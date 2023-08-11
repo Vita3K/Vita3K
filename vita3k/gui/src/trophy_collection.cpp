@@ -405,7 +405,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto TROPHY_PATH{ fs::path(emuenv.pref_path) / "ux0/user" / emuenv.io.user_id / "trophy" };
 
-    const auto is_background = gui.apps_background.find("NPXS10008") != gui.apps_background.end();
+    const auto is_background = gui.apps_background.find("vs0:app/NPXS10008") != gui.apps_background.end();
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
@@ -413,7 +413,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##trophy_collection", &gui.vita_area.trophy_collection, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10008"], ImVec2(0.f, 0.f), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["vs0:app/NPXS10008"], ImVec2(0.f, 0.f), display_size);
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), display_size, IM_COL32(31.f, 12.f, 0.f, 255.f), 0.f, ImDrawCornerFlags_All);
 

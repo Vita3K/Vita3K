@@ -76,8 +76,9 @@ bool read_file(const VitaIoDevice device, FileBuffer &buf, const std::wstring &p
     return true;
 }
 
-bool read_app_file(FileBuffer &buf, const std::wstring &pref_path, const std::string &app_device, const std::string &app_path, const fs::path &vfs_file_path) {
-    return read_file(VitaIoDevice::_from_string(app_device.c_str()), buf, pref_path, fs::path("app") / app_path / vfs_file_path);
+bool read_app_file(FileBuffer &buf, const std::wstring &pref_path, const std::string &app_path, const fs::path &vfs_file_path) {
+    const auto app_device = device::get_device(app_path);
+    return read_file(app_device, buf, pref_path, device::remove_device_from_path(app_path, app_device) / vfs_file_path);
 }
 
 SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path, const std::wstring &pref_path) {
@@ -155,7 +156,7 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path, boo
 
 void init_device_paths(IOState &io) {
     io.device_paths.savedata0 = "user/" + io.user_id + "/savedata/" + io.savedata;
-    io.device_paths.app0 = "app/" + io.app_path;
+    io.device_paths.app0 = device::remove_device_from_path(io.app_path, device::get_device(io.app_path));
     io.device_paths.addcont0 = "addcont/" + io.addcont;
 }
 
@@ -213,6 +214,15 @@ fs::path find_in_cache(IOState &io, const std::string &system_path) {
     }
 }
 
+std::string convert_path(const std::string &path) {
+    auto convert_path = path;
+
+	// replace colon with slash
+    string_utils::replace(convert_path, ":", "/");
+
+    return convert_path;
+}
+
 std::string translate_path(const char *path, VitaIoDevice &device, const IOState &io) {
     auto relative_path = device::remove_duplicate_device(path, device);
 
@@ -231,7 +241,7 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
     }
     case +VitaIoDevice::app0: { // Redirect app0: to ux0:app/<title_id>
         relative_path = device::remove_device_from_path(relative_path, device, io.device_paths.app0);
-        device = VitaIoDevice::_from_string(io.app_device.c_str());
+        device = device::get_device(io.app_path);
         break;
     }
     case +VitaIoDevice::addcont0: { // Redirect addcont0: to ux0:addcont/<title_id>

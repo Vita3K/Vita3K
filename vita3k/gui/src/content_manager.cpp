@@ -46,7 +46,7 @@ auto get_recursive_directory_size(const T &path) {
 } // namespace
 
 void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    const auto APP_PATH{ fs::path(emuenv.pref_path) / "ux0/app" / app_path };
+    const auto APP_PATH{ fs::path(emuenv.pref_path) / convert_path(app_path) };
     gui.app_selector.app_info = {};
 
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
@@ -59,7 +59,7 @@ void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pat
 }
 
 size_t get_app_size(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    const auto APP_PATH{ fs::path(emuenv.pref_path) / "ux0/app" / app_path };
+    const auto APP_PATH{ fs::path(emuenv.pref_path) / convert_path(app_path) };
     boost::uintmax_t app_size = 0;
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
         app_size += get_recursive_directory_size(APP_PATH);
@@ -193,7 +193,7 @@ struct AddCont {
 static std::map<std::string, AddCont> addcont_info;
 
 static void get_content_info(GuiState &gui, EmuEnvState &emuenv) {
-    const auto APP_PATH{ fs::path(emuenv.pref_path) / "ux0/app" / app_selected };
+    const auto APP_PATH{ fs::path(emuenv.pref_path) / convert_path(app_selected) };
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
         gui.app_selector.app_info.size = get_recursive_directory_size(APP_PATH);
     }
@@ -244,7 +244,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
-    const auto is_background = gui.apps_background.find("NPXS10026") != gui.apps_background.end();
+    const auto is_background = gui.apps_background.find("vs0:app/NPXS10026") != gui.apps_background.end();
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
@@ -253,7 +253,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::Begin("##content_manager", &gui.vita_area.content_manager, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10026"], ImVec2(0.f, 0.f), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["vs0:app/NPXS10026"], ImVec2(0.f, 0.f), display_size);
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), display_size, IM_COL32(53.f, 54.f, 70.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
@@ -326,7 +326,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
         if (ImGui::Selectable(lang.main["theme"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
-            pre_run_app(gui, emuenv, "vs0", "NPXS10015");
+            pre_run_app(gui, emuenv, "vs0:app/NPXS10015");
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
         ImGui::Selectable(space["themes"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT));

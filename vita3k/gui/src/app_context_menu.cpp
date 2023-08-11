@@ -20,6 +20,9 @@
 #include <config/state.h>
 #include <config/version.h>
 #include <gui/functions.h>
+
+#include <io/device.h>
+#include <io/functions.h>
 #include <io/state.h>
 
 #include <util/log.h>
@@ -282,12 +285,12 @@ void open_path(const std::string &path) {
 
 static std::string context_dialog;
 
-void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
+void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
     const auto title_id = APP_INDEX->title_id;
 
-    const auto APP_PATH{ fs::path(emuenv.pref_path) / app_device / "app" / app_path };
-    const auto CUSTOM_CONFIG_PATH{ fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
+    const auto APP_PATH{ fs::path(emuenv.pref_path) / convert_path(app_path) };
+    const auto CUSTOM_CONFIG_PATH{ fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", fs::path(app_path).stem().string()) };
     const auto ADDCONT_PATH{ fs::path(emuenv.pref_path) / "ux0/addcont" / APP_INDEX->addcont };
     const auto LICENSE_PATH{ fs::path(emuenv.pref_path) / "ux0/license" / title_id };
     const auto MANUAL_PATH{ APP_PATH / "sce_sys/manual" };
@@ -307,7 +310,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto common = emuenv.common_dialog.lang.common;
     auto lang_compat = gui.lang.compatibility;
 
-    const auto is_commercial_app = app_path.find("PCS") != std::string::npos;
+    const auto is_commercial_app = app_path.find("PCS") != std::string::npos || app_path.find("NPXS10007") != std::string::npos;
     const auto has_state_report = gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(title_id) : false;
     const auto compat_state = has_state_report ? gui.compat.app_compat_db[title_id].state : compat::UNKNOWN;
     const auto compat_state_color = gui.compat.compat_color[compat_state];
@@ -318,8 +321,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         ImGui::SetWindowFontScale(1.1f);
         const auto START_STR = app_path == emuenv.io.app_path ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
         if (ImGui::MenuItem(START_STR.c_str()))
-            pre_run_app(gui, emuenv, app_device, app_path);
-        if (app_path.find("NPXS") == std::string::npos) {
+            pre_run_app(gui, emuenv, app_path);
+        if (app_path.find("vs0") == std::string::npos) {
             if (ImGui::BeginMenu(lang_compat.name.c_str())) {
                 if (!is_commercial_app || !gui.compat.compat_db_loaded) {
                     if (ImGui::MenuItem(lang["check_app_state"].c_str())) {
@@ -467,39 +470,41 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             }
             if (!emuenv.cfg.show_live_area_screen && ImGui::BeginMenu("Live Area")) {
                 if (ImGui::MenuItem("Live Area", nullptr, &gui.vita_area.live_area_screen))
-                    open_live_area(gui, emuenv, app_device, app_path);
+                    open_live_area(gui, emuenv, app_path);
                 if (ImGui::MenuItem("Search", nullptr))
                     open_search(APP_INDEX->title);
                 if (fs::exists(MANUAL_PATH) && !fs::is_empty(MANUAL_PATH) && ImGui::MenuItem("Manual", nullptr))
-                    open_manual(gui, emuenv, app_device, app_path);
+                    open_manual(gui, emuenv, app_path);
                 if (ImGui::MenuItem("Update"))
-                    update_app(gui, emuenv, app_device, app_path);
+                    update_app(gui, emuenv, app_path);
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu(common["delete"].c_str())) {
-                if (ImGui::MenuItem(app_str["title"].c_str()))
-                    context_dialog = lang["app_delete"];
-                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang["addcont"].c_str()))
-                    context_dialog = lang["addcont_delete"];
-                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang["license"].c_str()))
-                    context_dialog = lang["license_delete"];
-                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
-                    context_dialog = lang["save_delete"];
-                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang["shaders_cache"].c_str()))
-                    fs::remove_all(SHADER_CACHE_PATH);
-                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang["shaders_log"].c_str()))
-                    fs::remove_all(SHADER_LOG_PATH);
-                ImGui::EndMenu();
-            }
-            if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(lang["update_history"].c_str())) {
-                if (get_update_history(gui, emuenv, app_path))
-                    context_dialog = "history";
-                else
-                    LOG_WARN("Patch note Error for Title ID {} in path {}", title_id, app_path);
+            if (app_path.find("ux0") != std::string::npos) {
+                if (ImGui::BeginMenu(common["delete"].c_str())) {
+                    if (ImGui::MenuItem(app_str["title"].c_str()))
+                        context_dialog = lang["app_delete"];
+                    if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang["addcont"].c_str()))
+                        context_dialog = lang["addcont_delete"];
+                    if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang["license"].c_str()))
+                        context_dialog = lang["license_delete"];
+                    if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
+                        context_dialog = lang["save_delete"];
+                    if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang["shaders_cache"].c_str()))
+                        fs::remove_all(SHADER_CACHE_PATH);
+                    if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang["shaders_log"].c_str()))
+                        fs::remove_all(SHADER_LOG_PATH);
+                    ImGui::EndMenu();
+                }
+                if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(lang["update_history"].c_str())) {
+                    if (get_update_history(gui, emuenv, app_path))
+                        context_dialog = "history";
+                    else
+                        LOG_WARN("Patch note Error for Title ID {} in path {}", title_id, app_path);
+                }
             }
         }
         if (ImGui::MenuItem(lang["information"].c_str(), nullptr, &gui.vita_area.app_information)) {
-            if (title_id.find("NPXS") == std::string::npos) {
+            if (app_path.find("vs0") == std::string::npos) {
                 get_app_info(gui, emuenv, app_path);
                 const auto app_size = get_app_size(gui, emuenv, app_path);
                 gui.app_selector.app_info.size = app_size;
@@ -598,11 +603,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             gui.vita_area.app_information = false;
             gui.vita_area.information_bar = true;
         }
-        if (get_app_icon(gui, title_id)->first == title_id) {
+        if (get_app_icon(gui, app_path)->first == app_path) {
             ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * SCALE.x));
             const auto POS_MIN = ImGui::GetCursorScreenPos();
             const ImVec2 POS_MAX(POS_MIN.x + INFO_ICON_SIZE.x, POS_MIN.y + INFO_ICON_SIZE.y);
-            ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, title_id)->second, POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, INFO_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
+            ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, app_path)->second, POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, INFO_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
         }
         ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize((lang["name"] + "  ").c_str()).x, INFO_ICON_SIZE.y + (50.f * SCALE.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s ", lang["name"].c_str());
@@ -610,7 +615,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         ImGui::PushTextWrapPos(display_size.x - (85.f * SCALE.x));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->title.c_str());
         ImGui::PopTextWrapPos();
-        if (title_id.find("NPXS") == std::string::npos) {
+        if (app_path.find("vs0") == std::string::npos) {
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["trophy_earning"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["trophy_earning"].c_str(), gui.app_selector.app_info.trophy.c_str());

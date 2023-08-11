@@ -206,10 +206,10 @@ EXPORT(int, sceAppMgrDestroyAppByName, const char *name) {
     TRACY_FUNC(sceAppMgrDestroyAppByName, name);
     LOG_DEBUG("name:{}, current app: {}", to_debug_str(emuenv.mem, name), emuenv.io.app_path);
     // Todo: Implement multi process
-    if (emuenv.io.app_path == "NPXS10062") {
+    if (emuenv.io.app_path == "vs0:vsh/initialsetup") {
         // Exit the initial setup to Shell
         STUBBED("Reload shell");
-        emuenv.io.app_path = "NPXS19999";
+        emuenv.io.app_path = "vsh/shell";
         return CALL_EXPORT(_sceAppMgrLoadExec, "vs0:vsh/shell/shell.self", nullptr, nullptr);
     }
 

@@ -72,7 +72,7 @@ static bool init_notice_icon(GuiState &gui, EmuEnvState &emuenv, const fs::path 
             LOG_WARN("Icon no found for trophy id: {} on NpComId: {}", info.content_id, info.id);
             return false;
         } else {
-            if (!vfs::read_app_file(buffer, emuenv.pref_path, "ux0", info.id, "sce_sys/icon0.png")) {
+            if (!vfs::read_app_file(buffer, emuenv.pref_path, "ux0:app/" + info.id, "sce_sys/icon0.png")) {
                 buffer = init_default_icon(gui, emuenv);
                 if (buffer.empty()) {
                     LOG_WARN("Not found defaut icon for this notice content: {}", info.content_id);
@@ -423,11 +423,11 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
                     save_notice_list(emuenv);
                     if (notice.type == "content") {
                         if (notice.group == "theme")
-                            pre_load_app(gui, emuenv, false, "vs0", "NPXS10015");
+                            pre_load_app(gui, emuenv, false, "vs0:app/NPXS10015");
                         else
-                            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, "ux0", notice.id);
+                            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, "ux0:app/" +  notice.id);
                     } else {
-                        pre_load_app(gui, emuenv, false, "vs0", "NPXS10008");
+                        pre_load_app(gui, emuenv, false, "vs0:app/NPXS10008");
                         open_trophy_unlocked(gui, emuenv, notice.id, notice.content_id);
                     }
                     notice_info_state = false;
@@ -547,10 +547,8 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
             const auto ICON_POS_MINI_SCALE = ImVec2((display_size.x / 2.f) - (14.f * SCALE.x) - (decal_app_icon_pos * SCALE.x) + (a * (34 * SCALE.x)), 2.f * SCALE.y);
             const auto ICON_POS_MAX_SCALE = ImVec2(ICON_POS_MINI_SCALE.x + ICON_SIZE_SCALE, ICON_POS_MINI_SCALE.y + ICON_SIZE_SCALE);
             const auto ICON_CENTER_POS = ImVec2(ICON_POS_MINI_SCALE.x + (ICON_SIZE_SCALE / 2.f), ICON_POS_MINI_SCALE.y + (ICON_SIZE_SCALE / 2.f));
-            const auto CURRENT_APP = gui.live_area_current_open_apps_list[a];
-            const auto APP_DEVICE = CURRENT_APP.first;
-            const auto APP_PATH = CURRENT_APP.second;
-            auto &APP_ICON_TYPE = APP_DEVICE == "vs0" ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+            const auto APP_PATH = gui.live_area_current_open_apps_list[a];
+            auto &APP_ICON_TYPE = APP_PATH.find("vs0") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
 
             // Check if icon exist
             if (APP_ICON_TYPE.find(APP_PATH) != APP_ICON_TYPE.end())
@@ -559,7 +557,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::GetForegroundDrawList()->AddCircleFilled(ICON_CENTER_POS, ICON_SIZE_SCALE / 2.f, IM_COL32_WHITE);
 
             // hide Icon no opened
-            if (!APP_IS_OPEN || (gui.live_area_current_open_apps_list[gui.live_area_app_current_open].second != APP_PATH))
+            if (!APP_IS_OPEN || (gui.live_area_current_open_apps_list[gui.live_area_app_current_open] != APP_PATH))
                 ImGui::GetForegroundDrawList()->AddCircleFilled(ICON_CENTER_POS, ICON_SIZE_SCALE / 2.f, IM_COL32(0.f, 0.f, 0.f, 140.f));
         }
     }

@@ -212,7 +212,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
     if (command_line.run_app_path.has_value()) {
         const std::string app_path = command_line.run_app_path.value();
-        if ((app_path != "NPXS10062") && (app_path != "NPXS19999")) {
+        if ((app_path != "NPXS10062") && (app_path != "vsh/shell")) {
             std::set<std::string> exist_apps = get_file_set(fs::path(cfg.pref_path) / command_line.app_device / "app");
             if (exist_apps.find(app_path) == exist_apps.end()) {
                 std::cout << "--installed-path: " << app_path << " no in {";

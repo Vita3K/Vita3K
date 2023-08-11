@@ -22,7 +22,7 @@
 #include <gui/functions.h>
 
 #include <config/state.h>
-#include <io/device.h>
+#include <io/functions.h>
 #include <io/vfs.h>
 
 #include <util/log.h>
@@ -31,8 +31,8 @@
 
 namespace gui {
 
-void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
-    if (init_manual(gui, emuenv, app_device, app_path)) {
+void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    if (init_manual(gui, emuenv, app_path)) {
         emuenv.app_path = app_path;
         gui.vita_area.information_bar = false;
         gui.vita_area.live_area_screen = false;
@@ -76,14 +76,14 @@ void browse_pages_manual(GuiState &gui, EmuEnvState &emuenv, const uint32_t butt
 
 static std::vector<uint32_t> height_manual_pages;
 
-bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
+bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     // Reset manual variables
     current_page = 0;
     scroll = 0.f;
     height_manual_pages.clear();
 
     const auto APP_INDEX = get_app_index(gui, app_path);
-    const auto APP_PATH{ fs::path(emuenv.pref_path) / emuenv.app_device / "app" / app_path };
+    const auto APP_PATH{ fs::path(emuenv.pref_path) / convert_path(app_path) };
     auto manual_path{ fs::path("sce_sys/manual/") };
 
     const auto lang = fmt::format("{:0>2d}", emuenv.cfg.sys_lang);
@@ -96,7 +96,7 @@ bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_devi
             if (manual.path().extension() == ".png") {
                 const auto page_path = manual_path / manual.path().filename().string();
                 vfs::FileBuffer buffer;
-                vfs::read_app_file(buffer, emuenv.pref_path, (emuenv.app_device.c_str()), app_path, page_path);
+                vfs::read_app_file(buffer, emuenv.pref_path, app_path, page_path);
 
                 if (buffer.empty()) {
                     LOG_WARN("Manual not found for title: {} [{}].", app_path, APP_INDEX->title);

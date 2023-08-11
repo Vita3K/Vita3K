@@ -23,7 +23,10 @@
 #include <config/state.h>
 #include <display/state.h>
 #include <host/dialog/filesystem.hpp>
+
+#include <io/device.h>
 #include <io/state.h>
+
 #include <kernel/state.h>
 #include <renderer/state.h>
 
@@ -367,8 +370,9 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     // If backend render or resolution multiplier is changed when app run, reboot emu and app
     if (!emuenv.io.title_id.empty() && ((emuenv.renderer->current_backend != emuenv.backend_renderer) || (emuenv.renderer->res_multiplier != emuenv.cfg.current_config.resolution_multiplier))) {
         emuenv.load_exec = true;
-        emuenv.load_app_device = emuenv.io.app_device;
-        emuenv.load_app_path = emuenv.io.app_path;
+        const auto app_device = device::get_device(emuenv.io.app_path);
+        emuenv.load_app_device = app_device._to_string();
+        emuenv.load_app_path = device::remove_device_from_path(emuenv.io.app_path, app_device);
         emuenv.load_exec_path = emuenv.self_path;
         if (!emuenv.cfg.app_args.empty())
             emuenv.load_exec_argv = "\"" + emuenv.cfg.app_args + "\"";

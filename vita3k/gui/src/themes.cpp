@@ -362,7 +362,8 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
             continue;
         }
 
-        gui.app_selector.sys_apps_icon[title_id].init(gui.imgui_state.get(), data, width, height);
+        const auto app_path = "vs0:" + (title_id == "NPXS19999" ? "vsh/shell" : "app/" + title_id); 
+        gui.app_selector.sys_apps_icon[app_path].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 

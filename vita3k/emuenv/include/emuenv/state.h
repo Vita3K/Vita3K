@@ -105,7 +105,6 @@ private:
 public:
     // App info contained in its `param.sfo` file
     sfo::SfoAppInfo &app_info;
-    std::string app_device{};
     std::string app_path{};
     int32_t app_sku_flag{};
     std::string license_content_id{};

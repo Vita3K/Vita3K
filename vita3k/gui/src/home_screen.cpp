@@ -24,7 +24,10 @@
 #include <ctrl/ctrl.h>
 #include <display/state.h>
 #include <gui/functions.h>
+
+#include <io/device.h>
 #include <io/state.h>
+
 #include <kernel/state.h>
 
 #include <io/VitaIoDevice.h>
@@ -104,20 +107,18 @@ void load_and_update_compat_user_apps(GuiState &gui, EmuEnvState &emuenv) {
     load_and_update_compat_user_apps_thread.detach();
 }
 
-std::vector<std::pair<std::string, std::string>>::iterator get_live_area_current_open_apps_list_index(GuiState &gui, const std::string &app_path) {
-    return std::find_if(gui.live_area_current_open_apps_list.begin(), gui.live_area_current_open_apps_list.end(), [&](const auto &pair) {
-        return pair.second == app_path;
-    });
+std::vector<std::string>::iterator get_live_area_current_open_apps_list_index(GuiState &gui, const std::string &app_path) {
+    return std::find(gui.live_area_current_open_apps_list.begin(), gui.live_area_current_open_apps_list.end(), app_path);
 }
 
-void update_live_area_current_open_apps_list(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
-    if ((get_live_area_current_open_apps_list_index(gui, app_path) != gui.live_area_current_open_apps_list.end()) && (gui.live_area_current_open_apps_list.front().second != app_path))
+void update_live_area_current_open_apps_list(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    if ((get_live_area_current_open_apps_list_index(gui, app_path) != gui.live_area_current_open_apps_list.end()) && (gui.live_area_current_open_apps_list.front() != app_path))
         gui.live_area_current_open_apps_list.erase(get_live_area_current_open_apps_list_index(gui, app_path));
     if ((get_live_area_current_open_apps_list_index(gui, app_path) == gui.live_area_current_open_apps_list.end()))
-        gui.live_area_current_open_apps_list.insert(gui.live_area_current_open_apps_list.begin(), { app_device, app_path });
+        gui.live_area_current_open_apps_list.insert(gui.live_area_current_open_apps_list.begin(), app_path);
     gui.live_area_app_current_open = 0;
     if (gui.live_area_current_open_apps_list.size() > 6) {
-        const auto last_app = gui.live_area_current_open_apps_list.back().second == emuenv.io.app_path ? gui.live_area_current_open_apps_list[gui.live_area_current_open_apps_list.size() - 2].second : gui.live_area_current_open_apps_list.back().second;
+        const auto last_app = gui.live_area_current_open_apps_list.back() == emuenv.io.app_path ? gui.live_area_current_open_apps_list[gui.live_area_current_open_apps_list.size() - 2] : gui.live_area_current_open_apps_list.back();
         gui.live_area_contents.erase(last_app);
         gui.live_items.erase(last_app);
         gui.live_area_current_open_apps_list.erase(get_live_area_current_open_apps_list_index(gui, last_app));
@@ -126,36 +127,34 @@ void update_live_area_current_open_apps_list(GuiState &gui, EmuEnvState &emuenv,
 
 static std::map<std::string, uint64_t> last_time;
 
-void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
-    update_live_area_current_open_apps_list(gui, emuenv, app_device, app_path);
+void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    update_live_area_current_open_apps_list(gui, emuenv, app_path);
     last_time["home"] = 0;
-    init_live_area(gui, emuenv, app_device, app_path);
+    init_live_area(gui, emuenv, app_path);
     gui.vita_area.home_screen = false;
     gui.vita_area.information_bar = true;
     gui.vita_area.live_area_screen = true;
 }
 
-void pre_load_app(GuiState &gui, EmuEnvState &emuenv, bool live_area, const std::string &app_device, const std::string &app_path) {
+void pre_load_app(GuiState &gui, EmuEnvState &emuenv, bool live_area, const std::string &app_path) {
     if (app_path == "NPXS10003") {
         update_last_time_app_used(gui, emuenv, app_path);
         open_path("https://Vita3k.org");
     } else {
         if (live_area)
-            open_live_area(gui, emuenv, app_device, app_path);
+            open_live_area(gui, emuenv, app_path);
         else
-            pre_run_app(gui, emuenv, app_device, app_path);
+            pre_run_app(gui, emuenv, app_path);
     }
 }
 
-void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
-    if ((app_path == "NPXS19999") || (app_path == "NPXS10007") || (app_path.find("NPXS") == std::string::npos)) {
+void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    if ((app_path == "vs0:vsh/shell") || (app_path.find("NPXS10007") != std::string::npos) || (app_path.find("NPXS") == std::string::npos)) {
         if (emuenv.io.app_path != app_path) {
             if (!emuenv.io.app_path.empty())
                 gui.vita_area.app_close = true;
-            else {
-                emuenv.io.app_device = app_device;
+            else
                 emuenv.io.app_path = app_path;
-            }
         } else {
             gui.vita_area.home_screen = false;
             gui.vita_area.live_area_screen = false;
@@ -166,16 +165,16 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_devi
         emuenv.app_path = app_path;
         gui.vita_area.home_screen = false;
         gui.vita_area.live_area_screen = false;
-        init_app_background(gui, emuenv, "vs0", app_path);
+        init_app_background(gui, emuenv, app_path);
         update_last_time_app_used(gui, emuenv, app_path);
 
-        if (app_path == "NPXS10008") {
+        if (app_path == "vs0:app/NPXS10008") {
             init_trophy_collection(gui, emuenv);
             gui.vita_area.trophy_collection = true;
-        } else if (app_path == "NPXS10015") {
+        } else if (app_path == "vs0:app/NPXS10015") {
             if (gui.vita_area.content_manager) {
-                emuenv.app_path = "NPXS10026";
-                update_time_app_used(gui, emuenv, "NPXS10026");
+                emuenv.app_path = "vs0:app/NPXS10026";
+                update_time_app_used(gui, emuenv, "vs0:app/NPXS10026");
                 gui.vita_area.content_manager = false;
             }
 
@@ -190,7 +189,7 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_devi
 void close_system_app(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.vita_area.content_manager) {
         gui.vita_area.content_manager = false;
-        update_time_app_used(gui, emuenv, "NPXS10026");
+        update_time_app_used(gui, emuenv, "vs0:app/NPXS10026");
     } else if (gui.vita_area.manual) {
         gui.vita_area.manual = false;
 
@@ -200,17 +199,17 @@ void close_system_app(GuiState &gui, EmuEnvState &emuenv) {
         gui.manuals.clear();
     } else if (gui.vita_area.settings) {
         gui.vita_area.settings = false;
-        update_time_app_used(gui, emuenv, "NPXS10015");
-        if (emuenv.app_path == "NPXS10026") {
-            pre_run_app(gui, emuenv, "vs0", "NPXS10026");
+        update_time_app_used(gui, emuenv, "vs0:app/NPXS10015");
+        if (emuenv.app_path == "vs0:app/NPXS10026") {
+            pre_run_app(gui, emuenv, "vs0:app/NPXS10026");
             return;
         }
     } else {
         gui.vita_area.trophy_collection = false;
-        update_time_app_used(gui, emuenv, "NPXS10008");
+        update_time_app_used(gui, emuenv, "vs0:app/NPXS10008");
     }
 
-    if ((gui::get_live_area_current_open_apps_list_index(gui, emuenv.app_path) != gui.live_area_current_open_apps_list.end()) && (gui.live_area_current_open_apps_list[gui.live_area_app_current_open].second == emuenv.app_path)) {
+    if ((gui::get_live_area_current_open_apps_list_index(gui, emuenv.app_path) != gui.live_area_current_open_apps_list.end()) && (gui.live_area_current_open_apps_list[gui.live_area_app_current_open] == emuenv.app_path)) {
         gui.vita_area.live_area_screen = true;
         gui.vita_area.information_bar = true;
     } else {
@@ -220,9 +219,9 @@ void close_system_app(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
-void close_and_run_new_app(EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
+void close_and_run_new_app(EmuEnvState &emuenv, const std::string &app_path) {
     emuenv.kernel.exit_delete_all_threads();
-    emuenv.load_app_device = app_device;
+    emuenv.load_app_device = 
     emuenv.load_app_path = app_path;
     emuenv.load_exec = true;
 }
@@ -264,9 +263,8 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
         gui.vita_area.app_close = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
     if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
-        const auto app_device = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open].first : emuenv.app_device;
-        const auto app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open].second : emuenv.app_path;
-        close_and_run_new_app(emuenv, app_device, app_path);
+        const auto app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open]: emuenv.app_path;
+        close_and_run_new_app(emuenv, app_path);
     }
     ImGui::PopStyleVar();
     ImGui::EndChild();
@@ -494,13 +492,13 @@ void browse_home_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t bu
     case SCE_CTRL_CIRCLE:
         if (emuenv.cfg.sys_button == 0) {
             const auto &selected_app = current_selected_app_index < 0 ? gui.app_selector.sys_apps[current_selected_app_index + 5] : gui.app_selector.user_apps[current_selected_app_index];
-            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, selected_app.device, selected_app.path);
+            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, selected_app.path);
         }
         break;
     case SCE_CTRL_CROSS:
         if (emuenv.cfg.sys_button == 1) {
             const auto &selected_app = current_selected_app_index < 0 ? gui.app_selector.sys_apps[current_selected_app_index + 5] : gui.app_selector.user_apps[current_selected_app_index];
-            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, selected_app.device, selected_app.path);
+            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, selected_app.path);
         }
         break;
     default: break;
@@ -758,7 +756,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
         for (const auto &app : apps_list) {
             bool selected = false;
-            const auto is_not_sys_app = app.path.find("NPXS") == std::string::npos;
+            const auto is_not_sys_app = app.path.find("ux0") != std::string::npos;
 
             if (is_not_sys_app) {
                 // Filter app by region and type
@@ -785,7 +783,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
 
             // Get the current app index off the apps list.
             const auto app_index = static_cast<int>(&app - &apps_list[0]);
-            const auto current_app_index = app.device != "vs0" ? app_index : app_index - 5;
+            const auto current_app_index = app.path.find("vs0") == std::string::npos ? app_index : app_index - 5;
             apps_list_filtered.push_back(current_app_index);
 
             // Check if the current app is selected.
@@ -795,12 +793,10 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::Selectable("##icon", selected || is_app_selected, icon_flags, SELECTABLE_APP_SIZE))
                 selected = true;
 
-            if (!gui.configuration_menu.custom_settings_dialog && (ImGui::IsItemHovered() || is_app_selected)) {
-                emuenv.app_device = app.device;
+            if (!gui.configuration_menu.custom_settings_dialog && (ImGui::IsItemHovered() || is_app_selected))
                 emuenv.app_path = app.path;
-            }
             if (emuenv.app_path == app.path)
-                draw_app_context_menu(gui, emuenv, app.device, app.path);
+                draw_app_context_menu(gui, emuenv, app.path);
             const auto STITLE_SIZE = ImGui::CalcTextSize(app.stitle.c_str(), 0, false, ICON_SIZE.x + (42.f * VIEWPORT_SCALE.x));
             const auto item_rect_max = ImGui::GetItemRectMax().y;
 
@@ -868,7 +864,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::NextColumn();
 
             // Draw the compatibility badge for commercial apps when they are within the visible area.
-            if (element_is_within_visible_area && (app.title_id.find("PCS") != std::string::npos)) {
+            if (element_is_within_visible_area && ((app.title_id.find("PCS") != std::string::npos) || app.title_id.find("NPXS10007") != std::string::npos)) {
                 const auto compat_state = (gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(app.title_id) : false) ? gui.compat.app_compat_db[app.title_id].state : compat::UNKNOWN;
                 const auto compat_state_vec4 = gui.compat.compat_color[compat_state];
                 const ImU32 compat_state_color = IM_COL32((int)(compat_state_vec4.x * 255.0f), (int)(compat_state_vec4.y * 255.0f), (int)(compat_state_vec4.z * 255.0f), (int)(compat_state_vec4.w * 255.0f));
@@ -915,7 +911,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             }
             ImGui::NextColumn();
             if (selected)
-                pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.device, app.path);
+                pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.path);
             ImGui::PopID();
         }
     };

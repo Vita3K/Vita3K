@@ -24,6 +24,7 @@
 #include <emuenv/state.h>
 #include <gui/functions.h>
 #include <gui/state.h>
+#include <io/device.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <modules/module_parent.h>
@@ -248,9 +249,15 @@ int main(int argc, char *argv[]) {
     }
 
     if (run_type == app::AppRunType::Extracted) {
-        emuenv.io.app_device = cfg.app_device;
-        emuenv.io.app_path = cfg.run_app_path ? *cfg.run_app_path : emuenv.app_info.app_title_id;
-        gui::init_user_app(gui, emuenv, emuenv.io.app_device, emuenv.io.app_path);
+        if (cfg.run_app_path == "vsh/shell")
+            emuenv.io.app_path = cfg.app_device + ":" + *cfg.run_app_path;
+        else if (cfg.run_app_path == "NPXS10062")
+            emuenv.io.app_path = cfg.app_device + ":vsh/initialsetup";
+        else {
+            emuenv.io.app_path = cfg.app_device + ":app/" + (cfg.run_app_path ? *cfg.run_app_path : emuenv.app_info.app_title_id);
+            gui::init_user_app(gui, emuenv, emuenv.io.app_path);
+        }
+
         if (emuenv.cfg.run_app_path.has_value())
             emuenv.cfg.run_app_path.reset();
         else if (emuenv.cfg.content_path.has_value())
@@ -307,8 +314,9 @@ int main(int argc, char *argv[]) {
 
     // When backend render is changed before boot app, reboot emu in new backend render and run app
     if (emuenv.renderer->current_backend != emuenv.backend_renderer) {
-        emuenv.load_app_device = emuenv.io.app_device;
-        emuenv.load_app_path = emuenv.io.app_path;
+        const auto app_device = device::get_device(emuenv.io.app_path);
+        emuenv.load_app_device = app_device._to_string();
+        emuenv.load_app_path = device::remove_device_from_path(emuenv.io.app_path, app_device);
         run_execv(argv, emuenv);
         return Success;
     }
@@ -326,11 +334,11 @@ int main(int argc, char *argv[]) {
         emuenv.io.title_id = APP_INDEX->title_id;
     };
 
-    if (emuenv.io.app_path == "NPXS19999" || (emuenv.io.app_path == "NPXS10062"))
-        set_app_info(gui::get_app_index(gui, "NPXS19999"));
+    if (emuenv.io.app_path.find("vs0:vsh") != std::string::npos)
+        set_app_info(gui::get_app_index(gui, "vs0:vsh/shell"));
     else
         set_app_info(gui::get_user_app_index(gui, emuenv.io.app_path));
-
+    
     // Check license for PS App Only
     if (emuenv.io.title_id.find("PCS") != std::string::npos)
         emuenv.app_sku_flag = get_license_sku_flag(emuenv, emuenv.app_info.app_content_id);
@@ -346,8 +354,8 @@ int main(int argc, char *argv[]) {
         gui.imgui_state->do_clear_screen = false;
     }
 
-    if ((emuenv.io.app_path != "NPXS19999") && (emuenv.io.app_path != "NPXS10062"))
-        gui::init_app_background(gui, emuenv, emuenv.io.app_device, emuenv.io.app_path);
+    if ((emuenv.io.app_path != "vs0:vsh/shell") && (emuenv.io.app_path.find("NPXS10062") == std::string::npos))
+        gui::init_app_background(gui, emuenv, emuenv.io.app_path);
     gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
 
     const auto draw_app_background = [](GuiState &gui, EmuEnvState &emuenv) {
