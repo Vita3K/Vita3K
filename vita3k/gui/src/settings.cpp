@@ -193,13 +193,15 @@ enum SettingsMenu {
 static SettingsMenu settings_menu = SELECT;
 
 void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
-    const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     const auto BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
-    const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT);
+    const ImVec2 WINDOW_POS(VIEWPORT_POS.x, VIEWPORT_POS.y + INFORMATION_BAR_HEIGHT);
+    const ImVec2 WINDOW_SIZE(VIEWPORT_SIZE.x, VIEWPORT_SIZE.y - INFORMATION_BAR_HEIGHT);
     const auto SIZE_PREVIEW = ImVec2(360.f * SCALE.x, 204.f * SCALE.y);
     const auto SIZE_MINI_PREVIEW = ImVec2(256.f * SCALE.x, 145.f * SCALE.y);
     const auto SIZE_LIST = ImVec2(780 * SCALE.x, 414.f * SCALE.y);
@@ -210,19 +212,25 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     const auto is_background = gui.apps_background.contains("NPXS10015");
     auto common = emuenv.common_dialog.lang.common;
 
-    ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
     ImGui::Begin("##settings", &gui.vita_area.settings, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::PopStyleVar();
+
+    const auto draw_list = ImGui::GetBackgroundDrawList();
+    const ImVec2 BG_POS_MAX(VIEWPORT_POS.x + VIEWPORT_SIZE.x, VIEWPORT_POS.y + VIEWPORT_SIZE.y);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], ImVec2(0.f, 0.f), display_size);
+        draw_list->AddImage(gui.apps_background["NPXS10015"], VIEWPORT_POS, BG_POS_MAX);
     else
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), display_size, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawCornerFlags_All);
+        draw_list->AddRectFilled(VIEWPORT_POS, BG_POS_MAX, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
     ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
     const auto title_size_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
-    ImGui::PushTextWrapPos(((display_size.x - SIZE_LIST.x) / 2.f) + SIZE_LIST.x);
-    ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (title_size_str.x / 2.f), (35.f * SCALE.y) - (title_size_str.y / 2.f)));
+    ImGui::PushTextWrapPos(((WINDOW_SIZE.x - SIZE_LIST.x) / 2.f) + SIZE_LIST.x);
+    ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (title_size_str.x / 2.f), (35.f * SCALE.y) - (title_size_str.y / 2.f)));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
     ImGui::PopTextWrapPos();
 
@@ -237,7 +245,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
         if ((menu == "theme") && selected.empty()) {
             ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
             const auto search_size = ImGui::CalcTextSize(theme.main["search"].c_str());
-            ImGui::SetCursorPos(ImVec2(display_size.x - (220.f * SCALE.x) - search_size.x, (35.f * SCALE.y) - (search_size.y / 2.f)));
+            ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (220.f * SCALE.x) - search_size.x, (35.f * SCALE.y) - (search_size.y / 2.f)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", theme.main["search"].c_str());
             ImGui::SameLine();
             search_bar.Draw("##search_bar", 200 * SCALE.x);
@@ -246,24 +254,32 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
             // Draw Scroll Arrow
             const auto ARROW_SIZE = ImVec2(50.f * SCALE.x, 60.f * SCALE.y);
             const ImU32 ARROW_COLOR = 0xFFFFFFFF; // White
+
+            // Set arrow position of width
+            const auto ARROW_WIDTH_POS = VIEWPORT_SIZE.x - (45.f * SCALE.x);
+            const auto ARROW_DRAW_WIDTH_POS = VIEWPORT_POS.x + ARROW_WIDTH_POS;
+            const auto ARROW_SELECT_WIDTH_POS = ARROW_WIDTH_POS - (ARROW_SIZE.x / 2.f);
+
             if (current_scroll_pos) {
-                const auto ARROW_UPP_CENTER = ImVec2(display_size.x - (45.f * SCALE.x), 135.f * SCALE.y);
-                ImGui::GetWindowDrawList()->AddTriangleFilled(
+                const auto ARROW_UP_HEIGHT_POS = 135.f * SCALE.y;
+                const ImVec2 ARROW_UPP_CENTER(ARROW_DRAW_WIDTH_POS, VIEWPORT_POS.y + ARROW_UP_HEIGHT_POS);
+                draw_list->AddTriangleFilled(
                     ImVec2(ARROW_UPP_CENTER.x - (20.f * SCALE.x), ARROW_UPP_CENTER.y + (16.f * SCALE.y)),
                     ImVec2(ARROW_UPP_CENTER.x, ARROW_UPP_CENTER.y - (16.f * SCALE.y)),
                     ImVec2(ARROW_UPP_CENTER.x + (20.f * SCALE.x), ARROW_UPP_CENTER.y + (16.f * SCALE.y)), ARROW_COLOR);
-                ImGui::SetCursorPos(ImVec2(ARROW_UPP_CENTER.x - (ARROW_SIZE.x / 2.f), ARROW_UPP_CENTER.y - ARROW_SIZE.y));
+                ImGui::SetCursorPos(ImVec2(ARROW_SELECT_WIDTH_POS, ARROW_UP_HEIGHT_POS - ARROW_SIZE.y));
                 if ((ImGui::Selectable("##upp", false, ImGuiSelectableFlags_None, ARROW_SIZE))
                     || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_up)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_up))
                     set_scroll_pos = current_scroll_pos - (340 * SCALE.y);
             }
             if (current_scroll_pos < max_scroll_pos) {
-                const auto ARROW_DOWN_CENTER = ImVec2(display_size.x - (45.f * SCALE.x), display_size.y - (30.f * SCALE.y));
-                ImGui::GetWindowDrawList()->AddTriangleFilled(
+                const auto ARROW_DOWN_HEIGHT_POS = VIEWPORT_SIZE.y - (30.f * SCALE.y);
+                const ImVec2 ARROW_DOWN_CENTER(ARROW_DRAW_WIDTH_POS, VIEWPORT_POS.y + ARROW_DOWN_HEIGHT_POS);
+                draw_list->AddTriangleFilled(
                     ImVec2(ARROW_DOWN_CENTER.x + (20.f * SCALE.x), ARROW_DOWN_CENTER.y - (16.f * SCALE.y)),
                     ImVec2(ARROW_DOWN_CENTER.x, ARROW_DOWN_CENTER.y + (16.f * SCALE.y)),
                     ImVec2(ARROW_DOWN_CENTER.x - (20.f * SCALE.x), ARROW_DOWN_CENTER.y - (16.f * SCALE.y)), ARROW_COLOR);
-                ImGui::SetCursorPos(ImVec2(ARROW_DOWN_CENTER.x - (ARROW_SIZE.x / 2.f), ARROW_DOWN_CENTER.y - ARROW_SIZE.y));
+                ImGui::SetCursorPos(ImVec2(ARROW_SELECT_WIDTH_POS, ARROW_DOWN_HEIGHT_POS - ARROW_SIZE.y));
                 if ((ImGui::Selectable("##down", false, ImGuiSelectableFlags_None, ARROW_SIZE))
                     || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_down)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_down))
                     set_scroll_pos = current_scroll_pos + (340 * SCALE.y);
@@ -273,7 +289,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::SetCursorPosY(64.0f * SCALE.y);
     ImGui::Separator();
-    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, ((settings_menu == THEME_BACKGROUND) && !menu.empty() ? 118.f : 96.0f) * SCALE.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
+    ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (WINDOW_SIZE.x / 2.f) - (SIZE_LIST.x / 2.f), WINDOW_POS.y + ((settings_menu == THEME_BACKGROUND) && !menu.empty() ? 86.f : 64.f) * SCALE.y), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
     ImGui::BeginChild("##settings_child", SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
@@ -413,9 +429,9 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         }
                     } else if (popup == "delete") {
                         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-                        ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
+                        ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
                         ImGui::Begin("##delete_theme", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-                        ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                        ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x / 2.f, WINDOW_SIZE.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
                         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
                         ImGui::BeginChild("##delete_theme_popup", POPUP_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                         ImGui::SetCursorPos(ImVec2(48.f * SCALE.x, 28.f * SCALE.y));
@@ -679,7 +695,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleVar();
         if (!menu.empty()) {
             const auto TIME_SELECT_SIZE = 336.f * SCALE.x;
-            ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x - TIME_SELECT_SIZE, INFORMATION_BAR_HEIGHT), ImGuiCond_Always, ImVec2(0.f, 0.f));
+            ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + WINDOW_SIZE.x - TIME_SELECT_SIZE, WINDOW_POS.y), ImGuiCond_Always, ImVec2(0.f, 0.f));
             ImGui::SetNextWindowSize(ImVec2(TIME_SELECT_SIZE, WINDOW_SIZE.y), ImGuiCond_Always);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
             ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.15f, 0.16f, 0.18f, 1.f));
@@ -687,7 +703,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
             ImGui::Columns(2, nullptr, false);
             ImGui::SetColumnWidth(0, 30.f * SCALE.x);
-            ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             if (menu == "date_format") {
                 const auto get_date_format_sting = [&](SceSystemParamDateFormat date_format) {
                     std::string date_format_str;
@@ -706,7 +722,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     auto date_format_value = SceSystemParamDateFormat(f);
                     const auto date_format_str = get_date_format_sting(date_format_value);
                     ImGui::PushID(date_format_str.c_str());
-                    ImGui::SetCursorPosY((display_size.y / 2.f) - INFORMATION_BAR_HEIGHT - (SIZE_PUPUP_SELECT * 1.5f) + (SIZE_PUPUP_SELECT * f));
+                    ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - INFORMATION_BAR_HEIGHT - (SIZE_PUPUP_SELECT * 1.5f) + (SIZE_PUPUP_SELECT * f));
                     if (ImGui::Selectable(emuenv.cfg.sys_date_format == date_format_value ? "V" : "##date_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
                         if (emuenv.cfg.sys_date_format != date_format_value) {
                             emuenv.cfg.sys_date_format = date_format_value;
@@ -715,13 +731,13 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         menu.clear();
                     }
                     ImGui::NextColumn();
-                    ImGui::SetCursorPosY((display_size.y / 2.f) - INFORMATION_BAR_HEIGHT - (SIZE_PUPUP_SELECT * 1.5f) + (SIZE_PUPUP_SELECT * f));
+                    ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - INFORMATION_BAR_HEIGHT - (SIZE_PUPUP_SELECT * 1.5f) + (SIZE_PUPUP_SELECT * f));
                     ImGui::Selectable(date_format_str.c_str(), false, ImGuiSelectableFlags_None, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT));
                     ImGui::PopID();
                     ImGui::NextColumn();
                 }
             } else if (menu == "time_format") {
-                ImGui::SetCursorPosY((display_size.y / 2.f) - SIZE_PUPUP_SELECT - INFORMATION_BAR_HEIGHT);
+                ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - SIZE_PUPUP_SELECT - INFORMATION_BAR_HEIGHT);
                 const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
                 if (ImGui::Selectable(is_12_hour_format ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
                     if (!is_12_hour_format) {
@@ -731,7 +747,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     menu.clear();
                 }
                 ImGui::NextColumn();
-                ImGui::SetCursorPosY((display_size.y / 2.f) - SIZE_PUPUP_SELECT - INFORMATION_BAR_HEIGHT);
+                ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - SIZE_PUPUP_SELECT - INFORMATION_BAR_HEIGHT);
                 ImGui::Selectable(date_time.time_format["clock_12_hour"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT));
                 ImGui::NextColumn();
                 if (ImGui::Selectable(!is_12_hour_format ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
@@ -794,9 +810,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PopStyleVar();
             if (popup == "select_sys_lang") {
                 const auto SYS_LANG_SIZE = WINDOW_SIZE.x / 2.f;
-                ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x - SYS_LANG_SIZE, INFORMATION_BAR_HEIGHT), ImGuiCond_Always, ImVec2(0.f, 0.f));
+                ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + WINDOW_SIZE.x - SYS_LANG_SIZE, WINDOW_POS.y), ImGuiCond_Always);
                 ImGui::SetNextWindowSize(ImVec2(SYS_LANG_SIZE, WINDOW_SIZE.y), ImGuiCond_Always);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.15f, 0.16f, 0.18f, 1.f));
                 ImGui::Begin("##system_language", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
@@ -839,7 +854,6 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Columns(1);
                 ImGui::PopStyleVar();
                 ImGui::End();
-                ImGui::PopStyleVar();
                 ImGui::PopStyleColor();
                 if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) && !ImGui::IsAnyItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                     popup.clear();
@@ -940,7 +954,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
 
     // Back
     ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
-    ImGui::SetCursorPos(ImVec2(6.f * SCALE.x, display_size.y - (84.f * SCALE.y)));
+    ImGui::SetCursorPos(ImVec2(6.f * SCALE.x, WINDOW_SIZE.y - (52.f * SCALE.y)));
     if (ImGui::Button("Back", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
         if (settings_menu) {
             if (!menu.empty()) {
@@ -965,7 +979,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     if ((settings_menu == THEME_BACKGROUND) && !selected.empty() && (selected != "default")) {
-        ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCALE.x), display_size.y - (84.f * SCALE.y)));
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (70.f * SCALE.x), WINDOW_SIZE.y - (52.f * SCALE.y)));
         if (((popup != "information") && ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y))) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_triangle))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...")) {
@@ -978,7 +992,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     }
     ImGui::PopStyleVar();
     ImGui::End();
-    ImGui::PopStyleVar();
+    ImGui::PopStyleVar(2);
 }
 
 } // namespace gui
