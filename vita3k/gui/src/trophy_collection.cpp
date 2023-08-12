@@ -388,9 +388,11 @@ void open_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, const std::string 
 }
 
 void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
-    const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
 
     const auto SIZE_ICON_LIST = ImVec2(160.f * SCALE.x, 88.f * SCALE.y);
@@ -398,7 +400,9 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
 
-    const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT);
+    const ImVec2 WINDOW_POS(VIEWPORT_POS.x, VIEWPORT_POS.y + INFORMATION_BAR_HEIGHT);
+    const ImVec2 WINDOW_SIZE(VIEWPORT_SIZE.x, VIEWPORT_SIZE.y - INFORMATION_BAR_HEIGHT);
+
     const auto SIZE_LIST = ImVec2((!np_com_id_selected.empty() && group_id_selected.empty() ? 810.f : 790.f) * SCALE.x, 442.f * SCALE.y);
     const auto SIZE_INFO = ImVec2(820.f * SCALE.x, 484.f * SCALE.y);
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
@@ -408,14 +412,20 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     const auto is_background = gui.apps_background.find("NPXS10008") != gui.apps_background.end();
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
-    ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
     ImGui::Begin("##trophy_collection", &gui.vita_area.trophy_collection, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::PopStyleVar();
+
+    const auto draw_list = ImGui::GetBackgroundDrawList();
+    const ImVec2 BG_POS_MAX(VIEWPORT_POS.x + VIEWPORT_SIZE.x, VIEWPORT_POS.y + VIEWPORT_SIZE.y);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10008"], ImVec2(0.f, 0.f), display_size);
+        draw_list->AddImage(gui.apps_background["NPXS10008"], VIEWPORT_POS, BG_POS_MAX);
     else
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), display_size, IM_COL32(31.f, 12.f, 0.f, 255.f), 0.f, ImDrawCornerFlags_All);
+        draw_list->AddRectFilled(VIEWPORT_POS, BG_POS_MAX, IM_COL32(31.f, 12.f, 0.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
     auto lang = gui.lang.trophy_collection;
 
@@ -426,13 +436,13 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SameLine();
             search_bar.Draw("##search_bar", 200 * SCALE.x);
         }
-        ImGui::SetCursorPos(ImVec2(display_size.x - (285.f * SCALE.x), (15.f * SCALE.y)));
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (285.f * SCALE.x), (15.f * SCALE.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "P   G   S   B");
         ImGui::SetCursorPosY(54.f * SCALE.y);
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.f);
     }
-    ImGui::SetNextWindowPos(ImVec2(90.f * SCALE.x, (!trophy_id_selected.empty() || detail_np_com_id ? 48.0f : 90.f) * SCALE.y), ImGuiCond_Always, ImVec2(0.f, 0.f));
+    ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (90.f * SCALE.x), WINDOW_POS.y + (!trophy_id_selected.empty() || detail_np_com_id ? 16.0f : 58.f) * SCALE.y), ImGuiCond_Always);
     ImGui::BeginChild("##trophy_collection_child", !trophy_id_selected.empty() || detail_np_com_id ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
     // Trophy Collection
@@ -454,28 +464,32 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
         if (np_com_id_selected.empty()) {
             // Ask Delete Trophy Popup
             if (!delete_np_com_id.empty()) {
-                ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-                ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
+                ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
+                ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
                 ImGui::Begin("##trophy_delete", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                 ImGui::SetNextWindowBgAlpha(0.999f);
-                ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (WINDOW_SIZE.x / 2.f) - (POPUP_SIZE.x / 2.f), WINDOW_POS.y + (WINDOW_SIZE.y / 2.f) - (POPUP_SIZE.y / 2.f)), ImGuiCond_Always);
                 ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
                 ImGui::BeginChild("##trophy_delete_child", POPUP_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                 ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
-                ImGui::SetCursorPos(ImVec2(48.f * SCALE.x, 28.f * SCALE.y));
-                if (gui.trophy_np_com_id_list_icons[delete_np_com_id].find("000") != gui.trophy_np_com_id_list_icons[delete_np_com_id].end())
+                const ImVec2 ICON_POS(48.f * SCALE.x, 28.f * SCALE.y);
+                if (gui.trophy_np_com_id_list_icons[delete_np_com_id].find("000") != gui.trophy_np_com_id_list_icons[delete_np_com_id].end()) {
+                    ImGui::SetCursorPos(ICON_POS);
                     ImGui::Image(gui.trophy_np_com_id_list_icons[delete_np_com_id]["000"], SIZE_ICON_LIST);
-                ImGui::SameLine();
+                }
+                const auto PADDING = (20.f * SCALE.x);
                 ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
-                const auto CALC_TITLE = ImGui::CalcTextSize(np_com_id_info[delete_np_com_id].name["000"].c_str(), nullptr, false, POPUP_SIZE.x - SIZE_ICON_LIST.x - 48.f).y / 2.f;
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (SIZE_ICON_LIST.y / 2.f) - CALC_TITLE);
-                ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + POPUP_SIZE.x - SIZE_ICON_LIST.x - (55.f * SCALE.x));
+                const auto CALC_TITLE = ImGui::CalcTextSize(np_com_id_info[delete_np_com_id].name["000"].c_str(), nullptr, false, POPUP_SIZE.x - SIZE_ICON_LIST.x - ICON_POS.x - PADDING).y / 2.f;
+                ImGui::SetCursorPos(ImVec2(ICON_POS.x + SIZE_ICON_LIST.x + PADDING, ICON_POS.y + (SIZE_ICON_LIST.y / 2.f) - CALC_TITLE));
+                ImGui::PushTextWrapPos(POPUP_SIZE.x - PADDING);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", np_com_id_info[delete_np_com_id].name["000"].c_str());
+                ImGui::PopTextWrapPos();
                 ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
                 const auto delete_str = lang["trophy_deleted"].c_str();
-                const auto CALC_TEXT = ImGui::CalcTextSize(delete_str);
-                ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (CALC_TEXT.x / 2.f), POPUP_SIZE.y / 2.f));
+                ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - ImGui::CalcTextSize(delete_str, 0, false, POPUP_SIZE.x - (108.f * SCALE.x)).x / 2, (POPUP_SIZE.y / 2) + 10));
+                ImGui::PushTextWrapPos(POPUP_SIZE.x - (54.f * SCALE.x));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", delete_str);
+                ImGui::PopTextWrapPos();
                 ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCALE.y)));
                 const auto cancel_str = !emuenv.common_dialog.lang.common["cancel"].empty() ? emuenv.common_dialog.lang.common["cancel"].c_str() : "Cancel";
                 if (ImGui::Button(cancel_str, BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))
@@ -729,7 +743,9 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
     ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
-    ImGui::SetCursorPos(ImVec2(8.f * SCALE.x, display_size.y - (84.f * SCALE.y)));
+
+    // Back
+    ImGui::SetCursorPos(ImVec2(8.f * SCALE.x, WINDOW_SIZE.y - (52.f * SCALE.y)));
     if (ImGui::Button("Back", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
         if (!np_com_id_selected.empty()) {
             if (detail_np_com_id) {
@@ -756,8 +772,10 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
         } else
             close_system_app(gui, emuenv);
     }
+
+    // Sort
     if (trophy_id_selected.empty() && !detail_np_com_id && (np_com_id_selected.empty() || !group_id_selected.empty())) {
-        ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCALE.x), display_size.y - (84.f * SCALE.y)));
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (70.f * SCALE.x), WINDOW_SIZE.y - (52.f * SCALE.y)));
         if (ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_triangle))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
@@ -824,7 +842,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetWindowFontScale(1.f);
     ImGui::PopStyleVar();
     ImGui::End();
-    ImGui::PopStyleVar();
+    ImGui::PopStyleVar(2);
 }
 
 } // namespace gui
