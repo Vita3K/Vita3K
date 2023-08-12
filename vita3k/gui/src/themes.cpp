@@ -405,7 +405,7 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
     auto draw_list = ImGui::GetBackgroundDrawList();
 
     // Draw black background for full screens
-    draw_list->AddRectFilled(ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize, IM_COL32(0.f, 0.f, 0.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
+    draw_list->AddRectFilled(ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize, IM_COL32(0.f, 0.f, 0.f, 255.f));
 
     // Draw blue background for home screen and live area screen only
     if (gui.vita_area.home_screen || gui.vita_area.live_area_screen)
@@ -413,8 +413,9 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
 
     // Draw background image for home screen and app loading screen only
     if (!gui.vita_area.live_area_screen && (is_theme_background || is_user_background)) {
-        ImVec2 background_pos_min(VIEWPORT_POS.x, VIEWPORT_POS.y + (gui.vita_area.home_screen ? INFO_BAR_HEIGHT : HALF_INFO_BAR_HEIGHT));
-        ImVec2 background_pos_max(background_pos_min.x + VIEWPORT_SIZE.x, background_pos_min.y + VIEWPORT_SIZE.y);
+        const auto MARGIN_HEIGHT = gui.vita_area.home_screen ? INFO_BAR_HEIGHT : HALF_INFO_BAR_HEIGHT;
+        ImVec2 background_pos_min(VIEWPORT_POS.x, VIEWPORT_POS.y + MARGIN_HEIGHT);
+        ImVec2 background_pos_max(background_pos_min.x + VIEWPORT_SIZE.x, background_pos_min.y + VIEWPORT_SIZE.y - MARGIN_HEIGHT);
 
         // Draw background image
         std::string user_bg_path;
@@ -423,8 +424,7 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
             const auto user_background_infos = gui.user_backgrounds_infos[user_bg_path];
             background_pos_min = ImVec2(background_pos_min.x + (user_background_infos.pos.x * SCALE.x), background_pos_min.y + (user_background_infos.pos.y * SCALE.y));
             background_pos_max = ImVec2(background_pos_min.x + (user_background_infos.size.x * SCALE.x), background_pos_min.y + (user_background_infos.size.y * SCALE.y));
-        } else if (is_theme_background && !gui.vita_area.home_screen)
-            background_pos_max.y -= HALF_INFO_BAR_HEIGHT;
+        }
 
         const auto &background = is_user_background ? gui.user_backgrounds[user_bg_path] : gui.theme_backgrounds[gui.current_theme_bg];
 

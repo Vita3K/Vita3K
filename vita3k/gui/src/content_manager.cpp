@@ -290,8 +290,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         if (!menu.empty()) {
             if (((menu == "app") && !gui.app_selector.user_apps.empty()) || ((menu == "save") && !save_data_list.empty())) {
                 // Search Bar
-                const auto search_size = ImGui::CalcTextSize(lang.main["search"].c_str());
-                ImGui::SetCursorPos(ImVec2(10.f * SCALE.x, (32.f * SCALE.y) - (search_size.y / 2.f)));
+                ImGui::SetCursorPos(ImVec2(VIEWPORT_POS.x + (10.f * SCALE.x), VIEWPORT_POS.y + (32.f * SCALE.y) - (ImGui::CalcTextSize(lang.main["search"].c_str()).y / 2.f)));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.main["search"].c_str());
                 ImGui::SameLine();
                 search_bar.Draw("##search_bar", 180 * SCALE.x);
@@ -301,7 +300,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             const auto scal_font = 19.2f / ImGui::GetFontSize();
             draw_list->AddText(gui.vita_font, 19.2f * SCALE.x, ImVec2((VIEWPORT_POS.x + VIEWPORT_SIZE.x - ((ImGui::CalcTextSize(lang.main["free_space"].c_str()).x * scal_font)) * SCALE.x) - (15.f * SCALE.x), VIEWPORT_POS.y + (42.f * SCALE.y)),
                 IM_COL32_WHITE, lang.main["free_space"].c_str());
-            draw_list->AddText(gui.vita_font, 19.2f * SCALE.x, ImVec2((VIEWPORT_POS.x + VIEWPORT_SIZE.x - ((ImGui::CalcTextSize(space["free"].c_str()).x * scal_font)) * SCALE.x) - (15.f * SCALE.x),  VIEWPORT_POS.y + (68.f * SCALE.y)),
+            draw_list->AddText(gui.vita_font, 19.2f * SCALE.x, ImVec2((VIEWPORT_POS.x + VIEWPORT_SIZE.x - ((ImGui::CalcTextSize(space["free"].c_str()).x * scal_font)) * SCALE.x) - (15.f * SCALE.x), VIEWPORT_POS.y + (68.f * SCALE.y)),
                 IM_COL32_WHITE, space["free"].c_str());
         }
         ImGui::SetCursorPosY(64.0f * SCALE.y);
@@ -579,7 +578,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
         // Draw the bottom band
         draw_list->AddRectFilled(ImVec2(VIEWPORT_POS.x, VIEWPORT_POS.y + (482.f * SCALE.y)), VIEWPORT_POS_MAX, IM_COL32(39.f, 42.f, 49.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
-        
+
         // Cancel
         if (ImGui::Button(common["cancel"].c_str(), ImVec2(202.f * SCALE.x, 44.f * SCALE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
             if (!menu.empty()) {

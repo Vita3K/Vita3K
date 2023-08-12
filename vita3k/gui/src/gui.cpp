@@ -750,14 +750,12 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.vita_area.home_screen)
         draw_home_screen(gui, emuenv);
 
-    if ((emuenv.cfg.show_info_bar || !emuenv.display.imgui_render || !gui.vita_area.home_screen) && gui.vita_area.information_bar)
-        draw_information_bar(gui, emuenv);
-
     if (gui.vita_area.live_area_screen)
         draw_live_area_screen(gui, emuenv);
     if (gui.vita_area.manual)
         draw_manual(gui, emuenv);
 
+    // Draw install dialogs
     if (gui.file_menu.archive_install_dialog)
         draw_archive_install_dialog(gui, emuenv);
     if (gui.file_menu.firmware_install_dialog)
@@ -792,6 +790,9 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.help_menu.vita3k_update)
         draw_vita3k_update(gui, emuenv);
 
+    if ((emuenv.cfg.show_info_bar || !emuenv.display.imgui_render || !gui.vita_area.home_screen) && gui.vita_area.information_bar)
+        draw_information_bar(gui, emuenv);
+
     // Info Message
     if (!gui.info_message.msg.empty())
         draw_info_message(gui, emuenv);
@@ -801,7 +802,7 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
 
 void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushFont(gui.vita_font);
-    if (!gui.vita_area.user_management)
+    if ((gui.vita_area.home_screen || !emuenv.io.app_path.empty()) && get_sys_apps_state(gui) && !gui.vita_area.live_area_screen && (!emuenv.cfg.show_info_bar || !gui.vita_area.information_bar))
         draw_main_menu_bar(gui, emuenv);
 
     if (gui.controls_menu.controls_dialog)

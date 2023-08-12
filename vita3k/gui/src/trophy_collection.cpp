@@ -432,9 +432,10 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     if (group_id_selected.empty()) {
         ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
         if (!np_com_id_list.empty() && np_com_id_selected.empty()) {
+            ImGui::SetCursorPos(ImVec2(VIEWPORT_POS.x + (10.f * SCALE.x), VIEWPORT_POS.y + (27.f * SCALE.y) - (ImGui::CalcTextSize(lang["search"].c_str()).y / 2.f)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["search"].c_str());
             ImGui::SameLine();
-            search_bar.Draw("##search_bar", 200 * SCALE.x);
+            search_bar.Draw("##search_bar", 180 * SCALE.x);
         }
         ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (285.f * SCALE.x), (15.f * SCALE.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "P   G   S   B");
