@@ -596,8 +596,8 @@ bool USSETranslatorVisitor::vldst(
 
     Operand to_store;
     if (is_store) {
+        inst.opr.src2.type = type_to_ldst;
         to_store = inst.opr.src2;
-        to_store.type = type_to_ldst;
     } else {
         if (is_translating_secondary_program()) {
             to_store.bank = RegisterBank::SECATTR;
@@ -616,19 +616,31 @@ bool USSETranslatorVisitor::vldst(
             to_store.type = DataType::F32;
     }
 
-    std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
-    LOG_DISASM("{} {} ({} + {} + {}) [{} bytes]", disasm_str, disasm::operand_to_str(to_store, 0b1, 0),
-        disasm::operand_to_str(inst.opr.src0, 0b1, 0),
-        disasm::operand_to_str(inst.opr.src1, 0b1, 0), is_store ? "0" : disasm::operand_to_str(inst.opr.src2, 0b1, 0), total_bytes_fo_fetch);
-
-    // TODO: is source_2 in word or byte? Is it even used at all?
-    spv::Id source_0 = load(inst.opr.src0, 0b1, 0);
-
     if (inst.opr.src1.bank == RegisterBank::IMMEDIATE) {
         inst.opr.src1.num *= get_data_type_size(type_to_ldst);
     }
 
-    spv::Id source_1 = load(inst.opr.src1, 0b1, 0);
+    // right now proper repeat is implemented only for the store operation
+    const int repeat_count = is_store ? mask_count : 0;
+    set_repeat_multiplier(1, 1, 1, 1);
+    BEGIN_REPEAT(repeat_count)
+    GET_REPEAT(inst, RepeatMode::SLMSI)
+
+    const int current_bytes_to_fetch = is_store ? 4 : total_bytes_fo_fetch;
+    const int current_number_to_fetch = is_store ? 1 : total_number_to_fetch;
+
+    const int to_store_offset = is_store ? src2_repeat_offset : 0;
+    const int src0_offset = is_store ? src0_repeat_offset : 0;
+    const int src1_offset = is_store ? dest_repeat_offset : 0;
+    const int src2_offset = 0; // not used when storing
+
+    std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
+    LOG_DISASM("{} {} ({} + {} + {}) [{} bytes]", disasm_str, disasm::operand_to_str(to_store, 0b1, to_store_offset),
+        disasm::operand_to_str(inst.opr.src0, 0b1, src0_offset),
+        disasm::operand_to_str(inst.opr.src1, 0b1, src1_offset), is_store ? "0" : disasm::operand_to_str(inst.opr.src2, 0b1, src2_offset), current_bytes_to_fetch);
+
+    spv::Id source_0 = load(inst.opr.src0, 0b1, src0_offset);
+    spv::Id source_1 = load(inst.opr.src1, 0b1, src1_offset);
 
     // Seems that if it's indexed by register, offset is in bytes and based on 0x10000?
     // Maybe that's just how the memory map operates. I'm not sure. However the literals on all shader so far is that
@@ -644,7 +656,7 @@ bool USSETranslatorVisitor::vldst(
     spv::Id i32_type = m_b.makeIntType(32);
     spv::Id base = m_b.createBinOp(spv::OpIAdd, i32_type, source_0, source_1);
     if (!is_store) {
-        spv::Id source_2 = load(inst.opr.src2, 0b1, 0);
+        spv::Id source_2 = load(inst.opr.src2, 0b1, src2_offset);
         base = m_b.createBinOp(spv::OpIAdd, i32_type, base, source_2);
     }
 
@@ -653,7 +665,7 @@ bool USSETranslatorVisitor::vldst(
     }
 
     if (m_features.support_memory_mapping) {
-        utils::buffer_address_access(m_b, m_spirv_params, m_util_funcs, m_features, to_store, base, get_data_type_size(type_to_ldst), total_number_to_fetch, m_program.is_fragment(), -1, is_store);
+        utils::buffer_address_access(m_b, m_spirv_params, m_util_funcs, m_features, to_store, to_store_offset, base, get_data_type_size(type_to_ldst), current_number_to_fetch, m_program.is_fragment(), -1, is_store);
     } else {
         for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
             spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
@@ -662,6 +674,9 @@ bool USSETranslatorVisitor::vldst(
             to_store.num += 1;
         }
     }
+
+    END_REPEAT()
+    reset_repeat_multiplier();
 
     return true;
 }
