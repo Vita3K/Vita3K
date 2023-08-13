@@ -294,8 +294,8 @@
 		<full_screen>全螢幕</full_screen>
 		<toggle_touch>切換觸摸</toggle_touch>
 		<toggle_touch_note>在背觸和前觸之間切換。</toggle_touch_note>
-		<toggle_gui_visibility>切換圖形化使用者介面可見性</toggle_gui_visibility>
-		<toggle_gui_visibility_note>在應用程式運行时，在螢幕頂部顯示和隱藏圖形化使用者介面之間切換。</toggle_gui_visibility_note>
+		<toggle_gui_visibility>切換GUI（圖形化使用者介面）可見性</toggle_gui_visibility>
+		<toggle_gui_visibility_note>在應用程式運行时，在螢幕頂部顯示和隱藏GUI（圖形化使用者介面）之間切換。</toggle_gui_visibility_note>
 		<error>錯誤</error>
 		<error_duplicate_key>此按鈕已繫結至其他按鈕或已被保留。</error_duplicate_key>
 	</controls>
