@@ -561,7 +561,7 @@ static spv::Id make_or_get_buffer_ptr(spv::Builder &b, shader::usse::utils::Spir
     return utils.buffer_address_vec[buffer_utils_idx][is_write];
 }
 
-void shader::usse::utils::buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand &dest, spv::Id addr, uint32_t component_size, uint32_t nb_components, bool is_fragment, int buffer_idx, bool is_buffer_store) {
+void shader::usse::utils::buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest, int dest_offset, spv::Id addr, uint32_t component_size, uint32_t nb_components, bool is_fragment, int buffer_idx, bool is_buffer_store) {
     const spv::Id i32 = b.makeIntType(32);
     const spv::Id zero = b.makeIntConstant(0);
 
@@ -592,11 +592,11 @@ void shader::usse::utils::buffer_address_access(spv::Builder &b, const SpirvShad
                 spv::Id accessed = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, buffer_address_vec4, { zero, b.makeIntConstant(buffer_idx_vec4) });
 
                 if (is_buffer_store) {
-                    spv::Id data = load(b, params, utils, features, dest, 0b1111, 0);
+                    spv::Id data = load(b, params, utils, features, dest, 0b1111, dest_offset);
                     b.createStore(data, accessed, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
                 } else {
                     accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
-                    store(b, params, utils, features, dest, accessed, 0b1111, 0);
+                    store(b, params, utils, features, dest, accessed, 0b1111, dest_offset);
                 }
 
                 dest.num += 4;
@@ -614,11 +614,11 @@ void shader::usse::utils::buffer_address_access(spv::Builder &b, const SpirvShad
             spv::Id accessed = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, buffer_address_vec, { zero, b.makeIntConstant(buffer_idx_vec4) });
 
             if (is_buffer_store) {
-                spv::Id data = load(b, params, utils, features, dest, (1 << nb_components) - 1, 0);
+                spv::Id data = load(b, params, utils, features, dest, (1 << nb_components) - 1, dest_offset);
                 b.createStore(data, accessed, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
             } else {
                 accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
-                store(b, params, utils, features, dest, accessed, (1 << nb_components) - 1, 0);
+                store(b, params, utils, features, dest, accessed, (1 << nb_components) - 1, dest_offset);
             }
         }
     } else {
@@ -663,7 +663,7 @@ void shader::usse::utils::buffer_address_access(spv::Builder &b, const SpirvShad
                 } else {
                     component_vec = b.createCompositeConstruct(b.makeVectorType(i32, loaded_components.size()), loaded_components);
                 }
-                store(b, params, utils, features, dest, component_vec, (1 << loaded_components.size()) - 1, 0);
+                store(b, params, utils, features, dest, component_vec, (1 << loaded_components.size()) - 1, dest_offset);
 
                 dest.num += component_size;
                 loaded_components.clear();

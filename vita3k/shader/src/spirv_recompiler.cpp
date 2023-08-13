@@ -1015,7 +1015,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                     .type = DataType::F32,
                 };
                 const uint32_t copy_size = std::min(buffer.reg_block_size, REG_SA_COUNT - buffer.reg_start_offset);
-                usse::utils::buffer_address_access(b, spv_params, utils, features, dest, b.makeIntConstant(0), sizeof(uint32_t), copy_size, translation_state.is_fragment, buffer.index);
+                usse::utils::buffer_address_access(b, spv_params, utils, features, dest, 0, b.makeIntConstant(0), sizeof(uint32_t), copy_size, translation_state.is_fragment, buffer.index);
             } else {
                 const uint32_t reg_block_size_in_f32v = std::min<uint32_t>(buffer.reg_block_size + 3, REG_SA_COUNT) / 4;
                 const auto spv_buffer = utils::create_access_chain(b, spv::StorageClassStorageBuffer, spv_params.buffer_container,
