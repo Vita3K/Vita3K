@@ -35,6 +35,7 @@ public:
     virtual void on_resize(){};
     virtual void render(bool is_pre_renderpass, vk::ImageView src_img, vk::ImageLayout src_layout, const Viewport &viewport) = 0;
     virtual std::string_view get_name() = 0;
+    virtual ~ScreenFilter() = default;
     // do we need the render pass not to clear the swapchain content ?
     virtual bool need_post_processing_render_pass() {
         return false;
