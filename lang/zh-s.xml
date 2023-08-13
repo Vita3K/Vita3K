@@ -294,8 +294,8 @@
 		<full_screen>全屏</full_screen>
 		<toggle_touch>切换触摸</toggle_touch>
 		<toggle_touch_note>在背触和前触之间切换。</toggle_touch_note>
-		<toggle_gui_visibility>切换图形用户界面可见性</toggle_gui_visibility>
-		<toggle_gui_visibility_note>在应用程序运行时，在屏幕顶部显示和隐藏图形用户界面之间切换。</toggle_gui_visibility_note>
+		<toggle_gui_visibility>切换GUI（图形用户界面）可见性</toggle_gui_visibility>
+		<toggle_gui_visibility_note>在应用程序运行时，在屏幕顶部显示和隐藏GUI（图形用户界面）之间切换。</toggle_gui_visibility_note>
 		<error>错误</error>
 		<error_duplicate_key>该键已被使用并绑定其他键或被预留。</error_duplicate_key>
 	</controls>
