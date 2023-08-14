@@ -105,7 +105,7 @@ enum PerfomanceOverleyPosition {
     code(int, "keyboard-button-l1", 20, keyboard_button_l1)                                             \
     code(int, "keyboard-button-r1", 8, keyboard_button_r1)                                              \
     code(int, "keyboard-button-l2", 24, keyboard_button_l2)                                             \
-    code(int, "keyboard-button-r2", 27, keyboard_button_r2)                                             \
+    code(int, "keyboard-button-r2", 18, keyboard_button_r2)                                             \
     code(int, "keyboard-button-l3", 9, keyboard_button_l3)                                              \
     code(int, "keyboard-button-r3", 11, keyboard_button_r3)                                             \
     code(int, "keyboard-button-triangle", 25, keyboard_button_triangle)                                 \
