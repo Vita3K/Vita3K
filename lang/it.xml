@@ -189,7 +189,6 @@ Codice di errore: {}</an_error_occurred>
 	</compatibility>
 
 	<content_manager name="Gestione contenuto">
-		<search>Search</search>
 		<application name="Applicazioni">
 			<delete>Le applicazioni selezionate e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</delete>
 			<no_item>Nessun elemento di contenuto.</no_item>

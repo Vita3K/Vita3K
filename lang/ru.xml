@@ -86,6 +86,7 @@
 		<microphone_disabled>Включите микрофон.</microphone_disabled>
 		<no>Нет</no>
 		<please_wait>Подождите...</please_wait>
+		<search>Поиск</search>
 		<select_all>Выбрать все</select_all>
 		<select>Выбрать</select>
 		<yes>Да</yes>
@@ -224,7 +225,6 @@
 	</compile_shaders>
 
 	<content_manager name="Управление данными">
-		<search>Поиск</search>
 		<application name="Приложения">
 			<delete>Выбранные приложения и все связанные с ними данные, в том числе сохраненные данные, будут удалены.</delete>
 			<no_item>Отсутствуют элементы данных.</no_item>
@@ -464,7 +464,6 @@
 		<theme_background name="Тема и Фон">
 			<default>По умолчанию</default>
 			<theme name="Тема">
-			<search>Поиск</search>
 				<find_a_psvita_custom_themes>Найти пользовательские темы для PSVita</find_a_psvita_custom_themes>
 				<information name="Информация">
 					<name>Название</name>
@@ -529,7 +528,6 @@
 	</settings_dialog>
 
 	<trophy_collection>
-		<search>Поиск</search>
 		<delete_trophy>Удалить призы</delete_trophy>
 		<trophy_deleted>Информация о призах, сохранённая для этого пользователя, 
 будет удалена.</trophy_deleted>

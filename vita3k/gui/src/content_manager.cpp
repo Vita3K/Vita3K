@@ -290,8 +290,8 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         if (!menu.empty()) {
             if (((menu == "app") && !gui.app_selector.user_apps.empty()) || ((menu == "save") && !save_data_list.empty())) {
                 // Search Bar
-                ImGui::SetCursorPos(ImVec2(VIEWPORT_POS.x + (10.f * SCALE.x), VIEWPORT_POS.y + (32.f * SCALE.y) - (ImGui::CalcTextSize(lang.main["search"].c_str()).y / 2.f)));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.main["search"].c_str());
+                ImGui::SetCursorPos(ImVec2(VIEWPORT_POS.x + (10.f * SCALE.x), VIEWPORT_POS.y + (32.f * SCALE.y) - (ImGui::CalcTextSize(common["search"].c_str()).y / 2.f)));
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", common["search"].c_str());
                 ImGui::SameLine();
                 search_bar.Draw("##search_bar", 180 * SCALE.x);
             }

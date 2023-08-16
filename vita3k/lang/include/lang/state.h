@@ -39,6 +39,7 @@ struct DialogLangState {
         { "no", "No" },
         { "ok", "OK" },
         { "please_wait", "Please wait..." },
+        { "search", "Search" },
         { "select_all", "Select All" },
         { "select", "Select" },
         { "submit", "Submit" },
@@ -203,7 +204,6 @@ struct LangState {
     struct ContentManager {
         std::map<std::string, std::string> main = {
             { "title", "Content Manager" },
-            { "search", "Search" },
             { "theme", "Themes" },
             { "free_space", "Free Space" },
             { "clear_all", "Clear All" }
@@ -404,7 +404,6 @@ struct LangState {
             struct Theme {
                 std::map<std::string, std::string> main = {
                     { "title", "Theme" },
-                    { "search", "Search" },
                     { "find_a_psvita_custom_themes", "Find a PSVita Custom Themes" },
                     { "delete", "This theme will be deleted." }
                 };
@@ -465,7 +464,6 @@ struct LangState {
         { "keep_changes", "Click on Save to keep your changes." }
     };
     std::map<std::string, std::string> trophy_collection = {
-        { "search", "Search" },
         { "delete_trophy", "Delete Trophy" },
         { "trophy_deleted", "This trophy information saved on this user will be deleted." },
         { "locked", "Locked" },

@@ -244,9 +244,9 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
         // Search Bar
         if ((menu == "theme") && selected.empty()) {
             ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
-            const auto search_size = ImGui::CalcTextSize(theme.main["search"].c_str());
+            const auto search_size = ImGui::CalcTextSize(common["search"].c_str());
             ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (220.f * SCALE.x) - search_size.x, (35.f * SCALE.y) - (search_size.y / 2.f)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", theme.main["search"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", common["search"].c_str());
             ImGui::SameLine();
             search_bar.Draw("##search_bar", 200 * SCALE.x);
             ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);

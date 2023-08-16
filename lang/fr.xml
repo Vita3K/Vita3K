@@ -84,6 +84,7 @@ Code d'erreur: {}</an_error_occurred>
 		<microphone_disabled>Activez le microphone.</microphone_disabled>
 		<no>Non</no>
 		<please_wait>Merci de patienter...</please_wait>
+		<search>Recherche</search>
 		<select_all>Sélectionner tout</select_all>
 		<select>Sélectionner</select>
 		<yes>Oui</yes>
@@ -356,7 +357,6 @@ Votre système Vita3K est prêt !</completed_setup>
 		<theme_background name="Thème et Arrière-plan">
 			<default>Par défaut</default>
 			<theme name="Thème">
-				<search>Recherche</search>
 				<find_a_psvita_custom_themes>Trouver un thème personnalisé pour PSVita</find_a_psvita_custom_themes>
 				<information name="Informations">
 					<name>Nom</name>
@@ -420,7 +420,6 @@ Votre système Vita3K est prêt !</completed_setup>
 	</settings_dialog>
 
 	<trophy_collection>
-		<search>Recherche</search>
 		<delete_trophy>Supprimer le trophée</delete_trophy>
 		<trophy_deleted>Les informations sur les trophées enregistrées pour cet utilisateur seront supprimées.</trophy_deleted>
 		<details>Détails</details>

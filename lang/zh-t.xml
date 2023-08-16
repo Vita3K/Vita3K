@@ -88,6 +88,7 @@
 		<microphone_disabled>請啟用麥克風。</microphone_disabled>
 		<no>否</no>
 		<please_wait>請稍候……</please_wait>
+		<search>搜尋</search>
 		<select_all>全選</select_all>
 		<select>選擇</select>
 		<submit>提交</submit>
@@ -239,7 +240,6 @@
 	</compile_shaders>
 
 	<content_manager name="內容管理">
-		<search>搜尋</search>
 		<application name="應用程式">
 			<delete>即將刪除您選擇的應用程式及所有相關資料（包括保存資料）。</delete>
 			<no_item>找不到內容。</no_item>
@@ -294,8 +294,8 @@
 		<full_screen>全螢幕</full_screen>
 		<toggle_touch>切換觸摸</toggle_touch>
 		<toggle_touch_note>在背觸和前觸之間切換。</toggle_touch_note>
-		<toggle_gui_visibility>切換圖形化使用者介面可見性</toggle_gui_visibility>
-		<toggle_gui_visibility_note>在應用程式運行时，在螢幕頂部顯示和隱藏圖形化使用者介面之間切換。</toggle_gui_visibility_note>
+		<toggle_gui_visibility>切換GUI（圖形化使用者介面）可見性</toggle_gui_visibility>
+		<toggle_gui_visibility_note>在應用程式運行时，在螢幕頂部顯示和隱藏GUI（圖形化使用者介面）之間切換。</toggle_gui_visibility_note>
 		<error>錯誤</error>
 		<error_duplicate_key>此按鈕已繫結至其他按鈕或已被保留。</error_duplicate_key>
 	</controls>
@@ -459,7 +459,6 @@
 		<theme_background name="主題&背景">
 			<default>原音</default>
 			<theme name="主題">
-				<search>搜尋</search>
 				<find_a_psvita_custom_themes>尋找PSVita自訂主題</find_a_psvita_custom_themes>
 				<information name="資訊">
 					<name>名稱</name>
@@ -527,7 +526,6 @@
 	</settings_dialog>
 
 	<trophy_collection>
-		<search>搜尋</search>
 		<delete_trophy>刪除獎盃</delete_trophy>
 		<trophy_deleted>刪除該使用者已保存的獎杯資訊。</trophy_deleted>
 		<locked>未解鎖</locked>

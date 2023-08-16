@@ -203,7 +203,6 @@
 	</compatibility>
 
 	<content_manager name="콘텐츠 관리">
-		<search>Search</search>
 		<application name="애플리케이션">
 			<delete>선택한 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</delete>
 			<no_item>콘텐츠가 없습니다.</no_item>
