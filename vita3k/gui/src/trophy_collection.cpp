@@ -428,8 +428,8 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
         draw_list->AddRectFilled(VIEWPORT_POS, BG_POS_MAX, IM_COL32(31.f, 12.f, 0.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
     auto lang = gui.lang.trophy_collection;
-    auto common = gui.lang.common.main;
-    const auto hidden_trophy_str = common["hidden_trophy"].c_str();
+    auto common = emuenv.common_dialog.lang.common;
+    const auto hidden_trophy_str = gui.lang.common.main["hidden_trophy"].c_str();
 
     if (group_id_selected.empty()) {
         ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
@@ -491,11 +491,10 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", delete_str);
                 ImGui::PopTextWrapPos();
                 ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCALE.y)));
-                const auto cancel_str = !emuenv.common_dialog.lang.common["cancel"].empty() ? emuenv.common_dialog.lang.common["cancel"].c_str() : "Cancel";
-                if (ImGui::Button(cancel_str, BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))
+                if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))
                     delete_np_com_id.clear();
                 ImGui::SameLine(0, 20.f * SCALE.x);
-                if (ImGui::Button(emuenv.common_dialog.lang.common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
+                if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
                     fs::remove_all(TROPHY_PATH / "conf" / delete_np_com_id);
                     fs::remove_all(TROPHY_PATH / "data" / delete_np_com_id);
                     const auto np_com_id_index = std::find_if(np_com_id_list.begin(), np_com_id_list.end(), [&](const NPComIdSort &np_com) {
