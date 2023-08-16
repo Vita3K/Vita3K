@@ -47,6 +47,7 @@ jobs:
         run: |
           brew install boost ccache ninja molten-vk openssl create-dmg
           echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
+          ccache --set-config=compiler_check=content
         if: matrix.os == 'macos-latest'
 
       - name: Set up build environment (ubuntu-latest)
