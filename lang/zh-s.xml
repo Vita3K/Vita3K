@@ -88,6 +88,7 @@
 		<microphone_disabled>请启用麦克风。</microphone_disabled>
 		<no>否</no>
 		<please_wait>请稍等…</please_wait>
+		<search>搜索</search>
 		<select_all>全部选择</select_all>
 		<select>选择</select>
 		<submit>提交</submit>
@@ -239,7 +240,6 @@
 	</compile_shaders>
 
 	<content_manager name="内容管理">
-		<search>搜索</search>
 		<application name="应用程序">
 			<delete>即将删除选择的应用程序及所有相关数据，包括保存数据。</delete>
 			<no_item>没有内容。</no_item>
@@ -294,8 +294,8 @@
 		<full_screen>全屏</full_screen>
 		<toggle_touch>切换触摸</toggle_touch>
 		<toggle_touch_note>在背触和前触之间切换。</toggle_touch_note>
-		<toggle_gui_visibility>切换图形用户界面可见性</toggle_gui_visibility>
-		<toggle_gui_visibility_note>在应用程序运行时，在屏幕顶部显示和隐藏图形用户界面之间切换。</toggle_gui_visibility_note>
+		<toggle_gui_visibility>切换GUI（图形用户界面）可见性</toggle_gui_visibility>
+		<toggle_gui_visibility_note>在应用程序运行时，在屏幕顶部显示和隐藏GUI（图形用户界面）之间切换。</toggle_gui_visibility_note>
 		<error>错误</error>
 		<error_duplicate_key>该键已被使用并绑定其他键或被预留。</error_duplicate_key>
 	</controls>
@@ -459,7 +459,6 @@
 		<theme_background name="主题&背景">
 			<default>原始</default>
 			<theme name="主题">
-				<search>搜索</search>
 				<find_a_psvita_custom_themes>寻找PSVita自制主题</find_a_psvita_custom_themes>
 				<information name="信息">
 					<name>名称</name>
@@ -527,7 +526,6 @@
 	</settings_dialog>
 
 	<trophy_collection>
-		<search>搜索</search>
 		<delete_trophy>删除奖杯</delete_trophy>
 		<trophy_deleted>该用户已保存的奖杯信息将被删除。</trophy_deleted>
 		<locked>未解锁</locked>

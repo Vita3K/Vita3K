@@ -85,6 +85,7 @@
 		<microphone_disabled>マイクを有効にしてください。</microphone_disabled>
 		<no>いいえ</no>
 		<please_wait>しばらくお待ちください...</please_wait>
+		<search>検索</search>
 		<select_all>すべて選択</select_all>
 		<select>選択</select>
 		<submit>確認</submit>
@@ -219,7 +220,6 @@
 	</compatibility>
 
 	<content_manager name="コンテンツ管理">
-		<search>検索</search>
 		<application name="アプリケーション">
 			<delete>選択したアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</delete>
 			<no_item>コンテンツがありません。</no_item>
@@ -441,7 +441,6 @@ Vita3Kをお楽しみください。</completed_setup>
 		<theme_background name="テーマ&背景">
 			<default>デフォルト</default>
 			<theme name="テーマ">
-				<search>検索</search>
 				<find_a_psvita_custom_themes>PSVita用カスタムテーマを探す</find_a_psvita_custom_themes>
 				<information name="情報">
 					<name>名前</name>
@@ -506,7 +505,6 @@ Vita3Kをお楽しみください。</completed_setup>
 	</settings_dialog>
 
 	<trophy_collection>
-		<search>検索</search>
 		<delete_trophy>トロフィーを削除</delete_trophy>
 		<trophy_deleted>このユーザーのトロフィー情報が削除されます。</trophy_deleted>
 		<details>詳細</details>

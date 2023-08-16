@@ -89,6 +89,7 @@ Error code: {}</an_error_occurred>
 		<no>No</no>
 		<ok>OK</ok>
 		<please_wait>Please wait...</please_wait>
+		<search>Search</search>
 		<select_all>Select All</select_all>
 		<select>Select</select>
 		<submit>Submit</submit>
@@ -240,7 +241,6 @@ Error code: {}</an_error_occurred>
 	</compile_shaders>
 
 	<content_manager name="Content Manager">
-		<search>Search</search>
 		<application name="Application">
 			<delete>The selected applications and all related data, including saved data, will be deleted.</delete>
 			<no_item>There are no content items.</no_item>
@@ -477,7 +477,6 @@ Please check work.bin/rif file or zRIF key.</failed_install_license>
 		<theme_background name="Theme & Background">
 			<default>Default</default>
 			<theme name="Theme">
-				<search>Search</search>
 				<find_a_psvita_custom_themes>Find a PSVita Custom Themes</find_a_psvita_custom_themes>
 				<information name="Information">
 					<name>Name</name>
@@ -545,7 +544,6 @@ Please check work.bin/rif file or zRIF key.</failed_install_license>
 	</settings_dialog>
 
 	<trophy_collection>
-		<search>Search</search>
 		<delete_trophy>Delete Trophy</delete_trophy>
 		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<locked>Locked</locked>

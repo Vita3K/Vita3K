@@ -428,12 +428,14 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
         draw_list->AddRectFilled(VIEWPORT_POS, BG_POS_MAX, IM_COL32(31.f, 12.f, 0.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
     auto lang = gui.lang.trophy_collection;
+    auto common = gui.lang.common.main;
+    const auto hidden_trophy_str = common["hidden_trophy"].c_str();
 
     if (group_id_selected.empty()) {
         ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
         if (!np_com_id_list.empty() && np_com_id_selected.empty()) {
-            ImGui::SetCursorPos(ImVec2(VIEWPORT_POS.x + (10.f * SCALE.x), VIEWPORT_POS.y + (27.f * SCALE.y) - (ImGui::CalcTextSize(lang["search"].c_str()).y / 2.f)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["search"].c_str());
+            ImGui::SetCursorPos(ImVec2(VIEWPORT_POS.x + (10.f * SCALE.x), VIEWPORT_POS.y + (27.f * SCALE.y) - (ImGui::CalcTextSize(common["search"].c_str()).y / 2.f)));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", common["search"].c_str());
             ImGui::SameLine();
             search_bar.Draw("##search_bar", 180 * SCALE.x);
         }
@@ -458,9 +460,6 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetScrollY(scroll_pos[scroll_type]);
             set_scroll_pos = false;
         }
-
-        auto common = gui.lang.common.main;
-        const auto hidden_trophy_str = common["hidden_trophy"].c_str();
 
         if (np_com_id_selected.empty()) {
             // Ask Delete Trophy Popup
