@@ -639,6 +639,35 @@ bool USSETranslatorVisitor::vldst(
         disasm::operand_to_str(inst.opr.src0, 0b1, src0_offset),
         disasm::operand_to_str(inst.opr.src1, 0b1, src1_offset), is_store ? "0" : disasm::operand_to_str(inst.opr.src2, 0b1, src2_offset), current_bytes_to_fetch);
 
+    if (inst.opr.src0.bank == RegisterBank::SECATTR && inst.opr.src0.num == m_spirv_params.literal_buffer_sa_offset) {
+        // We are reading the literal buffer
+
+        // first some checks
+        if (mask_count > 0) {
+            LOG_ERROR("Unimplemented literal buffer access with repeat");
+            return true;
+        }
+        if (to_store.type != DataType::F32) {
+            LOG_ERROR("Unimplemented non-f32 literal buffer access");
+            return true;
+        }
+        if (inst.opr.src1.bank != RegisterBank::IMMEDIATE || inst.opr.src2.bank != RegisterBank::IMMEDIATE) {
+            LOG_ERROR("Unimplemented non-immediate literal buffer access");
+            return true;
+        }
+        if (is_store) {
+            LOG_ERROR("Unhandled literal buffer store");
+            return true;
+        }
+
+        int offset = m_spirv_params.literal_buffer_base + inst.opr.src1.num + inst.opr.src2.num;
+        const uint8_t *literal_buffer = reinterpret_cast<const uint8_t *>(&m_program.literal_buffer_data_offset) + m_program.literal_buffer_data_offset;
+        const float literal = *reinterpret_cast<const float *>(literal_buffer + offset);
+
+        store(to_store, m_b.makeFloatConstant(literal), 0b1);
+        continue;
+    }
+
     spv::Id source_0 = load(inst.opr.src0, 0b1, src0_offset);
     spv::Id source_1 = load(inst.opr.src1, 0b1, src1_offset);
 
