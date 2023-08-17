@@ -763,6 +763,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox("Show Compile Shaders", &emuenv.cfg.show_compile_shaders);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable the display of the compile shaders dialog.");
+        ImGui::Spacing();
+        ImGui::Checkbox("Log Compatibility Warnings", &emuenv.cfg.log_compat_warn);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Check the box to log issues related to the app compatibility database.");
         ImGui::Separator();
         const auto perfomance_overley_size = ImGui::CalcTextSize("Performance overlay").x;
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (perfomance_overley_size / 2.f));

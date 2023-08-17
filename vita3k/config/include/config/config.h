@@ -53,6 +53,7 @@ enum PerfomanceOverleyPosition {
     code(bool, "gdbstub", false, gdbstub)                                                               \
     code(bool, "log-active-shaders", false, log_active_shaders)                                         \
     code(bool, "log-uniforms", false, log_uniforms)                                                     \
+    code(bool, "log-compat-warn", false, log_compat_warn)                                               \
     code(bool, "validation-layer", true, validation_layer)                                              \
     code(bool, "pstv-mode", false, pstv_mode)                                                           \
     code(bool, "show-mode", false, show_mode)                                                           \
