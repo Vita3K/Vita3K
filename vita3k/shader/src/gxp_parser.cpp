@@ -248,30 +248,41 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
         const SceGxmUniformBufferInfo *buffer_info = &buffer_infoes[i];
         const uint32_t offset = base_offset + buffer_info->ldst_base_offset;
 
-        auto buffer = uniform_buffers.find(buffer_info->reside_buffer);
+        // handle literal and texture buffer here
+        if (buffer_info->reside_buffer >= SCE_GXM_REAL_MAX_UNIFORM_BUFFER) {
+            UniformBuffer buffer{
+                .index = buffer_info->reside_buffer,
+                .reg_start_offset = 0,
+                .reg_block_size = 0,
+                .rw = false
+            };
 
-        if (buffer == uniform_buffers.end() && buffer_info->reside_buffer == 16) {
-            // literals buffer address
-            // this is not implemented yet but at least we can use (if one exists) another buffer
-            // address instead so that we don't get garbage values / crash
-            LOG_WARN("Shader is using a literals buffer address, this is not supported yet");
-            // use a placeholder address
-            buffer = uniform_buffers.begin();
+            if (buffer_info->reside_buffer == SCE_GXM_LITERAL_BUFFER) {
+                LOG_INFO("Shader is using a literal buffer");
+                buffer.size = program.literal_buffer_count;
+            } else {
+                LOG_ERROR("Shader is using an unkown buffer type {}", buffer_info->reside_buffer);
+                continue;
+            }
+
+            program_input.uniform_buffers.push_back(buffer);
+            uniform_buffers.emplace(buffer_info->reside_buffer, buffer);
         }
+
+        auto buffer = uniform_buffers.find(buffer_info->reside_buffer);
 
         // buffer = null seems to happen when there's a leftover uniform buffer (uniform buffer that's not used in shader code)
         // This case needs more investigation
         if (buffer != uniform_buffers.end()) {
-            Input item;
-            item.type = DataType::UINT32;
-            item.offset = offset;
-            item.component_count = 1;
-            item.array_size = 1;
-
-            UniformBufferInputSource source;
-            source.base = buffer_info->ldst_base_value;
-            source.index = buffer->second.index;
-            item.source = source;
+            Input item{
+                .type = DataType::UINT32,
+                .offset = offset,
+                .component_count = 1,
+                .array_size = 1,
+                .source = UniformBufferInputSource{
+                    .base = static_cast<uint32_t>(buffer_info->ldst_base_value),
+                    .index = buffer->second.index }
+            };
 
             program_input.inputs.push_back(item);
         }

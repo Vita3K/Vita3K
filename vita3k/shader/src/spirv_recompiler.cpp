@@ -876,6 +876,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     std::map<int, std::uint32_t> buffer_sizes;
 
     for (const auto &buffer : program_input.uniform_buffers) {
+        if (buffer.index >= SCE_GXM_REAL_MAX_UNIFORM_BUFFER)
+            continue;
+
         const auto buffer_size = (buffer.size + 3) / 4;
         buffer_sizes.emplace(buffer.index, buffer_size);
     }
@@ -1141,18 +1144,24 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            std::sort(literal_pairs.begin(), literal_pairs.end());
                        },
                        [&](const UniformBufferInputSource &s) {
-                           Operand reg;
-                           reg.bank = RegisterBank::SECATTR;
-                           reg.num = input.offset;
-                           reg.type = DataType::INT32;
-                           uint32_t base;
-                           if (features.support_memory_mapping) {
-                               // encode the index in the upper 4 bits
-                               base = (s.index << 28) + s.base;
+                           if (s.index == SCE_GXM_LITERAL_BUFFER) {
+                               spv_params.literal_buffer_sa_offset = input.offset;
+                               spv_params.literal_buffer_base = s.base;
                            } else {
-                               base = buffer_bases.at(s.index) + s.base;
+                               Operand reg;
+                               reg.bank = RegisterBank::SECATTR;
+                               reg.num = input.offset;
+                               reg.type = DataType::INT32;
+                               uint32_t base;
+
+                               if (features.support_memory_mapping) {
+                                   // encode the index in the upper 4 bits
+                                   base = (s.index << 28) + s.base;
+                               } else {
+                                   base = buffer_bases.at(s.index) + s.base;
+                               }
+                               utils::store(b, spv_params, utils, features, reg, b.makeIntConstant(base), 0b1, 0);
                            }
-                           utils::store(b, spv_params, utils, features, reg, b.makeIntConstant(base), 0b1, 0);
                        },
                        [&](const DependentSamplerInputSource &s) {
                            const auto &spv_sampler = samplers.at(s.index);

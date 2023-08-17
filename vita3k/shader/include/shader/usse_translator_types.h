@@ -84,6 +84,13 @@ struct SpirvShaderParameters {
     // when not using buffer device address, contains the storage buffer type
     spv::Id buffer_container;
 
+    // when using a texture or litteral buffer, if not -1, this fields contain the sa register 
+    // with the matching address, this assumes of course that this address is not copied somewhere
+    // else and that this register is not overwritten
+    // the base field is the offset to be applied when reading this buffer (almost always -4)
+    int literal_buffer_sa_offset = -1;
+    int literal_buffer_base;
+
     spv::Id render_info_id;
 };
 
