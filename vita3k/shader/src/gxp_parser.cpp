@@ -260,6 +260,9 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
             if (buffer_info->reside_buffer == SCE_GXM_LITERAL_BUFFER) {
                 LOG_INFO("Shader is using a literal buffer");
                 buffer.size = program.literal_buffer_count;
+            } else if (buffer_info->reside_buffer == SCE_GXM_THREAD_BUFFER) {
+                LOG_INFO("Shader is using a thread buffer");
+                buffer.size = program.thread_buffer_count;
             } else {
                 LOG_ERROR("Shader is using an unkown buffer type {}", buffer_info->reside_buffer);
                 continue;

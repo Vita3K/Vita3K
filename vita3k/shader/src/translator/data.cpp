@@ -559,11 +559,6 @@ bool USSETranslatorVisitor::vldst(
         return true;
     }
     const bool is_store = inst.opcode == Opcode::STR;
-    if (is_store && !m_features.support_memory_mapping) {
-        LOG_ERROR("Store opcode is not supported without memory mapping");
-        return true;
-    }
-
     DataType type_to_ldst = DataType::UNK;
 
     switch (data_type) {
@@ -671,31 +666,70 @@ bool USSETranslatorVisitor::vldst(
     spv::Id source_0 = load(inst.opr.src0, 0b1, src0_offset);
     spv::Id source_1 = load(inst.opr.src1, 0b1, src1_offset);
 
+    // are we using the sa register containing the thread buffer address ?
+    const bool is_thread_buffer_access = inst.opr.src0.bank == RegisterBank::SECATTR && inst.opr.src0.num == m_spirv_params.thread_buffer_sa_offset;
+
     // Seems that if it's indexed by register, offset is in bytes and based on 0x10000?
     // Maybe that's just how the memory map operates. I'm not sure. However the literals on all shader so far is that
     // Another thing is that, when moe expand is not enable, there seems to be 4 bytes added before fetching... No absolute prove.
     // Maybe moe expand means it's not fetching after all? Dunno
-    std::uint32_t REG_INDEX_BASE = 0x10000;
+    // also for the thread buffer, this value is 128 times bigger
+    uint32_t REG_INDEX_BASE = is_thread_buffer_access ? 0x1000000 : 0x10000;
     spv::Id reg_index_base_cst = m_b.makeIntConstant(REG_INDEX_BASE);
+    spv::Id i32_type = m_b.makeIntType(32);
 
     if (inst.opr.src1.bank != shader::usse::RegisterBank::IMMEDIATE) {
         source_1 = m_b.createBinOp(spv::OpISub, m_b.getTypeId(source_1), source_1, reg_index_base_cst);
     }
 
-    spv::Id i32_type = m_b.makeIntType(32);
-    spv::Id base = m_b.createBinOp(spv::OpIAdd, i32_type, source_0, source_1);
-    if (!is_store) {
-        spv::Id source_2 = load(inst.opr.src2, 0b1, src2_offset);
-        base = m_b.createBinOp(spv::OpIAdd, i32_type, base, source_2);
+    if (!moe_expand) {
+        source_1 = m_b.createBinOp(spv::OpIAdd, i32_type, source_1, m_b.makeIntConstant(4));
     }
 
-    if (!moe_expand) {
-        base = m_b.createBinOp(spv::OpIAdd, i32_type, base, m_b.makeIntConstant(4));
+    if (!is_store) {
+        spv::Id source_2 = load(inst.opr.src2, 0b1, src2_offset);
+        source_1 = m_b.createBinOp(spv::OpIAdd, i32_type, source_1, source_2);
     }
+
+    if (is_thread_buffer_access) {
+        // We are reading the thread buffer
+
+        // first some checks
+        if (mask_count > 0) {
+            LOG_ERROR("Unimplemented thread buffer access with repeat");
+            return true;
+        }
+        if (to_store.type != DataType::F32) {
+            LOG_ERROR("Unimplemented non-f32 thread buffer access");
+            return true;
+        }
+
+        if (m_spirv_params.thread_buffer_base != 0)
+            source_1 = m_b.createBinOp(spv::OpIAdd, i32_type, source_1, m_spirv_params.thread_buffer_base);
+
+        // get the index in the float array
+        spv::Id index = m_b.createBinOp(spv::OpShiftRightLogical, i32_type, source_1, m_b.makeUintConstant(2));
+        spv::Id float_ptr = utils::create_access_chain(m_b, spv::StorageClassPrivate, m_spirv_params.thread_buffer, { index });
+        if (is_store) {
+            spv::Id value = load(to_store, 0b1);
+            m_b.createStore(value, float_ptr);
+        } else {
+            spv::Id value = m_b.createLoad(float_ptr, spv::NoPrecision);
+            store(to_store, value, 0b1);
+        }
+        continue;
+    }
+
+    spv::Id base = m_b.createBinOp(spv::OpIAdd, i32_type, source_0, source_1);
 
     if (m_features.support_memory_mapping) {
         utils::buffer_address_access(m_b, m_spirv_params, m_util_funcs, m_features, to_store, to_store_offset, base, get_data_type_size(type_to_ldst), current_number_to_fetch, m_program.is_fragment(), -1, is_store);
     } else {
+        if (is_store) {
+            LOG_ERROR("Store opcode is not supported without memory mapping");
+            return true;
+        }
+
         for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
             spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
             spv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset);
