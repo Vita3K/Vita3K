@@ -911,10 +911,13 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         }
     };
 
-    // System Applications
-    display_app(gui.app_selector.sys_apps, gui.app_selector.sys_apps_icon);
-    // User Applications
+    // Draw System Applications
+    if (emuenv.cfg.display_system_apps)
+        display_app(gui.app_selector.sys_apps, gui.app_selector.sys_apps_icon);
+
+    // Draw User Applications
     display_app(gui.app_selector.user_apps, gui.app_selector.user_apps_icon);
+
     ImGui::PopStyleColor();
     ImGui::Columns(1);
     ImGui::SetWindowFontScale(1.f);

@@ -49,13 +49,26 @@ static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv, const float 
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                     const auto time_app = gui.time_apps[emuenv.io.user_id][i];
                     const auto app_index = get_app_index(gui, time_app.app);
+                    ImGui::PushID(time_app.app.c_str());
                     if ((app_index != gui.app_selector.user_apps.end()) && (app_index != gui.app_selector.sys_apps.end()) && ImGui::MenuItem(app_index->title.c_str(), time_app.app.c_str(), false))
                         pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, time_app.app);
+                    ImGui::PopID();
                     ImGui::PopStyleColor();
                 }
             } else
                 ImGui::MenuItem("Empty", nullptr, false, false);
             ImGui::EndMenu();
+        }
+        if (!emuenv.cfg.display_system_apps) {
+            ImGui::Separator();
+            ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+            for (const auto &app : gui.app_selector.sys_apps) {
+                ImGui::PushID(app.title_id.c_str());
+                if (ImGui::MenuItem(app.title.c_str(), nullptr, false))
+                    pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.title_id);
+                ImGui::PopID();
+            }
+            ImGui::PopStyleColor();
         }
         ImGui::EndMenu();
     }

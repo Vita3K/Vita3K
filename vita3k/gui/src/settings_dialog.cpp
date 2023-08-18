@@ -842,18 +842,22 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show an info bar inside the app selector.");
         ImGui::Spacing();
+        ImGui::Checkbox("Display Info Message", &emuenv.cfg.display_info_message);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Uncheck the box to display info message in log only.");
+        ImGui::SameLine();
+        ImGui::Checkbox("Display System Apps", &emuenv.cfg.display_system_apps);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Uncheck the box to disable showing system apps from the home screen to the main menu bar only.");
+        ImGui::Spacing();
         ImGui::Checkbox("Live Area app screen", &emuenv.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to open the Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
         ImGui::SameLine();
-        ImGui::Checkbox("Display Info Message", &emuenv.cfg.display_info_message);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Uncheck the box to display info message in log only.");
-        ImGui::Spacing();
         ImGui::Checkbox("Stretch The Display Area", &config.stretch_the_display_area);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enlarge the display area to fit the screen size.");
-        ImGui::SameLine();
+        ImGui::Spacing();
         ImGui::Checkbox("Grid Mode", &emuenv.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to set the app list to grid mode.");
