@@ -794,13 +794,16 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     spv::Id type_f32 = b.makeFloatType(32);
 
     if (op.bank == RegisterBank::FPCONSTANT) {
-        const bool integral = (op.type == DataType::UINT32) || (op.type == DataType::UINT16);
+        const bool integral_unsigned = (op.type == DataType::UINT32) || (op.type == DataType::UINT16);
+        const bool integral_signed = (op.type == DataType::INT32) || (op.type == DataType::INT16);
         std::vector<spv::Id> consts;
 
-        auto handle_unexpect_swizzle = [&](const SwizzleChannel ch, const bool integral) {
+        auto handle_unexpect_swizzle = [&](const SwizzleChannel ch) {
 #define GEN_CONSTANT(cnst)                                           \
-    if (integral)                                                    \
+    if (integral_unsigned)                                           \
         return b.makeUintConstant(static_cast<std::uint32_t>(cnst)); \
+    else if (integral_signed)                                        \
+        return b.makeIntConstant(static_cast<std::uint32_t>(cnst));  \
     else                                                             \
         return b.makeFloatConstant(static_cast<float>(cnst))
             switch (ch) {
@@ -825,7 +828,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         };
 
         // Load constants. Ignore mask
-        if ((op.type == DataType::F32) || (op.type == DataType::UINT32)) {
+        if ((op.type == DataType::F32) || (op.type == DataType::UINT32) || (op.type == DataType::INT32)) {
             auto get_f32_from_bank = [&](const int num) -> spv::Id {
                 int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::C_X);
                 std::uint32_t value = 0;
@@ -842,13 +845,15 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
                 }
 
                 default:
-                    return handle_unexpect_swizzle(op.swizzle[num], integral);
+                    return handle_unexpect_swizzle(op.swizzle[num]);
                 }
 
-                if (integral)
+                if (integral_unsigned)
                     return b.makeUintConstant(value);
-
-                return b.makeFloatConstant(*reinterpret_cast<const float *>(&value));
+                else if (integral_signed)
+                    return b.makeIntConstant(value);
+                else
+                    return b.makeFloatConstant(*reinterpret_cast<const float *>(&value));
             };
 
             for (int i = 0; i < 4; i++) {
@@ -856,7 +861,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
                     consts.push_back(get_f32_from_bank(i));
                 }
             }
-        } else if ((op.type == DataType::F16) || (op.type == DataType::UINT16)) {
+        } else if ((op.type == DataType::F16) || (op.type == DataType::UINT16) || (op.type == DataType::INT16)) {
             auto get_f16_from_bank = [&](const int num) -> spv::Id {
                 const int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::C_X);
                 float value = 0;
@@ -883,14 +888,15 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
                 }
 
                 default:
-                    return handle_unexpect_swizzle(op.swizzle[num], integral);
+                    return handle_unexpect_swizzle(op.swizzle[num]);
                 }
 
-                if (integral) {
-                    return b.makeUintConstant(*reinterpret_cast<const std::uint32_t *>(&value));
-                }
-
-                return b.makeFloatConstant(value);
+                if (integral_unsigned)
+                    return b.makeUintConstant(*reinterpret_cast<const uint32_t *>(&value));
+                else if (integral_signed)
+                    return b.makeIntConstant(*reinterpret_cast<const int32_t *>(&value));
+                else
+                    return b.makeFloatConstant(value);
             };
 
             for (int i = 0; i < 4; i++) {
