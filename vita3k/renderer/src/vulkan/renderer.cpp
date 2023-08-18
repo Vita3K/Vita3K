@@ -360,6 +360,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .samplerAnisotropy = physical_device_features.samplerAnisotropy,
             .occlusionQueryPrecise = physical_device_features.occlusionQueryPrecise,
             .fragmentStoresAndAtomics = physical_device_features.fragmentStoresAndAtomics,
+            .shaderStorageImageExtendedFormats = physical_device_features.shaderStorageImageExtendedFormats,
             .shaderInt16 = physical_device_features.shaderInt16,
         };
 
