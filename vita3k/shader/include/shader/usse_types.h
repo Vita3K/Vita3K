@@ -400,6 +400,7 @@ struct UniformBufferInputSource {
 struct DependentSamplerInputSource {
     std::string name;
     uint32_t index; // resource index
+    uint32_t layout_position; // between 0 and 3, a texture info is made of 4 32-bit registers
 };
 
 // Read source field in Input struct

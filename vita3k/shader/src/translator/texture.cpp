@@ -188,12 +188,27 @@ bool USSETranslatorVisitor::smp(
     inst.opr.src0.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     inst.opr.dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
+    bool is_texture_buffer_load = false;
+    // only used for a load using the texture buffer
+    spv::Id texture_index = 0;
     if (!m_spirv_params.samplers.count(inst.opr.src1.num)) {
-        LOG_ERROR("Can't get the sampler (sampler doesn't exist!)");
-        return true;
+        if (m_spirv_params.texture_buffer_sa_offset == -1) {
+            LOG_ERROR("Can't get the sampler (sampler doesn't exist!)");
+            return true;
+        }
+
+        if (sb_mode != 0 || lod_mode != 2) {
+            LOG_ERROR("Unhandled load using texture buffer with sb mode {} and lod mode {}", sb_mode, lod_mode);
+            return true;
+        }
+
+        is_texture_buffer_load = true;
+        inst.opr.src1.type = DataType::INT32;
+        texture_index = load(inst.opr.src1, 0b1);
     }
 
-    const SamplerInfo &sampler = m_spirv_params.samplers.at(inst.opr.src1.num);
+    // if this is a texture buffer load, just attribute the first available sampler to it
+    const SamplerInfo &sampler = is_texture_buffer_load ? m_spirv_params.samplers.begin()->second : m_spirv_params.samplers.at(inst.opr.src1.num);
 
     constexpr DataType tb_dest_fmt[] = {
         DataType::F32,
@@ -315,7 +330,54 @@ bool USSETranslatorVisitor::smp(
             }
         }
 
-        if (sb_mode == 0) {
+        if (is_texture_buffer_load) {
+            // maybe put this in a function instead
+
+            // do a big switch with all the different textures:
+            // switch(texture_idx) {
+            // case 0:
+            //   dest = texture(texture0, pos);
+            //   break;
+            // case 1:
+            //   dest = texture(texture1, pos);
+            //   break;
+            // ....
+
+            std::vector<const SamplerInfo *> samplers;
+            std::vector<int> sampler_indices;
+            std::vector<int> index_to_segment;
+            constexpr int sa_count = 32 * 4;
+            // if dim is 2, do not look for cubes and if dim is 3, only look for cubes
+            const bool request_cube = dim == 3;
+            for (auto &smp : m_spirv_params.samplers) {
+                if (smp.first < sa_count)
+                    continue;
+
+                if (request_cube != smp.second.is_cube)
+                    continue;
+
+                samplers.push_back(&smp.second);
+                index_to_segment.push_back(sampler_indices.size());
+                sampler_indices.push_back(smp.first - sa_count);
+            }
+
+            std::vector<spv::Block *> segment_blocks;
+            m_b.makeSwitch(texture_index, spv::SelectionControlMaskNone, samplers.size(), sampler_indices, index_to_segment, -1, segment_blocks);
+            for (int s = 0; s < samplers.size(); s++) {
+                const SamplerInfo *smp = samplers[s];
+
+                m_b.nextSwitchSegment(segment_blocks, s);
+                if (tb_dest_fmt[fconv_type] == DataType::UNK)
+                    inst.opr.dest.type = smp->component_type;
+
+                spv::Id result = do_fetch_texture(m_b.createLoad(smp->id, spv::NoPrecision), { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1);
+                const Imm4 dest_mask = (1U << smp->component_count) - 1;
+                store(inst.opr.dest, result, dest_mask);
+
+                m_b.addSwitchBreak();
+            }
+            m_b.endSwitch(segment_blocks);
+        } else if (sb_mode == 0) {
             spv::Id result = do_fetch_texture(image_sampler, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1, extra2);
             const Imm4 dest_mask = (1U << sampler.component_count) - 1;
             store(inst.opr.dest, result, dest_mask);

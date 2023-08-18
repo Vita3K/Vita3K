@@ -43,8 +43,9 @@ struct SamplerInfo {
     spv::Id id;
     DataType component_type;
     uint8_t component_count;
+    bool is_cube;
 };
-using SamplerMap = std::unordered_map<std::uint32_t, SamplerInfo>;
+using SamplerMap = std::map<uint32_t, SamplerInfo>;
 
 struct SpirvShaderParameters {
     // Mapped to 'pa' (primary attribute) USSE registers
@@ -84,10 +85,13 @@ struct SpirvShaderParameters {
     // when not using buffer device address, contains the storage buffer type
     spv::Id buffer_container;
 
-    // when using a thread or litteral buffer, if not -1, this fields contain the sa register
+    // when using a thread, texture or litteral buffer, if not -1, this fields contain the sa register
     // with the matching address, this assumes of course that this address is not copied somewhere
     // else and that this register is not overwritten
     // the base field is the offset to be applied when reading this buffer (almost always -4)
+    int texture_buffer_sa_offset = -1;
+    int texture_buffer_base;
+
     int literal_buffer_sa_offset = -1;
     int literal_buffer_base;
 

@@ -1094,7 +1094,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         samplers[sampler.index] = {
             sampler_spv_var,
             get_texture_component_type(texture_format),
-            get_texture_component_count(texture_format)
+            get_texture_component_count(texture_format),
+            sampler.is_cube
         };
 
         if (translation_state.is_vulkan) {
@@ -1145,6 +1146,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     int32_t in_fcount_allocated = 0;
+    const bool has_texture_buffer = program.texture_buffer_count > 0;
 
     for (const auto &input : program_input.inputs) {
         std::visit(overloaded{
@@ -1154,7 +1156,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            std::sort(literal_pairs.begin(), literal_pairs.end());
                        },
                        [&](const UniformBufferInputSource &s) {
-                           if (s.index == SCE_GXM_LITERAL_BUFFER) {
+                           if (s.index == SCE_GXM_TEXTURE_BUFFER) {
+                               spv_params.texture_buffer_sa_offset = input.offset;
+                               spv_params.texture_buffer_base = s.base;
+                           } else if (s.index == SCE_GXM_LITERAL_BUFFER) {
                                spv_params.literal_buffer_sa_offset = input.offset;
                                spv_params.literal_buffer_base = s.base;
                            } else if (s.index == SCE_GXM_THREAD_BUFFER) {
@@ -1179,12 +1184,28 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                        [&](const DependentSamplerInputSource &s) {
                            const auto &spv_sampler = samplers.at(s.index);
                            spv_params.samplers.emplace(input.offset, spv_sampler);
+
+                           if (has_texture_buffer && s.layout_position == 0) {
+                               // store the index in the first texture register to track it
+                               Operand reg;
+                               reg.bank = RegisterBank::SECATTR;
+                               reg.num = input.offset;
+                               reg.type = DataType::INT32;
+                               utils::store(b, spv_params, utils, features, reg, b.makeIntConstant(s.index), 0b1, 0);
+                           }
                        },
                        [&](const AttributeInputSource &s) {
                            add_var_to_reg(input, s.name, s.semantic, true, s.regformat, in_fcount_allocated / 4);
                            in_fcount_allocated += ((input.array_size * input.component_count + 3) / 4 * 4);
                        } },
             input.source);
+    }
+
+    if (has_texture_buffer) {
+        // we need to get an access to all the samplers
+        // easiest way it to store them in the sampler map, sa register go up to 128, so store them after this limit
+        for (auto &sampler : samplers)
+            spv_params.samplers.emplace(REG_SA_COUNT + sampler.first, sampler.second);
     }
 
     if (!translation_state.is_fragment && (in_fcount_allocated == 0) && (program.primary_reg_count != 0)) {

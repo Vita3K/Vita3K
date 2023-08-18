@@ -634,26 +634,47 @@ bool USSETranslatorVisitor::vldst(
         disasm::operand_to_str(inst.opr.src0, 0b1, src0_offset),
         disasm::operand_to_str(inst.opr.src1, 0b1, src1_offset), is_store ? "0" : disasm::operand_to_str(inst.opr.src2, 0b1, src2_offset), current_bytes_to_fetch);
 
-    if (inst.opr.src0.bank == RegisterBank::SECATTR && inst.opr.src0.num == m_spirv_params.literal_buffer_sa_offset) {
-        // We are reading the literal buffer
-
-        // first some checks
+    // check if we handle this literal or texture read
+    auto check_for_literal_texture_read = [&]() {
         if (mask_count > 0) {
             LOG_ERROR("Unimplemented literal buffer access with repeat");
-            return true;
+            return false;
         }
         if (to_store.type != DataType::F32) {
             LOG_ERROR("Unimplemented non-f32 literal buffer access");
-            return true;
+            return false;
         }
         if (inst.opr.src1.bank != RegisterBank::IMMEDIATE || inst.opr.src2.bank != RegisterBank::IMMEDIATE) {
             LOG_ERROR("Unimplemented non-immediate literal buffer access");
-            return true;
+            return false;
         }
         if (is_store) {
             LOG_ERROR("Unhandled literal buffer store");
-            return true;
+            return false;
         }
+
+        return true;
+    };
+
+    if (inst.opr.src0.bank == RegisterBank::SECATTR && inst.opr.src0.num == m_spirv_params.texture_buffer_sa_offset) {
+        // We are reading the texture buffer
+
+        if (!check_for_literal_texture_read())
+            return true;
+
+        int offset = (m_spirv_params.texture_buffer_base + inst.opr.src1.num + inst.opr.src2.num) / sizeof(uint32_t);
+        // we store the texture index in the first texture register, we don't do anything with the other 3
+        if (offset % 4 != 0)
+            continue;
+
+        to_store.type = DataType::INT32;
+        store(to_store, m_b.makeIntConstant(offset / 4), 0b1);
+        continue;
+    } else if (inst.opr.src0.bank == RegisterBank::SECATTR && inst.opr.src0.num == m_spirv_params.literal_buffer_sa_offset) {
+        // We are reading the literal buffer
+
+        if (!check_for_literal_texture_read())
+            return true;
 
         int offset = m_spirv_params.literal_buffer_base + inst.opr.src1.num + inst.opr.src2.num;
         const uint8_t *literal_buffer = reinterpret_cast<const uint8_t *>(&m_program.literal_buffer_data_offset) + m_program.literal_buffer_data_offset;

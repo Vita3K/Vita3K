@@ -257,16 +257,26 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
                 .rw = false
             };
 
-            if (buffer_info->reside_buffer == SCE_GXM_LITERAL_BUFFER) {
+            switch (buffer_info->reside_buffer) {
+            case SCE_GXM_TEXTURE_BUFFER:
+                LOG_INFO("Shader is using a texture buffer");
+                buffer.size = program.texture_buffer_count;
+                break;
+            case SCE_GXM_LITERAL_BUFFER:
                 LOG_INFO("Shader is using a literal buffer");
                 buffer.size = program.literal_buffer_count;
-            } else if (buffer_info->reside_buffer == SCE_GXM_THREAD_BUFFER) {
+                break;
+            case SCE_GXM_THREAD_BUFFER:
                 LOG_INFO("Shader is using a thread buffer");
                 buffer.size = program.thread_buffer_count;
-            } else {
+                break;
+            default:
                 LOG_ERROR("Shader is using an unkown buffer type {}", buffer_info->reside_buffer);
-                continue;
+                break;
             }
+
+            if (buffer.size == 0)
+                continue;
 
             program_input.uniform_buffers.push_back(buffer);
             uniform_buffers.emplace(buffer_info->reside_buffer, buffer);
@@ -324,6 +334,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
             }
 
             source.index = rsc_index;
+            source.layout_position = dependent_samplers[i].resource_index_layout_offset % 4;
             item.source = source;
 
             program_input.inputs.push_back(item);
