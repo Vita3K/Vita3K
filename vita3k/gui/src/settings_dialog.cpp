@@ -848,7 +848,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SameLine();
         ImGui::Checkbox("Display System Apps", &emuenv.cfg.display_system_apps);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Uncheck the box to disable showing system apps from the home screen to the main menu bar only.");
+            ImGui::SetTooltip("Uncheck the box to disable the display of system apps on the home screen.\nThey will be shown in the main menu bar only.");
         ImGui::Spacing();
         ImGui::Checkbox("Live Area app screen", &emuenv.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())

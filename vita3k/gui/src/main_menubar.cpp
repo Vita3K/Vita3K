@@ -39,21 +39,43 @@ static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
-static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv, const float scale) {
+static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv) {
     auto lang = gui.lang.main_menubar.emulation;
+    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 ICON_SIZE(56.f * SCALE.x, 56.f * SCALE.y);
+    const auto PADDING = 10.f * SCALE.x;
+
+    const auto draw_app = [&](const App &app) {
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+        ImGui::PushID(app.path.c_str());
+        const auto APP_ICON = get_app_icon(gui, app.path);
+        if (!APP_ICON->first.empty()) {
+            const auto POS_MIN = ImGui::GetCursorScreenPos();
+            const ImVec2 POS_MAX(POS_MIN.x + ICON_SIZE.x, POS_MIN.y + ICON_SIZE.y);
+            ImGui::GetWindowDrawList()->AddImageRounded(APP_ICON->second, POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ICON_SIZE.x + PADDING);
+        }
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+        if (ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, ICON_SIZE.y)))
+            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.title_id);
+        ImGui::PopStyleVar();
+        ImGui::PopID();
+        ImGui::PopStyleColor();
+    };
+
     if (ImGui::BeginMenu(lang["title"].c_str())) {
+        const auto app_list_is_empty = gui.time_apps[emuenv.io.user_id].empty();
+        ImGui::SetNextWindowSize(ImVec2(!app_list_is_empty ? 480.f * SCALE.x : 0.f, 0.f));
+        ImGui::SetWindowFontScale(RES_SCALE.x);
         if (ImGui::BeginMenu(lang["last_apps_used"].c_str())) {
-            if (!gui.time_apps[emuenv.io.user_id].empty()) {
-                ImGui::SetWindowFontScale(scale);
-                for (auto i = 0; i < std::min(14, int32_t(gui.time_apps[emuenv.io.user_id].size())); i++) {
-                    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+            if (!app_list_is_empty) {
+                for (auto i = 0; i < std::min(8, int32_t(gui.time_apps[emuenv.io.user_id].size())); i++) {
                     const auto time_app = gui.time_apps[emuenv.io.user_id][i];
                     const auto app_index = get_app_index(gui, time_app.app);
-                    ImGui::PushID(time_app.app.c_str());
-                    if ((app_index != gui.app_selector.user_apps.end()) && (app_index != gui.app_selector.sys_apps.end()) && ImGui::MenuItem(app_index->title.c_str(), time_app.app.c_str(), false))
-                        pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, time_app.app);
-                    ImGui::PopID();
-                    ImGui::PopStyleColor();
+                    if ((app_index != gui.app_selector.user_apps.end()) && (app_index != gui.app_selector.sys_apps.end()))
+                        draw_app(*app_index);
                 }
             } else
                 ImGui::MenuItem("Empty", nullptr, false, false);
@@ -61,14 +83,8 @@ static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv, const float 
         }
         if (!emuenv.cfg.display_system_apps) {
             ImGui::Separator();
-            ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-            for (const auto &app : gui.app_selector.sys_apps) {
-                ImGui::PushID(app.title_id.c_str());
-                if (ImGui::MenuItem(app.title.c_str(), nullptr, false))
-                    pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.title_id);
-                ImGui::PopID();
-            }
-            ImGui::PopStyleColor();
+            for (const auto &app : gui.app_selector.sys_apps)
+                draw_app(app);
         }
         ImGui::EndMenu();
     }
@@ -131,7 +147,7 @@ void draw_main_menu_bar(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 
         draw_file_menu(gui, emuenv);
-        draw_emulation_menu(gui, emuenv, RES_SCALE.x);
+        draw_emulation_menu(gui, emuenv);
         draw_debug_menu(gui.debug_menu);
         draw_config_menu(gui, emuenv);
         draw_controls_menu(gui);
