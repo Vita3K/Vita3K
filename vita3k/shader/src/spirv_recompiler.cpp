@@ -1134,7 +1134,17 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    std::int32_t in_fcount_allocated = 0;
+    // create thread buffer if it is being used
+    if (program.thread_buffer_count > 0) {
+        // there are 4 cores, each having 4 pipelines, assume the thread buffer is evenly divided
+        // between all of them and each pipeline only does things in its segment
+        const uint32_t size_in_f32 = program.thread_buffer_count / (4 * 4 * sizeof(float));
+        spv::Id thread_buffer = b.makeArrayType(f32, b.makeUintConstant(size_in_f32), sizeof(float));
+
+        spv_params.thread_buffer = b.createVariable(spv::NoPrecision, spv::StorageClassPrivate, thread_buffer, "thread_buffer");
+    }
+
+    int32_t in_fcount_allocated = 0;
 
     for (const auto &input : program_input.inputs) {
         std::visit(overloaded{
@@ -1147,6 +1157,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            if (s.index == SCE_GXM_LITERAL_BUFFER) {
                                spv_params.literal_buffer_sa_offset = input.offset;
                                spv_params.literal_buffer_base = s.base;
+                           } else if (s.index == SCE_GXM_THREAD_BUFFER) {
+                               spv_params.thread_buffer_sa_offset = input.offset;
+                               spv_params.thread_buffer_base = s.base;
                            } else {
                                Operand reg;
                                reg.bank = RegisterBank::SECATTR;
