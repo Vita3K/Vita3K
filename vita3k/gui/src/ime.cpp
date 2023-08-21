@@ -262,10 +262,12 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
     static bool numeric_pad = false;
     static float scroll_special_current;
     static float scroll_special_max;
-    const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
-    const auto WINDOW_POS = ImVec2(0.f, display_size.y - (248.f * SCALE.y));
+
+    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
+
     const auto BUTTON_HEIGHT_SIZE = 52.f * SCALE.y;
     const auto PUNCT_BUTTON_SIZE = ImVec2(56.f * SCALE.x, BUTTON_HEIGHT_SIZE);
     const auto KEY_BUTTON_SIZE = ImVec2(size_key * SCALE.x, BUTTON_HEIGHT_SIZE);
@@ -274,25 +276,34 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
     const auto SPACE = 6.f * SCALE.x;
     const auto MARGE_BORDER = 13.f * SCALE.x;
     const auto LAST_ROW_KEY_POS = 185.f * SCALE.y;
-    const auto BUTTON_POS_X = display_size.x - MARGE_BORDER - BUTTON_SIZE.x;
-    const auto ENTER_BUTTON_POS_X = display_size.x - MARGE_BORDER - ENTER_BUTTON_SIZE.x;
+    const auto BUTTON_POS_X = VIEWPORT_SIZE.x - MARGE_BORDER - BUTTON_SIZE.x;
+    const auto ENTER_BUTTON_POS_X = VIEWPORT_SIZE.x - MARGE_BORDER - ENTER_BUTTON_SIZE.x;
     const auto NUM_BUTTON_SIZE = ImVec2(74.f * SCALE.x, BUTTON_HEIGHT_SIZE);
     const auto NUM_BUTTON_POS_X = BUTTON_POS_X - (3 * NUM_BUTTON_SIZE.x) - (SPACE * 3);
     const auto SPACE_BUTTON_SIZE = ImVec2(numeric_pad ? 216.f * SCALE.x : 276.f * SCALE.x, KEY_BUTTON_SIZE.y);
     const auto SPACE_BUTTON_POS = ImVec2(numeric_pad ? NUM_BUTTON_POS_X - SPACE - SPACE_BUTTON_SIZE.x : ENTER_BUTTON_POS_X - (PUNCT_BUTTON_SIZE.x * 3.f) - SPACE_BUTTON_SIZE.x - (SPACE * 4.f), LAST_ROW_KEY_POS);
     const auto is_shift = ime.caps_level != NO;
 
+    const ImVec2 WINDOW_POS(VIEWPORT_POS.x, VIEWPORT_POS.y + VIEWPORT_SIZE.y - (248.f * SCALE.y));
+    const ImVec2 WINDOW_SIZE(VIEWPORT_SIZE.x, 248.f * SCALE.y);
+
     ImGui::PushStyleColor(ImGuiCol_WindowBg, numeric_pad ? IME_NUMERIC_BG : GUI_SMOOTH_GRAY);
-    ImGui::SetNextWindowPos(ImVec2(0.f, display_size.y - (248.f * SCALE.y)), ImGuiCond_Always, ImVec2(0.f, 0.f));
-    ImGui::SetNextWindowSize(ImVec2(display_size.x, 248.f * SCALE.y));
+    ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(WINDOW_SIZE);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##ime", &ime.state, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * emuenv.manual_dpi_scale);
+    ImGui::PopStyleVar(2);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
     ImGui::PushStyleColor(ImGuiCol_Button, GUI_COLOR_TEXT);
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_BLACK);
     ImGui::SetWindowFontScale(RES_SCALE.x);
     if (numeric_pad) {
         ImGui::SetCursorPosX(MARGE_BORDER);
+        ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 62.f * SCALE.y);
+        ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 10.f * SCALE.y);
         ImGui::VSliderFloat("##scroll_special", ImVec2(42.f * SCALE.x, 140.f * SCALE.y), &scroll_special_current, scroll_special_max, 0, "");
+        ImGui::PopStyleVar(2);
         ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (74.f * SCALE.x), WINDOW_POS.y));
         ImGui::BeginChild("##special_key", ImVec2(488.f * SCALE.x, 178.f * SCALE.y), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse);
         const auto scroll_value = ImGui::GetIO().MouseWheel * 20.f;
