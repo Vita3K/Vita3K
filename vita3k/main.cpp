@@ -210,7 +210,6 @@ int main(int argc, char *argv[]) {
                 } else
                     return QuitRequested;
             }
-            config::serialize_config(emuenv.cfg, emuenv.base_path);
             run_execv(argv, emuenv);
         }
         gui::init(gui, emuenv);

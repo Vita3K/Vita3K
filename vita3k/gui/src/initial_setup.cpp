@@ -17,6 +17,7 @@
 
 #include "private.h"
 
+#include <config/functions.h>
 #include <config/state.h>
 #include <gui/functions.h>
 #include <host/dialog/filesystem.hpp>
@@ -81,14 +82,20 @@ void get_firmware_file(EmuEnvState &emuenv) {
 }
 
 void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
-    const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
-    const auto WINDOW_SIZE = ImVec2(756.f * SCALE.x, 418.f * SCALE.y);
+    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+
+    const ImVec2 WINDOW_SIZE(756.f * SCALE.x, 418.f * SCALE.y);
+
     const auto SELECT_SIZE = 72.f * SCALE.y;
     const auto BUTTON_SIZE = ImVec2(154.f * SCALE.x, 52.f * SCALE.y);
     const auto BIG_BUTTON_SIZE = ImVec2(324.f * SCALE.x, 48.f * SCALE.y);
     const auto BIG_BUTTON_POS = ImVec2((WINDOW_SIZE.x / 2.f) - (BIG_BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BIG_BUTTON_SIZE.y - (20.f * SCALE.y));
+
+    const auto draw_list = ImGui::GetBackgroundDrawList();
+    draw_list->AddRectFilled(ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize, IM_COL32(0.f, 0.f, 0.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
     auto lang = gui.lang.initial_setup;
     auto common = emuenv.common_dialog.lang.common;
@@ -101,11 +108,15 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     const auto FW_FONT_INSTALLED = fs::exists(FW_FONT_PATH) && !fs::is_empty(FW_FONT_PATH);
 
     ImGui::PushFont(gui.vita_font);
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
+    ImGui::SetNextWindowPos(VIEWPORT_POS, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(VIEWPORT_SIZE, ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##initial_setup", &emuenv.cfg.initial_setup, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0), display_size, IM_COL32(112.f, 124.f, 246.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
-    ImGui::SetNextWindowPos(ImVec2(98.f * SCALE.x, 30 * SCALE.y), ImGuiCond_Always);
+    ImGui::PopStyleVar(2);
+
+    draw_list->AddRectFilled(VIEWPORT_POS, ImVec2(VIEWPORT_POS.x + VIEWPORT_SIZE.x, VIEWPORT_POS.y + VIEWPORT_SIZE.y), IM_COL32(112.f, 124.f, 246.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
+    ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (98.f * SCALE.x), VIEWPORT_POS.y + (30.f * SCALE.y)), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 6.f * SCALE.x);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * SCALE.x);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 2.f * SCALE.x);
@@ -125,12 +136,12 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     switch (setup) {
     case SELECT_LANGUAGE:
         title_str = lang["select_language"];
-        ImGui::SetNextWindowPos(ImVec2(198.f * SCALE.x, 126.f * SCALE.y), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (198.f * SCALE.x), VIEWPORT_POS.y + (126.f * SCALE.y)), ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
         ImGui::BeginChild("##lang_list", ImVec2(WINDOW_SIZE.x - (200.f * SCALE.x), WINDOW_SIZE.y - (108.f * SCALE.y)), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings);
         ImGui::Columns(3, nullptr, false);
-        ImGui::SetColumnWidth(0, 96.f * SCALE.x);
-        ImGui::SetColumnWidth(1, 30.f * SCALE.x);
+        ImGui::SetColumnWidth(0, 90.f * SCALE.x);
+        ImGui::SetColumnWidth(1, 36.f * SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
         ImGui::PushStyleColor(ImGuiCol_Header, SELECT_COLOR);
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECT_COLOR_HOVERED);
@@ -210,6 +221,14 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     case SELECT_INTERFACE_SETTINGS:
         title_str = lang["select_interface_settings"];
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
+        ImGui::Checkbox("Display Info Message", &emuenv.cfg.display_info_message);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Uncheck the box to display info message in log only.");
+        ImGui::SameLine();
+        ImGui::Checkbox("Display System Apps", &emuenv.cfg.display_system_apps);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Uncheck the box to disable the display of system apps on the home screen.\nThey will be shown in the main menu bar only.");
+        ImGui::Spacing();
         ImGui::Checkbox("Info Bar Visible", &emuenv.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show info bar inside app selector.\nInfo bar is clock, battery level and notification center.");
@@ -233,8 +252,10 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(completed_setup).x / 2.f), (WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize()));
         ImGui::Text("%s", completed_setup);
         ImGui::SetCursorPos(BIG_BUTTON_POS);
-        if (ImGui::Button(common["ok"].c_str(), BIG_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross)))
+        if (ImGui::Button(common["ok"].c_str(), BIG_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
             emuenv.cfg.initial_setup = true;
+            config::serialize_config(emuenv.cfg, emuenv.base_path);
+        }
         break;
     default: break;
     }
@@ -245,12 +266,14 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
 
     // Draw Button
     ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
-    ImGui::SetCursorPos(ImVec2(10.f * SCALE.x, display_size.y - BUTTON_SIZE.y - (14.f * SCALE.y)));
+    ImGui::SetCursorPos(ImVec2(10.f * SCALE.x, VIEWPORT_SIZE.y - BUTTON_SIZE.y - (16.f * SCALE.y)));
     if ((setup > SELECT_LANGUAGE) && ImGui::Button(lang["back"].c_str(), BUTTON_SIZE) || (setup > SELECT_LANGUAGE) && ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle)))
         setup = (InitialSetup)(setup - 1);
-    ImGui::SetCursorPos(ImVec2(display_size.x - BUTTON_SIZE.x - (14.f * SCALE.x), display_size.y - BUTTON_SIZE.y - (14.f * SCALE.y)));
-    if ((setup < FINISHED) && ImGui::Button(lang["next"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross)))
+    ImGui::SetCursorPos(ImVec2(VIEWPORT_SIZE.x - BUTTON_SIZE.x - (14.f * SCALE.x), VIEWPORT_SIZE.y - BUTTON_SIZE.y - (16.f * SCALE.y)));
+    if ((setup < FINISHED) && ImGui::Button(lang["next"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
         setup = (InitialSetup)(setup + 1);
+        config::serialize_config(emuenv.cfg, emuenv.base_path);
+    }
     ImGui::SetWindowFontScale(1.f);
 
     ImGui::PopStyleVar(3);
