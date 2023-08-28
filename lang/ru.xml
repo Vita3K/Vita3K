@@ -383,7 +383,9 @@
 			<no_font_exist>Пакет шрифтов прошивки отсутствует.
 Пожалуйста, скачайте и установите его.</no_font_exist>
 			<download_firmware_font_package>Скачать пакет шрифтов прошивки</download_firmware_font_package>
-			<firmware_font_package_note>Пакет шрифтов прошивки нужен для некоторых приложений, а также для поддержки шрифтов азиатского региона. (В целом рекомендуется)</firmware_font_package_note>
+			<firmware_font_package_note>Пакет шрифтов прошивки нужен для некоторых приложений,
+а также для поддержки шрифтов азиатского региона. 
+(В целом рекомендуется)</firmware_font_package_note>
 			<delete_firmware>Удалить установочный файл прошивки?</delete_firmware>
 		</firmware_install>
 		<pkg_install>
