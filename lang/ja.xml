@@ -374,7 +374,8 @@ Vita3Kをお楽しみください。</completed_setup>
 			<no_font_exist>ファームウェアフォントパッケージがありません。
 ダウンロードしてインストールしてください。</no_font_exist>
 			<download_firmware_font_package>ファームウェアフォントパッケージをダウンロード</download_firmware_font_package>
-			<firmware_font_package_note>ファームウェアフォントパッケージは、一部のアプリケーションや、GUIでのアジア地域のフォントサポートに必須です。
+			<firmware_font_package_note>ファームウェアフォントパッケージは、一部のアプリケーションや、
+GUIでのアジア地域のフォントサポートに必須です。
 また、一般的にGUIを正しく表示するために推奨されています。</firmware_font_package_note>
 			<delete_firmware>インストールしたファームウェアファイルを削除しますか？</delete_firmware>
 		</firmware_install>

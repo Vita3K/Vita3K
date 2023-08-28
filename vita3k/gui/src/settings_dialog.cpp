@@ -639,7 +639,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             config.anisotropic_filtering = 1 << current_aniso_filter_log;
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are sloped relative to the viewer.\nIt has no drawback but can impact performance.");
+            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces\nwhich are sloped relative to the viewer.\nIt has no drawback but can impact performance.");
         ImGui::SameLine(0, 5 * SCALE.x);
         if (current_aniso_filter_log == max_aniso_filter_log)
             ImGui::BeginDisabled();
@@ -697,7 +697,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::TextColored(GUI_COLOR_TEXT, "Enter button assignment \nSelect your 'Enter' button.");
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and get default confirmation button.");
+            ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs.\nSome applications don't use this and get default confirmation button.");
         ImGui::RadioButton("Circle", &emuenv.cfg.sys_button, 0);
         ImGui::RadioButton("Cross", &emuenv.cfg.sys_button, 1);
         ImGui::Spacing();
@@ -787,7 +787,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 #ifndef WIN32
         ImGui::Checkbox("Check to enable case-insensitive path finding on case sensitive filesystems. \nRESETS ON RESTART", &emuenv.io.case_isens_find_enabled);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Allows emulator to attempt to search for files regardless of case on non-Windows platforms");
+            ImGui::SetTooltip("Allows emulator to attempt to search for files regardless of case\non non-Windows platforms.");
 #endif
         ImGui::Separator();
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Emulated System Storage Folder").x / 2.f));
@@ -883,7 +883,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::Button("Download Firmware Font Package"))
                 open_path("https://bit.ly/2P2rb0r");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for Asian region font support in GUI.\nIt is also generally recommended for GUI");
+                ImGui::SetTooltip("Firmware font package is mandatory for some applications\nand also for Asian region font support in GUI.\nIt is also generally recommended for GUI.");
         }
         ImGui::Spacing();
         ImGui::Separator();
@@ -983,10 +983,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::SliderInt("HTTP Timeout Attempts", &emuenv.cfg.http_timeout_attempts, 0, 100);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("How many attempts to do when the server doesn't respond. Could be useful if you have very unstable or VERY SLOW internet.");
+            ImGui::SetTooltip("How many attempts to do when the server doesn't respond.\nCould be useful if you have very unstable or VERY SLOW internet.");
         ImGui::SliderInt("HTTP Timeout Sleep", &emuenv.cfg.http_timeout_sleep_ms, 50, 3000);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer. Could be useful if you have very unstable or VERY SLOW internet.");
+            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer.\nCould be useful if you have very unstable or VERY SLOW internet.");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

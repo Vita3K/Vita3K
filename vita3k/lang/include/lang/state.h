@@ -322,7 +322,7 @@ struct LangState {
             { "firmware_version", "Firmware version:" },
             { "no_font_exist", "No firmware font package present.\nPlease download and install it." },
             { "download_firmware_font_package", "Download Firmware Font Package" },
-            { "firmware_font_package_note", "Firmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)" },
+            { "firmware_font_package_note", "Firmware font package is needed for some applications\nand also for Asian regional font support. (Generally Recommended)" },
             { "delete_firmware", "Delete the firmware installation file?" }
         };
         std::map<std::string, std::string> pkg_install = {
