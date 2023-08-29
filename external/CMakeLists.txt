@@ -41,9 +41,7 @@ endif()
 # Define the Architecture variable, right now it should only contain "x86_64" or "arm64"
 include("dynarmic/CMakeModules/DetectArchitecture.cmake")
 
-option(CAPSTONE_BUILD_SHARED "Build shared library" OFF)
-option(CAPSTONE_BUILD_TESTS "Build tests" OFF)
-option(CAPSTONE_BUILD_CSTOOL "Build cstool" OFF)
+option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(CAPSTONE_ARCHITECTURE_DEFAULT "Whether architectures are enabled by default" OFF)
 option(CAPSTONE_ARM_SUPPORT "ARM support" ON)
 add_subdirectory(capstone EXCLUDE_FROM_ALL)
