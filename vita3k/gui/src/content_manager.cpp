@@ -264,7 +264,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
     if (has_background)
         draw_list->AddImage(gui.apps_background["NPXS10026"], VIEWPORT_POS, VIEWPORT_POS_MAX);
     else
-        draw_list->AddRectFilled(VIEWPORT_POS, VIEWPORT_POS_MAX, IM_COL32(53.f, 54.f, 70.f, 255.f), 0.f, ImDrawCornerFlags_All);
+        draw_list->AddRectFilled(VIEWPORT_POS, VIEWPORT_POS_MAX, IM_COL32(53.f, 54.f, 70.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
     ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
 
@@ -390,11 +390,11 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPos(ImVec2(106.f * SCALE.x, ImGui::GetCursorPosY() + (76.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", gui.lang.game_data["data_delete"].c_str(), size_selected_contents.c_str());
             ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (10.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCALE.y)));
-            if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
+            if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
                 popup = false;
             }
             ImGui::SameLine(0, 20.f * SCALE.x);
-            if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
+            if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
                 content_delete = true;
                 popup = false;
             }
@@ -563,7 +563,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
     const auto is_empty = ((menu == "app") && gui.app_selector.user_apps.empty()) || ((menu == "save") && save_data_list.empty());
     if (menu.empty() || (menu == "info") || is_empty) {
         // Back
-        if (ImGui::Button("Back", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
+        if (ImGui::Button("Back", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
             if (!menu.empty()) {
                 if (menu == "info") {
                     menu = "app";
@@ -580,7 +580,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         draw_list->AddRectFilled(ImVec2(VIEWPORT_POS.x, VIEWPORT_POS.y + (482.f * SCALE.y)), VIEWPORT_POS_MAX, IM_COL32(39.f, 42.f, 49.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
         // Cancel
-        if (ImGui::Button(common["cancel"].c_str(), ImVec2(202.f * SCALE.x, 44.f * SCALE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
+        if (ImGui::Button(common["cancel"].c_str(), ImVec2(202.f * SCALE.x, 44.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
             if (!menu.empty()) {
                 menu.clear();
                 contents_selected.clear();

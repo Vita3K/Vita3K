@@ -225,7 +225,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     if (is_background)
         draw_list->AddImage(gui.apps_background["NPXS10015"], VIEWPORT_POS, BG_POS_MAX);
     else
-        draw_list->AddRectFilled(VIEWPORT_POS, BG_POS_MAX, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawCornerFlags_All);
+        draw_list->AddRectFilled(VIEWPORT_POS, BG_POS_MAX, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
     ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
     const auto title_size_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
@@ -269,7 +269,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImVec2(ARROW_UPP_CENTER.x + (20.f * SCALE.x), ARROW_UPP_CENTER.y + (16.f * SCALE.y)), ARROW_COLOR);
                 ImGui::SetCursorPos(ImVec2(ARROW_SELECT_WIDTH_POS, ARROW_UP_HEIGHT_POS - ARROW_SIZE.y));
                 if ((ImGui::Selectable("##upp", false, ImGuiSelectableFlags_None, ARROW_SIZE))
-                    || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_up)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_up))
+                    || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_leftstick_up)))
+                    || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_up)))
                     set_scroll_pos = current_scroll_pos - (340 * SCALE.y);
             }
             if (current_scroll_pos < max_scroll_pos) {
@@ -281,7 +282,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImVec2(ARROW_DOWN_CENTER.x - (20.f * SCALE.x), ARROW_DOWN_CENTER.y - (16.f * SCALE.y)), ARROW_COLOR);
                 ImGui::SetCursorPos(ImVec2(ARROW_SELECT_WIDTH_POS, ARROW_DOWN_HEIGHT_POS - ARROW_SIZE.y));
                 if ((ImGui::Selectable("##down", false, ImGuiSelectableFlags_None, ARROW_SIZE))
-                    || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_down)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_down))
+                    || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_leftstick_down)))
+                    || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_down)))
                     set_scroll_pos = current_scroll_pos + (340 * SCALE.y);
             }
         }
@@ -414,7 +416,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         }
                         ImGui::SetWindowFontScale(1.2f);
                         ImGui::SetCursorPos(ImVec2((SIZE_LIST.x / 2.f) - (BUTTON_SIZE.x / 2.f), (SIZE_LIST.y - 82.f) - BUTTON_SIZE.y));
-                        if ((selected != gui.users[emuenv.io.user_id].theme_id) && (ImGui::Button(select, BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross))) {
+                        if ((selected != gui.users[emuenv.io.user_id].theme_id) && (ImGui::Button(select, BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross)))) {
                             gui.users[emuenv.io.user_id].start_path.clear();
                             if (init_theme(gui, emuenv, selected)) {
                                 gui.users[emuenv.io.user_id].theme_id = selected;
@@ -446,10 +448,10 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - (CALC_TEXT.x / 2.f), POPUP_SIZE.y / 2.f));
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", delete_str);
                         ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - BUTTON_SIZE.x - (20.f * SCALE.x), POPUP_SIZE.y - BUTTON_SIZE.y - (22.f * SCALE.y)));
-                        if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))
+                        if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle)))
                             popup.clear();
                         ImGui::SameLine(0, 40.f * SCALE.x);
-                        if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
+                        if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
                             if (selected == gui.users[emuenv.io.user_id].theme_id) {
                                 gui.users[emuenv.io.user_id].theme_id = "default";
                                 gui.users[emuenv.io.user_id].start_path.clear();
@@ -588,7 +590,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                             ImGui::Image(gui.themes_preview[gui.users[emuenv.io.user_id].theme_id][LOCK], SIZE_PREVIEW);
                         }
                         ImGui::SetCursorPos(SELECT_BUTTON_POS);
-                        if ((gui.users[emuenv.io.user_id].start_type != "theme") && (ImGui::Button(select, BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross))) {
+                        if ((gui.users[emuenv.io.user_id].start_type != "theme") && (ImGui::Button(select, BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross)))) {
                             gui.users[emuenv.io.user_id].start_path.clear();
                             gui.users[emuenv.io.user_id].start_type = "theme";
                             init_theme_start_background(gui, emuenv, gui.users[emuenv.io.user_id].theme_id);
@@ -612,7 +614,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                             ImGui::Image(gui.themes_preview["default"][LOCK], SIZE_PREVIEW);
                         }
                         ImGui::SetCursorPos(SELECT_BUTTON_POS);
-                        if ((gui.users[emuenv.io.user_id].start_type != "default") && (ImGui::Button(select, BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross))) {
+                        if ((gui.users[emuenv.io.user_id].start_type != "default") && (ImGui::Button(select, BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross)))) {
                             gui.users[emuenv.io.user_id].start_path.clear();
                             init_theme_start_background(gui, emuenv, "default");
                             gui.users[emuenv.io.user_id].start_type = "default";
@@ -955,7 +957,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     // Back
     ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
     ImGui::SetCursorPos(ImVec2(6.f * SCALE.x, WINDOW_SIZE.y - (52.f * SCALE.y)));
-    if (ImGui::Button("Back", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
+    if (ImGui::Button("Back", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
         if (settings_menu) {
             if (!menu.empty()) {
                 if (!selected.empty()) {
@@ -980,7 +982,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
 
     if ((settings_menu == THEME_BACKGROUND) && !selected.empty() && (selected != "default")) {
         ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (70.f * SCALE.x), WINDOW_SIZE.y - (52.f * SCALE.y)));
-        if (((popup != "information") && ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y))) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_triangle))
+        if (((popup != "information") && ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y))) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_triangle)))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...")) {
             if (ImGui::MenuItem(theme.information["title"].c_str()))

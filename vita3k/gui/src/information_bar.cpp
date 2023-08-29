@@ -465,7 +465,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetWindowFontScale(1.f * RES_SCALE.x);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
             ImGui::SetCursorPos(ImVec2(VIEWPORT_SIZE.x - (70.f * SCALE.x), VIEWPORT_SIZE.y - (52.f * SCALE.y)));
-            if (ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_triangle))
+            if (ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_triangle)))
                 ImGui::OpenPopup("...");
             if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
                 if (ImGui::Button(lang["delete_all"].c_str()))
@@ -480,11 +480,11 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize(notif_deleted).x / 2.f), (DELETE_POPUP_SIZE.y / 2.f) - (46.f * SCALE.y)));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", notif_deleted);
                     ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), DELETE_POPUP_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
-                    if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
+                    if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
                         ImGui::CloseCurrentPopup();
                     }
                     ImGui::SameLine(0.f, 20.f);
-                    if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
+                    if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
                         notice_info.clear();
                         for (auto &notice : gui.notice_info_icon)
                             notice.second = {};
