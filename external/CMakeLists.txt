@@ -163,10 +163,8 @@ set_property(TARGET unicorn PROPERTY FOLDER externals)
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")
 
-option(BUILD_TESTING "Build the testing tree." OFF)
 option(YAML_CPP_BUILD_TOOLS "Enable parse tools" OFF)
 option(YAML_CPP_BUILD_CONTRIB "Enable contrib stuff in library" OFF)
-option(YAML_CPP_INSTALL "Enable generation of install target" OFF)
 add_subdirectory(yaml-cpp EXCLUDE_FROM_ALL)
 set_property(TARGET yaml-cpp PROPERTY FOLDER externals)
 
