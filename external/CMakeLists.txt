@@ -334,14 +334,15 @@ option(TRACY_ENABLE_ON_CORE_COMPONENTS
 		HLE modules"
 	ON)
 add_library(tracy STATIC tracy/public/TracyClient.cpp)
+target_include_directories(tracy SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tracy/public>)
+target_link_libraries(tracy PUBLIC ${CMAKE_DL_LIBS})
 set_property(TARGET tracy PROPERTY FOLDER externals)
-target_include_directories(tracy PUBLIC tracy)
 
 if(UNIX)
-	target_link_libraries(tracy PUBLIC pthread dl)
+	target_link_libraries(tracy PUBLIC pthread)
 endif()
 
-# Enable Tracy on-demand profiling mode to avoid unnecesary memory usage when the developer
+# Enable Tracy on-demand profiling mode to avoid unnecessary memory usage when the developer
 # isn't profiling by only enabling profiling after a connection has been established with
 # a Tracy server
 target_compile_definitions(tracy PUBLIC $<$<CONFIG:Debug,RelWithDebInfo>:TRACY_ON_DEMAND>)

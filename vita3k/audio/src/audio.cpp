@@ -17,7 +17,7 @@
 
 #include <audio/state.h>
 
-#include "public/tracy/Tracy.hpp"
+#include <tracy/Tracy.hpp>
 
 #include <audio/impl/cubeb_audio.h>
 #include <audio/impl/sdl_audio.h>

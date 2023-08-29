@@ -19,7 +19,7 @@
 
 #ifdef TRACY_ENABLE
 
-#include "public/tracy/Tracy.hpp"
+#include <tracy/Tracy.hpp>
 #define R_PROFILE(name) ZoneNamedNC(___tracy_scoped_zone, name, 0x0055FF, false);
 
 #else
