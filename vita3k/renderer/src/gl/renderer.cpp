@@ -37,7 +37,7 @@
 #include <SDL.h>
 #include <SDL_video.h>
 
-#include <cassert>
+#include <array>
 #include <sstream>
 
 namespace renderer::gl {
@@ -169,7 +169,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
     // Recursively create GL version until one accepts
     // Major 4 is mandantory
     // We use glBufferStorage which needs OpenGL 4.4
-    const int accept_gl_version[] = {
+    constexpr std::array accept_gl_minor_versions = {
         6, // OpenGL 4.6
         5, // OpenGL 4.5
         4, // OpenGL 4.4
@@ -181,13 +181,10 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
 
-    int choosen_minor_version = 0;
-
-    for (int i = 0; i < sizeof(accept_gl_version) / sizeof(int); i++) {
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, accept_gl_version[i]);
+    for (int minor_version : accept_gl_minor_versions) {
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor_version);
         gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
         if (gl_state.context) {
-            choosen_minor_version = accept_gl_version[i];
             break;
         }
     }
@@ -207,9 +204,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
 
 #ifndef NDEBUG
-    if (choosen_minor_version >= 3) {
-        glDebugMessageCallback(reinterpret_cast<GLDEBUGPROC>(debug_output_callback), nullptr);
-    }
+    glDebugMessageCallback(reinterpret_cast<GLDEBUGPROC>(debug_output_callback), nullptr);
 #endif
 
     int total_extensions = 0;
