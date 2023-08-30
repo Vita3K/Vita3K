@@ -263,12 +263,6 @@ add_subdirectory(pugixml)
 set_property(TARGET pugixml-static PROPERTY FOLDER externals)
 
 add_library(CLI11 INTERFACE)
-
-# See "Note: Special instructions for GCC 8" on https://github.com/CLIUtils/CLI11
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
-	target_compile_definitions(CLI11 INTERFACE CLI11_HAS_FILESYSTEM=0)
-endif()
-
 target_include_directories(CLI11 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/cli11")
 
 add_library(vulkan INTERFACE)
