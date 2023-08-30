@@ -371,8 +371,7 @@ Vita3Kをお楽しみください。</completed_setup>
 			<firmware_installing>インストール中です、お待ちください...</firmware_installing>
 			<successed_install_firmware>ファームウェアのインストールに成功しました。</successed_install_firmware>
 			<firmware_version>ファームウェアバージョン：</firmware_version>
-			<no_font_exist>ファームウェアフォントパッケージがありません。
-ダウンロードしてインストールしてください。</no_font_exist>
+			<no_font_exist>ファームウェアフォントパッケージがありません，ダウンロードしてインストールしてください。</no_font_exist>
 			<download_firmware_font_package>ファームウェアフォントパッケージをダウンロード</download_firmware_font_package>
 			<firmware_font_package_note>ファームウェアフォントパッケージは、一部のアプリケーションや、
 GUIでのアジア地域のフォントサポートに必須です。

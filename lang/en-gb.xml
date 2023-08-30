@@ -397,8 +397,7 @@ Your Vita3K system is ready!</completed_setup>
 			<firmware_installing>Installation in progress, please wait...</firmware_installing>
 			<successed_install_firmware>Firmware successfully installed.</successed_install_firmware>
 			<firmware_version>Firmware version:</firmware_version>
-			<no_font_exist>No firmware font package present.
-Please download and install it.</no_font_exist>
+			<no_font_exist>No firmware font package present, please download and install it.</no_font_exist>
 			<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
 			<firmware_font_package_note>Firmware font package is needed for some applications
 and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
