@@ -116,6 +116,7 @@ static void after_callback(const char *name, void *funcptr, int len_args, ...) {
     }
 }
 
+#ifndef NDEBUG
 static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
     const GLchar *message, const void *userParam) {
     const char *type_str = nullptr;
@@ -162,6 +163,7 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
 
     LOG_DEBUG("[OPENGL - {} - {}] {}", type_str, severity_fmt, message);
 }
+#endif
 
 bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_path, const bool hashless_texture_cache) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
