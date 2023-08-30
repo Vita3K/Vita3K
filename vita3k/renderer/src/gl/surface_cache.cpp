@@ -259,13 +259,13 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                     // Check if the GL implementation actually store raw like this (a safe check)
                     if ((bytes_per_pixel_requested != color::bytes_per_pixel_in_gl_storage(base_format)) || (bytes_per_pixel_in_store != color::bytes_per_pixel_in_gl_storage(info.format))) {
                         LOG_ERROR("One or both two surface formats requested=0x{:X} and inStore=0x{:X} does not support bit-casting. Please report to developers!",
-                            base_format, info.format);
+                            fmt::underlying(base_format), fmt::underlying(info.format));
 
                         return 0;
                     }
                 } else {
                     static bool has_happened = false;
-                    LOG_ERROR_IF(!has_happened, "Two surface formats requested=0x{:X} and inStore=0x{:X} are not castable!", base_format, info.format);
+                    LOG_ERROR_IF(!has_happened, "Two surface formats requested=0x{:X} and inStore=0x{:X} are not castable!", fmt::underlying(base_format), fmt::underlying(info.format));
                     has_happened = true;
                     return 0;
                 }

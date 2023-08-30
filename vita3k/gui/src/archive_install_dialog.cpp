@@ -24,6 +24,8 @@
 
 #include <util/string_utils.h>
 
+#include <fmt/std.h>
+
 #include <thread>
 
 namespace gui {

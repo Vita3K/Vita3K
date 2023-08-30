@@ -547,7 +547,7 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
 
     auto format_gl = GXM_COLOR_FORMAT_TO_GL_FORMAT.find(format);
     if (format_gl == GXM_COLOR_FORMAT_TO_GL_FORMAT.end()) {
-        LOG_ERROR("Color format not implemented: {}, report this to developer", format);
+        LOG_ERROR("Color format not implemented: {}, report this to developer", fmt::underlying(format));
         return;
     }
 
@@ -608,7 +608,7 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
 
     auto format_gl = GXM_COLOR_FORMAT_TO_GL_FORMAT.find(format);
     if (format_gl == GXM_COLOR_FORMAT_TO_GL_FORMAT.end()) {
-        LOG_ERROR("Color format not implemented: {}, report this to developer", format);
+        LOG_ERROR("Color format not implemented: {}, report this to developer", fmt::underlying(format));
         return;
     }
 
