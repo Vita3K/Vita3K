@@ -151,9 +151,6 @@ target_link_libraries(vita3k PRIVATE app config ctrl display gdbstub gui gxm io 
 if(USE_DISCORD_RICH_PRESENCE)
 	target_link_libraries(vita3k PRIVATE discord-rpc)
 endif()
-if(LINUX)
-	target_link_libraries(vita3k PRIVATE stdc++fs)
-endif()
 
 set_target_properties(vita3k PROPERTIES OUTPUT_NAME Vita3K
 	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
