@@ -24,7 +24,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include <glad/glad.h>
+#include <glad/gl.h>
 
 struct MemState;
 

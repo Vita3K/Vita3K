@@ -73,9 +73,8 @@ set_property(TARGET spdlog PROPERTY FOLDER externals)
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
 
-add_library(glad STATIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c")
+add_library(glad STATIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/gl.c")
 target_include_directories(glad PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/include")
-target_link_libraries(glad PRIVATE ${CMAKE_DL_LIBS})
 set_property(TARGET glad PROPERTY FOLDER externals)
 
 add_library(better-enums INTERFACE)
