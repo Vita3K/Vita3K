@@ -28,16 +28,6 @@ endfunction()
 
 check_submodules_present()
 
-# Fix a glslang hack
-# See https://github.com/KhronosGroup/glslang/issues/1015 and https://github.com/Vita3K/Vita3K/pull/369 for details
-if(NOT CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-	if(WIN32)
-		set(CMAKE_INSTALL_PREFIX "C:/Program Files/${PROJECT_NAME}" CACHE STRING "Default install prefix is: C:/Program Files" FORCE)
-	elseif(UNIX)
-		set(CMAKE_INSTALL_PREFIX /usr/local CACHE STRING "Default install prefix is: /usr/local" FORCE)
-	endif()
-endif()
-
 # Define the Architecture variable, right now it should only contain "x86_64" or "arm64"
 include("dynarmic/CMakeModules/DetectArchitecture.cmake")
 
@@ -232,7 +222,7 @@ endif()
 option(BUILD_EXTERNAL "Build external dependencies in /External" OFF)
 option(SKIP_GLSLANG_INSTALL "Skip installation" ON)
 option(ENABLE_SPVREMAPPER "Enables building of SPVRemapper" OFF)
-option(ENABLE_GLSLANG_BINARIES "Builds glslangValidator and spirv-remap" OFF)
+option(ENABLE_GLSLANG_BINARIES "Builds glslang and spirv-remap" OFF)
 option(ENABLE_HLSL "Enables HLSL input support" OFF)
 option(ENABLE_CTEST "Enables testing" OFF)
 add_subdirectory(glslang)
