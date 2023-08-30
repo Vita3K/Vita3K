@@ -380,8 +380,7 @@
 			<firmware_installing>Идет установка, пожалуйста, подождите...</firmware_installing>
 			<successed_install_firmware>Прошивка успешно установлена.</successed_install_firmware>
 			<firmware_version>Версия прошивки:</firmware_version>
-			<no_font_exist>Пакет шрифтов прошивки отсутствует.
-Пожалуйста, скачайте и установите его.</no_font_exist>
+			<no_font_exist>Пакет шрифтов прошивки отсутствует, пожалуйста, скачайте и установите его.</no_font_exist>
 			<download_firmware_font_package>Скачать пакет шрифтов прошивки</download_firmware_font_package>
 			<firmware_font_package_note>Пакет шрифтов прошивки нужен для некоторых приложений,
 а также для поддержки шрифтов азиатского региона. 
