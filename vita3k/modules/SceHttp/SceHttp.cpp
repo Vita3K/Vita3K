@@ -148,7 +148,7 @@ EXPORT(SceInt, sceHttpAddRequestHeader, SceInt reqId, const char *name, const ch
     if (mode == SCE_HTTP_HEADER_OVERWRITE && !name)
         return RET_ERROR(SCE_HTTP_ERROR_NOT_FOUND);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (!name || !value)
@@ -166,7 +166,7 @@ EXPORT(SceInt, sceHttpAddRequestHeader, SceInt reqId, const char *name, const ch
             req.headers.insert({ name, value });
         }
     } else if (mode == SCE_HTTP_HEADER_ADD) {
-        if (req.headers.find(name) != req.headers.end())
+        if (req.headers.contains(name))
             return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
         req.headers.insert({ name, value });
@@ -206,7 +206,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.templates.find(tmplId) == emuenv.http.templates.end())
+    if (!emuenv.http.templates.contains(tmplId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (!url)
@@ -345,7 +345,7 @@ EXPORT(SceInt, sceHttpCreateConnection, SceInt tmplId, const char *hostname, con
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.templates.find(tmplId) == emuenv.http.templates.end())
+    if (!emuenv.http.templates.contains(tmplId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (!scheme)
@@ -378,7 +378,7 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceHttpMethods method
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.connections.find(connId) == emuenv.http.connections.end())
+    if (!emuenv.http.connections.contains(connId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (method >= SCE_HTTP_METHOD_INVALID || method < 0)
@@ -479,7 +479,7 @@ EXPORT(SceInt, sceHttpCreateRequest, SceInt connId, SceHttpMethods method, const
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.connections.find(connId) == emuenv.http.connections.end())
+    if (!emuenv.http.connections.contains(connId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (method >= SCE_HTTP_METHOD_INVALID || method < 0)
@@ -498,7 +498,7 @@ EXPORT(SceInt, sceHttpCreateRequest2, SceInt connId, const char *method, const c
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.connections.find(connId) == emuenv.http.connections.end())
+    if (!emuenv.http.connections.contains(connId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (!path)
@@ -517,7 +517,7 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL2, SceInt connId, const char *method, 
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.connections.find(connId) == emuenv.http.connections.end())
+    if (!emuenv.http.connections.contains(connId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (!path)
@@ -583,7 +583,7 @@ EXPORT(SceInt, sceHttpDeleteRequest, SceInt reqId) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto it = emuenv.http.requests.find(reqId);
@@ -602,7 +602,7 @@ EXPORT(SceInt, sceHttpDeleteTemplate, SceInt tmplId) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.templates.find(tmplId) == emuenv.http.templates.end())
+    if (!emuenv.http.templates.contains(tmplId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto it = emuenv.http.templates.find(tmplId);
@@ -629,7 +629,7 @@ EXPORT(SceInt, sceHttpGetAllResponseHeaders, SceInt reqId, Ptr<char> *header, Sc
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto req = emuenv.http.requests.find(reqId);
@@ -692,7 +692,7 @@ EXPORT(SceInt, sceHttpGetLastErrno, SceInt reqId, SceInt *errNum) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     *errNum = (int)errno;
@@ -724,7 +724,7 @@ EXPORT(SceInt, sceHttpGetResponseContentLength, SceInt reqId, SceULong64 *conten
     if (!contentLength)
         return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto req = emuenv.http.requests.find(reqId);
@@ -750,7 +750,7 @@ EXPORT(SceInt, sceHttpGetStatusCode, SceInt reqId, SceInt *statusCode) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto req = emuenv.http.requests.find(reqId);
@@ -867,7 +867,7 @@ EXPORT(SceInt, sceHttpReadData, SceInt reqId, void *data, SceSize size) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto req = emuenv.http.requests.find(reqId);
@@ -908,12 +908,12 @@ EXPORT(SceInt, sceHttpRemoveRequestHeader, SceInt reqId, const char *name) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto req = emuenv.http.requests.find(reqId);
 
-    if (req->second.headers.find(name) != req->second.headers.end())
+    if (req->second.headers.contains(name))
         req->second.headers.erase(name);
 
     return 0;
@@ -924,7 +924,7 @@ EXPORT(SceInt, sceHttpRequestGetAllHeaders, SceInt reqId, Ptr<char> *header, Sce
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto req = emuenv.http.requests.find(reqId);
@@ -946,7 +946,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto req = emuenv.http.requests.find(reqId);
@@ -976,7 +976,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
      */
 
     if (req->second.method == SCE_HTTP_METHOD_POST || req->second.method == SCE_HTTP_METHOD_PUT) {
-        if (req->second.headers.find("Content-Length") != req->second.headers.end()) {
+        if (req->second.headers.contains("Content-Length")) {
             // There is a content length header, probably by the game, use it
             auto contHeader = req->second.headers.find("Content-Length");
             SceSize contLen = string_utils::stoi_def(contHeader->second);
@@ -1311,7 +1311,7 @@ EXPORT(SceInt, sceHttpSetRequestContentLength, SceInt reqId, SceULong64 contentL
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto req = emuenv.http.requests.find(reqId);
@@ -1336,7 +1336,7 @@ EXPORT(SceInt, sceHttpSetResponseHeaderMaxSize, SceInt reqId, SceSize headerSize
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
+    if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (headerSize > SCE_HTTP_DEFAULT_RESPONSE_HEADER_MAX)
@@ -1557,7 +1557,7 @@ EXPORT(SceInt, sceHttpsDisableOption2, SceInt tmplId, SceHttpsFlags sslFlags) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.templates.find(tmplId) == emuenv.http.templates.end())
+    if (!emuenv.http.templates.contains(tmplId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto tmpl = emuenv.http.templates.find(tmplId);
@@ -1581,7 +1581,7 @@ EXPORT(SceInt, sceHttpsEnableOption2, SceInt tmplId, SceHttpsFlags sslFlags) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.templates.find(tmplId) == emuenv.http.templates.end())
+    if (!emuenv.http.templates.contains(tmplId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto tmpl = emuenv.http.templates.find(tmplId);
@@ -1627,7 +1627,7 @@ EXPORT(SceInt, sceHttpsGetSslError, SceInt tmplId, SceInt *errNum, SceUInt *deta
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.templates.find(tmplId) == emuenv.http.templates.end())
+    if (!emuenv.http.templates.contains(tmplId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     return UNIMPLEMENTED();
@@ -1643,7 +1643,7 @@ EXPORT(SceInt, sceHttpsSetSslCallback, SceInt tmplId, SceHttpsCallback cbFunctio
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.templates.find(tmplId) == emuenv.http.templates.end())
+    if (!emuenv.http.templates.contains(tmplId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (!cbFunction)

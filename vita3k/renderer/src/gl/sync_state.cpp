@@ -487,7 +487,7 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
     glBindBuffer(GL_ARRAY_BUFFER, context.vertex_stream_ring_buffer.handle());
 
     for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
-        if (glvert->attribute_infos.find(attribute.regIndex) == glvert->attribute_infos.end())
+        if (!glvert->attribute_infos.contains(attribute.regIndex))
             continue;
 
         const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];

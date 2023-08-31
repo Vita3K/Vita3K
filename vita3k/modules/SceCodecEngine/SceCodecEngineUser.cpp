@@ -44,7 +44,7 @@ EXPORT(int32_t, sceCodecEngineAllocMemoryFromUnmapMemBlock, SceUID uid, uint32_t
 EXPORT(int, sceCodecEngineCloseUnmapMemBlock, SceUID uid) {
     TRACY_FUNC(sceCodecEngineCloseUnmapMemBlock, uid);
     auto guard = std::lock_guard<std::mutex>(emuenv.kernel.mutex);
-    if (emuenv.kernel.codec_blocks.find(uid) == emuenv.kernel.codec_blocks.end())
+    if (!emuenv.kernel.codec_blocks.contains(uid))
         return SCE_CODECENGINE_ERROR_INVALID_VALUE;
 
     emuenv.kernel.codec_blocks.erase(uid);

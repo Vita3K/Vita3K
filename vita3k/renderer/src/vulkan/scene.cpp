@@ -293,7 +293,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem) {
     int max_stream_idx = -1;
 
     for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
-        if (vkvert->attribute_infos.find(attribute.regIndex) == vkvert->attribute_infos.end())
+        if (!vkvert->attribute_infos.contains(attribute.regIndex))
             continue;
         max_stream_idx = std::max<int>(max_stream_idx, attribute.streamIndex);
     }

@@ -73,7 +73,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
         }
         if (SDL_IsGameController(joystick_index)) {
             const SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(joystick_index);
-            if (state.controllers.find(guid) == state.controllers.end()) {
+            if (!state.controllers.contains(guid)) {
                 Controller new_controller;
                 const GameControllerPtr controller(SDL_GameControllerOpen(joystick_index), SDL_GameControllerClose);
                 new_controller.controller = controller;

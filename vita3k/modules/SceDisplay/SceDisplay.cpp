@@ -196,7 +196,7 @@ EXPORT(SceInt32, sceDisplayRegisterVblankStartCallback, SceUID uid) {
 
 EXPORT(SceInt32, sceDisplayUnregisterVblankStartCallback, SceUID uid) {
     TRACY_FUNC(sceDisplayUnregisterVblankStartCallback, uid);
-    if (emuenv.display.vblank_callbacks.find(uid) == emuenv.display.vblank_callbacks.end())
+    if (!emuenv.display.vblank_callbacks.contains(uid))
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
 
     emuenv.display.vblank_callbacks.erase(uid);

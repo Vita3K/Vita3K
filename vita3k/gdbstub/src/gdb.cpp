@@ -272,7 +272,7 @@ static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
 
 static std::string cmd_read_registers(EmuEnvState &state, PacketCommand &command) {
     if (state.gdb.current_thread == -1
-        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        || !state.kernel.threads.contains(state.gdb.current_thread))
         return "E00";
 
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
@@ -288,7 +288,7 @@ static std::string cmd_read_registers(EmuEnvState &state, PacketCommand &command
 static std::string cmd_write_registers(EmuEnvState &state, PacketCommand &command) {
     const auto guard = std::lock_guard(state.kernel.mutex);
     if (state.gdb.current_thread == -1
-        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        || !state.kernel.threads.contains(state.gdb.current_thread))
         return "E00";
 
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
@@ -306,7 +306,7 @@ static std::string cmd_write_registers(EmuEnvState &state, PacketCommand &comman
 static std::string cmd_read_register(EmuEnvState &state, PacketCommand &command) {
     const auto guard = std::lock_guard(state.kernel.mutex);
     if (state.gdb.current_thread == -1
-        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        || !state.kernel.threads.contains(state.gdb.current_thread))
         return "E00";
 
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
@@ -320,7 +320,7 @@ static std::string cmd_read_register(EmuEnvState &state, PacketCommand &command)
 static std::string cmd_write_register(EmuEnvState &state, PacketCommand &command) {
     const auto guard = std::lock_guard(state.kernel.mutex);
     if (state.gdb.current_thread == -1
-        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
+        || !state.kernel.threads.contains(state.gdb.current_thread))
         return "E00";
 
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
@@ -530,7 +530,7 @@ static std::string cmd_thread_alive(EmuEnvState &state, PacketCommand &command) 
     const int32_t thread_id = parse_hex(content.substr(1));
 
     // Assuming a thread is removed from the map when it closes or is killed.
-    if (state.kernel.threads.find(thread_id) != state.kernel.threads.end())
+    if (state.kernel.threads.contains(thread_id))
         return "OK";
 
     return "E00";

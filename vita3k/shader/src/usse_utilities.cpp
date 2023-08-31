@@ -678,16 +678,18 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
     case DataType::UINT8:
     case DataType::UINT16:
     case DataType::INT16: {
-        if (utils.unpack_funcs.find(type) == utils.unpack_funcs.end()) {
-            utils.unpack_funcs[type] = make_unpack_func(b, features, type);
+        auto iter = utils.unpack_funcs.find(type);
+        if (iter == utils.unpack_funcs.end()) {
+            iter = utils.unpack_funcs.emplace(type, make_unpack_func(b, features, type)).first;
         }
-        return b.createFunctionCall(utils.unpack_funcs.at(type), { scalar });
+        return b.createFunctionCall(iter->second, { scalar });
     }
     case DataType::F16: {
-        if (utils.unpack_funcs.find(type) == utils.unpack_funcs.end()) {
-            utils.unpack_funcs[type] = make_f16_unpack_func(b, features);
+        auto iter = utils.unpack_funcs.find(type);
+        if (iter == utils.unpack_funcs.end()) {
+            iter = utils.unpack_funcs.emplace(type, make_f16_unpack_func(b, features)).first;
         }
-        return b.createFunctionCall(utils.unpack_funcs.at(type), { scalar });
+        return b.createFunctionCall(iter->second, { scalar });
     }
     // TODO: Not really FX8?
     case DataType::C10: {
@@ -712,16 +714,18 @@ spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils
     case DataType::UINT8:
     case DataType::UINT16:
     case DataType::INT16: {
-        if (utils.pack_funcs.find(source_type) == utils.pack_funcs.end()) {
-            utils.pack_funcs[source_type] = make_pack_func(b, features, source_type);
+        auto iter = utils.pack_funcs.find(source_type);
+        if (iter == utils.pack_funcs.end()) {
+            iter = utils.pack_funcs.emplace(source_type, make_pack_func(b, features, source_type)).first;
         }
-        return b.createFunctionCall(utils.pack_funcs.at(source_type), { vec });
+        return b.createFunctionCall(iter->second, { vec });
     }
     case DataType::F16: {
-        if (utils.pack_funcs.find(source_type) == utils.pack_funcs.end()) {
-            utils.pack_funcs[source_type] = make_f16_pack_func(b, features);
+        auto iter = utils.pack_funcs.find(source_type);
+        if (iter == utils.pack_funcs.end()) {
+            iter = utils.pack_funcs.emplace(source_type, make_f16_pack_func(b, features)).first;
         }
-        return b.createFunctionCall(utils.pack_funcs.at(source_type), { vec });
+        return b.createFunctionCall(iter->second, { vec });
     }
     // TODO: Not really FX8?
     case DataType::C10: {

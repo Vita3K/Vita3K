@@ -157,7 +157,7 @@ int match_uniform_buffer_with_buffer_size(const SceGxmProgram &program, const Sc
     int base = gxp::get_uniform_buffer_base(program, parameter);
 
     // Search for the buffer from analyzed list
-    if (buffers.find(base) != buffers.end()) {
+    if (buffers.contains(base)) {
         return (buffers.at(base).size + 3) / 4;
     }
 
@@ -473,7 +473,7 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction rea
                         baddr = current_code->offset - 1;
                     }
                 }
-            } else if ((branches_to_back.find(baddr) != branches_to_back.end()) && (request.block_node->start_offset() != baddr)) {
+            } else if (branches_to_back.contains(baddr) && (request.block_node->start_offset() != baddr)) {
                 // The loop continue target should be unconditional and farest
                 std::uint32_t found_offset = 0xFFFFFFFF;
                 for (auto ite = branch_to_result.first; ite != branch_to_result.second; ite++) {

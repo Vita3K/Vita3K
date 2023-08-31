@@ -241,7 +241,7 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         if (fs::exists(SHADER_LOG_PATH))
             fs::remove_all(SHADER_LOG_PATH);
 
-        if (gui.app_selector.user_apps_icon.find(app_path) != gui.app_selector.user_apps_icon.end()) {
+        if (gui.app_selector.user_apps_icon.contains(app_path)) {
             gui.app_selector.user_apps_icon[app_path] = {};
             gui.app_selector.user_apps_icon.erase(app_path);
         }
@@ -546,7 +546,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         } else {
             // Delete Data
             const auto ICON_MARGIN = 24.f * SCALE.y;
-            if (gui.app_selector.user_apps_icon.find(title_id) != gui.app_selector.user_apps_icon.end()) {
+            if (gui.app_selector.user_apps_icon.contains(title_id)) {
                 ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PUPOP_ICON_SIZE.x / 2.f), ICON_MARGIN));
                 const auto POS_MIN = ImGui::GetCursorScreenPos();
                 const ImVec2 POS_MAX(POS_MIN.x + PUPOP_ICON_SIZE.x, POS_MIN.y + PUPOP_ICON_SIZE.y);

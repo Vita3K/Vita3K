@@ -89,7 +89,7 @@ static bool init_notice_icon(GuiState &gui, EmuEnvState &emuenv, const fs::path 
     gui.notice_info_icon[info.time].init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 
-    return gui.notice_info_icon.find(info.time) != gui.notice_info_icon.end();
+    return gui.notice_info_icon.contains(info.time);
 }
 
 static bool set_notice_info(GuiState &gui, EmuEnvState &emuenv, const NoticeList &info) {
@@ -411,7 +411,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
                 if (notice.time != notice_info.front().time)
                     ImGui::Separator();
                 const auto ICON_POS = ImGui::GetCursorPos();
-                if (gui.notice_info_icon.find(notice.time) != gui.notice_info_icon.end()) {
+                if (gui.notice_info_icon.contains(notice.time)) {
                     ImGui::SetCursorPos(ImVec2(ICON_POS.x + (ImGui::GetColumnWidth() / 2.f) - (ICON_SIZE.x / 2.f), ICON_POS.y + (SELECT_SIZE.y / 2.f) - (ICON_SIZE.y / 2.f)));
                     ImGui::Image(gui.notice_info_icon[notice.time], ICON_SIZE);
                 }
