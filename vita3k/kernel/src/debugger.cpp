@@ -45,7 +45,7 @@ void Debugger::add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode) {
 
 void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
     const auto lock = std::lock_guard(mutex);
-    if (breakpoints.find(addr) != breakpoints.end()) {
+    if (breakpoints.contains(addr)) {
         auto last = breakpoints[addr];
         std::memcpy(&mem.memory[addr], &last.data, last.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT));
         breakpoints.erase(addr);

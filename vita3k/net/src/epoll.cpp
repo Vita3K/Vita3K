@@ -1,12 +1,9 @@
 #include <net/epoll.h>
 
 int Epoll::add(int id, abs_socket sock, SceNetEpollEvent *ev) {
-    auto it = eventEntries.find(id);
-    if (it != eventEntries.end()) {
+    if (!eventEntries.try_emplace(id, EpollSocket{ ev->events, ev->data, sock }).second) {
         return SCE_NET_ERROR_EEXIST;
     }
-
-    eventEntries.emplace(id, EpollSocket{ ev->events, ev->data, sock });
 
     return 0;
 }

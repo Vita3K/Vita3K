@@ -635,7 +635,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             tex_query_info.prod_pos = prod_pos;
             tex_query_info.sampler_index = sampler_resource_index;
 
-            if (anonymous && (samplers.find(sampler_resource_index) == samplers.end())) {
+            if (anonymous && !samplers.contains(sampler_resource_index)) {
                 // Probably not gonna be used in future, just for non-dependent queries
                 tex_query_info.sampler = create_param_sampler(b, (program.is_vertex() ? "vertTex_" : "fragTex_") + tex_name, dim_type);
 

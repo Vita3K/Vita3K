@@ -97,7 +97,7 @@ Address resolve_export(KernelState &kernel, uint32_t nid) {
 }
 
 static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist, Address lr) {
-    if (nid_blacklist.find(nid) == nid_blacklist.end()) {
+    if (!nid_blacklist.contains(nid)) {
         const char *const name = import_name(nid);
         LOG_TRACE("[{}LE] TID: {:<3} FUNC: {} {} at {}", emulation_level, thread_id, log_hex(nid), name, log_hex(lr));
     }

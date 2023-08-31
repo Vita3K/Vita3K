@@ -375,7 +375,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         if (!search_bar.PassFilter(themes_info[theme.first].title.c_str()) && !search_bar.PassFilter(theme.first.c_str()))
                             continue;
                         const auto POS_IMAGE = ImGui::GetCursorPosY();
-                        if (gui.themes_preview[theme.first].find(PACKAGE) != gui.themes_preview[theme.first].end())
+                        if (gui.themes_preview[theme.first].contains(PACKAGE))
                             ImGui::Image(gui.themes_preview[theme.first][PACKAGE], SIZE_PACKAGE);
                         ImGui::SetCursorPosY(POS_IMAGE);
                         ImGui::PushID(theme.first.c_str());
@@ -404,11 +404,11 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     // Theme Select
                     title = themes_info[selected].title;
                     if (popup.empty()) {
-                        if (gui.themes_preview[selected].find(HOME) != gui.themes_preview[selected].end()) {
+                        if (gui.themes_preview[selected].contains(HOME)) {
                             ImGui::SetCursorPos(ImVec2(15.f * SCALE.x, (SIZE_LIST.y / 2.f) - (SIZE_PREVIEW.y / 2.f) - (72.f * SCALE.y)));
                             ImGui::Image(gui.themes_preview[selected][HOME], SIZE_PREVIEW);
                         }
-                        if (gui.themes_preview[selected].find(LOCK) != gui.themes_preview[selected].end()) {
+                        if (gui.themes_preview[selected].contains(LOCK)) {
                             ImGui::SetCursorPos(ImVec2((SIZE_LIST.x / 2.f) + (15.f * SCALE.y), (SIZE_LIST.y / 2.f) - (SIZE_PREVIEW.y / 2.f) - (72.f * SCALE.y)));
                             ImGui::Image(gui.themes_preview[selected][LOCK], SIZE_PREVIEW);
                         }
@@ -472,11 +472,11 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::PopStyleVar();
                         ImGui::End();
                     } else if (popup == "information") {
-                        if (gui.themes_preview[selected].find(HOME) != gui.themes_preview[selected].end()) {
+                        if (gui.themes_preview[selected].contains(HOME)) {
                             ImGui::SetCursorPos(ImVec2(119.f * SCALE.x, 4.f * SCALE.y));
                             ImGui::Image(gui.themes_preview[selected][HOME], SIZE_MINI_PREVIEW);
                         }
-                        if (gui.themes_preview[selected].find(LOCK) != gui.themes_preview[selected].end()) {
+                        if (gui.themes_preview[selected].contains(LOCK)) {
                             ImGui::SetCursorPos(ImVec2(SIZE_LIST.x / 2.f + (15.f * SCALE.y), 4.f * SCALE.y));
                             ImGui::Image(gui.themes_preview[selected][LOCK], SIZE_MINI_PREVIEW);
                         }
@@ -531,7 +531,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     const auto is_not_default = gui.users[emuenv.io.user_id].theme_id != "default";
                     if (is_not_default) {
                         const auto THEME_POS = ImVec2(15.f * SCALE.x, PACKAGE_POS_Y);
-                        if (gui.themes_preview[gui.users[emuenv.io.user_id].theme_id].find(PACKAGE) != gui.themes_preview[gui.users[emuenv.io.user_id].theme_id].end()) {
+                        if (gui.themes_preview[gui.users[emuenv.io.user_id].theme_id].contains(PACKAGE)) {
                             ImGui::SetCursorPos(THEME_POS);
                             ImGui::Image(gui.themes_preview[gui.users[emuenv.io.user_id].theme_id][PACKAGE], SIZE_PACKAGE);
                         }
@@ -563,7 +563,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::SetCursorPosX(IMAGE_POS.x);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", theme_background.start_screen["image"].c_str());
                     const auto DEFAULT_POS = ImVec2(is_not_default ? (SIZE_LIST.x / 2.f) + (SIZE_PACKAGE.x / 2.f) + (30.f * SCALE.y) : (SIZE_LIST.x / 2.f) - (SIZE_PACKAGE.x / 2.f), PACKAGE_POS_Y);
-                    if (gui.themes_preview["default"].find(PACKAGE) != gui.themes_preview["default"].end()) {
+                    if (gui.themes_preview["default"].contains(PACKAGE)) {
                         ImGui::SetCursorPos(DEFAULT_POS);
                         ImGui::Image(gui.themes_preview["default"][PACKAGE], SIZE_PACKAGE);
                         ImGui::SetCursorPos(DEFAULT_POS);
@@ -583,7 +583,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     const auto SELECT_BUTTON_POS = ImVec2((SIZE_LIST.x / 2.f) - (BUTTON_SIZE.x / 2.f), (SIZE_LIST.y - 82.f) - BUTTON_SIZE.y);
                     if (sub_menu == "theme") {
                         title = themes_info[gui.users[emuenv.io.user_id].theme_id].title;
-                        if (gui.themes_preview[gui.users[emuenv.io.user_id].theme_id].find(LOCK) != gui.themes_preview[gui.users[emuenv.io.user_id].theme_id].end()) {
+                        if (gui.themes_preview[gui.users[emuenv.io.user_id].theme_id].contains(LOCK)) {
                             ImGui::SetCursorPos(START_PREVIEW_POS);
                             ImGui::Image(gui.themes_preview[gui.users[emuenv.io.user_id].theme_id][LOCK], SIZE_PREVIEW);
                         }
@@ -607,7 +607,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         sub_menu.clear();
                     } else if (sub_menu == "default") {
                         title = theme_background.main["default"];
-                        if (gui.themes_preview["default"].find(LOCK) != gui.themes_preview["default"].end()) {
+                        if (gui.themes_preview["default"].contains(LOCK)) {
                             ImGui::SetCursorPos(START_PREVIEW_POS);
                             ImGui::Image(gui.themes_preview["default"][LOCK], SIZE_PREVIEW);
                         }

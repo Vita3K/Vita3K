@@ -145,7 +145,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
 
                 investigated_ub |= (1 << parameter.container_index);
 
-                if (uniform_buffers.find(parameter.container_index) == uniform_buffers.end()) {
+                if (!uniform_buffers.contains(parameter.container_index)) {
                     const std::uint32_t reg_block_size = container ? container->size_in_f32 : 0;
 
                     UniformBuffer buffer;
@@ -188,7 +188,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
             break;
         }
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER: {
-            if (uniform_buffers.find(parameter.resource_index) == uniform_buffers.end()) {
+            if (!uniform_buffers.contains(parameter.resource_index)) {
                 UniformBuffer buffer;
                 buffer.index = parameter.resource_index;
                 buffer.reg_block_size = 0;

@@ -87,10 +87,11 @@ void set_thread_fiber(FiberState &state, const SceUID &tid, SceFiber *fiber) {
 }
 
 SceFiber *get_thread_fiber(FiberState &state, const SceUID &tid) {
-    if (state.thread_fibers.find(tid) == state.thread_fibers.end()) {
+    auto fiber = state.thread_fibers.find(tid);
+    if (fiber == state.thread_fibers.end()) {
         return nullptr;
     }
-    return state.thread_fibers[tid];
+    return fiber->second;
 }
 
 void set_thread_context(FiberState &state, const SceUID &tid, const CPUContext &ctx) {

@@ -248,7 +248,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
-    const auto has_background = gui.apps_background.find("NPXS10026") != gui.apps_background.end();
+    const auto has_background = gui.apps_background.contains("NPXS10026");
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);

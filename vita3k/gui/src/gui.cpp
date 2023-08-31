@@ -524,7 +524,7 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
     regmgr::init_regmgr(emuenv.regmgr, emuenv.pref_path);
 
     const auto is_cmd = emuenv.cfg.run_app_path || emuenv.cfg.content_path;
-    if (!gui.users.empty() && (gui.users.find(emuenv.cfg.user_id) != gui.users.end()) && (is_cmd || emuenv.cfg.auto_user_login)) {
+    if (!gui.users.empty() && gui.users.contains(emuenv.cfg.user_id) && (is_cmd || emuenv.cfg.auto_user_login)) {
         init_user(gui, emuenv, emuenv.cfg.user_id);
         if (!is_cmd && emuenv.cfg.auto_user_login) {
             gui.vita_area.information_bar = true;
@@ -538,8 +538,7 @@ void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pa
     const auto APP_INDEX = get_app_index(gui, app_path);
     if (APP_INDEX != gui.app_selector.user_apps.end()) {
         gui.app_selector.user_apps.erase(APP_INDEX);
-        if (gui.app_selector.user_apps_icon.find(app_path) != gui.app_selector.user_apps_icon.end())
-            gui.app_selector.user_apps_icon.erase(app_path);
+        gui.app_selector.user_apps_icon.erase(app_path);
     }
 
     get_app_param(gui, emuenv, app_path);

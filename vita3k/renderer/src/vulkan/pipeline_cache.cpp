@@ -436,7 +436,7 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(Mem
     uint32_t used_streams = 0;
 
     for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
-        if (vkvert->attribute_infos.find(attribute.regIndex) == vkvert->attribute_infos.end())
+        if (!vkvert->attribute_infos.contains(attribute.regIndex))
             continue;
 
         used_streams |= (1 << attribute.streamIndex);
@@ -655,8 +655,7 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
 bool PipelineCache::precompile_shader(const Sha256Hash &hash) {
     const auto shader_path{ fs::path(state.base_path) / "cache/shaders" / state.title_id / state.self_name };
 
-    auto it = shaders.find(hash);
-    if (it != shaders.end())
+    if (shaders.contains(hash))
         return true;
 
     if (!fs::exists(shader_path) || fs::is_empty(shader_path))

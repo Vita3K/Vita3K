@@ -253,7 +253,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 WINDOW_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
 
     const auto BUTTON_SIZE = ImVec2(150.f * SCALE.x, 46.f * SCALE.y);
-    const auto is_background = gui.apps_background.find("NPXS10015") != gui.apps_background.end();
+    const auto is_background = gui.apps_background.contains("NPXS10015");
 
     auto common = emuenv.common_dialog.lang.common;
     auto lang = gui.lang.vita3k_update;
