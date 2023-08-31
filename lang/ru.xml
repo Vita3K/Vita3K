@@ -364,8 +364,7 @@
 Ваша система Vita3K готова!</completed_setup>
 		<select_language>Выбрать язык.</select_language>
 		<install_firmware>Установить прошивку.</install_firmware>
-		<install_highly_recommended>Настоятельно рекомендуется 
-установить прошивку и шрифты.</install_highly_recommended>
+		<install_highly_recommended>Настоятельно рекомендуется установить прошивку и шрифты.</install_highly_recommended>
 		<installed>Установлено:</installed>
 		<download_firmware>Скачать прошивку</download_firmware>
 		<download_font_package>Скачать пакет шрифтов</download_font_package>

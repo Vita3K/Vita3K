@@ -202,6 +202,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             gui.file_menu.firmware_install_dialog = true;
         if (gui.file_menu.firmware_install_dialog) {
             ImGui::PushFont(gui.vita_font);
+            ImGui::SetWindowFontScale(RES_SCALE.x);
             draw_firmware_install_dialog(gui, emuenv);
             ImGui::PopFont();
         }
