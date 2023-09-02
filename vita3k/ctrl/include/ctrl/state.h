@@ -18,6 +18,7 @@
 #pragma once
 
 #include <ctrl/ctrl.h>
+#include <ctrl/functions.h>
 
 #include <SDL_gamecontroller.h>
 #include <SDL_haptic.h>
