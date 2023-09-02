@@ -225,7 +225,8 @@ struct LangState {
         { "connected", "{} controllers connected" },
         { "name", "Name" },
         { "num", "Num" },
-        { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." }
+        { "not_connected", "No compatible controllers connected.\nPlease connect a controller that is compatible with SDL2." },
+        { "motion_support", "Gamepad has motion support" }
     };
     std::map<std::string, std::string> controls = {
         { "title", "Controls" },
