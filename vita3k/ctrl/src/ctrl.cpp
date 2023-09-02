@@ -48,7 +48,7 @@ static bool operator<(const SDL_JoystickGUID &a, const SDL_JoystickGUID &b) {
     return memcmp(&a, &b, sizeof(a)) < 0;
 }
 
-void refresh_controllers(CtrlState &state) {
+void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     // Remove disconnected controllers
     bool found_gyro = false;
     bool found_accel = false;
@@ -92,6 +92,15 @@ void refresh_controllers(CtrlState &state) {
                 state.controllers.emplace(guid, new_controller);
                 state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
                 state.controllers_num++;
+            }
+            if (emuenv.cfg.controller_binds.empty()) {
+                emuenv.cfg.controller_binds = {
+                    SDL_CONTROLLER_BUTTON_A, SDL_CONTROLLER_BUTTON_B, SDL_CONTROLLER_BUTTON_X,
+                    SDL_CONTROLLER_BUTTON_Y, SDL_CONTROLLER_BUTTON_BACK, SDL_CONTROLLER_BUTTON_GUIDE,
+                    SDL_CONTROLLER_BUTTON_START, SDL_CONTROLLER_BUTTON_DPAD_UP, SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+                    SDL_CONTROLLER_BUTTON_DPAD_LEFT, SDL_CONTROLLER_BUTTON_DPAD_RIGHT, SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
+                    SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, SDL_CONTROLLER_BUTTON_LEFTSTICK, SDL_CONTROLLER_BUTTON_RIGHTSTICK
+                };
             }
         }
     }
@@ -162,7 +171,7 @@ static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, EmuEnvSta
 }
 
 static float axis_to_axis(int16_t axis) {
-    const float unsigned_axis = static_cast<float>(axis - INT16_MIN);
+    const auto unsigned_axis = static_cast<float>(axis - INT16_MIN);
     assert(unsigned_axis >= 0);
     assert(unsigned_axis <= UINT16_MAX);
 
@@ -184,7 +193,7 @@ static uint8_t float_to_byte(float f) {
     return static_cast<uint8_t>(clamped * 255);
 }
 
-static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameController *controller, bool ext) {
+static void apply_controller(EmuEnvState &emuenv, uint32_t *buttons, float axes[4], SDL_GameController *controller, bool ext) {
     if (ext) {
         for (const auto &binding : controller_bindings_ext) {
             if (SDL_GameControllerGetButton(controller, binding.controller)) {
@@ -199,7 +208,22 @@ static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameControlle
             *buttons |= SCE_CTRL_R2;
         }
     } else {
-        for (const auto &binding : controller_bindings) {
+        std::array<ControllerBinding, 13> new_controller_bindings = { {
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[0]), SCE_CTRL_CROSS },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[1]), SCE_CTRL_CIRCLE },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[2]), SCE_CTRL_SQUARE },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[3]), SCE_CTRL_TRIANGLE },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[4]), SCE_CTRL_SELECT },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[5]), SCE_CTRL_PSBUTTON },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[6]), SCE_CTRL_START },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[7]), SCE_CTRL_UP },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[8]), SCE_CTRL_DOWN },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[9]), SCE_CTRL_LEFT },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[10]), SCE_CTRL_RIGHT },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[11]), SCE_CTRL_LTRIGGER },
+            { SDL_GameControllerButton(emuenv.cfg.controller_binds[12]), SCE_CTRL_RTRIGGER },
+        } };
+        for (const auto &binding : new_controller_bindings) {
             if (SDL_GameControllerGetButton(controller, binding.controller)) {
                 *buttons |= binding.button;
             }
@@ -219,7 +243,7 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
         port++;
     }
     CtrlState &state = emuenv.ctrl;
-    refresh_controllers(state);
+    refresh_controllers(state, emuenv);
 
     std::array<float, 4> axes;
     axes.fill(0);
@@ -251,7 +275,7 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
     }
     for (const auto &controller : state.controllers) {
         if (controller.second.port == port) {
-            apply_controller(&buttons, axes.data(), controller.second.controller.get(), is_v2);
+            apply_controller(emuenv, &buttons, axes.data(), controller.second.controller.get(), is_v2);
         }
     }
 
