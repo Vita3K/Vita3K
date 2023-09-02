@@ -258,7 +258,8 @@
 		<name>名稱</name>
 		<num>編號</num>
 		<not_connected>未連接相容的控制器。
-連接與SDL2相容的控制器。</not_connected>
+請連接與SDL2相容的控制器。</not_connected>
+		<motion_support>手柄控制器有體感支持</motion_support>
 	</controllers>
 
 	<controls name="控制">

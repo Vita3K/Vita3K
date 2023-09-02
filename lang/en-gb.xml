@@ -259,7 +259,8 @@ Error code: {}</an_error_occurred>
 		<name>Name</name>
 		<num>Num</num>
 		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
+Please connect a controller that is compatible with SDL2.</not_connected>
+		<motion_support>Gamepad has motion support</motion_support>
 	</controllers>
 
 	<controls name="Controls">
