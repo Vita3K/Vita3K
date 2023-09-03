@@ -76,9 +76,9 @@ jobs:
           vcpkg install zlib:x64-windows boost-system:x64-windows boost-filesystem:x64-windows boost-program-options:x64-windows boost-icl:x64-windows boost-variant:x64-windows openssl:x64-windows
         if: matrix.os == 'windows-latest'
 
-      - name: Set up SDL 2.26.5 (ubuntu-latest)
+      - name: Set up SDL 2.28.3 (ubuntu-latest)
         run: |
-          SDL2VER=2.26.5
+          SDL2VER=2.28.3
           if [[ ! -e ~/.ccache ]]; then
             mkdir ~/.ccache
           fi  
