@@ -49,4 +49,9 @@ void error_dialog(const std::string &message, SDL_Window *window = nullptr);
 void set_window_title(EmuEnvState &emuenv);
 void calculate_fps(EmuEnvState &emuenv);
 
+#ifdef __APPLE__
+int processorName(std::string &name);
+bool isProcessTranslated();
+#endif
+
 } // namespace app

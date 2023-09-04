@@ -65,14 +65,39 @@ void set_window_title(EmuEnvState &emuenv) {
     const auto af = emuenv.cfg.current_config.anisotropic_filtering > 1 ? fmt ::format(" | AF {}x", emuenv.cfg.current_config.anisotropic_filtering) : "";
     const auto x = emuenv.display.frame.image_size.x * emuenv.cfg.current_config.resolution_multiplier;
     const auto y = emuenv.display.frame.image_size.y * emuenv.cfg.current_config.resolution_multiplier;
-    const std::string title_to_set = fmt::format("{} | {} ({}) | {} | {} FPS ({} ms) | {}x{}{} | {}",
+    std::string title_to_set = fmt::format("{} | {} ({}) | {} | {} FPS ({} ms) | {}x{}{} | {}",
         window_title,
         emuenv.current_app_title, emuenv.io.title_id,
         emuenv.cfg.backend_renderer,
         emuenv.fps, emuenv.ms_per_frame,
         x, y, af, emuenv.cfg.current_config.screen_filter);
-
+#ifdef __APPLE__
+    if (isProcessTranslated())
+        title_to_set += " | Rosetta";
+#endif
     SDL_SetWindowTitle(emuenv.window.get(), title_to_set.c_str());
 }
 
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+int processorName(std::string &name) {
+    char buffer[512];
+    size_t size = sizeof(buffer);
+    if (sysctlbyname("machdep.cpu.brand_string", &buffer, &size, NULL, 0) < 0) {
+        return -1;
+    }
+    name = buffer;
+    return 0;
+}
+
+bool isProcessTranslated() {
+    int ret = 0;
+    size_t size = sizeof(ret);
+    if (sysctlbyname("sysctl.proc_translated", &ret, &size, NULL, 0) != -1)
+        return ret == 1;
+    if (errno == ENOENT)
+        return false;
+    return false;
+}
+#endif
 } // namespace app

@@ -186,6 +186,13 @@ int main(int argc, char *argv[]) {
     }
 
     LOG_INFO("{}", window_title);
+#ifdef __APPLE__
+    std::string processor_name;
+    if (app::processorName(processor_name) == 0)
+        LOG_INFO("CPU: {}", processor_name);
+    if (app::isProcessTranslated())
+        LOG_INFO("Vita3K is opened using Rosetta");
+#endif
     LOG_INFO("Number of logical CPU cores: {}", SDL_GetCPUCount());
     LOG_INFO("Available ram memory: {} MiB", SDL_GetSystemRAM());
 
