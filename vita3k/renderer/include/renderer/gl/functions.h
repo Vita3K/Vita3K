@@ -86,10 +86,7 @@ GLboolean attribute_format_normalised(SceGxmAttributeFormat format);
 namespace texture {
 
 // Textures.
-void bind_texture(GLTextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem);
-void configure_bound_texture(const renderer::TextureCacheState &state, const SceGxmTexture &gxm_texture);
-void upload_bound_texture(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height,
-    uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride);
+void bind_texture_without_cache(GLTextureCache &cache, const SceGxmTexture &gxm_texture, MemState &mem);
 
 // Texture formats.
 const GLint *translate_swizzle(SceGxmTextureFormat fmt);

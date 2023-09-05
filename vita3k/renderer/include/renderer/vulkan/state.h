@@ -45,7 +45,7 @@ struct VKState : public renderer::State {
 
     VKSurfaceCache surface_cache;
     PipelineCache pipeline_cache;
-    VKTextureCacheState texture_cache;
+    VKTextureCache texture_cache;
 
     vk::Instance instance;
     vk::Device device;

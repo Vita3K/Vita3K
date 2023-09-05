@@ -782,20 +782,6 @@ void float_to_half(const float *src, std::uint16_t *dest, const int total) {
 #endif
 #endif
 
-// pent0 found on stackoverflow
-// https://stackoverflow.com/questions/4398711/round-to-the-nearest-power-of-two/4398799
-std::uint32_t next_power_of_two(std::uint32_t num) {
-    num--;
-    num |= num >> 1;
-    num |= num >> 2;
-    num |= num >> 4;
-    num |= num >> 8;
-    num |= num >> 16;
-    num++;
-
-    return num;
-}
-
 // Encode code taken from https://github.com/yifanlu/UVLoader/blob/master/resolve.c
 
 uint32_t encode_arm_inst(uint8_t type, uint32_t immed, uint16_t reg) {

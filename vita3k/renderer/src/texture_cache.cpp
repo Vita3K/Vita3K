@@ -18,17 +18,16 @@
 #include <renderer/functions.h>
 
 #include <renderer/profile.h>
-#include <renderer/pvrt-dec.h>
-#include <renderer/texture_cache_state.h>
+#include <renderer/texture_cache.h>
 
 #include <gxm/functions.h>
 #include <mem/ptr.h>
 #include <util/align.h>
 #include <util/log.h>
 
-#include <algorithm> // find
-#include <cstring> // memcmp
-#include <numeric> // accumulate, reduce
+#include <algorithm>
+#include <cstring>
+#include <numeric>
 #include <xxh3.h>
 #ifdef WIN32
 #include <execution>
@@ -37,24 +36,22 @@
 namespace renderer {
 namespace texture {
 
-static TextureCacheHash hash_data(const void *data, size_t size) {
-    auto hash = XXH_INLINE_XXH3_64bits(data, size);
-    return TextureCacheHash(hash);
+static uint64_t hash_data(const void *data, size_t size) {
+    return XXH_INLINE_XXH3_64bits(data, size);
 }
 
-static TextureCacheHash hash_palette_data(const SceGxmTexture &texture, size_t count, const MemState &mem) {
+static uint64_t hash_palette_data(const SceGxmTexture &texture, size_t count, const MemState &mem) {
     const uint32_t *const palette_bytes = get_texture_palette(texture, mem);
-    const TextureCacheHash palette_hash = hash_data(palette_bytes, count * sizeof(uint32_t));
-    return palette_hash;
+    return hash_data(palette_bytes, count * sizeof(uint32_t));
 }
 
-TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
+uint64_t hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
     R_PROFILE(__func__);
     const SceGxmTextureFormat format = gxm::get_format(&texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
     const size_t size = texture_size(texture);
     const Ptr<const void> data(texture.data_addr << 2);
-    TextureCacheHash data_hash = 0;
+    uint64_t data_hash = 0;
 
     if (data.address()) {
         data_hash = hash_data(data.get(mem), size);
@@ -68,23 +65,6 @@ TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState 
     default:
         return data_hash;
     }
-}
-
-static size_t find_lru(const TextureCacheState &cache, TextureCacheTimestamp current_time) {
-    R_PROFILE(__func__);
-
-    uint64_t oldest_age = current_time - cache.infoes.front().timestamp;
-    size_t oldest_index = 0;
-
-    for (size_t index = 1; index < cache.infoes.size(); ++index) {
-        const uint64_t age = current_time - cache.infoes[index].timestamp;
-        if (age > oldest_age) {
-            oldest_age = age;
-            oldest_index = index;
-        }
-    }
-
-    return oldest_index;
 }
 
 bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt, bool is_vulkan) {
@@ -115,320 +95,6 @@ static bool is_block_compressed_format(SceGxmTextureBaseFormat fmt) {
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP);
 }
 
-/**
- * \brief Try to resolve Z-order of block compressed texture
- *
- * \param fmt    Texture base format.
- * \param dest   Destination texture data. Size must be sufficient enough of align(width, 4) * align(height,4) * 4 (bytes).
- * \param data   Source data to solve.
- * \param width  Texture width.
- * \param height Texture height.
- *
- * \return Void.
- */
-static void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height) {
-    int bc_type = 0;
-
-    switch (fmt) {
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-        bc_type = 1;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-        bc_type = 2;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-        bc_type = 3;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
-        bc_type = 4;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
-        bc_type = 5;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
-        bc_type = 6;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
-        bc_type = 7;
-        break;
-
-    default:
-        LOG_ERROR("Unknown compressed format {}", log_hex(fmt));
-        break;
-    }
-
-    if (bc_type)
-        renderer::texture::resolve_z_order_compressed_image(width, height, reinterpret_cast<const std::uint8_t *>(data),
-            reinterpret_cast<std::uint8_t *>(dest), bc_type);
-}
-
-/**
- * \brief Try to decompress texture to 32-bit RGBA.
- *
- * \param fmt    Texture base format.
- * \param dest   Destination texture data. Size must be sufficient enough of align(width, 4) * align(height,4) * 4 (bytes).
- * \param data   Source data to decompress.
- * \param width  Texture width.
- * \param height Texture height.
- *
- * \return Size of source taken.
- */
-static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height) {
-    int bc_type = 0;
-
-    switch (fmt) {
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-        bc_type = 1;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-        bc_type = 2;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-        bc_type = 3;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
-        bc_type = 4;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
-        bc_type = 5;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
-        bc_type = 6;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
-        bc_type = 7;
-        break;
-
-    default:
-        break;
-    }
-
-    if (bc_type) {
-        decompress_bc_swizz_image(width, height, reinterpret_cast<const std::uint8_t *>(data),
-            reinterpret_cast<std::uint32_t *>(dest), bc_type);
-        return (((width + 3) / 4) * ((height + 3) / 4) * ((bc_type != 1 && bc_type != 4 && bc_type != 5) ? 16 : 8));
-    } else if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) && (fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)) {
-        pvr::PVRTDecompressPVRTC(data, (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP), width, height,
-            (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP), reinterpret_cast<uint8_t *>(dest));
-
-        const bool is_2bpp = (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP);
-
-        const std::uint32_t num_xword = (width + (is_2bpp ? 7 : 3)) / (is_2bpp ? 8 : 4);
-        const std::uint32_t num_yword = (height + 3) / 4;
-
-        return (size_t)num_xword * (size_t)num_yword * 8;
-    } else {
-        LOG_ERROR("Trying to decompress and unswizzle unknown format {}", log_hex(fmt));
-    }
-
-    return 0;
-}
-
-/**
- * \brief Try to decompress texture to 16-bit RGB floating point color.
- *
- * \param fmt    Texture base format.
- * \param dest   Destination texture data. Size must be sufficient enough of align(width, 4) * height * 4 (bytes).
- * \param data   Source data to decompress.
- * \param width  Texture width.
- * \param height Texture height.
- *
- * \return Void.
- */
-static void decompress_packed_float_e5m9m9m9(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const uint32_t width, const uint32_t height) {
-    const uint32_t *in = reinterpret_cast<const uint32_t *>(data);
-    uint16_t *out = reinterpret_cast<uint16_t *>(dest);
-
-    for (uint32_t in_offset = 0, out_offset = 0; in_offset < width * height; ++in_offset) {
-        const uint32_t packed = in[in_offset];
-        const uint16_t exponent = static_cast<uint16_t>(packed >> 17);
-
-        out[out_offset++] = exponent | ((packed & (0x1FF << 18)) >> 17);
-        out[out_offset++] = exponent | ((packed & (0x1FF << 9)) >> 8);
-        out[out_offset++] = exponent | ((packed & 0x1FF) << 1);
-    }
-}
-
-static void convert_x8u24_to_u24x8(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels) {
-    auto dst = static_cast<uint32_t *>(dest);
-    auto src = static_cast<const uint32_t *>(data);
-
-    for (uint32_t row = 0; row < height; ++row) {
-        for (uint32_t col = 0; col < width; ++col) {
-            const uint32_t src_value = src[col];
-            const uint32_t value = (src_value << 8) | (src_value >> 24);
-            *dst++ = value;
-        }
-
-        src += row_length_in_pixels;
-    }
-}
-
-// Convert x8u24 (or u24x8) format to f32 (only keep the u24 part)
-// Do not use a depth-stencil format as x8d24 is not supported on all GPUs for Vulkan
-static void convert_x8u24_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels, const SceGxmTextureFormat format) {
-    const SceGxmTextureSwizzle2ModeAlt swizzle = static_cast<SceGxmTextureSwizzle2ModeAlt>(format & SCE_GXM_TEXTURE_SWIZZLE_MASK);
-    // is the depth in the upper or lower 24 bits of the data?
-    int shift_amount = (swizzle == SCE_GXM_TEXTURE_SWIZZLE2_DS) ? 8 : 0;
-    auto dst = static_cast<float *>(dest);
-    auto src = static_cast<const uint32_t *>(data);
-
-    for (uint32_t row = 0; row < height; ++row) {
-        for (uint32_t col = 0; col < width; ++col) {
-            const uint32_t src_value = src[col];
-            const uint32_t d24 = (src_value >> shift_amount) & ((1U << 24) - 1);
-            *dst++ = static_cast<float>(d24) / ((1U << 24) - 1);
-        }
-
-        src += row_length_in_pixels;
-    }
-}
-
-static void convert_U8U3U3U2_to_U8U8U8U8(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels) {
-    auto dst = static_cast<uint32_t *>(dest);
-    auto src = static_cast<const uint16_t *>(data);
-
-    for (uint32_t row = 0; row < height; ++row) {
-        for (uint32_t col = 0; col < width; ++col) {
-            const uint32_t src_value = src[col];
-
-            const uint8_t alpha = (src_value & 0xFF00) >> 8;
-            const uint8_t red = (src_value & 0x00E0) >> 5;
-            const uint8_t green = (src_value & 0x001C) >> 2;
-            const uint8_t blue = (src_value & 0x0003);
-
-            const uint32_t value = (alpha << 24) | (blue << 22) | (blue << 20) | (blue << 18) | (blue << 16) | (green << 13) | (green << 10) | ((green & 0b110) << 7) | (red << 5) | (red << 2) | (red >> 1);
-
-            *dst = value;
-            dst++;
-        }
-
-        src += row_length_in_pixels;
-    }
-}
-
-static void convert_f32m_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels) {
-    auto dst = static_cast<uint32_t *>(dest);
-    auto src = static_cast<const uint32_t *>(data);
-
-    for (uint32_t row = 0; row < height; ++row) {
-        for (uint32_t col = 0; col < width; ++col) {
-            const uint32_t src_value = src[col];
-            const uint32_t value = src_value & 0x7FFFFFFF;
-            *dst++ = value;
-        }
-
-        src += row_length_in_pixels;
-    }
-}
-
-static uint16_t f10_to_f16(const uint16_t f10) {
-    // f16 has a 10 bit mantissa and a 5 bit exponent
-    // f10 has a 5 bit mantissa and a 5 bit exponent
-    // so we just need to put the exponent in the right location, add zeros to the mantissa
-    // and it should work
-    const uint16_t exponent = (f10 >> 5) & 0b11111;
-    const uint16_t mantissa = f10 & 0b11111;
-    const uint16_t f16 = (exponent << 10) | (mantissa << 5);
-    return f16;
-}
-
-static void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels, const SceGxmTextureFormat format) {
-    auto dst = static_cast<std::array<uint16_t, 4> *>(dest);
-    auto src = static_cast<const uint32_t *>(data);
-
-    // are the 2 alpha bits in the upper or lower bits of the pixel ?
-    bool is_alpha_upper = (format == SCE_GXM_TEXTURE_FORMAT_U2F10F10F10_ABGR
-        || format == SCE_GXM_TEXTURE_FORMAT_U2F10F10F10_ARGB
-        || format == SCE_GXM_TEXTURE_FORMAT_X2F10F10F10_1BGR
-        || format == SCE_GXM_TEXTURE_FORMAT_X2F10F10F10_1RGB);
-
-    for (uint32_t row = 0; row < height; ++row) {
-        for (uint32_t col = 0; col < width; ++col) {
-            uint32_t src_value = src[col];
-            int dst_idx;
-            // first get the 2 alpha bits
-            if (is_alpha_upper) {
-                (*dst)[3] = (src_value >> 30) / 3.0f;
-                dst_idx = 0;
-            } else {
-                (*dst)[0] = (src_value & 0b11) / 3.0f;
-                dst_idx = 1;
-                src_value >>= 2;
-            }
-
-            // decode the 3 rgb components
-            for (int i = 0; i < 3; i++) {
-                const uint16_t comp = src_value & ((1 << 10) - 1);
-                src_value >>= 10;
-                (*dst)[dst_idx++] = f10_to_f16(comp);
-            }
-            dst++;
-        }
-
-        src += row_length_in_pixels;
-    }
-}
-
-/**
- * \brief Remove arbitraty blocks from block compressed texture
- *
- * \param fmt    Texture base format.
- * \param dest   Destination texture data. Size must be sufficient enough of ((width + 3) / 4) * ((height + 3) / 4) * 8 or 16 (bytes) depending on texture base format.
- * \param data   Source data to decompress.
- * \param width  Texture width.
- * \param height Texture height.
- *
- * \return Void.
- */
-static void remove_compressed_arbitrary_blocks(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height) {
-    uint32_t w = (width + 3) / 4;
-    uint32_t h = (height + 3) / 4;
-
-    uint32_t a_w = next_power_of_two(w);
-
-    std::size_t block_size;
-    switch (fmt) {
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
-        block_size = 8;
-        break;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
-        block_size = 16;
-        break;
-    default:
-        return;
-    }
-
-    w *= block_size;
-    a_w *= block_size;
-
-    const std::uint8_t *src = reinterpret_cast<const std::uint8_t *>(data);
-    std::uint8_t *dst = reinterpret_cast<std::uint8_t *>(dest);
-
-    for (std::size_t j = h; j; j--) {
-        memcpy(dst, src, w);
-        src += a_w;
-        dst += w;
-    }
-}
-
 uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uint16_t height, const SceGxmTextureBaseFormat base_format) {
     uint16_t max_mip_text;
 
@@ -442,11 +108,35 @@ uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uin
 
     return std::min(true_mip, max_mip_text);
 }
+} // namespace texture
 
-void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
+using namespace texture;
+
+bool TextureCache::init(const bool hashless_texture_cache) {
+    use_protect = hashless_texture_cache;
+
+    // initialize the doubly linked list
+    for (int i = 0; i < TextureCacheSize; i++) {
+        infoes[i].prev = &infoes[i - 1];
+        infoes[i].next = &infoes[i + 1];
+    }
+    // fix the first and last elements
+    infoes[0].prev = &infoes[TextureCacheSize - 1];
+    infoes[TextureCacheSize - 1].next = &infoes[0];
+
+    // set the list head to any element;
+    info_list_head = &infoes[0];
+
+    // prevent stutter caused by the hashmap resizing
+    info_lookup.reserve(TextureCacheSize);
+
+    return true;
+}
+
+void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &mem) {
     R_PROFILE(__func__);
 
-    bool is_vulkan = (*cache.backend == Backend::Vulkan);
+    bool is_vulkan = (backend == renderer::Backend::Vulkan);
 
     const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
@@ -475,13 +165,13 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
     const void *pixels = nullptr;
 
     size_t pixels_per_stride = 0;
-    size_t bpp = renderer::texture::bits_per_pixel(base_format);
+    size_t bpp = bits_per_pixel(base_format);
     size_t bytes_per_pixel = (bpp + 7) >> 3;
 
     const auto texture_type = gxm_texture.texture_type();
     const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
     const bool need_unswizzle = is_swizzled && block_compressed;
-    const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !block_compressed && !can_texture_be_unswizzled_without_decode(base_format, is_vulkan);
+    const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !block_compressed && !texture::can_texture_be_unswizzled_without_decode(base_format, is_vulkan);
 
     uint32_t mip_index = 0;
     uint32_t total_mip = get_upload_mip(gxm_texture.true_mip_count(), width, height, base_format);
@@ -511,7 +201,7 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
         upload_type = 1;
         face_total_count = 6;
 
-        const bool twok_align_cond1 = ((width >= 32) && (height >= 32) && ((bytes_per_pixel == 1) || (is_block_compressed_format(base_format))));
+        const bool twok_align_cond1 = ((width >= 32) && (height >= 32) && ((bytes_per_pixel == 1) || (texture::is_block_compressed_format(base_format))));
         const bool twok_align_cond2 = ((width >= 16) && (height >= 16) && ((bytes_per_pixel == 2) || (bytes_per_pixel == 4)));
         const bool twok_align_cond3 = ((width >= 8) && (height >= 8) && (bytes_per_pixel == 8));
 
@@ -722,7 +412,7 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
             source_size = (pixels_per_stride * height * ((bpp + 7) >> 3));
         }
 
-        cache.upload_texture_callback(upload_format, width, height, mip_index, pixels, upload_type, block_compressed, pixels_per_stride);
+        upload_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, block_compressed, pixels_per_stride);
 
         mip_index++;
         org_width /= 2;
@@ -748,7 +438,7 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
     }
 }
 
-void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, MemState &mem) {
+void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemState &mem) {
     R_PROFILE(__func__);
 
     size_t index = 0;
@@ -758,12 +448,11 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
 
     // Try to find GXM texture in cache.
     int cached_gxm_texture_index = -1;
-    for (size_t a = 0; a < cache.used; a++) {
-        if (memcmp(&cache.infoes[a].texture, &gxm_texture, sizeof(SceGxmTexture)) == 0) {
-            cached_gxm_texture_index = a;
-            break;
-        }
-    }
+    auto *gxm_texture_content = reinterpret_cast<const TextureGxmDataRepr *>(&gxm_texture);
+    auto gxm_it = info_lookup.find(*gxm_texture_content);
+    if (gxm_it != info_lookup.end())
+        // we found the texture in the cache
+        cached_gxm_texture_index = static_cast<int>(gxm_it->second - infoes.data());
 
     Address range_protect_begin = 0;
     Address range_protect_end = 0;
@@ -773,7 +462,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     // (for example, uniform buffer value and texture data got mixed, so page faults are triggered too many, it's not always good).
     // This works under the assumption that once this big enough texture decided to modify. It will have to modify either all of its data,
     // or replace with an entire new texture.
-    if (cache.use_protect && size >= mem.page_size * 4) {
+    if (use_protect && size >= mem.page_size * 4) {
         range_protect_begin = align(gxm_texture.data_addr << 2, mem.page_size);
         range_protect_end = align_down((gxm_texture.data_addr << 2) + size, mem.page_size);
 
@@ -785,19 +474,20 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     TextureCacheInfo *info;
     if (cached_gxm_texture_index == -1) {
         // Texture not found in cache.
-        if (cache.used < TextureCacheSize) {
-            // Cache is not full. Add texture to cache.
-            index = cache.used;
-            ++cache.used;
-        } else {
-            // Cache is full. Find least recently used texture.
-            index = find_lru(cache, cache.timestamp);
-            LOG_DEBUG("Evicting texture {} (t = {}) from cache. Current t = {}.", index, cache.infoes[index].timestamp, cache.timestamp);
+        // get the least recently used texture, which info_list_head points to
+        index = static_cast<int>(info_list_head - infoes.data());
+        info = &infoes[index];
+        if (info->timestamp > 0) {
+            // Cache is full.
+            LOG_DEBUG("Evicting texture {} (t = {}) from cache. Current t = {}.", index, info->timestamp, timestamp);
+            auto *previous_gxm_texture = reinterpret_cast<const TextureGxmDataRepr *>(&info->texture);
+            info_lookup.erase(*previous_gxm_texture);
         }
+        info_lookup[*gxm_texture_content] = info;
+
         configure = true;
         upload = true;
-        cache.infoes[index] = TextureCacheInfo(gxm_texture);
-        info = &cache.infoes[index];
+        info->texture = gxm_texture;
         info->use_hash = should_use_hash;
         if (info->use_hash) {
             info->hash = hash_texture_data(gxm_texture, mem);
@@ -805,10 +495,10 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     } else {
         // Texture is cached.
         index = cached_gxm_texture_index;
-        info = &cache.infoes[index];
+        info = &infoes[index];
         configure = false;
         if (info->use_hash) {
-            const TextureCacheHash hash = hash_texture_data(gxm_texture, mem);
+            const uint64_t hash = hash_texture_data(gxm_texture, mem);
             upload = info->hash != hash;
             info->hash = hash;
         } else {
@@ -820,21 +510,13 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         upload = false;
     }
 
-// Fix memory access error in the condition check for texture cache method
-// (hashed vs hashless) in Clang compilers due to compiler optimizations
-#ifdef __clang__
-    if (!info->use_hash) {
-        std::cout << "";
-    }
-#endif
-
-    cache.select_callback(index, &gxm_texture);
+    select(index, gxm_texture);
 
     if (configure) {
-        cache.configure_texture_callback(cache, &gxm_texture);
+        configure_texture(gxm_texture);
     }
     if (upload) {
-        upload_bound_texture(cache, gxm_texture, mem);
+        upload_texture(gxm_texture, mem);
         if (!info->use_hash) {
             info->dirty = false;
             add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MemPerm::ReadOnly, [info, gxm_texture](Address, bool) {
@@ -845,11 +527,24 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
                 return true;
             });
         }
-        cache.upload_done_callback();
+        upload_done();
     }
 
-    info->timestamp = cache.timestamp++;
+    info->timestamp = timestamp++;
+    // remove the texture from its current position and insert it at the end of the circular list
+    // so the circular list keeps its lru order
+
+    // first removal (update info_list_head if necessary)
+    if (info_list_head == info)
+        info_list_head = info->next;
+    info->next->prev = info->prev;
+    info->prev->next = info->next;
+
+    // then add it at the end
+    info_list_head->prev->next = info;
+    info->prev = info_list_head->prev;
+    info_list_head->prev = info;
+    info->next = info_list_head;
 }
 
-} // namespace texture
 } // namespace renderer

@@ -613,8 +613,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 #endif
 
     pipeline_cache.init();
-    texture_cache.backend = &current_backend;
-    texture::init(texture_cache, false);
+    texture_cache.init(false);
 
     return true;
 }

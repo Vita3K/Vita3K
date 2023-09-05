@@ -53,29 +53,6 @@ GLContext::GLContext()
     std::memset(&previous_frag_info, 0, sizeof(shader::RenderFragUniformBlock));
 }
 
-namespace texture {
-bool init(GLTextureCacheState &cache, const bool hashless_texture_cache) {
-    cache.select_callback = [&](const std::size_t index, const void *texture) {
-        const SceGxmTexture *texture_casted = reinterpret_cast<const SceGxmTexture *>(texture);
-
-        const GLuint gl_texture = cache.textures[index];
-        glBindTexture(get_gl_texture_type(*texture_casted), gl_texture);
-    };
-
-    cache.configure_texture_callback = [](const renderer::TextureCacheState &text_cache, const void *texture) {
-        configure_bound_texture(text_cache, *reinterpret_cast<const SceGxmTexture *>(texture));
-    };
-
-    cache.upload_texture_callback = upload_bound_texture;
-
-    cache.upload_done_callback = []() {};
-
-    cache.use_protect = hashless_texture_cache;
-
-    return cache.textures.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
-}
-} // namespace texture
-
 static GLenum translate_blend_func(SceGxmBlendFunc src) {
     R_PROFILE(__func__);
 
@@ -276,8 +253,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
 }
 
 bool GLState::init(const char *base_path, const bool hashless_texture_cache) {
-    texture_cache.backend = &current_backend;
-    if (!texture::init(texture_cache, hashless_texture_cache)) {
+    if (!texture_cache.init(hashless_texture_cache)) {
         LOG_ERROR("Failed to initialize texture cache!");
         return false;
     }

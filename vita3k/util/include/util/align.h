@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <bit>
 #include <cstdint>
 #include <type_traits>
 
@@ -30,4 +31,7 @@ constexpr T align_down(const T &value, std::uint64_t align) {
     return static_cast<T>(value & ~(align - 1));
 }
 
-std::uint32_t next_power_of_two(std::uint32_t num);
+template <class T>
+constexpr T next_power_of_two(T num) {
+    return std::bit_ceil(num);
+}
