@@ -237,6 +237,7 @@ Code d'erreur: {}</an_error_occurred>
 		<num>Num</num>
 		<not_connected>Aucun contrôleur compatible n'est connecté.
 Connecter un contrôleur compatible avec SDL2.</not_connected>
+		<motion_support>La manette de jeu prend en charge la détection de mouvements.</motion_support>
 	</controllers>
 
 	<dialog>
