@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <renderer/texture_cache_state.h>
+#include <renderer/texture_cache.h>
 #include <renderer/types.h>
 
 #include <threads/queue.h>
@@ -48,7 +48,7 @@ struct TextureCacheEntry {
     uint32_t memory_needed;
 };
 
-struct VKTextureCacheState : public renderer::TextureCacheState {
+struct VKTextureCache : public TextureCache {
     VKState &state;
 
     TextureStagingBuffer staging_buffers[NB_TEXTURE_STAGING_BUFFERS];
@@ -63,9 +63,15 @@ struct VKTextureCacheState : public renderer::TextureCacheState {
     vk::CommandBuffer cmd_buffer = nullptr;
     bool is_texture_transfer_ready = false;
 
-    VKTextureCacheState(VKState &state);
+    VKTextureCache(VKState &state);
     // get an available staging buffer, wait for one if all are busy
     void prepare_staging_buffer(bool is_configure = false);
+
+    bool init(const bool hashless_texture_cache) override;
+    void select(size_t index, const SceGxmTexture &texture) override;
+    void configure_texture(const SceGxmTexture &texture) override;
+    void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride) override;
+    void upload_done() override;
 };
 
 struct FrameObject {

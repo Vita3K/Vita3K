@@ -20,7 +20,6 @@
 #include <renderer/gl/screen_render.h>
 #include <renderer/gl/surface_cache.h>
 #include <renderer/state.h>
-#include <renderer/texture_cache_state.h>
 #include <renderer/types.h>
 
 #include "types.h"
@@ -40,7 +39,7 @@ struct GLState : public renderer::State {
     ShaderCache vertex_shader_cache;
     ProgramCache program_cache;
 
-    GLTextureCacheState texture_cache;
+    GLTextureCache texture_cache;
     GLSurfaceCache surface_cache;
 
     ScreenRenderer screen_renderer;

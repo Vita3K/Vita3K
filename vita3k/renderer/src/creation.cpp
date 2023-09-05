@@ -19,11 +19,10 @@
 #include <renderer/commands.h>
 #include <renderer/driver_functions.h>
 #include <renderer/state.h>
-#include <renderer/texture_cache_state.h>
+#include <renderer/texture_cache.h>
 #include <renderer/types.h>
 
 #include <renderer/gl/functions.h>
-#include <renderer/texture_cache_state.h>
 #include <renderer/vulkan/functions.h>
 #include <renderer/vulkan/state.h>
 

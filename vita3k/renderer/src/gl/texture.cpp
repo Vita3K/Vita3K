@@ -32,20 +32,22 @@
 static constexpr bool log_parameter = false;
 
 namespace renderer::gl {
-namespace texture {
-GLenum get_gl_texture_type(const SceGxmTexture &gxm_texture) {
-    const std::uint32_t type = gxm_texture.texture_type();
-    return ((type == SCE_GXM_TEXTURE_CUBE) || (type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
+
+using namespace texture;
+
+bool GLTextureCache::init(const bool hashless_texture_cache) {
+    TextureCache::init(hashless_texture_cache);
+    backend = Backend::OpenGL;
+
+    return textures.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
 }
 
-void bind_texture(GLTextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
-    R_PROFILE(__func__);
-    glBindTexture(get_gl_texture_type(gxm_texture), cache.textures[0]);
-    configure_bound_texture(cache, gxm_texture);
-    renderer::texture::upload_bound_texture(cache, gxm_texture, mem);
+void GLTextureCache::select(size_t index, const SceGxmTexture &texture) {
+    const GLuint gl_texture = textures[index];
+    glBindTexture(get_gl_texture_type(texture), gl_texture);
 }
 
-void configure_bound_texture(const renderer::TextureCacheState &state, const SceGxmTexture &gxm_texture) {
+void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);
@@ -81,10 +83,10 @@ void configure_bound_texture(const renderer::TextureCacheState &state, const Sce
 
     // anisotropic filtering
     // when using nearest filter, disable anisotropy as the pixels can contain data other than color
-    if (state.anisotropic_filtering > 1 && (min_filter != GL_NEAREST || mag_filter != GL_NEAREST))
+    if (anisotropic_filtering > 1 && (min_filter != GL_NEAREST || mag_filter != GL_NEAREST))
         // we don't need to check for the existence of this extension because it is considered an ubiquitous extension
         // for now we apply anisotropic filtering to all textures
-        glTexParameterf(texture_bind_type, GL_TEXTURE_MAX_ANISOTROPY_EXT, static_cast<float>(state.anisotropic_filtering));
+        glTexParameterf(texture_bind_type, GL_TEXTURE_MAX_ANISOTROPY_EXT, static_cast<float>(anisotropic_filtering));
 
     const GLenum internal_format = translate_internal_format(base_format);
     const GLenum format = translate_format(base_format);
@@ -140,7 +142,7 @@ void configure_bound_texture(const renderer::TextureCacheState &state, const Sce
     }
 }
 
-void upload_bound_texture(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride) {
+void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride) {
     R_PROFILE(__func__);
 
     GLenum upload_type = GL_TEXTURE_2D;
@@ -165,15 +167,30 @@ void upload_bound_texture(SceGxmTextureBaseFormat base_format, uint32_t width, u
     }
 }
 
+namespace texture {
+
+GLenum get_gl_texture_type(const SceGxmTexture &gxm_texture) {
+    const std::uint32_t type = gxm_texture.texture_type();
+    return ((type == SCE_GXM_TEXTURE_CUBE) || (type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
+}
+
+void bind_texture_without_cache(GLTextureCache &cache, const SceGxmTexture &gxm_texture, MemState &mem) {
+    R_PROFILE(__func__);
+    glBindTexture(get_gl_texture_type(gxm_texture), cache.textures[0]);
+    cache.select(0, gxm_texture);
+    cache.configure_texture(gxm_texture);
+    cache.upload_texture(gxm_texture, mem);
+}
+
 // Dumps bound texture to a file
 void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::string &parameter_name, const std::string &base_path, const std::string &title_id, Sha256Hash program_hash) {
     static uint32_t g_tex_index = 0;
     static std::vector<uint8_t> g_pixels; // re-use the same vector instead of allocating one every time
-    static std::map<TextureCacheHash, uint32_t> g_dumped_hashes;
+    static std::map<uint64_t, uint64_t> g_dumped_hashes;
 
     int tex_index = g_tex_index;
 
-    const TextureCacheHash hash = renderer::texture::hash_texture_data(gxm_texture, mem);
+    const uint64_t hash = renderer::texture::hash_texture_data(gxm_texture, mem);
 
     if (g_dumped_hashes.find(hash) != g_dumped_hashes.end()) {
         if (log_parameter && parameter_name != "") {

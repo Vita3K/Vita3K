@@ -23,7 +23,7 @@
 #include <renderer/types.h>
 
 #include <renderer/gl/ring_buffer.h>
-#include <renderer/texture_cache_state.h>
+#include <renderer/texture_cache.h>
 #include <shader/usse_program_analyzer.h>
 
 #include <map>
@@ -53,8 +53,14 @@ typedef std::map<ProgramHashes, SharedGLObject> ProgramCache;
 typedef std::vector<ExcludedUniform> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
 typedef std::map<GLuint, GLenum> UniformTypes;
 
-struct GLTextureCacheState : public renderer::TextureCacheState {
+class GLTextureCache : public TextureCache {
+public:
     GLObjectArray<TextureCacheSize> textures;
+
+    bool init(const bool hashless_texture_cache) override;
+    void select(size_t index, const SceGxmTexture &texture) override;
+    void configure_texture(const SceGxmTexture &texture) override;
+    void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride) override;
 };
 
 struct GLRenderTarget;

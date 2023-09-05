@@ -398,9 +398,9 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         }
     } else {
         if (config.texture_cache) {
-            renderer::texture::cache_and_bind_texture(state.texture_cache, texture, mem);
+            state.texture_cache.cache_and_bind_texture(texture, mem);
         } else {
-            texture::bind_texture(state.texture_cache, texture, mem);
+            texture::bind_texture_without_cache(state.texture_cache, texture, mem);
         }
     }
 
