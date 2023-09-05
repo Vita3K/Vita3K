@@ -720,8 +720,8 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             if (ImGui::GetIO().WantTextInput)
                 continue;
 
-            for (const auto &binding : controller_bindings_ext) {
-                if (emuenv.cfg.controller_binds[event.cbutton.button] == binding.controller) { // use the SDL_ControllerButton as an index into binds config
+            for (const auto &binding : get_controller_bindings_ext(emuenv)) {
+                if (event.cbutton.button == binding.controller) {
                     if (gui.vita_area.user_management)
                         gui::browse_users_management(gui, emuenv, binding.button);
                     else if (gui.vita_area.app_close)
@@ -735,32 +735,33 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     else if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
                         browse_common_dialog(binding.button);
                     }
+
+                    switch (binding.button) {
+                    case SCE_CTRL_CIRCLE:
+                    case SCE_CTRL_CROSS:
+                        if (gui.vita_area.start_screen) {
+                            gui.vita_area.start_screen = false;
+                            gui.vita_area.home_screen = true;
+                            if (emuenv.cfg.show_info_bar)
+                                gui.vita_area.information_bar = true;
+                        }
+
+                        break;
+
+                    case SCE_CTRL_PSBUTTON:
+                        if (allow_switch_state)
+                            switch_live_area_state(emuenv, gui);
+                        else if (!gui::get_sys_apps_state(gui))
+                            gui::close_system_app(gui, emuenv);
+                        break;
+
+                    default: break;
+                    }
+
                     break;
                 }
             }
-
-            switch (emuenv.cfg.controller_binds[event.cbutton.button]) {
-            case SDL_CONTROLLER_BUTTON_A:
-            case SDL_CONTROLLER_BUTTON_B:
-                if (gui.vita_area.start_screen) {
-                    gui.vita_area.start_screen = false;
-                    gui.vita_area.home_screen = true;
-                    if (emuenv.cfg.show_info_bar)
-                        gui.vita_area.information_bar = true;
-                }
-
-                break;
-
-            case SDL_CONTROLLER_BUTTON_GUIDE:
-                if (allow_switch_state)
-                    switch_live_area_state(emuenv, gui);
-                else if (!gui::get_sys_apps_state(gui))
-                    gui::close_system_app(gui, emuenv);
-                break;
-
-            default: break;
-            }
-            break;
+        break;
 
         case SDL_CONTROLLERTOUCHPADDOWN:
         case SDL_CONTROLLERTOUCHPADMOTION:

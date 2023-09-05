@@ -149,7 +149,7 @@ enum PerfomanceOverleyPosition {
 // If you are going to implement a dynamic list in the YAML, add it here instead
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_VECTOR(code)                                                                             \
-    code(std::vector<short>, "controller-binds", std::vector<short>{}, controller_binds)               \
+    code(std::vector<short>, "controller-binds", std::vector<short>{}, controller_binds)                \
     code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)              \
     code(std::vector<uint64_t>, "ime-langs", std::vector<uint64_t>{4}, ime_langs)                       \
     code(std::vector<std::string>, "tracy-advanced-profiling-modules", std::vector<std::string>{}, tracy_advanced_profiling_modules)

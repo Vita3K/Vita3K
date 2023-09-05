@@ -30,21 +30,134 @@ namespace gui {
 bool rebinds_is_open = false;
 bool is_capturing_buttons = false;
 
-void add_bind_to_table(GuiState &gui, EmuEnvState &emuenv, const char *button_name, int pos) {
+void reset_controller_binding(EmuEnvState &emuenv) {
+    emuenv.cfg.controller_binds = {
+        SDL_CONTROLLER_BUTTON_A,
+        SDL_CONTROLLER_BUTTON_B,
+        SDL_CONTROLLER_BUTTON_X,
+        SDL_CONTROLLER_BUTTON_Y,
+        SDL_CONTROLLER_BUTTON_BACK,
+        SDL_CONTROLLER_BUTTON_GUIDE,
+        SDL_CONTROLLER_BUTTON_START,
+        SDL_CONTROLLER_BUTTON_LEFTSTICK,
+        SDL_CONTROLLER_BUTTON_RIGHTSTICK,
+        SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
+        SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
+        SDL_CONTROLLER_BUTTON_DPAD_UP,
+        SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+        SDL_CONTROLLER_BUTTON_DPAD_LEFT,
+        SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+    };
+    config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+}
+
+static void add_bind_to_table(GuiState &gui, EmuEnvState &emuenv, const SDL_GameControllerType type, const SDL_GameControllerButton btn) {
+    auto &controls = gui.lang.controls;
+    std::map<SDL_GameControllerButton, std::string> buttons_name = {
+        { SDL_CONTROLLER_BUTTON_BACK, controls["select_button"].c_str() },
+        { SDL_CONTROLLER_BUTTON_START, controls["start_button"].c_str() },
+        { SDL_CONTROLLER_BUTTON_LEFTSTICK, controls["l3_button"].c_str() },
+        { SDL_CONTROLLER_BUTTON_RIGHTSTICK, controls["r3_button"].c_str() },
+        { SDL_CONTROLLER_BUTTON_LEFTSHOULDER, controls["l1_button"].c_str() },
+        { SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, controls["r1_button"].c_str() },
+        { SDL_CONTROLLER_BUTTON_A, controls["cross_button"].c_str() },
+        { SDL_CONTROLLER_BUTTON_B, controls["circle_button"].c_str() },
+        { SDL_CONTROLLER_BUTTON_X, controls["square_button"].c_str() },
+        { SDL_CONTROLLER_BUTTON_Y, controls["triangle_button"].c_str() },
+        { SDL_CONTROLLER_BUTTON_DPAD_UP, controls["d_pad_up"].c_str() },
+        { SDL_CONTROLLER_BUTTON_DPAD_DOWN, controls["d_pad_down"].c_str() },
+        { SDL_CONTROLLER_BUTTON_DPAD_LEFT, controls["d_pad_left"].c_str() },
+        { SDL_CONTROLLER_BUTTON_DPAD_RIGHT, controls["d_pad_right"].c_str() },
+        { SDL_CONTROLLER_BUTTON_GUIDE, controls["ps_button"].c_str() },
+    };
+
+    const auto get_mapped_button_name = [type](const SDL_GameControllerButton btn) -> std::string {
+        switch (btn) {
+        case SDL_CONTROLLER_BUTTON_DPAD_UP: return "D-Pad Up";
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return "D-Pad Down";
+        case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return "D-Pad Left";
+        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return "D-Pad Right";
+        default: break;
+        }
+
+        switch (type) {
+        case SDL_CONTROLLER_TYPE_XBOX360:
+        case SDL_CONTROLLER_TYPE_XBOXONE:
+            switch (btn) {
+            case SDL_CONTROLLER_BUTTON_BACK: return "Back";
+            case SDL_CONTROLLER_BUTTON_START: return "Start";
+            case SDL_CONTROLLER_BUTTON_LEFTSTICK: return "LS";
+            case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return "RS";
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return "LB";
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return "RB";
+            case SDL_CONTROLLER_BUTTON_A: return "A";
+            case SDL_CONTROLLER_BUTTON_B: return "B";
+            case SDL_CONTROLLER_BUTTON_X: return "X";
+            case SDL_CONTROLLER_BUTTON_Y: return "Y";
+            case SDL_CONTROLLER_BUTTON_GUIDE: return "Guide";
+            default: break;
+            }
+            break;
+        case SDL_CONTROLLER_TYPE_PS3:
+        case SDL_CONTROLLER_TYPE_PS4:
+        case SDL_CONTROLLER_TYPE_PS5:
+            switch (btn) {
+            case SDL_CONTROLLER_BUTTON_BACK: return "Select";
+            case SDL_CONTROLLER_BUTTON_START: return "Start";
+            case SDL_CONTROLLER_BUTTON_LEFTSTICK: return "L3";
+            case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return "R3";
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return "L1";
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return "R1";
+            case SDL_CONTROLLER_BUTTON_A: return "Cross";
+            case SDL_CONTROLLER_BUTTON_B: return "Circle";
+            case SDL_CONTROLLER_BUTTON_X: return "Square";
+            case SDL_CONTROLLER_BUTTON_Y: return "Triangle";
+            case SDL_CONTROLLER_BUTTON_GUIDE: return "PS";
+            default: break;
+            }
+            break;
+        case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO:
+        case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT:
+        case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT:
+        case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR:
+            switch (btn) {
+            case SDL_CONTROLLER_BUTTON_BACK: return "-";
+            case SDL_CONTROLLER_BUTTON_START: return "+";
+            case SDL_CONTROLLER_BUTTON_LEFTSTICK: return "LS";
+            case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return "RS";
+            case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return "L";
+            case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return "R";
+            case SDL_CONTROLLER_BUTTON_A: return "B";
+            case SDL_CONTROLLER_BUTTON_B: return "A";
+            case SDL_CONTROLLER_BUTTON_X: return "Y";
+            case SDL_CONTROLLER_BUTTON_Y: return "X";
+            case SDL_CONTROLLER_BUTTON_GUIDE: return "Home";
+            default: break;
+            }
+            break;
+        default: break;
+        }
+
+        return std::to_string(btn);
+    };
+
+    ImGui::PushID(btn);
     ImGui::TableNextRow();
     ImGui::TableSetColumnIndex(0);
-    ImGui::Text("%s", button_name);
+    ImGui::Text("%s", buttons_name[btn].c_str());
     ImGui::TableSetColumnIndex(1);
-    std::string button_button_name = "Button " + std::to_string(emuenv.cfg.controller_binds[pos]) + "##" + std::to_string(pos);
-    if (ImGui::Button(button_button_name.c_str())) {
+    if (ImGui::Button(get_mapped_button_name(SDL_GameControllerButton(emuenv.cfg.controller_binds[btn])).c_str())) {
         is_capturing_buttons = true;
         while (is_capturing_buttons) {
             // query SDL for button events
             SDL_Event get_controller_events;
             while (SDL_PollEvent(&get_controller_events)) {
                 switch (get_controller_events.type) {
+                case SDL_KEYDOWN:
+                    is_capturing_buttons = false;
+                    break;
                 case SDL_CONTROLLERBUTTONDOWN:
-                    emuenv.cfg.controller_binds[pos] = get_controller_events.cbutton.button;
+                    emuenv.cfg.controller_binds[btn] = get_controller_events.cbutton.button;
                     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
                     is_capturing_buttons = false;
                     break;
@@ -52,24 +165,28 @@ void add_bind_to_table(GuiState &gui, EmuEnvState &emuenv, const char *button_na
             }
         }
     }
+    ImGui::PopID();
 }
 
 void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 WINDOW_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const auto CONTROLLERS_REBIND_SIZE = WINDOW_SIZE.x / 3.f;
+    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
 
-    auto &lang = gui.lang.controllers;
-
-    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::Begin(lang["title"].c_str(), &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     auto &ctrl = emuenv.ctrl;
+    auto &lang = gui.lang.controllers;
+    if (ctrl.controllers_num > 0)
+        ImGui::SetNextWindowSize(ImVec2(VIEWPORT_SIZE.x / 2.5f, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::Begin(lang["title"].c_str(), &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
     if (ctrl.controllers_num) {
         const auto connected_str = fmt::format(fmt::runtime(lang["connected"].c_str()), ctrl.controllers_num);
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", connected_str.c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        if (ImGui::BeginTable("main", 2)) {
+        if (ImGui::BeginTable("main", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV)) {
             ImGui::TableSetupColumn("num");
             ImGui::TableSetupColumn("name");
             ImGui::TableNextRow();
@@ -86,46 +203,87 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::Button(ctrl.controllers_name[i]))
                     rebinds_is_open = true;
                 if (rebinds_is_open) {
-                    float height = emuenv.viewport_size.y / emuenv.dpi_scale;
-                    if (ImGui::BeginMainMenuBar()) {
-                        height = height - ImGui::GetWindowHeight() * 2;
-                        ImGui::EndMainMenuBar();
-                    }
-                    ImGui::SetNextWindowSize(ImVec2(CONTROLLERS_REBIND_SIZE, WINDOW_SIZE.y / 1.5f), ImGuiCond_Always);
-                    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-                    ImGui::Begin(lang["Rebind Controls"].c_str(), &rebinds_is_open);
+                    ImGui::SetNextWindowSize(ImVec2(VIEWPORT_SIZE.x / 1.4f, 0.f), ImGuiCond_Always);
+                    ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                    ImGui::Begin(lang["rebind_controls"].c_str(), &rebinds_is_open, ImGuiWindowFlags_NoSavedSettings);
+                    ImGui::SetWindowFontScale(RES_SCALE.x);
+                    auto &controls = gui.lang.controls;
+                    const auto type = SDL_GameControllerTypeForIndex(i);
                     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", ctrl.controllers_name[i]);
                     ImGui::Separator();
-                    ImGui::Spacing();
-                    if (ImGui::BeginTable("rebindTable", 2)) {
-                        ImGui::TableSetupColumn("vitaControl");
-                        ImGui::TableSetupColumn("controllerControl");
+                    if (ImGui::BeginTable("rebindControl", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV)) {
+                        ImGui::TableSetupColumn("leftButtons");
+                        ImGui::TableSetupColumn("rightButtons");
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0);
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Control");
+
+                        if (ImGui::BeginTable("rebindLeft", 2, ImGuiTableFlags_NoSavedSettings)) {
+                            ImGui::TableSetupColumn("vitaControl");
+                            ImGui::TableSetupColumn("controllerControl");
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", controls["button"].c_str());
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", controls["mapped_button"].c_str());
+
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_DPAD_UP);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_BACK);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_GUIDE);
+
+                            ImGui::EndTable();
+                        }
+
                         ImGui::TableSetColumnIndex(1);
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Mapped Button");
+                        if (ImGui::BeginTable("rebindRight", 2, ImGuiTableFlags_NoSavedSettings)) {
+                            ImGui::TableSetupColumn("vitaControl");
+                            ImGui::TableSetupColumn("controllerControl");
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", controls["button"].c_str());
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", controls["mapped_button"].c_str());
 
-                        add_bind_to_table(gui, emuenv, "Cross", 0);
-                        add_bind_to_table(gui, emuenv, "Circle", 1);
-                        add_bind_to_table(gui, emuenv, "Square", 2);
-                        add_bind_to_table(gui, emuenv, "Triangle", 3);
-                        add_bind_to_table(gui, emuenv, "Select", 4);
-                        add_bind_to_table(gui, emuenv, "PS Button", 5);
-                        add_bind_to_table(gui, emuenv, "Start", 6);
-                        add_bind_to_table(gui, emuenv, "D-Pad Up", 7);
-                        add_bind_to_table(gui, emuenv, "D-Pad Down", 8);
-                        add_bind_to_table(gui, emuenv, "D-Pad Left", 9);
-                        add_bind_to_table(gui, emuenv, "D-Pad Right", 10);
-                        add_bind_to_table(gui, emuenv, "L1", 11);
-                        add_bind_to_table(gui, emuenv, "R1", 12);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_Y);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_A);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_X);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_B);
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_START);
 
+                            ImGui::EndTable();
+                        }
                         ImGui::EndTable();
                     }
-                    ImGui::Spacing();
+
                     ImGui::Separator();
                     ImGui::Spacing();
-                    ImGui::End();
+                    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", controls["ps_tv_mode"].c_str());
+                    if (ImGui::BeginTable("rebindExt", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV)) {
+                        ImGui::TableSetupColumn("leftButtons");
+                        ImGui::TableSetupColumn("rightButtons");
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        if (ImGui::BeginTable("PSTV_modeL", 2, ImGuiTableFlags_NoSavedSettings)) {
+                            ImGui::TableSetupColumn("button");
+                            ImGui::TableSetupColumn("mapped_button");
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_LEFTSTICK);
+                            ImGui::EndTable();
+                        }
+                        ImGui::TableSetColumnIndex(1);
+                        if (ImGui::BeginTable("PSTV_modeR", 2, ImGuiTableFlags_NoSavedSettings)) {
+                            ImGui::TableSetupColumn("button");
+                            ImGui::TableSetupColumn("mapped_button");
+                            add_bind_to_table(gui, emuenv, type, SDL_CONTROLLER_BUTTON_RIGHTSTICK);
+                            ImGui::EndTable();
+                        }
+                        ImGui::EndTable();
+
+                        ImGui::End();
+                    }
                 }
             }
             ImGui::EndTable();
@@ -135,8 +293,15 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     if (emuenv.ctrl.has_motion_support) {
         ImGui::Spacing();
+        ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["motion_support"].c_str());
+        ImGui::PopTextWrapPos();
     }
+
+    ImGui::Spacing();
+    if (ImGui::Button("Reset Controller Binding"))
+        reset_controller_binding(emuenv);
+
     ImGui::End();
 }
 

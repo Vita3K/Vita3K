@@ -98,6 +98,7 @@ bool init_vita3k_update(GuiState &gui);
 void pre_init(GuiState &gui, EmuEnvState &emuenv);
 void pre_load_app(GuiState &gui, EmuEnvState &emuenv, bool live_area, const std::string &app_path);
 void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
+void reset_controller_binding(EmuEnvState &emuenv);
 void save_apps_cache(GuiState &gui, EmuEnvState &emuenv);
 void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id);
 void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);

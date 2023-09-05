@@ -191,6 +191,9 @@ int main(int argc, char *argv[]) {
         app::error_dialog("Emulated environment initialization failed.", emuenv.window.get());
         return 1;
     }
+    
+    if (emuenv.cfg.controller_binds.empty() || (emuenv.cfg.controller_binds.size() != 15))
+        gui::reset_controller_binding(emuenv);
 
     init_libraries(emuenv);
 
