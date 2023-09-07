@@ -150,37 +150,6 @@ if(WIN32)
 	target_link_libraries(winsock INTERFACE WSOCK32 WS2_32 IPHLPAPI)
 endif()
 
-if(WIN32)
-	set(UNICORN_VER "4b52942b")
-
-	set(UNICORN_PREFIX "${CMAKE_BINARY_DIR}/external/unicorn")
-
-	if(NOT EXISTS "${UNICORN_PREFIX}")
-		message(STATUS "Downloading unicorn...")
-
-		file(DOWNLOAD
-			https://github.com/Vita3K/unicorn/releases/download/${UNICORN_VER}/vita3k-unicorn.zip
-			"${CMAKE_BINARY_DIR}/external/unicorn.zip" SHOW_PROGRESS)
-		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/unicorn.zip"
-			WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external")
-	endif()
-
-	message(STATUS "Using bundled binaries at ${UNICORN_PREFIX}")
-
-	set(LIBUNICORN_INCLUDE_DIR "${UNICORN_PREFIX}/include" CACHE PATH "Path to Unicorn headers" FORCE)
-	set(LIBUNICORN_LIBRARY "${UNICORN_PREFIX}/lib/unicorn.lib" CACHE PATH "Path to Unicorn library" FORCE)
-	set(UNICORN_DLL_DIR "${UNICORN_PREFIX}/lib" CACHE PATH "Path to unicorn.dll" FORCE)
-
-	add_library(unicorn INTERFACE)
-	target_link_libraries(unicorn INTERFACE "${LIBUNICORN_LIBRARY}")
-	target_include_directories(unicorn INTERFACE "${LIBUNICORN_INCLUDE_DIR}")
-else()
-	option(UNICORN_BUILD_SHARED "Build shared instead of static library" OFF)
-	set(UNICORN_ARCH "arm")
-	add_subdirectory(unicorn)
-	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/include")
-endif()
-
 set(DYNARMIC_TESTS OFF CACHE BOOL "")
 set(DYNARMIC_NO_BUNDLED_FMT ON CACHE BOOL "")
 set(DYNARMIC_FRONTENDS "A32" CACHE STRING "")
@@ -199,6 +168,10 @@ if(MSVC)
 		set_property(TARGET mcl PROPERTY COMPILE_OPTIONS ${MCL_COMPILE_OPTIONS})
 	endif()
 endif()
+
+set(UNICORN_ARCH "arm")
+add_subdirectory(unicorn EXCLUDE_FROM_ALL)
+set_property(TARGET unicorn PROPERTY FOLDER externals)
 
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")

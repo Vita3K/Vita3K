@@ -55,7 +55,7 @@ struct CPUInterface {
 
     virtual CPUContext save_context() = 0;
     virtual void load_context(CPUContext context) = 0;
-    virtual void invalidate_jit_cache(Address start, size_t length) {}
+    virtual void invalidate_jit_cache(Address start, size_t length) = 0;
 
     virtual bool is_thumb_mode() = 0;
     virtual int step() = 0;

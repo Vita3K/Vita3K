@@ -97,6 +97,7 @@ public:
 
     CPUContext save_context() override;
     void load_context(CPUContext context) override;
+    void invalidate_jit_cache(Address start, size_t length) override;
 
     bool hit_breakpoint() override;
     void trigger_breakpoint() override;
