@@ -386,6 +386,10 @@ void UnicornCPU::load_context(CPUContext ctx) {
     set_pc(ctx.thumb() ? ctx.get_pc() | 1 : ctx.get_pc());
 }
 
+void UnicornCPU::invalidate_jit_cache(Address start, size_t length) {
+    uc_ctl_remove_cache(uc.get(), start, start + length);
+}
+
 bool UnicornCPU::hit_breakpoint() {
     return did_break;
 }
