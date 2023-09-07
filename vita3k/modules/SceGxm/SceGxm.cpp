@@ -959,6 +959,9 @@ struct SceGxmContext {
     gxp::TextureInfo is_vert_texture_dirty;
     gxp::TextureInfo is_frag_texture_dirty;
 
+    bool was_vert_default_uniform_reserved = false;
+    bool was_frag_default_uniform_reserved = false;
+
     explicit SceGxmContext(std::mutex &callback_lock_)
         : callback_lock(callback_lock_) {
     }
@@ -2124,6 +2127,19 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
     }
 
     renderer::draw(*emuenv.renderer, context->renderer.get(), primType, indexType, indexData, indexCount, instanceCount);
+
+    // increase the ringbuffer position if a default vertex or fragment buffer was reserved, we know the new position will fit in the ringbuffer
+    if (context->was_vert_default_uniform_reserved) {
+        const size_t size = (size_t)vertex_program_gxp.default_uniform_buffer_count * 4;
+        context->state.vertex_ring_buffer_used += size;
+        context->was_vert_default_uniform_reserved = false;
+    }
+
+    if (context->was_frag_default_uniform_reserved) {
+        const size_t size = (size_t)fragment_program_gxp.default_uniform_buffer_count * 4;
+        context->state.fragment_ring_buffer_used += size;
+        context->was_frag_default_uniform_reserved = false;
+    }
 
     return 0;
 }
@@ -3329,7 +3345,17 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     const auto program = fragment_program->program.get(emuenv.mem);
 
     const size_t size = (size_t)program->default_uniform_buffer_count * 4;
+    // data for the ring buffer must be 4 bytes aligned
+    context->state.fragment_ring_buffer_used = align(context->state.fragment_ring_buffer_used, 4);
     const size_t next_used = context->state.fragment_ring_buffer_used + size;
+
+    if (size == 0) {
+        *uniformBuffer = Ptr<void>();
+        context->state.fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
+
+        return 0;
+    }
+
     if (next_used > context->state.fragment_ring_buffer_size) {
         if (context->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
             context->state.fragment_ring_buffer = gxmRunDeferredMemoryCallback(emuenv.kernel, emuenv.mem, emuenv.gxm.callback_lock, context->state.fragment_ring_buffer_size,
@@ -3340,13 +3366,11 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
             }
         }
 
-        *uniformBuffer = context->state.fragment_ring_buffer;
-        context->state.fragment_ring_buffer_used = size;
-    } else {
-        *uniformBuffer = context->state.fragment_ring_buffer.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
-        context->state.fragment_ring_buffer_used = next_used;
+        context->state.fragment_ring_buffer_used = 0;
     }
 
+    *uniformBuffer = context->state.fragment_ring_buffer.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
+    context->was_frag_default_uniform_reserved = true;
     context->state.fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
 
     return 0;
@@ -3366,7 +3390,16 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     const auto program = vertex_program->program.get(emuenv.mem);
 
     const size_t size = (size_t)program->default_uniform_buffer_count * 4;
+    // data for the ring buffer must be 4 bytes aligned
+    context->state.vertex_ring_buffer_used = align(context->state.vertex_ring_buffer_used, 4);
     const size_t next_used = context->state.vertex_ring_buffer_used + size;
+
+    if (size == 0) {
+        *uniformBuffer = Ptr<void>();
+        context->state.vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
+
+        return 0;
+    }
 
     if (next_used > context->state.vertex_ring_buffer_size) {
         if (context->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
@@ -3378,13 +3411,11 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
             }
         }
 
-        *uniformBuffer = context->state.vertex_ring_buffer;
-        context->state.vertex_ring_buffer_used = size;
-    } else {
-        *uniformBuffer = context->state.vertex_ring_buffer.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
-        context->state.vertex_ring_buffer_used = next_used;
+        context->state.vertex_ring_buffer_used = 0;
     }
 
+    *uniformBuffer = context->state.vertex_ring_buffer.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
+    context->was_vert_default_uniform_reserved = true;
     context->state.vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
 
     return 0;
