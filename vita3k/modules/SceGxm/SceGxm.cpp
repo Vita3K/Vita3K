@@ -1233,26 +1233,14 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     texture->gamma_mode = 0;
 
     if ((texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE)) {
-        // Find highest set bit of width and height. It's also the 2^? for width and height
-        static auto highest_set_bit = [](const std::uint32_t num) -> std::uint32_t {
-            for (std::int32_t i = 12; i >= 0; i--) {
-                if (num & (1 << i)) {
-                    return static_cast<std::uint32_t>(i);
-                }
-            }
-
-            return 0;
-        };
-
-        texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-        texture->height_base2 = highest_set_bit(height);
-        texture->width_base2 = highest_set_bit(width);
+        texture->height_base2 = std::bit_width(height) - 1;
+        texture->width_base2 = std::bit_width(width) - 1;
     } else {
-        texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
         texture->height = height - 1;
         texture->width = width - 1;
     }
 
+    texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
     texture->base_format = (tex_format & 0x1F000000) >> 24;
     texture->type = texture_type >> 29;
     texture->data_addr = data.address() >> 2;
@@ -1260,6 +1248,7 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     texture->normalize_mode = 1;
     texture->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
     texture->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+    texture->mip_filter = 0;
     texture->lod_min0 = 0;
     texture->lod_min1 = 0;
 
@@ -1523,6 +1512,14 @@ EXPORT(int, sceGxmBeginSceneEx, SceGxmContext *immediateContext, uint32_t flags,
     return CALL_EXPORT(sceGxmBeginScene, immediateContext, flags, renderTarget, validRegion, vertexSyncObject, fragmentSyncObject, colorSurface, loadDepthStencilSurface);
 }
 
+DECL_EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount);
+DECL_EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t byteStride);
+DECL_EXPORT(int, sceGxmTextureInitSwizzled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount);
+DECL_EXPORT(int, sceGxmTextureInitTiled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount);
+DECL_EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data);
+DECL_EXPORT(int, sceGxmTextureSetFormat, SceGxmTexture *texture, SceGxmTextureFormat texFormat);
+DECL_EXPORT(int, sceGxmTextureSetGammaMode, SceGxmTexture *texture, SceGxmTextureGammaMode gammaMode);
+
 EXPORT(void, sceGxmColorSurfaceGetClip, const SceGxmColorSurface *surface, uint32_t *xMin, uint32_t *yMin, uint32_t *xMax, uint32_t *yMax) {
     TRACY_FUNC(sceGxmColorSurfaceGetClip, surface, xMin, yMin, xMax, yMax);
     assert(surface);
@@ -1577,7 +1574,7 @@ EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorForm
     if (!surface || !data)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    if (width > 4096 || height > 4096)
+    if (width == 0 || width > 4096 || height == 0 || height > 4096)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     if (strideInPixels & 1)
@@ -1585,6 +1582,10 @@ EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorForm
 
     if ((strideInPixels < width) || ((data.address() & 3) != 0))
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+
+    // if the surface is swizzled, width and height must be power of 2
+    if (surfaceType == SCE_GXM_COLOR_SURFACE_SWIZZLED && ((width & (width - 1)) || (height & (height - 1))))
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
 
     memset(surface, 0, sizeof(SceGxmColorSurface));
     surface->disabled = 0;
@@ -1602,12 +1603,21 @@ EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorForm
         LOG_WARN("Unable to convert color surface type 0x{:X} to texture format enum for background texture of color surface!", static_cast<std::uint32_t>(colorFormat));
     }
 
-    // Create background object, for here don't return an error
-    if (init_texture_base(export_name, &surface->backgroundTex, surface->data, tex_format, surface->width, surface->height, 1, SCE_GXM_TEXTURE_LINEAR) != SCE_KERNEL_OK) {
-        LOG_WARN("Unable to initialize background object control texture!");
+    // initialize the background texture
+    switch (surfaceType) {
+    case SCE_GXM_COLOR_SURFACE_SWIZZLED:
+        return CALL_EXPORT(sceGxmTextureInitSwizzled, &surface->backgroundTex, surface->data, tex_format, width, height, 1);
+    case SCE_GXM_COLOR_SURFACE_TILED:
+        return CALL_EXPORT(sceGxmTextureInitTiled, &surface->backgroundTex, surface->data, tex_format, width, height, 1);
+    default:
+        // linear
+        if (align(width, 8) == strideInPixels) {
+            return CALL_EXPORT(sceGxmTextureInitLinear, &surface->backgroundTex, surface->data, tex_format, width, height, 1);
+        } else {
+            uint32_t stride_in_bytes = static_cast<uint32_t>(gxm::bits_per_pixel(gxm::get_base_format(colorFormat)) * strideInPixels / 8);
+            return CALL_EXPORT(sceGxmTextureInitLinearStrided, &surface->backgroundTex, surface->data, tex_format, width, height, stride_in_bytes);
+        }
     }
-
-    return 0;
 }
 
 EXPORT(int, sceGxmColorSurfaceInitDisabled, SceGxmColorSurface *surface) {
@@ -1615,8 +1625,11 @@ EXPORT(int, sceGxmColorSurfaceInitDisabled, SceGxmColorSurface *surface) {
     if (!surface)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
+    memset(surface, 0, sizeof(SceGxmColorSurface));
     surface->disabled = 1;
-    return 0;
+
+    // this matches what is being done on a real PS Vita
+    return CALL_EXPORT(sceGxmTextureInitLinear, &surface->backgroundTex, Ptr<void>(), SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_BGRA, 1, 1, 0);
 }
 
 EXPORT(bool, sceGxmColorSurfaceIsEnabled, const SceGxmColorSurface *surface) {
@@ -1642,9 +1655,7 @@ EXPORT(int, sceGxmColorSurfaceSetData, SceGxmColorSurface *surface, Ptr<void> da
     }
 
     surface->data = data;
-    surface->backgroundTex.data_addr = data.address() >> 2;
-
-    return 0;
+    return CALL_EXPORT(sceGxmTextureSetData, &surface->backgroundTex, data);
 }
 
 EXPORT(int, sceGxmColorSurfaceSetDitherMode, SceGxmColorSurface *surface, SceGxmColorSurfaceDitherMode ditherMode) {
@@ -1655,8 +1666,6 @@ EXPORT(int, sceGxmColorSurfaceSetDitherMode, SceGxmColorSurface *surface, SceGxm
 
     return UNIMPLEMENTED();
 }
-
-DECL_EXPORT(int, sceGxmTextureSetFormat, SceGxmTexture *tex, SceGxmTextureFormat format);
 
 EXPORT(int, sceGxmColorSurfaceSetFormat, SceGxmColorSurface *surface, SceGxmColorFormat format) {
     TRACY_FUNC(sceGxmColorSurfaceSetFormat, surface, format);
@@ -1681,8 +1690,19 @@ EXPORT(int, sceGxmColorSurfaceSetGammaMode, SceGxmColorSurface *surface, SceGxmC
     }
 
     surface->gamma = static_cast<uint32_t>(gammaMode) >> 12;
-
-    return 0;
+    SceGxmTextureGammaMode texture_gamma;
+    switch (gammaMode) {
+    case SCE_GXM_COLOR_SURFACE_GAMMA_BGR:
+        texture_gamma = SCE_GXM_TEXTURE_GAMMA_BGR;
+        break;
+    case SCE_GXM_COLOR_SURFACE_GAMMA_GR:
+        texture_gamma = SCE_GXM_TEXTURE_GAMMA_GR;
+        break;
+    default:
+        texture_gamma = SCE_GXM_TEXTURE_GAMMA_NONE;
+        break;
+    }
+    return CALL_EXPORT(sceGxmTextureSetGammaMode, &surface->backgroundTex, texture_gamma);
 }
 
 EXPORT(void, sceGxmColorSurfaceSetScaleMode, SceGxmColorSurface *surface, SceGxmColorSurfaceScaleMode scaleMode) {
@@ -4763,6 +4783,10 @@ EXPORT(int, sceGxmTextureInitCube, SceGxmTexture *texture, Ptr<const void> data,
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
+    // width and height must be powers of 2
+    if (width == 0 || height == 0 || (width & (width - 1)) || (height & (height - 1)))
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+
     const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_CUBE);
 
     return result;
@@ -4831,6 +4855,10 @@ EXPORT(int, sceGxmTextureInitSwizzled, SceGxmTexture *texture, Ptr<const void> d
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
+
+    // width and height must be powers of 2
+    if (width == 0 || height == 0 || (width & (width - 1)) || (height & (height - 1)))
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
 
     const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_SWIZZLED);
 
@@ -5020,6 +5048,9 @@ EXPORT(int, sceGxmTextureSetNormalizeMode, SceGxmTexture *texture, SceGxmTexture
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
+
+    if (!normalizeMode)
+        LOG_WARN("Unimplemented unnormalized texture, please report it to a developper");
 
     texture->normalize_mode = (static_cast<std::uint32_t>(normalizeMode) >> 31);
     return 0;

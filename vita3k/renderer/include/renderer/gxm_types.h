@@ -35,6 +35,7 @@ struct VertexProgram;
 } // namespace renderer
 
 struct SceGxmColorSurface {
+    // note: the size is correct but the content does not match the PS Vita SceGxmColorSurface
     // opaque start
     struct {
         uint32_t disabled : 1;
