@@ -328,14 +328,14 @@ struct LangState {
         };
         std::map<std::string, std::string> pkg_install = {
             { "select_key_type", "Select key type" },
-            { "select_work", "Select work.bin" },
+            { "select_bin_rif", "Select work.bin/rif" },
             { "enter_zrif", "Enter zRIF" },
             { "enter_zrif_key", "Enter zRIF key" },
             { "input_zrif", "Please input your zRIF here" },
             { "copy_paste_zrif", "Ctrl (Cmd) + C to copy, Ctrl (Cmd) + V to paste." },
             { "delete_pkg", "Delete the pkg file?" },
-            { "delete_work", "Delete the work.bin file?" },
-            { "failed_install_package", "Failed to install package.\nPlease check pkg and work.bin file or zRIF key." }
+            { "delete_bin_rif", "Delete the work.bin/rif file?" },
+            { "failed_install_package", "Failed to install package.\nPlease check pkg and work.bin/rif file or zRIF key." }
         };
         std::map<std::string, std::string> archive_install = {
             { "select_install_type", "Select install type" },
