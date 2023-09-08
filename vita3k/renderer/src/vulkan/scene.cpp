@@ -389,7 +389,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
     if (context.is_first_scene_draw && context.state.features.support_shader_interlock) {
         // update the render pass to load and store the depth and stencil
-        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_attachment->format, ~0U);
+        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_attachment->format, true, true);
         context.is_first_scene_draw = false;
     }
 

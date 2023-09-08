@@ -87,7 +87,7 @@ public:
     void read_pipeline_cache();
     void save_pipeline_cache();
 
-    vk::RenderPass retrieve_render_pass(vk::Format format, uint32_t zls_control, bool no_color = false);
+    vk::RenderPass retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool no_color = false);
     vk::Pipeline retrieve_pipeline(VKContext &context, SceGxmPrimitiveType &type, MemState &mem);
 
     bool precompile_shader(const Sha256Hash &hash);

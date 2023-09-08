@@ -110,8 +110,7 @@ static GLenum translate_stencil_func(SceGxmStencilFunc stencil_func) {
 }
 
 void sync_mask(const GLState &state, GLContext &context, const MemState &mem) {
-    auto control = context.record.depth_stencil_surface.control.content;
-    GLubyte initial_byte = (control & SceGxmDepthStencilControl::mask_bit) ? 0xFF : 0;
+    GLubyte initial_byte = context.record.depth_stencil_surface.mask ? 0xFF : 0;
 
     GLubyte clear_bytes[4] = { initial_byte, initial_byte, initial_byte, initial_byte };
     glClearTexImage(context.render_target->masktexture[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, clear_bytes);
@@ -204,9 +203,8 @@ void sync_depth_data(const renderer::GxmRecordState &state) {
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
 
-    // If force load is enabled to load saved depth and depth data memory exists (the second condition is just for safe, may sometimes contradict its usefulness, hopefully won't)
-    if (((state.depth_stencil_surface.zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED) == 0) && (state.depth_stencil_surface.depthData)) {
-        glClearDepth(state.depth_stencil_surface.backgroundDepth);
+    if (!state.depth_stencil_surface.force_load) {
+        glClearDepth(state.depth_stencil_surface.background_depth);
         glClear(GL_DEPTH_BUFFER_BIT);
     }
 }
@@ -226,8 +224,8 @@ void sync_stencil_data(const GxmRecordState &state, const MemState &mem) {
     // Stencil test.
     glEnable(GL_STENCIL_TEST);
     glStencilMask(GL_TRUE);
-    if ((state.depth_stencil_surface.zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED) == 0) {
-        glClearStencil(state.depth_stencil_surface.control.content & SceGxmDepthStencilControl::stencil_bits);
+    if (!state.depth_stencil_surface.force_load) {
+        glClearStencil(state.depth_stencil_surface.stencil);
         glClear(GL_STENCIL_BUFFER_BIT);
     }
 }
@@ -349,8 +347,8 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         // Try to retrieve S24D8 texture
         if (!texture_as_surface) {
             SceGxmDepthStencilSurface lookup_temp;
-            lookup_temp.depthData = data_addr;
-            lookup_temp.stencilData.reset();
+            lookup_temp.depth_data = data_addr;
+            lookup_temp.stencil_data.reset();
 
             texture_as_surface = state.surface_cache.retrieve_depth_stencil_texture_handle(state, mem, lookup_temp, width, height, true);
             if (texture_as_surface) {

@@ -112,8 +112,8 @@ void VKSurfaceCache::destroy_surface(DepthStencilSurfaceCacheInfo &info) {
 VKSurfaceCache::VKSurfaceCache(VKState &state)
     : state(state) {
     for (int i = 0; i < MAX_CACHE_SIZE_PER_CONTAINER; i++) {
-        depth_stencil_textures[i].surface.depthData = -1;
-        depth_stencil_textures[i].surface.stencilData = -1;
+        depth_stencil_textures[i].surface.depth_data = -1;
+        depth_stencil_textures[i].surface.stencil_data = -1;
         depth_stencil_textures[i].flags = SurfaceCacheInfo::FLAG_FREE;
     }
 }
@@ -570,7 +570,7 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
 
 vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, int32_t width,
     int32_t height, const bool is_reading) {
-    bool packed_ds = (surface.control.content & SceGxmDepthStencilControl::format_bits) == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
+    bool packed_ds = surface.get_format() == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
 
     int32_t memory_width = width;
     int32_t memory_height = height;
@@ -592,14 +592,14 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
         height *= state.res_multiplier;
     }
 
-    const bool is_stencil_only = surface.depthData.address() == 0;
+    const bool is_stencil_only = surface.depth_data.address() == 0;
     size_t found_index = -1;
 
     // The whole depth stencil struct is reserved for future use
     for (size_t i = 0; i < depth_stencil_textures.size(); i++) {
-        if ((!is_stencil_only && depth_stencil_textures[i].surface.depthData == surface.depthData)
-            || (is_stencil_only && depth_stencil_textures[i].surface.stencilData == surface.stencilData)
-            || (is_reading && !packed_ds && surface.depthData == depth_stencil_textures[i].surface.stencilData)) {
+        if ((!is_stencil_only && depth_stencil_textures[i].surface.depth_data == surface.depth_data)
+            || (is_stencil_only && depth_stencil_textures[i].surface.stencil_data == surface.stencil_data)
+            || (is_reading && !packed_ds && surface.depth_data == depth_stencil_textures[i].surface.stencil_data)) {
             found_index = i;
             break;
         }
@@ -632,7 +632,7 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
                 height /= 2;
 
             const uint64_t scene_timestamp = reinterpret_cast<VKContext *>(state.context)->scene_timestamp;
-            const bool is_stencil = depth_stencil_textures[found_index].surface.depthData != surface.depthData;
+            const bool is_stencil = depth_stencil_textures[found_index].surface.depth_data != surface.depth_data;
 
             int read_surface_idx = -1;
             for (int i = 0; i < cached_info.read_surfaces.size(); i++) {
@@ -807,7 +807,7 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
         color_handle = &target->color;
     }
 
-    if (depth_stencil && (depth_stencil->depthData || depth_stencil->stencilData)) {
+    if (depth_stencil && (depth_stencil->depth_data || depth_stencil->stencil_data)) {
         assert(target->width >= width && target->height >= height);
         ds_handle = retrieve_depth_stencil_texture_handle(mem, *depth_stencil, target->width, target->height);
     } else {
