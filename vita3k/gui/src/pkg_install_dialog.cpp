@@ -32,10 +32,10 @@
 namespace gui {
 
 static std::filesystem::path pkg_path = "";
-static std::filesystem::path work_path = "";
+static std::filesystem::path license_path = "";
 static std::string state, title, zRIF;
 static bool draw_file_dialog = true;
-static bool delete_pkg_file, delete_work_file;
+static bool delete_pkg_file, delete_license_file;
 
 void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
@@ -69,7 +69,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
     const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const ImVec2 WINDOW_SIZE(616.f * SCALE.x, 264.f * SCALE.y);
-    const ImVec2 BUTTON_SIZE(160.f * SCALE.x, 45.f * SCALE.y);
+    const ImVec2 BUTTON_SIZE(180.f * SCALE.x, 45.f * SCALE.y);
 
     ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE);
@@ -84,8 +84,8 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (state.empty()) {
             ImGui::SetCursorPosX(POS_BUTTON);
             title = lang["select_key_type"];
-            if (ImGui::Button(lang["select_work"].c_str(), BUTTON_SIZE))
-                state = "work";
+            if (ImGui::Button(lang["select_bin_rif"].c_str(), BUTTON_SIZE))
+                state = "license";
             ImGui::SetCursorPosX(POS_BUTTON);
             if (ImGui::Button(lang["enter_zrif"].c_str(), BUTTON_SIZE))
                 state = "zrif";
@@ -97,10 +97,10 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gui.file_menu.pkg_install_dialog = false;
                 draw_file_dialog = true;
             }
-        } else if (state == "work") {
-            result = host::dialog::filesystem::open_file(work_path, { { "PlayStation Vita software license file", { "bin" } } });
+        } else if (state == "license") {
+            result = host::dialog::filesystem::open_file(license_path, { { "PlayStation Vita software license file", { "bin", "rif" } } });
             if (result == host::dialog::filesystem::Result::SUCCESS) {
-                fs::ifstream binfile(work_path.wstring(), std::ios::in | std::ios::binary | std::ios::ate);
+                fs::ifstream binfile(license_path.wstring(), std::ios::in | std::ios::binary | std::ios::ate);
                 zRIF = rif2zrif(binfile);
                 state = "install";
             } else
@@ -144,8 +144,8 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Separator();
             ImGui::Spacing();
             ImGui::Checkbox(lang["delete_pkg"].c_str(), &delete_pkg_file);
-            if (work_path != "")
-                ImGui::Checkbox(lang["delete_work"].c_str(), &delete_work_file);
+            if (license_path != "")
+                ImGui::Checkbox(lang["delete_bin_rif"].c_str(), &delete_license_file);
             ImGui::Spacing();
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
@@ -153,9 +153,9 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     fs::remove(fs::path(pkg_path.wstring()));
                     delete_pkg_file = false;
                 }
-                if (delete_work_file) {
-                    fs::remove(fs::path(work_path.wstring()));
-                    delete_work_file = false;
+                if (delete_license_file) {
+                    fs::remove(fs::path(license_path.wstring()));
+                    delete_license_file = false;
                 }
                 if ((emuenv.app_info.app_category.find("gd") != std::string::npos) || (emuenv.app_info.app_category.find("gp") != std::string::npos)) {
                     init_user_app(gui, emuenv, emuenv.app_info.app_title_id);
@@ -163,7 +163,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 }
                 update_notice_info(gui, emuenv, "content");
                 pkg_path = "";
-                work_path = "";
+                license_path = "";
                 gui.file_menu.pkg_install_dialog = false;
                 draw_file_dialog = true;
                 state.clear();
@@ -178,7 +178,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gui.file_menu.pkg_install_dialog = false;
                 pkg_path = "";
                 draw_file_dialog = true;
-                work_path = "";
+                license_path = "";
                 state.clear();
             }
         } else if (state == "installing") {
