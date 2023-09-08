@@ -372,7 +372,7 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     }
 
     SceGxmDepthStencilSurface *ds_surface_fin = &context.record.depth_stencil_surface;
-    if ((ds_surface_fin->depthData.address() == 0) && (ds_surface_fin->stencilData.address() == 0)) {
+    if ((ds_surface_fin->depth_data.address() == 0) && (ds_surface_fin->stencil_data.address() == 0)) {
         ds_surface_fin = nullptr;
     }
 

@@ -103,8 +103,7 @@ void sync_mask(VKContext &context, const MemState &mem) {
     if (!context.state.features.use_mask_bit)
         return;
 
-    auto control = context.record.depth_stencil_surface.control.content;
-    float initial_val = (control & SceGxmDepthStencilControl::mask_bit) ? 1.0f : 0.0f;
+    float initial_val = context.record.depth_stencil_surface.mask ? 1.0f : 0.0f;
 
     std::array<float, 4> clear_bytes = { initial_val, initial_val, initial_val, initial_val };
     vk::ClearColorValue clear_color{ clear_bytes };
@@ -121,12 +120,11 @@ void sync_depth_bias(VKContext &context) {
 }
 
 void sync_depth_data(VKContext &context) {
-    // If force load is enabled to load saved depth and depth data memory exists (the second condition is just for safe, may sometimes contradict its usefulness, hopefully won't)
-    if ((context.record.depth_stencil_surface.zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED) || (!context.record.depth_stencil_surface.depthData))
+    if (context.record.depth_stencil_surface.force_load)
         return;
 
     vk::ClearDepthStencilValue clear_value{
-        .depth = context.record.depth_stencil_surface.backgroundDepth
+        .depth = context.record.depth_stencil_surface.background_depth
     };
     vk::ClearAttachment clear_attachment{
         .aspectMask = vk::ImageAspectFlagBits::eDepth,
@@ -143,11 +141,11 @@ void sync_depth_data(VKContext &context) {
 }
 
 void sync_stencil_data(VKContext &context, const MemState &mem) {
-    if (context.record.depth_stencil_surface.zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED)
+    if (context.record.depth_stencil_surface.force_load)
         return;
 
     vk::ClearDepthStencilValue clear_value{
-        .stencil = context.record.depth_stencil_surface.control.content & SceGxmDepthStencilControl::stencil_bits
+        .stencil = context.record.depth_stencil_surface.stencil
     };
     vk::ClearAttachment clear_attachment{
         .aspectMask = vk::ImageAspectFlagBits::eStencil,

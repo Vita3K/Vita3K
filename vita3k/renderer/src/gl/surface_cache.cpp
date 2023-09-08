@@ -528,7 +528,7 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
     force_width *= state.res_multiplier;
     force_height *= state.res_multiplier;
 
-    bool packed_ds = (surface.control.content & SceGxmDepthStencilControl::format_bits) == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
+    bool packed_ds = surface.get_format() == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
 
     if (force_width < 0) {
         force_width = target->width;
@@ -538,13 +538,13 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
         force_height = target->height;
     }
 
-    const bool is_stencil_only = surface.depthData.address() == 0;
+    const bool is_stencil_only = surface.depth_data.address() == 0;
     std::size_t found_index = static_cast<std::size_t>(-1);
 
     // The whole depth stencil struct is reserved for future use
     for (std::size_t i = 0; i < depth_stencil_textures.size(); i++) {
-        if ((!is_stencil_only && depth_stencil_textures[i].surface.depthData == surface.depthData)
-            || (is_stencil_only && depth_stencil_textures[i].surface.stencilData == surface.stencilData)) {
+        if ((!is_stencil_only && depth_stencil_textures[i].surface.depth_data == surface.depth_data)
+            || (is_stencil_only && depth_stencil_textures[i].surface.stencil_data == surface.stencil_data)) {
             found_index = i;
             break;
         }

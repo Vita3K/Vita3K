@@ -101,8 +101,8 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     } else {
         // Try to retrieve S24D8 texture
         SceGxmDepthStencilSurface lookup_temp;
-        lookup_temp.depthData = data_addr;
-        lookup_temp.stencilData.reset();
+        lookup_temp.depth_data = data_addr;
+        lookup_temp.stencil_data.reset();
 
         image = context.state.surface_cache.retrieve_depth_stencil_texture_handle(mem, lookup_temp, width, height, true);
     }

@@ -58,19 +58,15 @@ COMMAND(handle_set_context) {
     if (color_surface)
         delete color_surface;
 
-    if (depth_stencil_surface) {
+    if (depth_stencil_surface && !depth_stencil_surface->disabled()) {
         render_context->record.depth_stencil_surface = *depth_stencil_surface;
-        delete depth_stencil_surface;
     } else {
-        static const SceGxmDepthStencilSurface default_ds{
-            .zlsControl = 0,
-            .depthData = Ptr<void>(0),
-            .stencilData = Ptr<void>(0),
-            .backgroundDepth = 1.0f,
-            .control = { SceGxmDepthStencilControl::mask_bit }
-        };
-        render_context->record.depth_stencil_surface = default_ds;
+        render_context->record.depth_stencil_surface.depth_data.reset();
+        render_context->record.depth_stencil_surface.stencil_data.reset();
     }
+
+    if (depth_stencil_surface)
+        delete depth_stencil_surface;
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:

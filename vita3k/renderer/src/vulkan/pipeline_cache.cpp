@@ -285,11 +285,8 @@ vk::PipelineLayout PipelineCache::retrieve_pipeline_layout(const uint16_t vert_t
     return pipeline_layouts[vert_texture_count][frag_texture_count];
 }
 
-vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, uint32_t zls_control, bool no_color) {
-    bool force_loaded = (zls_control & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED) != 0;
-    bool force_stored = (zls_control & SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED) != 0;
-
-    auto &render_passes_map = no_color ? shader_interlock_pass : render_passes[force_loaded][force_stored];
+vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool no_color) {
+    auto &render_passes_map = no_color ? shader_interlock_pass : render_passes[force_load][force_store];
 
     auto it = render_passes_map.find(format);
 
@@ -324,8 +321,8 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, uint32_t z
         .finalLayout = vk::ImageLayout::eGeneral
     };
 
-    vk::AttachmentLoadOp load_op = force_loaded ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eClear;
-    vk::AttachmentStoreOp store_op = force_stored ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare;
+    vk::AttachmentLoadOp load_op = force_load ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eClear;
+    vk::AttachmentStoreOp store_op = force_store ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare;
     vk::AttachmentDescription ds_attachment{
         .format = vk::Format::eD32SfloatS8Uint,
         .samples = vk::SampleCountFlagBits::e1,

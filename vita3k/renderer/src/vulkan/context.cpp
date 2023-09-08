@@ -124,7 +124,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     }
 
     SceGxmDepthStencilSurface *ds_surface_fin = &context.record.depth_stencil_surface;
-    if ((ds_surface_fin->depthData.address() == 0) && (ds_surface_fin->stencilData.address() == 0)) {
+    if ((ds_surface_fin->depth_data.address() == 0) && (ds_surface_fin->stencil_data.address() == 0)) {
         ds_surface_fin = nullptr;
     }
 
@@ -133,14 +133,15 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
 
     context.start_recording();
 
-    uint32_t zls_control = context.record.depth_stencil_surface.zlsControl;
+    bool force_load = context.record.depth_stencil_surface.force_load;
+    bool force_store = context.record.depth_stencil_surface.force_store;
     if (context.state.features.support_shader_interlock)
         // we must always store the depth stencil
-        zls_control |= SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED;
-    context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, zls_control);
+        force_store = true;
+    context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, force_load, force_store);
     if (context.state.features.support_shader_interlock)
         // also retrieve / create the shader interlock pass
-        context.current_shader_interlock_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, ~0, true);
+        context.current_shader_interlock_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, true, true, true);
 
     Framebuffer &framebuffer = state.surface_cache.retrieve_framebuffer_handle(
         mem, color_surface_fin, ds_surface_fin, context.current_render_pass, context.current_shader_interlock_pass,
@@ -265,8 +266,8 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
     // only the depth-stencil attachment may be clear if not force loaded
     std::array<vk::ClearValue, 2> curr_clear_values{};
     curr_clear_values[1].depthStencil = vk::ClearDepthStencilValue{
-        .depth = record.depth_stencil_surface.backgroundDepth,
-        .stencil = record.depth_stencil_surface.control.content & SceGxmDepthStencilControl::stencil_bits
+        .depth = record.depth_stencil_surface.background_depth,
+        .stencil = record.depth_stencil_surface.stencil
     };
     curr_renderpass_info.setClearValues(curr_clear_values);
     render_cmd.beginRenderPass(curr_renderpass_info, vk::SubpassContents::eInline);

@@ -1800,32 +1800,27 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
 
 EXPORT(float, sceGxmDepthStencilSurfaceGetBackgroundDepth, const SceGxmDepthStencilSurface *surface) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceGetBackgroundDepth, surface);
-    assert(surface);
-    return surface->backgroundDepth;
+    return surface->background_depth;
 }
 
 EXPORT(bool, sceGxmDepthStencilSurfaceGetBackgroundMask, const SceGxmDepthStencilSurface *surface) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceGetBackgroundMask, surface);
-    assert(surface);
-    return (surface->control.content & SceGxmDepthStencilControl::mask_bit) != 0;
+    return surface->mask;
 }
 
 EXPORT(uint8_t, sceGxmDepthStencilSurfaceGetBackgroundStencil, const SceGxmDepthStencilSurface *surface) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceGetBackgroundStencil, surface);
-    assert(surface);
-    return surface->control.content & SceGxmDepthStencilControl::stencil_bits;
+    return surface->stencil;
 }
 
 EXPORT(SceGxmDepthStencilForceLoadMode, sceGxmDepthStencilSurfaceGetForceLoadMode, const SceGxmDepthStencilSurface *surface) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceGetForceLoadMode, surface);
-    assert(surface);
-    return static_cast<SceGxmDepthStencilForceLoadMode>(surface->zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED);
+    return surface->force_load ? SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED : SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_DISABLED;
 }
 
 EXPORT(SceGxmDepthStencilForceStoreMode, sceGxmDepthStencilSurfaceGetForceStoreMode, const SceGxmDepthStencilSurface *surface) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceGetForceStoreMode, surface);
-    assert(surface);
-    return static_cast<SceGxmDepthStencilForceStoreMode>(surface->zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
+    return surface->force_store ? SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED : SCE_GXM_DEPTH_STENCIL_FORCE_STORE_DISABLED;
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceGetFormat, const SceGxmDepthStencilSurface *surface) {
@@ -1833,13 +1828,15 @@ EXPORT(int, sceGxmDepthStencilSurfaceGetFormat, const SceGxmDepthStencilSurface 
     if (!surface) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return surface->control.content & SceGxmDepthStencilControl::format_bits;
+    return surface->get_format();
 }
 
 EXPORT(uint32_t, sceGxmDepthStencilSurfaceGetStrideInSamples, const SceGxmDepthStencilSurface *surface) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceGetStrideInSamples, surface);
-    assert(surface);
-    return UNIMPLEMENTED();
+    if (!surface)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    return surface->get_stride();
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, SceGxmDepthStencilFormat depthStencilFormat, SceGxmDepthStencilSurfaceType surfaceType, uint32_t strideInSamples, Ptr<void> depthData, Ptr<void> stencilData) {
@@ -1852,12 +1849,17 @@ EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, S
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    *surface = SceGxmDepthStencilSurface();
-    surface->depthData = depthData;
-    surface->stencilData = stencilData;
-    surface->zlsControl = SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_DISABLED | SCE_GXM_DEPTH_STENCIL_FORCE_STORE_DISABLED;
+    memset(surface, 0, sizeof(SceGxmDepthStencilSurface));
+    surface->unk1 = 1;
+    surface->unk2 = 1;
+    surface->set_stride(strideInSamples);
+    surface->set_type(surfaceType);
+    surface->set_format(depthStencilFormat);
+    surface->depth_data = depthData;
+    surface->stencil_data = stencilData;
+    surface->background_depth = 1.0f;
+    surface->mask = 1;
 
-    surface->control.content = static_cast<uint32_t>(depthStencilFormat) | SceGxmDepthStencilControl::mask_bit;
     return 0;
 }
 
@@ -1867,50 +1869,70 @@ EXPORT(int, sceGxmDepthStencilSurfaceInitDisabled, SceGxmDepthStencilSurface *su
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    *surface = SceGxmDepthStencilSurface();
+    memset(surface, 0, sizeof(SceGxmDepthStencilSurface));
+    surface->background_depth = 1.0f;
+    surface->mask = 1;
+    surface->unk2 = 1;
 
-    surface->control.content = SceGxmDepthStencilControl::disabled_bit | SceGxmDepthStencilControl::mask_bit;
     return 0;
 }
 
 EXPORT(bool, sceGxmDepthStencilSurfaceIsEnabled, const SceGxmDepthStencilSurface *surface) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceIsEnabled, surface);
-    assert(surface);
-    return (surface->control.content & SceGxmDepthStencilControl::disabled_bit) == 0;
+    if (!surface)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    return !surface->disabled();
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundDepth, SceGxmDepthStencilSurface *surface, float depth) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceSetBackgroundDepth, surface, depth);
-    assert(surface);
-    surface->backgroundDepth = depth;
+    if (!surface) {
+        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return;
+    }
+
+    surface->background_depth = depth;
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundMask, SceGxmDepthStencilSurface *surface, bool mask) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceSetBackgroundMask, surface, mask);
-    assert(surface);
-    if (mask)
-        surface->control.content |= SceGxmDepthStencilControl::mask_bit;
-    else
-        surface->control.content &= ~SceGxmDepthStencilControl::mask_bit;
+    if (!surface) {
+        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return;
+    }
+
+    surface->mask = static_cast<uint32_t>(mask);
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundStencil, SceGxmDepthStencilSurface *surface, uint8_t stencil) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceSetBackgroundStencil, surface, stencil);
-    assert(surface);
-    surface->control.content &= ~SceGxmDepthStencilControl::stencil_bits;
-    surface->control.content |= stencil;
+    if (!surface) {
+        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return;
+    }
+
+    surface->stencil = stencil;
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetForceLoadMode, SceGxmDepthStencilSurface *surface, SceGxmDepthStencilForceLoadMode forceLoad) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceSetForceLoadMode, surface, forceLoad);
-    assert(surface);
-    surface->zlsControl = (forceLoad & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED) | (surface->zlsControl & ~SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED);
+    if (!surface) {
+        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return;
+    }
+
+    surface->force_load = static_cast<bool>(forceLoad);
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetForceStoreMode, SceGxmDepthStencilSurface *surface, SceGxmDepthStencilForceStoreMode forceStore) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceSetForceStoreMode, surface, forceStore);
-    assert(surface);
-    surface->zlsControl = (forceStore & SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED) | (surface->zlsControl & ~SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
+    if (!surface) {
+        RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return;
+    }
+
+    surface->force_store = static_cast<bool>(forceStore);
 }
 
 EXPORT(int, sceGxmDestroyContext, Ptr<SceGxmContext> context) {
