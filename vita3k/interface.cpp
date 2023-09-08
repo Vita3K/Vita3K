@@ -714,6 +714,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             break;
 
         case SDL_CONTROLLERBUTTONDOWN:
+            if (!emuenv.kernel.is_threads_paused() && (event.cbutton.button == SDL_CONTROLLER_BUTTON_TOUCHPAD))
+                toggle_touchscreen();
+
             if (ImGui::GetIO().WantTextInput)
                 continue;
 
@@ -759,18 +762,18 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             }
             break;
 
+        case SDL_CONTROLLERTOUCHPADDOWN:
+        case SDL_CONTROLLERTOUCHPADMOTION:
+        case SDL_CONTROLLERTOUCHPADUP:
+            handle_touchpad_event(event.ctouchpad);
+            break;
+
         case SDL_WINDOWEVENT:
             handle_window_event(emuenv, event.window);
             break;
 
         case SDL_FINGERDOWN:
-            handle_touch_event(event.tfinger);
-            break;
-
         case SDL_FINGERMOTION:
-            handle_touch_event(event.tfinger);
-            break;
-
         case SDL_FINGERUP:
             handle_touch_event(event.tfinger);
             break;

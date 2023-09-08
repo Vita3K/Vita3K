@@ -180,6 +180,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             if (!config_child.child("emulator").empty()) {
                 const auto emulator_child = config_child.child("emulator");
                 config.ngs_enable = emulator_child.attribute("enable-ngs").as_bool();
+                config.show_touchpad_cursor = emulator_child.attribute("show-touchpad-cursor").as_bool();
             }
 
             // Load Network Config
@@ -227,6 +228,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         config.pstv_mode = emuenv.cfg.pstv_mode;
         config.ngs_enable = emuenv.cfg.ngs_enable;
+        config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
         config.psn_status = emuenv.cfg.psn_status;
     }
     get_modules_list(gui, emuenv);
@@ -292,6 +294,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         // Emulator
         auto emulator_child = config_child.append_child("emulator");
         emulator_child.append_attribute("enable-ngs") = config.ngs_enable;
+        emulator_child.append_attribute("show-touchpad-cursor") = config.show_touchpad_cursor;
 
         // Network
         auto network_child = config_child.append_child("network");
@@ -312,6 +315,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.v_sync = config.v_sync;
         emuenv.cfg.anisotropic_filtering = config.anisotropic_filtering;
         emuenv.cfg.ngs_enable = config.ngs_enable;
+        emuenv.cfg.show_touchpad_cursor = config.show_touchpad_cursor;
         emuenv.cfg.psn_status = config.psn_status;
     }
 
@@ -369,6 +373,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
+        emuenv.cfg.current_config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
         emuenv.cfg.current_config.psn_status = emuenv.cfg.psn_status;
     }
 
@@ -764,6 +769,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable the display of the compile shaders dialog.");
         ImGui::Spacing();
+        ImGui::Checkbox("Show Touchpad Cursor", &config.show_touchpad_cursor);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Uncheck the box to disable showing the touchpad cursor on-screen.");
+        ImGui::SameLine();
         ImGui::Checkbox("Log Compatibility Warnings", &emuenv.cfg.log_compat_warn);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to log issues related to the app compatibility database.");

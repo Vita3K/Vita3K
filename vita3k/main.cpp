@@ -432,6 +432,9 @@ int main(int argc, char *argv[]) {
         if (emuenv.cfg.performance_overlay && !emuenv.kernel.is_threads_paused() && (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING))
             gui::draw_perf_overlay(gui, emuenv);
 
+        if (emuenv.cfg.current_config.show_touchpad_cursor && !emuenv.kernel.is_threads_paused())
+            gui::draw_touchpad_cursor(emuenv);
+
         if (emuenv.display.imgui_render) {
             gui::draw_ui(gui, emuenv);
         }

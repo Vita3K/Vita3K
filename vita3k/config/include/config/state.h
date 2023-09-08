@@ -180,6 +180,7 @@ public:
         bool v_sync = true;
         int anisotropic_filtering = 1;
         bool stretch_the_display_area = false;
+        bool show_touchpad_cursor = true;
         int psn_status = SCE_NP_SERVICE_STATE_UNKNOWN;
     };
 

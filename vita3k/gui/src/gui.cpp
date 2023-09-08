@@ -32,6 +32,7 @@
 #include <lang/functions.h>
 #include <packages/sfo.h>
 #include <regmgr/functions.h>
+#include <touch/functions.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -736,6 +737,23 @@ void draw_begin(GuiState &gui, EmuEnvState &emuenv) {
 void draw_end(GuiState &gui, SDL_Window *window) {
     ImGui::Render();
     ImGui_ImplSdl_RenderDrawData(gui.imgui_state.get());
+}
+
+void draw_touchpad_cursor(EmuEnvState &emuenv) {
+    SceTouchPortType port;
+    const auto touchpad_fingers_pos = get_touchpad_fingers_pos(port);
+    if (touchpad_fingers_pos.empty())
+        return;
+
+    const ImVec2 RES_SCALE(emuenv.viewport_size.x / emuenv.res_width_dpi_scale, emuenv.viewport_size.y / emuenv.res_height_dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+
+    const auto color = (port == SCE_TOUCH_PORT_FRONT) ? IM_COL32(0.f, 102.f, 204.f, 255.f) : IM_COL32(255.f, 0.f, 0.f, 255.f);
+    for (const auto &pos : touchpad_fingers_pos) {
+        auto x = emuenv.viewport_pos.x + (pos.x * emuenv.viewport_size.x);
+        auto y = emuenv.viewport_pos.y + (pos.y * emuenv.viewport_size.y);
+        ImGui::GetForegroundDrawList()->AddCircle(ImVec2(x, y), 20.f * SCALE.x, color, 0, 4.f * SCALE.x);
+    }
 }
 
 void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
