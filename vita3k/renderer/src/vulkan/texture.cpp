@@ -477,27 +477,30 @@ void VKTextureCache::upload_done() {
 namespace texture {
 
 vk::Sampler create_sampler(VKState &state, const SceGxmTexture &gxm_texture, const uint16_t mip_count) {
+    // linear strided textures use the mag filter as the min filter too
+    const bool is_linear_strided = gxm_texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED;
+
     const SceGxmTextureAddrMode uaddr = static_cast<SceGxmTextureAddrMode>(gxm_texture.uaddr_mode);
     const SceGxmTextureAddrMode vaddr = static_cast<SceGxmTextureAddrMode>(gxm_texture.vaddr_mode);
-    const SceGxmTextureFilter min_filter = static_cast<SceGxmTextureFilter>(gxm_texture.min_filter);
+    // Note: I don't know what to do with the MIPMAP version of SceGxmTextureFilter
     const SceGxmTextureFilter mag_filter = static_cast<SceGxmTextureFilter>(gxm_texture.mag_filter);
-    const bool mipmap_enabled = static_cast<bool>(gxm_texture.mip_filter);
+    const SceGxmTextureFilter min_filter = is_linear_strided ? mag_filter : static_cast<SceGxmTextureFilter>(gxm_texture.min_filter);
 
     // create sampler
     vk::SamplerCreateInfo sampler_info{
         .magFilter = translate_filter(mag_filter),
         .minFilter = translate_filter(min_filter),
-        .mipmapMode = translate_mimpmap_mode(min_filter),
+        .mipmapMode = gxm_texture.mip_filter ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest,
         .addressModeU = translate_address_mode(uaddr),
         .addressModeV = translate_address_mode(vaddr),
         .addressModeW = vk::SamplerAddressMode::eRepeat,
         .mipLodBias = (static_cast<float>(gxm_texture.lod_bias) - 31.f) / 8.f,
         .maxAnisotropy = static_cast<float>(state.texture_cache.anisotropic_filtering),
         .compareEnable = VK_FALSE,
-        .minLod = mipmap_enabled ? static_cast<float>(std::min<uint16_t>(mip_count, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2))) : 0.f,
+        .minLod = (mip_count > 1) ? static_cast<float>(std::min<uint16_t>(mip_count, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2))) : 0.f,
         // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkSamplerCreateInfo.html
         // if there is no mipmap, set maxLod to 0.25 so it uses both the magnification or minification filter when needed
-        .maxLod = mipmap_enabled ? static_cast<float>(mip_count) : 0.25f,
+        .maxLod = (mip_count > 1) ? static_cast<float>(mip_count) : 0.25f,
         .unnormalizedCoordinates = VK_FALSE,
     };
 

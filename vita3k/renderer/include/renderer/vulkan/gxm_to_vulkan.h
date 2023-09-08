@@ -49,7 +49,6 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format);
 vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format);
 vk::SamplerAddressMode translate_address_mode(SceGxmTextureAddrMode src);
 vk::Filter translate_filter(SceGxmTextureFilter src);
-vk::SamplerMipmapMode translate_mimpmap_mode(SceGxmTextureFilter src);
 } // namespace texture
 
 } // namespace renderer::vulkan
