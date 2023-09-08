@@ -21,6 +21,7 @@
 
 #define SCE_TOUCH_MAX_REPORT 8
 
+struct SDL_ControllerTouchpadEvent;
 struct SDL_TouchFingerEvent;
 
 enum SceTouchSamplingState {

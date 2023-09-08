@@ -124,6 +124,7 @@ void draw_reinstall_dialog(GenericDialogState *status, GuiState &gui, EmuEnvStat
 void draw_pre_compiling_shaders_progress(GuiState &gui, EmuEnvState &emuenv, const uint32_t &total);
 void draw_shaders_count_compiled(GuiState &gui, EmuEnvState &emuenv);
 void draw_trophies_unlocked(GuiState &gui, EmuEnvState &emuenv);
+void draw_touchpad_cursor(EmuEnvState &emuenv);
 void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv);
 
 ImTextureID load_image(GuiState &gui, const char *data, const std::uint32_t size);
