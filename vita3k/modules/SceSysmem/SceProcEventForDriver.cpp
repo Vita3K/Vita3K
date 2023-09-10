@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceProcEventForDriver.h"
+#include <module/module.h>
 
 EXPORT(int, ksceKernelInvokeProcEventHandler) {
     return UNIMPLEMENTED();
@@ -28,7 +28,3 @@ EXPORT(int, ksceKernelRegisterProcEventHandler) {
 EXPORT(int, ksceKernelUnregisterProcEventHandler) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(ksceKernelInvokeProcEventHandler)
-BRIDGE_IMPL(ksceKernelRegisterProcEventHandler)
-BRIDGE_IMPL(ksceKernelUnregisterProcEventHandler)

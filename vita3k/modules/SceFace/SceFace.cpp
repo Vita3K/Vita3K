@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceFace.h"
+#include <module/module.h>
 
 EXPORT(int, sceFaceAgeGetWorkingMemorySize) {
     return UNIMPLEMENTED();
@@ -108,27 +108,3 @@ EXPORT(int, sceFaceShapeGetWorkingMemorySize) {
 EXPORT(int, sceFaceShapeTrack) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceFaceAgeGetWorkingMemorySize)
-BRIDGE_IMPL(sceFaceAgeRangeEstimate)
-BRIDGE_IMPL(sceFaceAgeRangeIntegrate)
-BRIDGE_IMPL(sceFaceAllParts)
-BRIDGE_IMPL(sceFaceAllPartsGetWorkingMemorySize)
-BRIDGE_IMPL(sceFaceAttribute)
-BRIDGE_IMPL(sceFaceAttributeGetWorkingMemorySize)
-BRIDGE_IMPL(sceFaceDetection)
-BRIDGE_IMPL(sceFaceDetectionEx)
-BRIDGE_IMPL(sceFaceDetectionGetDefaultParam)
-BRIDGE_IMPL(sceFaceDetectionGetWorkingMemorySize)
-BRIDGE_IMPL(sceFaceDetectionLocal)
-BRIDGE_IMPL(sceFaceEstimatePoseRegion)
-BRIDGE_IMPL(sceFaceIdentifyGetFeature)
-BRIDGE_IMPL(sceFaceIdentifyGetWorkingMemorySize)
-BRIDGE_IMPL(sceFaceIdentifySimilarity)
-BRIDGE_IMPL(sceFaceParts)
-BRIDGE_IMPL(sceFacePartsEx)
-BRIDGE_IMPL(sceFacePartsGetWorkingMemorySize)
-BRIDGE_IMPL(sceFacePartsResultCheck)
-BRIDGE_IMPL(sceFaceShapeFit)
-BRIDGE_IMPL(sceFaceShapeGetWorkingMemorySize)
-BRIDGE_IMPL(sceFaceShapeTrack)

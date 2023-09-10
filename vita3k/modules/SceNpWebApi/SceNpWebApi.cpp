@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNpWebApi.h"
+#include <module/module.h>
 
 EXPORT(int, sceNpWebApiAbortHandle) {
     return UNIMPLEMENTED();
@@ -168,42 +168,3 @@ EXPORT(int, sceNpWebApiUnregisterServicePushEventCallback) {
 EXPORT(int, sceNpWebApiUtilityParseNpId) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNpWebApiAbortHandle)
-BRIDGE_IMPL(sceNpWebApiAbortRequest)
-BRIDGE_IMPL(sceNpWebApiAddHttpRequestHeader)
-BRIDGE_IMPL(sceNpWebApiAddMultipartPart)
-BRIDGE_IMPL(sceNpWebApiCheckCallback)
-BRIDGE_IMPL(sceNpWebApiCreateExtdPushEventFilter)
-BRIDGE_IMPL(sceNpWebApiCreateHandle)
-BRIDGE_IMPL(sceNpWebApiCreateMultipartRequest)
-BRIDGE_IMPL(sceNpWebApiCreatePushEventFilter)
-BRIDGE_IMPL(sceNpWebApiCreateRequest)
-BRIDGE_IMPL(sceNpWebApiCreateServicePushEventFilter)
-BRIDGE_IMPL(sceNpWebApiDeleteExtdPushEventFilter)
-BRIDGE_IMPL(sceNpWebApiDeleteHandle)
-BRIDGE_IMPL(sceNpWebApiDeletePushEventFilter)
-BRIDGE_IMPL(sceNpWebApiDeleteRequest)
-BRIDGE_IMPL(sceNpWebApiDeleteServicePushEventFilter)
-BRIDGE_IMPL(sceNpWebApiGetErrorCode)
-BRIDGE_IMPL(sceNpWebApiGetHttpResponseHeaderValue)
-BRIDGE_IMPL(sceNpWebApiGetHttpResponseHeaderValueLength)
-BRIDGE_IMPL(sceNpWebApiGetHttpStatusCode)
-BRIDGE_IMPL(sceNpWebApiGetMemoryPoolStats)
-BRIDGE_IMPL(sceNpWebApiGetNpTitleId)
-BRIDGE_IMPL(sceNpWebApiInitialize)
-BRIDGE_IMPL(sceNpWebApiReadData)
-BRIDGE_IMPL(sceNpWebApiRegisterExtdPushEventCallback)
-BRIDGE_IMPL(sceNpWebApiRegisterPushEventCallback)
-BRIDGE_IMPL(sceNpWebApiRegisterServicePushEventCallback)
-BRIDGE_IMPL(sceNpWebApiSendMultipartRequest)
-BRIDGE_IMPL(sceNpWebApiSendMultipartRequest2)
-BRIDGE_IMPL(sceNpWebApiSendRequest)
-BRIDGE_IMPL(sceNpWebApiSendRequest2)
-BRIDGE_IMPL(sceNpWebApiSetMultipartContentType)
-BRIDGE_IMPL(sceNpWebApiSetNpTitleId)
-BRIDGE_IMPL(sceNpWebApiTerminate)
-BRIDGE_IMPL(sceNpWebApiUnregisterExtdPushEventCallback)
-BRIDGE_IMPL(sceNpWebApiUnregisterPushEventCallback)
-BRIDGE_IMPL(sceNpWebApiUnregisterServicePushEventCallback)
-BRIDGE_IMPL(sceNpWebApiUtilityParseNpId)

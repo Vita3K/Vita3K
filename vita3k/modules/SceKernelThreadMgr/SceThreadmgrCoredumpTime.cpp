@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceThreadmgrCoredumpTime.h"
+#include <module/module.h>
 
 #include <kernel/state.h>
 
@@ -30,5 +30,3 @@ EXPORT(int, sceKernelExitThread, int status) {
     // the thread exits, the return value is not read anyway
     return 0;
 }
-
-BRIDGE_IMPL(sceKernelExitThread)

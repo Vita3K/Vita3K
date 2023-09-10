@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceIme.h"
+#include <module/module.h>
 
 #include <ime/functions.h>
 #include <ime/types.h>
@@ -129,10 +129,3 @@ EXPORT(SceInt32, sceImeUpdate) {
 
     return 0;
 }
-
-BRIDGE_IMPL(sceImeClose)
-BRIDGE_IMPL(sceImeOpen)
-BRIDGE_IMPL(sceImeSetCaret)
-BRIDGE_IMPL(sceImeSetPreeditGeometry)
-BRIDGE_IMPL(sceImeSetText)
-BRIDGE_IMPL(sceImeUpdate)

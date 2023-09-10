@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceUsbdForUser.h"
+#include <module/module.h>
 
 EXPORT(int, sceUsbdAttach) {
     return UNIMPLEMENTED();
@@ -108,27 +108,3 @@ EXPORT(int, sceUsbdUnregisterCallback) {
 EXPORT(int, sceUsbdUnregisterLdd) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceUsbdAttach)
-BRIDGE_IMPL(sceUsbdAttachCompositeLdd)
-BRIDGE_IMPL(sceUsbdClosePipe)
-BRIDGE_IMPL(sceUsbdEnd)
-BRIDGE_IMPL(sceUsbdGetDescriptor)
-BRIDGE_IMPL(sceUsbdGetDescriptorSize)
-BRIDGE_IMPL(sceUsbdGetDeviceAddress)
-BRIDGE_IMPL(sceUsbdGetDeviceList)
-BRIDGE_IMPL(sceUsbdGetDeviceSpeed)
-BRIDGE_IMPL(sceUsbdGetIsochTransferStatus)
-BRIDGE_IMPL(sceUsbdGetTransferStatus)
-BRIDGE_IMPL(sceUsbdInit)
-BRIDGE_IMPL(sceUsbdIsochTransferData)
-BRIDGE_IMPL(sceUsbdOpenDefaultPipe)
-BRIDGE_IMPL(sceUsbdOpenPipe)
-BRIDGE_IMPL(sceUsbdReceiveEvent)
-BRIDGE_IMPL(sceUsbdRegisterCallback)
-BRIDGE_IMPL(sceUsbdRegisterCompositeLdd)
-BRIDGE_IMPL(sceUsbdRegisterLdd)
-BRIDGE_IMPL(sceUsbdResetDevice)
-BRIDGE_IMPL(sceUsbdTransferData)
-BRIDGE_IMPL(sceUsbdUnregisterCallback)
-BRIDGE_IMPL(sceUsbdUnregisterLdd)

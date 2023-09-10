@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceJpegEncUser.h"
+#include <module/module.h>
 
 #include <codec/state.h>
 #include <codec/types.h>
@@ -158,14 +158,3 @@ EXPORT(int, sceJpegEncoderSetValidRegion, SceJpegEncoderContext *context, int32_
     TRACY_FUNC(sceJpegEncoderSetValidRegion, context, inWidth, inHeight);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceJpegEncoderCsc)
-BRIDGE_IMPL(sceJpegEncoderEncode)
-BRIDGE_IMPL(sceJpegEncoderEnd)
-BRIDGE_IMPL(sceJpegEncoderGetContextSize)
-BRIDGE_IMPL(sceJpegEncoderInit)
-BRIDGE_IMPL(sceJpegEncoderInitWithParam)
-BRIDGE_IMPL(sceJpegEncoderSetCompressionRatio)
-BRIDGE_IMPL(sceJpegEncoderSetHeaderMode)
-BRIDGE_IMPL(sceJpegEncoderSetOutputAddr)
-BRIDGE_IMPL(sceJpegEncoderSetValidRegion)

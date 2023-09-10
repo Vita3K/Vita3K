@@ -15,12 +15,23 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceFios2User.h"
+#include <module/module.h>
 
 #include "io/functions.h"
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceFios2User);
+
+enum SceFiosErrorCode {
+    SCE_FIOS_OK = 0
+};
+
+typedef SceUID SceFiosOverlayID;
+
+enum SceFiosOverlayResolveMode {
+    SCE_FIOS_OVERLAY_RESOLVE_FOR_READ = 0,
+    SCE_FIOS_OVERLAY_RESOLVE_FOR_WRITE = 1
+};
 
 template <>
 std::string to_debug_str<SceFiosOverlayResolveMode>(const MemState &mem, SceFiosOverlayResolveMode type) {
@@ -112,14 +123,3 @@ EXPORT(int, sceFiosOverlayThreadSetDisabled02) {
     TRACY_FUNC(sceFiosOverlayThreadSetDisabled02);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceFiosOverlayAddForProcess02)
-BRIDGE_IMPL(sceFiosOverlayGetInfoForProcess02)
-BRIDGE_IMPL(sceFiosOverlayGetList02)
-BRIDGE_IMPL(sceFiosOverlayGetRecommendedScheduler02)
-BRIDGE_IMPL(sceFiosOverlayModifyForProcess02)
-BRIDGE_IMPL(sceFiosOverlayRemoveForProcess02)
-BRIDGE_IMPL(sceFiosOverlayResolveSync02)
-BRIDGE_IMPL(sceFiosOverlayResolveWithRangeSync02)
-BRIDGE_IMPL(sceFiosOverlayThreadIsDisabled02)
-BRIDGE_IMPL(sceFiosOverlayThreadSetDisabled02)

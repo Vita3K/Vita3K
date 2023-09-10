@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceAppUtilExt.h"
+#include <module/module.h>
 
 EXPORT(int, sceAppUtilExtVideoMount) {
     return UNIMPLEMENTED();
@@ -24,6 +24,3 @@ EXPORT(int, sceAppUtilExtVideoMount) {
 EXPORT(int, sceAppUtilExtVideoUmount) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceAppUtilExtVideoMount)
-BRIDGE_IMPL(sceAppUtilExtVideoUmount)

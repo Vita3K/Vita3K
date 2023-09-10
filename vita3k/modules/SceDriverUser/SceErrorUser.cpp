@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceErrorUser.h"
+#include <module/module.h>
 
 EXPORT(int, sceErrorGetExternalString) {
     return UNIMPLEMENTED();
@@ -40,10 +40,3 @@ EXPORT(int, sceErrorHistorySetDefaultFormat) {
 EXPORT(int, sceErrorHistoryUpdateSequenceInfo) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceErrorGetExternalString)
-BRIDGE_IMPL(sceErrorHistoryClearError)
-BRIDGE_IMPL(sceErrorHistoryGetError)
-BRIDGE_IMPL(sceErrorHistoryPostError)
-BRIDGE_IMPL(sceErrorHistorySetDefaultFormat)
-BRIDGE_IMPL(sceErrorHistoryUpdateSequenceInfo)

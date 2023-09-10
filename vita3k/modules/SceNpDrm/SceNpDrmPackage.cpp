@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNpDrmPackage.h"
+#include <module/module.h>
 
 EXPORT(int, _sceNpDrmPackageCheck) {
     return UNIMPLEMENTED();
@@ -80,20 +80,3 @@ EXPORT(int, sceNpDrmSaveDataFormatOngoing) {
 EXPORT(int, sceNpDrmSaveDataInstallOngoing) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(_sceNpDrmPackageCheck)
-BRIDGE_IMPL(_sceNpDrmPackageDecrypt)
-BRIDGE_IMPL(_sceNpDrmPackageInstallFinished)
-BRIDGE_IMPL(_sceNpDrmPackageInstallStarted)
-BRIDGE_IMPL(_sceNpDrmPackageTransform)
-BRIDGE_IMPL(_sceNpDrmPackageUninstallFinished)
-BRIDGE_IMPL(_sceNpDrmPackageUninstallStarted)
-BRIDGE_IMPL(_sceNpDrmSaveDataFormatFinished)
-BRIDGE_IMPL(_sceNpDrmSaveDataFormatStarted)
-BRIDGE_IMPL(_sceNpDrmSaveDataInstallFinished)
-BRIDGE_IMPL(_sceNpDrmSaveDataInstallStarted)
-BRIDGE_IMPL(sceNpDrmPackageInstallOngoing)
-BRIDGE_IMPL(sceNpDrmPackageIsGameExist)
-BRIDGE_IMPL(sceNpDrmPackageUninstallOngoing)
-BRIDGE_IMPL(sceNpDrmSaveDataFormatOngoing)
-BRIDGE_IMPL(sceNpDrmSaveDataInstallOngoing)

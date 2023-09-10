@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceDrmBridge.h"
+#include <module/module.h>
 
 EXPORT(int, sceDrmBridgeGetCurrentSecureTick) {
     return UNIMPLEMENTED();
@@ -32,8 +32,3 @@ EXPORT(int, sceDrmBridgeMlnpsnlAuth1) {
 EXPORT(int, sceDrmBridgeMlnpsnlAuth2) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceDrmBridgeGetCurrentSecureTick)
-BRIDGE_IMPL(sceDrmBridgeIsAllowRemotePlayDebug)
-BRIDGE_IMPL(sceDrmBridgeMlnpsnlAuth1)
-BRIDGE_IMPL(sceDrmBridgeMlnpsnlAuth2)

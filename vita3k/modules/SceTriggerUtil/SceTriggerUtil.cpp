@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceTriggerUtil.h"
+#include <module/module.h>
 
 EXPORT(int, sceTriggerUtilGetAutoStartStatus) {
     return UNIMPLEMENTED();
@@ -60,15 +60,3 @@ EXPORT(int, sceTriggerUtilUnregisterDailyEvent) {
 EXPORT(int, sceTriggerUtilUnregisterOneTimeEvent) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceTriggerUtilGetAutoStartStatus)
-BRIDGE_IMPL(sceTriggerUtilGetDailyEventInfo)
-BRIDGE_IMPL(sceTriggerUtilGetOneTimeEventInfo)
-BRIDGE_IMPL(sceTriggerUtilGetRegisteredSystemTitleIdList)
-BRIDGE_IMPL(sceTriggerUtilGetRegisteredUserTitleIdList)
-BRIDGE_IMPL(sceTriggerUtilGetSystemAppInfo)
-BRIDGE_IMPL(sceTriggerUtilGetUserAppInfo)
-BRIDGE_IMPL(sceTriggerUtilRegisterDailyEvent)
-BRIDGE_IMPL(sceTriggerUtilRegisterOneTimeEvent)
-BRIDGE_IMPL(sceTriggerUtilUnregisterDailyEvent)
-BRIDGE_IMPL(sceTriggerUtilUnregisterOneTimeEvent)

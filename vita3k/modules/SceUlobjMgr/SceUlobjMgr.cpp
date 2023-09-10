@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceUlobjMgr.h"
+#include <module/module.h>
 
 EXPORT(int, _sceUlobjMgrRegisterLibultProtocolRevision) {
     return UNIMPLEMENTED();
@@ -28,7 +28,3 @@ EXPORT(int, _sceUlobjMgrStartSupportingUserlevelObject) {
 EXPORT(int, _sceUlobjMgrStopSupportingUserlevelObject) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(_sceUlobjMgrRegisterLibultProtocolRevision)
-BRIDGE_IMPL(_sceUlobjMgrStartSupportingUserlevelObject)
-BRIDGE_IMPL(_sceUlobjMgrStopSupportingUserlevelObject)

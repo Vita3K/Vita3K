@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceGxmInternal.h"
+#include <module/module.h>
 
 EXPORT(int, sceGxmCheckMemoryInternal) {
     return UNIMPLEMENTED();
@@ -72,18 +72,3 @@ EXPORT(int, sceGxmUnmapFragmentUsseMemoryInternal) {
 EXPORT(int, sceGxmUnmapVertexUsseMemoryInternal) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceGxmCheckMemoryInternal)
-BRIDGE_IMPL(sceGxmCreateRenderTargetInternal)
-BRIDGE_IMPL(sceGxmGetDisplayQueueThreadIdInternal)
-BRIDGE_IMPL(sceGxmGetRenderTargetMemSizeInternal)
-BRIDGE_IMPL(sceGxmGetTopContextInternal)
-BRIDGE_IMPL(sceGxmInitializedInternal)
-BRIDGE_IMPL(sceGxmIsInitializationInternal)
-BRIDGE_IMPL(sceGxmMapFragmentUsseMemoryInternal)
-BRIDGE_IMPL(sceGxmMapVertexUsseMemoryInternal)
-BRIDGE_IMPL(sceGxmRenderingContextIsWithinSceneInternal)
-BRIDGE_IMPL(sceGxmSetCallbackInternal)
-BRIDGE_IMPL(sceGxmSetInitializeParamInternal)
-BRIDGE_IMPL(sceGxmUnmapFragmentUsseMemoryInternal)
-BRIDGE_IMPL(sceGxmUnmapVertexUsseMemoryInternal)

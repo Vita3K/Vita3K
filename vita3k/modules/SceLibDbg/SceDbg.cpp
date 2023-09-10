@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceDbg.h"
+#include <module/module.h>
 
 #include <kernel/state.h>
 #include <util/lock_and_find.h>
@@ -97,9 +97,3 @@ EXPORT(int, sceDbgSetMinimumLogLevel) {
     TRACY_FUNC(sceDbgSetMinimumLogLevel);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceDbgAssertionHandler)
-BRIDGE_IMPL(sceDbgLoggingHandler)
-BRIDGE_IMPL(sceDbgSetBreakOnErrorState)
-BRIDGE_IMPL(sceDbgSetBreakOnWarningState)
-BRIDGE_IMPL(sceDbgSetMinimumLogLevel)

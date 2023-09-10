@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceUsbstorVStor.h"
+#include <module/module.h>
 
 EXPORT(int, sceUsbstorVStorSetDeviceInfo) {
     return UNIMPLEMENTED();
@@ -32,8 +32,3 @@ EXPORT(int, sceUsbstorVStorStart) {
 EXPORT(int, sceUsbstorVStorStop) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceUsbstorVStorSetDeviceInfo)
-BRIDGE_IMPL(sceUsbstorVStorSetImgFilePath)
-BRIDGE_IMPL(sceUsbstorVStorStart)
-BRIDGE_IMPL(sceUsbstorVStorStop)

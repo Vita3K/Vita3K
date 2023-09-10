@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceCodecEngineWrapper.h"
+#include <module/module.h>
 
 EXPORT(int, _sceCodecEngineAllocMemoryFromUnmapMemBlock) {
     return UNIMPLEMENTED();
@@ -80,20 +80,3 @@ EXPORT(int, _sceCodecEngineResetNumRpcCalled) {
 EXPORT(int, _sceCodecEngineSetClockFrequency) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(_sceCodecEngineAllocMemoryFromUnmapMemBlock)
-BRIDGE_IMPL(_sceCodecEngineChangeNumWorkerCores)
-BRIDGE_IMPL(_sceCodecEngineChangeNumWorkerCoresDefault)
-BRIDGE_IMPL(_sceCodecEngineChangeNumWorkerCoresMax)
-BRIDGE_IMPL(_sceCodecEngineCloseUnmapMemBlock)
-BRIDGE_IMPL(_sceCodecEngineFreeMemoryFromUnmapMemBlock)
-BRIDGE_IMPL(_sceCodecEngineGetMemoryState)
-BRIDGE_IMPL(_sceCodecEngineGetNumRpcCalled)
-BRIDGE_IMPL(_sceCodecEngineGetProcessorLoad)
-BRIDGE_IMPL(_sceCodecEngineOpenUnmapMemBlock)
-BRIDGE_IMPL(_sceCodecEnginePmonGetProcessorLoad)
-BRIDGE_IMPL(_sceCodecEnginePmonReset)
-BRIDGE_IMPL(_sceCodecEnginePmonStart)
-BRIDGE_IMPL(_sceCodecEnginePmonStop)
-BRIDGE_IMPL(_sceCodecEngineResetNumRpcCalled)
-BRIDGE_IMPL(_sceCodecEngineSetClockFrequency)

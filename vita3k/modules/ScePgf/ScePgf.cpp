@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "ScePgf.h"
+#include <module/module.h>
 
 typedef void *SceFontLibHandle;
 typedef void *SceFontHandle;
@@ -253,27 +253,3 @@ EXPORT(int, sceFontSetAltCharacterCode, SceFontLibHandle libHandle, unsigned int
 EXPORT(int, sceFontSetResolution, SceFontLibHandle libHandle, float hRes, float vRes) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceFontClose)
-BRIDGE_IMPL(sceFontDoneLib)
-BRIDGE_IMPL(sceFontFindFont)
-BRIDGE_IMPL(sceFontFindOptimumFont)
-BRIDGE_IMPL(sceFontFlush)
-BRIDGE_IMPL(sceFontGetCharGlyphImage)
-BRIDGE_IMPL(sceFontGetCharGlyphImage_Clip)
-BRIDGE_IMPL(sceFontGetCharImageRect)
-BRIDGE_IMPL(sceFontGetCharInfo)
-BRIDGE_IMPL(sceFontGetFontInfo)
-BRIDGE_IMPL(sceFontGetFontInfoByIndexNumber)
-BRIDGE_IMPL(sceFontGetFontList)
-BRIDGE_IMPL(sceFontGetNumFontList)
-BRIDGE_IMPL(sceFontNewLib)
-BRIDGE_IMPL(sceFontOpen)
-BRIDGE_IMPL(sceFontOpenUserFile)
-BRIDGE_IMPL(sceFontOpenUserMemory)
-BRIDGE_IMPL(sceFontPixelToPointH)
-BRIDGE_IMPL(sceFontPixelToPointV)
-BRIDGE_IMPL(sceFontPointToPixelH)
-BRIDGE_IMPL(sceFontPointToPixelV)
-BRIDGE_IMPL(sceFontSetAltCharacterCode)
-BRIDGE_IMPL(sceFontSetResolution)

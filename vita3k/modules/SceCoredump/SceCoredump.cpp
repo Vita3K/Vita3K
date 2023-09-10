@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceCoredump.h"
+#include <module/module.h>
 
 EXPORT(int, sceCoredumpRegisterCoredumpHandler) {
     return UNIMPLEMENTED();
@@ -24,6 +24,3 @@ EXPORT(int, sceCoredumpRegisterCoredumpHandler) {
 EXPORT(int, sceCoredumpUnregisterCoredumpHandler) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceCoredumpRegisterCoredumpHandler)
-BRIDGE_IMPL(sceCoredumpUnregisterCoredumpHandler)

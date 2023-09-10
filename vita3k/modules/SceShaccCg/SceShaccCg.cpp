@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceShaccCg.h"
+#include <module/module.h>
 
 EXPORT(int, sceShaccCgCompileProgram) {
     return UNIMPLEMENTED();
@@ -140,35 +140,3 @@ EXPORT(int, sceShaccCgIsParameterRegFormat) {
 EXPORT(int, sceShaccCgSetDefaultAllocator) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceShaccCgCompileProgram)
-BRIDGE_IMPL(sceShaccCgDestroyCompileOutput)
-BRIDGE_IMPL(sceShaccCgGetArrayParameter)
-BRIDGE_IMPL(sceShaccCgGetArraySize)
-BRIDGE_IMPL(sceShaccCgGetFirstParameter)
-BRIDGE_IMPL(sceShaccCgGetFirstStructParameter)
-BRIDGE_IMPL(sceShaccCgGetFirstUniformBlockParameter)
-BRIDGE_IMPL(sceShaccCgGetNextParameter)
-BRIDGE_IMPL(sceShaccCgGetParameterBaseType)
-BRIDGE_IMPL(sceShaccCgGetParameterBufferIndex)
-BRIDGE_IMPL(sceShaccCgGetParameterByName)
-BRIDGE_IMPL(sceShaccCgGetParameterClass)
-BRIDGE_IMPL(sceShaccCgGetParameterColumns)
-BRIDGE_IMPL(sceShaccCgGetParameterDirection)
-BRIDGE_IMPL(sceShaccCgGetParameterMemoryLayout)
-BRIDGE_IMPL(sceShaccCgGetParameterName)
-BRIDGE_IMPL(sceShaccCgGetParameterResourceIndex)
-BRIDGE_IMPL(sceShaccCgGetParameterRows)
-BRIDGE_IMPL(sceShaccCgGetParameterSemantic)
-BRIDGE_IMPL(sceShaccCgGetParameterUserType)
-BRIDGE_IMPL(sceShaccCgGetParameterVariability)
-BRIDGE_IMPL(sceShaccCgGetParameterVectorWidth)
-BRIDGE_IMPL(sceShaccCgGetRowParameter)
-BRIDGE_IMPL(sceShaccCgGetSamplerQueryFormatPrecision)
-BRIDGE_IMPL(sceShaccCgGetSamplerQueryFormatPrecisionCount)
-BRIDGE_IMPL(sceShaccCgGetSamplerQueryFormatWidth)
-BRIDGE_IMPL(sceShaccCgInitializeCallbackList)
-BRIDGE_IMPL(sceShaccCgInitializeCompileOptions)
-BRIDGE_IMPL(sceShaccCgIsParameterReferenced)
-BRIDGE_IMPL(sceShaccCgIsParameterRegFormat)
-BRIDGE_IMPL(sceShaccCgSetDefaultAllocator)

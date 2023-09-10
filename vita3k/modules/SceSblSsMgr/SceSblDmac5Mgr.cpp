@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSblDmac5Mgr.h"
+#include <module/module.h>
 
 EXPORT(int, sceSblDmac5EncDec) {
     return UNIMPLEMENTED();
@@ -32,8 +32,3 @@ EXPORT(int, sceSblDmac5HashTransform) {
 EXPORT(int, sceSblDmac5HmacKeyGen) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceSblDmac5EncDec)
-BRIDGE_IMPL(sceSblDmac5EncDecKeyGen)
-BRIDGE_IMPL(sceSblDmac5HashTransform)
-BRIDGE_IMPL(sceSblDmac5HmacKeyGen)

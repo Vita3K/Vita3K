@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNpUtility.h"
+#include <module/module.h>
 
 EXPORT(int, sceNpBandwidthTestAbort) {
     return UNIMPLEMENTED();
@@ -152,38 +152,3 @@ EXPORT(int, sceNpWordFilterTerm) {
 EXPORT(int, sceNpWordFilterWaitAsync) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNpBandwidthTestAbort)
-BRIDGE_IMPL(sceNpBandwidthTestGetStatus)
-BRIDGE_IMPL(sceNpBandwidthTestInitStart)
-BRIDGE_IMPL(sceNpBandwidthTestShutdown)
-BRIDGE_IMPL(sceNpLookupAbortRequest)
-BRIDGE_IMPL(sceNpLookupAvatarImage)
-BRIDGE_IMPL(sceNpLookupAvatarImageAsync)
-BRIDGE_IMPL(sceNpLookupCreateRequest)
-BRIDGE_IMPL(sceNpLookupCreateTitleCtx)
-BRIDGE_IMPL(sceNpLookupDeleteRequest)
-BRIDGE_IMPL(sceNpLookupDeleteTitleCtx)
-BRIDGE_IMPL(sceNpLookupInit)
-BRIDGE_IMPL(sceNpLookupNpId)
-BRIDGE_IMPL(sceNpLookupNpIdAsync)
-BRIDGE_IMPL(sceNpLookupPollAsync)
-BRIDGE_IMPL(sceNpLookupSetTimeout)
-BRIDGE_IMPL(sceNpLookupTerm)
-BRIDGE_IMPL(sceNpLookupUserProfile)
-BRIDGE_IMPL(sceNpLookupUserProfileAsync)
-BRIDGE_IMPL(sceNpLookupWaitAsync)
-BRIDGE_IMPL(sceNpWordFilterAbortRequest)
-BRIDGE_IMPL(sceNpWordFilterCensorComment)
-BRIDGE_IMPL(sceNpWordFilterCensorCommentAsync)
-BRIDGE_IMPL(sceNpWordFilterCreateRequest)
-BRIDGE_IMPL(sceNpWordFilterCreateTitleCtx)
-BRIDGE_IMPL(sceNpWordFilterDeleteRequest)
-BRIDGE_IMPL(sceNpWordFilterDeleteTitleCtx)
-BRIDGE_IMPL(sceNpWordFilterInit)
-BRIDGE_IMPL(sceNpWordFilterPollAsync)
-BRIDGE_IMPL(sceNpWordFilterSanitizeComment)
-BRIDGE_IMPL(sceNpWordFilterSanitizeCommentAsync)
-BRIDGE_IMPL(sceNpWordFilterSetTimeout)
-BRIDGE_IMPL(sceNpWordFilterTerm)
-BRIDGE_IMPL(sceNpWordFilterWaitAsync)

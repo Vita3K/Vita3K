@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNpScore.h"
+#include <module/module.h>
 
 EXPORT(int, sceNpScoreAbortRequest) {
     return UNIMPLEMENTED();
@@ -144,36 +144,3 @@ EXPORT(int, sceNpScoreTerm) {
 EXPORT(int, sceNpScoreWaitAsync) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNpScoreAbortRequest)
-BRIDGE_IMPL(sceNpScoreCensorComment)
-BRIDGE_IMPL(sceNpScoreCensorCommentAsync)
-BRIDGE_IMPL(sceNpScoreChangeModeForOtherSaveDataOwners)
-BRIDGE_IMPL(sceNpScoreCreateRequest)
-BRIDGE_IMPL(sceNpScoreCreateTitleCtx)
-BRIDGE_IMPL(sceNpScoreDeleteRequest)
-BRIDGE_IMPL(sceNpScoreDeleteTitleCtx)
-BRIDGE_IMPL(sceNpScoreGetBoardInfo)
-BRIDGE_IMPL(sceNpScoreGetBoardInfoAsync)
-BRIDGE_IMPL(sceNpScoreGetFriendsRanking)
-BRIDGE_IMPL(sceNpScoreGetFriendsRankingAsync)
-BRIDGE_IMPL(sceNpScoreGetGameData)
-BRIDGE_IMPL(sceNpScoreGetGameDataAsync)
-BRIDGE_IMPL(sceNpScoreGetRankingByNpId)
-BRIDGE_IMPL(sceNpScoreGetRankingByNpIdAsync)
-BRIDGE_IMPL(sceNpScoreGetRankingByNpIdPcId)
-BRIDGE_IMPL(sceNpScoreGetRankingByNpIdPcIdAsync)
-BRIDGE_IMPL(sceNpScoreGetRankingByRange)
-BRIDGE_IMPL(sceNpScoreGetRankingByRangeAsync)
-BRIDGE_IMPL(sceNpScoreInit)
-BRIDGE_IMPL(sceNpScorePollAsync)
-BRIDGE_IMPL(sceNpScoreRecordGameData)
-BRIDGE_IMPL(sceNpScoreRecordGameDataAsync)
-BRIDGE_IMPL(sceNpScoreRecordScore)
-BRIDGE_IMPL(sceNpScoreRecordScoreAsync)
-BRIDGE_IMPL(sceNpScoreSanitizeComment)
-BRIDGE_IMPL(sceNpScoreSanitizeCommentAsync)
-BRIDGE_IMPL(sceNpScoreSetPlayerCharacterId)
-BRIDGE_IMPL(sceNpScoreSetTimeout)
-BRIDGE_IMPL(sceNpScoreTerm)
-BRIDGE_IMPL(sceNpScoreWaitAsync)

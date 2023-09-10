@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceRtcForDriver.h"
+#include <module/module.h>
 
 EXPORT(int, ksceRtcConvertDateTimeToUnixTime) {
     return UNIMPLEMENTED();
@@ -156,39 +156,3 @@ EXPORT(int, ksceRtcUnregisterCallback) {
 EXPORT(int, ksceRtcUnregisterSecureAlarmCallback) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(ksceRtcConvertDateTimeToUnixTime)
-BRIDGE_IMPL(ksceRtcConvertLocalTimeToUtc)
-BRIDGE_IMPL(ksceRtcConvertTickToDateTime)
-BRIDGE_IMPL(ksceRtcConvertUtcToLocal)
-BRIDGE_IMPL(ksceRtcFormatRFC2822)
-BRIDGE_IMPL(ksceRtcFormatRFC2822LocalTime)
-BRIDGE_IMPL(ksceRtcFormatRFC3339)
-BRIDGE_IMPL(ksceRtcFormatRFC3339LocalTime)
-BRIDGE_IMPL(ksceRtcGetAccumulativeTime)
-BRIDGE_IMPL(ksceRtcGetAlarmTick)
-BRIDGE_IMPL(ksceRtcGetCurrentAdNetworkTick)
-BRIDGE_IMPL(ksceRtcGetCurrentClock)
-BRIDGE_IMPL(ksceRtcGetCurrentClockLocalTime)
-BRIDGE_IMPL(ksceRtcGetCurrentDebugNetworkTick)
-BRIDGE_IMPL(ksceRtcGetCurrentGpsTick)
-BRIDGE_IMPL(ksceRtcGetCurrentNetworkTick)
-BRIDGE_IMPL(ksceRtcGetCurrentRetainedNetworkTick)
-BRIDGE_IMPL(ksceRtcGetCurrentSecureTick)
-BRIDGE_IMPL(ksceRtcGetCurrentTick)
-BRIDGE_IMPL(ksceRtcGetLastAdjustedTick)
-BRIDGE_IMPL(ksceRtcGetLastReincarnatedTick)
-BRIDGE_IMPL(ksceRtcGetSecureAlarmTick)
-BRIDGE_IMPL(ksceRtcIsAlarmed)
-BRIDGE_IMPL(ksceRtcIsSecureAlarmed)
-BRIDGE_IMPL(ksceRtcRegisterCallback)
-BRIDGE_IMPL(ksceRtcRegisterSecureAlarmCallback)
-BRIDGE_IMPL(ksceRtcSetAlarmTick)
-BRIDGE_IMPL(ksceRtcSetConf)
-BRIDGE_IMPL(ksceRtcSetCurrentDebugNetworkTick)
-BRIDGE_IMPL(ksceRtcSetCurrentNetworkTick)
-BRIDGE_IMPL(ksceRtcSetCurrentSecureTick)
-BRIDGE_IMPL(ksceRtcSetCurrentTick)
-BRIDGE_IMPL(ksceRtcSetSecureAlarmTick)
-BRIDGE_IMPL(ksceRtcUnregisterCallback)
-BRIDGE_IMPL(ksceRtcUnregisterSecureAlarmCallback)

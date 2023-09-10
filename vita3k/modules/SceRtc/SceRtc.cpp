@@ -178,21 +178,3 @@ EXPORT(SceULong64, sceRtcGetAccumulativeTime) {
     STUBBED("sceRtcGetAccumulativeTime");
     return rtc_get_ticks(emuenv.kernel.base_tick.tick);
 }
-
-BRIDGE_IMPL(_sceRtcConvertLocalTimeToUtc)
-BRIDGE_IMPL(_sceRtcConvertUtcToLocalTime)
-BRIDGE_IMPL(_sceRtcFormatRFC2822)
-BRIDGE_IMPL(_sceRtcFormatRFC2822LocalTime)
-BRIDGE_IMPL(_sceRtcFormatRFC3339)
-BRIDGE_IMPL(_sceRtcFormatRFC3339LocalTime)
-BRIDGE_IMPL(_sceRtcGetCurrentAdNetworkTick)
-BRIDGE_IMPL(_sceRtcGetCurrentClock)
-BRIDGE_IMPL(_sceRtcGetCurrentClockLocalTime)
-BRIDGE_IMPL(_sceRtcGetCurrentDebugNetworkTick)
-BRIDGE_IMPL(_sceRtcGetCurrentGpsTick)
-BRIDGE_IMPL(_sceRtcGetCurrentNetworkTick)
-BRIDGE_IMPL(_sceRtcGetCurrentRetainedNetworkTick)
-BRIDGE_IMPL(_sceRtcGetCurrentTick)
-BRIDGE_IMPL(_sceRtcGetLastAdjustedTick)
-BRIDGE_IMPL(_sceRtcGetLastReincarnatedTick)
-BRIDGE_IMPL(sceRtcGetAccumulativeTime)

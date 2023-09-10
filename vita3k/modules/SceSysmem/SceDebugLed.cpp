@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceDebugLed.h"
+#include <module/module.h>
 
 EXPORT(int, sceDebugLedInvokeHandle0) {
     return UNIMPLEMENTED();
@@ -32,8 +32,3 @@ EXPORT(int, sceKernelGetGPI) {
 EXPORT(int, sceKernelSetGPO) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceDebugLedInvokeHandle0)
-BRIDGE_IMPL(sceDebugLedInvokeHandle1)
-BRIDGE_IMPL(sceKernelGetGPI)
-BRIDGE_IMPL(sceKernelSetGPO)

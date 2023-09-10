@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSmart.h"
+#include <module/module.h>
 
 EXPORT(int, sceSmartCreateInstantImageTarget) {
     return UNIMPLEMENTED();
@@ -192,48 +192,3 @@ EXPORT(int, sceSmartTargetTrackingStop) {
 EXPORT(int, sceSmartTargetTrackingUnregisterTarget) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceSmartCreateInstantImageTarget)
-BRIDGE_IMPL(sceSmartCreateLearnedImageTarget)
-BRIDGE_IMPL(sceSmartDestroyTarget)
-BRIDGE_IMPL(sceSmartGetTargetInfo)
-BRIDGE_IMPL(sceSmartInit)
-BRIDGE_IMPL(sceSmartRelease)
-BRIDGE_IMPL(sceSmartSceneMappingDispatchAndQuery)
-BRIDGE_IMPL(sceSmartSceneMappingDispatchAndQueryWithMask)
-BRIDGE_IMPL(sceSmartSceneMappingEnableMask)
-BRIDGE_IMPL(sceSmartSceneMappingFixMap)
-BRIDGE_IMPL(sceSmartSceneMappingForceLocalize)
-BRIDGE_IMPL(sceSmartSceneMappingGetInitializationPointInfo)
-BRIDGE_IMPL(sceSmartSceneMappingGetLandmarkInfo)
-BRIDGE_IMPL(sceSmartSceneMappingGetNodePointInfo)
-BRIDGE_IMPL(sceSmartSceneMappingGetNumInitializationPoints)
-BRIDGE_IMPL(sceSmartSceneMappingGetNumLandmarks)
-BRIDGE_IMPL(sceSmartSceneMappingGetNumNodePoints)
-BRIDGE_IMPL(sceSmartSceneMappingLoadMap)
-BRIDGE_IMPL(sceSmartSceneMappingPropagateResult)
-BRIDGE_IMPL(sceSmartSceneMappingRegisterTarget)
-BRIDGE_IMPL(sceSmartSceneMappingRemoveLandmark)
-BRIDGE_IMPL(sceSmartSceneMappingReset)
-BRIDGE_IMPL(sceSmartSceneMappingRun)
-BRIDGE_IMPL(sceSmartSceneMappingRunCore)
-BRIDGE_IMPL(sceSmartSceneMappingSaveMap)
-BRIDGE_IMPL(sceSmartSceneMappingSetCustomListener)
-BRIDGE_IMPL(sceSmartSceneMappingSetDenseMapMode)
-BRIDGE_IMPL(sceSmartSceneMappingSetDispatchMode)
-BRIDGE_IMPL(sceSmartSceneMappingStart)
-BRIDGE_IMPL(sceSmartSceneMappingStop)
-BRIDGE_IMPL(sceSmartSceneMappingUnregisterTarget)
-BRIDGE_IMPL(sceSmartTargetTrackingDispatchAndQuery)
-BRIDGE_IMPL(sceSmartTargetTrackingGetResults)
-BRIDGE_IMPL(sceSmartTargetTrackingQuery)
-BRIDGE_IMPL(sceSmartTargetTrackingQuery2)
-BRIDGE_IMPL(sceSmartTargetTrackingRegisterTarget)
-BRIDGE_IMPL(sceSmartTargetTrackingReset)
-BRIDGE_IMPL(sceSmartTargetTrackingRun)
-BRIDGE_IMPL(sceSmartTargetTrackingRun2)
-BRIDGE_IMPL(sceSmartTargetTrackingRunWorker)
-BRIDGE_IMPL(sceSmartTargetTrackingSetSearchPolicy)
-BRIDGE_IMPL(sceSmartTargetTrackingStart)
-BRIDGE_IMPL(sceSmartTargetTrackingStop)
-BRIDGE_IMPL(sceSmartTargetTrackingUnregisterTarget)

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNpDrm.h"
+#include <module/module.h>
 
 EXPORT(int, _sceNpDrmCheckActData) {
     return UNIMPLEMENTED();
@@ -48,12 +48,3 @@ EXPORT(int, _sceNpDrmPresetRifProvisionalFlag) {
 EXPORT(int, _sceNpDrmRemoveActData) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(_sceNpDrmCheckActData)
-BRIDGE_IMPL(_sceNpDrmCheckDrmReset)
-BRIDGE_IMPL(_sceNpDrmGetFixedRifName)
-BRIDGE_IMPL(_sceNpDrmGetRifInfo)
-BRIDGE_IMPL(_sceNpDrmGetRifName)
-BRIDGE_IMPL(_sceNpDrmGetRifNameForInstall)
-BRIDGE_IMPL(_sceNpDrmPresetRifProvisionalFlag)
-BRIDGE_IMPL(_sceNpDrmRemoveActData)

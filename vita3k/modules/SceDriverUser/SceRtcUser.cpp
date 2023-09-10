@@ -15,7 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceRtcUser.h"
+#include <module/module.h>
+#include "../SceRtc/SceRtc.h"
 
 #include <rtc/rtc.h>
 
@@ -556,48 +557,3 @@ EXPORT(int, sceRtcTickAddYears, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sc
     pTick0->tick = __RtcPspTimeToTicks(&t);
     return 0;
 }
-
-BRIDGE_IMPL(sceRtcCheckValid)
-BRIDGE_IMPL(sceRtcCompareTick)
-BRIDGE_IMPL(sceRtcConvertLocalTimeToUtc)
-BRIDGE_IMPL(sceRtcConvertUtcToLocalTime)
-BRIDGE_IMPL(sceRtcFormatRFC2822)
-BRIDGE_IMPL(sceRtcFormatRFC2822LocalTime)
-BRIDGE_IMPL(sceRtcFormatRFC3339)
-BRIDGE_IMPL(sceRtcFormatRFC3339LocalTime)
-BRIDGE_IMPL(sceRtcGetCurrentAdNetworkTick)
-BRIDGE_IMPL(sceRtcGetCurrentClock)
-BRIDGE_IMPL(sceRtcGetCurrentClockLocalTime)
-BRIDGE_IMPL(sceRtcGetCurrentDebugNetworkTick)
-BRIDGE_IMPL(sceRtcGetCurrentGpsTick)
-BRIDGE_IMPL(sceRtcGetCurrentNetworkTick)
-BRIDGE_IMPL(sceRtcGetCurrentRetainedNetworkTick)
-BRIDGE_IMPL(sceRtcGetCurrentTick)
-BRIDGE_IMPL(sceRtcGetDayOfWeek)
-BRIDGE_IMPL(sceRtcGetDayOfYear)
-BRIDGE_IMPL(sceRtcGetDaysInMonth)
-BRIDGE_IMPL(sceRtcGetDosTime)
-BRIDGE_IMPL(sceRtcGetLastAdjustedTick)
-BRIDGE_IMPL(sceRtcGetLastReincarnatedTick)
-BRIDGE_IMPL(sceRtcGetTick)
-BRIDGE_IMPL(sceRtcGetTickResolution)
-BRIDGE_IMPL(sceRtcGetTime64_t)
-BRIDGE_IMPL(sceRtcGetTime_t)
-BRIDGE_IMPL(sceRtcGetWin32FileTime)
-BRIDGE_IMPL(sceRtcIsLeapYear)
-BRIDGE_IMPL(sceRtcParseDateTime)
-BRIDGE_IMPL(sceRtcParseRFC3339)
-BRIDGE_IMPL(sceRtcSetDosTime)
-BRIDGE_IMPL(sceRtcSetTick)
-BRIDGE_IMPL(sceRtcSetTime64_t)
-BRIDGE_IMPL(sceRtcSetTime_t)
-BRIDGE_IMPL(sceRtcSetWin32FileTime)
-BRIDGE_IMPL(sceRtcTickAddDays)
-BRIDGE_IMPL(sceRtcTickAddHours)
-BRIDGE_IMPL(sceRtcTickAddMicroseconds)
-BRIDGE_IMPL(sceRtcTickAddMinutes)
-BRIDGE_IMPL(sceRtcTickAddMonths)
-BRIDGE_IMPL(sceRtcTickAddSeconds)
-BRIDGE_IMPL(sceRtcTickAddTicks)
-BRIDGE_IMPL(sceRtcTickAddWeeks)
-BRIDGE_IMPL(sceRtcTickAddYears)

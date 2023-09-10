@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceUdcd.h"
+#include <module/module.h>
 
 EXPORT(int, sceUdcdGetDeviceInfo) {
     return UNIMPLEMENTED();
@@ -40,10 +40,3 @@ EXPORT(int, sceUdcdUnregisterCallback) {
 EXPORT(int, sceUdcdWaitState) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceUdcdGetDeviceInfo)
-BRIDGE_IMPL(sceUdcdGetDeviceState)
-BRIDGE_IMPL(sceUdcdGetDrvState)
-BRIDGE_IMPL(sceUdcdRegisterCallback)
-BRIDGE_IMPL(sceUdcdUnregisterCallback)
-BRIDGE_IMPL(sceUdcdWaitState)

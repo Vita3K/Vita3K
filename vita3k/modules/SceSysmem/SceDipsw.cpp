@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceDipsw.h"
+#include <module/module.h>
 
 EXPORT(int, sceKernelCheckDipsw) {
     return UNIMPLEMENTED();
@@ -28,7 +28,3 @@ EXPORT(int, sceKernelClearDipsw) {
 EXPORT(int, sceKernelSetDipsw) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceKernelCheckDipsw)
-BRIDGE_IMPL(sceKernelClearDipsw)
-BRIDGE_IMPL(sceKernelSetDipsw)

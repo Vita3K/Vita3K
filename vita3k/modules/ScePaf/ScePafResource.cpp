@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "ScePafResource.h"
+#include <module/module.h>
 
 EXPORT(int, _ZN3paf8Resource7Element11GetHashByIdEPS1_) {
     return UNIMPLEMENTED();
@@ -120,30 +120,3 @@ EXPORT(int, scePafResourceGetString) {
 EXPORT(int, scePafResourceGetStyleId) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(_ZN3paf8Resource7Element11GetHashByIdEPS1_)
-BRIDGE_IMPL(scePafResourceGetAttribute)
-BRIDGE_IMPL(scePafResourceGetAttributeChar)
-BRIDGE_IMPL(scePafResourceGetAttributeData)
-BRIDGE_IMPL(scePafResourceGetAttributeFloat)
-BRIDGE_IMPL(scePafResourceGetAttributeFloatArray)
-BRIDGE_IMPL(scePafResourceGetAttributeIdInt)
-BRIDGE_IMPL(scePafResourceGetAttributeIdIntLpb)
-BRIDGE_IMPL(scePafResourceGetAttributeIdStr)
-BRIDGE_IMPL(scePafResourceGetAttributeIdStrLpb)
-BRIDGE_IMPL(scePafResourceGetAttributeInteger)
-BRIDGE_IMPL(scePafResourceGetAttributeIntegerArray)
-BRIDGE_IMPL(scePafResourceGetAttributeString)
-BRIDGE_IMPL(scePafResourceGetAttributeStyleId)
-BRIDGE_IMPL(scePafResourceGetChar)
-BRIDGE_IMPL(scePafResourceGetData)
-BRIDGE_IMPL(scePafResourceGetFloat)
-BRIDGE_IMPL(scePafResourceGetFloatArray)
-BRIDGE_IMPL(scePafResourceGetIdInt)
-BRIDGE_IMPL(scePafResourceGetIdIntLpb)
-BRIDGE_IMPL(scePafResourceGetIdStr)
-BRIDGE_IMPL(scePafResourceGetIdStrLpb)
-BRIDGE_IMPL(scePafResourceGetInteger)
-BRIDGE_IMPL(scePafResourceGetIntegerArray)
-BRIDGE_IMPL(scePafResourceGetString)
-BRIDGE_IMPL(scePafResourceGetStyleId)

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceAVConfig.h"
+#include <module/module.h>
 
 EXPORT(int, sceAVConfigChangeReg) {
     return UNIMPLEMENTED();
@@ -152,38 +152,3 @@ EXPORT(int, sceAVConfigWriteMasterVol) {
 EXPORT(int, sceAVConfigWriteRegSystemVol) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceAVConfigChangeReg)
-BRIDGE_IMPL(sceAVConfigClearAutoSuspend2)
-BRIDGE_IMPL(sceAVConfigDisplayOn)
-BRIDGE_IMPL(sceAVConfigGetAcStatus)
-BRIDGE_IMPL(sceAVConfigGetBtVol)
-BRIDGE_IMPL(sceAVConfigGetConnectedAudioDevice)
-BRIDGE_IMPL(sceAVConfigGetDisplayMaxBrightness)
-BRIDGE_IMPL(sceAVConfigGetMasterVol)
-BRIDGE_IMPL(sceAVConfigGetShutterVol)
-BRIDGE_IMPL(sceAVConfigGetSystemVol)
-BRIDGE_IMPL(sceAVConfigGetVolCtrlEnable)
-BRIDGE_IMPL(sceAVConfigHdmiCecCmdOneTouchPlay)
-BRIDGE_IMPL(sceAVConfigHdmiCecDisable)
-BRIDGE_IMPL(sceAVConfigHdmiCecEnable)
-BRIDGE_IMPL(sceAVConfigHdmiClearCecInfo)
-BRIDGE_IMPL(sceAVConfigHdmiGetCecInfo)
-BRIDGE_IMPL(sceAVConfigHdmiGetMonitorInfo)
-BRIDGE_IMPL(sceAVConfigHdmiGetOutScalingRatio)
-BRIDGE_IMPL(sceAVConfigHdmiSetOutScalingRatio)
-BRIDGE_IMPL(sceAVConfigHdmiSetResolution)
-BRIDGE_IMPL(sceAVConfigHdmiSetRgbRangeMode)
-BRIDGE_IMPL(sceAVConfigMuteOn)
-BRIDGE_IMPL(sceAVConfigRegisterCallback)
-BRIDGE_IMPL(sceAVConfigSendVolKey)
-BRIDGE_IMPL(sceAVConfigSetAutoDisplayDimming)
-BRIDGE_IMPL(sceAVConfigSetAutoSuspend)
-BRIDGE_IMPL(sceAVConfigSetAutoSuspend2)
-BRIDGE_IMPL(sceAVConfigSetDisplayBrightness)
-BRIDGE_IMPL(sceAVConfigSetDisplayColorSpaceMode)
-BRIDGE_IMPL(sceAVConfigSetMasterVol)
-BRIDGE_IMPL(sceAVConfigSetSystemVol)
-BRIDGE_IMPL(sceAVConfigUnRegisterCallback)
-BRIDGE_IMPL(sceAVConfigWriteMasterVol)
-BRIDGE_IMPL(sceAVConfigWriteRegSystemVol)

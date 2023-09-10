@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "ScePower.h"
+#include <module/module.h>
 
 #include <util/tracy.h>
 #include <util/types.h>
@@ -301,46 +301,3 @@ EXPORT(int, scePowerUnregisterCallback) {
     TRACY_FUNC(scePowerUnregisterCallback);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(scePowerBatteryUpdateInfo)
-BRIDGE_IMPL(scePowerCancelRequest)
-BRIDGE_IMPL(scePowerGetArmClockFrequency)
-BRIDGE_IMPL(scePowerGetBatteryChargingStatus)
-BRIDGE_IMPL(scePowerGetBatteryCycleCount)
-BRIDGE_IMPL(scePowerGetBatteryElec)
-BRIDGE_IMPL(scePowerGetBatteryFullCapacity)
-BRIDGE_IMPL(scePowerGetBatteryLifePercent)
-BRIDGE_IMPL(scePowerGetBatteryLifeTime)
-BRIDGE_IMPL(scePowerGetBatteryRemainCapacity)
-BRIDGE_IMPL(scePowerGetBatteryRemainLevel)
-BRIDGE_IMPL(scePowerGetBatteryRemainMaxLevel)
-BRIDGE_IMPL(scePowerGetBatterySOH)
-BRIDGE_IMPL(scePowerGetBatteryTemp)
-BRIDGE_IMPL(scePowerGetBatteryVolt)
-BRIDGE_IMPL(scePowerGetBusClockFrequency)
-BRIDGE_IMPL(scePowerGetCaseTemp)
-BRIDGE_IMPL(scePowerGetGpuClockFrequency)
-BRIDGE_IMPL(scePowerGetGpuXbarClockFrequency)
-BRIDGE_IMPL(scePowerGetUsingWireless)
-BRIDGE_IMPL(scePowerIsBatteryCharging)
-BRIDGE_IMPL(scePowerIsBatteryExist)
-BRIDGE_IMPL(scePowerIsLowBattery)
-BRIDGE_IMPL(scePowerIsLowBatteryInhibitUpdateDownload)
-BRIDGE_IMPL(scePowerIsLowBatteryInhibitUpdateReboot)
-BRIDGE_IMPL(scePowerIsPowerOnline)
-BRIDGE_IMPL(scePowerIsRequest)
-BRIDGE_IMPL(scePowerIsSuspendRequired)
-BRIDGE_IMPL(scePowerRegisterCallback)
-BRIDGE_IMPL(scePowerRequestColdReset)
-BRIDGE_IMPL(scePowerRequestDisplayOff)
-BRIDGE_IMPL(scePowerRequestDisplayOn)
-BRIDGE_IMPL(scePowerRequestStandby)
-BRIDGE_IMPL(scePowerRequestSuspend)
-BRIDGE_IMPL(scePowerSetArmClockFrequency)
-BRIDGE_IMPL(scePowerSetBusClockFrequency)
-BRIDGE_IMPL(scePowerSetConfigurationMode)
-BRIDGE_IMPL(scePowerSetGpuClockFrequency)
-BRIDGE_IMPL(scePowerSetGpuXbarClockFrequency)
-BRIDGE_IMPL(scePowerSetIdleTimerCount)
-BRIDGE_IMPL(scePowerSetUsingWireless)
-BRIDGE_IMPL(scePowerUnregisterCallback)

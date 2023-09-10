@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "ScePsmDrm.h"
+#include <module/module.h>
 
 EXPORT(int, scePsmDrmGetRifInfo) {
     return UNIMPLEMENTED();
@@ -24,6 +24,3 @@ EXPORT(int, scePsmDrmGetRifInfo) {
 EXPORT(int, scePsmDrmGetRifKey) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(scePsmDrmGetRifInfo)
-BRIDGE_IMPL(scePsmDrmGetRifKey)

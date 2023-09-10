@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "ScePafMisc.h"
+#include <module/module.h>
 
 EXPORT(int, scePafGetCurrentClockLocalTime) {
     return UNIMPLEMENTED();
@@ -36,9 +36,3 @@ EXPORT(int, scePafSha1Update) {
 EXPORT(int, sce_paf_misc_does_file_exist) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(scePafGetCurrentClockLocalTime)
-BRIDGE_IMPL(scePafSha1Init)
-BRIDGE_IMPL(scePafSha1Result)
-BRIDGE_IMPL(scePafSha1Update)
-BRIDGE_IMPL(sce_paf_misc_does_file_exist)

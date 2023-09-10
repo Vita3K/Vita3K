@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceGameUpdate.h"
+#include <module/module.h>
 
 EXPORT(int, sceGameUpdateAbort) {
     return UNIMPLEMENTED();
@@ -32,8 +32,3 @@ EXPORT(int, sceGameUpdateRun) {
 EXPORT(int, sceGameUpdateTerm) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceGameUpdateAbort)
-BRIDGE_IMPL(sceGameUpdateInit)
-BRIDGE_IMPL(sceGameUpdateRun)
-BRIDGE_IMPL(sceGameUpdateTerm)

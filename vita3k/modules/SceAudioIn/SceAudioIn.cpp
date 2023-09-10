@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceAudioIn.h"
+#include <module/module.h>
 
 #include <audio/state.h>
 #include <util/lock_and_find.h>
@@ -207,16 +207,3 @@ EXPORT(int, sceAudioInSetMute) {
     TRACY_FUNC(sceAudioInSetMute);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceAudioInGetAdopt)
-BRIDGE_IMPL(sceAudioInGetInput)
-BRIDGE_IMPL(sceAudioInGetMicGain)
-BRIDGE_IMPL(sceAudioInGetStatus)
-BRIDGE_IMPL(sceAudioInInput)
-BRIDGE_IMPL(sceAudioInInputWithInputDeviceState)
-BRIDGE_IMPL(sceAudioInOpenPort)
-BRIDGE_IMPL(sceAudioInOpenPortForDiag)
-BRIDGE_IMPL(sceAudioInReleasePort)
-BRIDGE_IMPL(sceAudioInSelectInput)
-BRIDGE_IMPL(sceAudioInSetMicGain)
-BRIDGE_IMPL(sceAudioInSetMute)

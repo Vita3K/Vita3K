@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceRegMgrForGame.h"
+#include <module/module.h>
 
 #include <regmgr/functions.h>
 
@@ -73,11 +73,3 @@ EXPORT(int, sceRegMgrSystemParamSetStr, const int id, const char *buf, const Sce
 
     return 0;
 }
-
-BRIDGE_IMPL(sceRegMgrSystemIsBlueScreen)
-BRIDGE_IMPL(sceRegMgrSystemParamGetBin)
-BRIDGE_IMPL(sceRegMgrSystemParamGetInt)
-BRIDGE_IMPL(sceRegMgrSystemParamGetStr)
-BRIDGE_IMPL(sceRegMgrSystemParamSetBin)
-BRIDGE_IMPL(sceRegMgrSystemParamSetInt)
-BRIDGE_IMPL(sceRegMgrSystemParamSetStr)

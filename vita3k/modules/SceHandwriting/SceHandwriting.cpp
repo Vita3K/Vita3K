@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceHandwriting.h"
+#include <module/module.h>
 
 EXPORT(int, sceHandwritingGetBufferSize) {
     return UNIMPLEMENTED();
@@ -60,15 +60,3 @@ EXPORT(int, sceHandwritingSetMode) {
 EXPORT(int, sceHandwritingTerm) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceHandwritingGetBufferSize)
-BRIDGE_IMPL(sceHandwritingInit)
-BRIDGE_IMPL(sceHandwritingRecognize)
-BRIDGE_IMPL(sceHandwritingRegisterDelete)
-BRIDGE_IMPL(sceHandwritingRegisterGetResult)
-BRIDGE_IMPL(sceHandwritingRegisterInfo)
-BRIDGE_IMPL(sceHandwritingRegisterInit)
-BRIDGE_IMPL(sceHandwritingRegisterSet)
-BRIDGE_IMPL(sceHandwritingRegisterTerm)
-BRIDGE_IMPL(sceHandwritingSetMode)
-BRIDGE_IMPL(sceHandwritingTerm)

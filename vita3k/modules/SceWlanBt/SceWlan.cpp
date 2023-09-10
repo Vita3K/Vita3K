@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceWlan.h"
+#include <module/module.h>
 
 EXPORT(int, sceWlanGetConfiguration) {
     return UNIMPLEMENTED();
@@ -36,9 +36,3 @@ EXPORT(int, sceWlanSetConfiguration) {
 EXPORT(int, sceWlanUnregisterCallback) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceWlanGetConfiguration)
-BRIDGE_IMPL(sceWlanGetWakeOnTargetProcess)
-BRIDGE_IMPL(sceWlanRegisterCallback)
-BRIDGE_IMPL(sceWlanSetConfiguration)
-BRIDGE_IMPL(sceWlanUnregisterCallback)

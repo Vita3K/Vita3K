@@ -18,7 +18,6 @@
 #pragma once
 
 #include <module/module.h>
-#include <modules/module_parent.h>
 
 enum SceAudiodecCodec : uint32_t {
     SCE_AUDIODEC_TYPE_AT9 = 0x1003,
@@ -45,22 +44,6 @@ union SceAudiodecInitParam {
     SceAudiodecInitStreamParam celp;
 };
 
-EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodecInitParam *pInitParam);
-EXPORT(SceInt32, sceAudiodecTermLibrary, SceAudiodecCodec codecType);
+DECL_EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodecInitParam *pInitParam);
+DECL_EXPORT(SceInt32, sceAudiodecTermLibrary, SceAudiodecCodec codecType);
 
-LIBRARY_INIT_DECL(SceAudiodec);
-BRIDGE_DECL(sceAudiodecClearContext)
-BRIDGE_DECL(sceAudiodecCreateDecoder)
-BRIDGE_DECL(sceAudiodecCreateDecoderExternal)
-BRIDGE_DECL(sceAudiodecCreateDecoderResident)
-BRIDGE_DECL(sceAudiodecDecode)
-BRIDGE_DECL(sceAudiodecDecodeNFrames)
-BRIDGE_DECL(sceAudiodecDecodeNStreams)
-BRIDGE_DECL(sceAudiodecDeleteDecoder)
-BRIDGE_DECL(sceAudiodecDeleteDecoderExternal)
-BRIDGE_DECL(sceAudiodecDeleteDecoderResident)
-BRIDGE_DECL(sceAudiodecGetContextSize)
-BRIDGE_DECL(sceAudiodecGetInternalError)
-BRIDGE_DECL(sceAudiodecInitLibrary)
-BRIDGE_DECL(sceAudiodecPartlyDecode)
-BRIDGE_DECL(sceAudiodecTermLibrary)

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceAppUtilCache.h"
+#include <module/module.h>
 
 EXPORT(int, sceAppUtilCacheGetDevInfo) {
     return UNIMPLEMENTED();
@@ -28,7 +28,3 @@ EXPORT(int, sceAppUtilCacheMount) {
 EXPORT(int, sceAppUtilCacheUmount) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceAppUtilCacheGetDevInfo)
-BRIDGE_IMPL(sceAppUtilCacheMount)
-BRIDGE_IMPL(sceAppUtilCacheUmount)

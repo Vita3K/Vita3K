@@ -66,27 +66,5 @@ struct SceDisplayFrameBuf2 : public SceDisplayFrameBuf {
     SceUInt32 unkn = 0;
 };
 
-EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync, uint32_t *pFrameBuf_size);
-EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync, uint32_t *pFrameBuf_size);
-
-BRIDGE_DECL(_sceDisplayGetFrameBuf)
-BRIDGE_DECL(_sceDisplayGetFrameBufInternal)
-BRIDGE_DECL(_sceDisplayGetMaximumFrameBufResolution)
-BRIDGE_DECL(_sceDisplayGetResolutionInfoInternal)
-BRIDGE_DECL(_sceDisplaySetFrameBuf)
-BRIDGE_DECL(_sceDisplaySetFrameBufForCompat)
-BRIDGE_DECL(_sceDisplaySetFrameBufInternal)
-BRIDGE_DECL(sceDisplayGetPrimaryHead)
-BRIDGE_DECL(sceDisplayGetRefreshRate)
-BRIDGE_DECL(sceDisplayGetVcount)
-BRIDGE_DECL(sceDisplayGetVcountInternal)
-BRIDGE_DECL(sceDisplayRegisterVblankStartCallback)
-BRIDGE_DECL(sceDisplayUnregisterVblankStartCallback)
-BRIDGE_DECL(sceDisplayWaitSetFrameBuf)
-BRIDGE_DECL(sceDisplayWaitSetFrameBufCB)
-BRIDGE_DECL(sceDisplayWaitSetFrameBufMulti)
-BRIDGE_DECL(sceDisplayWaitSetFrameBufMultiCB)
-BRIDGE_DECL(sceDisplayWaitVblankStart)
-BRIDGE_DECL(sceDisplayWaitVblankStartCB)
-BRIDGE_DECL(sceDisplayWaitVblankStartMulti)
-BRIDGE_DECL(sceDisplayWaitVblankStartMultiCB)
+DECL_EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync, uint32_t *pFrameBuf_size);
+DECL_EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync, uint32_t *pFrameBuf_size);

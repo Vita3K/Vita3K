@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSblUtMgr.h"
+#include <module/module.h>
 
 EXPORT(int, sceSblUtMgrGetCurrentSecureTick) {
     return UNIMPLEMENTED();
@@ -36,9 +36,3 @@ EXPORT(int, sceSblUtMgrResetUtokenFile) {
 EXPORT(int, sceSblUtMgrUpdateUtoken) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceSblUtMgrGetCurrentSecureTick)
-BRIDGE_IMPL(sceSblUtMgrIsTrilithiumFlagEnabled)
-BRIDGE_IMPL(sceSblUtMgrReadUtoken)
-BRIDGE_IMPL(sceSblUtMgrResetUtokenFile)
-BRIDGE_IMPL(sceSblUtMgrUpdateUtoken)

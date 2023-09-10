@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSsl.h"
+#include <module/module.h>
 
 #include <http/state.h>
 #include <openssl/ssl.h>
@@ -111,15 +111,3 @@ EXPORT(SceInt32, sceSslTerm) {
 
     return 0;
 }
-
-BRIDGE_IMPL(sceSslFreeSslCertName)
-BRIDGE_IMPL(sceSslGetIssuerName)
-BRIDGE_IMPL(sceSslGetMemoryPoolStats)
-BRIDGE_IMPL(sceSslGetNameEntryCount)
-BRIDGE_IMPL(sceSslGetNameEntryInfo)
-BRIDGE_IMPL(sceSslGetNotAfter)
-BRIDGE_IMPL(sceSslGetNotBefore)
-BRIDGE_IMPL(sceSslGetSerialNumber)
-BRIDGE_IMPL(sceSslGetSubjectName)
-BRIDGE_IMPL(sceSslInit)
-BRIDGE_IMPL(sceSslTerm)

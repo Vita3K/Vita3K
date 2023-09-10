@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNearDialogUtil.h"
+#include <module/module.h>
 
 EXPORT(int, sceNearDialogAbort) {
     return UNIMPLEMENTED();
@@ -148,37 +148,3 @@ EXPORT(int, sceNearUtilitySetGift) {
 EXPORT(int, sceNearUtilitySetGift2) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNearDialogAbort)
-BRIDGE_IMPL(sceNearDialogGetResult)
-BRIDGE_IMPL(sceNearDialogGetStatus)
-BRIDGE_IMPL(sceNearDialogInit)
-BRIDGE_IMPL(sceNearDialogTerm)
-BRIDGE_IMPL(sceNearUtilityCloseDiscoveredGiftImage)
-BRIDGE_IMPL(sceNearUtilityCloseReceivedGiftData)
-BRIDGE_IMPL(sceNearUtilityConvertDiscoveredGiftParam)
-BRIDGE_IMPL(sceNearUtilityDeleteDiscoveredGift)
-BRIDGE_IMPL(sceNearUtilityDeleteGift)
-BRIDGE_IMPL(sceNearUtilityFinalize)
-BRIDGE_IMPL(sceNearUtilityGetDiscoveredGiftInfo)
-BRIDGE_IMPL(sceNearUtilityGetDiscoveredGiftSender)
-BRIDGE_IMPL(sceNearUtilityGetDiscoveredGiftStatus)
-BRIDGE_IMPL(sceNearUtilityGetDiscoveredGifts)
-BRIDGE_IMPL(sceNearUtilityGetGift)
-BRIDGE_IMPL(sceNearUtilityGetGiftStatus)
-BRIDGE_IMPL(sceNearUtilityGetLastNeighborFoundDateTime)
-BRIDGE_IMPL(sceNearUtilityGetMyStatus)
-BRIDGE_IMPL(sceNearUtilityGetNeighbors)
-BRIDGE_IMPL(sceNearUtilityGetNewNeighbors)
-BRIDGE_IMPL(sceNearUtilityGetRecentNeighbors)
-BRIDGE_IMPL(sceNearUtilityIgnoreDiscoveredGift)
-BRIDGE_IMPL(sceNearUtilityInitialize)
-BRIDGE_IMPL(sceNearUtilityLaunchNearAppForDownload)
-BRIDGE_IMPL(sceNearUtilityLaunchNearAppForUpdate)
-BRIDGE_IMPL(sceNearUtilityOpenDiscoveredGiftImage)
-BRIDGE_IMPL(sceNearUtilityOpenReceivedGiftData)
-BRIDGE_IMPL(sceNearUtilityReadDiscoveredGiftImage)
-BRIDGE_IMPL(sceNearUtilityReadReceivedGiftData)
-BRIDGE_IMPL(sceNearUtilityRefresh)
-BRIDGE_IMPL(sceNearUtilitySetGift)
-BRIDGE_IMPL(sceNearUtilitySetGift2)

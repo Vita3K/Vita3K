@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceLibMtp.h"
+#include <module/module.h>
 
 EXPORT(int, sceMtpBeginCheckSameObjectExist) {
     return UNIMPLEMENTED();
@@ -204,51 +204,3 @@ EXPORT(int, sceMtpSuspend) {
 EXPORT(int, sceMtpTerminateExecution) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceMtpBeginCheckSameObjectExist)
-BRIDGE_IMPL(sceMtpBeginCreateHostDir)
-BRIDGE_IMPL(sceMtpBeginCreateHostFile)
-BRIDGE_IMPL(sceMtpBeginDeleteHostDir)
-BRIDGE_IMPL(sceMtpBeginDeleteObject)
-BRIDGE_IMPL(sceMtpBeginExportObjectWithCheck)
-BRIDGE_IMPL(sceMtpBeginGetHostStorageSize)
-BRIDGE_IMPL(sceMtpBeginGetNpAccountInfo)
-BRIDGE_IMPL(sceMtpBeginGetNumOfObject)
-BRIDGE_IMPL(sceMtpBeginGetObjectMetadata)
-BRIDGE_IMPL(sceMtpBeginGetObjectStatus2)
-BRIDGE_IMPL(sceMtpBeginGetObjectThumbnail)
-BRIDGE_IMPL(sceMtpBeginGetSystemSetting)
-BRIDGE_IMPL(sceMtpBeginGetTotalObjectSize)
-BRIDGE_IMPL(sceMtpBeginHandover)
-BRIDGE_IMPL(sceMtpBeginHttpGetDataWithUrl)
-BRIDGE_IMPL(sceMtpBeginHttpGetPropertyWithUrl)
-BRIDGE_IMPL(sceMtpBeginImportObject)
-BRIDGE_IMPL(sceMtpBeginMoveHostDir)
-BRIDGE_IMPL(sceMtpBeginNpDrmActivate)
-BRIDGE_IMPL(sceMtpBeginNpDrmDeactivate)
-BRIDGE_IMPL(sceMtpBeginNpDrmGetLicense)
-BRIDGE_IMPL(sceMtpBeginNpDrmGetRtc)
-BRIDGE_IMPL(sceMtpBeginReadObjectWithOffset)
-BRIDGE_IMPL(sceMtpBeginResumeExportObject)
-BRIDGE_IMPL(sceMtpBeginResumeImportObject)
-BRIDGE_IMPL(sceMtpBeginRpcNetOperationRecv)
-BRIDGE_IMPL(sceMtpBeginRpcNetOperationSend)
-BRIDGE_IMPL(sceMtpBeginSearchObject)
-BRIDGE_IMPL(sceMtpBeginSetSystemSetting)
-BRIDGE_IMPL(sceMtpBeginSpecifiedObjectMetadata)
-BRIDGE_IMPL(sceMtpBeginWriteObjectWithOffset)
-BRIDGE_IMPL(sceMtpCheckContextValid)
-BRIDGE_IMPL(sceMtpEnd)
-BRIDGE_IMPL(sceMtpEndImportObject)
-BRIDGE_IMPL(sceMtpGetBgTaskInfo)
-BRIDGE_IMPL(sceMtpGetCurrentInterface)
-BRIDGE_IMPL(sceMtpGetHostInfo)
-BRIDGE_IMPL(sceMtpInit)
-BRIDGE_IMPL(sceMtpPauseExportObject)
-BRIDGE_IMPL(sceMtpReset)
-BRIDGE_IMPL(sceMtpResume)
-BRIDGE_IMPL(sceMtpSetFinishCallback)
-BRIDGE_IMPL(sceMtpStart)
-BRIDGE_IMPL(sceMtpStop)
-BRIDGE_IMPL(sceMtpSuspend)
-BRIDGE_IMPL(sceMtpTerminateExecution)

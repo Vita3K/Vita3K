@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceCodecEnginePerf.h"
+#include <module/module.h>
 
 EXPORT(int, sceCodecEnginePmonGetProcessorLoad) {
     return UNIMPLEMENTED();
@@ -32,8 +32,3 @@ EXPORT(int, sceCodecEnginePmonStart) {
 EXPORT(int, sceCodecEnginePmonStop) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceCodecEnginePmonGetProcessorLoad)
-BRIDGE_IMPL(sceCodecEnginePmonReset)
-BRIDGE_IMPL(sceCodecEnginePmonStart)
-BRIDGE_IMPL(sceCodecEnginePmonStop)

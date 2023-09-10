@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceVoice.h"
+#include <module/module.h>
 
 EXPORT(int, sceVoiceCheckTopology) {
     return UNIMPLEMENTED();
@@ -128,32 +128,3 @@ EXPORT(int, sceVoiceUpdatePort) {
 EXPORT(int, sceVoiceWriteToIPort) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceVoiceCheckTopology)
-BRIDGE_IMPL(sceVoiceConnectIPortToOPort)
-BRIDGE_IMPL(sceVoiceCreatePort)
-BRIDGE_IMPL(sceVoiceDeletePort)
-BRIDGE_IMPL(sceVoiceDisconnectIPortFromOPort)
-BRIDGE_IMPL(sceVoiceEnd)
-BRIDGE_IMPL(sceVoiceGetBitRate)
-BRIDGE_IMPL(sceVoiceGetMuteFlag)
-BRIDGE_IMPL(sceVoiceGetPortAttr)
-BRIDGE_IMPL(sceVoiceGetPortInfo)
-BRIDGE_IMPL(sceVoiceGetResourceInfo)
-BRIDGE_IMPL(sceVoiceGetVolume)
-BRIDGE_IMPL(sceVoiceInit)
-BRIDGE_IMPL(sceVoicePausePort)
-BRIDGE_IMPL(sceVoicePausePortAll)
-BRIDGE_IMPL(sceVoiceReadFromOPort)
-BRIDGE_IMPL(sceVoiceResetPort)
-BRIDGE_IMPL(sceVoiceResumePort)
-BRIDGE_IMPL(sceVoiceResumePortAll)
-BRIDGE_IMPL(sceVoiceSetBitRate)
-BRIDGE_IMPL(sceVoiceSetMuteFlag)
-BRIDGE_IMPL(sceVoiceSetMuteFlagAll)
-BRIDGE_IMPL(sceVoiceSetPortAttr)
-BRIDGE_IMPL(sceVoiceSetVolume)
-BRIDGE_IMPL(sceVoiceStart)
-BRIDGE_IMPL(sceVoiceStop)
-BRIDGE_IMPL(sceVoiceUpdatePort)
-BRIDGE_IMPL(sceVoiceWriteToIPort)

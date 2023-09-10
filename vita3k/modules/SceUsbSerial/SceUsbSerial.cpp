@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceUsbSerial.h"
+#include <module/module.h>
 
 EXPORT(int, sceUsbSerialClose) {
     return UNIMPLEMENTED();
@@ -44,11 +44,3 @@ EXPORT(int, sceUsbSerialStart) {
 EXPORT(int, sceUsbSerialStatus) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceUsbSerialClose)
-BRIDGE_IMPL(sceUsbSerialGetRecvBufferSize)
-BRIDGE_IMPL(sceUsbSerialRecv)
-BRIDGE_IMPL(sceUsbSerialSend)
-BRIDGE_IMPL(sceUsbSerialSetup)
-BRIDGE_IMPL(sceUsbSerialStart)
-BRIDGE_IMPL(sceUsbSerialStatus)

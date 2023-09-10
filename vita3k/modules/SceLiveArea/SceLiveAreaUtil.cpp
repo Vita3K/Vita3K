@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceLiveAreaUtil.h"
+#include <module/module.h>
 
 EXPORT(int, sceLiveAreaGetFrameRevision) {
     return UNIMPLEMENTED();
@@ -48,12 +48,3 @@ EXPORT(int, sceLiveAreaUpdateFrameAsync) {
 EXPORT(int, sceLiveAreaUpdateFrameSync) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceLiveAreaGetFrameRevision)
-BRIDGE_IMPL(sceLiveAreaGetFrameUserData)
-BRIDGE_IMPL(sceLiveAreaGetRevision)
-BRIDGE_IMPL(sceLiveAreaGetStatus)
-BRIDGE_IMPL(sceLiveAreaReplaceAllAsync)
-BRIDGE_IMPL(sceLiveAreaReplaceAllSync)
-BRIDGE_IMPL(sceLiveAreaUpdateFrameAsync)
-BRIDGE_IMPL(sceLiveAreaUpdateFrameSync)

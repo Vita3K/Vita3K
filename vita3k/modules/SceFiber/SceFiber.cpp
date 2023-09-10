@@ -15,7 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceFiber.h"
+#include <module/module.h>
+#include <modules/module_parent.h>
 
 #include <cpu/functions.h>
 #include <kernel/state.h>
@@ -27,6 +28,46 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceFiber);
 
+#define SCE_FIBER_CONTEXT_MINIMUM_SIZE 512
+
+enum SceFiberErrorCode {
+    SCE_FIBER_OK = 0x00000000, //!< Success
+    SCE_FIBER_ERROR_NULL = 0x80590001, //!< Some parameters are NULL.
+    SCE_FIBER_ERROR_ALIGNMENT = 0x80590002, //!< Some pointer-parameters are not aligned in their proper alignments.
+    SCE_FIBER_ERROR_RANGE = 0x80590003, //!< A parameter exceeds its range in the specification.
+    SCE_FIBER_ERROR_INVALID = 0x80590004, //!< A parameter has an invalid value.
+    SCE_FIBER_ERROR_PERMISSION = 0x80590005, //!< The function was called from the entity which does not have the permission.
+    SCE_FIBER_ERROR_STATE = 0x80590006, //!< The function was applied to a fiber in the state which the function does not support.
+    SCE_FIBER_ERROR_BUSY = 0x80590007, //!< The module specified by the function is busy.
+    SCE_FIBER_ERROR_AGAIN = 0x80590008, //!< The function could not complete because of the situation. Please try again later.
+    SCE_FIBER_ERROR_FATAL = 0x80590009, //!< The fiber caused an unrecoverable error.
+};
+
+typedef void(SceFiberEntry)(SceUInt32 argOnInitialize, SceUInt32 argOnRun);
+
+struct SceFiberOptParam {
+    char reserved[128];
+};
+
+enum class FiberStatus {
+    INIT,
+    SUSPEND,
+    RUN
+};
+
+typedef struct SceFiber {
+    Ptr<SceFiberEntry> entry;
+    Address addrContext;
+    SceSize sizeContext;
+    char name[32];
+    CPUContext *cpu;
+    SceUInt32 argOnInitialize;
+    Ptr<uint32_t> argOnRun;
+    FiberStatus status;
+} SceFiber;
+
+static_assert(sizeof(SceFiber) <= 128, "SceFiber struct size is more than 128");
+
 const static int DEFAULT_FIBER_STACK_SIZE = 4096;
 
 struct FiberState {
@@ -35,10 +76,9 @@ struct FiberState {
     std::map<SceUID, CPUContext> thread_contexts;
 };
 
-LIBRARY_INIT_IMPL(SceFiber) {
+LIBRARY_INIT(SceFiber) {
     emuenv.kernel.obj_store.create<FiberState>();
 }
-LIBRARY_INIT_REGISTER(SceFiber)
 
 constexpr bool LOG_FIBER = false;
 
@@ -403,20 +443,3 @@ EXPORT(SceUInt32, sceFiberSwitch, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<Sce
 
     return fiber->cpu->cpu_registers[0];
 }
-
-BRIDGE_IMPL(_sceFiberAttachContextAndRun)
-BRIDGE_IMPL(_sceFiberAttachContextAndSwitch)
-BRIDGE_IMPL(_sceFiberInitializeImpl)
-BRIDGE_IMPL(_sceFiberInitializeWithInternalOptionImpl)
-BRIDGE_IMPL(sceFiberFinalize)
-BRIDGE_IMPL(sceFiberGetInfo)
-BRIDGE_IMPL(sceFiberGetSelf)
-BRIDGE_IMPL(sceFiberOptParamInitialize)
-BRIDGE_IMPL(sceFiberPopUserMarkerWithHud)
-BRIDGE_IMPL(sceFiberPushUserMarkerWithHud)
-BRIDGE_IMPL(sceFiberRenameSelf)
-BRIDGE_IMPL(sceFiberReturnToThread)
-BRIDGE_IMPL(sceFiberRun)
-BRIDGE_IMPL(sceFiberStartContextSizeCheck)
-BRIDGE_IMPL(sceFiberStopContextSizeCheck)
-BRIDGE_IMPL(sceFiberSwitch)

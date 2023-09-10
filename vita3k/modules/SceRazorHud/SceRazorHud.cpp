@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceRazorHud.h"
+#include <module/module.h>
 
 EXPORT(int, sceRazorCpuHudSetUserMarkerTraceBuffer) {
     return UNIMPLEMENTED();
@@ -84,21 +84,3 @@ EXPORT(int, sceRazorHudSetDisplayEnabled) {
 EXPORT(int, sceRazorHudSetDisplayFrameCount) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceRazorCpuHudSetUserMarkerTraceBuffer)
-BRIDGE_IMPL(sceRazorCpuHudUserMarkerEnableAllThreads)
-BRIDGE_IMPL(sceRazorCpuHudUserMarkerEnableThreadId)
-BRIDGE_IMPL(sceRazorGpuLiveSetBuffer)
-BRIDGE_IMPL(sceRazorGpuLiveSetMetricsGroup)
-BRIDGE_IMPL(sceRazorGpuLiveStart)
-BRIDGE_IMPL(sceRazorGpuLiveStop)
-BRIDGE_IMPL(sceRazorGpuLiveTriggerDebugDump)
-BRIDGE_IMPL(sceRazorGpuPerfGetMode)
-BRIDGE_IMPL(sceRazorGpuTraceRingBufferSize)
-BRIDGE_IMPL(sceRazorGpuTraceRingBufferUsed)
-BRIDGE_IMPL(sceRazorGpuTraceSetFilename)
-BRIDGE_IMPL(sceRazorGpuTraceSetMetricsGroup)
-BRIDGE_IMPL(sceRazorGpuTraceTrigger)
-BRIDGE_IMPL(sceRazorHudReloadSettings)
-BRIDGE_IMPL(sceRazorHudSetDisplayEnabled)
-BRIDGE_IMPL(sceRazorHudSetDisplayFrameCount)

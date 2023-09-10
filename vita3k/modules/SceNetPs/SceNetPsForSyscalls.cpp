@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNetPsForSyscalls.h"
+#include <module/module.h>
 
 EXPORT(int, sceNetSyscallAccept) {
     return UNIMPLEMENTED();
@@ -152,38 +152,3 @@ EXPORT(int, sceNetSyscallSocketAbort) {
 EXPORT(int, sceNetSyscallSysctl) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNetSyscallAccept)
-BRIDGE_IMPL(sceNetSyscallBind)
-BRIDGE_IMPL(sceNetSyscallClose)
-BRIDGE_IMPL(sceNetSyscallConnect)
-BRIDGE_IMPL(sceNetSyscallControl)
-BRIDGE_IMPL(sceNetSyscallDescriptorClose)
-BRIDGE_IMPL(sceNetSyscallDescriptorCreate)
-BRIDGE_IMPL(sceNetSyscallDescriptorCtl)
-BRIDGE_IMPL(sceNetSyscallDumpAbort)
-BRIDGE_IMPL(sceNetSyscallDumpClose)
-BRIDGE_IMPL(sceNetSyscallDumpCreate)
-BRIDGE_IMPL(sceNetSyscallDumpRead)
-BRIDGE_IMPL(sceNetSyscallEpollAbort)
-BRIDGE_IMPL(sceNetSyscallEpollClose)
-BRIDGE_IMPL(sceNetSyscallEpollCreate)
-BRIDGE_IMPL(sceNetSyscallEpollCtl)
-BRIDGE_IMPL(sceNetSyscallEpollWait)
-BRIDGE_IMPL(sceNetSyscallGetIfList)
-BRIDGE_IMPL(sceNetSyscallGetSockinfo)
-BRIDGE_IMPL(sceNetSyscallGetpeername)
-BRIDGE_IMPL(sceNetSyscallGetsockname)
-BRIDGE_IMPL(sceNetSyscallGetsockopt)
-BRIDGE_IMPL(sceNetSyscallIcmConnect)
-BRIDGE_IMPL(sceNetSyscallIoctl)
-BRIDGE_IMPL(sceNetSyscallListen)
-BRIDGE_IMPL(sceNetSyscallRecvfrom)
-BRIDGE_IMPL(sceNetSyscallRecvmsg)
-BRIDGE_IMPL(sceNetSyscallSendmsg)
-BRIDGE_IMPL(sceNetSyscallSendto)
-BRIDGE_IMPL(sceNetSyscallSetsockopt)
-BRIDGE_IMPL(sceNetSyscallShutdown)
-BRIDGE_IMPL(sceNetSyscallSocket)
-BRIDGE_IMPL(sceNetSyscallSocketAbort)
-BRIDGE_IMPL(sceNetSyscallSysctl)

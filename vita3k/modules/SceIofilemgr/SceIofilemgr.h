@@ -26,68 +26,8 @@ typedef struct _sceIoLseekOpt {
     uint32_t unk;
 } _sceIoLseekOpt;
 
-EXPORT(int, _sceIoDopen, const char *dir);
-EXPORT(int, _sceIoDread, const SceUID fd, SceIoDirent *dir);
-EXPORT(int, _sceIoMkdir, const char *dir, const SceMode mode);
-EXPORT(SceOff, _sceIoLseek, const SceUID fd, Ptr<_sceIoLseekOpt> opt);
-EXPORT(int, _sceIoGetstat, const char *file, SceIoStat *stat);
-
-BRIDGE_DECL(_sceIoChstat)
-BRIDGE_DECL(_sceIoChstatAsync)
-BRIDGE_DECL(_sceIoChstatByFd)
-BRIDGE_DECL(_sceIoCompleteMultiple)
-BRIDGE_DECL(_sceIoDevctl)
-BRIDGE_DECL(_sceIoDevctlAsync)
-BRIDGE_DECL(_sceIoDopen)
-BRIDGE_DECL(_sceIoDread)
-BRIDGE_DECL(_sceIoGetstat)
-BRIDGE_DECL(_sceIoGetstatAsync)
-BRIDGE_DECL(_sceIoGetstatByFd)
-BRIDGE_DECL(_sceIoIoctl)
-BRIDGE_DECL(_sceIoIoctlAsync)
-BRIDGE_DECL(_sceIoLseek)
-BRIDGE_DECL(_sceIoLseekAsync)
-BRIDGE_DECL(_sceIoMkdir)
-BRIDGE_DECL(_sceIoMkdirAsync)
-BRIDGE_DECL(_sceIoOpen)
-BRIDGE_DECL(_sceIoOpenAsync)
-BRIDGE_DECL(_sceIoPread)
-BRIDGE_DECL(_sceIoPreadAsync)
-BRIDGE_DECL(_sceIoPwrite)
-BRIDGE_DECL(_sceIoPwriteAsync)
-BRIDGE_DECL(_sceIoRemove)
-BRIDGE_DECL(_sceIoRemoveAsync)
-BRIDGE_DECL(_sceIoRename)
-BRIDGE_DECL(_sceIoRenameAsync)
-BRIDGE_DECL(_sceIoRmdir)
-BRIDGE_DECL(_sceIoRmdirAsync)
-BRIDGE_DECL(_sceIoSync)
-BRIDGE_DECL(_sceIoSyncAsync)
-BRIDGE_DECL(sceIoCancel)
-BRIDGE_DECL(sceIoChstatByFdAsync)
-BRIDGE_DECL(sceIoClose)
-BRIDGE_DECL(sceIoCloseAsync)
-BRIDGE_DECL(sceIoComplete)
-BRIDGE_DECL(sceIoDclose)
-BRIDGE_DECL(sceIoDcloseAsync)
-BRIDGE_DECL(sceIoDopenAsync)
-BRIDGE_DECL(sceIoDreadAsync)
-BRIDGE_DECL(sceIoFlockForSystem)
-BRIDGE_DECL(sceIoGetPriority)
-BRIDGE_DECL(sceIoGetPriorityForSystem)
-BRIDGE_DECL(sceIoGetProcessDefaultPriority)
-BRIDGE_DECL(sceIoGetThreadDefaultPriority)
-BRIDGE_DECL(sceIoGetThreadDefaultPriorityForSystem)
-BRIDGE_DECL(sceIoGetstatByFdAsync)
-BRIDGE_DECL(sceIoLseek32)
-BRIDGE_DECL(sceIoRead)
-BRIDGE_DECL(sceIoReadAsync)
-BRIDGE_DECL(sceIoSetPriority)
-BRIDGE_DECL(sceIoSetPriorityForSystem)
-BRIDGE_DECL(sceIoSetProcessDefaultPriority)
-BRIDGE_DECL(sceIoSetThreadDefaultPriority)
-BRIDGE_DECL(sceIoSetThreadDefaultPriorityForSystem)
-BRIDGE_DECL(sceIoSyncByFd)
-BRIDGE_DECL(sceIoSyncByFdAsync)
-BRIDGE_DECL(sceIoWrite)
-BRIDGE_DECL(sceIoWriteAsync)
+DECL_EXPORT(int, _sceIoDopen, const char *dir);
+DECL_EXPORT(int, _sceIoDread, const SceUID fd, SceIoDirent *dir);
+DECL_EXPORT(int, _sceIoMkdir, const char *dir, const SceMode mode);
+DECL_EXPORT(SceOff, _sceIoLseek, const SceUID fd, Ptr<_sceIoLseekOpt> opt);
+DECL_EXPORT(int, _sceIoGetstat, const char *file, SceIoStat *stat);

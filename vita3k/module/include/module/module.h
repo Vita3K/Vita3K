@@ -27,14 +27,16 @@ int unimplemented_impl(const char *name);
 int stubbed_impl(const char *name, const char *info);
 #define STUBBED(info) stubbed_impl(export_name, info)
 
-#define BRIDGE_DECL(name) extern const ImportFn import_##name;
-#define BRIDGE_IMPL(name) const ImportFn import_##name = bridge(&export_##name, #name);
-
 #define CALL_EXPORT(name, ...) export_##name(emuenv, thread_id, #name, ##__VA_ARGS__)
 
-#define EXPORT(ret, name, ...) ret export_##name(EmuEnvState &emuenv, SceUID thread_id, const char *export_name, ##__VA_ARGS__)
+#define DECL_EXPORT(ret, name, ...) ret export_##name(EmuEnvState &emuenv, SceUID thread_id, const char *export_name, ##__VA_ARGS__)
+#define EXPORT(ret, name, ...)                                           \
+    DECL_EXPORT(ret, name, ##__VA_ARGS__);                               \
+    extern const ImportFn import_##name = bridge(&export_##name, #name); \
+    DECL_EXPORT(ret, name, ##__VA_ARGS__)
 
-#define VAR_BRIDGE_DECL(name) extern const ImportVarFactory import_##name;
-#define VAR_BRIDGE_IMPL(name) const ImportVarFactory import_##name = export_##name;
-
-#define VAR_EXPORT(name) Address export_##name(EmuEnvState &emuenv)
+#define DECL_VAR_EXPORT(name) Address export_##name(EmuEnvState &emuenv)
+#define VAR_EXPORT(name)                                         \
+    DECL_VAR_EXPORT(name);                                       \
+    extern const ImportVarFactory import_##name = export_##name; \
+    DECL_VAR_EXPORT(name)

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceAudioencUser.h"
+#include <module/module.h>
 
 EXPORT(int, sceAudioencClearContext) {
     return UNIMPLEMENTED();
@@ -72,18 +72,3 @@ EXPORT(int, sceAudioencInitLibrary) {
 EXPORT(int, sceAudioencTermLibrary) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceAudioencClearContext)
-BRIDGE_IMPL(sceAudioencCreateEncoder)
-BRIDGE_IMPL(sceAudioencCreateEncoderExternal)
-BRIDGE_IMPL(sceAudioencCreateEncoderResident)
-BRIDGE_IMPL(sceAudioencDeleteEncoder)
-BRIDGE_IMPL(sceAudioencDeleteEncoderExternal)
-BRIDGE_IMPL(sceAudioencDeleteEncoderResident)
-BRIDGE_IMPL(sceAudioencEncode)
-BRIDGE_IMPL(sceAudioencEncodeNFrames)
-BRIDGE_IMPL(sceAudioencGetContextSize)
-BRIDGE_IMPL(sceAudioencGetInternalError)
-BRIDGE_IMPL(sceAudioencGetOptInfo)
-BRIDGE_IMPL(sceAudioencInitLibrary)
-BRIDGE_IMPL(sceAudioencTermLibrary)
