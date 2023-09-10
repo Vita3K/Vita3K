@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNetCtl.h"
+#include <module/module.h>
 
 #include <kernel/state.h>
 #include <net/state.h>
@@ -516,22 +516,3 @@ EXPORT(void, sceNetCtlTerm) {
     STUBBED("Stub");
     emuenv.netctl.inited = false;
 }
-
-BRIDGE_IMPL(sceNetCtlAdhocDisconnect)
-BRIDGE_IMPL(sceNetCtlAdhocGetInAddr)
-BRIDGE_IMPL(sceNetCtlAdhocGetPeerList)
-BRIDGE_IMPL(sceNetCtlAdhocGetResult)
-BRIDGE_IMPL(sceNetCtlAdhocGetState)
-BRIDGE_IMPL(sceNetCtlAdhocRegisterCallback)
-BRIDGE_IMPL(sceNetCtlAdhocUnregisterCallback)
-BRIDGE_IMPL(sceNetCtlCheckCallback)
-BRIDGE_IMPL(sceNetCtlGetIfStat)
-BRIDGE_IMPL(sceNetCtlGetNatInfo)
-BRIDGE_IMPL(sceNetCtlGetPhoneMaxDownloadableSize)
-BRIDGE_IMPL(sceNetCtlInetGetInfo)
-BRIDGE_IMPL(sceNetCtlInetGetResult)
-BRIDGE_IMPL(sceNetCtlInetGetState)
-BRIDGE_IMPL(sceNetCtlInetRegisterCallback)
-BRIDGE_IMPL(sceNetCtlInetUnregisterCallback)
-BRIDGE_IMPL(sceNetCtlInit)
-BRIDGE_IMPL(sceNetCtlTerm)

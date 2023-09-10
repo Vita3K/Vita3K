@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "ScePerf.h"
+#include <module/module.h>
 
 VAR_EXPORT(_pLibPerfCaptureFlagPtr) {
     auto ptr = Ptr<uint32_t>(alloc(emuenv.mem, 4, "_pLibPerfCaptureFlagPtr"));
@@ -128,31 +128,3 @@ EXPORT(int, sceRazorCpuStopUserMarkerTrace) {
 EXPORT(int, sceRazorCpuSync) {
     return UNIMPLEMENTED();
 }
-
-VAR_BRIDGE_IMPL(_pLibPerfCaptureFlagPtr)
-BRIDGE_IMPL(_sceCpuRazorPopFiberUserMarker)
-BRIDGE_IMPL(_sceCpuRazorPushFiberUserMarker)
-BRIDGE_IMPL(_sceRazorCpuInit)
-BRIDGE_IMPL(_sceRazorCpuWriteFiberUltPkt)
-BRIDGE_IMPL(scePerfArmPmonGetCounterValue)
-BRIDGE_IMPL(scePerfArmPmonReset)
-BRIDGE_IMPL(scePerfArmPmonSelectEvent)
-BRIDGE_IMPL(scePerfArmPmonSetCounterValue)
-BRIDGE_IMPL(scePerfArmPmonSoftwareIncrement)
-BRIDGE_IMPL(scePerfArmPmonStart)
-BRIDGE_IMPL(scePerfArmPmonStop)
-BRIDGE_IMPL(scePerfGetTimebaseFrequency)
-BRIDGE_IMPL(scePerfGetTimebaseValue)
-BRIDGE_IMPL(sceRazorCpuGetActivityMonitorTraceBuffer)
-BRIDGE_IMPL(sceRazorCpuGetUserMarkerTraceBuffer)
-BRIDGE_IMPL(sceRazorCpuIsCapturing)
-BRIDGE_IMPL(sceRazorCpuPopMarker)
-BRIDGE_IMPL(sceRazorCpuPushMarker)
-BRIDGE_IMPL(sceRazorCpuPushMarkerWithHud)
-BRIDGE_IMPL(sceRazorCpuStartActivityMonitor)
-BRIDGE_IMPL(sceRazorCpuStartCapture)
-BRIDGE_IMPL(sceRazorCpuStartUserMarkerTrace)
-BRIDGE_IMPL(sceRazorCpuStopActivityMonitor)
-BRIDGE_IMPL(sceRazorCpuStopCapture)
-BRIDGE_IMPL(sceRazorCpuStopUserMarkerTrace)
-BRIDGE_IMPL(sceRazorCpuSync)

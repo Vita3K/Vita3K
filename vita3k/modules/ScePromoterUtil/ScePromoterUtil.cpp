@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "ScePromoterUtil.h"
+#include <module/module.h>
 
 EXPORT(int, scePromoterUtilityCheckExist) {
     return UNIMPLEMENTED();
@@ -68,17 +68,3 @@ EXPORT(int, scePromoterUtilityUpdateLiveArea) {
 EXPORT(int, scePromoterUtilityUpdateUpgradableStatus) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(scePromoterUtilityCheckExist)
-BRIDGE_IMPL(scePromoterUtilityDeletePkg)
-BRIDGE_IMPL(scePromoterUtilityExit)
-BRIDGE_IMPL(scePromoterUtilityGetResult)
-BRIDGE_IMPL(scePromoterUtilityGetSize)
-BRIDGE_IMPL(scePromoterUtilityGetState)
-BRIDGE_IMPL(scePromoterUtilityInit)
-BRIDGE_IMPL(scePromoterUtilityPromoteImport)
-BRIDGE_IMPL(scePromoterUtilityPromotePkg)
-BRIDGE_IMPL(scePromoterUtilityPromotePkgWithRif)
-BRIDGE_IMPL(scePromoterUtilityRemoveSavedata)
-BRIDGE_IMPL(scePromoterUtilityUpdateLiveArea)
-BRIDGE_IMPL(scePromoterUtilityUpdateUpgradableStatus)

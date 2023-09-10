@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "ScePspnetAdhoc.h"
+#include <module/module.h>
 
 EXPORT(int, sceNetAdhocGetPdpStat) {
     return UNIMPLEMENTED();
@@ -128,32 +128,3 @@ EXPORT(int, sceNetAdhocctlInit) {
 EXPORT(int, sceNetAdhocctlTerm) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNetAdhocGetPdpStat)
-BRIDGE_IMPL(sceNetAdhocGetPtpStat)
-BRIDGE_IMPL(sceNetAdhocGetSocketAlert)
-BRIDGE_IMPL(sceNetAdhocInit)
-BRIDGE_IMPL(sceNetAdhocPdpCreate)
-BRIDGE_IMPL(sceNetAdhocPdpDelete)
-BRIDGE_IMPL(sceNetAdhocPdpRecv)
-BRIDGE_IMPL(sceNetAdhocPdpSend)
-BRIDGE_IMPL(sceNetAdhocPollSocket)
-BRIDGE_IMPL(sceNetAdhocPtpAccept)
-BRIDGE_IMPL(sceNetAdhocPtpClose)
-BRIDGE_IMPL(sceNetAdhocPtpConnect)
-BRIDGE_IMPL(sceNetAdhocPtpFlush)
-BRIDGE_IMPL(sceNetAdhocPtpListen)
-BRIDGE_IMPL(sceNetAdhocPtpOpen)
-BRIDGE_IMPL(sceNetAdhocPtpRecv)
-BRIDGE_IMPL(sceNetAdhocPtpSend)
-BRIDGE_IMPL(sceNetAdhocSetSocketAlert)
-BRIDGE_IMPL(sceNetAdhocTerm)
-BRIDGE_IMPL(sceNetAdhocctlGetAddrByName)
-BRIDGE_IMPL(sceNetAdhocctlGetAdhocId)
-BRIDGE_IMPL(sceNetAdhocctlGetEtherAddr)
-BRIDGE_IMPL(sceNetAdhocctlGetNameByAddr)
-BRIDGE_IMPL(sceNetAdhocctlGetParameter)
-BRIDGE_IMPL(sceNetAdhocctlGetPeerInfo)
-BRIDGE_IMPL(sceNetAdhocctlGetPeerList)
-BRIDGE_IMPL(sceNetAdhocctlInit)
-BRIDGE_IMPL(sceNetAdhocctlTerm)

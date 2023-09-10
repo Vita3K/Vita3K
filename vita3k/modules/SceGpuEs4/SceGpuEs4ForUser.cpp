@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceGpuEs4ForUser.h"
+#include <module/module.h>
 
 EXPORT(int, PVRSRVOpen) {
     return UNIMPLEMENTED();
@@ -44,11 +44,3 @@ EXPORT(int, sceGpuSignalWaitLockup) {
 EXPORT(int, sceGpuUnregisterSalvage) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(PVRSRVOpen)
-BRIDGE_IMPL(PVRSRVRelease)
-BRIDGE_IMPL(PVRSRV_BridgeDispatchKM)
-BRIDGE_IMPL(sceGpuRegisterSalvage)
-BRIDGE_IMPL(sceGpuSignalWait)
-BRIDGE_IMPL(sceGpuSignalWaitLockup)
-BRIDGE_IMPL(sceGpuUnregisterSalvage)

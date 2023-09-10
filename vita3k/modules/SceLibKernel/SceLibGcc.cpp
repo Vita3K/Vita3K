@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceLibGcc.h"
+#include <module/module.h>
 
 EXPORT(int, _Unwind_Backtrace) {
     return UNIMPLEMENTED();
@@ -76,19 +76,3 @@ EXPORT(int, _Unwind_VRS_Pop) {
 EXPORT(int, _Unwind_VRS_Set) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(_Unwind_Backtrace)
-BRIDGE_IMPL(_Unwind_Complete)
-BRIDGE_IMPL(_Unwind_DeleteException)
-BRIDGE_IMPL(_Unwind_ForcedUnwind)
-BRIDGE_IMPL(_Unwind_GetCFA)
-BRIDGE_IMPL(_Unwind_GetDataRelBase)
-BRIDGE_IMPL(_Unwind_GetLanguageSpecificData)
-BRIDGE_IMPL(_Unwind_GetRegionStart)
-BRIDGE_IMPL(_Unwind_GetTextRelBase)
-BRIDGE_IMPL(_Unwind_RaiseException)
-BRIDGE_IMPL(__Unwind_Resume)
-BRIDGE_IMPL(_Unwind_Resume_or_Rethrow)
-BRIDGE_IMPL(_Unwind_VRS_Get)
-BRIDGE_IMPL(_Unwind_VRS_Pop)
-BRIDGE_IMPL(_Unwind_VRS_Set)

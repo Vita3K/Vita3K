@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceLibMp4Recorder.h"
+#include <module/module.h>
 
 EXPORT(int, sceMp4RecAddAudioSample) {
     return UNIMPLEMENTED();
@@ -56,14 +56,3 @@ EXPORT(int, sceMp4RecRecorderInit) {
 EXPORT(int, sceMp4RecTerm) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceMp4RecAddAudioSample)
-BRIDGE_IMPL(sceMp4RecAddVideoSample)
-BRIDGE_IMPL(sceMp4RecCreateRecorder)
-BRIDGE_IMPL(sceMp4RecCsc)
-BRIDGE_IMPL(sceMp4RecDeleteRecorder)
-BRIDGE_IMPL(sceMp4RecInit)
-BRIDGE_IMPL(sceMp4RecQueryPhysicalMemSize)
-BRIDGE_IMPL(sceMp4RecRecorderEnd)
-BRIDGE_IMPL(sceMp4RecRecorderInit)
-BRIDGE_IMPL(sceMp4RecTerm)

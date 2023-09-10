@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceJpegUser.h"
+#include <module/module.h>
 
 #include <codec/state.h>
 #include <codec/types.h>
@@ -237,15 +237,3 @@ EXPORT(int, sceJpegSplitDecodeMJpeg) {
     TRACY_FUNC(sceJpegSplitDecodeMJpeg);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceJpegCreateSplitDecoder)
-BRIDGE_IMPL(sceJpegCsc)
-BRIDGE_IMPL(sceJpegDecodeMJpeg)
-BRIDGE_IMPL(sceJpegDecodeMJpegYCbCr)
-BRIDGE_IMPL(sceJpegDeleteSplitDecoder)
-BRIDGE_IMPL(sceJpegFinishMJpeg)
-BRIDGE_IMPL(sceJpegGetOutputInfo)
-BRIDGE_IMPL(sceJpegInitMJpeg)
-BRIDGE_IMPL(sceJpegInitMJpegWithParam)
-BRIDGE_IMPL(sceJpegMJpegCsc)
-BRIDGE_IMPL(sceJpegSplitDecodeMJpeg)

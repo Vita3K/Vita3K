@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceAvPlayer.h"
+#include <module/module.h>
 
 #include <codec/state.h>
 #include <io/functions.h>
@@ -523,24 +523,3 @@ EXPORT(int, sceAvPlayerStop, SceUID player_handle) {
     run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_STOP, 0, Ptr<void>(0));
     return 0;
 }
-
-BRIDGE_IMPL(sceAvPlayerAddSource)
-BRIDGE_IMPL(sceAvPlayerClose)
-BRIDGE_IMPL(sceAvPlayerCurrentTime)
-BRIDGE_IMPL(sceAvPlayerDisableStream)
-BRIDGE_IMPL(sceAvPlayerEnableStream)
-BRIDGE_IMPL(sceAvPlayerGetAudioData)
-BRIDGE_IMPL(sceAvPlayerGetStreamInfo)
-BRIDGE_IMPL(sceAvPlayerGetVideoData)
-BRIDGE_IMPL(sceAvPlayerGetVideoDataEx)
-BRIDGE_IMPL(sceAvPlayerInit)
-BRIDGE_IMPL(sceAvPlayerIsActive)
-BRIDGE_IMPL(sceAvPlayerJumpToTime)
-BRIDGE_IMPL(sceAvPlayerPause)
-BRIDGE_IMPL(sceAvPlayerPostInit)
-BRIDGE_IMPL(sceAvPlayerResume)
-BRIDGE_IMPL(sceAvPlayerSetLooping)
-BRIDGE_IMPL(sceAvPlayerSetTrickSpeed)
-BRIDGE_IMPL(sceAvPlayerStart)
-BRIDGE_IMPL(sceAvPlayerStop)
-BRIDGE_IMPL(sceAvPlayerStreamCount)

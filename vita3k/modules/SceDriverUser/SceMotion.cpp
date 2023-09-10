@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceMotion.h"
+#include <module/module.h>
 
 #include <ctrl/state.h>
 #include <motion/functions.h>
@@ -266,34 +266,3 @@ EXPORT(int, sceMotionTermLibraryExt) {
     TRACY_FUNC(sceMotionTermLibraryExt);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceMotionGetAngleThreshold)
-BRIDGE_IMPL(sceMotionGetBasicOrientation)
-BRIDGE_IMPL(sceMotionGetDeadband)
-BRIDGE_IMPL(sceMotionGetDeadbandExt)
-BRIDGE_IMPL(sceMotionGetDeviceLocation)
-BRIDGE_IMPL(sceMotionGetGyroBiasCorrection)
-BRIDGE_IMPL(sceMotionGetMagnetometerState)
-BRIDGE_IMPL(sceMotionGetSensorState)
-BRIDGE_IMPL(sceMotionGetState)
-BRIDGE_IMPL(sceMotionGetStateExt)
-BRIDGE_IMPL(sceMotionGetStateInternal)
-BRIDGE_IMPL(sceMotionGetTiltCorrection)
-BRIDGE_IMPL(sceMotionGetTiltCorrectionExt)
-BRIDGE_IMPL(sceMotionInitLibraryExt)
-BRIDGE_IMPL(sceMotionMagnetometerOff)
-BRIDGE_IMPL(sceMotionMagnetometerOn)
-BRIDGE_IMPL(sceMotionReset)
-BRIDGE_IMPL(sceMotionResetExt)
-BRIDGE_IMPL(sceMotionRotateYaw)
-BRIDGE_IMPL(sceMotionSetAngleThreshold)
-BRIDGE_IMPL(sceMotionSetDeadband)
-BRIDGE_IMPL(sceMotionSetDeadbandExt)
-BRIDGE_IMPL(sceMotionSetGyroBiasCorrection)
-BRIDGE_IMPL(sceMotionSetTiltCorrection)
-BRIDGE_IMPL(sceMotionSetTiltCorrectionExt)
-BRIDGE_IMPL(sceMotionStartSampling)
-BRIDGE_IMPL(sceMotionStartSamplingExt)
-BRIDGE_IMPL(sceMotionStopSampling)
-BRIDGE_IMPL(sceMotionStopSamplingExt)
-BRIDGE_IMPL(sceMotionTermLibraryExt)

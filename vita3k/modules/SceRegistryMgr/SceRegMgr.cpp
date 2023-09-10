@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceRegMgr.h"
+#include <module/module.h>
 
 #include <regmgr/functions.h>
 
@@ -155,26 +155,3 @@ EXPORT(int, sceRegMgrUnregisterDrvErrCallback) {
     TRACY_FUNC(sceRegMgrUnregisterDrvErrCallback);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceRegMgrAddRegistryCallback)
-BRIDGE_IMPL(sceRegMgrDbBackup)
-BRIDGE_IMPL(sceRegMgrDbRestore)
-BRIDGE_IMPL(sceRegMgrGetInitVals)
-BRIDGE_IMPL(sceRegMgrGetKeyBin)
-BRIDGE_IMPL(sceRegMgrGetKeyInt)
-BRIDGE_IMPL(sceRegMgrGetKeyStr)
-BRIDGE_IMPL(sceRegMgrGetKeys)
-BRIDGE_IMPL(sceRegMgrGetKeysInfo)
-BRIDGE_IMPL(sceRegMgrGetRegVersion)
-BRIDGE_IMPL(sceRegMgrIsBlueScreen)
-BRIDGE_IMPL(sceRegMgrRegisterCallback)
-BRIDGE_IMPL(sceRegMgrRegisterDrvErrCallback)
-BRIDGE_IMPL(sceRegMgrResetRegistryLv)
-BRIDGE_IMPL(sceRegMgrSetKeyBin)
-BRIDGE_IMPL(sceRegMgrSetKeyInt)
-BRIDGE_IMPL(sceRegMgrSetKeyStr)
-BRIDGE_IMPL(sceRegMgrSetKeys)
-BRIDGE_IMPL(sceRegMgrStartCallback)
-BRIDGE_IMPL(sceRegMgrStopCallback)
-BRIDGE_IMPL(sceRegMgrUnregisterCallback)
-BRIDGE_IMPL(sceRegMgrUnregisterDrvErrCallback)

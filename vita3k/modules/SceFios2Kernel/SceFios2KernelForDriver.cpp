@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceFios2KernelForDriver.h"
+#include <module/module.h>
 
 EXPORT(int, ksceFiosKernelOverlayAdd) {
     return UNIMPLEMENTED();
@@ -72,18 +72,3 @@ EXPORT(int, ksceFiosKernelOverlayThreadIsDisabled) {
 EXPORT(int, ksceFiosKernelOverlayThreadSetDisabled) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(ksceFiosKernelOverlayAdd)
-BRIDGE_IMPL(ksceFiosKernelOverlayAddForProcess)
-BRIDGE_IMPL(ksceFiosKernelOverlayGetInfo)
-BRIDGE_IMPL(ksceFiosKernelOverlayGetInfoForProcess)
-BRIDGE_IMPL(ksceFiosKernelOverlayGetList)
-BRIDGE_IMPL(ksceFiosKernelOverlayGetRecommendedScheduler)
-BRIDGE_IMPL(ksceFiosKernelOverlayModify)
-BRIDGE_IMPL(ksceFiosKernelOverlayModifyForProcess)
-BRIDGE_IMPL(ksceFiosKernelOverlayRemove)
-BRIDGE_IMPL(ksceFiosKernelOverlayRemoveForProcess)
-BRIDGE_IMPL(ksceFiosKernelOverlayResolveSync)
-BRIDGE_IMPL(ksceFiosKernelOverlayResolveWithRangeSync)
-BRIDGE_IMPL(ksceFiosKernelOverlayThreadIsDisabled)
-BRIDGE_IMPL(ksceFiosKernelOverlayThreadSetDisabled)

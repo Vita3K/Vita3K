@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSas.h"
+#include <module/module.h>
 
 EXPORT(int, sceSasCore) {
     return UNIMPLEMENTED();
@@ -148,37 +148,3 @@ EXPORT(int, sceSasSetVoicePCM) {
 EXPORT(int, sceSasSetVolume) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceSasCore)
-BRIDGE_IMPL(sceSasCoreWithMix)
-BRIDGE_IMPL(sceSasExit)
-BRIDGE_IMPL(sceSasGetDryPeak)
-BRIDGE_IMPL(sceSasGetEndState)
-BRIDGE_IMPL(sceSasGetEnvelope)
-BRIDGE_IMPL(sceSasGetGrain)
-BRIDGE_IMPL(sceSasGetNeededMemorySize)
-BRIDGE_IMPL(sceSasGetOutputmode)
-BRIDGE_IMPL(sceSasGetPauseState)
-BRIDGE_IMPL(sceSasGetPreMasterPeak)
-BRIDGE_IMPL(sceSasGetWetPeak)
-BRIDGE_IMPL(sceSasInit)
-BRIDGE_IMPL(sceSasInitWithGrain)
-BRIDGE_IMPL(sceSasSetADSR)
-BRIDGE_IMPL(sceSasSetADSRmode)
-BRIDGE_IMPL(sceSasSetDistortion)
-BRIDGE_IMPL(sceSasSetEffect)
-BRIDGE_IMPL(sceSasSetEffectParam)
-BRIDGE_IMPL(sceSasSetEffectType)
-BRIDGE_IMPL(sceSasSetEffectVolume)
-BRIDGE_IMPL(sceSasSetGrain)
-BRIDGE_IMPL(sceSasSetKeyOff)
-BRIDGE_IMPL(sceSasSetKeyOn)
-BRIDGE_IMPL(sceSasSetNoise)
-BRIDGE_IMPL(sceSasSetOutputmode)
-BRIDGE_IMPL(sceSasSetPause)
-BRIDGE_IMPL(sceSasSetPitch)
-BRIDGE_IMPL(sceSasSetSL)
-BRIDGE_IMPL(sceSasSetSimpleADSR)
-BRIDGE_IMPL(sceSasSetVoice)
-BRIDGE_IMPL(sceSasSetVoicePCM)
-BRIDGE_IMPL(sceSasSetVolume)

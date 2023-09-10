@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceBt.h"
+#include <module/module.h>
 
 EXPORT(int, sceBtAvrcpReadVolume) {
     return UNIMPLEMENTED();
@@ -232,58 +232,3 @@ EXPORT(int, sceBtStopInquiry) {
 EXPORT(int, sceBtUnregisterCallback) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceBtAvrcpReadVolume)
-BRIDGE_IMPL(sceBtAvrcpSendButton)
-BRIDGE_IMPL(sceBtAvrcpSendVolume)
-BRIDGE_IMPL(sceBtAvrcpSetPlayStatus)
-BRIDGE_IMPL(sceBtAvrcpSetTitle)
-BRIDGE_IMPL(sceBtDeleteRegisteredInfo)
-BRIDGE_IMPL(sceBtFreqAudio)
-BRIDGE_IMPL(sceBtGetConfiguration)
-BRIDGE_IMPL(sceBtGetConnectingInfo)
-BRIDGE_IMPL(sceBtGetDeviceId)
-BRIDGE_IMPL(sceBtGetDeviceName)
-BRIDGE_IMPL(sceBtGetInfoForTest)
-BRIDGE_IMPL(sceBtGetLastError)
-BRIDGE_IMPL(sceBtGetRegisteredInfo)
-BRIDGE_IMPL(sceBtGetStatusForTest)
-BRIDGE_IMPL(sceBtHfpGetCurrentPhoneNumber)
-BRIDGE_IMPL(sceBtHfpRequest)
-BRIDGE_IMPL(sceBtHidGetReportDescriptor)
-BRIDGE_IMPL(sceBtHidTransfer)
-BRIDGE_IMPL(sceBtHidVuGetReportFeature)
-BRIDGE_IMPL(sceBtHidVuGetReportInput)
-BRIDGE_IMPL(sceBtHidVuReadEvent)
-BRIDGE_IMPL(sceBtHidVuRegisterCallback)
-BRIDGE_IMPL(sceBtHidVuSetInterruptOutput)
-BRIDGE_IMPL(sceBtHidVuSetReportFeature)
-BRIDGE_IMPL(sceBtHidVuSetReportOutput)
-BRIDGE_IMPL(sceBtHidVuUnregisterCallback)
-BRIDGE_IMPL(sceBtPairingOOB)
-BRIDGE_IMPL(sceBtPushBip)
-BRIDGE_IMPL(sceBtPushOpp)
-BRIDGE_IMPL(sceBtReadEvent)
-BRIDGE_IMPL(sceBtRecvAudio)
-BRIDGE_IMPL(sceBtRecvBip)
-BRIDGE_IMPL(sceBtRecvOpp)
-BRIDGE_IMPL(sceBtRecvSpp)
-BRIDGE_IMPL(sceBtRegisterCallback)
-BRIDGE_IMPL(sceBtReplyPinCode)
-BRIDGE_IMPL(sceBtReplyUserConfirmation)
-BRIDGE_IMPL(sceBtSendAudio)
-BRIDGE_IMPL(sceBtSendL2capEchoRequestForTest)
-BRIDGE_IMPL(sceBtSendSpp)
-BRIDGE_IMPL(sceBtSetConfiguration)
-BRIDGE_IMPL(sceBtSetContentProtection)
-BRIDGE_IMPL(sceBtSetInquiryResultForTest)
-BRIDGE_IMPL(sceBtSetInquiryScan)
-BRIDGE_IMPL(sceBtSetL2capEchoResponseBufferForTest)
-BRIDGE_IMPL(sceBtSetStatusForTest)
-BRIDGE_IMPL(sceBtStartAudio)
-BRIDGE_IMPL(sceBtStartConnect)
-BRIDGE_IMPL(sceBtStartDisconnect)
-BRIDGE_IMPL(sceBtStartInquiry)
-BRIDGE_IMPL(sceBtStopAudio)
-BRIDGE_IMPL(sceBtStopInquiry)
-BRIDGE_IMPL(sceBtUnregisterCallback)

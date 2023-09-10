@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceLibRng.h"
+#include <module/module.h>
 
 #include <algorithm>
 #include <kernel/types.h>
@@ -50,5 +50,3 @@ EXPORT(int, sceKernelGetRandomNumber, uint64_t *output, unsigned int size) {
     std::copy(ptr, ptr + remain, reinterpret_cast<char *>(&output[repeat]));
     return SCE_KERNEL_OK;
 }
-
-BRIDGE_IMPL(sceKernelGetRandomNumber)

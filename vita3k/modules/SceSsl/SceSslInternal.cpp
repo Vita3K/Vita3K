@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSslInternal.h"
+#include <module/module.h>
 
 EXPORT(int, sceSslInternalGetCertificateAuthority) {
     return UNIMPLEMENTED();
@@ -28,7 +28,3 @@ EXPORT(int, sceSslInternalIsInitalized) {
 EXPORT(int, sceSslInternalWrite) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceSslInternalGetCertificateAuthority)
-BRIDGE_IMPL(sceSslInternalIsInitalized)
-BRIDGE_IMPL(sceSslInternalWrite)

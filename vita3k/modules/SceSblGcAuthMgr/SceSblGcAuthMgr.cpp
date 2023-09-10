@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSblGcAuthMgr.h"
+#include <module/module.h>
 
 EXPORT(int, _sceSblGcAuthMgrAdhocBB160Auth1) {
     return UNIMPLEMENTED();
@@ -152,38 +152,3 @@ EXPORT(int, _sceSblGcAuthMgrSclkGetData1) {
 EXPORT(int, _sceSblGcAuthMgrSclkSetData2) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160Auth1)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160Auth2)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160Auth3)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160Auth4)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160Auth5)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160BroadCastDecrypt)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160BroadCastEncrypt)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160GetKeys)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160Init)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160Shutdown)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160UniCastDecrypt)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB160UniCastEncrypt)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB224Auth1)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB224Auth2)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB224Auth3)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB224Auth4)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB224Auth5)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB224GetKeys)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB224Init)
-BRIDGE_IMPL(_sceSblGcAuthMgrAdhocBB224Shutdown)
-BRIDGE_IMPL(_sceSblGcAuthMgrGetMediaIdType01)
-BRIDGE_IMPL(_sceSblGcAuthMgrMsSaveBBCipherFinal)
-BRIDGE_IMPL(_sceSblGcAuthMgrMsSaveBBCipherInit)
-BRIDGE_IMPL(_sceSblGcAuthMgrMsSaveBBCipherUpdate)
-BRIDGE_IMPL(_sceSblGcAuthMgrMsSaveBBMacFinal)
-BRIDGE_IMPL(_sceSblGcAuthMgrMsSaveBBMacInit)
-BRIDGE_IMPL(_sceSblGcAuthMgrMsSaveBBMacUpdate)
-BRIDGE_IMPL(_sceSblGcAuthMgrPcactActivation)
-BRIDGE_IMPL(_sceSblGcAuthMgrPcactGetChallenge)
-BRIDGE_IMPL(_sceSblGcAuthMgrPkgVry)
-BRIDGE_IMPL(_sceSblGcAuthMgrPsmactCreateC1)
-BRIDGE_IMPL(_sceSblGcAuthMgrPsmactVerifyR1)
-BRIDGE_IMPL(_sceSblGcAuthMgrSclkGetData1)
-BRIDGE_IMPL(_sceSblGcAuthMgrSclkSetData2)

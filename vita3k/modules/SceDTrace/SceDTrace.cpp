@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceDTrace.h"
+#include <module/module.h>
 
 EXPORT(int, sceDTraceAddHelperDof) {
     return UNIMPLEMENTED();
@@ -40,10 +40,3 @@ EXPORT(int, sceDTraceHelperIoctl) {
 EXPORT(int, sceDTraceRemoveHelperDof) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceDTraceAddHelperDof)
-BRIDGE_IMPL(sceDTraceClientClose)
-BRIDGE_IMPL(sceDTraceClientIoctl)
-BRIDGE_IMPL(sceDTraceClientOpen)
-BRIDGE_IMPL(sceDTraceHelperIoctl)
-BRIDGE_IMPL(sceDTraceRemoveHelperDof)

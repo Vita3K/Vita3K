@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceRegMgrForSDK.h"
+#include <module/module.h>
 
 #include <regmgr/functions.h>
 
@@ -69,10 +69,3 @@ EXPORT(int, sceRegMgrUtilitySetStr, const int id, const char *buf, const SceSize
 
     return 0;
 }
-
-BRIDGE_IMPL(sceRegMgrUtilityGetBin)
-BRIDGE_IMPL(sceRegMgrUtilityGetInt)
-BRIDGE_IMPL(sceRegMgrUtilityGetStr)
-BRIDGE_IMPL(sceRegMgrUtilitySetBin)
-BRIDGE_IMPL(sceRegMgrUtilitySetInt)
-BRIDGE_IMPL(sceRegMgrUtilitySetStr)

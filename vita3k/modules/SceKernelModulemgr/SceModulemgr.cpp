@@ -165,20 +165,3 @@ EXPORT(int, sceKernelIsCalledFromSysModule) {
     TRACY_FUNC(sceKernelIsCalledFromSysModule);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(_sceKernelCloseModule)
-BRIDGE_IMPL(_sceKernelLoadModule)
-BRIDGE_IMPL(_sceKernelLoadStartModule)
-BRIDGE_IMPL(_sceKernelOpenModule)
-BRIDGE_IMPL(_sceKernelStartModule)
-BRIDGE_IMPL(_sceKernelStopModule)
-BRIDGE_IMPL(_sceKernelStopUnloadModule)
-BRIDGE_IMPL(_sceKernelUnloadModule)
-BRIDGE_IMPL(sceKernelGetAllowedSdkVersionOnSystem)
-BRIDGE_IMPL(sceKernelGetLibraryInfoByNID)
-BRIDGE_IMPL(sceKernelGetModuleIdByAddr)
-BRIDGE_IMPL(sceKernelGetModuleInfo)
-BRIDGE_IMPL(sceKernelGetModuleList)
-BRIDGE_IMPL(sceKernelGetSystemSwVersion)
-BRIDGE_IMPL(sceKernelInhibitLoadingModule)
-BRIDGE_IMPL(sceKernelIsCalledFromSysModule)

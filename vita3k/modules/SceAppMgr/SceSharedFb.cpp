@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSharedFb.h"
+#include <module/module.h>
 
 EXPORT(int, _sceSharedFbOpen) {
     return UNIMPLEMENTED();
@@ -64,16 +64,3 @@ EXPORT(int, sceSharedFbUpdateProcessBegin) {
 EXPORT(int, sceSharedFbUpdateProcessEnd) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(_sceSharedFbOpen)
-BRIDGE_IMPL(sceSharedFbBegin)
-BRIDGE_IMPL(sceSharedFbClose)
-BRIDGE_IMPL(sceSharedFbCreate)
-BRIDGE_IMPL(sceSharedFbDelete)
-BRIDGE_IMPL(sceSharedFbEnd)
-BRIDGE_IMPL(sceSharedFbGetInfo)
-BRIDGE_IMPL(sceSharedFbGetRenderingInfo)
-BRIDGE_IMPL(sceSharedFbGetShellRenderPort)
-BRIDGE_IMPL(sceSharedFbUpdateProcess)
-BRIDGE_IMPL(sceSharedFbUpdateProcessBegin)
-BRIDGE_IMPL(sceSharedFbUpdateProcessEnd)

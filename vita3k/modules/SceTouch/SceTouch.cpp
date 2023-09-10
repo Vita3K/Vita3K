@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceTouch.h"
+#include <module/module.h>
 
 #include <touch/functions.h>
 #include <touch/state.h>
@@ -286,31 +286,3 @@ EXPORT(int, sceTouchSetSamplingStateExt) {
     TRACY_FUNC(sceTouchSetSamplingStateExt);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceTouchActivateRegion)
-BRIDGE_IMPL(sceTouchClearRegion)
-BRIDGE_IMPL(sceTouchDisableTouchForce)
-BRIDGE_IMPL(sceTouchDisableTouchForceExt)
-BRIDGE_IMPL(sceTouchEnableIdleTimerCancelSetting)
-BRIDGE_IMPL(sceTouchEnableTouchForce)
-BRIDGE_IMPL(sceTouchEnableTouchForceExt)
-BRIDGE_IMPL(sceTouchGetDeviceInfo)
-BRIDGE_IMPL(sceTouchGetPanelInfo)
-BRIDGE_IMPL(sceTouchGetPixelDensity)
-BRIDGE_IMPL(sceTouchGetPixelDensity2)
-BRIDGE_IMPL(sceTouchGetProcessInfo)
-BRIDGE_IMPL(sceTouchGetSamplingState)
-BRIDGE_IMPL(sceTouchGetSamplingStateExt)
-BRIDGE_IMPL(sceTouchPeek)
-BRIDGE_IMPL(sceTouchPeek2)
-BRIDGE_IMPL(sceTouchPeekRegion)
-BRIDGE_IMPL(sceTouchPeekRegionExt)
-BRIDGE_IMPL(sceTouchRead)
-BRIDGE_IMPL(sceTouchRead2)
-BRIDGE_IMPL(sceTouchReadRegion)
-BRIDGE_IMPL(sceTouchReadRegionExt)
-BRIDGE_IMPL(sceTouchSetProcessPrivilege)
-BRIDGE_IMPL(sceTouchSetRegion)
-BRIDGE_IMPL(sceTouchSetRegionAttr)
-BRIDGE_IMPL(sceTouchSetSamplingState)
-BRIDGE_IMPL(sceTouchSetSamplingStateExt)

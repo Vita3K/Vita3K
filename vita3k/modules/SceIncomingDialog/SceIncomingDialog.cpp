@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceIncomingDialog.h"
+#include <module/module.h>
 
 EXPORT(int, sceIncomingDialogClose) {
     return UNIMPLEMENTED();
@@ -40,10 +40,3 @@ EXPORT(int, sceIncomingDialogOpen) {
 EXPORT(int, sceIncomingDialogSwitchToDialog) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceIncomingDialogClose)
-BRIDGE_IMPL(sceIncomingDialogFinish)
-BRIDGE_IMPL(sceIncomingDialogGetStatus)
-BRIDGE_IMPL(sceIncomingDialogInitialize)
-BRIDGE_IMPL(sceIncomingDialogOpen)
-BRIDGE_IMPL(sceIncomingDialogSwitchToDialog)

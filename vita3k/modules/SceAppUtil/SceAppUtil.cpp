@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceAppUtil.h"
+#include <module/module.h>
 
 #include <emuenv/app_util.h>
 #include <io/device.h>
@@ -520,50 +520,3 @@ EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf,
     }
     return 0;
 }
-
-BRIDGE_IMPL(sceAppUtilAddCookieWebBrowser)
-BRIDGE_IMPL(sceAppUtilAddcontMount)
-BRIDGE_IMPL(sceAppUtilAddcontUmount)
-BRIDGE_IMPL(sceAppUtilAppEventParseGameCustomData)
-BRIDGE_IMPL(sceAppUtilAppEventParseIncomingDialog)
-BRIDGE_IMPL(sceAppUtilAppEventParseLiveArea)
-BRIDGE_IMPL(sceAppUtilAppEventParseNearGift)
-BRIDGE_IMPL(sceAppUtilAppEventParseNpActivity)
-BRIDGE_IMPL(sceAppUtilAppEventParseNpAppDataMessage)
-BRIDGE_IMPL(sceAppUtilAppEventParseNpBasicJoinablePresence)
-BRIDGE_IMPL(sceAppUtilAppEventParseNpInviteMessage)
-BRIDGE_IMPL(sceAppUtilAppEventParseScreenShotNotification)
-BRIDGE_IMPL(sceAppUtilAppEventParseSessionInvitation)
-BRIDGE_IMPL(sceAppUtilAppEventParseTeleport)
-BRIDGE_IMPL(sceAppUtilAppEventParseTriggerUtil)
-BRIDGE_IMPL(sceAppUtilAppEventParseWebBrowser)
-BRIDGE_IMPL(sceAppUtilAppParamGetInt)
-BRIDGE_IMPL(sceAppUtilBgdlGetStatus)
-BRIDGE_IMPL(sceAppUtilDrmClose)
-BRIDGE_IMPL(sceAppUtilDrmOpen)
-BRIDGE_IMPL(sceAppUtilInit)
-BRIDGE_IMPL(sceAppUtilLaunchWebBrowser)
-BRIDGE_IMPL(sceAppUtilLoadSafeMemory)
-BRIDGE_IMPL(sceAppUtilMusicMount)
-BRIDGE_IMPL(sceAppUtilMusicUmount)
-BRIDGE_IMPL(sceAppUtilPhotoMount)
-BRIDGE_IMPL(sceAppUtilPhotoUmount)
-BRIDGE_IMPL(sceAppUtilPspSaveDataGetDirNameList)
-BRIDGE_IMPL(sceAppUtilPspSaveDataLoad)
-BRIDGE_IMPL(sceAppUtilReceiveAppEvent)
-BRIDGE_IMPL(sceAppUtilResetCookieWebBrowser)
-BRIDGE_IMPL(sceAppUtilSaveDataDataRemove)
-BRIDGE_IMPL(sceAppUtilSaveDataDataSave)
-BRIDGE_IMPL(sceAppUtilSaveDataGetQuota)
-BRIDGE_IMPL(sceAppUtilSaveDataMount)
-BRIDGE_IMPL(sceAppUtilSaveDataSlotCreate)
-BRIDGE_IMPL(sceAppUtilSaveDataSlotDelete)
-BRIDGE_IMPL(sceAppUtilSaveDataSlotGetParam)
-BRIDGE_IMPL(sceAppUtilSaveDataSlotSearch)
-BRIDGE_IMPL(sceAppUtilSaveDataSlotSetParam)
-BRIDGE_IMPL(sceAppUtilSaveDataUmount)
-BRIDGE_IMPL(sceAppUtilSaveSafeMemory)
-BRIDGE_IMPL(sceAppUtilShutdown)
-BRIDGE_IMPL(sceAppUtilStoreBrowse)
-BRIDGE_IMPL(sceAppUtilSystemParamGetInt)
-BRIDGE_IMPL(sceAppUtilSystemParamGetString)

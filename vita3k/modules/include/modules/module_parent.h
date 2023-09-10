@@ -68,6 +68,7 @@ const std::array<VarExport, var_exports_size> &get_var_exports();
 
 using LibraryInitFn = std::function<void(EmuEnvState &emuenv)>;
 
-#define LIBRARY_INIT_DECL(name) void export_library_init_##name(EmuEnvState &emuenv);
-#define LIBRARY_INIT_IMPL(name) void export_library_init_##name(EmuEnvState &emuenv)
-#define LIBRARY_INIT_REGISTER(name) extern const LibraryInitFn import_library_init_##name = export_library_init_##name;
+#define LIBRARY_INIT(name)                                                              \
+    void export_library_init_##name(EmuEnvState &emuenv);                               \
+    extern const LibraryInitFn import_library_init_##name = export_library_init_##name; \
+    void export_library_init_##name(EmuEnvState &emuenv)

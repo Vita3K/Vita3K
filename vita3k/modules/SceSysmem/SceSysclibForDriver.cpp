@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSysclibForDriver.h"
+#include <module/module.h>
 
 EXPORT(int, __aeabi_idiv) {
     return UNIMPLEMENTED();
@@ -168,42 +168,3 @@ EXPORT(int, ktoupper) {
 EXPORT(int, kvsnprintf) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(__aeabi_idiv)
-BRIDGE_IMPL(__aeabi_lcmp)
-BRIDGE_IMPL(__aeabi_ldivmod)
-BRIDGE_IMPL(__aeabi_lmul)
-BRIDGE_IMPL(__aeabi_uidiv)
-BRIDGE_IMPL(__aeabi_uidivmod)
-BRIDGE_IMPL(__aeabi_ulcmp)
-BRIDGE_IMPL(__memcpy_chk)
-BRIDGE_IMPL(__memmove_chk)
-BRIDGE_IMPL(__memset_chk)
-BRIDGE_IMPL(__kstack_chk_fail)
-BRIDGE_IMPL(__strncat_chk)
-BRIDGE_IMPL(__strncpy_chk)
-BRIDGE_IMPL(look_ctype_table)
-BRIDGE_IMPL(kmemchr)
-BRIDGE_IMPL(kmemcmp)
-BRIDGE_IMPL(kmemcpy)
-BRIDGE_IMPL(kmemmove)
-BRIDGE_IMPL(kmemset)
-BRIDGE_IMPL(rshift)
-BRIDGE_IMPL(ksnprintf)
-BRIDGE_IMPL(kstrchr)
-BRIDGE_IMPL(kstrcmp)
-BRIDGE_IMPL(strlcat)
-BRIDGE_IMPL(strlcpy)
-BRIDGE_IMPL(kstrlen)
-BRIDGE_IMPL(kstrncat)
-BRIDGE_IMPL(kstrncmp)
-BRIDGE_IMPL(kstrncpy)
-BRIDGE_IMPL(strnlen)
-BRIDGE_IMPL(kstrrchr)
-BRIDGE_IMPL(kstrstr)
-BRIDGE_IMPL(kstrtol)
-BRIDGE_IMPL(kstrtoll)
-BRIDGE_IMPL(kstrtoul)
-BRIDGE_IMPL(ktolower)
-BRIDGE_IMPL(ktoupper)
-BRIDGE_IMPL(kvsnprintf)

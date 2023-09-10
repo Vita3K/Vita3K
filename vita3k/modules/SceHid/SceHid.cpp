@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceHid.h"
+#include <module/module.h>
 
 EXPORT(int, sceHidConsumerControlEnumerate) {
     return UNIMPLEMENTED();
@@ -128,32 +128,3 @@ EXPORT(int, sceHidMouseUnregisterEnumHintCallback) {
 EXPORT(int, sceHidMouseUnregisterReadHintCallback) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceHidConsumerControlEnumerate)
-BRIDGE_IMPL(sceHidConsumerControlRead)
-BRIDGE_IMPL(sceHidConsumerControlRegisterEnumHintCallback)
-BRIDGE_IMPL(sceHidConsumerControlRegisterReadHintCallback)
-BRIDGE_IMPL(sceHidConsumerControlUnregisterEnumHintCallback)
-BRIDGE_IMPL(sceHidConsumerControlUnregisterReadHintCallback)
-BRIDGE_IMPL(sceHidControllerEnumerate)
-BRIDGE_IMPL(sceHidControllerRead)
-BRIDGE_IMPL(sceHidControllerRegisterEnumHintCallback)
-BRIDGE_IMPL(sceHidControllerRegisterReadHintCallback)
-BRIDGE_IMPL(sceHidControllerUnregisterEnumHintCallback)
-BRIDGE_IMPL(sceHidControllerUnregisterReadHintCallback)
-BRIDGE_IMPL(sceHidKeyboardClear)
-BRIDGE_IMPL(sceHidKeyboardEnumerate)
-BRIDGE_IMPL(sceHidKeyboardGetIntercept)
-BRIDGE_IMPL(sceHidKeyboardPeek)
-BRIDGE_IMPL(sceHidKeyboardRead)
-BRIDGE_IMPL(sceHidKeyboardRegisterEnumHintCallback)
-BRIDGE_IMPL(sceHidKeyboardRegisterReadHintCallback)
-BRIDGE_IMPL(sceHidKeyboardSetIntercept)
-BRIDGE_IMPL(sceHidKeyboardUnregisterEnumHintCallback)
-BRIDGE_IMPL(sceHidKeyboardUnregisterReadHintCallback)
-BRIDGE_IMPL(sceHidMouseEnumerate)
-BRIDGE_IMPL(sceHidMouseRead)
-BRIDGE_IMPL(sceHidMouseRegisterEnumHintCallback)
-BRIDGE_IMPL(sceHidMouseRegisterReadHintCallback)
-BRIDGE_IMPL(sceHidMouseUnregisterEnumHintCallback)
-BRIDGE_IMPL(sceHidMouseUnregisterReadHintCallback)

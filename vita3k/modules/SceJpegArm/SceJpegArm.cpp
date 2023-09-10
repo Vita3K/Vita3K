@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceJpegArm.h"
+#include <module/module.h>
 
 EXPORT(int, sceJpegArmCreateSplitDecoder) {
     return UNIMPLEMENTED();
@@ -40,10 +40,3 @@ EXPORT(int, sceJpegArmGetOutputInfo) {
 EXPORT(int, sceJpegArmSplitDecodeMJpeg) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceJpegArmCreateSplitDecoder)
-BRIDGE_IMPL(sceJpegArmDecodeMJpeg)
-BRIDGE_IMPL(sceJpegArmDecodeMJpegYCbCr)
-BRIDGE_IMPL(sceJpegArmDeleteSplitDecoder)
-BRIDGE_IMPL(sceJpegArmGetOutputInfo)
-BRIDGE_IMPL(sceJpegArmSplitDecodeMJpeg)

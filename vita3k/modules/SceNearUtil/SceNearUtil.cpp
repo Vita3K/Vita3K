@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNearUtil.h"
+#include <module/module.h>
 
 EXPORT(int, sceNearCloseDiscoveredGiftImage) {
     return UNIMPLEMENTED();
@@ -132,33 +132,3 @@ EXPORT(int, sceNearSetGift) {
 EXPORT(int, sceNearSetGift2) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNearCloseDiscoveredGiftImage)
-BRIDGE_IMPL(sceNearCloseReceivedGiftData)
-BRIDGE_IMPL(sceNearConvertDiscoveredGiftParam)
-BRIDGE_IMPL(sceNearDeleteDiscoveredGift)
-BRIDGE_IMPL(sceNearDeleteGift)
-BRIDGE_IMPL(sceNearFinalize)
-BRIDGE_IMPL(sceNearFinalizeAndLaunchNearApp)
-BRIDGE_IMPL(sceNearGetDiscoveredGiftInfo)
-BRIDGE_IMPL(sceNearGetDiscoveredGiftSender)
-BRIDGE_IMPL(sceNearGetDiscoveredGiftStatus)
-BRIDGE_IMPL(sceNearGetDiscoveredGifts)
-BRIDGE_IMPL(sceNearGetGift)
-BRIDGE_IMPL(sceNearGetGiftStatus)
-BRIDGE_IMPL(sceNearGetLastNeighborFoundDateTime)
-BRIDGE_IMPL(sceNearGetMyStatus)
-BRIDGE_IMPL(sceNearGetNeighbors)
-BRIDGE_IMPL(sceNearGetNewNeighbors)
-BRIDGE_IMPL(sceNearGetRecentNeighbors)
-BRIDGE_IMPL(sceNearIgnoreDiscoveredGift)
-BRIDGE_IMPL(sceNearInitialize)
-BRIDGE_IMPL(sceNearLaunchNearAppForDownload)
-BRIDGE_IMPL(sceNearLaunchNearAppForUpdate)
-BRIDGE_IMPL(sceNearOpenDiscoveredGiftImage)
-BRIDGE_IMPL(sceNearOpenReceivedGiftData)
-BRIDGE_IMPL(sceNearReadDiscoveredGiftImage)
-BRIDGE_IMPL(sceNearReadReceivedGiftData)
-BRIDGE_IMPL(sceNearRefresh)
-BRIDGE_IMPL(sceNearSetGift)
-BRIDGE_IMPL(sceNearSetGift2)

@@ -15,7 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceDisplayUser.h"
+#include <module/module.h>
+#include "../SceDisplay/SceDisplay.h"
 
 #include <util/tracy.h>
 
@@ -64,11 +65,3 @@ EXPORT(int, sceDisplaySetFrameBufInternal) {
     TRACY_FUNC(sceDisplaySetFrameBufInternal);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceDisplayGetFrameBuf)
-BRIDGE_IMPL(sceDisplayGetFrameBufInternal)
-BRIDGE_IMPL(sceDisplayGetMaximumFrameBufResolution)
-BRIDGE_IMPL(sceDisplayGetResolutionInfoInternal)
-BRIDGE_IMPL(sceDisplaySetFrameBuf)
-BRIDGE_IMPL(sceDisplaySetFrameBufForCompat)
-BRIDGE_IMPL(sceDisplaySetFrameBufInternal)

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceLsdb.h"
+#include <module/module.h>
 
 EXPORT(int, sceLsdbGetAppVer) {
     return UNIMPLEMENTED();
@@ -76,19 +76,3 @@ EXPORT(int, sceLsdbGetTitle) {
 EXPORT(int, sceLsdbGetType) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceLsdbGetAppVer)
-BRIDGE_IMPL(sceLsdbGetAttribute)
-BRIDGE_IMPL(sceLsdbGetBootable)
-BRIDGE_IMPL(sceLsdbGetCategory)
-BRIDGE_IMPL(sceLsdbGetDiscId)
-BRIDGE_IMPL(sceLsdbGetGameDataId)
-BRIDGE_IMPL(sceLsdbGetMetaContentsPath)
-BRIDGE_IMPL(sceLsdbGetName)
-BRIDGE_IMPL(sceLsdbGetOriginalPath)
-BRIDGE_IMPL(sceLsdbGetParentalLevel)
-BRIDGE_IMPL(sceLsdbGetSelfPath)
-BRIDGE_IMPL(sceLsdbGetStitle)
-BRIDGE_IMPL(sceLsdbGetSystemVersion)
-BRIDGE_IMPL(sceLsdbGetTitle)
-BRIDGE_IMPL(sceLsdbGetType)

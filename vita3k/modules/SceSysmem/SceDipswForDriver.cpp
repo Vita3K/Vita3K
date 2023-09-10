@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceDipswForDriver.h"
+#include <module/module.h>
 
 EXPORT(int, ksceKernelCheckDipsw) {
     return UNIMPLEMENTED();
@@ -32,8 +32,3 @@ EXPORT(int, ksceKernelGetDipswInfo) {
 EXPORT(int, ksceKernelSetDipsw) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(ksceKernelCheckDipsw)
-BRIDGE_IMPL(ksceKernelClearDipsw)
-BRIDGE_IMPL(ksceKernelGetDipswInfo)
-BRIDGE_IMPL(ksceKernelSetDipsw)

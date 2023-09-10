@@ -132,7 +132,7 @@ static void gen_nids_h(std::ostream &out, const Modules &modules) {
 
 static void gen_library_cpp(std::ostream &dst, const Library &library) {
     gen_license_comment(dst);
-    dst << "#include \"" << library.first << ".h\"" << '\n';
+    dst << "#include <module/module.h>" << '\n';
 
     for (const Function &function : library.second) {
         dst << '\n';
@@ -142,21 +142,6 @@ static void gen_library_cpp(std::ostream &dst, const Library &library) {
     }
 
     dst << '\n';
-    for (const Function &function : library.second) {
-        dst << "BRIDGE_IMPL(" << function.first << ")" << '\n';
-    }
-}
-
-static void gen_library_h(std::ostream &dst, const Library &library) {
-    gen_license_comment(dst);
-    dst << "#pragma once" << '\n';
-    dst << '\n';
-    dst << "#include <module/module.h>" << '\n';
-    dst << '\n';
-
-    for (const auto &function : library.second) {
-        dst << "BRIDGE_DECL(" << function.first << ")" << '\n';
-    }
 }
 
 static void gen_module_stubs(const Modules &modules) {
@@ -175,8 +160,6 @@ static void gen_module_stubs(const Modules &modules) {
             const std::string library_h_path = module_path + "/" + library.first + ".h";
             std::ofstream library_cpp(library_cpp_path.c_str(), std::ios::binary);
             gen_library_cpp(library_cpp, library);
-            std::ofstream library_h(library_h_path.c_str(), std::ios::binary);
-            gen_library_h(library_h, library);
         }
     }
 }
@@ -185,7 +168,6 @@ static void gen_modules_cmakelists(std::ostream &out, const Modules &modules) {
     for (const Module &module : modules) {
         for (const Library &library : module.second) {
             out << "\n\t" << module.first << "/" << library.first << ".cpp";
-            out << " " << module.first << "/" << library.first << ".h";
         }
     }
 }
@@ -204,7 +186,7 @@ int main(int argc, const char *argv[]) {
 
     std::ofstream cmake("vita3k/modules/CMakeLists.txt", std::ios::binary);
     cmake << "set(SOURCE_LIST" << '\n';
-    cmake << '\t' << "module_parent.cpp include/modules/module_parent.h include/modules/library_init_list.inc" << '\n';
+    cmake << '\t' << "module_parent.cpp" << '\n';
 
     std::ofstream nids("vita3k/nids/include/nids/nids.inc", std::ios::binary);
     gen_license_comment(nids);
@@ -226,7 +208,7 @@ int main(int argc, const char *argv[]) {
           << '\n';
     cmake << "add_library(modules STATIC ${SOURCE_LIST})" << '\n';
     cmake << "target_include_directories(modules PUBLIC include)" << '\n';
-    cmake << "target_link_libraries(modules PRIVATE xxHash::xxhash)" << '\n';
+    cmake << "target_link_libraries(modules PRIVATE audio codec ctrl dialog display gui gxm kernel mem motion net ngs np ssl packages renderer rtc sdl2 touch xxHash::xxhash)" << '\n';
     cmake << "target_link_libraries(modules PUBLIC module)" << '\n';
     cmake << "source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})" << '\n';
 

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "ScePvf.h"
+#include <module/module.h>
 
 EXPORT(int, __scePvfSetFt2DoneLibCHook) {
     return UNIMPLEMENTED();
@@ -188,47 +188,3 @@ EXPORT(int, scePvfSetResolution) {
 EXPORT(int, scePvfSetSkewValue) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(__scePvfSetFt2DoneLibCHook)
-BRIDGE_IMPL(__scePvfSetFt2LibCHook)
-BRIDGE_IMPL(scePvfClose)
-BRIDGE_IMPL(scePvfDoneLib)
-BRIDGE_IMPL(scePvfFindFont)
-BRIDGE_IMPL(scePvfFindOptimumFont)
-BRIDGE_IMPL(scePvfFlush)
-BRIDGE_IMPL(scePvfGetCharGlyphImage)
-BRIDGE_IMPL(scePvfGetCharGlyphImage_Clip)
-BRIDGE_IMPL(scePvfGetCharGlyphOutline)
-BRIDGE_IMPL(scePvfGetCharImageRect)
-BRIDGE_IMPL(scePvfGetCharInfo)
-BRIDGE_IMPL(scePvfGetFontInfo)
-BRIDGE_IMPL(scePvfGetFontInfoByIndexNumber)
-BRIDGE_IMPL(scePvfGetFontList)
-BRIDGE_IMPL(scePvfGetKerningInfo)
-BRIDGE_IMPL(scePvfGetNumFontList)
-BRIDGE_IMPL(scePvfGetVertCharGlyphImage)
-BRIDGE_IMPL(scePvfGetVertCharGlyphImage_Clip)
-BRIDGE_IMPL(scePvfGetVertCharGlyphOutline)
-BRIDGE_IMPL(scePvfGetVertCharImageRect)
-BRIDGE_IMPL(scePvfGetVertCharInfo)
-BRIDGE_IMPL(scePvfIsElement)
-BRIDGE_IMPL(scePvfIsVertElement)
-BRIDGE_IMPL(scePvfNewLib)
-BRIDGE_IMPL(scePvfOpen)
-BRIDGE_IMPL(scePvfOpenDefaultJapaneseFontOnSharedMemory)
-BRIDGE_IMPL(scePvfOpenDefaultLatinFontOnSharedMemory)
-BRIDGE_IMPL(scePvfOpenUserFile)
-BRIDGE_IMPL(scePvfOpenUserFileWithSubfontIndex)
-BRIDGE_IMPL(scePvfOpenUserMemory)
-BRIDGE_IMPL(scePvfOpenUserMemoryWithSubfontIndex)
-BRIDGE_IMPL(scePvfPixelToPointH)
-BRIDGE_IMPL(scePvfPixelToPointV)
-BRIDGE_IMPL(scePvfPointToPixelH)
-BRIDGE_IMPL(scePvfPointToPixelV)
-BRIDGE_IMPL(scePvfReleaseCharGlyphOutline)
-BRIDGE_IMPL(scePvfSetAltCharacterCode)
-BRIDGE_IMPL(scePvfSetCharSize)
-BRIDGE_IMPL(scePvfSetEM)
-BRIDGE_IMPL(scePvfSetEmboldenRate)
-BRIDGE_IMPL(scePvfSetResolution)
-BRIDGE_IMPL(scePvfSetSkewValue)

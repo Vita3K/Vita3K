@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNpActivity.h"
+#include <module/module.h>
 
 EXPORT(int, sceNpActivityInit) {
     return UNIMPLEMENTED();
@@ -32,8 +32,3 @@ EXPORT(int, sceNpActivityPostStatus) {
 EXPORT(int, sceNpActivityTerm) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNpActivityInit)
-BRIDGE_IMPL(sceNpActivityPostAppStartupStatus)
-BRIDGE_IMPL(sceNpActivityPostStatus)
-BRIDGE_IMPL(sceNpActivityTerm)

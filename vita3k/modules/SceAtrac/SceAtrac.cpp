@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceAtrac.h"
+#include <module/module.h>
 
 #include "../SceAudiodec/SceAudiodecUser.h"
 
@@ -371,28 +371,3 @@ EXPORT(SceInt32, sceAtracSetSubBuffer, SceInt32 atracHandle, Ptr<SceUChar8> pSub
 
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceAtracAddStreamData)
-BRIDGE_IMPL(sceAtracCreateDecoderGroup)
-BRIDGE_IMPL(sceAtracDecode)
-BRIDGE_IMPL(sceAtracDeleteDecoderGroup)
-BRIDGE_IMPL(sceAtracGetContentInfo)
-BRIDGE_IMPL(sceAtracGetDecoderGroupInfo)
-BRIDGE_IMPL(sceAtracGetDecoderStatus)
-BRIDGE_IMPL(sceAtracGetInternalError)
-BRIDGE_IMPL(sceAtracGetLoopInfo)
-BRIDGE_IMPL(sceAtracGetNextOutputPosition)
-BRIDGE_IMPL(sceAtracGetOutputSamples)
-BRIDGE_IMPL(sceAtracGetOutputableSamples)
-BRIDGE_IMPL(sceAtracGetRemainSamples)
-BRIDGE_IMPL(sceAtracGetStreamInfo)
-BRIDGE_IMPL(sceAtracGetSubBufferInfo)
-BRIDGE_IMPL(sceAtracGetVacantSize)
-BRIDGE_IMPL(sceAtracIsSubBufferNeeded)
-BRIDGE_IMPL(sceAtracQueryDecoderGroupMemSize)
-BRIDGE_IMPL(sceAtracReleaseHandle)
-BRIDGE_IMPL(sceAtracResetNextOutputPosition)
-BRIDGE_IMPL(sceAtracSetDataAndAcquireHandle)
-BRIDGE_IMPL(sceAtracSetLoopNum)
-BRIDGE_IMPL(sceAtracSetOutputSamples)
-BRIDGE_IMPL(sceAtracSetSubBuffer)

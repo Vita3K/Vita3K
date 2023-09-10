@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceGxmInternalForVsh.h"
+#include <module/module.h>
 
 #include "SceGxm.h"
 
@@ -46,9 +46,3 @@ EXPORT(int, sceGxmVshSyncObjectDestroy) {
 EXPORT(int, sceGxmVshSyncObjectOpen) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceGxmVshInitialize)
-BRIDGE_IMPL(sceGxmVshSyncObjectClose)
-BRIDGE_IMPL(sceGxmVshSyncObjectCreate)
-BRIDGE_IMPL(sceGxmVshSyncObjectDestroy)
-BRIDGE_IMPL(sceGxmVshSyncObjectOpen)

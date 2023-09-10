@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNpSignaling.h"
+#include <module/module.h>
 
 EXPORT(int, sceNpSignalingActivateConnection) {
     return UNIMPLEMENTED();
@@ -88,22 +88,3 @@ EXPORT(int, sceNpSignalingTerm) {
 EXPORT(int, sceNpSignalingTerminateConnection) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNpSignalingActivateConnection)
-BRIDGE_IMPL(sceNpSignalingCancelPeerNetInfo)
-BRIDGE_IMPL(sceNpSignalingCreateCtx)
-BRIDGE_IMPL(sceNpSignalingDeactivateConnection)
-BRIDGE_IMPL(sceNpSignalingDestroyCtx)
-BRIDGE_IMPL(sceNpSignalingGetConnectionFromNpId)
-BRIDGE_IMPL(sceNpSignalingGetConnectionFromPeerAddress)
-BRIDGE_IMPL(sceNpSignalingGetConnectionInfo)
-BRIDGE_IMPL(sceNpSignalingGetConnectionStatus)
-BRIDGE_IMPL(sceNpSignalingGetCtxOpt)
-BRIDGE_IMPL(sceNpSignalingGetLocalNetInfo)
-BRIDGE_IMPL(sceNpSignalingGetMemoryInfo)
-BRIDGE_IMPL(sceNpSignalingGetPeerNetInfo)
-BRIDGE_IMPL(sceNpSignalingGetPeerNetInfoResult)
-BRIDGE_IMPL(sceNpSignalingInit)
-BRIDGE_IMPL(sceNpSignalingSetCtxOpt)
-BRIDGE_IMPL(sceNpSignalingTerm)
-BRIDGE_IMPL(sceNpSignalingTerminateConnection)

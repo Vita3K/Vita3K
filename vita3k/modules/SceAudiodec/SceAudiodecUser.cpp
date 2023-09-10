@@ -17,6 +17,8 @@
 
 #include "SceAudiodecUser.h"
 
+#include <modules/module_parent.h>
+
 #include <audio/state.h>
 #include <codec/state.h>
 #include <kernel/state.h>
@@ -113,10 +115,9 @@ constexpr uint32_t SCE_AUDIODEC_AAC_MAX_PCM_SIZE = KiB(2);
 constexpr uint32_t SCE_AUDIODEC_MP3_V1_MAX_PCM_SIZE = 2304;
 constexpr uint32_t SCE_AUDIODEC_MP3_V2_MAX_PCM_SIZE = 1152;
 
-LIBRARY_INIT_IMPL(SceAudiodec) {
+LIBRARY_INIT(SceAudiodec) {
     emuenv.kernel.obj_store.create<AudiodecState>();
 }
-LIBRARY_INIT_REGISTER(SceAudiodec)
 
 EXPORT(int, sceAudiodecClearContext, SceAudiodecCtrl *ctrl) {
     TRACY_FUNC(sceAudiodecClearContext, ctrl)
@@ -370,19 +371,3 @@ EXPORT(SceInt32, sceAudiodecTermLibrary, SceAudiodecCodec codecType) {
     state->codecs.erase(codecType);
     return 0;
 }
-
-BRIDGE_IMPL(sceAudiodecClearContext)
-BRIDGE_IMPL(sceAudiodecCreateDecoder)
-BRIDGE_IMPL(sceAudiodecCreateDecoderExternal)
-BRIDGE_IMPL(sceAudiodecCreateDecoderResident)
-BRIDGE_IMPL(sceAudiodecDecode)
-BRIDGE_IMPL(sceAudiodecDecodeNFrames)
-BRIDGE_IMPL(sceAudiodecDecodeNStreams)
-BRIDGE_IMPL(sceAudiodecDeleteDecoder)
-BRIDGE_IMPL(sceAudiodecDeleteDecoderExternal)
-BRIDGE_IMPL(sceAudiodecDeleteDecoderResident)
-BRIDGE_IMPL(sceAudiodecGetContextSize)
-BRIDGE_IMPL(sceAudiodecGetInternalError)
-BRIDGE_IMPL(sceAudiodecInitLibrary)
-BRIDGE_IMPL(sceAudiodecPartlyDecode)
-BRIDGE_IMPL(sceAudiodecTermLibrary)

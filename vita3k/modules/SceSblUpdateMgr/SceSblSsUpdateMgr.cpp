@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSblSsUpdateMgr.h"
+#include <module/module.h>
 
 EXPORT(int, sceSblUsAllocateBuffer) {
     return UNIMPLEMENTED();
@@ -116,29 +116,3 @@ EXPORT(int, sceSblUsVerifyPupSegmentById) {
 EXPORT(int, sceSblUsVerifyPupWatermark) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceSblUsAllocateBuffer)
-BRIDGE_IMPL(sceSblUsCheckSystemIntegrity)
-BRIDGE_IMPL(sceSblUsExtractSpackage)
-BRIDGE_IMPL(sceSblUsGetApplicableVersion)
-BRIDGE_IMPL(sceSblUsGetExtractSpackage)
-BRIDGE_IMPL(sceSblUsGetSpkgInfo)
-BRIDGE_IMPL(sceSblUsGetStatus)
-BRIDGE_IMPL(sceSblUsGetUpdateMode)
-BRIDGE_IMPL(sceSblUsInformUpdateFinished)
-BRIDGE_IMPL(sceSblUsInformUpdateOngoing)
-BRIDGE_IMPL(sceSblUsInformUpdateStarted)
-BRIDGE_IMPL(sceSblUsInspectSpackage)
-BRIDGE_IMPL(sceSblUsPowerControl)
-BRIDGE_IMPL(sceSblUsReleaseBuffer)
-BRIDGE_IMPL(sceSblUsSetSwInfoBin)
-BRIDGE_IMPL(sceSblUsSetSwInfoInt)
-BRIDGE_IMPL(sceSblUsSetSwInfoStr)
-BRIDGE_IMPL(sceSblUsSetUpdateMode)
-BRIDGE_IMPL(sceSblUsUpdateSpackage)
-BRIDGE_IMPL(sceSblUsVerifyPup)
-BRIDGE_IMPL(sceSblUsVerifyPupAdditionalSign)
-BRIDGE_IMPL(sceSblUsVerifyPupHeader)
-BRIDGE_IMPL(sceSblUsVerifyPupSegment)
-BRIDGE_IMPL(sceSblUsVerifyPupSegmentById)
-BRIDGE_IMPL(sceSblUsVerifyPupWatermark)

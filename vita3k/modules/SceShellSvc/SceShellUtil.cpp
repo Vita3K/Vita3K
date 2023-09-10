@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceShellUtil.h"
+#include <module/module.h>
 
 EXPORT(int, sceShellUtilInitEvents) {
     return UNIMPLEMENTED();
@@ -36,9 +36,3 @@ EXPORT(int, sceShellUtilRequestLaunchApp) {
 EXPORT(int, sceShellUtilUnlock) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceShellUtilInitEvents)
-BRIDGE_IMPL(sceShellUtilLock)
-BRIDGE_IMPL(sceShellUtilRegisterEventHandler)
-BRIDGE_IMPL(sceShellUtilRequestLaunchApp)
-BRIDGE_IMPL(sceShellUtilUnlock)

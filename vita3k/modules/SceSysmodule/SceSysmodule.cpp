@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSysmodule.h"
+#include <module/module.h>
 
 #include <kernel/state.h>
 #include <module/load_module.h>
@@ -243,12 +243,3 @@ EXPORT(int, sceSysmoduleUnloadModuleInternalWithArg, SceSysmoduleInternalModuleI
     TRACY_FUNC(sceSysmoduleUnloadModuleInternalWithArg, module_id, args, argp, option);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceSysmoduleIsLoaded)
-BRIDGE_IMPL(sceSysmoduleIsLoadedInternal)
-BRIDGE_IMPL(sceSysmoduleLoadModule)
-BRIDGE_IMPL(sceSysmoduleLoadModuleInternal)
-BRIDGE_IMPL(sceSysmoduleLoadModuleInternalWithArg)
-BRIDGE_IMPL(sceSysmoduleUnloadModule)
-BRIDGE_IMPL(sceSysmoduleUnloadModuleInternal)
-BRIDGE_IMPL(sceSysmoduleUnloadModuleInternalWithArg)

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceScreenShot.h"
+#include <module/module.h>
 
 EXPORT(int, sceScreenShotCapture) {
     return UNIMPLEMENTED();
@@ -48,12 +48,3 @@ EXPORT(int, sceScreenShotSetOverlayImage) {
 EXPORT(int, sceScreenShotSetParam) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceScreenShotCapture)
-BRIDGE_IMPL(sceScreenShotDisable)
-BRIDGE_IMPL(sceScreenShotDisableNotification)
-BRIDGE_IMPL(sceScreenShotEnable)
-BRIDGE_IMPL(sceScreenShotEnableNotification)
-BRIDGE_IMPL(sceScreenShotGetParam)
-BRIDGE_IMPL(sceScreenShotSetOverlayImage)
-BRIDGE_IMPL(sceScreenShotSetParam)

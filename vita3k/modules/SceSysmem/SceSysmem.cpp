@@ -17,6 +17,8 @@
 
 #include "SceSysmem.h"
 
+#include <modules/module_parent.h>
+
 #include <kernel/state.h>
 #include <kernel/types.h>
 
@@ -73,10 +75,9 @@ struct SysmemState {
     }
 };
 
-LIBRARY_INIT_IMPL(SceSysmem) {
+LIBRARY_INIT(SceSysmem) {
     emuenv.kernel.obj_store.create<SysmemState>();
 }
-LIBRARY_INIT_REGISTER(SceSysmem)
 
 constexpr SceUInt32 SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT = 4;
 
@@ -347,24 +348,3 @@ EXPORT(int, sceKernelSyncVMDomain, SceUID block_uid, Address base, uint32_t size
 
     return 0;
 }
-
-BRIDGE_IMPL(sceKernelAllocMemBlock)
-BRIDGE_IMPL(sceKernelAllocMemBlockForVM)
-BRIDGE_IMPL(sceKernelAllocUnmapMemBlock)
-BRIDGE_IMPL(sceKernelCheckModelCapability)
-BRIDGE_IMPL(sceKernelCloseMemBlock)
-BRIDGE_IMPL(sceKernelCloseVMDomain)
-BRIDGE_IMPL(sceKernelFindMemBlockByAddr)
-BRIDGE_IMPL(sceKernelFreeMemBlock)
-BRIDGE_IMPL(sceKernelFreeMemBlockForVM)
-BRIDGE_IMPL(sceKernelGetFreeMemorySize)
-BRIDGE_IMPL(sceKernelGetMemBlockBase)
-BRIDGE_IMPL(sceKernelGetMemBlockInfoByAddr)
-BRIDGE_IMPL(sceKernelGetMemBlockInfoByRange)
-BRIDGE_IMPL(sceKernelGetModel)
-BRIDGE_IMPL(sceKernelGetModelForCDialog)
-BRIDGE_IMPL(sceKernelGetSubbudgetInfo)
-BRIDGE_IMPL(sceKernelIsPSVitaTV)
-BRIDGE_IMPL(sceKernelOpenMemBlock)
-BRIDGE_IMPL(sceKernelOpenVMDomain)
-BRIDGE_IMPL(sceKernelSyncVMDomain)

@@ -243,25 +243,3 @@ EXPORT(SceInt32, sceDisplayWaitVblankStartMultiCB, SceUInt vcount) {
     TRACY_FUNC(sceDisplayWaitVblankStartMultiCB, vcount);
     return display_wait(emuenv, thread_id, static_cast<int>(vcount), false, true);
 }
-
-BRIDGE_IMPL(_sceDisplayGetFrameBuf)
-BRIDGE_IMPL(_sceDisplayGetFrameBufInternal)
-BRIDGE_IMPL(_sceDisplayGetMaximumFrameBufResolution)
-BRIDGE_IMPL(_sceDisplayGetResolutionInfoInternal)
-BRIDGE_IMPL(_sceDisplaySetFrameBuf)
-BRIDGE_IMPL(_sceDisplaySetFrameBufForCompat)
-BRIDGE_IMPL(_sceDisplaySetFrameBufInternal)
-BRIDGE_IMPL(sceDisplayGetPrimaryHead)
-BRIDGE_IMPL(sceDisplayGetRefreshRate)
-BRIDGE_IMPL(sceDisplayGetVcount)
-BRIDGE_IMPL(sceDisplayGetVcountInternal)
-BRIDGE_IMPL(sceDisplayRegisterVblankStartCallback)
-BRIDGE_IMPL(sceDisplayUnregisterVblankStartCallback)
-BRIDGE_IMPL(sceDisplayWaitSetFrameBuf)
-BRIDGE_IMPL(sceDisplayWaitSetFrameBufCB)
-BRIDGE_IMPL(sceDisplayWaitSetFrameBufMulti)
-BRIDGE_IMPL(sceDisplayWaitSetFrameBufMultiCB)
-BRIDGE_IMPL(sceDisplayWaitVblankStart)
-BRIDGE_IMPL(sceDisplayWaitVblankStartCB)
-BRIDGE_IMPL(sceDisplayWaitVblankStartMulti)
-BRIDGE_IMPL(sceDisplayWaitVblankStartMultiCB)

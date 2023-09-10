@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceCtrl.h"
+#include <module/module.h>
 
 #include <ctrl/ctrl.h>
 #include <ctrl/functions.h>
@@ -268,41 +268,3 @@ EXPORT(int, sceCtrlUnregisterBdRMCCallback) {
     TRACY_FUNC(sceCtrlUnregisterBdRMCCallback);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceCtrlClearRapidFire)
-BRIDGE_IMPL(sceCtrlDisconnect)
-BRIDGE_IMPL(sceCtrlGetAnalogStickCheckMode)
-BRIDGE_IMPL(sceCtrlGetAnalogStickCheckTarget)
-BRIDGE_IMPL(sceCtrlGetBatteryInfo)
-BRIDGE_IMPL(sceCtrlGetButtonIntercept)
-BRIDGE_IMPL(sceCtrlGetControllerPortInfo)
-BRIDGE_IMPL(sceCtrlGetProcessStatus)
-BRIDGE_IMPL(sceCtrlGetSamplingMode)
-BRIDGE_IMPL(sceCtrlGetSamplingModeExt)
-BRIDGE_IMPL(sceCtrlGetWirelessControllerInfo)
-BRIDGE_IMPL(sceCtrlIsMultiControllerSupported)
-BRIDGE_IMPL(sceCtrlPeekBufferNegative)
-BRIDGE_IMPL(sceCtrlPeekBufferNegative2)
-BRIDGE_IMPL(sceCtrlPeekBufferPositive)
-BRIDGE_IMPL(sceCtrlPeekBufferPositive2)
-BRIDGE_IMPL(sceCtrlPeekBufferPositiveExt)
-BRIDGE_IMPL(sceCtrlPeekBufferPositiveExt2)
-BRIDGE_IMPL(sceCtrlReadBufferNegative)
-BRIDGE_IMPL(sceCtrlReadBufferNegative2)
-BRIDGE_IMPL(sceCtrlReadBufferPositive)
-BRIDGE_IMPL(sceCtrlReadBufferPositive2)
-BRIDGE_IMPL(sceCtrlReadBufferPositiveExt)
-BRIDGE_IMPL(sceCtrlReadBufferPositiveExt2)
-BRIDGE_IMPL(sceCtrlRegisterBdRMCCallback)
-BRIDGE_IMPL(sceCtrlResetLightBar)
-BRIDGE_IMPL(sceCtrlSetActuator)
-BRIDGE_IMPL(sceCtrlSetAnalogStickCheckMode)
-BRIDGE_IMPL(sceCtrlSetAnalogStickCheckTarget)
-BRIDGE_IMPL(sceCtrlSetButtonIntercept)
-BRIDGE_IMPL(sceCtrlSetButtonRemappingInfo)
-BRIDGE_IMPL(sceCtrlSetLightBar)
-BRIDGE_IMPL(sceCtrlSetRapidFire)
-BRIDGE_IMPL(sceCtrlSetSamplingMode)
-BRIDGE_IMPL(sceCtrlSetSamplingModeExt)
-BRIDGE_IMPL(sceCtrlSingleControllerMode)
-BRIDGE_IMPL(sceCtrlUnregisterBdRMCCallback)

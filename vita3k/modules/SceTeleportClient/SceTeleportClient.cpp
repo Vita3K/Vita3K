@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceTeleportClient.h"
+#include <module/module.h>
 
 EXPORT(int, sceTeleportClientClearCacheInfo) {
     return UNIMPLEMENTED();
@@ -68,17 +68,3 @@ EXPORT(int, sceTeleportClientStartSearchDevice) {
 EXPORT(int, sceTeleportClientWakeupLatestDevice) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceTeleportClientClearCacheInfo)
-BRIDGE_IMPL(sceTeleportClientDeleteRemoteApp)
-BRIDGE_IMPL(sceTeleportClientEndSearchDevice)
-BRIDGE_IMPL(sceTeleportClientFinalize)
-BRIDGE_IMPL(sceTeleportClientGetCacheInfo)
-BRIDGE_IMPL(sceTeleportClientGetDeviceDescription)
-BRIDGE_IMPL(sceTeleportClientGetRemoteAppInfo)
-BRIDGE_IMPL(sceTeleportClientGetRemoteAppInfoNum)
-BRIDGE_IMPL(sceTeleportClientInitialize)
-BRIDGE_IMPL(sceTeleportClientLaunchRemoteApp)
-BRIDGE_IMPL(sceTeleportClientRegisterGetDeviceInfoCallback)
-BRIDGE_IMPL(sceTeleportClientStartSearchDevice)
-BRIDGE_IMPL(sceTeleportClientWakeupLatestDevice)

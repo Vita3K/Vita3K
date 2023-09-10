@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSblPmMgr.h"
+#include <module/module.h>
 
 EXPORT(int, sceSblPmMgrAuthEtoI) {
     return UNIMPLEMENTED();
@@ -36,9 +36,3 @@ EXPORT(int, sceSblPmMgrGetProductModeFromNVS) {
 EXPORT(int, sceSblPmMgrSetProductModeOffForUser) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceSblPmMgrAuthEtoI)
-BRIDGE_IMPL(sceSblPmMgrGetCurrentMode)
-BRIDGE_IMPL(sceSblPmMgrGetProductModeForUser)
-BRIDGE_IMPL(sceSblPmMgrGetProductModeFromNVS)
-BRIDGE_IMPL(sceSblPmMgrSetProductModeOffForUser)

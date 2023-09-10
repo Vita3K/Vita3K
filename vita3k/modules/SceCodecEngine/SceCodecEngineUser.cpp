@@ -15,13 +15,20 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceCodecEngineUser.h"
+#include <module/module.h>
 #include <../SceSysmem/SceSysmem.h>
 
 #include <kernel/state.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceCodecEngineUser);
+
+enum SceCodecEngineErrorCode {
+    SCE_CODECENGINE_ERROR_INVALID_POINTER = 0x80600000,
+    SCE_CODECENGINE_ERROR_INVALID_SIZE = 0x80600001,
+    SCE_CODECENGINE_ERROR_INVALID_HEAP = 0x80600005,
+    SCE_CODECENGINE_ERROR_INVALID_VALUE = 0x80600009
+};
 
 EXPORT(int32_t, sceCodecEngineAllocMemoryFromUnmapMemBlock, SceUID uid, uint32_t size, uint32_t alignment) {
     TRACY_FUNC(sceCodecEngineAllocMemoryFromUnmapMemBlock, uid, size, alignment);
@@ -59,8 +66,3 @@ EXPORT(SceUID, sceCodecEngineOpenUnmapMemBlock, Address memBlock, uint32_t size)
     emuenv.kernel.codec_blocks.emplace(uid, block);
     return uid;
 }
-
-BRIDGE_IMPL(sceCodecEngineAllocMemoryFromUnmapMemBlock)
-BRIDGE_IMPL(sceCodecEngineCloseUnmapMemBlock)
-BRIDGE_IMPL(sceCodecEngineFreeMemoryFromUnmapMemBlock)
-BRIDGE_IMPL(sceCodecEngineOpenUnmapMemBlock)

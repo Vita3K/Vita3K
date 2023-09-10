@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNpCommon.h"
+#include <module/module.h>
 
 #include <io/state.h>
 #include <kernel/state.h>
@@ -143,24 +143,3 @@ EXPORT(int, sceNpSetPlatformType) {
     TRACY_FUNC(sceNpSetPlatformType);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNpAuthAbortRequest)
-BRIDGE_IMPL(sceNpAuthCreateStartRequest)
-BRIDGE_IMPL(sceNpAuthDestroyRequest)
-BRIDGE_IMPL(sceNpAuthGetEntitlementById)
-BRIDGE_IMPL(sceNpAuthGetEntitlementByIdPrefix)
-BRIDGE_IMPL(sceNpAuthGetEntitlementIdList)
-BRIDGE_IMPL(sceNpAuthGetTicket)
-BRIDGE_IMPL(sceNpAuthGetTicketParam)
-BRIDGE_IMPL(sceNpAuthInit)
-BRIDGE_IMPL(sceNpAuthTerm)
-BRIDGE_IMPL(sceNpCmpNpId)
-BRIDGE_IMPL(sceNpCmpNpIdInOrder)
-BRIDGE_IMPL(sceNpCmpOnlineId)
-BRIDGE_IMPL(sceNpCommonBase64Encode)
-BRIDGE_IMPL(sceNpCommonFreeNpServerName)
-BRIDGE_IMPL(sceNpCommonGetNpEnviroment)
-BRIDGE_IMPL(sceNpCommonGetSystemSwVersion)
-BRIDGE_IMPL(sceNpCommonMallocNpServerName)
-BRIDGE_IMPL(sceNpGetPlatformType)
-BRIDGE_IMPL(sceNpSetPlatformType)

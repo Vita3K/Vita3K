@@ -15,13 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <module/module.h>
+
 #include <modules/module_parent.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/log.h>
 #include <util/tracy.h>
-
-#include "SceNgs.h"
 
 TRACY_MODULE_NAME(SceNgs);
 
@@ -1024,72 +1024,3 @@ EXPORT(int, sceSulphaNgsTrace) {
     TRACY_FUNC(sceSulphaNgsTrace);
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNgsAT9GetSectionDetails)
-BRIDGE_IMPL(sceNgsModuleGetNumPresets)
-BRIDGE_IMPL(sceNgsModuleGetPreset)
-BRIDGE_IMPL(sceNgsPatchCreateRouting)
-BRIDGE_IMPL(sceNgsPatchGetInfo)
-BRIDGE_IMPL(sceNgsPatchRemoveRouting)
-BRIDGE_IMPL(sceNgsRackGetRequiredMemorySize)
-BRIDGE_IMPL(sceNgsRackGetVoiceHandle)
-BRIDGE_IMPL(sceNgsRackInit)
-BRIDGE_IMPL(sceNgsRackRelease)
-BRIDGE_IMPL(sceNgsRackSetParamErrorCallback)
-BRIDGE_IMPL(sceNgsSystemGetRequiredMemorySize)
-BRIDGE_IMPL(sceNgsSystemInit)
-BRIDGE_IMPL(sceNgsSystemLock)
-BRIDGE_IMPL(sceNgsSystemRelease)
-BRIDGE_IMPL(sceNgsSystemSetFlags)
-BRIDGE_IMPL(sceNgsSystemSetParamErrorCallback)
-BRIDGE_IMPL(sceNgsSystemUnlock)
-BRIDGE_IMPL(sceNgsSystemUpdate)
-BRIDGE_IMPL(sceNgsVoiceBypassModule)
-BRIDGE_IMPL(sceNgsVoiceDefGetAtrac9Voice)
-BRIDGE_IMPL(sceNgsVoiceDefGetCompressorBuss)
-BRIDGE_IMPL(sceNgsVoiceDefGetCompressorSideChainBuss)
-BRIDGE_IMPL(sceNgsVoiceDefGetDelayBuss)
-BRIDGE_IMPL(sceNgsVoiceDefGetDistortionBuss)
-BRIDGE_IMPL(sceNgsVoiceDefGetEnvelopeBuss)
-BRIDGE_IMPL(sceNgsVoiceDefGetEqBuss)
-BRIDGE_IMPL(sceNgsVoiceDefGetMasterBuss)
-BRIDGE_IMPL(sceNgsVoiceDefGetMixerBuss)
-BRIDGE_IMPL(sceNgsVoiceDefGetPauserBuss)
-BRIDGE_IMPL(sceNgsVoiceDefGetPitchShiftBuss)
-BRIDGE_IMPL(sceNgsVoiceDefGetReverbBuss)
-BRIDGE_IMPL(sceNgsVoiceDefGetSasEmuVoice)
-BRIDGE_IMPL(sceNgsVoiceDefGetScreamAtrac9Voice)
-BRIDGE_IMPL(sceNgsVoiceDefGetScreamVoice)
-BRIDGE_IMPL(sceNgsVoiceDefGetSimpleAtrac9Voice)
-BRIDGE_IMPL(sceNgsVoiceDefGetSimpleVoice)
-BRIDGE_IMPL(sceNgsVoiceDefGetTemplate1)
-BRIDGE_IMPL(sceNgsVoiceGetInfo)
-BRIDGE_IMPL(sceNgsVoiceGetModuleBypass)
-BRIDGE_IMPL(sceNgsVoiceGetModuleType)
-BRIDGE_IMPL(sceNgsVoiceGetOutputPatch)
-BRIDGE_IMPL(sceNgsVoiceGetParamsOutOfRange)
-BRIDGE_IMPL(sceNgsVoiceGetStateData)
-BRIDGE_IMPL(sceNgsVoiceInit)
-BRIDGE_IMPL(sceNgsVoiceKeyOff)
-BRIDGE_IMPL(sceNgsVoiceKill)
-BRIDGE_IMPL(sceNgsVoiceLockParams)
-BRIDGE_IMPL(sceNgsVoicePatchSetVolume)
-BRIDGE_IMPL(sceNgsVoicePatchSetVolumes)
-BRIDGE_IMPL(sceNgsVoicePatchSetVolumesMatrix)
-BRIDGE_IMPL(sceNgsVoicePause)
-BRIDGE_IMPL(sceNgsVoicePlay)
-BRIDGE_IMPL(sceNgsVoiceResume)
-BRIDGE_IMPL(sceNgsVoiceSetFinishedCallback)
-BRIDGE_IMPL(sceNgsVoiceSetModuleCallback)
-BRIDGE_IMPL(sceNgsVoiceSetParamsBlock)
-BRIDGE_IMPL(sceNgsVoiceSetPreset)
-BRIDGE_IMPL(sceNgsVoiceUnlockParams)
-BRIDGE_IMPL(sceSulphaNgsGetDefaultConfig)
-BRIDGE_IMPL(sceSulphaNgsGetNeededMemory)
-BRIDGE_IMPL(sceSulphaNgsInit)
-BRIDGE_IMPL(sceSulphaNgsSetRackName)
-BRIDGE_IMPL(sceSulphaNgsSetSampleName)
-BRIDGE_IMPL(sceSulphaNgsSetSynthName)
-BRIDGE_IMPL(sceSulphaNgsSetVoiceName)
-BRIDGE_IMPL(sceSulphaNgsShutdown)
-BRIDGE_IMPL(sceSulphaNgsTrace)

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceCamera.h"
+#include <module/module.h>
 
 EXPORT(int, sceCameraClose) {
     return UNIMPLEMENTED();
@@ -196,49 +196,3 @@ EXPORT(int, sceCameraStart) {
 EXPORT(int, sceCameraStop) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceCameraClose)
-BRIDGE_IMPL(sceCameraGetAntiFlicker)
-BRIDGE_IMPL(sceCameraGetAutoControlHold)
-BRIDGE_IMPL(sceCameraGetBacklight)
-BRIDGE_IMPL(sceCameraGetBrightness)
-BRIDGE_IMPL(sceCameraGetContrast)
-BRIDGE_IMPL(sceCameraGetDeviceLocation)
-BRIDGE_IMPL(sceCameraGetEV)
-BRIDGE_IMPL(sceCameraGetEffect)
-BRIDGE_IMPL(sceCameraGetExposureCeiling)
-BRIDGE_IMPL(sceCameraGetGain)
-BRIDGE_IMPL(sceCameraGetISO)
-BRIDGE_IMPL(sceCameraGetImageQuality)
-BRIDGE_IMPL(sceCameraGetNightmode)
-BRIDGE_IMPL(sceCameraGetNoiseReduction)
-BRIDGE_IMPL(sceCameraGetReverse)
-BRIDGE_IMPL(sceCameraGetSaturation)
-BRIDGE_IMPL(sceCameraGetSharpness)
-BRIDGE_IMPL(sceCameraGetSharpnessOff)
-BRIDGE_IMPL(sceCameraGetWhiteBalance)
-BRIDGE_IMPL(sceCameraGetZoom)
-BRIDGE_IMPL(sceCameraIsActive)
-BRIDGE_IMPL(sceCameraOpen)
-BRIDGE_IMPL(sceCameraRead)
-BRIDGE_IMPL(sceCameraSetAntiFlicker)
-BRIDGE_IMPL(sceCameraSetAutoControlHold)
-BRIDGE_IMPL(sceCameraSetBacklight)
-BRIDGE_IMPL(sceCameraSetBrightness)
-BRIDGE_IMPL(sceCameraSetContrast)
-BRIDGE_IMPL(sceCameraSetEV)
-BRIDGE_IMPL(sceCameraSetEffect)
-BRIDGE_IMPL(sceCameraSetExposureCeiling)
-BRIDGE_IMPL(sceCameraSetGain)
-BRIDGE_IMPL(sceCameraSetISO)
-BRIDGE_IMPL(sceCameraSetImageQuality)
-BRIDGE_IMPL(sceCameraSetNightmode)
-BRIDGE_IMPL(sceCameraSetNoiseReduction)
-BRIDGE_IMPL(sceCameraSetReverse)
-BRIDGE_IMPL(sceCameraSetSaturation)
-BRIDGE_IMPL(sceCameraSetSharpness)
-BRIDGE_IMPL(sceCameraSetSharpnessOff)
-BRIDGE_IMPL(sceCameraSetWhiteBalance)
-BRIDGE_IMPL(sceCameraSetZoom)
-BRIDGE_IMPL(sceCameraStart)
-BRIDGE_IMPL(sceCameraStop)

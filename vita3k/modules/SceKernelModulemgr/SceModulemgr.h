@@ -21,23 +21,6 @@
 
 #include <kernel/types.h>
 
-EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option);
-EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, const Ptr<void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes);
-EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes);
-
-BRIDGE_DECL(_sceKernelCloseModule)
-BRIDGE_DECL(_sceKernelLoadModule)
-BRIDGE_DECL(_sceKernelLoadStartModule)
-BRIDGE_DECL(_sceKernelOpenModule)
-BRIDGE_DECL(_sceKernelStartModule)
-BRIDGE_DECL(_sceKernelStopModule)
-BRIDGE_DECL(_sceKernelStopUnloadModule)
-BRIDGE_DECL(_sceKernelUnloadModule)
-BRIDGE_DECL(sceKernelGetAllowedSdkVersionOnSystem)
-BRIDGE_DECL(sceKernelGetLibraryInfoByNID)
-BRIDGE_DECL(sceKernelGetModuleIdByAddr)
-BRIDGE_DECL(sceKernelGetModuleInfo)
-BRIDGE_DECL(sceKernelGetModuleList)
-BRIDGE_DECL(sceKernelGetSystemSwVersion)
-BRIDGE_DECL(sceKernelInhibitLoadingModule)
-BRIDGE_DECL(sceKernelIsCalledFromSysModule)
+DECL_EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option);
+DECL_EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, const Ptr<void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes);
+DECL_EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes);

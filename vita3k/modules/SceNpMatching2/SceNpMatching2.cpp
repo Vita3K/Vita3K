@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNpMatching2.h"
+#include <module/module.h>
 
 EXPORT(int, sceNpMatching2AbortContextStart) {
     return UNIMPLEMENTED();
@@ -216,54 +216,3 @@ EXPORT(int, sceNpMatching2SignalingGetPingInfo) {
 EXPORT(int, sceNpMatching2Term) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNpMatching2AbortContextStart)
-BRIDGE_IMPL(sceNpMatching2AbortRequest)
-BRIDGE_IMPL(sceNpMatching2ContextStart)
-BRIDGE_IMPL(sceNpMatching2ContextStop)
-BRIDGE_IMPL(sceNpMatching2CreateContext)
-BRIDGE_IMPL(sceNpMatching2CreateJoinRoom)
-BRIDGE_IMPL(sceNpMatching2DestroyContext)
-BRIDGE_IMPL(sceNpMatching2GetLobbyInfoList)
-BRIDGE_IMPL(sceNpMatching2GetMemoryInfo)
-BRIDGE_IMPL(sceNpMatching2GetRoomDataExternalList)
-BRIDGE_IMPL(sceNpMatching2GetRoomDataInternal)
-BRIDGE_IMPL(sceNpMatching2GetRoomMemberDataExternalList)
-BRIDGE_IMPL(sceNpMatching2GetRoomMemberDataInternal)
-BRIDGE_IMPL(sceNpMatching2GetRoomMemberIdListLocal)
-BRIDGE_IMPL(sceNpMatching2GetRoomPasswordLocal)
-BRIDGE_IMPL(sceNpMatching2GetServerLocal)
-BRIDGE_IMPL(sceNpMatching2GetSignalingOptParamLocal)
-BRIDGE_IMPL(sceNpMatching2GetUserInfoList)
-BRIDGE_IMPL(sceNpMatching2GetWorldInfoList)
-BRIDGE_IMPL(sceNpMatching2GrantRoomOwner)
-BRIDGE_IMPL(sceNpMatching2Init)
-BRIDGE_IMPL(sceNpMatching2JoinLobby)
-BRIDGE_IMPL(sceNpMatching2JoinRoom)
-BRIDGE_IMPL(sceNpMatching2KickoutRoomMember)
-BRIDGE_IMPL(sceNpMatching2LeaveLobby)
-BRIDGE_IMPL(sceNpMatching2LeaveRoom)
-BRIDGE_IMPL(sceNpMatching2RegisterContextCallback)
-BRIDGE_IMPL(sceNpMatching2RegisterLobbyEventCallback)
-BRIDGE_IMPL(sceNpMatching2RegisterLobbyMessageCallback)
-BRIDGE_IMPL(sceNpMatching2RegisterRoomEventCallback)
-BRIDGE_IMPL(sceNpMatching2RegisterRoomMessageCallback)
-BRIDGE_IMPL(sceNpMatching2RegisterSignalingCallback)
-BRIDGE_IMPL(sceNpMatching2SearchRoom)
-BRIDGE_IMPL(sceNpMatching2SendLobbyChatMessage)
-BRIDGE_IMPL(sceNpMatching2SendRoomChatMessage)
-BRIDGE_IMPL(sceNpMatching2SendRoomMessage)
-BRIDGE_IMPL(sceNpMatching2SetDefaultRequestOptParam)
-BRIDGE_IMPL(sceNpMatching2SetRoomDataExternal)
-BRIDGE_IMPL(sceNpMatching2SetRoomDataInternal)
-BRIDGE_IMPL(sceNpMatching2SetRoomMemberDataInternal)
-BRIDGE_IMPL(sceNpMatching2SetSignalingOptParam)
-BRIDGE_IMPL(sceNpMatching2SetUserInfo)
-BRIDGE_IMPL(sceNpMatching2SignalingCancelPeerNetInfo)
-BRIDGE_IMPL(sceNpMatching2SignalingGetConnectionInfo)
-BRIDGE_IMPL(sceNpMatching2SignalingGetConnectionStatus)
-BRIDGE_IMPL(sceNpMatching2SignalingGetLocalNetInfo)
-BRIDGE_IMPL(sceNpMatching2SignalingGetPeerNetInfo)
-BRIDGE_IMPL(sceNpMatching2SignalingGetPeerNetInfoResult)
-BRIDGE_IMPL(sceNpMatching2SignalingGetPingInfo)
-BRIDGE_IMPL(sceNpMatching2Term)

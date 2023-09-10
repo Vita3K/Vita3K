@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceProcessmgr.h"
+#include <module/module.h>
 
 #include <io/functions.h>
 #include <kernel/state.h>
@@ -301,36 +301,3 @@ EXPORT(int, sceKernelGetMainModuleSdkVersion) {
         return 0;
     }
 }
-
-BRIDGE_IMPL(_sceKernelExitProcessForUser)
-BRIDGE_IMPL(_sceKernelGetTimer5Reg)
-BRIDGE_IMPL(_sceKernelRegisterLibkernelAddresses)
-BRIDGE_IMPL(sceKernelCDialogSessionClose)
-BRIDGE_IMPL(sceKernelCDialogSetLeaseLimit)
-BRIDGE_IMPL(sceKernelCallAbortHandler)
-BRIDGE_IMPL(sceKernelGetCurrentProcess)
-BRIDGE_IMPL(sceKernelGetExtraTty)
-BRIDGE_IMPL(sceKernelGetMainModuleSdkVersion)
-BRIDGE_IMPL(sceKernelGetProcessName)
-BRIDGE_IMPL(sceKernelGetProcessParam)
-BRIDGE_IMPL(sceKernelGetProcessTimeCore)
-BRIDGE_IMPL(sceKernelGetProcessTimeLowCore)
-BRIDGE_IMPL(sceKernelGetProcessTimeWideCore)
-BRIDGE_IMPL(sceKernelGetProcessTitleId)
-BRIDGE_IMPL(sceKernelGetRemoteProcessTime)
-BRIDGE_IMPL(sceKernelGetStderr)
-BRIDGE_IMPL(sceKernelGetStdin)
-BRIDGE_IMPL(sceKernelGetStdout)
-BRIDGE_IMPL(sceKernelIsCDialogAvailable)
-BRIDGE_IMPL(sceKernelIsGameBudget)
-BRIDGE_IMPL(sceKernelLibcClock)
-BRIDGE_IMPL(sceKernelLibcGettimeofday)
-BRIDGE_IMPL(sceKernelLibcGmtime_r)
-BRIDGE_IMPL(sceKernelLibcLocaltime_r)
-BRIDGE_IMPL(sceKernelLibcMktime)
-BRIDGE_IMPL(sceKernelLibcTime)
-BRIDGE_IMPL(sceKernelPowerLock)
-BRIDGE_IMPL(sceKernelPowerTick)
-BRIDGE_IMPL(sceKernelPowerUnlock)
-BRIDGE_IMPL(sceKernelRegisterProcessTerminationCallback)
-BRIDGE_IMPL(sceKernelUnregisterProcessTerminationCallback)

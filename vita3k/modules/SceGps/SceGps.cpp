@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceGps.h"
+#include <module/module.h>
 
 EXPORT(int, _sceGpsClose) {
     return UNIMPLEMENTED();
@@ -60,15 +60,3 @@ EXPORT(int, _sceGpsStart) {
 EXPORT(int, _sceGpsStop) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(_sceGpsClose)
-BRIDGE_IMPL(_sceGpsGetData)
-BRIDGE_IMPL(_sceGpsGetDeviceInfo)
-BRIDGE_IMPL(_sceGpsGetState)
-BRIDGE_IMPL(_sceGpsIoctl)
-BRIDGE_IMPL(_sceGpsIsDevice)
-BRIDGE_IMPL(_sceGpsOpen)
-BRIDGE_IMPL(_sceGpsResumeCallback)
-BRIDGE_IMPL(_sceGpsSelectDevice)
-BRIDGE_IMPL(_sceGpsStart)
-BRIDGE_IMPL(_sceGpsStop)

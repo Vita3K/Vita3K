@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceStdio.h"
+#include <module/module.h>
 
 EXPORT(int, sceKernelStderr) {
     return UNIMPLEMENTED();
@@ -28,7 +28,3 @@ EXPORT(int, sceKernelStdin) {
 EXPORT(int, sceKernelStdout) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceKernelStderr)
-BRIDGE_IMPL(sceKernelStdin)
-BRIDGE_IMPL(sceKernelStdout)

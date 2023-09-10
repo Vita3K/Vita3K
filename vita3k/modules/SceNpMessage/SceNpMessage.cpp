@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceNpMessage.h"
+#include <module/module.h>
 
 EXPORT(int, sceNpMessageAbort) {
     return UNIMPLEMENTED();
@@ -60,15 +60,3 @@ EXPORT(int, sceNpMessageSyncMessage) {
 EXPORT(int, sceNpMessageTerm) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceNpMessageAbort)
-BRIDGE_IMPL(sceNpMessageGetAttachedData)
-BRIDGE_IMPL(sceNpMessageGetMessage)
-BRIDGE_IMPL(sceNpMessageGetMessageEntries)
-BRIDGE_IMPL(sceNpMessageGetMessageEntry)
-BRIDGE_IMPL(sceNpMessageGetMessageEntryCount)
-BRIDGE_IMPL(sceNpMessageInit)
-BRIDGE_IMPL(sceNpMessageInitWithParam)
-BRIDGE_IMPL(sceNpMessageSetAttachedDataUsedFlag)
-BRIDGE_IMPL(sceNpMessageSyncMessage)
-BRIDGE_IMPL(sceNpMessageTerm)

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceSblRtcMgr.h"
+#include <module/module.h>
 
 EXPORT(int, sceSblRtcMgrGetCpRtcLogical) {
     return UNIMPLEMENTED();
@@ -44,11 +44,3 @@ EXPORT(int, sceSblRtcMgrSetCpRtcPhysicalAndKey) {
 EXPORT(int, sceSblRtcMgrSetCpRtcPhysicalForUser) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceSblRtcMgrGetCpRtcLogical)
-BRIDGE_IMPL(sceSblRtcMgrGetCpRtcPhysicalForUser)
-BRIDGE_IMPL(sceSblRtcMgrGetCpSerialId)
-BRIDGE_IMPL(sceSblRtcMgrSetCpActivationKey)
-BRIDGE_IMPL(sceSblRtcMgrSetCpRtcLogical)
-BRIDGE_IMPL(sceSblRtcMgrSetCpRtcPhysicalAndKey)
-BRIDGE_IMPL(sceSblRtcMgrSetCpRtcPhysicalForUser)

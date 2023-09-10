@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceVoiceQoS.h"
+#include <module/module.h>
 
 EXPORT(int, sceVoiceQoSConnect) {
     return UNIMPLEMENTED();
@@ -84,21 +84,3 @@ EXPORT(int, sceVoiceQoSSetLocalEndpointAttribute) {
 EXPORT(int, sceVoiceQoSWritePacket) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceVoiceQoSConnect)
-BRIDGE_IMPL(sceVoiceQoSCreateLocalEndpoint)
-BRIDGE_IMPL(sceVoiceQoSCreateRemoteEndpoint)
-BRIDGE_IMPL(sceVoiceQoSDeleteLocalEndpoint)
-BRIDGE_IMPL(sceVoiceQoSDeleteRemoteEndpoint)
-BRIDGE_IMPL(sceVoiceQoSDisconnect)
-BRIDGE_IMPL(sceVoiceQoSEnd)
-BRIDGE_IMPL(sceVoiceQoSGetConnectionAttribute)
-BRIDGE_IMPL(sceVoiceQoSGetLocalEndpoint)
-BRIDGE_IMPL(sceVoiceQoSGetLocalEndpointAttribute)
-BRIDGE_IMPL(sceVoiceQoSGetRemoteEndpoint)
-BRIDGE_IMPL(sceVoiceQoSGetStatus)
-BRIDGE_IMPL(sceVoiceQoSInit)
-BRIDGE_IMPL(sceVoiceQoSReadPacket)
-BRIDGE_IMPL(sceVoiceQoSSetConnectionAttribute)
-BRIDGE_IMPL(sceVoiceQoSSetLocalEndpointAttribute)
-BRIDGE_IMPL(sceVoiceQoSWritePacket)

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceClipboard.h"
+#include <module/module.h>
 
 EXPORT(int, sceClipboardGetText) {
     return UNIMPLEMENTED();
@@ -24,6 +24,3 @@ EXPORT(int, sceClipboardGetText) {
 EXPORT(int, sceClipboardSetText) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceClipboardGetText)
-BRIDGE_IMPL(sceClipboardSetText)

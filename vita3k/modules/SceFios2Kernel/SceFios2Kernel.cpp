@@ -15,10 +15,23 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceFios2Kernel.h"
+#include <module/module.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceFios2Kernel);
+
+struct sceFiosKernelOverlayResolveWithRangeSync_opt {
+    Ptr<char> pOutPath;
+    SceSize maxPath;
+    char loOrderFilter;
+    char hiOrderFilter;
+    char reserved1;
+    char reserved2;
+    int reserved3;
+    int reserved4;
+    int reserved5;
+    int reserved6;
+};
 
 EXPORT(int, _sceFiosKernelOverlayAdd) {
     return UNIMPLEMENTED();
@@ -103,24 +116,3 @@ EXPORT(int, _sceFiosKernelOverlayThreadIsDisabled) {
 EXPORT(int, _sceFiosKernelOverlayThreadSetDisabled) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(_sceFiosKernelOverlayAdd)
-BRIDGE_IMPL(_sceFiosKernelOverlayAddForProcess)
-BRIDGE_IMPL(_sceFiosKernelOverlayDHChstatSync)
-BRIDGE_IMPL(_sceFiosKernelOverlayDHCloseSync)
-BRIDGE_IMPL(_sceFiosKernelOverlayDHOpenSync)
-BRIDGE_IMPL(_sceFiosKernelOverlayDHReadSync)
-BRIDGE_IMPL(_sceFiosKernelOverlayDHStatSync)
-BRIDGE_IMPL(_sceFiosKernelOverlayDHSyncSync)
-BRIDGE_IMPL(_sceFiosKernelOverlayGetInfo)
-BRIDGE_IMPL(_sceFiosKernelOverlayGetInfoForProcess)
-BRIDGE_IMPL(_sceFiosKernelOverlayGetList)
-BRIDGE_IMPL(_sceFiosKernelOverlayGetRecommendedScheduler)
-BRIDGE_IMPL(_sceFiosKernelOverlayModify)
-BRIDGE_IMPL(_sceFiosKernelOverlayModifyForProcess)
-BRIDGE_IMPL(_sceFiosKernelOverlayRemove)
-BRIDGE_IMPL(_sceFiosKernelOverlayRemoveForProcess)
-BRIDGE_IMPL(_sceFiosKernelOverlayResolveSync)
-BRIDGE_IMPL(_sceFiosKernelOverlayResolveWithRangeSync)
-BRIDGE_IMPL(_sceFiosKernelOverlayThreadIsDisabled)
-BRIDGE_IMPL(_sceFiosKernelOverlayThreadSetDisabled)

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceLibRudp.h"
+#include <module/module.h>
 
 EXPORT(int, sceRudpActivate) {
     return UNIMPLEMENTED();
@@ -140,35 +140,3 @@ EXPORT(int, sceRudpTerminate) {
 EXPORT(int, sceRudpWrite) {
     return UNIMPLEMENTED();
 }
-
-BRIDGE_IMPL(sceRudpActivate)
-BRIDGE_IMPL(sceRudpBind)
-BRIDGE_IMPL(sceRudpCreateContext)
-BRIDGE_IMPL(sceRudpEnableInternalIOThread)
-BRIDGE_IMPL(sceRudpEnableInternalIOThread2)
-BRIDGE_IMPL(sceRudpEnd)
-BRIDGE_IMPL(sceRudpFlush)
-BRIDGE_IMPL(sceRudpGetContextStatus)
-BRIDGE_IMPL(sceRudpGetLocalInfo)
-BRIDGE_IMPL(sceRudpGetMaxSegmentSize)
-BRIDGE_IMPL(sceRudpGetNumberOfPacketsToRead)
-BRIDGE_IMPL(sceRudpGetOption)
-BRIDGE_IMPL(sceRudpGetRemoteInfo)
-BRIDGE_IMPL(sceRudpGetSizeReadable)
-BRIDGE_IMPL(sceRudpGetSizeWritable)
-BRIDGE_IMPL(sceRudpGetStatus)
-BRIDGE_IMPL(sceRudpInit)
-BRIDGE_IMPL(sceRudpInitiate)
-BRIDGE_IMPL(sceRudpNetReceived)
-BRIDGE_IMPL(sceRudpPollCancel)
-BRIDGE_IMPL(sceRudpPollControl)
-BRIDGE_IMPL(sceRudpPollCreate)
-BRIDGE_IMPL(sceRudpPollDestroy)
-BRIDGE_IMPL(sceRudpPollWait)
-BRIDGE_IMPL(sceRudpProcessEvents)
-BRIDGE_IMPL(sceRudpRead)
-BRIDGE_IMPL(sceRudpSetEventHandler)
-BRIDGE_IMPL(sceRudpSetMaxSegmentSize)
-BRIDGE_IMPL(sceRudpSetOption)
-BRIDGE_IMPL(sceRudpTerminate)
-BRIDGE_IMPL(sceRudpWrite)
