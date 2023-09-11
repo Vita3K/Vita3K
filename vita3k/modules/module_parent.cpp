@@ -120,12 +120,17 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
         const ImportFn fn = resolve_import(nid);
         if (fn) {
             fn(emuenv, cpu, thread_id);
-        } else if (emuenv.missing_nids.count(nid) == 0 || LOG_UNK_NIDS_ALWAYS) {
-            const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
-            LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
+        } else {
+            const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+            // make the function return 0
+            write_reg(*thread->cpu, 0, 0);
 
-            if (!LOG_UNK_NIDS_ALWAYS)
-                emuenv.missing_nids.insert(nid);
+            if (emuenv.missing_nids.count(nid) == 0 || LOG_UNK_NIDS_ALWAYS) {
+                LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
+
+                if (!LOG_UNK_NIDS_ALWAYS)
+                    emuenv.missing_nids.insert(nid);
+            }
         }
     } else {
         auto pc = read_pc(cpu);
