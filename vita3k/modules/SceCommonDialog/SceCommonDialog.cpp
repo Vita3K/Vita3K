@@ -95,6 +95,11 @@ EXPORT(int, sceCommonDialogUpdate) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, SceCommonDialog_E37069D5) {
+    TRACY_FUNC(SceCommonDialog_E37069D5);
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceCompanionUtilDialogAbort) {
     TRACY_FUNC(sceCompanionUtilDialogAbort);
     return UNIMPLEMENTED();
