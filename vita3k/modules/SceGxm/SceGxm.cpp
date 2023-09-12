@@ -19,6 +19,7 @@
 
 #include <modules/module_parent.h>
 
+#include <span>
 #include <xxh3.h>
 
 #include <gxm/functions.h>
@@ -2042,22 +2043,22 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
     return 0;
 }
 
-static void gxmSetUniformBuffers(renderer::State &state, GxmState &gxm, SceGxmContext *context, const SceGxmProgram &program, const UniformBuffers &buffers, const UniformBufferSizes &sizes, KernelState &kern, const MemState &mem, const SceUID current_thread) {
-    for (std::size_t i = 0; i < buffers.size(); i++) {
+static void gxmSetUniformBuffers(renderer::State &state, GxmState &gxm, SceGxmContext *context, const SceGxmProgram &program, std::span<UniformBuffer> buffers, const UniformBufferSizes &sizes, KernelState &kern, const MemState &mem, const SceUID current_thread) {
+    for (size_t i = 0; i < buffers.size(); i++) {
         if (!buffers[i] || sizes.at(i) == 0) {
             continue;
         }
 
-        std::uint32_t bytes_to_copy = sizes.at(i) * 4;
+        uint32_t bytes_to_copy = sizes.at(i) * 4;
         if (sizes.at(i) == SCE_GXM_MAX_UB_IN_FLOAT_UNIT) {
             auto ite = gxm.memory_mapped_regions.lower_bound(buffers[i].address());
             if ((ite != gxm.memory_mapped_regions.end()) && ((ite->first + ite->second.size) > buffers[i].address())) {
                 // Bound the size
-                bytes_to_copy = std::min<std::uint32_t>(ite->first + ite->second.size - buffers[i].address(), bytes_to_copy);
+                bytes_to_copy = std::min<uint32_t>(ite->first + ite->second.size - buffers[i].address(), bytes_to_copy);
             }
 
             // Check other UB friends and bound the size
-            for (std::size_t j = 0; j < SCE_GXM_MAX_UNIFORM_BUFFERS; j++) {
+            for (size_t j = 0; j < buffers.size(); j++) {
                 if (i == j) {
                     continue;
                 }
@@ -2240,10 +2241,13 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     const SceGxmProgram &vertex_program_gxp = *vertex_program->program.get(emuenv.mem);
     const SceGxmProgram &fragment_program_gxp = *fragment_program->program.get(emuenv.mem);
 
-    gxmSetUniformBuffers(*emuenv.renderer, emuenv.gxm, context, vertex_program_gxp, (vertex_state ? (*vertex_state->uniform_buffers.get(emuenv.mem)) : context->state.vertex_uniform_buffers), vertex_program->renderer_data->uniform_buffer_sizes,
+    std::span<UniformBuffer> vertex_buffers = vertex_state ? std::span(vertex_state->uniform_buffers.get(emuenv.mem), vertex_state->buffer_count) : context->state.vertex_uniform_buffers;
+    std::span<UniformBuffer> fragment_buffers = fragment_state ? std::span(fragment_state->uniform_buffers.get(emuenv.mem), fragment_state->buffer_count) : context->state.fragment_uniform_buffers;
+
+    gxmSetUniformBuffers(*emuenv.renderer, emuenv.gxm, context, vertex_program_gxp, vertex_buffers, vertex_program->renderer_data->uniform_buffer_sizes,
         emuenv.kernel, emuenv.mem, thread_id);
 
-    gxmSetUniformBuffers(*emuenv.renderer, emuenv.gxm, context, fragment_program_gxp, (fragment_state ? (*fragment_state->uniform_buffers.get(emuenv.mem)) : context->state.fragment_uniform_buffers), fragment_program->renderer_data->uniform_buffer_sizes,
+    gxmSetUniformBuffers(*emuenv.renderer, emuenv.gxm, context, fragment_program_gxp, fragment_buffers, fragment_program->renderer_data->uniform_buffer_sizes,
         emuenv.kernel, emuenv.mem, thread_id);
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
@@ -2543,28 +2547,28 @@ EXPORT(uint32_t, sceGxmGetPrecomputedDrawSize, const SceGxmVertexProgram *vertex
     TRACY_FUNC(sceGxmGetPrecomputedDrawSize, vertexProgram);
     assert(vertexProgram);
 
-    uint16_t max_stream_index = 0;
+    int max_stream_index = -1;
     for (const SceGxmVertexAttribute &attribute : vertexProgram->attributes) {
-        max_stream_index = std::max(attribute.streamIndex, max_stream_index);
+        max_stream_index = std::max<int>(attribute.streamIndex, max_stream_index);
     }
 
-    return (max_stream_index + 1) * sizeof(StreamData);
+    return static_cast<uint32_t>((max_stream_index + 1) * sizeof(StreamData));
 }
 
 EXPORT(uint32_t, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
     TRACY_FUNC(sceGxmGetPrecomputedFragmentStateSize, fragmentProgram);
     assert(fragmentProgram);
 
-    const uint16_t texture_count = fragmentProgram->renderer_data->texture_count;
-    return texture_count * sizeof(TextureData) + sizeof(UniformBuffers);
+    auto &renderer_data = fragmentProgram->renderer_data;
+    return renderer_data->texture_count * sizeof(TextureData) + renderer_data->buffer_count * sizeof(UniformBuffer);
 }
 
 EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
     TRACY_FUNC(sceGxmGetPrecomputedVertexStateSize, vertexProgram);
     assert(vertexProgram);
 
-    const uint16_t texture_count = vertexProgram->renderer_data->texture_count;
-    return texture_count * sizeof(TextureData) + sizeof(UniformBuffers);
+    auto &renderer_data = vertexProgram->renderer_data;
+    return renderer_data->texture_count * sizeof(TextureData) + renderer_data->buffer_count * sizeof(UniformBuffer);
 }
 
 EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
@@ -2894,7 +2898,7 @@ EXPORT(int, sceGxmPrecomputedDrawSetVertexStream, SceGxmPrecomputedDraw *state, 
 
 EXPORT(Ptr<const void>, sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer, const SceGxmPrecomputedFragmentState *state) {
     TRACY_FUNC(sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer, state);
-    UniformBuffers &uniform_buffers = *state->uniform_buffers.get(emuenv.mem);
+    UniformBuffer *uniform_buffers = state->uniform_buffers.get(emuenv.mem);
     return uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX];
 }
 
@@ -2911,10 +2915,12 @@ EXPORT(int, sceGxmPrecomputedFragmentStateInit, SceGxmPrecomputedFragmentState *
     SceGxmPrecomputedFragmentState new_state;
     new_state.program = program;
 
-    new_state.texture_count = program.get(emuenv.mem)->renderer_data->texture_count;
+    auto &renderer_data = program.get(emuenv.mem)->renderer_data;
+    new_state.texture_count = renderer_data->texture_count;
+    new_state.buffer_count = renderer_data->buffer_count;
 
     new_state.textures = extra_data.cast<TextureData>();
-    new_state.uniform_buffers = (extra_data.cast<TextureData>() + new_state.texture_count).cast<UniformBuffers>();
+    new_state.uniform_buffers = (extra_data.cast<TextureData>() + new_state.texture_count).cast<UniformBuffer>();
 
     *state = new_state;
 
@@ -2945,12 +2951,12 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetAllUniformBuffers, SceGxmPrecompute
     if (!precomputedState || !precomputedState->uniform_buffers || !bufferDataArray)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    UniformBuffers *uniform_buffers = precomputedState->uniform_buffers.get(emuenv.mem);
+    UniformBuffer *uniform_buffers = precomputedState->uniform_buffers.get(emuenv.mem);
     if (!uniform_buffers)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    for (auto b = 0; b < SCE_GXM_MAX_UNIFORM_BUFFERS; b++)
-        (*uniform_buffers)[b] = bufferDataArray[b];
+    for (int i = 0; i + SCE_GXM_UNIFORM_BUFFER_OFFSET < precomputedState->buffer_count; i++)
+        uniform_buffers[i + SCE_GXM_UNIFORM_BUFFER_OFFSET] = bufferDataArray[i];
 
     return 0;
 }
@@ -2961,7 +2967,10 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetDefaultUniformBuffer, SceGxmPrecomp
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    UniformBuffers &uniform_buffers = *state->uniform_buffers.get(emuenv.mem);
+    if (state->buffer_count == 0)
+        return 0;
+
+    UniformBuffer *uniform_buffers = state->uniform_buffers.get(emuenv.mem);
     uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = buffer;
 
     return 0;
@@ -2992,7 +3001,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetUniformBuffer, SceGxmPrecomputedFra
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (bufferIndex > (SCE_GXM_MAX_UNIFORM_BUFFERS - 1)) {
+    if (bufferIndex >= SCE_GXM_MAX_UNIFORM_BUFFERS) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
@@ -3000,15 +3009,17 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetUniformBuffer, SceGxmPrecomputedFra
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    auto &state_uniform_buffers = *precomputedState->uniform_buffers.get(emuenv.mem);
-    state_uniform_buffers[bufferIndex] = bufferData;
+    if (bufferIndex + SCE_GXM_UNIFORM_BUFFER_OFFSET < precomputedState->buffer_count) {
+        UniformBuffer *uniform_buffers = precomputedState->uniform_buffers.get(emuenv.mem);
+        uniform_buffers[bufferIndex + SCE_GXM_UNIFORM_BUFFER_OFFSET] = bufferData;
+    }
 
     return 0;
 }
 
 EXPORT(Ptr<const void>, sceGxmPrecomputedVertexStateGetDefaultUniformBuffer, SceGxmPrecomputedVertexState *state) {
     TRACY_FUNC(sceGxmPrecomputedVertexStateGetDefaultUniformBuffer, state);
-    UniformBuffers &uniform_buffers = *state->uniform_buffers.get(emuenv.mem);
+    UniformBuffer *uniform_buffers = state->uniform_buffers.get(emuenv.mem);
     return uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX];
 }
 
@@ -3025,10 +3036,12 @@ EXPORT(int, sceGxmPrecomputedVertexStateInit, SceGxmPrecomputedVertexState *stat
     SceGxmPrecomputedVertexState new_state;
     new_state.program = program;
 
-    new_state.texture_count = program.get(emuenv.mem)->renderer_data->texture_count;
+    auto &renderer_data = program.get(emuenv.mem)->renderer_data;
+    new_state.texture_count = renderer_data->texture_count;
+    new_state.buffer_count = renderer_data->buffer_count;
 
     new_state.textures = extra_data.cast<TextureData>();
-    new_state.uniform_buffers = (extra_data.cast<TextureData>() + new_state.texture_count).cast<UniformBuffers>();
+    new_state.uniform_buffers = (extra_data.cast<TextureData>() + new_state.texture_count).cast<UniformBuffer>();
 
     *state = new_state;
 
@@ -3054,12 +3067,12 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetAllUniformBuffers, SceGxmPrecomputedV
     if (!precomputedState || !precomputedState->uniform_buffers || !bufferDataArray)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    UniformBuffers *uniform_buffers = precomputedState->uniform_buffers.get(emuenv.mem);
+    UniformBuffer *uniform_buffers = precomputedState->uniform_buffers.get(emuenv.mem);
     if (!uniform_buffers)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    for (auto b = 0; b < SCE_GXM_MAX_UNIFORM_BUFFERS; b++)
-        (*uniform_buffers)[b] = bufferDataArray[b];
+    for (int i = 0; i + SCE_GXM_UNIFORM_BUFFER_OFFSET < precomputedState->buffer_count; i++)
+        uniform_buffers[i + SCE_GXM_UNIFORM_BUFFER_OFFSET] = bufferDataArray[i];
 
     return 0;
 }
@@ -3070,7 +3083,10 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetDefaultUniformBuffer, SceGxmPrecomput
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    UniformBuffers &uniform_buffers = *state->uniform_buffers.get(emuenv.mem);
+    if (state->buffer_count == 0)
+        return 0;
+
+    UniformBuffer *uniform_buffers = state->uniform_buffers.get(emuenv.mem);
     uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = buffer;
 
     return 0;
@@ -3101,7 +3117,7 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetUniformBuffer, SceGxmPrecomputedVerte
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (bufferIndex > (SCE_GXM_MAX_UNIFORM_BUFFERS - 1)) {
+    if (bufferIndex >= SCE_GXM_MAX_UNIFORM_BUFFERS) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
@@ -3109,8 +3125,10 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetUniformBuffer, SceGxmPrecomputedVerte
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    UniformBuffers &uniform_buffers = *precomputedState->uniform_buffers.get(emuenv.mem);
-    uniform_buffers[bufferIndex] = bufferData;
+    if (bufferIndex + SCE_GXM_UNIFORM_BUFFER_OFFSET < precomputedState->buffer_count) {
+        UniformBuffer *uniform_buffers = precomputedState->uniform_buffers.get(emuenv.mem);
+        uniform_buffers[bufferIndex + SCE_GXM_UNIFORM_BUFFER_OFFSET] = bufferData;
+    }
 
     return 0;
 }
@@ -3735,7 +3753,7 @@ EXPORT(int, sceGxmSetFragmentUniformBuffer, SceGxmContext *context, uint32_t buf
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    context->state.fragment_uniform_buffers[bufferIndex] = bufferData;
+    context->state.fragment_uniform_buffers[bufferIndex + SCE_GXM_UNIFORM_BUFFER_OFFSET] = bufferData;
     return 0;
 }
 
@@ -4131,10 +4149,10 @@ EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, uint32_t buffe
     if (!context || !bufferData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    if (bufferIndex > (SCE_GXM_MAX_UNIFORM_BUFFERS - 1))
+    if (bufferIndex >= SCE_GXM_MAX_UNIFORM_BUFFERS)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
-    context->state.vertex_uniform_buffers[bufferIndex] = bufferData;
+    context->state.vertex_uniform_buffers[bufferIndex + SCE_GXM_UNIFORM_BUFFER_OFFSET] = bufferData;
     return 0;
 }
 

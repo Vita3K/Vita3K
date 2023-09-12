@@ -29,6 +29,7 @@
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <renderer/functions.h>
+#include <util/align.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 #include <util/tracy.h>
@@ -42,7 +43,7 @@ static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &siz
         if (sizes[i] != 0) {
             // Round to vec4 unit
             offsets[i] = last_offset;
-            last_offset += ((sizes[i] + 3) / 4 * 4);
+            last_offset += align(sizes[i], 4);
         } else {
             offsets[i] = static_cast<std::uint32_t>(-1);
         }
@@ -196,7 +197,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProg
     fp->hash = sha256(&program, program.size);
     gxp_ptr_map.emplace(fp->hash, &program);
 
-    shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);
+    fp->buffer_count = shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);
     layout_ssbo_offset_from_uniform_buffer_sizes(fp->uniform_buffer_sizes, fp->uniform_buffer_data_offsets, fp->max_total_uniform_buffer_storage);
     fp->textures_used = gxp::get_textures_used(program);
     fp->texture_count = std::bit_width(fp->textures_used.to_ulong());
@@ -223,7 +224,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
     vp->hash = sha256(&program, program.size);
     gxp_ptr_map.emplace(vp->hash, &program);
 
-    shader::usse::get_uniform_buffer_sizes(program, vp->uniform_buffer_sizes);
+    vp->buffer_count = shader::usse::get_uniform_buffer_sizes(program, vp->uniform_buffer_sizes);
     shader::usse::get_attribute_informations(program, vp->attribute_infos);
     layout_ssbo_offset_from_uniform_buffer_sizes(vp->uniform_buffer_sizes, vp->uniform_buffer_data_offsets, vp->max_total_uniform_buffer_storage);
     vp->textures_used = gxp::get_textures_used(program);

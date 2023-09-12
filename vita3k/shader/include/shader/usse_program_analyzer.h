@@ -234,8 +234,8 @@ using AttributeInformationMap = std::map<int, AttributeInformation>;
 using AnalyzeReadFunction = std::function<std::uint64_t(USSEOffset)>;
 
 void get_attribute_informations(const SceGxmProgram &program, AttributeInformationMap &locmap);
-void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &sizes);
-int match_uniform_buffer_with_buffer_size(const SceGxmProgram &program, const SceGxmProgramParameter &parameter, const shader::usse::UniformBufferMap &buffers);
+// return the max used buffer index + 1
+int get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &sizes);
 
 void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction read_func);
 } // namespace shader::usse

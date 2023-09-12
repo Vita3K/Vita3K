@@ -36,7 +36,7 @@ namespace shader {
 static constexpr int COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0;
 static constexpr int MASK_TEXTURE_SLOT_IMAGE = 1;
 static constexpr int COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE = 3;
-static constexpr uint32_t CURRENT_VERSION = 11;
+static constexpr uint32_t CURRENT_VERSION = 12;
 
 struct RenderVertUniformBlock {
     std::array<float, 4> viewport_flip;

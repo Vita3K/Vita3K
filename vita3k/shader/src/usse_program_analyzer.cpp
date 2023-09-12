@@ -150,26 +150,25 @@ bool is_buffer_fetch_or_store(const std::uint64_t inst, int &base, int &cursor, 
     return false;
 }
 
-int match_uniform_buffer_with_buffer_size(const SceGxmProgram &program, const SceGxmProgramParameter &parameter, const shader::usse::UniformBufferMap &buffers) {
-    assert(parameter.component_count == 0 && parameter.category == SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER);
+int get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &sizes) {
+    memset(sizes.data(), 0, sizeof(UniformBufferSizes));
 
-    // Determine base value
-    int base = gxp::get_uniform_buffer_base(program, parameter);
-
-    // Search for the buffer from analyzed list
-    if (buffers.contains(base)) {
-        return (buffers.at(base).size + 3) / 4;
-    }
-
-    return -1;
-}
-
-void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &sizes) {
+    int max_used_idx = 0;
     const auto program_input = shader::get_program_input(program);
     for (const auto &buffer : program_input.uniform_buffers) {
-        if (buffer.index < SCE_GXM_REAL_MAX_UNIFORM_BUFFER)
-            sizes[buffer.index] = buffer.size;
+        if (buffer.index < SCE_GXM_REAL_MAX_UNIFORM_BUFFER && buffer.size > 0) {
+            if (buffer.index < SCE_GXM_MAX_UNIFORM_BUFFERS) {
+                sizes[buffer.index + SCE_GXM_UNIFORM_BUFFER_OFFSET] = buffer.size;
+                max_used_idx = std::max<int>(max_used_idx, buffer.index + SCE_GXM_UNIFORM_BUFFER_OFFSET + 1);
+            } else {
+                // default buffer
+                sizes[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = buffer.size;
+                max_used_idx = std::max(max_used_idx, 1);
+            }
+        }
     }
+
+    return max_used_idx;
 }
 
 void get_attribute_informations(const SceGxmProgram &program, AttributeInformationMap &locmap) {

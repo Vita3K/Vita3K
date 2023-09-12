@@ -138,7 +138,8 @@ struct SceGxmDeferredContextParams {
     uint32_t fragmentBufferMemSize;
 };
 
-typedef std::array<Ptr<const void>, 15> UniformBuffers;
+typedef Ptr<const void> UniformBuffer;
+typedef std::array<UniformBuffer, SCE_GXM_REAL_MAX_UNIFORM_BUFFER> UniformBuffers;
 typedef SceGxmTexture TextureData;
 typedef Ptr<const void> StreamData;
 
@@ -349,7 +350,8 @@ struct SceGxmPrecomputedFragmentState {
     Ptr<TextureData> textures;
     uint16_t texture_count;
 
-    Ptr<UniformBuffers> uniform_buffers;
+    uint16_t buffer_count;
+    Ptr<UniformBuffer> uniform_buffers;
 };
 
 struct SceGxmPrecomputedVertexState {
@@ -358,7 +360,8 @@ struct SceGxmPrecomputedVertexState {
     Ptr<TextureData> textures;
     uint16_t texture_count;
 
-    Ptr<UniformBuffers> uniform_buffers;
+    uint16_t buffer_count;
+    Ptr<UniformBuffer> uniform_buffers;
 };
 
 static_assert(SCE_GXM_PRECOMPUTED_DRAW_WORD_COUNT * sizeof(uint32_t) >= sizeof(SceGxmPrecomputedDraw), "Precomputed Draw Size Too Big");
