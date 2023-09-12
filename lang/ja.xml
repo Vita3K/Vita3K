@@ -380,13 +380,13 @@ GUIでのアジア地域のフォントサポートに必須です。
 		</firmware_install>
 		<pkg_install>
 			<select_key_type>key typeを選択</select_key_type>
-			<select_work>work.binを選択</select_work>
+			<select_bin_rif>work.bin/rifを選択</select_bin_rif>
 			<enter_zrif>zRIFを入力</enter_zrif>
 			<enter_zrif_key>zRIF keyを入力</enter_zrif_key>
 			<input_zrif>zRIFをここに入力してください</input_zrif>
 			<copy_paste_zrif>Ctrl（Cmd）+ C でコピー、Ctrl（Cmd）+ V でペーストします。</copy_paste_zrif>
 			<delete_pkg>先ほどのpkgを削除しますか？</delete_pkg>
-			<delete_work>先ほどのwork.binを削除しますか？</delete_work>
+			<delete_bin_rif>先ほどのwork.bin/rifを削除しますか？</delete_bin_rif>
 		</pkg_install>
 		<archive_install>
 			<select_install_type>インストール方法を選択</select_install_type>
@@ -401,9 +401,7 @@ GUIでのアジア地域のフォントサポートに必須です。
 		</archive_install>
 		<license_install>
 			<select_license_type>ライセンスを選択</select_license_type>
-			<select_bin_rif>work.bin/rifを選択</select_bin_rif>
 			<successed_install_license>ライセンスのインストールに成功しました。</successed_install_license>
-			<delete_bin_rif>先ほどのwork.bin/rifを削除しますか？</delete_bin_rif>
 		</license_install>
 		<reinstall>
 			<reinstall_content>このコンテンツを再インストールしますか？</reinstall_content>
