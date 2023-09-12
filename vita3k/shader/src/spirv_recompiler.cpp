@@ -85,7 +85,7 @@ struct StructDeclContext {
     usse::RegisterBank reg_type = usse::RegisterBank::INVALID;
     std::vector<spv::Id> field_ids;
     std::vector<std::string> field_names; // count must be equal to `field_ids`
-    bool is_interaface_block{ false };
+    bool is_interface_block{ false };
 
     bool empty() const { return name.empty(); }
     void clear() { *this = {}; }
@@ -875,12 +875,18 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     std::map<int, int> buffer_bases;
     std::map<int, std::uint32_t> buffer_sizes;
 
+    auto convert_buffer_idx_to_host = [](int idx) {
+        if (idx < SCE_GXM_MAX_UNIFORM_BUFFERS)
+            return idx + SCE_GXM_UNIFORM_BUFFER_OFFSET;
+        return SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX;
+    };
+
     for (const auto &buffer : program_input.uniform_buffers) {
         if (buffer.index >= SCE_GXM_REAL_MAX_UNIFORM_BUFFER)
             continue;
 
         const auto buffer_size = (buffer.size + 3) / 4;
-        buffer_sizes.emplace(buffer.index, buffer_size);
+        buffer_sizes.emplace(convert_buffer_idx_to_host(buffer.index), buffer_size);
     }
 
     int last_base = 0;
@@ -1009,6 +1015,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv_params.render_info_id = translation_state.render_info_id;
 
     for (const auto &buffer : program_input.uniform_buffers) {
+        int host_idx = convert_buffer_idx_to_host(buffer.index);
         if (buffer.reg_block_size > 0) {
             if (features.support_memory_mapping) {
                 Operand dest{
@@ -1017,11 +1024,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                     .type = DataType::F32,
                 };
                 const uint32_t copy_size = std::min(buffer.reg_block_size, REG_SA_COUNT - buffer.reg_start_offset);
-                usse::utils::buffer_address_access(b, spv_params, utils, features, dest, 0, b.makeIntConstant(0), sizeof(uint32_t), copy_size, translation_state.is_fragment, buffer.index);
+                usse::utils::buffer_address_access(b, spv_params, utils, features, dest, 0, b.makeIntConstant(0), sizeof(uint32_t), copy_size, translation_state.is_fragment, host_idx);
             } else {
                 const uint32_t reg_block_size_in_f32v = std::min<uint32_t>(buffer.reg_block_size + 3, REG_SA_COUNT) / 4;
                 const auto spv_buffer = utils::create_access_chain(b, spv::StorageClassStorageBuffer, spv_params.buffer_container,
-                    { b.makeIntConstant(spv_params.buffers.at(buffer.index).index_in_container) });
+                    { b.makeIntConstant(spv_params.buffers.at(host_idx).index_in_container) });
                 copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset, reg_block_size_in_f32v);
             }
         }
@@ -1171,11 +1178,13 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                                reg.type = DataType::INT32;
                                uint32_t base;
 
+                               int index = convert_buffer_idx_to_host(s.index);
+
                                if (features.support_memory_mapping) {
                                    // encode the index in the upper 4 bits
-                                   base = (s.index << 28) + s.base;
+                                   base = (index << 28) + s.base;
                                } else {
-                                   base = buffer_bases.at(s.index) + s.base;
+                                   base = buffer_bases[index] + s.base;
                                }
                                utils::store(b, spv_params, utils, features, reg, b.makeIntConstant(base), 0b1, 0);
                            }
