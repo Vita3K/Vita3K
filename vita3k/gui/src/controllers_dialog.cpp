@@ -59,6 +59,7 @@ namespace gui {
         const auto CONTROLLERS_REBIND_SIZE = WINDOW_SIZE.x / 3.f;
 
         auto &lang = gui.lang.controllers;
+
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::Begin(lang["title"].c_str(), &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
         auto &ctrl = emuenv.ctrl;
@@ -92,7 +93,7 @@ namespace gui {
                         }
                         ImGui::SetNextWindowSize(ImVec2(CONTROLLERS_REBIND_SIZE, WINDOW_SIZE.y / 1.5f), ImGuiCond_Always);
                         ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-                        ImGui::Begin("Rebind Controls", &rebinds_is_open);
+                        ImGui::Begin(lang["Rebind Controls"].c_str(), &rebinds_is_open);
                         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", ctrl.controllers_name[i]);
                         ImGui::Separator();
                         ImGui::Spacing();

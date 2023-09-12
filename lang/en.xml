@@ -261,6 +261,7 @@ Error code: {}</an_error_occurred>
 		<not_connected>No compatible controllers connected.
 Please connect a controller that is compatible with SDL2.</not_connected>
 		<motion_support>Gamepad has motion support</motion_support>
+		<rebind_controls>Rebind Controls</rebind_controls>
 	</controllers>
 
 	<controls name="Controls">
@@ -406,13 +407,13 @@ and also for Asian regional font support. (Generally Recommended)</firmware_font
 		</firmware_install>
 		<pkg_install>
 			<select_key_type>Select key type</select_key_type>
-			<select_work>Select work.bin</select_work>
+			<select_bin_rif>Select work.bin/rif</select_bin_rif>
 			<enter_zrif>Enter zRIF</enter_zrif>
 			<enter_zrif_key>Enter zRIF key</enter_zrif_key>
 			<input_zrif>Please input your zRIF here</input_zrif>
 			<copy_paste_zrif>Ctrl (Cmd) + C to copy, Ctrl (Cmd) + V to paste.</copy_paste_zrif>
 			<delete_pkg>Delete the pkg file?</delete_pkg>
-			<delete_work>Delete the work.bin file?</delete_work>
+			<delete_bin_rif>Delete the work.bin/rif file?</delete_bin_rif>
 			<failed_install_package>Failed to install package.
 Please check pkg and work.bin file or zRIF key.</failed_install_package>
 		</pkg_install>
@@ -429,9 +430,7 @@ Please check pkg and work.bin file or zRIF key.</failed_install_package>
 		</archive_install>
 		<license_install>
 			<select_license_type>Select license type</select_license_type>
-			<select_bin_rif>Select work.bin/rif</select_bin_rif>
 			<successed_install_license>Successfully installed license.</successed_install_license>
-			<delete_bin_rif>Delete the work.bin/rif file?</delete_bin_rif>
 			<failed_install_license>Failed to install license.
 Please check work.bin/rif file or zRIF key.</failed_install_license>
 		</license_install>

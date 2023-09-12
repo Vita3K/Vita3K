@@ -226,7 +226,8 @@ struct LangState {
         { "name", "Name" },
         { "num", "Num" },
         { "not_connected", "No compatible controllers connected.\nPlease connect a controller that is compatible with SDL2." },
-        { "motion_support", "Gamepad has motion support" }
+        { "motion_support", "Gamepad has motion support" },
+        { "rebind_controls", "Rebind Controls" }
     };
     std::map<std::string, std::string> controls = {
         { "title", "Controls" },
@@ -350,9 +351,7 @@ struct LangState {
         };
         std::map<std::string, std::string> license_install = {
             { "select_license_type", "Select license type" },
-            { "select_bin_rif", "Select work.bin/rif" },
             { "successed_install_license", "Successfully installed license." },
-            { "delete_bin_rif", "Delete the work.bin/rif file?" },
             { "failed_install_license", "Failed to install license.\nPlease check work.bin/rif file or zRIF key." }
         };
         std::map<std::string, std::string> reinstall = {

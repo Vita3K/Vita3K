@@ -260,6 +260,7 @@
 		<not_connected>未连接兼容的控制器。
 请连接与SDL2兼容的控制器。</not_connected>
 		<motion_support>手柄控制器有体感支持</motion_support>
+		<rebind_controls>重新绑定控制</rebind_controls>
 	</controllers>
 
 	<controls name="控制">
@@ -390,13 +391,13 @@
 		</firmware_install>
 		<pkg_install>
 			<select_key_type>选择密钥类型</select_key_type>
-			<select_work>选择work.bin</select_work>
+			<select_bin_rif>选择work.bin/rif</select_bin_rif>
 			<enter_zrif>输入zRIF</enter_zrif>
 			<enter_zrif_key>输入zRIF密钥</enter_zrif_key>
 			<input_zrif>请在此处输入您的zRIF</input_zrif>
 			<copy_paste_zrif>使用Ctrl（Cmd）+ C复制，使用Ctrl（Cmd）+ V粘贴。</copy_paste_zrif>
 			<delete_pkg>删除pkg文件？</delete_pkg>
-			<delete_work>删除work.bin文件？</delete_work>
+			<delete_bin_rif>删除work.bin/rif文件？</delete_bin_rif>
 			<failed_install_package>无法安装该包。
 请检查pkg以及work.bin文件或zRIF密钥。</failed_install_package>
 		</pkg_install>
@@ -413,9 +414,7 @@
 		</archive_install>
 		<license_install>
 			<select_license_type>选择授权类型</select_license_type>
-			<select_bin_rif>选择work.bin/rif</select_bin_rif>
 			<successed_install_license>已成功安装授权。</successed_install_license>
-			<delete_bin_rif>删除work.bin/rif文件？</delete_bin_rif>
 			<failed_install_license>无法安装授权。
 请检查work.bin/rif文件或zRIF密钥。</failed_install_license>
 		</license_install>
