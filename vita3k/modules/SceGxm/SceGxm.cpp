@@ -2266,6 +2266,20 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
 
     renderer::draw(*emuenv.renderer, context->renderer.get(), draw->type, draw->index_format, draw->index_data, draw->vertex_count, draw->instance_count);
 
+    // increase the ringbuffer position if a default vertex or fragment buffer was reserved, we know the new position will fit in the ringbuffer
+    // also even in a precomputed draw, this is needed as some parts of the pipeline can be not precomputed
+    if (context->was_vert_default_uniform_reserved) {
+        const size_t size = (size_t)vertex_program_gxp.default_uniform_buffer_count * 4;
+        context->state.vertex_ring_buffer_used += size;
+        context->was_vert_default_uniform_reserved = false;
+    }
+
+    if (context->was_frag_default_uniform_reserved) {
+        const size_t size = (size_t)fragment_program_gxp.default_uniform_buffer_count * 4;
+        context->state.fragment_ring_buffer_used += size;
+        context->was_frag_default_uniform_reserved = false;
+    }
+
     context->last_precomputed = true;
     return 0;
 }
