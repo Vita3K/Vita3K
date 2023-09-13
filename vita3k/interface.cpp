@@ -721,7 +721,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 continue;
 
             for (const auto &binding : controller_bindings_ext) {
-                if (emuenv.cfg.controller_binds[event.cbutton.button] == binding.controller) {    // use the SDL_ControllerButton as an index into binds config
+                if (emuenv.cfg.controller_binds[event.cbutton.button] == binding.controller) { // use the SDL_ControllerButton as an index into binds config
                     if (gui.vita_area.user_management)
                         gui::browse_users_management(gui, emuenv, binding.button);
                     else if (gui.vita_area.app_close)

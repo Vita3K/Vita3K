@@ -15,8 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <module/module.h>
 #include "../SceDisplay/SceDisplay.h"
+#include <module/module.h>
 
 #include <util/tracy.h>
 

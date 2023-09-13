@@ -46,4 +46,3 @@ union SceAudiodecInitParam {
 
 DECL_EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodecInitParam *pInitParam);
 DECL_EXPORT(SceInt32, sceAudiodecTermLibrary, SceAudiodecCodec codecType);
-
