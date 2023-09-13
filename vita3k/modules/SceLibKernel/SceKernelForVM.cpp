@@ -36,4 +36,3 @@ EXPORT(int, _sceKernelSuspendThreadForVM, SceUID threadId) {
     TRACY_FUNC(_sceKernelSuspendThreadForVM, threadId);
     return CALL_EXPORT(sceKernelSuspendThreadForVM, threadId);
 }
-

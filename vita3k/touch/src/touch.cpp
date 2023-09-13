@@ -242,9 +242,9 @@ int handle_touchpad_event(SDL_ControllerTouchpadEvent &touchpad) {
         }
         break;
     }
- 
+
     is_touchpad = finger_count > 0;
-    
+
     return 0;
 }
 
@@ -258,7 +258,7 @@ std::vector<SceFVector2> get_touchpad_fingers_pos(SceTouchPortType &port) {
     }
 
     port = touchscreen_port;
-    
+
     return touchpad_fingers_pos;
 }
 

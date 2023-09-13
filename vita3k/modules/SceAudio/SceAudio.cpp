@@ -24,7 +24,6 @@
 
 TRACY_MODULE_NAME(SceAudio);
 
-
 enum SceAudioOutMode {
     SCE_AUDIO_OUT_MODE_MONO = 0,
     SCE_AUDIO_OUT_MODE_STEREO = 1

@@ -30,9 +30,9 @@
 
 #pragma once
 
+#include "util/types.h"
 #include <cmath>
 #include <type_traits>
-#include "util/types.h"
 
 namespace Util {
 
@@ -47,33 +47,36 @@ public:
     T z{};
 
     constexpr Vec3() = default;
-    constexpr Vec3(const T& x_, const T& y_, const T& z_) : x(x_), y(y_), z(z_) {}
+    constexpr Vec3(const T &x_, const T &y_, const T &z_)
+        : x(x_)
+        , y(y_)
+        , z(z_) {}
 
     template <typename T2>
     [[nodiscard]] constexpr Vec3<T2> Cast() const {
         return Vec3<T2>(static_cast<T2>(x), static_cast<T2>(y), static_cast<T2>(z));
     }
 
-    [[nodiscard]] static constexpr Vec3 AssignToAll(const T& f) {
+    [[nodiscard]] static constexpr Vec3 AssignToAll(const T &f) {
         return Vec3(f, f, f);
     }
 
-    [[nodiscard]] constexpr Vec3<decltype(T{} + T{})> operator+(const Vec3& other) const {
-        return {x + other.x, y + other.y, z + other.z};
+    [[nodiscard]] constexpr Vec3<decltype(T{} + T{})> operator+(const Vec3 &other) const {
+        return { x + other.x, y + other.y, z + other.z };
     }
 
-    constexpr Vec3& operator+=(const Vec3& other) {
+    constexpr Vec3 &operator+=(const Vec3 &other) {
         x += other.x;
         y += other.y;
         z += other.z;
         return *this;
     }
 
-    [[nodiscard]] constexpr Vec3<decltype(T{} - T{})> operator-(const Vec3& other) const {
-        return {x - other.x, y - other.y, z - other.z};
+    [[nodiscard]] constexpr Vec3<decltype(T{} - T{})> operator-(const Vec3 &other) const {
+        return { x - other.x, y - other.y, z - other.z };
     }
 
-    constexpr Vec3& operator-=(const Vec3& other) {
+    constexpr Vec3 &operator-=(const Vec3 &other) {
         x -= other.x;
         y -= other.y;
         z -= other.z;
@@ -82,15 +85,15 @@ public:
 
     template <typename U = T>
     [[nodiscard]] constexpr Vec3<std::enable_if_t<std::is_signed_v<U>, U>> operator-() const {
-        return {-x, -y, -z};
+        return { -x, -y, -z };
     }
 
-    [[nodiscard]] constexpr Vec3<decltype(T{} * T{})> operator*(const Vec3& other) const {
-        return {x * other.x, y * other.y, z * other.z};
+    [[nodiscard]] constexpr Vec3<decltype(T{} * T{})> operator*(const Vec3 &other) const {
+        return { x * other.x, y * other.y, z * other.z };
     }
 
     template <typename V>
-    [[nodiscard]] constexpr Vec3<decltype(T{} * V{})> operator*(const V& f) const {
+    [[nodiscard]] constexpr Vec3<decltype(T{} * V{})> operator*(const V &f) const {
         using TV = decltype(T{} * V{});
         using C = std::common_type_t<T, V>;
 
@@ -102,12 +105,12 @@ public:
     }
 
     template <typename V>
-    constexpr Vec3& operator*=(const V& f) {
+    constexpr Vec3 &operator*=(const V &f) {
         *this = *this * f;
         return *this;
     }
     template <typename V>
-    [[nodiscard]] constexpr Vec3<decltype(T{} / V{})> operator/(const V& f) const {
+    [[nodiscard]] constexpr Vec3<decltype(T{} / V{})> operator/(const V &f) const {
         using TV = decltype(T{} / V{});
         using C = std::common_type_t<T, V>;
 
@@ -119,7 +122,7 @@ public:
     }
 
     template <typename V>
-    constexpr Vec3& operator/=(const V& f) {
+    constexpr Vec3 &operator/=(const V &f) {
         *this = *this / f;
         return *this;
     }
@@ -133,11 +136,11 @@ public:
     [[nodiscard]] Vec3 Normalized() const;
     [[nodiscard]] SceFloat Normalize(); // returns the previous length, which is often useful
 
-    [[nodiscard]] constexpr T& operator[](std::size_t i) {
+    [[nodiscard]] constexpr T &operator[](std::size_t i) {
         return *((&x) + i);
     }
 
-    [[nodiscard]] constexpr const T& operator[](std::size_t i) const {
+    [[nodiscard]] constexpr const T &operator[](std::size_t i) const {
         return *((&x) + i);
     }
 
@@ -148,74 +151,74 @@ public:
     }
 
     // Common aliases: UVW (texel coordinates), RGB (colors), STQ (texture coordinates)
-    [[nodiscard]] constexpr T& u() {
+    [[nodiscard]] constexpr T &u() {
         return x;
     }
-    [[nodiscard]] constexpr T& v() {
+    [[nodiscard]] constexpr T &v() {
         return y;
     }
-    [[nodiscard]] constexpr T& w() {
+    [[nodiscard]] constexpr T &w() {
         return z;
     }
 
-    [[nodiscard]] constexpr T& r() {
+    [[nodiscard]] constexpr T &r() {
         return x;
     }
-    [[nodiscard]] constexpr T& g() {
+    [[nodiscard]] constexpr T &g() {
         return y;
     }
-    [[nodiscard]] constexpr T& b() {
+    [[nodiscard]] constexpr T &b() {
         return z;
     }
 
-    [[nodiscard]] constexpr T& s() {
+    [[nodiscard]] constexpr T &s() {
         return x;
     }
-    [[nodiscard]] constexpr T& t() {
+    [[nodiscard]] constexpr T &t() {
         return y;
     }
-    [[nodiscard]] constexpr T& q() {
+    [[nodiscard]] constexpr T &q() {
         return z;
     }
 
-    [[nodiscard]] constexpr const T& u() const {
+    [[nodiscard]] constexpr const T &u() const {
         return x;
     }
-    [[nodiscard]] constexpr const T& v() const {
+    [[nodiscard]] constexpr const T &v() const {
         return y;
     }
-    [[nodiscard]] constexpr const T& w() const {
+    [[nodiscard]] constexpr const T &w() const {
         return z;
     }
 
-    [[nodiscard]] constexpr const T& r() const {
+    [[nodiscard]] constexpr const T &r() const {
         return x;
     }
-    [[nodiscard]] constexpr const T& g() const {
+    [[nodiscard]] constexpr const T &g() const {
         return y;
     }
-    [[nodiscard]] constexpr const T& b() const {
+    [[nodiscard]] constexpr const T &b() const {
         return z;
     }
 
-    [[nodiscard]] constexpr const T& s() const {
+    [[nodiscard]] constexpr const T &s() const {
         return x;
     }
-    [[nodiscard]] constexpr const T& t() const {
+    [[nodiscard]] constexpr const T &t() const {
         return y;
     }
-    [[nodiscard]] constexpr const T& q() const {
+    [[nodiscard]] constexpr const T &q() const {
         return z;
     }
 };
 
 template <typename T, typename V>
-[[nodiscard]] constexpr Vec3<T> operator*(const V& f, const Vec3<T>& vec) {
+[[nodiscard]] constexpr Vec3<T> operator*(const V &f, const Vec3<T> &vec) {
     using C = std::common_type_t<T, V>;
 
     return Vec3<T>(static_cast<T>(static_cast<C>(f) * static_cast<C>(vec.x)),
-                   static_cast<T>(static_cast<C>(f) * static_cast<C>(vec.y)),
-                   static_cast<T>(static_cast<C>(f) * static_cast<C>(vec.z)));
+        static_cast<T>(static_cast<C>(f) * static_cast<C>(vec.y)),
+        static_cast<T>(static_cast<C>(f) * static_cast<C>(vec.z)));
 }
 
 template <>
@@ -238,35 +241,35 @@ inline SceFloat Vec3<SceFloat>::Normalize() {
 using Vec3f = Vec3<SceFloat>;
 
 template <typename T>
-[[nodiscard]] constexpr decltype(T{} * T{} + T{} * T{}) Dot(const Vec3<T>& a, const Vec3<T>& b) {
+[[nodiscard]] constexpr decltype(T{} * T{} + T{} * T{}) Dot(const Vec3<T> &a, const Vec3<T> &b) {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 template <typename T>
-[[nodiscard]] constexpr Vec3<decltype(T{} * T{} - T{} * T{})> Cross(const Vec3<T>& a,
-                                                                    const Vec3<T>& b) {
-    return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+[[nodiscard]] constexpr Vec3<decltype(T{} * T{} - T{} * T{})> Cross(const Vec3<T> &a,
+    const Vec3<T> &b) {
+    return { a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x };
 }
 
 // linear interpolation via SceFloat: 0.0=begin, 1.0=end
 template <typename X>
 [[nodiscard]] constexpr decltype(X{} * SceFloat{} + X{} * SceFloat{})
-    Lerp(const X &begin, const X &end, const SceFloat t) {
+Lerp(const X &begin, const X &end, const SceFloat t) {
     return begin * (1.f - t) + end * t;
 }
 
 // linear interpolation via int: 0=begin, base=end
 template <typename X, int base>
-[[nodiscard]] constexpr decltype((X{} * int{} + X{} * int{}) / base) LerpInt(const X& begin,
-                                                                             const X& end,
-                                                                             const int t) {
+[[nodiscard]] constexpr decltype((X{} * int{} + X{} * int{}) / base) LerpInt(const X &begin,
+    const X &end,
+    const int t) {
     return (begin * (base - t) + end * t) / base;
 }
 
 // bilinear interpolation. s is for interpolating x00-x01 and x10-x11, and t is for the second
 // interpolation.
 template <typename X>
-[[nodiscard]] constexpr auto BilinearInterp(const X& x00, const X& x01, const X& x10, const X& x11,
+[[nodiscard]] constexpr auto BilinearInterp(const X &x00, const X &x01, const X &x10, const X &x11,
     const SceFloat s, const SceFloat t) {
     auto y0 = Lerp(x00, x01, s);
     auto y1 = Lerp(x10, x11, s);
@@ -276,8 +279,8 @@ template <typename X>
 // Utility vector factories
 
 template <typename T>
-[[nodiscard]] constexpr Vec3<T> MakeVec(const T& x, const T& y, const T& z) {
-    return Vec3<T>{x, y, z};
+[[nodiscard]] constexpr Vec3<T> MakeVec(const T &x, const T &y, const T &z) {
+    return Vec3<T>{ x, y, z };
 }
 
-} // namespace Common
+} // namespace Util
