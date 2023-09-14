@@ -330,6 +330,10 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     current_texture->memory_needed = align(memory_needed, 16);
     vkutil::Image &image = current_texture->texture;
 
+    // In case the cache is full, no need to put the previous image in the destroy queue
+    // as it shouldn't have been used for a while
+    image.destroy();
+
     // manually initialize the image
     image.allocator = state.allocator;
     image.width = width;
