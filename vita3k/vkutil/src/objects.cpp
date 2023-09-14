@@ -144,8 +144,10 @@ void Buffer::destroy() {
     if (!destroy_on_deletion || !allocator)
         return;
 
-    if (buffer)
+    if (buffer) {
         allocator.destroyBuffer(buffer, allocation);
+        buffer = nullptr;
+    }
 }
 
 Buffer::~Buffer() {
