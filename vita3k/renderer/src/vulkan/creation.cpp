@@ -39,9 +39,22 @@ VKContext::VKContext(VKState &state, MemState &mem)
     , vertex_uniform_stream_ring_buffer(state.allocator, vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 64))
     , fragment_uniform_stream_ring_buffer(state.allocator, vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 64))
     , vertex_info_uniform_buffer(state.allocator, vk::BufferUsageFlagBits::eUniformBuffer, MiB(16))
-    , fragment_info_uniform_buffer(state.allocator, vk::BufferUsageFlagBits::eUniformBuffer, MiB(16)) {
-    memset(&previous_vert_info, 0, sizeof(shader::RenderVertUniformBlockWithMapping));
-    memset(&previous_frag_info, 0, sizeof(shader::RenderFragUniformBlockWithMapping));
+    , fragment_info_uniform_buffer(state.allocator, vk::BufferUsageFlagBits::eUniformBuffer, MiB(32)) {
+    memset(&prev_vert_ublock, 0, sizeof(shader::RenderVertUniformBlock));
+    memset(&prev_frag_ublock, 0, sizeof(shader::RenderFragUniformBlock));
+
+    // specify the alignement
+    // for the index buffer, we only have 16 or 32bit types
+    index_stream_ring_buffer.alignment = sizeof(uint32_t);
+    // for the vertex buffer, nothing should need more alignment than a vec4
+    index_stream_ring_buffer.alignment = 4 * sizeof(float);
+
+    const uint32_t uniform_alignment = static_cast<uint32_t>(state.physical_device_properties.limits.minUniformBufferOffsetAlignment);
+    const uint32_t storage_alignment = static_cast<uint32_t>(state.physical_device_properties.limits.minStorageBufferOffsetAlignment);
+    vertex_uniform_stream_ring_buffer.alignment = storage_alignment;
+    fragment_uniform_stream_ring_buffer.alignment = storage_alignment;
+    vertex_info_uniform_buffer.alignment = uniform_alignment;
+    fragment_info_uniform_buffer.alignment = uniform_alignment;
 
     if (state.features.support_memory_mapping) {
         // use the default buffer
@@ -101,8 +114,8 @@ VKContext::VKContext(VKState &state, MemState &mem)
         global_set = state.device.allocateDescriptorSets(descr_set_info)[0];
 
         // update it now (will not be updated after)
-        const uint64_t vert_uniform_size = state.features.support_memory_mapping ? sizeof(shader::RenderVertUniformBlockWithMapping) : sizeof(shader::RenderVertUniformBlock);
-        const uint64_t frag_uniform_size = state.features.support_memory_mapping ? sizeof(shader::RenderFragUniformBlockWithMapping) : sizeof(shader::RenderFragUniformBlock);
+        constexpr uint64_t vert_uniform_size = shader::RenderVertUniformBlockExtended::get_max_size();
+        constexpr uint64_t frag_uniform_size = shader::RenderFragUniformBlockExtended::get_max_size();
         std::array<vk::DescriptorBufferInfo, 4> buffers_info = {
             vk::DescriptorBufferInfo{
                 .buffer = vertex_info_uniform_buffer.handle(),

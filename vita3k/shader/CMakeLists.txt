@@ -1,21 +1,6 @@
 add_library(
 	shader
 	STATIC
-	include/shader/profile.h
-	include/shader/usse_types.h
-    include/shader/types_imm.h
-	include/shader/matcher.h
-	include/shader/decoder_detail.h
-	include/shader/usse_disasm.h
-	include/shader/usse_program_analyzer.h
-	include/shader/usse_decoder_helpers.h
-	include/shader/usse_translator.h
-	include/shader/usse_translator_entry.h
-	include/shader/usse_translator_types.h
-	include/shader/usse_utilities.h
-	include/shader/gxp_parser.h
-	include/shader/spirv_recompiler.h
-
 	src/translator/alu.cpp
 	src/translator/ialu.cpp
 	src/translator/branch_cond.cpp

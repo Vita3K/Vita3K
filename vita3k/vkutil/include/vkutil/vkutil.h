@@ -92,7 +92,7 @@ static std::enable_if_t<vk::isVulkanHandleType<T>::value, uint64_t> &to_u64(T &v
     return reinterpret_cast<uint64_t &>(vk_object);
 }
 
-static uint64_t &to_u64(vma::Allocation &vk_object) {
+[[maybe_unused]] static uint64_t &to_u64(vma::Allocation &vk_object) {
     return reinterpret_cast<uint64_t &>(vk_object);
 }
 
@@ -101,7 +101,7 @@ static std::enable_if_t<vk::isVulkanHandleType<T>::value, T> &from_u64(uint64_t 
     return reinterpret_cast<T &>(vk_object);
 }
 
-static vma::Allocation &from_u64(uint64_t &vk_object) {
+[[maybe_unused]] static vma::Allocation &from_u64(uint64_t &vk_object) {
     return reinterpret_cast<vma::Allocation &>(vk_object);
 }
 

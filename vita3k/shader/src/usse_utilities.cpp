@@ -578,8 +578,7 @@ void shader::usse::utils::buffer_address_access(spv::Builder &b, const SpirvShad
         buffer_idx_val = b.makeIntConstant(buffer_idx);
     }
 
-    const uint32_t render_buffer_idx = is_fragment ? static_cast<uint32_t>(shader::FRAG_UNIFORM_buffer_addresses) : static_cast<uint32_t>(shader::VERT_UNIFORM_buffer_addresses);
-    spv::Id buffer_address = utils::create_access_chain(b, spv::StorageClassUniform, params.render_info_id, { b.makeIntConstant(render_buffer_idx), buffer_idx_val });
+    spv::Id buffer_address = utils::create_access_chain(b, spv::StorageClassUniform, params.render_info_id, { b.makeIntConstant(params.buffer_addresses_id), buffer_idx_val });
     buffer_address = b.createLoad(buffer_address, spv::NoPrecision);
     // add the offset from the base address
     buffer_address = add_uvec2_uint(b, buffer_address, addr);
