@@ -85,6 +85,11 @@ struct SpirvShaderParameters {
     // when not using buffer device address, contains the storage buffer type
     spv::Id buffer_container;
 
+    // ids for the given fields in the uniform block container
+    int buffer_addresses_id;
+    int viewport_ratio_id;
+    int viewport_offset_id;
+
     // when using a thread, texture or litteral buffer, if not -1, this fields contain the sa register
     // with the matching address, this assumes of course that this address is not copied somewhere
     // else and that this register is not overwritten

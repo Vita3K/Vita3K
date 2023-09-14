@@ -97,6 +97,8 @@ protected:
     uint32_t capacity;
 
 public:
+    // any buffer alignment on vulkan is at most 256 on 99% of instances
+    uint32_t alignment = 256;
     uint32_t data_offset = 0;
 
     explicit RingBuffer(vma::Allocator allocator, vk::BufferUsageFlags usage, const size_t capacity);

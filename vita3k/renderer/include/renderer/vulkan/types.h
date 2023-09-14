@@ -165,11 +165,14 @@ struct VKContext : public renderer::Context {
     vk::Buffer vertex_stream_buffers[SCE_GXM_MAX_VERTEX_STREAMS];
     vk::DeviceSize vertex_stream_offsets[SCE_GXM_MAX_VERTEX_STREAMS] = {};
 
-    shader::RenderVertUniformBlockWithMapping previous_vert_info;
-    shader::RenderFragUniformBlockWithMapping previous_frag_info;
+    shader::RenderVertUniformBlock prev_vert_ublock;
+    shader::RenderFragUniformBlock prev_frag_ublock;
 
-    shader::RenderVertUniformBlockWithMapping current_vert_render_info;
-    shader::RenderFragUniformBlockWithMapping current_frag_render_info;
+    shader::RenderVertUniformBlockExtended curr_vert_ublock;
+    shader::RenderFragUniformBlockExtended curr_frag_ublock;
+
+    // scratch memory to contain the constructed render info uniform before copying it
+    uint8_t shader_info_temp[std::max(shader::RenderVertUniformBlockExtended::get_max_size(), shader::RenderFragUniformBlockExtended::get_max_size())];
 
     // used to implement the Visibility Buffer
     std::map<Address, VisibilityBuffer> visibility_buffers;

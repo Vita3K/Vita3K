@@ -19,6 +19,7 @@
 
 #include "vkutil/vkutil.h"
 
+#include <util/align.h>
 #include <util/log.h>
 
 namespace vkutil {
@@ -175,21 +176,23 @@ RingBuffer::RingBuffer(vma::Allocator allocator, vk::BufferUsageFlags usage, con
     if (usage & vk::BufferUsageFlagBits::eVertexBuffer)
         // for AMD GPUs, in case the buffer ends exactly with an rgb16 component (which is read as rgba)
         buffer_capacity += 2;
+    if (usage & vk::BufferUsageFlagBits::eUniformBuffer)
+        // the descriptor set for the uniform buffers specify the max possible size while we only allocate
+        // the actual size, this prevents validation errors
+        buffer_capacity += 512;
 
     buffer = Buffer(allocator, buffer_capacity);
 }
 
 void RingBuffer::allocate(const uint32_t data_size) {
-    if (cursor + data_size > capacity) {
-        // LOG_WARNING("End of buffer reached");
+    if (cursor + data_size > capacity)
         cursor = 0;
-    }
 
     data_offset = cursor;
 
     cursor += data_size;
-    // align to 256 bytes, the granularity is at most this value in any gpu
-    cursor = (cursor + 255) & ~255;
+
+    cursor = align(cursor, alignment);
 }
 
 void HostRingBuffer::create() {

@@ -37,9 +37,9 @@ void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderPro
     if (context.state.features.support_memory_mapping) {
         const uint64_t buffer_address = context.state.get_matching_device_address(data.address());
         if (vertex_shader) {
-            context.current_vert_render_info.buffer_addresses[block_num] = buffer_address;
+            context.curr_vert_ublock.set_buffer_address(block_num, buffer_address);
         } else {
-            context.current_frag_render_info.buffer_addresses[block_num] = buffer_address;
+            context.curr_frag_ublock.set_buffer_address(block_num, buffer_address);
         }
     } else {
         const uint32_t data_size_upload = std::min<uint32_t>(size, program->uniform_buffer_sizes.at(block_num) * 4);
@@ -465,21 +465,37 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
     const bool use_memory_mapping = context.state.features.support_memory_mapping;
 
-    shader::RenderVertUniformBlockWithMapping &vert_ublock = context.current_vert_render_info;
+    // update uniforms if needed
+    // first update the buffer and texture count
+    auto &vert_render_data = context.record.vertex_program.get(mem)->renderer_data;
+    auto &frag_render_data = context.record.fragment_program.get(mem)->renderer_data;
+
+    if (use_memory_mapping) {
+        context.curr_vert_ublock.set_buffer_count(vert_render_data->buffer_count);
+        context.curr_frag_ublock.set_buffer_count(frag_render_data->buffer_count);
+    }
+
+    if (context.state.features.use_texture_viewport) {
+        context.curr_vert_ublock.set_texture_count(vert_render_data->texture_count);
+        context.curr_frag_ublock.set_texture_count(frag_render_data->texture_count);
+    }
+
+    auto &vert_ublock = context.curr_vert_ublock.base_block;
     vert_ublock.viewport_flip = context.record.viewport_flip;
     vert_ublock.viewport_flag = (context.record.viewport_flat) ? 0.0f : 1.0f;
     vert_ublock.z_offset = context.record.z_offset;
     vert_ublock.z_scale = context.record.z_scale;
     vert_ublock.screen_width = static_cast<float>(context.render_target->width / context.state.res_multiplier);
     vert_ublock.screen_height = static_cast<float>(context.render_target->height / context.state.res_multiplier);
-    const size_t vert_ublock_size = use_memory_mapping ? sizeof(shader::RenderVertUniformBlockWithMapping) : sizeof(shader::RenderVertUniformBlock);
 
-    if (memcmp(&context.previous_vert_info, &vert_ublock, vert_ublock_size) != 0) {
-        context.vertex_info_uniform_buffer.allocate(context.prerender_cmd, vert_ublock_size, &vert_ublock);
-        memcpy(&context.previous_vert_info, &vert_ublock, vert_ublock_size);
+    if (context.curr_vert_ublock.changed || memcmp(&context.prev_vert_ublock, &vert_ublock, sizeof(vert_ublock)) != 0) {
+        // TODO: this intermediate step can be avoided
+        context.curr_vert_ublock.copy_to(context.shader_info_temp);
+        context.vertex_info_uniform_buffer.allocate(context.prerender_cmd, context.curr_vert_ublock.get_size(), context.shader_info_temp);
+        memcpy(&context.prev_vert_ublock, &vert_ublock, sizeof(vert_ublock));
     }
 
-    shader::RenderFragUniformBlockWithMapping &frag_ublock = context.current_frag_render_info;
+    auto &frag_ublock = context.curr_frag_ublock.base_block;
     frag_ublock.writing_mask = context.record.writing_mask;
     frag_ublock.res_multiplier = static_cast<float>(context.state.res_multiplier);
     const bool has_msaa = context.render_target->multisample_mode;
@@ -489,11 +505,11 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     else if (!has_msaa && has_downscale)
         frag_ublock.res_multiplier /= 2;
 
-    const size_t frag_ublock_size = use_memory_mapping ? sizeof(shader::RenderFragUniformBlockWithMapping) : sizeof(shader::RenderFragUniformBlock);
-
-    if (memcmp(&context.previous_frag_info, &frag_ublock, frag_ublock_size) != 0) {
-        context.fragment_info_uniform_buffer.allocate(context.prerender_cmd, frag_ublock_size, &frag_ublock);
-        memcpy(&context.previous_frag_info, &frag_ublock, frag_ublock_size);
+    if (context.curr_frag_ublock.changed || memcmp(&context.prev_frag_ublock, &frag_ublock, sizeof(frag_ublock)) != 0) {
+        // TODO: this intermediate step can be avoided
+        context.curr_frag_ublock.copy_to(context.shader_info_temp);
+        context.fragment_info_uniform_buffer.allocate(context.prerender_cmd, context.curr_frag_ublock.get_size(), context.shader_info_temp);
+        memcpy(&context.prev_frag_ublock, &frag_ublock, sizeof(frag_ublock));
     }
 
     // create, update and bind descriptors (uniforms and textures)
@@ -505,14 +521,13 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     vk::IndexType index_type = (format == SCE_GXM_INDEX_FORMAT_U16) ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
     const size_t index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
 
-    if (context.state.features.support_memory_mapping) {
+    if (use_memory_mapping) {
         auto [buffer, offset] = context.state.get_matching_mapping(indices);
         context.render_cmd.bindIndexBuffer(buffer, offset, index_type);
     } else {
         const size_t index_buffer_size = index_size * count;
 
         context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
-
         context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
     }
 
