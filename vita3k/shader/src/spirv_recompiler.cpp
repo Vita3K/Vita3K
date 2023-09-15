@@ -933,7 +933,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     const spv::Id f32 = b.makeFloatType(32);
-    const spv::Id i32 = b.makeIntType(32);
     const spv::Id v4 = b.makeVectorType(f32, 4);
     const spv::Id u32 = b.makeUintType(32);
     const spv::Id uvec2 = b.makeVectorType(u32, 2);

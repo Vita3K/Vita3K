@@ -32,10 +32,6 @@ struct FeatureState;
 
 namespace shader::usse {
 
-// For debugging SPIR-V output
-static uint32_t instr_idx = 0;
-constexpr std::size_t max_sa_registers = 128;
-
 struct USSERecompiler;
 
 class USSETranslatorVisitor final {
@@ -140,11 +136,11 @@ private:
     for (auto current_repeat = 0; current_repeat < repeat_count_num; current_repeat++) {
 #define END_REPEAT() }
 
-#define GET_REPEAT(inst, repeat_mode)                                                                           \
-    int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat, repeat_mode, inst.opr.dest.bank); \
-    int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat, repeat_mode, inst.opr.src0.bank); \
-    int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat, repeat_mode, inst.opr.src1.bank); \
-    int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat, repeat_mode, inst.opr.src2.bank);
+#define GET_REPEAT(inst, repeat_mode)                                                                                            \
+    [[maybe_unused]] int dest_repeat_offset = get_repeat_offset(inst.opr.dest, current_repeat, repeat_mode, inst.opr.dest.bank); \
+    [[maybe_unused]] int src0_repeat_offset = get_repeat_offset(inst.opr.src0, current_repeat, repeat_mode, inst.opr.src0.bank); \
+    [[maybe_unused]] int src1_repeat_offset = get_repeat_offset(inst.opr.src1, current_repeat, repeat_mode, inst.opr.src1.bank); \
+    [[maybe_unused]] int src2_repeat_offset = get_repeat_offset(inst.opr.src2, current_repeat, repeat_mode, inst.opr.src2.bank);
 
     const int get_repeat_offset(Operand &op, const std::uint8_t repeat_index, RepeatMode repeat_mode, RegisterBank bank) {
         if (repeat_mode == RepeatMode::INTERNAL) {

@@ -130,10 +130,10 @@ static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::Spi
         return &params.predicates;
     case shader::usse::RegisterBank::INDEX:
         return &params.indexes;
+    default:
+        // LOG_WARN("Reg bank {} unsupported", static_cast<uint8_t>(reg_bank));
+        return nullptr;
     }
-
-    // LOG_WARN("Reg bank {} unsupported", static_cast<uint8_t>(reg_bank));
-    return nullptr;
 }
 
 // TODO: Not sure if this is right. Based on this article
@@ -575,14 +575,13 @@ void shader::usse::utils::buffer_address_access(spv::Builder &b, const SpirvShad
         buffer_idx_val = b.makeIntConstant(buffer_idx);
     }
 
-    const int render_buffer_idx = is_fragment ? shader::FRAG_UNIFORM_buffer_addresses : shader::VERT_UNIFORM_buffer_addresses;
+    const uint32_t render_buffer_idx = is_fragment ? static_cast<uint32_t>(shader::FRAG_UNIFORM_buffer_addresses) : static_cast<uint32_t>(shader::VERT_UNIFORM_buffer_addresses);
     spv::Id buffer_address = utils::create_access_chain(b, spv::StorageClassUniform, params.render_info_id, { b.makeIntConstant(render_buffer_idx), buffer_idx_val });
     buffer_address = b.createLoad(buffer_address, spv::NoPrecision);
     // add the offset from the base address
     buffer_address = add_uvec2_uint(b, buffer_address, addr);
 
     if (component_size == sizeof(uint32_t)) {
-        int components_left = nb_components;
         int buffer_idx_vec4 = 0;
         if (nb_components >= 4) {
             // first copy them 4 by 4 (using the fact that we can do 4-byte aligned reads)
@@ -627,16 +626,13 @@ void shader::usse::utils::buffer_address_access(spv::Builder &b, const SpirvShad
             return;
         }
 
-        spv::Id f32 = b.makeFloatType(32);
-        spv::Id u32 = b.makeUintType(32);
-
         // less optimized
         // TODO: if the gpu supports it, load it as a u16vec4 / u8vec4
         const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, 1, 4);
         // pack the component by groups of 4 (except possible the last ones) when storing them
         std::vector<spv::Id> loaded_components;
 
-        for (int component_idx = 0; component_idx < nb_components; component_idx++) {
+        for (uint32_t component_idx = 0; component_idx < nb_components; component_idx++) {
             spv::Id component_addr = add_uvec2_uint(b, buffer_address, b.makeUintConstant(component_idx * component_size));
             // we must make it 4-byte aligned
             spv::Id addr_low_bits = b.createCompositeExtract(component_addr, i32, 0);

@@ -137,7 +137,7 @@ bool is_buffer_fetch_or_store(const std::uint64_t inst, int &base, int &cursor, 
     // Are you me? Or am i you
     if (((inst >> 59) & 0b11111) == 0b11101 || ((inst >> 59) & 0b11111) == 0b11110) {
         // Get the base
-        offset = cursor + (inst >> 7) & 0b1111111;
+        offset = (cursor + (inst >> 7)) & 0b1111111;
         base = (inst >> 14) & 0b1111111;
 
         // Data type downwards: 4 bytes, 2 bytes, 1 bytes, 0 bytes

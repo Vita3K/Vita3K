@@ -186,6 +186,9 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
         filled_dt = DataType::UINT8;
         break;
     }
+    default: {
+        break;
+    }
     }
 
     if (alu_sel == 2) {
