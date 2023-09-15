@@ -44,10 +44,6 @@ SceCtrlExternalInputMode get_type_of_controller(const int idx) {
     return (type == SDL_CONTROLLER_TYPE_PS4) || (type == SDL_CONTROLLER_TYPE_PS5) ? SCE_CTRL_TYPE_DS4 : SCE_CTRL_TYPE_DS3;
 }
 
-static bool operator<(const SDL_JoystickGUID &a, const SDL_JoystickGUID &b) {
-    return memcmp(&a, &b, sizeof(a)) < 0;
-}
-
 void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     // Remove disconnected controllers
     bool found_gyro = false;
@@ -85,6 +81,15 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
                 if (new_controller.has_accel)
                     SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
+
+                new_controller.has_led = SDL_GameControllerHasLED(controller.get());
+                if (new_controller.has_led) {
+                    auto &color = emuenv.cfg.controller_led_color;
+                    if (!color.empty()) {
+                        color.resize(3);
+                        SDL_GameControllerSetLED(controller.get(), color[0], color[1], color[2]);
+                    }
+                }
 
                 found_gyro |= new_controller.has_gyro;
                 found_accel |= new_controller.has_accel;

@@ -161,6 +161,7 @@ static void add_bind_to_table(GuiState &gui, EmuEnvState &emuenv, const SDL_Game
                     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
                     is_capturing_buttons = false;
                     break;
+                default: break;
                 }
             }
         }
@@ -176,12 +177,14 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto &ctrl = emuenv.ctrl;
     auto &lang = gui.lang.controllers;
 
-    if (ctrl.controllers_num > 0)
+    const auto has_controllers = ctrl.controllers_num > 0;
+
+    if (has_controllers)
         ImGui::SetNextWindowSize(ImVec2(VIEWPORT_SIZE.x / 2.5f, 0), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin(lang["title"].c_str(), &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    if (ctrl.controllers_num) {
+    if (has_controllers) {
         const auto connected_str = fmt::format(fmt::runtime(lang["connected"].c_str()), ctrl.controllers_num);
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", connected_str.c_str());
         ImGui::Spacing();
@@ -204,6 +207,11 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::Button(ctrl.controllers_name[i]))
                     rebinds_is_open = true;
                 if (rebinds_is_open) {
+                    const SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(i);
+                    if (!ctrl.controllers.contains(guid)) {
+                        rebinds_is_open = false;
+                        continue;
+                    }
                     ImGui::SetNextWindowSize(ImVec2(VIEWPORT_SIZE.x / 1.4f, 0.f), ImGuiCond_Always);
                     ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
                     ImGui::Begin(lang["rebind_controls"].c_str(), &rebinds_is_open, ImGuiWindowFlags_NoSavedSettings);
@@ -282,9 +290,58 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                             ImGui::EndTable();
                         }
                         ImGui::EndTable();
-
-                        ImGui::End();
                     }
+
+                    if (ctrl.controllers[guid].has_led) {
+                        const auto set_led_color = [&](const std::vector<int> &led) {
+                            SDL_GameControllerSetLED(ctrl.controllers[guid].controller.get(), led[0], led[1], led[2]);
+                            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+                        };
+                        ImGui::Spacing();
+                        const auto led_color_str = "LED Color";
+                        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(led_color_str).x / 2.f));
+                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, led_color_str);
+                        auto &color = emuenv.cfg.controller_led_color;
+                        bool has_custom_color = !color.empty();
+                        if (ImGui::Checkbox("Use Custom Color", &has_custom_color)) {
+                            const std::vector<int> default_color = { 0, 0, 65 };
+                            if (color.empty())
+                                color = default_color;
+                            else
+                                color.clear();
+                            set_led_color(default_color);
+                        }
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Check this box to use custom color for the controller's LED");
+                        if (has_custom_color) {
+                            ImGui::Spacing();
+                            if (ImGui::BeginTable("setColor", 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV)) {
+                                ImGui::TableSetupColumn("red");
+                                ImGui::TableSetupColumn("green");
+                                ImGui::TableSetupColumn("blue");
+                                ImGui::TableNextRow();
+                                ImGui::TableSetColumnIndex(0);
+                                ImGui::Text("Red");
+                                ImGui::TableSetColumnIndex(1);
+                                ImGui::Text("Green");
+                                ImGui::TableSetColumnIndex(2);
+                                ImGui::Text("Blue");
+                                ImGui::TableNextRow();
+                                const auto tab_size = (ImGui::GetWindowWidth() / 3.f) - ImGui::GetStyle().WindowPadding.x - ImGui::GetStyle().FramePadding.x;
+                                for (auto l = 0; l < color.size(); l++) {
+                                    ImGui::PushID(l);
+                                    ImGui::TableSetColumnIndex(l);
+                                    ImGui::PushItemWidth(tab_size);
+                                    if (ImGui::SliderInt("##color", &color[l], 0, 255, std::to_string((color[l] * 100) / 255).append("%%").c_str()))
+                                        set_led_color(color);
+                                    ImGui::PopItemWidth();
+                                    ImGui::PopID();
+                                }
+                                ImGui::EndTable();
+                            }
+                        }
+                    }
+                    ImGui::End();
                 }
             }
             ImGui::EndTable();
