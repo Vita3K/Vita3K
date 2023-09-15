@@ -25,6 +25,11 @@
 #include <mutex>
 #include <set>
 
+#if defined(__APPLE__) && defined(__aarch64__)
+#define PAGE_NOT_4KIB
+typedef std::map<Address, std::pair<uint32_t, uint32_t>, std::greater<Address>> ForceAllocPage;
+#endif
+
 struct AllocMemPage {
     uint32_t allocated : 4;
     uint32_t size : 28;
@@ -78,4 +83,10 @@ struct MemState {
     bool use_page_table = false;
     PageTable page_table;
     std::map<uint64_t, MemExternalMapping, std::greater<uint64_t>> external_mapping;
+
+#ifdef PAGE_NOT_4KIB
+    ForceAllocPage force_alloc;
+    BitmapAllocator seg_allocator;
+    uint32_t multiplier;
+#endif
 };
