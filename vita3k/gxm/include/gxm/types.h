@@ -1460,7 +1460,7 @@ struct SceGxmProgramParameter {
     uint8_t semantic; // applicable only for for vertex attributes, for everything else it's 0
     uint8_t semantic_index;
     uint32_t array_size;
-    int32_t resource_index;
+    uint32_t resource_index;
 
     bool is_sampler_cube() const {
         return (semantic_index >> 4) & 1;

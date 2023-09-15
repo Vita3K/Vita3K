@@ -363,7 +363,7 @@ bool USSETranslatorVisitor::smp(
 
             std::vector<spv::Block *> segment_blocks;
             m_b.makeSwitch(texture_index, spv::SelectionControlMaskNone, samplers.size(), sampler_indices, index_to_segment, -1, segment_blocks);
-            for (int s = 0; s < samplers.size(); s++) {
+            for (size_t s = 0; s < samplers.size(); s++) {
                 const SamplerInfo *smp = samplers[s];
 
                 m_b.nextSwitchSegment(segment_blocks, s);
@@ -408,7 +408,7 @@ bool USSETranslatorVisitor::smp(
                     }
                 }
 
-                for (int idx = 0; idx < comps_alone.size(); idx += 4) {
+                for (size_t idx = 0; idx < comps_alone.size(); idx += 4) {
                     // pack them by 4 so each pack size is a multiple of 32 bits
                     const spv::Id comp_packed = m_b.createCompositeConstruct(m_b.getTypeId(g4_comps[0]), { comps_alone[idx], comps_alone[idx + 1], comps_alone[idx + 2], comps_alone[idx + 3] });
                     store(inst.opr.dest, comp_packed, 0b1111);

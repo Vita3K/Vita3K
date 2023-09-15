@@ -1078,7 +1078,7 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     // TODO: Reuse this
     usse::USSERecompiler recomp(b, program, features, parameters, utils, end_hook_func, queries, render_info_id);
 
-    for (auto phase = 0; phase < (uint32_t)ShaderPhase::Max; ++phase) {
+    for (uint32_t phase = 0; phase < static_cast<uint32_t>(ShaderPhase::Max); ++phase) {
         const auto cur_phase_code = shader_code[(ShaderPhase)phase];
 
         if (cur_phase_code.second != 0) {
