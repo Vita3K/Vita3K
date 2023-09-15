@@ -66,7 +66,7 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
     return b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Fract, { coords });
 }
 
-spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type, const int lod_mode, const spv::Id extra1, const spv::Id extra2, const int gather4_comp) {
+spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, int texture_index, const int dim, const Coord &coord, const DataType dest_type, const int lod_mode, const spv::Id extra1, const spv::Id extra2, const int gather4_comp) {
     auto coord_id = coord.first;
 
     if (coord.second != static_cast<int>(DataType::F32)) {
@@ -75,7 +75,7 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
 
         // Shuffle if number of components is larger than 2
         if (m_b.getNumComponents(coord_id) > 2) {
-            coord_id = m_b.createOp(spv::OpVectorShuffle, m_b.makeVectorType(type_f32, 2), { coord_id, coord_id, 0, 1 });
+            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { coord_id, coord_id, 0, 1 });
         }
     }
 
@@ -84,6 +84,21 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     }
 
     assert(m_b.getTypeClass(m_b.getContainedTypeId(m_b.getTypeId(coord_id))) == spv::OpTypeFloat);
+
+    // the texture viewport is only useful for surfaces and they are never cubes
+    // also for the time being ignore sampleProj ops
+    if (m_features.use_texture_viewport && dim == 2 && (extra1 != spv::NoResult || lod_mode != 4)) {
+        // coord = coord * viewport_ratio + viewport_offset
+        spv::Id viewport_ratio = utils::create_access_chain(m_b, spv::StorageClassUniform, m_spirv_params.render_info_id, { m_b.makeIntConstant(m_spirv_params.viewport_ratio_id), m_b.makeIntConstant(texture_index) });
+        viewport_ratio = m_b.createLoad(viewport_ratio, spv::NoPrecision);
+        spv::Id viewport_offset = utils::create_access_chain(m_b, spv::StorageClassUniform, m_spirv_params.render_info_id, { m_b.makeIntConstant(m_spirv_params.viewport_offset_id), m_b.makeIntConstant(texture_index) });
+        viewport_offset = m_b.createLoad(viewport_offset, spv::NoPrecision);
+
+        // only keep the first two coordinates (x,y)
+        coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { coord_id, coord_id, 0, 1 });
+
+        coord_id = m_b.createBuiltinCall(m_b.getTypeId(coord_id), std_builtins, GLSLstd450Fma, { coord_id, viewport_ratio, viewport_offset });
+    }
 
     spv::Id image_sample = spv::NoResult;
     spv::Op op;
@@ -138,7 +153,7 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
             proj = true;
         }
 
-        spv::Id fetch_result = do_fetch_texture(m_b.createLoad(texture_query.sampler, spv::NoPrecision), coord_inst, store_op.type, proj ? 4 : 0, 0);
+        spv::Id fetch_result = do_fetch_texture(m_b.createLoad(texture_query.sampler, spv::NoPrecision), texture_query.sampler_index, texture_query.dim, coord_inst, store_op.type, proj ? 4 : 0, 0);
         store_op.num = texture_query.dest_offset;
 
         const Imm4 mask = (1U << texture_query.component_count) - 1;
@@ -370,7 +385,7 @@ bool USSETranslatorVisitor::smp(
                 if (tb_dest_fmt[fconv_type] == DataType::UNK)
                     inst.opr.dest.type = smp->component_type;
 
-                spv::Id result = do_fetch_texture(m_b.createLoad(smp->id, spv::NoPrecision), { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1);
+                spv::Id result = do_fetch_texture(m_b.createLoad(smp->id, spv::NoPrecision), smp->index, dim, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1);
                 const Imm4 dest_mask = (1U << smp->component_count) - 1;
                 store(inst.opr.dest, result, dest_mask);
 
@@ -378,7 +393,7 @@ bool USSETranslatorVisitor::smp(
             }
             m_b.endSwitch(segment_blocks);
         } else if (sb_mode == 0) {
-            spv::Id result = do_fetch_texture(image_sampler, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1, extra2);
+            spv::Id result = do_fetch_texture(image_sampler, sampler.index, dim, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1, extra2);
             const Imm4 dest_mask = (1U << sampler.component_count) - 1;
             store(inst.opr.dest, result, dest_mask);
         } else {
@@ -386,7 +401,7 @@ bool USSETranslatorVisitor::smp(
             // first gather all components
             std::vector<spv::Id> g4_comps;
             for (int comp = 0; comp < sampler.component_count; comp++) {
-                g4_comps.push_back(do_fetch_texture(image_sampler, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1, extra2, comp));
+                g4_comps.push_back(do_fetch_texture(image_sampler, sampler.index, dim, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1, extra2, comp));
             }
 
             if (sampler.component_count == 1) {

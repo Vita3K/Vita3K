@@ -83,7 +83,7 @@ struct UniformBlockExtended {
         return align(sizeof(T), 8);
     }
 
-    void set_viewport_ratio(int idx, std::pair<float, float> ratio) {
+    void set_viewport_ratio(int idx, const std::pair<float, float> &ratio) {
         if (viewport_ratio[idx] != ratio) {
             changed = true;
             viewport_ratio[idx] = ratio;
@@ -94,7 +94,7 @@ struct UniformBlockExtended {
         return get_buffer_addresses_offset(buffer_count, texture_count) + buffer_count * sizeof(uint64_t);
     }
 
-    void set_viewport_offset(int idx, std::pair<float, float> offset) {
+    void set_viewport_offset(int idx, const std::pair<float, float> &offset) {
         if (viewport_offset[idx] != offset) {
             changed = true;
             viewport_offset[idx] = offset;

@@ -92,7 +92,7 @@ static std::enable_if_t<vk::isVulkanHandleType<T>::value, uint64_t> &to_u64(T &v
     return reinterpret_cast<uint64_t &>(vk_object);
 }
 
-[[maybe_unused]] static uint64_t &to_u64(vma::Allocation &vk_object) {
+static uint64_t &to_u64(vma::Allocation &vk_object) {
     return reinterpret_cast<uint64_t &>(vk_object);
 }
 
@@ -101,7 +101,7 @@ static std::enable_if_t<vk::isVulkanHandleType<T>::value, T> &from_u64(uint64_t 
     return reinterpret_cast<T &>(vk_object);
 }
 
-[[maybe_unused]] static vma::Allocation &from_u64(uint64_t &vk_object) {
+static vma::Allocation &from_u64(uint64_t &vk_object) {
     return reinterpret_cast<vma::Allocation &>(vk_object);
 }
 
@@ -127,6 +127,8 @@ enum struct ImageLayout {
 void transition_image_layout(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range = color_subresource_range);
 // transition image layout assuming you don't care about the former image content
 void transition_image_layout_discard(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range = color_subresource_range);
+// Return the vulkan layout associated with ImageLayout
+vk::ImageLayout get_underlying_layout(ImageLayout layout);
 
 // given the swizzle of the color surface (which was written as rgba because vulkan doesn't support swizzle on framebuffers)
 // and the swizzle of the texture that's reading from the color surface

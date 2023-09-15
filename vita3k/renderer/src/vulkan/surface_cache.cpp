@@ -120,7 +120,7 @@ VKSurfaceCache::VKSurfaceCache(VKState &state)
 
 vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &mem, uint16_t width, uint16_t height, const uint16_t pixel_stride,
     const SceGxmColorBaseFormat base_format, const SceGxmColorSurfaceType surface_type, const bool is_srgb, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, vk::ComponentMapping &swizzle,
-    uint16_t *stored_height, uint16_t *stored_width) {
+    uint16_t *stored_height, uint16_t *stored_width, TextureViewport *texture_viewport) {
     // Create the key to access the cache struct
     const std::uint64_t key = address.address();
 
@@ -262,6 +262,17 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
                 const vk::ImageView color_handle_view = reinterpret_cast<VKContext *>(state.context)->current_color_attachment->view;
                 const bool is_same_image = (color_handle_view == info.texture.view) || (info.sampled_image && color_handle_view == info.sampled_image->view);
 
+                if (state.features.use_texture_viewport && vk_format == info.texture.format) {
+                    // use a texture viewport
+                    *texture_viewport = {
+                        .ratio = {
+                            original_width / static_cast<float>(info.original_width),
+                            original_height / static_cast<float>(info.original_height) },
+                        .offset = { start_x / static_cast<float>(info.width), start_sourced_line / static_cast<float>(info.height) }
+                    };
+                    return &info.texture;
+                }
+
                 if (is_same_image || (start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format)) {
                     uint64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
                         std::chrono::steady_clock::now().time_since_epoch())
@@ -389,18 +400,6 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
                     // we must insert a barrier before reading from the texture
                     VKContext *context = reinterpret_cast<VKContext *>(state.context);
                     vk::CommandBuffer cmd_buffer = context->prerender_cmd;
-                    vk::ImageMemoryBarrier barrier{
-                        .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-                        .dstAccessMask = vk::AccessFlagBits::eShaderRead,
-                        .oldLayout = vk::ImageLayout::eGeneral,
-                        .newLayout = vk::ImageLayout::eGeneral,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image = info.texture.image,
-                        .subresourceRange = vkutil::color_subresource_range
-                    };
-
-                    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, vk::DependencyFlags(), {}, {}, barrier);
 
                     if (swizzle == info.swizzle && vk_format == info.texture.format)
                         // we can use the same texture view
@@ -420,6 +419,8 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
                             .subresourceRange = vkutil::color_subresource_range
                         };
                         info.sampled_image->view = state.device.createImageView(view_info);
+                        info.sampled_image->layout = vkutil::ImageLayout::ColorAttachmentReadWrite;
+                        info.sampled_image->format = vk_format;
                     }
 
                     return info.sampled_image.get();
@@ -452,6 +453,8 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
                             .subresourceRange = vkutil::color_subresource_range
                         };
                         info.sampled_image->view = state.device.createImageView(view_info);
+                        info.sampled_image->layout = vkutil::ImageLayout::ColorAttachmentReadWrite;
+                        info.sampled_image->format = vk_format;
                     }
 
                     return info.sampled_image.get();
@@ -569,7 +572,7 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
 }
 
 vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, int32_t width,
-    int32_t height, const bool is_reading) {
+    int32_t height, const bool is_reading, TextureViewport *texture_viewport) {
     bool packed_ds = surface.get_format() == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
 
     int32_t memory_width = width;
@@ -631,8 +634,41 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
             if (cached_info.multisample_mode == SCE_GXM_MULTISAMPLE_4X)
                 height /= 2;
 
-            const uint64_t scene_timestamp = reinterpret_cast<VKContext *>(state.context)->scene_timestamp;
             const bool is_stencil = depth_stencil_textures[found_index].surface.depth_data != surface.depth_data;
+
+            vk::ImageView ds_attachment = reinterpret_cast<VKContext *>(state.context)->current_ds_attachment->view;
+            const bool reading_ds_attachment = cached_info.texture.view == ds_attachment;
+
+            if (state.features.use_texture_viewport && !reading_ds_attachment) {
+                // use a texture viewport
+
+                // we must create a new read-only view if it is not already present
+                // with a texture viewport, we will only use one read surface at most
+                if (cached_info.read_surfaces.empty())
+                    cached_info.read_surfaces.resize(1);
+                vkutil::Image &img_view = is_stencil ? cached_info.read_surfaces[0].stencil_view : cached_info.read_surfaces[0].depth_view;
+                if (!img_view.view) {
+                    vk::ImageSubresourceRange range = vkutil::ds_subresource_range;
+                    range.aspectMask = is_stencil ? vk::ImageAspectFlagBits::eStencil : vk::ImageAspectFlagBits::eDepth;
+                    vk::ImageViewCreateInfo view_info{
+                        .image = cached_info.texture.image,
+                        .viewType = vk::ImageViewType::e2D,
+                        .format = vk::Format::eD32SfloatS8Uint,
+                        .components = {},
+                        .subresourceRange = range
+                    };
+                    img_view.view = state.device.createImageView(view_info);
+                    img_view.layout = vkutil::ImageLayout::DepthReadOnly;
+                }
+
+                texture_viewport->ratio = {
+                    memory_width / static_cast<float>(cached_info.memory_width),
+                    memory_height / static_cast<float>(cached_info.memory_height)
+                };
+                return &img_view;
+            }
+
+            const uint64_t scene_timestamp = reinterpret_cast<VKContext *>(state.context)->scene_timestamp;
 
             int read_surface_idx = -1;
             for (int i = 0; i < cached_info.read_surfaces.size(); i++) {
@@ -674,6 +710,7 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
                     .subresourceRange = range
                 };
                 img_view.view = state.device.createImageView(view_info);
+                img_view.layout = vkutil::ImageLayout::SampledImage;
             }
 
             // copy the depth stencil only once per scene
@@ -701,8 +738,8 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
             cmd_buffer.copyImage(cached_info.texture.image, vk::ImageLayout::eTransferSrcOptimal, read_only.depth_view.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
 
             // transition back
-            cached_info.texture.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
-            read_only.depth_view.transition_to(cmd_buffer, vkutil::ImageLayout::DepthReadOnly, vkutil::ds_subresource_range);
+            cached_info.texture.transition_to(cmd_buffer, vkutil::ImageLayout::DepthReadOnly, vkutil::ds_subresource_range);
+            read_only.depth_view.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage, vkutil::ds_subresource_range);
 
             return &img_view;
         }
@@ -763,7 +800,7 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
     image.height = height;
     image.format = vk::Format::eD32SfloatS8Uint;
     image.layout = vkutil::ImageLayout::Undefined;
-    image.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+    image.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled);
 
     image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst, vkutil::ds_subresource_range);
     vk::ClearDepthStencilValue clear_value{
@@ -771,7 +808,7 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
         .stencil = 0
     };
     cmd_buffer.clearDepthStencilImage(image.image, vk::ImageLayout::eTransferDstOptimal, clear_value, vkutil::ds_subresource_range);
-    image.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
+    image.transition_to(cmd_buffer, vkutil::ImageLayout::DepthReadOnly, vkutil::ds_subresource_range);
 
     return &image;
 }
@@ -786,7 +823,9 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
     }
 
     if (!color && !depth_stencil) {
-        LOG_ERROR("Depth stencil and color surface are both null!");
+        static bool has_happened = false;
+        LOG_ERROR_IF(!has_happened, "Depth stencil and color surface are both null!");
+        has_happened = true;
         return empty_framebuffer;
     }
 

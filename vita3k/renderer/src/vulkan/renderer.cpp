@@ -48,6 +48,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
         "VUID-VkImageViewCreateInfo-usage-02275", // srgb does not support the storage format
         "VUID-VkImageCreateInfo-imageCreateMaxMipLevels-02251", // srgb does not support the storage format
         "VUID-vkCmdPipelineBarrier-pDependencies-02285", // shader write -> vertex input read self-dependency, wrong error
+        "VUID-vkCmdDrawIndexed-None-09003", // reading from color attachment, works on most GPUs with a general layout
     };
 
     if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
