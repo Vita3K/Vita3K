@@ -28,6 +28,29 @@
 #include <vkutil/vkutil.h>
 
 namespace renderer::vulkan {
+
+// return if this format can be used to read a depth stencil buffer
+// Only return the formats we support and make sense for now
+// (technically we can read a D24S8 or D32 as R8R8R8R8, but it is not implemented
+// yet and no game I am aware of does it)
+static bool is_depth_stencil_compatible_format(SceGxmTextureBaseFormat format) {
+    switch (format) {
+        // 8bit stencil
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+        // D16 format
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
+        // D32 format
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
+        // D32M format
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
+        // D24S8 format
+    case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+        return true;
+    default:
+        return false;
+    }
+}
+
 VKTextureCache::VKTextureCache(VKState &state)
     : state(state) {}
 
@@ -63,8 +86,10 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
 
     SceGxmColorBaseFormat format_target_of_texture;
 
-    uint16_t width = static_cast<std::uint16_t>(gxm::get_width(&texture));
-    uint16_t height = static_cast<std::uint16_t>(gxm::get_height(&texture));
+    uint16_t width = static_cast<uint16_t>(gxm::get_width(&texture));
+    uint16_t height = static_cast<uint16_t>(gxm::get_height(&texture));
+
+    TextureViewport texture_viewport{};
 
     if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
         uint16_t stride_in_pixels = width;
@@ -92,19 +117,16 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
 
         image = context.state.surface_cache.retrieve_color_surface_texture_handle(
             mem, width, height, stride_in_pixels, format_target_of_texture, surface_type, static_cast<bool>(texture.gamma_mode), Ptr<void>(data_addr),
-            renderer::SurfaceTextureRetrievePurpose::READING, swizzle);
+            renderer::SurfaceTextureRetrievePurpose::READING, swizzle, nullptr, nullptr, &texture_viewport);
     }
 
-    vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal;
-    if (image) {
-        layout = vk::ImageLayout::eGeneral;
-    } else {
-        // Try to retrieve S24D8 texture
+    if (!image && is_depth_stencil_compatible_format(base_format)) {
+        // Try to retrieve depth/stencil
         SceGxmDepthStencilSurface lookup_temp;
         lookup_temp.depth_data = data_addr;
         lookup_temp.stencil_data.reset();
 
-        image = context.state.surface_cache.retrieve_depth_stencil_texture_handle(mem, lookup_temp, width, height, true);
+        image = context.state.surface_cache.retrieve_depth_stencil_texture_handle(mem, lookup_temp, width, height, true, &texture_viewport);
     }
 
     if (image) {
@@ -118,6 +140,8 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         context.state.texture_cache.cache_and_bind_texture(texture, mem);
         image = &context.state.texture_cache.current_texture->texture;
     }
+
+    const vk::ImageLayout layout = vkutil::get_underlying_layout(image->layout);
 
     vk::DescriptorImageInfo &image_info = is_vertex
         ? context.vertex_textures[index - SCE_GXM_MAX_TEXTURE_UNITS]
@@ -133,6 +157,16 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
             context.last_vert_texture_count = ~0;
         else
             context.last_frag_texture_count = ~0;
+    }
+
+    if (context.state.features.use_texture_viewport) {
+        if (is_vertex) {
+            context.curr_vert_ublock.set_viewport_ratio(index - SCE_GXM_MAX_TEXTURE_UNITS, texture_viewport.ratio);
+            context.curr_vert_ublock.set_viewport_offset(index - SCE_GXM_MAX_TEXTURE_UNITS, texture_viewport.offset);
+        } else {
+            context.curr_frag_ublock.set_viewport_ratio(index, texture_viewport.ratio);
+            context.curr_frag_ublock.set_viewport_offset(index, texture_viewport.offset);
+        }
     }
 }
 
@@ -473,6 +507,7 @@ void VKTextureCache::upload_done() {
         .layerCount = current_texture->is_cube ? 6U : 1U
     };
     vkutil::transition_image_layout(cmd_buffer, current_texture->texture.image, vkutil::ImageLayout::TransferDst, vkutil::ImageLayout::SampledImage, range);
+    current_texture->texture.layout = vkutil::ImageLayout::SampledImage;
     // this should not be necessary
     cmd_buffer = nullptr;
     is_texture_transfer_ready = false;

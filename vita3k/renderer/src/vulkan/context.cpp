@@ -135,6 +135,11 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
 
     bool force_load = context.record.depth_stencil_surface.force_load;
     bool force_store = context.record.depth_stencil_surface.force_store;
+    if (ds_surface_fin == nullptr) {
+        // no memory backing the depth stencil
+        force_load = false;
+        force_store = false;
+    }
     if (context.state.features.support_shader_interlock)
         // we must always store the depth stencil
         force_store = true;
@@ -448,10 +453,15 @@ void VKContext::check_for_macroblock_change() {
         last_macroblock_y = curr_macroblock_y;
 
         if (in_renderpass) {
-            SceGxmNotification empty_notification{};
-            stop_recording(empty_notification, empty_notification, false);
-            start_recording();
-            scene_timestamp++;
+            if (state.features.use_texture_viewport) {
+                // no need to copy the texture after this renderpass
+                stop_render_pass();
+            } else {
+                SceGxmNotification empty_notification{};
+                stop_recording(empty_notification, empty_notification, false);
+                start_recording();
+                scene_timestamp++;
+            }
         }
     }
 }

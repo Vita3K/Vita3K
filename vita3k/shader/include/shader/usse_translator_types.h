@@ -41,6 +41,7 @@ struct SpirvUniformBufferInfo {
 
 struct SamplerInfo {
     spv::Id id;
+    uint32_t index;
     DataType component_type;
     uint8_t component_count;
     bool is_cube;
@@ -118,6 +119,7 @@ struct NonDependentTextureQueryCallInfo {
     std::uint32_t dest_offset = 0;
     int store_type = 0; ///< For sampling method later
     int prod_pos = -1;
+    int dim = 2;
 
     DataType component_type;
     uint8_t component_count;

@@ -29,6 +29,12 @@ struct VKRenderTarget;
 struct VKState;
 struct Viewport;
 
+// used for in-shader texture viewport
+struct TextureViewport {
+    std::pair<float, float> ratio = { 1.0f, 1.0f };
+    std::pair<float, float> offset = { 0.0f, 0.0f };
+};
+
 struct SurfaceCacheInfo {
     enum {
         FLAG_DIRTY = 1 << 0,
@@ -148,10 +154,10 @@ public:
     // when writing, the swizzled given to this function is inversed
     vkutil::Image *retrieve_color_surface_texture_handle(MemState &mem, uint16_t width, uint16_t height, const uint16_t pixel_stride,
         const SceGxmColorBaseFormat base_format, const SceGxmColorSurfaceType surface_type, const bool is_srgb, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, vk::ComponentMapping &swizzle,
-        uint16_t *stored_height = nullptr, uint16_t *stored_width = nullptr);
+        uint16_t *stored_height = nullptr, uint16_t *stored_width = nullptr, TextureViewport *texture_viewport = nullptr);
 
     vkutil::Image *retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, int32_t width,
-        int32_t height, const bool is_reading = false);
+        int32_t height, const bool is_reading = false, TextureViewport *texture_viewport = nullptr);
 
     Framebuffer &retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
         vk::RenderPass standard_render_pass, vk::RenderPass interlock_render_pass, vkutil::Image **color_texture_handle, vkutil::Image **ds_texture_handle,

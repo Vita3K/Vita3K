@@ -142,7 +142,7 @@ static constexpr ImageLayoutTransition layout_transitions[] = {
         vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite },
     // DepthReadOnly
     {
-        vk::ImageLayout::eShaderReadOnlyOptimal,
+        vk::ImageLayout::eDepthStencilReadOnlyOptimal,
         vk::PipelineStageFlagBits::eFragmentShader,
         vk::AccessFlagBits::eShaderRead },
 };
@@ -171,6 +171,10 @@ void transition_image_layout(vk::CommandBuffer cmd_buffer, vk::Image image, Imag
 
 void transition_image_layout_discard(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range) {
     transition_image_layout_impl(cmd_buffer, image, src_layout, dst_layout, range, true);
+}
+
+vk::ImageLayout get_underlying_layout(ImageLayout layout) {
+    return layout_transitions[static_cast<int>(layout)].layout;
 }
 
 vk::ComponentMapping color_to_texture_swizzle(const vk::ComponentMapping &swizzle_color, const vk::ComponentMapping &swizzle_texture) {

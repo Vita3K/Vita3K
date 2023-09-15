@@ -330,8 +330,8 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
         .storeOp = store_op,
         .stencilLoadOp = load_op,
         .stencilStoreOp = store_op,
-        .initialLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal,
-        .finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal
+        .initialLayout = force_load ? vk::ImageLayout::eDepthStencilReadOnlyOptimal : vk::ImageLayout::eUndefined,
+        .finalLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal
     };
 
     std::array<vk::SubpassDependency, 4> dependencies;

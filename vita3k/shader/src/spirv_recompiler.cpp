@@ -621,6 +621,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             NonDependentTextureQueryCallInfo tex_query_info;
             tex_query_info.store_type = static_cast<int>(store_type);
+            tex_query_info.dim = (dim_type == spv::Dim2D) ? 2 : 3;
 
             const SceGxmTextureFormat texture_format = translation_state.is_fragment ? translation_state.hints->fragment_textures[sampler_resource_index] : translation_state.hints->vertex_textures[sampler_resource_index];
             tex_query_info.component_type = get_texture_component_type(texture_format);
@@ -642,7 +643,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 b.addDecoration(tex_query_info.sampler, spv::DecorationBinding, sampler_resource_index);
                 if (translation_state.is_vulkan)
                     b.addDecoration(tex_query_info.sampler, spv::DecorationDescriptorSet, program.is_vertex() ? 2 : 3);
-                samplers[sampler_resource_index] = { tex_query_info.sampler, tex_query_info.component_type, tex_query_info.component_count };
+                samplers[sampler_resource_index] = { tex_query_info.sampler, sampler_resource_index, tex_query_info.component_type, tex_query_info.component_count };
             } else {
                 tex_query_info.sampler = samplers[sampler_resource_index].id;
             }
@@ -1148,6 +1149,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         const SceGxmTextureFormat texture_format = translation_state.is_fragment ? translation_state.hints->fragment_textures[sampler.index] : translation_state.hints->vertex_textures[sampler.index];
         samplers[sampler.index] = {
             sampler_spv_var,
+            sampler.index,
             get_texture_component_type(texture_format),
             get_texture_component_count(texture_format),
             sampler.is_cube
