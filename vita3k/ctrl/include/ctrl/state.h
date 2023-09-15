@@ -39,6 +39,7 @@ struct Controller {
     int port;
     bool has_accel;
     bool has_gyro;
+    bool has_led;
 };
 
 struct ControllerBinding {
@@ -46,7 +47,13 @@ struct ControllerBinding {
     uint32_t button;
 };
 
-typedef std::map<SDL_JoystickGUID, Controller> ControllerList;
+struct SDL_JoystickGUIDComparator {
+    bool operator()(const SDL_JoystickGUID &a, const SDL_JoystickGUID &b) const {
+        return memcmp(&a, &b, sizeof(a)) < 0;
+    }
+};
+
+typedef std::map<SDL_JoystickGUID, Controller, SDL_JoystickGUIDComparator> ControllerList;
 
 struct CtrlState {
     std::mutex mutex;
