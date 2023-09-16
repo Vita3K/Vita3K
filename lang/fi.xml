@@ -13,7 +13,6 @@
 			<last_apps_used>Last Apps used</last_apps_used>
 		</emulation>
 		<configuration name="Configuration">
-			<settings>Asetukset</settings>
 			<user_management>Käyttäjien hallinta</user_management>
 		</configuration>
 		<controls name="Controls">
@@ -183,7 +182,7 @@ Virhekoodi: {}</an_error_occurred>
 		<clear_all>Tyhjennä kaikki</clear_all>
 	</content_manager>
 
-	<controllers name="Controllers">
+	<controllers name="Ohjaimen">
 		<name>Nimi</name>
 		<num>Num</num>
 	</controllers>
@@ -311,7 +310,7 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="Asetukset">
 		<save>Tallenna</save>
 	</settings_dialog>
 

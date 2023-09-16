@@ -109,7 +109,6 @@ struct LangState {
         };
         std::map<std::string, std::string> configuration = {
             { "title", "Configuration" },
-            { "settings", "Settings" },
             { "user_management", "User Management" }
         };
         std::map<std::string, std::string> controls = {
@@ -227,7 +226,8 @@ struct LangState {
         { "num", "Num" },
         { "not_connected", "No compatible controllers connected.\nPlease connect a controller that is compatible with SDL2." },
         { "motion_support", "Gamepad has motion support" },
-        { "rebind_controls", "Rebind Controls" }
+        { "rebind_controls", "Rebind Controls" },
+        { "reset_controller_binding", "Reset Controller Binding" }
     };
     std::map<std::string, std::string> controls = {
         { "title", "Controls" },
@@ -328,7 +328,7 @@ struct LangState {
             { "delete_firmware", "Delete the firmware installation file?" }
         };
         std::map<std::string, std::string> pkg_install = {
-            { "select_key_type", "Select key type" },
+            { "select_license_type", "Select license type" },
             { "select_bin_rif", "Select work.bin/rif" },
             { "enter_zrif", "Enter zRIF" },
             { "enter_zrif_key", "Enter zRIF key" },
@@ -350,7 +350,6 @@ struct LangState {
             { "delete_archive", "Delete archive?" }
         };
         std::map<std::string, std::string> license_install = {
-            { "select_license_type", "Select license type" },
             { "successed_install_license", "Successfully installed license." },
             { "failed_install_license", "Failed to install license.\nPlease check work.bin/rif file or zRIF key." }
         };
@@ -457,6 +456,7 @@ struct LangState {
     };
     Settings settings;
     std::map<std::string, std::string> settings_dialog = {
+        { "title", "Settings" },
         { "close", "Close" },
         { "save_reboot", "Save & Reboot" },
         { "save_apply", "Save & Apply" },

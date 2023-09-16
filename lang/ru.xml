@@ -13,7 +13,6 @@
 			<last_apps_used>Последние использованные приложения</last_apps_used>
 		</emulation>
 		<configuration name="Конфигурация">
-			<settings>Настройки</settings>
 			<user_management>Управление пользователями</user_management>
 		</configuration>
 		<controls name="Управление">
@@ -387,7 +386,7 @@
 			<delete_firmware>Удалить установочный файл прошивки?</delete_firmware>
 		</firmware_install>
 		<pkg_install>
-			<select_key_type>Выберите тип ключа</select_key_type>
+			<select_license_type>Выбрать тип лицензии</select_license_type>
 			<select_bin_rif>Выбр. work.bin/rif</select_bin_rif>
 			<enter_zrif>Введите zRIF</enter_zrif>
 			<enter_zrif_key>Введите zRIF ключ</enter_zrif_key>
@@ -396,7 +395,7 @@
 			<delete_pkg>Удалить файл pkg?</delete_pkg>
 			<delete_bin_rif>Удалить файл work.bin/rif?</delete_bin_rif>
 			<failed_install_package>Не удалось установить пакет.
-Пожалуйста, проверьте файл pkg и work.bin или zRIF ключ.</failed_install_package>
+Пожалуйста, проверьте файл pkg и work.bin/rif или zRIF ключ.</failed_install_package>
 		</pkg_install>
 		<archive_install>
 			<select_install_type>Выберите тип установки</select_install_type>
@@ -410,7 +409,6 @@
 			<delete_archive>Удалить архив?</delete_archive>
 		</archive_install>
 		<license_install>
-			<select_license_type>Выбрать тип лицензии</select_license_type>
 			<successed_install_license>Лицензия успешно установлена.</successed_install_license>
 			<failed_install_license>Не удалось установить лицензию.
 Пожалуйста, проверьте файл work.bin/rif или zRIF ключ.</failed_install_license>
@@ -520,7 +518,7 @@
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="Настройки">
 		<close>Закрыть</close>
 		<save>Сохранить</save>
 	</settings_dialog>

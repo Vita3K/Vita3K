@@ -13,7 +13,6 @@
 			<last_apps_used>Ultime app utilizzate</last_apps_used>
 		</emulation>
 		<configuration name="Configurazione">
-			<settings>Impostazioni</settings>
 			<user_management>Gestione utenti</user_management>
 		</configuration>
 		<controls name="Controlli">
@@ -266,12 +265,6 @@ Non spegnere il sistema né chiudere l'applicazione.</warning_saving>
 Il tuo sistema Vita3K è pronto per l'uso!</completed_setup>
 		<select_language>Seleziona una lingua.</select_language>
 		<install_firmware>Installa il Firmware.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
 		<next>Seguente</next>
 	</initial_setup>
 
@@ -290,17 +283,13 @@ Il tuo sistema Vita3K è pronto per l'uso!</completed_setup>
 					<updated>Aggiornato</updated>
 					<size>Dimensione</size>
 					<version>Versione</version>
-					<content_id>Content ID</content_id>
 				</information>
 				<delete>Questo tema sarà eliminato.</delete>
 			</theme>
 			<start_screen name="Schermata iniziale">
 				<image>Immagine</image>
-				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Sfondi schermata principale">
-				<delete_background>Delete Background</delete_background>
-				<add_background>Add Background</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Date e ora">
@@ -341,7 +330,7 @@ Il tuo sistema Vita3K è pronto per l'uso!</completed_setup>
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="Impostazioni">
 		<save>Salva</save>
 	</settings_dialog>
 

@@ -13,7 +13,6 @@
 			<last_apps_used>Last Apps used</last_apps_used>
 		</emulation>
 		<configuration name="Configuration">
-			<settings>Ustawienia</settings>
 			<user_management>Zarządzanie użytkownikami</user_management>
 		</configuration>
 		<controls name="Controls">
@@ -196,7 +195,7 @@ Kod błędu: {}</an_error_occurred>
 		<clear_all>wyczyść wszystko</clear_all>
 	</content_manager>
 
-	<controllers name="Controllers">
+	<controllers name="Kontrolera">
 		<name>Nazwa</name>
 		<num>Num</num>
 	</controllers>
@@ -324,7 +323,7 @@ System Vita3K jest gotowy!</completed_setup>
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="Ustawienia">
 		<save>Zapisz</save>
 	</settings_dialog>
 

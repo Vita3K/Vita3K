@@ -419,7 +419,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Begin("##settings", &settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushFont(gui.vita_font);
     ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
-    auto settings_str = gui.lang.main_menubar.configuration["settings"].c_str();
+    auto settings_str = lang["title"].c_str();
     const auto title = is_custom_config ? fmt::format("{}: {} [{}]", settings_str, get_app_index(gui, emuenv.app_path)->title, emuenv.app_path) : settings_str;
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());

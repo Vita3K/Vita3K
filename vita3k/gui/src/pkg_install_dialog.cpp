@@ -83,7 +83,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         if (state.empty()) {
             ImGui::SetCursorPosX(POS_BUTTON);
-            title = lang["select_key_type"];
+            title = lang["select_license_type"];
             if (ImGui::Button(lang["select_bin_rif"].c_str(), BUTTON_SIZE))
                 state = "license";
             ImGui::SetCursorPosX(POS_BUTTON);

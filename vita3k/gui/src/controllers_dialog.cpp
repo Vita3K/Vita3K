@@ -175,6 +175,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     auto &ctrl = emuenv.ctrl;
     auto &lang = gui.lang.controllers;
+
     if (ctrl.controllers_num > 0)
         ImGui::SetNextWindowSize(ImVec2(VIEWPORT_SIZE.x / 2.5f, 0), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
@@ -299,7 +300,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     ImGui::Spacing();
-    if (ImGui::Button("Reset Controller Binding"))
+    if (ImGui::Button(lang["reset_controller_binding"].c_str()))
         reset_controller_binding(emuenv);
 
     ImGui::End();

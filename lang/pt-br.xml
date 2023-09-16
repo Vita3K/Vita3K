@@ -13,7 +13,6 @@
 			<last_apps_used>Últimos apps usados</last_apps_used>
 		</emulation>
 		<configuration name="Configuração">
-			<settings>Configurações</settings>
 			<user_management>Gerenciamento de usuários</user_management>
 		</configuration>
 		<controls name="Controles">
@@ -227,10 +226,10 @@ Código de erro: {}</an_error_occurred>
 		<clear_all>Limpar tudo</clear_all>
 	</content_manager>
 
-	<controllers name="Controles de jogo">
+	<controllers name="Controle">
 		<connected>Controles conectados</connected>
 		<name>Nome</name>
-		<num>Num</num>
+		<num>Núm</num>
 		<not_connected>Nenhum controle compatível conectado.
 Conecte um controle que seja compatível com SDL2.</not_connected>
 	</controllers>
@@ -388,7 +387,7 @@ fundo</add_background>
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="Configurações">
 		<save>Salvar</save>
 	</settings_dialog>
 
