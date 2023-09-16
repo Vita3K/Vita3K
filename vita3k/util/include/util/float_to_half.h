@@ -20,26 +20,12 @@
 // original source:https://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion
 // public domain
 
-#include <bit>
+#include "util/bit_cast.h"
+
 #include <climits> // CHAR_BIT
 #include <cstdint> // uint32_t, uint64_t, etc.
-#include <cstring> // memcpy
 #include <limits> // numeric_limits
 #include <utility> // is_integral_v, is_floating_point_v, forward
-
-#ifndef __cpp_lib_bit_cast
-namespace std {
-template <typename T, typename U>
-T bit_cast(U &&u) {
-    static_assert(sizeof(T) == sizeof(U));
-    union {
-        T t;
-    }; // prevent construction
-    std::memcpy(&t, &u, sizeof(t));
-    return t;
-}
-} // namespace std
-#endif
 
 namespace util {
 template <typename T>

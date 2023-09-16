@@ -20,6 +20,7 @@
 #include <shader/usse_program_analyzer.h>
 #include <shader/usse_utilities.h>
 
+#include <util/bit_cast.h>
 #include <util/log.h>
 
 #include <SPIRV/GLSL.std.450.h>
@@ -853,7 +854,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
                 else if (integral_signed)
                     return b.makeIntConstant(value);
                 else
-                    return b.makeFloatConstant(*reinterpret_cast<const float *>(&value));
+                    return b.makeFloatConstant(std::bit_cast<float>(value));
             };
 
             for (int i = 0; i < 4; i++) {
@@ -892,9 +893,9 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
                 }
 
                 if (integral_unsigned)
-                    return b.makeUintConstant(*reinterpret_cast<const uint32_t *>(&value));
+                    return b.makeUintConstant(std::bit_cast<uint32_t>(value));
                 else if (integral_signed)
-                    return b.makeIntConstant(*reinterpret_cast<const int32_t *>(&value));
+                    return b.makeIntConstant(std::bit_cast<int32_t>(value));
                 else
                     return b.makeFloatConstant(value);
             };
