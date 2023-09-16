@@ -244,6 +244,7 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     }
     default:
         assert(false);
+        return nullptr;
     }
 
     spv::Function *unpack_func = b.makeFunctionEntry(
@@ -336,6 +337,7 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     }
     default:
         assert(false);
+        return nullptr;
     }
 
     spv::Function *pack_func = b.makeFunctionEntry(
