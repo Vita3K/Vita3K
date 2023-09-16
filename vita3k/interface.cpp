@@ -761,7 +761,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     break;
                 }
             }
-        break;
+            break;
 
         case SDL_CONTROLLERTOUCHPADDOWN:
         case SDL_CONTROLLERTOUCHPADMOTION:
