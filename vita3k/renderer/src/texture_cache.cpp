@@ -401,7 +401,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             case SCE_GXM_TEXTURE_FORMAT_YVYU422_CSC1:
             case SCE_GXM_TEXTURE_FORMAT_UYVY422_CSC1:
             case SCE_GXM_TEXTURE_FORMAT_VYUY422_CSC1:
-                LOG_ERROR("Yuv Texture format not implemented: {}", fmt);
+                LOG_ERROR("Yuv Texture format not implemented: {}", fmt::underlying(fmt));
                 assert(false);
             default:
                 assert(false);

@@ -47,7 +47,7 @@ std::string to_debug_str<SceFiosOverlayResolveMode>(const MemState &mem, SceFios
 EXPORT(int, sceFiosOverlayAddForProcess02, SceUID processId, SceFiosProcessOverlay *pOverlay, SceFiosOverlayID *pOutID) {
     TRACY_FUNC(sceFiosOverlayAddForProcess02, processId, pOverlay, pOutID);
     if (pOverlay->type != SCE_FIOS_OVERLAY_TYPE_OPAQUE)
-        LOG_WARN("Using unimplemented overlay type {}.", pOverlay->type);
+        LOG_WARN("Using unimplemented overlay type {}.", fmt::underlying(pOverlay->type));
 
     *pOutID = create_overlay(emuenv.io, pOverlay);
 

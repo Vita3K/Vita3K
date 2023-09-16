@@ -17,7 +17,7 @@
 
 #include "audio/impl/cubeb_audio.h"
 
-#include "public/tracy/Tracy.hpp"
+#include <tracy/Tracy.hpp>
 
 #include "kernel/thread/thread_state.h"
 

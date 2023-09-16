@@ -19,12 +19,7 @@
 
 #include <cpu/functions.h>
 
-// Disable warninig here is needed to compile on windows because we
-// are turning some warnings into errors to allow makepkg default flags
-#pragma warning(push)
-#pragma warning(disable : 4774)
 #include <imgui_memory_editor.h>
-#pragma warning(pop)
 
 #include <spdlog/fmt/fmt.h>
 

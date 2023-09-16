@@ -265,7 +265,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     if (is_background)
         ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], WINDOW_POS, display_size);
     else
-        ImGui::GetBackgroundDrawList()->AddRectFilled(WINDOW_POS, display_size, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawCornerFlags_All);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(WINDOW_POS, display_size, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
     ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
     ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (ImGui::CalcTextSize(lang["title"].c_str()).x / 2.f), 44.f * SCALE.y));
@@ -377,7 +377,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetCursorPosY(display_size.y - BUTTON_SIZE.y - (20.f * SCALE.y));
     ImGui::Separator();
     ImGui::SetCursorPos(ImVec2(WINDOW_POS.x + (10.f * SCALE.x), (display_size.y - BUTTON_SIZE.y - (12.f * SCALE.y))));
-    if (ImGui::Button((state < DESCRIPTION) || (state == DOWNLOAD) ? common["cancel"].c_str() : lang["back"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
+    if (ImGui::Button((state < DESCRIPTION) || (state == DOWNLOAD) ? common["cancel"].c_str() : lang["back"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
         if (state < DESCRIPTION) {
             if (fs::exists("windows-latest.zip"))
                 fs::remove("windows-latest.zip");
@@ -392,7 +392,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
 
     if (state > NO_UPDATE && state < DOWNLOAD) {
         ImGui::SetCursorPos(ImVec2(display_size.x - WINDOW_POS.x - BUTTON_SIZE.x - (10.f * SCALE.x), (display_size.y - BUTTON_SIZE.y - (12.f * SCALE.y))));
-        if (ImGui::Button(state < UPDATE_VITA3K ? lang["next"].c_str() : lang["update"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
+        if (ImGui::Button(state < UPDATE_VITA3K ? lang["next"].c_str() : lang["update"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
             state = (Vita3kUpdate)(state + 1);
             if (state == DOWNLOAD)
                 download_update(emuenv.base_path);

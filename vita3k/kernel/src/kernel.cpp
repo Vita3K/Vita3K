@@ -16,7 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #ifdef TRACY_ENABLE
-#include "public/tracy/Tracy.hpp"
+#include <tracy/Tracy.hpp>
 #endif
 
 #include <kernel/state.h>

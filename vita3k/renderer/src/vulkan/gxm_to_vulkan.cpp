@@ -94,7 +94,7 @@ vk::BlendFactor translate_blend_factor(const SceGxmBlendFactor blend_factor) {
     case SCE_GXM_BLEND_FACTOR_DST_ALPHA_SATURATE:
         return vk::BlendFactor::eDstAlpha; // TODO Not supported.
     default:
-        LOG_ERROR("Unknown blend factor: {}", blend_factor);
+        LOG_ERROR("Unknown blend factor: {}", fmt::underlying(blend_factor));
         return vk::BlendFactor::eOne;
     }
 }
@@ -113,7 +113,7 @@ vk::BlendOp translate_blend_func(const SceGxmBlendFunc blend_func) {
     case SCE_GXM_BLEND_FUNC_MAX:
         return vk::BlendOp::eMax;
     default:
-        LOG_ERROR("Unknown blend func: {}", blend_func);
+        LOG_ERROR("Unknown blend func: {}", fmt::underlying(blend_func));
         return vk::BlendOp::eAdd;
     }
 }
@@ -134,7 +134,7 @@ vk::PrimitiveTopology translate_primitive(SceGxmPrimitiveType primitive) {
         LOG_WARN("Unsupported primitive: SCE_GXM_PRIMITIVE_TRIANGLE_EDGES, using SCE_GXM_PRIMITIVE_TRIANGLES instead");
         return vk::PrimitiveTopology::eTriangleList;
     default:
-        LOG_ERROR("Unknown primitive: {}", primitive);
+        LOG_ERROR("Unknown primitive: {}", fmt::underlying(primitive));
         return vk::PrimitiveTopology::eTriangleList;
     }
 }

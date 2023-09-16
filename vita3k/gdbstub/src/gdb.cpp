@@ -27,7 +27,6 @@
 
 #include <kernel/state.h>
 #include <mem/state.h>
-#include <spdlog/fmt/bundled/printf.h>
 #include <sstream>
 
 // Sockets

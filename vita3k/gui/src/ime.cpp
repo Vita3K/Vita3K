@@ -350,7 +350,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2(MARGE_BORDER, key_row_pos[3] * SCALE.y));
         ImGui::PushStyleColor(ImGuiCol_Button, IME_BUTTON_BG);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-        if (ImGui::Button("Shift", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_l2)) {
+        if (ImGui::Button("Shift", BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_l2))) {
             if (ime.edit_text.caretIndex == 0)
                 ime.caps_level = ime.caps_level == YES ? NO : ++ime.caps_level;
             else
@@ -367,7 +367,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
         ImGui::SameLine(0, SPACE);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         ImGui::PushStyleColor(ImGuiCol_Button, IME_BUTTON_BG);
-        if (ImGui::Button("<", PUNCT_BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_l1)) {
+        if (ImGui::Button("<", PUNCT_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_l1))) {
             ime.edit_text.editIndex = ime.edit_text.caretIndex;
             if (ime.edit_text.caretIndex)
                 --ime.edit_text.caretIndex;
@@ -381,7 +381,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
                 ime.caps_level = YES;
         }
         ImGui::SameLine(0, SPACE_BUTTON_SIZE.x + (SPACE * 2.f));
-        if (ImGui::Button(">", PUNCT_BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_r1)) {
+        if (ImGui::Button(">", PUNCT_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_r1))) {
             ime.edit_text.editIndex = ime.edit_text.caretIndex;
             if (ime.edit_text.caretIndex < ime.str.length())
                 ++ime.edit_text.caretIndex;
@@ -421,7 +421,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
     ImGui::SetCursorPos(ImVec2(BUTTON_POS_X, key_row_pos[3] * SCALE.y));
     ImGui::PushStyleColor(ImGuiCol_Button, IME_BUTTON_BG);
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-    if (ImGui::Button("Backspace", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_square) && ime.edit_text.caretIndex) {
+    if (ImGui::Button("Backspace", BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_square)) && ime.edit_text.caretIndex) {
         ime.str.erase(ime.edit_text.caretIndex - 1, 1);
         ime.edit_text.editIndex = ime.edit_text.caretIndex;
         --ime.edit_text.caretIndex;
@@ -438,7 +438,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
     ImGui::PopStyleColor(2);
     ImGui::PushStyleColor(ImGuiCol_Button, GUI_COLOR_TEXT_BLACK);
     ImGui::SetCursorPos(ImVec2(MARGE_BORDER, LAST_ROW_KEY_POS));
-    if (ImGui::Button("V", ImVec2(44.f * SCALE.x, KEY_BUTTON_SIZE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))
+    if (ImGui::Button("V", ImVec2(44.f * SCALE.x, KEY_BUTTON_SIZE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle)))
         ime.event_id = SCE_IME_EVENT_PRESS_CLOSE;
     ImGui::PopStyleColor();
     ImGui::SameLine(0, 18.f);
@@ -461,12 +461,12 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
         }
     }
     ImGui::SetCursorPos(SPACE_BUTTON_POS);
-    if (ImGui::Button(space_str.c_str(), SPACE_BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_triangle))
+    if (ImGui::Button(space_str.c_str(), SPACE_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_triangle)))
         update_ponct(ime, u" ");
     ImGui::PopStyleColor();
     ImGui::SetCursorPos(ImVec2(ENTER_BUTTON_POS_X, LAST_ROW_KEY_POS));
     ImGui::PushStyleColor(ImGuiCol_Button, GUI_PROGRESS_BAR);
-    if (ImGui::Button(ime.enter_label.c_str(), ENTER_BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_r2))
+    if (ImGui::Button(ime.enter_label.c_str(), ENTER_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_r2)))
         ime.event_id = SCE_IME_EVENT_PRESS_ENTER;
     ImGui::PopStyleColor();
 

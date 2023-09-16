@@ -549,7 +549,7 @@ size_t get_compressed_size(SceGxmTextureBaseFormat base_format, std::uint32_t wi
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
         return ((width + 3) / 4) * ((height + 3) / 4) * 16;
     default:
-        LOG_ERROR("Invalid block compressed texture format: {}", base_format);
+        LOG_ERROR("Invalid block compressed texture format: {}", fmt::underlying(base_format));
         return 0;
     }
 }

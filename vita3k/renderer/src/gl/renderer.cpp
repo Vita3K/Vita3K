@@ -110,9 +110,17 @@ void bind_fundamental(GLContext &context) {
     glBindVertexArray(context.vertex_array[0]);
 }
 
-static void after_callback(const char *name, void *funcptr, int len_args, ...) {
-    for (GLenum error = glad_glGetError(); error != GL_NO_ERROR; error = glad_glGetError()) {
-        LOG_ERROR("OpenGL: {} set error {}.", name, error);
+static void after_callback(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...) {
+    GLenum error_code;
+
+    GLAD_UNUSED(ret);
+    GLAD_UNUSED(apiproc);
+    GLAD_UNUSED(len_args);
+
+    error_code = glad_glGetError();
+
+    if (error_code != GL_NO_ERROR) {
+        LOG_ERROR("OpenGL: {} set error {}.", name, error_code);
     }
 }
 
@@ -194,8 +202,10 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
     if (!gl_state.context)
         return false;
 
-    gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
-    glad_set_post_callback(after_callback);
+    if (!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress))
+        return false;
+
+    gladSetGLPostCallback(after_callback);
 
     // Detect GPU and features
     const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
@@ -547,7 +557,7 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
 
     auto format_gl = GXM_COLOR_FORMAT_TO_GL_FORMAT.find(format);
     if (format_gl == GXM_COLOR_FORMAT_TO_GL_FORMAT.end()) {
-        LOG_ERROR("Color format not implemented: {}, report this to developer", format);
+        LOG_ERROR("Color format not implemented: {}, report this to developer", fmt::underlying(format));
         return;
     }
 
@@ -608,7 +618,7 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
 
     auto format_gl = GXM_COLOR_FORMAT_TO_GL_FORMAT.find(format);
     if (format_gl == GXM_COLOR_FORMAT_TO_GL_FORMAT.end()) {
-        LOG_ERROR("Color format not implemented: {}, report this to developer", format);
+        LOG_ERROR("Color format not implemented: {}, report this to developer", fmt::underlying(format));
         return;
     }
 

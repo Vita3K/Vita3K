@@ -28,22 +28,10 @@ endfunction()
 
 check_submodules_present()
 
-# Fix a glslang hack
-# See https://github.com/KhronosGroup/glslang/issues/1015 and https://github.com/Vita3K/Vita3K/pull/369 for details
-if(NOT CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-	if(WIN32)
-		set(CMAKE_INSTALL_PREFIX "C:/Program Files/${PROJECT_NAME}" CACHE STRING "Default install prefix is: C:/Program Files" FORCE)
-	elseif(UNIX)
-		set(CMAKE_INSTALL_PREFIX /usr/local CACHE STRING "Default install prefix is: /usr/local" FORCE)
-	endif()
-endif()
-
 # Define the Architecture variable, right now it should only contain "x86_64" or "arm64"
 include("dynarmic/CMakeModules/DetectArchitecture.cmake")
 
-option(CAPSTONE_BUILD_SHARED "Build shared library" OFF)
-option(CAPSTONE_BUILD_TESTS "Build tests" OFF)
-option(CAPSTONE_BUILD_CSTOOL "Build cstool" OFF)
+option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(CAPSTONE_ARCHITECTURE_DEFAULT "Whether architectures are enabled by default" OFF)
 option(CAPSTONE_ARM_SUPPORT "ARM support" ON)
 add_subdirectory(capstone EXCLUDE_FROM_ALL)
@@ -75,9 +63,8 @@ set_property(TARGET spdlog PROPERTY FOLDER externals)
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
 
-add_library(glad STATIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c")
+add_library(glad STATIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/gl.c")
 target_include_directories(glad PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/include")
-target_link_libraries(glad PRIVATE ${CMAKE_DL_LIBS})
 set_property(TARGET glad PROPERTY FOLDER externals)
 
 add_library(better-enums INTERFACE)
@@ -176,10 +163,8 @@ set_property(TARGET unicorn PROPERTY FOLDER externals)
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")
 
-option(BUILD_TESTING "Build the testing tree." OFF)
 option(YAML_CPP_BUILD_TOOLS "Enable parse tools" OFF)
 option(YAML_CPP_BUILD_CONTRIB "Enable contrib stuff in library" OFF)
-option(YAML_CPP_INSTALL "Enable generation of install target" OFF)
 add_subdirectory(yaml-cpp EXCLUDE_FROM_ALL)
 set_property(TARGET yaml-cpp PROPERTY FOLDER externals)
 
@@ -235,7 +220,7 @@ endif()
 option(BUILD_EXTERNAL "Build external dependencies in /External" OFF)
 option(SKIP_GLSLANG_INSTALL "Skip installation" ON)
 option(ENABLE_SPVREMAPPER "Enables building of SPVRemapper" OFF)
-option(ENABLE_GLSLANG_BINARIES "Builds glslangValidator and spirv-remap" OFF)
+option(ENABLE_GLSLANG_BINARIES "Builds glslang and spirv-remap" OFF)
 option(ENABLE_HLSL "Enables HLSL input support" OFF)
 option(ENABLE_CTEST "Enables testing" OFF)
 add_subdirectory(glslang)
@@ -305,7 +290,7 @@ if(NOT OPENSSL_FOUND)
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.zip")
 			message(STATUS "Downloading openssl...")
-			file(DOWNLOAD https://firedaemon.com/download-firedaemon-openssl-3-zip
+			file(DOWNLOAD https://firedaemon.com/download-firedaemon-openssl-3.1-zip
 				"${CMAKE_BINARY_DIR}/external/openssl.zip" SHOW_PROGRESS)
 		endif()
 
@@ -315,7 +300,7 @@ if(NOT OPENSSL_FOUND)
 				WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
 		endif()
 
-		set(OPENSSL_ROOT_DIR "${CMAKE_BINARY_DIR}/external/openssl/openssl-3.0/x64")
+		set(OPENSSL_ROOT_DIR "${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64")
 	endif()
 
 	find_package(OpenSSL REQUIRED)
@@ -347,14 +332,15 @@ option(TRACY_ENABLE_ON_CORE_COMPONENTS
 		HLE modules"
 	ON)
 add_library(tracy STATIC tracy/public/TracyClient.cpp)
+target_include_directories(tracy SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tracy/public>)
+target_link_libraries(tracy PUBLIC ${CMAKE_DL_LIBS})
 set_property(TARGET tracy PROPERTY FOLDER externals)
-target_include_directories(tracy PUBLIC tracy)
 
 if(UNIX)
-	target_link_libraries(tracy PUBLIC pthread dl)
+	target_link_libraries(tracy PUBLIC pthread)
 endif()
 
-# Enable Tracy on-demand profiling mode to avoid unnecesary memory usage when the developer
+# Enable Tracy on-demand profiling mode to avoid unnecessary memory usage when the developer
 # isn't profiling by only enabling profiling after a connection has been established with
 # a Tracy server
 target_compile_definitions(tracy PUBLIC $<$<CONFIG:Debug,RelWithDebInfo>:TRACY_ON_DEMAND>)

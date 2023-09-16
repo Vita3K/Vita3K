@@ -46,11 +46,11 @@
 #include <process.h>
 #endif
 
-#include "public/tracy/Tracy.hpp"
 #include <SDL.h>
 #include <chrono>
 #include <cstdlib>
 #include <thread>
+#include <tracy/Tracy.hpp>
 
 static void run_execv(char *argv[], EmuEnvState &emuenv) {
     char *args[10];
