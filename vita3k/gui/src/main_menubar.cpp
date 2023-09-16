@@ -110,7 +110,7 @@ static void draw_config_menu(GuiState &gui, EmuEnvState &emuenv) {
     const auto CUSTOM_CONFIG_PATH{ fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", emuenv.io.app_path) };
     auto &settings_dialog = !emuenv.io.app_path.empty() && fs::exists(CUSTOM_CONFIG_PATH) ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
-        if (ImGui::MenuItem(lang["settings"].c_str(), nullptr, &settings_dialog))
+        if (ImGui::MenuItem(gui.lang.settings_dialog["title"].c_str(), nullptr, &settings_dialog))
             init_config(gui, emuenv, emuenv.io.app_path);
         if (ImGui::MenuItem(lang["user_management"].c_str(), nullptr, &gui.vita_area.user_management, (!gui.vita_area.user_management && emuenv.io.title_id.empty())))
             init_user_management(gui, emuenv);

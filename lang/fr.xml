@@ -13,7 +13,6 @@
 			<last_apps_used>Dernières Apps utilisées</last_apps_used>
 		</emulation>
 		<configuration name="Configuration">
-			<settings>Paramètres</settings>
 			<user_management>Gestion des Utilisateurs</user_management>
 		</configuration>
 		<controls name="Commandes">
@@ -416,7 +415,7 @@ Votre système Vita3K est prêt !</completed_setup>
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="Paramètres">
 		<save>Sauvegarder</save>
 	</settings_dialog>
 

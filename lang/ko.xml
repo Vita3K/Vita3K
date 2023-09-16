@@ -13,7 +13,6 @@
 			<last_apps_used>마지막으로 사용한 앱</last_apps_used>
 		</emulation>
 		<configuration name="설정">
-			<settings>설정</settings>
 			<user_management>유저 관리</user_management>
 		</configuration>
 		<controls name="컨트롤">
@@ -32,6 +31,7 @@
 		<vita3k_staff>Vita3K 스태프</vita3k_staff>
 		<developers>개발자</developers>
 		<contributors>기여자</contributors>
+		<supporters>후원자</supporters>
 	</about>
 
 	<app_context>
@@ -216,8 +216,9 @@
 		<clear_all>모두 해제</clear_all>
 	</content_manager>
 
-	<controllers name="Controllers">
+	<controllers name="컨트롤러">
 		<name>이름</name>
+		<num>번호</num>
 	</controllers>
 
 	<dialog>
@@ -335,7 +336,7 @@
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="설정">
 		<save>저장</save>
 	</settings_dialog>
 

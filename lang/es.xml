@@ -13,7 +13,6 @@
 			<last_apps_used>Últimas aplicaciones utilizadas</last_apps_used>
 		</emulation>
 		<configuration name="Configuración">
-			<settings>Ajustes</settings>
 			<user_management>Gestión de usuarios</user_management>
 		</configuration>
 		<controls name="Controles">
@@ -198,7 +197,7 @@ Código del error: {}</an_error_occurred>
 	<controllers name="Controles">
 		<connected>{} controles conectado</connected>
 		<name>Nombre</name>
-		<num>Num</num>
+		<num>Núm</num>
 	</controllers>
 
 	<dialog>
@@ -325,7 +324,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="Ajustes">
 		<save>Guardar</save>
 	</settings_dialog>
 

@@ -13,7 +13,6 @@
 			<last_apps_used>Last Apps used</last_apps_used>
 		</emulation>
 		<configuration name="Configuration">
-			<settings>Configurações</settings>
 			<user_management>Gestão de utilizadores</user_management>
 		</configuration>
 		<controls name="Controls">
@@ -186,9 +185,9 @@ Código de erro: {}</an_error_occurred>
 		<clear_all>Limpar todos</clear_all>
 	</content_manager>
 
-	<controllers name="Controllers">
+	<controllers name="Comando">
 		<name>Nome</name>
-		<num>Num</num>
+		<num>Núm</num>
 	</controllers>
 
 	<dialog>
@@ -257,7 +256,7 @@ O seu sistema Vita3K está pronto!</completed_setup>
 		<continue>Continuar</continue>
 	</live_area>
 
-	<settings name="Configurações">
+	<settings name="Definições">
 		<theme_background name="Tema e fundo">
 			<default>Predefinição</default>
 			<theme name="Tema">
@@ -314,7 +313,7 @@ O seu sistema Vita3K está pronto!</completed_setup>
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="Definições">
 		<save>Guardar</save>
 	</settings_dialog>
 

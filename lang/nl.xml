@@ -13,7 +13,6 @@
 			<last_apps_used>Laatste gebruikte apps</last_apps_used>
 		</emulation>
 		<configuration name="Configuratie">
-			<settings>Instellingen</settings>
 			<user_management>Gebruikerbeheer</user_management>
 		</configuration>
 		<controls name="Besturing">
@@ -331,7 +330,7 @@ Je Vita3K-systeem is gereed!</completed_setup>
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="Instellingen">
 		<save>Opslaan</save>
 	</settings_dialog>
 

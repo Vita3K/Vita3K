@@ -13,7 +13,6 @@
 			<last_apps_used>最近使用的應用程式</last_apps_used>
 		</emulation>
 		<configuration name="組態">
-			<settings>設定</settings>
 			<user_management>使用者管理</user_management>
 		</configuration>
 		<controls name="控制">
@@ -261,6 +260,7 @@
 請連接與SDL2相容的控制器。</not_connected>
 		<motion_support>手柄控制器有體感支持</motion_support>
 		<rebind_controls>重新綁定控制</rebind_controls>
+		<reset_controller_binding>重設控制器綁定</reset_controller_binding>
 	</controllers>
 
 	<controls name="控制">
@@ -390,7 +390,7 @@
 
 	<install_dialog>
 		<pkg_install>
-			<select_key_type>選擇金鑰類型</select_key_type>
+			<select_license_type>請選擇授權類型</select_license_type>
 			<select_bin_rif>選擇work.bin/rif</select_bin_rif>
 			<enter_zrif>輸入zRIF</enter_zrif>
 			<enter_zrif_key>輸入zRIF金鑰</enter_zrif_key>
@@ -399,10 +399,10 @@
 			<delete_pkg>刪除pkg檔案？</delete_pkg>
 			<delete_bin_rif>刪除work.bin/rif檔案？</delete_bin_rif>
 			<failed_install_package>無法安裝該包。
-請檢查pkg以及work.bin檔案或zRIF金鑰。</failed_install_package>
+請檢查pkg以及work.bin/rif檔案或zRIF金鑰。</failed_install_package>
 		</pkg_install>
 		<archive_install>
-			<select_install_type>選擇安裝類型</select_install_type>
+			<select_install_type>請選擇安裝類型</select_install_type>
 			<select_file>選擇檔案</select_file>
 			<select_directory>選擇目錄</select_directory>
 			<compatible_content>已找到{}個相容內容的封存檔。</compatible_content>
@@ -413,7 +413,6 @@
 			<delete_archive>刪除封存檔？</delete_archive>
 		</archive_install>
 		<license_install>
-			<select_license_type>選擇授權類型</select_license_type>
 			<successed_install_license>已成功安裝授權。</successed_install_license>
 			<failed_install_license>無法安裝授權。
 請檢查work.bin/rif檔案或zRIF金鑰。</failed_install_license>
@@ -517,7 +516,7 @@
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="設定">
 		<close>關閉</close>
 		<save_reboot>保存並重啟</save_reboot>
 		<save_apply>保存並應用</save_apply>

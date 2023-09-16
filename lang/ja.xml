@@ -13,7 +13,6 @@
 			<last_apps_used>最近プレイしたソフト</last_apps_used>
 		</emulation>
 		<configuration name="設定">
-			<settings>設定</settings>
 			<user_management>ユーザー管理</user_management>
 		</configuration>
 		<controls name="入力">
@@ -379,7 +378,7 @@ GUIでのアジア地域のフォントサポートに必須です。
 			<delete_firmware>インストールしたファームウェアファイルを削除しますか？</delete_firmware>
 		</firmware_install>
 		<pkg_install>
-			<select_key_type>key typeを選択</select_key_type>
+			<select_license_type>ライセンスを選択</select_license_type>
 			<select_bin_rif>work.bin/rifを選択</select_bin_rif>
 			<enter_zrif>zRIFを入力</enter_zrif>
 			<enter_zrif_key>zRIF keyを入力</enter_zrif_key>
@@ -400,7 +399,6 @@ GUIでのアジア地域のフォントサポートに必須です。
 			<delete_archive>アーカイブを削除しますか？</delete_archive>
 		</archive_install>
 		<license_install>
-			<select_license_type>ライセンスを選択</select_license_type>
 			<successed_install_license>ライセンスのインストールに成功しました。</successed_install_license>
 		</license_install>
 		<reinstall>
@@ -497,7 +495,7 @@ GUIでのアジア地域のフォントサポートに必須です。
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="設定">
 		<close>閉じる</close>
 		<save>セーブ</save>
 	</settings_dialog>

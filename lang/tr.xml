@@ -13,7 +13,6 @@
 			<last_apps_used>Son Kullanma</last_apps_used>
 		</emulation>
 		<configuration name="Yapılandırma">
-			<settings>Ayarlar</settings>
 			<user_management>Kullanıcı Yönetimi</user_management>
 		</configuration>
 		<controls name="Kontroller">
@@ -189,7 +188,7 @@ Hata Kodu: {}</an_error_occurred>
 		<clear_all>Tümünü Temizle</clear_all>
 	</content_manager>
 
-	<controllers name="Kontroller">
+	<controllers name="Kontrol Cihazı">
 		<name>Ad</name>
 		<num>Num</num>
 	</controllers>
@@ -318,7 +317,8 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="Ayarlar">
+		<close>Kapat</close>
 		<save>Kaydet</save>
 	</settings_dialog>
 

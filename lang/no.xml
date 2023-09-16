@@ -13,7 +13,6 @@
 			<last_apps_used>Last Apps used</last_apps_used>
 		</emulation>
 		<configuration name="Configuration">
-			<settings>Innstillinger</settings>
 			<user_management>Brukeradminstrasjon</user_management>
 		</configuration>
 		<controls name="Controls">
@@ -183,7 +182,7 @@ Feilkode: {}</an_error_occurred>
 		<clear_all>Slett alle</clear_all>
 	</content_manager>
 
-	<controllers name="Controllers">
+	<controllers name="Kontroller">
 		<name>Navn</name>
 		<num>Num</num>
 	</controllers>
@@ -311,7 +310,7 @@ Vita3K-systemet ditt er klart!</completed_setup>
 		</language>
 	</settings>
 
-	<settings_dialog>
+	<settings_dialog name="Innstillinger">
 		<save>Lagre</save>
 	</settings_dialog>
 
