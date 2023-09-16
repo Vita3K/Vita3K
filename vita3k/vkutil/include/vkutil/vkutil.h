@@ -24,7 +24,17 @@
 #include <vulkan/vulkan.hpp>
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnullability-completeness"
+#endif
+
 #include <vk_mem_alloc.hpp>
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #include <string>
 
@@ -88,20 +98,20 @@ static constexpr vma::AllocationCreateInfo vma_host_visible = {
 };
 
 template <typename T>
-static std::enable_if_t<vk::isVulkanHandleType<T>::value, uint64_t> &to_u64(T &vk_object) {
+[[maybe_unused]] static std::enable_if_t<vk::isVulkanHandleType<T>::value, uint64_t> &to_u64(T &vk_object) {
     return reinterpret_cast<uint64_t &>(vk_object);
 }
 
-static uint64_t &to_u64(vma::Allocation &vk_object) {
+[[maybe_unused]] static uint64_t &to_u64(vma::Allocation &vk_object) {
     return reinterpret_cast<uint64_t &>(vk_object);
 }
 
 template <typename T>
-static std::enable_if_t<vk::isVulkanHandleType<T>::value, T> &from_u64(uint64_t &vk_object) {
+[[maybe_unused]] static std::enable_if_t<vk::isVulkanHandleType<T>::value, T> &from_u64(uint64_t &vk_object) {
     return reinterpret_cast<T &>(vk_object);
 }
 
-static vma::Allocation &from_u64(uint64_t &vk_object) {
+[[maybe_unused]] static vma::Allocation &from_u64(uint64_t &vk_object) {
     return reinterpret_cast<vma::Allocation &>(vk_object);
 }
 
