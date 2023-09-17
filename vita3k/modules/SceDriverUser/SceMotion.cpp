@@ -93,7 +93,7 @@ EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numR
         sensorState->dataInfo = 0;
     } else {
         // some default values
-        memset(sensorState, 0, sizeof(sensorState));
+        memset(sensorState, 0, sizeof(*sensorState));
         sensorState->accelerometer.z = -1.0;
 
         std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
