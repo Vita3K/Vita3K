@@ -1379,7 +1379,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
         return;
     }
 
-    std::vector<spv::Id> ops;
+    std::vector<spv::IdImmediate> ops;
 
     // The provided source are stored in continous order, however the dest mask may not be the same
     const int total_elem_to_copy_first_vec = std::min<int>(4 - (insert_offset % 4), total_comp_source);
@@ -1387,18 +1387,18 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
 
     elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset) >> 2) });
 
-    ops.push_back(b.createLoad(elem, spv::NoPrecision));
-    ops.push_back(source);
+    ops.emplace_back(true, b.createLoad(elem, spv::NoPrecision));
+    ops.emplace_back(true, source);
 
     for (auto i = 0; i < insert_offset % 4; i++) {
-        ops.push_back(i);
+        ops.emplace_back(false, i);
     }
 
     for (auto i = insert_offset % 4; i < 4; i++) {
         if ((dest_comp_stored_so_far < total_comp_source) && (dest_mask & (1 << (i - (insert_offset % 4))))) {
-            ops.push_back(4 + (dest_comp_stored_so_far++));
+            ops.emplace_back(false, 4 + (dest_comp_stored_so_far++));
         } else {
-            ops.push_back(i);
+            ops.emplace_back(false, i);
         }
     }
 
@@ -1413,20 +1413,20 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset + 3) >> 2) });
 
         // Do an access chain
-        ops.push_back(b.createLoad(elem, spv::NoPrecision));
-        ops.push_back(source);
+        ops.emplace_back(true, b.createLoad(elem, spv::NoPrecision));
+        ops.emplace_back(true, source);
 
         // Start taking value that specified in the mask
         for (auto i = 0; i < total_elem_left; i++) {
             if ((dest_comp_stored_so_far < total_comp_source) && (dest_mask & (1 << (total_elem_to_copy_first_vec + i)))) {
-                ops.push_back(4 + (dest_comp_stored_so_far++));
+                ops.emplace_back(false, 4 + (dest_comp_stored_so_far++));
             } else {
-                ops.push_back(i);
+                ops.emplace_back(false, i);
             }
         }
 
         for (auto i = total_elem_left; i < 4; i++) {
-            ops.push_back(i);
+            ops.emplace_back(false, i);
         }
 
         spv::Id shuffled = b.createOp(spv::OpVectorShuffle, bank_base_elem_type, ops);
