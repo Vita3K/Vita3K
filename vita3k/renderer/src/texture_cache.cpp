@@ -117,8 +117,10 @@ bool TextureCache::init(const bool hashless_texture_cache) {
 
     // initialize the doubly linked list
     for (int i = 0; i < TextureCacheSize; i++) {
-        infoes[i].prev = &infoes[i - 1];
-        infoes[i].next = &infoes[i + 1];
+        if (i > 0)
+            infoes[i].prev = &infoes[i - 1];
+        if (i < TextureCacheSize - 1)
+            infoes[i].next = &infoes[i + 1];
     }
     // fix the first and last elements
     infoes[0].prev = &infoes[TextureCacheSize - 1];
