@@ -261,6 +261,12 @@ Error code: {}</an_error_occurred>
 Please connect a controller that is compatible with SDL2.</not_connected>
 		<motion_support>Gamepad has motion support</motion_support>
 		<rebind_controls>Rebind Controls</rebind_controls>
+		<led_color>LED Color</led_color>
+		<use_custom_color>Use Custom Color</use_custom_color>
+		<use_custom_color_note>Check this box to use custom color for the controller's LED.</use_custom_color_note>
+		<red>Red</red>
+		<green>Green</green>
+		<blue>Blue</blue>
 		<reset_controller_binding>Reset Controller Binding</reset_controller_binding>
 	</controllers>
 

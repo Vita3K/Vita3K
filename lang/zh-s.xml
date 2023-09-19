@@ -260,6 +260,12 @@
 请连接与SDL2兼容的控制器。</not_connected>
 		<motion_support>手柄控制器有体感支持</motion_support>
 		<rebind_controls>重新绑定控制</rebind_controls>
+		<led_color>LED灯色</led_color>
+		<use_custom_color>使用自定义颜色</use_custom_color>
+		<use_custom_color_note>勾选此项可为控制器的LED灯使用自定义颜色。</use_custom_color_note>
+		<red>红</red>
+		<green>绿</green>
+		<blue>蓝</blue>
 		<reset_controller_binding>重置控制器绑定</reset_controller_binding>
 	</controllers>
 
