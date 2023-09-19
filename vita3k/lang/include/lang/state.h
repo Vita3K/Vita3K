@@ -227,6 +227,12 @@ struct LangState {
         { "not_connected", "No compatible controllers connected.\nPlease connect a controller that is compatible with SDL2." },
         { "motion_support", "Gamepad has motion support" },
         { "rebind_controls", "Rebind Controls" },
+        { "led_color", "LED Color" },
+        { "use_custom_color", "Use Custom Color" },
+        { "use_custom_color_note", "Check this box to use custom color for the controller's LED." },
+        { "red", "Red" },
+        { "green", "Green" },
+        { "blue", "Blue" },
         { "reset_controller_binding", "Reset Controller Binding" }
     };
     std::map<std::string, std::string> controls = {

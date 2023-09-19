@@ -298,12 +298,12 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
                         };
                         ImGui::Spacing();
-                        const auto led_color_str = "LED Color";
+                        const auto led_color_str = lang["led_color"].c_str();
                         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(led_color_str).x / 2.f));
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, led_color_str);
+                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", led_color_str);
                         auto &color = emuenv.cfg.controller_led_color;
                         bool has_custom_color = !color.empty();
-                        if (ImGui::Checkbox("Use Custom Color", &has_custom_color)) {
+                        if (ImGui::Checkbox(lang["use_custom_color"].c_str(), &has_custom_color)) {
                             const std::vector<int> default_color = { 0, 0, 65 };
                             if (color.empty())
                                 color = default_color;
@@ -312,7 +312,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                             set_led_color(default_color);
                         }
                         if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Check this box to use custom color for the controller's LED");
+                            ImGui::SetTooltip("%s", lang["use_custom_color_note"].c_str());
                         if (has_custom_color) {
                             ImGui::Spacing();
                             if (ImGui::BeginTable("setColor", 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV)) {
@@ -321,11 +321,11 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                                 ImGui::TableSetupColumn("blue");
                                 ImGui::TableNextRow();
                                 ImGui::TableSetColumnIndex(0);
-                                ImGui::Text("Red");
+                                ImGui::Text("%s", lang["red"].c_str());
                                 ImGui::TableSetColumnIndex(1);
-                                ImGui::Text("Green");
+                                ImGui::Text("%s", lang["green"].c_str());
                                 ImGui::TableSetColumnIndex(2);
-                                ImGui::Text("Blue");
+                                ImGui::Text("%s", lang["blue"].c_str());
                                 ImGui::TableNextRow();
                                 const auto tab_size = (ImGui::GetWindowWidth() / 3.f) - ImGui::GetStyle().WindowPadding.x - ImGui::GetStyle().FramePadding.x;
                                 for (auto l = 0; l < color.size(); l++) {
