@@ -361,6 +361,8 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
         reset_controller_binding(emuenv);
 
     ImGui::End();
+
+    ctrl.drop_inputs = rebinds_is_open; // if the dialog is active, drop inputs from passing to ctrl
 }
 
 } // namespace gui

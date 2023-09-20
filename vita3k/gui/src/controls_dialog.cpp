@@ -20,6 +20,7 @@
 #include <SDL_scancode.h>
 #include <config/functions.h>
 #include <config/state.h>
+#include <ctrl/state.h>
 #include <emuenv/state.h>
 #include <gui/functions.h>
 #include <interface.h>
@@ -104,6 +105,7 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
         std::array<int, total_key_entries> original_state;
         prepare_map_array(emuenv, original_state);
         while (gui.is_capturing_keys) {
+            emuenv.ctrl.drop_inputs = false; // set ctrl.drop_inputs to false, so they don't get discarded while rebinding
             handle_events(emuenv, gui);
             *button = gui.captured_key;
             if (*button < 0 || *button > 231)
@@ -204,6 +206,8 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     ImGui::End();
+
+    emuenv.ctrl.drop_inputs = gui.controls_menu.controls_dialog;
 }
 
 } // namespace gui

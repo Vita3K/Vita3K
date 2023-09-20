@@ -619,7 +619,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             return false;
 
         case SDL_KEYDOWN: {
-            if (ImGui::GetIO().WantTextInput || gui.is_key_locked)
+            if (ImGui::GetIO().WantTextInput || gui.is_key_locked || emuenv.ctrl.drop_inputs)
                 continue;
 
             const auto get_sce_ctrl_btn_from_scancode = [&emuenv](const SDL_Scancode scancode) {
@@ -717,7 +717,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             if (!emuenv.kernel.is_threads_paused() && (event.cbutton.button == SDL_CONTROLLER_BUTTON_TOUCHPAD))
                 toggle_touchscreen();
 
-            if (ImGui::GetIO().WantTextInput)
+            if (ImGui::GetIO().WantTextInput || emuenv.ctrl.drop_inputs)
                 continue;
 
             for (const auto &binding : get_controller_bindings_ext(emuenv)) {
