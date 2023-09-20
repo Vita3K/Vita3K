@@ -101,7 +101,8 @@ struct LangState {
             { "install_firmware", "Install Firmware" },
             { "install_pkg", "Install .pkg" },
             { "install_zip", "Install .zip, .vpk" },
-            { "install_license", "Install License" }
+            { "install_license", "Install License" },
+            { "exit", "Exit" }
         };
         std::map<std::string, std::string> emulation = {
             { "title", "Emulation" },
