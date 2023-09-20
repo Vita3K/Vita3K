@@ -7,7 +7,7 @@
 			<install_firmware>Installeer Firmware</install_firmware>
 			<install_pkg>Installeer .pkg</install_pkg>
 			<install_zip>Installeer .zip, .vpk</install_zip>
-			<install_license>Installeer een licentie</install_license
+			<install_license>Installeer een licentie</install_license>
 			<exit>Afsluiten</exit>
 		</file>
 		<emulation name="Emuleren">
