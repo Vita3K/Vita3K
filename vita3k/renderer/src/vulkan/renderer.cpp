@@ -470,14 +470,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         if (support_shader_interlock) {
             auto props = physical_device.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
             support_shader_interlock = static_cast<bool>(props.get<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>().fragmentShaderSampleInterlock);
-        }
-
-        if (support_shader_interlock) {
-            features.support_shader_interlock = true;
-            LOG_INFO("Using shader interlock for accurate framebuffer fetch emulation");
-        } else {
-            // We use subpass input to get something similar to direct fragcolor access (there is no difference for the shader)
-            features.direct_fragcolor = true;
+            features.support_shader_interlock = support_shader_interlock;
         }
 
         vk::StructureChain<vk::DeviceCreateInfo,
@@ -613,10 +606,24 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     surface_cache.can_mprotect_mapped_memory = std::string_view(physical_device_properties.deviceName).find("NVIDIA") != std::string_view::npos;
 #endif
 
+    return true;
+}
+
+void VKState::late_init(const Config &cfg) {
+    // shader interlock is more accurate but slower
+    if (features.support_shader_interlock && cfg.current_config.high_accuracy) {
+        LOG_INFO("Using shader interlock for accurate framebuffer fetch emulation");
+    } else {
+        // We use subpass input to get something similar to direct fragcolor access (there is no difference for the shader)
+        features.direct_fragcolor = true;
+        features.support_shader_interlock = false;
+    }
+
+    // texture viewport is faster but not entirely accurate
+    features.use_texture_viewport = !cfg.high_accuracy;
+
     pipeline_cache.init();
     texture_cache.init(false);
-
-    return true;
 }
 
 void VKState::cleanup() {
@@ -708,8 +715,21 @@ void VKState::swap_window(SDL_Window *window) {
     }
 }
 
-uint32_t VKState::get_device_id() {
-    return physical_device_properties.deviceID;
+uint32_t VKState::get_features_mask() {
+    union {
+        struct {
+            bool use_shader_interlock : 1;
+            bool use_texture_viewport : 1;
+        };
+        uint32_t value;
+    } features_mask;
+    static_assert(sizeof(features_mask) == sizeof(uint32_t));
+
+    features_mask.value = 0;
+    features_mask.use_shader_interlock = features.support_shader_interlock;
+    features_mask.use_texture_viewport = features.use_texture_viewport;
+
+    return features_mask.value;
 }
 
 int VKState::get_supported_filters() {

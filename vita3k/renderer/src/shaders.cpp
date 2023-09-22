@@ -48,13 +48,16 @@ bool get_shaders_cache_hashs(State &renderer) {
     // Check version of cache and device id
     uint32_t versionInFile;
     shaders_hashs.read((char *)&versionInFile, sizeof(uint32_t));
-    uint32_t deviceId;
-    shaders_hashs.read((char *)&deviceId, sizeof(uint32_t));
-    if (versionInFile != shader::CURRENT_VERSION || deviceId != renderer.get_device_id()) {
+    uint32_t features_mask;
+    shaders_hashs.read((char *)&features_mask, sizeof(uint32_t));
+    if (versionInFile != shader::CURRENT_VERSION || features_mask != renderer.get_features_mask()) {
         shaders_hashs.close();
         fs::remove_all(shaders_path);
         fs::remove_all(fs::path(renderer.base_path) / "shaderlog" / renderer.title_id / renderer.self_name);
-        LOG_WARN("Current version of cache: {}, is outdated, recreate it.", versionInFile);
+        if (versionInFile != shader::CURRENT_VERSION)
+            LOG_WARN("Current version of cache: {}, is outdated, recreate it.", versionInFile);
+        else
+            LOG_WARN("Incompatible GPU features enabled, recreating shader cache");
         return false;
     }
 
@@ -100,8 +103,8 @@ void save_shaders_cache_hashs(State &renderer, std::vector<ShadersHash> &shaders
         // Write version of cache
         const uint32_t versionInFile = shader::CURRENT_VERSION;
         shaders_hashs.write((char *)&versionInFile, sizeof(uint32_t));
-        const uint32_t deviceId = renderer.get_device_id();
-        shaders_hashs.write((char *)&deviceId, sizeof(uint32_t));
+        const uint32_t features_mask = renderer.get_features_mask();
+        shaders_hashs.write((char *)&features_mask, sizeof(uint32_t));
 
         // Write shader hash list
         for (const auto &hash : shaders_cache_hashs) {

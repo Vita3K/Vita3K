@@ -174,6 +174,7 @@ public:
         std::vector<std::string> lle_modules = {};
         bool pstv_mode = false;
         bool ngs_enable = true;
+        bool high_accuracy = false;
         int resolution_multiplier = 1;
         bool disable_surface_sync = false;
         std::string screen_filter = "Bilinear";

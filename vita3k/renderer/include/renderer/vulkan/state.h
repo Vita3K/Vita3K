@@ -85,11 +85,12 @@ struct VKState : public renderer::State {
 
     bool init(const char *base_path, const bool hashless_texture_cache) override;
     bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path, const Config &config);
+    void late_init(const Config &cfg) override;
     void cleanup();
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem) override;
     void swap_window(SDL_Window *window) override;
-    uint32_t get_device_id() override;
+    uint32_t get_features_mask() override;
     int get_supported_filters() override;
     void set_screen_filter(const std::string_view &filter) override;
     int get_max_anisotropic_filtering() override;

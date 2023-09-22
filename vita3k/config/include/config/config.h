@@ -68,6 +68,7 @@ enum PerfomanceOverleyPosition {
     code(bool, "archive-log", false, archive_log)                                                       \
     code(std::string, "backend-renderer", "OpenGL", backend_renderer)                                   \
     code(int, "gpu-idx", 0, gpu_idx)                                                                    \
+    code(bool, "high-accuracy", false, high_accuracy)                                                   \
     code(int, "resolution-multiplier", 1, resolution_multiplier)                                        \
     code(bool, "disable-surface-sync", true, disable_surface_sync)                                      \
     code(std::string, "screen-filter", "Bilinear", screen_filter)                                       \
