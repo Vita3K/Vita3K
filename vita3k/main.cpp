@@ -343,6 +343,11 @@ int main(int argc, char *argv[]) {
     gui::init_app_background(gui, emuenv, emuenv.io.app_path);
     gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
 
+    if (!app::late_init(emuenv)) {
+        app::error_dialog("Failed to initialize Vita3K", emuenv.window.get());
+        return 1;
+    }
+
     const auto draw_app_background = [](GuiState &gui, EmuEnvState &emuenv) {
         const auto pos_min = ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
         const auto pos_max = ImVec2(pos_min.x + emuenv.viewport_size.x, pos_min.y + emuenv.viewport_size.y);

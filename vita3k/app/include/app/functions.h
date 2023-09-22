@@ -39,6 +39,7 @@ enum class AppRunType {
 };
 
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths);
+bool late_init(EmuEnvState &state);
 void destroy(EmuEnvState &emuenv, ImGui_State *imgui);
 void update_viewport(EmuEnvState &state);
 void switch_state(EmuEnvState &emuenv, const bool pause);

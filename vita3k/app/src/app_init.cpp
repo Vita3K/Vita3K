@@ -102,14 +102,6 @@ void update_viewport(EmuEnvState &state) {
 }
 
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
-    const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
-        const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
-        const std::lock_guard<std::mutex> lock(thread->mutex);
-        if (thread->status == ThreadStatus::wait) {
-            thread->update_status(ThreadStatus::run);
-        }
-    };
-
     state.cfg = std::move(cfg);
 
     state.base_path = root_paths.get_base_path_string();
@@ -207,25 +199,8 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         }
     }
 
-    if (!init(state.mem, state.renderer->need_page_table)) {
-        LOG_ERROR("Failed to initialize memory for emulator state!");
-        return false;
-    }
-
-    if (state.mem.use_page_table && state.kernel.cpu_backend == CPUBackend::Unicorn)
-        LOG_CRITICAL("Unicorn backend is not supported with a page table");
-
-    if (!state.audio.init(resume_thread, state.cfg.audio_backend)) {
-        LOG_WARN("Failed to initialize audio! Audio will not work.");
-    }
-
     if (!init(state.io, state.base_path, state.pref_path, state.cfg.console)) {
         LOG_ERROR("Failed to initialize file system for the emulator!");
-        return false;
-    }
-
-    if (!ngs::init(state.ngs, state.mem)) {
-        LOG_ERROR("Failed to initialize ngs.");
         return false;
     }
 
@@ -234,6 +209,36 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         discordrpc::update_presence();
     }
 #endif
+
+    return true;
+}
+
+bool late_init(EmuEnvState &state) {
+    state.renderer->late_init(state.cfg);
+
+    if (!init(state.mem, state.renderer->need_page_table)) {
+        LOG_ERROR("Failed to initialize memory for emulator state!");
+        return false;
+    }
+
+    if (state.mem.use_page_table && state.kernel.cpu_backend == CPUBackend::Unicorn)
+        LOG_CRITICAL("Unicorn backend is not supported with a page table");
+
+    const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
+        const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
+        const std::lock_guard<std::mutex> lock(thread->mutex);
+        if (thread->status == ThreadStatus::wait) {
+            thread->update_status(ThreadStatus::run);
+        }
+    };
+    if (!state.audio.init(resume_thread, state.cfg.audio_backend)) {
+        LOG_WARN("Failed to initialize audio! Audio will not work.");
+    }
+
+    if (!ngs::init(state.ngs, state.mem)) {
+        LOG_ERROR("Failed to initialize ngs.");
+        return false;
+    }
 
     return true;
 }

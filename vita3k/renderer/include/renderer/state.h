@@ -29,6 +29,7 @@ struct SDL_Cursor;
 struct SDL_Window;
 struct DisplayState;
 struct GxmState;
+struct Config;
 
 namespace renderer {
 
@@ -74,11 +75,13 @@ struct State {
     bool need_page_table = false;
 
     virtual bool init(const char *base_path, const bool hashless_texture_cache) = 0;
+    virtual void late_init(const Config &cfg){};
     virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem)
         = 0;
     virtual void swap_window(SDL_Window *window) = 0;
-    virtual uint32_t get_device_id() {
+    // return a mask of the features which can influence the compiled shaders
+    virtual uint32_t get_features_mask() {
         return 0;
     }
     // return a bitmask with the Filter enum values of the supported enum filters
