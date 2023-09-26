@@ -370,7 +370,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         bool temp_bool;
         bool support_global_priority = false;
         bool support_buffer_device_address = false;
-        bool support_standard_layout = false;
         bool support_external_memory = false;
         bool support_shader_interlock = false;
         const std::map<std::string_view, bool *> optional_extensions = {
@@ -494,10 +493,11 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         device_info.get().setQueueCreateInfos(queue_infos);
         device_info.get().setPEnabledExtensionNames(device_extensions);
 
-        if (!features.support_memory_mapping) {
+        if (!features.support_memory_mapping)
             device_info.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
+
+        if (!support_standard_layout)
             device_info.unlink<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
-        }
 
         if (!support_fsr)
             device_info.unlink<vk::PhysicalDeviceShaderFloat16Int8Features>();
@@ -610,8 +610,15 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 }
 
 void VKState::late_init(const Config &cfg) {
+    bool use_high_accuracy = cfg.current_config.high_accuracy;
+
+    if (!support_standard_layout) {
+        LOG_INFO("Standard layout extension is not supported, using high renderer accuracy");
+        use_high_accuracy = true;
+    }
+
     // shader interlock is more accurate but slower
-    if (features.support_shader_interlock && cfg.current_config.high_accuracy) {
+    if (features.support_shader_interlock && use_high_accuracy) {
         LOG_INFO("Using shader interlock for accurate framebuffer fetch emulation");
     } else {
         // We use subpass input to get something similar to direct fragcolor access (there is no difference for the shader)
@@ -620,7 +627,9 @@ void VKState::late_init(const Config &cfg) {
     }
 
     // texture viewport is faster but not entirely accurate
-    features.use_texture_viewport = !cfg.high_accuracy;
+    features.use_texture_viewport = !use_high_accuracy;
+    if (features.use_texture_viewport)
+        LOG_INFO("The vulkan renderer is using texture viewport for better performance");
 
     pipeline_cache.init();
     texture_cache.init(false);
@@ -720,6 +729,7 @@ uint32_t VKState::get_features_mask() {
         struct {
             bool use_shader_interlock : 1;
             bool use_texture_viewport : 1;
+            bool use_memory_mapping : 1;
         };
         uint32_t value;
     } features_mask;
@@ -728,6 +738,7 @@ uint32_t VKState::get_features_mask() {
     features_mask.value = 0;
     features_mask.use_shader_interlock = features.support_shader_interlock;
     features_mask.use_texture_viewport = features.use_texture_viewport;
+    features_mask.use_memory_mapping = features.support_memory_mapping;
 
     return features_mask.value;
 }
