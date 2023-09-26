@@ -80,6 +80,8 @@ struct VKState : public renderer::State {
     vkutil::Buffer default_buffer;
 
     bool support_fsr = false;
+    // support for the VK_KHR_uniform_buffer_standard_layout extension, needed for memory mapping and texture viewport
+    bool support_standard_layout = false;
 
     VKState(int gpu_idx);
 

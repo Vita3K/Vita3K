@@ -963,12 +963,15 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv::Id render_buf_type;
     int curr_field_id = 0;
 
+    const uint16_t uniform_buffer_count = features.support_memory_mapping ? buffer_count : 0;
+    const uint16_t uniform_texture_count = features.use_texture_viewport ? texture_count : 0;
+
     if (program_type == SceGxmProgramType::Vertex) {
         // Create the default reg uniform buffer
         std::vector<spv::Id> uniform_composition = { v4, f32, f32, f32, f32, f32 };
-        if (features.support_memory_mapping && buffer_count > 0)
+        if (uniform_buffer_count > 0)
             uniform_composition.push_back(buffer_addresses_type);
-        if (features.use_texture_viewport && texture_count > 0) {
+        if (uniform_texture_count > 0) {
             uniform_composition.push_back(viewport_fields_type);
             uniform_composition.push_back(viewport_fields_type);
         }
@@ -991,15 +994,15 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         ADD_VERT_UNIFORM_MEMBER(z_scale);
 
 #undef ADD_VERT_UNIFORM_MEMBER
-#define ADD_EXT_UNIFORM_MEMBER(name)                                                                                                                                \
-    spv_params.name##_id = curr_field_id;                                                                                                                           \
-    b.addMemberDecoration(render_buf_type, curr_field_id, spv::DecorationOffset, RenderVertUniformBlockExtended::get_##name##_offset(buffer_count, texture_count)); \
+#define ADD_EXT_UNIFORM_MEMBER(name)                                                                                                                                                \
+    spv_params.name##_id = curr_field_id;                                                                                                                                           \
+    b.addMemberDecoration(render_buf_type, curr_field_id, spv::DecorationOffset, RenderVertUniformBlockExtended::get_##name##_offset(uniform_buffer_count, uniform_texture_count)); \
     b.addMemberName(render_buf_type, curr_field_id++, #name)
 
-        if (features.support_memory_mapping && buffer_count > 0) {
+        if (uniform_buffer_count > 0) {
             ADD_EXT_UNIFORM_MEMBER(buffer_addresses);
         }
-        if (features.use_texture_viewport && texture_count > 0) {
+        if (uniform_texture_count > 0) {
             ADD_EXT_UNIFORM_MEMBER(viewport_ratio);
             ADD_EXT_UNIFORM_MEMBER(viewport_offset);
         }
@@ -1015,9 +1018,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     if (program_type == SceGxmProgramType::Fragment) {
         std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, f32 };
-        if (features.support_memory_mapping && buffer_count > 0)
+        if (uniform_buffer_count > 0)
             uniform_composition.push_back(buffer_addresses_type);
-        if (features.use_texture_viewport && texture_count > 0) {
+        if (uniform_texture_count > 0) {
             uniform_composition.push_back(viewport_fields_type);
             uniform_composition.push_back(viewport_fields_type);
         }
@@ -1040,15 +1043,15 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         ADD_FRAG_UNIFORM_MEMBER(res_multiplier);
 
 #undef ADD_FRAG_UNIFORM_MEMBER
-#define ADD_EXT_UNIFORM_MEMBER(name)                                                                                                                                \
-    spv_params.name##_id = curr_field_id;                                                                                                                           \
-    b.addMemberDecoration(render_buf_type, curr_field_id, spv::DecorationOffset, RenderFragUniformBlockExtended::get_##name##_offset(buffer_count, texture_count)); \
+#define ADD_EXT_UNIFORM_MEMBER(name)                                                                                                                                                \
+    spv_params.name##_id = curr_field_id;                                                                                                                                           \
+    b.addMemberDecoration(render_buf_type, curr_field_id, spv::DecorationOffset, RenderFragUniformBlockExtended::get_##name##_offset(uniform_buffer_count, uniform_texture_count)); \
     b.addMemberName(render_buf_type, curr_field_id++, #name)
 
-        if (features.support_memory_mapping && buffer_count > 0) {
+        if (uniform_buffer_count > 0) {
             ADD_EXT_UNIFORM_MEMBER(buffer_addresses);
         }
-        if (features.use_texture_viewport && texture_count > 0) {
+        if (uniform_texture_count > 0) {
             ADD_EXT_UNIFORM_MEMBER(viewport_ratio);
             ADD_EXT_UNIFORM_MEMBER(viewport_offset);
         }
