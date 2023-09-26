@@ -612,11 +612,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 void VKState::late_init(const Config &cfg) {
     bool use_high_accuracy = cfg.current_config.high_accuracy;
 
-    if (!support_standard_layout) {
-        LOG_INFO("Standard layout extension is not supported, using high renderer accuracy");
-        use_high_accuracy = true;
-    }
-
     // shader interlock is more accurate but slower
     if (features.support_shader_interlock && use_high_accuracy) {
         LOG_INFO("Using shader interlock for accurate framebuffer fetch emulation");
@@ -627,9 +622,10 @@ void VKState::late_init(const Config &cfg) {
     }
 
     // texture viewport is faster but not entirely accurate
-    features.use_texture_viewport = !use_high_accuracy;
-    if (features.use_texture_viewport)
-        LOG_INFO("The vulkan renderer is using texture viewport for better performance");
+    if (support_standard_layout && !use_high_accuracy) {
+        LOG_INFO("The Vulkan renderer is using texture viewport for better performance");
+        features.use_texture_viewport = true;
+    }
 
     pipeline_cache.init();
     texture_cache.init(false);
