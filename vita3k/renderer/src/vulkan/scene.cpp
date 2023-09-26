@@ -337,50 +337,9 @@ static void bind_vertex_streams(VKContext &context, MemState &mem) {
     context.render_cmd.bindVertexBuffers(0, max_stream_idx, context.vertex_stream_buffers, context.vertex_stream_offsets);
 }
 
-#ifdef __APPLE__
-// convert indices for triangle fans to indices for a triangle list
-// needed for metal because it does not support a triangle fan implementation
-template <typename T>
-void triangle_fan_to_triangle_list(void *&indices, size_t &count) {
-    // if N is the number of faces, there are N + 2 indices for triangle fans and 3N indices for triangle list
-    if (count < 3)
-        // safety check
-        return;
-
-    const uint32_t nb_triangle = count - 2;
-
-    T *old_indices = reinterpret_cast<T *>(indices);
-    indices = new uint8_t[3 * nb_triangle * sizeof(T)];
-    T *curr_indices = reinterpret_cast<T *>(indices);
-
-    for (uint32_t triangle = 0; triangle < nb_triangle; triangle++) {
-        curr_indices[0] = old_indices[0];
-        curr_indices[1] = old_indices[triangle + 1];
-        curr_indices[2] = old_indices[triangle + 2];
-        curr_indices += 3;
-    }
-
-    count = 3 * nb_triangle;
-}
-#endif
-
 void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config) {
     void *indices_ptr = indices.get(mem);
-#ifdef __APPLE__
-    bool replaced_indices = (type == SCE_GXM_PRIMITIVE_TRIANGLE_FAN);
-    // metal does not support triangle fans
-    if (replaced_indices) {
-        if (format == SCE_GXM_INDEX_FORMAT_U16) {
-            triangle_fan_to_triangle_list<uint16_t>(indices_ptr, count);
-        } else {
-            triangle_fan_to_triangle_list<uint32_t>(indices_ptr, count);
-        }
-        type = SCE_GXM_PRIMITIVE_TRIANGLES;
-    }
-#else
-    constexpr bool replaced_indices = false;
-#endif
 
     context.check_for_macroblock_change();
 
@@ -532,9 +491,6 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     }
 
     context.render_cmd.drawIndexed(count, instance_count, 0, 0, 0);
-
-    if (replaced_indices)
-        delete[] reinterpret_cast<uint8_t *>(indices_ptr);
 
     context.vertex_uniform_storage_allocated = false;
     context.fragment_uniform_storage_allocated = false;
