@@ -1167,8 +1167,11 @@ EXPORT(SceInt32, sceSaveDataDialogGetResult, Ptr<SceSaveDataDialogResult> result
         result.get(emuenv.mem)->mode = save_dialog.mode;
         result.get(emuenv.mem)->result = emuenv.common_dialog.result;
         result.get(emuenv.mem)->buttonId = save_dialog.button_id;
-        result.get(emuenv.mem)->slotId = save_dialog.slot_id[save_dialog.selected_save];
-        if (result.get(emuenv.mem)->slotInfo) {
+
+        if (!save_dialog.slot_id.empty()) {
+            result.get(emuenv.mem)->slotId = save_dialog.slot_id[save_dialog.selected_save];
+        }
+        if (result.get(emuenv.mem)->slotInfo && !save_dialog.slot_info.empty()) {
             result_slotinfo->isExist = save_dialog.slot_info[save_dialog.selected_save].isExist;
             result_slotinfo->slotParam = save_dialog.slot_info[save_dialog.selected_save].slotParam;
         }
