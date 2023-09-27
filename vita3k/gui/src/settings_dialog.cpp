@@ -552,7 +552,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
             static const char *LIST_RENDERER_ACCURACY[] = { "Standard", "High" };
             int is_high_accuracy = static_cast<int>(config.high_accuracy);
-            ImGui::Combo("Renderer accuracy", &is_high_accuracy, LIST_RENDERER_ACCURACY, IM_ARRAYSIZE(LIST_RENDERER_ACCURACY));
+            ImGui::Combo("Renderer Accuracy", &is_high_accuracy, LIST_RENDERER_ACCURACY, IM_ARRAYSIZE(LIST_RENDERER_ACCURACY));
             config.high_accuracy = static_cast<bool>(is_high_accuracy);
 
             if (is_ingame)
@@ -593,7 +593,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::Combo("Screen Filter", &curr_filter, filters.data(), filters.size()))
             config.screen_filter = filters[curr_filter];
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Set post-processing filter to Apply");
+            ImGui::SetTooltip("Set post-processing filter to apply.");
 
         ImGui::Spacing();
         ImGui::Separator();
