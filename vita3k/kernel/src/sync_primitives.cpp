@@ -345,6 +345,25 @@ SceUID timer_create(KernelState &kernel, MemState &mem, const char *export_name,
     return uid;
 }
 
+SceUID timer_find(KernelState &kernel, const char *export_name, const char *pName) {
+    if (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+
+    if (LOG_SYNC_PRIMITIVES)
+        LOG_DEBUG("{}: name: \"{}\"", export_name, pName);
+
+    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+
+    const auto it = std::find_if(kernel.timers.begin(), kernel.timers.end(), [=](const auto &timer) {
+        return strncmp(timer.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    });
+
+    if (it != kernel.timers.end())
+        return it->first;
+
+    return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
+}
+
 static void timer_schedule_event(TimerPtr &timer) {
     uint64_t curr_time = get_current_time();
     timer->next_event = curr_time + timer->event_interval;

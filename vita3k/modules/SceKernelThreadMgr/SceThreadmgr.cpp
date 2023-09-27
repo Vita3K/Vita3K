@@ -1268,24 +1268,9 @@ EXPORT(int, sceKernelOpenSimpleEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceUID, sceKernelOpenTimer, const char *name) {
-    TRACY_FUNC(sceKernelOpenTimer, name);
-    STUBBED("References not implemented.");
-
-    SceUID timer_handle = -1;
-    TimerPtr timer_info;
-
-    const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-    for (const auto &timer : emuenv.kernel.timers) {
-        if (timer.second->name == name) {
-            timer_handle = timer.first;
-            timer_info = timer.second;
-            break;
-        }
-    }
-    emuenv.kernel.mutex.unlock();
-
-    return timer_handle;
+EXPORT(SceUID, sceKernelOpenTimer, const char *pName) {
+    TRACY_FUNC(sceKernelOpenTimer, pName);
+    return timer_find(emuenv.kernel, export_name, pName);
 }
 
 EXPORT(int, sceKernelPollSema, SceUID semaid, int32_t needCount) {
