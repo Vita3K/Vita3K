@@ -1,3 +1,5 @@
+add_compile_options(-w)
+
 include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
 
 # Make option() in all external projects do nothing when a normal variable of the
@@ -38,7 +40,7 @@ add_subdirectory(capstone EXCLUDE_FROM_ALL)
 
 add_library(dirent INTERFACE)
 
-if(WIN32)
+if(MSVC)
 	target_include_directories(dirent INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/dirent/include")
 endif()
 
@@ -396,6 +398,9 @@ option(TRACY_NO_FRAME_IMAGE, ON)
 add_library(tracy STATIC tracy/public/TracyClient.cpp)
 target_include_directories(tracy SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tracy/public>)
 target_link_libraries(tracy PUBLIC ${CMAKE_DL_LIBS})
+if(WIN32)
+	target_link_libraries(tracy PRIVATE Dbghelp)
+endif()
 
 if(UNIX)
 	target_link_libraries(tracy PUBLIC pthread)

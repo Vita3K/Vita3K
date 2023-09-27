@@ -46,7 +46,6 @@
 #include <SDL_vulkan.h>
 
 #ifdef WIN32
-#pragma comment(lib, "Dwmapi")
 #include <SDL_syswm.h>
 #include <dwmapi.h>
 #endif
