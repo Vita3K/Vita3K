@@ -96,7 +96,7 @@ std::basic_string<uint8_t> string_to_byte_array(const std::string &string) {
     return hex_bytes;
 }
 
-#ifdef WIN32
+#ifdef _MSC_VER
 std::string utf16_to_utf8(const std::u16string &str) {
     std::wstring_convert<std::codecvt_utf8_utf16<int16_t>, int16_t> myconv;
     auto p = reinterpret_cast<const int16_t *>(str.data());

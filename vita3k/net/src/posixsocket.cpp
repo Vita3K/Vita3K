@@ -19,7 +19,7 @@
 #include <net/socket.h>
 
 // NOTE: This should be SCE_NET_##errname but it causes vitaQuake to softlock in online games
-#ifdef WIN32
+#ifdef _WIN32
 #define ERROR_CASE(errname) \
     case (WSA##errname):    \
         return SCE_NET_ERROR_##errname;
@@ -31,12 +31,12 @@
 
 static int translate_return_value(int retval) {
     if (retval < 0) {
-#ifdef WIN32
+#ifdef _WIN32
         switch (WSAGetLastError()) {
 #else
         switch (errno) {
 #endif
-#ifndef WIN32 // These errorcodes don't exist in WinSock
+#ifndef _WIN32 // These errorcodes don't exist in WinSock
             ERROR_CASE(EPERM)
             ERROR_CASE(ENOENT)
             ERROR_CASE(ESRCH)
@@ -92,7 +92,7 @@ static int translate_return_value(int retval) {
             ERROR_CASE(EPROTOTYPE)
             ERROR_CASE(ENOPROTOOPT)
             ERROR_CASE(EPROTONOSUPPORT)
-#if defined(__APPLE__) || defined(WIN32)
+#if defined(__APPLE__) || defined(_WIN32)
             ERROR_CASE(EOPNOTSUPP)
 #endif
             ERROR_CASE(EAFNOSUPPORT)
@@ -173,7 +173,7 @@ int PosixSocket::get_socket_address(SceNetSockaddr *name, unsigned int *namelen)
 }
 
 int PosixSocket::close() {
-#ifdef WIN32
+#ifdef _WIN32
     auto out = closesocket(sock);
 #else
     auto out = ::close(sock);
@@ -184,7 +184,7 @@ int PosixSocket::close() {
 SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen) {
     sockaddr addr2;
     abs_socket new_socket = ::accept(sock, &addr2, (socklen_t *)addrlen);
-#ifdef WIN32
+#ifdef _WIN32
     if (new_socket != INVALID_SOCKET) {
 #else
     if (new_socket >= 0) {
@@ -246,7 +246,7 @@ int PosixSocket::set_socket_options(int level, int optname, const void *optval, 
                 return SCE_NET_ERROR_EFAULT;
             }
             memcpy(&sockopt_so_nbio, optval, optlen);
-#ifdef WIN32
+#ifdef _WIN32
             static_assert(sizeof(u_long) == sizeof(sockopt_so_nbio), "type used for ioctlsocket value does not have the expected size");
             return translate_return_value(ioctlsocket(sock, FIONBIO, (u_long *)&sockopt_so_nbio));
 #else

@@ -35,7 +35,7 @@
 #define XXH_INLINE_ALL
 #include <xxhash.h>
 #endif
-#ifdef WIN32
+#ifdef _WIN32
 #include <execution>
 #endif
 

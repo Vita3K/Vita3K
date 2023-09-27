@@ -405,11 +405,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                                 "%23 Vita3K summary%0A- Version: {}%0A- Build number: {}%0A- Commit hash: https://github.com/vita3k/vita3k/commit/{}%0A- CPU backend: {}%0A- GPU backend: {}",
                                 app_version, app_number, app_hash, get_cpu_backend(gui, emuenv, app_path), emuenv.cfg.backend_renderer);
 
-#ifdef WIN32
+#ifdef _WIN32
                             const auto user = std::getenv("USERNAME");
 #else
                             auto user = std::getenv("USER");
-#endif // WIN32
+#endif // _WIN32
 
                             // Test environment summary
                             const auto test_env_summary = fmt::format(

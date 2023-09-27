@@ -19,11 +19,11 @@
 
 #include <memory>
 
-#if WIN32
+#ifdef _MSC_VER
 #include <intrin.h>
 #endif
 
-#if WIN32
+#ifdef _MSC_VER
 
 inline bool atomic_compare_and_swap(volatile uint8_t *pointer, uint8_t value, uint8_t expected) {
     const uint8_t result = _InterlockedCompareExchange8(reinterpret_cast<volatile char *>(pointer), value, expected);

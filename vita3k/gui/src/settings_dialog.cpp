@@ -891,7 +891,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.emulator["select_position"].c_str());
         }
         ImGui::Spacing();
-#ifndef WIN32
+#ifndef _WIN32
         ImGui::Checkbox(lang.emulator["case_insensitive"].c_str(), &emuenv.io.case_isens_find_enabled);
         SetTooltipEx(lang.emulator["case_insensitive_description"].c_str());
 #endif
