@@ -39,7 +39,7 @@
 namespace gui {
 
 bool get_sys_apps_state(GuiState &gui) {
-    return !gui.vita_area.content_manager && !gui.vita_area.settings && !gui.vita_area.trophy_collection && !gui.vita_area.manual && !gui.vita_area.user_management;
+    return !gui.vita_area.content_manager && !gui.vita_area.settings && !gui.vita_area.trophy_collection && !gui.vita_area.manual;
 }
 
 struct FRAME {
