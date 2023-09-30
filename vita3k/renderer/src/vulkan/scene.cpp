@@ -341,12 +341,14 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config) {
     void *indices_ptr = indices.get(mem);
 
-    context.check_for_macroblock_change();
+    context.check_for_macroblock_change(true);
 
     if (!context.in_renderpass)
         context.start_render_pass();
 
-    if (context.is_first_scene_draw && context.state.features.support_shader_interlock) {
+    // when we do multiple render pass for one scene (shader interlock or slow macroblock),
+    // we need to always load the depth-stencil after the first draw
+    if (context.is_first_scene_draw && (context.state.features.support_shader_interlock || context.ignore_macroblock)) {
         // update the render pass to load and store the depth and stencil
         context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_attachment->format, true, true);
         context.is_first_scene_draw = false;

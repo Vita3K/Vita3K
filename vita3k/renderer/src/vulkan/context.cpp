@@ -170,6 +170,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     context.is_first_scene_draw = true;
     context.last_macroblock_x = ~0;
     context.last_macroblock_y = ~0;
+    context.ignore_macroblock = false;
 }
 
 void VKContext::start_recording() {
@@ -253,7 +254,7 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
         .framebuffer = current_framebuffer
     };
 
-    if (render_target->has_macroblock_sync) {
+    if (render_target->has_macroblock_sync && !ignore_macroblock) {
         // set the render area to the correct macroblock
         curr_renderpass_info.renderArea = {
             .offset = {
@@ -439,15 +440,22 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     }
 }
 
-void VKContext::check_for_macroblock_change() {
+void VKContext::check_for_macroblock_change(bool is_draw) {
     if (!render_target->has_macroblock_sync)
         return;
+
+    if (scissor.extent.width == render_target->width && scissor.extent.height == render_target->height) {
+        // flower does not specify a scissor adapted to the current macroblock
+        // so fallback to the slow path (one scene per draw, can't really do better)
+        // TODO: with the feedback loop extension we can do better
+        ignore_macroblock = true;
+    }
 
     // use the scissor to know in which macroblock we are
     uint16_t curr_macroblock_x = scissor.offset.x / render_target->macroblock_width;
     uint16_t curr_macroblock_y = scissor.offset.y / render_target->macroblock_height;
 
-    if (curr_macroblock_x != last_macroblock_x || curr_macroblock_y != last_macroblock_y) {
+    if ((ignore_macroblock && is_draw) || curr_macroblock_x != last_macroblock_x || curr_macroblock_y != last_macroblock_y) {
         // we changed the current macroblock, restart the renderpass
         last_macroblock_x = curr_macroblock_x;
         last_macroblock_y = curr_macroblock_y;

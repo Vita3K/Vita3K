@@ -61,7 +61,7 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     // in particular, we know that the scissor is the correct one for the upcoming draw
     // and the texture copy needs to be in the correct prerender command for it to render fine
     // so start a new recording right now if the macroblock has changed
-    context.check_for_macroblock_change();
+    context.check_for_macroblock_change(false);
 
     Address data_addr = texture.data_addr << 2;
     bool is_vertex = index >= SCE_GXM_MAX_TEXTURE_UNITS;
