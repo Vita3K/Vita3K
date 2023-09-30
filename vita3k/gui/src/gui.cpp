@@ -791,7 +791,7 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
     if (!gui.trophy_unlock_display_requests.empty())
         draw_trophies_unlocked(gui, emuenv);
 
-    if (emuenv.ime.state && !gui.vita_area.home_screen && !gui.vita_area.live_area_screen && get_sys_apps_state(gui))
+    if (emuenv.ime.state && !gui.vita_area.home_screen && !gui.vita_area.live_area_screen && !gui.vita_area.user_management && get_sys_apps_state(gui))
         draw_ime(emuenv.ime, emuenv);
 
     // System App
@@ -819,7 +819,7 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
 
 void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushFont(gui.vita_font);
-    if ((gui.vita_area.home_screen || !emuenv.io.app_path.empty()) && get_sys_apps_state(gui) && !gui.vita_area.live_area_screen && (!emuenv.cfg.show_info_bar || !gui.vita_area.information_bar))
+    if ((gui.vita_area.home_screen || !emuenv.io.app_path.empty()) && get_sys_apps_state(gui) && !gui.vita_area.live_area_screen && !gui.vita_area.user_management && (!emuenv.cfg.show_info_bar || !gui.vita_area.information_bar))
         draw_main_menu_bar(gui, emuenv);
 
     if (gui.controls_menu.controls_dialog)

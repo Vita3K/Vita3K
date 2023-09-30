@@ -617,7 +617,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     draw_list->AddRectFilled(ImVec2(VIEWPORT_POS.x + INFO_BAR_SIZE.x - (54.f * SCALE.x) - is_notif_pos, VIEWPORT_POS.y + (12.f * SCALE.y)), ImVec2(VIEWPORT_POS.x + INFO_BAR_SIZE.x - (50.f * SCALE.x) - is_notif_pos, VIEWPORT_POS.y + (20 * SCALE.y)), IM_COL32(81.f, 169.f, 32.f, 255.f));
     draw_list->AddRectFilled(ImVec2(VIEWPORT_POS.x + INFO_BAR_SIZE.x - (50.f * SCALE.x) - is_notif_pos, VIEWPORT_POS.y + (5.f * SCALE.y)), ImVec2(VIEWPORT_POS.x + INFO_BAR_SIZE.x - (12.f * SCALE.x) - is_notif_pos, VIEWPORT_POS.y + (27 * SCALE.y)), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f * SCALE.x, ImDrawFlags_RoundCornersAll);
 
-    if (emuenv.display.imgui_render && !gui.vita_area.start_screen && !gui.vita_area.live_area_screen && !gui.help_menu.vita3k_update && get_sys_apps_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
+    if (emuenv.display.imgui_render && !gui.vita_area.start_screen && !gui.vita_area.live_area_screen && !gui.vita_area.user_management && !gui.help_menu.vita3k_update && get_sys_apps_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
         gui.vita_area.information_bar = false;
 
     if (is_notif_pos)

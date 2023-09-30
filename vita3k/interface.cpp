@@ -619,9 +619,6 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             return false;
 
         case SDL_KEYDOWN: {
-            if (ImGui::GetIO().WantTextInput || gui.is_key_locked)
-                continue;
-
             const auto get_sce_ctrl_btn_from_scancode = [&emuenv](const SDL_Scancode scancode) {
                 if (scancode == emuenv.cfg.keyboard_button_up)
                     return SCE_CTRL_UP;
@@ -661,6 +658,10 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 }
                 gui.is_capturing_keys = false;
             }
+
+            if (ImGui::GetIO().WantTextInput || gui.is_key_locked)
+                continue;
+
             if (allow_switch_state) {
                 // toggle gui state
                 if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_gui)
