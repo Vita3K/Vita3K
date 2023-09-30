@@ -225,6 +225,8 @@ struct VKContext : public renderer::Context {
     // used for macroblock sync emulation
     uint16_t last_macroblock_x = ~0;
     uint16_t last_macroblock_y = ~0;
+    // special case where we can't determine the current macroblock
+    bool ignore_macroblock = false;
 
     // used if necessary to restart easily the render pass
     vk::RenderPassBeginInfo curr_renderpass_info;
@@ -253,7 +255,7 @@ struct VKContext : public renderer::Context {
     void stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2, bool submit = true);
 
     // check (when the render target has macroblock set) if we are drawing to another block
-    void check_for_macroblock_change();
+    void check_for_macroblock_change(bool is_draw);
 
 private:
     void wait_thread_function(const MemState &mem);
