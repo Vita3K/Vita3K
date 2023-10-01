@@ -50,8 +50,6 @@ static void close_ssl(SSL *ssl) {
     SSL_free(ssl);
 }
 
-static uint64_t header_size = 0;
-
 struct Https {
     SSL *ssl = nullptr;
     abs_socket sockfd = 0;
@@ -220,17 +218,11 @@ std::string get_web_response(const std::string &url, const std::string &method) 
     close_ssl(https.ssl);
     close_socket(https.sockfd);
 
-    boost::trim(response);
-
     // Check if the response is resource not found
     if (response.find("HTTP/1.1 404 Not Found") != std::string::npos) {
         LOG_ERROR("404 Not Found");
         return {};
     }
-
-    // Set header size if method is HEAD
-    if (method == "HEAD")
-        header_size = downloaded_size;
 
     return response;
 }
@@ -275,8 +267,6 @@ static uint64_t get_file_size(const std::string &header) {
 }
 
 bool download_file(std::string url, const std::string &output_file_path, ProgressCallback progress_callback) {
-    header_size = 0;
-
     // Get the HEAD of response
     auto response = get_web_response(url, "HEAD");
 
@@ -331,6 +321,15 @@ bool download_file(std::string url, const std::string &output_file_path, Progres
     auto https = init(url, "GET", downloaded_file_size);
     if (!https.ssl)
         return false;
+
+    // Calculate the header size based on the HEAD of response
+    auto header_size = response.length();
+    if (downloaded_file_size > 0) {
+        // Calculate the size of the added line of Content-Range with the end of line characters
+        const auto content_range_length = fmt::format("\r\nContent-Range: bytes {}-{}/{}\r\n", downloaded_file_size, file_size, file_size).length();
+        // Add the size of diference between the HEAD of response and the GET of response
+        header_size += 13 + content_range_length - (std::to_string(file_size).length() - std::to_string(downloaded_file_size).length());
+    }
 
     // Create read buffer with using header size
     std::vector<char> read_buffer(header_size);
@@ -413,6 +412,10 @@ bool download_file(std::string url, const std::string &output_file_path, Progres
     // Close SSL and socket connection
     close_ssl(https.ssl);
     close_socket(https.sockfd);
+
+    // Reset progress state to 0
+    if (progress_callback)
+        progress_state = progress_callback(0, 0);
 
     // Check if download file size is same of file size
     if (downloaded_file_size < (file_size * 0.99)) {
