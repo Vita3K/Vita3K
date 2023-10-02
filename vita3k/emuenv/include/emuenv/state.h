@@ -143,6 +143,7 @@ public:
     IVector2 drawable_size = { 0, 0 };
     FVector2 viewport_pos = { 0, 0 };
     FVector2 viewport_size = { 0, 0 };
+    bool drop_inputs{};
     MemState &mem;
     CtrlState &ctrl;
     TouchState &touch;
