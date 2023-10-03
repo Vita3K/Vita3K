@@ -306,6 +306,7 @@ option(TRACY_ENABLE_ON_CORE_COMPONENTS
 	"Enable and require Tracy to compile core components such as the renderer, shader recompiler and
 		HLE modules"
 	ON)
+option(TRACY_NO_FRAME_IMAGE, ON)
 add_library(tracy STATIC tracy/public/TracyClient.cpp)
 target_include_directories(tracy SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tracy/public>)
 target_link_libraries(tracy PUBLIC ${CMAKE_DL_LIBS})

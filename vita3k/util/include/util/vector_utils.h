@@ -43,4 +43,16 @@ std::vector<T, A> merge_vectors(const std::vector<T, A> &cur, const std::vector<
     return new_vector;
 }
 
+template <typename T, typename A = std::allocator<T>>
+size_t find_index(const std::vector<T, A> &v, const T &value) {
+    auto it = std::find(v.begin(), v.end(), value);
+    if (it != v.end()) {
+        // The value was found, return its index
+        return std::distance(v.begin(), it);
+    } else {
+        // The value was not found, return -1
+        return -1;
+    }
+}
+
 } // namespace vector_utils
