@@ -21,6 +21,9 @@
 #include <config/yaml.h>
 
 #include <util/fs.h>
+#ifdef TRACY_ENABLE
+#include <util/tracy_module_utils.h>
+#endif
 #include <util/vector_utils.h>
 
 #include <optional>
@@ -52,6 +55,10 @@ private:
 
         CONFIG_LIST(UPDATE_MEMBERS)
 #undef UPDATE_MEMBERS
+#ifdef TRACY_ENABLE
+        tracy_module_utils::cleanup(tracy_advanced_profiling_modules);
+        tracy_module_utils::load_from(tracy_advanced_profiling_modules);
+#endif
     }
 
     // Perform comparisons with optional settings
@@ -100,68 +107,6 @@ public:
     bool fullscreen = false;
     bool console = false;
     bool load_app_list = false;
-
-    /**
-     * @brief Available HLE modules for advanced profiling using Tracy
-     *
-     * Advanced profiling using Tracy allows for function calls to be logged with their arguments
-     * Please keep them in order.
-     */
-    const std::set<std::string> tracy_available_advanced_profiling_modules = {
-        "Renderer commands",
-        "SceAppMgr",
-        "SceAppMgrUser",
-        "SceAppUtil",
-        "SceAtrac",
-        "SceAudio",
-        "SceAudiodecUser",
-        "SceAudioIn",
-        "SceCodecEngineUser",
-        "SceCommonDialog",
-        "SceCtrl",
-        "SceDbg",
-        "SceDisplay",
-        "SceDisplayUser",
-        "SceFiber",
-        "SceFios2Kernel",
-        "SceFios2User",
-        "SceGxm",
-        "SceHttp",
-        "SceIme",
-        "SceIofilemgr",
-        "SceJpegEncUser",
-        "SceJpegUser",
-        "SceKernelForMono",
-        "SceKernelForVM",
-        "SceLibc",
-        "SceLibKernel",
-        "SceLibm",
-        "SceLibRng",
-        "SceLibstdcxx",
-        "SceModulemgr",
-        "SceMotion",
-        "SceNet",
-        "SceNetCtl",
-        "SceNetInternal",
-        "SceNgs",
-        "SceNpCommon",
-        "SceNpManager",
-        "SceNpTrophy",
-        "ScePafStdc",
-        "ScePower",
-        "SceProcessmgr",
-        "SceRegMgr",
-        "SceRtc",
-        "SceRtcUser",
-        "SceSblRng",
-        "SceSsl",
-        "SceSysmem",
-        "SceSysmodule",
-        "SceThreadmgr",
-        "SceThreadmgrCoredumpTime",
-        "SceTouch",
-        "SceVideodecUser"
-    };
 
     /**
      * @brief Config struct for per-app configurable settings

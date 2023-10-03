@@ -42,20 +42,4 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path);
  */
 ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths);
 
-#ifdef TRACY_ENABLE
-/**
- * @brief Detect the Tracy advanced profiling activation state for a given HLE module
- *
- * @param active_modules Vector meant to contain the names of every module with Tracy advanced profiling enabled
- * @param module Name of the module to check the activation state for
- * @param index Variable where to store the calculated index where the name of the module is stored in
- * `emuenv.cfg.tracy_advanced_profiling_modules`. Useful to save on `std::find()` calls. It is recommended to initialize
- * the variable with `-1` before passing it to this function.
- * @return true Advanced profiling using Tracy is enabled for the module
- * @return false Advanced profiling using Tracy is not enabled for the module or module isn't available
- * for advanced profiling.
- */
-bool is_tracy_advanced_profiling_active_for_module(std::vector<std::string> &active_modules, const std::string &module, int *index = nullptr);
-#endif // TRACY_ENABLE
-
 } // namespace config

@@ -1119,25 +1119,25 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         // Tracy modules list
         if (ImGui::BeginListBox(tracy_modules_list_label.c_str(), { 0.0f, ImGui::GetTextLineHeightWithSpacing() * 8.25f + ImGui::GetStyle().FramePadding.y * 2.0f })) {
+            // Get all HLE modules available for advanced profiling using Tracy. Do it only once.
+            static std::vector<std::string> tracy_modules = tracy_module_utils::get_available_module_names();
             // For every HLE module available for advanced profiling using Tracy
-            for (auto &module : emuenv.cfg.tracy_available_advanced_profiling_modules) {
-                // Get activation state and position in vector of activated modules
-                bool activation_state = false;
-                int index = -1;
-                activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, module, &index);
-
+            for (auto &module : tracy_modules) {
+                bool activation_state = tracy_module_utils::is_tracy_active(module);
                 // Create selectable item using module name and get activation state
                 if (ImGui::Selectable(module.c_str(), activation_state)) {
                     // Change activation state if module is clicked/selected
                     if (activation_state == true) {
-                        // Deactivate module by deleting the name of the module from the vector
-                        emuenv.cfg.tracy_advanced_profiling_modules.erase(emuenv.cfg.tracy_advanced_profiling_modules.begin() + index);
+                        // Deactivate module
+                        tracy_module_utils::set_tracy_active(module, false);
+                        // Update config data by deleting the name of the module from the vector
+                        std::erase(emuenv.cfg.tracy_advanced_profiling_modules, module);
                     } else {
-                        // Activate module by appending the name of the module to the vector
+                        // Activate module
+                        tracy_module_utils::set_tracy_active(module, true);
+                        // Update config data by appending the name of the module to the vector
                         emuenv.cfg.tracy_advanced_profiling_modules.push_back(module);
                     }
-                    // Sort the list everytime it changes, this is so that we can use binary search on sce functions
-                    std::sort(emuenv.cfg.tracy_advanced_profiling_modules.begin(), emuenv.cfg.tracy_advanced_profiling_modules.end());
                 }
             }
             ImGui::EndListBox();

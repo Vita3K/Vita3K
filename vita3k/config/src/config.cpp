@@ -277,36 +277,4 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     return Success;
 }
 
-#ifdef TRACY_ENABLE
-bool is_tracy_advanced_profiling_active_for_module(std::vector<std::string> &active_modules, const std::string &module, int *index) {
-    // If we dont care about the index that means that its getting executed from an export
-    // And because of that we know its sorted so we can use binary search so it
-    // doesn't hurt performance as a standard std::find, also we just care for the result
-    if (!index)
-        return std::binary_search(active_modules.begin(), active_modules.end(), module);
-
-    bool result = false;
-
-    // Retrieve index for module name in the list of enabled modules
-    auto iterator = std::find(active_modules.begin(), active_modules.end(), module);
-
-    // Check the index the iterator references to (`std::find()` returns `last` if no match was found)
-    if (iterator == active_modules.end()) {
-        // Return false if no match is found in the active modules vector
-        result = false;
-    } else {
-        // Return true if there was at least one match
-        result = true;
-    }
-
-    // If index is being requested and the module name was found
-    if (result) {
-        // Calculate the distance between the first element in the module and
-        *index = std::distance(active_modules.begin(), iterator);
-    }
-
-    return result;
-}
-#endif // TRACY_ENABLE
-
 } // namespace config

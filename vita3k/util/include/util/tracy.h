@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <config/functions.h> // for is_tracy_advanced_profiling_active_for_module
 #include <mem/ptr.h>
 #include <mem/state.h>
 #include <sstream>
@@ -76,6 +75,7 @@ inline std::string to_debug_str(const MemState &mem) {
 }
 
 #ifdef TRACY_ENABLE
+#include "tracy_module_utils.h"
 #include <tracy/Tracy.hpp>
 
 #if (defined(_MSC_VER) && !defined(__clang__) && (!defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL))
@@ -97,53 +97,56 @@ inline std::string to_debug_str(const MemState &mem) {
 #define __TRACY_LOG_ARG_IF(arg) __TRACY_LOG_ARG_IF2(dummy, arg)
 #endif
 
-#define __TRACY_FUNC(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, ...)                                                  \
-    static_assert(std::basic_string_view(__FUNCTION__) == "export_" #name);                                                                             \
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, module_name_var); \
-    ZoneNamedN(___tracy_scoped_zone, #name, _tracy_activation_state);                                                                                   \
-    if (_tracy_activation_state) {                                                                                                                      \
-        __TRACY_LOG_ARG_IF(arg1)                                                                                                                        \
-        __TRACY_LOG_ARG_IF(arg2)                                                                                                                        \
-        __TRACY_LOG_ARG_IF(arg3)                                                                                                                        \
-        __TRACY_LOG_ARG_IF(arg4)                                                                                                                        \
-        __TRACY_LOG_ARG_IF(arg5)                                                                                                                        \
-        __TRACY_LOG_ARG_IF(arg6)                                                                                                                        \
-        __TRACY_LOG_ARG_IF(arg7)                                                                                                                        \
-        __TRACY_LOG_ARG_IF(arg8)                                                                                                                        \
-        __TRACY_LOG_ARG_IF(arg9)                                                                                                                        \
+#define __TRACY_FUNC(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, ...) \
+    static_assert(std::basic_string_view(__FUNCTION__) == "export_" #name);                            \
+    bool _tracy_activation_state = tracy_module_utils::is_tracy_active(module_name_var);               \
+    ZoneNamedN(___tracy_scoped_zone, #name, _tracy_activation_state);                                  \
+    if (_tracy_activation_state) {                                                                     \
+        __TRACY_LOG_ARG_IF(arg1)                                                                       \
+        __TRACY_LOG_ARG_IF(arg2)                                                                       \
+        __TRACY_LOG_ARG_IF(arg3)                                                                       \
+        __TRACY_LOG_ARG_IF(arg4)                                                                       \
+        __TRACY_LOG_ARG_IF(arg5)                                                                       \
+        __TRACY_LOG_ARG_IF(arg6)                                                                       \
+        __TRACY_LOG_ARG_IF(arg7)                                                                       \
+        __TRACY_LOG_ARG_IF(arg8)                                                                       \
+        __TRACY_LOG_ARG_IF(arg9)                                                                       \
     }
 
-#define TRACY_MODULE_NAME(module_name) const std::string tracy_module_name = #module_name;
+#define TRACY_MODULE_NAME_N(var_name, module_name) \
+    const tracy_module_utils::tracy_module_helper var_name(#module_name);
 
-inline const std::string tracy_renderer_command_name = "Renderer commands";
+#define TRACY_MODULE_NAME(module_name) TRACY_MODULE_NAME_N(tracy_module_id, module_name)
+
+inline const tracy_module_utils::tracy_module_helper tracy_renderer_command_id("Renderer commands");
 
 // TODO: Support more stuff for commands, like arguments
-#define __TRACY_FUNC_COMMANDS(name)                                                                                                                             \
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(config.tracy_advanced_profiling_modules, tracy_renderer_command_name); \
+#define __TRACY_FUNC_COMMANDS(name)                                                                \
+    bool _tracy_activation_state = tracy_module_utils::is_tracy_active(tracy_renderer_command_id); \
     ZoneNamedN(___tracy_scoped_zone, #name, _tracy_activation_state);
 
 // TODO: Support more stuff for commands, like arguments
-#define __TRACY_FUNC_COMMANDS_SET_STATE(name)                                                                                                                   \
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(config.tracy_advanced_profiling_modules, tracy_renderer_command_name); \
+#define __TRACY_FUNC_COMMANDS_SET_STATE(name)                                                      \
+    bool _tracy_activation_state = tracy_module_utils::is_tracy_active(tracy_renderer_command_id); \
     ZoneNamedN(___tracy_scoped_zone, #name, _tracy_activation_state);
 
 // workaround for variadic macro in "traditional" MSVC preprocessor.
 // https://docs.microsoft.com/en-us/cpp/preprocessor/preprocessor-experimental-overview?view=msvc-170#macro-arguments-are-unpacked
 #if (defined(_MSC_VER) && !defined(__clang__) && (!defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL))
 #pragma warning(disable : 4003) // This warning is SUPER annoying, shut the warning up c:
-#define TRACY_FUNC(name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) __TRACY_FUNC(tracy_module_name, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
-#define TRACY_FUNC_M(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) __TRACY_FUNC(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+#define TRACY_FUNC(name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) __TRACY_FUNC(tracy_module_id, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+#define TRACY_FUNC_N(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) __TRACY_FUNC(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 #define TRACY_FUNC_COMMANDS(name) __TRACY_FUNC_COMMANDS(name)
 #define TRACY_FUNC_COMMANDS_SET_STATE(name) __TRACY_FUNC_COMMANDS_SET_STATE(name)
 #else
-#define TRACY_FUNC(name, ...) __TRACY_FUNC(tracy_module_name, name, ##__VA_ARGS__, , , , , , , , , )
-#define TRACY_FUNC_M(module_name_var, name, ...) __TRACY_FUNC(module_name_var, name, ##__VA_ARGS__, , , , , , , , , )
+#define TRACY_FUNC(name, ...) __TRACY_FUNC(tracy_module_id, name, ##__VA_ARGS__, , , , , , , , , )
+#define TRACY_FUNC_N(module_name_var, name, ...) __TRACY_FUNC(module_name_var, name, ##__VA_ARGS__, , , , , , , , , )
 #define TRACY_FUNC_COMMANDS(name) __TRACY_FUNC_COMMANDS(name)
 #define TRACY_FUNC_COMMANDS_SET_STATE(name) __TRACY_FUNC_COMMANDS_SET_STATE(name)
 #endif // "traditional" MSVC preprocessor
 #else // if not TRACY_ENABLE
 #define TRACY_FUNC(name, ...)
-#define TRACY_FUNC_M(module_name_var, name, ...)
+#define TRACY_FUNC_N(module_name_var, name, ...)
 #define TRACY_MODULE_NAME(module_name)
 #define TRACY_FUNC_COMMANDS(name)
 #define TRACY_FUNC_COMMANDS_SET_STATE(name)

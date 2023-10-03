@@ -52,8 +52,7 @@ ImportFn bridge(Ret (*export_fn)(EmuEnvState &, SceUID, const char *, Args...), 
 
     return [export_fn, export_name, args_layout](EmuEnvState &emuenv, CPUState &cpu, SceUID thread_id) {
 #ifdef TRACY_ENABLE
-        ZoneNamed(___tracy_scoped_zone, emuenv.cfg.tracy_primitive_impl); // Tracy - Track function scope
-        ZoneColorV(___tracy_scoped_zone, 0xFFF34C); // Tracy - Change color to yellow
+        ZoneNamedC(___tracy_scoped_zone, 0xFFF34C, emuenv.cfg.tracy_primitive_impl); // Tracy - Track function scope and set color to yellow
         ZoneNameV(___tracy_scoped_zone, export_name, strlen(export_name)); // Tracy - Edit scope name based on export_name
 #endif
 
