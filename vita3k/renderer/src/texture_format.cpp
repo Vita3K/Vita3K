@@ -764,12 +764,9 @@ static void decompress_block_alpha_signed(const std::uint8_t *block_storage, std
 static void decompress_block_bc2(const std::uint8_t *block_storage, std::uint32_t *image) {
     decompress_block_bc1(block_storage + 8, image);
 
-    for (int i = 0; i < 16; i += 2) {
-        image[i] = (((block_storage[i] & 0x0F) | ((block_storage[i] & 0x0F) << 4)) << 24) | (image[i] & 0x00FFFFFF);
-    }
-
-    for (int i = 1; i < 16; i += 2) {
-        image[i] = (((block_storage[i] & 0xF0) | ((block_storage[i] & 0xF0) >> 4)) << 24) | (image[i] & 0x00FFFFFF);
+    for (int i = 0; i < 8; i++) {
+        image[2 * i] = (((block_storage[i] & 0x0F) | ((block_storage[i] & 0x0F) << 4)) << 24) | (image[2 * i] & 0x00FFFFFF);
+        image[2 * i + 1] = (((block_storage[i] & 0xF0) | ((block_storage[i] & 0xF0) >> 4)) << 24) | (image[2 * i + 1] & 0x00FFFFFF);
     }
 }
 
@@ -848,7 +845,7 @@ static void decompress_block_bc5s(const std::uint8_t *block_storage, std::uint32
 void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type) {
     std::uint32_t block_count_x = (width + 3) / 4;
     std::uint32_t block_count_y = (height + 3) / 4;
-    std::size_t block_size = (bc_type != 1 && bc_type != 4 && bc_type != 5) ? 16 : 8;
+    std::size_t block_size = (bc_type != 1 && bc_type != 4) ? 16 : 8;
 
     std::uint32_t temp_block_result[16] = {};
 
@@ -916,7 +913,7 @@ void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const 
 void resolve_z_order_compressed_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *src, std::uint8_t *dest, const std::uint8_t bc_type) {
     std::uint32_t block_count_x = (width + 3) / 4;
     std::uint32_t block_count_y = (height + 3) / 4;
-    std::size_t block_size = (bc_type != 1 && bc_type != 4 && bc_type != 5) ? 16 : 8;
+    std::size_t block_size = (bc_type != 1 && bc_type != 4) ? 16 : 8;
 
     size_t min = block_count_x < block_count_y ? block_count_x : block_count_y;
     size_t k = static_cast<size_t>(log2(min));
