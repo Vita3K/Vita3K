@@ -506,6 +506,8 @@ const GLint *translate_swizzle(SceGxmTextureFormat fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
         return translate_swizzle(static_cast<SceGxmTextureSwizzle1Mode>(swizzle));
 
     // 2 components (red-green.)
@@ -516,6 +518,8 @@ const GLint *translate_swizzle(SceGxmTextureFormat fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
         return translate_swizzle(static_cast<SceGxmTextureSwizzle2Mode>(swizzle));
 
     // 2 components (depth-stencil.)
@@ -549,10 +553,6 @@ const GLint *translate_swizzle(SceGxmTextureFormat fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
     case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:

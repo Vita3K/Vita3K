@@ -645,6 +645,8 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
         return translate_swizzle1(static_cast<SceGxmTextureSwizzle1Mode>(swizzle));
 
     // 2 components
@@ -655,6 +657,8 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
         return translate_swizzle2(static_cast<SceGxmTextureSwizzle2Mode>(swizzle));
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
@@ -689,8 +693,6 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
         return translate_swizzle4(static_cast<SceGxmTextureSwizzle4Mode>(swizzle));
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
@@ -809,8 +811,14 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
         return vk::Format::eBc4UnormBlock;
 
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        return vk::Format::eBc4SnormBlock;
+
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
         return vk::Format::eBc5UnormBlock;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+        return vk::Format::eBc5SnormBlock;
 
     default:
         LOG_ERROR("Unknown format {}", log_hex(base_format));
