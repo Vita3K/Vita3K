@@ -351,6 +351,7 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return lhs.app_ver < rhs.app_ver;
             case DESCENDANT:
                 return lhs.app_ver > rhs.app_ver;
+            case NOT_SORTED: break;
             }
             break;
         case CATEGORY:
@@ -359,6 +360,7 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return lhs.category < rhs.category;
             case DESCENDANT:
                 return lhs.category > rhs.category;
+            case NOT_SORTED: break;
             }
             break;
         case COMPAT:
@@ -367,6 +369,7 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return lhs.compat < rhs.compat;
             case DESCENDANT:
                 return lhs.compat > rhs.compat;
+            case NOT_SORTED: break;
             }
             break;
         case LAST_TIME:
@@ -375,6 +378,7 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return lhs.last_time > rhs.last_time;
             case DESCENDANT:
                 return lhs.last_time < rhs.last_time;
+            case NOT_SORTED: break;
             }
             break;
         case TITLE:
@@ -383,6 +387,7 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
             case DESCENDANT:
                 return string_utils::toupper(lhs.title) > string_utils::toupper(rhs.title);
+            case NOT_SORTED: break;
             }
             break;
         case TITLE_ID:
@@ -391,6 +396,7 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return lhs.title_id < rhs.title_id;
             case DESCENDANT:
                 return lhs.title_id > rhs.title_id;
+            case NOT_SORTED: break;
             }
             break;
         }

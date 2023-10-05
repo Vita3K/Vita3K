@@ -43,6 +43,10 @@ std::vector<std::string> split_string(const std::string &str, char delimiter) {
     return seglist;
 }
 
+#ifndef _MSC_VER
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 std::wstring utf_to_wide(const std::string &str) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
     return myconv.from_bytes(str);
@@ -122,6 +126,9 @@ std::u16string utf8_to_utf16(const std::string &str) {
     std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> myconv;
     return myconv.from_bytes(str);
 }
+#endif
+#ifndef _MSC_VER
+#pragma GCC diagnostic pop
 #endif
 
 std::string toupper(const std::string &s) {

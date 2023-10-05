@@ -1253,6 +1253,10 @@ static void swizzle_text_T(T *pixels, uint32_t nb_pixel, ColorSurfaceCacheInfo *
             // ARGB
             swizzle_text_T_4<T, 2>(pixels, nb_pixel);
             break;
+        case vk::ComponentSwizzle::eIdentity:
+        case vk::ComponentSwizzle::eZero:
+        case vk::ComponentSwizzle::eOne:
+        case vk::ComponentSwizzle::eR: break;
         }
     }
 }

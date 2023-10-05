@@ -33,14 +33,14 @@ void init(vma::Allocator vma_allocator) {
 Image::Image() = default;
 
 Image::Image(Image &&other) noexcept {
-    memcpy(this, &other, sizeof(Image));
+    memcpy((void *)this, &other, sizeof(Image));
     other.sampler = nullptr;
     other.view = nullptr;
     other.image = nullptr;
     other.layout = ImageLayout::Undefined;
 }
 Image &Image::operator=(Image &&other) noexcept {
-    memcpy(this, &other, sizeof(Image));
+    memcpy((void *)this, &other, sizeof(Image));
     other.sampler = nullptr;
     other.view = nullptr;
     other.image = nullptr;
@@ -127,14 +127,14 @@ void Image::transition_to_discard(vk::CommandBuffer buffer, ImageLayout new_layo
 Buffer::Buffer() = default;
 
 Buffer::Buffer(Buffer &&other) noexcept {
-    memcpy(this, &other, sizeof(Buffer));
+    memcpy((void *)this, &other, sizeof(Buffer));
     other.allocation = nullptr;
     other.buffer = nullptr;
     other.size = 0;
     other.mapped_data = nullptr;
 }
 Buffer &Buffer::operator=(Buffer &&other) noexcept {
-    memcpy(this, &other, sizeof(Buffer));
+    memcpy((void *)this, &other, sizeof(Buffer));
     other.allocation = nullptr;
     other.buffer = nullptr;
     other.size = 0;
