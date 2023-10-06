@@ -28,7 +28,7 @@
 
 #include <bitset>
 
-using namespace shader::usse;
+namespace shader::usse::utils {
 
 static spv::Id get_correspond_constant_with_channel(spv::Builder &b, shader::usse::SwizzleChannel swizz) {
     switch (swizz) {
@@ -55,7 +55,7 @@ static spv::Id get_correspond_constant_with_channel(spv::Builder &b, shader::uss
     return spv::NoResult;
 }
 
-spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 swizz, const int offset, const Imm4 dest_mask) {
+spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 swizz, const int offset, const Imm4 dest_mask) {
     if (first == spv::NoResult || second == spv::NoResult) {
         return spv::NoResult;
     }
@@ -100,14 +100,14 @@ spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id se
     return b.createCompositeConstruct(b.makeVectorType(target_type, static_cast<int>(ops.size())), ops);
 }
 
-size_t shader::usse::utils::dest_mask_to_comp_count(shader::usse::Imm4 dest_mask) {
+size_t dest_mask_to_comp_count(shader::usse::Imm4 dest_mask) {
     std::bitset<4> bs(dest_mask);
     const auto bit_count = bs.count();
     assert(bit_count <= 4 && bit_count > 0);
     return bit_count;
 }
 
-spv::Id shader::usse::utils::create_access_chain(spv::Builder &b, const spv::StorageClass storage_class, const spv::Id base, const std::vector<spv::Id> &offsets) {
+spv::Id create_access_chain(spv::Builder &b, const spv::StorageClass storage_class, const spv::Id base, const std::vector<spv::Id> &offsets) {
     spv::Builder::AccessChain access_chain{};
     access_chain.base = base;
     access_chain.indexChain = offsets;
@@ -115,21 +115,21 @@ spv::Id shader::usse::utils::create_access_chain(spv::Builder &b, const spv::Sto
     return b.createAccessChain(storage_class, base, offsets);
 }
 
-static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::SpirvShaderParameters &params, shader::usse::RegisterBank reg_bank) {
+static const SpirvVarRegBank *get_reg_bank(const shader::usse::SpirvShaderParameters &params, shader::usse::RegisterBank reg_bank) {
     switch (reg_bank) {
-    case shader::usse::RegisterBank::PRIMATTR:
+    case RegisterBank::PRIMATTR:
         return &params.ins;
-    case shader::usse::RegisterBank::SECATTR:
+    case RegisterBank::SECATTR:
         return &params.uniforms;
-    case shader::usse::RegisterBank::OUTPUT:
+    case RegisterBank::OUTPUT:
         return &params.outs;
-    case shader::usse::RegisterBank::TEMP:
+    case RegisterBank::TEMP:
         return &params.temps;
-    case shader::usse::RegisterBank::FPINTERNAL:
+    case RegisterBank::FPINTERNAL:
         return &params.internals;
-    case shader::usse::RegisterBank::PREDICATE:
+    case RegisterBank::PREDICATE:
         return &params.predicates;
-    case shader::usse::RegisterBank::INDEX:
+    case RegisterBank::INDEX:
         return &params.indexes;
     default:
         // LOG_WARN("Reg bank {} unsupported", static_cast<uint8_t>(reg_bank));
@@ -142,7 +142,7 @@ static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::Spi
 // > Eight-bit IEEE-like float: The largest value would be 01011111 and have value: 4(1 – 2-5) = 31/8 = 3.3875.
 static constexpr float MAX_FX8 = 3.3875f;
 
-static spv::Function *make_fx8_unpack_func(spv::Builder &b, const FeatureState &features) {
+static spv::Function *make_fx8_unpack_func(spv::Builder &b, const SpirvUtilFunctions &utils, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *fx8_unpack_func_block;
@@ -161,7 +161,7 @@ static spv::Function *make_fx8_unpack_func(spv::Builder &b, const FeatureState &
 
     // Cast to uint first
     extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
-    extracted = b.createBuiltinCall(type_f32_v4, b.import("GLSL.std.450"), GLSLstd450UnpackSnorm4x8, { extracted });
+    extracted = b.createBuiltinCall(type_f32_v4, utils.std_builtins, GLSLstd450UnpackSnorm4x8, { extracted });
 
     // Multiply them with max fx8
     extracted = b.createBinOp(spv::OpFMul, type_f32_v4, extracted, b.makeCompositeConstant(type_f32_v4, { max_fx8_c, max_fx8_c, max_fx8_c, max_fx8_c }));
@@ -172,7 +172,7 @@ static spv::Function *make_fx8_unpack_func(spv::Builder &b, const FeatureState &
     return fx8_unpack_func;
 }
 
-static spv::Function *make_fx8_pack_func(spv::Builder &b, const FeatureState &features) {
+static spv::Function *make_fx8_pack_func(spv::Builder &b, const SpirvUtilFunctions &utils, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *fx8_pack_func_block;
@@ -190,7 +190,7 @@ static spv::Function *make_fx8_pack_func(spv::Builder &b, const FeatureState &fe
     spv::Id extracted = fx8_pack_func->getParamId(0);
 
     extracted = b.createBinOp(spv::OpFDiv, type_f32_v4, extracted, b.makeCompositeConstant(type_f32_v4, { max_fx8_c, max_fx8_c, max_fx8_c, max_fx8_c }));
-    extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackSnorm4x8, { extracted });
+    extracted = b.createBuiltinCall(type_ui32, utils.std_builtins, GLSLstd450PackSnorm4x8, { extracted });
     extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
@@ -368,7 +368,7 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     return pack_func;
 }
 
-static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &features) {
+static spv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunctions &utils, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *f16_unpack_func_block;
@@ -385,7 +385,7 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &
     spv::Id extracted = f16_unpack_func->getParamId(0);
 
     extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
-    extracted = b.createBuiltinCall(type_f32_v2, b.import("GLSL.std.450"), GLSLstd450UnpackHalf2x16, { extracted });
+    extracted = b.createBuiltinCall(type_f32_v2, utils.std_builtins, GLSLstd450UnpackHalf2x16, { extracted });
 
     b.makeReturn(false, extracted);
     b.setBuildPoint(last_build_point);
@@ -393,7 +393,7 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &
     return f16_unpack_func;
 }
 
-static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &features) {
+static spv::Function *make_f16_pack_func(spv::Builder &b, const SpirvUtilFunctions &utils, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *f16_pack_func_block;
@@ -410,7 +410,7 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &fe
     spv::Id extracted = f16_pack_func->getParamId(0);
 
     // use packHalf2x16
-    extracted = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450PackHalf2x16, { extracted });
+    extracted = b.createBuiltinCall(type_ui32, utils.std_builtins, GLSLstd450PackHalf2x16, { extracted });
     extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
 
     b.makeReturn(false, extracted);
@@ -531,7 +531,7 @@ static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderP
     return fetch_func;
 }
 
-spv::Id shader::usse::utils::fetch_memory(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, spv::Id addr) {
+spv::Id fetch_memory(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, spv::Id addr) {
     if (!utils.fetch_memory) {
         utils.fetch_memory = make_fetch_memory_func(b, params);
     }
@@ -564,7 +564,7 @@ static spv::Id make_or_get_buffer_ptr(spv::Builder &b, shader::usse::utils::Spir
     return utils.buffer_address_vec[buffer_utils_idx][is_write];
 }
 
-void shader::usse::utils::buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest, int dest_offset, spv::Id addr, uint32_t component_size, uint32_t nb_components, bool is_fragment, int buffer_idx, bool is_buffer_store) {
+void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest, int dest_offset, spv::Id addr, uint32_t component_size, uint32_t nb_components, bool is_fragment, int buffer_idx, bool is_buffer_store) {
     const spv::Id i32 = b.makeIntType(32);
     const spv::Id zero = b.makeIntConstant(0);
 
@@ -670,7 +670,7 @@ void shader::usse::utils::buffer_address_access(spv::Builder &b, const SpirvShad
     }
 }
 
-spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id scalar, const DataType type) {
+spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id scalar, const DataType type) {
     switch (type) {
     case DataType::INT8:
     case DataType::UINT8:
@@ -685,14 +685,14 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
     case DataType::F16: {
         auto iter = utils.unpack_funcs.find(type);
         if (iter == utils.unpack_funcs.end()) {
-            iter = utils.unpack_funcs.emplace(type, make_f16_unpack_func(b, features)).first;
+            iter = utils.unpack_funcs.emplace(type, make_f16_unpack_func(b, utils, features)).first;
         }
         return b.createFunctionCall(iter->second, { scalar });
     }
     // TODO: Not really FX8?
     case DataType::C10: {
         if (!utils.unpack_fx8) {
-            utils.unpack_fx8 = make_fx8_unpack_func(b, features);
+            utils.unpack_fx8 = make_fx8_unpack_func(b, utils, features);
         }
 
         return b.createFunctionCall(utils.unpack_fx8, { scalar });
@@ -706,7 +706,7 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
     return spv::NoResult;
 }
 
-spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id vec, const DataType source_type) {
+spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id vec, const DataType source_type) {
     switch (source_type) {
     case DataType::INT8:
     case DataType::UINT8:
@@ -721,14 +721,14 @@ spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils
     case DataType::F16: {
         auto iter = utils.pack_funcs.find(source_type);
         if (iter == utils.pack_funcs.end()) {
-            iter = utils.pack_funcs.emplace(source_type, make_f16_pack_func(b, features)).first;
+            iter = utils.pack_funcs.emplace(source_type, make_f16_pack_func(b, utils, features)).first;
         }
         return b.createFunctionCall(iter->second, { vec });
     }
     // TODO: Not really FX8?
     case DataType::C10: {
         if (!utils.pack_fx8) {
-            utils.pack_fx8 = make_fx8_pack_func(b, features);
+            utils.pack_fx8 = make_fx8_pack_func(b, utils, features);
         }
 
         return b.createFunctionCall(utils.pack_fx8, { vec });
@@ -743,7 +743,7 @@ spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils
     return spv::NoResult;
 }
 
-static spv::Id apply_modifiers(spv::Builder &b, const shader::usse::RegisterFlags flags, spv::Id val) {
+static spv::Id apply_modifiers(spv::Builder &b, const SpirvUtilFunctions &utils, const shader::usse::RegisterFlags flags, spv::Id val) {
     spv::Id contained_type = b.getTypeId(val);
 
     if (!b.isScalarType(contained_type)) {
@@ -765,7 +765,7 @@ static spv::Id apply_modifiers(spv::Builder &b, const shader::usse::RegisterFlag
             return result;
         }
 
-        result = b.createBuiltinCall(dest_type, b.import("GLSL.std.450"), GLSLstd450FAbs, { result });
+        result = b.createBuiltinCall(dest_type, utils.std_builtins, GLSLstd450FAbs, { result });
     }
 
     // Apply modifier flags
@@ -792,7 +792,7 @@ static spv::Id apply_modifiers(spv::Builder &b, const shader::usse::RegisterFlag
     return result;
 }
 
-spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand op, const Imm4 dest_mask, int shift_offset) {
+spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand op, const Imm4 dest_mask, int shift_offset) {
     spv::Id type_f32 = b.makeFloatType(32);
 
     if (op.bank == RegisterBank::FPCONSTANT) {
@@ -909,10 +909,10 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         }
 
         if (consts.size() == 1) {
-            return apply_modifiers(b, op.flags, consts[0]);
+            return apply_modifiers(b, utils, op.flags, consts[0]);
         } else {
             spv::Id result = b.makeCompositeConstant(b.makeVectorType(type_f32, static_cast<int>(consts.size())), consts);
-            return apply_modifiers(b, op.flags, result);
+            return apply_modifiers(b, utils, op.flags, result);
         }
     }
 
@@ -1009,7 +1009,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
             spv::Id pass = b.makeCompositeConstant(b.makeVectorType(b.getTypeId(constant), static_cast<int>(dest_comp_count)), ops);
 
             pass = finalize(b, pass, pass, op.swizzle, shift_offset, dest_mask);
-            return apply_modifiers(b, op.flags, pass);
+            return apply_modifiers(b, utils, op.flags, pass);
         }
     }
 
@@ -1091,11 +1091,11 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         }
         // Create a constant composite
         if (comps.size() == 1) {
-            return apply_modifiers(b, op.flags, comps[0]);
+            return apply_modifiers(b, utils, op.flags, comps[0]);
         }
 
         else {
-            return apply_modifiers(b, op.flags, b.makeCompositeConstant(b.makeVectorType(type_f32, static_cast<int>(comps.size())), comps));
+            return apply_modifiers(b, utils, op.flags, b.makeCompositeConstant(b.makeVectorType(type_f32, static_cast<int>(comps.size())), comps));
         }
     }
 
@@ -1167,10 +1167,10 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         return first_pass;
     }
 
-    return apply_modifiers(b, op.flags, first_pass);
+    return apply_modifiers(b, utils, op.flags, first_pass);
 }
 
-spv::Id shader::usse::utils::unpack(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
+spv::Id unpack(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
     const int offset) {
     if (type == DataType::F32 || target == spv::NoResult) {
         return target;
@@ -1204,7 +1204,7 @@ spv::Id shader::usse::utils::unpack(spv::Builder &b, SpirvUtilFunctions &utils, 
         swizz, offset, dest_mask);
 }
 
-void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest,
+void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest,
     spv::Id source, std::uint8_t dest_mask, int off) {
     if (source == spv::NoResult) {
         LOG_WARN("Source invalid");
@@ -1433,14 +1433,14 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     }
 }
 
-spv::Id shader::usse::utils::make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size) {
+spv::Id make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size) {
     if (size == 1) {
         return component;
     }
     return b.makeVectorType(component, size);
 }
 
-spv::Id shader::usse::utils::unwrap_type(spv::Builder &b, spv::Id type) {
+spv::Id unwrap_type(spv::Builder &b, spv::Id type) {
     if (b.isVectorType(type)) {
         return b.getContainedTypeId(type);
     }
@@ -1479,7 +1479,7 @@ static spv::Id create_constant_vector_or_scalar(spv::Builder &b, spv::Id constan
     return b.createCompositeConstruct(b.makeVectorType(b.getTypeId(constant), comp_count), oprs);
 }
 
-spv::Id shader::usse::utils::convert_to_float(spv::Builder &b, spv::Id opr, DataType type, bool normal) {
+spv::Id convert_to_float(spv::Builder &b, spv::Id opr, DataType type, bool normal) {
     const auto spv_type = unwrap_type(b, b.getTypeId(opr));
     const auto comp_count = b.isVector(opr) ? b.getNumComponents(opr) : 1;
     const auto target_type = b.isVector(opr) ? b.makeVectorType(b.makeFloatType(32), comp_count) : b.makeFloatType(32);
@@ -1515,7 +1515,7 @@ spv::Id shader::usse::utils::convert_to_float(spv::Builder &b, spv::Id opr, Data
     return opr;
 }
 
-spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataType type, bool normal) {
+spv::Id convert_to_int(spv::Builder &b, const SpirvUtilFunctions &utils, spv::Id opr, DataType type, bool normal) {
     const auto opr_type = b.getTypeId(opr);
     assert(b.isFloatType(unwrap_type(b, b.getTypeId(opr))));
 
@@ -1531,7 +1531,7 @@ spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataTy
         const auto range_begin_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(is_uint ? 0.f : -1.f), comp_count);
         const auto range_end_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(1.f), comp_count);
 
-        opr = b.createBuiltinCall(opr_type, b.import("GLSL.std.450"), GLSLstd450FClamp, { opr, range_begin_vec, range_end_vec });
+        opr = b.createBuiltinCall(opr_type, utils.std_builtins, GLSLstd450FClamp, { opr, range_begin_vec, range_end_vec });
         if (is_uint) {
             opr = b.createBinOp(spv::OpFMul, opr_type, opr, normalizer_vec);
         } else {
@@ -1545,6 +1545,7 @@ spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataTy
                 b.createBinOp(spv::OpFMul, opr_type, opr, normalize_vec_neg),
                 b.createBinOp(spv::OpFMul, opr_type, opr, normalizer_vec));
         }
+        opr = b.createBuiltinCall(opr_type, utils.std_builtins, GLSLstd450Round, { opr });
     }
 
     if (!is_uint) {
@@ -1556,7 +1557,7 @@ spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataTy
     return opr;
 }
 
-spv::Id shader::usse::utils::add_uvec2_uint(spv::Builder &b, spv::Id vec, spv::Id to_add) {
+spv::Id add_uvec2_uint(spv::Builder &b, spv::Id vec, spv::Id to_add) {
     if (b.isConstant(to_add) && b.getConstantScalar(to_add) == 0)
         return vec;
 
@@ -1581,3 +1582,5 @@ spv::Id shader::usse::utils::add_uvec2_uint(spv::Builder &b, spv::Id vec, spv::I
     lower = b.createCompositeExtract(lower_add, u32, 0);
     return b.createCompositeConstruct(uvec2, { lower, upper });
 }
+
+} // namespace shader::usse::utils

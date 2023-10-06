@@ -142,7 +142,7 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     image_sample = m_b.createOp(op, type_f32_v[4], params);
 
     if (is_integer_data_type(dest_type))
-        image_sample = utils::convert_to_int(m_b, image_sample, dest_type, true);
+        image_sample = utils::convert_to_int(m_b, m_util_funcs, image_sample, dest_type, true);
 
     return image_sample;
 }
@@ -319,8 +319,8 @@ bool USSETranslatorVisitor::smp(
         const spv::Id lod_level = m_b.createUnaryOp(spv::OpConvertFToU, type_ui32, lod);
 
         // the result is stored as a vector of uint8, we must convert it
-        uv = utils::convert_to_int(m_b, uv, DataType::UINT8, true);
-        tri_frac = utils::convert_to_int(m_b, tri_frac, DataType::UINT8, true);
+        uv = utils::convert_to_int(m_b, m_util_funcs, uv, DataType::UINT8, true);
+        tri_frac = utils::convert_to_int(m_b, m_util_funcs, tri_frac, DataType::UINT8, true);
 
         const spv::Id u = m_b.createBinOp(spv::OpVectorExtractDynamic, type_ui32, uv, m_b.makeIntConstant(0));
         const spv::Id v = m_b.createBinOp(spv::OpVectorExtractDynamic, type_ui32, uv, m_b.makeIntConstant(1));
