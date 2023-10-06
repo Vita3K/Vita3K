@@ -69,13 +69,22 @@ int32_t VoiceInputManager::receive(ngs::Patch *patch, const VoiceProduct &produc
     float *dest_buffer = reinterpret_cast<float *>(input->data());
     const float *data_to_mix_in = reinterpret_cast<const float *>(product.data);
 
+    float volume_matrix[2][2];
+    memcpy(volume_matrix, patch->volume_matrix, sizeof(volume_matrix));
+
+    if (patch->source->rack->channels_per_voice == 1) {
+        // the volume for the second channel may contain random values
+        volume_matrix[1][0] = 0.0f;
+        volume_matrix[1][1] = 0.0f;
+    }
+
     // Try mixing, also with the use of this volume matrix
     // Dest is our voice to receive this data.
     for (int32_t k = 0; k < patch->dest->rack->system->granularity; k++) {
-        dest_buffer[k * 2] = std::clamp(dest_buffer[k * 2] + data_to_mix_in[k * 2] * patch->volume_matrix[0][0]
-                + data_to_mix_in[k * 2 + 1] * patch->volume_matrix[1][0],
+        dest_buffer[k * 2] = std::clamp(dest_buffer[k * 2] + data_to_mix_in[k * 2] * volume_matrix[0][0]
+                + data_to_mix_in[k * 2 + 1] * volume_matrix[1][0],
             -1.0f, 1.0f);
-        dest_buffer[k * 2 + 1] = std::clamp(dest_buffer[k * 2 + 1] + data_to_mix_in[k * 2] * patch->volume_matrix[0][1] + data_to_mix_in[k * 2 + 1] * patch->volume_matrix[1][1], -1.0f, 1.0f);
+        dest_buffer[k * 2 + 1] = std::clamp(dest_buffer[k * 2 + 1] + data_to_mix_in[k * 2] * volume_matrix[0][1] + data_to_mix_in[k * 2 + 1] * volume_matrix[1][1], -1.0f, 1.0f);
     }
 
     return 0;
