@@ -67,7 +67,8 @@ jobs:
         with:
             variant: sccache
         env:
-            SCCACHE_RECACHE: 1
+            SCCACHE_ERROR_LOG: build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}/sccache_log.txt
+            SCCACHE_LOG: debug
         if: matrix.os == 'windows-latest'
  
       - uses: actions/cache@v3
