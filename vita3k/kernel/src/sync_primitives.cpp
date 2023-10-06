@@ -1157,7 +1157,6 @@ int semaphore_cancel(KernelState &kernel, const char *export_name, SceUID thread
 
     SceUInt32 nb_threads = 0;
     const std::lock_guard<std::mutex> semaphore_lock(semaphore->mutex);
-    LOG_TRACE("sema_cancel. waiting threads:{}", semaphore->waiting_threads->size());
     while (!semaphore->waiting_threads->empty()) {
         const auto &waiting_thread_data = *semaphore->waiting_threads->begin();
         const auto waiting_thread = waiting_thread_data.thread;
