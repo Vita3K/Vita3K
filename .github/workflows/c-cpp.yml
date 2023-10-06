@@ -66,7 +66,8 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
             variant: sccache
-            restore: false
+        env:
+            SCCACHE_RECACHE: 1
         if: matrix.os == 'windows-latest'
  
       - uses: actions/cache@v3
