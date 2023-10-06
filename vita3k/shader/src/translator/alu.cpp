@@ -1044,8 +1044,8 @@ bool USSETranslatorVisitor::sop2(
     auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
     auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
 
-    color_res = utils::convert_to_int(m_b, color_res, DataType::UINT8, true);
-    alpha_res = utils::convert_to_int(m_b, alpha_res, DataType::UINT8, true);
+    color_res = utils::convert_to_int(m_b, m_util_funcs, color_res, DataType::UINT8, true);
+    alpha_res = utils::convert_to_int(m_b, m_util_funcs, alpha_res, DataType::UINT8, true);
 
     // Final result. Do binary operation and then store
     store(inst.opr.dest, color_res, 0b0111, dest_repeat_offset);
@@ -1230,7 +1230,7 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
         result = m_b.createTriOp(spv::OpVectorInsertDynamic, src_type, result, apply_opcode(alpha_op, alpha_type, a1, a2), alpha_index);
     }
 
-    result = utils::convert_to_int(m_b, result, DataType::UINT8, true);
+    result = utils::convert_to_int(m_b, m_util_funcs, result, DataType::UINT8, true);
 
     // Final result. Do binary operation and then store
     store(inst.opr.dest, result, wmask, 0);
@@ -1484,8 +1484,8 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
     auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
     auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
 
-    color_res = utils::convert_to_int(m_b, color_res, DataType::UINT8, true);
-    alpha_res = utils::convert_to_int(m_b, alpha_res, DataType::UINT8, true);
+    color_res = utils::convert_to_int(m_b, m_util_funcs, color_res, DataType::UINT8, true);
+    alpha_res = utils::convert_to_int(m_b, m_util_funcs, alpha_res, DataType::UINT8, true);
 
     // Final result. Do binary operation and then store
     store(inst.opr.dest, color_res, 0b0111, 0);

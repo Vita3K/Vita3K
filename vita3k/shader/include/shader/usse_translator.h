@@ -47,7 +47,7 @@ public:
 
     spv::Id const_f32_v0[5];
 
-    utils::SpirvUtilFunctions m_util_funcs;
+    utils::SpirvUtilFunctions &m_util_funcs;
 
     spv::Block *main_block;
     spv::Id out;
@@ -81,8 +81,7 @@ public:
         // Set main block
         main_block = m_b.getBuildPoint();
 
-        // Import GLSL.std.450
-        std_builtins = m_b.import("GLSL.std.450");
+        std_builtins = utils.std_builtins;
 
         // Build common type here, so builder won't have to look it up later
         type_f32 = m_b.makeFloatType(32);

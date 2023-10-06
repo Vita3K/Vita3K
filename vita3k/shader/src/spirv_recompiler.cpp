@@ -324,7 +324,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
         }
 
         if (is_integer_data_type(dest.type) && b.isFloatType(utils::unwrap_type(b, b.getTypeId(var))))
-            var = utils::convert_to_int(b, var, dest.type, true);
+            var = utils::convert_to_int(b, utils, var, dest.type, true);
 
         if (is_4th_component_1) {
             // set the 4th component to 1, because it's what the shader is expecting it to be
@@ -712,7 +712,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         auto store_source_result = [&](const bool direct_store = false) {
             if (source != spv::NoResult) {
                 if (!direct_store && !is_float_data_type(target_to_store.type)) {
-                    source = utils::convert_to_int(b, source, target_to_store.type, true);
+                    source = utils::convert_to_int(b, utils, source, target_to_store.type, true);
                 }
 
                 utils::store(b, parameters, utils, features, target_to_store, source, 0b1111, 0);
@@ -1734,6 +1734,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
 
     NonDependentTextureQueryCallInfos texture_queries;
     utils::SpirvUtilFunctions utils;
+    utils.std_builtins = b.import("GLSL.std.450");
 
     std::string entry_point_name;
     spv::ExecutionModel execution_model;
