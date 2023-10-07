@@ -4886,6 +4886,10 @@ EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const vo
     texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
     texture->height = height - 1;
     texture->width = width - 1;
+    texture->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+    texture->gamma_mode = 0;
+    texture->lod_min0 = 0;
+    texture->lod_min1 = 0;
 
     return 0;
 }
