@@ -68,8 +68,14 @@ jobs:
             variant: sccache
         env:
             SCCACHE_LOG: debug
-            SCCACHE_ERROR_LOG: build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}/sccache_log.txt
+            SCCACHE_ERROR_LOG: sccache_log.txt
         if: matrix.os == 'windows-latest'
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: vita3k-${{ env.git_short_sha }}-${{ matrix.os }}-sscache_log-1
+          path: sccache_log.txt
+          if: matrix.os == 'windows-latest'
  
       - uses: actions/cache@v3
         with:
@@ -148,6 +154,12 @@ jobs:
           # path is set up to be <binary_dir>/bin/<config_type> since that's how multi-config
           # generators work on CMake
           path: build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: vita3k-${{ env.git_short_sha }}-${{ matrix.os }}-sscache_log
+          path: sccache_log.txt
+          if: matrix.os == 'windows-latest'
 
     outputs:
       BuildTag: ${{ env.build_variable }}
