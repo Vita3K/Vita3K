@@ -252,11 +252,11 @@ void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front) {
     }
 }
 
-void sync_point_line_width(const std::uint32_t width, const bool is_front) {
+void sync_point_line_width(const GLState &state, const std::uint32_t width, const bool is_front) {
     // Point Line Width
     if (is_front) {
-        glLineWidth(static_cast<GLfloat>(width));
-        glPointSize(static_cast<GLfloat>(width));
+        glLineWidth(static_cast<GLfloat>(width * state.res_multiplier));
+        glPointSize(static_cast<GLfloat>(width * state.res_multiplier));
     }
 }
 
