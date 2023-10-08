@@ -1190,8 +1190,8 @@ struct SceGxmTexture {
     uint32_t swizzle_format : 3;
     uint32_t normalize_mode : 1;
 
-    uint32_t texture_type() const {
-        return type << 29;
+    SceGxmTextureType texture_type() const {
+        return static_cast<SceGxmTextureType>(type << 29);
     }
 
     uint32_t true_mip_count() const {

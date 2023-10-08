@@ -837,13 +837,11 @@ vk::SamplerAddressMode translate_address_mode(SceGxmTextureAddrMode src) {
     case SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP:
         return vk::SamplerAddressMode::eMirrorClampToEdge;
     case SCE_GXM_TEXTURE_ADDR_REPEAT_IGNORE_BORDER:
-        return vk::SamplerAddressMode::eRepeat; // FIXME: Is this correct?
     case SCE_GXM_TEXTURE_ADDR_CLAMP_FULL_BORDER:
-        return vk::SamplerAddressMode::eClampToBorder;
     case SCE_GXM_TEXTURE_ADDR_CLAMP_IGNORE_BORDER:
-        return vk::SamplerAddressMode::eClampToBorder; // FIXME: Is this correct?
     case SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER:
-        return vk::SamplerAddressMode::eClampToBorder; // FIXME: Is this correct?
+        LOG_ERROR_ONCE("Unhandled border color address mode, texture will be corrupted. Please report it to the developers.");
+        return (src == SCE_GXM_TEXTURE_ADDR_REPEAT_IGNORE_BORDER) ? vk::SamplerAddressMode::eRepeat : vk::SamplerAddressMode::eClampToBorder;
     default:
         LOG_ERROR("Unknown address mode {}", log_hex(src));
         return vk::SamplerAddressMode::eClampToEdge;

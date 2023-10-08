@@ -30,97 +30,6 @@
 
 namespace renderer::texture {
 
-size_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
-    switch (base_format) {
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
-        return 8;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
-        return 16;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
-        return 32;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
-        return 64;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
-        return 2;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
-        return 4;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
-        return 2;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
-        return 4;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-        return 4;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-        return 8;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
-        return 4;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
-        return 8;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
-        return 12;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
-        return 16;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
-        return 4;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
-        return 8;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
-        return 24;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
-        return 32;
-    }
-
-    return 0;
-}
-
-size_t texture_size(const SceGxmTexture &texture) {
-    const SceGxmTextureFormat format = gxm::get_format(&texture);
-    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
-    const size_t width = gxm::get_width(&texture);
-    const size_t height = gxm::get_height(&texture);
-    if ((base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP)) {
-        return ((width + 7) / 8 * 8) * ((height + 3) / 4 * 4) / 4;
-    } else if ((base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP) || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)) {
-        return ((width + 3) / 4 * 4) * ((height + 3) / 4 * 4) / 2;
-    }
-    const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
-    const size_t bpp = bits_per_pixel(base_format);
-    const size_t size = (bpp * stride * height) / 8;
-    return size;
-}
-
 bool convert_base_texture_format_to_base_color_format(SceGxmTextureBaseFormat format, SceGxmColorBaseFormat &color_format) {
     static const std::map<std::uint32_t, std::uint32_t> TEXTURE_TO_COLOR_FORMAT_MAPPING = {
         { SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8, SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8 },
@@ -201,7 +110,7 @@ void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest,
             reinterpret_cast<std::uint8_t *>(dest), bc_type);
 }
 
-size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height) {
+uint32_t decompress_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const uint32_t width, const uint32_t height) {
     int bc_type = 0;
 
     switch (fmt) {
@@ -238,8 +147,8 @@ size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, void *de
     }
 
     if (bc_type) {
-        decompress_bc_swizz_image(width, height, reinterpret_cast<const std::uint8_t *>(data),
-            reinterpret_cast<std::uint32_t *>(dest), bc_type);
+        decompress_bc_image(width, height, reinterpret_cast<const uint8_t *>(data),
+            reinterpret_cast<uint32_t *>(dest), bc_type);
         return (((width + 3) / 4) * ((height + 3) / 4) * ((bc_type != 1 && bc_type != 4 && bc_type != 5) ? 16 : 8));
     } else if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) && (fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)) {
         pvr::PVRTDecompressPVRTC(data, (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP), width, height,
@@ -247,10 +156,10 @@ size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, void *de
 
         const bool is_2bpp = (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP);
 
-        const std::uint32_t num_xword = (width + (is_2bpp ? 7 : 3)) / (is_2bpp ? 8 : 4);
-        const std::uint32_t num_yword = (height + 3) / 4;
+        const uint32_t num_xword = (width + (is_2bpp ? 7 : 3)) / (is_2bpp ? 8 : 4);
+        const uint32_t num_yword = (height + 3) / 4;
 
-        return (size_t)num_xword * (size_t)num_yword * 8;
+        return num_xword * num_yword * 8;
     } else {
         LOG_ERROR("Trying to decompress and unswizzle unknown format {}", log_hex(fmt));
     }
@@ -272,22 +181,19 @@ void decompress_packed_float_e5m9m9m9(SceGxmTextureBaseFormat fmt, void *dest, c
     }
 }
 
-void convert_x8u24_to_u24x8(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels) {
+void convert_x8u24_to_u24x8(void *dest, const void *data, const uint32_t width, const uint32_t height) {
     auto dst = static_cast<uint32_t *>(dest);
     auto src = static_cast<const uint32_t *>(data);
 
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
-            const uint32_t src_value = src[col];
-            const uint32_t value = (src_value << 8) | (src_value >> 24);
-            *dst++ = value;
+            uint32_t src_value = src[row * width + col];
+            dst[row * width + col] = (src_value << 8) | (src_value >> 24);
         }
-
-        src += row_length_in_pixels;
     }
 }
 
-void convert_x8u24_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels, const SceGxmTextureFormat format) {
+void convert_x8u24_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height, const SceGxmTextureFormat format) {
     const SceGxmTextureSwizzle2ModeAlt swizzle = static_cast<SceGxmTextureSwizzle2ModeAlt>(format & SCE_GXM_TEXTURE_SWIZZLE_MASK);
     // is the depth in the upper or lower 24 bits of the data?
     int shift_amount = (swizzle == SCE_GXM_TEXTURE_SWIZZLE2_DS) ? 8 : 0;
@@ -296,22 +202,20 @@ void convert_x8u24_to_f32(void *dest, const void *data, const uint32_t width, co
 
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
-            const uint32_t src_value = src[col];
+            const uint32_t src_value = src[row * width + height];
             const uint32_t d24 = (src_value >> shift_amount) & ((1U << 24) - 1);
-            *dst++ = static_cast<float>(d24) / ((1U << 24) - 1);
+            dst[row * width + height] = static_cast<float>(d24) / ((1U << 24) - 1);
         }
-
-        src += row_length_in_pixels;
     }
 }
 
-void convert_U8U3U3U2_to_U8U8U8U8(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels) {
+void convert_U8U3U3U2_to_U8U8U8U8(void *dest, const void *data, const uint32_t width, const uint32_t height) {
     auto dst = static_cast<uint32_t *>(dest);
     auto src = static_cast<const uint16_t *>(data);
 
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
-            const uint32_t src_value = src[col];
+            const uint32_t src_value = src[row * width + height];
 
             const uint8_t alpha = (src_value & 0xFF00) >> 8;
             const uint8_t red = (src_value & 0x00E0) >> 5;
@@ -320,26 +224,20 @@ void convert_U8U3U3U2_to_U8U8U8U8(void *dest, const void *data, const uint32_t w
 
             const uint32_t value = (alpha << 24) | (blue << 22) | (blue << 20) | (blue << 18) | (blue << 16) | (green << 13) | (green << 10) | ((green & 0b110) << 7) | (red << 5) | (red << 2) | (red >> 1);
 
-            *dst = value;
-            dst++;
+            dst[row * width + height] = value;
         }
-
-        src += row_length_in_pixels;
     }
 }
 
-void convert_f32m_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels) {
+void convert_f32m_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height) {
     auto dst = static_cast<uint32_t *>(dest);
     auto src = static_cast<const uint32_t *>(data);
 
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
-            const uint32_t src_value = src[col];
-            const uint32_t value = src_value & 0x7FFFFFFF;
-            *dst++ = value;
+            const uint32_t src_value = src[row * width + height];
+            dst[row * width + height] = src_value & 0x7FFFFFFF;
         }
-
-        src += row_length_in_pixels;
     }
 }
 
@@ -355,7 +253,7 @@ static uint16_t f10_to_f16(const uint16_t f10) {
     return f16;
 }
 
-void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels, const SceGxmTextureFormat format) {
+void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uint32_t width, const uint32_t height, const SceGxmTextureFormat format) {
     auto dst = static_cast<std::array<uint16_t, 4> *>(dest);
     auto src = static_cast<const uint32_t *>(data);
 
@@ -367,14 +265,14 @@ void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uin
 
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
-            uint32_t src_value = src[col];
+            uint32_t src_value = src[row * width + height];
             int dst_idx;
             // first get the 2 alpha bits
             if (is_alpha_upper) {
-                (*dst)[3] = (src_value >> 30) / 3.0f;
+                dst[row * width + height][3] = (src_value >> 30) / 3.0f;
                 dst_idx = 0;
             } else {
-                (*dst)[0] = (src_value & 0b11) / 3.0f;
+                dst[row * width + height][0] = (src_value & 0b11) / 3.0f;
                 dst_idx = 1;
                 src_value >>= 2;
             }
@@ -383,59 +281,9 @@ void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uin
             for (int i = 0; i < 3; i++) {
                 const uint16_t comp = src_value & ((1 << 10) - 1);
                 src_value >>= 10;
-                (*dst)[dst_idx++] = f10_to_f16(comp);
+                dst[row * width + height][dst_idx++] = f10_to_f16(comp);
             }
-            dst++;
         }
-
-        src += row_length_in_pixels;
-    }
-}
-
-/**
- * \brief Remove arbitraty blocks from block compressed texture
- *
- * \param fmt    Texture base format.
- * \param dest   Destination texture data. Size must be sufficient enough of ((width + 3) / 4) * ((height + 3) / 4) * 8 or 16 (bytes) depending on texture base format.
- * \param data   Source data to decompress.
- * \param width  Texture width.
- * \param height Texture height.
- *
- * \return Void.
- */
-void remove_compressed_arbitrary_blocks(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height) {
-    uint32_t w = (width + 3) / 4;
-    uint32_t h = (height + 3) / 4;
-
-    uint32_t a_w = next_power_of_two(w);
-
-    std::size_t block_size;
-    switch (fmt) {
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
-        block_size = 8;
-        break;
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
-        block_size = 16;
-        break;
-    default:
-        return;
-    }
-
-    w *= block_size;
-    a_w *= block_size;
-
-    const std::uint8_t *src = reinterpret_cast<const std::uint8_t *>(data);
-    std::uint8_t *dst = reinterpret_cast<std::uint8_t *>(dest);
-
-    for (std::size_t j = h; j; j--) {
-        memcpy(dst, src, w);
-        src += a_w;
-        dst += w;
     }
 }
 
@@ -520,24 +368,7 @@ void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t
     }
 }
 
-bool is_compressed_format(SceGxmTextureBaseFormat base_format) {
-    switch (base_format) {
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
-        return true;
-    default:
-        break;
-    }
-
-    return false;
-}
-
-size_t get_compressed_size(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height) {
+uint32_t get_compressed_size(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height) {
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
@@ -842,7 +673,7 @@ static void decompress_block_bc5s(const std::uint8_t *block_storage, std::uint32
  * \param image             Pointer to the image where the decompressed pixels will be stored.
  * \param bc_type           Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2) or BC5S (RGTC2).
  */
-void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type) {
+void decompress_bc_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type) {
     std::uint32_t block_count_x = (width + 3) / 4;
     std::uint32_t block_count_y = (height + 3) / 4;
     std::size_t block_size = (bc_type != 1 && bc_type != 4) ? 16 : 8;

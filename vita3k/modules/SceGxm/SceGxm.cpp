@@ -4675,7 +4675,7 @@ EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
 EXPORT(SceGxmTextureFormat, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
     TRACY_FUNC(sceGxmTextureGetFormat, texture);
     assert(texture);
-    return gxm::get_format(texture);
+    return gxm::get_format(*texture);
 }
 
 EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
@@ -4687,7 +4687,7 @@ EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
 EXPORT(uint32_t, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
     TRACY_FUNC(sceGxmTextureGetHeight, texture);
     assert(texture);
-    return static_cast<uint32_t>(gxm::get_height(texture));
+    return static_cast<uint32_t>(gxm::get_height(*texture));
 }
 
 EXPORT(uint32_t, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
@@ -4761,7 +4761,7 @@ EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
     TRACY_FUNC(sceGxmTextureGetPalette, texture);
-    const auto base_format = gxm::get_base_format(gxm::get_format(texture));
+    const auto base_format = gxm::get_base_format(gxm::get_format(*texture));
 
     return gxm::is_paletted_format(base_format) ? Ptr<void>(texture->palette_addr << 6) : Ptr<void>();
 }
@@ -4772,7 +4772,7 @@ EXPORT(uint32_t, sceGxmTextureGetStride, const SceGxmTexture *texture) {
     if (texture->texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED)
         return 0;
 
-    return uint32_t(gxm::get_stride_in_bytes(texture));
+    return gxm::get_stride_in_bytes(*texture);
 }
 
 EXPORT(int, sceGxmTextureGetType, const SceGxmTexture *texture) {
@@ -4814,7 +4814,7 @@ EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
 EXPORT(uint32_t, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
     TRACY_FUNC(sceGxmTextureGetWidth, texture);
     assert(texture);
-    return static_cast<uint32_t>(gxm::get_width(texture));
+    return gxm::get_width(*texture);
 }
 
 EXPORT(int, sceGxmTextureInitCube, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {

@@ -50,19 +50,14 @@ void GLTextureCache::select(size_t index, const SceGxmTexture &texture) {
 void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     R_PROFILE(__func__);
 
-    const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);
+    const SceGxmTextureFormat fmt = gxm::get_format(gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
     const SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(gxm_texture.uaddr_mode);
     const SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(gxm_texture.vaddr_mode);
-    auto width = static_cast<uint32_t>(gxm::get_width(&gxm_texture));
-    auto height = static_cast<uint32_t>(gxm::get_height(&gxm_texture));
-    if (gxm::is_block_compressed_format(base_format)) {
-        // align width and height to block size
-        width = (width + 3) & ~3;
-        height = (height + 3) & ~3;
-    }
+    uint32_t width = gxm::get_width(gxm_texture);
+    uint32_t height = gxm::get_height(gxm_texture);
     const GLint *const swizzle = translate_swizzle(fmt);
-    uint32_t mip_count = renderer::texture::get_upload_mip(gxm_texture.true_mip_count(), width, height, base_format);
+    uint32_t mip_count = renderer::texture::get_upload_mip(gxm_texture.true_mip_count(), width, height);
 
     const GLenum texture_bind_type = get_gl_texture_type(gxm_texture);
 
@@ -100,7 +95,7 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
 
     uint32_t mip_index = 0;
 
-    bool block_compressed = renderer::texture::is_compressed_format(base_fmt);
+    bool compressed = gxm::is_bcn_format(base_fmt);
 
     // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
     GLenum upload_type = GL_TEXTURE_2D;
@@ -114,16 +109,11 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     }
 
     while (face_iterated < face_total_count && width && height) {
-        if (block_compressed) {
+        if (compressed) {
             size_t compressed_size = renderer::texture::get_compressed_size(base_fmt, width, height);
             glCompressedTexImage2D(upload_type, mip_index, internal_format, width, height, 0, static_cast<GLsizei>(compressed_size), nullptr);
-        } else if (!is_swizzled || (renderer::texture::can_texture_be_unswizzled_without_decode(base_fmt, false))) {
-            glTexImage2D(upload_type, mip_index, internal_format, width, height, 0, format, type, nullptr);
         } else {
-            if (is_swizzled) {
-                // Data feed will later be RGBA
-                glTexImage2D(upload_type, mip_index, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-            }
+            glTexImage2D(upload_type, mip_index, internal_format, width, height, 0, format, type, nullptr);
         }
 
         mip_index++;
@@ -142,7 +132,7 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     }
 }
 
-void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride) {
+void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) {
     R_PROFILE(__func__);
 
     GLenum upload_type = GL_TEXTURE_2D;
@@ -150,12 +140,24 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
         upload_type = GL_TEXTURE_CUBE_MAP_POSITIVE_X + (face - 1);
 
-    if (is_compressed) {
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    if (gxm::is_bcn_format(base_format)) {
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
+
+        const GLint block_size = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC4 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC4)
+            ? 8
+            : 16;
+        glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, block_size);
+        glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 4);
+        glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 4);
 
         const GLenum format = translate_format(base_format);
-        size_t compressed_size = renderer::texture::get_compressed_size(base_format, width, height);
+        size_t compressed_size = renderer::texture::get_compressed_size(base_format, pixels_per_stride, height);
         glCompressedTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), pixels);
+
+        glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, 0);
+        glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 0);
+        glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 0);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     } else {
         glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
 
@@ -190,7 +192,8 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
 
     int tex_index = g_tex_index;
 
-    const uint64_t hash = renderer::texture::hash_texture_data(gxm_texture, mem);
+    const uint32_t texture_size = gxm::texture_size_first_mip(gxm_texture);
+    const uint64_t hash = renderer::texture::hash_texture_data(gxm_texture, texture_size, mem);
 
     if (g_dumped_hashes.contains(hash)) {
         if (log_parameter && parameter_name != "") {
@@ -202,40 +205,16 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
         ++g_tex_index;
     }
 
-    const size_t width = gxm::get_width(&gxm_texture);
-    const size_t height = gxm::get_height(&gxm_texture);
+    const size_t width = gxm::get_width(gxm_texture);
+    const size_t height = gxm::get_height(gxm_texture);
 
-    const SceGxmTextureFormat format = gxm::get_format(&gxm_texture);
-    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
-
-    const bool is_swizzled = (gxm_texture.texture_type() == SCE_GXM_TEXTURE_SWIZZLED) || (gxm_texture.texture_type() == SCE_GXM_TEXTURE_CUBE) || (gxm_texture.texture_type() == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (gxm_texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
-    const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !renderer::texture::can_texture_be_unswizzled_without_decode(base_format, false);
-
-    size_t bpp = renderer::texture::bits_per_pixel(base_format);
-    size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
-    if (gxm::is_paletted_format(base_format)) {
-        stride = width;
-    }
-    size_t size = (bpp * stride * height) / 8;
-
-    if (gxm::is_yuv_format(base_format)) {
-        bpp = 24;
-        size = width * height * 3;
-    } else if (need_decompress_and_unswizzle_on_cpu || gxm::is_paletted_format(base_format)) {
-        bpp = 32;
-        size = width * height * 4;
-    }
-    const size_t components = bpp / 8;
+    size_t size = width * height * 4;
 
     g_pixels.resize(size);
 
-    auto gl_format = texture::translate_format(base_format);
-    auto gl_type = texture::translate_type(base_format);
+    GLenum gl_format = GL_RGBA;
+    GLenum gl_type = GL_UNSIGNED_BYTE;
 
-    if (need_decompress_and_unswizzle_on_cpu) {
-        gl_format = GL_RGBA;
-        gl_type = GL_UNSIGNED_BYTE;
-    }
     glGetnTexImage(GL_TEXTURE_2D, 0, gl_format, gl_type, size, (void *)g_pixels.data());
 
     // TODO: Create the texturelog path elsewhere on init once and pass it here whole
@@ -247,7 +226,7 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
     const auto tex_filename = fmt::format("tex_{}_{:08X}_{}.png", tex_index, hash, hex_string(program_hash));
     const auto filepath = texturelog_path / tex_filename;
 
-    if (!stbi_write_png(filepath.string().c_str(), static_cast<int>(width), static_cast<int>(height), static_cast<int>(components), (void *)g_pixels.data(), static_cast<int>(stride * components)))
+    if (!stbi_write_png(filepath.string().c_str(), static_cast<int>(width), static_cast<int>(height), 4, (void *)g_pixels.data(), static_cast<int>(width * 4)))
         LOG_WARN("Failed to save texture: {}", filepath.string());
 }
 

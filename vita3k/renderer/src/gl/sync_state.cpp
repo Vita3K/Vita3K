@@ -271,13 +271,12 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     const Config &config, const std::string &base_path, const std::string &title_id) {
     Address data_addr = texture.data_addr << 2;
 
-    const size_t texture_size = renderer::texture::texture_size(texture);
-    if (!is_valid_addr_range(mem, data_addr, data_addr + texture_size)) {
+    if (!is_valid_addr(mem, data_addr)) {
         LOG_WARN("Texture has freed data.");
         return;
     }
 
-    const SceGxmTextureFormat format = gxm::get_format(&texture);
+    const SceGxmTextureFormat format = gxm::get_format(texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
     if (gxm::is_paletted_format(base_format) && texture.palette_addr == 0) {
         LOG_WARN("Ignoring null palette texture");
@@ -314,15 +313,15 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
         SceGxmColorBaseFormat format_target_of_texture;
 
-        std::uint16_t width = static_cast<std::uint16_t>(gxm::get_width(&texture));
-        std::uint16_t height = static_cast<std::uint16_t>(gxm::get_height(&texture));
+        std::uint16_t width = static_cast<std::uint16_t>(gxm::get_width(texture));
+        std::uint16_t height = static_cast<std::uint16_t>(gxm::get_height(texture));
 
         if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
             std::uint16_t stride_in_pixels = width;
 
             switch (texture.texture_type()) {
             case SCE_GXM_TEXTURE_LINEAR_STRIDED:
-                stride_in_pixels = static_cast<std::uint16_t>(gxm::get_stride_in_bytes(&texture)) / ((renderer::texture::bits_per_pixel(base_format) + 7) >> 3);
+                stride_in_pixels = static_cast<std::uint16_t>(gxm::get_stride_in_bytes(texture)) / ((gxm::bits_per_pixel(base_format) + 7) >> 3);
                 break;
             case SCE_GXM_TEXTURE_LINEAR:
                 // when the texture is linear, the stride should be aligned to 8 pixels
