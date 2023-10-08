@@ -29,16 +29,24 @@ SceGxmColorBaseFormat get_base_format(SceGxmColorFormat src);
 size_t bits_per_pixel(SceGxmColorBaseFormat base_format);
 size_t get_stride_in_bytes(const SceGxmColorFormat src, const std::size_t stride_in_pixels);
 // Textures.
-size_t get_width(const SceGxmTexture *texture);
-size_t get_height(const SceGxmTexture *texture);
-SceGxmTextureFormat get_format(const SceGxmTexture *texture);
+uint32_t get_width(const SceGxmTexture &texture);
+uint32_t get_height(const SceGxmTexture &texture);
+SceGxmTextureFormat get_format(const SceGxmTexture &texture);
 SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src);
-size_t get_stride_in_bytes(const SceGxmTexture *texture);
+std::pair<uint32_t, uint32_t> get_block_size(SceGxmTextureBaseFormat base_format);
+uint32_t get_stride_in_bytes(const SceGxmTexture &texture);
+uint32_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
+// get the full texture size (including all mips and faces)
+uint32_t texture_size_full(const SceGxmTexture &texture);
+// get the size of the first mip of the first face
+uint32_t texture_size_first_mip(const SceGxmTexture &texture);
+bool is_bcn_format(SceGxmTextureBaseFormat base_format);
+bool is_pvrt_format(SceGxmTextureBaseFormat base_format);
 bool is_block_compressed_format(SceGxmTextureBaseFormat base_format);
 bool is_paletted_format(SceGxmTextureBaseFormat base_format);
 bool is_yuv_format(SceGxmTextureBaseFormat base_format);
-size_t attribute_format_size(SceGxmAttributeFormat format);
-size_t index_element_size(SceGxmIndexFormat format);
+uint32_t attribute_format_size(SceGxmAttributeFormat format);
+uint32_t index_element_size(SceGxmIndexFormat format);
 bool is_stream_instancing(SceGxmIndexSource source);
 bool convert_color_format_to_texture_format(SceGxmColorFormat format, SceGxmTextureFormat &dest_format);
 // Transfer

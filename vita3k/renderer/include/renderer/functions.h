@@ -149,9 +149,9 @@ class TextureCache;
 namespace texture {
 
 // Paletted textures.
-void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const size_t stride, const uint32_t *palette);
-void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const size_t stride, const uint32_t *palette);
-void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_t height);
+void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, uint32_t width, uint32_t height, const uint32_t *palette);
+void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, uint32_t width, uint32_t height, const uint32_t *palette);
+void yuv420P3_texture_to_rgb(uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, uint32_t layout_width, uint32_t layout_height);
 const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem);
 
 /**
@@ -178,7 +178,7 @@ void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest,
  *
  * \return Size of source taken.
  */
-size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height);
+uint32_t decompress_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const uint32_t width, const uint32_t height);
 
 /**
  * \brief Decompresses all the blocks of a block compressed texture and stores the resulting pixels in 'image'.
@@ -191,7 +191,7 @@ size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, void *de
  * \param image             Pointer to the image where the decompressed pixels will be stored.
  * \param bc_type           Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2) or BC5S (RGTC2).
  */
-void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type);
+void decompress_bc_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type);
 
 /**
  * \brief Try to decompress texture to 16-bit RGB floating point color.
@@ -219,40 +219,24 @@ void decompress_packed_float_e5m9m9m9(SceGxmTextureBaseFormat fmt, void *dest, c
  */
 void resolve_z_order_compressed_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *src, std::uint8_t *dest, const std::uint8_t bc_type);
 
-/**
- * \brief Remove arbitraty blocks from block compressed texture
- *
- * \param fmt    Texture base format.
- * \param dest   Destination texture data. Size must be sufficient enough of ((width + 3) / 4) * ((height + 3) / 4) * 8 or 16 (bytes) depending on texture base format.
- * \param data   Source data to decompress.
- * \param width  Texture width.
- * \param height Texture height.
- *
- * \return Void.
- */
-void remove_compressed_arbitrary_blocks(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height);
-
 // Convert x8u24 (or u24x8) format to f32 (only keep the u24 part)
 // Do not use a depth-stencil format as x8d24 is not supported on all GPUs for Vulkan
-void convert_x8u24_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels, const SceGxmTextureFormat format);
-void convert_U8U3U3U2_to_U8U8U8U8(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels);
-void convert_x8u24_to_u24x8(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels);
-void convert_f32m_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels);
-void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels, const SceGxmTextureFormat format);
+void convert_x8u24_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height, const SceGxmTextureFormat format);
+void convert_U8U3U3U2_to_U8U8U8U8(void *dest, const void *data, const uint32_t width, const uint32_t height);
+void convert_x8u24_to_u24x8(void *dest, const void *data, const uint32_t width, const uint32_t height);
+void convert_f32m_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height);
+void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uint32_t width, const uint32_t height, const SceGxmTextureFormat format);
 
 void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 
-uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uint16_t height, const SceGxmTextureBaseFormat base_format);
+uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uint16_t height);
 
 uint32_t decode_morton2_x(uint32_t code);
 uint32_t decode_morton2_y(uint32_t code);
-size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
-bool is_compressed_format(SceGxmTextureBaseFormat base_format);
 bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt, bool is_vulkan);
-size_t get_compressed_size(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height);
-uint64_t hash_texture_data(const SceGxmTexture &texture, const MemState &mem);
-size_t texture_size(const SceGxmTexture &texture);
+uint32_t get_compressed_size(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height);
+uint64_t hash_texture_data(const SceGxmTexture &texture, uint32_t texture_size, const MemState &mem);
 bool convert_base_texture_format_to_base_color_format(SceGxmTextureBaseFormat format, SceGxmColorBaseFormat &color_format);
 
 } // namespace texture

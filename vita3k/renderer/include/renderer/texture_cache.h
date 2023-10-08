@@ -37,11 +37,12 @@ struct TextureCacheInfo {
     TextureCacheInfo *next;
     TextureCacheInfo *prev;
 
-    bool use_hash = false;
-    bool dirty = false;
     uint64_t hash = 0;
     uint64_t timestamp = 0;
     SceGxmTexture texture;
+    uint32_t texture_size = 0;
+    bool use_hash = false;
+    bool dirty = false;
 };
 
 typedef std::array<TextureCacheInfo, TextureCacheSize> TextureCacheInfoes;
@@ -63,7 +64,7 @@ public:
     virtual bool init(const bool hashless_texture_cache);
     virtual void select(size_t index, const SceGxmTexture &texture) = 0;
     virtual void configure_texture(const SceGxmTexture &texture) = 0;
-    virtual void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride) = 0;
+    virtual void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) = 0;
     virtual void upload_done() {}
 
     void upload_texture(const SceGxmTexture &gxm_texture, MemState &mem);

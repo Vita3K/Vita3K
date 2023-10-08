@@ -19,7 +19,7 @@
 #include <util/log.h>
 
 namespace gxm {
-size_t attribute_format_size(SceGxmAttributeFormat format) {
+uint32_t attribute_format_size(SceGxmAttributeFormat format) {
     switch (format) {
     case SCE_GXM_ATTRIBUTE_FORMAT_U8:
     case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
@@ -42,7 +42,7 @@ size_t attribute_format_size(SceGxmAttributeFormat format) {
     }
 }
 
-size_t index_element_size(SceGxmIndexFormat format) {
+uint32_t index_element_size(SceGxmIndexFormat format) {
     return (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
 }
 } // namespace gxm

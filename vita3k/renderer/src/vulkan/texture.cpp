@@ -66,9 +66,7 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     Address data_addr = texture.data_addr << 2;
     bool is_vertex = index >= SCE_GXM_MAX_TEXTURE_UNITS;
 
-    const size_t texture_size = renderer::texture::texture_size(texture);
-
-    const SceGxmTextureFormat format = gxm::get_format(&texture);
+    const SceGxmTextureFormat format = gxm::get_format(texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
     if (gxm::is_paletted_format(base_format) && texture.palette_addr == 0) {
         LOG_WARN("Ignoring null palette texture");
@@ -86,8 +84,8 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
 
     SceGxmColorBaseFormat format_target_of_texture;
 
-    uint16_t width = static_cast<uint16_t>(gxm::get_width(&texture));
-    uint16_t height = static_cast<uint16_t>(gxm::get_height(&texture));
+    uint16_t width = static_cast<uint16_t>(gxm::get_width(texture));
+    uint16_t height = static_cast<uint16_t>(gxm::get_height(texture));
 
     TextureViewport texture_viewport{};
 
@@ -97,7 +95,7 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         SceGxmColorSurfaceType surface_type = SCE_GXM_COLOR_SURFACE_LINEAR;
         switch (texture.texture_type()) {
         case SCE_GXM_TEXTURE_LINEAR_STRIDED:
-            stride_in_pixels = static_cast<uint16_t>(gxm::get_stride_in_bytes(&texture)) / ((renderer::texture::bits_per_pixel(base_format) + 7) >> 3);
+            stride_in_pixels = static_cast<uint16_t>(gxm::get_stride_in_bytes(texture)) / ((gxm::bits_per_pixel(base_format) + 7) >> 3);
             break;
         case SCE_GXM_TEXTURE_LINEAR:
             // when the texture is linear, the stride should be aligned to 8 pixels
@@ -111,6 +109,9 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         case SCE_GXM_TEXTURE_SWIZZLED:
         case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
             surface_type = SCE_GXM_COLOR_SURFACE_SWIZZLED;
+            break;
+        default:
+            break;
         }
 
         vk::ComponentMapping swizzle = texture::translate_swizzle(format);
@@ -133,10 +134,6 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         if (!image->sampler)
             image->sampler = texture::create_sampler(context.state, texture);
     } else {
-        if (!is_valid_addr_range(mem, data_addr, data_addr + texture_size)) {
-            LOG_WARN("Texture has freed data.");
-            return;
-        }
         context.state.texture_cache.cache_and_bind_texture(texture, mem);
         image = &context.state.texture_cache.current_texture->texture;
     }
@@ -315,35 +312,30 @@ static vk::Format linear_to_srgb(const vk::Format format) {
 static uint32_t get_image_memory_upper_bound(const SceGxmTexture &gxm_texture, const vk::Format vk_format, const SceGxmTextureBaseFormat base_format) {
     // we only want an upper bound, it doesn't matter if because of some conversions we later get the width instead of the stride
     // aligning to 8 takes care of the default stride values
-    uint32_t stride = align(gxm::get_width(&gxm_texture), 8);
-    uint32_t height = align(gxm::get_height(&gxm_texture), 8);
+    uint32_t stride = std::max(next_power_of_two(gxm::get_width(gxm_texture)), 8U);
+    uint32_t height = std::max(next_power_of_two(gxm::get_height(gxm_texture)), 8U);
 
     if (gxm_texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
-        const uint32_t bpp = (renderer::texture::bits_per_pixel(base_format) + 7) / 8;
+        const uint32_t bpp = (gxm::bits_per_pixel(base_format) + 7) / 8;
         // the max is to handle the case of P4 textures
-        stride = std::max<uint32_t>(stride, gxm::get_stride_in_bytes(&gxm_texture) / bpp);
+        stride = std::max<uint32_t>(stride, gxm::get_stride_in_bytes(gxm_texture) / bpp);
     }
 
     return ((stride * height) / vk::texelsPerBlock(vk_format)) * vk::blockSize(vk_format);
 }
 
 void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
-    const SceGxmTextureFormat format = gxm::get_format(&gxm_texture);
+    const SceGxmTextureFormat format = gxm::get_format(gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
 
     const vk::ComponentMapping swizzle = texture::translate_swizzle(format);
 
     const bool is_cube = (gxm_texture.texture_type() == SCE_GXM_TEXTURE_CUBE || gxm_texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
 
-    uint32_t width = static_cast<uint32_t>(gxm::get_width(&gxm_texture));
-    uint32_t height = static_cast<uint32_t>(gxm::get_height(&gxm_texture));
-    if (gxm::is_block_compressed_format(base_format)) {
-        // align width and height to block size
-        width = align(width, 4);
-        height = align(height, 4);
-    }
+    uint32_t width = gxm::get_width(gxm_texture);
+    uint32_t height = gxm::get_height(gxm_texture);
 
-    const uint16_t mip_count = renderer::texture::get_upload_mip(gxm_texture.true_mip_count(), width, height, base_format);
+    const uint16_t mip_count = renderer::texture::get_upload_mip(gxm_texture.true_mip_count(), width, height);
 
     vk::Format vk_format = texture::translate_format(base_format);
     if (gxm_texture.gamma_mode) {
@@ -441,7 +433,7 @@ static void *add_alpha_channel(const void *pixels, const uint32_t width, const u
 }
 
 void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height,
-    uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride) {
+    uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) {
     if (!is_texture_transfer_ready)
         prepare_staging_buffer();
 
@@ -462,10 +454,13 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
     }
 
     vk::DeviceSize upload_size;
-    if (is_compressed) {
-        upload_size = renderer::texture::get_compressed_size(base_format, width, height);
+    uint32_t buffer_height = height;
+    if (gxm::is_bcn_format(base_format)) {
+        upload_size = renderer::texture::get_compressed_size(base_format, pixels_per_stride, height);
+        pixels_per_stride = align(pixels_per_stride, 4);
+        buffer_height = align(buffer_height, 4);
     } else {
-        size_t bpp = renderer::texture::bits_per_pixel(base_format);
+        size_t bpp = gxm::bits_per_pixel(base_format);
         size_t bytes_per_pixel = (bpp + 7) >> 3;
         upload_size = pixels_per_stride * height * bytes_per_pixel;
     }
@@ -486,7 +481,7 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
     vk::BufferImageCopy region{
         .bufferOffset = staging_buffer.used_so_far,
         .bufferRowLength = static_cast<uint32_t>(pixels_per_stride),
-        .bufferImageHeight = height,
+        .bufferImageHeight = buffer_height,
         .imageSubresource = layer,
         .imageOffset = { 0, 0, 0 },
         .imageExtent = { width, height, 1 }

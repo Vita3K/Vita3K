@@ -45,16 +45,14 @@ static uint64_t hash_palette_data(const SceGxmTexture &texture, size_t count, co
     return hash_data(palette_bytes, count * sizeof(uint32_t));
 }
 
-uint64_t hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
-    R_PROFILE(__func__);
-    const SceGxmTextureFormat format = gxm::get_format(&texture);
+uint64_t hash_texture_data(const SceGxmTexture &texture, uint32_t texture_size, const MemState &mem) {
+    const SceGxmTextureFormat format = gxm::get_format(texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
-    const size_t size = texture_size(texture);
     const Ptr<const void> data(texture.data_addr << 2);
     uint64_t data_hash = 0;
 
     if (data.address()) {
-        data_hash = hash_data(data.get(mem), size);
+        data_hash = hash_data(data.get(mem), texture_size);
     }
 
     switch (base_format) {
@@ -67,45 +65,8 @@ uint64_t hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
     }
 }
 
-bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt, bool is_vulkan) {
-    return fmt == SCE_GXM_TEXTURE_BASE_FORMAT_P4
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_P8
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16
-        || (is_vulkan && fmt == SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9);
-}
-
-static bool is_block_compressed_format(SceGxmTextureBaseFormat fmt) {
-    return (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_UBC2
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_UBC3
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_UBC4
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_UBC5
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP
-        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP);
-}
-
-uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uint16_t height, const SceGxmTextureBaseFormat base_format) {
-    uint16_t max_mip_text;
-
-    if (is_block_compressed_format(base_format)) {
-        // blocks size is 4x4, do not try to upload mips whose with or height is not a multiple of 4
-        max_mip_text = std::bit_width(std::min<uint16_t>(width & (-width), height & (-height)));
-        max_mip_text -= 2;
-    } else {
-        max_mip_text = std::bit_width(std::min(width, height));
-    }
-
+uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uint16_t height) {
+    uint16_t max_mip_text = std::bit_width(std::min(width, height));
     return std::min(true_mip, max_mip_text);
 }
 } // namespace texture
@@ -140,17 +101,17 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
 
     bool is_vulkan = (backend == renderer::Backend::Vulkan);
 
-    const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);
+    const SceGxmTextureFormat fmt = gxm::get_format(gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
 
-    const bool block_compressed = renderer::texture::is_compressed_format(base_format);
-    auto width = static_cast<uint32_t>(gxm::get_width(&gxm_texture));
-    auto height = static_cast<uint32_t>(gxm::get_height(&gxm_texture));
-    if (block_compressed) {
-        // align width and height to block size
-        width = (width + 3) & ~3;
-        height = (height + 3) & ~3;
+    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422) {
+        LOG_ERROR_ONCE("Unimplemented YUV format {}, please report it to the developers.", log_hex(fmt::underlying(base_format)));
+        return;
     }
+
+    const bool is_block_compressed = gxm::is_block_compressed_format(base_format);
+    uint32_t width = gxm::get_width(gxm_texture);
+    uint32_t height = gxm::get_height(gxm_texture);
 
     const Ptr<uint8_t> data(gxm_texture.data_addr << 2);
     uint8_t *texture_data = data.get(mem);
@@ -160,126 +121,140 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
     }
 
     std::vector<uint8_t> texture_data_decompressed;
-    std::vector<uint8_t> texture_pixels_lineared; // TODO Move to context to avoid frequent allocation?
-    std::vector<uint32_t> palette_texture_pixels;
-    std::vector<uint8_t> yuv_texture_pixels;
+    std::vector<uint8_t> texture_pixels_lineared;
 
     const void *pixels = nullptr;
 
-    size_t pixels_per_stride = 0;
-    size_t bpp = bits_per_pixel(base_format);
-    size_t bytes_per_pixel = (bpp + 7) >> 3;
+    uint32_t pixels_per_stride = 0;
+    uint32_t bpp = gxm::bits_per_pixel(base_format);
+    uint32_t bytes_per_pixel = (bpp + 7) >> 3;
 
     const auto texture_type = gxm_texture.texture_type();
     const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
-    const bool need_unswizzle = is_swizzled && block_compressed;
-    const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !block_compressed && !texture::can_texture_be_unswizzled_without_decode(base_format, is_vulkan);
+    // swizzled bcn textures
+    const bool need_block_unswizzle = is_swizzled && gxm::is_bcn_format(base_format);
 
     uint32_t mip_index = 0;
-    uint32_t total_mip = get_upload_mip(gxm_texture.true_mip_count(), width, height, base_format);
+    uint32_t total_mip = get_upload_mip(gxm_texture.true_mip_count(), width, height);
     uint32_t face_uploaded_count = 0;
     uint32_t face_total_count;
-    size_t source_size = 0;
-    size_t total_source_so_far = 0;
+    uint32_t source_size = 0;
+    uint32_t total_source_so_far = 0;
 
     // Modified during decompression
-    uint32_t org_width = width;
-    uint32_t org_height = height;
-
-    uint32_t org_width_const = width;
-    uint32_t org_height_const = height;
+    const uint32_t org_width = width;
+    const uint32_t org_height = height;
 
     uint32_t face_align_bytes = 4;
-
-    if (texture_type == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
-        total_mip = 1;
-    }
 
     // > 0 means texture cube
     int upload_type = 0;
 
     face_total_count = 1;
-    if ((texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) {
+    if (texture_type == SCE_GXM_TEXTURE_CUBE || texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY) {
         upload_type = 1;
         face_total_count = 6;
 
-        const bool twok_align_cond1 = ((width >= 32) && (height >= 32) && ((bytes_per_pixel == 1) || (texture::is_block_compressed_format(base_format))));
-        const bool twok_align_cond2 = ((width >= 16) && (height >= 16) && ((bytes_per_pixel == 2) || (bytes_per_pixel == 4)));
-        const bool twok_align_cond3 = ((width >= 8) && (height >= 8) && (bytes_per_pixel == 8));
+        if (gxm_texture.mip_count != 0xF) {
+            const bool twok_align_cond1 = width >= 32 && height >= 32 && (bpp <= 8 || gxm::is_block_compressed_format(base_format));
+            const bool twok_align_cond2 = width >= 16 && height >= 16 && (bpp == 16 || bpp == 32);
+            const bool twok_align_cond3 = width >= 8 && height >= 8 && bpp == 64;
 
-        if (twok_align_cond1 || twok_align_cond2 || twok_align_cond3) {
-            face_align_bytes = 2048;
+            if (twok_align_cond1 || twok_align_cond2 || twok_align_cond3) {
+                face_align_bytes = 2048;
+            }
         }
     }
 
-    while ((face_uploaded_count < face_total_count) && org_width && org_height) {
-        width = org_width;
-        height = org_height;
+    uint32_t layout_width;
+    uint32_t layout_height;
+    if (gxm_texture.mip_count == 0xF && texture_type == SCE_GXM_TEXTURE_LINEAR) {
+        // a mipcount of 0xF means no mips, so for cube and planes, they follow each other directly without padding
+        layout_width = width;
+        layout_height = height;
+    } else {
+        layout_width = next_power_of_two(width);
+        layout_height = next_power_of_two(height);
+    }
+    auto [block_width, block_height] = gxm::get_block_size(base_format);
+    // block size in bytes
+    const uint32_t block_size = (block_width * block_height * bpp) / 8;
+    // from the number of pixels in a mipmap, we can get the number of blocks by shifting to the right by block_shift
+    const uint32_t block_shift = std::bit_width(block_width * block_height) - 1;
+
+    uint32_t align_width = block_width;
+    uint32_t align_height = block_height;
+    if (texture_type == SCE_GXM_TEXTURE_LINEAR) {
+        align_width = std::max(align_width, 8U);
+    } else if (texture_type == SCE_GXM_TEXTURE_TILED) {
+        align_width = std::max(align_width, 32U);
+        align_height = std::max(align_height, 32U);
+    }
+
+    const uint32_t org_layout_width = layout_width;
+    const uint32_t org_layout_height = layout_height;
+
+    while (face_uploaded_count < face_total_count && org_width > 0 && org_height > 0) {
         pixels = texture_data;
 
         SceGxmTextureBaseFormat upload_format = base_format;
+        uint32_t memory_height = height;
 
         // Get pixels per stride
+        pixels_per_stride = width;
         switch (texture_type) {
         case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
         case SCE_GXM_TEXTURE_CUBE_ARBITRARY:
-            width = next_power_of_two(width);
-            height = next_power_of_two(height);
-        case SCE_GXM_TEXTURE_SWIZZLED:
-        case SCE_GXM_TEXTURE_CUBE:
-        case SCE_GXM_TEXTURE_TILED:
-            pixels_per_stride = static_cast<size_t>(width);
-            break;
-        case SCE_GXM_TEXTURE_LINEAR:
-            pixels_per_stride = static_cast<size_t>((width + 7) & ~7);
+            pixels_per_stride = next_power_of_two(width);
+            memory_height = next_power_of_two(height);
             break;
         case SCE_GXM_TEXTURE_LINEAR_STRIDED:
-            pixels_per_stride = gxm::get_stride_in_bytes(&gxm_texture) / bytes_per_pixel;
+            pixels_per_stride = gxm::get_stride_in_bytes(gxm_texture) / bytes_per_pixel;
             if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P4) // P4 textures are the only one not byte aligned, therefore bytes_per_pixel should be 0.5 and not 1, correct it here
                 pixels_per_stride *= 2;
             break;
+        default:
+            break;
         }
+        pixels_per_stride = align(pixels_per_stride, align_width);
+        memory_height = align(memory_height, align_height);
 
-        if (gxm::is_paletted_format(base_format)) {
-            palette_texture_pixels.resize(width * height * 4);
-            if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
-                renderer::texture::palette_texture_to_rgba_8(palette_texture_pixels.data(),
-                    reinterpret_cast<const uint8_t *>(pixels), width, height, pixels_per_stride, renderer::texture::get_texture_palette(gxm_texture, mem));
-            } else {
-                renderer::texture::palette_texture_to_rgba_4(reinterpret_cast<uint32_t *>(palette_texture_pixels.data()),
-                    reinterpret_cast<const uint8_t *>(pixels), width, height, pixels_per_stride / 2, renderer::texture::get_texture_palette(gxm_texture, mem));
-            }
-            pixels = palette_texture_pixels.data();
-            bytes_per_pixel = 4;
-            bpp = 32;
-            upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
-        }
-
-        if (need_unswizzle) {
-            // Must unswizzle them
-            texture_data_decompressed.resize(renderer::texture::get_compressed_size(base_format, width, height));
-            resolve_z_order_compressed_texture(base_format, texture_data_decompressed.data(), pixels, width, height);
-            pixels = texture_data_decompressed.data();
-        } else if (need_decompress_and_unswizzle_on_cpu) {
-            // Must decompress them
-            texture_data_decompressed.resize(align(width, 4) * align(height, 4) * 4);
-            source_size = decompress_compressed_swizz_texture(base_format, texture_data_decompressed.data(), pixels, width, height);
-            bytes_per_pixel = 4;
-            bpp = 32;
-            upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
-            pixels = texture_data_decompressed.data();
-        }
-
+        // perform all needed conversions (formats not supported by modern GPUs)
         switch (base_format) {
+        case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
+            if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
+                palette_texture_to_rgba_8(reinterpret_cast<uint32_t *>(texture_data_decompressed.data()),
+                    reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, get_texture_palette(gxm_texture, mem));
+            } else {
+                palette_texture_to_rgba_4(reinterpret_cast<uint32_t *>(texture_data_decompressed.data()),
+                    reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, get_texture_palette(gxm_texture, mem));
+            }
+            pixels = texture_data_decompressed.data();
+            bytes_per_pixel = 4;
+            bpp = 32;
+            upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
+            break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+            if (!is_swizzled)
+                LOG_ERROR_ONCE("Unhandled non-swizzled PVRT format, please report it to the developers");
+
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
+            // this actually also unswizzles the texture
+            source_size = decompress_compressed_texture(base_format, texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
+            bytes_per_pixel = 4;
+            bpp = 32;
+            upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
+            pixels = texture_data_decompressed.data();
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
             // Convert U8U3U3U2 to U8U8U8U8
-            texture_data_decompressed.resize(width * height * 4);
-            convert_U8U3U3U2_to_U8U8U8U8(texture_data_decompressed.data(), pixels, width, height, pixels_per_stride);
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
+            convert_U8U3U3U2_to_U8U8U8U8(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
             pixels = texture_data_decompressed.data();
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
             bpp = 32;
@@ -288,151 +263,111 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             // this format is supported on all GPUs with vulkan
             if (is_vulkan)
                 break;
-            texture_data_decompressed.resize(width * height * 6);
-            decompress_packed_float_e5m9m9m9(base_format, texture_data_decompressed.data(), pixels, width, height);
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 6);
+            decompress_packed_float_e5m9m9m9(base_format, texture_data_decompressed.data(), pixels, width, memory_height);
             pixels = texture_data_decompressed.data();
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
             // don't change what openGL is doing (which is completely wrong)
             if (!is_vulkan)
                 break;
-            texture_data_decompressed.resize(width * height * 8);
-            convert_u2f10f10f10_to_f16f16f16f16(texture_data_decompressed.data(), pixels, width, height, pixels_per_stride, fmt);
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 8);
+            convert_u2f10f10f10_to_f16f16f16f16(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height, fmt);
             pixels = texture_data_decompressed.data();
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16;
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
-            texture_data_decompressed.resize(width * height * 4);
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
             if (is_vulkan) {
                 // d24_u8 or x8_d24 is not supported on all GPUs (thanks AMD)
-                convert_x8u24_to_f32(texture_data_decompressed.data(), pixels, width, height, pixels_per_stride, fmt);
+                convert_x8u24_to_f32(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height, fmt);
                 upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F32;
             } else {
                 // X8 = [24-31], D24 = [0-23], technically this is GL_UNSIGNED_INT_24_8_REV which does not exist
                 // TODO: Requires shader to convert the normalized value read by GL to unsigned int. Just multiply by 2^24-1 when reading and you're done.
                 // TODO: this is wrong, the depth is in the upper or lower 24 bits according to the swizzle
-                convert_x8u24_to_u24x8(texture_data_decompressed.data(), pixels, width, height, pixels_per_stride);
+                convert_x8u24_to_u24x8(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
             }
             pixels = texture_data_decompressed.data();
-            pixels_per_stride = width;
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
             // Convert F32M to F32
-            texture_data_decompressed.resize(width * height * 4);
-            convert_f32m_to_f32(texture_data_decompressed.data(), pixels, width, height, pixels_per_stride);
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
+            convert_f32m_to_f32(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
             pixels = texture_data_decompressed.data();
-            pixels_per_stride = width;
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F32;
             break;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
-        case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
-            source_size = renderer::texture::get_compressed_size(base_format, width, height);
-
-            if ((texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) {
-                size_t compressed_size = renderer::texture::get_compressed_size(base_format, org_width, org_height);
-
-                texture_pixels_lineared.resize(compressed_size);
-                remove_compressed_arbitrary_blocks(base_format, texture_pixels_lineared.data(), pixels, org_width, org_height);
-
-                pixels = texture_pixels_lineared.data();
-                pixels_per_stride = org_width;
-
-                if (need_unswizzle)
-                    texture_data_decompressed.clear();
-            }
+        // TODO: we are decoding YUV420P2 as YUV420P3, that's completely wrong...
+        // The reason I do not put an error message instead is because the video decoder
+        // is always outputting YUV420P2 frames (instead of what is asked by the user...)
+        // so this works in this case but that needs to be fixed
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
+            yuv420P3_texture_to_rgb(texture_data_decompressed.data(),
+                reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height);
+            pixels = texture_data_decompressed.data();
+            bpp = 32;
+            upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
             break;
-
         default:
-            if (texture_type == SCE_GXM_TEXTURE_LINEAR || texture_type == SCE_GXM_TEXTURE_LINEAR_STRIDED)
-                break;
-            // Convert data to linear layout
-            texture_pixels_lineared.resize(width * height * bytes_per_pixel);
+            break;
+        }
 
-            if (is_swizzled)
-                renderer::texture::swizzled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), width, height,
+        if (texture_type != SCE_GXM_TEXTURE_LINEAR && texture_type != SCE_GXM_TEXTURE_LINEAR_STRIDED && !gxm::is_pvrt_format(base_format)) {
+            // Convert data to linear layout
+            texture_pixels_lineared.resize(pixels_per_stride * memory_height * bytes_per_pixel);
+
+            if (is_swizzled && gxm::is_bcn_format(base_format))
+                // just unswizzle the blocks
+                resolve_z_order_compressed_texture(base_format, texture_pixels_lineared.data(), pixels, pixels_per_stride, memory_height);
+            else if (is_swizzled)
+                swizzled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height,
                     static_cast<std::uint8_t>(bpp));
             else
-                renderer::texture::tiled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), width, height,
+                tiled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height,
                     static_cast<std::uint8_t>(bpp));
 
             pixels = texture_pixels_lineared.data();
-
-            if (need_decompress_and_unswizzle_on_cpu)
-                texture_data_decompressed.clear();
         }
 
-        if ((texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) {
-            width = org_width;
-            height = org_height;
-        }
+        upload_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
 
-        if (gxm::is_paletted_format(base_format)) {
-            pixels_per_stride = width;
-        }
-
-        if (gxm::is_yuv_format(base_format)) {
-            switch (fmt) {
-            case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC1:
-            case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC1:
-            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1:
-            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1: {
-                yuv_texture_pixels.resize(width * height * 4);
-                renderer::texture::yuv420_texture_to_rgb(yuv_texture_pixels.data(),
-                    reinterpret_cast<const uint8_t *>(pixels), width, height);
-                pixels = yuv_texture_pixels.data();
-                pixels_per_stride = width;
-                bpp = 32;
-                upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
-                break;
-            }
-
-            case SCE_GXM_TEXTURE_FORMAT_YUYV422_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YVYU422_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_UYVY422_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_VYUY422_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YUYV422_CSC1:
-            case SCE_GXM_TEXTURE_FORMAT_YVYU422_CSC1:
-            case SCE_GXM_TEXTURE_FORMAT_UYVY422_CSC1:
-            case SCE_GXM_TEXTURE_FORMAT_VYUY422_CSC1:
-                LOG_ERROR("Yuv Texture format not implemented: {}", fmt::underlying(fmt));
-                assert(false);
-            default:
-                assert(false);
-            }
-        }
-
-        if (!block_compressed && !need_decompress_and_unswizzle_on_cpu) {
-            source_size = (pixels_per_stride * height * ((bpp + 7) >> 3));
-        }
-
-        upload_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, block_compressed, pixels_per_stride);
+        const uint32_t nb_pixels = align(layout_width, align_width) * align(layout_height, align_height);
+        const uint32_t mip_size = (nb_pixels >> block_shift) * block_size;
+        texture_data += mip_size;
+        total_source_so_far += mip_size;
 
         mip_index++;
-        org_width /= 2;
-        org_height /= 2;
-
-        texture_data += source_size;
-        total_source_so_far += source_size;
+        width /= 2;
+        height /= 2;
+        layout_width /= 2;
+        layout_height /= 2;
 
         if (mip_index == total_mip) {
+            if ((texture_type == SCE_GXM_TEXTURE_CUBE || texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY) && gxm_texture.mip_count != 0xF) {
+                // we must do as if all possible mips are here
+                while (layout_width > 0 && layout_height > 0) {
+                    const uint32_t nb_pixels = align(layout_width, align_width) * align(layout_height, align_height);
+                    const uint32_t mip_size = (nb_pixels >> block_shift) * block_size;
+                    texture_data += mip_size;
+                    total_source_so_far += mip_size;
+                    layout_width /= 2;
+                    layout_height /= 2;
+                }
+            }
+
             mip_index = 0;
             face_uploaded_count++;
 
-            org_width = org_width_const;
-            org_height = org_height_const;
+            layout_width = org_layout_width;
+            layout_height = org_layout_height;
+            width = org_width;
+            height = org_height;
 
             upload_type++;
 
-            size_t source_unaligned_size = total_source_so_far;
+            uint32_t source_unaligned_size = total_source_so_far;
             total_source_so_far = align(total_source_so_far, face_align_bytes);
 
             texture_data += total_source_so_far - source_unaligned_size;
@@ -446,7 +381,6 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     size_t index = 0;
     bool configure = false;
     bool upload = false;
-    const size_t size = texture_size(gxm_texture);
 
     // Try to find GXM texture in cache.
     int cached_gxm_texture_index = -1;
@@ -458,20 +392,6 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
     Address range_protect_begin = 0;
     Address range_protect_end = 0;
-    bool should_use_hash = true;
-
-    // To prevent protecting too commonly accessed data that belongs to the page where the texture also resides
-    // (for example, uniform buffer value and texture data got mixed, so page faults are triggered too many, it's not always good).
-    // This works under the assumption that once this big enough texture decided to modify. It will have to modify either all of its data,
-    // or replace with an entire new texture.
-    if (use_protect && size >= mem.page_size * 4) {
-        range_protect_begin = align(gxm_texture.data_addr << 2, mem.page_size);
-        range_protect_end = align_down((gxm_texture.data_addr << 2) + size, mem.page_size);
-
-        if (range_protect_end - range_protect_begin >= mem.page_size * 4) {
-            should_use_hash = false;
-        }
-    }
 
     TextureCacheInfo *info;
     if (cached_gxm_texture_index == -1) {
@@ -489,10 +409,27 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
         configure = true;
         upload = true;
+        // only hash the first mips, assume no game would modify other mips (and faces) without modifying the first one
+        info->texture_size = gxm::texture_size_first_mip(gxm_texture);
         info->texture = gxm_texture;
+
+        // To prevent protecting too commonly accessed data that belongs to the page where the texture also resides
+        // (for example, uniform buffer value and texture data got mixed, so page faults are triggered too many, it's not always good).
+        // This works under the assumption that once this big enough texture decided to modify. It will have to modify either all of its data,
+        // or replace with an entire new texture.
+        bool should_use_hash = true;
+        if (use_protect && info->texture_size >= mem.page_size * 4) {
+            range_protect_begin = align(gxm_texture.data_addr << 2, mem.page_size);
+            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.page_size);
+
+            if (range_protect_end - range_protect_begin >= mem.page_size * 4) {
+                should_use_hash = false;
+            }
+        }
+
         info->use_hash = should_use_hash;
         if (info->use_hash) {
-            info->hash = hash_texture_data(gxm_texture, mem);
+            info->hash = hash_texture_data(gxm_texture, info->texture_size, mem);
         }
     } else {
         // Texture is cached.
@@ -500,7 +437,7 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         info = &infoes[index];
         configure = false;
         if (info->use_hash) {
-            const uint64_t hash = hash_texture_data(gxm_texture, mem);
+            const uint64_t hash = hash_texture_data(gxm_texture, info->texture_size, mem);
             upload = info->hash != hash;
             info->hash = hash;
         } else {

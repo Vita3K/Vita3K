@@ -50,14 +50,14 @@ SwsContext *get_sws_context(size_t width, size_t height) {
     return s_render_sws_context;
 }
 
-void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_t height) {
+void yuv420P3_texture_to_rgb(uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, uint32_t layout_width, uint32_t layout_height) {
     SwsContext *context = get_sws_context(width, height);
     assert(context);
 
     const uint8_t *slices[] = {
-        &src[0], // Y Slice
-        &src[width * height], // U Slice
-        &src[width * height + width * height / 4], // V Slice
+        src, // Y Slice
+        src + layout_width * layout_height, // U Slice
+        src + layout_width * layout_height + layout_width * layout_height / 4, // V Slice
     };
 
     int strides[] = {
