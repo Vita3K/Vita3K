@@ -67,7 +67,7 @@ jobs:
         with:
             variant: sccache
         env:
-            SCCACHE_LOG: trace
+            SCCACHE_LOG: debug
             SCCACHE_ERROR_LOG: ${{ github.workspace }}\sccache_log.txt
             SCCACHE_GHA_ENABLED: OFF
         if: matrix.os == 'windows-latest'
@@ -77,6 +77,10 @@ jobs:
           name: sscache_log-after-start
           path: sccache_log.txt
           if: matrix.os == 'windows-latest'
+
+      - name: List cache content before
+        shell: cmd
+        run: dir /b /s ${{ github.workspace }}\sccache >${{ github.workspace }}\cashe_files_log_before.txt
  
       - uses: actions/cache@v3
         with:
@@ -156,10 +160,17 @@ jobs:
           # generators work on CMake
           path: build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
 
+      - name: List cache content after
+        shell: cmd
+        run: dir /b /s ${{ github.workspace }}\sccache >${{ github.workspace }}\cashe_files_log_after.txt
+
       - uses: actions/upload-artifact@v3
         with:
           name: sccache_log
-          path: ${{ github.workspace }}\sccache_log.txt
+          path: |
+            ${{ github.workspace }}\sccache_log.txt
+            ${{ github.workspace }}\cashe_files_log_before.txt
+            ${{ github.workspace }}\cashe_files_log_after.txt
           if: matrix.os == 'windows-latest'
 
     outputs:
