@@ -80,7 +80,7 @@ jobs:
 
       - name: List cache content before
         shell: cmd
-        run: dir /b /s ${{ github.workspace }}\sccache >${{ github.workspace }}\cashe_files_log_before.txt
+        run: dir /b /s ${{ github.workspace }}\.sccache >${{ github.workspace }}\cashe_files_log_before.txt
  
       - uses: actions/cache@v3
         with:
@@ -162,7 +162,7 @@ jobs:
 
       - name: List cache content after
         shell: cmd
-        run: dir /b /s ${{ github.workspace }}\sccache >${{ github.workspace }}\cashe_files_log_after.txt
+        run: dir /b /s ${{ github.workspace }}\.sccache >${{ github.workspace }}\cashe_files_log_after.txt
 
       - uses: actions/upload-artifact@v3
         with:
