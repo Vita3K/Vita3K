@@ -68,7 +68,7 @@ jobs:
             variant: sccache
         env:
             SCCACHE_LOG: debug
-            SCCACHE_ERROR_LOG: sccache_log.txt
+            SCCACHE_ERROR_LOG: ${{ github.workspace }}/sccache_log.txt
         if: matrix.os == 'windows-latest'
 
       - uses: actions/upload-artifact@v3
