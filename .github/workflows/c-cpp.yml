@@ -67,13 +67,14 @@ jobs:
         with:
             variant: sccache
         env:
-            SCCACHE_LOG: debug
+            SCCACHE_LOG: trace
             SCCACHE_ERROR_LOG: ${{ github.workspace }}\sccache_log.txt
+            SCCACHE_GHA_ENABLED: OFF
         if: matrix.os == 'windows-latest'
 
       - uses: actions/upload-artifact@v3
         with:
-          name: vita3k-${{ env.git_short_sha }}-${{ matrix.os }}-sscache_log-1
+          name: sscache_log-after-start
           path: sccache_log.txt
           if: matrix.os == 'windows-latest'
  
