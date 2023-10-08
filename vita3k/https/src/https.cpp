@@ -30,6 +30,7 @@ typedef int abs_socket;
 #endif
 
 #include <openssl/err.h>
+#include <openssl/md5.h>
 #include <openssl/ssl.h>
 
 #include <util/log.h>
@@ -266,6 +267,78 @@ static uint64_t get_file_size(const std::string &header) {
     return file_size;
 }
 
+static std::string convert_md5_bytes_to_str(unsigned char *md5_bytes) {
+    std::string content_md5(MD5_DIGEST_LENGTH * 2, '\0');
+    for (int i = 0; i < MD5_DIGEST_LENGTH; i++) {
+        sprintf(&content_md5[i * 2], "%02X", md5_bytes[i]);
+    }
+
+    return content_md5;
+}
+
+static std::string calculate_md5_file(const std::string &file_path) {
+    std::ifstream file(file_path, std::ios::binary);
+    if (!file) {
+        LOG_ERROR("Failed to open file: {}", file_path);
+        return {};
+    }
+
+    MD5_CTX md5_context;
+    MD5_Init(&md5_context);
+
+    char buffer[1024];
+    while (!file.eof()) {
+        file.read(buffer, sizeof(buffer));
+        MD5_Update(&md5_context, buffer, file.gcount());
+    }
+
+    unsigned char md5_digest[MD5_DIGEST_LENGTH];
+    MD5_Final(md5_digest, &md5_context);
+
+    return convert_md5_bytes_to_str(md5_digest);
+}
+
+static std::string get_content_md5(const std::string &header) {
+    std::smatch match;
+    std::string content_md5_base64;
+    // Get the redirection URL from the response header (Location)
+    if (std::regex_search(header, match, std::regex("Content-MD5: ([-A-Za-z0-9+/=]+)"))) {
+        content_md5_base64 = match[1];
+    } else {
+        LOG_ERROR("No success found Content-MD5:\n{}", header);
+        return {};
+    }
+
+    const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    unsigned char md5_bytes[MD5_DIGEST_LENGTH];
+    int i = 0;
+    uint32_t accum = 0;
+    int accum_bits = 0;
+
+    for (const auto c : content_md5_base64) {
+        if (std::isspace(c) || (c == '=')) {
+            continue;
+        }
+
+        size_t char_value = base64_chars.find(c);
+        if (char_value == std::string::npos) {
+            LOG_ERROR("Invalid character in base64 string: {}", c);
+            return {};
+        }
+
+        accum = static_cast<uint32_t>(accum << 6) | char_value;
+        accum_bits += 6;
+
+        if (accum_bits >= 8) {
+            accum_bits -= 8;
+            md5_bytes[i++] = static_cast<unsigned char>((accum >> accum_bits) & 0xFF);
+        }
+    }
+
+    return convert_md5_bytes_to_str(md5_bytes);
+}
+
 bool download_file(std::string url, const std::string &output_file_path, ProgressCallback progress_callback) {
     // Get the HEAD of response
     auto response = get_web_response(url, "HEAD");
@@ -298,6 +371,13 @@ bool download_file(std::string url, const std::string &output_file_path, Progres
     // Check if the response is resource not found
     if (response.find("HTTP/1.1 404 Not Found") != std::string::npos) {
         LOG_ERROR("404 Not Found");
+        return false;
+    }
+
+    // Get the MD5 from the response header (Content-MD5)
+    const auto content_md5 = get_content_md5(response);
+    if (content_md5.empty()) {
+        LOG_ERROR("Failed to get Content-MD5 on header: {}", response);
         return false;
     }
 
@@ -426,7 +506,15 @@ bool download_file(std::string url, const std::string &output_file_path, Progres
         return false;
     }
 
-    return fs::exists(output_file_path);
+    // Check if the downloaded file is corrupted
+    const auto downloaded_file_md5 = calculate_md5_file(output_file_path);
+    if (downloaded_file_md5 != content_md5) {
+        LOG_ERROR("Downloaded file is corrupted, MD5 Expected: {}; Downloaded: {}", content_md5, downloaded_file_md5);
+        fs::remove(output_file_path);
+        return false;
+    }
+
+    return true;
 }
 
 } // namespace https
