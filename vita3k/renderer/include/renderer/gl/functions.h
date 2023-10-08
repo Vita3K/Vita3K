@@ -67,7 +67,7 @@ void sync_stencil_data(const renderer::GxmRecordState &state, const MemState &me
 void sync_stencil_func(const GxmStencilStateOp &state_op, const GxmStencilStateValues &state_vals, const MemState &mem, const bool is_back_stencil);
 void sync_mask(const GLState &state, GLContext &context, const MemState &mem);
 void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front);
-void sync_point_line_width(const std::uint32_t size, const bool front);
+void sync_point_line_width(const GLState &state, const std::uint32_t size, const bool front);
 void sync_depth_bias(const int factor, const int unit, const bool front);
 void sync_blending(const GxmRecordState &state, const MemState &mem);
 void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config,

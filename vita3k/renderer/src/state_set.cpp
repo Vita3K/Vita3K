@@ -342,7 +342,7 @@ COMMAND_SET_STATE(point_line_width) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
-        gl::sync_point_line_width(width, is_front);
+        gl::sync_point_line_width(static_cast<gl::GLState &>(renderer), width, is_front);
         break;
 
     case Backend::Vulkan:
