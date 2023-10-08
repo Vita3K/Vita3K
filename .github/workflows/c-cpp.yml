@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest]
         config: [Release]
         include:
           - os: ubuntu-latest
@@ -68,7 +68,7 @@ jobs:
             variant: sccache
         env:
             SCCACHE_LOG: debug
-            SCCACHE_ERROR_LOG: ${{ github.workspace }}/sccache_log.txt
+            SCCACHE_ERROR_LOG: ${{ github.workspace }}\sccache_log.txt
         if: matrix.os == 'windows-latest'
 
       - uses: actions/upload-artifact@v3
@@ -157,8 +157,8 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: vita3k-${{ env.git_short_sha }}-${{ matrix.os }}-sscache_log
-          path: sccache_log.txt
+          name: sccache_log
+          path: ${{ github.workspace }}\sccache_log.txt
           if: matrix.os == 'windows-latest'
 
     outputs:
