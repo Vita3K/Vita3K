@@ -146,11 +146,6 @@ EXPORT(int, sceNgsPatchCreateRouting, SceNgsPatchSetupInfo *patch_info, Ptr<ngs:
 
 EXPORT(SceInt32, sceNgsPatchGetInfo, ngs::Patch *patch, SceNgsPatchAudioPropInfo *prop_info, SceNgsPatchDeliveryInfo *deli_info) {
     TRACY_FUNC(sceNgsPatchGetInfo, patch, prop_info, deli_info);
-    // Always stereo
-    if (prop_info) {
-        prop_info->in_channels = 2;
-        prop_info->out_channels = 2;
-    }
 
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
@@ -160,10 +155,9 @@ EXPORT(SceInt32, sceNgsPatchGetInfo, ngs::Patch *patch, SceNgsPatchAudioPropInfo
     }
 
     if (prop_info) {
-        prop_info->volume_matrix.matrix[0][0] = patch->volume_matrix[0][0];
-        prop_info->volume_matrix.matrix[0][1] = patch->volume_matrix[0][1];
-        prop_info->volume_matrix.matrix[1][0] = patch->volume_matrix[1][0];
-        prop_info->volume_matrix.matrix[1][1] = patch->volume_matrix[1][1];
+        memcpy(prop_info->volume_matrix.matrix, patch->volume_matrix, sizeof(patch->volume_matrix));
+        prop_info->in_channels = patch->dest->rack->channels_per_voice;
+        prop_info->out_channels = patch->source->rack->channels_per_voice;
     }
 
     if (deli_info) {
@@ -668,7 +662,7 @@ EXPORT(SceInt32, sceNgsVoiceGetOutputPatch, ngs::Voice *voice, const SceInt32 ou
 
     *patch = voice->patches[output_index][output_subindex];
     if (!(*patch) || (patch->get(emuenv.mem))->output_sub_index == -1) {
-        LOG_WARN("Getting non-existen output patch port {}:{}", output_index, output_subindex);
+        LOG_WARN_ONCE("Getting non-existen output patch port {}:{}", output_index, output_subindex);
         *patch = Ptr<ngs::Patch>(0);
     }
 
@@ -846,10 +840,7 @@ EXPORT(SceInt32, sceNgsVoicePatchSetVolumesMatrix, ngs::Patch *patch, const SceN
     if (!patch || patch->output_sub_index == -1)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
-    patch->volume_matrix[0][0] = matrix->matrix[0][0];
-    patch->volume_matrix[0][1] = matrix->matrix[0][1];
-    patch->volume_matrix[1][0] = matrix->matrix[1][0];
-    patch->volume_matrix[1][1] = matrix->matrix[1][1];
+    memcpy(patch->volume_matrix, matrix->matrix, sizeof(matrix->matrix));
 
     return SCE_NGS_OK;
 }

@@ -72,9 +72,14 @@ int32_t VoiceInputManager::receive(ngs::Patch *patch, const VoiceProduct &produc
     float volume_matrix[2][2];
     memcpy(volume_matrix, patch->volume_matrix, sizeof(volume_matrix));
 
+    // we always use stereo internally, so make sure not to add too many channels
     if (patch->source->rack->channels_per_voice == 1) {
-        // the volume for the second channel may contain random values
         volume_matrix[1][0] = 0.0f;
+        volume_matrix[1][1] = 0.0f;
+    }
+
+    if (patch->dest->rack->channels_per_voice == 1) {
+        volume_matrix[0][1] = 0.0f;
         volume_matrix[1][1] = 0.0f;
     }
 
@@ -200,10 +205,7 @@ Ptr<Patch> Voice::patch(const MemState &mem, const int32_t index, int32_t subind
     patch->source = this;
 
     // Initialize the matrix
-    patch->volume_matrix[0][1] = 0.0f;
-    patch->volume_matrix[0][0] = 1.0f;
-    patch->volume_matrix[1][0] = 0.0f;
-    patch->volume_matrix[1][1] = 1.0f;
+    memset(patch->volume_matrix, 0, sizeof(patch->volume_matrix));
 
     return patches[index][subindex];
 }
