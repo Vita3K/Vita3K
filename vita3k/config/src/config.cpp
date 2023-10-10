@@ -137,12 +137,12 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->group("Options");
 
     // Positional options
-    app.add_option("content-path", command_line.content_path, "Path of app in .vpk/.zip or folder of content to install & run")
+    app.add_option("content-path", command_line.content_path, "Path to the app with a .vpk/.zip extension or folder of content to install & run")
         ->default_str({});
 
     // Grouped options
     auto input = app.add_option_group("Input", "Special options for Vita3K");
-    input->add_option("--console,-z", command_line.console, "Starts the emulator in fullscreen mode.")
+    input->add_flag("--console,-z", command_line.console, "Start the emulator in console mode.")
        ->default_val(false)->group("Input");
     input->add_option("--app-args,-Z", command_line.app_args, "Argument for app, use ', ' to separate arguments.")
         ->default_str("")->group("Input");
@@ -150,21 +150,21 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
        ->default_val(false)->group("Input");
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
-    input->add_option("--installed-path,-r", command_line.run_app_path, "Path of installed app to run")
+    input->add_option("--installed-path,-r", command_line.run_app_path, "Path to the installed app to run")
         ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
         ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
-    auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path of app (in .pkg format) to install")
+    auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path to the app file (.pkg extension) to install")
         ->default_str({})->group("Input");
-    auto input_zrif = input->add_option("--zrif", command_line.pkg_zrif, "zrif for the app (in .pkg format)")
+    auto input_zrif = input->add_option("--zrif", command_line.pkg_zrif, "zrif to decode the app (base64 format)")
         ->default_str({})->group("Input");
     input_pkg->needs(input_zrif);
     input_zrif->needs(input_pkg);
 
     auto config = app.add_option_group("Configuration", "Modify Vita3K's config.yml file");
-    config->add_flag("--" + cfg[e_archive_log] + ",-A", command_line.archive_log, "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
+    config->add_flag("--" + cfg[e_archive_log] + ",-A", command_line.archive_log, "Make a duplicate of the log file with TITLE_ID and Game ID as title")
         ->group("Logging");
     config->add_option("--" + cfg[e_backend_renderer] + ",-B", command_line.backend_renderer, "Renderer backend to use")
         ->ignore_case()->check(CLI::IsMember(std::set<std::string>{ "OpenGL", "Vulkan" }))->group("Vita Emulation");
@@ -176,7 +176,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->group("YML");
     config->add_flag("--load-config,-f", command_line.load_config, "Load a configuration file. Setting --keep-config with this option preserves the configuration file.")
         ->group("YML");
-    config->add_flag("--fullscreen,-F", command_line.fullscreen, "Starts the emulator in fullscreen mode.")
+    config->add_flag("--fullscreen,-F", command_line.fullscreen, "Start the emulator in fullscreen mode.")
         ->group("YML");
 
     std::vector<std::string> lle_modules{};
