@@ -24,7 +24,7 @@
 
 namespace compat {
 
-bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv);
-bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv);
+bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv);
+bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv);
 
 } // namespace compat
