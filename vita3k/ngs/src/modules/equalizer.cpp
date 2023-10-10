@@ -24,9 +24,7 @@ bool EqualizerModule::process(KernelState &kern, const MemState &mem, const SceU
     if (!data.is_bypassed) {
         const SceNgsParamsDescriptor *desc = data.get_parameters<SceNgsParamsDescriptor>(mem);
         if (desc->id == SCE_NGS_PARAM_EQ_COEFF_STRUCT_ID || desc->id == SCE_NGS_PARAM_EQ_STRUCT_ID) {
-            static bool has_happened = false;
-            LOG_WARN_IF(!has_happened, "Game is using unimplemented equalizer audio module");
-            has_happened = true;
+            LOG_WARN_ONCE("Game is using unimplemented equalizer audio module");
         }
     }
 

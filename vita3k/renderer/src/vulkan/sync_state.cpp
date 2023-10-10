@@ -249,10 +249,7 @@ void sync_visibility_index(VKContext &context, bool enable, uint32_t index, bool
     }
 
     if (index >= context.current_visibility_buffer->size) {
-        static bool has_happened = false;
-        LOG_WARN_IF(!has_happened, "Using visibility index {} which is too big for the buffer");
-        has_happened = true;
-
+        LOG_WARN_ONCE("Using visibility index {} which is too big for the buffer", index);
         index = 0;
     }
 

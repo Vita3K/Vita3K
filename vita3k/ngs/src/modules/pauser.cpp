@@ -24,9 +24,7 @@ bool PauserModule::process(KernelState &kern, const MemState &mem, const SceUID 
     if (!data.is_bypassed) {
         const SceNgsParamsDescriptor *desc = data.get_parameters<SceNgsParamsDescriptor>(mem);
         if (desc->id == SCE_NGS_PAUSER_PARAMS_STRUCT_ID) {
-            static bool has_happened = false;
-            LOG_WARN_IF(!has_happened, "Game is using unimplemented pauser audio module");
-            has_happened = true;
+            LOG_WARN_ONCE("Game is using unimplemented pauser audio module");
         }
     }
 

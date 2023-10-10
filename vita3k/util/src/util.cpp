@@ -131,25 +131,6 @@ ExitCode add_sink(const fs::path &log_path) {
     return Success;
 }
 
-typedef std::set<std::string> NameSet;
-static std::mutex mutex;
-static NameSet logged;
-
-int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_val) {
-    bool inserted = false;
-
-    {
-        const std::lock_guard<std::mutex> lock(mutex);
-        inserted = logged.insert(name).second;
-    }
-
-    if (inserted) {
-        LOG_ERROR("{} returned {} ({})", name, error_str, log_hex(error_val));
-    }
-
-    return error_val;
-}
-
 // log exceptions and flush log file on exceptions
 #ifdef WIN32
 static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {

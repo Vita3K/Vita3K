@@ -1,16 +1,7 @@
 add_library(
 	module
 	STATIC
-	include/module/args_layout.h
-	include/module/bridge.h
-	include/module/bridge_types.h
-	include/module/lay_out_args.h
-	include/module/load_module.h
-	include/module/module.h
-	include/module/read_arg.h
-	include/module/write_return_value.h
 	src/load_module.cpp
-	src/module.cpp
 	src/read_arg.cpp
 	src/write_return_value.cpp
 )

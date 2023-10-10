@@ -21,11 +21,17 @@
 
 #include <util/log.h>
 
-int unimplemented_impl(const char *name);
-#define UNIMPLEMENTED() unimplemented_impl(export_name)
+#define UNIMPLEMENTED()                                                \
+    ([&]() {                                                           \
+        LOG_WARN_ONCE("Unimplemented {} import called.", export_name); \
+        return 0;                                                      \
+    })()
 
-int stubbed_impl(const char *name, const char *info);
-#define STUBBED(info) stubbed_impl(export_name, info)
+#define STUBBED(info)                                                       \
+    ([&]() {                                                                \
+        LOG_WARN_ONCE("Stubbed {} import called. ({})", export_name, info); \
+        return 0;                                                           \
+    })()
 
 #define CALL_EXPORT(name, ...) export_##name(emuenv, thread_id, #name, ##__VA_ARGS__)
 

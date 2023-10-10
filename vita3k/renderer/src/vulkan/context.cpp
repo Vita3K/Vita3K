@@ -192,9 +192,7 @@ void VKContext::start_recording() {
 
     // safety check
     if (render_target->cmd_buffer_idx == render_target->cmd_buffers[current_frame_idx].size()) {
-        static bool has_happened = false;
-        LOG_WARN_IF(!has_happened, "Render Target is using more scenes per frame than what was planned!");
-        has_happened = true;
+        LOG_WARN_ONCE("Render Target is using more scenes per frame than what was planned!");
 
         // add additional cmd buffers, fences and semaphores
         vk::CommandBufferAllocateInfo cmd_buffer_info{
