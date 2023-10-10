@@ -89,6 +89,7 @@ public:
     std::optional<std::string> delete_title_id;
     std::optional<std::string> pkg_path;
     std::optional<std::string> pkg_zrif;
+    std::optional<std::string> pup_path;
 
     // Setting not present in the YAML file
     fs::path config_path = {};

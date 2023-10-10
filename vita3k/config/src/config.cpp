@@ -156,6 +156,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
         ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
+    input->add_option("--firmware", command_line.pup_path, "Path to the firmware file (.pup extension) to install");
     auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path to the app file (.pkg extension) to install")
         ->default_str({})->group("Input");
     auto input_zrif = input->add_option("--zrif", command_line.pkg_zrif, "zrif to decode the app (base64 format)")
@@ -215,6 +216,10 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     }
     if (command_line.delete_title_id.has_value()) {
         cfg.delete_title_id = std::move(command_line.delete_title_id);
+        return QuitRequested;
+    }
+    if (command_line.pup_path.has_value()) {
+        cfg.pup_path = std::move(command_line.pup_path);
         return QuitRequested;
     }
     if (command_line.pkg_path.has_value() && command_line.pkg_zrif.has_value()) {
