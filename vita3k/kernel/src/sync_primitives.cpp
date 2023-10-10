@@ -412,11 +412,8 @@ SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID t
             timer->waiting_threads->size());
     }
 
-    if (timeout) {
-        static bool has_happened = false;
-        LOG_WARN_IF(!has_happened, "Ignoring timeout");
-        has_happened = true;
-    }
+    if (timeout)
+        LOG_WARN_ONCE("Ignoring timeout");
 
     const ThreadStatePtr thread = kernel.get_thread(thread_id);
 

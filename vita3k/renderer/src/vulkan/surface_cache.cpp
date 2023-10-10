@@ -153,9 +153,7 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
         if (vk_format == vk::Format::eR8G8B8A8Unorm) {
             vk_format = vk::Format::eR8G8B8A8Srgb;
         } else {
-            static bool has_happened = false;
-            LOG_WARN_IF(!has_happened, "Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
-            has_happened = true;
+            LOG_WARN_ONCE("Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
         }
     }
 
@@ -241,11 +239,8 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
                     castable = (((bytes_per_pixel_in_store % bytes_per_pixel_requested) == 0) && (pixel_stride % info.pixel_stride == 0) && ((pixel_stride / info.pixel_stride) == (bytes_per_pixel_in_store / bytes_per_pixel_requested)));
                 }
 
-                if (!castable) {
-                    static bool has_happened = false;
-                    has_happened = true;
+                if (!castable)
                     return nullptr;
-                }
             }
             if (castable) {
                 // TODO: this is true only for linear textures (and also kind of for tiled textures) (and in this case start_x = 0),
@@ -360,9 +355,7 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
                         };
                         cmd_buffer.copyImage(info.texture.image, vk::ImageLayout::eGeneral, casted->texture.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
                     } else {
-                        static bool has_happened = false;
-                        LOG_INFO_IF(!has_happened, "Game is doing typeless copies");
-                        has_happened = true;
+                        LOG_INFO_ONCE("Game is doing typeless copies");
                         // We must use a transition buffer
                         vk::DeviceSize buffer_size = bytes_per_stride * state.res_multiplier * height + start_x * bytes_per_pixel_requested;
                         if (!casted->transition_buffer.buffer || casted->transition_buffer.size < buffer_size) {
@@ -823,9 +816,7 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
     }
 
     if (!color && !depth_stencil) {
-        static bool has_happened = false;
-        LOG_ERROR_IF(!has_happened, "Depth stencil and color surface are both null!");
-        has_happened = true;
+        LOG_ERROR_ONCE("Depth stencil and color surface are both null!");
         return empty_framebuffer;
     }
 
@@ -908,9 +899,7 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
     // this works for surface swizzles
     bool is_swizzle_identity = last_written_surface->swizzle.r == vk::ComponentSwizzle::eR;
     if (!is_swizzle_identity && !format_support_swizzle(last_written_surface->format)) {
-        static bool has_happened = false;
-        LOG_WARN_IF(!has_happened, "Surface sync with swizzle not support on {}", vk::to_string(last_written_surface->texture.format));
-        has_happened = true;
+        LOG_WARN_ONCE("Surface sync with swizzle not support on {}", vk::to_string(last_written_surface->texture.format));
 
         is_swizzle_identity = true;
     }

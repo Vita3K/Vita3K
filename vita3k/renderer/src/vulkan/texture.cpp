@@ -304,9 +304,7 @@ static vk::Format linear_to_srgb(const vk::Format format) {
     case vk::Format::eBc3UnormBlock:
         return vk::Format::eBc3SrgbBlock;
     default: {
-        static bool has_happened = false;
-        LOG_WARN_IF(!has_happened, "Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
-        has_happened = true;
+        LOG_WARN_ONCE("Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
         return format;
     }
     }

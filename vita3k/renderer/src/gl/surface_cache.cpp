@@ -264,9 +264,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                         return 0;
                     }
                 } else {
-                    static bool has_happened = false;
-                    LOG_ERROR_IF(!has_happened, "Two surface formats requested=0x{:X} and inStore=0x{:X} are not castable!", fmt::underlying(base_format), fmt::underlying(info.format));
-                    has_happened = true;
+                    LOG_ERROR_ONCE("Two surface formats requested=0x{:X} and inStore=0x{:X} are not castable!", fmt::underlying(base_format), fmt::underlying(info.format));
                     return 0;
                 }
             }
@@ -451,9 +449,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     }
 
     if (color_surface_textures.count(key) > 0) {
-        static bool has_happened = false;
-        LOG_WARN_IF(!has_happened, "Two different surfaces have the same base adress, this is not handled, an openGL error will happen.");
-        has_happened = true;
+        LOG_WARN_ONCE("Two different surfaces have the same base adress, this is not handled, an openGL error will happen.");
     }
     color_surface_textures.emplace(key, std::move(info_added));
 

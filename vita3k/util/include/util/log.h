@@ -30,12 +30,6 @@
 #include <sstream>
 #include <vector>
 
-namespace logging {
-
-ExitCode init(const Root &root_paths, bool use_stdout);
-void set_level(spdlog::level::level_enum log_level);
-ExitCode add_sink(const fs::path &log_path);
-
 #define LOG_TRACE SPDLOG_TRACE
 #define LOG_DEBUG SPDLOG_DEBUG
 #define LOG_INFO SPDLOG_INFO
@@ -75,12 +69,21 @@ ExitCode add_sink(const fs::path &log_path);
 #define LOG_INFO_ONCE(...) LOG_ONCE(LOG_INFO, __VA_ARGS__)
 #define LOG_WARN_ONCE(...) LOG_ONCE(LOG_WARN, __VA_ARGS__)
 #define LOG_ERROR_ONCE(...) LOG_ONCE(LOG_ERROR, __VA_ARGS__)
-#define LOG_CRITICAL_ONCE(...) LOG_ONCE(LOG_CRITICAL_IF, __VA_ARGS__)
+#define LOG_CRITICAL_ONCE(...) LOG_ONCE(LOG_CRITICAL, __VA_ARGS__)
 
-int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_val);
+namespace logging {
+
+ExitCode init(const Root &root_paths, bool use_stdout);
+void set_level(spdlog::level::level_enum log_level);
+ExitCode add_sink(const fs::path &log_path);
+
 } // namespace logging
 
-#define RET_ERROR(error) logging::ret_error_impl(export_name, #error, error)
+#define RET_ERROR(error)                                                            \
+    ([&]() {                                                                        \
+        LOG_ERROR_ONCE("{} returned {} ({})", export_name, #error, log_hex(error)); \
+        return static_cast<int>(error);                                             \
+    })()
 
 // Using stringstream as its 2x faster than fmt::format
 
