@@ -42,7 +42,7 @@ namespace compat {
 static std::string db_updated_at;
 static const uint32_t db_version = 1;
 
-bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
+bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto app_compat_db_path = fs::path(emuenv.base_path) / "cache/app_compat_db.xml";
     if (!fs::exists(app_compat_db_path)) {
         LOG_WARN("Compatibility database not found at {}.", app_compat_db_path.string());
@@ -62,14 +62,19 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto version = compatibility.attribute("version").as_uint();
     if (db_version != version) {
         LOG_WARN("Compatibility database version {} is outdated, download it again.", version);
-        return update_compat_app_db(gui, emuenv);
+        return update_app_compat_db(gui, emuenv);
+    }
+
+    // Check if compatibility database is up to date in first load
+    if (db_updated_at.empty()) {
+        db_updated_at = compatibility.attribute("db_updated_at").as_string();
+        if (update_app_compat_db(gui, emuenv))
+            return true;
     }
 
     // Clear old compat database
     gui.compat.compat_db_loaded = false;
     gui.compat.app_compat_db.clear();
-
-    db_updated_at = compatibility.attribute("db_updated_at").as_string();
 
     //  Load compatibility database
     for (const auto &app : doc.child("compatibility")) {
@@ -122,7 +127,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 static const std::string latest_link = "https://api.github.com/repos/Vita3K/compatibility/releases/latest";
 static const std::string app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml";
 
-bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
+bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto cache_path = fs::path(emuenv.base_path) / "cache";
     const auto app_compat_db_path = cache_path / "app_compat_db.xml";
     gui.info_message.function = SPDLOG_FUNCTION;
@@ -152,27 +157,29 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     if (!https::download_file(app_compat_db_link, new_app_compat_db_path.string())) {
         gui.info_message.level = spdlog::level::err;
         gui.info_message.msg = fmt::format(fmt::runtime(lang["download_failed"].c_str()), updated_at);
+        fs::remove(new_app_compat_db_path);
         return false;
     }
 
-    // Remove old database and rename new database
-    fs::remove(app_compat_db_path);
+    // Rename new database to replace old database
     fs::rename(new_app_compat_db_path, app_compat_db_path);
 
     const auto old_db_updated_at = db_updated_at;
-    const auto old_compat_count = !gui.compat.app_compat_db.empty() ? gui.compat.app_compat_db.size() : 0;
+    const auto old_compat_db_count = gui.compat.app_compat_db.size();
+    db_updated_at = updated_at;
 
-    gui.compat.compat_db_loaded = load_compat_app_db(gui, emuenv);
-    if (!gui.compat.compat_db_loaded || (db_updated_at != updated_at)) {
+    gui.compat.compat_db_loaded = load_app_compat_db(gui, emuenv);
+    if (!gui.compat.compat_db_loaded) {
         gui.info_message.level = spdlog::level::err;
         gui.info_message.msg = fmt::format(fmt::runtime(lang["load_failed"].c_str()), updated_at);
+        db_updated_at.clear();
         return false;
     }
 
     gui.info_message.level = spdlog::level::info;
 
     if (compat_db_exist) {
-        const auto dif = static_cast<int32_t>(gui.compat.app_compat_db.size() - old_compat_count);
+        const auto dif = static_cast<int32_t>(gui.compat.app_compat_db.size() - old_compat_db_count);
         if (!old_db_updated_at.empty() && dif > 0)
             gui.info_message.msg = fmt::format(fmt::runtime(lang["new_app_listed"].c_str()), old_db_updated_at, db_updated_at, dif, gui.compat.app_compat_db.size());
         else
