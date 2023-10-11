@@ -89,10 +89,6 @@ int main(int argc, char *argv[]) {
     root_paths.set_base_path(string_utils::utf_to_wide(SDL_GetBasePath()));
     root_paths.set_pref_path(string_utils::utf_to_wide(SDL_GetPrefPath(org_name, app_name)));
 
-    // Create default preference path for safety
-    if (!fs::exists(root_paths.get_pref_path()))
-        fs::create_directories(root_paths.get_pref_path());
-
     if (logging::init(root_paths, true) != Success)
         return InitConfigFailed;
 
@@ -128,8 +124,14 @@ int main(int argc, char *argv[]) {
 
     Config cfg{};
     EmuEnvState emuenv;
-    if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
-        if (err == QuitRequested) {
+    const auto config_err = config::init_config(cfg, argc, argv, root_paths);
+
+    // Create preference path for safety
+    if (!fs::exists(cfg.pref_path))
+        fs::create_directories(cfg.pref_path);
+
+    if (config_err != Success) {
+        if (config_err == QuitRequested) {
             if (cfg.recompile_shader_path.has_value()) {
                 LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
                 shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
@@ -143,7 +145,7 @@ int main(int argc, char *argv[]) {
             }
             if (cfg.pup_path.has_value()) {
                 LOG_INFO("Installing firmware file {}", *cfg.pup_path);
-                install_pup(emuenv.pref_path, *cfg.pup_path, [](uint32_t progress) {
+                install_pup(string_utils::utf_to_wide(cfg.pref_path), *cfg.pup_path, [](uint32_t progress) {
                     LOG_INFO("Firmware installation progress: {}%", progress);
                 });
             }
