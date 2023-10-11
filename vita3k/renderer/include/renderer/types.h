@@ -135,6 +135,8 @@ struct GxmRecordState {
     bool is_maskupdate = false;
     bool is_gamma_corrected = false;
 
+    uint8_t _padding[6] = {};
+
     // Do not put any state not used for the Vulkan pipeline creation before vertex_streams
     std::array<GXMStreamInfo, SCE_GXM_MAX_VERTEX_STREAMS> vertex_streams;
 

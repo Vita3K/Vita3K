@@ -21,8 +21,8 @@
 #include <limits>
 #include <map>
 #include <set>
-#include <unordered_map>
 
+#include <util/containers.h>
 #include <vkutil/objects.h>
 
 struct SceGxmProgram;
@@ -57,7 +57,7 @@ private:
     // render passes used along shader interlock
     std::map<vk::Format, vk::RenderPass> shader_interlock_pass;
     std::map<Sha256Hash, vk::ShaderModule> shaders;
-    std::unordered_map<uint64_t, vk::Pipeline> pipelines;
+    unordered_map_fast<uint64_t, vk::Pipeline> pipelines;
 
     // temp vars used to store the result computed by auxialiary functions before createPipeline is called
     std::vector<vk::VertexInputBindingDescription> binding_descr;
