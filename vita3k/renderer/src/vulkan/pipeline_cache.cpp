@@ -155,6 +155,9 @@ void PipelineCache::init() {
     }
 }
 
+// magic number put at the beginning of the pipeline cache file
+constexpr uint32_t pipeline_cache_magic = 0xBEEF4321;
+
 void PipelineCache::read_pipeline_cache() {
     const auto shaders_path{ fs::path(state.cache_path) / "shaders" / state.title_id / state.self_name };
     const std::string pipeline_cache_name = fmt::format("pipeline-cache-vk{}.dat", shader::CURRENT_VERSION);
@@ -167,8 +170,35 @@ void PipelineCache::read_pipeline_cache() {
     LOG_INFO("Found pipeline cache, reading...");
 
     pipeline_cache_file.seekg(0, fs::ifstream::end);
-    const size_t pipeline_size = pipeline_cache_file.tellg();
+    size_t pipeline_size = pipeline_cache_file.tellg();
     pipeline_cache_file.seekg(0);
+
+    if (pipeline_size < sizeof(uint32_t) + sizeof(size_t))
+        return;
+
+    // read the hashes
+    auto read_integer = [&]<typename T>(T &val) {
+        pipeline_cache_file.read(reinterpret_cast<char *>(&val), sizeof(T));
+    };
+    uint32_t magic_number;
+    read_integer(magic_number);
+    size_t nb_hashes;
+    read_integer(nb_hashes);
+    // safety check
+    size_t hashes_size = sizeof(magic_number) + sizeof(nb_hashes) + nb_hashes * sizeof(uint64_t);
+    if (magic_number != pipeline_cache_magic || pipeline_size < hashes_size) {
+        LOG_WARN("Pipeline cache is corrupted, ignoring it.");
+        pipeline_cache_file.close();
+        return;
+    }
+    pipeline_size -= hashes_size;
+
+    // insert hashes with null pipeline
+    for (size_t i = 0; i < nb_hashes; i++) {
+        uint64_t hash;
+        read_integer(hash);
+        pipelines[hash] = nullptr;
+    }
 
     std::vector<char> pipeline_data(pipeline_size);
     pipeline_cache_file.read(pipeline_data.data(), pipeline_size);
@@ -194,12 +224,23 @@ void PipelineCache::save_pipeline_cache() {
     const std::string pipeline_cache_name = fmt::format("pipeline-cache-vk{}.dat", shader::CURRENT_VERSION);
     const fs::path path = shaders_path / pipeline_cache_name;
 
-    fs::ofstream pipeline_cache_file(path, std::ios::out | std::ios::binary);
+    fs::ofstream pipeline_cache_file(path, std::ios::out | std::ios::binary | std::ios::trunc);
     if (!pipeline_cache_file.is_open())
         return;
 
     LOG_INFO("Saving pipeline cache...");
 
+    // first save the hashes of all pipelines
+    auto write_integer = [&]<typename T>(T val) {
+        pipeline_cache_file.write(reinterpret_cast<const char *>(&val), sizeof(T));
+    };
+    write_integer(pipeline_cache_magic);
+    write_integer(pipelines.size());
+    for (auto &[hash, _] : pipelines) {
+        write_integer(hash);
+    }
+
+    // then save the cache
     pipeline_cache_file.write(reinterpret_cast<const char *>(pipeline_data.data()), pipeline_data.size());
     pipeline_cache_file.close();
     LOG_INFO("Pipeline cache saved");
@@ -266,8 +307,6 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
         .module = shader,
         .pName = is_vertex ? "main_vs" : "main_fs"
     };
-
-    state.shaders_count_compiled++;
 
     return shader_stage_info;
 }
@@ -538,8 +577,13 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     // and also add the primitive type
     key ^= static_cast<uint64_t>(type);
     auto it = pipelines.find(key);
-    if (it != pipelines.end())
-        return it->second;
+    if (it != pipelines.end()) {
+        if (it->second != nullptr)
+            return it->second;
+    } else {
+        // the pipeline hash was not in the cache
+        state.shaders_count_compiled++;
+    }
 
     const VertexProgram &vertex_program = *reinterpret_cast<VertexProgram *>(
         vertex_program_gxm.renderer_data.get());

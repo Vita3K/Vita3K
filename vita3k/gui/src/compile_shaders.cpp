@@ -74,14 +74,14 @@ void draw_pre_compiling_shaders_progress(GuiState &gui, EmuEnvState &emuenv, con
 
 void set_shaders_compiled_display(GuiState &gui, EmuEnvState &emuenv) {
     const uint64_t time = std::time(nullptr);
-    if (emuenv.renderer->shaders_count_compiled) {
-        gui.shaders_compiled_display[Count] = emuenv.renderer->shaders_count_compiled;
-        gui.shaders_compiled_display[Time] = time;
+    if (emuenv.renderer->shaders_count_compiled > 0) {
+        gui.shaders_compiled_display_count += emuenv.renderer->shaders_count_compiled;
+        gui.shaders_compiled_display_time = time;
         emuenv.renderer->shaders_count_compiled = 0;
-    } else if (!gui.shaders_compiled_display.empty()) {
+    } else if (gui.shaders_compiled_display_count > 0) {
         // Display shaders compliled count during 3 sec
-        if ((gui.shaders_compiled_display[Time] + 3) <= time)
-            gui.shaders_compiled_display.clear();
+        if ((gui.shaders_compiled_display_time + 3) <= time)
+            gui.shaders_compiled_display_count = 0;
     }
 }
 
@@ -89,7 +89,13 @@ void draw_shaders_count_compiled(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (2.f * emuenv.dpi_scale), emuenv.viewport_pos.y + emuenv.viewport_size.y - (42.f * emuenv.dpi_scale)));
     ImGui::SetNextWindowBgAlpha(0.6f);
     ImGui::Begin("##shaders_compiled", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-    const auto shaders_compiled_str = fmt::format(fmt::runtime(gui.lang.compile_shaders["shaders_compiled"].c_str()), gui.shaders_compiled_display[Count]);
+    const char *gpu_objects_compiled_msg;
+    if (emuenv.renderer->current_backend == renderer::Backend::Vulkan) {
+        gpu_objects_compiled_msg = gui.lang.compile_shaders["pipelines_compiled"].c_str();
+    } else {
+        gpu_objects_compiled_msg = gui.lang.compile_shaders["shaders_compiled"].c_str();
+    }
+    const auto shaders_compiled_str = fmt::format(fmt::runtime(gpu_objects_compiled_msg), gui.shaders_compiled_display_count);
     ImGui::Text("%s", shaders_compiled_str.c_str());
     ImGui::End();
 }
