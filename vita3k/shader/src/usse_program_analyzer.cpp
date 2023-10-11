@@ -172,16 +172,15 @@ int get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &s
 }
 
 void get_attribute_informations(const SceGxmProgram &program, AttributeInformationMap &locmap) {
-    const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
+    const SceGxmProgramParameter *const gxp_parameters = program.program_parameters();
     std::uint32_t fcount_allocated = 0;
     const auto vertex_varyings_ptr = program.vertex_varyings();
 
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-            const SceGxmParameterType parameter_type = gxp::parameter_type(parameter);
             bool is_integer;
-            switch (parameter_type) {
+            switch (parameter.type) {
             case SCE_GXM_PARAMETER_TYPE_C10:
             case SCE_GXM_PARAMETER_TYPE_F16:
             case SCE_GXM_PARAMETER_TYPE_F32:
@@ -193,13 +192,15 @@ void get_attribute_informations(const SceGxmProgram &program, AttributeInformati
             }
 
             bool is_signed;
-            switch (parameter_type) {
+            switch (parameter.type) {
             case SCE_GXM_PARAMETER_TYPE_S8:
             case SCE_GXM_PARAMETER_TYPE_S16:
             case SCE_GXM_PARAMETER_TYPE_S32:
                 is_signed = true;
+                break;
             default:
                 is_signed = false;
+                break;
             }
 
             bool regformat = (vertex_varyings_ptr->untyped_pa_regs & ((uint64_t)1 << parameter.resource_index)) != 0;

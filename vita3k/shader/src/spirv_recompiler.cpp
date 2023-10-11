@@ -395,7 +395,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     std::uint32_t pa_offset = 0;
     std::uint32_t anon_tex_count = 0;
 
-    const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
+    const SceGxmProgramParameter *const gxp_parameters = program.program_parameters();
 
     // Store the coords
     std::array<shader::usse::Coord, 11> coords;
@@ -838,7 +838,7 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
     const FeatureState &features, TranslationState &translation_state, SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
-    const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
+    const SceGxmProgramParameter *const gxp_parameters = program.program_parameters();
 
     // Make array type. TODO: Make length configurable
     spv::Id f32_type = b.makeFloatType(32);
@@ -1181,8 +1181,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 offset = container->base_sa_offset + parameter.resource_index;
             }
 
-            const auto parameter_type = gxp::parameter_type(parameter);
-            const auto [store_type, param_type_name] = shader::get_parameter_type_store_and_name(parameter_type);
+            const auto [store_type, param_type_name] = shader::get_parameter_type_store_and_name(parameter.type);
             std::string param_log = fmt::format("[{} + {}] {}a{} = ({}{}) {}",
                 gxp::get_container_name(parameter.container_index), parameter.resource_index,
                 is_uniform ? "s" : "p", offset, param_type_name, parameter.component_count, var_name);

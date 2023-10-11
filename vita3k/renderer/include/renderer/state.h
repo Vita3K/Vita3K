@@ -34,7 +34,7 @@ struct Config;
 
 namespace renderer {
 
-struct TextureCache;
+class TextureCache;
 
 enum struct Filter : int {
     NEAREST = 1 << 0,

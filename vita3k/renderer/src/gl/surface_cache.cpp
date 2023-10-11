@@ -524,8 +524,6 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
     force_width *= state.res_multiplier;
     force_height *= state.res_multiplier;
 
-    bool packed_ds = surface.get_format() == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
-
     if (force_width < 0) {
         force_width = target->width;
     }

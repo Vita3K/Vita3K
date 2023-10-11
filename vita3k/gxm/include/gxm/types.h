@@ -40,6 +40,8 @@
 #define SCE_GXM_TILE_SIZEY (1U << SCE_GXM_TILE_SHIFTY)
 #define SCE_GXM_VISIBILITY_ALIGNMENT 16U
 
+struct SceGxmProgramAttributeDescriptor;
+struct SceGxmProgramParameter;
 struct SceGxmSyncObject;
 struct SceGxmPrecomputedVertexState;
 struct SceGxmPrecomputedFragmentState;
@@ -195,7 +197,7 @@ enum SceGxmLineFillLastPixelMode : uint32_t {
     SCE_GXM_LINE_FILL_LAST_PIXEL_ENABLED = 0x00080000u
 };
 
-enum SceGxmParameterCategory {
+enum SceGxmParameterCategory : uint8_t {
     SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE,
     SCE_GXM_PARAMETER_CATEGORY_UNIFORM,
     SCE_GXM_PARAMETER_CATEGORY_SAMPLER,
@@ -203,7 +205,7 @@ enum SceGxmParameterCategory {
     SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER
 };
 
-enum SceGxmParameterType {
+enum SceGxmParameterType : uint8_t {
     SCE_GXM_PARAMETER_TYPE_F32,
     SCE_GXM_PARAMETER_TYPE_F16,
     SCE_GXM_PARAMETER_TYPE_C10,
@@ -216,7 +218,7 @@ enum SceGxmParameterType {
     SCE_GXM_PARAMETER_TYPE_AGGREGATE
 };
 
-enum SceGxmParameterSemantic {
+enum SceGxmParameterSemantic : uint8_t {
     SCE_GXM_PARAMETER_SEMANTIC_NONE,
     SCE_GXM_PARAMETER_SEMANTIC_ATTR,
     SCE_GXM_PARAMETER_SEMANTIC_BCOL,
@@ -1221,7 +1223,7 @@ typedef void *(*SceGxmDeferredContextCallback)(void *userData, uint32_t minSize,
 
 // identical to ::SceGxmProgramType for now
 // see SceGxmProgram.type field for details
-enum SceGxmProgramType : std::uint8_t {
+enum SceGxmProgramType : uint8_t {
     Vertex = 0,
     Fragment = 1
 };
@@ -1256,6 +1258,15 @@ enum SceGxmVertexProgramOutputs : int {
     _SCE_GXM_VERTEX_PROGRAM_OUTPUT_LAST = 1 << 23
 };
 
+#define OFFSET_FUNCTION(type, name, field)                                                        \
+    const type *name() const {                                                                    \
+        return reinterpret_cast<const type *>(reinterpret_cast<const uint8_t *>(&field) + field); \
+    }
+#define OFFSET_FUNCTION_CHECKED(type, name, field)                                                                  \
+    const type *name() const {                                                                                      \
+        return reinterpret_cast<const type *>(field ? reinterpret_cast<const uint8_t *>(&field) + field : nullptr); \
+    }
+
 #pragma pack(push, 1)
 struct SceGxmProgramVertexVaryings {
     union {
@@ -1267,22 +1278,23 @@ struct SceGxmProgramVertexVaryings {
 
         // Fragment Program Variables
         struct {
-            std::uint8_t unk0[8];
-            std::uint8_t fragment_output_start; // this might be wrong
-            std::uint8_t unk1;
-            std::uint8_t output_param_type;
-            std::uint8_t output_comp_count;
+            uint8_t unk0[8];
+            uint8_t fragment_output_start; // this might be wrong
+            uint8_t unk1;
+            SceGxmParameterType output_param_type;
+            uint8_t output_comp_count;
 
-            std::uint16_t varyings_count;
-            std::uint16_t pad0; // Might be the number of non-dependent samplers
+            uint16_t varyings_count;
+            uint16_t pad0; // Might be the number of non-dependent samplers
         };
     };
 
     uint32_t vertex_outputs1; // includes everything except texcoord outputs
     uint32_t vertex_outputs2; // includes texcoord outputs
     uint32_t texcoord_pack_format; // 1 bit per texcoord. (0 - float, 1 - half)
-    std::uint16_t semantic_index_offset;
-    std::uint16_t semantic_instance_offset;
+    uint16_t semantic_index_offset;
+    uint16_t semantic_instance_offset;
+    OFFSET_FUNCTION_CHECKED(SceGxmProgramAttributeDescriptor, frag_attribute_descriptor, vertex_outputs1)
 };
 #pragma pack(pop)
 
@@ -1296,8 +1308,8 @@ struct SceGxmProgramAttributeDescriptor {
 };
 
 struct SceGxmDependentSampler {
-    std::uint16_t resource_index_layout_offset; ///< The resource index of the sampler, in range of [index * 4, (index + 1) * 4)
-    std::uint16_t sa_offset; ///< The SA offset correspond to the sampler
+    uint16_t resource_index_layout_offset; ///< The resource index of the sampler, in range of [index * 4, (index + 1) * 4)
+    uint16_t sa_offset; ///< The SA offset correspond to the sampler
 };
 
 enum SceGxmFragmentProgramInputs : int {
@@ -1338,17 +1350,29 @@ enum SceGxmProgramFlags : uint32_t {
 };
 
 struct SceGxmUniformBufferInfo {
-    std::uint16_t reside_buffer; ///< If reside buffer = 0, this is a in memory buffer. Likely SSBO
-    std::uint16_t ldst_base_offset; ///< Point to the register number starting from container's base SA offset, storing base value.
-    std::int32_t ldst_base_value; ///< Value representing the starting offset in bytes to load/store buffer data.
+    uint16_t reside_buffer; ///< If reside buffer = 0, this is a in memory buffer. Likely SSBO
+    uint16_t ldst_base_offset; ///< Point to the register number starting from container's base SA offset, storing base value.
+    int32_t ldst_base_value; ///< Value representing the starting offset in bytes to load/store buffer data.
+};
+
+struct SceGxmProgramParameterContainer {
+    uint16_t container_index;
+    uint16_t unk02;
+    uint16_t base_sa_offset;
+    uint16_t size_in_f32;
+};
+
+struct SceGxmProgramLiteral {
+    uint32_t offset;
+    float data;
 };
 
 struct SceGxmProgram {
     uint32_t magic; // should be "GXP\0"
 
-    std::uint8_t major_version; // min 1
-    std::uint8_t minor_version; // min 4
-    std::uint16_t sdk_version; // 0x350 - 3.50
+    uint8_t major_version; // min 1
+    uint8_t minor_version; // min 4
+    uint16_t sdk_version; // 0x350 - 3.50
 
     uint32_t size; // size of file - ignoring padding bytes at the end after SceGxmProgramParameter table
 
@@ -1365,12 +1389,12 @@ struct SceGxmProgram {
     uint32_t parameters_offset; // Number of bytes from the start of this field to the first parameter.
     uint32_t varyings_offset; // offset to vertex outputs / fragment inputs, relative to this field
 
-    std::uint16_t primary_reg_count; // (PAs)
-    std::uint16_t secondary_reg_count; // (SAs)
+    uint16_t primary_reg_count; // (PAs)
+    uint16_t secondary_reg_count; // (SAs)
     uint32_t temp_reg_count1;
-    std::uint16_t temp_reg_count2; // Temp reg count in selective rate(programmable blending) phase
+    uint16_t temp_reg_count2; // Temp reg count in selective rate(programmable blending) phase
 
-    std::uint16_t primary_program_phase_count;
+    uint16_t primary_program_phase_count;
     uint32_t primary_program_instr_count;
     uint32_t primary_program_offset;
 
@@ -1412,15 +1436,9 @@ struct SceGxmProgram {
     bool is_fragment() const {
         return get_type() == SceGxmProgramType::Fragment;
     }
-    uint64_t *primary_program_start() const {
-        return (uint64_t *)((uint8_t *)&primary_program_offset + primary_program_offset);
-    }
-    uint64_t *secondary_program_start() const {
-        return (uint64_t *)((uint8_t *)&secondary_program_offset + secondary_program_offset);
-    }
-    uint64_t *secondary_program_end() const {
-        return (uint64_t *)((uint8_t *)&secondary_program_offset_end + secondary_program_offset_end);
-    }
+    OFFSET_FUNCTION(uint64_t, primary_program_start, primary_program_offset)
+    OFFSET_FUNCTION(uint64_t, secondary_program_start, secondary_program_offset)
+    OFFSET_FUNCTION(uint64_t, secondary_program_end, secondary_program_offset_end)
     bool is_discard_used() const {
         return (program_flags & SCE_GXM_PROGRAM_FLAG_DISCARD_USED);
     }
@@ -1436,9 +1454,8 @@ struct SceGxmProgram {
     bool is_frag_color_used() const {
         return (program_flags & SCE_GXM_PROGRAM_FLAG_FRAGCOLOR_USED);
     }
-    const SceGxmProgramVertexVaryings *vertex_varyings() const {
-        return reinterpret_cast<const SceGxmProgramVertexVaryings *>(varyings_offset ? reinterpret_cast<const std::uint8_t *>(&varyings_offset) + varyings_offset : nullptr);
-    }
+    OFFSET_FUNCTION_CHECKED(SceGxmProgramParameter, program_parameters, parameters_offset)
+    OFFSET_FUNCTION_CHECKED(SceGxmProgramVertexVaryings, vertex_varyings, varyings_offset)
     SceGxmParameterType get_fragment_output_type() const {
         return static_cast<const SceGxmParameterType>(vertex_varyings()->output_param_type);
     }
@@ -1448,6 +1465,14 @@ struct SceGxmProgram {
     bool is_secondary_program_available() const {
         return secondary_program_offset < secondary_program_offset_end + 4;
     }
+    OFFSET_FUNCTION(uint8_t, literal_buffer_data, literal_buffer_data_offset)
+    OFFSET_FUNCTION(SceGxmProgramLiteral, literals, literals_offset)
+    OFFSET_FUNCTION(SceGxmUniformBufferInfo, uniform_buffer, uniform_buffer_offset)
+    OFFSET_FUNCTION(SceGxmDependentSampler, dependent_sampler, dependent_sampler_offset)
+    OFFSET_FUNCTION(SceGxmDependentSampler, texture_buffer_dependent_sampler, texture_buffer_dependent_sampler_offset)
+    OFFSET_FUNCTION(SceGxmProgramParameterContainer, container, container_offset)
+    // OFFSET_FUNCTION(uint8_t, sampler_query_info, sampler_query_info_offset)
+
     bool has_no_effect() const {
         return (program_flags & SCE_GXM_PROGRAM_FLAG_OUTPUT_UNDEFINED) && !is_discard_used() && !is_depth_replace_used();
     }
@@ -1458,13 +1483,13 @@ struct SceGxmProgramParameter {
 
     struct {
         // Each member is half a bit wide, so the values are [0-15], [0,F]
-        uint8_t category : 4; // SceGxmParameterCategory
-        uint8_t type : 4; // SceGxmParameterType - applicable for constants, not applicable for samplers (select type like float, half, fixed ...)
+        SceGxmParameterCategory category : 4;
+        SceGxmParameterType type : 4; // applicable for constants, not applicable for samplers (select type like float, half, fixed ...)
         uint8_t component_count : 4; // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
         uint8_t container_index : 4; // applicable for constants, not applicable for samplers (buffer, default, texture)
     };
 
-    uint8_t semantic; // applicable only for for vertex attributes, for everything else it's 0
+    SceGxmParameterSemantic semantic; // applicable only for for vertex attributes, for everything else it's 0
     uint8_t semantic_index;
     uint32_t array_size;
     uint32_t resource_index;
@@ -1472,16 +1497,14 @@ struct SceGxmProgramParameter {
     bool is_sampler_cube() const {
         return (semantic_index >> 4) & 1;
     }
+    /**
+     * \brief Returns raw parameter name
+     *        Therefore, if parameter belongs in a struct, includes it in the form of "struct_name.field_name"
+     */
+    OFFSET_FUNCTION(char, name, name_offset)
 };
 
 static_assert(sizeof(SceGxmProgramParameter) == 16, "Incorrect structure layout.");
-
-struct SceGxmProgramParameterContainer {
-    uint16_t container_index;
-    uint16_t unk02;
-    uint16_t base_sa_offset;
-    uint16_t size_in_f32;
-};
 
 struct SceGxmVertexAttribute {
     uint16_t streamIndex;
@@ -1499,3 +1522,5 @@ enum {
     SCE_GXM_PRECOMPUTED_DRAW_WORD_COUNT = 11,
     SCE_GXM_MAX_UB_IN_FLOAT_UNIT = 2048 // Guessing
 };
+#undef OFFSET_FUNCTION
+#undef OFFSET_FUNCTION_CHECKED

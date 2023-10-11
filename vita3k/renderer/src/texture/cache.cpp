@@ -336,7 +336,6 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         return;
     }
 
-    const bool is_block_compressed = gxm::is_block_compressed_format(base_format);
     uint32_t width = gxm::get_width(gxm_texture);
     uint32_t height = gxm::get_height(gxm_texture);
 
@@ -358,14 +357,11 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
 
     const auto texture_type = gxm_texture.texture_type();
     const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
-    // swizzled bcn textures
-    const bool need_block_unswizzle = is_swizzled && gxm::is_bcn_format(base_format);
 
     uint32_t mip_index = 0;
     uint32_t total_mip = get_upload_mip(gxm_texture.true_mip_count(), width, height);
     uint32_t face_uploaded_count = 0;
     uint32_t face_total_count;
-    uint32_t source_size = 0;
     uint32_t total_source_so_far = 0;
 
     // Modified during decompression
@@ -472,7 +468,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
 
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
             // this actually also unswizzles the texture
-            source_size = decompress_compressed_texture(base_format, texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
+            decompress_compressed_texture(base_format, texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
             bytes_per_pixel = 4;
             bpp = 32;
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
