@@ -1020,14 +1020,14 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
 
 template <typename T>
 void swizzle_text_T_2(T *pixels, uint32_t nb_pixel) {
-    for (int i = 0; i < nb_pixel; i++) {
+    for (uint32_t i = 0; i < nb_pixel; i++) {
         std::swap(pixels[2 * i], pixels[2 * i + 1]);
     }
 }
 
 template <typename T, size_t type>
 void swizzle_text_T_4(T *pixels, uint32_t nb_pixel) {
-    for (int i = 0; i < nb_pixel; i++) {
+    for (uint32_t i = 0; i < nb_pixel; i++) {
         if constexpr (type == 0) {
             // BGRA
             std::swap(pixels[4 * i], pixels[4 * i + 2]);

@@ -70,12 +70,6 @@ using GxmVertexOutputTexCoordInfos = std::array<uint8_t, 10>;
 void log_parameter(const SceGxmProgramParameter &parameter);
 
 /**
- * \brief Returns raw parameter name from GXP
- *        Therefore, if parameter belongs in a struct, includes it in the form of "struct_name.field_name"
- */
-std::string parameter_name_raw(const SceGxmProgramParameter &parameter);
-
-/**
  * \brief If parameter belongs in a struct, returns the struct field name only
  */
 std::string parameter_name(const SceGxmProgramParameter &parameter);
@@ -84,8 +78,6 @@ std::string parameter_name(const SceGxmProgramParameter &parameter);
  * \brief If parameter belongs in a struct, returns the struct name only
  */
 std::string parameter_struct_name(const SceGxmProgramParameter &parameter);
-const SceGxmProgramParameter *program_parameters(const SceGxmProgram &program);
-SceGxmParameterType parameter_type(const SceGxmProgramParameter &parameter);
 GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parameter);
 /**
  * \return SceGxmVertexProgramOutput (bitfield)
@@ -93,10 +85,9 @@ GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parame
 SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, GxmVertexOutputTexCoordInfos *coord_infos = nullptr);
 SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program);
 
-const int get_parameter_type_size(const SceGxmParameterType type);
-const int get_num_32_bit_components(const SceGxmParameterType type, const uint16_t num_comp);
+int get_parameter_type_size(const SceGxmParameterType type);
+int get_num_32_bit_components(const SceGxmParameterType type, const uint16_t num_comp);
 
-const SceGxmProgramParameterContainer *get_containers(const SceGxmProgram &program);
 const SceGxmProgramParameterContainer *get_container_by_index(const SceGxmProgram &program, const std::uint16_t idx);
 const char *get_container_name(const std::uint16_t idx);
 

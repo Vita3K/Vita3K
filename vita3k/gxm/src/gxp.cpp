@@ -51,7 +51,7 @@ const char *log_parameter_semantic(const SceGxmProgramParameter &parameter) {
 }
 
 void log_parameter(const SceGxmProgramParameter &parameter) {
-    std::string category;
+    std::string_view category;
     switch (parameter.category) {
     case SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE:
         category = "Vertex attribute";
@@ -73,11 +73,11 @@ void log_parameter(const SceGxmProgramParameter &parameter) {
         break;
     }
     LOG_DEBUG("{}: name:{:s} semantic:{} type:{:d} component_count:{} container_index:0x{:0X} semantic_index:{} array_size:{} resource_index:{}",
-        category, parameter_name_raw(parameter), log_parameter_semantic(parameter), parameter.type, uint8_t(parameter.component_count), uint8_t(parameter.container_index),
+        category, parameter.name(), log_parameter_semantic(parameter), uint8_t(parameter.type), uint8_t(parameter.component_count), uint8_t(parameter.container_index),
         parameter.semantic_index, parameter.array_size, parameter.resource_index);
 }
 
-const int get_parameter_type_size(const SceGxmParameterType type) {
+int get_parameter_type_size(const SceGxmParameterType type) {
     switch (type) {
     case SCE_GXM_PARAMETER_TYPE_F32:
     case SCE_GXM_PARAMETER_TYPE_U32:
@@ -100,18 +100,9 @@ const int get_parameter_type_size(const SceGxmParameterType type) {
     return 4;
 }
 
-const int get_num_32_bit_components(const SceGxmParameterType type, const uint16_t num_comp) {
+int get_num_32_bit_components(const SceGxmParameterType type, const uint16_t num_comp) {
     const int param_size = get_parameter_type_size(type);
     return static_cast<int>(num_comp + (4 / param_size - 1)) * param_size / 4;
-}
-
-const SceGxmProgramParameter *program_parameters(const SceGxmProgram &program) {
-    return reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program.parameters_offset) + program.parameters_offset);
-}
-
-SceGxmParameterType parameter_type(const SceGxmProgramParameter &parameter) {
-    return static_cast<SceGxmParameterType>(
-        static_cast<uint16_t>(parameter.type));
 }
 
 GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parameter) {
@@ -123,13 +114,9 @@ GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parame
         return GenericParameterType::Scalar;
     }
 }
-std::string parameter_name_raw(const SceGxmProgramParameter &parameter) {
-    const uint8_t *const bytes = reinterpret_cast<const uint8_t *>(&parameter);
-    return reinterpret_cast<const char *>(bytes + parameter.name_offset);
-}
 
 std::string parameter_name(const SceGxmProgramParameter &parameter) {
-    auto full_name = gxp::parameter_name_raw(parameter);
+    std::string full_name = parameter.name();
     const std::size_t dot_pos = full_name.find_first_of('.');
     const bool is_struct_type = dot_pos != std::string::npos;
     std::replace(full_name.begin(), full_name.end(), '.', '_');
@@ -153,7 +140,7 @@ std::string parameter_name(const SceGxmProgramParameter &parameter) {
 }
 
 std::string parameter_struct_name(const SceGxmProgramParameter &parameter) {
-    auto full_name = gxp::parameter_name_raw(parameter);
+    std::string full_name = parameter.name();
     auto struct_idx = full_name.find('.');
     bool is_struct_field = struct_idx != std::string::npos;
 
@@ -169,35 +156,31 @@ SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, GxmV
 
     auto vertex_varyings_ptr = program.vertex_varyings();
 
-    const std::uint32_t vo1 = vertex_varyings_ptr->vertex_outputs1;
-    const std::uint32_t vo2 = vertex_varyings_ptr->vertex_outputs2;
+    const uint32_t vo1 = vertex_varyings_ptr->vertex_outputs1;
+    const uint32_t vo2 = vertex_varyings_ptr->vertex_outputs2;
+
+    int res = SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION;
 
     const bool has_fog = vo1 & 0x200;
-    const bool has_color = vo1 & 0x800;
-
-    int res = SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0 | SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION;
-    int res_nocolor = SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION;
-
-    if (has_fog) {
+    if (has_fog)
         res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG;
-        res_nocolor |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG;
-    }
 
-    if (!has_color)
-        res = res_nocolor;
+    const bool has_color = vo1 & 0x800;
+    if (has_color)
+        res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0;
 
     if (vo1 & 0x400)
         res |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1;
 
-    std::uint32_t coordinfo_mask = 0b111;
-    std::uint32_t to_shift = 0;
+    uint32_t coordinfo_mask = 0b111;
+    uint32_t to_shift = 0;
 
-    for (std::uint8_t i = 0; i < 10; i++) {
+    for (uint8_t i = 0; i < 10; i++) {
         if (vo2 & coordinfo_mask) {
             res |= (SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0 << i);
 
             if (coord_infos)
-                (*coord_infos)[i] = static_cast<std::uint8_t>((vo2 >> to_shift) & 0b111u);
+                (*coord_infos)[i] = static_cast<uint8_t>((vo2 >> to_shift) & 0b111u);
         }
 
         to_shift += 3;
@@ -233,10 +216,7 @@ SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program) {
     const SceGxmProgramVertexVaryings *vo_ptr = program.vertex_varyings();
 
     // following code is adapted from decompilation
-    const SceGxmProgramAttributeDescriptor *current_interpolant = nullptr;
-    if (vo_ptr->vertex_outputs1 != 0) {
-        current_interpolant = reinterpret_cast<const SceGxmProgramAttributeDescriptor *>(reinterpret_cast<const uint8_t *>(&vo_ptr->vertex_outputs1) + vo_ptr->vertex_outputs1);
-    }
+    const SceGxmProgramAttributeDescriptor *current_interpolant = vo_ptr->frag_attribute_descriptor();
     const SceGxmProgramAttributeDescriptor *const interpolants_end = current_interpolant + vo_ptr->varyings_count;
 
     uint32_t result = _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE;
@@ -294,15 +274,10 @@ SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program) {
     return static_cast<SceGxmFragmentProgramInputs>(result);
 }
 
-const SceGxmProgramParameterContainer *get_containers(const SceGxmProgram &program) {
-    const SceGxmProgramParameterContainer *containers = reinterpret_cast<const SceGxmProgramParameterContainer *>(reinterpret_cast<const std::uint8_t *>(&program.container_offset) + program.container_offset);
-    return containers;
-}
+const SceGxmProgramParameterContainer *get_container_by_index(const SceGxmProgram &program, const uint16_t idx) {
+    const SceGxmProgramParameterContainer *container = program.container();
 
-const SceGxmProgramParameterContainer *get_container_by_index(const SceGxmProgram &program, const std::uint16_t idx) {
-    const SceGxmProgramParameterContainer *container = get_containers(program);
-
-    for (std::uint32_t i = 0; i < program.container_count; i++) {
+    for (uint32_t i = 0; i < program.container_count; i++) {
         if (container[i].container_index == idx) {
             return &container[i];
         }
@@ -317,13 +292,12 @@ int get_uniform_buffer_base(const SceGxmProgram &program, const SceGxmProgramPar
     auto container = get_container_by_index(program, 19);
     int base = (container ? container->base_sa_offset : 0);
 
-    const SceGxmUniformBufferInfo *info = reinterpret_cast<const SceGxmUniformBufferInfo *>(
-        reinterpret_cast<const std::uint8_t *>(&program.uniform_buffer_offset) + program.uniform_buffer_offset);
+    const SceGxmUniformBufferInfo *info = program.uniform_buffer();
 
     if (program.uniform_buffer_count == 1) {
         base += info->ldst_base_offset;
     } else {
-        for (std::uint32_t i = 0; i < program.uniform_buffer_count; i++) {
+        for (uint32_t i = 0; i < program.uniform_buffer_count; i++) {
             if (info[i].reside_buffer == parameter.resource_index) {
                 base += info[i].ldst_base_offset;
             }
@@ -333,7 +307,7 @@ int get_uniform_buffer_base(const SceGxmProgram &program, const SceGxmProgramPar
     return base;
 }
 
-const char *get_container_name(const std::uint16_t idx) {
+const char *get_container_name(const uint16_t idx) {
     switch (idx) {
     case 0:
         return "BUFFER0 ";
@@ -385,7 +359,7 @@ const char *get_container_name(const std::uint16_t idx) {
 TextureInfo get_textures_used(const SceGxmProgram &program_gxp) {
     TextureInfo textures_used;
 
-    const auto parameters = gxp::program_parameters(program_gxp);
+    const auto parameters = program_gxp.program_parameters();
 
     for (uint32_t i = 0; i < program_gxp.parameter_count; ++i) {
         const auto parameter = parameters[i];
@@ -396,21 +370,18 @@ TextureInfo get_textures_used(const SceGxmProgram &program_gxp) {
 
     // symbols may be stripped, look for an anonymous texture
     auto vertex_varyings_ptr = program_gxp.vertex_varyings();
-    const SceGxmProgramAttributeDescriptor *descriptor = reinterpret_cast<const SceGxmProgramAttributeDescriptor *>(
-        reinterpret_cast<const std::uint8_t *>(&vertex_varyings_ptr->vertex_outputs1) + vertex_varyings_ptr->vertex_outputs1);
+    const SceGxmProgramAttributeDescriptor *descriptor = vertex_varyings_ptr->frag_attribute_descriptor();
 
     for (uint16_t i = 0; i < vertex_varyings_ptr->varyings_count; i++, descriptor++) {
         const uint32_t tex_coord_index = (descriptor->attribute_info & 0x40F);
-        if (tex_coord_index == 0xF)
-            continue;
-        textures_used[descriptor->resource_index] = true;
+        if (tex_coord_index != 0xF)
+            textures_used[descriptor->resource_index] = true;
     }
 
     // also look for an anonymous sampler
     const SceGxmProgramParameterContainer *container = gxp::get_container_by_index(program_gxp, 19);
     if (container) {
-        const SceGxmDependentSampler *dependent_samplers = reinterpret_cast<const SceGxmDependentSampler *>(reinterpret_cast<const std::uint8_t *>(&program_gxp.dependent_sampler_offset)
-            + program_gxp.dependent_sampler_offset);
+        const SceGxmDependentSampler *dependent_samplers = program_gxp.dependent_sampler();
 
         for (uint32_t i = 0; i < program_gxp.dependent_sampler_count; i++) {
             const uint16_t rsc_index = dependent_samplers[i].resource_index_layout_offset / 4;

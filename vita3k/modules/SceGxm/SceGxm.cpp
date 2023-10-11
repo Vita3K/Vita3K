@@ -3156,55 +3156,49 @@ EXPORT(int, sceGxmProgramCheck, const SceGxmProgram *program) {
     return 0;
 }
 
-EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterByName, const SceGxmProgram *program, const char *name) {
-    TRACY_FUNC(sceGxmProgramFindParameterByName, program, name);
-    const MemState &mem = emuenv.mem;
+EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterByName, Ptr<const SceGxmProgram> program_ptr, const char *name) {
+    TRACY_FUNC(sceGxmProgramFindParameterByName, program_ptr, name);
     assert(program);
-    if (!program || !name)
+    if (!program_ptr || !name)
         return Ptr<SceGxmProgramParameter>();
 
-    const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
+    auto program = program_ptr.get(emuenv.mem);
+    auto parameters = program->program_parameters();
     for (uint32_t i = 0; i < program->parameter_count; ++i) {
-        const SceGxmProgramParameter *const parameter = &parameters[i];
-        const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
-        const char *const parameter_name = reinterpret_cast<const char *>(parameter_bytes + parameter->name_offset);
-        if (strcmp(parameter_name, name) == 0) {
-            const Address parameter_address = static_cast<Address>(parameter_bytes - &mem.memory[0]);
-            return Ptr<SceGxmProgramParameter>(parameter_address);
+        auto parameter = &parameters[i];
+        if (strcmp(parameter->name(), name) == 0) {
+            return Ptr<SceGxmProgramParameter>(program_ptr.address() + int(size_t(parameter) - size_t(program)));
         }
     }
-
     return Ptr<SceGxmProgramParameter>();
 }
 
-EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, const SceGxmProgram *program, SceGxmParameterSemantic semantic, uint32_t index) {
-    TRACY_FUNC(sceGxmProgramFindParameterBySemantic, program, semantic, index);
-    const MemState &mem = emuenv.mem;
+EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, Ptr<const SceGxmProgram> program_ptr, SceGxmParameterSemantic semantic, uint32_t index) {
+    TRACY_FUNC(sceGxmProgramFindParameterBySemantic, program_ptr, semantic, index);
 
     if (semantic == SCE_GXM_PARAMETER_SEMANTIC_NONE) {
         return Ptr<SceGxmProgramParameter>();
     }
 
-    assert(program);
-    if (!program)
+    assert(program_ptr);
+    if (!program_ptr)
         return Ptr<SceGxmProgramParameter>();
 
-    const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
+    auto program = program_ptr.get(emuenv.mem);
+    auto parameters = program->program_parameters();
     for (uint32_t i = 0; i < program->parameter_count; ++i) {
-        const SceGxmProgramParameter *const parameter = &parameters[i];
-        const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
+        auto parameter = &parameters[i];
         if ((parameter->semantic == semantic) && (parameter->semantic_index == index)) {
-            const Address parameter_address = static_cast<Address>(parameter_bytes - &mem.memory[0]);
-            return Ptr<SceGxmProgramParameter>(parameter_address);
+            return Ptr<SceGxmProgramParameter>(program_ptr.address() + int(size_t(parameter) - size_t(program)));
         }
     }
 
     return Ptr<SceGxmProgramParameter>();
 }
 
-EXPORT(Ptr<SceGxmProgramParameter>, _sceGxmProgramFindParameterBySemantic, const SceGxmProgram *program, SceGxmParameterSemantic semantic, uint32_t index) {
-    TRACY_FUNC(_sceGxmProgramFindParameterBySemantic, program, semantic, index);
-    return export_sceGxmProgramFindParameterBySemantic(emuenv, thread_id, export_name, program, semantic, index);
+EXPORT(Ptr<SceGxmProgramParameter>, _sceGxmProgramFindParameterBySemantic, Ptr<const SceGxmProgram> program_ptr, SceGxmParameterSemantic semantic, uint32_t index) {
+    TRACY_FUNC(_sceGxmProgramFindParameterBySemantic, program_ptr, semantic, index);
+    return CALL_EXPORT(sceGxmProgramFindParameterBySemantic, program_ptr, semantic, index);
 }
 
 EXPORT(uint32_t, sceGxmProgramGetDefaultUniformBufferSize, const SceGxmProgram *program) {
@@ -3232,19 +3226,15 @@ EXPORT(int, sceGxmProgramGetOutputRegisterFormat, const SceGxmProgram *program, 
     return 0;
 }
 
-EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, Ptr<const SceGxmProgram> program, uint32_t index) {
-    TRACY_FUNC(sceGxmProgramGetParameter, program, index);
+EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, Ptr<const SceGxmProgram> program_ptr, uint32_t index) {
+    TRACY_FUNC(sceGxmProgramGetParameter, program_ptr, index);
 
-    const SceGxmProgram *program_ptr = program.get(emuenv.mem);
-    if (index >= program_ptr->parameter_count)
+    auto program = program_ptr.get(emuenv.mem);
+    if (index >= program->parameter_count)
         return Ptr<SceGxmProgramParameter>(0);
-
-    Address parameter_addr = program.address();
-    parameter_addr += offsetof(SceGxmProgram, parameters_offset);
-    parameter_addr += program_ptr->parameters_offset;
-    parameter_addr += index * sizeof(SceGxmProgramParameter);
-
-    return Ptr<SceGxmProgramParameter>(parameter_addr);
+    auto parameters = program->program_parameters();
+    auto parameter = &parameters[index];
+    return Ptr<SceGxmProgramParameter>(program_ptr.address() + int(size_t(parameter) - size_t(program)));
 }
 
 EXPORT(uint32_t, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {
@@ -3338,11 +3328,11 @@ EXPORT(uint32_t, sceGxmProgramParameterGetContainerIndex, const SceGxmProgramPar
 
 EXPORT(uint32_t, sceGxmProgramParameterGetIndex, const SceGxmProgram *program, const SceGxmProgramParameter *parameter) {
     TRACY_FUNC(sceGxmProgramParameterGetIndex, program, parameter);
-    uint64_t parameter_offset = program->parameters_offset;
-
-    if (parameter_offset > 0)
-        parameter_offset += (uint64_t)&program->parameters_offset;
-    return (uint32_t)((uint64_t)parameter - parameter_offset) >> 4;
+    auto parameters = program->program_parameters();
+    if (parameters) {
+        return static_cast<uint32_t>(parameter - parameters);
+    }
+    return 0;
 }
 
 EXPORT(Ptr<const char>, sceGxmProgramParameterGetName, Ptr<const SceGxmProgramParameter> parameter) {
@@ -3370,7 +3360,7 @@ EXPORT(int, sceGxmProgramParameterGetSemantic, const SceGxmProgramParameter *par
 
 EXPORT(int, _sceGxmProgramParameterGetSemantic, const SceGxmProgramParameter *parameter) {
     TRACY_FUNC(_sceGxmProgramParameterGetSemantic, parameter);
-    return export_sceGxmProgramParameterGetSemantic(emuenv, thread_id, export_name, parameter);
+    return CALL_EXPORT(sceGxmProgramParameterGetSemantic, parameter);
 }
 
 EXPORT(uint32_t, sceGxmProgramParameterGetSemanticIndex, const SceGxmProgramParameter *parameter) {

@@ -545,12 +545,12 @@ void FSRScreenFilter::on_resize() {
     // update the descriptor sets (except the first sampler image as it is not fixed)
     std::vector<vk::DescriptorImageInfo> descr_images(screen.swapchain_size * 3);
     std::vector<vk::WriteDescriptorSet> write_descr(screen.swapchain_size * 3);
-    for (int i = 0; i < write_descr.size(); i++) {
+    for (size_t i = 0; i < write_descr.size(); i++) {
         descr_images[i].imageView = intermediate_images[i / 3].view;
         write_descr[i].setImageInfo(descr_images[i]);
     }
 
-    for (int i = 0; i < screen.swapchain_size; i++) {
+    for (uint32_t i = 0; i < screen.swapchain_size; i++) {
         // easu dst
         descr_images[i * 3].imageLayout = vk::ImageLayout::eGeneral;
         write_descr[i * 3]

@@ -685,7 +685,7 @@ bool USSETranslatorVisitor::vldst(
             return true;
 
         int offset = m_spirv_params.literal_buffer_base + inst.opr.src1.num + inst.opr.src2.num;
-        const uint8_t *literal_buffer = reinterpret_cast<const uint8_t *>(&m_program.literal_buffer_data_offset) + m_program.literal_buffer_data_offset;
+        const uint8_t *literal_buffer = m_program.literal_buffer_data();
         const float literal = *reinterpret_cast<const float *>(literal_buffer + offset);
 
         store(to_store, m_b.makeFloatConstant(literal), 0b1);

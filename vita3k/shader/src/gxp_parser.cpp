@@ -81,7 +81,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
     std::map<int, UniformBuffer> uniform_buffers;
 
     // TODO split these to functions (e.g. get_literals, get_paramters)
-    const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
+    auto gxp_parameters = program.program_parameters();
     auto vertex_varyings_ptr = program.vertex_varyings();
 
     std::uint32_t investigated_ub = 0;
@@ -108,8 +108,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
                 offset = container->base_sa_offset + parameter.resource_index;
             }
 
-            const auto parameter_type = gxp::parameter_type(parameter);
-            const auto [store_type, param_type_name] = shader::get_parameter_type_store_and_name(parameter_type);
+            const auto [store_type, param_type_name] = shader::get_parameter_type_store_and_name(parameter.type);
 
             // Make the type
             gxp::GenericParameterType param_type = gxp::parameter_generic_type(parameter);
@@ -238,8 +237,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
         uniform_buffers.emplace(14, buffer);
     }
 
-    const auto buffer_infoes = reinterpret_cast<const SceGxmUniformBufferInfo *>(
-        reinterpret_cast<const std::uint8_t *>(&program.uniform_buffer_offset) + program.uniform_buffer_offset);
+    const auto buffer_infoes = program.uniform_buffer();
 
     const auto buffer_container = gxp::get_container_by_index(program, 19);
     const uint32_t base_offset = buffer_container ? buffer_container->base_sa_offset : 0;
@@ -305,8 +303,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
 
     if (container) {
         // Create dependent sampler
-        const SceGxmDependentSampler *dependent_samplers = reinterpret_cast<const SceGxmDependentSampler *>(reinterpret_cast<const std::uint8_t *>(&program.dependent_sampler_offset)
-            + program.dependent_sampler_offset);
+        auto dependent_samplers = program.dependent_sampler();
 
         for (std::uint32_t i = 0; i < program.dependent_sampler_count; i++) {
             const std::uint32_t rsc_index = dependent_samplers[i].resource_index_layout_offset / 4;
@@ -341,8 +338,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
         }
     }
 
-    const std::uint32_t *literals = reinterpret_cast<const std::uint32_t *>(reinterpret_cast<const std::uint8_t *>(&program.literals_offset)
-        + program.literals_offset);
+    auto literals = program.literals();
 
     // Get base SA offset for literal
     // The container index of those literals are 16
@@ -353,18 +349,15 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
         container = gxp::get_container_by_index(program, 19);
     }
     if (container) {
-        for (std::uint32_t i = 0; i < program.literals_count * 2; i += 2) {
-            auto literal_offset = container->base_sa_offset + literals[i];
-            auto literal_data = *reinterpret_cast<const float *>(&literals[i + 1]);
-
+        for (std::uint32_t i = 0; i < program.literals_count; ++i) {
             LiteralInputSource source;
-            source.data = literal_data;
+            source.data = literals[i].data;
 
             Input item;
             item.component_count = 1;
             item.type = DataType::F32;
             item.bank = RegisterBank::SECATTR;
-            item.offset = literal_offset;
+            item.offset = container->base_sa_offset + literals[i].offset;
             item.array_size = 1;
             item.generic_type = GenericType::SCALER;
             item.source = source;

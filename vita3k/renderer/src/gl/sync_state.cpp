@@ -517,7 +517,7 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
 
         const std::uint16_t stream_index = attribute.streamIndex;
 
-        for (int i = 0; i < array_size; i++) {
+        for (uint32_t i = 0; i < array_size; i++) {
             if (upload_integral || (attribute_format == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED)) {
                 glVertexAttribIPointer(attrib_location + i, component_count, type, stream.stride, reinterpret_cast<const GLvoid *>(i * array_element_size + attribute.offset + offset_in_buffer[stream_index]));
             } else {
