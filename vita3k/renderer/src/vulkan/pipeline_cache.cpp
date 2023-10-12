@@ -512,7 +512,7 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(Mem
 
 static vk::StencilOpState convert_op_state(const GxmStencilStateOp &state) {
     return vk::StencilOpState{
-        .failOp = translate_stencil_op(state.depth_fail),
+        .failOp = translate_stencil_op(state.stencil_fail),
         .passOp = translate_stencil_op(state.depth_pass),
         .depthFailOp = translate_stencil_op(state.depth_fail),
         .compareOp = translate_stencil_func(state.func)
