@@ -388,14 +388,16 @@ void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &
     else
         vfs::read_app_file(buffer, emuenv.pref_path, app_path, "sce_sys/pic0.png");
 
+    const auto title = (APP_INDEX != gui.app_selector.sys_apps.end()) && (APP_INDEX != gui.app_selector.user_apps.end()) ? APP_INDEX->title : app_path;
+
     if (buffer.empty()) {
-        LOG_WARN("Background not found for application {} [{}].", APP_INDEX->title, app_path);
+        LOG_WARN("Background not found for application {} [{}].", title, app_path);
         return;
     }
 
     stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
     if (!data) {
-        LOG_ERROR("Invalid background for application {} [{}].", APP_INDEX->title, app_path);
+        LOG_ERROR("Invalid background for application {} [{}].", title, app_path);
         return;
     }
     gui.apps_background[app_path].init(gui.imgui_state.get(), data, width, height);
