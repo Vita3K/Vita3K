@@ -28,17 +28,21 @@
 		<update_history>Päivityshistoria</update_history>
 		<history_version>Versio {}</history_version>
 		<information>Info</information>
-		<app_delete>Tämä sovellus ja kaikki siihen liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</app_delete>
-		<save_delete>Haluatko poistaa nämä tallennentut tiedot?</save_delete>
-		<eligible>Kelpo</eligible>
-		<ineligible>Epäkelpo</ineligible>
-		<level>Taso</level>
-		<name>Nimi</name>
-		<trophy_earning>Trophyjen ansaitseminen</trophy_earning>
-		<parental_controls>Lapsilukko</parental_controls>
-		<updated>Päivitetty</updated>
-		<size>Koko</size>
-		<version>Versio</version>
+		<delete>
+			<app_delete>Tämä sovellus ja kaikki siihen liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</app_delete>
+			<saved_data_delete>Haluatko poistaa nämä tallennentut tiedot?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Kelpo</eligible>
+			<ineligible>Epäkelpo</ineligible>
+			<level>Taso</level>
+			<name>Nimi</name>
+			<trophy_earning>Trophyjen ansaitseminen</trophy_earning>
+			<parental_controls>Lapsilukko</parental_controls>
+			<updated>Päivitetty</updated>
+			<size>Koko</size>
+			<version>Versio</version>
+		</info>
 	</app_context>
 
 	<common>

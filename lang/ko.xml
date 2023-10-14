@@ -49,17 +49,28 @@
 		<update_history>업데이트 이력</update_history>
 		<history_version>버전 {}</history_version>
 		<information>정보</information>
-		<app_delete>이 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</app_delete>
-		<save_delete>이 저장 데이터를 삭제하시겠습니까?</save_delete>
-		<eligible>권리 있음</eligible>
-		<ineligible>권리 없음</ineligible>
-		<level>레벨</level>		
-		<name>이름</name>
-		<trophy_earning>트로피 획득</trophy_earning>
-		<parental_controls>자녀보호 기능</parental_controls>
-		<updated>갱신일</updated>
-		<size>크기</size>
-		<version>버전</version>
+		<delete>
+			<app_delete>이 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</app_delete>
+			<saved_data_delete>이 저장 데이터를 삭제하시겠습니까?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>권리 있음</eligible>
+			<ineligible>권리 없음</ineligible>
+			<level>레벨</level>		
+			<name>이름</name>
+			<trophy_earning>트로피 획득</trophy_earning>
+			<parental_controls>자녀보호 기능</parental_controls>
+			<updated>갱신일</updated>
+			<size>크기</size>
+			<version>버전</version>
+		</info>
+		<time_used>
+			<time_used_seconds>{}초</time_used_seconds>
+			<time_used_minutes>{}분 {}초</time_used_minutes>
+			<time_used_hours>{}시간 {}분 {}초</time_used_hours>
+			<time_used_days>{}일 {}시간 {}분 {}초</time_used_days>
+			<time_used_weeks>{}주일 {}일 {}시간 {}분 {}초</time_used_weeks>
+		</time_used>
 	</app_context>
 
 	<common>

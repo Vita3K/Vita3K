@@ -50,7 +50,7 @@ void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pat
     gui.app_selector.app_info = {};
 
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
-        auto lang = gui.lang.app_context;
+        auto &lang = gui.lang.app_context.info;
         gui.app_selector.app_info.trophy = fs::exists(APP_PATH / "sce_sys/trophy") ? lang["eligible"] : lang["ineligible"];
 
         const auto last_writen = fs::last_write_time(APP_PATH);
@@ -268,10 +268,11 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
 
-    auto lang = gui.lang.content_manager;
-    auto application = lang.application;
-    auto saved_data = lang.saved_data;
-    auto common = emuenv.common_dialog.lang.common;
+    auto &lang = gui.lang.content_manager;
+    auto &application = lang.application;
+    auto &saved_data = lang.saved_data;
+    auto &info = gui.lang.app_context.info;
+    auto &common = emuenv.common_dialog.lang.common;
 
     if (menu == "info") {
         ImGui::SetCursorPos(ImVec2(90.f * SCALE.x, 10.f * SCALE.y));
@@ -504,7 +505,6 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             }
         } else if (menu == "info") {
             // Information
-            auto info = gui.lang.app_context;
             ImGui::SetWindowFontScale(1.f);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["trophy_earning"].c_str());
             ImGui::SameLine(310.f * SCALE.x);

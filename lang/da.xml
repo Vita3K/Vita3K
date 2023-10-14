@@ -28,21 +28,21 @@
 		<update_history>Opdateringshistorik</update_history>
 		<history_version>Version {}</history_version>
 		<information>Information</information>
-		<app_delete>Dette program og alle relaterede data, herunder gemte data, vil blive slettet.</app_delete>
-		<save_delete>Ønsker du at disse gemte data?</save_delete>
-		<eligible>Kvalificeret</eligible>
-		<ineligible>Ikke kvalificeret</ineligible>
-		<level>Niveau</level>
-		<name>Navn</name>
-		<trophy_earning>Trophy opnåelse</trophy_earning>
-		<parental_controls>Forældrekontrol</parental_controls>
-		<updated>Opdateret</updated>
-		<size>Størrelse</size>
-		<version>Version</version>
-		<title_id>Title ID</title_id>
-		<last_time_used>Last time used</last_time_used>
-		<never>Never</never>
-		<time_used>Time used</time_used>
+		<delete>
+			<app_delete>Dette program og alle relaterede data, herunder gemte data, vil blive slettet.</app_delete>
+			<saved_data_delete>Ønsker du at disse gemte data?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Kvalificeret</eligible>
+			<ineligible>Ikke kvalificeret</ineligible>
+			<level>Niveau</level>
+			<name>Navn</name>
+			<trophy_earning>Trophy opnåelse</trophy_earning>
+			<parental_controls>Forældrekontrol</parental_controls>
+			<updated>Opdateret</updated>
+			<size>Størrelse</size>
+			<version>Version</version>
+		</info>
 	</app_context>
 	
 	<common>

@@ -57,23 +57,34 @@
 		<update_history>アップデート履歴</update_history>
 		<history_version>バージョン {}</history_version>
 		<information>情報</information>
-		<app_delete>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</app_delete>
-		<app_delete_note>アプリの削除にはアプリのサイズと
-ご利用のハードウェアにより時間がかかる場合があります。</app_delete_note>
-		<save_delete>このセーブデータを削除しますか？</save_delete>
-		<eligible>権利あり</eligible>
-		<ineligible>権利なし</ineligible>
-		<level>レベル</level>
-		<name>名前</name>
-		<trophy_earning>トロフィー獲得</trophy_earning>
-		<parental_controls>ペアレンタルコントロール</parental_controls>
-		<updated>更新日</updated>
-		<size>サイズ</size>
-		<version>バージョン</version>
-		<title_id>タイトルID</title_id>
-		<last_time_used>最後に起動した日時</last_time_used>
-		<never>なし</never>
-		<time_used>プレイ時間</time_used>
+		<delete>
+			<app_delete>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</app_delete>
+			<app_delete_description>アプリの削除にはアプリのサイズと
+ご利用のハードウェアにより時間がかかる場合があります。</app_delete_description>
+			<saved_data_delete>このセーブデータを削除しますか？</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>権利あり</eligible>
+			<ineligible>権利なし</ineligible>
+			<level>レベル</level>
+			<name>名前</name>
+			<trophy_earning>トロフィー獲得</trophy_earning>
+			<parental_controls>ペアレンタルコントロール</parental_controls>
+			<updated>更新日</updated>
+			<size>サイズ</size>
+			<version>バージョン</version>
+			<title_id>タイトルID</title_id>
+			<last_time_used>最後に起動した日時</last_time_used>
+			<time_used>プレイ時間</time_used>
+			<never>なし</never>
+		</info>
+		<time_used>
+			<time_used_seconds>{}秒</time_used_seconds>
+			<time_used_minutes>{}分{}秒</time_used_minutes>
+			<time_used_hours>{}時間{}分{}秒</time_used_hours>
+			<time_used_days>{}日{}時間{}分{}秒</time_used_days>
+			<time_used_weeks>{}週間{}日{}時間{}分{}秒</time_used_weeks>
+		</time_used>
 	</app_context>
 
 	<common>
@@ -373,9 +384,9 @@ Vita3Kをお楽しみください。</completed_setup>
 			<firmware_version>ファームウェアバージョン：</firmware_version>
 			<no_font_exist>ファームウェアフォントパッケージがありません，ダウンロードしてインストールしてください。</no_font_exist>
 			<download_firmware_font_package>ファームウェアフォントパッケージをダウンロード</download_firmware_font_package>
-			<firmware_font_package_note>ファームウェアフォントパッケージは、一部のアプリケーションや、
+			<firmware_font_package_description>ファームウェアフォントパッケージは、一部のアプリケーションや、
 GUIでのアジア地域のフォントサポートに必須です。
-また、一般的にGUIを正しく表示するために推奨されています。</firmware_font_package_note>
+また、一般的にGUIを正しく表示するために推奨されています。</firmware_font_package_description>
 			<delete_firmware>インストールしたファームウェアファイルを削除しますか？</delete_firmware>
 		</firmware_install>
 		<pkg_install>

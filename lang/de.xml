@@ -31,20 +31,24 @@
 		<update_history>Update-Verlauf</update_history>
 		<history_version>Version {}</history_version>
 		<information>Information</information>
-		<app_delete>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</app_delete>
-		<save_delete>Willst du die Nutzerdaten löschen?</save_delete>
-		<eligible>berechtigt</eligible>
-		<ineligible>nicht berechtigt</ineligible>
-		<level>Stufe</level>
-		<name>Name</name>
-		<trophy_earning>Verdienen von Trophäen</trophy_earning>
-		<parental_controls>Kindersicherung</parental_controls>
-		<updated>Aktualisiert</updated>
-		<size>Größe</size>
-		<version>Version</version>
-		<last_time_used>Zuletzt benutzt</last_time_used>
-		<never>Nie</never>
-		<time_used>Nutzungsdauer</time_used>
+		<delete>
+			<app_delete>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</app_delete>
+			<saved_data_delete>Willst du die Nutzerdaten löschen?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>berechtigt</eligible>
+			<ineligible>nicht berechtigt</ineligible>
+			<level>Stufe</level>
+			<name>Name</name>
+			<trophy_earning>Verdienen von Trophäen</trophy_earning>
+			<parental_controls>Kindersicherung</parental_controls>
+			<updated>Aktualisiert</updated>
+			<size>Größe</size>
+			<version>Version</version>
+			<last_time_used>Zuletzt benutzt</last_time_used>
+			<time_used>Nutzungsdauer</time_used>
+			<never>Nie</never>
+		</info>
 	</app_context>
 
 	<common>

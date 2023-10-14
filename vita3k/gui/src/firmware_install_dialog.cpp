@@ -133,7 +133,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::Button(lang["download_firmware_font_package"].c_str()))
                     open_path("https://bit.ly/2P2rb0r");
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", lang["firmware_font_package_note"].c_str());
+                    ImGui::SetTooltip("%s", lang["firmware_font_package_description"].c_str());
                 ImGui::Spacing();
                 ImGui::Separator();
                 ImGui::Spacing();

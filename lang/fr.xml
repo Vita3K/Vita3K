@@ -58,21 +58,25 @@
 		<update_history>Historique de mise à jour</update_history>
 		<history_version>Version {}</history_version>
 		<information>Informations</information>
-		<app_delete>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</app_delete>
-		<save_delete>Supprimer ces données sauvegardées ?</save_delete>
- 		<eligible>Autorisé</eligible>
-		<ineligible>Non autorisé</ineligible>
-		<level>Niveau</level>
-		<name>Nom</name>
-		<trophy_earning>Obtention de trophées</trophy_earning>
-		<parental_controls>Contrôle parental</parental_controls>
-		<updated>Mis à jour</updated>
-		<size>Taille</size>
-		<version>Version</version>
-		<title_id>ID du Titre</title_id>
-		<last_time_used>Dernière fois utilisé</last_time_used>
-		<never>Jamais</never>
-		<time_used>Temps utilisé</time_used>
+		<delete>
+			<app_delete>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</app_delete>
+			<saved_data_delete>Supprimer ces données sauvegardées ?</saved_data_delete>
+		</delete>
+		<info>
+ 			<eligible>Autorisé</eligible>
+			<ineligible>Non autorisé</ineligible>
+			<level>Niveau</level>
+			<name>Nom</name>
+			<trophy_earning>Obtention de trophées</trophy_earning>
+			<parental_controls>Contrôle parental</parental_controls>
+			<updated>Mis à jour</updated>
+			<size>Taille</size>
+			<version>Version</version>
+			<title_id>ID du Titre</title_id>
+			<last_time_used>Dernière fois utilisé</last_time_used>
+			<time_used>Temps utilisé</time_used>
+			<never>Jamais</never>
+		</info>
 	</app_context>
 
 	<common>

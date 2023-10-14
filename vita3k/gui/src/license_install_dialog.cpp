@@ -101,7 +101,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     } else if (state == "success") {
         title = indicator["install_complete"];
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s\n%s: %s\n%s: %s", lang["successed_install_license"].c_str(), gui.lang.settings.theme_background.theme.information["content_id"].c_str(), emuenv.license_content_id.c_str(), gui.lang.app_context["title_id"].c_str(), emuenv.license_title_id.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s\n%s: %s\n%s: %s", lang["successed_install_license"].c_str(), gui.lang.settings.theme_background.theme.information["content_id"].c_str(), emuenv.license_content_id.c_str(), gui.lang.app_context.info["title_id"].c_str(), emuenv.license_title_id.c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

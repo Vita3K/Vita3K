@@ -26,25 +26,29 @@
 
 	<about name="Hakkında">
 	</about>
-	
+
 	<app_context>
 		<update_history>Güncelleme Geçmişi</update_history>
 		<history_version>Sürüm {}</history_version>
 		<information>Bilgi</information>
-		<app_delete>Bu uygulama ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</app_delete>
-		<save_delete>Bu kayıtlı verileri silmek istiyor musunuz?</save_delete>
-		<eligible>Uygun</eligible> 
-		<ineligible>Uygun değil</ineligible>
-		<level>Seviye</level>
-		<name>Ad</name>
-		<trophy_earning>Kupa Kazanma</trophy_earning>
-		<parental_controls>Ebeveyn Kontrolleri</parental_controls>
-		<updated>üncelleme Tarihi</updated>
-		<size>Boyut</size>
-		<version>Sürüm</version>
-		<last_time_used>Son kullanma</last_time_used>
-		<never>Asla</never>
-		<time_used>Süre kullanıldı</time_used>
+		<delete>
+			<app_delete>Bu uygulama ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</app_delete>
+			<saved_data_delete>Bu kayıtlı verileri silmek istiyor musunuz?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Uygun</eligible> 
+			<ineligible>Uygun değil</ineligible>
+			<level>Seviye</level>
+			<name>Ad</name>
+			<trophy_earning>Kupa Kazanma</trophy_earning>
+			<parental_controls>Ebeveyn Kontrolleri</parental_controls>
+			<updated>üncelleme Tarihi</updated>
+			<size>Boyut</size>
+			<version>Sürüm</version>
+			<last_time_used>Son kullanma</last_time_used>
+			<time_used>Süre kullanıldı</time_used>
+			<never>Asla</never>
+		</info>
 	</app_context>
 
 	<common>

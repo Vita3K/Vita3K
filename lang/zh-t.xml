@@ -58,25 +58,36 @@
 		<update_history>更新履歷</update_history>
 		<history_version>{} 版本</history_version>
 		<information>資訊</information>
-		<app_delete>刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
-		<app_delete_note>刪除應用程式可能需要一段時間，
-取決於它的大小和您的硬件。</app_delete_note>
-		<addcont_delete>確定要刪除此追加內容嗎？</addcont_delete>
-		<license_delete>確定要刪除此授權嗎？</license_delete>
-		<save_delete>確定要刪除此保存資料嗎？</save_delete>
-		<eligible>有權</eligible>
-		<ineligible>無權</ineligible>
-		<level>等級</level>
-		<name>名稱</name>
-		<trophy_earning>獲得獎盃</trophy_earning>
-		<parental_controls>家長監控</parental_controls>
-		<updated>更新日</updated>
-		<size>檔案大小</size>
-		<version>版本</version>
-		<title_id>標題ID</title_id>
-		<last_time_used>上次使用時間</last_time_used>
-		<never>從來沒有</never>
-		<time_used>使用時間</time_used>
+		<delete>
+			<app_delete>刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
+			<app_delete_description>刪除應用程式可能需要一段時間，
+取決於它的大小和您的硬件。</app_delete_description>
+			<addcont_delete>確定要刪除此追加內容嗎？</addcont_delete>
+			<license_delete>確定要刪除此授權嗎？</license_delete>
+			<saved_data_delete>確定要刪除此保存資料嗎？</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>有權</eligible>
+			<ineligible>無權</ineligible>
+			<level>等級</level>
+			<name>名稱</name>
+			<trophy_earning>獲得獎盃</trophy_earning>
+			<parental_controls>家長監控</parental_controls>
+			<updated>更新日</updated>
+			<size>檔案大小</size>
+			<version>版本</version>
+			<title_id>標題ID</title_id>
+			<last_time_used>上次使用時間</last_time_used>
+			<time_used>使用時間</time_used>
+			<never>從來沒有</never>
+		</info>
+		<time_used>
+			<time_used_seconds>{}秒</time_used_seconds>
+			<time_used_minutes>{}分鐘{}秒</time_used_minutes>
+			<time_used_hours>{}小時{}分鐘{}秒</time_used_hours>
+			<time_used_days>{}天{}小時{}分鐘{}秒</time_used_days>
+			<time_used_weeks>{}周{}天{}小時{}分鐘{}秒</time_used_weeks>
+		</time_used>
 	</app_context>
 
 	<common>
@@ -236,6 +247,7 @@
 
 	<compile_shaders>
 		<compiling_shaders>正在編譯著色器</compiling_shaders>
+		<pipelines_compiled>已編譯{}個管綫</pipelines_compiled>
 		<shaders_compiled>已編譯{}個著色器</shaders_compiled>
 	</compile_shaders>
 
@@ -263,7 +275,7 @@
 		<rebind_controls>重新綁定控制</rebind_controls>
 		<led_color>LED顔色</led_color>
 		<use_custom_color>使用自訂顔色</use_custom_color>
-		<use_custom_color_note>勾選此項可為控制器的LED使用自訂顔色。</use_custom_color_note>
+		<use_custom_color_description>勾選此項可為控制器的LED使用自訂顔色。</use_custom_color_description>
 		<red>紅</red>
 		<green>綠</green>
 		<blue>藍</blue>
@@ -302,9 +314,9 @@
 		<gui>GUI（圖形化使用者介面）</gui>
 		<full_screen>全螢幕</full_screen>
 		<toggle_touch>切換觸摸</toggle_touch>
-		<toggle_touch_note>在背觸和前觸之間切換。</toggle_touch_note>
+		<toggle_touch_description>在背觸和前觸之間切換。</toggle_touch_description>
 		<toggle_gui_visibility>切換GUI（圖形化使用者介面）可見性</toggle_gui_visibility>
-		<toggle_gui_visibility_note>在應用程式運行时，在螢幕頂部顯示和隱藏GUI（圖形化使用者介面）之間切換。</toggle_gui_visibility_note>
+		<toggle_gui_visibility_description>在應用程式運行时，在螢幕頂部顯示和隱藏GUI（圖形化使用者介面）之間切換。</toggle_gui_visibility_description>
 		<error>錯誤</error>
 		<error_duplicate_key>此按鈕已繫結至其他按鈕或已被保留。</error_duplicate_key>
 	</controls>

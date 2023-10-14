@@ -51,23 +51,27 @@
 		<update_history>Histórico de atualizações</update_history>
 		<history_version>Versão {}</history_version>
 		<information>Informações</information>
-		<app_delete>Esse aplicativo e todos os dados relacionados, inclusive dados salvos, serão excluídos.</app_delete>
-		<app_delete_note>Deletar um aplicativo pode demorar algum tempo
-dependendo de seu tamanho e hardware.</app_delete_note>
-		<save_delete>Deseja excluir esses dados salvos?</save_delete>
-		<eligible>Qualificado</eligible>
-		<ineligible>Não qualificado</ineligible>
-		<level>Nível</level>
-		<name>Nome</name>
-		<trophy_earning>Conquista de troféus</trophy_earning>
-		<parental_controls>Controle parental</parental_controls>
-		<updated>Atualizado</updated>
-		<size>Tamanho</size>
-		<version>Versão</version>
-		<title_id>ID do título</title_id>
-		<last_time_used>Usado pela última vez</last_time_used>
-		<never>Nunca</never>
-		<time_used>Tempo usado</time_used>
+		<delete>
+			<app_delete>Esse aplicativo e todos os dados relacionados, inclusive dados salvos, serão excluídos.</app_delete>
+			<app_delete_description>Deletar um aplicativo pode demorar algum tempo
+dependendo de seu tamanho e hardware.</app_delete_description>
+			<saved_data_delete>Deseja excluir esses dados salvos?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Qualificado</eligible>
+			<ineligible>Não qualificado</ineligible>
+			<level>Nível</level>
+			<name>Nome</name>
+			<trophy_earning>Conquista de troféus</trophy_earning>
+			<parental_controls>Controle parental</parental_controls>
+			<updated>Atualizado</updated>
+			<size>Tamanho</size>
+			<version>Versão</version>
+			<title_id>ID do título</title_id>
+			<last_time_used>Usado pela última vez</last_time_used>
+			<time_used>Tempo usado</time_used>
+			<never>Nunca</never>
+		</info>
 	</app_context>
 
 	<common>

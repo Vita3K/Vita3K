@@ -28,17 +28,21 @@
 		<update_history>Historia aktualizacji</update_history>
 		<history_version>Wersja {}</history_version>
 		<information>Informacje</information>
-		<app_delete>Aplikacja i wszystkie powiązane dane, w tym zapisane dane, zostaną usunięte.</app_delete>
-		<save_delete>Czy chcesz usunąć te zapisane dane?</save_delete>
-		<eligible>Spełnia warunki</eligible>
-		<ineligible>Nie spełnia warunków</ineligible>
-		<level>Poziom</level>
-		<name>Nazwa</name>
-		<trophy_earning>Zdobywanie trofeów</trophy_earning>
-		<parental_controls>kontrola rodzicielska</parental_controls>
-		<updated>Zaktualizowano</updated>
-		<size>Rozmiar</size>
-		<version>Wersja</version>
+		<delete>
+			<app_delete>Aplikacja i wszystkie powiązane dane, w tym zapisane dane, zostaną usunięte.</app_delete>
+			<saved_data_delete>Czy chcesz usunąć te zapisane dane?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Spełnia warunki</eligible>
+			<ineligible>Nie spełnia warunków</ineligible>
+			<level>Poziom</level>
+			<name>Nazwa</name>
+			<trophy_earning>Zdobywanie trofeów</trophy_earning>
+			<parental_controls>kontrola rodzicielska</parental_controls>
+			<updated>Zaktualizowano</updated>
+			<size>Rozmiar</size>
+			<version>Wersja</version>
+		</information>
 	</app_context>
 
 	<common>

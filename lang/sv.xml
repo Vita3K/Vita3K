@@ -28,17 +28,21 @@
 		<update_history>Uppdateringshistorik</update_history>
 		<history_version>Version {}</history_version>
 		<information>Information</information>
-		<app_delete>Den här applikationen och alla tillhörande data, inklusive sparade data, kommer att raderas.</app_delete>
-		<save_delete>Vill du radera dessa sparade data?</save_delete>
-		<eligible>Möjligt</eligible>
-		<ineligible>Inte möjligt</ineligible>
-		<level>Nivå</level>
-		<name>Namn</name>
-		<trophy_earning>Vinna trophy</trophy_earning>
-		<parental_controls>Föräldrakontroll</parental_controls>
-		<updated>Uppdaterat</updated>
-		<size>Storlek</size>
-		<version>Version</version>
+		<delete>
+			<app_delete>Den här applikationen och alla tillhörande data, inklusive sparade data, kommer att raderas.</app_delete>
+			<saved_data_delete>Vill du radera dessa sparade data?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Möjligt</eligible>
+			<ineligible>Inte möjligt</ineligible>
+			<level>Nivå</level>
+			<name>Namn</name>
+			<trophy_earning>Vinna trophy</trophy_earning>
+			<parental_controls>Föräldrakontroll</parental_controls>
+			<updated>Uppdaterat</updated>
+			<size>Storlek</size>
+			<version>Version</version>
+		</info>
 	</app_context>
 	
 	<common>

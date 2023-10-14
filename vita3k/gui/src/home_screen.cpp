@@ -395,13 +395,14 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
 static std::string get_label_name(GuiState &gui, const SortType &type) {
     std::string label;
     auto &lang = gui.lang.home_screen;
+    auto &info = gui.lang.app_context.info;
     switch (type) {
     case APP_VER: label = lang["ver"]; break;
     case CATEGORY: label = lang["cat"]; break;
     case COMPAT: label = lang["comp"]; break;
     case LAST_TIME: label = lang["last_time"]; break;
-    case TITLE: label = gui.lang.app_context["name"]; break;
-    case TITLE_ID: label = gui.lang.app_context["title_id"]; break;
+    case TITLE: label = info["name"]; break;
+    case TITLE_ID: label = info["title_id"]; break;
     }
 
     switch (gui.app_selector.app_list_sorted[type]) {
@@ -893,7 +894,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::SetCursorPosX(ImGui::GetCursorPosX() - (10.f * VIEWPORT_SCALE.x) + (ImGui::GetColumnWidth() / 2.f) - HALF_CLOCK_SIZE);
                     ImGui::Text("%s", CLOCK_STR.c_str());
                 } else
-                    ImGui::Selectable(!gui.lang.app_context["never"].empty() ? gui.lang.app_context["never"].c_str() : "Never", false, ImGuiSelectableFlags_None, ImVec2(0.f, ICON_SIZE.y));
+                    ImGui::Selectable(!gui.lang.app_context.info["never"].empty() ? gui.lang.app_context.info["never"].c_str() : "Never", false, ImGuiSelectableFlags_None, ImVec2(0.f, ICON_SIZE.y));
                 ImGui::NextColumn();
                 ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, list_selectable_size);
                 ImGui::PopStyleColor();

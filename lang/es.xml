@@ -37,21 +37,25 @@
 		<update_history>Historial de actualizaciones</update_history>
 		<history_version>Versión {}</history_version>
 		<information>Información</information>
-		<app_delete>Se eliminarán la aplicación y todos los datos relacionados, incluidos los datos guardados.</app_delete>
-		<save_delete>¿Quieres eliminar estos datos guardados?</save_delete>
-		<eligible>Elegible</eligible>
-		<ineligible>No elegible</ineligible>
-		<level>Nivel</level>
-		<name>Nombre</name>
-		<trophy_earning>Ganar trofeos</trophy_earning>
-		<parental_controls>Control paterno</parental_controls>
-		<updated>Actualizado</updated>
-		<size>Tamaño</size>
-		<version>Versión</version>
-		<title_id>Título ID</title_id>
-		<last_time_used>Última vez que se utilizó</last_time_used>
-		<never>Nunca</never>
-		<time_used>Tiempo utilizado</time_used>
+		<delete>
+			<app_delete>Se eliminarán la aplicación y todos los datos relacionados, incluidos los datos guardados.</app_delete>
+			<saved_data_delete>¿Quieres eliminar estos datos guardados?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Elegible</eligible>
+			<ineligible>No elegible</ineligible>
+			<level>Nivel</level>
+			<name>Nombre</name>
+			<trophy_earning>Ganar trofeos</trophy_earning>
+			<parental_controls>Control paterno</parental_controls>
+			<updated>Actualizado</updated>
+			<size>Tamaño</size>
+			<version>Versión</version>
+			<title_id>Título ID</title_id>
+			<last_time_used>Última vez que se utilizó</last_time_used>
+			<time_used>Tiempo utilizado</time_used>
+			<never>Nunca</never>
+		</info>
 	</app_context>
 
 	<common>

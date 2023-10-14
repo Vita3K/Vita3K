@@ -113,7 +113,20 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 set_lang_string(lang.about, lang_child.child("about"));
 
                 // App Context
-                set_lang_string(lang.app_context, lang_child.child("app_context"));
+                const auto app_context = lang_child.child("app_context");
+                if (!app_context.empty()) {
+                    // Main
+                    set_lang_string(lang.app_context.main, app_context);
+
+                    // Delete
+                    set_lang_string(lang.app_context.deleting, app_context.child("delete"));
+
+                    // Information
+                    set_lang_string(lang.app_context.info, app_context.child("info"));
+
+                    // Time Used
+                    set_lang_string(lang.app_context.time_used, app_context.child("time_used"));
+                }
 
                 // Common
                 const auto common = lang_child.child("common");

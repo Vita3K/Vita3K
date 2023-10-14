@@ -135,46 +135,60 @@ struct LangState {
         { "contributors", "Contributors" },
         { "supporters", "Supporters" }
     };
-    std::map<std::string, std::string> app_context = {
-        { "check_app_state", "Check App state" },
-        { "copy_vita3k_summary", "Copy Vita3K Summary" },
-        { "open_state_report", "Open state report" },
-        { "create_state_report", "Create state report" },
-        { "update_database", "Update database" },
-        { "copy_app_info", "Copy App info" },
-        { "name_and_id", "Name and Title ID" },
-        { "app_summary", "App Summary" },
-        { "custom_config", "Custom Config" },
-        { "create", "Create" },
-        { "edit", "Edit" },
-        { "remove", "Remove" },
-        { "open_folder", "Open Folder" },
-        { "addcont", "DLC" },
-        { "license", "License" },
-        { "shaders_cache", "Shaders Cache" },
-        { "shaders_log", "Shaders Log" },
-        { "update_history", "Update History" },
-        { "history_version", "Version {}" },
-        { "information", "Information" },
-        { "app_delete", "This application and all related data, including saved data, will be deleted." },
-        { "app_delete_note", "Deleting an application may take a while,\ndepending on its size and your hardware." },
-        { "addcont_delete", "Do you want to delete this add-on data?" },
-        { "license_delete", "Do you want to delete this license?" },
-        { "save_delete", "Do you want to delete this saved data?" },
-        { "eligible", "Eligible" },
-        { "ineligible", "Ineligible" },
-        { "level", "Level" },
-        { "name", "Name" },
-        { "trophy_earning", "Trophy Earning" },
-        { "parental_controls", "Parental Controls" },
-        { "updated", "Updated" },
-        { "size", "Size" },
-        { "version", "Version" },
-        { "title_id", "Title ID" },
-        { "last_time_used", "Last time used" },
-        { "never", "Never" },
-        { "time_used", "Time used" }
+    struct AppContext {
+        std::map<std::string, std::string> main = {
+            { "check_app_state", "Check App state" },
+            { "copy_vita3k_summary", "Copy Vita3K Summary" },
+            { "open_state_report", "Open state report" },
+            { "create_state_report", "Create state report" },
+            { "update_database", "Update database" },
+            { "copy_app_info", "Copy App info" },
+            { "name_and_id", "Name and Title ID" },
+            { "app_summary", "App Summary" },
+            { "custom_config", "Custom Config" },
+            { "create", "Create" },
+            { "edit", "Edit" },
+            { "remove", "Remove" },
+            { "open_folder", "Open Folder" },
+            { "addcont", "DLC" },
+            { "license", "License" },
+            { "shaders_cache", "Shaders Cache" },
+            { "shaders_log", "Shaders Log" },
+            { "update_history", "Update History" },
+            { "history_version", "Version {}" },
+            { "information", "Information" }
+        };
+        std::map<std::string, std::string> deleting = {
+            { "app_delete", "This application and all related data, including saved data, will be deleted." },
+            { "app_delete_description", "Deleting an application may take a while,\ndepending on its size and your hardware." },
+            { "addcont_delete", "Do you want to delete this add-on data?" },
+            { "license_delete", "Do you want to delete this license?" },
+            { "saved_data_delete", "Do you want to delete this saved data?" }
+        };
+        std::map<std::string, std::string> info = {
+            { "eligible", "Eligible" },
+            { "ineligible", "Ineligible" },
+            { "level", "Level" },
+            { "name", "Name" },
+            { "trophy_earning", "Trophy Earning" },
+            { "parental_controls", "Parental Controls" },
+            { "updated", "Updated" },
+            { "size", "Size" },
+            { "version", "Version" },
+            { "title_id", "Title ID" },
+            { "last_time_used", "Last time used" },
+            { "time_used", "Time used" },
+            { "never", "Never" }
+        };
+        std::map<std::string, std::string> time_used = {
+            { "time_used_seconds", "{}s" },
+            { "time_used_minutes", "{}m:{}s" },
+            { "time_used_hours", "{}h:{}m:{}s" },
+            { "time_used_days", "{}d:{}h:{}m:{}s" },
+            { "time_used_weeks", "{}w:{}d:{}h:{}m:{}s" }
+        };
     };
+    AppContext app_context;
     struct Compatibility {
         std::string name = "Compatibility";
         std::map<compat::CompatibilityState, std::string> states = {
@@ -199,6 +213,7 @@ struct LangState {
     };
     std::map<std::string, std::string> compile_shaders = {
         { "compiling_shaders", "Compiling Shaders" },
+        { "pipelines_compiled", "{} pipelines compiled" },
         { "shaders_compiled", "{} shaders compiled" }
     };
     struct ContentManager {
@@ -230,7 +245,7 @@ struct LangState {
         { "rebind_controls", "Rebind Controls" },
         { "led_color", "LED Color" },
         { "use_custom_color", "Use Custom Color" },
-        { "use_custom_color_note", "Check this box to use custom color for the controller's LED." },
+        { "use_custom_color_description", "Check this box to use custom color for the controller's LED." },
         { "red", "Red" },
         { "green", "Green" },
         { "blue", "Blue" },
@@ -269,9 +284,9 @@ struct LangState {
         { "gui", "GUI" },
         { "full_screen", "Full Screen" },
         { "toggle_touch", "Toggle Touch" },
-        { "toggle_touch_note", "Toggles between back touch and screen touch." },
+        { "toggle_touch_description", "Toggles between back touch and screen touch." },
         { "toggle_gui_visibility", "Toggle GUI Visibility" },
-        { "toggle_gui_visibility_note", "Toggles between showing and hiding the GUI at the top of the screen while the app is running." },
+        { "toggle_gui_visibility_description", "Toggles between showing and hiding the GUI at the top of the screen while the app is running." },
         { "error", "Error" },
         { "error_duplicate_key", "The key is used for other bindings or it is reserved." }
     };
@@ -331,7 +346,7 @@ struct LangState {
             { "firmware_version", "Firmware version:" },
             { "no_font_exist", "No firmware font package present, please download and install it." },
             { "download_firmware_font_package", "Download Firmware Font Package" },
-            { "firmware_font_package_note", "Firmware font package is needed for some applications\nand also for Asian regional font support. (Generally Recommended)" },
+            { "firmware_font_package_description", "Firmware font package is needed for some applications\nand also for Asian regional font support. (Generally Recommended)" },
             { "delete_firmware", "Delete the firmware installation file?" }
         };
         std::map<std::string, std::string> pkg_install = {
