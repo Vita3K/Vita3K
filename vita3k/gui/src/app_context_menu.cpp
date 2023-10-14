@@ -102,7 +102,7 @@ std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, EmuEnvState &em
     return time_app_index;
 }
 
-static std::string get_time_app_used(const int64_t &time_used) {
+static std::string get_time_app_used(GuiState &gui, const int64_t &time_used) {
     static const uint32_t one_min = 60;
     static const uint32_t one_hour = one_min * 60;
     static const uint32_t twenty_four_hours = 24;
@@ -110,27 +110,29 @@ static std::string get_time_app_used(const int64_t &time_used) {
     static const uint32_t seven_days = 7;
     static const uint32_t one_week = one_day * seven_days;
 
+    auto &lang = gui.lang.app_context.time_used;
+
     if (time_used < one_min)
-        return fmt::format("{}s", time_used);
+        return fmt::format(fmt::runtime(lang["time_used_seconds"].c_str()), time_used);
     else {
         const std::chrono::seconds sec(time_used);
         const uint32_t minutes = std::chrono::duration_cast<std::chrono::minutes>(sec).count() % one_min;
         const uint32_t seconds = sec.count() % one_min;
         if (time_used < one_hour)
-            return fmt::format("{}m:{}s", minutes, seconds);
+            return fmt::format(fmt::runtime(lang["time_used_minutes"].c_str()), minutes, seconds);
         else {
             const uint32_t count_hours = std::chrono::duration_cast<std::chrono::hours>(sec).count();
             if (time_used < one_day)
-                return fmt::format("{}h:{}m:{}s", count_hours, minutes, seconds);
+                return fmt::format(fmt::runtime(lang["time_used_hours"].c_str()), count_hours, minutes, seconds);
             else {
                 const uint32_t count_days = count_hours / twenty_four_hours;
                 const uint32_t hours_per_day = count_hours - (count_days * twenty_four_hours);
                 if (time_used < one_week)
-                    return fmt::format("{}d:{}h:{}m:{}s", count_days, hours_per_day, minutes, seconds);
+                    return fmt::format(fmt::runtime(lang["time_used_days"].c_str()), count_days, hours_per_day, minutes, seconds);
                 else {
                     const uint32_t count_weeks = count_days / seven_days;
                     const uint32_t count_days_week = count_days - (count_weeks * seven_days);
-                    return fmt::format("{}w:{}d:{}h:{}m:{}s", count_weeks, count_days_week, hours_per_day, minutes, seconds);
+                    return fmt::format(fmt::runtime(lang["time_used_weeks"].c_str()), count_weeks, count_days_week, hours_per_day, minutes, seconds);
                 }
             }
         }
@@ -301,11 +303,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
-    auto lang = gui.lang.app_context;
-    auto app_str = gui.lang.content_manager.application;
-    auto savedata_str = gui.lang.content_manager.saved_data;
-    auto common = emuenv.common_dialog.lang.common;
-    auto lang_compat = gui.lang.compatibility;
+    auto &lang = gui.lang.app_context;
+    auto &app_str = gui.lang.content_manager.application;
+    auto &savedata_str = gui.lang.content_manager.saved_data;
+    auto &common = emuenv.common_dialog.lang.common;
+    auto &lang_compat = gui.lang.compatibility;
 
     const auto is_commercial_app = title_id.find("PCS") != std::string::npos;
     const auto has_state_report = gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(title_id) : false;
@@ -322,7 +324,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         if (title_id.find("NPXS") == std::string::npos) {
             if (ImGui::BeginMenu(lang_compat.name.c_str())) {
                 if (!is_commercial_app || !gui.compat.compat_db_loaded) {
-                    if (ImGui::MenuItem(lang["check_app_state"].c_str())) {
+                    if (ImGui::MenuItem(lang.main["check_app_state"].c_str())) {
                         const std::string compat_url = is_commercial_app ? "https://vita3k.org/compatibility?g=" + title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + APP_INDEX->title;
                         open_path(compat_url);
                     }
@@ -336,7 +338,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                         SAFE_LOCALTIME(&gui.compat.app_compat_db[title_id].updated_at, &updated_at_tm);
                         auto UPDATED_AT = get_date_time(gui, emuenv, updated_at_tm);
                         ImGui::Spacing();
-                        const auto updated_at_str = fmt::format("{} {} {} {}", lang["updated"].c_str(), UPDATED_AT[DateTime::DATE_MINI], UPDATED_AT[DateTime::CLOCK], is_12_hour_format ? UPDATED_AT[DateTime::DAY_MOMENT] : "");
+                        const auto updated_at_str = fmt::format("{} {} {} {}", lang.info["updated"].c_str(), UPDATED_AT[DateTime::DATE_MINI], UPDATED_AT[DateTime::CLOCK], is_12_hour_format ? UPDATED_AT[DateTime::DAY_MOMENT] : "");
                         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(updated_at_str.c_str()).x / 2));
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", updated_at_str.c_str());
                     }
@@ -352,14 +354,14 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                             ImGui::LogText("%s", vita3k_summary.c_str());
                             ImGui::LogFinish();
                         };
-                        if (ImGui::MenuItem(lang["copy_vita3k_summary"].c_str()))
+                        if (ImGui::MenuItem(lang.main["copy_vita3k_summary"].c_str()))
                             copy_vita3k_summary();
-                        if (ImGui::MenuItem(lang["open_state_report"].c_str())) {
+                        if (ImGui::MenuItem(lang.main["open_state_report"].c_str())) {
                             copy_vita3k_summary();
                             open_path(fmt::format("{}/{}", ISSUES_URL, gui.compat.app_compat_db[title_id].issue_id));
                         }
                     } else {
-                        if (ImGui::MenuItem(lang["create_state_report"].c_str())) {
+                        if (ImGui::MenuItem(lang.main["create_state_report"].c_str())) {
                             // Create body of state repport
 
                             // Encode title for URL
@@ -410,58 +412,58 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                         }
                     }
                 }
-                if (is_commercial_app && ImGui::MenuItem(lang["update_database"].c_str()))
+                if (is_commercial_app && ImGui::MenuItem(lang.main["update_database"].c_str()))
                     load_and_update_compat_user_apps(gui, emuenv);
 
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu(lang["copy_app_info"].c_str())) {
-                if (ImGui::MenuItem(lang["name_and_id"].c_str())) {
+            if (ImGui::BeginMenu(lang.main["copy_app_info"].c_str())) {
+                if (ImGui::MenuItem(lang.main["name_and_id"].c_str())) {
                     ImGui::LogToClipboard();
                     ImGui::LogText("%s [%s]", APP_INDEX->title.c_str(), title_id.c_str());
                     ImGui::LogFinish();
                 }
-                if (ImGui::MenuItem(lang["name"].c_str())) {
+                if (ImGui::MenuItem(lang.info["name"].c_str())) {
                     ImGui::LogToClipboard();
                     ImGui::LogText("%s", APP_INDEX->title.c_str());
                     ImGui::LogFinish();
                 }
-                if (ImGui::MenuItem(lang["title_id"].c_str())) {
+                if (ImGui::MenuItem(lang.info["title_id"].c_str())) {
                     ImGui::LogToClipboard();
                     ImGui::LogText("%s", title_id.c_str());
                     ImGui::LogFinish();
                 }
-                if (ImGui::MenuItem(lang["app_summary"].c_str())) {
+                if (ImGui::MenuItem(lang.main["app_summary"].c_str())) {
                     ImGui::LogToClipboard();
                     ImGui::LogText("# App summary\n- App name: %s\n- App serial: %s\n- App version: %s", APP_INDEX->title.c_str(), title_id.c_str(), APP_INDEX->app_ver.c_str());
                     ImGui::LogFinish();
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu(lang["custom_config"].c_str())) {
+            if (ImGui::BeginMenu(lang.main["custom_config"].c_str())) {
                 if (!fs::exists(CUSTOM_CONFIG_PATH)) {
-                    if (ImGui::MenuItem(lang["create"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
+                    if (ImGui::MenuItem(lang.main["create"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
                         init_config(gui, emuenv, app_path);
                 } else {
-                    if (ImGui::MenuItem(lang["edit"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
+                    if (ImGui::MenuItem(lang.main["edit"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
                         init_config(gui, emuenv, app_path);
-                    if (ImGui::MenuItem(lang["remove"].c_str()))
+                    if (ImGui::MenuItem(lang.main["remove"].c_str()))
                         fs::remove(CUSTOM_CONFIG_PATH);
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu(lang["open_folder"].c_str())) {
+            if (ImGui::BeginMenu(lang.main["open_folder"].c_str())) {
                 if (ImGui::MenuItem(app_str["title"].c_str()))
                     open_path(APP_PATH.string());
-                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang["addcont"].c_str()))
+                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.main["addcont"].c_str()))
                     open_path(ADDCONT_PATH.string());
-                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang["license"].c_str()))
+                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang.main["license"].c_str()))
                     open_path(LICENSE_PATH.string());
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
                     open_path(SAVE_DATA_PATH.string());
-                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang["shaders_cache"].c_str()))
+                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang.main["shaders_cache"].c_str()))
                     open_path(SHADER_CACHE_PATH.string());
-                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang["shaders_log"].c_str()))
+                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.main["shaders_log"].c_str()))
                     open_path(SHADER_LOG_PATH.string());
                 ImGui::EndMenu();
             }
@@ -478,27 +480,27 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             }
             if (ImGui::BeginMenu(common["delete"].c_str())) {
                 if (ImGui::MenuItem(app_str["title"].c_str()))
-                    context_dialog = lang["app_delete"];
-                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang["addcont"].c_str()))
-                    context_dialog = lang["addcont_delete"];
-                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang["license"].c_str()))
-                    context_dialog = lang["license_delete"];
+                    context_dialog = lang.deleting["app_delete"];
+                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.main["addcont"].c_str()))
+                    context_dialog = lang.deleting["addcont_delete"];
+                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang.main["license"].c_str()))
+                    context_dialog = lang.deleting["license_delete"];
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
-                    context_dialog = lang["save_delete"];
-                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang["shaders_cache"].c_str()))
+                    context_dialog = lang.deleting["saved_data_delete"];
+                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang.main["shaders_cache"].c_str()))
                     fs::remove_all(SHADER_CACHE_PATH);
-                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang["shaders_log"].c_str()))
+                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.main["shaders_log"].c_str()))
                     fs::remove_all(SHADER_LOG_PATH);
                 ImGui::EndMenu();
             }
-            if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(lang["update_history"].c_str())) {
+            if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(lang.main["update_history"].c_str())) {
                 if (get_update_history(gui, emuenv, app_path))
                     context_dialog = "history";
                 else
                     LOG_WARN("Patch note Error for Title ID {} in path {}", title_id, app_path);
             }
         }
-        if (ImGui::MenuItem(lang["information"].c_str(), nullptr, &gui.vita_area.app_information)) {
+        if (ImGui::MenuItem(lang.main["information"].c_str(), nullptr, &gui.vita_area.app_information)) {
             if (title_id.find("NPXS") == std::string::npos) {
                 get_app_info(gui, emuenv, app_path);
                 const auto app_size = get_app_size(gui, emuenv, app_path);
@@ -532,7 +534,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::BeginChild("##info_update_list", ImVec2(WINDOW_SIZE.x - (30.f * SCALE.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * SCALE.y)), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
             for (const auto &update : update_history_infos) {
                 ImGui::SetWindowFontScale(1.4f);
-                const auto version_str = fmt::format(fmt::runtime(lang["history_version"].c_str()), update.first);
+                const auto version_str = fmt::format(fmt::runtime(lang.main["history_version"].c_str()), update.first);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", version_str.c_str());
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::PushTextWrapPos(WINDOW_SIZE.x - (80.f * SCALE.x));
@@ -560,8 +562,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::PushTextWrapPos(WINDOW_SIZE.x - (54.f * SCALE.x));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", context_dialog.c_str());
             ImGui::PopTextWrapPos();
-            if ((context_dialog == lang["app_delete"]) && ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", lang["app_delete_note"].c_str());
+            if ((context_dialog == lang.deleting["app_delete"]) && ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", lang.deleting["app_delete_description"].c_str());
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
             if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
@@ -571,13 +573,13 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * SCALE.x));
         }
         if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
-            if (context_dialog == lang["app_delete"])
+            if (context_dialog == lang.deleting["app_delete"])
                 delete_app(gui, emuenv, app_path);
-            if (context_dialog == lang["addcont_delete"])
+            if (context_dialog == lang.deleting["addcont_delete"])
                 fs::remove_all(ADDCONT_PATH);
-            if (context_dialog == lang["license_delete"])
+            if (context_dialog == lang.deleting["license_delete"])
                 fs::remove_all(LICENSE_PATH);
-            else if (context_dialog == lang["save_delete"])
+            else if (context_dialog == lang.deleting["saved_data_delete"])
                 fs::remove_all(SAVE_DATA_PATH);
             context_dialog.clear();
         }
@@ -604,46 +606,46 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             const ImVec2 POS_MAX(POS_MIN.x + INFO_ICON_SIZE.x, POS_MIN.y + INFO_ICON_SIZE.y);
             ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, title_id)->second, POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, INFO_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
         }
-        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize((lang["name"] + "  ").c_str()).x, INFO_ICON_SIZE.y + (50.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s ", lang["name"].c_str());
+        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["name"] + "  ").c_str()).x, INFO_ICON_SIZE.y + (50.f * SCALE.y)));
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s ", lang.info["name"].c_str());
         ImGui::SameLine();
         ImGui::PushTextWrapPos(display_size.x - (85.f * SCALE.x));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->title.c_str());
         ImGui::PopTextWrapPos();
         if (title_id.find("NPXS") == std::string::npos) {
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["trophy_earning"] + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["trophy_earning"].c_str(), gui.app_selector.app_info.trophy.c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["trophy_earning"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["trophy_earning"].c_str(), gui.app_selector.app_info.trophy.c_str());
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["parental_controls"] + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["parental_controls"].c_str(), lang["level"].c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["parental_controls"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["parental_controls"].c_str(), lang.info["level"].c_str());
             ImGui::SameLine();
             ImGui::TextColored(GUI_COLOR_TEXT, "%d", *reinterpret_cast<const uint16_t *>(APP_INDEX->parental_level.c_str()));
             ImGui::Spacing();
-            ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize((lang["updated"] + "  ").c_str()).x));
+            ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["updated"] + "  ").c_str()).x));
             auto DATE_TIME = get_date_time(gui, emuenv, gui.app_selector.app_info.updated);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s %s", lang["updated"].c_str(), DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s %s", lang.info["updated"].c_str(), DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
             if (is_12_hour_format) {
                 ImGui::SameLine();
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
             }
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["size"] + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (lang["size"] + "  " + get_unit_size(gui.app_selector.app_info.size)).c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["size"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (lang.info["size"] + "  " + get_unit_size(gui.app_selector.app_info.size)).c_str());
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["version"] + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["version"].c_str(), APP_INDEX->app_ver.c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["version"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["version"].c_str(), APP_INDEX->app_ver.c_str());
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["title_id"] + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["title_id"].c_str(), APP_INDEX->title_id.c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["title_id"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["title_id"].c_str(), APP_INDEX->title_id.c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang_compat.name + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang_compat.name.c_str());
             ImGui::SameLine();
             ImGui::TextColored(compat_state_color, " %s", compat_state_str.c_str());
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["last_time_used"] + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s ", lang["last_time_used"].c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["last_time_used"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s ", lang.info["last_time_used"].c_str());
             ImGui::SameLine();
             const auto time_app_index = get_time_app_index(gui, emuenv, app_path);
             if (time_app_index != gui.time_apps[emuenv.io.user_id].end()) {
@@ -656,10 +658,10 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", LAST_TIME[DateTime::DAY_MOMENT].c_str());
                 }
                 ImGui::Spacing();
-                ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["time_used"] + "  ").c_str()).x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["time_used"].c_str(), get_time_app_used(time_app_index->time_used).c_str());
+                ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["time_used"] + "  ").c_str()).x);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["time_used"].c_str(), get_time_app_used(gui, time_app_index->time_used).c_str());
             } else
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["never"].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.info["never"].c_str());
         }
         ImGui::End();
     }

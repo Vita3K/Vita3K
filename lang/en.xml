@@ -58,25 +58,36 @@
 		<update_history>Update History</update_history>
 		<history_version>Version {}</history_version>
 		<information>Information</information>
-		<app_delete>This application and all related data, including saved data, will be deleted.</app_delete>
-		<app_delete_note>Deleting an application may take a while,
-depending on its size and your hardware.</app_delete_note>
-		<addcont_delete>Do you want to delete this add-on data?</addcont_delete>
-		<license_delete>Do you want to delete this license?</license_delete>
-		<save_delete>Do you want to delete this saved data?</save_delete>
-		<eligible>Eligible</eligible>
-		<ineligible>Ineligible</ineligible>
-		<level>Level</level>
-		<name>Name</name>
-		<trophy_earning>Trophy Earning</trophy_earning>
-		<parental_controls>Parental Controls</parental_controls>
-		<updated>Updated</updated>
-		<size>Size</size>
-		<version>Version</version>
-		<title_id>Title ID</title_id>
-		<last_time_used>Last time used</last_time_used>
-		<never>Never</never>
-		<time_used>Time used</time_used>
+		<delete>
+			<app_delete>This application and all related data, including saved data, will be deleted.</app_delete>
+			<app_delete_description>Deleting an application may take a while,
+depending on its size and your hardware.</app_delete_description>
+			<addcont_delete>Do you want to delete this add-on data?</addcont_delete>
+			<license_delete>Do you want to delete this license?</license_delete>
+			<saved_data_delete>Do you want to delete this saved data?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Eligible</eligible>
+			<ineligible>Ineligible</ineligible>
+			<level>Level</level>
+			<name>Name</name>
+			<trophy_earning>Trophy Earning</trophy_earning>
+			<parental_controls>Parental Controls</parental_controls>
+			<updated>Updated</updated>
+			<size>Size</size>
+			<version>Version</version>
+			<title_id>Title ID</title_id>
+			<last_time_used>Last time used</last_time_used>
+			<time_used>Time used</time_used>
+			<never>Never</never>
+		</info>
+		<time_used>
+			<time_used_seconds>{}s</time_used_seconds>
+			<time_used_minutes>{}m:{}s</time_used_minutes>
+			<time_used_hours>{}h:{}m:{}s</time_used_hours>
+			<time_used_days>{}d:{}h:{}m:{}s</time_used_days>
+			<time_used_weeks>{}w:{}d:{}h:{}m:{}s</time_used_weeks>
+		</time_used>
 	</app_context>
 
 	<common>
@@ -237,6 +248,7 @@ Error code: {}</an_error_occurred>
 
 	<compile_shaders>
 		<compiling_shaders>Compiling Shaders</compiling_shaders>
+		<pipelines_compiled>{} pipelines compiled</pipelines_compiled>
 		<shaders_compiled>{} shaders compiled</shaders_compiled>
 	</compile_shaders>
 
@@ -264,7 +276,7 @@ Please connect a controller that is compatible with SDL2.</not_connected>
 		<rebind_controls>Rebind Controls</rebind_controls>
 		<led_color>LED Color</led_color>
 		<use_custom_color>Use Custom Color</use_custom_color>
-		<use_custom_color_note>Check this box to use custom color for the controller's LED.</use_custom_color_note>
+		<use_custom_color_description>Check this box to use custom color for the controller's LED.</use_custom_color_description>
 		<red>Red</red>
 		<green>Green</green>
 		<blue>Blue</blue>
@@ -303,9 +315,9 @@ Please connect a controller that is compatible with SDL2.</not_connected>
 		<gui>GUI</gui>
 		<full_screen>Full Screen</full_screen>
 		<toggle_touch>Toggle Touch</toggle_touch>
-		<toggle_touch_note>Toggles between back touch and screen touch.</toggle_touch_note>
+		<toggle_touch_description>Toggles between back touch and screen touch.</toggle_touch_description>
 		<toggle_gui_visibility>Toggle GUI Visibility</toggle_gui_visibility>
-		<toggle_gui_visibility_note>Toggles between showing and hiding the GUI at the top of the screen while the app is running.</toggle_gui_visibility_note>
+		<toggle_gui_visibility_description>Toggles between showing and hiding the GUI at the top of the screen while the app is running.</toggle_gui_visibility_description>
 		<error>Error</error>
 		<error_duplicate_key>The key is used for other bindings or it is reserved.</error_duplicate_key>
 	</controls>
@@ -408,8 +420,8 @@ Your Vita3K system is ready!</completed_setup>
 			<firmware_version>Firmware version:</firmware_version>
 			<no_font_exist>No firmware font package present, please download and install it.</no_font_exist>
 			<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
-			<firmware_font_package_note>Firmware font package is needed for some applications
-and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
+			<firmware_font_package_description>Firmware font package is needed for some applications
+and also for Asian regional font support. (Generally Recommended)</firmware_font_package_description>
 			<delete_firmware>Delete the firmware installation file?</delete_firmware>
 		</firmware_install>
 		<pkg_install>

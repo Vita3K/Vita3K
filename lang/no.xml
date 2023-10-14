@@ -28,17 +28,21 @@
 		<update_history>Oppdater historikk</update_history>
 		<history_version>Versjon {}</history_version>
 		<information>Informasjon</information>
-		<app_delete>Dette programmet og all relatert data, inkludert lagreda data, vil bli slettet.</app_delete>
-		<save_delete>Vil du slette disse lagrede dataene?</save_delete>
-		<eligible>Valgbar</eligible>
-		<ineligible>Ikke valgbar</ineligible>
-		<level>Nivå</level>
-		<name>Navn</name>
-		<trophy_earning>Trophy-oppnåing</trophy_earning>
-		<parental_controls>Foreldrakontroll</parental_controls>
-		<updated>Oppdatert</updated>
-		<size>Størrelse</size>
-		<version>Versjon</version>
+		<delete>
+			<app_delete>Dette programmet og all relatert data, inkludert lagreda data, vil bli slettet.</app_delete>
+			<saved_data_delete>Vil du slette disse lagrede dataene?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Valgbar</eligible>
+			<ineligible>Ikke valgbar</ineligible>
+			<level>Nivå</level>
+			<name>Navn</name>
+			<trophy_earning>Trophy-oppnåing</trophy_earning>
+			<parental_controls>Foreldrakontroll</parental_controls>
+			<updated>Oppdatert</updated>
+			<size>Størrelse</size>
+			<version>Versjon</version>
+		</info>
 	</app_context>
 
 	<common>

@@ -58,25 +58,36 @@
 		<update_history>更新历史记录</update_history>
 		<history_version>{}版本</history_version>
 		<information>信息</information>
-		<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
-		<app_delete_note>删除应用程序可能需要一段时间，
-取决于它的大小和您的硬件。</app_delete_note>
-		<addcont_delete>要删除此追加内容吗？</addcont_delete>
-		<license_delete>要删除此授权吗？</license_delete>
-		<save_delete>要删除此保存数据吗？</save_delete>
-		<eligible>有权</eligible>
-		<ineligible>无权</ineligible>
-		<level>级别</level>
-		<name>名称</name>
-		<trophy_earning>获得奖杯</trophy_earning>
-		<parental_controls>视听者限制</parental_controls>
-		<updated>升级日期</updated>
-		<size>大小</size>
-		<version>版本</version>
-		<title_id>标题ID</title_id>
-		<last_time_used>最近使用时间</last_time_used>
-		<never>从来没有</never>
-		<time_used>使用时间</time_used>
+		<delete>
+			<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
+			<app_delete_description>删除应用程序可能需要一段时间，
+取决于它的大小和您的硬件。</app_delete_description>
+			<addcont_delete>要删除此追加内容吗？</addcont_delete>
+			<license_delete>要删除此授权吗？</license_delete>
+			<saved_data_delete>要删除此保存数据吗？</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>有权</eligible>
+			<ineligible>无权</ineligible>
+			<level>级别</level>
+			<name>名称</name>
+			<trophy_earning>获得奖杯</trophy_earning>
+			<parental_controls>视听者限制</parental_controls>
+			<updated>升级日期</updated>
+			<size>大小</size>
+			<version>版本</version>
+			<title_id>标题ID</title_id>
+			<last_time_used>最近使用时间</last_time_used>
+			<time_used>使用时间</time_used>
+			<never>从来没有</never>
+		</info>
+		<time_used>
+			<time_used_seconds>{}秒</time_used_seconds>
+			<time_used_minutes>{}分钟{}秒</time_used_minutes>
+			<time_used_hours>{}小时{}分钟{}秒</time_used_hours>
+			<time_used_days>{}天{}小时{}分钟{}秒</time_used_days>
+			<time_used_weeks>{}周{}天{}小时{}分钟{}秒</time_used_weeks>
+		</time_used>
 	</app_context>
 
 	<common>
@@ -236,6 +247,7 @@
 
 	<compile_shaders>
 		<compiling_shaders>正在编译着色器</compiling_shaders>
+		<pipelines_compiled>已编译{}个管线</pipelines_compiled>
 		<shaders_compiled>已编译{}个着色器</shaders_compiled>
 	</compile_shaders>
 
@@ -263,7 +275,7 @@
 		<rebind_controls>重新绑定控制</rebind_controls>
 		<led_color>LED灯色</led_color>
 		<use_custom_color>使用自定义颜色</use_custom_color>
-		<use_custom_color_note>勾选此项可为控制器的LED灯使用自定义颜色。</use_custom_color_note>
+		<use_custom_color_description>勾选此项可为控制器的LED灯使用自定义颜色。</use_custom_color_description>
 		<red>红</red>
 		<green>绿</green>
 		<blue>蓝</blue>
@@ -302,9 +314,9 @@
 		<gui>GUI（图形用户界面）</gui>
 		<full_screen>全屏</full_screen>
 		<toggle_touch>切换触摸</toggle_touch>
-		<toggle_touch_note>在背触和前触之间切换。</toggle_touch_note>
+		<toggle_touch_description>在背触和前触之间切换。</toggle_touch_description>
 		<toggle_gui_visibility>切换GUI（图形用户界面）可见性</toggle_gui_visibility>
-		<toggle_gui_visibility_note>在应用程序运行时，在屏幕顶部显示和隐藏GUI（图形用户界面）之间切换。</toggle_gui_visibility_note>
+		<toggle_gui_visibility_description>在应用程序运行时，在屏幕顶部显示和隐藏GUI（图形用户界面）之间切换。</toggle_gui_visibility_description>
 		<error>错误</error>
 		<error_duplicate_key>该键已被使用并绑定其他键或被预留。</error_duplicate_key>
 	</controls>

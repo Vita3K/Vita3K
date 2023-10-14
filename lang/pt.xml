@@ -28,20 +28,24 @@
 		<update_history>Histórico de atualização</update_history>
 		<history_version>Versão {}</history_version>
 		<information>Informações</information>
-		<app_delete>Esta aplicação e todos os dados relacionados, incluindo dados guardados, serão elminados.</app_delete>
-		<save_delete>Pretende elminar estes dados guardados?</save_delete>
-		<eligible>Elegível</eligible>
-		<ineligible>Inelegível</ineligible>
-		<level>Nível</level>
-		<name>Nome</name>
-		<trophy_earning>Ganho de Troféus</trophy_earning>
-		<parental_controls>Controlo parental</parental_controls>
-		<updated>Atualizado</updated>
-		<size>Tamanho</size>
-		<version>Versão</version>
-		<last_time_used>Usado pela última vez</last_time_used>
-		<never>Nunca</never>
-		<time_used>Tempo usado</time_used>
+		<delete>
+			<app_delete>Esta aplicação e todos os dados relacionados, incluindo dados guardados, serão elminados.</app_delete>
+			<saved_data_delete>Pretende elminar estes dados guardados?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Elegível</eligible>
+			<ineligible>Inelegível</ineligible>
+			<level>Nível</level>
+			<name>Nome</name>
+			<trophy_earning>Ganho de Troféus</trophy_earning>
+			<parental_controls>Controlo parental</parental_controls>
+			<updated>Atualizado</updated>
+			<size>Tamanho</size>
+			<version>Versão</version>
+			<last_time_used>Usado pela última vez</last_time_used>
+			<time_used>Tempo usado</time_used>
+			<never>Nunca</never>
+		</info>
 	</app_context>
 
 	<common>

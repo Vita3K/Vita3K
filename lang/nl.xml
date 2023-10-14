@@ -31,20 +31,24 @@
 		<update_history>Updategeschiedenis</update_history>
 		<history_version>Versie {}</history_version>
 		<information>Informatie</information>
-		<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
-		<save_delete>Wil je deze opgeslagen data verwijderen?</save_delete>
-		<eligible>Geschikt</eligible>
-		<ineligible>Niet geschikt</ineligible>
-		<level>Niveau</level>
-		<name>Naam</name>
-		<trophy_earning>Trofeeën verdienen</trophy_earning>
-		<parental_controls>Ouderlijk toezicht</parental_controls>
-		<updated>Geüpdatet</updated>
-		<size>Grootte</size>
-		<version>Versie</version>
-		<last_time_used>Laatst gebruikt</last_time_used>
-		<never>Nooit</never>
-		<time_used>Gebruikte tijd</time_used>
+		<delete>
+			<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
+			<saved_data_delete>Wil je deze opgeslagen data verwijderen?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Geschikt</eligible>
+			<ineligible>Niet geschikt</ineligible>
+			<level>Niveau</level>
+			<name>Naam</name>
+			<trophy_earning>Trofeeën verdienen</trophy_earning>
+			<parental_controls>Ouderlijk toezicht</parental_controls>
+			<updated>Geüpdatet</updated>
+			<size>Grootte</size>
+			<version>Versie</version>
+			<last_time_used>Laatst gebruikt</last_time_used>
+			<time_used>Gebruikte tijd</time_used>
+			<never>Nooit</never>
+		</info>
 	</app_context>
 
 	<common>

@@ -57,24 +57,28 @@
 		<update_history>Хронология обновлений</update_history>
 		<history_version>Версия {}</history_version>
 		<information>Информация</information>
-		<app_delete>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</app_delete>
-		<app_delete_note>Удаление приложения может занять некоторое время
-в зависимости от его размера и производительности вашей системы.</app_delete_note>
-		<addcont_delete>Удалить DLC?</addcont_delete>
-		<license_delete>Удалить лицензию?</license_delete>
-		<save_delete>Удалить эти сохранённые данные?</save_delete>
-		<eligible>Допущен</eligible>
-		<ineligible>Не допущен</ineligible>
-		<level>Уровень</level>
-		<name>Название</name>
-		<trophy_earning>Полученные призы</trophy_earning>
-		<parental_controls>Родительский контроль</parental_controls>
-		<updated>Обновлен</updated>
-		<size>Размер</size>
-		<version>Версия</version>
-		<last_time_used>Время последнего использования</last_time_used>
-		<never>Никогда</never>
-		<time_used>Время использования</time_used>
+		<delete>
+			<app_delete>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</app_delete>
+			<app_delete_description>Удаление приложения может занять некоторое время
+в зависимости от его размера и производительности вашей системы.</app_delete_description>
+			<addcont_delete>Удалить DLC?</addcont_delete>
+			<license_delete>Удалить лицензию?</license_delete>
+			<saved_data_delete>Удалить эти сохранённые данные?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Допущен</eligible>
+			<ineligible>Не допущен</ineligible>
+			<level>Уровень</level>
+			<name>Название</name>
+			<trophy_earning>Полученные призы</trophy_earning>
+			<parental_controls>Родительский контроль</parental_controls>
+			<updated>Обновлен</updated>
+			<size>Размер</size>
+			<version>Версия</version>
+			<last_time_used>Время последнего использования</last_time_used>
+			<time_used>Время использования</time_used>
+			<never>Никогда</never>
+		</info>
 	</app_context>
 
 	<common>
@@ -278,9 +282,9 @@
 		<gui>Интерфейс</gui>
 		<full_screen>Полный экран</full_screen>
 		<toggle_touch>Переключение сенсора</toggle_touch>
-		<toggle_touch_note>Переключение между задним сенсором и сенсорным экраном.</toggle_touch_note>
+		<toggle_touch_description>Переключение между задним сенсором и сенсорным экраном.</toggle_touch_description>
 		<toggle_gui_visibility>Перекл. видим. интерф.</toggle_gui_visibility>
-		<toggle_gui_visibility_note>Переключает видимость интерфейса в верхней части экрана при работе приложения.</toggle_gui_visibility_note>
+		<toggle_gui_visibility_description>Переключает видимость интерфейса в верхней части экрана при работе приложения.</toggle_gui_visibility_description>
 		<error>Ошибка</error>
 		<error_duplicate_key>Данная кнопка уже назначена.</error_duplicate_key>
 	</controls>
@@ -381,9 +385,9 @@
 			<firmware_version>Версия прошивки:</firmware_version>
 			<no_font_exist>Пакет шрифтов прошивки отсутствует, пожалуйста, скачайте и установите его.</no_font_exist>
 			<download_firmware_font_package>Скачать пакет шрифтов прошивки</download_firmware_font_package>
-			<firmware_font_package_note>Пакет шрифтов прошивки нужен для некоторых приложений,
+			<firmware_font_package_description>Пакет шрифтов прошивки нужен для некоторых приложений,
 а также для поддержки шрифтов азиатского региона. 
-(В целом рекомендуется)</firmware_font_package_note>
+(В целом рекомендуется)</firmware_font_package_description>
 			<delete_firmware>Удалить установочный файл прошивки?</delete_firmware>
 		</firmware_install>
 		<pkg_install>

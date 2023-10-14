@@ -312,7 +312,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                             set_led_color(default_color);
                         }
                         if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("%s", lang["use_custom_color_note"].c_str());
+                            ImGui::SetTooltip("%s", lang["use_custom_color_description"].c_str());
                         if (has_custom_color) {
                             ImGui::Spacing();
                             if (ImGui::BeginTable("setColor", 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV)) {
