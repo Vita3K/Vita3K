@@ -1226,7 +1226,7 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     if (width > 4096 || height > 4096 || mipCount > 13) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
-    // data can be empty to be filled out later.
+    memset(texture, 0, sizeof(SceGxmTexture));
 
     texture->mip_count = std::min<std::uint32_t>(15, mipCount - 1);
     texture->format0 = (tex_format & 0x80000000) >> 31;
@@ -4871,6 +4871,8 @@ EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const vo
     if ((byteStride < 4) || (byteStride > 131072)) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
+
+    memset(texture, 0, sizeof(SceGxmTexture));
 
     const uint32_t stride_compressed = (byteStride >> 2) - 1;
     texture->mip_filter = stride_compressed & 1;

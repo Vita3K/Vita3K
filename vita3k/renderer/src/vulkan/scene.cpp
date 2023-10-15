@@ -350,7 +350,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     // we need to always load the depth-stencil after the first draw
     if (context.is_first_scene_draw && (context.state.features.support_shader_interlock || context.ignore_macroblock)) {
         // update the render pass to load and store the depth and stencil
-        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_attachment->format, true, true);
+        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_format, true, true);
         context.is_first_scene_draw = false;
     }
 
@@ -365,7 +365,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
             .newLayout = vk::ImageLayout::eGeneral,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = context.current_color_attachment->image,
+            .image = context.current_color_base_image->image,
             .subresourceRange = vkutil::color_subresource_range
         };
         context.render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,

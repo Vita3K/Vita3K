@@ -27,6 +27,7 @@
 #include <mem/ptr.h>
 #include <mem/util.h>
 #include <rtc/rtc.h>
+#include <util/containers.h>
 #include <util/pool.h>
 
 #include <atomic>
@@ -38,8 +39,6 @@
 #include <shared_mutex>
 #include <unordered_map>
 #include <vector>
-
-#include <boost/version.hpp>
 
 struct ThreadState;
 
@@ -61,15 +60,7 @@ typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
 typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
 typedef std::map<SceUID, CallbackPtr> CallbackPtrs;
-
-#if BOOST_VERSION >= 108100
-#include <boost/unordered/unordered_flat_map.hpp>
-// use a boost unordered_flat_map as performance really matters for this field
-typedef boost::unordered::unordered_flat_map<uint32_t, Address> ExportNids;
-#else
-// fallback in case someone is using an old boost version
-typedef std::unordered_map<uint32_t, Address> ExportNids;
-#endif
+typedef unordered_map_fast<uint32_t, Address> ExportNids;
 
 typedef std::map<Address, uint32_t> NotFoundVars;
 typedef std::unique_ptr<CPUProtocol> CPUProtocolPtr;

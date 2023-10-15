@@ -57,7 +57,7 @@ class GLTextureCache : public TextureCache {
 public:
     GLObjectArray<TextureCacheSize> textures;
 
-    bool init(const bool hashless_texture_cache) override;
+    bool init(const bool hashless_texture_cache);
     void select(size_t index, const SceGxmTexture &texture) override;
     void configure_texture(const SceGxmTexture &texture) override;
     void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) override;
