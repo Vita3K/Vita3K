@@ -79,17 +79,42 @@ bool USSETranslatorVisitor::vbw(
     bool immediate = src2_ext && inst.opr.src2.bank == RegisterBank::IMMEDIATE;
     uint32_t value = 0;
 
-    if (src2_rot) {
-        LOG_WARN("Bitwise Rotations are unsupported.");
-        return false;
-    }
-
     spv::Id src2 = 0;
     if (immediate) {
         value = src2_n | (static_cast<uint32_t>(src2_sel) << 7) | (static_cast<uint32_t>(src2_exth) << 14);
-        src2 = m_b.makeUintConstant(src2_invert ? ~value : value);
+        // rotate left by src2_rot
+        if (src2_rot > 0) {
+            if (type == DataType::UINT16) {
+                src2_rot &= 15;
+                uint16_t temp = static_cast<uint16_t>(value);
+                temp = (temp << src2_rot) | (temp >> (16 - src2_rot));
+                value = temp;
+            } else {
+                value = (value << src2_rot) | (value >> (32 - src2_rot));
+            }
+        }
+
+        if (src2_invert)
+            value = ~value;
+        if (type == DataType::UINT16)
+            value &= 0xFFFF;
+        src2 = m_b.makeUintConstant(value);
     } else {
         src2 = load(inst.opr.src2, 0b0001, src2_repeat_offset);
+
+        if (src2_rot) {
+            if (type == DataType::UINT16)
+                src2_rot &= 15;
+            const uint32_t right_shift = type == DataType::UINT16 ? (16 - src2_rot) : (32 - src2_rot);
+
+            // src2 = (src2 << src2_rot) | (src2 >> (bit_size - src2_rot))
+            spv::Id left = m_b.createBinOp(spv::OpShiftLeftLogical, type_ui32, src2, m_b.makeUintConstant(src2_rot));
+            spv::Id right = m_b.createBinOp(spv::OpShiftRightLogical, type_ui32, src2, m_b.makeUintConstant(right_shift));
+            src2 = m_b.createBinOp(spv::OpBitwiseOr, type_ui32, left, right);
+
+            if (type == DataType::UINT16)
+                src2 = m_b.createBinOp(spv::OpBitwiseAnd, type_ui32, src2, m_b.makeUintConstant(0xFFFF));
+        }
 
         if (src2 == spv::NoResult) {
             LOG_ERROR("Source 2 not loaded");
@@ -98,6 +123,9 @@ bool USSETranslatorVisitor::vbw(
 
         if (src2_invert) {
             src2 = m_b.createUnaryOp(spv::Op::OpNot, type_ui32, src2);
+
+            if (type == DataType::UINT16)
+                src2 = m_b.createBinOp(spv::OpBitwiseAnd, type_ui32, src2, m_b.makeUintConstant(0xFFFF));
         }
     }
 
