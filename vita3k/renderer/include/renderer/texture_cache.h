@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <boost/unordered_map.hpp>
 #include <gxm/types.h>
+#include <util/containers.h>
 
 #include <array>
 #include <cstdint>
@@ -32,42 +32,55 @@ namespace renderer {
 enum class Backend : uint32_t;
 static constexpr size_t TextureCacheSize = 1024;
 
+typedef std::array<uint32_t, 4> TextureGxmDataRepr;
 struct TextureCacheInfo {
-    // add a doubly linked circular list structure to easily get the lru element
-    TextureCacheInfo *next;
-    TextureCacheInfo *prev;
-
     uint64_t hash = 0;
     uint64_t timestamp = 0;
-    SceGxmTexture texture;
+    TextureGxmDataRepr texture;
+    int index = 0;
     uint32_t texture_size = 0;
     bool use_hash = false;
     bool dirty = false;
 };
 
+struct SamplerCacheInfo {
+    // compact representation of the sampler state
+    uint32_t value = 0;
+    int index = 0;
+};
+
 typedef std::array<TextureCacheInfo, TextureCacheSize> TextureCacheInfoes;
-typedef std::array<uint32_t, 4> TextureGxmDataRepr;
 
 class TextureCache {
 public:
     Backend backend;
     bool use_protect = false;
+    // use a separate sampler cache
+    bool use_sampler_cache = false;
     int anisotropic_filtering = 1;
     uint64_t timestamp = 1;
 
-    TextureCacheInfoes infoes;
     // used to quicky get the info from a hash of a gxm_texture
-    boost::unordered_map<TextureGxmDataRepr, TextureCacheInfo *> info_lookup;
-    // pointer to the doubly linked list head, which is the least recently used texture
-    TextureCacheInfo *info_list_head;
+    unordered_map_fast<TextureGxmDataRepr, TextureCacheInfo *> texture_lookup;
+    lru::Queue<TextureCacheInfo> texture_queue;
 
-    virtual bool init(const bool hashless_texture_cache);
+    // when use_sampler_cache is set to true, used to quickly get a cached sampler
+    unordered_map_fast<uint32_t, SamplerCacheInfo *> sampler_lookup;
+    lru::Queue<SamplerCacheInfo> sampler_queue;
+    size_t last_bound_sampler_index;
+
+    bool init(const bool hashless_texture_cache, const size_t sampler_cache_size = 0);
     virtual void select(size_t index, const SceGxmTexture &texture) = 0;
     virtual void configure_texture(const SceGxmTexture &texture) = 0;
     virtual void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) = 0;
     virtual void upload_done() {}
 
+    virtual void configure_sampler(size_t index, const SceGxmTexture &texture) {}
+
     void upload_texture(const SceGxmTexture &gxm_texture, MemState &mem);
     void cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemState &mem);
+
+    // is called by cache_and_bind_texture if use_sampler_cache is set to true
+    int cache_and_bind_sampler(const SceGxmTexture &gxm_texture);
 };
 } // namespace renderer

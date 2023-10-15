@@ -116,6 +116,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
         context.record.is_maskupdate = false;
         context.record.color_base_format = SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8;
     }
+    context.current_color_format = vk_format;
 
     if (rt->multisample_mode && !context.record.color_surface.downscale) {
         // using MSAA without downscaling, emulate this as best as we can by multiplying the width and height of the render target by 2
@@ -148,12 +149,10 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
         // also retrieve / create the shader interlock pass
         context.current_shader_interlock_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, true, true, true);
 
-    Framebuffer &framebuffer = state.surface_cache.retrieve_framebuffer_handle(
-        mem, color_surface_fin, ds_surface_fin, context.current_render_pass, context.current_shader_interlock_pass,
-        &context.current_color_attachment, &context.current_ds_attachment,
-        &context.current_framebuffer_height, rt->width, rt->height);
+    Framebuffer &framebuffer = state.surface_cache.retrieve_framebuffer_handle(mem, color_surface_fin, ds_surface_fin, context.current_render_pass, context.current_shader_interlock_pass, context.current_color_view, context.current_ds_view);
     context.current_framebuffer = framebuffer.standard;
     context.current_shader_interlock_framebuffer = framebuffer.shader_interlock;
+    context.current_color_base_image = framebuffer.base_image;
 
     if (state.features.use_mask_bit)
         sync_mask(context, mem);
@@ -298,7 +297,7 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
     // the mask will only be used if state.features.use_mask_bit is true
     vk::DescriptorImageInfo descr_color_info{
         .sampler = nullptr,
-        .imageView = current_color_attachment->view,
+        .imageView = current_color_view,
         .imageLayout = vk::ImageLayout::eGeneral,
     };
     vk::DescriptorImageInfo descr_mask_info{

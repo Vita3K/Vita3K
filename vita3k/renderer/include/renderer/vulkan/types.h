@@ -57,6 +57,7 @@ struct VKTextureCache : public TextureCache {
     uint64_t current_scene_timestamp;
 
     std::array<TextureCacheEntry, TextureCacheSize> textures;
+    std::vector<vk::Sampler> samplers;
 
     TextureCacheEntry *current_texture = nullptr;
     const SceGxmTexture *gxm_texture = nullptr;
@@ -67,11 +68,17 @@ struct VKTextureCache : public TextureCache {
     // get an available staging buffer, wait for one if all are busy
     void prepare_staging_buffer(bool is_configure = false);
 
-    bool init(const bool hashless_texture_cache) override;
+    bool init(const bool hashless_texture_cache);
     void select(size_t index, const SceGxmTexture &texture) override;
     void configure_texture(const SceGxmTexture &texture) override;
     void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) override;
     void upload_done() override;
+
+    void configure_sampler(size_t index, const SceGxmTexture &texture) override;
+
+    vk::Sampler get_retrieved_sampler() const {
+        return samplers[last_bound_sampler_index];
+    }
 };
 
 struct FrameObject {
@@ -206,9 +213,11 @@ struct VKContext : public renderer::Context {
 
     vk::Framebuffer current_framebuffer;
     vk::Framebuffer current_shader_interlock_framebuffer = nullptr;
-    uint16_t current_framebuffer_height;
-    vkutil::Image *current_color_attachment;
-    vkutil::Image *current_ds_attachment;
+    // we need the format or image for some cases
+    vkutil::Image *current_color_base_image;
+    vk::Format current_color_format;
+    vk::ImageView current_color_view;
+    vk::ImageView current_ds_view;
 
     bool is_recording = false;
     bool in_renderpass = false;

@@ -37,6 +37,7 @@ static bool is_depth_stencil_compatible_format(SceGxmTextureBaseFormat format) {
     switch (format) {
         // 8bit stencil
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
         // D16 format
     case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
         // D32 format
@@ -80,7 +81,7 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         context.shader_hints.fragment_textures[index] = format;
     }
 
-    vkutil::Image *image = nullptr;
+    std::optional<TextureLookupResult> lookup_result = std::nullopt;
 
     SceGxmColorBaseFormat format_target_of_texture;
 
@@ -90,63 +91,38 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     TextureViewport texture_viewport{};
 
     if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
-        uint16_t stride_in_pixels = width;
-
-        SceGxmColorSurfaceType surface_type = SCE_GXM_COLOR_SURFACE_LINEAR;
-        switch (texture.texture_type()) {
-        case SCE_GXM_TEXTURE_LINEAR_STRIDED:
-            stride_in_pixels = static_cast<uint16_t>(gxm::get_stride_in_bytes(texture)) / ((gxm::bits_per_pixel(base_format) + 7) >> 3);
-            break;
-        case SCE_GXM_TEXTURE_LINEAR:
-            // when the texture is linear, the stride should be aligned to 8 pixels
-            stride_in_pixels = align(stride_in_pixels, 8);
-            break;
-        case SCE_GXM_TEXTURE_TILED:
-            // tiles are 32x32
-            stride_in_pixels = align(stride_in_pixels, 32);
-            surface_type = SCE_GXM_COLOR_SURFACE_TILED;
-            break;
-        case SCE_GXM_TEXTURE_SWIZZLED:
-        case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
-            surface_type = SCE_GXM_COLOR_SURFACE_SWIZZLED;
-            break;
-        default:
-            break;
-        }
-
-        vk::ComponentMapping swizzle = texture::translate_swizzle(format);
-
-        image = context.state.surface_cache.retrieve_color_surface_texture_handle(
-            mem, width, height, stride_in_pixels, format_target_of_texture, surface_type, static_cast<bool>(texture.gamma_mode), Ptr<void>(data_addr),
-            renderer::SurfaceTextureRetrievePurpose::READING, swizzle, nullptr, nullptr, &texture_viewport);
+        // try to retrieve it from the color surface cache
+        lookup_result = context.state.surface_cache.retrieve_color_surface_as_texture(texture, format_target_of_texture, &texture_viewport);
     }
 
-    if (!image && is_depth_stencil_compatible_format(base_format)) {
-        // Try to retrieve depth/stencil
-        SceGxmDepthStencilSurface lookup_temp;
-        lookup_temp.depth_data = data_addr;
-        lookup_temp.stencil_data.reset();
-
-        image = context.state.surface_cache.retrieve_depth_stencil_texture_handle(mem, lookup_temp, width, height, true, &texture_viewport);
+    if (!lookup_result.has_value() && is_depth_stencil_compatible_format(base_format)) {
+        // Try to retrieve depth/stencil cache
+        lookup_result = context.state.surface_cache.retrieve_depth_stencil_as_texture(texture, &texture_viewport);
     }
 
-    if (image) {
-        if (!image->sampler)
-            image->sampler = texture::create_sampler(context.state, texture);
+    if (lookup_result.has_value()) {
+        // get the sampler now
+        context.state.texture_cache.cache_and_bind_sampler(texture);
     } else {
         context.state.texture_cache.cache_and_bind_texture(texture, mem);
-        image = &context.state.texture_cache.current_texture->texture;
+        auto &image = context.state.texture_cache.current_texture->texture;
+        lookup_result = TextureLookupResult{
+            image.view,
+            image.layout,
+            image.format
+        };
     }
 
-    const vk::ImageLayout layout = vkutil::get_underlying_layout(image->layout);
+    const vk::ImageLayout layout = vkutil::get_underlying_layout(lookup_result->layout);
+    const vk::Sampler sampler = context.state.texture_cache.get_retrieved_sampler();
 
     vk::DescriptorImageInfo &image_info = is_vertex
         ? context.vertex_textures[index - SCE_GXM_MAX_TEXTURE_UNITS]
         : context.fragment_textures[index];
-    if (image_info.sampler != image->sampler || image_info.imageView != image->view) {
+    if (image_info.sampler != sampler || image_info.imageView != lookup_result->view) {
         image_info = vk::DescriptorImageInfo{
-            .sampler = image->sampler,
-            .imageView = image->view,
+            .sampler = sampler,
+            .imageView = lookup_result->view,
             .imageLayout = layout
         };
         // invalidate last descriptor set
@@ -271,12 +247,17 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
 }
 
 bool VKTextureCache::init(const bool hashless_texture_cache) {
-    TextureCache::init(hashless_texture_cache);
+    // set a limit to the number of samplers which can be allocated at the same time
+    const size_t max_sampler_used = std::min(state.physical_device_properties.limits.maxSamplerAllocationCount / 2, 512U);
+
+    TextureCache::init(hashless_texture_cache, max_sampler_used);
     backend = Backend::Vulkan;
 
     // don't forget to specify the allocator for all the staging buffers
     for (int i = 0; i < NB_TEXTURE_STAGING_BUFFERS; i++)
         staging_buffers[i].buffer.allocator = state.allocator;
+
+    samplers.resize(max_sampler_used);
 
     return true;
 }
@@ -402,8 +383,6 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     };
     image.view = state.device.createImageView(view_info);
 
-    image.sampler = texture::create_sampler(state, gxm_texture, mip_count);
-
     if (!gxm_texture.normalize_mode)
         LOG_ERROR("Unhandled unnormalized texture, please report it to the developers");
 
@@ -506,41 +485,42 @@ void VKTextureCache::upload_done() {
     is_texture_transfer_ready = false;
 }
 
-namespace texture {
+void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &texture) {
+    vk::Sampler &sampler = samplers[index];
+    if (sampler) {
+        // the previous one has not been used for a while, we can destroy it
+        state.device.destroy(sampler);
+    }
 
-vk::Sampler create_sampler(VKState &state, const SceGxmTexture &gxm_texture, const uint16_t mip_count) {
     // linear strided textures use the mag filter as the min filter too
-    const bool is_linear_strided = gxm_texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED;
+    const bool is_linear_strided = texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED;
 
-    const SceGxmTextureAddrMode uaddr = static_cast<SceGxmTextureAddrMode>(gxm_texture.uaddr_mode);
-    const SceGxmTextureAddrMode vaddr = static_cast<SceGxmTextureAddrMode>(gxm_texture.vaddr_mode);
+    const SceGxmTextureAddrMode uaddr = static_cast<SceGxmTextureAddrMode>(texture.uaddr_mode);
+    const SceGxmTextureAddrMode vaddr = static_cast<SceGxmTextureAddrMode>(texture.vaddr_mode);
     // Note: I don't know what to do with the MIPMAP version of SceGxmTextureFilter
-    const SceGxmTextureFilter mag_filter = static_cast<SceGxmTextureFilter>(gxm_texture.mag_filter);
-    const SceGxmTextureFilter min_filter = is_linear_strided ? mag_filter : static_cast<SceGxmTextureFilter>(gxm_texture.min_filter);
+    const SceGxmTextureFilter mag_filter = static_cast<SceGxmTextureFilter>(texture.mag_filter);
+    const SceGxmTextureFilter min_filter = is_linear_strided ? mag_filter : static_cast<SceGxmTextureFilter>(texture.min_filter);
 
     // create sampler
     vk::SamplerCreateInfo sampler_info{
-        .magFilter = translate_filter(mag_filter),
-        .minFilter = translate_filter(min_filter),
-        .mipmapMode = gxm_texture.mip_filter ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest,
-        .addressModeU = translate_address_mode(uaddr),
-        .addressModeV = translate_address_mode(vaddr),
+        .magFilter = texture::translate_filter(mag_filter),
+        .minFilter = texture::translate_filter(min_filter),
+        .mipmapMode = texture.mip_filter ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest,
+        .addressModeU = texture::translate_address_mode(uaddr),
+        .addressModeV = texture::translate_address_mode(vaddr),
         .addressModeW = vk::SamplerAddressMode::eRepeat,
-        .mipLodBias = (static_cast<float>(gxm_texture.lod_bias) - 31.f) / 8.f,
-        .maxAnisotropy = static_cast<float>(state.texture_cache.anisotropic_filtering),
+        .mipLodBias = (static_cast<float>(texture.lod_bias) - 31.f) / 8.f,
+        .maxAnisotropy = static_cast<float>(anisotropic_filtering),
         .compareEnable = VK_FALSE,
-        .minLod = (mip_count > 1) ? static_cast<float>(std::min<uint16_t>(mip_count, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2))) : 0.f,
-        // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkSamplerCreateInfo.html
-        // if there is no mipmap, set maxLod to 0.25 so it uses both the magnification or minification filter when needed
-        .maxLod = (mip_count > 1) ? static_cast<float>(mip_count) : 0.25f,
+        .minLod = static_cast<float>(texture.lod_min0 | (texture.lod_min1 << 2)),
+        .maxLod = VK_LOD_CLAMP_NONE,
         .unnormalizedCoordinates = VK_FALSE,
     };
 
     // when using nearest filter, disable anisotropy as the pixels can contain data other than color
-    sampler_info.anisotropyEnable = (state.texture_cache.anisotropic_filtering > 1) && (sampler_info.magFilter != vk::Filter::eNearest || sampler_info.minFilter != vk::Filter::eNearest);
+    sampler_info.anisotropyEnable = (anisotropic_filtering > 1) && (sampler_info.magFilter != vk::Filter::eNearest || sampler_info.minFilter != vk::Filter::eNearest);
 
-    return state.device.createSampler(sampler_info);
+    sampler = state.device.createSampler(sampler_info);
 }
-} // namespace texture
 
 } // namespace renderer::vulkan

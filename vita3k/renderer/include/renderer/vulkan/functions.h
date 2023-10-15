@@ -58,8 +58,4 @@ void sync_visibility_index(VKContext &context, bool enable, uint32_t index, bool
 
 void refresh_pipeline(VKContext &context);
 
-namespace texture {
-vk::Sampler create_sampler(VKState &state, const SceGxmTexture &gxm_texture, const uint16_t mip_count = 1);
-} // namespace texture
-
 } // namespace renderer::vulkan

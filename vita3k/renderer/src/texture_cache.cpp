@@ -23,6 +23,7 @@
 #include <gxm/functions.h>
 #include <mem/ptr.h>
 #include <util/align.h>
+#include <util/bit_cast.h>
 #include <util/log.h>
 
 #include <algorithm>
@@ -73,25 +74,27 @@ uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uin
 
 using namespace texture;
 
-bool TextureCache::init(const bool hashless_texture_cache) {
+bool TextureCache::init(const bool hashless_texture_cache, size_t sampler_cache_size) {
     use_protect = hashless_texture_cache;
 
-    // initialize the doubly linked list
-    for (int i = 0; i < TextureCacheSize; i++) {
-        if (i > 0)
-            infoes[i].prev = &infoes[i - 1];
-        if (i < TextureCacheSize - 1)
-            infoes[i].next = &infoes[i + 1];
-    }
-    // fix the first and last elements
-    infoes[0].prev = &infoes[TextureCacheSize - 1];
-    infoes[TextureCacheSize - 1].next = &infoes[0];
-
-    // set the list head to any element;
-    info_list_head = &infoes[0];
+    // initialize the texture queue
+    texture_queue.init(TextureCacheSize);
+    // set the proper index of each entry
+    for (size_t i = 0; i < TextureCacheSize; i++)
+        texture_queue.items[i].content.index = static_cast<int>(i);
 
     // prevent stutter caused by the hashmap resizing
-    info_lookup.reserve(TextureCacheSize);
+    texture_lookup.reserve(TextureCacheSize);
+
+    use_sampler_cache = sampler_cache_size > 0;
+    if (use_sampler_cache) {
+        sampler_queue.init(sampler_cache_size);
+
+        for (size_t i = 0; i < sampler_cache_size; i++)
+            sampler_queue.items[i].content.index = static_cast<int>(i);
+
+        sampler_lookup.reserve(sampler_cache_size);
+    }
 
     return true;
 }
@@ -375,6 +378,20 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
     }
 }
 
+// remove everything related to the sampler state
+static constexpr TextureGxmDataRepr default_texture_mask = {
+    0x981E0000,
+    0xFFFFFFFF,
+    0xFFFFFFFC,
+    0xF3FFFFFF
+};
+static constexpr TextureGxmDataRepr strided_texture_mask = {
+    0x9FFE0E06,
+    0xFFFFFFFF,
+    0xFFFFFFFC,
+    0xF3FFFFFF
+};
+
 void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemState &mem) {
     R_PROFILE(__func__);
 
@@ -384,11 +401,17 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
     // Try to find GXM texture in cache.
     int cached_gxm_texture_index = -1;
-    auto *gxm_texture_content = reinterpret_cast<const TextureGxmDataRepr *>(&gxm_texture);
-    auto gxm_it = info_lookup.find(*gxm_texture_content);
-    if (gxm_it != info_lookup.end())
+    TextureGxmDataRepr texture_repr = std::bit_cast<TextureGxmDataRepr>(gxm_texture);
+    if (use_sampler_cache) {
+        // remove the sampler state from the representation
+        const TextureGxmDataRepr &mask = (gxm_texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) ? strided_texture_mask : default_texture_mask;
+        for (int i = 0; i < 4; i++)
+            texture_repr[i] &= mask[i];
+    }
+    auto gxm_it = texture_lookup.find(texture_repr);
+    if (gxm_it != texture_lookup.end())
         // we found the texture in the cache
-        cached_gxm_texture_index = static_cast<int>(gxm_it->second - infoes.data());
+        cached_gxm_texture_index = gxm_it->second->index;
 
     Address range_protect_begin = 0;
     Address range_protect_end = 0;
@@ -397,21 +420,20 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     if (cached_gxm_texture_index == -1) {
         // Texture not found in cache.
         // get the least recently used texture, which info_list_head points to
-        index = static_cast<int>(info_list_head - infoes.data());
-        info = &infoes[index];
+        info = texture_queue.get_lru();
+        index = info->index;
         if (info->timestamp > 0) {
             // Cache is full.
             LOG_DEBUG("Evicting texture {} (t = {}) from cache. Current t = {}.", index, info->timestamp, timestamp);
-            auto *previous_gxm_texture = reinterpret_cast<const TextureGxmDataRepr *>(&info->texture);
-            info_lookup.erase(*previous_gxm_texture);
+            texture_lookup.erase(info->texture);
         }
-        info_lookup[*gxm_texture_content] = info;
+        texture_lookup[texture_repr] = info;
 
         configure = true;
         upload = true;
         // only hash the first mips, assume no game would modify other mips (and faces) without modifying the first one
         info->texture_size = gxm::texture_size_first_mip(gxm_texture);
-        info->texture = gxm_texture;
+        info->texture = texture_repr;
 
         // To prevent protecting too commonly accessed data that belongs to the page where the texture also resides
         // (for example, uniform buffer value and texture data got mixed, so page faults are triggered too many, it's not always good).
@@ -434,7 +456,7 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     } else {
         // Texture is cached.
         index = cached_gxm_texture_index;
-        info = &infoes[index];
+        info = gxm_it->second;
         configure = false;
         if (info->use_hash) {
             const uint64_t hash = hash_texture_data(gxm_texture, info->texture_size, mem);
@@ -470,20 +492,56 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     }
 
     info->timestamp = timestamp++;
-    // remove the texture from its current position and insert it at the end of the circular list
-    // so the circular list keeps its lru order
 
-    // first removal (update info_list_head if necessary)
-    if (info_list_head == info)
-        info_list_head = info->next;
-    info->next->prev = info->prev;
-    info->prev->next = info->next;
+    // set the texture as the mru
+    texture_queue.set_as_mru(info);
 
-    // then add it at the end
-    info_list_head->prev->next = info;
-    info->prev = info_list_head->prev;
-    info_list_head->prev = info;
-    info->next = info_list_head;
+    // retrieve the appropriate sampler if needed
+    if (use_sampler_cache)
+        cache_and_bind_sampler(gxm_texture);
+}
+
+int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture) {
+    uint32_t compact_repr = 0;
+    if (gxm_texture.texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        compact_repr = 0b01
+            | (gxm_texture.vaddr_mode << 2)
+            | (gxm_texture.uaddr_mode << 5)
+            | (gxm_texture.mip_filter << 8)
+            | (gxm_texture.min_filter << 9)
+            | (gxm_texture.mag_filter << 11)
+            | (gxm_texture.lod_bias << 13)
+            | (gxm_texture.lod_min0 << 19)
+            | (gxm_texture.lod_min1 << 21);
+    } else {
+        // has a special representation
+        compact_repr = 0b11
+            | (gxm_texture.vaddr_mode << 2)
+            | (gxm_texture.uaddr_mode << 5)
+            | (gxm_texture.mag_filter << 8);
+    }
+
+    auto it = sampler_lookup.find(compact_repr);
+    if (it != sampler_lookup.end()) {
+        sampler_queue.set_as_mru(it->second);
+        last_bound_sampler_index = it->second->index;
+        return last_bound_sampler_index;
+    }
+
+    // we didn't find a matching sampler, create a new one
+    SamplerCacheInfo *info = sampler_queue.get_lru();
+    if (info->value != 0) {
+        // the compact representation can never be 0, so we can erase the previous value
+        sampler_lookup.erase(info->value);
+    }
+
+    sampler_queue.set_as_mru(info);
+    sampler_lookup[compact_repr] = info;
+
+    info->value = compact_repr;
+    configure_sampler(info->index, gxm_texture);
+    last_bound_sampler_index = info->index;
+    return last_bound_sampler_index;
 }
 
 } // namespace renderer
