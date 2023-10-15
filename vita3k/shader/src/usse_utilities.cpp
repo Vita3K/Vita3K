@@ -1002,7 +1002,7 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
             }
 
             if (dest_comp_count == 1) {
-                return constant;
+                return apply_modifiers(b, utils, op.flags, constant);
             }
 
             std::vector<spv::Id> ops(dest_comp_count, constant);
