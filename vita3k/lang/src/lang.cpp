@@ -68,7 +68,7 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
     }
 
     pugi::xml_document lang_xml;
-    const auto lang_path{ fs::path(emuenv.base_path) / "lang" };
+    const auto lang_path{ emuenv.shared_path / "lang" };
     const auto lang_xml_path = (lang_path / (lang.user_lang[GUI] + ".xml")).string();
     if (fs::exists(lang_xml_path)) {
         if (lang_xml.load_file(lang_xml_path.c_str())) {

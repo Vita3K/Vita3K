@@ -23,6 +23,8 @@
 #include <set>
 #include <string>
 
+#include <util/fs.h>
+
 // forward declare everything used in EmuEnvState
 namespace sfo {
 struct SfoAppInfo;
@@ -110,9 +112,13 @@ public:
     std::string license_content_id{};
     std::string license_title_id{};
     std::string current_app_title{};
-    std::string base_path{};
-    std::string default_path{};
-    std::wstring pref_path{};
+    fs::path base_path{};
+    fs::path default_path{};
+    fs::path config_path{};
+    fs::path log_path{};
+    fs::path cache_path{};
+    fs::path pref_path{};
+    fs::path shared_path{};
     bool load_exec{};
     std::string load_app_path{};
     std::string load_exec_argv{};

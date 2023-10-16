@@ -25,6 +25,10 @@ namespace fs = boost::filesystem;
 class Root {
     fs::path base_path;
     fs::path pref_path;
+    fs::path log_path;
+    fs::path config_path;
+    fs::path shared_path;
+    fs::path cache_path;
 
 public:
     void set_base_path(const fs::path &p) {
@@ -49,6 +53,54 @@ public:
 
     std::string get_pref_path_string() const {
         return pref_path.generic_path().string();
+    }
+
+    void set_log_path(const fs::path &p) {
+        log_path = p;
+    }
+
+    fs::path get_log_path() const {
+        return log_path;
+    }
+
+    std::string get_log_path_string() const {
+        return log_path.generic_path().string();
+    }
+
+    void set_config_path(const fs::path &p) {
+        config_path = p;
+    }
+
+    fs::path get_config_path() const {
+        return config_path;
+    }
+
+    std::string get_config_path_string() const {
+        return config_path.generic_path().string();
+    }
+
+    void set_shared_path(const fs::path &p) {
+        shared_path = p;
+    }
+
+    fs::path get_shared_path() const {
+        return shared_path;
+    }
+
+    std::string get_shared_path_string() const {
+        return shared_path.generic_path().string();
+    }
+
+    void set_cache_path(const fs::path &p) {
+        cache_path = p;
+    }
+
+    fs::path get_cache_path() const {
+        return cache_path;
+    }
+
+    std::string get_cache_path_string() const {
+        return cache_path.generic_path().string();
     }
 }; // class root
 

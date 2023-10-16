@@ -118,12 +118,12 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
 ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths) {
     // Always generate the default configuration file
     Config command_line{};
-    serialize_config(command_line, root_paths.get_base_path() / "data/config/default.yml");
-    // Load base path configuration by default; otherwise, move the default to the base path
-    if (fs::exists(check_path(root_paths.get_base_path())))
-        parse(cfg, root_paths.get_base_path(), root_paths.get_base_path());
+    serialize_config(command_line, root_paths.get_config_path() / "data/config/default.yml");
+    // Load config path configuration by default; otherwise, move the default to the config path
+    if (fs::exists(check_path(root_paths.get_config_path())))
+        parse(cfg, root_paths.get_config_path(), root_paths.get_pref_path());
     else
-        fs::copy(root_paths.get_base_path() / "data/config/default.yml", root_paths.get_base_path() / "config.yml");
+        fs::copy(root_paths.get_config_path() / "data/config/default.yml", root_paths.get_config_path() / "config.yml");
 
     // Declare all options
     CLI::App app{ "Vita3K Command Line Interface" }; // "--help,-h" is automatically generated
@@ -227,11 +227,11 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         cfg.pkg_zrif = std::move(command_line.pkg_zrif);
         return QuitRequested;
     }
-    if (command_line.load_config || command_line.config_path != root_paths.get_base_path()) {
+    if (command_line.load_config || command_line.config_path != root_paths.get_config_path()) {
         if (command_line.config_path.empty()) {
-            command_line.config_path = root_paths.get_base_path();
+            command_line.config_path = root_paths.get_config_path();
         } else {
-            if (parse(command_line, command_line.config_path, root_paths.get_base_path()) != Success)
+            if (parse(command_line, command_line.config_path, root_paths.get_pref_path()) != Success)
                 return InitConfigFailed;
         }
     }

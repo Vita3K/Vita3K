@@ -38,6 +38,7 @@ enum class AppRunType {
     Extracted,
 };
 
+void init_paths(Root &root_paths);
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths);
 bool late_init(EmuEnvState &state);
 void destroy(EmuEnvState &emuenv, ImGui_State *imgui);

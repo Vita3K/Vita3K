@@ -43,7 +43,7 @@ static std::string db_updated_at;
 static const uint32_t db_version = 1;
 
 bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
-    const auto app_compat_db_path = fs::path(emuenv.base_path) / "cache/app_compat_db.xml";
+    const auto app_compat_db_path = emuenv.cache_path / "app_compat_db.xml";
     if (!fs::exists(app_compat_db_path)) {
         LOG_WARN("Compatibility database not found at {}.", app_compat_db_path.string());
         return false;
@@ -128,8 +128,7 @@ static const std::string latest_link = "https://api.github.com/repos/Vita3K/comp
 static const std::string app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml";
 
 bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
-    const auto cache_path = fs::path(emuenv.base_path) / "cache";
-    const auto app_compat_db_path = cache_path / "app_compat_db.xml";
+    const auto app_compat_db_path = emuenv.cache_path / "app_compat_db.xml";
     gui.info_message.function = SPDLOG_FUNCTION;
 
     auto &lang = gui.lang.compat_db;
@@ -152,7 +151,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
 
     LOG_INFO("Applications compatibility database is {}, attempting to download latest updated at: {}", compat_db_exist ? "outdated" : "missing", updated_at);
 
-    const auto new_app_compat_db_path = cache_path / "new_app_compat_db.xml";
+    const auto new_app_compat_db_path = emuenv.cache_path / "new_app_compat_db.xml";
 
     if (!https::download_file(app_compat_db_link, new_app_compat_db_path.string())) {
         gui.info_message.level = spdlog::level::err;

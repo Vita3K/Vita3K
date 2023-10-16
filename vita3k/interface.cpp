@@ -79,7 +79,7 @@ static void set_theme_name(EmuEnvState &emuenv, vfs::FileBuffer &buf) {
 }
 
 static bool is_nonpdrm(EmuEnvState &emuenv, const fs::path &output_path) {
-    const auto app_license_path{ fs::path(emuenv.pref_path) / "ux0/license" / emuenv.app_info.app_title_id / fmt::format("{}.rif", emuenv.app_info.app_content_id) };
+    const auto app_license_path{ emuenv.pref_path / "ux0/license" / emuenv.app_info.app_title_id / fmt::format("{}.rif", emuenv.app_info.app_content_id) };
     const auto is_patch_found_app_license = (emuenv.app_info.app_category == "gp") && fs::exists(app_license_path);
     if (fs::exists(output_path / "sce_sys/package/work.bin") || is_patch_found_app_license) {
         std::string licpath = is_patch_found_app_license ? app_license_path.string() : output_path.string() + "/sce_sys/package/work.bin";
@@ -129,7 +129,7 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const fs::path 
 
     const auto is_theme = mz_zip_reader_extract_file_to_callback(zip.get(), (fs::path(content_path) / theme_path).string().c_str(), &write_to_buffer, &theme, 0);
 
-    auto output_path{ fs::path(emuenv.pref_path) / "ux0" };
+    auto output_path{ emuenv.pref_path / "ux0" };
     if (mz_zip_reader_extract_file_to_callback(zip.get(), (fs::path(content_path) / sfo_path).string().c_str(), &write_to_buffer, &buffer, 0)) {
         sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang);
         if (!set_content_path(emuenv, is_theme, output_path))
@@ -226,7 +226,7 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const fs::path 
         else
             return false;
     }
-    if (!copy_path(output_path, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
+    if (!copy_path(output_path, emuenv.pref_path.wstring(), emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
     update_progress();
@@ -355,7 +355,7 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
     };
 
     const auto is_theme = fs::exists(content_path / "theme.xml");
-    auto dst_path{ fs::path(emuenv.pref_path) / "ux0" };
+    auto dst_path{ emuenv.pref_path / "ux0" };
     if (get_buffer(sfo_path)) {
         sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang);
         if (!set_content_path(emuenv, is_theme, dst_path))
@@ -380,7 +380,7 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
     if (fs::exists(dst_path / "sce_sys/package/") && !is_nonpdrm(emuenv, dst_path))
         return false;
 
-    if (!copy_path(dst_path, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
+    if (!copy_path(dst_path, emuenv.pref_path.wstring(), emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
     LOG_INFO("{} [{}] installed successfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
@@ -428,7 +428,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     }
 
     if (emuenv.cfg.archive_log) {
-        const fs::path log_directory{ emuenv.base_path + "/logs" };
+        const fs::path log_directory{ emuenv.log_path / "logs" };
         fs::create_directory(log_directory);
         const auto log_path{ log_directory / string_utils::utf_to_wide(emuenv.io.title_id + " - [" + string_utils::remove_special_chars(emuenv.current_app_title) + "].log") };
         if (logging::add_sink(log_path) != Success)
@@ -491,7 +491,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
             process_preload_disabled = *preload_disabled_ptr.get(emuenv.mem);
         }
     }
-    const auto module_app_path{ fs::path(emuenv.pref_path) / "ux0/app" / emuenv.io.app_path / "sce_module" };
+    const auto module_app_path{ emuenv.pref_path / "ux0/app" / emuenv.io.app_path / "sce_module" };
     const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);
     std::vector<std::string> lib_load_list = {};
     // todo: check if module is imported
