@@ -162,10 +162,10 @@ std::string get_driver_version(uint32_t vendor_id, uint32_t version_raw) {
     return fmt::format("{}.{}.{}", (version_raw >> 22) & 0x3ff, (version_raw >> 12) & 0x3ff, (version_raw)&0xfff);
 }
 
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path, const Config &config) {
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config) {
     auto &vk_state = dynamic_cast<VKState &>(*state);
 
-    return vk_state.create(window, state, base_path, config);
+    return vk_state.create(window, state, config);
 }
 
 VKState::VKState(int gpu_idx)
@@ -176,13 +176,12 @@ VKState::VKState(int gpu_idx)
     , screen_renderer(*this) {
 }
 
-bool VKState::init(const char *base_path, const bool hashless_texture_cache) {
+bool VKState::init(const char *shared_path, const bool hashless_texture_cache) {
     shader_version = fmt::format("v{}", shader::CURRENT_VERSION);
     return true;
 }
 
-bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path, const Config &config) {
-    this->base_path = base_path;
+bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config) {
     // Create Instance
     {
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
@@ -596,7 +595,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         default_image.sampler = device.createSampler(sampler_info);
     }
 
-    if (!screen_renderer.setup(base_path))
+    if (!screen_renderer.setup(shared_path.c_str()))
         return false;
 
     support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);

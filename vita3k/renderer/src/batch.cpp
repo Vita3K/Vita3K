@@ -104,7 +104,7 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
             LOG_ERROR("Unimplemented command opcode {}", static_cast<int>(cmd->opcode));
         } else {
             CommandHelper helper(cmd);
-            handler->second(state, mem, config, helper, features, command_list.context, state.base_path, state.title_id, state.self_name);
+            handler->second(state, mem, config, helper, features, command_list.context, state.cache_path.c_str(), state.title_id, state.self_name);
         }
 
         Command *last_cmd = cmd;

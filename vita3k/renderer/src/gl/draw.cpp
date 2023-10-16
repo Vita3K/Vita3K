@@ -59,7 +59,7 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
 }
 
 void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
-    MemState &mem, const char *base_path, const char *title_id, const char *self_name, const Config &config) {
+    MemState &mem, const char *cache_path, const char *title_id, const char *self_name, const Config &config) {
     R_PROFILE(__func__);
 
     GLuint program_id = context.last_draw_program;
@@ -71,7 +71,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     // If it's different, we need to switch. Else just stick to it.
     if (context.record.vertex_program.get(mem)->renderer_data->hash != context.last_draw_vertex_program_hash || context.record.fragment_program.get(mem)->renderer_data->hash != context.last_draw_fragment_program_hash) {
         // Need to recompile!
-        SharedGLObject program = gl::compile_program(renderer, context, context.record, features, mem, config.shader_cache, config.spirv_shader, gxm_fragment_program.is_maskupdate, base_path, title_id, self_name);
+        SharedGLObject program = gl::compile_program(renderer, context, context.record, features, mem, config.shader_cache, config.spirv_shader, gxm_fragment_program.is_maskupdate, cache_path, title_id, self_name);
 
         LOG_ERROR_IF(!program, "Fail to get program!");
 

@@ -203,7 +203,7 @@ COMMAND(handle_mid_scene_flush) {
 
     if (!renderer.features.support_memory_mapping) {
         // handle it like a simple notification
-        cmd_handle_notification(renderer, mem, config, helper, features, render_context, base_path, title_id, self_name);
+        cmd_handle_notification(renderer, mem, config, helper, features, render_context, cache_path, title_id, self_name);
         return;
     }
 
@@ -224,7 +224,7 @@ COMMAND(handle_draw) {
     switch (renderer.current_backend) {
     case Backend::OpenGL:
         gl::draw(dynamic_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context),
-            features, type, format, indicies.cast<void>().get(mem), count, instance_count, mem, base_path, title_id, self_name, config);
+            features, type, format, indicies.cast<void>().get(mem), count, instance_count, mem, cache_path, title_id, self_name, config);
         break;
 
     case Backend::Vulkan:

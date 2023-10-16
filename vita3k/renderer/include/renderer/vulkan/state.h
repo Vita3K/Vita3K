@@ -85,8 +85,8 @@ struct VKState : public renderer::State {
 
     VKState(int gpu_idx);
 
-    bool init(const char *base_path, const bool hashless_texture_cache) override;
-    bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path, const Config &config);
+    bool init(const char *shared_path, const bool hashless_texture_cache) override;
+    bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
     void late_init(const Config &cfg) override;
     void cleanup();
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,

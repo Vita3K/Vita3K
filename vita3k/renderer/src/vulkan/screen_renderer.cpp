@@ -43,7 +43,7 @@ bool ScreenRenderer::create(SDL_Window *window) {
     return true;
 }
 
-bool ScreenRenderer::setup(const char *base_path) {
+bool ScreenRenderer::setup(const char *cache_path) {
     const auto surface_formats = state.physical_device.getSurfaceFormatsKHR(surface);
     bool surface_format_found = false;
     for (const auto &format : surface_formats) {

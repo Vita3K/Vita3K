@@ -31,8 +31,8 @@ struct RenderTarget;
 struct State;
 struct VertexProgram;
 
-bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
-bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
+bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *cache_path, const char *title_id);
+bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *cache_path, const char *title_id);
 void create(SceGxmSyncObject *sync, State &state);
 void destroy(SceGxmSyncObject *sync, State &state);
 void finish(State &state, Context *context);
@@ -57,7 +57,7 @@ void submit_command_list(State &state, renderer::Context *context, CommandList &
 bool is_cmd_ready(MemState &mem, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list);
 void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config);
-bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const char *base_path);
+bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
 
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units);
 void set_depth_func(State &state, Context *ctx, bool is_front, SceGxmDepthFunc depth_func);

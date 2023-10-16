@@ -109,7 +109,7 @@ void SinglePassScreenFilter::create_layout_sync() {
 
 void SinglePassScreenFilter::create_graphics_pipeline() {
     // create shader modules
-    const auto builtin_shaders_path = std::string(screen.state.base_path) + "shaders-builtin/vulkan/";
+    const auto builtin_shaders_path = std::string(screen.state.shared_path) + "shaders-builtin/vulkan/";
     vertex_shader = vkutil::load_shader(screen.state.device, builtin_shaders_path + std::string(get_vertex_name()));
     fragment_shader = vkutil::load_shader(screen.state.device, builtin_shaders_path + std::string(get_fragment_name()));
     vk::PipelineShaderStageCreateInfo vert_info{
@@ -408,7 +408,7 @@ void FSRScreenFilter::init() {
     };
     sampler = device.createSampler(sampler_info);
 
-    const auto builtin_shaders_path = std::string(screen.state.base_path) + "shaders-builtin/vulkan/";
+    const auto builtin_shaders_path = std::string(screen.state.shared_path) + "shaders-builtin/vulkan/";
     easu_shader = vkutil::load_shader(screen.state.device, builtin_shaders_path + "fsr_filter_easu.comp.spv");
     rcas_shader = vkutil::load_shader(screen.state.device, builtin_shaders_path + "fsr_filter_rcas.comp.spv");
 

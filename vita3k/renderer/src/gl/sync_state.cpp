@@ -268,7 +268,7 @@ void sync_depth_bias(const int factor, const int unit, const bool is_front) {
 }
 
 void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t index, SceGxmTexture texture,
-    const Config &config, const std::string &base_path, const std::string &title_id) {
+    const Config &config, const std::string &title_id) {
     Address data_addr = texture.data_addr << 2;
 
     if (!is_valid_addr(mem, data_addr)) {
@@ -415,7 +415,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                 break;
             }
         }
-        renderer::gl::texture::dump(texture, mem, parameter_name, base_path, title_id, program_hash);
+        renderer::gl::texture::dump(texture, mem, parameter_name, state.log_path, title_id, program_hash);
     }
 
     glActiveTexture(GL_TEXTURE0);
