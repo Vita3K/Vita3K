@@ -754,7 +754,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         // we can just sample from the surface itself
 
         // we must create a new read-only view if it is not already present
-        vk::ImageView img_view = is_stencil ? cached_info.stencil_view : cached_info.depth_view;
+        vk::ImageView &img_view = is_stencil ? cached_info.stencil_view : cached_info.depth_view;
         if (!img_view) {
             vk::ImageSubresourceRange range = vkutil::ds_subresource_range;
             range.aspectMask = is_stencil ? vk::ImageAspectFlagBits::eStencil : vk::ImageAspectFlagBits::eDepth;
