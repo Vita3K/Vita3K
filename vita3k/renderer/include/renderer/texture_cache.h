@@ -19,10 +19,15 @@
 
 #include <gxm/types.h>
 #include <util/containers.h>
+#include <util/fs.h>
 
 #include <array>
 #include <cstdint>
 #include <functional>
+
+namespace ddspp {
+struct Descriptor;
+}
 
 struct MemState;
 
@@ -35,12 +40,18 @@ static constexpr size_t TextureCacheSize = 1024;
 typedef std::array<uint32_t, 4> TextureGxmDataRepr;
 struct TextureCacheInfo {
     uint64_t hash = 0;
-    uint64_t timestamp = 0;
-    TextureGxmDataRepr texture;
+    SceGxmTexture texture;
     int index = 0;
     uint32_t texture_size = 0;
     bool use_hash = false;
     bool dirty = false;
+    // used for texture importation
+    bool is_imported = false;
+    bool is_srgb = false;
+    uint16_t width = 0;
+    uint16_t height = 0;
+    uint16_t mip_count = 0;
+    SceGxmTextureBaseFormat format;
 };
 
 struct SamplerCacheInfo {
@@ -52,13 +63,34 @@ struct SamplerCacheInfo {
 typedef std::array<TextureCacheInfo, TextureCacheSize> TextureCacheInfoes;
 
 class TextureCache {
+protected:
+    // current texture info the cache is looking at
+    TextureCacheInfo *current_info = nullptr;
+
+    // are we in the process of exporting a texture
+    bool exporting_texture = false;
+    // are we in the process of importing a texture
+    bool importing_texture = false;
+
+    // dds/png raw file
+    std::vector<uint8_t> imported_texture_raw_data;
+    // pointer to the decoded content
+    uint8_t *imported_texture_decoded = nullptr;
+    // if set to false, means we are loading a png
+    bool loading_dds = false;
+    // contain the decrypted header when loading dds
+    ddspp::Descriptor *dds_descriptor = nullptr;
+    // file being written to when exporting dds
+    fs::ofstream output_file;
+    // used when exporting dds
+    bool export_dds_swap_rb = false;
+
 public:
     Backend backend;
     bool use_protect = false;
     // use a separate sampler cache
     bool use_sampler_cache = false;
     int anisotropic_filtering = 1;
-    uint64_t timestamp = 1;
 
     // used to quicky get the info from a hash of a gxm_texture
     unordered_map_fast<TextureGxmDataRepr, TextureCacheInfo *> texture_lookup;
@@ -69,7 +101,20 @@ public:
     lru::Queue<SamplerCacheInfo> sampler_queue;
     size_t last_bound_sampler_index;
 
-    bool init(const bool hashless_texture_cache, const size_t sampler_cache_size = 0);
+    // folder where the replacement textures should be located
+    fs::path import_folder;
+    // key = hash, content = is the texture a dds (true) or a png (false)
+    unordered_map_fast<uint64_t, bool> available_textures_hash;
+    bool import_textures = false;
+    bool save_as_png = true;
+
+    // folder where the exported textures will be saved
+    fs::path export_folder;
+    // hash of the textures that have already been exported
+    unordered_set_fast<uint64_t> exported_textures_hash;
+    bool export_textures = false;
+
+    bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id, const size_t sampler_cache_size = 0);
     virtual void select(size_t index, const SceGxmTexture &texture) = 0;
     virtual void configure_texture(const SceGxmTexture &texture) = 0;
     virtual void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) = 0;
@@ -82,5 +127,19 @@ public:
 
     // is called by cache_and_bind_texture if use_sampler_cache is set to true
     int cache_and_bind_sampler(const SceGxmTexture &gxm_texture);
+
+    // look at the texture folder and update the available imported / exported hashes
+    void refresh_available_textures();
+
+    // functions used for texture exportation
+    void export_select(const SceGxmTexture &texture);
+    void export_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride);
+    void export_done();
+
+    // return false if there was an issue with the replacement texture
+    bool import_configure_texture();
+    virtual void import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) = 0;
+    void import_upload_texture();
+    void import_done();
 };
 } // namespace renderer

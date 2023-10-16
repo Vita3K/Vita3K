@@ -28,11 +28,13 @@ namespace gxm {
 SceGxmColorBaseFormat get_base_format(SceGxmColorFormat src);
 size_t bits_per_pixel(SceGxmColorBaseFormat base_format);
 size_t get_stride_in_bytes(const SceGxmColorFormat src, const std::size_t stride_in_pixels);
+
 // Textures.
 uint32_t get_width(const SceGxmTexture &texture);
 uint32_t get_height(const SceGxmTexture &texture);
 SceGxmTextureFormat get_format(const SceGxmTexture &texture);
 SceGxmTextureBaseFormat get_base_format(SceGxmTextureFormat src);
+uint32_t get_num_components(SceGxmTextureBaseFormat fmt);
 std::pair<uint32_t, uint32_t> get_block_size(SceGxmTextureBaseFormat base_format);
 uint32_t get_stride_in_bytes(const SceGxmTexture &texture);
 uint32_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
@@ -49,6 +51,7 @@ uint32_t attribute_format_size(SceGxmAttributeFormat format);
 uint32_t index_element_size(SceGxmIndexFormat format);
 bool is_stream_instancing(SceGxmIndexSource source);
 bool convert_color_format_to_texture_format(SceGxmColorFormat format, SceGxmTextureFormat &dest_format);
+
 // Transfer
 uint32_t get_bits_per_pixel(SceGxmTransferFormat Format);
 } // namespace gxm

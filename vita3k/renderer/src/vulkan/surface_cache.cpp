@@ -524,7 +524,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
                 .extent = {
                     // Don't try to copy what is in the stride
                     std::min<uint32_t>(width, info.width),
-                    height,
+                    std::min<uint32_t>(height, info.height),
                     1 }
             };
             cmd_buffer.copyImage(info.texture.image, vk::ImageLayout::eGeneral, casted->texture.image, vk::ImageLayout::eTransferDstOptimal, image_copy);

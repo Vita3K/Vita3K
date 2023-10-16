@@ -608,7 +608,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     return true;
 }
 
-void VKState::late_init(const Config &cfg) {
+void VKState::late_init(const Config &cfg, const std::string_view game_id) {
     bool use_high_accuracy = cfg.current_config.high_accuracy;
 
     // shader interlock is more accurate but slower
@@ -627,7 +627,9 @@ void VKState::late_init(const Config &cfg) {
     }
 
     pipeline_cache.init();
-    texture_cache.init(false);
+
+    const fs::path texture_folder = fs::path(shared_path) / "textures";
+    texture_cache.init(false, texture_folder, game_id);
 }
 
 void VKState::cleanup() {
@@ -897,6 +899,13 @@ int VKState::get_max_anisotropic_filtering() {
 
 void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
+}
+
+void VKState::set_texture_state(bool import_textures, bool export_textures, bool export_as_png) {
+    texture_cache.import_textures = import_textures;
+    texture_cache.export_textures = export_textures;
+    texture_cache.save_as_png = export_as_png;
+    texture_cache.refresh_available_textures();
 }
 
 std::vector<std::string> VKState::get_gpu_list() {

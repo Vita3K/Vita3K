@@ -87,7 +87,7 @@ struct VKState : public renderer::State {
 
     bool init(const char *shared_path, const bool hashless_texture_cache) override;
     bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
-    void late_init(const Config &cfg) override;
+    void late_init(const Config &cfg, const std::string_view game_id) override;
     void cleanup();
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem) override;
@@ -97,6 +97,8 @@ struct VKState : public renderer::State {
     void set_screen_filter(const std::string_view &filter) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
+    void set_texture_state(bool import_textures, bool export_textures, bool export_as_png) override;
+
     bool map_memory(MemState &mem, Ptr<void> address, uint32_t size) override;
     void unmap_memory(MemState &mem, Ptr<void> address) override;
     // return the matching buffer and offset for the memory location

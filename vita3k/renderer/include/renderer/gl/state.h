@@ -45,6 +45,7 @@ struct GLState : public renderer::State {
     ScreenRenderer screen_renderer;
 
     bool init(const char *shared_path, const bool hashless_texture_cache) override;
+    void late_init(const Config &cfg, const std::string_view game_id) override;
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem) override;
     void swap_window(SDL_Window *window) override;
@@ -52,6 +53,7 @@ struct GLState : public renderer::State {
     void set_screen_filter(const std::string_view &filter) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
+    void set_texture_state(bool import_textures, bool export_textures, bool export_as_png) override;
 
     void precompile_shader(const ShadersHash &hash) override;
     void preclose_action() override;

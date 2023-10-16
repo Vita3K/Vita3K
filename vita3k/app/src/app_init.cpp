@@ -303,7 +303,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 }
 
 bool late_init(EmuEnvState &state) {
-    state.renderer->late_init(state.cfg);
+    state.renderer->late_init(state.cfg, state.app_path);
 
     if (!init(state.mem, state.renderer->need_page_table)) {
         LOG_ERROR("Failed to initialize memory for emulator state!");
