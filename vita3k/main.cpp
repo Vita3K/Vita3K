@@ -86,8 +86,8 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
 int main(int argc, char *argv[]) {
     ZoneScoped; // Tracy - Track main function scope
     Root root_paths;
-    root_paths.set_base_path(string_utils::utf_to_wide(SDL_GetBasePath()));
-    root_paths.set_pref_path(string_utils::utf_to_wide(SDL_GetPrefPath(org_name, app_name)));
+
+    app::init_paths(root_paths);
 
     if (logging::init(root_paths, true) != Success)
         return InitConfigFailed;
@@ -126,7 +126,6 @@ int main(int argc, char *argv[]) {
     EmuEnvState emuenv;
     const auto config_err = config::init_config(cfg, argc, argv, root_paths);
 
-    // Create preference path for safety
     if (!fs::exists(cfg.pref_path))
         fs::create_directories(cfg.pref_path);
 
@@ -141,7 +140,7 @@ int main(int argc, char *argv[]) {
                 fs::remove_all(fs::path(cfg.pref_path) / "ux0/app" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(cfg.pref_path) / "ux0/addcont" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(cfg.pref_path) / "ux0/user/00/savedata" / *cfg.delete_title_id);
-                fs::remove_all(fs::path(root_paths.get_base_path()) / "cache/shaders" / *cfg.delete_title_id);
+                fs::remove_all(fs::path(root_paths.get_cache_path()) / "shaders" / *cfg.delete_title_id);
             }
             if (cfg.pup_path.has_value()) {
                 LOG_INFO("Installing firmware file {}", *cfg.pup_path);
@@ -217,7 +216,7 @@ int main(int argc, char *argv[]) {
                 } else
                     return QuitRequested;
             }
-            config::serialize_config(emuenv.cfg, emuenv.base_path);
+            config::serialize_config(emuenv.cfg, emuenv.config_path);
             run_execv(argv, emuenv);
         }
         gui::init(gui, emuenv);
@@ -376,7 +375,6 @@ int main(int argc, char *argv[]) {
     gui.vita_area.information_bar = false;
 
     // Pre-Compile Shaders
-    emuenv.renderer->base_path = emuenv.base_path.c_str();
     emuenv.renderer->title_id = emuenv.io.title_id.c_str();
     emuenv.renderer->self_name = emuenv.self_name.c_str();
     if (renderer::get_shaders_cache_hashs(*emuenv.renderer) && cfg.shader_cache) {

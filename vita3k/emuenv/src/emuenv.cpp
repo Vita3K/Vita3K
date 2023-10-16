@@ -37,6 +37,7 @@
 #include <regmgr/state.h>
 #include <renderer/state.h>
 #include <touch/state.h>
+#include <util/string_utils.h>
 
 #include <gdbstub/state.h>
 
