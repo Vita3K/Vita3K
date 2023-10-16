@@ -70,7 +70,7 @@ bool copy_license(EmuEnvState &emuenv, const fs::path &license_path) {
     if (open_license(emuenv, license_path)) {
         emuenv.license_content_id = license_buf.content_id;
         emuenv.license_title_id = emuenv.license_content_id.substr(7, 9);
-        const auto dst_path{ fs::path(emuenv.pref_path) / "ux0/license" / emuenv.license_title_id };
+        const auto dst_path{ emuenv.pref_path / "ux0/license" / emuenv.license_title_id };
         if (!fs::exists(dst_path))
             fs::create_directories(dst_path);
 
@@ -93,11 +93,11 @@ bool copy_license(EmuEnvState &emuenv, const fs::path &license_path) {
 int32_t get_license_sku_flag(EmuEnvState &emuenv, const std::string &content_id) {
     int32_t sku_flag;
     const auto title_id = content_id.substr(7, 9);
-    const auto license_path{ fs::path(emuenv.pref_path) / "ux0/license" / title_id / fmt::format("{}.rif", content_id) };
+    const auto license_path{ emuenv.pref_path / "ux0/license" / title_id / fmt::format("{}.rif", content_id) };
     if (open_license(emuenv, license_path)) {
         sku_flag = byte_swap(license_buf.sku_flag);
     } else {
-        const auto RETAIL_APP_PATH{ fs::path(emuenv.pref_path) / "ux0/app" / title_id / "sce_sys/retail/livearea" };
+        const auto RETAIL_APP_PATH{ emuenv.pref_path / "ux0/app" / title_id / "sce_sys/retail/livearea" };
         if (fs::exists(RETAIL_APP_PATH))
             sku_flag = 1;
         else
@@ -112,12 +112,11 @@ int32_t get_license_sku_flag(EmuEnvState &emuenv, const std::string &content_id)
 }
 
 bool create_license(EmuEnvState &emuenv, const std::string &zRIF) {
-    const auto cache_path = fs::path(emuenv.base_path) / "cache";
-    if (!fs::exists(cache_path))
-        fs::create_directories(cache_path);
+    if (!fs::exists(emuenv.cache_path))
+        fs::create_directories(emuenv.cache_path);
 
     // Create temp license file
-    const auto temp_license_path = cache_path / "temp_licence.rif";
+    const auto temp_license_path = emuenv.cache_path / "temp_licence.rif";
     std::ofstream temp_file(temp_license_path.string(), std::ios::out | std::ios::binary);
     zrif2rif(zRIF, temp_file);
 

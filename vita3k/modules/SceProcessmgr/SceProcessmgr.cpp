@@ -157,17 +157,17 @@ EXPORT(int, sceKernelGetRemoteProcessTime) {
 
 EXPORT(int, sceKernelGetStderr) {
     TRACY_FUNC(sceKernelGetStderr);
-    return open_file(emuenv.io, "tty0:", SCE_O_WRONLY, emuenv.pref_path, export_name);
+    return open_file(emuenv.io, "tty0:", SCE_O_WRONLY, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, sceKernelGetStdin) {
     TRACY_FUNC(sceKernelGetStdin);
-    return open_file(emuenv.io, "tty0:", SCE_O_RDONLY, emuenv.pref_path, export_name);
+    return open_file(emuenv.io, "tty0:", SCE_O_RDONLY, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, sceKernelGetStdout) {
     TRACY_FUNC(sceKernelGetStdout);
-    return open_file(emuenv.io, "tty0:", SCE_O_WRONLY, emuenv.pref_path, export_name);
+    return open_file(emuenv.io, "tty0:", SCE_O_WRONLY, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, sceKernelIsCDialogAvailable) {

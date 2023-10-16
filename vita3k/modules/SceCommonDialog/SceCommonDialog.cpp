@@ -820,7 +820,7 @@ static void check_empty_param(EmuEnvState &emuenv, const SceAppUtilSaveDataSlotE
         if (iconPath) {
             auto device = device::get_device(empty_param->iconPath.get(emuenv.mem));
             auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
-            vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
+            vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, emuenv.pref_path.wstring(), thumbnail_path);
             emuenv.common_dialog.savedata.icon_buffer[idx] = thumbnail_buffer;
         } else if (iconBuf && iconBufSize != 0) {
             thumbnail_buffer.insert(thumbnail_buffer.end(), iconBuf, iconBuf + iconBufSize);
@@ -831,7 +831,7 @@ static void check_empty_param(EmuEnvState &emuenv, const SceAppUtilSaveDataSlotE
 }
 
 static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const char *export_name) {
-    SceUID fd = open_file(emuenv.io, construct_slotparam_path(emuenv.common_dialog.savedata.slot_id[index]).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
+    SceUID fd = open_file(emuenv.io, construct_slotparam_path(emuenv.common_dialog.savedata.slot_id[index]).c_str(), SCE_O_RDONLY, emuenv.pref_path.wstring(), export_name);
     if (fd < 0) {
         auto empty_param = emuenv.common_dialog.savedata.list_empty_param[index];
         check_empty_param(emuenv, empty_param, index);
@@ -848,7 +848,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
         emuenv.common_dialog.savedata.has_date[index] = true;
         auto device = device::get_device(slot_param.iconPath);
         auto thumbnail_path = translate_path(slot_param.iconPath, device, emuenv.io.device_paths);
-        vfs::read_file(device, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
+        vfs::read_file(device, thumbnail_buffer, emuenv.pref_path.wstring(), thumbnail_path);
         emuenv.common_dialog.savedata.icon_buffer[index] = thumbnail_buffer;
         emuenv.common_dialog.savedata.icon_texture[index] = {};
     }

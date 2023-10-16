@@ -38,6 +38,7 @@
 #include <util/bytes.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceGxm);
@@ -4355,7 +4356,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     fp->is_maskupdate = false;
     fp->program = programId->program;
 
-    if (!renderer::create(fp->renderer_data, *emuenv.renderer, *programId->program.get(mem), blendInfo, emuenv.renderer->gxp_ptr_map, emuenv.base_path.c_str(), emuenv.io.title_id.c_str())) {
+    if (!renderer::create(fp->renderer_data, *emuenv.renderer, *programId->program.get(mem), blendInfo, emuenv.renderer->gxp_ptr_map, emuenv.cache_path.string().c_str(), emuenv.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -4382,7 +4383,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     fp->program = Ptr<const SceGxmProgram>(alloc_callbacked(emuenv, thread_id, shaderPatcher->params, size_mask_gxp));
     memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
 
-    if (!renderer::create(fp->renderer_data, *emuenv.renderer, *fp->program.get(mem), nullptr, emuenv.renderer->gxp_ptr_map, emuenv.base_path.c_str(), emuenv.io.title_id.c_str())) {
+    if (!renderer::create(fp->renderer_data, *emuenv.renderer, *fp->program.get(mem), nullptr, emuenv.renderer->gxp_ptr_map, emuenv.cache_path.string().c_str(), emuenv.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -4434,7 +4435,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
         vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
     }
 
-    if (!renderer::create(vp->renderer_data, *emuenv.renderer, *programId->program.get(mem), emuenv.renderer->gxp_ptr_map, emuenv.base_path.c_str(), emuenv.io.title_id.c_str())) {
+    if (!renderer::create(vp->renderer_data, *emuenv.renderer, *programId->program.get(mem), emuenv.renderer->gxp_ptr_map, emuenv.cache_path.string().c_str(), emuenv.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 

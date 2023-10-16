@@ -33,6 +33,7 @@
 #include <util/find.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <unordered_set>
 
@@ -176,14 +177,14 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     VitaIoDevice device = device::get_device(module_path);
     auto translated_module_path = translate_path(module_path.c_str(), device, emuenv.io.device_paths);
     if (device == VitaIoDevice::app0)
-        res = vfs::read_app_file(module_buffer, emuenv.pref_path, emuenv.io.app_path, translated_module_path);
+        res = vfs::read_app_file(module_buffer, emuenv.pref_path.wstring(), emuenv.io.app_path, translated_module_path);
     else
-        res = vfs::read_file(device, module_buffer, emuenv.pref_path, translated_module_path);
+        res = vfs::read_file(device, module_buffer, emuenv.pref_path.wstring(), translated_module_path);
     if (!res) {
         LOG_ERROR("Failed to read module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
     }
-    SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_buffer.data(), module_path);
+    SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_buffer.data(), module_path, emuenv.log_path.string());
     if (module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[module_id];
         LOG_INFO("Module {} (at \"{}\") loaded", module->module_name, module_path);

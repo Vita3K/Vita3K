@@ -224,7 +224,7 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
         type = PkgType::PKG_TYPE_VITA_PATCH;
     }
 
-    auto path{ fs::path(emuenv.pref_path) / "ux0" };
+    auto path{ emuenv.pref_path / "ux0" };
 
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
@@ -342,7 +342,7 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
         break;
     }
 
-    if (!copy_path(title_id_src, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
+    if (!copy_path(title_id_src, emuenv.pref_path.wstring(), emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
     create_license(emuenv, zRIF);

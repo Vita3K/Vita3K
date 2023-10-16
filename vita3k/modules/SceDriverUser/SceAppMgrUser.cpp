@@ -557,9 +557,9 @@ EXPORT(int, sceAppMgrSaveDataDataRemove, Ptr<SceAppMgrSaveDataDataDelete> data) 
     for (int i = 0; i < data.get(emuenv.mem)->fileNum; i++) {
         const auto file = fs::path(construct_savedata0_path(data.get(emuenv.mem)->files.get(emuenv.mem)[i].dataPath.get(emuenv.mem)));
         if (fs::is_regular_file(file)) {
-            remove_file(emuenv.io, file.string().c_str(), emuenv.pref_path, export_name);
+            remove_file(emuenv.io, file.string().c_str(), emuenv.pref_path.wstring(), export_name);
         } else
-            remove_dir(emuenv.io, file.string().c_str(), emuenv.pref_path, export_name);
+            remove_dir(emuenv.io, file.string().c_str(), emuenv.pref_path.wstring(), export_name);
     }
 
     return 0;
@@ -580,22 +580,22 @@ EXPORT(int, sceAppMgrSaveDataDataSave, Ptr<SceAppMgrSaveDataData> data) {
         const auto file_path = construct_savedata0_path(files[i].dataPath.get(emuenv.mem));
         switch (files[i].mode) {
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_DIRECTORY:
-            create_dir(emuenv.io, file_path.c_str(), 0777, emuenv.pref_path, export_name);
+            create_dir(emuenv.io, file_path.c_str(), 0777, emuenv.pref_path.wstring(), export_name);
             break;
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE_TRUNCATE:
             if (files[i].buf) {
-                fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.pref_path, export_name);
+                fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.pref_path.wstring(), export_name);
                 seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, emuenv.io, export_name);
                 write_file(fd, files[i].buf.get(emuenv.mem), files[i].bufSize, emuenv.io, export_name);
                 close_file(emuenv.io, fd, export_name);
             }
-            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_APPEND | SCE_O_TRUNC, emuenv.pref_path, export_name);
+            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_APPEND | SCE_O_TRUNC, emuenv.pref_path.wstring(), export_name);
             truncate_file(fd, files[i].bufSize + files[i].offset, emuenv.io, export_name);
             close_file(emuenv.io, fd, export_name);
             break;
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE:
         default:
-            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.pref_path, export_name);
+            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.pref_path.wstring(), export_name);
             seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, emuenv.io, export_name);
             if (files[i].buf.get(emuenv.mem)) {
                 write_file(fd, files[i].buf.get(emuenv.mem), files[i].bufSize, emuenv.io, export_name);

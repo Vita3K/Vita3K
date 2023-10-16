@@ -55,7 +55,7 @@ EXPORT(int, _sceIoDevctlAsync) {
 
 EXPORT(int, _sceIoDopen, const char *dir) {
     TRACY_FUNC(_sceIoDopen, dir);
-    return open_dir(emuenv.io, dir, emuenv.pref_path, export_name);
+    return open_dir(emuenv.io, dir, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, _sceIoDread, const SceUID fd, SceIoDirent *dir) {
@@ -63,12 +63,12 @@ EXPORT(int, _sceIoDread, const SceUID fd, SceIoDirent *dir) {
     if (dir == nullptr) {
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     }
-    return read_dir(emuenv.io, fd, dir, emuenv.pref_path, export_name);
+    return read_dir(emuenv.io, fd, dir, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, _sceIoGetstat, const char *file, SceIoStat *stat) {
     TRACY_FUNC(_sceIoGetstat, file, stat);
-    return stat_file(emuenv.io, file, stat, emuenv.pref_path, export_name);
+    return stat_file(emuenv.io, file, stat, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, _sceIoGetstatAsync) {
@@ -78,7 +78,7 @@ EXPORT(int, _sceIoGetstatAsync) {
 
 EXPORT(int, _sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
     TRACY_FUNC(_sceIoGetstatByFd, fd, stat);
-    return stat_file_by_fd(emuenv.io, fd, stat, emuenv.pref_path, export_name);
+    return stat_file_by_fd(emuenv.io, fd, stat, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, _sceIoIoctl) {
@@ -103,7 +103,7 @@ EXPORT(int, _sceIoLseekAsync) {
 
 EXPORT(int, _sceIoMkdir, const char *dir, const SceMode mode) {
     TRACY_FUNC(_sceIoMkdir, dir, mode);
-    return create_dir(emuenv.io, dir, mode, emuenv.pref_path, export_name);
+    return create_dir(emuenv.io, dir, mode, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, _sceIoMkdirAsync) {
@@ -117,7 +117,7 @@ EXPORT(int, _sceIoOpen, const char *file, const int flags, const SceMode mode) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
     LOG_INFO("Opening file: {}", file);
-    return open_file(emuenv.io, file, flags, emuenv.pref_path, export_name);
+    return open_file(emuenv.io, file, flags, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, _sceIoOpenAsync) {

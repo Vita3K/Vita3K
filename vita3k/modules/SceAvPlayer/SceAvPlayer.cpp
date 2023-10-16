@@ -242,14 +242,13 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
 
     const auto thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
 
-    auto file_path = expand_path(emuenv.io, path.get(emuenv.mem), emuenv.pref_path);
+    auto file_path = expand_path(emuenv.io, path.get(emuenv.mem), emuenv.pref_path.wstring());
     if (!fs::exists(file_path) && player_info->file_manager.open_file && player_info->file_manager.close_file && player_info->file_manager.read_file && player_info->file_manager.file_size) {
-        const auto cache_path{ fs::path(emuenv.base_path) / "cache" };
-        if (!fs::exists(cache_path))
-            fs::create_directories(cache_path);
+        if (!fs::exists(emuenv.cache_path))
+            fs::create_directories(emuenv.cache_path);
 
         // Create temp media file
-        const auto temp_file_path = cache_path / "temp_vita_media.mp4";
+        const auto temp_file_path = emuenv.cache_path / "temp_vita_media.mp4";
         std::ofstream temp_file(temp_file_path.string(), std::ios::out | std::ios::binary);
 
         const Address buf = alloc(emuenv.mem, KiB(512), "AvPlayer buffer");
