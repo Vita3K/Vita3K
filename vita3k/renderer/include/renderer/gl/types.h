@@ -57,10 +57,12 @@ class GLTextureCache : public TextureCache {
 public:
     GLObjectArray<TextureCacheSize> textures;
 
-    bool init(const bool hashless_texture_cache);
+    bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id);
     void select(size_t index, const SceGxmTexture &texture) override;
     void configure_texture(const SceGxmTexture &texture) override;
     void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) override;
+
+    void import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) override;
 };
 
 struct GLRenderTarget;

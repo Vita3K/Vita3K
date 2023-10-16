@@ -401,23 +401,6 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         }
     }
 
-    if (config.dump_textures) {
-        auto frag_program = context.record.fragment_program.get(mem);
-        auto program = frag_program->program.get(mem);
-        const auto program_hash = sha256(program, program->size);
-
-        std::string parameter_name;
-        const auto parameters = gxp::program_parameters(*program);
-        for (uint32_t i = 0; i < program->parameter_count; ++i) {
-            const auto parameter = &parameters[i];
-            if (parameter->resource_index == index) {
-                parameter_name = gxp::parameter_name_raw(*parameter);
-                break;
-            }
-        }
-        renderer::gl::texture::dump(texture, mem, parameter_name, state.log_path, title_id, program_hash);
-    }
-
     glActiveTexture(GL_TEXTURE0);
 }
 

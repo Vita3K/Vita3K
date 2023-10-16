@@ -191,7 +191,7 @@ uint32_t decompress_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, 
  * \param image             Pointer to the image where the decompressed pixels will be stored.
  * \param bc_type           Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2) or BC5S (RGTC2).
  */
-void decompress_bc_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type);
+void decompress_bc_image(uint32_t width, uint32_t height, const uint8_t *block_storage, uint32_t *image, const uint8_t bc_type);
 
 /**
  * \brief Try to decompress texture to 16-bit RGB floating point color.
@@ -217,7 +217,7 @@ void decompress_packed_float_e5m9m9m9(SceGxmTextureBaseFormat fmt, void *dest, c
  * \param dest      Pointer to the image where the decompressed pixels will be stored.
  * \param bc_type   Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2 or BC5S (RGTC2).
  */
-void resolve_z_order_compressed_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *src, std::uint8_t *dest, const std::uint8_t bc_type);
+void resolve_z_order_compressed_image(uint32_t width, uint32_t height, const uint8_t *src, uint8_t *dest, const uint8_t bc_type);
 
 // Convert x8u24 (or u24x8) format to f32 (only keep the u24 part)
 // Do not use a depth-stencil format as x8d24 is not supported on all GPUs for Vulkan
@@ -234,9 +234,13 @@ uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uin
 
 uint32_t decode_morton2_x(uint32_t code);
 uint32_t decode_morton2_y(uint32_t code);
+uint32_t encode_morton(uint16_t x, uint16_t y, uint16_t width, uint16_t height);
 bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt, bool is_vulkan);
 uint32_t get_compressed_size(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height);
 uint64_t hash_texture_data(const SceGxmTexture &texture, uint32_t texture_size, const MemState &mem);
+// hash texture used for texture replacement such that byte in the stride are not hashed
+// this prevent texture duplication in case there are random bytes in the stride
+uint64_t hash_texture_nostride(const SceGxmTexture &texture, const MemState &mem);
 bool convert_base_texture_format_to_base_color_format(SceGxmTextureBaseFormat format, SceGxmColorBaseFormat &color_format);
 
 } // namespace texture

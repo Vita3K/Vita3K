@@ -23,14 +23,20 @@
 
 #if BOOST_VERSION >= 108100
 #include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
 // use a boost unordered_flat_map as performance really matters for fields using this type
 template <typename T, typename S>
 using unordered_map_fast = boost::unordered::unordered_flat_map<T, S>;
+template <typename T>
+using unordered_set_fast = boost::unordered::unordered_flat_set<T>;
 #else
 // fallback in case someone is using an old boost version
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 template <typename T, typename S>
 using unordered_map_fast = boost::unordered_map<T, S>;
+template <typename T>
+using unordered_set_fast = boost::unordered_set<T>;
 #endif
 
 namespace lru {

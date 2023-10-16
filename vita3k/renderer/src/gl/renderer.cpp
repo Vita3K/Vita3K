@@ -261,11 +261,6 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
 }
 
 bool GLState::init(const char *shared_path, const bool hashless_texture_cache) {
-    if (!texture_cache.init(hashless_texture_cache)) {
-        LOG_ERROR("Failed to initialize texture cache!");
-        return false;
-    }
-
     if (!screen_renderer.init(shared_path)) {
         LOG_ERROR("Failed to initialize screen renderer");
         return false;
@@ -274,6 +269,11 @@ bool GLState::init(const char *shared_path, const bool hashless_texture_cache) {
     shader_version = fmt::format("v{}", shader::CURRENT_VERSION);
 
     return true;
+}
+
+void GLState::late_init(const Config &cfg, const std::string_view game_id) {
+    const fs::path texture_folder = fs::path(shared_path) / "textures";
+    texture_cache.init(cfg.hashless_texture_cache, texture_folder, game_id);
 }
 
 bool create(std::unique_ptr<Context> &context) {
@@ -645,7 +645,6 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
     post_process_pixels_data(renderer, pixels, temp_store, width, height, surface.strideInPixels, surface);
 
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-    ++renderer.texture_cache.timestamp;
 }
 
 void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
@@ -731,6 +730,13 @@ int GLState::get_max_anisotropic_filtering() {
 
 void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
+}
+
+void GLState::set_texture_state(bool import_textures, bool export_textures, bool export_as_png) {
+    texture_cache.import_textures = import_textures;
+    texture_cache.export_textures = export_textures;
+    texture_cache.save_as_png = export_as_png;
+    texture_cache.refresh_available_textures();
 }
 
 void GLState::precompile_shader(const ShadersHash &hash) {

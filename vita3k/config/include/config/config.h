@@ -77,6 +77,9 @@ enum PerfomanceOverleyPosition {
     code(bool, "texture-cache", true, texture_cache)                                                    \
     code(bool, "show-compile-shaders", true, show_compile_shaders)                                      \
     code(bool, "hashless-texture-cache", false, hashless_texture_cache)                                 \
+    code(bool, "import-textures", false, import_textures)                                               \
+    code(bool, "export-textures", false, export_textures)                                               \
+    code(bool, "export-as-png", true, export_as_png)                                                    \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
@@ -130,7 +133,6 @@ enum PerfomanceOverleyPosition {
     code(int, "keyboard-gui-toggle-touch", 23, keyboard_gui_toggle_touch)                               \
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
-    code(bool, "dump-textures", false, dump_textures)                                                   \
     code(bool, "display-info-message", true, display_info_message)                                      \
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "asia-font-support", false, asia_font_support)                                           \

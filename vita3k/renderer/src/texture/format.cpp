@@ -149,7 +149,7 @@ uint32_t decompress_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, 
     if (bc_type) {
         decompress_bc_image(width, height, reinterpret_cast<const uint8_t *>(data),
             reinterpret_cast<uint32_t *>(dest), bc_type);
-        return (((width + 3) / 4) * ((height + 3) / 4) * ((bc_type != 1 && bc_type != 4 && bc_type != 5) ? 16 : 8));
+        return (((width + 3) / 4) * ((height + 3) / 4) * ((bc_type != 1 && bc_type != 4) ? 16 : 8));
     } else if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) && (fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)) {
         pvr::PVRTDecompressPVRTC(data, (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP), width, height,
             (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP), reinterpret_cast<uint8_t *>(dest));
@@ -288,6 +288,7 @@ void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uin
 }
 
 // Based on this: http://xen.firefly.nu/up/rearrange.c.html
+// https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/
 // Thanks daniel from GXTConvert finding this out first
 
 // Inverse of Part1By1 - "delete" all odd-indexed bits
@@ -300,12 +301,39 @@ static uint32_t compact_one_by_one(uint32_t x) {
     return x;
 }
 
-uint32_t decode_morton2_x(uint32_t code) {
+uint32_t decode_morton2_y(uint32_t code) {
     return compact_one_by_one(code >> 0);
 }
 
-uint32_t decode_morton2_y(uint32_t code) {
+uint32_t decode_morton2_x(uint32_t code) {
     return compact_one_by_one(code >> 1);
+}
+
+static uint32_t Part1By1(uint32_t x) {
+    x &= 0x0000ffff; // x = ---- ---- ---- ---- fedc ba98 7654 3210
+    x = (x ^ (x << 8)) & 0x00ff00ff; // x = ---- ---- fedc ba98 ---- ---- 7654 3210
+    x = (x ^ (x << 4)) & 0x0f0f0f0f; // x = ---- fedc ---- ba98 ---- 7654 ---- 3210
+    x = (x ^ (x << 2)) & 0x33333333; // x = --fe --dc --ba --98 --76 --54 --32 --10
+    x = (x ^ (x << 1)) & 0x55555555; // x = -f-e -d-c -b-a -9-8 -7-6 -5-4 -3-2 -1-0
+    return x;
+}
+
+uint32_t encode_morton(uint16_t x, uint16_t y, uint16_t width, uint16_t height) {
+    assert((width & (width - 1)) == 0);
+    assert((height & (height - 1)) == 0);
+
+    // assuming width < height:
+    // xxxxxxx yyyy
+    uint16_t min = std::min(width, height);
+    uint32_t k = std::bit_width(min) - 1;
+    // upper unswizzled bits
+    // xxx--------
+    uint32_t result = static_cast<uint32_t>((x >> k) | (y >> k)) << 2 * k;
+    // xxxx-x-x-x-
+    result |= (Part1By1(x & (min - 1)) << 1);
+    // xxxxyxyxyxy
+    result |= Part1By1(y & (min - 1));
+    return result;
 }
 
 void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel) {
@@ -315,32 +343,20 @@ void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint1
     }
 
     uint8_t bytes_per_pixel = (bits_per_pixel + 7) >> 3;
+    uint32_t min = std::min(width, height);
+    uint32_t k = std::bit_width(min) - 1;
 
-    for (uint32_t i = 0; i < static_cast<uint32_t>(width * height); i++) {
-        size_t min = width < height ? width : height;
-        size_t k = static_cast<size_t>(log2(min));
-
-        size_t x, y;
-        if (height < width) {
-            // XXXyxyxyx → XXXxxxyyy
-            size_t j = i >> (2 * k) << (2 * k)
-                | (decode_morton2_y(i) & (min - 1)) << k
-                | (decode_morton2_x(i) & (min - 1)) << 0;
-            x = j / height;
-            y = j % height;
+    for (uint32_t i = 0; i < width * static_cast<uint32_t>(height); i++) {
+        uint32_t x = decode_morton2_x(i) & (min - 1);
+        uint32_t y = decode_morton2_y(i) & (min - 1);
+        uint32_t upper_bits = (i >> (2 * k)) << k;
+        if (width >= height) {
+            x |= upper_bits;
         } else {
-            // YYYyxyxyx → YYYyyyxxx
-            size_t j = i >> (2 * k) << (2 * k)
-                | (decode_morton2_x(i) & (min - 1)) << k
-                | (decode_morton2_y(i) & (min - 1)) << 0;
-            x = j % width;
-            y = j / width;
+            y |= upper_bits;
         }
 
-        if (y >= height || x >= width)
-            continue;
-
-        std::memcpy(dest + (y * width + x) * bytes_per_pixel, src + i * bytes_per_pixel, bytes_per_pixel);
+        memcpy(dest + (y * width + x) * bytes_per_pixel, src + i * bytes_per_pixel, bytes_per_pixel);
     }
 }
 
@@ -398,7 +414,7 @@ uint32_t get_compressed_size(SceGxmTextureBaseFormat base_format, uint32_t width
  * \param block_storage     pointer to the block to decompress.
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
-static void decompress_block_bc1(const std::uint8_t *block_storage, std::uint32_t *image) {
+static void decompress_block_bc1(const uint8_t *block_storage, uint32_t *image) {
     std::uint16_t n0 = static_cast<std::uint16_t>((block_storage[1] << 8) | block_storage[0]);
     std::uint16_t n1 = static_cast<std::uint16_t>((block_storage[3] << 8) | block_storage[2]);
 
@@ -486,7 +502,7 @@ static void decompress_block_bc1(const std::uint8_t *block_storage, std::uint32_
  * \param offset            offset to where data should be written.
  * \param stride            stride between bytes to where data should be written.
  **/
-static void decompress_block_alpha(const std::uint8_t *block_storage, std::uint8_t *image, const std::uint32_t offset, const std::uint32_t stride) {
+static void decompress_block_alpha(const uint8_t *block_storage, uint8_t *image, const uint32_t offset, const uint32_t stride) {
     uint8_t alpha[8];
 
     alpha[0] = block_storage[0];
@@ -540,7 +556,7 @@ static void decompress_block_alpha(const std::uint8_t *block_storage, std::uint8
  * \param offset            offset to where data should be written.
  * \param stride            stride between bytes to where data should be written.
  **/
-static void decompress_block_alpha_signed(const std::uint8_t *block_storage, std::uint8_t *image, const std::uint32_t offset, const std::uint32_t stride) {
+static void decompress_block_alpha_signed(const uint8_t *block_storage, uint8_t *image, const uint32_t offset, const uint32_t stride) {
     int8_t alpha[8];
 
     alpha[0] = static_cast<int8_t>(block_storage[0]);
@@ -592,7 +608,7 @@ static void decompress_block_alpha_signed(const std::uint8_t *block_storage, std
  * \param block_storage     pointer to the block to decompress.
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
-static void decompress_block_bc2(const std::uint8_t *block_storage, std::uint32_t *image) {
+static void decompress_block_bc2(const uint8_t *block_storage, uint32_t *image) {
     decompress_block_bc1(block_storage + 8, image);
 
     for (int i = 0; i < 8; i++) {
@@ -607,7 +623,7 @@ static void decompress_block_bc2(const std::uint8_t *block_storage, std::uint32_
  * \param block_storage     pointer to the block to decompress.
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
-static void decompress_block_bc3(const std::uint8_t *block_storage, std::uint32_t *image) {
+static void decompress_block_bc3(const uint8_t *block_storage, uint32_t *image) {
     decompress_block_bc1(block_storage + 8, image);
     decompress_block_alpha(block_storage, reinterpret_cast<std::uint8_t *>(image), 3, 4);
 }
@@ -618,10 +634,10 @@ static void decompress_block_bc3(const std::uint8_t *block_storage, std::uint32_
  * \param block_storage     pointer to the block to decompress.
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
-static void decompress_block_bc4u(const std::uint8_t *block_storage, std::uint32_t *image) {
+static void decompress_block_bc4u(const uint8_t *block_storage, uint8_t *image) {
     for (int i = 0; i < 16; i++)
-        image[i] = 0x00000000;
-    decompress_block_alpha(block_storage, reinterpret_cast<std::uint8_t *>(image), 0, 4);
+        image[i] = 0x00;
+    decompress_block_alpha(block_storage, image, 0, 1);
 }
 
 /**
@@ -630,10 +646,10 @@ static void decompress_block_bc4u(const std::uint8_t *block_storage, std::uint32
  * \param block_storage     pointer to the block to decompress.
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
-static void decompress_block_bc4s(const std::uint8_t *block_storage, std::uint32_t *image) {
+static void decompress_block_bc4s(const uint8_t *block_storage, uint8_t *image) {
     for (int i = 0; i < 16; i++)
-        image[i] = 0x00000000;
-    decompress_block_alpha_signed(block_storage, reinterpret_cast<std::uint8_t *>(image), 0, 4);
+        image[i] = 0x00;
+    decompress_block_alpha_signed(block_storage, image, 0, 1);
 }
 
 /**
@@ -642,11 +658,11 @@ static void decompress_block_bc4s(const std::uint8_t *block_storage, std::uint32
  * \param block_storage     pointer to the block to decompress.
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
-static void decompress_block_bc5u(const std::uint8_t *block_storage, std::uint32_t *image) {
+static void decompress_block_bc5u(const uint8_t *block_storage, uint16_t *image) {
     for (int i = 0; i < 16; i++)
-        image[i] = 0x00000000;
-    decompress_block_alpha(block_storage, reinterpret_cast<std::uint8_t *>(image), 0, 4);
-    decompress_block_alpha(block_storage + 8, reinterpret_cast<std::uint8_t *>(image), 1, 4);
+        image[i] = 0x0000;
+    decompress_block_alpha(block_storage, reinterpret_cast<uint8_t *>(image), 0, 2);
+    decompress_block_alpha(block_storage + 8, reinterpret_cast<uint8_t *>(image), 1, 2);
 }
 
 /**
@@ -655,11 +671,11 @@ static void decompress_block_bc5u(const std::uint8_t *block_storage, std::uint32
  * \param block_storage     pointer to the block to decompress.
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
-static void decompress_block_bc5s(const std::uint8_t *block_storage, std::uint32_t *image) {
+static void decompress_block_bc5s(const uint8_t *block_storage, uint16_t *image) {
     for (int i = 0; i < 16; i++)
-        image[i] = 0x00000000;
-    decompress_block_alpha_signed(block_storage, reinterpret_cast<std::uint8_t *>(image), 0, 4);
-    decompress_block_alpha_signed(block_storage + 8, reinterpret_cast<std::uint8_t *>(image), 1, 4);
+        image[i] = 0x0000;
+    decompress_block_alpha_signed(block_storage, reinterpret_cast<uint8_t *>(image), 0, 2);
+    decompress_block_alpha_signed(block_storage + 8, reinterpret_cast<uint8_t *>(image), 1, 2);
 }
 
 /**
@@ -674,59 +690,56 @@ static void decompress_block_bc5s(const std::uint8_t *block_storage, std::uint32
  * \param bc_type           Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2) or BC5S (RGTC2).
  */
 void decompress_bc_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type) {
-    std::uint32_t block_count_x = (width + 3) / 4;
-    std::uint32_t block_count_y = (height + 3) / 4;
-    std::size_t block_size = (bc_type != 1 && bc_type != 4) ? 16 : 8;
+    const uint32_t block_count_x = (width + 3) / 4;
+    const uint32_t block_count_y = (height + 3) / 4;
+    const uint32_t block_size = (bc_type != 1 && bc_type != 4) ? 16 : 8;
+    const uint32_t line_size = block_count_x * 4;
 
-    std::uint32_t temp_block_result[16] = {};
+    auto decompress_bcn = [=, &block_storage]<typename T, typename F>(T _, F decompress_func) {
+        T temp_block_result[16] = {};
 
-    // Z-order curve inverse table
-    static const int z_order_curve_inv[] = {
-        0, 2, 8, 10,
-        1, 3, 9, 11,
-        4, 6, 12, 14,
-        5, 7, 13, 15
+        for (uint32_t j = 0; j < block_count_y; j++) {
+            for (uint32_t i = 0; i < block_count_x; i++) {
+                decompress_func(block_storage, temp_block_result);
+
+                const uint32_t offset = j * 4 * line_size + i * 4;
+                for (uint32_t delta = 0; delta < 16; delta++) {
+                    image[offset + (delta % 4) + ((delta / 4) * line_size)] = temp_block_result[delta];
+                }
+
+                block_storage += block_size;
+            }
+        }
     };
 
-    for (std::uint32_t j = 0; j < block_count_y; j++) {
-        for (std::uint32_t i = 0; i < block_count_x; i++) {
-            switch (bc_type) {
-            case 1:
-                decompress_block_bc1(block_storage, temp_block_result);
-                break;
+    switch (bc_type) {
+    case 1:
+        decompress_bcn(uint32_t(), decompress_block_bc1);
+        break;
 
-            case 2:
-                decompress_block_bc2(block_storage, temp_block_result);
-                break;
+    case 2:
+        decompress_bcn(uint32_t(), decompress_block_bc2);
+        break;
 
-            case 3:
-                decompress_block_bc3(block_storage, temp_block_result);
-                break;
+    case 3:
+        decompress_bcn(uint32_t(), decompress_block_bc3);
+        break;
 
-            case 4:
-                decompress_block_bc4u(block_storage, temp_block_result);
-                break;
+    case 4:
+        decompress_bcn(uint8_t(), decompress_block_bc4u);
+        break;
 
-            case 5:
-                decompress_block_bc4s(block_storage, temp_block_result);
-                break;
+    case 5:
+        decompress_bcn(uint8_t(), decompress_block_bc4s);
+        break;
 
-            case 6:
-                decompress_block_bc5u(block_storage, temp_block_result);
-                break;
+    case 6:
+        decompress_bcn(uint16_t(), decompress_block_bc5u);
+        break;
 
-            case 7:
-                decompress_block_bc5s(block_storage, temp_block_result);
-                break;
-            }
-
-            for (int b = 0; b < 16; b++) {
-                image[z_order_curve_inv[b]] = temp_block_result[b];
-            }
-
-            block_storage += block_size;
-            image += 16;
-        }
+    case 7:
+        decompress_bcn(uint16_t(), decompress_block_bc5s);
+        break;
     }
 }
 
@@ -741,37 +754,24 @@ void decompress_bc_image(std::uint32_t width, std::uint32_t height, const std::u
  * \param dest      Pointer to the image where the decompressed pixels will be stored.
  * \param bc_type   Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2 or BC5S (RGTC2).
  */
-void resolve_z_order_compressed_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *src, std::uint8_t *dest, const std::uint8_t bc_type) {
-    std::uint32_t block_count_x = (width + 3) / 4;
-    std::uint32_t block_count_y = (height + 3) / 4;
-    std::size_t block_size = (bc_type != 1 && bc_type != 4) ? 16 : 8;
+void resolve_z_order_compressed_image(uint32_t width, uint32_t height, const uint8_t *src, uint8_t *dest, const uint8_t bc_type) {
+    uint32_t block_count_x = (width + 3) / 4;
+    uint32_t block_count_y = (height + 3) / 4;
+    uint32_t block_size = (bc_type != 1 && bc_type != 4) ? 16 : 8;
 
-    size_t min = block_count_x < block_count_y ? block_count_x : block_count_y;
-    size_t k = static_cast<size_t>(log2(min));
+    uint32_t min = std::min(block_count_x, block_count_y);
+    uint32_t k = std::bit_width(min) - 1;
 
-    bool x_first = block_count_y < block_count_x;
-
-    uint32_t block_count = static_cast<uint32_t>(block_count_x * block_count_y);
+    uint32_t block_count = block_count_x * block_count_y;
     for (uint32_t i = 0; i < block_count; i++) {
-        size_t x, y;
-        if (x_first) {
-            // XXXyxyxyx → XXXxxxyyy
-            size_t j = i >> (2 * k) << (2 * k)
-                | (decode_morton2_y(i) & (min - 1)) << k
-                | (decode_morton2_x(i) & (min - 1)) << 0;
-            x = j / block_count_y;
-            y = j % block_count_y;
+        uint32_t x = decode_morton2_x(i) & (min - 1);
+        uint32_t y = decode_morton2_y(i) & (min - 1);
+        uint32_t upper_bits = (i >> (2 * k)) << k;
+        if (block_count_x >= block_count_y) {
+            x |= upper_bits;
         } else {
-            // YYYyxyxyx → YYYyyyxxx
-            size_t j = i >> (2 * k) << (2 * k)
-                | (decode_morton2_x(i) & (min - 1)) << k
-                | (decode_morton2_y(i) & (min - 1)) << 0;
-            x = j % block_count_x;
-            y = j / block_count_x;
+            y |= upper_bits;
         }
-
-        if (y >= block_count_y || x >= block_count_x)
-            continue;
 
         std::memcpy(dest + (y * block_count_x + x) * block_size, src + i * block_size, block_size);
     }

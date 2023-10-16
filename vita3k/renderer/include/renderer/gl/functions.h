@@ -99,7 +99,6 @@ size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 
 // Texture cache.
 bool init(GLTextureCacheState &cache, const bool hashless_texture_cache);
-void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::string &name, const std::string &log_path, const std::string &title_id, Sha256Hash hash);
 
 } // namespace texture
 

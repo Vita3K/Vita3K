@@ -24,6 +24,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <string_view>
 
 struct SDL_Cursor;
 struct SDL_Window;
@@ -77,7 +78,7 @@ struct State {
     bool need_page_table = false;
 
     virtual bool init(const char *shared_path, const bool hashless_texture_cache) = 0;
-    virtual void late_init(const Config &cfg){};
+    virtual void late_init(const Config &cfg, const std::string_view game_id) = 0;
     virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem)
         = 0;
@@ -91,6 +92,7 @@ struct State {
     virtual void set_screen_filter(const std::string_view &filter) = 0;
     virtual int get_max_anisotropic_filtering() = 0;
     virtual void set_anisotropic_filtering(int anisotropic_filtering) = 0;
+    virtual void set_texture_state(bool import_textures, bool export_textures, bool export_as_png) = 0;
     void set_surface_sync_state(bool disable) {
         disable_surface_sync = disable;
     }

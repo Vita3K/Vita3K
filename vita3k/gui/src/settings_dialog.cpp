@@ -170,6 +170,9 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
                 config.screen_filter = gpu_child.attribute("screen-filter").as_string();
                 config.v_sync = gpu_child.attribute("v-sync").as_bool();
                 config.anisotropic_filtering = gpu_child.attribute("anisotropic-filtering").as_int();
+                config.import_textures = gpu_child.attribute("import-textures").as_bool();
+                config.export_textures = gpu_child.attribute("export-textures").as_bool();
+                config.export_as_png = gpu_child.attribute("export-as-png").as_bool();
             }
 
             // Load System Config
@@ -228,6 +231,9 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.screen_filter = emuenv.cfg.screen_filter;
         config.v_sync = emuenv.cfg.v_sync;
         config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
+        config.import_textures = emuenv.cfg.import_textures;
+        config.export_textures = emuenv.cfg.export_textures;
+        config.export_as_png = emuenv.cfg.export_as_png;
         config.pstv_mode = emuenv.cfg.pstv_mode;
         config.ngs_enable = emuenv.cfg.ngs_enable;
         config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
@@ -289,6 +295,9 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         gpu_child.append_attribute("screen-filter") = config.screen_filter.c_str();
         gpu_child.append_attribute("v-sync") = config.v_sync;
         gpu_child.append_attribute("anisotropic-filtering") = config.anisotropic_filtering;
+        gpu_child.append_attribute("import-textures") = config.import_textures;
+        gpu_child.append_attribute("export-textures") = config.export_textures;
+        gpu_child.append_attribute("export-as-png") = config.export_as_png;
 
         // System
         auto system_child = config_child.append_child("system");
@@ -318,6 +327,9 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.screen_filter = config.screen_filter;
         emuenv.cfg.v_sync = config.v_sync;
         emuenv.cfg.anisotropic_filtering = config.anisotropic_filtering;
+        emuenv.cfg.import_textures = config.import_textures;
+        emuenv.cfg.export_textures = config.export_textures;
+        emuenv.cfg.export_as_png = config.export_as_png;
         emuenv.cfg.ngs_enable = config.ngs_enable;
         emuenv.cfg.show_touchpad_cursor = config.show_touchpad_cursor;
         emuenv.cfg.psn_status = config.psn_status;
@@ -377,6 +389,9 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.screen_filter = emuenv.cfg.screen_filter;
         emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
+        emuenv.cfg.current_config.import_textures = emuenv.cfg.import_textures;
+        emuenv.cfg.current_config.export_textures = emuenv.cfg.export_textures;
+        emuenv.cfg.current_config.export_as_png = emuenv.cfg.export_as_png;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
         emuenv.cfg.current_config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
         emuenv.cfg.current_config.psn_status = emuenv.cfg.psn_status;
@@ -401,6 +416,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
     emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
     emuenv.renderer->set_stretch_display(emuenv.cfg.stretch_the_display_area);
+    emuenv.renderer->set_texture_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
 
     // No change it if app already running
     if (emuenv.io.title_id.empty()) {
@@ -683,6 +699,19 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
+
+        // Texture Replacement
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Texture Replacement").x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Texture Replacement");
+        ImGui::Spacing();
+        ImGui::Checkbox("Export textures", &config.export_textures);
+        ImGui::SameLine();
+        ImGui::Checkbox("Import textures", &config.import_textures);
+
+        static const char *export_formats[] = { "PNG", "DDS" };
+        int export_format_pos = config.export_as_png ? 0 : 1;
+        if (ImGui::Combo("Texture exporting format", &export_format_pos, export_formats, IM_ARRAYSIZE(export_formats)))
+            config.export_as_png = export_format_pos == 0;
 
         // Shaders
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Shaders").x / 2.f));
@@ -1051,10 +1080,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");
         ImGui::Spacing();
-        ImGui::Checkbox("Texture dumping", &emuenv.cfg.dump_textures);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Dump textures to files");
-        ImGui::SameLine();
         ImGui::Checkbox("ELF dumping", &emuenv.kernel.debugger.dump_elfs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Dump loaded code as ELFs");

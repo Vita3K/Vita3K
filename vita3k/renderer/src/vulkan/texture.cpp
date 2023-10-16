@@ -245,11 +245,11 @@ void VKTextureCache::prepare_staging_buffer(bool is_configure) {
     is_texture_transfer_ready = true;
 }
 
-bool VKTextureCache::init(const bool hashless_texture_cache) {
+bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id) {
     // set a limit to the number of samplers which can be allocated at the same time
     const size_t max_sampler_used = std::min(state.physical_device_properties.limits.maxSamplerAllocationCount / 2, 512U);
 
-    TextureCache::init(hashless_texture_cache, max_sampler_used);
+    TextureCache::init(hashless_texture_cache, texture_folder, game_id, max_sampler_used);
     backend = Backend::Vulkan;
 
     // don't forget to specify the allocator for all the staging buffers
@@ -335,8 +335,9 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     vkutil::Image &image = current_texture->texture;
 
     // In case the cache is full, no need to put the previous image in the destroy queue
-    // as it shouldn't have been used for a while
-    image.destroy();
+    // because of texture importation, we must be careful when destroying an image
+    if (image.image)
+        reinterpret_cast<VKContext *>(state.context)->frame().destroy_queue.add_image(image);
 
     // manually initialize the image
     image.allocator = state.allocator;
@@ -520,6 +521,99 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
     sampler_info.anisotropyEnable = (anisotropic_filtering > 1) && (sampler_info.magFilter != vk::Filter::eNearest || sampler_info.minFilter != vk::Filter::eNearest);
 
     sampler = state.device.createSampler(sampler_info);
+}
+
+void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) {
+    const size_t bpp = gxm::bits_per_pixel(base_format);
+    const uint32_t texture_size = static_cast<uint32_t>((align(width, 4) * align(height, 4) * bpp) / 8);
+    current_texture->memory_needed = align(texture_size, 16);
+
+    current_texture->mip_count = mipcount;
+    if (mipcount > 1)
+        current_texture->memory_needed += current_texture->memory_needed / 2;
+
+    const bool is_cube = current_info->texture.texture_type() == SCE_GXM_TEXTURE_CUBE || current_info->texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY;
+    current_texture->is_cube = is_cube;
+    if (is_cube)
+        current_texture->memory_needed *= 6;
+
+    vkutil::Image &image = current_texture->texture;
+    // In case the cache is full, no need to put the previous image in the destroy queue
+    // because of texture importation, we must be careful when destroying an image
+    if (image.image)
+        reinterpret_cast<VKContext *>(state.context)->frame().destroy_queue.add_image(image);
+
+    vk::Format vk_format = texture::translate_format(base_format);
+    if (is_srgb)
+        vk_format = linear_to_srgb(vk_format);
+
+    // manually initialize the image
+    image.allocator = state.allocator;
+    image.width = width;
+    image.height = height;
+    image.format = vk_format;
+
+    // create image
+    vk::ImageCreateInfo image_info{
+        .flags = is_cube ? vk::ImageCreateFlagBits::eCubeCompatible : vk::ImageCreateFlags(),
+        .imageType = vk::ImageType::e2D,
+        .format = vk_format,
+        .extent = vk::Extent3D{
+            .width = width,
+            .height = height,
+            .depth = 1 },
+        .mipLevels = mipcount,
+        .arrayLayers = is_cube ? 6U : 1U,
+        .samples = vk::SampleCountFlagBits::e1,
+        .tiling = vk::ImageTiling::eOptimal,
+        .usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
+        .sharingMode = vk::SharingMode::eExclusive,
+        .initialLayout = vk::ImageLayout::eUndefined,
+    };
+
+    std::tie(image.image, image.allocation) = image.allocator.createImage(image_info, vkutil::vma_auto_alloc);
+
+    // create image view
+    vk::ImageSubresourceRange range{
+        .aspectMask = vk::ImageAspectFlagBits::eColor,
+        .baseMipLevel = 0,
+        .levelCount = mipcount,
+        .baseArrayLayer = 0,
+        .layerCount = is_cube ? 6U : 1U
+    };
+
+    vk::ComponentMapping swizzle{ vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA };
+    if (nb_components == 3) {
+        swizzle.a = vk::ComponentSwizzle::eOne;
+    } else if (nb_components <= 2) {
+        // use the real swizzle
+        swizzle = texture::translate_swizzle(gxm::get_format(current_info->texture));
+    }
+
+    // u5u6u5 is stored as bgr in vulkan
+    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5) {
+        swap_rb = !swap_rb;
+    }
+
+    if (swap_rb)
+        std::swap(swizzle.r, swizzle.b);
+
+    // this format is stored as abgr in vulkan
+    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4) {
+        std::swap(swizzle.r, swizzle.a);
+        std::swap(swizzle.g, swizzle.b);
+    }
+
+    vk::ImageViewCreateInfo view_info{
+        .image = image.image,
+        .viewType = is_cube ? vk::ImageViewType::eCube : vk::ImageViewType::e2D,
+        .format = vk_format,
+        .components = swizzle,
+        .subresourceRange = range
+    };
+    image.view = state.device.createImageView(view_info);
+
+    prepare_staging_buffer(true);
 }
 
 } // namespace renderer::vulkan

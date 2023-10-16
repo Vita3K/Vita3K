@@ -28,23 +28,25 @@ add_library(
 	src/vulkan/sync_state.cpp
 	src/vulkan/texture.cpp
 
+	src/texture/cache.cpp
+	src/texture/format.cpp
+	src/texture/palette.cpp
+	src/texture/pvrt-dec.cpp
+	src/texture/replacement.cpp
+	src/texture/yuv.cpp
+
 	src/batch.cpp
 	src/creation.cpp
-	src/pvrt-dec.cpp
 	src/renderer.cpp
 	src/scene.cpp
 	src/shaders.cpp
 	src/state_set.cpp
 	src/sync.cpp
-	src/texture_cache.cpp
-	src/texture_format.cpp
-	src/texture_palette.cpp
-	src/texture_yuv.cpp
 )
 
 target_include_directories(renderer PUBLIC include)
 target_link_libraries(renderer PUBLIC crypto display dlmalloc mem stb shader glutil threads config util vkutil)
-target_link_libraries(renderer PRIVATE sdl2 stb ffmpeg xxHash::xxhash)
+target_link_libraries(renderer PRIVATE ddspp sdl2 stb ffmpeg xxHash::xxhash)
 
 # Marshmallow Tracy linking
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)

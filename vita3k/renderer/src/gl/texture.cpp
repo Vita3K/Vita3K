@@ -27,16 +27,36 @@
 #include <util/align.h>
 #include <util/log.h>
 
-#include <stb_image_write.h>
-
 static constexpr bool log_parameter = false;
 
 namespace renderer::gl {
 
 using namespace texture;
 
-bool GLTextureCache::init(const bool hashless_texture_cache) {
-    TextureCache::init(hashless_texture_cache);
+static void apply_sampler_state(const SceGxmTexture &gxm_texture, const GLenum texture_bind_type, const int anisotropic_filtering) {
+    const SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(gxm_texture.uaddr_mode);
+    const SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(gxm_texture.vaddr_mode);
+
+    const GLenum min_filter = translate_minmag_filter((SceGxmTextureFilter)gxm_texture.min_filter);
+    const GLenum mag_filter = translate_minmag_filter((SceGxmTextureFilter)gxm_texture.mag_filter);
+
+    glTexParameteri(texture_bind_type, GL_TEXTURE_WRAP_S, translate_wrap_mode(uaddr));
+    glTexParameteri(texture_bind_type, GL_TEXTURE_WRAP_T, translate_wrap_mode(vaddr));
+    glTexParameterf(texture_bind_type, GL_TEXTURE_LOD_BIAS, (static_cast<float>(gxm_texture.lod_bias) - 31.f) / 8.f);
+    glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_LOD, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2));
+    glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_FILTER, min_filter);
+    glTexParameteri(texture_bind_type, GL_TEXTURE_MAG_FILTER, mag_filter);
+
+    // anisotropic filtering
+    // when using nearest filter, disable anisotropy as the pixels can contain data other than color
+    if (anisotropic_filtering > 1 && (min_filter != GL_NEAREST || mag_filter != GL_NEAREST))
+        // we don't need to check for the existence of this extension because it is considered an ubiquitous extension
+        // for now we apply anisotropic filtering to all textures
+        glTexParameterf(texture_bind_type, GL_TEXTURE_MAX_ANISOTROPY_EXT, static_cast<float>(anisotropic_filtering));
+}
+
+bool GLTextureCache::init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id) {
+    TextureCache::init(hashless_texture_cache, texture_folder, game_id);
     backend = Backend::OpenGL;
 
     return textures.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
@@ -61,33 +81,17 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
 
     const GLenum texture_bind_type = get_gl_texture_type(gxm_texture);
 
-    const GLenum min_filter = translate_minmag_filter((SceGxmTextureFilter)gxm_texture.min_filter);
-    const GLenum mag_filter = translate_minmag_filter((SceGxmTextureFilter)gxm_texture.mag_filter);
-
     // TODO Support mip-mapping.
     if (mip_count)
         glTexParameteri(texture_bind_type, GL_TEXTURE_MAX_LEVEL, mip_count - 1);
-
-    glTexParameteri(texture_bind_type, GL_TEXTURE_WRAP_S, translate_wrap_mode(uaddr));
-    glTexParameteri(texture_bind_type, GL_TEXTURE_WRAP_T, translate_wrap_mode(vaddr));
-    glTexParameterf(texture_bind_type, GL_TEXTURE_LOD_BIAS, (static_cast<float>(gxm_texture.lod_bias) - 31.f) / 8.f);
-    glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_LOD, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2));
-    glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_FILTER, min_filter);
-    glTexParameteri(texture_bind_type, GL_TEXTURE_MAG_FILTER, mag_filter);
     glTexParameteriv(texture_bind_type, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 
-    // anisotropic filtering
-    // when using nearest filter, disable anisotropy as the pixels can contain data other than color
-    if (anisotropic_filtering > 1 && (min_filter != GL_NEAREST || mag_filter != GL_NEAREST))
-        // we don't need to check for the existence of this extension because it is considered an ubiquitous extension
-        // for now we apply anisotropic filtering to all textures
-        glTexParameterf(texture_bind_type, GL_TEXTURE_MAX_ANISOTROPY_EXT, static_cast<float>(anisotropic_filtering));
+    apply_sampler_state(gxm_texture, texture_bind_type, anisotropic_filtering);
 
     const GLenum internal_format = translate_internal_format(base_format);
     const GLenum format = translate_format(base_format);
     const GLenum type = translate_type(base_format);
     const auto texture_type = gxm_texture.texture_type();
-    const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
     const auto base_fmt = gxm::get_base_format(fmt);
 
     std::uint32_t org_width = width;
@@ -169,6 +173,54 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
     }
 }
 
+void GLTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) {
+    SceGxmTexture &gxm_texture = current_info->texture;
+    GLint default_swizzle[] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+    const GLint *swizzle = default_swizzle;
+    if (nb_components == 3)
+        default_swizzle[3] = GL_ONE;
+    else if (nb_components <= 2)
+        swizzle = translate_swizzle(gxm::get_format(gxm_texture));
+
+    if (swap_rb)
+        std::swap(default_swizzle[0], default_swizzle[2]);
+
+    const GLenum texture_bind_type = GL_TEXTURE_2D;
+
+    glTexParameteri(texture_bind_type, GL_TEXTURE_MAX_LEVEL, mipcount - 1);
+    glTexParameteriv(texture_bind_type, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+    apply_sampler_state(gxm_texture, texture_bind_type, anisotropic_filtering);
+
+    const GLenum internal_format = translate_internal_format(base_format);
+    const GLenum format = translate_format(base_format);
+    const GLenum type = translate_type(base_format);
+
+    // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
+    GLenum upload_type = GL_TEXTURE_2D;
+    bool compressed = gxm::is_bcn_format(base_format);
+
+    const bool is_cube = current_info->texture.texture_type() == SCE_GXM_TEXTURE_CUBE || current_info->texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY;
+    if (is_cube)
+        upload_type = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+
+    for (uint32_t face = 0; face < (is_cube ? 6U : 1U); face++) {
+        uint32_t mip_width = width;
+        uint32_t mip_height = height;
+        for (uint32_t mip = 0; mip < mipcount; mip++) {
+            if (compressed) {
+                size_t compressed_size = renderer::texture::get_compressed_size(base_format, mip_width, mip_height);
+                glCompressedTexImage2D(upload_type, mip, internal_format, mip_width, mip_height, 0, compressed_size, nullptr);
+            } else {
+                glTexImage2D(upload_type, mip, internal_format, mip_width, mip_height, 0, format, type, nullptr);
+            }
+            mip_width /= 2;
+            mip_height /= 2;
+        }
+
+        upload_type++;
+    }
+}
+
 namespace texture {
 
 GLenum get_gl_texture_type(const SceGxmTexture &gxm_texture) {
@@ -182,52 +234,6 @@ void bind_texture_without_cache(GLTextureCache &cache, const SceGxmTexture &gxm_
     cache.select(0, gxm_texture);
     cache.configure_texture(gxm_texture);
     cache.upload_texture(gxm_texture, mem);
-}
-
-// Dumps bound texture to a file
-void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::string &parameter_name, const std::string &log_path, const std::string &title_id, Sha256Hash program_hash) {
-    static uint32_t g_tex_index = 0;
-    static std::vector<uint8_t> g_pixels; // re-use the same vector instead of allocating one every time
-    static std::map<uint64_t, uint64_t> g_dumped_hashes;
-
-    int tex_index = g_tex_index;
-
-    const uint32_t texture_size = gxm::texture_size_first_mip(gxm_texture);
-    const uint64_t hash = renderer::texture::hash_texture_data(gxm_texture, texture_size, mem);
-
-    if (g_dumped_hashes.contains(hash)) {
-        if (log_parameter && parameter_name != "") {
-            LOG_TRACE("Setting {} of {} by texture {}", parameter_name, hex_string(program_hash), g_dumped_hashes[hash]);
-        }
-        return;
-    } else {
-        g_dumped_hashes.emplace(hash, tex_index);
-        ++g_tex_index;
-    }
-
-    const size_t width = gxm::get_width(gxm_texture);
-    const size_t height = gxm::get_height(gxm_texture);
-
-    size_t size = width * height * 4;
-
-    g_pixels.resize(size);
-
-    GLenum gl_format = GL_RGBA;
-    GLenum gl_type = GL_UNSIGNED_BYTE;
-
-    glGetnTexImage(GL_TEXTURE_2D, 0, gl_format, gl_type, size, (void *)g_pixels.data());
-
-    // TODO: Create the texturelog path elsewhere on init once and pass it here whole
-    // TODO: Same for shaderlog path
-    const fs::path texturelog_path{ fs::path(log_path) / "texturelog" / title_id };
-    if (!fs::exists(texturelog_path))
-        fs::create_directories(texturelog_path);
-
-    const auto tex_filename = fmt::format("tex_{}_{:08X}_{}.png", tex_index, hash, hex_string(program_hash));
-    const auto filepath = texturelog_path / tex_filename;
-
-    if (!stbi_write_png(filepath.string().c_str(), static_cast<int>(width), static_cast<int>(height), 4, (void *)g_pixels.data(), static_cast<int>(width * 4)))
-        LOG_WARN("Failed to save texture: {}", filepath.string());
 }
 
 } // namespace texture

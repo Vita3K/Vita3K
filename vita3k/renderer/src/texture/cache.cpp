@@ -66,6 +66,220 @@ uint64_t hash_texture_data(const SceGxmTexture &texture, uint32_t texture_size, 
     }
 }
 
+// Function to hash an arbitrary swizzled texture in the most optimized way possible
+// this is a recursive function which calls itself on the 4 higher block making the sizzle
+// once a block entirely in the swizzle is found, it stops and hash it
+// the pixels should be hash in the exact order they appear in the memory
+static void hash_arbitrary_swizzled(const uint8_t *data, uint32_t width, uint32_t height, uint32_t texture_width, uint32_t texture_height, uint32_t texture_size, XXH3_state_t *hash_state) {
+    if (width >= texture_width && height >= texture_height) {
+        // whole block is included, hash it
+        XXH3_64bits_update(hash_state, data, texture_size);
+        return;
+    }
+
+    // divide the current block in 4 subblocks
+    const uint32_t block_width = texture_width / 2;
+    const uint32_t block_height = texture_height / 2;
+    const uint32_t block_size = texture_size / 4;
+
+    // we always hash the first subblock (it always contains something)
+    hash_arbitrary_swizzled(data, width, height, block_width, block_height, block_size, hash_state);
+
+    if (height > block_height) {
+        hash_arbitrary_swizzled(data + block_size, width, height - block_height, block_width, block_height, block_size, hash_state);
+    }
+
+    if (width > block_width) {
+        hash_arbitrary_swizzled(data + 2 * block_size, width - block_width, height, block_width, block_height, block_size, hash_state);
+    }
+
+    if (height > block_height && width > block_width) {
+        hash_arbitrary_swizzled(data + 3 * block_size, width - block_width, height - block_height, block_width, block_height, block_size, hash_state);
+    }
+}
+
+// hash only the visible pixels of a tiled texture
+static void hash_unaligned_tiled(const uint8_t *data, uint32_t width, uint32_t height, uint32_t block_width, uint32_t block_height, uint32_t bpp, XXH3_state_t *hash_state) {
+    // a tile is 32x32
+    constexpr uint32_t tile_mask = 0x1F;
+
+    const uint32_t width_down_aligned = align_down(width, 32);
+    const uint32_t width_aligned = align(width, 32);
+    const uint32_t height_down_aligned = align_down(height, 32);
+    const uint32_t height_aligned = align(height, 32);
+
+    // we need to take blocks into account, so consider a block line as
+    // a 32xblock_height rectangle of pixels
+    const uint32_t tile_block_lines = 32 / block_height;
+    const uint32_t total_line_size = (32 * block_height * bpp) / 8;
+
+    if (width == width_down_aligned) {
+        // just hash everything (except the bottom) in one go
+        const uint32_t hash_size = (width * height_down_aligned * bpp) / 8;
+        XXH3_64bits_update(hash_state, data, hash_size);
+        data += hash_size;
+    } else {
+        // need to hash block lines one by one
+        const uint32_t block_lines = height_down_aligned / 32;
+        const uint32_t filled_line_size = (width_down_aligned * 32 * bpp) / 8;
+        const uint32_t end_line_used = ((width & tile_mask) * block_height * bpp) / 8;
+
+        // we are only using the left of the tiles
+        for (uint32_t block_line = 0; block_line < block_lines; block_line++) {
+            XXH3_64bits_update(hash_state, data, filled_line_size);
+            data += filled_line_size;
+
+            for (uint32_t tile_block_line = 0; tile_block_line < tile_block_lines; tile_block_line++) {
+                XXH3_64bits_update(hash_state, data, end_line_used);
+                data += total_line_size;
+            }
+        }
+    }
+
+    if (height == height_down_aligned)
+        // we are done
+        return;
+
+    // we are only using the top of the tiles
+    const uint32_t tile_size = (32 * 32 * bpp) / 8;
+    const uint32_t used_tile_size = (32 * (height & tile_mask) * bpp) / 8;
+    const uint32_t nb_tiles_x = width_down_aligned / 32;
+    for (uint32_t tile_x = 0; tile_x < nb_tiles_x; tile_x++) {
+        XXH3_64bits_update(hash_state, data, used_tile_size);
+        data += tile_size;
+    }
+
+    if (width == width_down_aligned)
+        // we are done
+        return;
+
+    // We are only using the top left part of the bottom right tile
+    const uint32_t end_line_used = ((width & tile_mask) * block_height * bpp) / 8;
+    const uint32_t nb_lines_used = (height & tile_mask) / block_height;
+    for (uint32_t line = 0; line < nb_lines_used; line++) {
+        XXH3_64bits_update(hash_state, data, end_line_used);
+        data += total_line_size;
+    }
+}
+
+uint64_t hash_texture_nostride(const SceGxmTexture &texture, const MemState &mem) {
+    const SceGxmTextureFormat format = gxm::get_format(texture);
+    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
+    const Ptr<const uint8_t> data(texture.data_addr << 2);
+
+    if (!data)
+        return 0;
+
+    uint32_t width = gxm::get_width(texture);
+    uint32_t height = gxm::get_height(texture);
+    auto [block_width, block_height] = gxm::get_block_size(base_format);
+    width = align(width, block_width);
+    height = align(height, block_height);
+
+    // put the width and height of the texture in the hash
+    // also put the gamma mode in case the same texture is used with and without srgb
+    // and put the swizzle, although it's only used for textures with 3 or more components
+    uint64_t hash = width << 16
+        | height
+        | static_cast<uint64_t>(texture.gamma_mode != 0) << 32
+        | static_cast<uint64_t>(texture.swizzle_format) << 33;
+
+    // handle paletted texture (create one hash for each variant)
+    switch (base_format) {
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+        hash ^= hash_palette_data(texture, 16, mem);
+        // update the block dimensions in this case (needed for hashing latter)
+        block_width = 2;
+        block_height = 1;
+        break;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+        hash ^= hash_palette_data(texture, 256, mem);
+        break;
+    default:
+        break;
+    }
+
+    // special case
+    if (gxm::is_yuv_format(base_format)) {
+        hash ^= hash_data(data.get(mem), gxm::texture_size_first_mip(texture));
+        return hash;
+    }
+
+    const uint32_t bpp = gxm::bits_per_pixel(base_format);
+
+    // if there is no pixel in the stride, we can just hash the whole texture
+    bool has_no_stride = true;
+    uint32_t stride_in_pixels = width;
+    switch (texture.texture_type()) {
+    case SCE_GXM_TEXTURE_LINEAR_STRIDED:
+        stride_in_pixels = (gxm::get_stride_in_bytes(texture) * 8) / bpp;
+        has_no_stride = stride_in_pixels == width;
+        break;
+    case SCE_GXM_TEXTURE_LINEAR:
+        stride_in_pixels = align(width, 8);
+        has_no_stride = stride_in_pixels == width;
+        break;
+    case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
+    case SCE_GXM_TEXTURE_CUBE_ARBITRARY:
+        // it has no stride if both width and height are powers of 2
+        has_no_stride = (width & (width - 1)) == 0 && (height & (height - 1)) == 0;
+        break;
+    case SCE_GXM_TEXTURE_TILED:
+        // it has no stride if both the width and height are multiple of the tile size (32)
+        stride_in_pixels = align(width, 32);
+        has_no_stride = (width & 0x1F) == 0 && (height & 0x1F) == 0;
+        break;
+    default:
+        break;
+    }
+
+    if (has_no_stride) {
+        // just hash the whole first mips and we are done
+        // perform the computation with 64-bit integers for safety
+        // I checked, width * height * bpp will always fit in a 32-bit unsigned integer
+        uint32_t texture_size = (width * height * bpp) / 8;
+        hash ^= hash_data(data.get(mem), texture_size);
+        return hash;
+    }
+
+    // all the pixels are not in a contiguous memory range
+    static XXH3_state_t *hash_state = XXH3_createState();
+    XXH3_64bits_reset(hash_state);
+
+    if (texture.texture_type() == SCE_GXM_TEXTURE_LINEAR || texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        // hash line by line
+        // need to take block compressed textures into account
+        uint32_t block_stride_in_bytes = (stride_in_pixels * block_height * bpp) / 8;
+        uint32_t block_width_in_bytes = (width * block_height * bpp) / 8;
+        uint32_t nb_blocks_y = height / block_height;
+        const uint8_t *data_loc = data.get(mem);
+        for (uint32_t block_y = 0; block_y < nb_blocks_y; block_y++) {
+            XXH3_64bits_update(hash_state, data_loc, block_width_in_bytes);
+            data_loc += block_stride_in_bytes;
+        }
+
+        hash ^= XXH3_64bits_digest(hash_state);
+        return hash;
+    }
+
+    if (texture.texture_type() == SCE_GXM_TEXTURE_TILED) {
+        // some side tiles have non-used pixels
+        hash_unaligned_tiled(data.get(mem), width, height, block_width, block_height, bpp, hash_state);
+
+        hash ^= XXH3_64bits_digest(hash_state);
+        return hash;
+    }
+
+    // texture is arbitrarily swizzled
+    // hash completely used block by completely used block
+    const uint32_t texture_width = next_power_of_two(width);
+    const uint32_t texture_height = next_power_of_two(height);
+    const uint32_t texture_size = (texture_width * texture_height * bpp) / 8;
+    hash_arbitrary_swizzled(data.get(mem), width, height, texture_width, texture_height, texture_size, hash_state);
+    hash ^= XXH3_64bits_digest(hash_state);
+    return hash;
+}
+
 uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uint16_t height) {
     uint16_t max_mip_text = std::bit_width(std::min(width, height));
     return std::min(true_mip, max_mip_text);
@@ -74,7 +288,7 @@ uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uin
 
 using namespace texture;
 
-bool TextureCache::init(const bool hashless_texture_cache, size_t sampler_cache_size) {
+bool TextureCache::init(const bool hashless_texture_cache, const fs::path &texture_folder, std::string_view game_id, const size_t sampler_cache_size) {
     use_protect = hashless_texture_cache;
 
     // initialize the texture queue
@@ -95,6 +309,11 @@ bool TextureCache::init(const bool hashless_texture_cache, size_t sampler_cache_
 
         sampler_lookup.reserve(sampler_cache_size);
     }
+
+    export_folder = texture_folder / "export" / game_id;
+    import_folder = texture_folder / "import" / game_id;
+
+    refresh_available_textures();
 
     return true;
 }
@@ -335,6 +554,8 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         }
 
         upload_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
+        if (export_textures)
+            export_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
 
         const uint32_t nb_pixels = align(layout_width, align_width) * align(layout_height, align_height);
         const uint32_t mip_size = (nb_pixels >> block_shift) * block_size;
@@ -422,10 +643,10 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         // get the least recently used texture, which info_list_head points to
         info = texture_queue.get_lru();
         index = info->index;
-        if (info->timestamp > 0) {
+        if (info->texture_size > 0) {
             // Cache is full.
-            LOG_DEBUG("Evicting texture {} (t = {}) from cache. Current t = {}.", index, info->timestamp, timestamp);
-            texture_lookup.erase(info->texture);
+            LOG_WARN_ONCE("Texture cache is full. Starting to replace textures");
+            texture_lookup.erase(std::bit_cast<TextureGxmDataRepr>(info->texture));
         }
         texture_lookup[texture_repr] = info;
 
@@ -433,7 +654,9 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         upload = true;
         // only hash the first mips, assume no game would modify other mips (and faces) without modifying the first one
         info->texture_size = gxm::texture_size_first_mip(gxm_texture);
-        info->texture = texture_repr;
+        // use the texture_repr representation, it contains everything we need and we can use it to erase the key
+        // from texture_lookup later
+        info->texture = std::bit_cast<SceGxmTexture>(texture_repr);
 
         // To prevent protecting too commonly accessed data that belongs to the page where the texture also resides
         // (for example, uniform buffer value and texture data got mixed, so page faults are triggered too many, it's not always good).
@@ -451,7 +674,11 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
         info->use_hash = should_use_hash;
         if (info->use_hash) {
-            info->hash = hash_texture_data(gxm_texture, info->texture_size, mem);
+            if (import_textures || export_textures)
+                info->hash = hash_texture_nostride(gxm_texture, mem);
+            else
+                // the xor 1 is to make sure it won't be the same as hash_texture_nostride
+                info->hash = hash_texture_data(gxm_texture, info->texture_size, mem) ^ 1;
         }
     } else {
         // Texture is cached.
@@ -459,25 +686,69 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         info = gxm_it->second;
         configure = false;
         if (info->use_hash) {
-            const uint64_t hash = hash_texture_data(gxm_texture, info->texture_size, mem);
-            upload = info->hash != hash;
-            info->hash = hash;
+            const uint64_t previous_hash = info->hash;
+            if (import_textures || export_textures)
+                info->hash = hash_texture_nostride(gxm_texture, mem);
+            else
+                info->hash = hash_texture_data(gxm_texture, info->texture_size, mem) ^ 1;
+
+            upload = previous_hash != info->hash;
         } else {
             upload = info->dirty;
         }
     }
+    current_info = info;
 
     if (gxm_texture.data_addr == 0) {
         upload = false;
     }
 
+    if (upload && !info->use_hash && (import_textures || export_textures)) {
+        // we still need to get a hash of the texture
+        info->hash = hash_texture_nostride(gxm_texture, mem);
+    }
+
+    importing_texture = false;
+    // to restore the state, in case for whatever reason we could not load the replacement texture
+    bool previous_configure = configure;
+    if (upload && import_textures) {
+        auto it = available_textures_hash.find(info->hash);
+        if (it != available_textures_hash.end()) {
+            importing_texture = true;
+            loading_dds = it->second;
+            // always configure for replacement texture (although it may have no effect)
+            // the reason being that we may have two replacement textures for the same gxm identifier
+            // with different dimensions, so we can't assume
+            configure = true;
+        }
+    }
+
+    if (upload && !importing_texture && info->is_imported)
+        configure = true;
+
     select(index, gxm_texture);
 
     if (configure) {
-        configure_texture(gxm_texture);
+        bool need_configure = true;
+
+        if (importing_texture)
+            need_configure = !import_configure_texture();
+
+        if (need_configure) {
+            configure_texture(gxm_texture);
+            importing_texture = false;
+            info->is_imported = false;
+        }
     }
     if (upload) {
-        upload_texture(gxm_texture, mem);
+        if (export_textures && !importing_texture)
+            export_select(gxm_texture);
+
+        if (importing_texture)
+            import_upload_texture();
+        else
+            upload_texture(gxm_texture, mem);
+
         if (!info->use_hash) {
             info->dirty = false;
             add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MemPerm::ReadOnly, [info, gxm_texture](Address, bool) {
@@ -488,10 +759,14 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
                 return true;
             });
         }
-        upload_done();
-    }
 
-    info->timestamp = timestamp++;
+        upload_done();
+        if (export_textures && !importing_texture)
+            export_done();
+        if (importing_texture)
+            import_done();
+    }
+    importing_texture = false;
 
     // set the texture as the mru
     texture_queue.set_as_mru(info);
