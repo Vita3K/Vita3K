@@ -48,8 +48,8 @@ static std::vector<std::pair<std::string, time_t>> themes_list;
 static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
     gui.themes_preview.clear(), themes_info.clear(), themes_list.clear();
 
-    const auto theme_path{ fs::path(emuenv.pref_path) / "ux0/theme" };
-    const auto fw_theme_path{ fs::path(emuenv.pref_path) / "vs0/data/internal/theme" };
+    const auto theme_path{ emuenv.pref_path / "ux0/theme" };
+    const auto fw_theme_path{ emuenv.pref_path / "vs0/data/internal/theme" };
     if ((!fs::exists(fw_theme_path) || fs::is_empty(fw_theme_path)) && (!fs::exists(theme_path) || fs::is_empty(theme_path))) {
         LOG_WARN("Theme path is empty");
         return;
@@ -157,9 +157,9 @@ static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
                 vfs::FileBuffer buffer;
 
                 if (theme.first == "default")
-                    vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, name.second);
+                    vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path.wstring(), name.second);
                 else
-                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / string_utils::utf_to_wide(theme.first) / name.second);
+                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path.wstring(), fs::path("theme") / string_utils::utf_to_wide(theme.first) / name.second);
 
                 if (buffer.empty()) {
                     LOG_WARN("Background, Name: '{}', Not found for title: {} [{}].", name.second, theme.first, theme.second.title);
@@ -462,7 +462,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                                 save_user(gui, emuenv, emuenv.io.user_id);
                                 init_theme_start_background(gui, emuenv, "default");
                             }
-                            fs::remove_all(fs::path{ emuenv.pref_path } / "ux0/theme" / string_utils::utf_to_wide(selected));
+                            fs::remove_all(emuenv.pref_path / "ux0/theme" / string_utils::utf_to_wide(selected));
                             if (emuenv.app_path == "NPXS10026")
                                 init_content_manager(gui, emuenv);
                             delete_theme = selected;
@@ -728,7 +728,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     if (ImGui::Selectable(emuenv.cfg.sys_date_format == date_format_value ? "V" : "##date_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
                         if (emuenv.cfg.sys_date_format != date_format_value) {
                             emuenv.cfg.sys_date_format = date_format_value;
-                            config::serialize_config(emuenv.cfg, emuenv.base_path);
+                            config::serialize_config(emuenv.cfg, emuenv.config_path);
                         }
                         menu.clear();
                     }
@@ -744,7 +744,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::Selectable(is_12_hour_format ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
                     if (!is_12_hour_format) {
                         emuenv.cfg.sys_time_format = SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
-                        config::serialize_config(emuenv.cfg, emuenv.base_path);
+                        config::serialize_config(emuenv.cfg, emuenv.config_path);
                     }
                     menu.clear();
                 }
@@ -755,7 +755,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::Selectable(!is_12_hour_format ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
                     if (is_12_hour_format) {
                         emuenv.cfg.sys_time_format = SCE_SYSTEM_PARAM_TIME_FORMAT_24HOUR;
-                        config::serialize_config(emuenv.cfg, emuenv.base_path);
+                        config::serialize_config(emuenv.cfg, emuenv.config_path);
                     }
                     menu.clear();
                 }
@@ -826,7 +826,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     if (ImGui::Selectable(is_current_lang ? "V" : "##lang", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(SYS_LANG_SIZE, SIZE_PUPUP_SELECT))) {
                         if (!is_current_lang) {
                             emuenv.cfg.sys_lang = sys_lang.first;
-                            config::serialize_config(emuenv.cfg, emuenv.base_path);
+                            config::serialize_config(emuenv.cfg, emuenv.config_path);
                             lang::init_lang(gui.lang, emuenv);
                             if (sys_lang.first != gui.app_selector.apps_cache_lang) {
                                 std::thread init_app([&gui, &emuenv]() {
@@ -941,7 +941,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                                 emuenv.cfg.ime_langs = cfg_ime_langs_temp;
                             }
                         }
-                        config::serialize_config(emuenv.cfg, emuenv.base_path);
+                        config::serialize_config(emuenv.cfg, emuenv.config_path);
                     }
                     ImGui::NextColumn();
                     ImGui::Columns(1);
