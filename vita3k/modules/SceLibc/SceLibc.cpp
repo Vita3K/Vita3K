@@ -432,7 +432,7 @@ EXPORT(int, fileno) {
 EXPORT(int, fopen, const char *filename, const char *mode) {
     TRACY_FUNC(fopen, filename, mode);
     LOG_WARN_IF(mode[0] != 'r', "fopen({}, {})", filename, *mode);
-    return open_file(emuenv.io, filename, SCE_O_RDONLY, emuenv.pref_path, export_name);
+    return open_file(emuenv.io, filename, SCE_O_RDONLY, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, fopen_s) {

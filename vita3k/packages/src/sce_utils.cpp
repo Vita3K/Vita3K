@@ -677,7 +677,7 @@ void extract_fat(const std::wstring &partition_path, const std::string &partitio
         });
 
     Fat16::Entry first;
-    traverse_directory(img, first, pref_path + string_utils::utf_to_wide(partition.substr(0, 3)));
+    traverse_directory(img, first, pref_path + std::wstring{ fs::path::preferred_separator } + string_utils::utf_to_wide(partition.substr(0, 3)));
 
     fclose(f);
 }

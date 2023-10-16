@@ -27,4 +27,4 @@ struct MemState;
 template <class T>
 class Ptr;
 
-SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &path);
+SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const std::string &dump_path);

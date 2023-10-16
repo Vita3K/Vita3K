@@ -584,7 +584,7 @@ EXPORT(int, sceIoGetstatAsync) {
 
 EXPORT(int, sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
     TRACY_FUNC(sceIoGetstatByFd, fd, stat);
-    return stat_file_by_fd(emuenv.io, fd, stat, emuenv.pref_path, export_name);
+    return stat_file_by_fd(emuenv.io, fd, stat, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, sceIoIoctl, SceUID fd, int cmd, const void *argp, SceSize arglen, void *bufp, SceSize buflen) {
@@ -630,7 +630,7 @@ EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode)
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
     LOG_INFO("Opening file: {}", file);
-    return open_file(emuenv.io, file, flags, emuenv.pref_path, export_name);
+    return open_file(emuenv.io, file, flags, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, sceIoOpenAsync) {
@@ -682,7 +682,7 @@ EXPORT(int, sceIoRemove, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return remove_file(emuenv.io, path, emuenv.pref_path, export_name);
+    return remove_file(emuenv.io, path, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, sceIoRemoveAsync) {
@@ -696,7 +696,7 @@ EXPORT(int, sceIoRename, const char *oldname, const char *newname) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
 
     LOG_INFO("Renaming: {} to {}", oldname, newname);
-    return rename(emuenv.io, oldname, newname, emuenv.pref_path, export_name);
+    return rename(emuenv.io, oldname, newname, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, sceIoRenameAsync) {
@@ -709,7 +709,7 @@ EXPORT(int, sceIoRmdir, const char *path) {
     if (path == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
-    return remove_dir(emuenv.io, path, emuenv.pref_path, export_name);
+    return remove_dir(emuenv.io, path, emuenv.pref_path.wstring(), export_name);
 }
 
 EXPORT(int, sceIoRmdirAsync) {

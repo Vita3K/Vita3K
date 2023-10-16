@@ -96,7 +96,7 @@ SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path,
 // * End utility functions *
 // ****************************
 
-bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path, bool redirect_stdio) {
+bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, const fs::path &pref_path, bool redirect_stdio) {
     // Iterate through the entire list of devices and create the subdirectories if they do not exist
     for (auto i : VitaIoDevice::_names()) {
         if (!device::is_valid_output_path(i))
@@ -141,9 +141,9 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path, boo
     if (!fs::exists(vd0_network))
         fs::create_directories(vd0_network);
 
-    fs::create_directories(base_path / "cache/shaders");
-    fs::create_directory(base_path / "shaderlog");
-    fs::create_directory(base_path / "texturelog");
+    fs::create_directories(cache_path / "shaders");
+    fs::create_directory(log_path / "shaderlog");
+    fs::create_directory(log_path / "texturelog");
 
     io.redirect_stdio = redirect_stdio;
 
@@ -683,7 +683,7 @@ SceUID open_dir(IOState &io, const char *path, const std::wstring &pref_path, co
     auto device_for_icase = device;
     const auto translated_path = translate_path(path, device, io.device_paths);
 
-    auto dir_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio) / "/";
+    auto dir_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio) / std::string{ fs::path::preferred_separator };
     if (!fs::exists(dir_path)) {
         if (io.case_isens_find_enabled) {
             // Attempt a case-insensitive file search.
