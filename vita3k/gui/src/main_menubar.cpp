@@ -29,7 +29,7 @@ static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
     auto lang = gui.lang.main_menubar.file;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
         if (ImGui::MenuItem(lang["open_pref_path"].c_str()))
-            open_path(string_utils::wide_to_utf(emuenv.pref_path));
+            open_path(emuenv.pref_path.string());
         ImGui::Separator();
         ImGui::MenuItem(lang["install_firmware"].c_str(), nullptr, &gui.file_menu.firmware_install_dialog);
         ImGui::MenuItem(lang["install_pkg"].c_str(), nullptr, &gui.file_menu.pkg_install_dialog);
@@ -110,7 +110,7 @@ static void draw_debug_menu(DebugMenuState &state) {
 
 static void draw_config_menu(GuiState &gui, EmuEnvState &emuenv) {
     auto lang = gui.lang.main_menubar.configuration;
-    const auto CUSTOM_CONFIG_PATH{ fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", emuenv.io.app_path) };
+    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", emuenv.io.app_path) };
     auto &settings_dialog = !emuenv.io.app_path.empty() && fs::exists(CUSTOM_CONFIG_PATH) ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
         if (ImGui::MenuItem(gui.lang.settings_dialog["title"].c_str(), nullptr, &settings_dialog))

@@ -53,7 +53,7 @@ struct AvatarInfo {
 
 static std::map<std::string, std::map<AvatarSize, AvatarInfo>> users_avatar_infos;
 static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string avatar_path) {
-    const auto avatar_path_wstr = avatar_path == "default" ? fs::path(emuenv.base_path) / "data/image/icon.png" : fs::path(string_utils::utf_to_wide(avatar_path));
+    const auto avatar_path_wstr = avatar_path == "default" ? emuenv.shared_path / "data/image/icon.png" : fs::path(string_utils::utf_to_wide(avatar_path));
 
     if (!fs::exists(avatar_path_wstr)) {
         LOG_WARN("Avatar image doesn't exist: {}.", avatar_path_wstr.string());
@@ -97,7 +97,7 @@ static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &u
 
 void get_users_list(GuiState &gui, EmuEnvState &emuenv) {
     gui.users.clear();
-    const auto user_path{ fs::path(emuenv.pref_path) / "ux0/user" };
+    const auto user_path{ emuenv.pref_path / "ux0/user" };
     if (fs::exists(user_path) && !fs::is_empty(user_path)) {
         for (const auto &path : fs::directory_iterator(user_path)) {
             pugi::xml_document user_xml;
@@ -154,7 +154,7 @@ void get_users_list(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
-    const auto user_path{ fs::path(emuenv.pref_path) / "ux0/user" / user_id };
+    const auto user_path{ emuenv.pref_path / "ux0/user" / user_id };
     if (!fs::exists(user_path))
         fs::create_directory(user_path);
 
@@ -318,7 +318,7 @@ static void select_and_open_user(GuiState &gui, EmuEnvState &emuenv, const std::
 }
 
 static void delete_user(GuiState &gui, EmuEnvState &emuenv) {
-    const auto user_path{ fs::path(emuenv.pref_path) / "ux0/user" };
+    const auto user_path{ emuenv.pref_path / "ux0/user" };
     fs::remove_all(user_path / user_id_selected);
     gui.users_avatar.erase(user_id_selected);
     gui.users.erase(get_users_index(gui, gui.users[user_id_selected].name));
@@ -493,7 +493,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(WINDOW_POS, WINDOW_POS_MAX, IM_COL32(10.f, 50.f, 140.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
-    const auto user_path{ fs::path(emuenv.pref_path) / "ux0/user" };
+    const auto user_path{ emuenv.pref_path / "ux0/user" };
 
     const auto SMALL_AVATAR_SIZE = get_avatar_size(SMALL, SCALE);
     const auto MED_AVATAR_SIZE = get_avatar_size(MEDIUM, SCALE);

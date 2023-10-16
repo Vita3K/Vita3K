@@ -454,7 +454,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
                 if (ImGui::MenuItem(get_ime_lang_index(ime, SceImeLanguage(lang))->second.c_str(), nullptr, emuenv.cfg.current_ime_lang == lang)) {
                     init_ime_lang(ime, SceImeLanguage(lang));
                     emuenv.cfg.current_ime_lang = lang;
-                    config::serialize_config(emuenv.cfg, emuenv.base_path);
+                    config::serialize_config(emuenv.cfg, emuenv.config_path);
                 }
             }
             ImGui::EndPopup();

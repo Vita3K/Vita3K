@@ -395,7 +395,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::Button(state < UPDATE_VITA3K ? lang["next"].c_str() : lang["update"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
             state = (Vita3kUpdate)(state + 1);
             if (state == DOWNLOAD)
-                download_update(emuenv.base_path);
+                download_update(emuenv.base_path.string());
         }
         if (state == DOWNLOAD)
             ImGui::EndDisabled();

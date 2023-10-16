@@ -67,12 +67,12 @@ static bool init_notice_icon(GuiState &gui, EmuEnvState &emuenv, const fs::path 
     int32_t height = 0;
     vfs::FileBuffer buffer;
 
-    if (!vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, content_path)) {
+    if (!vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path.wstring(), content_path)) {
         if (info.type == "trophy") {
             LOG_WARN("Icon no found for trophy id: {} on NpComId: {}", info.content_id, info.id);
             return false;
         } else {
-            if (!vfs::read_app_file(buffer, emuenv.pref_path, info.id, "sce_sys/icon0.png")) {
+            if (!vfs::read_app_file(buffer, emuenv.pref_path.wstring(), info.id, "sce_sys/icon0.png")) {
                 buffer = init_default_icon(gui, emuenv);
                 if (buffer.empty()) {
                     LOG_WARN("Not found defaut icon for this notice content: {}", info.content_id);
@@ -111,7 +111,7 @@ static bool set_notice_info(GuiState &gui, EmuEnvState &emuenv, const NoticeList
             msg = lang["install_complete"];
         }
         vfs::FileBuffer params;
-        if (vfs::read_file(VitaIoDevice::ux0, params, emuenv.pref_path, content_path / "sce_sys/param.sfo")) {
+        if (vfs::read_file(VitaIoDevice::ux0, params, emuenv.pref_path.wstring(), content_path / "sce_sys/param.sfo")) {
             SfoFile sfo_handle;
             sfo::load(sfo_handle, params);
             if (!sfo::get_data_by_key(name, sfo_handle, fmt::format("TITLE_{:0>2d}", emuenv.cfg.sys_lang)))
@@ -139,7 +139,7 @@ static bool set_notice_info(GuiState &gui, EmuEnvState &emuenv, const NoticeList
         default: break;
         }
 
-        const auto trophy_conf_id_path{ fs::path(emuenv.pref_path) / "ux0/user" / emuenv.io.user_id / "trophy/conf" / info.id };
+        const auto trophy_conf_id_path{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy/conf" / info.id };
         const std::string sfm_name = fs::exists(trophy_conf_id_path / fmt::format("TROP_{:0>2d}.SFM", emuenv.cfg.sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", emuenv.cfg.sys_lang) : "TROP.SFM";
 
         pugi::xml_document doc;
@@ -205,7 +205,7 @@ void get_notice_list(EmuEnvState &emuenv) {
     notice_list.clear();
     notice_list_count_new.clear();
     notice_list_new.clear();
-    const auto notice_path{ fs::path(emuenv.pref_path) / "ux0/user/notice.xml" };
+    const auto notice_path{ emuenv.pref_path / "ux0/user/notice.xml" };
 
     if (fs::exists(notice_path)) {
         pugi::xml_document notice_xml;
@@ -264,7 +264,7 @@ void save_notice_list(EmuEnvState &emuenv) {
         }
     }
 
-    const auto notice_path{ fs::path(emuenv.pref_path) / "ux0/user/notice.xml" };
+    const auto notice_path{ emuenv.pref_path / "ux0/user/notice.xml" };
     const auto save_xml = notice_xml.save_file(notice_path.c_str());
     if (!save_xml)
         LOG_ERROR("Fail save xml");

@@ -33,7 +33,7 @@ bool delete_pup_file;
 std::filesystem::path pup_path = "";
 
 static void get_firmware_version(EmuEnvState &emuenv) {
-    fs::ifstream versionFile(emuenv.pref_path + L"/PUP_DEC/PUP/version.txt");
+    fs::ifstream versionFile(emuenv.pref_path / "PUP_DEC/PUP/version.txt");
 
     if (versionFile.is_open()) {
         std::getline(versionFile, fw_version);
@@ -41,7 +41,7 @@ static void get_firmware_version(EmuEnvState &emuenv) {
     } else
         LOG_WARN("Firmware Version file not found!");
 
-    fs::remove_all(fs::path(emuenv.pref_path) / "PUP_DEC");
+    fs::remove_all(emuenv.pref_path / "PUP_DEC");
 }
 
 void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
@@ -74,7 +74,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         if (result == host::dialog::filesystem::Result::SUCCESS) {
             std::thread installation([&emuenv]() {
-                install_pup(emuenv.pref_path, pup_path.string(), progress_callback);
+                install_pup(emuenv.pref_path.wstring(), pup_path.string(), progress_callback);
                 std::lock_guard<std::mutex> lock(install_mutex);
                 finished_installing = true;
                 get_firmware_version(emuenv);
@@ -127,7 +127,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            const auto fw_font_package{ fs::path(emuenv.pref_path) / "sa0" };
+            const auto fw_font_package{ emuenv.pref_path / "sa0" };
             if (!fs::exists(fw_font_package) || fs::is_empty(fw_font_package)) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["no_font_exist"].c_str());
                 if (ImGui::Button(lang["download_firmware_font_package"].c_str()))

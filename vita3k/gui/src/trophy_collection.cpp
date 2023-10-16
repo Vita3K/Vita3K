@@ -125,7 +125,7 @@ static bool load_trophy_progress(IOState &io, const SceUID &progress_input_file,
 static std::string np_com_id_sort;
 
 void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
-    const auto TROPHY_PATH{ fs::path(emuenv.pref_path) / "ux0/user" / emuenv.io.user_id / "trophy" };
+    const auto TROPHY_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy" };
     const auto TROPHY_CONF_PATH = TROPHY_PATH / "conf";
 
     gui.trophy_np_com_id_list_icons.clear(), np_com_id_info.clear(), np_com_id_list.clear();
@@ -151,7 +151,7 @@ void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
 
                 // Open trophy progress file
                 const auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + emuenv.io.user_id + "/trophy/data/" + np_com_id + "/TROPUSR.DAT");
-                const auto progress_input_file = open_file(emuenv.io, trophy_progress_save_file.c_str(), SCE_O_RDONLY, emuenv.pref_path, "load_trophy_progress_file");
+                const auto progress_input_file = open_file(emuenv.io, trophy_progress_save_file.c_str(), SCE_O_RDONLY, emuenv.pref_path.wstring(), "load_trophy_progress_file");
 
                 if (!load_trophy_progress(emuenv.io, progress_input_file, np_com_id)) {
                     LOG_ERROR("Fail load trophy progress for Np Com ID: {}, clean trophy file.", np_com_id);
@@ -236,7 +236,7 @@ void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     int32_t height = 0;
                     vfs::FileBuffer buffer;
 
-                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, "user/" + emuenv.io.user_id + "/trophy/conf/" + np_com_id + "/" + group.second);
+                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path.wstring(), "user/" + emuenv.io.user_id + "/trophy/conf/" + np_com_id + "/" + group.second);
 
                     if (buffer.empty()) {
                         LOG_WARN("Icon: '{}', Not found for NPComId: {}.", group.second, np_com_id);
@@ -285,7 +285,7 @@ static std::vector<TrophySort> trophy_list;
 static std::string trophy_sort;
 
 static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::string &np_com_id, const std::string &group_id) {
-    const auto trophy_conf_id_path{ fs::path(emuenv.pref_path) / "ux0/user" / emuenv.io.user_id / "trophy/conf" / np_com_id };
+    const auto trophy_conf_id_path{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy/conf" / np_com_id };
     if (fs::is_empty(trophy_conf_id_path)) {
         LOG_WARN("Trophy conf path is empty");
         return;
@@ -318,7 +318,7 @@ static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::strin
         const std::string trophy_id = trophy.first;
         const std::string icon_name = fmt::format("TROP{}.PNG", trophy_id);
 
-        vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, "user/" + emuenv.io.user_id + "/trophy/conf/" + np_com_id + "/" + icon_name);
+        vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path.wstring(), "user/" + emuenv.io.user_id + "/trophy/conf/" + np_com_id + "/" + icon_name);
         if (buffer.empty()) {
             LOG_WARN("Trophy icon, Name: '{}', Not found for trophy id: {}.", icon_name, trophy.first);
             continue;
@@ -407,7 +407,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     const auto SIZE_INFO = ImVec2(820.f * SCALE.x, 484.f * SCALE.y);
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
-    const auto TROPHY_PATH{ fs::path(emuenv.pref_path) / "ux0/user" / emuenv.io.user_id / "trophy" };
+    const auto TROPHY_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy" };
 
     const auto is_background = gui.apps_background.contains("NPXS10008");
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
