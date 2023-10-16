@@ -23,10 +23,11 @@
 
 namespace renderer::gl {
 
-bool ScreenRenderer::init(const std::string &base_path) {
+bool ScreenRenderer::init(const char *shared_path) {
     glGenTextures(1, &m_screen_texture);
 
-    const auto builtin_shaders_path = base_path + "shaders-builtin/opengl/";
+    std::string builtin_shaders_path = shared_path;
+    builtin_shaders_path += "shaders-builtin/opengl/";
 
     m_render_shader_nofilter = ::gl::load_shaders(builtin_shaders_path + "render_main.vert", builtin_shaders_path + "render_main.frag");
     m_render_shader_fxaa = ::gl::load_shaders(builtin_shaders_path + "render_main.vert", builtin_shaders_path + "render_main_fxaa.frag");

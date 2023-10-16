@@ -55,8 +55,7 @@ static bool is_depth_stencil_compatible_format(SceGxmTextureBaseFormat format) {
 VKTextureCache::VKTextureCache(VKState &state)
     : state(state) {}
 
-void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config,
-    const std::string &base_path, const std::string &title_id) {
+void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config, const std::string &title_id) {
     // why are we doing this here?
     // well textures are synced right before the draw
     // in particular, we know that the scissor is the correct one for the upcoming draw

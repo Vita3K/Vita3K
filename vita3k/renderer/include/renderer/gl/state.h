@@ -44,7 +44,7 @@ struct GLState : public renderer::State {
 
     ScreenRenderer screen_renderer;
 
-    bool init(const char *base_path, const bool hashless_texture_cache) override;
+    bool init(const char *shared_path, const bool hashless_texture_cache) override;
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem) override;
     void swap_window(SDL_Window *window) override;

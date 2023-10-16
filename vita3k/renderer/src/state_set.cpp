@@ -429,12 +429,12 @@ COMMAND_SET_STATE(texture) {
     switch (renderer.current_backend) {
     case Backend::OpenGL:
         gl::sync_texture(dynamic_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), mem, texture_index, texture,
-            config, base_path, title_id);
+            config, title_id);
         break;
 
     case Backend::Vulkan:
         vulkan::sync_texture(*reinterpret_cast<vulkan::VKContext *>(render_context), mem, texture_index, texture,
-            config, base_path, title_id);
+            config, title_id);
         break;
 
     default:
@@ -562,7 +562,7 @@ COMMAND(handle_set_state) {
 
     if (result != handlers.end()) {
         // LOG_TRACE("State set: {}", (int)gxm_state_to_set);
-        result->second(renderer, mem, config, helper, render_context, base_path, title_id);
+        result->second(renderer, mem, config, helper, render_context, cache_path, title_id);
     } else {
         LOG_ERROR("Unknown state set command {}", static_cast<uint16_t>(gxm_state_to_set));
     }

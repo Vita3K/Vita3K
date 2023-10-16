@@ -42,7 +42,9 @@ enum struct Filter : int {
 };
 
 struct State {
-    const char *base_path;
+    std::string cache_path;
+    std::string log_path;
+    std::string shared_path;
     const char *title_id;
     const char *self_name;
 
@@ -74,7 +76,7 @@ struct State {
 
     bool need_page_table = false;
 
-    virtual bool init(const char *base_path, const bool hashless_texture_cache) = 0;
+    virtual bool init(const char *shared_path, const bool hashless_texture_cache) = 0;
     virtual void late_init(const Config &cfg){};
     virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem)

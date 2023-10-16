@@ -24,7 +24,7 @@ struct MemState;
 
 namespace renderer::vulkan {
 
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path, const Config &config);
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
 
 bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem);
 bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
@@ -48,8 +48,7 @@ void sync_depth_bias(VKContext &context);
 void sync_depth_data(VKContext &context);
 void sync_stencil_data(VKContext &context, const MemState &mem);
 void sync_point_line_width(VKContext &context, const bool is_front);
-void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config,
-    const std::string &base_path, const std::string &title_id);
+void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config, const std::string &title_id);
 void sync_viewport_flat(VKContext &context);
 void sync_viewport_real(VKContext &context, const float xOffset, const float yOffset, const float zOffset,
     const float xScale, const float yScale, const float zScale);

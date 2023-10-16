@@ -156,7 +156,7 @@ void PipelineCache::init() {
 }
 
 void PipelineCache::read_pipeline_cache() {
-    const auto shaders_path{ fs::path(state.base_path) / "cache/shaders" / state.title_id / state.self_name };
+    const auto shaders_path{ fs::path(state.cache_path) / "shaders" / state.title_id / state.self_name };
     const std::string pipeline_cache_name = fmt::format("pipeline-cache-vk{}.dat", shader::CURRENT_VERSION);
     const fs::path path = shaders_path / pipeline_cache_name;
 
@@ -190,7 +190,7 @@ void PipelineCache::save_pipeline_cache() {
         // No pipeline was created
         return;
 
-    const auto shaders_path{ fs::path(state.base_path) / "cache/shaders" / state.title_id / state.self_name };
+    const auto shaders_path{ fs::path(state.cache_path) / "shaders" / state.title_id / state.self_name };
     const std::string pipeline_cache_name = fmt::format("pipeline-cache-vk{}.dat", shader::CURRENT_VERSION);
     const fs::path path = shaders_path / pipeline_cache_name;
 
@@ -226,7 +226,6 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
         return shader_stage_info;
     }
 
-    const char *base_path = state.base_path;
     const char *title_id = state.title_id;
     const char *self_name = state.self_name;
 
@@ -239,7 +238,7 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
     current_context->shader_hints.color_format = current_context->record.color_surface.colorFormat;
     current_context->shader_hints.attributes = hint_attributes;
 
-    shader::usse::SpirvCode source = load_spirv_shader(*program, state.features, true, current_context->shader_hints, maskupdate, base_path, title_id, self_name, shader_version, true);
+    shader::usse::SpirvCode source = load_spirv_shader(*program, state.features, true, current_context->shader_hints, maskupdate, state.cache_path.c_str(), title_id, self_name, shader_version, true);
 
     vk::ShaderModuleCreateInfo shader_info{
         .codeSize = sizeof(uint32_t) * source.size(),
@@ -650,7 +649,7 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
 }
 
 bool PipelineCache::precompile_shader(const Sha256Hash &hash) {
-    const auto shader_path{ fs::path(state.base_path) / "cache/shaders" / state.title_id / state.self_name };
+    const auto shader_path{ fs::path(state.cache_path) / "shaders" / state.title_id / state.self_name };
 
     if (shaders.contains(hash))
         return true;
@@ -662,7 +661,7 @@ bool PipelineCache::precompile_shader(const Sha256Hash &hash) {
     memcpy(shader_hash.data(), hash.data(), sizeof(Sha256Hash));
     const std::string hash_ver = fmt::format("vk{}-{}", shader::CURRENT_VERSION, hex_string(shader_hash));
 
-    const std::vector<uint32_t> source = renderer::pre_load_shader_spirv(hash_ver.c_str(), "spv", state.base_path, state.title_id, state.self_name);
+    const std::vector<uint32_t> source = renderer::pre_load_shader_spirv(hash_ver.c_str(), "spv", state.cache_path.c_str(), state.title_id, state.self_name);
 
     if (source.empty())
         return false;

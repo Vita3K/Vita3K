@@ -173,8 +173,9 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
 }
 #endif
 
-bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_path, const bool hashless_texture_cache) {
+bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &config) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
+    auto &hashless_texture_cache = config.hashless_texture_cache;
 
     // Recursively create GL version until one accepts
     // Major 4 is mandantory
@@ -256,16 +257,16 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
     // always enabled in the opengl renderer
     gl_state.features.use_mask_bit = true;
 
-    return gl_state.init(base_path, hashless_texture_cache);
+    return gl_state.init(gl_state.shared_path.c_str(), hashless_texture_cache);
 }
 
-bool GLState::init(const char *base_path, const bool hashless_texture_cache) {
+bool GLState::init(const char *shared_path, const bool hashless_texture_cache) {
     if (!texture_cache.init(hashless_texture_cache)) {
         LOG_ERROR("Failed to initialize texture cache!");
         return false;
     }
 
-    if (!screen_renderer.init(base_path)) {
+    if (!screen_renderer.init(shared_path)) {
         LOG_ERROR("Failed to initialize screen renderer");
         return false;
     }
@@ -733,7 +734,7 @@ void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
 }
 
 void GLState::precompile_shader(const ShadersHash &hash) {
-    pre_compile_program(*this, base_path, title_id, self_name, hash);
+    pre_compile_program(*this, cache_path.c_str(), title_id, self_name, hash);
 }
 
 void GLState::preclose_action() {}

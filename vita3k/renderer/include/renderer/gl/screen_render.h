@@ -27,7 +27,7 @@ public:
     ScreenRenderer() = default;
     ~ScreenRenderer();
 
-    bool init(const std::string &base_path);
+    bool init(const char *shared_path);
     void render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size);
 
     void destroy();

@@ -76,7 +76,7 @@ public:
 
     bool create(SDL_Window *window);
     // called after the logical device has been created
-    bool setup(const char *base_path);
+    bool setup(const char *shared_path);
     void cleanup();
 
     bool acquire_swapchain_image(bool start_render_pass = false);

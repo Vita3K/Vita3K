@@ -185,7 +185,7 @@ void bind_texture_without_cache(GLTextureCache &cache, const SceGxmTexture &gxm_
 }
 
 // Dumps bound texture to a file
-void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::string &parameter_name, const std::string &base_path, const std::string &title_id, Sha256Hash program_hash) {
+void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::string &parameter_name, const std::string &log_path, const std::string &title_id, Sha256Hash program_hash) {
     static uint32_t g_tex_index = 0;
     static std::vector<uint8_t> g_pixels; // re-use the same vector instead of allocating one every time
     static std::map<uint64_t, uint64_t> g_dumped_hashes;
@@ -219,7 +219,7 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
 
     // TODO: Create the texturelog path elsewhere on init once and pass it here whole
     // TODO: Same for shaderlog path
-    const fs::path texturelog_path{ fs::path(base_path) / "texturelog" / title_id };
+    const fs::path texturelog_path{ fs::path(log_path) / "texturelog" / title_id };
     if (!fs::exists(texturelog_path))
         fs::create_directories(texturelog_path);
 
