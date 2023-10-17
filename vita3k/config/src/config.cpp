@@ -118,12 +118,12 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
 ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths) {
     // Always generate the default configuration file
     Config command_line{};
-    serialize_config(command_line, root_paths.get_config_path() / "data/config/default.yml");
     // Load config path configuration by default; otherwise, move the default to the config path
-    if (fs::exists(check_path(root_paths.get_config_path())))
+    if (fs::exists(check_path(root_paths.get_config_path()))) {
         parse(cfg, root_paths.get_config_path(), root_paths.get_pref_path());
-    else
-        fs::copy(root_paths.get_config_path() / "data/config/default.yml", root_paths.get_config_path() / "config.yml");
+    } else {
+        serialize_config(command_line, check_path(root_paths.get_config_path()));
+    }
 
     // Declare all options
     CLI::App app{ "Vita3K Command Line Interface" }; // "--help,-h" is automatically generated
