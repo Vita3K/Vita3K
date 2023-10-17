@@ -106,6 +106,16 @@
       }
     },
     {
+      "name": "linux-ninja-clang15-appimage",
+      "inherits": "linux-ninja-clang15",
+      "displayName": "Linux AppImage with Ninja and Clang",
+      "description": "Linux AppImage build using Ninja Multi-Config generator and Clang 15 compiler",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "/usr",
+        "BUILD_APPIMAGE": true
+      }
+    },
+    {
       "name": "linux-ninja-gnu",
       "inherits": "linux-ninja",
       "displayName": "Linux with Ninja and GNU GCC",
@@ -246,6 +256,13 @@
       "description": "Build with compiler optimizations enabled and no debugging information",
       "configuration": "Release",
       "configurePreset": "linux-ninja-clang"
+    },
+    {
+      "name": "linux-ninja-clang15-appimage-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information as an AppImage",
+      "configuration": "Release",
+      "configurePreset": "linux-ninja-clang15-appimage"
     },
     {
       "name": "linux-ninja-clang15-debug",
