@@ -12,6 +12,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
 
 option(USE_DISCORD_RICH_PRESENCE "Build Vita3K with Discord Rich Presence" ON)
 option(USE_VITA3K_UPDATE "Build Vita3K with updater." ON)
+option(BUILD_APPIMAGE "Build an AppImage." OFF)
 
 if("${CMAKE_CXX_COMPILER_LAUNCHER}" STREQUAL "")
     find_program(CCACHE_PROGRAM ccache)
@@ -226,6 +227,17 @@ if (MSVC AND (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") AND (MSVC_VERSION GREATER_E
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /experimental:external")
 	endif()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /external:I${CMAKE_SOURCE_DIR}/external/ /external:W0 /external:templates-")
+endif()
+
+if (${BUILD_APPIMAGE})
+	if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+		set(LINUXDEPLOY_COMMAND "${CMAKE_SOURCE_DIR}/appimage/linuxdeploy.AppImage" CACHE INTERNAL "")
+		if (NOT EXISTS "${LINUXDEPLOY_COMMAND}")
+			message(FATAL_ERROR "Could not find linuxdeploy at ${LINUXDEPLOY_COMMAND}!")
+		endif()
+	else()
+		message(FATAL_ERROR "Cannot build an AppImage for a non-Linux host.")
+	endif()
 endif()
 
 add_subdirectory(external)
