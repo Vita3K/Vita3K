@@ -547,59 +547,84 @@ static void switch_full_screen(EmuEnvState &emuenv) {
 
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
     refresh_controllers(emuenv.ctrl, emuenv);
-    const auto allow_switch_state = !emuenv.io.title_id.empty() && !gui.vita_area.app_close && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog && gui::get_sys_apps_state(gui);
-    const auto switch_live_area_state = [](EmuEnvState &emuenv, GuiState &gui) {
-        // Show/Hide Live Area during app running
-        if (!gui.is_key_locked && !gui.vita_area.home_screen) {
-            const auto live_area_app_index = gui::get_live_area_current_open_apps_list_index(gui, emuenv.io.app_path);
-            if (live_area_app_index == gui.live_area_current_open_apps_list.end())
-                gui::open_live_area(gui, emuenv, emuenv.io.app_path);
-            else {
-                // If current live area app open is not the current app running, set it as current
-                if ((gui.live_area_app_current_open < 0) || (gui.live_area_current_open_apps_list[gui.live_area_app_current_open] != emuenv.io.app_path))
-                    gui.live_area_app_current_open = static_cast<int32_t>(std::distance(live_area_app_index, gui.live_area_current_open_apps_list.end()) - 1);
+    const auto allow_switch_state = !emuenv.io.title_id.empty() && !gui.vita_area.app_close && !gui.vita_area.home_screen && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog && gui::get_sys_apps_state(gui);
 
-                // Switch Live Area state
-                gui.vita_area.information_bar = !gui.vita_area.information_bar;
-                gui.vita_area.live_area_screen = !gui.vita_area.live_area_screen;
+    const auto ui_navigation = [&emuenv, &gui, allow_switch_state](const uint32_t sce_ctrl_btn) {
+        if (gui.vita_area.app_close) {
+            const auto cancel = [&gui]() {
+                gui.vita_area.app_close = false;
+            };
+            const auto confirm = [&gui, &emuenv]() {
+                const auto app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open] : emuenv.app_path;
+                gui::close_and_run_new_app(gui, emuenv, app_path);
+            };
+            switch (sce_ctrl_btn) {
+            case SCE_CTRL_CIRCLE:
+                if (emuenv.cfg.sys_button == 1)
+                    cancel();
+                else
+                    confirm();
+                break;
+            case SCE_CTRL_CROSS:
+                if (emuenv.cfg.sys_button == 1)
+                    confirm();
+                else
+                    cancel();
+                break;
+            default: break;
             }
+        } else if (gui.vita_area.user_management)
+            gui::browse_users_management(gui, emuenv, sce_ctrl_btn);
+        else if (gui.vita_area.manual)
+            gui::browse_pages_manual(gui, emuenv, sce_ctrl_btn);
+        else if (gui.vita_area.home_screen)
+            gui::browse_home_apps_list(gui, emuenv, sce_ctrl_btn);
+        else if (gui.vita_area.live_area_screen)
+            gui::browse_live_area_apps_list(gui, emuenv, sce_ctrl_btn);
+        else if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
+            switch (emuenv.common_dialog.type) {
+            case SAVEDATA_DIALOG:
+                gui::browse_save_data_dialog(gui, emuenv, sce_ctrl_btn);
+                break;
 
-            app::switch_state(emuenv, !emuenv.kernel.is_threads_paused());
+            default: break;
+            }
         }
-    };
 
-    const auto close_and_run_new_app = [&gui, &emuenv](const uint32_t button) {
-        const auto cancel = [&]() {
-            gui.vita_area.app_close = false;
-        };
-        const auto confirm = [&]() {
-            const auto app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open] : emuenv.app_path;
-            gui::close_and_run_new_app(gui, emuenv, app_path);
-        };
-        switch (button) {
-        case SCE_CTRL_CIRCLE:
-            if (emuenv.cfg.sys_button == 1)
-                cancel();
-            else
-                confirm();
-            break;
+        switch (sce_ctrl_btn) {
         case SCE_CTRL_CROSS:
-            if (emuenv.cfg.sys_button == 1)
-                confirm();
-            else
-                cancel();
+        case SCE_CTRL_CIRCLE:
+            gui.is_key_locked = true;
+            if (gui.vita_area.start_screen) {
+                gui.vita_area.start_screen = false;
+                gui.vita_area.home_screen = true;
+                if (emuenv.cfg.show_info_bar)
+                    gui.vita_area.information_bar = true;
+            }
+            break;
+        case SCE_CTRL_PSBUTTON:
+            gui.is_key_locked = true;
+            if (allow_switch_state) {
+                // Show/Hide Live Area during app running
+                const auto live_area_app_index = gui::get_live_area_current_open_apps_list_index(gui, emuenv.io.app_path);
+                if (live_area_app_index == gui.live_area_current_open_apps_list.end())
+                    gui::open_live_area(gui, emuenv, emuenv.io.app_path);
+                else {
+                    // If current live area app open is not the current app running, set it as current
+                    if ((gui.live_area_app_current_open < 0) || (gui.live_area_current_open_apps_list[gui.live_area_app_current_open] != emuenv.io.app_path))
+                        gui.live_area_app_current_open = static_cast<int32_t>(std::distance(live_area_app_index, gui.live_area_current_open_apps_list.end()) - 1);
+
+                    // Switch Live Area state
+                    gui.vita_area.information_bar = !gui.vita_area.information_bar;
+                    gui.vita_area.live_area_screen = !gui.vita_area.live_area_screen;
+                }
+
+                app::switch_state(emuenv, !emuenv.kernel.is_threads_paused());
+
+            } else if (!gui::get_sys_apps_state(gui))
+                gui::close_system_app(gui, emuenv);
             break;
         default: break;
-        }
-    };
-
-    const auto browse_common_dialog = [&gui, &emuenv](const uint32_t button) {
-        switch (emuenv.common_dialog.type) {
-        case SAVEDATA_DIALOG:
-            gui::browse_save_data_dialog(gui, emuenv, button);
-            break;
-        default:
-            break;
         }
     };
 
@@ -662,45 +687,16 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             if (ImGui::GetIO().WantTextInput || gui.is_key_locked)
                 continue;
 
-            if (allow_switch_state) {
-                // toggle gui state
-                if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_gui)
-                    emuenv.display.imgui_render = !emuenv.display.imgui_render;
-                else if (sce_ctrl_btn & SCE_CTRL_PSBUTTON)
-                    switch_live_area_state(emuenv, gui);
-            } else if (!gui::get_sys_apps_state(gui)) {
-                if (sce_ctrl_btn & SCE_CTRL_PSBUTTON)
-                    gui::close_system_app(gui, emuenv);
-            }
+            // toggle gui state
+            if (allow_switch_state && (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_gui))
+                emuenv.display.imgui_render = !emuenv.display.imgui_render;
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_touch && !gui.is_key_capture_dropped)
                 toggle_touchscreen();
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped)
                 switch_full_screen(emuenv);
 
-            if (sce_ctrl_btn != 0) {
-                if (gui.vita_area.user_management)
-                    gui::browse_users_management(gui, emuenv, sce_ctrl_btn);
-                else if (gui.vita_area.app_close)
-                    close_and_run_new_app(sce_ctrl_btn);
-                else if (gui.vita_area.manual)
-                    gui::browse_pages_manual(gui, emuenv, sce_ctrl_btn);
-                else if (gui.vita_area.home_screen)
-                    gui::browse_home_apps_list(gui, emuenv, sce_ctrl_btn);
-                else if (gui.vita_area.live_area_screen)
-                    gui::browse_live_area_apps_list(gui, emuenv, sce_ctrl_btn);
-                else if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING)
-                    browse_common_dialog(sce_ctrl_btn);
-
-                switch (sce_ctrl_btn) {
-                case SCE_CTRL_CROSS:
-                case SCE_CTRL_CIRCLE:
-                case SCE_CTRL_PSBUTTON:
-                    gui.is_key_locked = true;
-                    break;
-                default:
-                    break;
-                }
-            }
+            if (sce_ctrl_btn != 0)
+                ui_navigation(sce_ctrl_btn);
 
             break;
         }
@@ -723,41 +719,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
 
             for (const auto &binding : get_controller_bindings_ext(emuenv)) {
                 if (event.cbutton.button == binding.controller) {
-                    if (gui.vita_area.user_management)
-                        gui::browse_users_management(gui, emuenv, binding.button);
-                    else if (gui.vita_area.app_close)
-                        close_and_run_new_app(binding.button);
-                    else if (gui.vita_area.manual)
-                        gui::browse_pages_manual(gui, emuenv, binding.button);
-                    else if (gui.vita_area.home_screen)
-                        gui::browse_home_apps_list(gui, emuenv, binding.button);
-                    else if (gui.vita_area.live_area_screen)
-                        gui::browse_live_area_apps_list(gui, emuenv, binding.button);
-                    else if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
-                        browse_common_dialog(binding.button);
-                    }
-
-                    switch (binding.button) {
-                    case SCE_CTRL_CIRCLE:
-                    case SCE_CTRL_CROSS:
-                        if (gui.vita_area.start_screen) {
-                            gui.vita_area.start_screen = false;
-                            gui.vita_area.home_screen = true;
-                            if (emuenv.cfg.show_info_bar)
-                                gui.vita_area.information_bar = true;
-                        }
-
-                        break;
-
-                    case SCE_CTRL_PSBUTTON:
-                        if (allow_switch_state)
-                            switch_live_area_state(emuenv, gui);
-                        else if (!gui::get_sys_apps_state(gui))
-                            gui::close_system_app(gui, emuenv);
-                        break;
-
-                    default: break;
-                    }
+                    ui_navigation(binding.button);
 
                     break;
                 }
