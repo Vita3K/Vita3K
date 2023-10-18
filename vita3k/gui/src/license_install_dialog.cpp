@@ -74,8 +74,12 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 state = "success";
             else
                 state = "fail";
-        } else
+        } else {
+            if (result == host::dialog::filesystem::Result::ERROR)
+                LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
+
             state.clear();
+        }
     } else if (state == "zrif") {
         title = license["enter_zrif_key"];
         ImGui::PushItemWidth(640.f * SCALE.x);

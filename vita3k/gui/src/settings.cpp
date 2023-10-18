@@ -32,6 +32,8 @@
 #include <pugixml.hpp>
 #include <stb_image.h>
 
+#undef ERROR
+
 namespace gui {
 
 struct Theme {
@@ -606,6 +608,9 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                             gui.users[emuenv.io.user_id].start_type = "image";
                             save_user(gui, emuenv, emuenv.io.user_id);
                         }
+                        if (result == host::dialog::filesystem::Result::ERROR) {
+                            LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
+                        }
                         sub_menu.clear();
                     } else if (sub_menu == "default") {
                         title = theme_background.main["default"];
@@ -668,6 +673,9 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                             gui.users[emuenv.io.user_id].use_theme_bg = false;
                             save_user(gui, emuenv, emuenv.io.user_id);
                         }
+                    }
+                    if (result == host::dialog::filesystem::Result::ERROR) {
+                        LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
                     }
                 }
                 ImGui::PopStyleVar();

@@ -103,8 +103,11 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 fs::ifstream binfile(license_path.wstring(), std::ios::in | std::ios::binary | std::ios::ate);
                 zRIF = rif2zrif(binfile);
                 state = "install";
-            } else
+            } else {
+                if (result == host::dialog::filesystem::Result::ERROR)
+                    LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
                 state.clear();
+            }
         } else if (state == "zrif") {
             title = lang["enter_zrif_key"];
             ImGui::PushItemWidth(640.f * SCALE.x);

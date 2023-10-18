@@ -120,8 +120,11 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             }
             if (result == host::dialog::filesystem::Result::SUCCESS) {
                 state = "install";
-            } else
+            } else {
+                if (result == host::dialog::filesystem::Result::ERROR)
+                    LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
                 type.clear();
+            }
         } else if (state == "install") {
             std::thread installation([&emuenv, &gui]() {
                 global_progress = 1.f;

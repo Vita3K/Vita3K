@@ -48,6 +48,8 @@
 #include <pugixml.hpp>
 #include <sstream>
 
+#undef ERROR
+
 namespace gui {
 
 /**
@@ -117,6 +119,10 @@ static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
         // TODO: Move app old to new path
         reset_emulator(gui, emuenv);
         LOG_INFO("Successfully moved Vita3K path to: {}", emuenv.pref_path.string());
+    }
+
+    if (result == host::dialog::filesystem::Result::ERROR) {
+        LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
     }
 }
 

@@ -171,6 +171,8 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             if ((result == host::dialog::filesystem::Result::SUCCESS) && (emulator_path.wstring() != emuenv.pref_path)) {
                 emuenv.pref_path = emulator_path.wstring() + L'/';
                 emuenv.cfg.pref_path = emulator_path.string();
+            } else if (result == host::dialog::filesystem::Result::ERROR) {
+                LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
             }
         }
         if (!is_default_path) {
