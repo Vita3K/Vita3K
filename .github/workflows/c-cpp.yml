@@ -204,19 +204,6 @@ jobs:
           rm -rf Vita3K.app
         if: matrix.os == 'macos-latest'
 
-      - name: Bundle Shared Objects
-        id: bundle_shared_objects
-        run: |
-            cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
-            if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
-              cp /usr/lib/x86_64-linux-gnu/libssl.so.3 ./libssl.so.3
-              cp /usr/lib/x86_64-linux-gnu/libcrypto.so.3 ./libcrypto.so.3
-            elif [[ "${{ matrix.os }}" == "ubuntu-22.04-arm" ]]; then
-              cp /usr/lib/aarch64-linux-gnu/libssl.so.3 ./libssl.so.3
-              cp /usr/lib/aarch64-linux-gnu/libcrypto.so.3 ./libcrypto.so.3
-            fi
-        if: startsWith(matrix.os, 'ubuntu-22.04')
-
       - name: Prepare Linux AppImage artifact
         run: |
           cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
