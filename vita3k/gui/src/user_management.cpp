@@ -34,6 +34,8 @@
 #include <pugixml.hpp>
 #include <stb_image.h>
 
+#undef ERROR
+
 namespace gui {
 
 enum AvatarSize {
@@ -677,6 +679,9 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
 
             if ((result == host::dialog::filesystem::Result::SUCCESS) && init_avatar(gui, emuenv, "temp", avatar_path.string()))
                 temp.avatar = avatar_path.string();
+
+            if (result == host::dialog::filesystem::Result::ERROR)
+                LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
         }
         ImGui::SetWindowFontScale(0.8f);
         const auto INPUT_NAME_SIZE = 330.f * SCALE.x;
