@@ -700,7 +700,7 @@ bool USSETranslatorVisitor::vcomp(
     inst.opr.dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
     // TODO: Should we do this ?
-    std::uint32_t src_mask = 0;
+    uint32_t src_mask = 0;
 
     // Build the source mask. It should only be one component
     switch (src_comp) {
@@ -726,12 +726,18 @@ bool USSETranslatorVisitor::vcomp(
 
     default: break;
     }
+    // (upper bound on the) number of components to set in the destination
+    const uint32_t nb_components = std::bit_width(write_mask);
 
     m_b.setLine(m_recompiler.cur_pc);
 
     // TODO: Log
     BEGIN_REPEAT(repeat_count)
     GET_REPEAT(inst, RepeatMode::SLMSI);
+
+    LOG_DISASM("{:016x}: {}{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
+        disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
+
     spv::Id result = load(inst.opr.src1, src_mask, src1_repeat_offset);
 
     if (result == spv::NoResult) {
@@ -741,24 +747,8 @@ bool USSETranslatorVisitor::vcomp(
 
     switch (op) {
     case Opcode::VRCP: {
-        // We have to manually divide by 1
-        const int num_comp = m_b.getNumComponents(result);
-        const spv::Id one_const = m_b.makeFloatConstant(1.0f);
-        spv::Id one_v = spv::NoResult;
-
-        if (num_comp == 1) {
-            one_v = one_const;
-        } else {
-            std::vector<spv::Id> composite_values(num_comp);
-
-            std::fill_n(composite_values.begin(), num_comp, one_const);
-            one_v = m_b.makeCompositeConstant(type_f32_v[num_comp], composite_values);
-
-            std::fill_n(composite_values.begin(), num_comp, result);
-            result = m_b.createCompositeConstruct(type_f32_v[num_comp], composite_values);
-        }
-
-        result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(result), one_v, result);
+        // Get the inverse
+        result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(result), m_b.makeFloatConstant(1.0f), result);
         break;
     }
 
@@ -779,9 +769,8 @@ bool USSETranslatorVisitor::vcomp(
         // hack (kind of) :
         // define exp(Nan) as 1.0, this is needed for Freedom Wars to render properly
         const spv::Id exp_val = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Exp, { result });
-        const int num_comp = m_b.getNumComponents(result);
         const spv::Id ones = utils::make_uniform_vector_from_type(m_b, m_b.getTypeId(result), 1.0f);
-        const spv::Id is_nan = m_b.createUnaryOp(spv::OpIsNan, utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), num_comp), result);
+        const spv::Id is_nan = m_b.createUnaryOp(spv::OpIsNan, m_b.makeBoolType(), result);
         result = m_b.createTriOp(spv::OpSelect, m_b.getTypeId(result), is_nan, ones, exp_val);
         break;
     }
@@ -790,10 +779,14 @@ bool USSETranslatorVisitor::vcomp(
         break;
     }
 
+    if (nb_components > 1) {
+        std::vector<spv::Id> composite_values(nb_components);
+        std::fill_n(composite_values.begin(), nb_components, result);
+        result = m_b.createCompositeConstruct(type_f32_v[nb_components], composite_values);
+    }
+
     store(inst.opr.dest, result, write_mask, dest_repeat_offset);
 
-    LOG_DISASM("{:016x}: {}{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(op), disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset),
-        disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
     END_REPEAT()
 
     return true;
