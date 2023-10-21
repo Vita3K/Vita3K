@@ -55,7 +55,7 @@ static spv::Id get_correspond_constant_with_channel(spv::Builder &b, shader::uss
     return spv::NoResult;
 }
 
-spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 swizz, const int offset, const Imm4 dest_mask) {
+spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 swizz, spv::Id offset, const Imm4 dest_mask) {
     if (first == spv::NoResult || second == spv::NoResult) {
         return spv::NoResult;
     }
@@ -66,8 +66,19 @@ spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 
 
     const auto first_comp_count = b.getNumComponents(first);
 
-    if ((offset % 4 == 0) && is_default(swizz, 4) && dest_mask == 0b1111 && b.getNumComponents(first) == 4) {
+    const bool offset_is_const = b.isConstant(offset);
+    const int offset_value = offset_is_const ? b.getConstantScalar(offset) : 0;
+    if (offset_is_const && (offset_value % 4 == 0) && is_default(swizz, 4) && dest_mask == 0b1111 && b.getNumComponents(first) == 4) {
         return first;
+    }
+
+    const spv::Id i32 = b.makeIntType(32);
+    // if offset is not constant, threshold to be considered in the first base
+    spv::Id first_base_threshold = 0;
+    if (!offset_is_const) {
+        // threshold is 4 - offset % 4
+        spv::Id off_mod_4 = b.createBinOp(spv::OpBitwiseAnd, i32, offset, b.makeIntConstant(3));
+        first_base_threshold = b.createBinOp(spv::OpISub, i32, b.makeIntConstant(4), off_mod_4);
     }
 
     // Try to plant a composite construct
@@ -75,8 +86,8 @@ spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 
         if (dest_mask & (1 << i)) {
             if ((int)swizz[i] >= (int)SwizzleChannel::C_0) {
                 ops.push_back(get_correspond_constant_with_channel(b, swizz[i]));
-            } else {
-                int access_offset = offset % 4 + (int)swizz[i] - (int)SwizzleChannel::C_X;
+            } else if (offset_is_const) {
+                int access_offset = offset_value % 4 + (int)swizz[i] - (int)SwizzleChannel::C_X;
                 spv::Id access_base = first;
 
                 if (access_offset >= first_comp_count) {
@@ -89,6 +100,21 @@ spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 
                 } else {
                     ops.push_back(access_base);
                 }
+            } else {
+                if (first_comp_count != 4) {
+                    LOG_ERROR("Unhandled non-const offset without a vec4 entry");
+                    return spv::NoResult;
+                }
+                // do exactly as above, but in spirv
+                spv::Id delta = b.makeIntConstant((int)swizz[i] - (int)SwizzleChannel::C_X);
+                spv::Id access_offset = b.createBinOp(spv::OpIAdd, i32, offset, delta);
+                access_offset = b.createBinOp(spv::OpBitwiseAnd, i32, access_offset, b.makeIntConstant(3));
+
+                spv::Id first_base = b.createOp(spv::OpVectorExtractDynamic, target_type, { first, access_offset });
+                spv::Id second_base = b.createOp(spv::OpVectorExtractDynamic, target_type, { second, access_offset });
+                // select one if (int)swizz[i] - (int)SwizzleChannel::C_X < 4 - offset % 4
+                spv::Id cond = b.createBinOp(spv::OpSLessThan, b.makeBoolType(), delta, first_base_threshold);
+                ops.push_back(b.createOp(spv::OpSelect, target_type, { cond, first_base, second_base }));
             }
         }
     }
@@ -1008,7 +1034,7 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
             std::vector<spv::Id> ops(dest_comp_count, constant);
             spv::Id pass = b.makeCompositeConstant(b.makeVectorType(b.getTypeId(constant), static_cast<int>(dest_comp_count)), ops);
 
-            pass = finalize(b, pass, pass, op.swizzle, shift_offset, dest_mask);
+            pass = finalize(b, pass, pass, op.swizzle, b.makeIntConstant(shift_offset), dest_mask);
             return apply_modifiers(b, utils, op.flags, pass);
         }
     }
@@ -1016,11 +1042,12 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
     spv::Id idx_in_arr_1 = spv::NoResult;
     spv::Id idx_in_arr_2 = spv::NoResult;
 
+    spv::Id finalize_offset = b.makeIntConstant(op.num + shift_offset);
     if (op.bank == RegisterBank::INDEXED1 || op.bank == RegisterBank::INDEXED2) {
         // Decode the info. Usually the number of bits in a INDEXED number is 7.
         // TODO: Fix the assumption
         const Imm2 bank_enc = (op.num >> 5) & 0b11;
-        const Imm5 add_off = op.num & 0b11111;
+        const Imm5 add_off = (op.num & 0b11111) + shift_offset;
 
         const std::int8_t idx_off = (int)op.bank - (int)RegisterBank::INDEXED1;
 
@@ -1052,6 +1079,7 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
         spv::Id idx_reg_val = b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, type_i32), { params.indexes, b.makeIntConstant(idx_off) }), spv::NoPrecision);
 
         spv::Id real_idx = b.createBinOp(spv::OpIAdd, type_i32, b.createBinOp(spv::OpIMul, type_i32, idx_reg_val, b.makeIntConstant(2)), b.makeIntConstant(add_off));
+        finalize_offset = real_idx;
 
         idx_in_arr_1 = b.createBinOp(spv::OpSDiv, type_i32, real_idx, b.makeIntConstant(4));
         idx_in_arr_2 = b.createBinOp(spv::OpSDiv, type_i32, b.createBinOp(spv::OpIAdd, type_i32, real_idx, b.makeIntConstant(3)),
@@ -1148,7 +1176,7 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
     connected_friend = b.createOp(spv::OpAccessChain, comp_type, second_pass_operands);
 
     first_pass = finalize(b, b.createLoad(first_pass, spv::NoPrecision), b.createLoad(connected_friend, spv::NoPrecision), extract_swizz,
-        op.num + shift_offset, extract_mask);
+        finalize_offset, extract_mask);
 
     if (first_pass == spv::NoResult) {
         return first_pass;
@@ -1201,7 +1229,7 @@ spv::Id unpack(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &f
     }
 
     return finalize(b, unpack_results[0], unpack_results.size() > 1 ? unpack_results[1] : unpack_results[0],
-        swizz, offset, dest_mask);
+        swizz, b.makeIntConstant(offset), dest_mask);
 }
 
 void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest,

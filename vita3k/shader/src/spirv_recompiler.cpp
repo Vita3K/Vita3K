@@ -309,7 +309,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
         if (!b.isConstant(var)) {
             if (b.isPointer(var))
                 var = b.createLoad(var, spv::NoPrecision);
-            var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
+            var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, b.makeIntConstant(0), dest_mask);
 
             if (!features.support_rgb_attributes && !translation_state.is_fragment && dest_mask == 0b1111) {
                 // if the vertex input was rgb, the alpha component must be set to 1,

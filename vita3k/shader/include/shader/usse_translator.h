@@ -165,7 +165,10 @@ private:
         if (repeat_mode == RepeatMode::SLMSI) {
             auto inc = repeat_increase[op.index][repeat_index];
 
-            if (((bank >= RegisterBank::TEMP) && (bank <= RegisterBank::SECATTR)) || bank == RegisterBank::PREDICATE)
+            if (((bank >= RegisterBank::TEMP) && (bank <= RegisterBank::SECATTR))
+                || bank == RegisterBank::PREDICATE
+                || bank == RegisterBank::INDEXED1
+                || bank == RegisterBank::INDEXED2)
                 inc *= repeat_multiplier[op.index];
 
             return inc;

@@ -495,7 +495,7 @@ bool USSETranslatorVisitor::vpck(
         src2.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
         spv::Id source1 = load(src1, 0b11, src1_repeat_offset);
         spv::Id source2 = load(src2, 0b11, src2_repeat_offset);
-        source = utils::finalize(m_b, source1, source2, inst.opr.src1.swizzle, 0, dest_mask);
+        source = utils::finalize(m_b, source1, source2, inst.opr.src1.swizzle, m_b.makeIntConstant(0), dest_mask);
     }
 
     // source is int destination is float
