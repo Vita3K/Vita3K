@@ -249,6 +249,9 @@ bool USSETranslatorVisitor::smp(
 
     // Decode dest
     inst.opr.dest.bank = (dest_use_pa) ? RegisterBank::PRIMATTR : RegisterBank::TEMP;
+    if (dest_use_pa && m_second_program)
+        // PA can't be used in the secondary program
+        inst.opr.dest.bank = RegisterBank::SECATTR;
     inst.opr.dest.num = dest_n;
     inst.opr.dest.type = tb_dest_fmt[fconv_type];
 
