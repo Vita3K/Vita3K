@@ -3957,7 +3957,7 @@ static void convert_uniform_data(std::vector<std::uint8_t> &converted_data, cons
 
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, uint32_t componentOffset, uint32_t componentCount, const float *sourceData) {
     TRACY_FUNC(sceGxmSetUniformDataF, uniformBuffer, parameter, componentOffset, componentCount, sourceData);
-    assert(parameter);
+    // this function should match exactly what gxm on a PS Vita does
 
     if (!uniformBuffer || !parameter || !sourceData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
@@ -3965,119 +3965,150 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
     if (parameter->category != SceGxmParameterCategory::SCE_GXM_PARAMETER_CATEGORY_UNIFORM)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
-    size_t size = 0;
-    size_t offset = 0;
-    bool is_float = false;
+    if (componentOffset + componentCount > parameter->component_count * parameter->array_size)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
-    const std::uint16_t param_type = parameter->type;
+    const auto param_type = static_cast<SceGxmParameterType>(parameter->type);
+    // can we copy all the components in one go
+    bool copy_all = false;
+    // do we need to increase by one every time the value becomes 3 mod 4
+    bool look_mod_4 = false;
 
     // Component size is in bytes
-    int comp_size = gxp::get_parameter_type_size(static_cast<SceGxmParameterType>(param_type));
-    const std::uint8_t *source = reinterpret_cast<const std::uint8_t *>(sourceData);
-    std::vector<std::uint8_t> converted_data;
+    int comp_size = gxp::get_parameter_type_size(param_type);
+    const uint8_t *source = reinterpret_cast<const uint8_t *>(sourceData);
+    std::vector<uint8_t> converted_data;
 
     switch (parameter->type) {
-    case SCE_GXM_PARAMETER_TYPE_S8: {
-        convert_uniform_data<int8_t>(converted_data, sourceData, componentCount);
-        source = converted_data.data();
+    case SCE_GXM_PARAMETER_TYPE_F32:
+        if (parameter->component_count == 3)
+            look_mod_4 = true;
+        else
+            copy_all = true;
         break;
-    }
 
-    case SCE_GXM_PARAMETER_TYPE_U8: {
-        convert_uniform_data<uint8_t>(converted_data, sourceData, componentCount);
-        source = converted_data.data();
+    case SCE_GXM_PARAMETER_TYPE_F16:
+        converted_data.resize(componentCount * sizeof(uint16_t));
+        float_to_half(sourceData, reinterpret_cast<uint16_t *>(converted_data.data()), componentCount);
+
+        if (parameter->component_count == 4)
+            copy_all = true;
+        else if (parameter->component_count == 3)
+            look_mod_4 = true;
+
         break;
-    }
 
-    case SCE_GXM_PARAMETER_TYPE_U16: {
-        convert_uniform_data<uint16_t>(converted_data, sourceData, componentCount);
-        source = converted_data.data();
-        break;
-    }
-
-    case SCE_GXM_PARAMETER_TYPE_S16: {
-        convert_uniform_data<int16_t>(converted_data, sourceData, componentCount);
-        source = converted_data.data();
-        break;
-    }
-
-    case SCE_GXM_PARAMETER_TYPE_U32: {
+    case SCE_GXM_PARAMETER_TYPE_U32:
         convert_uniform_data<uint32_t>(converted_data, sourceData, componentCount);
-        source = converted_data.data();
+        copy_all = true;
         break;
-    }
 
-    case SCE_GXM_PARAMETER_TYPE_S32: {
+    case SCE_GXM_PARAMETER_TYPE_S32:
         convert_uniform_data<int32_t>(converted_data, sourceData, componentCount);
-        source = converted_data.data();
+        copy_all = true;
         break;
-    }
 
-    case SCE_GXM_PARAMETER_TYPE_F16: {
-        converted_data.resize(((componentCount + 7) / 8) * 8 * 2);
-        float_to_half(sourceData, reinterpret_cast<std::uint16_t *>(converted_data.data()), componentCount);
+    case SCE_GXM_PARAMETER_TYPE_U16:
+    case SCE_GXM_PARAMETER_TYPE_S16:
+        if (parameter->type == SCE_GXM_PARAMETER_TYPE_U16)
+            convert_uniform_data<uint16_t>(converted_data, sourceData, componentCount);
+        else
+            convert_uniform_data<int16_t>(converted_data, sourceData, componentCount);
 
-        source = converted_data.data();
-        is_float = true;
+        if (parameter->component_count == 4 || parameter->component_count == 2)
+            copy_all = true;
+        else if (parameter->component_count == 3)
+            look_mod_4 = true;
         break;
-    }
 
-    case SCE_GXM_PARAMETER_TYPE_F32: {
-        is_float = true;
+    case SCE_GXM_PARAMETER_TYPE_U8:
+    case SCE_GXM_PARAMETER_TYPE_S8:
+        if (parameter->type == SCE_GXM_PARAMETER_TYPE_U8)
+            convert_uniform_data<uint8_t>(converted_data, sourceData, componentCount);
+        else
+            convert_uniform_data<int8_t>(converted_data, sourceData, componentCount);
+
+        if (parameter->component_count == 4)
+            copy_all = true;
+        else if (parameter->component_count == 3)
+            look_mod_4 = true;
         break;
-    }
+
     default:
-        assert(false);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    if (parameter->array_size == 1 || parameter->component_count == 1) {
-        // Case 1: No array. Only a single vector. Don't apply any alignment
-        // Case 2: Array but component count equals to 1. This case, a scalar array, align it to 32-bit bound
-        if (parameter->component_count == 1) {
-            // Apply 32 bit alignment, by making each component has 4 bytes
-            comp_size = 4;
-        }
+    if (!converted_data.empty())
+        source = converted_data.data();
 
-        size = componentCount * comp_size;
-        offset = parameter->resource_index * sizeof(float) + componentOffset * comp_size;
+    uint8_t *dest_data = reinterpret_cast<uint8_t *>(uniformBuffer) + parameter->resource_index * 4;
 
-        memcpy(static_cast<uint8_t *>(uniformBuffer) + offset, source, size);
+    if (copy_all) {
+        // easiest part, copy everything in one go
+        uint32_t offset = comp_size * componentOffset;
+        uint32_t copy_size = comp_size * componentCount;
+        memcpy(dest_data + offset, source, copy_size);
+    } else if (look_mod_4) {
+        // why are we doing this?
+        // this doesn't make any sense to me
+        // but that's what the PS Vita does, so anyway...
+        uint32_t offset_idx = componentOffset / 3;
+
+        // note: use lambda + template for the compiler to be able to optimize this code
+        auto perform_copy = [&]<typename T>(const T *src) {
+            T *dst = reinterpret_cast<T *>(dest_data);
+            for (uint32_t comp = 0; comp < componentCount; comp++) {
+                dst[offset_idx] = src[comp];
+
+                // Note: this code is flawed, if at the beginning offset_idx % 4 == 3 this won't work
+                // but that's what the PS Vita is doing so anyway...
+                offset_idx++;
+                if (offset_idx % 4 == 3)
+                    offset_idx++;
+            }
+        };
+
+        if (comp_size == sizeof(uint32_t))
+            perform_copy(reinterpret_cast<const uint32_t *>(source));
+        else if (comp_size == sizeof(uint16_t))
+            perform_copy(reinterpret_cast<const uint16_t *>(source));
+        else
+            perform_copy(reinterpret_cast<const uint8_t *>(source));
     } else {
-        // This is the size of each element.
-        size = parameter->component_count * comp_size;
-        int align_bytes = 0;
+        uint32_t offset_idx = componentOffset;
 
-        if (is_float) {
-            // Align it to 64-bit boundary (8 bytes)
-            if ((size & 7) != 0) {
-                align_bytes = 8 - (size & 7);
+        // copy some components, then skip to get the correct alignment
+        // multiple cases
+        if (parameter->component_count == 1) {
+            // no alignement check
+            if (comp_size == 1) {
+                // copy 1 skip 3
+                for (uint32_t comp = 0; comp < componentCount; comp++) {
+                    dest_data[4 * comp] = source[comp];
+                }
+            } else {
+                // copy 1 skip 1
+                const uint16_t *src = reinterpret_cast<const uint16_t *>(source);
+                uint16_t *dst = reinterpret_cast<uint16_t *>(dest_data);
+                for (uint32_t comp = 0; comp < componentCount; comp++) {
+                    dst[2 * comp] = src[comp];
+                }
             }
         } else {
-            // Align it to 32-bit boundary (4 bytes)
-            if ((size & 3) != 0) {
-                align_bytes = 4 - (size & 3);
-            }
-        }
-
-        // wtf
-        // wtf
-        const int vec_to_start_write = componentOffset / parameter->component_count;
-        int component_cursor_inside_vector = (componentOffset % parameter->component_count);
-        std::uint8_t *dest = reinterpret_cast<uint8_t *>(uniformBuffer) + parameter->resource_index * sizeof(float)
-            + vec_to_start_write * (size + align_bytes) + component_cursor_inside_vector * comp_size;
-
-        int component_to_copy_remain_per_elem = parameter->component_count - component_cursor_inside_vector;
-        int component_left_to_copy = componentCount;
-
-        while (component_left_to_copy > 0) {
-            memcpy(dest, source, component_to_copy_remain_per_elem * comp_size);
-
-            // Add and align destination
-            dest += comp_size * component_to_copy_remain_per_elem + align_bytes;
-            source += component_to_copy_remain_per_elem * comp_size;
-
-            component_left_to_copy -= component_to_copy_remain_per_elem;
-            component_to_copy_remain_per_elem = std::min<int>(4, component_to_copy_remain_per_elem);
+            // parameter->component_count = 2
+            // copy 2 skip 2, but with alignment check
+            auto perform_copy = [&]<typename T>(const T *src) {
+                T *dst = reinterpret_cast<T *>(dest_data);
+                for (uint32_t comp = 0; comp < componentCount; comp++) {
+                    // x + (x & ~1) increases by 1 for odd and by 3 for even values
+                    dst[offset_idx + (offset_idx & ~1)] = src[comp];
+                    offset_idx++;
+                }
+            };
+            if (comp_size == sizeof(uint8_t))
+                perform_copy(reinterpret_cast<const uint8_t *>(source));
+            else
+                perform_copy(reinterpret_cast<const uint16_t *>(source));
         }
     }
 
