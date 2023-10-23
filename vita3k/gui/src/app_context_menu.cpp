@@ -293,7 +293,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto MANUAL_PATH{ APP_PATH / "sce_sys/manual" };
     const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
     const auto SHADER_CACHE_PATH{ emuenv.cache_path / "shaders" / title_id };
-    const auto SHADER_LOG_PATH{ emuenv.log_path / "shaderlog" / title_id };
+    const auto SHADER_LOG_PATH{ emuenv.cache_path / "shaderlog" / title_id };
     const auto ISSUES_URL = "https://github.com/Vita3K/compatibility/issues";
 
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
