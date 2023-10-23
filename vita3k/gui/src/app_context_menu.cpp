@@ -237,7 +237,7 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         const auto SHADER_CACHE_PATH{ emuenv.cache_path / "shaders" / title_id };
         if (fs::exists(SHADER_CACHE_PATH))
             fs::remove_all(SHADER_CACHE_PATH);
-        const auto SHADER_LOG_PATH{ emuenv.log_path / "shaderlog" / title_id };
+        const auto SHADER_LOG_PATH{ emuenv.cache_path / "shaderlog" / title_id };
         if (fs::exists(SHADER_LOG_PATH))
             fs::remove_all(SHADER_LOG_PATH);
 
