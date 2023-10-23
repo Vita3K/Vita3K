@@ -740,7 +740,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             if (ImGui::Button("Clean Shaders Cache and Log")) {
                 fs::remove_all(shaders_cache_path);
-                fs::remove_all(emuenv.log_path / "shaderlog");
+                fs::remove_all(emuenv.cache_path / "shaderlog");
             }
         }
         ImGui::EndTabItem();
