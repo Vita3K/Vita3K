@@ -68,36 +68,21 @@ bool convert_base_texture_format_to_base_color_format(SceGxmTextureBaseFormat fo
     return true;
 }
 
-void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height) {
-    int bc_type = 0;
+void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const uint32_t width, const uint32_t height) {
+    uint32_t block_size = 0;
 
     switch (fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-        bc_type = 1;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        block_size = 8;
         break;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-        bc_type = 2;
-        break;
-
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-        bc_type = 3;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
-        bc_type = 4;
-        break;
-
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
-        bc_type = 5;
-        break;
-
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
-        bc_type = 6;
-        break;
-
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
-        bc_type = 7;
+        block_size = 16;
         break;
 
     default:
@@ -105,51 +90,51 @@ void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest,
         break;
     }
 
-    if (bc_type)
+    if (block_size > 0)
         resolve_z_order_compressed_image(width, height, reinterpret_cast<const std::uint8_t *>(data),
-            reinterpret_cast<std::uint8_t *>(dest), bc_type);
+            reinterpret_cast<std::uint8_t *>(dest), block_size);
 }
 
 uint32_t decompress_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const uint32_t width, const uint32_t height) {
-    int bc_type = 0;
+    int format_id = 0;
 
     switch (fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-        bc_type = 1;
+        format_id = 1;
         break;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-        bc_type = 2;
+        format_id = 2;
         break;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-        bc_type = 3;
+        format_id = 3;
         break;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
-        bc_type = 4;
+        format_id = 4;
         break;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
-        bc_type = 5;
+        format_id = 5;
         break;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
-        bc_type = 6;
+        format_id = 6;
         break;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
-        bc_type = 7;
+        format_id = 7;
         break;
 
     default:
         break;
     }
 
-    if (bc_type) {
+    if (format_id) {
         decompress_bc_image(width, height, reinterpret_cast<const uint8_t *>(data),
-            reinterpret_cast<uint32_t *>(dest), bc_type);
-        return (((width + 3) / 4) * ((height + 3) / 4) * ((bc_type != 1 && bc_type != 4) ? 16 : 8));
+            reinterpret_cast<uint32_t *>(dest), format_id);
+        return (((width + 3) / 4) * ((height + 3) / 4) * ((format_id != 1 && format_id != 4 && format_id != 5) ? 16 : 8));
     } else if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) && (fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)) {
         pvr::PVRTDecompressPVRTC(data, (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP), width, height,
             (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP), reinterpret_cast<uint8_t *>(dest));
@@ -394,6 +379,9 @@ uint32_t get_compressed_size(SceGxmTextureBaseFormat base_format, uint32_t width
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
         return ((width + 3) / 4) * ((height + 3) / 4) * 16;
     default:
         LOG_ERROR("Invalid block compressed texture format: {}", fmt::underlying(base_format));
@@ -678,21 +666,10 @@ static void decompress_block_bc5s(const uint8_t *block_storage, uint16_t *image)
     decompress_block_alpha_signed(block_storage + 8, reinterpret_cast<uint8_t *>(image), 1, 2);
 }
 
-/**
- * \brief Decompresses all the blocks of a block compressed texture and stores the resulting pixels in 'image'.
- *
- * Output results is in format RGBA, with each channel being 8 bits.
- *
- * \param width             Texture width.
- * \param height            Texture height.
- * \param block_storage     Pointer to compressed blocks.
- * \param image             Pointer to the image where the decompressed pixels will be stored.
- * \param bc_type           Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2) or BC5S (RGTC2).
- */
-void decompress_bc_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type) {
+void decompress_bc_image(uint32_t width, uint32_t height, const uint8_t *block_storage, uint32_t *image, const uint8_t format_id) {
     const uint32_t block_count_x = (width + 3) / 4;
     const uint32_t block_count_y = (height + 3) / 4;
-    const uint32_t block_size = (bc_type != 1 && bc_type != 4) ? 16 : 8;
+    const uint32_t block_size = (format_id != 1 && format_id != 4 && format_id != 5) ? 16 : 8;
     const uint32_t line_size = block_count_x * 4;
 
     auto decompress_bcn = [=, &block_storage]<typename T, typename F>(T _, F decompress_func) {
@@ -712,7 +689,7 @@ void decompress_bc_image(std::uint32_t width, std::uint32_t height, const std::u
         }
     };
 
-    switch (bc_type) {
+    switch (format_id) {
     case 1:
         decompress_bcn(uint32_t(), decompress_block_bc1);
         break;
@@ -754,10 +731,9 @@ void decompress_bc_image(std::uint32_t width, std::uint32_t height, const std::u
  * \param dest      Pointer to the image where the decompressed pixels will be stored.
  * \param bc_type   Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2 or BC5S (RGTC2).
  */
-void resolve_z_order_compressed_image(uint32_t width, uint32_t height, const uint8_t *src, uint8_t *dest, const uint8_t bc_type) {
+void resolve_z_order_compressed_image(uint32_t width, uint32_t height, const uint8_t *src, uint8_t *dest, const uint32_t block_size) {
     uint32_t block_count_x = (width + 3) / 4;
     uint32_t block_count_y = (height + 3) / 4;
-    uint32_t block_size = (bc_type != 1 && bc_type != 4) ? 16 : 8;
 
     uint32_t min = std::min(block_count_x, block_count_y);
     uint32_t k = std::bit_width(min) - 1;

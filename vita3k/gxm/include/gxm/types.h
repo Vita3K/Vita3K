@@ -400,7 +400,14 @@ enum SceGxmTextureBaseFormat : uint32_t {
     SCE_GXM_TEXTURE_BASE_FORMAT_P8 = 0x95000000,
     SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8 = 0x98000000,
     SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8 = 0x99000000,
-    SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10 = 0x9A000000
+    SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10 = 0x9A000000,
+
+    // Fake formats, these format are not defined nor supported on a real PS Vita
+    // They are defined and used here for texture replacement: a replaced texture
+    // can use the following formats
+    SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H = 0xFF000001,
+    SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H = 0xFF000002,
+    SCE_GXM_TEXTURE_BASE_FORMAT_UBC7 = 0xFF000003,
 };
 
 template <typename T>

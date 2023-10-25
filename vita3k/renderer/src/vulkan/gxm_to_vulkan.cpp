@@ -820,6 +820,15 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
         return vk::Format::eBc5SnormBlock;
 
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H:
+        return vk::Format::eBc6HUfloatBlock;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H:
+        return vk::Format::eBc6HSfloatBlock;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
+        return vk::Format::eBc7UnormBlock;
+
     default:
         LOG_ERROR("Unknown format {}", log_hex(base_format));
         return {};

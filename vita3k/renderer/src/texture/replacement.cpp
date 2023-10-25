@@ -685,11 +685,20 @@ static SceGxmTextureBaseFormat dxgi_to_gxm(const ddspp::DXGIFormat format) {
     case BC3_UNORM_SRGB:
         return SCE_GXM_TEXTURE_BASE_FORMAT_UBC3;
     case BC4_UNORM:
-    case BC4_SNORM:
         return SCE_GXM_TEXTURE_BASE_FORMAT_UBC4;
+    case BC4_SNORM:
+        return SCE_GXM_TEXTURE_BASE_FORMAT_SBC4;
     case BC5_UNORM:
-    case BC5_SNORM:
         return SCE_GXM_TEXTURE_BASE_FORMAT_UBC5;
+    case BC5_SNORM:
+        return SCE_GXM_TEXTURE_BASE_FORMAT_SBC5;
+    case BC6H_UF16:
+        return SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H;
+    case BC6H_SF16:
+        return SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H;
+    case BC7_UNORM:
+    case BC7_UNORM_SRGB:
+        return SCE_GXM_TEXTURE_BASE_FORMAT_UBC7;
     case B5G6R5_UNORM:
         return SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5;
     case B5G5R5A1_UNORM:
@@ -801,6 +810,8 @@ static ddspp::DXGIFormat dxgi_apply_srgb(const ddspp::DXGIFormat format) {
         return BC1_UNORM_SRGB;
     case BC3_UNORM:
         return BC3_UNORM_SRGB;
+    case BC7_UNORM:
+        return BC7_UNORM_SRGB;
     default:
         return format;
     }
