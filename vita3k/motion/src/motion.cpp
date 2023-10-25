@@ -21,6 +21,7 @@
 
 #include <ctrl/state.h>
 
+#include <SDL.h>
 #include <SDL_gamecontroller.h>
 
 SceFVector3 get_acceleration(const MotionState &state) {
@@ -73,18 +74,27 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
     uint64_t accel_timestamp = 0;
 
     {
+        // SDL_GameControllerGetSensorDataWithTimestamp is only supported on 2.26+
+        // we need to check it because we are linking dynamically with SDL
+        // TODO: put this in an init function
+        SDL_version sdl_version;
+        SDL_GetVersion(&sdl_version);
+        const bool can_use_timestamp_fn = sdl_version.minor >= 26;
+
         std::lock_guard<std::mutex> guard(ctrl_state.mutex);
         for (auto controller : ctrl_state.controllers) {
             if (!found_gyro && controller.second.has_gyro) {
-                if (SDL_GameControllerGetSensorDataWithTimestamp(controller.second.controller.get(), SDL_SENSOR_GYRO, &gyro_timestamp, reinterpret_cast<float *>(&gyro), 3) == 0) {
+                if (can_use_timestamp_fn && SDL_GameControllerGetSensorDataWithTimestamp(controller.second.controller.get(), SDL_SENSOR_GYRO, &gyro_timestamp, reinterpret_cast<float *>(&gyro), 3) == 0)
                     found_gyro = true;
-                }
+                else if (!can_use_timestamp_fn && SDL_GameControllerGetSensorData(controller.second.controller.get(), SDL_SENSOR_GYRO, reinterpret_cast<float *>(&gyro), 3) == 0)
+                    found_gyro = true;
             }
 
             if (!found_accel && controller.second.has_accel) {
-                if (SDL_GameControllerGetSensorDataWithTimestamp(controller.second.controller.get(), SDL_SENSOR_ACCEL, &accel_timestamp, reinterpret_cast<float *>(&accel), 3) == 0) {
+                if (can_use_timestamp_fn && SDL_GameControllerGetSensorDataWithTimestamp(controller.second.controller.get(), SDL_SENSOR_ACCEL, &accel_timestamp, reinterpret_cast<float *>(&accel), 3) == 0)
                     found_accel = true;
-                }
+                else if (!can_use_timestamp_fn && SDL_GameControllerGetSensorData(controller.second.controller.get(), SDL_SENSOR_ACCEL, reinterpret_cast<float *>(&accel), 3) == 0)
+                    found_accel = true;
             }
         }
     }
