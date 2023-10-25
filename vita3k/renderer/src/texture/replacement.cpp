@@ -416,8 +416,8 @@ void TextureCache::export_done() {
 
 bool TextureCache::import_configure_texture() {
     uint64_t hash = current_info->hash;
-    const std::string file_name = fmt::format("{:016X}.{}", hash, loading_dds ? "dds" : "png");
-    fs::path import_name = import_folder / file_name;
+    const std::string file_name = fmt::format("{:016X}.{}", hash, loading_texture.is_dds ? "dds" : "png");
+    fs::path import_name = *loading_texture.folder_path / file_name;
 
     if (!fs::exists(import_name)) {
         LOG_ERROR("Texture {} was listed as available but was not found", file_name);
@@ -429,7 +429,7 @@ bool TextureCache::import_configure_texture() {
     uint32_t nb_comp = gxm::get_num_components(format);
 
     const bool is_cube = gxm_texture.texture_type() == SCE_GXM_TEXTURE_CUBE || gxm_texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY;
-    if (is_cube && !loading_dds) {
+    if (is_cube && !loading_texture.is_dds) {
         LOG_ERROR("Trying to import cubemap as png {}", file_name);
         return false;
     }
@@ -445,7 +445,7 @@ bool TextureCache::import_configure_texture() {
     SceGxmTextureBaseFormat base_format;
     bool is_srgb = false;
     bool swap_rb = false;
-    if (loading_dds) {
+    if (loading_texture.is_dds) {
         if (dds_descriptor == nullptr)
             dds_descriptor = new ddspp::Descriptor;
 
@@ -533,7 +533,7 @@ bool TextureCache::import_configure_texture() {
 }
 
 void TextureCache::import_upload_texture() {
-    if (loading_dds) {
+    if (loading_texture.is_dds) {
         auto [block_width, _] = gxm::get_block_size(current_info->format);
         const uint32_t mipcount = current_info->mip_count;
         const bool is_cube = current_info->texture.texture_type() == SCE_GXM_TEXTURE_CUBE || current_info->texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY;
@@ -560,7 +560,7 @@ void TextureCache::import_upload_texture() {
 }
 
 void TextureCache::import_done() {
-    if (loading_dds) {
+    if (loading_texture.is_dds) {
         imported_texture_raw_data.clear();
         imported_texture_decoded = nullptr;
     } else {
@@ -580,7 +580,7 @@ void TextureCache::refresh_available_textures() {
             fs::create_directories(folder);
 
         // iterate through all the files, and list the png/dds inside
-        for (const auto &file_entry : fs::directory_iterator(folder)) {
+        for (const auto &file_entry : fs::recursive_directory_iterator(folder)) {
             const fs::path &file = file_entry.path();
             if (!fs::is_regular_file(file))
                 continue;
@@ -594,13 +594,17 @@ void TextureCache::refresh_available_textures() {
 
             bool is_dds = file.extension() == ".dds";
 
-            on_texture_found(hash, is_dds);
+            on_texture_found(hash, file, is_dds);
         }
     };
 
     exported_textures_hash.clear();
     if (export_textures) {
-        look_through_folder(export_folder, [&](uint64_t hash, bool is_dds) {
+        look_through_folder(export_folder, [&](uint64_t hash, const fs::path &file, bool is_dds) {
+            // for exported textures, do not look in subfolders
+            if (file.parent_path() != export_folder)
+                return;
+
             if (save_as_png == !is_dds)
                 exported_textures_hash.insert(hash);
         });
@@ -611,10 +615,23 @@ void TextureCache::refresh_available_textures() {
 
     available_textures_hash.clear();
     if (import_textures) {
-        look_through_folder(import_folder, [&](uint64_t hash, bool is_dds) {
+        // to reduce memory, reuse the same path for multiple textures in the same folder
+        std::map<fs::path, std::shared_ptr<fs::path>> found_folders;
+
+        look_through_folder(import_folder, [&](uint64_t hash, const fs::path &file, bool is_dds) {
             // prioritize dds files
-            if (is_dds || !available_textures_hash.contains(hash))
-                available_textures_hash[hash] = is_dds;
+            if (is_dds || !available_textures_hash.contains(hash)) {
+                const fs::path parent = file.parent_path();
+                auto it = found_folders.find(parent);
+
+                if (it == found_folders.end())
+                    it = found_folders.emplace(parent, std::make_shared<fs::path>(parent)).first;
+
+                available_textures_hash[hash] = {
+                    is_dds,
+                    it->second
+                };
+            }
         });
 
         if (!available_textures_hash.empty())
