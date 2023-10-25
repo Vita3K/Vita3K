@@ -60,7 +60,10 @@ struct SamplerCacheInfo {
     int index = 0;
 };
 
-typedef std::array<TextureCacheInfo, TextureCacheSize> TextureCacheInfoes;
+struct AvailableTexture {
+    bool is_dds;
+    std::shared_ptr<fs::path> folder_path;
+};
 
 class TextureCache {
 protected:
@@ -76,8 +79,8 @@ protected:
     std::vector<uint8_t> imported_texture_raw_data;
     // pointer to the decoded content
     uint8_t *imported_texture_decoded = nullptr;
-    // if set to false, means we are loading a png
-    bool loading_dds = false;
+    // Info about the texture currently loading
+    AvailableTexture loading_texture;
     // contain the decrypted header when loading dds
     ddspp::Descriptor *dds_descriptor = nullptr;
     // file being written to when exporting dds
@@ -104,7 +107,7 @@ public:
     // folder where the replacement textures should be located
     fs::path import_folder;
     // key = hash, content = is the texture a dds (true) or a png (false)
-    unordered_map_fast<uint64_t, bool> available_textures_hash;
+    unordered_map_fast<uint64_t, AvailableTexture> available_textures_hash;
     bool import_textures = false;
     bool save_as_png = true;
 

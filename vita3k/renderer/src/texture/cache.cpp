@@ -715,7 +715,7 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         auto it = available_textures_hash.find(info->hash);
         if (it != available_textures_hash.end()) {
             importing_texture = true;
-            loading_dds = it->second;
+            loading_texture = it->second;
             // always configure for replacement texture (although it may have no effect)
             // the reason being that we may have two replacement textures for the same gxm identifier
             // with different dimensions, so we can't assume
