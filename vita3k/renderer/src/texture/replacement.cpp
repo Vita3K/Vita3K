@@ -88,7 +88,9 @@ void TextureCache::export_select(const SceGxmTexture &texture) {
         const uint32_t array_size = is_cube ? 6 : 1;
         ddspp::TextureType texture_type = is_cube ? ddspp::Cubemap : ddspp::Texture2D;
         ddspp::Header header;
+        memset(&header, 0, sizeof(header));
         ddspp::HeaderDXT10 dxt_header;
+        memset(&dxt_header, 0, sizeof(dxt_header));
         ddspp::encode_header(dxgi_format, width, height, 1, texture_type, mipcount, array_size, header, dxt_header);
 
         // we need to do this to get the descriptor anyway
@@ -404,12 +406,12 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
 }
 
 void TextureCache::export_done() {
-    exporting_texture = false;
-
-    if (!save_as_png) {
+    if (exporting_texture && !save_as_png) {
         output_file.close();
         exported_textures_hash.insert(current_info->hash);
     }
+
+    exporting_texture = false;
 }
 
 bool TextureCache::import_configure_texture() {
@@ -856,6 +858,7 @@ static bool dds_swap_rb(const ddspp::DXGIFormat format) {
     case B8G8R8X8_UNORM_SRGB:
     case B4G4R4A4_UNORM:
     case B5G5R5A1_UNORM:
+    case B5G6R5_UNORM:
         return true;
     default:
         return false;

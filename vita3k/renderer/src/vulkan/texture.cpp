@@ -595,14 +595,14 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
         swap_rb = !swap_rb;
     }
 
-    if (swap_rb)
-        std::swap(swizzle.r, swizzle.b);
-
     // this format is stored as abgr in vulkan
     if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4) {
         std::swap(swizzle.r, swizzle.a);
         std::swap(swizzle.g, swizzle.b);
     }
+
+    if (swap_rb)
+        std::swap(swizzle.r, swizzle.b);
 
     vk::ImageViewCreateInfo view_info{
         .image = image.image,
