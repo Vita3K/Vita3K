@@ -165,7 +165,7 @@ const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState
  *
  * \return Void.
  */
-void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height);
+void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const uint32_t width, const uint32_t height);
 
 /**
  * \brief Try to decompress texture to 32-bit RGBA.
@@ -189,9 +189,9 @@ uint32_t decompress_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, 
  * \param height            Texture height.
  * \param block_storage     Pointer to compressed blocks.
  * \param image             Pointer to the image where the decompressed pixels will be stored.
- * \param bc_type           Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2) or BC5S (RGTC2).
+ * \param format_id         Id of the compressed format, in order: BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2) or BC5S (RGTC2).
  */
-void decompress_bc_image(uint32_t width, uint32_t height, const uint8_t *block_storage, uint32_t *image, const uint8_t bc_type);
+void decompress_bc_image(uint32_t width, uint32_t height, const uint8_t *block_storage, uint32_t *image, const uint8_t format_id);
 
 /**
  * \brief Try to decompress texture to 16-bit RGB floating point color.
@@ -211,13 +211,13 @@ void decompress_packed_float_e5m9m9m9(SceGxmTextureBaseFormat fmt, void *dest, c
  *
  * Output results is in format RGBA, with each channel being 8 bits.
  *
- * \param width     Texture width.
- * \param height    Texture height.
- * \param src       Pointer to compressed blocks.
- * \param dest      Pointer to the image where the decompressed pixels will be stored.
- * \param bc_type   Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2 or BC5S (RGTC2).
+ * \param width         Texture width.
+ * \param height        Texture height.
+ * \param src           Pointer to compressed blocks.
+ * \param dest          Pointer to the image where the decompressed pixels will be stored.
+ * \param block_size    The size of a compressed block in (8 bytes or 16 bytes)
  */
-void resolve_z_order_compressed_image(uint32_t width, uint32_t height, const uint8_t *src, uint8_t *dest, const uint8_t bc_type);
+void resolve_z_order_compressed_image(uint32_t width, uint32_t height, const uint8_t *src, uint8_t *dest, const uint32_t block_size);
 
 // Convert x8u24 (or u24x8) format to f32 (only keep the u24 part)
 // Do not use a depth-stencil format as x8d24 is not supported on all GPUs for Vulkan

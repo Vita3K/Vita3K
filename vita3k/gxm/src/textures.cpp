@@ -106,6 +106,9 @@ uint32_t get_num_components(SceGxmTextureBaseFormat fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
         return 4;
+
+    default:
+        return 0;
     }
 }
 
@@ -121,7 +124,10 @@ bool is_bcn_format(SceGxmTextureBaseFormat base_format) {
         || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC4
         || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC4
         || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC5
-        || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC5;
+        || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC5
+        || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H
+        || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H
+        || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC7;
 }
 
 bool is_pvrt_format(SceGxmTextureBaseFormat base_format) {
@@ -187,6 +193,9 @@ uint32_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
         return 8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
@@ -214,6 +223,9 @@ std::pair<uint32_t, uint32_t> get_block_size(SceGxmTextureBaseFormat base_format
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
         return { 4, 4 };
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:

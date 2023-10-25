@@ -191,13 +191,13 @@ void GLTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     glTexParameteriv(texture_bind_type, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
     apply_sampler_state(gxm_texture, texture_bind_type, anisotropic_filtering);
 
+    bool compressed = gxm::is_bcn_format(base_format);
     const GLenum internal_format = translate_internal_format(base_format);
     const GLenum format = translate_format(base_format);
-    const GLenum type = translate_type(base_format);
+    const GLenum type = compressed ? 0 : translate_type(base_format);
 
     // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
     GLenum upload_type = GL_TEXTURE_2D;
-    bool compressed = gxm::is_bcn_format(base_format);
 
     const bool is_cube = current_info->texture.texture_type() == SCE_GXM_TEXTURE_CUBE || current_info->texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY;
     if (is_cube)
