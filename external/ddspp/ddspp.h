@@ -1018,19 +1018,33 @@ namespace ddspp
 		else
 		{
 			unsigned long long mipChainSize = 0;
+			unsigned int width = desc.width;
+			unsigned int height = desc.height;
 
 			for (unsigned int m = 0; m < desc.numMips; ++m)
 			{
-				unsigned long long mipSize = mip0Size >> 2 * m; // Divide by 2 in width and height
-				mipChainSize += mipSize > desc.bitsPerPixelOrBlock ? mipSize : desc.bitsPerPixelOrBlock;
+				unsigned long long blocksX = (width + desc.blockWidth - 1) / desc.blockWidth;
+				unsigned long long blocksY = (height + desc.blockHeight - 1) / desc.blockHeight;
+				unsigned long long mipSize = blocksX * blocksY * desc.bitsPerPixelOrBlock;
+				mipChainSize += mipSize;
+
+				width >>= 1;
+				height >>= 1;
 			}
 
 			offset += mipChainSize * slice;
 
+			width = desc.width;
+			height = desc.height;
 			for (unsigned int m = 0; m < mip; ++m)
 			{
-				unsigned long long mipSize = mip0Size >> 2 * m; // Divide by 2 in width and height
+				unsigned long long blocksX = (width + desc.blockWidth - 1) / desc.blockWidth;
+				unsigned long long blocksY = (height + desc.blockHeight - 1) / desc.blockHeight;
+				unsigned long long mipSize = blocksX * blocksY * desc.bitsPerPixelOrBlock;
 				offset += mipSize > desc.bitsPerPixelOrBlock ? mipSize : desc.bitsPerPixelOrBlock;
+
+				width >>= 1;
+				height >>= 1;
 			}
 		}
 
