@@ -828,6 +828,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox("Log Compatibility Warnings", &emuenv.cfg.log_compat_warn);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to log issues related to the app compatibility database.");
+        ImGui::Spacing();
+        ImGui::Checkbox("Check for updates", &emuenv.cfg.check_for_updates);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Automatically check for updates at startup.");
         ImGui::Separator();
         const auto perfomance_overley_size = ImGui::CalcTextSize("Performance overlay").x;
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (perfomance_overley_size / 2.f));
