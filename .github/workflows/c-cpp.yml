@@ -46,10 +46,7 @@ jobs:
       - name: Set up build environment (macos-latest)
         run: |
           brew install ccache ninja create-dmg
-          brew fetch --force --bottle-tag=big_sur boost openssl@3 molten-vk
-          brew install $(brew --cache --bottle-tag=big_sur boost)
-          brew install $(brew --cache --bottle-tag=big_sur molten-vk)
-          brew reinstall $(brew --cache --bottle-tag=big_sur openssl@3)
+          brew install boost openssl@3 molten-vk
           echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
           ccache --set-config=compiler_check=content
         if: matrix.os == 'macos-latest'
