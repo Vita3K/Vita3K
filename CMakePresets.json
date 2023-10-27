@@ -93,16 +93,16 @@
       }
     },
     {
-      "name": "linux-ninja-clang14",
+      "name": "linux-ninja-clang15",
       "inherits": "linux-ninja",
-      "displayName": "Linux with Ninja and Clang 14",
-      "description": "Linux native build using Ninja Multi-Config generator and Clang 14 compiler",
+      "displayName": "Linux with Ninja and Clang 15",
+      "description": "Linux native build using Ninja Multi-Config generator and Clang 15 compiler",
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang-14",
-        "CMAKE_CXX_COMPILER": "clang++-14"
+        "CMAKE_C_COMPILER": "clang-15",
+        "CMAKE_CXX_COMPILER": "clang++-15"
       },
       "environment": {
-        "LDFLAGS": "-fuse-ld=lld-14"
+        "LDFLAGS": "-fuse-ld=lld-15"
       }
     },
     {
@@ -248,25 +248,25 @@
       "configurePreset": "linux-ninja-clang"
     },
     {
-      "name": "linux-ninja-clang14-debug",
+      "name": "linux-ninja-clang15-debug",
       "displayName": "Debug",
       "description": "Build with debugging information and no compiler optimizations",
       "configuration": "Debug",
-      "configurePreset": "linux-ninja-clang14"
+      "configurePreset": "linux-ninja-clang15"
     },
     {
-      "name": "linux-ninja-clang14-relwithdebinfo",
+      "name": "linux-ninja-clang15-relwithdebinfo",
       "displayName": "Release with debugging information",
       "description": "Build with compiler optimizations enabled and limited debugging information",
       "configuration": "RelWithDebInfo",
-      "configurePreset": "linux-ninja-clang14"
+      "configurePreset": "linux-ninja-clang15"
     },
     {
-      "name": "linux-ninja-clang14-release",
+      "name": "linux-ninja-clang15-release",
       "displayName": "Release",
       "description": "Build with compiler optimizations enabled and no debugging information",
       "configuration": "Release",
-      "configurePreset": "linux-ninja-clang14"
+      "configurePreset": "linux-ninja-clang15"
     },
     {
       "name": "linux-ninja-gnu-debug",
