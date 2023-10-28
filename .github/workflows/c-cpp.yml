@@ -24,13 +24,14 @@ jobs:
         include:
           - os: ubuntu-latest
             cache_path: ~/.ccache
-            extra_cmake_args:
+            extra_cmake_args: 
             cmake_preset: linux-ninja-clang15
           - os: windows-latest
             cache_path: |
                 C:\vcpkg\installed
                 C:\vcpkg\packages
-            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+                C:\Users\runneradmin\AppData\Local\ccache
+            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake 
             cmake_preset: windows-ninja
           - os: macos-latest
             cache_path: ~/Library/Caches/ccache
@@ -60,10 +61,6 @@ jobs:
 
       - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows-latest'
-      - uses: hendrikmuhs/ccache-action@v1.2
-        with:
-            variant: sccache
-        if: matrix.os == 'windows-latest'
  
       - uses: actions/cache@v3
         with:
@@ -75,6 +72,7 @@ jobs:
       - name: Set up build environment (windows-latest)
         run: |
           vcpkg install zlib:x64-windows boost-system:x64-windows boost-filesystem:x64-windows boost-program-options:x64-windows boost-icl:x64-windows boost-variant:x64-windows openssl:x64-windows
+          choco install ccache
         if: matrix.os == 'windows-latest'
 
       - name: Set up SDL 2.28.3 (ubuntu-latest)
@@ -94,6 +92,9 @@ jobs:
           fi
           sudo make -C SDL2-${SDL2VER} install
         if: matrix.os == 'ubuntu-latest'
+
+      - name: Ccache setup
+        run: ccache -z
 
       - name: CMake
         run: |
@@ -120,6 +121,9 @@ jobs:
             cp /usr/lib/x86_64-linux-gnu/libssl.so.3 ./libssl.so.3
             cp /usr/lib/x86_64-linux-gnu/libcrypto.so.3 ./libcrypto.so.3
         if: matrix.os == 'ubuntu-latest'
+
+      - name: Ccache statistics
+        run: ccache -s  
         
       - name: Create DMG (macos-latest)
         run: |
