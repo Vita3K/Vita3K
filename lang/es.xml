@@ -399,7 +399,7 @@ Cuando la descarga se haya completado, Vita3K se reiniciará automáticamente e 
 		<commercial_compatibility_list>Lista de compatibilidad comercial</commercial_compatibility_list>
 		<homebrew_compatibility_list>Lista de compatibilidad de Homebrew</homebrew_compatibility_list>
 		<line_ninth>¡Las contribuciones son bienvenidas!</line_ninth>
-		<line_tenth>Más ayuda disponible en el canal #help</line_tenth>
+		<line_tenth>Más ayuda disponible en el canal #help del servidor de</line_tenth>
 		<line_eleventh>Vita3K no tolera la piratería. Debes usar tus propios juegos.</line_eleventh>
 		<show_next_time>Mostrar la próxima vez</show_next_time>
 		<close>Cerrar</close>
