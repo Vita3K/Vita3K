@@ -152,6 +152,10 @@ if(USE_DISCORD_RICH_PRESENCE)
 	target_link_libraries(vita3k PRIVATE discord-rpc)
 endif()
 
+if(LINUX)
+	target_link_libraries(vita3k PRIVATE -static-libgcc -static-libstdc++)
+endif()
+
 set_target_properties(vita3k PROPERTIES OUTPUT_NAME Vita3K
 	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 	LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
