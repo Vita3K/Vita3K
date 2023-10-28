@@ -385,4 +385,23 @@ Cuando la descarga se haya completado, Vita3K se reiniciará automáticamente e 
 		<update>Actualizar</update>
 		<version>Versión {}</version>
 	</vita3k_update>
+
+	<welcome name="Bienvenido a Vita3K">
+		<line_first>Emulador de PlayStation Vita Vita3K</line_first>
+		<line_second>Vita3K es un emulador de PlayStation Vita de código abierto, escrito en C++ para Windows, Linux, macOS y Android.</line_second>
+		<line_third>El emulador todavía está en etapas tempranas del desarrollo, así que cualquier retroalimentación y pruebas serán sumamente apreciadas.</line_third>
+		<line_fourth>Para empezar, por favor instala el firmware de la PS Vita y sus paquetes de fuentes.</line_fourth>
+		<download_firmware>Descargar Firmware</download_firmware>
+		<line_sixth_part_one>Una guía completa sobre cómo configurar Vita3K está disponible en la página de</line_sixth_part_one>
+		<quickstart>Inicio rápido</quickstart>
+		<line_sixth_part_two></line_sixth_part_two>
+		<line_seventh>Consulta la página de compatibilidad de juegos comerciales y Homebrew para ver qué juegos funcionan actualmente.</line_seventh>
+		<commercial_compatibility_list>Lista de compatibilidad comercial</commercial_compatibility_list>
+		<homebrew_compatibility_list>Lista de compatibilidad de Homebrew</homebrew_compatibility_list>
+		<line_ninth>¡Las contribuciones son bienvenidas!</line_ninth>
+		<line_tenth>Más ayuda disponible en el canal #help del servidor de</line_tenth>
+		<line_eleventh>Vita3K no tolera la piratería. Debes usar tus propios juegos.</line_eleventh>
+		<show_next_time>Mostrar la próxima vez</show_next_time>
+		<close>Cerrar</close>
+	</welcome>
 </lang>
