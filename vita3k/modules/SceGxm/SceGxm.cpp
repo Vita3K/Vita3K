@@ -20,7 +20,12 @@
 #include <modules/module_parent.h>
 
 #include <span>
-#include <xxh3.h>
+#ifdef __x86_64__
+#include <xxh_x86dispatch.h>
+#else
+#define XXH_INLINE_ALL
+#include <xxhash.h>
+#endif
 
 #include <gxm/functions.h>
 #include <gxm/state.h>
@@ -1190,7 +1195,7 @@ static const uint8_t mask_gxp[] = {
 static constexpr std::uint32_t DEFAULT_RING_SIZE = 4096;
 
 static VertexCacheHash hash_data(const void *data, size_t size) {
-    auto hash = XXH_INLINE_XXH3_64bits(data, size);
+    auto hash = XXH3_64bits(data, size);
     return VertexCacheHash(hash);
 }
 
