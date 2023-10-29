@@ -17,8 +17,6 @@
 
 #include <renderer/vulkan/pipeline_cache.h>
 
-#include <xxh3.h>
-
 #include <renderer/vulkan/gxm_to_vulkan.h>
 #include <renderer/vulkan/state.h>
 #include <renderer/vulkan/types.h>
@@ -31,6 +29,11 @@
 #include <util/align.h>
 #include <util/fs.h>
 #include <util/log.h>
+
+// don't use the dispatch version, because we always hash a small amount
+// with a known size
+#define XXH_INLINE_ALL
+#include <xxhash.h>
 
 namespace renderer::vulkan {
 PipelineCache::PipelineCache(VKState &state)
@@ -562,7 +565,7 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     const GxmRecordState &record = context.record;
     // get the hash of the current context
     constexpr size_t record_pipeline_len = offsetof(GxmRecordState, vertex_streams);
-    uint64_t key = XXH_INLINE_XXH3_64bits(&record, record_pipeline_len);
+    uint64_t key = XXH3_64bits(&record, record_pipeline_len);
 
     // add the hash of the blending
     const SceGxmFragmentProgram &fragment_program_gxm = *record.fragment_program.get(mem);

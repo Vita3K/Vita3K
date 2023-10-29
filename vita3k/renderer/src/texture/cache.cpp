@@ -29,7 +29,12 @@
 #include <algorithm>
 #include <cstring>
 #include <numeric>
-#include <xxh3.h>
+#ifdef __x86_64__
+#include <xxh_x86dispatch.h>
+#else
+#define XXH_INLINE_ALL
+#include <xxhash.h>
+#endif
 #ifdef WIN32
 #include <execution>
 #endif
@@ -38,7 +43,7 @@ namespace renderer {
 namespace texture {
 
 static uint64_t hash_data(const void *data, size_t size) {
-    return XXH_INLINE_XXH3_64bits(data, size);
+    return XXH3_64bits(data, size);
 }
 
 static uint64_t hash_palette_data(const SceGxmTexture &texture, size_t count, const MemState &mem) {
