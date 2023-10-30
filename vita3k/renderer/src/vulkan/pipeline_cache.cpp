@@ -302,9 +302,6 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
     }
     renderer::save_shaders_cache_hashs(state, state.shaders_cache_hashs);
 
-    const auto time_s = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    next_pipeline_cache_save = time_s + pipeline_cache_save_delay;
-
     vk::PipelineShaderStageCreateInfo shader_stage_info{
         .stage = is_vertex ? vk::ShaderStageFlagBits::eVertex : vk::ShaderStageFlagBits::eFragment,
         .module = shader,
@@ -689,6 +686,9 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
         LOG_CRITICAL("Failed to create pipeline.");
         return nullptr;
     }
+
+    const auto time_s = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    next_pipeline_cache_save = time_s + pipeline_cache_save_delay;
 
     pipelines[key] = result.value;
 
