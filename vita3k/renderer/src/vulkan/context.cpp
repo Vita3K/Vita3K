@@ -111,7 +111,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
 
         // set back default values
         vk_format = vk::Format::eR8G8B8A8Unorm;
-        context.record.color_surface.downscale = false;
+        context.record.color_surface.downscale = static_cast<bool>(rt->multisample_mode);
         context.record.is_gamma_corrected = false;
         context.record.is_maskupdate = false;
         context.record.color_base_format = SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8;
