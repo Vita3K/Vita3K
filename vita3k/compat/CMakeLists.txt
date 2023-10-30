@@ -7,5 +7,5 @@ add_library(
 )
 
 target_include_directories(compat PUBLIC include)
-target_link_libraries(compat PUBLIC gui https emuenv)
+target_link_libraries(compat PUBLIC gui emuenv)
 target_link_libraries(compat PRIVATE pugixml::pugixml)

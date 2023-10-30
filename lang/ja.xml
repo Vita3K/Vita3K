@@ -553,8 +553,7 @@ GUIでのアジア地域のフォントサポートに必須です。
 	<vita3k_update name="Vita3Kのアップデート">
  		<new_version_available>新しいバージョンのVita3Kがあります。</new_version_available>
 		<back>戻る</back>
-		<cancel_update_resume>アップデートをキャンセルしますか？
-キャンセルした場合、Vita3Kは次回のアップデートでこの時点のダウンロードを再開します。</cancel_update_resume>
+		<cancel_update_resume>アップデートをキャンセルしますか？</cancel_update_resume>
 		<downloading>ダウンロード中...
 ダウンロードが完了すると、Vita3Kが自動的に再起動し、新しいアップデートがインストールされます。</downloading>
 		<not_complete_update>アップデートできませんでした。</not_complete_update>

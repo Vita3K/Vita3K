@@ -23,7 +23,7 @@
 #include <config/version.h>
 
 #include <gui/functions.h>
-#include <https/functions.h>
+#include <util/net_utils.h>
 #include <util/string_utils.h>
 
 #include <SDL.h>
@@ -64,7 +64,7 @@ bool init_vita3k_update(GuiState &gui) {
     const auto latest_link = "https://api.github.com/repos/Vita3K/Vita3K/releases/latest";
 
     // Get Build number of latest release
-    const auto version = https::get_web_regex_result(latest_link, std::regex("Vita3K Build: (\\d+)"));
+    const auto version = net_utils::get_web_regex_result(latest_link, std::regex("Vita3K Build: (\\d+)"));
     if (!version.empty() && std::all_of(version.begin(), version.end(), ::isdigit))
         git_version = string_utils::stoi_def(version, 0, "git version");
     else {
@@ -90,12 +90,10 @@ bool init_vita3k_update(GuiState &gui) {
                 const auto continuous_link = fmt::format(R"(https://api.github.com/repos/Vita3K/Vita3K/commits?sha=continuous&page={}&per_page={})", page.first, dif_from_current < 100 ? dif_from_current : 100);
 
                 // Get response from github api
-                auto response = https::get_web_response(continuous_link);
+                auto commits = net_utils::get_web_response(continuous_link);
 
                 // Check if response is not empty
-                if (!response.empty()) {
-                    // Get commits from response with remove HTTP header
-                    std::string commits = response.substr(response.find("\r\n\r\n") + 4);
+                if (!commits.empty()) {
                     std::string author, msg, sha;
                     std::smatch match;
 
@@ -148,13 +146,7 @@ bool init_vita3k_update(GuiState &gui) {
 
 static std::atomic<float> progress(0);
 static std::atomic<uint64_t> remaining(0);
-static https::ProgressState progress_state{};
-
-static const auto progress_callback = [](float updated_progress, uint64_t updated_remaining) {
-    progress = updated_progress;
-    remaining = updated_remaining;
-    return progress_state;
-};
+static net_utils::ProgressState progress_state{};
 
 static void download_update(const std::string &base_path) {
     progress_state.download = true;
@@ -175,42 +167,20 @@ static void download_update(const std::string &base_path) {
         const std::string archive_ext = ".zip";
 #endif
 
-        const auto latest_ver_path = base_path + "latest-ver";
         const auto vita3k_latest_path = base_path + "vita3k-latest" + archive_ext;
 
         const std::string version = std::to_string(git_version);
 
-        // check if vita3k_latest_path exist
-        if (fs::exists(vita3k_latest_path)) {
-            // read latest ver file if exist
-            std::ifstream latest_ver(latest_ver_path, std::ios::binary);
-            std::string latest_version{};
-            if (latest_ver.is_open()) {
-                std::getline(latest_ver, latest_version);
-                latest_ver.close();
-            }
-
-            // check if latest version is same with current git version for can resume download
-            if (latest_version == version)
-                LOG_INFO("Resume download of version: {}", latest_version);
-            else {
-                fs::remove(latest_ver_path);
-                fs::remove(vita3k_latest_path);
-                LOG_INFO("Start download of version: {}", latest_version);
-            }
-        }
-
-        // check if latest_ver file exist
-        if (!fs::exists(latest_ver_path)) {
-            // write latest_info file
-            std::ofstream latest_ver(latest_ver_path, std::ios::binary);
-            latest_ver.write(version.c_str(), version.size());
-            latest_ver.close();
-        }
-
         // Download latest Vita3K version
         LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
-        if (https::download_file(download_continuous_link, vita3k_latest_path, progress_callback)) {
+
+        static const auto progress_callback = [](float updated_progress, uint64_t updated_remaining) {
+            progress = updated_progress;
+            remaining = updated_remaining;
+            return &progress_state;
+        };
+
+        if (net_utils::download_file(download_continuous_link, vita3k_latest_path, progress_callback)) {
             SDL_Event event;
             event.type = SDL_QUIT;
             SDL_PushEvent(&event);
@@ -223,10 +193,6 @@ static void download_update(const std::string &base_path) {
 #else
             const auto vita3K_batch = fmt::format("chmod +x \"{}/update-vita3k.sh\" && \"{}/update-vita3k.sh\"", base_path, base_path);
 #endif
-
-            // When success finish download, remove latest ver file
-            fs::remove(latest_ver_path);
-
             std::system(vita3K_batch.c_str());
         } else {
             if (progress_state.download) {
@@ -379,8 +345,6 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetCursorPos(ImVec2(WINDOW_POS.x + (10.f * SCALE.x), (display_size.y - BUTTON_SIZE.y - (12.f * SCALE.y))));
     if (ImGui::Button((state < DESCRIPTION) || (state == DOWNLOAD) ? common["cancel"].c_str() : lang["back"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
         if (state < DESCRIPTION) {
-            if (fs::exists("windows-latest.zip"))
-                fs::remove("windows-latest.zip");
             gui.vita_area = vita_area_state;
             gui.help_menu.vita3k_update = false;
         } else if (state == DOWNLOAD) {
@@ -397,8 +361,6 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
             if (state == DOWNLOAD)
                 download_update(emuenv.base_path.string());
         }
-        if (state == DOWNLOAD)
-            ImGui::EndDisabled();
     }
 
     // Draw Cancel popup
@@ -414,16 +376,24 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextWrapped("%s", lang["cancel_update_resume"].c_str());
         ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - LARGE_BUTTON_SIZE.x - (20.f * SCALE.x), POPUP_SIZE.y - LARGE_BUTTON_SIZE.y - (22.0f * SCALE.y)));
         if (ImGui::Button(common["no"].c_str(), LARGE_BUTTON_SIZE)) {
+            std::unique_lock<std::mutex> lock(progress_state.mutex);
             progress_state.pause = false;
+            progress_state.cv.notify_one();
+
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine(0, 40.f * SCALE.x);
         if (ImGui::Button(common["yes"].c_str(), LARGE_BUTTON_SIZE)) {
+            std::unique_lock<std::mutex> lock(progress_state.mutex);
             progress_state.download = false;
+            progress_state.pause = false; // Unpause so it gets handled by the callback
+            progress_state.cv.notify_one();
+
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
     }
+
     ImGui::PopStyleVar(2);
     ImGui::End();
 }
