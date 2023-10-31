@@ -666,11 +666,14 @@ std::map<DateTime, std::string> get_date_time(GuiState &gui, EmuEnvState &emuenv
             break;
         }
     }
-    const auto is_afternoon = date_time.tm_hour > 12;
-    const auto clock_12h = is_afternoon && (emuenv.io.user_id.empty() || (emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR));
-    date_time_str[DateTime::HOUR] = std::to_string(clock_12h ? (date_time.tm_hour - 12) : date_time.tm_hour);
+    const auto clock_12h = emuenv.io.user_id.empty() || (emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR);
+    if (clock_12h && date_time.tm_hour == 0)
+        date_time_str[DateTime::HOUR] = std::to_string(12);
+    else
+        date_time_str[DateTime::HOUR] = std::to_string(clock_12h && date_time.tm_hour > 12 ? (date_time.tm_hour - 12) : date_time.tm_hour);
+
     date_time_str[DateTime::CLOCK] = fmt::format("{}:{:0>2d}", date_time_str[DateTime::HOUR], date_time.tm_min);
-    date_time_str[DateTime::DAY_MOMENT] = is_afternoon ? "PM" : "AM";
+    date_time_str[DateTime::DAY_MOMENT] = date_time.tm_hour >= 12 ? "PM" : "AM";
 
     return date_time_str;
 }
