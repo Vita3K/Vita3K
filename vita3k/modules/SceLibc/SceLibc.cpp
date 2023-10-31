@@ -837,10 +837,7 @@ EXPORT(int, mbtowc) {
 
 EXPORT(Ptr<void>, memalign, uint32_t alignment, uint32_t size) {
     TRACY_FUNC(memalign, alignment, size);
-    Address address = alloc(emuenv.mem, size, "memalign", alignment);
-
-    STUBBED("No actual alignment.");
-    LOG_WARN_IF(address % alignment != 0, "Address {} does not fit alignment of {}.", log_hex(address), alignment);
+    Address address = alloc_aligned(emuenv.mem, size, "memalign", alignment);
 
     return Ptr<void>(address);
 }
