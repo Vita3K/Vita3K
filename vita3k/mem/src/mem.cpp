@@ -191,13 +191,13 @@ static Address alloc_inner(MemState &state, uint32_t start_page, int page_count,
     return addr;
 }
 
-Address alloc(MemState &state, uint32_t size, const char *name, unsigned int alignment) {
+Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned int alignment, Address start_addr) {
     if (alignment == 0)
-        return alloc(state, size, name);
+        return alloc(state, size, name, start_addr);
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     size += alignment;
     const uint32_t page_count = align(size, state.page_size) / state.page_size;
-    const Address addr = alloc_inner(state, 0, page_count, name, false);
+    const Address addr = alloc_inner(state, start_addr / state.page_size, page_count, name, false);
     const Address align_addr = align(addr, alignment);
     const uint32_t page_num = addr / state.page_size;
     const uint32_t align_page_num = align_addr / state.page_size;
@@ -490,10 +490,10 @@ void remove_external_mapping(MemState &mem, uint8_t *addr_ptr) {
     }
 }
 
-Address alloc(MemState &state, uint32_t size, const char *name) {
+Address alloc(MemState &state, uint32_t size, const char *name, Address start_addr) {
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const uint32_t page_count = align(size, state.page_size) / state.page_size;
-    const Address addr = alloc_inner(state, 0, page_count, name, false);
+    const Address addr = alloc_inner(state, start_addr / state.page_size, page_count, name, false);
     return addr;
 }
 
@@ -517,8 +517,8 @@ Address try_alloc_at(MemState &state, Address address, uint32_t size, const char
     return address;
 }
 
-Block alloc_block(MemState &mem, uint32_t size, const char *name) {
-    const Address address = alloc(mem, size, name);
+Block alloc_block(MemState &mem, uint32_t size, const char *name, Address start_addr) {
+    const Address address = alloc(mem, size, name, start_addr);
     return Block(address, [&mem](Address stack) {
         free(mem, stack);
     });

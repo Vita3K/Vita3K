@@ -95,8 +95,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType 
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
-        // should only be 4K, but Freedom War crashes if the alignment is less than 32K...
-        min_alignment = 0x8000;
+        min_alignment = 0x1000;
         break;
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
         min_alignment = 0x40000;
@@ -113,18 +112,35 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType 
 
     SceSize alignment = min_alignment;
     if (optp && (optp->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT)) {
-        alignment = optp->alignment;
         // alignment must be a power of 2
-        // it should also be at least min_alignment but it looks like it is not the case in games like uncharted
-        // and the ps vita does not return an error
-        if (alignment & (alignment - 1))
+        if (optp->alignment & (optp->alignment - 1))
             return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+
+        alignment = std::max(alignment, optp->alignment);
+    }
+
+    // x & -x returns the lsb of x
+    alignment = std::max(alignment, size & -size);
+
+    // https://wiki.henkaku.xyz/vita/SceSysmem_Types#memtype_bit_value
+    Address start_address;
+    switch (type) {
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
+        start_address = 0x70000000U;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
+        start_address = 0x60000000U;
+        break;
+    default:
+        // technically should be 0x81000000 but it shouldn't make a difference
+        start_address = 0x80000000U;
+        break;
     }
 
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
-    Ptr<void> address = Ptr<void>(alloc(mem, size, pName, alignment));
+    Ptr<void> address = Ptr<void>(alloc_aligned(mem, size, pName, alignment, start_address));
 
     if (!address) {
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
