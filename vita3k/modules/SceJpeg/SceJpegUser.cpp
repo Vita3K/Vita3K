@@ -32,9 +32,9 @@ struct MJpegState {
 };
 
 struct SceJpegMJpegInitInfo {
-    uint32_t size;
-    int32_t decoder_count;
-    int32_t options;
+    SceSize size;
+    int maxSplitDecoder;
+    int option;
 };
 
 struct SceJpegPitch {
@@ -42,13 +42,39 @@ struct SceJpegPitch {
     uint32_t y;
 };
 
-enum SceJpegColorSpace : int32_t {
+enum SceJpegColorSpace : int {
     SCE_JPEG_COLORSPACE_UNKNOWN = 0x00000,
     SCE_JPEG_COLORSPACE_GRAYSCALE = 0x10000,
     SCE_JPEG_COLORSPACE_YUV = 0x20000,
     SCE_JPEG_COLORSPACE_YUV444 = 0x20101,
     SCE_JPEG_COLORSPACE_YUV422 = 0x20102,
     SCE_JPEG_COLORSPACE_YUV420 = 0x20202,
+};
+
+enum SceJpegDHTMode : int {
+    SCE_JPEG_MJPEG_WITH_DHT,
+    SCE_JPEG_MJPEG_WITHOUT_DHT,
+    SCE_JPEG_MJPEG_ANY_SAMPLING_WITHOUT_DHT,
+    SCE_JPEG_MJPEG_ANY_SAMPLING
+};
+
+enum SceJpegDownscaleMode : int {
+    SCE_JPEG_MJPEG_DOWNSCALE_1_2 = 1 << 4,
+    SCE_JPEG_MJPEG_DOWNSCALE_1_4 = 1 << 5,
+    SCE_JPEG_MJPEG_DOWNSCALE_1_8 = 1 << 6,
+    SCE_JPEG_MJPEG_DOWNSCALE_ANY = 0b111 << 4
+};
+
+enum SceJpegFormat : int {
+    // YUV format
+    SCE_JPEG_NO_CSC_OUTPUT = -1,
+    SCE_JPEG_PIXEL_RGBA8888 = 0,
+    SCE_JPEG_PIXEL_BGRA8888 = 4
+};
+
+enum SceJpegColorConversion : int {
+    SCE_JPEG_COLORSPACE_JFIF = 0,
+    SCE_JPEG_COLORSPACE_BT601 = 0x10
 };
 
 struct SceJpegOutputInfo {
@@ -102,14 +128,17 @@ EXPORT(int, sceJpegCsc) {
 }
 
 EXPORT(int, sceJpegDecodeMJpeg, const unsigned char *pJpeg, SceSize isize, uint8_t *pRGBA, SceSize osize,
-    int decodeMode, uint8_t *pTempBuffer, SceSize tempBufferSize, void *pCoefBuffer, SceSize coefBufferSize) {
+    int decodeMode, void *pTempBuffer, SceSize tempBufferSize, void *pCoefBuffer, SceSize coefBufferSize) {
     TRACY_FUNC(sceJpegDecodeMJpeg, pJpeg, isize, pRGBA, osize, decodeMode, pTempBuffer, tempBufferSize, pCoefBuffer, coefBufferSize);
+
+    if (decodeMode & SCE_JPEG_MJPEG_DOWNSCALE_ANY)
+        return STUBBED("JPEG downscaling is not implemented");
 
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
 
     DecoderSize size = {};
 
-    // allocates i think an extra frame but i want to be careful here
+    // the yuv data will always be smaller than the rgba data, so osize is an upper bound
     std::vector<uint8_t> temporary(osize);
 
     state->decoder->send(pJpeg, isize);
@@ -121,15 +150,19 @@ EXPORT(int, sceJpegDecodeMJpeg, const unsigned char *pJpeg, SceSize isize, uint8
     return (size.width << 16u) | size.height;
 }
 
-EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *jpeg_data, uint32_t jpeg_size,
-    uint8_t *output, uint32_t output_size, int mode, void *buffer, uint32_t buffer_size) {
-    TRACY_FUNC(sceJpegDecodeMJpegYCbCr, jpeg_data, jpeg_size, output, output_size, mode, buffer, buffer_size);
+EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *pJpeg, SceSize isize,
+    uint8_t *pYCbCr, SceSize osize, int decodeMode, void *pCoefBuffer, SceSize coefBufferSize) {
+    TRACY_FUNC(sceJpegDecodeMJpegYCbCr, pJpeg, isize, pYCbCr, osize, decodeMode, pCoefBuffer, coefBufferSize);
+
+    if (decodeMode & SCE_JPEG_MJPEG_DOWNSCALE_ANY)
+        return STUBBED("JPEG downscaling is not implemented");
+
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
 
     DecoderSize size = {};
 
-    state->decoder->send(jpeg_data, jpeg_size);
-    state->decoder->receive(output, &size);
+    state->decoder->send(pJpeg, isize);
+    state->decoder->receive(pYCbCr, &size);
 
     // Top 16 bits = width, bottom 16 bits = height.
     return (size.width << 16u) | size.height;
@@ -147,36 +180,35 @@ EXPORT(int, sceJpegFinishMJpeg) {
     return 0;
 }
 
-// TODO: There is still a lack of information about what each bit of mode does.
-EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
-    int32_t format, int32_t mode, SceJpegOutputInfo *output) {
-    TRACY_FUNC(sceJpegGetOutputInfo, jpeg_data, jpeg_size, format, mode, output);
+EXPORT(int, sceJpegGetOutputInfo, const uint8_t *pJpeg, SceSize isize,
+    SceJpegFormat format, int decodeMode, SceJpegOutputInfo *output) {
+    TRACY_FUNC(sceJpegGetOutputInfo, pJpeg, isize, format, decodeMode, output);
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
 
-    if (!jpeg_data || !output) {
-        return SCE_JPEG_ERROR_INVALID_POINTER;
-    }
-    if (!jpeg_size) {
-        return SCE_JPEG_ERROR_OUT_OF_MEMORY;
-    }
-    // If format is 0, the image is RGBA; if -1, it is YUV. Otherwise, the color format is incorrect.
-    if (format != 0 && format != -1) {
-        return SCE_JPEG_ERROR_INVALID_COLOR_FORMAT;
-    }
-    // The third bit of mode assumes that the format requires RGBA.
-    if ((mode & 4) && (format != 0)) {
-        return SCE_JPEG_ERROR_INVALID_COLOR_FORMAT;
-    }
+    if (!pJpeg || !output || !isize)
+        return RET_ERROR(SCE_JPEG_ERROR_INVALID_POINTER);
+
+    memset(output, 0, sizeof(SceJpegOutputInfo));
+
+    if (format != SCE_JPEG_NO_CSC_OUTPUT && format != SCE_JPEG_PIXEL_RGBA8888 && format != SCE_JPEG_PIXEL_BGRA8888)
+        return RET_ERROR(SCE_JPEG_ERROR_INVALID_COLOR_FORMAT);
+
+    if (format == SCE_JPEG_PIXEL_BGRA8888)
+        return STUBBED("SCE_JPEG_PIXEL_BGRA8888 is not implemented");
 
     DecoderSize size = {};
 
-    state->decoder->send(jpeg_data, jpeg_size);
+    state->decoder->send(pJpeg, isize);
     state->decoder->receive(nullptr, &size);
 
     output->width = size.width;
     output->height = size.height;
     output->color_space = convert_color_space_decoder_to_jpeg(state->decoder->get_color_space());
-    if (format == 0) {
+    output->pitch[0] = {
+        .x = size.width,
+        .y = size.height
+    };
+    if (format == SCE_JPEG_PIXEL_RGBA8888) {
         output->output_size = size.width * size.height * 4;
     } else {
         switch (output->color_space) {
@@ -185,50 +217,73 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
             break;
         case SCE_JPEG_COLORSPACE_YUV444:
             output->output_size = size.width * size.height * 3;
+            output->pitch[1] = output->pitch[0];
+            output->pitch[2] = output->pitch[0];
             break;
         case SCE_JPEG_COLORSPACE_YUV422:
             output->output_size = size.width * size.height * 2;
+            output->pitch[1] = {
+                .x = size.width / 2,
+                .y = size.height
+            };
+            output->pitch[2] = output->pitch[1];
             break;
         case SCE_JPEG_COLORSPACE_YUV420:
             output->output_size = size.width * size.height * 3 / 2;
+            output->pitch[1] = {
+                .x = size.width / 2,
+                .y = size.height / 2
+            };
+            output->pitch[2] = output->pitch[1];
             break;
         }
     }
 
-    // The 5-7 bits of mode are assumed the downscaling related flags.
-    if (mode & 0x70) {
-        return STUBBED("The handling of image downscaling in this function is not yet implemented.");
+    if (decodeMode & SCE_JPEG_MJPEG_DOWNSCALE_ANY)
+        return STUBBED("JPEG downscaling is not implemented");
+
+    return 0;
+}
+
+EXPORT(int, sceJpegInitMJpeg, int maxSplitDecoder) {
+    TRACY_FUNC(sceJpegInitMJpeg, maxSplitDecoder);
+    if (maxSplitDecoder > 0)
+        STUBBED("Ignoring non-zero maxSplitDecoder parameter");
+
+    emuenv.kernel.obj_store.create<MJpegState>();
+    const auto state = emuenv.kernel.obj_store.get<MJpegState>();
+    state->decoder = std::make_shared<MjpegDecoderState>();
+
+    return 0;
+}
+
+EXPORT(int, sceJpegInitMJpegWithParam, const SceJpegMJpegInitInfo *param) {
+    TRACY_FUNC(sceJpegInitMJpegWithParam, param);
+    return CALL_EXPORT(sceJpegInitMJpeg, param->maxSplitDecoder);
+}
+
+EXPORT(int, sceJpegMJpegCsc, uint8_t *pRGBA, const uint8_t *pYCbCr,
+    uint32_t xysize, int iFrameWidth, int colorOption, int sampling) {
+    TRACY_FUNC(sceJpegMJpegCsc, pRGBA, pYCbCr, xysize, iFrameWidth, colorOption, sampling);
+
+    if (colorOption & SCE_JPEG_COLORSPACE_BT601) {
+        STUBBED("Unhandled BT601 color conversion");
+        colorOption &= ~SCE_JPEG_COLORSPACE_BT601;
     }
 
-    return 0;
-}
+    if (colorOption != SCE_JPEG_PIXEL_RGBA8888 && colorOption != SCE_JPEG_PIXEL_BGRA8888)
+        return RET_ERROR(SCE_JPEG_ERROR_INVALID_COLOR_FORMAT);
 
-// TODO: Decoder options are ignored for the time being.
-EXPORT(int, sceJpegInitMJpeg, int32_t decoder_count) {
-    TRACY_FUNC(sceJpegInitMJpeg, decoder_count);
-    emuenv.kernel.obj_store.create<MJpegState>();
-    const auto state = emuenv.kernel.obj_store.get<MJpegState>();
-    state->decoder = std::make_shared<MjpegDecoderState>();
+    if (colorOption == SCE_JPEG_PIXEL_BGRA8888)
+        return STUBBED("SCE_JPEG_PIXEL_BGRA8888 is not implemented");
 
-    return 0;
-}
+    uint32_t width = xysize >> 16;
+    uint32_t height = xysize & 0xFFFF;
 
-EXPORT(int, sceJpegInitMJpegWithParam, const SceJpegMJpegInitInfo *info) {
-    TRACY_FUNC(sceJpegInitMJpegWithParam, info);
-    emuenv.kernel.obj_store.create<MJpegState>();
-    const auto state = emuenv.kernel.obj_store.get<MJpegState>();
-    state->decoder = std::make_shared<MjpegDecoderState>();
+    if (width != iFrameWidth)
+        STUBBED("Mismatch between width and frameWidth, image will look corrupted");
 
-    return 0;
-}
-
-EXPORT(int, sceJpegMJpegCsc, uint8_t *rgba, const uint8_t *yuv,
-    int32_t size, int32_t image_width, int32_t format, int32_t sampling) {
-    TRACY_FUNC(sceJpegMJpegCsc, rgba, yuv, size, image_width, format, sampling);
-    uint32_t width = size >> 16u;
-    uint32_t height = size & (~0u >> 16u);
-
-    convert_yuv_to_rgb(yuv, rgba, width, height, convert_color_space_jpeg_to_decoder(static_cast<SceJpegColorSpace>(SCE_JPEG_COLORSPACE_YUV | sampling)));
+    convert_yuv_to_rgb(pYCbCr, pRGBA, width, height, convert_color_space_jpeg_to_decoder(static_cast<SceJpegColorSpace>(SCE_JPEG_COLORSPACE_YUV | sampling)));
 
     return 0;
 }
