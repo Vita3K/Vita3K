@@ -48,6 +48,7 @@ struct State {
     std::string cache_path;
     std::string log_path;
     std::string shared_path;
+    fs::path static_assets;
     const char *title_id;
     const char *self_name;
 
@@ -80,7 +81,7 @@ struct State {
 
     bool need_page_table = false;
 
-    virtual bool init(const char *shared_path, const bool hashless_texture_cache) = 0;
+    virtual bool init(const fs::path &static_assets, const bool hashless_texture_cache) = 0;
     virtual void late_init(const Config &cfg, const std::string_view game_id) = 0;
 
     virtual TextureCache *get_texture_cache() = 0;

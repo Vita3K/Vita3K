@@ -18,6 +18,7 @@
 #pragma once
 
 #include <glutil/shader.h>
+#include <util/fs.h>
 #include <util/types.h>
 
 namespace renderer::gl {
@@ -27,7 +28,7 @@ public:
     ScreenRenderer() = default;
     ~ScreenRenderer();
 
-    bool init(const char *shared_path);
+    bool init(const fs::path &static_assets);
     void render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size);
 
     void destroy();

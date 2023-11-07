@@ -23,14 +23,17 @@
 
 namespace renderer::gl {
 
-bool ScreenRenderer::init(const char *shared_path) {
+bool ScreenRenderer::init(const fs::path &static_assets) {
     glGenTextures(1, &m_screen_texture);
 
-    std::string builtin_shaders_path = shared_path;
-    builtin_shaders_path += "shaders-builtin/opengl/";
+    fs::path builtin_shaders_path = static_assets / "shaders-builtin/opengl";
 
-    m_render_shader_nofilter = ::gl::load_shaders(builtin_shaders_path + "render_main.vert", builtin_shaders_path + "render_main.frag");
-    m_render_shader_fxaa = ::gl::load_shaders(builtin_shaders_path + "render_main.vert", builtin_shaders_path + "render_main_fxaa.frag");
+    const auto render_main_path_vert = builtin_shaders_path / "render_main.vert";
+    const auto render_main_path_frag = builtin_shaders_path / "render_main.frag";
+    const auto render_main_path_fxaa_vert = builtin_shaders_path / "render_main_fxaa.vert";
+
+    m_render_shader_nofilter = ::gl::load_shaders(render_main_path_vert.string(), render_main_path_frag.string());
+    m_render_shader_fxaa = ::gl::load_shaders(render_main_path_vert.string(), render_main_path_fxaa_vert.string());
     if (!m_render_shader_nofilter || !m_render_shader_fxaa) {
         LOG_CRITICAL("Couldn't compile essential shaders for rendering. Exiting");
         return false;

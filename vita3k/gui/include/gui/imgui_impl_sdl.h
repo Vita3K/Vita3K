@@ -28,7 +28,7 @@ union SDL_Event;
 struct SDL_Window;
 struct SDL_Cursor;
 
-IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path);
+IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window *window);
 IMGUI_API void ImGui_ImplSdl_Shutdown(ImGui_State *state);
 IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state);
 IMGUI_API void ImGui_ImplSdl_RenderDrawData(ImGui_State *state);

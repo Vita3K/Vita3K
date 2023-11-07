@@ -245,7 +245,8 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         font_config.SizePixels = 22.f;
 
         // Set up default font path
-        const auto default_font_path{ emuenv.shared_path / "data/fonts/mplus-1mn-bold.ttf" };
+        fs::path default_font_path = emuenv.static_assets_path / "data/fonts/mplus-1mn-bold.ttf";
+
         // Check existence of default font file
         if (fs::exists(default_font_path)) {
             gui.vita_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), font_config.SizePixels, &font_config, latin_range);
@@ -273,7 +274,8 @@ vfs::FileBuffer init_default_icon(GuiState &gui, EmuEnvState &emuenv) {
     vfs::FileBuffer buffer;
 
     const auto default_fw_icon{ emuenv.pref_path / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
-    const auto default_icon{ emuenv.shared_path / "data/image/icon.png" };
+
+    fs::path default_icon = emuenv.static_assets_path / "data/image/icon.png";
 
     if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
         auto icon_path = fs::exists(default_fw_icon) ? default_fw_icon.string() : default_icon.string();
@@ -698,7 +700,7 @@ void pre_init(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::GetCurrentContext() == NULL) {
         ImGui::CreateContext();
     }
-    gui.imgui_state.reset(ImGui_ImplSdl_Init(emuenv.renderer.get(), emuenv.window.get(), emuenv.base_path.string()));
+    gui.imgui_state.reset(ImGui_ImplSdl_Init(emuenv.renderer.get(), emuenv.window.get()));
 
     assert(gui.imgui_state);
 

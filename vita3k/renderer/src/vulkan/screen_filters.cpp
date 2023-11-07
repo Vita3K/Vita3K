@@ -109,9 +109,13 @@ void SinglePassScreenFilter::create_layout_sync() {
 
 void SinglePassScreenFilter::create_graphics_pipeline() {
     // create shader modules
-    const auto builtin_shaders_path = std::string(screen.state.shared_path) + "shaders-builtin/vulkan/";
-    vertex_shader = vkutil::load_shader(screen.state.device, builtin_shaders_path + std::string(get_vertex_name()));
-    fragment_shader = vkutil::load_shader(screen.state.device, builtin_shaders_path + std::string(get_fragment_name()));
+
+    fs::path builtin_shaders_path = screen.state.static_assets / "shaders-builtin/vulkan";
+    const auto vertex_shader_path = builtin_shaders_path / get_vertex_name();
+    const auto fragment_shader_path = builtin_shaders_path / get_fragment_name();
+
+    vertex_shader = vkutil::load_shader(screen.state.device, vertex_shader_path.string());
+    fragment_shader = vkutil::load_shader(screen.state.device, fragment_shader_path.string());
     vk::PipelineShaderStageCreateInfo vert_info{
         .stage = vk::ShaderStageFlagBits::eVertex,
         .module = vertex_shader,
@@ -408,9 +412,13 @@ void FSRScreenFilter::init() {
     };
     sampler = device.createSampler(sampler_info);
 
-    const auto builtin_shaders_path = std::string(screen.state.shared_path) + "shaders-builtin/vulkan/";
-    easu_shader = vkutil::load_shader(screen.state.device, builtin_shaders_path + "fsr_filter_easu.comp.spv");
-    rcas_shader = vkutil::load_shader(screen.state.device, builtin_shaders_path + "fsr_filter_rcas.comp.spv");
+    fs::path builtin_shaders_path = screen.state.static_assets / "shaders-builtin/vulkan";
+
+    const auto easu_shader_path = builtin_shaders_path / "fsr_filter_easu.comp.spv";
+    const auto frcas_shader_path = builtin_shaders_path / "fsr_filter_rcas.comp.spv";
+
+    easu_shader = vkutil::load_shader(screen.state.device, easu_shader_path.string());
+    rcas_shader = vkutil::load_shader(screen.state.device, frcas_shader_path.string());
 
     std::array<vk::DescriptorSetLayoutBinding, 3> layout_bindings = {
         // src img

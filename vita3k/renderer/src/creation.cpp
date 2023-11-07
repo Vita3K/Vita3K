@@ -258,6 +258,7 @@ bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, co
         state->cache_path = root_paths.get_cache_path_string();
         state->log_path = root_paths.get_log_path_string();
         state->shared_path = root_paths.get_shared_path_string();
+        state->static_assets = root_paths.get_static_assets_path();
         if (!gl::create(window, state, config))
             return false;
         break;
@@ -267,6 +268,7 @@ bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, co
         state->cache_path = root_paths.get_cache_path_string();
         state->log_path = root_paths.get_log_path_string();
         state->shared_path = root_paths.get_shared_path_string();
+        state->static_assets = root_paths.get_static_assets_path();
         if (!vulkan::create(window, state, config))
             return false;
         break;
