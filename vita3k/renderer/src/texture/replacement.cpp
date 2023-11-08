@@ -65,9 +65,9 @@ void TextureCache::set_replacement_state(bool import_textures, bool export_textu
     this->save_as_png = export_as_png;
 
     // invalidate all the current textures, will force all of them to be re-uploaded next frame
-    for (int i = 0; i < TextureCacheSize; i++) {
-        texture_queue.items[i].content.hash = 0;
-        texture_queue.items[i].content.dirty = true;
+    for (auto &queue_item : texture_queue.items) {
+        queue_item.content.hash = 0;
+        queue_item.content.dirty = true;
     }
 
     refresh_available_textures();
