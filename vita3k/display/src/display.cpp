@@ -50,7 +50,11 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
 
                 // in this case, even though no new game frames are being rendered, we still need to update the screen
                 if (emuenv.kernel.is_threads_paused() || (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING))
-                    emuenv.renderer->should_display = true;
+                    // only display the UI/common dialog at 30 fps
+                    // this is necessary so that the command buffer processing doesn't get starved
+                    // with vsync enabled and a screen with a refresh rate of 60Hz or less
+                    if (display.vblank_count % 2 == 0)
+                        emuenv.renderer->should_display = true;
             }
 
             // maybe we should also use a mutex for this part, but it shouldn't be an issue
