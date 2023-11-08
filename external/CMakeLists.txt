@@ -262,8 +262,10 @@ if(APPLE)
 		message(FATAL_ERROR "Cannot locate OpenSSL directory\nPlease run: brew install openssl")
 	endif()
 endif()
-find_package(OpenSSL QUIET)
 
+
+
+find_package(OpenSSL QUIET)
 if(NOT OPENSSL_FOUND)
 	if(MSVC)
 		message("OpenSSL not found, using prebuilt version")
@@ -291,6 +293,27 @@ message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 
 add_library(ssl INTERFACE)
 target_link_libraries(ssl INTERFACE OpenSSL::SSL)
+
+
+find_package(CURL QUIET)
+if(NOT CURL_FOUND)
+	message("System curl not found, compiling curl from source")
+	include(FetchContent)
+	option(HTTP_ONLY "disables all protocols except HTTP (This overrides all CURL_DISABLE_* options)" ON)
+	if(WIN32)
+		option(CURL_USE_SCHANNEL "Enable Windows native SSL/TLS" ON)
+	endif()
+	option(CURL_CA_FALLBACK "Set ON to use built-in CA store of TLS backend. Defaults to OFF" ON)
+	FetchContent_Declare(curl
+		GIT_REPOSITORY https://github.com/curl/curl.git
+		GIT_TAG        7ab9d43720bc34d9aa351c7ca683c1668ebf8335 # release 8.1.2
+	)
+	FetchContent_MakeAvailable(curl)
+else()
+	add_library(libcurl INTERFACE)
+	target_link_libraries(libcurl INTERFACE CURL::libcurl)
+endif()
+
 
 file(GLOB LIBATRAC9_SOURCES
 	LibAtrac9/C/src/*.c

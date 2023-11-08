@@ -17,11 +17,16 @@
 
 #include <util/net_utils.h>
 
+#include <curl/curl.h>
+
 #ifdef _WIN32
 #include <winsock2.h>
 #else
 #include <fcntl.h>
 #endif
+
+#include <condition_variable>
+#include <mutex>
 
 namespace net_utils {
 
@@ -325,6 +330,138 @@ bool socketSetBlocking(int sockfd, bool blocking) {
     }
 #endif
     return true;
+}
+
+std::string get_web_response(const std::string &url) {
+    auto curl = curl_easy_init();
+    if (!curl)
+        return {};
+
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "Vita3K Emulator");
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+
+    std::string response_string;
+    const auto writeFunc = +[](void *ptr, size_t size, size_t nmemb, std::string *data) {
+        data->append((char *)ptr, size * nmemb);
+        return size * nmemb;
+    };
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFunc);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_string);
+    long response_code;
+    curl_easy_perform(curl);
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+
+    curl_easy_cleanup(curl);
+
+    if (response_code / 100 == 2)
+        return response_string;
+
+    return {};
+}
+
+std::string get_web_regex_result(const std::string &url, const std::regex &regex) {
+    std::string result;
+
+    // Get the response of the web
+    const auto response = get_web_response(url);
+
+    // Check if the response is not empty
+    if (!response.empty()) {
+        std::smatch match;
+        // Check if the response matches the regex
+        if (std::regex_search(response, match, regex)) {
+            result = match[1];
+        } else
+            LOG_ERROR("No success found regex: {}", response);
+    }
+
+    return result;
+}
+
+uint64_t get_current_time_ms() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+};
+
+static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream) {
+    size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
+    return written;
+}
+
+typedef int (*CurlDownloadCallback)(void *c, long t, long d);
+
+bool download_file(std::string url, const std::string &output_file_path, ProgressCallback progress_callback) {
+    CURL *curl_download = curl_easy_init();
+    if (!curl_download)
+        return false;
+
+    CurlDownloadCallback curl_callback = +[](void *user_data, long bytes_total, long downloaded_bytes) {
+        const auto data = (CallbackData *)user_data;
+
+        if (bytes_total == 0)
+            return 0; // Ignore if we dont have the total yet
+
+        if (!data->second)
+            return 0;
+        const auto progress_percent = static_cast<float>(downloaded_bytes) / static_cast<float>(bytes_total) * 100.0f;
+
+        const auto elapsed_time_ms = std::difftime(get_current_time_ms(), data->first);
+
+        // Calculate remaining time in seconds
+        const auto remaining_bytes = static_cast<double>(bytes_total - downloaded_bytes);
+        const auto remaining_time = static_cast<uint64_t>((remaining_bytes / downloaded_bytes) * elapsed_time_ms) / 1000;
+
+        ProgressState *callback_result = data->second(progress_percent, remaining_time);
+
+        std::unique_lock<std::mutex> lock(callback_result->mutex);
+
+        callback_result->cv.wait(lock, [&]() {
+            return !callback_result->pause;
+        });
+
+        if (!callback_result->download) {
+            return 1; // Returning anything thats not 0 aborts the request
+        }
+        return 0;
+    };
+
+    auto start_time = get_current_time_ms();
+    auto callbackData = CallbackData(start_time, progress_callback);
+
+    curl_easy_setopt(curl_download, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl_download, CURLOPT_WRITEFUNCTION, write_data);
+    curl_easy_setopt(curl_download, CURLOPT_NOPROGRESS, false); // Enable progress function
+    curl_easy_setopt(curl_download, CURLOPT_XFERINFODATA, &callbackData);
+    curl_easy_setopt(curl_download, CURLOPT_XFERINFOFUNCTION, curl_callback);
+    curl_easy_setopt(curl_download, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
+
+    auto fp = fopen(output_file_path.c_str(), "wb");
+    if (!fp) {
+        LOG_CRITICAL("Could not fopen file {}", output_file_path);
+        curl_easy_cleanup(curl_download);
+        if (fs::exists(output_file_path))
+            fs::remove(output_file_path);
+        return false;
+    }
+
+    curl_easy_setopt(curl_download, CURLOPT_WRITEDATA, fp);
+    int res = curl_easy_perform(curl_download);
+
+    fclose(fp);
+    curl_easy_cleanup(curl_download);
+    if (progress_callback)
+        progress_callback(0, 0);
+
+    if (res != CURLE_OK) {
+        if (fs::exists(output_file_path))
+            fs::remove(output_file_path);
+    }
+
+    if (res == CURLE_ABORTED_BY_CALLBACK)
+        LOG_CRITICAL("Aborted update by user");
+
+    return res == CURLE_OK;
 }
 
 } // namespace net_utils

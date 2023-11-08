@@ -23,7 +23,7 @@
 #include <emuenv/state.h>
 #include <gui/state.h>
 
-#include <https/functions.h>
+#include <util/net_utils.h>
 
 #include <pugixml.hpp>
 
@@ -134,7 +134,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     auto &lang = gui.lang.compat_db;
 
     // Get current date of last compat database updated at
-    const auto updated_at = https::get_web_regex_result(latest_link, std::regex("Updated at: (\\d{2}-\\d{2}-\\d{4} \\d{2}:\\d{2}:\\d{2})"));
+    const auto updated_at = net_utils::get_web_regex_result(latest_link, std::regex("Updated at: (\\d{2}-\\d{2}-\\d{4} \\d{2}:\\d{2}:\\d{2})"));
     if (updated_at.empty()) {
         gui.info_message.level = spdlog::level::err;
         gui.info_message.msg = lang["get_failed"].c_str();
@@ -153,7 +153,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto new_app_compat_db_path = emuenv.cache_path / "new_app_compat_db.xml";
 
-    if (!https::download_file(app_compat_db_link, new_app_compat_db_path.string())) {
+    if (!net_utils::download_file(app_compat_db_link, new_app_compat_db_path.string())) {
         gui.info_message.level = spdlog::level::err;
         gui.info_message.msg = fmt::format(fmt::runtime(lang["download_failed"].c_str()), updated_at);
         fs::remove(new_app_compat_db_path);
