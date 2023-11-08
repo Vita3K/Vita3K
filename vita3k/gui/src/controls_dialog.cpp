@@ -187,6 +187,17 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_gui_toggle_gui, lang["toggle_gui_visibility"].c_str(), lang["toggle_gui_visibility_description"].c_str());
         ImGui::EndTable();
     }
+
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Miscellaneous");
+    if (ImGui::BeginTable("misc", 2)) {
+        ImGui::TableSetupColumn("button");
+        ImGui::TableSetupColumn("mapped_button");
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_toggle_texture_replacement, "Toggle texture replacement");
+        ImGui::EndTable();
+    }
+
     if (need_open_error_duplicate_key_popup) {
         ImGui::OpenPopup(gui.lang.controls["error"].c_str());
         need_open_error_duplicate_key_popup = false;

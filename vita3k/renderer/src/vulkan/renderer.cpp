@@ -902,13 +902,6 @@ void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
 }
 
-void VKState::set_texture_state(bool import_textures, bool export_textures, bool export_as_png) {
-    texture_cache.import_textures = import_textures;
-    texture_cache.export_textures = export_textures;
-    texture_cache.save_as_png = export_as_png;
-    texture_cache.refresh_available_textures();
-}
-
 std::vector<std::string> VKState::get_gpu_list() {
     const std::vector<vk::PhysicalDevice> gpus = instance.enumeratePhysicalDevices();
 

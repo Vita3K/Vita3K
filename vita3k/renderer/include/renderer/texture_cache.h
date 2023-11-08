@@ -88,6 +88,11 @@ protected:
     // used when exporting dds
     bool export_dds_swap_rb = false;
 
+    bool import_textures = false;
+    // if set to false, save textures as dds
+    bool save_as_png = true;
+    bool export_textures = false;
+
 public:
     Backend backend;
     bool use_protect = false;
@@ -108,16 +113,15 @@ public:
     fs::path import_folder;
     // key = hash, content = is the texture a dds (true) or a png (false)
     unordered_map_fast<uint64_t, AvailableTexture> available_textures_hash;
-    bool import_textures = false;
-    bool save_as_png = true;
 
     // folder where the exported textures will be saved
     fs::path export_folder;
     // hash of the textures that have already been exported
     unordered_set_fast<uint64_t> exported_textures_hash;
-    bool export_textures = false;
 
     bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id, const size_t sampler_cache_size = 0);
+    void set_replacement_state(bool import_textures, bool export_textures, bool export_as_png);
+
     virtual void select(size_t index, const SceGxmTexture &texture) = 0;
     virtual void configure_texture(const SceGxmTexture &texture) = 0;
     virtual void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) = 0;

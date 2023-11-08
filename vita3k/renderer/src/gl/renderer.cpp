@@ -732,13 +732,6 @@ void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
 }
 
-void GLState::set_texture_state(bool import_textures, bool export_textures, bool export_as_png) {
-    texture_cache.import_textures = import_textures;
-    texture_cache.export_textures = export_textures;
-    texture_cache.save_as_png = export_as_png;
-    texture_cache.refresh_available_textures();
-}
-
 void GLState::precompile_shader(const ShadersHash &hash) {
     pre_compile_program(*this, cache_path.c_str(), title_id, self_name, hash);
 }
