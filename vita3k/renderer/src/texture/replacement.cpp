@@ -54,6 +54,25 @@ static void reverse_comp3_order(const void *src, void *dst, uint32_t nb_pixels);
 // some dds format are encoded in a bgra way, in this case the swizzle must be changed
 static bool dds_swap_rb(const ddspp::DXGIFormat format);
 
+void TextureCache::set_replacement_state(bool import_textures, bool export_textures, bool export_as_png) {
+    if (this->import_textures == import_textures
+        && this->exporting_texture == export_textures
+        && this->save_as_png == export_as_png)
+        return;
+
+    this->import_textures = import_textures;
+    this->exporting_texture = export_textures;
+    this->save_as_png = export_as_png;
+
+    // invalidate all the current textures, will force all of them to be re-uploaded next frame
+    for (int i = 0; i < TextureCacheSize; i++) {
+        texture_queue.items[i].content.hash = 0;
+        texture_queue.items[i].content.dirty = true;
+    }
+
+    refresh_available_textures();
+}
+
 void TextureCache::export_select(const SceGxmTexture &texture) {
     const SceGxmTextureBaseFormat format = gxm::get_base_format(gxm::get_format(texture));
     const bool is_cube = texture.texture_type() == SCE_GXM_TEXTURE_CUBE || texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY;

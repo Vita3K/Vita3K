@@ -27,6 +27,7 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <renderer/state.h>
+#include <renderer/texture_cache.h>
 
 #include <gui/functions.h>
 #include <gui/state.h>
@@ -422,7 +423,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
     emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
     emuenv.renderer->set_stretch_display(emuenv.cfg.stretch_the_display_area);
-    emuenv.renderer->set_texture_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
+    emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
 
     // No change it if app already running
     if (emuenv.io.title_id.empty()) {

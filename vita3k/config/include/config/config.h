@@ -131,6 +131,7 @@ enum PerfomanceOverleyPosition {
     code(int, "keyboard-gui-toggle-gui", 10, keyboard_gui_toggle_gui)                                   \
     code(int, "keyboard-gui-fullscreen", 68, keyboard_gui_fullscreen)                                   \
     code(int, "keyboard-gui-toggle-touch", 23, keyboard_gui_toggle_touch)                               \
+    code(int, "keyboard-toggle-texture-replacement", 0, keyboard_toggle_texture_replacement)            \
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
     code(bool, "display-info-message", true, display_info_message)                                      \

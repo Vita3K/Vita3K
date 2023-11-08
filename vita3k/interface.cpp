@@ -34,6 +34,8 @@
 #include <packages/functions.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
+#include <renderer/state.h>
+#include <renderer/texture_cache.h>
 
 #include <modules/module_parent.h>
 #include <string>
@@ -545,6 +547,11 @@ static void switch_full_screen(EmuEnvState &emuenv) {
     app::update_viewport(emuenv);
 }
 
+static void toggle_texture_replacement(EmuEnvState &emuenv) {
+    emuenv.cfg.current_config.import_textures = !emuenv.cfg.current_config.import_textures;
+    emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
+}
+
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
     refresh_controllers(emuenv.ctrl, emuenv);
     const auto allow_switch_state = !emuenv.io.title_id.empty() && !gui.vita_area.app_close && !gui.vita_area.home_screen && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog && gui::get_sys_apps_state(gui);
@@ -694,6 +701,8 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 toggle_touchscreen();
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped)
                 switch_full_screen(emuenv);
+            if (event.key.keysym.scancode == emuenv.cfg.keyboard_toggle_texture_replacement && !gui.is_key_capture_dropped)
+                toggle_texture_replacement(emuenv);
 
             if (sce_ctrl_btn != 0)
                 ui_navigation(sce_ctrl_btn);
