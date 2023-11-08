@@ -117,12 +117,14 @@ jobs:
         run: echo "build_variable=$(git rev-list HEAD --count)" >> $GITHUB_ENV
         if: matrix.os == 'ubuntu-latest'
 
-      - name: Bundle OpenSSL shared objects
-        id: bundle_openssl
+      - name: Bundle shared objects
+        id: bundle_shared_objects
         run: |
             cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
             cp /usr/lib/x86_64-linux-gnu/libssl.so.3 ./libssl.so.3
             cp /usr/lib/x86_64-linux-gnu/libcrypto.so.3 ./libcrypto.so.3
+            cp /usr/lib/x86_64-linux-gnu/libcurl-gnutls.so.4 ./libcurl-gnutls.so.4
+
         if: matrix.os == 'ubuntu-latest'
 
       - name: Ccache statistics
