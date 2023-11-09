@@ -1,0 +1,54 @@
+diff --git a/cmake_unofficial/CMakeLists.txt b/cmake_unofficial/CMakeLists.txt
+index e8fbb53..6385d90 100644
+--- a/cmake_unofficial/CMakeLists.txt
++++ b/cmake_unofficial/CMakeLists.txt
+@@ -3,7 +3,7 @@
+ # the public domain worldwide. This software is distributed without
+ # any warranty.
+ #
+-# For details, see <https://creativecommons.org/publicdomain/zero/1.0/>.
++# For details, see <
+ 
+ cmake_minimum_required (VERSION 2.8.12 FATAL_ERROR)
+ 
+@@ -75,26 +75,22 @@ mark_as_advanced(XXHASH_BUNDLED_MODE)
+ include(CMakeDependentOption)
+ CMAKE_DEPENDENT_OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON "NOT XXHASH_BUNDLED_MODE" OFF)
+ 
+-if("${CMAKE_VERSION}" VERSION_LESS "3.10")
+-  # Can not enable DISPATCH mode since it fails to recognize architecture.
+-else()
+-  CMAKE_HOST_SYSTEM_INFORMATION(RESULT PLATFORM QUERY OS_PLATFORM)
+-  message(STATUS "Architecture: ${PLATFORM}")
+-endif()
++# if("${CMAKE_VERSION}" VERSION_LESS "3.10")
++#   # Can not enable DISPATCH mode since it fails to recognize architecture.
++# else()
++#   CMAKE_HOST_SYSTEM_INFORMATION(RESULT PLATFORM QUERY OS_PLATFORM)
++#   message(STATUS "Architecture: ${PLATFORM}")
++# endif()
+ 
+ # libxxhash
+-if((DEFINED DISPATCH) AND (DEFINED PLATFORM))
+-  # Only support DISPATCH option on x86_64.
+-  if(("${PLATFORM}" STREQUAL "x86_64") OR ("${PLATFORM}" STREQUAL "AMD64"))
+-    set(XXHSUM_DISPATCH ON)
+-    message(STATUS "Enable xxHash dispatch mode")
+-    add_library(xxhash "${XXHASH_DIR}/xxh_x86dispatch.c"
+-                       "${XXHASH_DIR}/xxhash.c"
+-               )
+-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DXXHSUM_DISPATCH=1")
+-  else()
+-    add_library(xxhash "${XXHASH_DIR}/xxhash.c")
+-  endif()
++# if((DEFINED DISPATCH) AND (DEFINED PLATFORM))
++if(DEFINED DISPATCH)
++  set(XXHSUM_DISPATCH ON)
++  message(STATUS "Enable xxHash dispatch mode")
++  add_library(xxhash "${XXHASH_DIR}/xxh_x86dispatch.c"
++                      "${XXHASH_DIR}/xxhash.c"
++              )
++  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DXXHSUM_DISPATCH=1")
+ else()
+   add_library(xxhash "${XXHASH_DIR}/xxhash.c")
+ endif()

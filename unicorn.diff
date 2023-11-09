@@ -1,0 +1,48 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index dbdbbb92..e43fb179 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -19,7 +19,13 @@ endif()
+ 
+ # Workaround to fix wrong compiler on macos.
+ if(APPLE AND NOT CMAKE_C_COMPILER)
+-    set(CMAKE_C_COMPILER "/usr/bin/cc")
++    find_program(CCACHE_PROGRAM ccache)
++    if(CCACHE_PROGRAM)
++        set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
++        set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
++    else()
++        set(CMAKE_C_COMPILER "/usr/bin/cc")
++    endif()
+ endif()
+ 
+ # Detect if unicorn is compiled as the top-level project
+@@ -312,6 +318,7 @@ else()
+     # GEN config-host.mak & target directories
+     execute_process(COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/qemu/configure
+         --cc=${CMAKE_C_COMPILER}
++        --cpu=${TARGET_ARCH}
+         ${EXTRA_CFLAGS}
+         ${TARGET_LIST}
+         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+@@ -404,6 +411,12 @@ else()
+             OUTPUT_FILE ${CMAKE_BINARY_DIR}/tricore-softmmu/config-target.h
+         )
+     endif()
++    if (TARGET_ARCH STREQUAL "x86_64")
++        set(UNICORN_TARGET_ARCH "i386")
++    else()
++        set(UNICORN_TARGET_ARCH "aarch64")
++        set(TARGET_ARCH "arm64")
++    endif()
+     add_compile_options(
+         ${UNICORN_CFLAGS}
+         -I${CMAKE_CURRENT_SOURCE_DIR}/qemu/tcg/${UNICORN_TARGET_ARCH}
+@@ -412,6 +425,7 @@ else()
+         -D_LARGEFILE_SOURCE
+         -Wall
+         -fPIC
++        -arch ${TARGET_ARCH}
+     )
+     if(APPLE)
+         # This warning is disabled by default for gcc and doesn't cause any bug.
