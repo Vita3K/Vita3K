@@ -56,12 +56,12 @@ static bool dds_swap_rb(const ddspp::DXGIFormat format);
 
 void TextureCache::set_replacement_state(bool import_textures, bool export_textures, bool export_as_png) {
     if (this->import_textures == import_textures
-        && this->exporting_texture == export_textures
+        && this->export_textures == export_textures
         && this->save_as_png == export_as_png)
         return;
 
     this->import_textures = import_textures;
-    this->exporting_texture = export_textures;
+    this->export_textures = export_textures;
     this->save_as_png = export_as_png;
 
     // invalidate all the current textures, will force all of them to be re-uploaded next frame
