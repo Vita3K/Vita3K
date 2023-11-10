@@ -315,8 +315,8 @@ bool TextureCache::init(const bool hashless_texture_cache, const fs::path &textu
         sampler_lookup.reserve(sampler_cache_size);
     }
 
-    export_folder = texture_folder / "export" / game_id;
-    import_folder = texture_folder / "import" / game_id;
+    export_folder = texture_folder / "export" / std::string(game_id);
+    import_folder = texture_folder / "import" / std::string(game_id);
 
     refresh_available_textures();
 
