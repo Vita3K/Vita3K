@@ -75,23 +75,9 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set(LINUX TRUE)
 endif()
 
-macro(configure_boost)
-	message("configuring boost")
+get_boost()
 
-	set(Boost_USE_STATIC_LIBS ON)
-	set(Boost_USE_MULTITHREADED ON)
-	set(BOOST_COMPONENTS filesystem system)
-
-	find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
-
-	include_directories(${Boost_INCLUDE_DIRS})
-
-	message("Using Boost_VERSION: ${Boost_VERSION}")
-	message("Using Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
-	message("Using Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
-endmacro(configure_boost)
-
-configure_boost()
+include_directories(${Boost_INCLUDE_DIRS})
 
 if (USE_DISCORD_RICH_PRESENCE)
 	add_definitions(-DUSE_DISCORD)
