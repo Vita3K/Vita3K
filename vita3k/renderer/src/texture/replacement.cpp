@@ -87,7 +87,7 @@ void TextureCache::export_select(const SceGxmTexture &texture) {
     else if (!save_as_png && !allowed_dds_textures(format))
         return;
 
-    if (exported_textures_hash.contains(current_info->hash))
+    if (exported_textures_hash.find(current_info->hash) != exported_textures_hash.end())
         // texture was already exported
         return;
 
@@ -639,7 +639,7 @@ void TextureCache::refresh_available_textures() {
 
         look_through_folder(import_folder, [&](uint64_t hash, const fs::path &file, bool is_dds) {
             // prioritize dds files
-            if (is_dds || !available_textures_hash.contains(hash)) {
+            if (is_dds || available_textures_hash.find(hash) == available_textures_hash.end()) {
                 const fs::path parent = file.parent_path();
                 auto it = found_folders.find(parent);
 
