@@ -82,8 +82,8 @@ struct SceJpegOutputInfo {
     uint16_t width;
     uint16_t height;
     uint32_t output_size;
-    uint32_t unknown1;
-    uint32_t unknown2;
+    uint32_t temp_buffer_size;
+    uint32_t coef_buffer_size;
     SceJpegPitch pitch[4];
 };
 
@@ -208,8 +208,13 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *pJpeg, SceSize isize,
         .x = size.width,
         .y = size.height
     };
+    // Should be 0 most of the time but I believe it causes more problems
+    // for it to be 0 when it shouldn't than the opposite
+    output->coef_buffer_size = 0x100;
     if (format == SCE_JPEG_PIXEL_RGBA8888) {
         output->output_size = size.width * size.height * 4;
+        // put something greater than 0
+        output->temp_buffer_size = 0x100;
     } else {
         switch (output->color_space) {
         case SCE_JPEG_COLORSPACE_GRAYSCALE:
