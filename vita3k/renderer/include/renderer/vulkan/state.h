@@ -76,6 +76,9 @@ struct VKState : public renderer::State {
     // only used when memory mapping is enabled
     std::map<Address, MappedMemory, std::greater<Address>> mapped_memories;
 
+    // queue where we put requests that need to wait for the GPU
+    Queue<WaitThreadRequest> request_queue;
+
     vkutil::Image default_image;
     vkutil::Buffer default_buffer;
 

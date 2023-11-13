@@ -22,6 +22,7 @@
 #include <renderer/vulkan/state.h>
 
 #include <gxm/functions.h>
+#include <renderer/functions.h>
 
 #include <util/log.h>
 #include <util/overloaded.h>
@@ -46,7 +47,7 @@ void VKContext::wait_thread_function(const MemState &mem) {
     };
 
     while (true) {
-        auto wait_request = request_queue.pop();
+        auto wait_request = state.request_queue.pop();
 
         if (!wait_request)
             break;
@@ -86,6 +87,11 @@ void VKContext::wait_thread_function(const MemState &mem) {
                            wait_for_fences();
 
                            state.surface_cache.perform_post_surface_sync(mem, request.cache_info);
+                       },
+                       [&](SyncSignalRequest &request) {
+                           wait_for_fences();
+
+                           renderer::subject_done(request.sync, request.timestamp);
                        } },
             *wait_request);
     }
@@ -423,17 +429,17 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
 
     if (state.features.support_memory_mapping) {
         // send it to the wait queue
-        request_queue.push(FenceWaitRequest{ fence });
+        state.request_queue.push(FenceWaitRequest{ fence });
 
         if (surface_info) {
-            request_queue.push(PostSurfaceSyncRequest{ surface_info });
+            state.request_queue.push(PostSurfaceSyncRequest{ surface_info });
         }
 
         // the notification must be the last thing sent
         NotificationRequest request = {
             .notifications = { notif1, notif2 },
         };
-        request_queue.push(request);
+        state.request_queue.push(request);
     }
 }
 
@@ -471,6 +477,69 @@ void VKContext::check_for_macroblock_change(bool is_draw) {
             }
         }
     }
+}
+
+void new_frame(VKContext &context) {
+    if (context.state.features.support_memory_mapping) {
+        FrameDoneRequest request = { context.frame_timestamp };
+        context.state.request_queue.push(request);
+    }
+
+    context.frame_timestamp++;
+    context.current_frame_idx = context.frame_timestamp % MAX_FRAMES_RENDERING;
+
+    vk::Device device = context.state.device;
+    FrameObject &frame = context.frame();
+
+    // wait on all fences still present to make sure
+    if (!frame.rendered_fences.empty()) {
+        // wait for the fences, then reset them
+
+        if (context.state.features.support_memory_mapping) {
+            // this will underflow for the first MAX_FRAMES_RENDERING frames
+            // but that's not an issue as frame.rendered_fences will be empty
+            uint64_t previous_frame_timestamp = context.frame_timestamp - MAX_FRAMES_RENDERING;
+
+            // the wait is done by the wait thread
+            std::unique_lock<std::mutex> lock(context.new_frame_mutex);
+            context.new_frame_condv.wait(lock, [&]() {
+                return context.last_frame_waited >= previous_frame_timestamp;
+            });
+        } else {
+            auto result = device.waitForFences(frame.rendered_fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+            if (result != vk::Result::eSuccess) {
+                LOG_ERROR("Could not wait for fences.");
+                assert(false);
+                return;
+            }
+        }
+
+        // reset the fences in both case (the wait thread does not do that as they can still be used)
+        device.resetFences(frame.rendered_fences);
+        frame.rendered_fences.clear();
+    }
+
+    device.resetCommandPool(frame.prerender_pool);
+    device.resetCommandPool(frame.render_pool);
+    device.resetDescriptorPool(frame.descriptor_pool);
+
+    // deferred destruction of the objects
+    frame.destroy_queue.destroy_objects();
+
+    context.last_vert_texture_count = ~0;
+    context.last_frag_texture_count = ~0;
+
+    frame.frame_timestamp = context.frame_timestamp;
+}
+
+void signal_sync_object(VKState &state, SceGxmSyncObject *sync_object, uint32_t timestamp) {
+    assert(state.features.support_memory_mapping);
+
+    SyncSignalRequest request{
+        .sync = sync_object,
+        .timestamp = timestamp
+    };
+    state.request_queue.push(request);
 }
 
 } // namespace renderer::vulkan

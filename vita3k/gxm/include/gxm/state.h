@@ -42,9 +42,9 @@ struct SceGxmInitializeParams {
 struct DisplayCallback {
     Address pc;
     Address data;
-    Ptr<SceGxmSyncObject> old_buffer;
-    Ptr<SceGxmSyncObject> new_buffer;
-    uint32_t new_buffer_timestamp;
+    Ptr<SceGxmSyncObject> old_sync;
+    Ptr<SceGxmSyncObject> new_sync;
+    uint32_t new_sync_timestamp;
 };
 
 struct MemoryMapInfo {
@@ -61,5 +61,4 @@ struct GxmState {
     SceUID display_queue_thread;
     std::map<Address, MemoryMapInfo> memory_mapped_regions;
     std::mutex callback_lock;
-    SDL_Thread *sdl_thread;
 };
