@@ -37,6 +37,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
 void mid_scene_flush(VKContext &context, const SceGxmNotification notification);
 void new_frame(VKContext &context);
+void signal_sync_object(VKState &state, SceGxmSyncObject *sync_object, uint32_t timestamp);
 
 void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const FeatureState &features);
 void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, Ptr<uint8_t> data);

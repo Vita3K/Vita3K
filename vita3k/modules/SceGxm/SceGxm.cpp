@@ -892,6 +892,48 @@ std::string to_debug_str<SceGxmTransferFlags>(const MemState &mem, SceGxmTransfe
     return std::to_string(type);
 }
 
+static void display_entry_thread(EmuEnvState &emuenv) {
+    auto &display_queue = emuenv.gxm.display_queue;
+    const Address callback_address = emuenv.gxm.params.displayQueueCallback.address();
+    const ThreadStatePtr display_thread = emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread);
+    if (!display_thread) {
+        LOG_CRITICAL("display_thread not found. thid:{}", display_thread->id);
+        return;
+    }
+    Ptr<SceGxmSyncObject> previous_sync = Ptr<SceGxmSyncObject>();
+
+    while (true) {
+        auto display_callback = display_queue.top();
+        if (!display_callback)
+            break;
+
+        SceGxmSyncObject *old_sync = display_callback->old_sync.get(emuenv.mem);
+        SceGxmSyncObject *new_sync = display_callback->new_sync.get(emuenv.mem);
+
+        // Wait for fragment on the new buffer to finish
+        renderer::wishlist(new_sync, display_callback->new_sync_timestamp);
+        // now we can remove the thread from the display queue
+        display_queue.pop();
+
+        // Now run callback
+        display_thread->run_guest_function(display_callback->pc, display_callback->data);
+
+        free(emuenv.mem, display_callback->data);
+
+        // The only thing old buffer should be waiting for is to stop being displayed
+        renderer::subject_done(old_sync, std::min(old_sync->timestamp_current + 1, old_sync->timestamp_ahead.load()));
+        if (previous_sync && display_callback->old_sync != previous_sync) {
+            // in this case, also set the previous sync object to avoid deadlocks
+            SceGxmSyncObject *other_old_sync = previous_sync.get(emuenv.mem);
+            renderer::subject_done(other_old_sync, std::min(other_old_sync->timestamp_current + 1, other_old_sync->timestamp_ahead.load()));
+        }
+
+        previous_sync = display_callback->new_sync;
+    }
+
+    return;
+}
+
 static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemState &mem, std::mutex &global_lock, std::uint32_t &return_size, Ptr<SceGxmDeferredContextCallback> callback, Ptr<void> userdata,
     const std::uint32_t size, const SceUID thread_id) {
     const std::lock_guard<std::mutex> guard(global_lock);
@@ -2008,12 +2050,12 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     // Block future rendering by setting value2 of sync object
     SceGxmSyncObject *oldBufferSync = oldBuffer.get(emuenv.mem);
     SceGxmSyncObject *newBufferSync = newBuffer.get(emuenv.mem);
-
     display_callback.data = address;
     display_callback.pc = emuenv.gxm.params.displayQueueCallback.address();
-    display_callback.old_buffer = oldBuffer;
-    display_callback.new_buffer = newBuffer;
-    display_callback.new_buffer_timestamp = newBufferSync->timestamp_ahead++;
+    display_callback.old_sync = oldBuffer;
+    display_callback.new_sync = newBuffer;
+    display_callback.new_sync_timestamp = newBufferSync->timestamp_ahead++;
+    };
 
     if (newBuffer == emuenv.gxm.last_fbo_sync_object) {
         // don't know why, some games like NFS send twice in a row the same buffer to the front...
@@ -2038,6 +2080,10 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     emuenv.gxm.display_queue.push(display_callback);
 
     renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::NewFrame, false);
+
+    if (emuenv.gxm.params.displayQueueMaxPendingCount == 1)
+        // double buffering, not handled by the queue configuration
+        emuenv.gxm.display_queue.wait_empty();
 
     return 0;
 }
@@ -2586,48 +2632,6 @@ EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params
     return STUBBED("2MiB emuenv mem");
 }
 
-struct GxmThreadParams {
-    KernelState *kernel = nullptr;
-    MemState *mem = nullptr;
-    SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
-    GxmState *gxm = nullptr;
-    renderer::State *renderer = nullptr;
-    std::shared_ptr<SDL_semaphore> emuenv_may_destroy_params = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(0), SDL_DestroySemaphore);
-};
-
-static int SDLCALL thread_function(void *data) {
-    const GxmThreadParams params = *static_cast<const GxmThreadParams *>(data);
-    SDL_SemPost(params.emuenv_may_destroy_params.get());
-    while (true) {
-        auto display_callback = params.gxm->display_queue.top();
-        if (!display_callback)
-            break;
-
-        SceGxmSyncObject *oldBuffer = Ptr<SceGxmSyncObject>(display_callback->old_buffer).get(*params.mem);
-        SceGxmSyncObject *newBuffer = Ptr<SceGxmSyncObject>(display_callback->new_buffer).get(*params.mem);
-
-        // Wait for fragment on the new buffer to finish
-        renderer::wishlist(newBuffer, display_callback->new_buffer_timestamp);
-        // now we can remove the thread from the display queue
-        params.gxm->display_queue.pop();
-
-        // Now run callback
-        const ThreadStatePtr display_thread = params.kernel->get_thread(params.thid);
-        if (display_thread) {
-            display_thread->run_guest_function(display_callback->pc, display_callback->data);
-        } else {
-            LOG_ERROR("display_thread not found. thid:{} display_callback function: {}", params.thid, log_hex(display_callback->pc));
-        }
-
-        free(*params.mem, display_callback->data);
-
-        // The only thing old buffer should be waiting for is to stop being displayed
-        renderer::subject_done(oldBuffer, std::min(oldBuffer->timestamp_current + 1, oldBuffer->timestamp_ahead.load()));
-    }
-
-    return 0;
-}
-
 EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     TRACY_FUNC(sceGxmInitialize, params);
     if (!params) {
@@ -2644,8 +2648,9 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
 
     emuenv.gxm.params = *params;
     // hack, limit the number of frame rendering at the same time to at most 3
-    // moreover, it looks like one of the frame of displayQueueMaxPendingCount is the one going to be added to the display queue
-    const uint32_t max_queue_size = std::min(std::max(params->displayQueueMaxPendingCount, 2U), 3U) - 1;
+    // also, the last frame won't be in the queue so decrease the count by 1
+    // the case where displayQueueMaxPendingCount is 1 handled in sceGxmDisplayQueueAddEntry
+    const uint32_t max_queue_size = std::max(std::min(params->displayQueueMaxPendingCount, 3U) - 1, 1U);
     emuenv.gxm.display_queue.maxPendingCount_ = max_queue_size;
 
     const ThreadStatePtr main_thread = util::find(thread_id, emuenv.kernel.threads);
@@ -2655,17 +2660,10 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     }
     emuenv.gxm.display_queue_thread = display_queue_thread->id;
 
-    GxmThreadParams gxm_params;
-    gxm_params.mem = &emuenv.mem;
-    gxm_params.kernel = &emuenv.kernel;
-    gxm_params.thid = emuenv.gxm.display_queue_thread;
-    gxm_params.gxm = &emuenv.gxm;
-    gxm_params.renderer = emuenv.renderer.get();
-
     // Reset the queue in case sceGxmTerminate was called earlier
     emuenv.gxm.display_queue.reset();
-    emuenv.gxm.sdl_thread = SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params);
-    SDL_SemWait(gxm_params.emuenv_may_destroy_params.get());
+    std::thread display_host_thread(display_entry_thread, std::ref(emuenv));
+    display_host_thread.detach();
     emuenv.gxm.notification_region = Ptr<uint32_t>(alloc(emuenv.mem, MiB(1), "SceGxmNotificationRegion"));
     memset(emuenv.gxm.notification_region.get(emuenv.mem), 0, MiB(1));
     return 0;
@@ -4666,8 +4664,6 @@ EXPORT(int, sceGxmTerminate) {
     // Make sure everything is done in SDL side before killing Vita thread
     emuenv.gxm.display_queue.wait_empty();
     emuenv.gxm.display_queue.abort();
-    SDL_WaitThread(emuenv.gxm.sdl_thread, nullptr);
-    emuenv.gxm.sdl_thread = nullptr;
     emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread)->exit_delete();
     return 0;
 }

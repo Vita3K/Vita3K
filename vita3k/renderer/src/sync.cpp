@@ -43,7 +43,12 @@ COMMAND(handle_signal_sync_object) {
     SceGxmSyncObject *sync = helper.pop<Ptr<SceGxmSyncObject>>().get(mem);
     const uint32_t timestamp = helper.pop<uint32_t>();
 
-    renderer::subject_done(sync, timestamp);
+    if (features.support_memory_mapping) {
+        assert(renderer.current_backend == renderer::Backend::Vulkan);
+        vulkan::signal_sync_object(dynamic_cast<vulkan::VKState &>(renderer), sync, timestamp);
+    } else {
+        renderer::subject_done(sync, timestamp);
+    }
 }
 
 COMMAND(handle_wait_sync_object) {

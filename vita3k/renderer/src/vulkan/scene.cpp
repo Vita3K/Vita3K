@@ -96,59 +96,6 @@ void mid_scene_flush(VKContext &context, const SceGxmNotification notification) 
     }
 }
 
-void new_frame(VKContext &context) {
-    if (context.state.features.support_memory_mapping) {
-        FrameDoneRequest request = { context.frame_timestamp };
-        context.request_queue.push(request);
-    }
-
-    context.frame_timestamp++;
-    context.current_frame_idx = context.frame_timestamp % MAX_FRAMES_RENDERING;
-
-    vk::Device device = context.state.device;
-    FrameObject &frame = context.frame();
-
-    // wait on all fences still present to make sure
-    if (!frame.rendered_fences.empty()) {
-        // wait for the fences, then reset them
-
-        if (context.state.features.support_memory_mapping) {
-            // this will underflow for the first MAX_FRAMES_RENDERING frames
-            // but that's not an issue as frame.rendered_fences will be empty
-            uint64_t previous_frame_timestamp = context.frame_timestamp - MAX_FRAMES_RENDERING;
-
-            // the wait is done by the wait thread
-            std::unique_lock<std::mutex> lock(context.new_frame_mutex);
-            context.new_frame_condv.wait(lock, [&]() {
-                return context.last_frame_waited >= previous_frame_timestamp;
-            });
-        } else {
-            auto result = device.waitForFences(frame.rendered_fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
-            if (result != vk::Result::eSuccess) {
-                LOG_ERROR("Could not wait for fences.");
-                assert(false);
-                return;
-            }
-        }
-
-        // reset the fences in both case (the wait thread does not do that as they can still be used)
-        device.resetFences(frame.rendered_fences);
-        frame.rendered_fences.clear();
-    }
-
-    device.resetCommandPool(frame.prerender_pool);
-    device.resetCommandPool(frame.render_pool);
-    device.resetDescriptorPool(frame.descriptor_pool);
-
-    // deferred destruction of the objects
-    frame.destroy_queue.destroy_objects();
-
-    context.last_vert_texture_count = ~0;
-    context.last_frag_texture_count = ~0;
-
-    frame.frame_timestamp = context.frame_timestamp;
-}
-
 #ifdef __APPLE__
 // restride vertex attribute binding strides to multiple of 4
 // needed for metal because it only allows multiples of 4.

@@ -136,6 +136,11 @@ struct FrameDoneRequest {
     uint64_t frame_timestamp;
 };
 
+struct SyncSignalRequest {
+    SceGxmSyncObject *sync;
+    uint32_t timestamp;
+};
+
 struct PostSurfaceSyncRequest {
     ColorSurfaceCacheInfo *cache_info;
 };
@@ -143,7 +148,13 @@ struct PostSurfaceSyncRequest {
 // A parallel thread is handling these request and telling other waiting threads
 // when they are done
 // only used if memory mapping is enabled
-typedef std::variant<FenceWaitRequest, NotificationRequest, FrameDoneRequest, PostSurfaceSyncRequest> WaitThreadRequest;
+typedef std::variant<
+    FenceWaitRequest,
+    NotificationRequest,
+    FrameDoneRequest,
+    PostSurfaceSyncRequest,
+    SyncSignalRequest>
+    WaitThreadRequest;
 
 struct VKContext : public renderer::Context {
     // GXM Context Info
@@ -247,8 +258,6 @@ struct VKContext : public renderer::Context {
     // only used if memory mapping is enabled
     std::mutex new_frame_mutex;
     std::condition_variable new_frame_condv;
-    // queue were new notification and frame done request are added
-    Queue<WaitThreadRequest> request_queue;
     std::thread gpu_request_wait_thread;
     uint64_t last_frame_waited = 0;
 
