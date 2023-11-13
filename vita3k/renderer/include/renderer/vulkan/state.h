@@ -97,7 +97,7 @@ struct VKState : public renderer::State {
         return &texture_cache;
     }
 
-    void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
+    void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, DisplayState &display,
         const GxmState &gxm, MemState &mem) override;
     void swap_window(SDL_Window *window) override;
     uint32_t get_features_mask() override;

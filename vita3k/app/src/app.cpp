@@ -63,8 +63,8 @@ void calculate_fps(EmuEnvState &emuenv) {
 
 void set_window_title(EmuEnvState &emuenv) {
     const auto af = emuenv.cfg.current_config.anisotropic_filtering > 1 ? fmt ::format(" | AF {}x", emuenv.cfg.current_config.anisotropic_filtering) : "";
-    const auto x = emuenv.display.frame.image_size.x * emuenv.cfg.current_config.resolution_multiplier;
-    const auto y = emuenv.display.frame.image_size.y * emuenv.cfg.current_config.resolution_multiplier;
+    const auto x = emuenv.display.next_rendered_frame.image_size.x * emuenv.cfg.current_config.resolution_multiplier;
+    const auto y = emuenv.display.next_rendered_frame.image_size.y * emuenv.cfg.current_config.resolution_multiplier;
     const std::string title_to_set = fmt::format("{} | {} ({}) | {} | {} FPS ({} ms) | {}x{}{} | {}",
         window_title,
         emuenv.current_app_title, emuenv.io.title_id,

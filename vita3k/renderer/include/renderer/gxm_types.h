@@ -172,12 +172,10 @@ struct SceGxmSyncObject {
     std::atomic<uint32_t> timestamp_ahead;
 
     // timestamp for the last time the object was displayed
-    std::uint32_t last_display;
+    std::atomic<uint32_t> last_display;
 
     std::mutex lock;
     std::condition_variable cond;
-    // some extra space for additional data, on the Vulkan renderer this points to a RenderTarget* a,d a vector of fences
-    void *extra;
 };
 
 struct GxmContextState {

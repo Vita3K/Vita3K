@@ -27,6 +27,8 @@
 #include <xxhash.h>
 #endif
 
+#include <display/functions.h>
+#include <display/state.h>
 #include <gxm/functions.h>
 #include <gxm/state.h>
 #include <gxm/types.h>
@@ -915,8 +917,12 @@ static void display_entry_thread(EmuEnvState &emuenv) {
         // now we can remove the thread from the display queue
         display_queue.pop();
 
+        // specify whether the call to SceDisplaySetFrameBuf is expected to do something
+        emuenv.display.predicting = display_callback->frame_predicted;
+        emuenv.display.current_sync_object = display_callback->new_sync.address();
+
         // Now run callback
-        display_thread->run_guest_function(display_callback->pc, display_callback->data);
+        display_thread->run_guest_function(callback_address, display_callback->data);
 
         free(emuenv.mem, display_callback->data);
 
@@ -1499,7 +1505,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
         // Wait for the display queue to be done.
         // If it's offline render, the sync object already has the display queue subject done, so don't worry.
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::WaitSyncObject,
-            nullptr, fragmentSyncObject, sync->last_display);
+            nullptr, fragmentSyncObject, sync->last_display.load());
     }
 
     // It's legal to set at client.
@@ -2041,20 +2047,22 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     if (!oldBuffer || !newBuffer)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    DisplayCallback display_callback;
-
     const Address address = alloc(emuenv.mem, emuenv.gxm.params.displayQueueCallbackDataSize, __FUNCTION__);
     const Ptr<void> ptr(address);
     memcpy(ptr.get(emuenv.mem), callbackData.get(emuenv.mem), emuenv.gxm.params.displayQueueCallbackDataSize);
 
+    DisplayFrameInfo *frame = predict_next_image(emuenv, newBuffer.address());
+
     // Block future rendering by setting value2 of sync object
     SceGxmSyncObject *oldBufferSync = oldBuffer.get(emuenv.mem);
     SceGxmSyncObject *newBufferSync = newBuffer.get(emuenv.mem);
-    display_callback.data = address;
-    display_callback.pc = emuenv.gxm.params.displayQueueCallback.address();
-    display_callback.old_sync = oldBuffer;
-    display_callback.new_sync = newBuffer;
-    display_callback.new_sync_timestamp = newBufferSync->timestamp_ahead++;
+
+    DisplayCallback display_callback{
+        .data = address,
+        .old_sync = oldBuffer,
+        .new_sync = newBuffer,
+        .new_sync_timestamp = newBufferSync->timestamp_ahead++,
+        .frame_predicted = frame != nullptr
     };
 
     if (newBuffer == emuenv.gxm.last_fbo_sync_object) {
@@ -2063,7 +2071,7 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
         renderer::subject_done(newBufferSync, newBufferSync->last_display);
     }
 
-    newBufferSync->last_display = newBufferSync->timestamp_ahead;
+    newBufferSync->last_display = newBufferSync->timestamp_ahead.load();
     emuenv.gxm.last_fbo_sync_object = newBuffer;
 
     // needed the first time the sync object is used as the old front buffer
@@ -2079,7 +2087,8 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     // function may be blocking here (expected behavior)
     emuenv.gxm.display_queue.push(display_callback);
 
-    renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::NewFrame, false);
+    // TODO: I do this because the sync function does not have access to the display state, but this is not great
+    renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::NewFrame, false, frame, &emuenv.display);
 
     if (emuenv.gxm.params.displayQueueMaxPendingCount == 1)
         // double buffering, not handled by the queue configuration
@@ -5274,7 +5283,7 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
-            syncObject, sync->last_display);
+            syncObject, sync->last_display.load());
         cmd_timestamp = ++sync->timestamp_ahead;
     }
 
@@ -5334,7 +5343,7 @@ EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> s
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
-            syncObject, sync->last_display);
+            syncObject, sync->last_display.load());
         cmd_timestamp = ++sync->timestamp_ahead;
     }
 
@@ -5385,7 +5394,7 @@ EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFor
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
-            syncObject, sync->last_display);
+            syncObject, sync->last_display.load());
         cmd_timestamp = ++sync->timestamp_ahead;
     }
 

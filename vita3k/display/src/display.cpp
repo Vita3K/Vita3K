@@ -32,6 +32,9 @@
 
 static constexpr int TARGET_FPS = 60;
 static constexpr int64_t TARGET_MICRO_PER_FRAME = 1000000LL / TARGET_FPS;
+// how many cycles do we need to see before we start predicting the next frame
+static constexpr int predict_threshold = 3;
+static constexpr int max_expected_swapchain_size = 6;
 
 static void vblank_sync_thread(EmuEnvState &emuenv) {
     DisplayState &display = emuenv.display;
@@ -43,10 +46,6 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
             {
                 const std::lock_guard<std::mutex> guard_info(display.display_info_mutex);
                 display.vblank_count++;
-
-                // register framebuf change made by _sceDisplaySetFrameBuf
-                if (display.has_next_frame)
-                    display.has_next_frame = false;
 
                 // in this case, even though no new game frames are being rendered, we still need to update the screen
                 if (emuenv.kernel.is_threads_paused() || (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING))
@@ -118,4 +117,103 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePt
             }
         }
     }
+}
+
+static void reset_swapchain_cycle(DisplayState &display, Address sync_object) {
+    display.predicted_frames.resize(1);
+    display.predicted_frames[0].sync_object = sync_object;
+    display.predicted_frame_position = 0;
+    display.predicted_cycles_seen = 0;
+}
+
+DisplayFrameInfo *predict_next_image(EmuEnvState &emuenv, Address sync_object) {
+    auto &display = emuenv.display;
+    std::lock_guard<std::mutex> lock(display.display_info_mutex);
+
+    if (display.predicted_cycles_seen >= predict_threshold) {
+        // just check that the next sync_object in line is the one we expect
+        display.predicted_frame_position = (display.predicted_frame_position + 1) % display.predicted_frames.size();
+        if (display.predicted_frames[display.predicted_frame_position].sync_object != sync_object)
+            // bad, this isn't what we expect
+            reset_swapchain_cycle(display, sync_object);
+
+    } else if (display.predicted_cycles_seen >= 1) {
+        display.predicted_frame_position = (display.predicted_frame_position + 1) % display.predicted_frames.size();
+
+        if (display.predicted_frame_position == 0)
+            display.predicted_cycles_seen++;
+
+        if (display.predicted_frames[display.predicted_frame_position].sync_object != sync_object)
+            // bad, this isn't what we expect
+            reset_swapchain_cycle(display, sync_object);
+    } else {
+        // check if we have a cycle
+        bool has_cycle = false;
+        for (int idx = 0; idx < display.predicted_frames.size(); idx++) {
+            if (display.predicted_frames[idx].sync_object == sync_object) {
+                // we found a cycle
+                has_cycle = true;
+                display.predicted_frames.erase(display.predicted_frames.begin(), display.predicted_frames.begin() + idx);
+                display.predicted_frame_position = 0;
+                display.predicted_cycles_seen = 1;
+                break;
+            }
+        }
+
+        if (!has_cycle) {
+            // predicted_frame_position is initialized to -1, so this is fine
+            display.predicted_frame_position++;
+            if (display.predicted_frame_position == display.predicted_frames.size()) {
+                // keep the last max_expected_swapchain_size frames for the swapchain cycle
+                if (display.predicted_frames.size() == max_expected_swapchain_size) {
+                    display.predicted_frame_position = 0;
+                } else {
+                    display.predicted_frames.resize(display.predicted_frames.size() + 1);
+                }
+            }
+            display.predicted_frames[display.predicted_frame_position].sync_object = sync_object;
+        }
+    }
+
+    bool predict = display.predicted_cycles_seen >= predict_threshold;
+    DisplayFrameInfo *frame = nullptr;
+    if (predict) {
+        // set the next framebuffer image here
+        frame = new DisplayFrameInfo;
+        *frame = display.predicted_frames[display.predicted_frame_position].frame_info;
+    }
+
+    return frame;
+}
+
+void update_prediction(EmuEnvState &emuenv, DisplayFrameInfo &frame) {
+    auto &display = emuenv.display;
+    std::lock_guard<std::mutex> lock(display.display_info_mutex);
+    Address sync_object = display.current_sync_object;
+
+    if (!display.predicting) {
+        display.next_rendered_frame = frame;
+        emuenv.renderer->should_display = true;
+    }
+
+    for (auto &pred_frame : display.predicted_frames) {
+        if (pred_frame.sync_object != sync_object)
+            continue;
+
+        if (memcmp(&pred_frame.frame_info, &frame, sizeof(DisplayFrameInfo)) == 0)
+            // we got what we expected, fine
+            return;
+
+        pred_frame.frame_info = frame;
+        break;
+    }
+
+    if (display.predicting) {
+        LOG_TRACE("Mispredicted the next swapchain image");
+        display.next_rendered_frame = frame;
+        emuenv.renderer->should_display = true;
+    }
+
+    // let predict_next_image reset the cycle if necessary
+    display.predicted_cycles_seen = std::min(display.predicted_cycles_seen, 1U);
 }
