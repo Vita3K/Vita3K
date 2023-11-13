@@ -54,6 +54,8 @@
 		<license>Лицензия</license>
 		<shaders_cache>Кэш шейдеров</shaders_cache>
 		<shaders_log>Лог шейдеров</shaders_log>
+		<manual>Руководство</manual>
+		<update>Обновление</update>
 		<update_history>Хронология обновлений</update_history>
 		<history_version>Версия {}</history_version>
 		<information>Информация</information>
@@ -222,6 +224,11 @@
 			<state id = "6">Играбельно</state>
 		</states>
 	</compatibility>
+
+	<compat_db>
+		<error>Ошибка</error>
+		<information>Информация</information>
+	</compat_db>
 
 	<compile_shaders>
 		<compiling_shaders>Компиляция шейдеров</compiling_shaders>
@@ -524,6 +531,8 @@
 	</settings>
 
 	<settings_dialog name="Настройки">
+		<gui name="Интерфейс">
+		</gui>
 		<close>Закрыть</close>
 		<save>Сохранить</save>
 	</settings_dialog>
@@ -572,7 +581,7 @@
 	<vita3k_update name="Обновление Vita3K">
  		<new_version_available>Доступна новая версия Vita3K.</new_version_available>
 		<back>Назад</back>
-		<cancel_update_resume>Отменить обновление?</cancel_update_resume>
+		<cancel_update>Отменить обновление?</cancel_update>
 		<downloading>Идет загрузка...
 После завершения загрузки Vita3K автоматически перезапустится и установит новое обновление.</downloading>
 		<not_complete_update>Не удалось завершить обновление.</not_complete_update>
@@ -590,20 +599,20 @@
 	</vita3k_update>
 
 	<welcome name="Добро пожаловать в Vita3K">
-		<line_first>Vita3K, эмулятор PlayStation Vita</line_first>
-		<line_second>Vita3K - это эмулятор PlayStation Vita с открытым исходным кодом, написанный на C++ для Windows, Linux, macOS и Android.</line_second>
-		<line_third>Эмулятор до сих пор находится в разработке, мы очень ценим любые отзывы и тесты.</line_third>
-		<line_fourth>Для начала, пожалуйста, установите прошивку PS Vita и пакет шрифтов.</line_fourth>
+		<vita3k>Vita3K, эмулятор PlayStation Vita</vita3k>
+		<about_vita3k>Vita3K - это эмулятор PlayStation Vita с открытым исходным кодом, написанный на C++ для Windows, Linux, macOS и Android.</about_vita3k>
+		<development_stage>Эмулятор до сих пор находится в разработке, мы очень ценим любые отзывы и тесты.</development_stage>
+		<about_firmware>Для начала, пожалуйста, установите прошивку PS Vita и пакет шрифтов.</about_firmware>
 		<download_firmware>Скачать прошивку</download_firmware>
-		<line_sixth_part_one>Полное руководство для настройки Vita3K можно найти</line_sixth_part_one>
+		<vita3k_quickstart>Полное руководство для настройки Vita3K можно найти</vita3k_quickstart>
 		<quickstart>здесь</quickstart>
-		<line_sixth_part_two></line_sixth_part_two>
-		<line_seventh>Проверьте списки совместимости, чтобы узнать, что сейчас запускается</line_seventh>
+		<page></page>
+		<check_compatibility>Проверьте списки совместимости, чтобы узнать, что сейчас запускается</check_compatibility>
 		<commercial_compatibility_list>Список совместимости коммерческих игр</commercial_compatibility_list>
 		<homebrew_compatibility_list>Список совместимости homebrew</homebrew_compatibility_list>
-		<line_ninth>Помощникам всегда рады!</line_ninth>
-		<line_tenth>Дополнительную информацию можно найти на канале #help в</line_tenth>
-		<line_eleventh>Vita3K не поощряет пиратство. Вы должны использовать дампы своих собственных игр.</line_eleventh>
+		<welcome_contribution>Помощникам всегда рады!</welcome_contribution>
+		<discord_help>Дополнительную информацию можно найти на канале #help в</discord_help>
+		<no_piracy>Vita3K не поощряет пиратство. Вы должны использовать дампы своих собственных игр.</no_piracy>
 		<show_next_time>Показать в следующий раз</show_next_time>
 		<close>Закрыть</close>
 	</welcome>

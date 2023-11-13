@@ -2,7 +2,7 @@
 
 <lang>
 	<main_menubar>
-		<file name="File">
+		<file name="Filen">
 			<open_pref_path>Open Pref Path</open_pref_path>
 			<install_firmware>Install Firmware</install_firmware>
 			<install_pkg>Install .pkg</install_pkg>
@@ -19,12 +19,14 @@
 		<controls name="Controls">
 			<keyboard_controls>Keyboard Controls</keyboard_controls>
 		</controls>
-		<help name="Help">
+		<help name="Hjelp">
 			<welcome>Welcome</welcome>
 		</help>
 	</main_menubar>
 
 	<app_context>
+		<manual>Håndboken</manual>
+		<update>Oppdater</update>
 		<update_history>Oppdater historikk</update_history>
 		<history_version>Versjon {}</history_version>
 		<information>Informasjon</information>
@@ -173,6 +175,11 @@ Feilkode: {}</an_error_occurred>
 		<minutes_ago>{} minutter sidan</minutes_ago>
 	</common>
 
+	<compat_db>
+		<error>Feil</error>
+		<information>Informasjon</information>
+	</compat_db>
+
 	<content_manager name="Innholdsadministrator">
 		<application name="Programmer">
 			<delete>De valgte programmene og alle de tilknyttede dataene, inkludert lagreda data, vil bli slettet.</delete>
@@ -191,6 +198,10 @@ Feilkode: {}</an_error_occurred>
 		<name>Navn</name>
 		<num>Num</num>
 	</controllers>
+
+	<controls name="Controls">
+		<error>Feil</error>
+	</controls>
 
 	<dialog>
 		<trophy>
@@ -316,6 +327,7 @@ Vita3K-systemet ditt er klart!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Innstillinger">
+		<close>Lukke</close>
 		<save>Lagre</save>
 	</settings_dialog>
 
@@ -355,7 +367,7 @@ Er du sikker på at du vil fortsette?</user_delete_warn>
 	<vita3k_update name="Vita3K-oppdatering">
  		<new_version_available>En ny versjon av Vita3K er tilgjengelig.</new_version_available>
 		<back>Tilbake</back>
- 		<cancel_update_resume>Vil du avbryte oppdateringen?</cancel_update_resume>
+ 		<cancel_update>Vil du avbryte oppdateringen?</cancel_update>
 		<downloading>Laster ned...
 Etter at Etter at nedlastingen er fullført, vil Vita3K starte på nytt automatisk og deretter installere den nye oppdateringen.</downloading>
 		<not_complete_update>Kunne ikke fullføre oppdateringen.</not_complete_update>
@@ -369,4 +381,8 @@ Etter at Etter at nedlastingen er fullført, vil Vita3K starte på nytt automati
 		<update>Oppdater</update>
 		<version>Versjon {}</version>
 	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<close>Lukke</close>
+	</welcome>
 </lang>

@@ -190,11 +190,11 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Miscellaneous");
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["miscellaneous"].c_str());
     if (ImGui::BeginTable("misc", 2)) {
         ImGui::TableSetupColumn("button");
         ImGui::TableSetupColumn("mapped_button");
-        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_toggle_texture_replacement, "Toggle texture replacement");
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_toggle_texture_replacement, lang["toggle_texture_replacement"].c_str());
         ImGui::EndTable();
     }
 

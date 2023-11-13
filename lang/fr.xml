@@ -55,6 +55,8 @@
 		<license>License</license>
 		<shaders_cache>Cache des shaders</shaders_cache>
 		<shaders_log>Journal des shaders</shaders_log>
+		<manual>Manuel</manual>
+		<update>Mise à jour</update>
 		<update_history>Historique de mise à jour</update_history>
 		<history_version>Version {}</history_version>
 		<information>Informations</information>
@@ -221,6 +223,11 @@ Code d'erreur: {}</an_error_occurred>
 		</states>
 	</compatibility>
 
+	<compat_db>
+		<error>Erreur</error>
+		<information>Informations</information>
+	</compat_db>
+
 	<content_manager name="Gestionnaire de contenu">
 		<application name="Applications">
 			<delete>Les applications sélectionnées et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</delete>
@@ -243,6 +250,10 @@ Code d'erreur: {}</an_error_occurred>
 Connecter un contrôleur compatible avec SDL2.</not_connected>
 		<motion_support>La manette de jeu prend en charge la détection de mouvements.</motion_support>
 	</controllers>
+
+	<controls name="Commandes">
+		<error>Erreur</error>
+	</controls>
 
 	<dialog>
 		<trophy>
@@ -421,6 +432,7 @@ Votre système Vita3K est prêt !</completed_setup>
 	</settings>
 
 	<settings_dialog name="Paramètres">
+		<close>Fermer</close>
 		<save>Sauvegarder</save>
 	</settings_dialog>
 
@@ -466,7 +478,7 @@ Voulez-vous vraiment continuer?</user_delete_warn>
 	<vita3k_update name="Mise à jour Vita3K">
  		<new_version_available>Une nouvelle version de Vita3K est disponible.</new_version_available>
 		<back>Précédent</back>
-		<cancel_update_resume>Annuler la mise à jour ?</cancel_update_resume>
+		<cancel_update>Annuler la mise à jour ?</cancel_update>
 		<downloading>Téléchargement en cours...
 Une fois le téléchargement terminé, Vita3K redémarrera automatiquement et installera la nouvelle mise à jour.</downloading>
 		<not_complete_update>La mise à jour n'a pas pu être terminée.</not_complete_update>
@@ -482,4 +494,8 @@ Une fois le téléchargement terminé, Vita3K redémarrera automatiquement et in
 		<update>Mettre à jour</update>
 		<version>Version {}</version>
 	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<close>Fermer</close>
+	</welcome>
 </lang>

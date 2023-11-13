@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 
 <lang>
 	<main_menubar>
@@ -28,6 +28,8 @@
 	</about>
 
 	<app_context>
+		<manual>Manuale</manual>
+		<update>Aggiornamento</update>
 		<update_history>Cronologia degli aggiornamenti</update_history>
 		<history_version>Versione {}</history_version>
 		<information>Informazioni</information>
@@ -191,6 +193,11 @@ Codice di errore: {}</an_error_occurred>
 		</states>
 	</compatibility>
 
+	<compat_db>
+		<error>Errore</error>
+		<information>Informazioni</information>
+	</compat_db>
+
 	<content_manager name="Gestione contenuto">
 		<application name="Applicazioni">
 			<delete>Le applicazioni selezionate e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</delete>
@@ -209,6 +216,10 @@ Codice di errore: {}</an_error_occurred>
 		<name>Nome</name>
 		<num>Num</num>
 	</controllers>
+
+	<controls name="Controlli">
+		<error>Errore</error>
+	</controls>
 
 	<dialog>
 		<trophy>
@@ -335,6 +346,7 @@ Il tuo sistema Vita3K è pronto per l'uso!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Impostazioni">
+		<close>Chiudersi</close>
 		<save>Salva</save>
 	</settings_dialog>
 
@@ -375,7 +387,7 @@ Vuoi davvero continuare?</user_delete_warn>
 	<vita3k_update name="Aggiornamento del Vita3K">
  		<new_version_available>È disponibile una nuova versione del Vita3K.</new_version_available>
 		<back>Indietro</back>
- 		<cancel_update_resume>Vuoi annullare l'aggiornamento?</cancel_update_resume>
+ 		<cancel_update>Vuoi annullare l'aggiornamento?</cancel_update>
 		<downloading>Download in corso...
 Al termine del download, Vita3K si riavvierà automaticamente e quindi installerà il nuovo aggiornamento.</downloading>
 		<not_complete_update>Impossibile completare l'aggiornamento.</not_complete_update>
@@ -391,4 +403,8 @@ Al termine del download, Vita3K si riavvierà automaticamente e quindi installer
 		<update>Aggiorna</update>
 		<version>Versione {}</version>
 	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<close>Chiudersi</close>
+	</welcome>
 </lang>

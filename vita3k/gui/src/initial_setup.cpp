@@ -158,13 +158,13 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         break;
     case SELECT_PREF_PATH:
         title_str = lang["select_pref_path"];
-        ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize("Current emulator folder").x / 2.f), (WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize()));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Current emulator path");
+        ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["current_emu_path"].c_str()).x / 2.f), (WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize()));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["current_emu_path"].c_str());
         ImGui::Spacing();
         ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(emuenv.cfg.pref_path.c_str()).x / 2.f));
         ImGui::TextWrapped("%s", emuenv.cfg.pref_path.c_str());
         ImGui::SetCursorPos(!is_default_path ? ImVec2((WINDOW_SIZE.x / 2.f) - BIG_BUTTON_SIZE.x - (20.f * SCALE.x), BIG_BUTTON_POS.y) : BIG_BUTTON_POS);
-        if (ImGui::Button("Change Emulator Path", BIG_BUTTON_SIZE)) {
+        if (ImGui::Button(lang["change_emu_path"].c_str(), BIG_BUTTON_SIZE)) {
             std::filesystem::path emulator_path = "";
             host::dialog::filesystem::Result result = host::dialog::filesystem::pick_folder(emulator_path);
 
@@ -177,7 +177,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         }
         if (!is_default_path) {
             ImGui::SameLine(0, 40.f * SCALE.x);
-            if (ImGui::Button("Reset Emulator Path", BIG_BUTTON_SIZE)) {
+            if (ImGui::Button(lang["reset_emu_path"].c_str(), BIG_BUTTON_SIZE)) {
                 if (emuenv.default_path != emuenv.pref_path) {
                     emuenv.pref_path = emuenv.default_path;
                     emuenv.cfg.pref_path = emuenv.default_path.string();
@@ -212,22 +212,22 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     case SELECT_INTERFACE_SETTINGS:
         title_str = lang["select_interface_settings"];
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
-        ImGui::Checkbox("Info Bar Visible", &emuenv.cfg.show_info_bar);
+        ImGui::Checkbox(lang["show_info_bar"].c_str(), &emuenv.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to show info bar inside app selector.\nInfo bar is clock, battery level and notification center.");
+            ImGui::SetTooltip("%s", lang["info_bar_description"].c_str());
         ImGui::SameLine();
-        ImGui::Checkbox("Live Area App Screen", &emuenv.cfg.show_live_area_screen);
+        ImGui::Checkbox(lang["show_live_area_screen"].c_str(), &emuenv.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to open Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
+            ImGui::SetTooltip("%s", lang["live_area_screen_description"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("Grid Mode", &emuenv.cfg.apps_list_grid);
+        ImGui::Checkbox(lang["apps_list_grid"].c_str(), &emuenv.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to set the app list to grid mode like of PS Vita.");
+            ImGui::SetTooltip("%s", lang["apps_list_grid_description"].c_str());
         if (!emuenv.cfg.apps_list_grid) {
             ImGui::Spacing();
-            ImGui::SliderInt("App Icon Size", &emuenv.cfg.icon_size, 64, 128);
+            ImGui::SliderInt(lang["icon_size"].c_str(), &emuenv.cfg.icon_size, 64, 128);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred icon size.");
+                ImGui::SetTooltip("%s", lang["select_icon_size"].c_str());
         }
         break;
     case FINISHED:

@@ -264,6 +264,7 @@ inline const std::vector<std::pair<SceSystemParamLang, std::string>> LIST_SYS_LA
 
 struct InfoMessage {
     std::string function;
+    std::string title;
     spdlog::level::level_enum level;
     std::string msg;
 };
