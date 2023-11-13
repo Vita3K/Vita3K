@@ -647,12 +647,18 @@ void VKState::cleanup() {
     instance.destroy();
 }
 
-void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
+void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, DisplayState &display,
     const GxmState &gxm, MemState &mem) {
     // we are displaying this frame, wait for a new one
     should_display = false;
 
-    if (!display.frame.base)
+    DisplayFrameInfo frame;
+    {
+        std::lock_guard<std::mutex> guard(display.display_info_mutex);
+        frame = display.next_rendered_frame;
+    }
+
+    if (!frame.base)
         return;
 
     if (!screen_renderer.acquire_swapchain_image())
@@ -660,36 +666,36 @@ void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
 
     // Check if the surface exists
     Viewport viewport;
-    viewport.width = display.frame.image_size.x * res_multiplier;
-    viewport.height = display.frame.image_size.y * res_multiplier;
+    viewport.width = frame.image_size.x * res_multiplier;
+    viewport.height = frame.image_size.y * res_multiplier;
 
     vk::ImageLayout layout = vk::ImageLayout::eGeneral;
     vk::ImageView surface_handle = surface_cache.sourcing_color_surface_for_presentation(
-        display.frame.base, display.frame.pitch, viewport);
+        frame.base, frame.pitch, viewport);
 
     if (!surface_handle) {
         vkutil::Image &vita_surface = screen_renderer.vita_surface[screen_renderer.swapchain_image_idx];
-        if (display.frame.image_size.x != vita_surface.width || display.frame.image_size.y != vita_surface.height) {
+        if (frame.image_size.x != vita_surface.width || frame.image_size.y != vita_surface.height) {
             // re-create the image
             vita_surface.destroy();
-            vita_surface = vkutil::Image(allocator, display.frame.image_size.x, display.frame.image_size.y, vk::Format::eR8G8B8A8Unorm);
+            vita_surface = vkutil::Image(allocator, frame.image_size.x, frame.image_size.y, vk::Format::eR8G8B8A8Unorm);
             vita_surface.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
         }
 
         // copy surface to staging buffer
-        const vk::DeviceSize texture_data_size = display.frame.pitch * display.frame.image_size.y * 4;
-        memcpy(screen_renderer.vita_surface_staging_info.pMappedData, display.frame.base.get(mem), texture_data_size);
+        const vk::DeviceSize texture_data_size = frame.pitch * frame.image_size.y * 4;
+        memcpy(screen_renderer.vita_surface_staging_info.pMappedData, frame.base.get(mem), texture_data_size);
 
         // copy staging buffer to image
         auto &cmd_buffer = screen_renderer.current_cmd_buffer;
         vita_surface.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
         vk::BufferImageCopy region{
             .bufferOffset = 0,
-            .bufferRowLength = display.frame.pitch,
-            .bufferImageHeight = static_cast<uint32_t>(display.frame.image_size.y),
+            .bufferRowLength = frame.pitch,
+            .bufferImageHeight = static_cast<uint32_t>(frame.image_size.y),
             .imageSubresource = vkutil::color_subresource_layer,
             .imageOffset = { 0, 0, 0 },
-            .imageExtent = { static_cast<uint32_t>(display.frame.image_size.x), static_cast<uint32_t>(display.frame.image_size.y), 1 }
+            .imageExtent = { static_cast<uint32_t>(frame.image_size.x), static_cast<uint32_t>(frame.image_size.y), 1 }
         };
         cmd_buffer.copyBufferToImage(screen_renderer.vita_surface_staging, vita_surface.image, vk::ImageLayout::eTransferDstOptimal, region);
 
@@ -699,10 +705,10 @@ void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         viewport = {
             .offset_x = 0,
             .offset_y = 0,
-            .width = static_cast<uint32_t>(display.frame.image_size.x),
-            .height = static_cast<uint32_t>(display.frame.image_size.y),
-            .texture_width = static_cast<uint32_t>(display.frame.image_size.x),
-            .texture_height = static_cast<uint32_t>(display.frame.image_size.y)
+            .width = static_cast<uint32_t>(frame.image_size.x),
+            .height = static_cast<uint32_t>(frame.image_size.y),
+            .texture_width = static_cast<uint32_t>(frame.image_size.x),
+            .texture_height = static_cast<uint32_t>(frame.image_size.y)
         };
         layout = vk::ImageLayout::eShaderReadOnlyOptimal;
     }

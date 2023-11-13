@@ -18,12 +18,16 @@
 #pragma once
 
 #include <cstdint>
-#include <kernel/callback.h>
+#include <kernel/thread/thread_state.h>
 #include <util/types.h>
 
 struct DisplayState;
 struct KernelState;
 struct EmuEnvState;
+struct DisplayFrameInfo;
 
 void start_sync_thread(EmuEnvState &emuenv);
 void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePtr &wait_thread, const uint64_t target_vcount, const bool is_cb);
+// if the result is not nullptr, contain the predicted frame (pointer needs to be freed later)
+DisplayFrameInfo *predict_next_image(EmuEnvState &emuenv, Address sync_object);
+void update_prediction(EmuEnvState &emuenv, DisplayFrameInfo &frame);

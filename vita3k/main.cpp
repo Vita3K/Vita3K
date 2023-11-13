@@ -403,12 +403,9 @@ int main(int argc, char *argv[]) {
         // Driver acto!
         renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg);
 
-        {
-            const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
-            const SceFVector2 viewport_pos = { emuenv.viewport_pos.x, emuenv.viewport_pos.y };
-            const SceFVector2 viewport_size = { emuenv.viewport_size.x, emuenv.viewport_size.y };
-            emuenv.renderer->render_frame(viewport_pos, viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
-        }
+        const SceFVector2 viewport_pos = { emuenv.viewport_pos.x, emuenv.viewport_pos.y };
+        const SceFVector2 viewport_size = { emuenv.viewport_size.x, emuenv.viewport_size.y };
+        emuenv.renderer->render_frame(viewport_pos, viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
 
         gui::draw_begin(gui, emuenv);
         gui::draw_common_dialog(gui, emuenv);
@@ -424,13 +421,9 @@ int main(int argc, char *argv[]) {
         // Driver acto!
         renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg);
 
-        {
-            const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
-            const SceFVector2 viewport_pos = { emuenv.viewport_pos.x, emuenv.viewport_pos.y };
-            const SceFVector2 viewport_size = { emuenv.viewport_size.x, emuenv.viewport_size.y };
-            emuenv.renderer->render_frame(viewport_pos, viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
-        }
-
+        const SceFVector2 viewport_pos = { emuenv.viewport_pos.x, emuenv.viewport_pos.y };
+        const SceFVector2 viewport_size = { emuenv.viewport_size.x, emuenv.viewport_size.y };
+        emuenv.renderer->render_frame(viewport_pos, viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
         // Calculate FPS
         app::calculate_fps(emuenv);
 

@@ -244,7 +244,6 @@ void create(SceGxmSyncObject *sync, State &state) {
     sync->last_display = 0;
     sync->timestamp_current = 0;
     sync->timestamp_ahead = 0;
-    sync->extra = 0;
 }
 
 void destroy(SceGxmSyncObject *sync, State &state) {

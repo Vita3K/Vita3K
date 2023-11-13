@@ -647,23 +647,29 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 }
 
-void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
+void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, DisplayState &display,
     const GxmState &gxm, MemState &mem) {
     should_display = false;
 
-    if (!display.frame.base)
+    DisplayFrameInfo frame;
+    {
+        std::lock_guard<std::mutex> guard(display.display_info_mutex);
+        frame = display.next_rendered_frame;
+    }
+
+    if (!frame.base)
         return;
 
     // Check if the surface exists
     float uvs[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     bool need_uv = true;
 
-    const std::size_t texture_data_size = (std::size_t)display.frame.pitch * (std::size_t)display.frame.image_size.y * (std::size_t)4;
+    const std::size_t texture_data_size = static_cast<size_t>(frame.pitch) * static_cast<size_t>(frame.image_size.y) * sizeof(uint32_t);
 
     SceFVector2 texture_size;
 
     uint64_t surface_handle = surface_cache.sourcing_color_surface_for_presentation(
-        display.frame.base, display.frame.image_size.x, display.frame.image_size.y, display.frame.pitch, uvs, this->res_multiplier, texture_size);
+        frame.base, frame.image_size.x, frame.image_size.y, frame.pitch, uvs, this->res_multiplier, texture_size);
 
     GLint last_texture = 0;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
@@ -674,25 +680,25 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         glBindTexture(GL_TEXTURE_2D, screen_renderer.get_resident_texture());
 
         // Maybe a victim of surface locking (early from client GXM) when no frame yet renders!
-        const auto pixels = display.frame.base.cast<void>().get(mem);
+        const auto pixels = frame.base.cast<void>().get(mem);
 
         if (pixels) {
-            open_access_parent_protect_segment(mem, display.frame.base.address());
-            unprotect_inner(mem, display.frame.base.address(), texture_data_size);
+            open_access_parent_protect_segment(mem, frame.base.address());
+            unprotect_inner(mem, frame.base.address(), texture_data_size);
         }
 
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, display.frame.pitch);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.frame.image_size.x, display.frame.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.pitch);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frame.image_size.x, frame.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
         if (pixels) {
-            close_access_parent_protect_segment(mem, display.frame.base.address());
+            close_access_parent_protect_segment(mem, frame.base.address());
         }
 
-        texture_size.x = static_cast<float>(display.frame.image_size.x);
-        texture_size.y = static_cast<float>(display.frame.image_size.y);
+        texture_size.x = static_cast<float>(frame.image_size.x);
+        texture_size.y = static_cast<float>(frame.image_size.y);
 
         surface_handle = screen_renderer.get_resident_texture();
     } else {

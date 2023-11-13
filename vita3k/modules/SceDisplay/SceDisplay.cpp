@@ -61,13 +61,8 @@ EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDispl
 
     const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
 
-    DisplayFrameInfo *info;
     // ignore value of sync in GetFrameBuf
-    if (emuenv.display.has_next_frame) {
-        info = &emuenv.display.next_frame;
-    } else {
-        info = &emuenv.display.frame;
-    }
+    DisplayFrameInfo *info = &emuenv.display.sce_frame;
 
     pFrameBuf->base = info->base;
     pFrameBuf->pitch = info->pitch;
@@ -121,28 +116,16 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
         STUBBED("SCE_DISPLAY_SETBUF_IMMEDIATE is not supported");
     }
 
-    {
-        const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
+    DisplayFrameInfo &info = emuenv.display.sce_frame;
 
-        emuenv.display.has_next_frame = true;
-        DisplayFrameInfo &info = emuenv.display.next_frame;
+    info.base = pFrameBuf->base;
+    info.pitch = pFrameBuf->pitch;
+    info.pixelformat = pFrameBuf->pixelformat;
+    info.image_size.x = pFrameBuf->width;
+    info.image_size.y = pFrameBuf->height;
+    update_prediction(emuenv, info);
 
-        info.base = pFrameBuf->base;
-        info.pitch = pFrameBuf->pitch;
-        info.pixelformat = pFrameBuf->pixelformat;
-        info.image_size.x = pFrameBuf->width;
-        info.image_size.y = pFrameBuf->height;
-        emuenv.display.last_setframe_vblank_count = emuenv.display.vblank_count.load();
-
-        // hack (kind of)
-        // we can assume the framebuffer is already fully rendered
-        // (always the case when using gxm, and should also be the case when it is not used)
-        // so set this buffer as ready to be displayed
-        // this should decrease the latency
-        emuenv.display.frame = emuenv.display.next_frame;
-        emuenv.renderer->should_display = true;
-    }
-
+    emuenv.display.last_setframe_vblank_count = emuenv.display.vblank_count.load();
     emuenv.frame_count++;
 
 #ifdef TRACY_ENABLE
@@ -185,10 +168,12 @@ EXPORT(int, sceDisplayGetVcountInternal) {
 
 EXPORT(SceInt32, sceDisplayRegisterVblankStartCallback, SceUID uid) {
     TRACY_FUNC(sceDisplayRegisterVblankStartCallback, uid);
+
     const auto cb = lock_and_find(uid, emuenv.kernel.callbacks, emuenv.kernel.mutex);
     if (!cb)
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
 
+    std::lock_guard<std::mutex> guard(emuenv.display.mutex);
     emuenv.display.vblank_callbacks[uid] = cb;
 
     return 0;
@@ -199,6 +184,7 @@ EXPORT(SceInt32, sceDisplayUnregisterVblankStartCallback, SceUID uid) {
     if (!emuenv.display.vblank_callbacks.contains(uid))
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
 
+    std::lock_guard<std::mutex> guard(emuenv.display.mutex);
     emuenv.display.vblank_callbacks.erase(uid);
 
     return 0;

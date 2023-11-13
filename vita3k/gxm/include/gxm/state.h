@@ -26,25 +26,20 @@
 
 struct SDL_Thread;
 
-typedef void SceGxmDisplayQueueCallback(Ptr<const void> callbackData);
-static constexpr std::uint64_t SCENE_TIME_UNDEF = 0xFFFFFFFFFFFFFFFF;
-static constexpr std::uint64_t GPU_SYNCING_DISABLE_SCENE_DELTA = 40;
-static constexpr std::uint64_t GPU_INSERT_FENCE_SCENE_DELTA = 30;
-
 struct SceGxmInitializeParams {
     uint32_t flags = 0;
     uint32_t displayQueueMaxPendingCount = 0;
-    Ptr<SceGxmDisplayQueueCallback> displayQueueCallback;
+    Ptr<void> displayQueueCallback;
     uint32_t displayQueueCallbackDataSize = 0;
     uint32_t parameterBufferSize = 0;
 };
 
 struct DisplayCallback {
-    Address pc;
     Address data;
     Ptr<SceGxmSyncObject> old_sync;
     Ptr<SceGxmSyncObject> new_sync;
     uint32_t new_sync_timestamp;
+    bool frame_predicted;
 };
 
 struct MemoryMapInfo {

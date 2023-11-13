@@ -16,12 +16,14 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <chrono>
+#include <display/functions.h>
 #include <gxm/types.h>
 #include <renderer/commands.h>
 #include <renderer/driver_functions.h>
 #include <renderer/state.h>
 #include <renderer/types.h>
 
+#include <display/state.h>
 #include <renderer/gl/functions.h>
 #include <renderer/vulkan/functions.h>
 #include <renderer/vulkan/types.h>
@@ -74,6 +76,18 @@ COMMAND(handle_notification) {
 
 COMMAND(new_frame) {
     TRACY_FUNC_COMMANDS(new_frame);
+    DisplayFrameInfo *next_frame = helper.pop<DisplayFrameInfo *>();
+
+    if (next_frame) {
+        // set the predicted frame as the next one to render
+        DisplayState *display = helper.pop<DisplayState *>();
+        std::lock_guard<std::mutex> guard(display->display_info_mutex);
+        display->next_rendered_frame = *next_frame;
+        delete next_frame;
+
+        renderer.should_display = true;
+    }
+
     if (renderer.current_backend == Backend::Vulkan) {
         vulkan::new_frame(*reinterpret_cast<vulkan::VKContext *>(renderer.context));
     }

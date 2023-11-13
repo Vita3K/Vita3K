@@ -85,7 +85,7 @@ struct State {
 
     virtual TextureCache *get_texture_cache() = 0;
 
-    virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
+    virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, DisplayState &display,
         const GxmState &gxm, MemState &mem)
         = 0;
     virtual void swap_window(SDL_Window *window) = 0;
