@@ -2,7 +2,7 @@
 
 <lang>
 	<main_menubar>
-		<file name="File">
+		<file name="Ficheiro">
 			<open_pref_path>Open Pref Path</open_pref_path>
 			<install_firmware>Install Firmware</install_firmware>
 			<install_pkg>Install .pkg</install_pkg>
@@ -19,12 +19,14 @@
 		<controls name="Controls">
 			<keyboard_controls>Keyboard Controls</keyboard_controls>
 		</controls>
-		<help name="Help">
+		<help name="Ajuda">
 			<welcome>Welcome</welcome>
 		</help>
 	</main_menubar>
 
 	<app_context>
+		<manual>Manual</manual>
+		<update>Atualização</update>
 		<update_history>Histórico de atualização</update_history>
 		<history_version>Versão {}</history_version>
 		<information>Informações</information>
@@ -176,6 +178,11 @@ Código de erro: {}</an_error_occurred>
 		<minutes_ago>Há {} minutos</minutes_ago>
 	</common>
 
+	<compat_db>
+		<error>Erro</error>
+		<information>Informações</information>
+	</compat_db>
+
 	<content_manager name="Gestor de conteúdo">
 		<application name="Aplicações">
 			<delete>As aplicações selecionadas e todos os dados relacionados, incluindo dados guardados, serão eliminados.</delete>
@@ -194,6 +201,10 @@ Código de erro: {}</an_error_occurred>
 		<name>Nome</name>
 		<num>Núm</num>
 	</controllers>
+
+	<controls name="Controls">
+		<error>Erro</error>
+	</controls>
 
 	<dialog>
 		<trophy>
@@ -319,6 +330,7 @@ O seu sistema Vita3K está pronto!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Definições">
+		<close>Fechar</close>
 		<save>Guardar</save>
 	</settings_dialog>
 
@@ -359,8 +371,7 @@ Tem a certeza de que pretende continuar?</user_delete_warn>
 	<vita3k_update name="Atualização Vita3K">
  		<new_version_available>Está disponível uma nova versão da Vita3K.</new_version_available>
 		<back>Retroceder</back>
- 		<cancel_update_resume>Pretende cancelar a atualização?
-Se cancelar a operação, da próxima vez que atualizar, o Vita3K iniciará a transferência a partir deste ponto.</cancel_update_resume>
+ 		<cancel_update>Pretende cancelar a atualização?</cancel_update>
 		<downloading>A transferir...
 Uma vez concluída a transferência, Vita3K será reiniciado automaticamente e, em seguida, instalará o novo atualização.</downloading>
 		<not_complete_update>Não foi possível concluir a atualização.</not_complete_update>
@@ -374,4 +385,8 @@ Uma vez concluída a transferência, Vita3K será reiniciado automaticamente e, 
 		<update>Atualizar</update>
 		<version>Versão {}</version>
 	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<close>Fechar</close>
+	</welcome>
 </lang>

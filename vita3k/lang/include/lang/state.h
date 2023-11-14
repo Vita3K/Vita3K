@@ -108,6 +108,18 @@ struct LangState {
             { "title", "Emulation" },
             { "last_apps_used", "Last Apps used" }
         };
+        std::map<std::string, std::string> debug = {
+            { "title", "Debug" },
+            { "threads", "Threads" },
+            { "semaphores", "Semaphores" },
+            { "mutexes", "Mutexes" },
+            { "lightweight_mutexes", "Lightweight Mutexes" },
+            { "condition_variables", "Condition Variables" },
+            { "lightweight_condition_variables", "Lightweight Condition Variables" },
+            { "event_flags", "Event Flags" },
+            { "memory_allocations", "Memory Allocations" },
+            { "disassembly", "Disassembly" }
+        };
         std::map<std::string, std::string> configuration = {
             { "title", "Configuration" },
             { "user_management", "User Management" }
@@ -154,6 +166,8 @@ struct LangState {
             { "license", "License" },
             { "shaders_cache", "Shaders Cache" },
             { "shaders_log", "Shaders Log" },
+            { "manual", "Manual" },
+            { "update", "Update" },
             { "update_history", "Update History" },
             { "history_version", "Version {}" },
             { "information", "Information" }
@@ -204,6 +218,8 @@ struct LangState {
     };
     Compatibility compatibility;
     std::map<std::string, std::string> compat_db = {
+        { "error", "Error" },
+        { "information", "Information" },
         { "get_failed", "Failed to get current compatibility database, check firewall/internet access, try again later." },
         { "download_failed", "Failed to download Applications compatibility database updated at: {}" },
         { "load_failed", "Failed to load Applications compatibility database downloaded updated at: {}" },
@@ -287,6 +303,8 @@ struct LangState {
         { "toggle_touch_description", "Toggles between back touch and screen touch." },
         { "toggle_gui_visibility", "Toggle GUI Visibility" },
         { "toggle_gui_visibility_description", "Toggles between showing and hiding the GUI at the top of the screen while the app is running." },
+        { "miscellaneous", "Miscellaneous" },
+        { "toggle_texture_replacement", "Toggle Texture Replacement" },
         { "error", "Error" },
         { "error_duplicate_key", "The key is used for other bindings or it is reserved." }
     };
@@ -328,6 +346,9 @@ struct LangState {
         { "completed_setup", "You have now completed initial setup.\nYour Vita3K system is ready!" },
         { "select_language", "Select a language." },
         { "select_pref_path", "Select a pref path." },
+        { "current_emu_path", "Current emulator path" },
+        { "change_emu_path", "Change Emulator Path" },
+        { "reset_emu_path", "Reset Emulator Path" },
         { "install_firmware", "Install Firmware." },
         { "install_highly_recommended", "Installing both firmware files is highly recommended." },
         { "installed", "Installed:" },
@@ -335,6 +356,14 @@ struct LangState {
         { "download_font_package", "Download Font Package" },
         { "install_firmware_file", "Install Firmware File" },
         { "select_interface_settings", "Select interface settings." },
+        { "show_info_bar", "Info Bar Visible" },
+        { "info_bar_description", "Check the box to show info bar inside app selector.\nInfo bar is clock, battery level and notification center." },
+        { "show_live_area_screen", "Live Area App Screen" },
+        { "live_area_screen_description", "Check the box to open Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it." },
+        { "apps_list_grid", "Grid Mode" },
+        { "apps_list_grid_description", "Check the box to set the app list to grid mode like of PS Vita." },
+        { "icon_size", "App Icon Size" },
+        { "select_icon_size", "Select your preferred icon size." },
         { "completed", "Completed." },
         { "next", "Next" }
     };
@@ -477,14 +506,187 @@ struct LangState {
         Language language;
     };
     Settings settings;
-    std::map<std::string, std::string> settings_dialog = {
-        { "title", "Settings" },
-        { "close", "Close" },
-        { "save_reboot", "Save & Reboot" },
-        { "save_apply", "Save & Apply" },
-        { "save", "Save" },
-        { "keep_changes", "Click on Save to keep your changes." }
+    struct SettingsDialog {
+        std::map<std::string, std::string> main_window = {
+            { "title", "Settings" },
+            { "close", "Close" },
+            { "save_reboot", "Save & Reboot" },
+            { "save_apply", "Save & Apply" },
+            { "save", "Save" },
+            { "keep_changes", "Click on Save to keep your changes." }
+        };
+        std::map<std::string, std::string> core = {
+            { "title", "Core" },
+            { "modules_mode", "Modules Mode" },
+            { "modules_list", "Modules List" },
+            { "select_modules", "Select your desired modules." },
+            { "search_modules", "Search Modules" },
+            { "clear_list", "Clear List" },
+            { "no_modules", "No modules present.\nPlease download and install the last PS Vita firmware." },
+            { "refresh_list", "Refresh List" }
+        };
+        std::map<std::string, std::string> cpu = {
+            { "cpu_backend", "CPU Backend" },
+            { "select_cpu_backend", "Select your preferred CPU backend." },
+            { "cpu_opt", "Enable optimizations" },
+            { "cpu_opt_description", "Check the box to enable additional CPU JIT optimizations." }
+        };
+        std::map<std::string, std::string> gpu = {
+            { "reset", "Reset" },
+            { "backend_renderer", "Backend Renderer" },
+            { "select_backend_renderer", "Select your preferred backend renderer." },
+            { "gpu", "GPU (Reboot to apply)" },
+            { "select_gpu", "Select the GPU Vita3K should run on." },
+            { "renderer_accuracy", "Renderer Accuracy" },
+            { "v_sync", "V-Sync" },
+            { "v_sync_description", "Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid visual tearing." },
+            { "disable_surface_sync", "Disable surface sync" },
+            { "surface_sync_description", "Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on)." },
+            { "screen_filter", "Screen Filter" },
+            { "screen_filter_description", "Set post-processing filter to apply." },
+            { "internal_resolution_upscaling", "Internal Resolution Upscaling" },
+            { "internal_resolution_upscaling_description", "Enable upscaling for Vita3K.\nExperimental: games are not guaranteed to render properly at more than 1x." },
+            { "anisotropic_filtering", "Anisotropic Filtering" },
+            { "anisotropic_filtering_description", "Anisotropic filtering is a technique to enhance the image quality of surfaces\nwhich are sloped relative to the viewer.\nIt has no drawback but can impact performance." },
+            { "texture_replacement", "Texture Replacement" },
+            { "export_textures", "Export Textures" },
+            { "import_textures", "Import Textures" },
+            { "texture_exporting_format", "Texture Exporting Format" },
+            { "shaders", "Shaders" },
+            { "shader_cache", "Use Shader Cache" },
+            { "shader_cache_description", "Check the box to enable shader cache to pre-compile it at game startup.\nUncheck to disable this feature." },
+            { "spirv_shader", "Use Spir-V shader (deprecated)" },
+            { "spirv_shader_description", "Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled,\nand not all GPUs are compatible with this." },
+            { "clean_shaders", "Clean Shaders Cache and Log" }
+        };
+        std::map<std::string, std::string> system = {
+            { "title", "System" },
+            { "select_enter_button", "Enter button assignment\nSelect your 'Enter' button." },
+            { "enter_button_description", "This is the button that is used as 'Confirm' in applications dialogs.\nSome applications don't use this and get default confirmation button." },
+            { "circle", "Circle" },
+            { "cross", "Cross" },
+            { "pstv_mode", "PS TV Mode" },
+            { "pstv_mode_description", "Check the box to enable PS TV Emulated mode." },
+            { "show_mode", "Show Mode" },
+            { "show_mode_description", "Check the box to enable Show mode." },
+            { "demo_mode", "Demo Mode" },
+            { "demo_mode_description", "Check the box to enable Demo mode." }
+        };
+        std::map<std::string, std::string> emulator = {
+            { "title", "Emulator" },
+            { "boot_apps_full_screen", "Boot apps in full screen" },
+            { "audio_backend", "Audio Backend" },
+            { "select_audio_backend", "Select your preferred audio backend." },
+            { "enable_ngs_support", "Enable NGS support" },
+            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." },
+            { "log_level", "Log Level" },
+            { "select_log_level", "Select your preferred log level." },
+            { "archive_log", "Archive Log" },
+            { "archive_log_description", "Check the box to enable Archive Log." },
+            { "discord_rich_presence", "Enables Discord Rich Presence to show what application you're running on Discord." },
+            { "texture_cache", "Texture Cache" },
+            { "texture_cache_description", "Uncheck the box to disable texture cache." },
+            { "show_compile_shaders", "Show Compile Shaders" },
+            { "compile_shaders_description", "Uncheck the box to disable the display of the compile shaders dialog." },
+            { "show_touchpad_cursor", "Show Touchpad Cursor" },
+            { "touchpad_cursor_description", "Uncheck the box to disable showing the touchpad cursor on-screen." },
+            { "log_compat_warn", "Log Compatibility Warning" },
+            { "log_compat_warn_description", "Check the box to enable log compatibility warning of GitHub issue." },
+            { "check_for_updates", "Check for updates" },
+            { "check_for_updates_description", "Automatically check for updates at startup." },
+            { "performance_overlay", "Performance overlay" },
+            { "performance_overlay_description", "Display performance information on the screen as an overlay." },
+            { "detail", "Detail" },
+            { "select_detail", "Select your preferred perfomance overlay detail." },
+            { "position", "Position" },
+            { "select_position", "Select your preferred perfomance overlay position." },
+            { "case_insensitive", "Check to enable case-insensitive path finding on case sensitive filesystems.\nRESETS ON RESTART" },
+            { "case_insensitive_description", "Allows emulator to attempt to search for files regardless of case\non non-Windows platforms." },
+            { "emu_storage_folder", "Emulated System Storage Folder" },
+            { "current_emu_path", "Current emulator path:" },
+            { "change_emu_path", "Change Emulator Path" },
+            { "change_emu_path_description", "Change Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually." },
+            { "reset_emu_path", "Reset Emulator Path" },
+            { "reset_emu_path_description", "Reset Vita3K emulator path to the default.\nYou will need to move your old folder to the new location manually." },
+            { "custom_config_settings", "Custom Config Settings" },
+            { "clear_custom_config", "Clear Custom Config" }
+        };
+        std::map<std::string, std::string> gui = {
+            { "title", "GUI" },
+            { "show_gui", "GUI Visible" },
+            { "gui_description", "Check the box to show GUI after booting an application." },
+            { "show_info_bar", "Info Bar Visible" },
+            { "info_bar_description", "Check the box to show an info bar inside the app selector." },
+            { "display_info_message", "Display Info Message" },
+            { "display_info_message_description", "Uncheck the box to display info message in log only." },
+            { "display_system_apps", "Display System Apps" },
+            { "display_system_apps_description", "Uncheck the box to disable the display of system apps on the home screen.\nThey will be shown in the main menu bar only." },
+            { "show_live_area_screen", "Live Area App Screen" },
+            { "live_area_screen_description", "Check the box to open the Live Area by default when clicking on an application\nIf disabled, right click on an application to open it." },
+            { "stretch_the_display_area", "Stretch The Display Area" },
+            { "stretch_the_display_area_description", "Check the box to enlarge the display area to fit the screen size." },
+            { "apps_list_grid", "Grid Mode" },
+            { "apps_list_grid_description", "Check the box to set the app list to grid mode." },
+            { "icon_size", "App Icon Size" },
+            { "select_icon_size", "Select your preferred icon size." },
+            { "font_support", "Font support" },
+            { "asia_font_support", "Asia Region" },
+            { "asia_font_support_description", "Check this box to enable font support for Chinese and Korean.\nEnabling this will use more memory and will require you to restart the emulator." },
+            { "firmware_font_package_description", "Firmware font package is mandatory for some applications\nand also for Asian region font support in GUI.\nIt is also generally recommended for GUI." },
+            { "theme_background", "Theme & Background" },
+            { "current_theme_content_id", "Current theme content id:" },
+            { "reset_default_theme", "Reset Default Theme" },
+            { "using_theme_background", "Using theme background" },
+            { "clean_user_backgrounds", "Clean User Backgrounds" },
+            { "current_start_background", "Current start background:" },
+            { "reset_start_background", "Reset Start Background" },
+            { "background_alpha", "Background Alpha" },
+            { "select_background_alpha", "Select your preferred background transparency.\nThe minimum is opaque and the maximum is transparent." },
+            { "delay_background", "Delay for backgrounds" },
+            { "select_delay_background", "Select the delay (in seconds) before changing backgrounds." },
+            { "delay_start", "Delay for start screen" },
+            { "select_delay_start", "Select the delay (in seconds) before returning to the start screen." }
+        };
+        std::map<std::string, std::string> network = {
+            { "title", "Network" },
+            { "psn_status", "PSN Status" },
+            { "select_psn_state", "Select the state of the PS Network." },
+            { "enable_http", "Enable HTTP" },
+            { "enable_http_description", "Check this box to enable games to use the HTTP protocol on the internet." },
+            { "timeout_attempts", "HTTP Timeout Attempts" },
+            { "timeout_attempts_description", "How many attempts to do when the server doesn't respond.\nCould be useful if you have very unstable or VERY SLOW internet." },
+            { "timeout_sleep", "HTTP Timeout Sleep" },
+            { "timeout_sleep_description", "Attempt sleep time when the server doesn't answer.\nCould be useful if you have very unstable or VERY SLOW internet." },
+            { "read_end_attempts", "HTTP Read End Attempts" },
+            { "read_end_attempts_description", "How many attempts to do when there isn't more data to read,\nlower can improve performance but can make games unstable if you have bad enough internet." },
+            { "read_end_sleep", "HTTP Read End Sleep" },
+            { "read_end_sleep_description", "Attempt sleep time when there isn't more data to read,\nlower can improve performance but can make games unstable if you have bad enough internet." }
+        };
+        std::map<std::string, std::string> debug = {
+            { "title", "Debug" },
+            { "log_imports", "Import logging" },
+            { "log_imports_description", "Log module import symbols." },
+            { "log_exports", "Export logging" },
+            { "log_exports_description", "Log module export symbols." },
+            { "log_active_shaders", "Shader logging" },
+            { "log_active_shaders_description", "Log shaders being used on each draw call." },
+            { "log_uniforms", "Uniform logging" },
+            { "log_uniforms_description", "Log shader uniform names and values." },
+            { "color_surface_debug", "Save color surfaces" },
+            { "color_surface_debug_description", "Save color surfaces to files." },
+            { "dump_elfs", "ELF dumping" },
+            { "dump_elfs_description", "Dump loaded code as ELFs." },
+            { "validation_layer", "Validation Layer (Reboot required)" },
+            { "validation_layer_description", "Enable Vulkan validation layer." },
+            { "unwatch_code", "Unwatch Code" },
+            { "watch_code", "Watch Code" },
+            { "unwatch_memory", "Unwatch Memory" },
+            { "watch_memory", "Watch Memory" },
+            { "unwatch_import_calls", "Unwatch Import Calls" },
+            { "watch_import_calls", "Watch Import Calls" }
+        };
     };
+    SettingsDialog settings_dialog;
     std::map<std::string, std::string> trophy_collection = {
         { "delete_trophy", "Delete Trophy" },
         { "trophy_deleted", "This trophy information saved on this user will be deleted." },
@@ -525,7 +727,7 @@ struct LangState {
         { "title", "Vita3K Update" },
         { "new_version_available", "A new version of Vita3K is available." },
         { "back", "Back" },
-        { "cancel_update_resume", "Do you want to cancel the update?\nIf you cancel, the next time you update, Vita3K will start downloading from this point." },
+        { "cancel_update", "Do you want to cancel the update?" },
         { "downloading", "Downloading...\nAfter the download is complete, Vita3K will restart automatically and then install the new update." },
         { "not_complete_update", "Could not complete the update." },
         { "minutes_left", "{} Minutes Left" },
@@ -542,20 +744,20 @@ struct LangState {
     };
     std::map<std::string, std::string> welcome = {
         { "title", "Welcome to Vita3K" },
-        { "line_first", "Vita3K PlayStation Vita Emulator" },
-        { "line_second", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS and Android." },
-        { "line_third", "The emulator is still in its development stages so any feedback and testing is greatly appreciated." },
-        { "line_fourth", "To get started, please install the PS Vita firmware and font packages." },
+        { "vita3k", "Vita3K PlayStation Vita Emulator" },
+        { "about_vita3k", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS and Android." },
+        { "development_stage", "The emulator is still in its development stages so any feedback and testing is greatly appreciated." },
+        { "about_firmware", "To get started, please install the PS Vita firmware and font packages." },
         { "download_firmware", "Download Firmware" },
-        { "line_sixth_part_one", "A comprehensive guide on how to set-up Vita3K can be found on the" },
+        { "vita3k_quickstart", "A comprehensive guide on how to set-up Vita3K can be found on the" },
         { "quickstart", "Quickstart" },
-        { "line_sixth_part_two", "page." },
-        { "line_seventh", "Consult the Commercial game and the Homebrew compatibility list to see what currently runs." },
+        { "page", "page." },
+        { "check_compatibility", "Consult the Commercial game and the Homebrew compatibility list to see what currently runs." },
         { "commercial_compatibility_list", "Commercial Compatibility List" },
         { "homebrew_compatibility_list", "Homebrew Compatibility List" },
-        { "line_ninth", "Contributions are welcome!" },
-        { "line_tenth", "Additional support can be found in the #help channel of the" },
-        { "line_eleventh", "Vita3K does not condone piracy. You must dump your own games." },
+        { "welcome_contribution", "Contributions are welcome!" },
+        { "discord_help", "Additional support can be found in the #help channel of the" },
+        { "no_piracy", "Vita3K does not condone piracy. You must dump your own games." },
         { "show_next_time", "Show next time" },
         { "close", "Close" }
     };

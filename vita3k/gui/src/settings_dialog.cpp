@@ -439,30 +439,28 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     auto &lang = gui.lang.settings_dialog;
+    auto &firmware_font = gui.lang.install_dialog.firmware_install;
 
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.48f));
     const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
     auto &settings_dialog = is_custom_config ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     ImGui::Begin("##settings", &settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::PushFont(gui.vita_font);
     ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
-    auto settings_str = lang["title"].c_str();
+    auto settings_str = lang.main_window["title"].c_str();
     const auto title = is_custom_config ? fmt::format("{}: {} [{}]", settings_str, get_app_index(gui, emuenv.app_path)->title, emuenv.app_path) : settings_str;
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
-    ImGui::PopFont();
     ImGui::Spacing();
     ImGui::Separator();
-    ImGui::SetWindowFontScale(1.f * RES_SCALE.x);
     ImGui::BeginTabBar("SettingsTabBar", ImGuiTabBarFlags_None);
 
     // Core
-    if (ImGui::BeginTabItem("Core")) {
+    if (ImGui::BeginTabItem(lang.core["title"].c_str())) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
         if (!gui.modules.empty()) {
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Modules Mode");
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.core["modules_mode"].c_str());
             ImGui::Spacing();
             for (auto m = 0; m < MODULES_MODE_COUNT; m++) {
                 if (m)
@@ -474,11 +472,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Modules List");
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.core["modules_list"].c_str());
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your desired modules.");
+                ImGui::SetTooltip("%s", lang.core["select_modules"].c_str());
             ImGui::Spacing();
-            ImGui::PushItemWidth(240 * SCALE.x);
+            ImGui::PushItemWidth(260 * SCALE.x);
             if (ImGui::BeginListBox("##modules_list", { 0.0f, ImGui::GetTextLineHeightWithSpacing() * 8.25f + ImGui::GetStyle().FramePadding.y * 2.0f })) {
                 for (auto &m : gui.modules) {
                     const auto module = std::find(config.lle_modules.begin(), config.lle_modules.end(), m.first);
@@ -496,21 +494,21 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             }
             ImGui::PopItemWidth();
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT, "Search modules");
-            gui.module_search_bar.Draw("##module_search_bar", 200 * SCALE.x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.core["search_modules"].c_str());
+            gui.module_search_bar.Draw("##module_search_bar", 260 * SCALE.x);
             ImGui::Spacing();
-            if (ImGui::Button("Clear List")) {
+            if (ImGui::Button(lang.core["clear_list"].c_str())) {
                 config.lle_modules.clear();
                 for (auto &m : gui.modules)
                     m.second = false;
             }
             ImGui::SameLine();
         } else {
-            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the last PS Vita firmware.");
-            if (ImGui::Button("Download Firmware"))
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.core["no_modules"].c_str());
+            if (ImGui::Button(gui.lang.welcome["download_firmware"].c_str()))
                 get_firmware_file(emuenv);
         }
-        if (ImGui::Button("Refresh List"))
+        if (ImGui::Button(lang.core["refresh_list"].c_str()))
             get_modules_list(gui, emuenv);
         ImGui::EndTabItem();
     } else
@@ -523,16 +521,16 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         static const char *LIST_CPU_BACKEND[] = { "Dynarmic", "Unicorn" };
         static const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic", "Unicorn (deprecated)" };
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "CPU Backend");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.cpu["cpu_backend"].c_str());
         if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND_DISPLAY, IM_ARRAYSIZE(LIST_CPU_BACKEND_DISPLAY)))
             config.cpu_backend = LIST_CPU_BACKEND[int(config_cpu_backend)];
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select your preferred CPU backend.");
+            ImGui::SetTooltip("%s", lang.cpu["select_cpu_backend"].c_str());
         if (config_cpu_backend == CPUBackend::Dynarmic) {
             ImGui::Spacing();
-            ImGui::Checkbox("Enable optimizations", &config.cpu_opt);
+            ImGui::Checkbox(lang.cpu["cpu_opt"].c_str(), &config.cpu_opt);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Check the box to enable additional CPU JIT optimizations.");
+                ImGui::SetTooltip("%s", lang.cpu["cpu_opt_description"].c_str());
         }
         ImGui::EndTabItem();
     } else
@@ -548,10 +546,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::BeginDisabled();
 #endif
         static const char *LIST_BACKEND_RENDERER[] = { "OpenGL", "Vulkan" };
-        if (ImGui::Combo("Backend Renderer", reinterpret_cast<int *>(&emuenv.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
+        if (ImGui::Combo(lang.gpu["backend_renderer"].c_str(), reinterpret_cast<int *>(&emuenv.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
             emuenv.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(emuenv.backend_renderer)];
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select your preferred backend renderer.");
+            ImGui::SetTooltip("%s", lang.gpu["select_backend_renderer"].c_str());
 #ifdef __APPLE__
         ImGui::EndDisabled();
 #else
@@ -566,31 +564,31 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             std::vector<const char *> gpu_list;
             for (const auto &gpu : gpu_list_str)
                 gpu_list.push_back(gpu.c_str());
-            ImGui::Combo("GPU (Reboot to apply)", &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size()));
+            ImGui::Combo(lang.gpu["gpu"].c_str(), &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size()));
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select the GPU Vita3K should run on.");
+                ImGui::SetTooltip("%s", lang.gpu["select_gpu"].c_str());
 
             if (is_ingame)
                 ImGui::BeginDisabled();
 
             static const char *LIST_RENDERER_ACCURACY[] = { "Standard", "High" };
             int is_high_accuracy = static_cast<int>(config.high_accuracy);
-            ImGui::Combo("Renderer Accuracy", &is_high_accuracy, LIST_RENDERER_ACCURACY, IM_ARRAYSIZE(LIST_RENDERER_ACCURACY));
+            ImGui::Combo(lang.gpu["renderer_accuracy"].c_str(), &is_high_accuracy, LIST_RENDERER_ACCURACY, IM_ARRAYSIZE(LIST_RENDERER_ACCURACY));
             config.high_accuracy = static_cast<bool>(is_high_accuracy);
 
             if (is_ingame)
                 ImGui::EndDisabled();
         } else {
-            ImGui::Checkbox("V-Sync", &config.v_sync);
+            ImGui::Checkbox(lang.gpu["v_sync"].c_str(), &config.v_sync);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid visual tearing.");
+                ImGui::SetTooltip("%s", lang.gpu["v_sync_description"].c_str());
             ImGui::SameLine();
         }
         if (!is_vulkan || emuenv.renderer->features.support_memory_mapping) {
             // surface sync is supported on vulkan only when memory mapping is enabled
-            ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
+            ImGui::Checkbox(lang.gpu["disable_surface_sync"].c_str(), &config.disable_surface_sync);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on).");
+                ImGui::SetTooltip("%s", lang.gpu["surface_sync_description"].c_str());
         }
 
         // Screen Filter
@@ -613,18 +611,18 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 filters.push_back(possible_filters[i]);
         }
 
-        if (ImGui::Combo("Screen Filter", &curr_filter, filters.data(), filters.size()))
+        if (ImGui::Combo(lang.gpu["screen_filter"].c_str(), &curr_filter, filters.data(), filters.size()))
             config.screen_filter = filters[curr_filter];
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Set post-processing filter to apply.");
+            ImGui::SetTooltip("%s", lang.gpu["screen_filter_description"].c_str());
 
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
 
         // Resolution Upscaling
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Internal Resolution Upscaling").x / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Internal Resolution Upscaling");
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.gpu["internal_resolution_upscaling"].c_str()).x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.gpu["internal_resolution_upscaling"].c_str());
         ImGui::Spacing();
         ImGui::PushID("Res scal");
         if (config.resolution_multiplier == 1)
@@ -641,7 +639,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Enable upscaling for Vita3K.\nExperimental: games are not guaranteed to render properly at more than 1x");
+            ImGui::SetTooltip("%s", lang.gpu["internal_resolution_upscaling_description"].c_str());
         ImGui::SameLine(0, 5 * SCALE.x);
         if (config.resolution_multiplier == 8)
             ImGui::BeginDisabled();
@@ -652,7 +650,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SameLine();
         if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
             ImGui::BeginDisabled();
-        if (ImGui::Button("Reset", ImVec2(60.f * SCALE.x, 0)))
+        if (ImGui::Button(lang.gpu["reset"].c_str(), ImVec2(60.f * SCALE.x, 0)))
             config.resolution_multiplier = 1;
 
         if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
@@ -668,8 +666,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
 
         // Anisotropic Filtering
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Anisotropic Filtering").x / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Anisotropic Filtering");
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.gpu["anisotropic_filtering"].c_str()).x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.gpu["anisotropic_filtering"].c_str());
         ImGui::Spacing();
         ImGui::PushID("Aniso filter");
         if (config.anisotropic_filtering == 1)
@@ -684,7 +682,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             config.anisotropic_filtering = 1 << current_aniso_filter_log;
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces\nwhich are sloped relative to the viewer.\nIt has no drawback but can impact performance.");
+            ImGui::SetTooltip("%s", lang.gpu["anisotropic_filtering_description"].c_str());
         ImGui::SameLine(0, 5 * SCALE.x);
         if (current_aniso_filter_log == max_aniso_filter_log)
             ImGui::BeginDisabled();
@@ -695,7 +693,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SameLine();
         if (config.anisotropic_filtering == 1)
             ImGui::BeginDisabled();
-        if (ImGui::Button("Reset", ImVec2(60.f * SCALE.x, 0))) {
+        if (ImGui::Button(lang.gpu["reset"].c_str(), ImVec2(60.f * SCALE.x, 0))) {
             config.anisotropic_filtering = 1;
             current_aniso_filter_log = 0;
         }
@@ -708,38 +706,37 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
 
         // Texture Replacement
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Texture Replacement").x / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Texture Replacement");
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.gpu["texture_replacement"].c_str()).x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.gpu["texture_replacement"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("Export textures", &config.export_textures);
+        ImGui::Checkbox(lang.gpu["export_textures"].c_str(), &config.export_textures);
         ImGui::SameLine();
-        ImGui::Checkbox("Import textures", &config.import_textures);
+        ImGui::Checkbox(lang.gpu["import_textures"].c_str(), &config.import_textures);
 
         static const char *export_formats[] = { "PNG", "DDS" };
         int export_format_pos = config.export_as_png ? 0 : 1;
-        if (ImGui::Combo("Texture exporting format", &export_format_pos, export_formats, IM_ARRAYSIZE(export_formats)))
+        if (ImGui::Combo(lang.gpu["texture_exporting_format"].c_str(), &export_format_pos, export_formats, IM_ARRAYSIZE(export_formats)))
             config.export_as_png = export_format_pos == 0;
 
         // Shaders
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Shaders").x / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Shaders");
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.gpu["shaders"].c_str()).x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.gpu["shaders"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("Use shader cache", &emuenv.cfg.shader_cache);
+        ImGui::Checkbox(lang.gpu["shader_cache"].c_str(), &emuenv.cfg.shader_cache);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable shader cache to pre-compile it at game startup\nUncheck to disable this feature.");
+            ImGui::SetTooltip("%s", lang.gpu["shader_cache_description"].c_str());
         if (emuenv.renderer->features.spirv_shader) {
             ImGui::SameLine();
-            ImGui::Checkbox("Use Spir-V shader (deprecated)", &emuenv.cfg.spirv_shader);
+            ImGui::Checkbox(lang.gpu["spirv_shader"].c_str(), &emuenv.cfg.spirv_shader);
 
             if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, "
-                                  "and not all GPUs are compatible with this.");
+                ImGui::SetTooltip("%s", lang.gpu["spirv_shader_description"].c_str());
             }
         }
         const auto shaders_cache_path{ emuenv.cache_path / "shaders" };
         if (fs::exists(shaders_cache_path) && !fs::is_empty(shaders_cache_path)) {
             ImGui::Spacing();
-            if (ImGui::Button("Clean Shaders Cache and Log")) {
+            if (ImGui::Button(lang.gpu["clean_shaders"].c_str())) {
                 fs::remove_all(shaders_cache_path);
                 fs::remove_all(emuenv.cache_path / "shaderlog");
             }
@@ -750,126 +747,126 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     // System
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem("System")) {
+    if (ImGui::BeginTabItem(lang.system["title"].c_str())) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Enter button assignment \nSelect your 'Enter' button.");
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.system["select_enter_button"].c_str());
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs.\nSome applications don't use this and get default confirmation button.");
-        ImGui::RadioButton("Circle", &emuenv.cfg.sys_button, 0);
-        ImGui::RadioButton("Cross", &emuenv.cfg.sys_button, 1);
+            ImGui::SetTooltip("%s", lang.system["enter_button_description"].c_str());
+        ImGui::RadioButton(lang.system["circle"].c_str(), &emuenv.cfg.sys_button, 0);
+        ImGui::RadioButton(lang.system["cross"].c_str(), &emuenv.cfg.sys_button, 1);
         ImGui::Spacing();
-        ImGui::Checkbox("PS TV Mode", &config.pstv_mode);
+        ImGui::Checkbox(lang.system["pstv_mode"].c_str(), &config.pstv_mode);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable PS TV Emulated mode.");
+            ImGui::SetTooltip("%s", lang.system["pstv_mode_description"].c_str());
         ImGui::SameLine();
-        ImGui::Checkbox("Show Mode", &emuenv.cfg.show_mode);
+        ImGui::Checkbox(lang.system["show_mode"].c_str(), &emuenv.cfg.show_mode);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable Show mode.");
+            ImGui::SetTooltip("%s", lang.system["show_mode_description"].c_str());
         ImGui::SameLine();
-        ImGui::Checkbox("Demo Mode", &emuenv.cfg.demo_mode);
+        ImGui::Checkbox(lang.system["demo_mode"].c_str(), &emuenv.cfg.demo_mode);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable Demo mode.");
+            ImGui::SetTooltip("%s", lang.system["demo_mode_description"].c_str());
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
 
     // Emulator
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem("Emulator")) {
+    if (ImGui::BeginTabItem(lang.emulator["title"].c_str())) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("Boot apps in full screen", &emuenv.cfg.boot_apps_full_screen);
+        ImGui::Checkbox(lang.emulator["boot_apps_full_screen"].c_str(), &emuenv.cfg.boot_apps_full_screen);
         ImGui::Spacing();
 
         if (!emuenv.io.app_path.empty())
             ImGui::BeginDisabled();
 
         static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
-        if (ImGui::Combo("Audio Backend", reinterpret_cast<int *>(&audio_backend_idx), LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
+        if (ImGui::Combo(lang.emulator["audio_backend"].c_str(), reinterpret_cast<int *>(&audio_backend_idx), LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
             emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select your preferred audio backend.");
+            ImGui::SetTooltip("%s", lang.emulator["select_audio_backend"].c_str());
 
         if (!emuenv.io.app_path.empty())
             ImGui::EndDisabled();
 
-        ImGui::Checkbox("Enable NGS support", &config.ngs_enable);
+        ImGui::Checkbox(lang.emulator["enable_ngs_support"].c_str(), &config.ngs_enable);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Uncheck the box to disable support for advanced audio library NGS.");
+            ImGui::SetTooltip("%s", lang.emulator["ngs_description"].c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        if (ImGui::Combo("Log Level", &emuenv.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0"))
+        if (ImGui::Combo(lang.emulator["log_level"].c_str(), &emuenv.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0"))
             logging::set_level(static_cast<spdlog::level::level_enum>(emuenv.cfg.log_level));
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select your preferred log level.");
+            ImGui::SetTooltip("%s", lang.emulator["select_log_level"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("Archive Log", &emuenv.cfg.archive_log);
+        ImGui::Checkbox(lang.emulator["archive_log"].c_str(), &emuenv.cfg.archive_log);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable Archiving Log.");
+            ImGui::SetTooltip("%s", lang.emulator["archive_log_description"].c_str());
         ImGui::SameLine();
 #ifdef USE_DISCORD
         ImGui::Checkbox("Discord Rich Presence", &emuenv.cfg.discord_rich_presence);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Enables Discord Rich Presence to show what application you're running on Discord.");
+            ImGui::SetTooltip("%s", lang.emulator["discord_rich_presence"].c_str());
 #endif
-        ImGui::Checkbox("Texture Cache", &emuenv.cfg.texture_cache);
+        ImGui::Checkbox(lang.emulator["texture_cache"].c_str(), &emuenv.cfg.texture_cache);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Uncheck the box to disable texture cache.");
+            ImGui::SetTooltip("%s", lang.emulator["texture_cache_description"].c_str());
         ImGui::SameLine();
-        ImGui::Checkbox("Show Compile Shaders", &emuenv.cfg.show_compile_shaders);
+        ImGui::Checkbox(lang.emulator["show_compile_shaders"].c_str(), &emuenv.cfg.show_compile_shaders);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Uncheck the box to disable the display of the compile shaders dialog.");
+            ImGui::SetTooltip("%s", lang.emulator["compile_shaders_description"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("Show Touchpad Cursor", &config.show_touchpad_cursor);
+        ImGui::Checkbox(lang.emulator["show_touchpad_cursor"].c_str(), &config.show_touchpad_cursor);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Uncheck the box to disable showing the touchpad cursor on-screen.");
+            ImGui::SetTooltip("%s", lang.emulator["touchpad_cursor_description"].c_str());
         ImGui::SameLine();
-        ImGui::Checkbox("Log Compatibility Warnings", &emuenv.cfg.log_compat_warn);
+        ImGui::Checkbox(lang.emulator["log_compat_warn"].c_str(), &emuenv.cfg.log_compat_warn);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to log issues related to the app compatibility database.");
+            ImGui::SetTooltip("%s", lang.emulator["log_compat_warn_description"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("Check for updates", &emuenv.cfg.check_for_updates);
+        ImGui::Checkbox(lang.emulator["check_for_updates"].c_str(), &emuenv.cfg.check_for_updates);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Automatically check for updates at startup.");
+            ImGui::SetTooltip("%s", lang.emulator["check_for_updates_description"].c_str());
         ImGui::Separator();
-        const auto perfomance_overley_size = ImGui::CalcTextSize("Performance overlay").x;
+        const auto perfomance_overley_size = ImGui::CalcTextSize(lang.emulator["performance_overlay"].c_str()).x;
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (perfomance_overley_size / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Performance Overlay");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.emulator["performance_overlay"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("Performance Overlay", &emuenv.cfg.performance_overlay);
+        ImGui::Checkbox(lang.emulator["performance_overlay"].c_str(), &emuenv.cfg.performance_overlay);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Display performance information on the screen as an overlay.");
+            ImGui::SetTooltip("%s", lang.emulator["performance_overlay_description"].c_str());
         if (emuenv.cfg.performance_overlay) {
-            ImGui::Combo("Detail", &emuenv.cfg.performance_overlay_detail, "Minimum\0Low\0Medium\0Maximum\0");
+            ImGui::Combo(lang.emulator["detail"].c_str(), &emuenv.cfg.performance_overlay_detail, "Minimum\0Low\0Medium\0Maximum\0");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred performance overlay detail.");
-            ImGui::Combo("Position", &emuenv.cfg.performance_overlay_position, "Top Left\0Top Center\0Top Right\0Bottom Left\0Bottom Center\0Bottom Right\0");
+                ImGui::SetTooltip("%s", lang.emulator["select_detail"].c_str());
+            ImGui::Combo(lang.emulator["position"].c_str(), &emuenv.cfg.performance_overlay_position, "Top Left\0Top Center\0Top Right\0Bottom Left\0Bottom Center\0Bottom Right\0");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred performance overlay position.");
+                ImGui::SetTooltip("%s", lang.emulator["select_position"].c_str());
         }
         ImGui::Spacing();
 #ifndef WIN32
-        ImGui::Checkbox("Check to enable case-insensitive path finding on case sensitive filesystems. \nRESETS ON RESTART", &emuenv.io.case_isens_find_enabled);
+        ImGui::Checkbox(lang.emulator["case_insensitive"].c_str(), &emuenv.io.case_isens_find_enabled);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Allows emulator to attempt to search for files regardless of case\non non-Windows platforms.");
+            ImGui::SetTooltip("%s", lang.emulator["case_insensitive_description"].c_str());
 #endif
         ImGui::Separator();
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Emulated System Storage Folder").x / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Emulated System Storage Folder");
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.emulator["emu_storage_folder"].c_str()).x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.emulator["emu_storage_folder"].c_str());
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current emulator folder: %s", emuenv.cfg.pref_path.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", lang.emulator["current_emu_path"].c_str(), emuenv.cfg.pref_path.c_str());
         ImGui::PopItemWidth();
         ImGui::Spacing();
-        if (ImGui::Button("Change Emulator Path"))
+        if (ImGui::Button(lang.emulator["change_emu_path"].c_str()))
             change_emulator_path(gui, emuenv);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Change Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually.");
-        if (emuenv.cfg.pref_path != emuenv.default_path.string()) {
+            ImGui::SetTooltip("%s", lang.emulator["change_emu_path_description"].c_str());
+        if (emuenv.cfg.pref_path != emuenv.default_path) {
             ImGui::SameLine();
-            if (ImGui::Button("Reset Emulator Path")) {
+            if (ImGui::Button(lang.emulator["reset_emu_path"].c_str())) {
                 if (emuenv.default_path != emuenv.pref_path) {
                     emuenv.pref_path = emuenv.default_path;
 
@@ -879,14 +876,14 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 }
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Reset Vita3K emulator path to the default.\nYou will need to move your old folder to the new location manually.");
+                ImGui::SetTooltip("%s", lang.emulator["reset_emu_path_description"].c_str());
         }
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Custom Config Settings").x / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Custom Config Settings");
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.emulator["custom_config_settings"].c_str()).x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.emulator["custom_config_settings"].c_str());
         ImGui::Spacing();
-        if (ImGui::Button("Clear Custom Config")) {
+        if (ImGui::Button(lang.emulator["clear_custom_config"].c_str())) {
             if (fs::remove_all(emuenv.config_path / "config")) {
                 LOG_INFO("Clear all custom config settings successfully.");
             }
@@ -897,71 +894,71 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     // GUI
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem("GUI")) {
+    if (ImGui::BeginTabItem(lang.gui["title"].c_str())) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("GUI visible", &emuenv.cfg.show_gui);
+        ImGui::Checkbox(lang.gui["show_gui"].c_str(), &emuenv.cfg.show_gui);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to show GUI after booting an application.");
+            ImGui::SetTooltip("%s", lang.gui["gui_description"].c_str());
         ImGui::SameLine();
-        ImGui::Checkbox("Info bar visible", &emuenv.cfg.show_info_bar);
+        ImGui::Checkbox(lang.gui["show_info_bar"].c_str(), &emuenv.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to show an info bar inside the app selector.");
+            ImGui::SetTooltip("%s", lang.gui["info_bar_description"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("Display Info Message", &emuenv.cfg.display_info_message);
+        ImGui::Checkbox(lang.gui["display_info_message"].c_str(), &emuenv.cfg.display_info_message);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Uncheck the box to display info message in log only.");
+            ImGui::SetTooltip("%s", lang.gui["display_info_message_description"].c_str());
         ImGui::SameLine();
-        ImGui::Checkbox("Display System Apps", &emuenv.cfg.display_system_apps);
+        ImGui::Checkbox(lang.gui["display_system_apps"].c_str(), &emuenv.cfg.display_system_apps);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Uncheck the box to disable the display of system apps on the home screen.\nThey will be shown in the main menu bar only.");
+            ImGui::SetTooltip("%s", lang.gui["display_system_apps_description"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("Live Area app screen", &emuenv.cfg.show_live_area_screen);
+        ImGui::Checkbox(lang.gui["show_live_area_screen"].c_str(), &emuenv.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to open the Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
+            ImGui::SetTooltip("%s", lang.gui["live_area_screen_description"].c_str());
         ImGui::SameLine();
-        ImGui::Checkbox("Stretch The Display Area", &config.stretch_the_display_area);
+        ImGui::Checkbox(lang.gui["stretch_the_display_area"].c_str(), &config.stretch_the_display_area);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enlarge the display area to fit the screen size.");
+            ImGui::SetTooltip("%s", lang.gui["stretch_the_display_area_description"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("Grid Mode", &emuenv.cfg.apps_list_grid);
+        ImGui::Checkbox(lang.gui["apps_list_grid"].c_str(), &emuenv.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to set the app list to grid mode.");
+            ImGui::SetTooltip("%s", lang.gui["apps_list_grid_description"].c_str());
         if (!emuenv.cfg.apps_list_grid) {
             ImGui::Spacing();
-            ImGui::SliderInt("App Icon Size", &emuenv.cfg.icon_size, 64, 128);
+            ImGui::SliderInt(lang.gui["icon_size"].c_str(), &emuenv.cfg.icon_size, 64, 128);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred icon size.");
+                ImGui::SetTooltip("%s", lang.gui["select_icon_size"].c_str());
         }
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        const auto font_size = ImGui::CalcTextSize("Font support").x;
+        const auto font_size = ImGui::CalcTextSize(lang.gui["font_support"].c_str()).x;
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (font_size / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Font support");
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang.gui["font_support"].c_str());
         ImGui::Spacing();
         if (gui.fw_font) {
-            ImGui::Checkbox("Asia Region", &emuenv.cfg.asia_font_support);
+            ImGui::Checkbox(lang.gui["asia_font_support"].c_str(), &emuenv.cfg.asia_font_support);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Check this box to enable font support for Korean and Chinese.\nEnabling this will use more memory and will require you to restart the emulator.");
+                ImGui::SetTooltip("%s", lang.gui["asia_font_support_description"].c_str());
         } else {
-            ImGui::TextColored(GUI_COLOR_TEXT, "No firmware font package present.\nPlease download and install it.");
-            if (ImGui::Button("Download Firmware Font Package"))
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", firmware_font["no_font_exist"].c_str());
+            if (ImGui::Button(firmware_font["download_firmware_font_package"].c_str()))
                 open_path("https://bit.ly/2P2rb0r");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Firmware font package is mandatory for some applications\nand also for Asian region font support in GUI.\nIt is also generally recommended for GUI.");
+                ImGui::SetTooltip("%s", lang.gui["firmware_font_package_description"].c_str());
         }
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        const auto title = ImGui::CalcTextSize("Theme & Background").x;
+        const auto title = ImGui::CalcTextSize(lang.gui["theme_background"].c_str()).x;
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (title / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Theme & Background");
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang.gui["theme_background"].c_str());
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current theme content id: %s", gui.users[emuenv.io.user_id].theme_id.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", lang.gui["current_theme_content_id"].c_str(), gui.users[emuenv.io.user_id].theme_id.c_str());
         if (gui.users[emuenv.io.user_id].theme_id != "default") {
             ImGui::Spacing();
-            if (ImGui::Button("Reset Default Theme")) {
+            if (ImGui::Button(lang.gui["reset_default_theme"].c_str())) {
                 gui.users[emuenv.io.user_id].theme_id = "default";
                 gui.users[emuenv.io.user_id].use_theme_bg = false;
                 if (init_theme(gui, emuenv, "default"))
@@ -975,12 +972,12 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SameLine();
         }
         if (!gui.theme_backgrounds.empty())
-            if (ImGui::Checkbox("Using theme background", &gui.users[emuenv.io.user_id].use_theme_bg))
+            if (ImGui::Checkbox(lang.gui["using_theme_background"].c_str(), &gui.users[emuenv.io.user_id].use_theme_bg))
                 save_user(gui, emuenv, emuenv.io.user_id);
 
         if (!gui.user_backgrounds.empty()) {
             ImGui::Spacing();
-            if (ImGui::Button("Clean User Backgrounds")) {
+            if (ImGui::Button(lang.gui["clean_user_backgrounds"].c_str())) {
                 gui.user_backgrounds[gui.users[emuenv.io.user_id].backgrounds[gui.current_user_bg]] = {};
                 gui.user_backgrounds.clear();
                 if (!gui.theme_backgrounds.empty())
@@ -990,10 +987,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             }
         }
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current start background: %s", gui.users[emuenv.io.user_id].start_type.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", lang.gui["current_start_background"].c_str(), gui.users[emuenv.io.user_id].start_type.c_str());
         if (((gui.users[emuenv.io.user_id].theme_id == "default") && (gui.users[emuenv.io.user_id].start_type != "default")) || ((gui.users[emuenv.io.user_id].theme_id != "default") && (gui.users[emuenv.io.user_id].start_type != "theme"))) {
             ImGui::Spacing();
-            if (ImGui::Button("Reset Start Background")) {
+            if (ImGui::Button(lang.gui["reset_start_background"].c_str())) {
                 gui.users[emuenv.io.user_id].start_path.clear();
                 init_theme_start_background(gui, emuenv, gui.users[emuenv.io.user_id].theme_id);
                 gui.users[emuenv.io.user_id].start_type = (gui.users[emuenv.io.user_id].theme_id == "default") ? "default" : "theme";
@@ -1002,27 +999,27 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         if (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty()) {
             ImGui::Spacing();
-            ImGui::SliderFloat("Background Alpha", &emuenv.cfg.background_alpha, 0.999f, 0.000f);
+            ImGui::SliderFloat(lang.gui["background_alpha"].c_str(), &emuenv.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred background transparency.\nThe minimum is opaque and the maximum is transparent.");
+                ImGui::SetTooltip("%s", lang.gui["select_background_alpha"].c_str());
         }
         if (!gui.theme_backgrounds.empty() || (gui.user_backgrounds.size() > 1)) {
             ImGui::Spacing();
-            ImGui::SliderInt("Delay for backgrounds", &emuenv.cfg.delay_background, 4, 60);
+            ImGui::SliderInt(lang.gui["delay_background"].c_str(), &emuenv.cfg.delay_background, 4, 60);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select the delay (in seconds) before changing backgrounds.");
+                ImGui::SetTooltip("%s", lang.gui["select_delay_background"].c_str());
         }
         ImGui::Spacing();
-        ImGui::SliderInt("Delay for start screen", &emuenv.cfg.delay_start, 10, 60);
+        ImGui::SliderInt(lang.gui["delay_start"].c_str(), &emuenv.cfg.delay_start, 10, 60);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select the delay (in seconds) before returning to the start screen.");
+            ImGui::SetTooltip("%s", lang.gui["select_delay_start"].c_str());
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
 
     // Network
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem("Network")) {
+    if (ImGui::BeginTabItem(lang.network["title"].c_str())) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
 
@@ -1031,9 +1028,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (psn / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "PlayStation Network");
         ImGui::Spacing();
-        ImGui::Combo("PSN Status", &config.psn_status, "Unknown\0Signed Out\0Signed In\0Online\0");
+        ImGui::Combo(lang.network["psn_status"].c_str(), &config.psn_status, "Unknown\0Signed Out\0Signed In\0Online\0");
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select the state of the PS Network.");
+            ImGui::SetTooltip("%s", lang.network["select_psn_state"].c_str());
 
         // HTTP
         ImGui::Spacing();
@@ -1043,75 +1040,75 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (http / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "HTTP");
         ImGui::Spacing();
-        ImGui::Checkbox("Enable HTTP", &emuenv.cfg.http_enable);
+        ImGui::Checkbox(lang.network["enable_http"].c_str(), &emuenv.cfg.http_enable);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check this box to enable games to use the HTTP protocol on the internet.");
+            ImGui::SetTooltip("%s", lang.network["enable_http_description"].c_str());
         ImGui::Spacing();
-        ImGui::SliderInt("HTTP Timeout Attempts", &emuenv.cfg.http_timeout_attempts, 0, 100);
+        ImGui::SliderInt(lang.network["timeout_attempts"].c_str(), &emuenv.cfg.http_timeout_attempts, 0, 100);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("How many attempts to do when the server doesn't respond.\nCould be useful if you have very unstable or VERY SLOW internet.");
-        ImGui::SliderInt("HTTP Timeout Sleep", &emuenv.cfg.http_timeout_sleep_ms, 50, 3000);
+            ImGui::SetTooltip("%s", lang.network["timeout_attempts_description"].c_str());
+        ImGui::SliderInt(lang.network["timeout_sleep"].c_str(), &emuenv.cfg.http_timeout_sleep_ms, 50, 3000);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer.\nCould be useful if you have very unstable or VERY SLOW internet.");
+            ImGui::SetTooltip("%s", lang.network["timeout_sleep_description"].c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        ImGui::SliderInt("HTTP Read End Attempts", &emuenv.cfg.http_read_end_attempts, 0, 100);
+        ImGui::SliderInt(lang.network["read_end_attempts"].c_str(), &emuenv.cfg.http_read_end_attempts, 0, 100);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("How many attempts to do when there isn't more data to read,\nlower can improve performance but can make games unstable if you have bad enough internet.");
-        ImGui::SliderInt("HTTP Read End Sleep", &emuenv.cfg.http_read_end_sleep_ms, 50, 3000);
+            ImGui::SetTooltip("%s", lang.network["read_end_attempts_description"].c_str());
+        ImGui::SliderInt(lang.network["read_end_sleep"].c_str(), &emuenv.cfg.http_read_end_sleep_ms, 50, 3000);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Attempt sleep time when there isn't more data to read,\nlower can improve performance but can make games unstable if you have bad enough internet.");
+            ImGui::SetTooltip("%s", lang.network["read_end_sleep_description"].c_str());
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
 
     // Debug
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem("Debug")) {
+    if (ImGui::BeginTabItem(lang.debug["title"].c_str())) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("Import logging", &emuenv.kernel.debugger.log_imports);
+        ImGui::Checkbox(lang.debug["log_imports"].c_str(), &emuenv.kernel.debugger.log_imports);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Log module import symbols.");
-        ImGui::Checkbox("Export logging", &emuenv.kernel.debugger.log_exports);
+            ImGui::SetTooltip("%s", lang.debug["log_imports_description"].c_str());
+        ImGui::Checkbox(lang.debug["log_exports"].c_str(), &emuenv.kernel.debugger.log_exports);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Log module export symbols.");
+            ImGui::SetTooltip("%s", lang.debug["log_exports_description"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("Shader logging", &emuenv.cfg.log_active_shaders);
+        ImGui::Checkbox(lang.debug["log_active_shaders"].c_str(), &emuenv.cfg.log_active_shaders);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Log shaders being used on each draw call.");
-        ImGui::Checkbox("Uniform logging", &emuenv.cfg.log_uniforms);
+            ImGui::SetTooltip("%s", lang.debug["log_active_shaders_description"].c_str());
+        ImGui::Checkbox(lang.debug["log_uniforms"].c_str(), &emuenv.cfg.log_uniforms);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Log shader uniform names and values.");
+            ImGui::SetTooltip("%s", lang.debug["log_uniforms_description"].c_str());
         ImGui::SameLine();
-        ImGui::Checkbox("Save color surfaces", &emuenv.cfg.color_surface_debug);
+        ImGui::Checkbox(lang.debug["color_surface_debug"].c_str(), &emuenv.cfg.color_surface_debug);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Save color surfaces to files.");
+            ImGui::SetTooltip("%s", lang.debug["color_surface_debug_description"].c_str());
         ImGui::Spacing();
-        ImGui::Checkbox("ELF dumping", &emuenv.kernel.debugger.dump_elfs);
+        ImGui::Checkbox(lang.debug["dump_elfs"].c_str(), &emuenv.kernel.debugger.dump_elfs);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Dump loaded code as ELFs");
-        ImGui::Spacing();
+            ImGui::SetTooltip("%s", lang.debug["dump_elfs_description"].c_str());
+        ImGui::SameLine();
         if (emuenv.backend_renderer == renderer::Backend::Vulkan) {
-            ImGui::Checkbox("Validation Layer (Reboot required)", &emuenv.cfg.validation_layer);
+            ImGui::Checkbox(lang.debug["validation_layer"].c_str(), &emuenv.cfg.validation_layer);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Enable Vulkan validation layer.");
+                ImGui::SetTooltip("%s", lang.debug["validation_layer_description"].c_str());
             ImGui::Spacing();
         }
-        if (ImGui::Button(emuenv.kernel.debugger.watch_code ? "Unwatch Code" : "Watch Code")) {
+        if (ImGui::Button(emuenv.kernel.debugger.watch_code ? lang.debug["unwatch_code"].c_str() : lang.debug["watch_code"].c_str())) {
             emuenv.kernel.debugger.watch_code = !emuenv.kernel.debugger.watch_code;
             emuenv.kernel.debugger.update_watches();
         }
         ImGui::SameLine();
-        if (ImGui::Button(emuenv.kernel.debugger.watch_memory ? "Unwatch Memory" : "Watch Memory")) {
+        if (ImGui::Button(emuenv.kernel.debugger.watch_memory ? lang.debug["unwatch_memory"].c_str() : lang.debug["watch_memory"].c_str())) {
             emuenv.kernel.debugger.watch_memory = !emuenv.kernel.debugger.watch_memory;
             emuenv.kernel.debugger.update_watches();
         }
         ImGui::Spacing();
-        if (ImGui::Button(emuenv.kernel.debugger.watch_import_calls ? "Unwatch Import Calls" : "Watch Import Calls")) {
+        if (ImGui::Button(emuenv.kernel.debugger.watch_import_calls ? lang.debug["unwatch_import_calls"].c_str() : lang.debug["watch_import_calls"].c_str())) {
             emuenv.kernel.debugger.watch_import_calls = !emuenv.kernel.debugger.watch_import_calls;
             emuenv.kernel.debugger.update_watches();
         }
@@ -1191,21 +1188,18 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * SCALE.x));
-    ImGui::PushFont(gui.vita_font);
-    ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
-    if (ImGui::Button(lang["close"].c_str(), BUTTON_SIZE))
+    if (ImGui::Button(lang.main_window["close"].c_str(), BUTTON_SIZE))
         settings_dialog = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));
     const auto is_reboot = (emuenv.renderer->current_backend != emuenv.backend_renderer) || (config.resolution_multiplier != emuenv.cfg.current_config.resolution_multiplier);
-    if (ImGui::Button(is_apply ? (is_reboot ? lang["save_reboot"].c_str() : lang["save_apply"].c_str()) : lang["save"].c_str(), BUTTON_SIZE)) {
+    if (ImGui::Button(is_apply ? (is_reboot ? lang.main_window["save_reboot"].c_str() : lang.main_window["save_apply"].c_str()) : lang.main_window["save"].c_str(), BUTTON_SIZE)) {
         save_config(gui, emuenv);
         if (is_apply)
             set_config(gui, emuenv, emuenv.io.app_path);
     }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("%s", lang["keep_changes"].c_str());
-    ImGui::PopFont();
+        ImGui::SetTooltip("%s", lang.main_window["keep_changes"].c_str());
 
     ImGui::End();
 }

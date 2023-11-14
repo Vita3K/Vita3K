@@ -28,55 +28,56 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
 
-    auto lang = gui.lang.welcome;
+    auto &lang = gui.lang.welcome;
+
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     ImGui::Begin(lang["title"].c_str(), &gui.help_menu.welcome_dialog, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(RES_SCALE.x);
     ImGui::PopStyleColor();
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_first"].c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["vita3k"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::TextWrapped("%s", lang["line_second"].c_str());
+    ImGui::TextWrapped("%s", lang["about_vita3k"].c_str());
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_third"].c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["development_stage"].c_str());
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_fourth"].c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["about_firmware"].c_str());
     if (ImGui::Button(lang["download_firmware"].c_str()))
         get_firmware_file(emuenv);
     ImGui::SameLine();
     if (ImGui::Button(gui.lang.install_dialog.firmware_install["download_firmware_font_package"].c_str()))
         open_path("https://bit.ly/2P2rb0r");
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_sixth_part_one"].c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["vita3k_quickstart"].c_str());
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
     if (ImGui::Button(lang["quickstart"].c_str()))
         open_path("https://vita3k.org/quickstart.html");
     ImGui::SameLine();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_sixth_part_two"].c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["page"].c_str());
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_seventh"].c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["check_compatibility"].c_str());
     if (ImGui::Button(lang["commercial_compatibility_list"].c_str()))
         open_path("https://vita3k.org/compatibility.html");
     ImGui::SameLine();
     if (ImGui::Button(lang["homebrew_compatibility_list"].c_str()))
         open_path("https://vita3k.org/compatibility-homebrew.html");
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_ninth"].c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["welcome_contribution"].c_str());
     ImGui::SameLine();
     if (ImGui::Button("GitHub"))
         open_path("https://github.com/Vita3K/Vita3K");
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_tenth"].c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["discord_help"].c_str());
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
     if (ImGui::Button("Discord"))
         open_path("https://discord.gg/6aGwQzh");
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_eleventh"].c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["no_piracy"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();

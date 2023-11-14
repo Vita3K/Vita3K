@@ -2,7 +2,7 @@
 
 <lang>
 	<main_menubar>
-		<file name="File">
+		<file name="Arkiv">
 			<open_pref_path>Open Pref Path</open_pref_path>
 			<install_firmware>Install Firmware</install_firmware>
 			<install_pkg>Install .pkg</install_pkg>
@@ -19,12 +19,14 @@
 		<controls name="Controls">
 			<keyboard_controls>Keyboard Controls</keyboard_controls>
 		</controls>
-		<help name="Help">
+		<help name="Hjälp">
 			<welcome>Welcome</welcome>
 		</help>
 	</main_menubar>
 
 	<app_context>
+		<manual>Handbok</manual>
+		<update>Uppdatera</update>
 		<update_history>Uppdateringshistorik</update_history>
 		<history_version>Version {}</history_version>
 		<information>Information</information>
@@ -173,6 +175,11 @@ Felkod: {}</an_error_occurred>
 		<minutes_ago>{} minuter sedan</minutes_ago>
 	</common>
 
+	<compat_db>
+		<error>Fel</error>
+		<information>Information</information>
+	</compat_db>
+
 	<content_manager name="Innehållshanterare">
 		<application name="Applikationer">
 			<delete>De markerade applikationerna och alla tillhörande data, inklusive sparade data, kommer att raderas.</delete>
@@ -191,6 +198,10 @@ Felkod: {}</an_error_occurred>
 		<name>Namn</name>
 		<num>Num</num>
 	</controllers>
+
+	<controls name="Controls">
+		<error>Fel</error>
+	</controls>
 
 	<dialog>
 		<trophy>
@@ -317,6 +328,7 @@ Ditt Vita3K-system är redo!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Inställningar">
+		<close>Stänga</close>
 		<save>Spara</save>
 	</settings_dialog>
 
@@ -355,7 +367,7 @@ Du kan få trophies om du använder en applikation som stder trophy-funktionen.<
 	<vita3k_update name="Vita3K-uppdatering">
  		<new_version_available>En ny version av Vita3K är tillgänglig.</new_version_available>
 		<back>Tillbaka</back>
- 		<cancel_update_resume>Vill du avbryta uppdateringen?</cancel_update_resume>
+ 		<cancel_update>Vill du avbryta uppdateringen?</cancel_update>
 		<downloading>Laddar ned...
 När nedladdningen är slutförd kommer Vita3K automatiskt att startas om och den nya uppdatera installeras.</downloading>
 		<not_complete_update>Kunde inte slutföra uppdateringen.</not_complete_update>
@@ -369,4 +381,8 @@ När nedladdningen är slutförd kommer Vita3K automatiskt att startas om och de
 		<update>Uppdatera</update>
 		<version>Version {}</version>
 	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<close>Stänga</close>
+	</welcome>
 </lang>

@@ -63,8 +63,7 @@ void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::BeginChild("##info", WINDOW_SIZE, true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
-        auto title = fmt::format("{}", spdlog::level::to_string_view(gui.info_message.level));
-        title[0] = std::toupper(title[0]);
+        const auto title = gui.info_message.title;
         ImGui::SetWindowFontScale(RES_SCALE.x);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(title.c_str()).x) / 2);
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
@@ -829,6 +828,9 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
     if ((gui.vita_area.home_screen || !emuenv.io.app_path.empty()) && get_sys_apps_state(gui) && !gui.vita_area.live_area_screen && !gui.vita_area.user_management && (!emuenv.cfg.show_info_bar || !gui.vita_area.information_bar))
         draw_main_menu_bar(gui, emuenv);
 
+    if (gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog)
+        draw_settings_dialog(gui, emuenv);
+
     if (gui.controls_menu.controls_dialog)
         draw_controls_dialog(gui, emuenv);
     if (gui.controls_menu.controllers_dialog)
@@ -863,9 +865,6 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
         draw_allocations_dialog(gui, emuenv);
     if (gui.debug_menu.disassembly_dialog)
         draw_disassembly_dialog(gui, emuenv);
-
-    if (gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog)
-        draw_settings_dialog(gui, emuenv);
 
     ImGui::PopFont();
 }

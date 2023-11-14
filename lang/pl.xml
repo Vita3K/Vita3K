@@ -2,7 +2,7 @@
 
 <lang>
 	<main_menubar>
-		<file name="File">
+		<file name="Plik">
 			<open_pref_path>Open Pref Path</open_pref_path>
 			<install_firmware>Install Firmware</install_firmware>
 			<install_pkg>Zainstaluj .pkg</install_pkg>
@@ -19,12 +19,14 @@
 		<controls name="Controls">
 			<keyboard_controls>Keyboard Controls</keyboard_controls>
 		</controls>
-		<help name="Help">
+		<help name="Pomoc">
 			<welcome>Witamy</welcome>
 		</help>
 	</main_menubar>
 
 	<app_context>
+		<manual>Instrukcja obsługi</manual>
+		<update>Aktualizuj</update>
 		<update_history>Historia aktualizacji</update_history>
 		<history_version>Wersja {}</history_version>
 		<information>Informacje</information>
@@ -186,6 +188,11 @@ Kod błędu: {}</an_error_occurred>
 		</states>
 	</compatibility>
 
+	<compat_db>
+		<error>Błąd</error>
+		<information>Informacje</information>
+	</compat_db>
+
 	<content_manager name="Menedźer zawartości">
 		<application name="Aplikacje">
 			<delete>Wybrane aplikacje i wszystkie powiązane dane, w tym zapisane dane, zostaną usunięte.</delete>
@@ -204,6 +211,10 @@ Kod błędu: {}</an_error_occurred>
 		<name>Nazwa</name>
 		<num>Num</num>
 	</controllers>
+
+	<controls name="Controls">
+		<error>Błąd</error>
+	</controls>
 
 	<dialog>
 		<trophy>
@@ -329,6 +340,7 @@ System Vita3K jest gotowy!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Ustawienia">
+		<close>Zamykać</close>
 		<save>Zapisz</save>
 	</settings_dialog>
 
@@ -368,7 +380,7 @@ Czy na pewno chcesz kontynuować?</user_delete_warn>
 	<vita3k_update name="Aktualizacja Vita3K">
  		<new_version_available>Dostępna jest nowa wersja Vita3K.</new_version_available>
 		<back>Wstecz</back>
- 		<cancel_update_resume>Czy chcesz anulować tę aktualizację?</cancel_update_resume>
+ 		<cancel_update>Czy chcesz anulować tę aktualizację?</cancel_update>
 		<downloading>Pobieranie...
 Po ukończeniu pobierania Vita3K zostanie automatycznie ponownie uruchomiony, a następnie zostanie zainstalowane nowe aktualizacji.</downloading>
 		<not_complete_update>Nie można ukończyć aktualizacji.</not_complete_update>
@@ -382,4 +394,8 @@ Po ukończeniu pobierania Vita3K zostanie automatycznie ponownie uruchomiony, a 
 		<update>Aktualizuj</update>
 		<version>Wersja {}</version>
 	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<close>Zamykać</close>
+	</welcome>
 </lang>

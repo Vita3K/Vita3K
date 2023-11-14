@@ -46,6 +46,8 @@
 		<license>라이센스</license>
 		<shaders_cache>셰이더 캐시</shaders_cache>
 		<shaders_log>셰이더 로그</shaders_log>
+		<manual>설명서</manual>
+		<update>업데이트</update>
 		<update_history>업데이트 이력</update_history>
 		<history_version>버전 {}</history_version>
 		<information>정보</information>
@@ -214,6 +216,11 @@
 		</states>
 	</compatibility>
 
+	<compat_db>
+		<error>오류</error>
+		<information>정보</information>
+	</compat_db>
+
 	<content_manager name="콘텐츠 관리">
 		<application name="애플리케이션">
 			<delete>선택한 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</delete>
@@ -232,6 +239,10 @@
 		<name>이름</name>
 		<num>번호</num>
 	</controllers>
+
+	<controls name="컨트롤">
+		<error>오류</error>
+	</controls>
 
 	<dialog>
 		<trophy>
@@ -349,6 +360,7 @@
 	</settings>
 
 	<settings_dialog name="설정">
+		<close>닫다</close>
 		<save>저장</save>
 	</settings_dialog>
 
@@ -390,7 +402,7 @@
 	<vita3k_update name="Vita3K 업데이트">
  		<new_version_available>새 버전의 Vita3K 있습니다.</new_version_available>
 		<back>돌아가기</back>
- 		<cancel_update_resume>업데이트를 취소하시겠습니까?</cancel_update_resume>
+ 		<cancel_update>업데이트를 취소하시겠습니까?</cancel_update>
 		<downloading>다운로드 중입니다...
 다운로드 후에 Vita3K 자동으로 재기동하여 새로운 업데이트를 설치합니다.</downloading>
 		<not_complete_update>업데이트하지 못했습니다.</not_complete_update>
@@ -404,4 +416,8 @@
 		<update>업데이트</update>
 		<version>버전 {}</version>
 	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<close>닫다</close>
+	</welcome>
 </lang>

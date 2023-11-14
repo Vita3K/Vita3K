@@ -13,6 +13,17 @@
 		<emulation name="模拟">
 			<last_apps_used>最近使用的应用程序</last_apps_used>
 		</emulation>
+		<debug name="调试">
+			<threads>线程</threads>
+			<semaphores>信号量</semaphores>
+			<mutexes>互斥锁</mutexes>
+			<lightweight_mutexes>轻量互斥锁</lightweight_mutexes>
+			<condition_variables>条件变量</condition_variables>
+			<lightweight_condition_variables>轻量条件变量</lightweight_condition_variables>
+			<event_flags>事件标志</event_flags>
+			<memory_allocations>内存分配</memory_allocations>
+			<disassembly>反汇编</disassembly>
+		</debug>
 		<configuration name="配置">
 			<user_management>用户管理</user_management>
 		</configuration>
@@ -55,6 +66,8 @@
 		<license>授权</license>
 		<shaders_cache>着色器缓存</shaders_cache>
 		<shaders_log>着色器日志</shaders_log>
+		<manual>说明书</manual>
+		<update>升级</update>
 		<update_history>更新历史记录</update_history>
 		<history_version>{}版本</history_version>
 		<information>信息</information>
@@ -234,6 +247,8 @@
 	</compatibility>
 
 	<compat_db>
+		<error>错误</error>
+		<information>信息</information>
 		<get_failed>无法获取当前兼容性数据库，请检查防火墙/互联网连接后再重试。</get_failed>
 		<download_failed>无法下载更新于{}的应用程序兼容性数据库，请稍后重试。</download_failed>
 		<load_failed>无法读取已下载更新于{}的应用程序兼容性数据库。</load_failed>
@@ -311,12 +326,14 @@
 		<r2_button>R2键</r2_button>
 		<l3_button>L3键</l3_button>
 		<r3_button>R3键</r3_button>
-		<gui>GUI（图形用户界面）</gui>
+		<gui>图形用户界面</gui>
 		<full_screen>全屏</full_screen>
 		<toggle_touch>切换触摸</toggle_touch>
 		<toggle_touch_description>在背触和前触之间切换。</toggle_touch_description>
-		<toggle_gui_visibility>切换GUI（图形用户界面）可见性</toggle_gui_visibility>
-		<toggle_gui_visibility_description>在应用程序运行时，在屏幕顶部显示和隐藏GUI（图形用户界面）之间切换。</toggle_gui_visibility_description>
+		<toggle_gui_visibility>切换图形用户界面可见性</toggle_gui_visibility>
+		<toggle_gui_visibility_description>在应用程序运行时，在屏幕顶部显示和隐藏图形用户界面之间切换。</toggle_gui_visibility_description>
+		<miscellaneous>杂项</miscellaneous>
+		<toggle_texture_replacement>切换纹理替换</toggle_texture_replacement>
 		<error>错误</error>
 		<error_duplicate_key>该键已被使用并绑定其他键或被预留。</error_duplicate_key>
 	</controls>
@@ -399,6 +416,7 @@
 		<install_firmware>安装固件。</install_firmware>
 		<installed>已安装：</installed>
 		<install_firmware_file>安装固件文件</install_firmware_file>
+		<grid_mode>网格模式</grid_mode>
 		<completed>已完成。</completed>
 	</initial_setup>
 
@@ -536,6 +554,195 @@
 	</settings>
 
 	<settings_dialog name="设置">
+		<core name="核心">
+			<modules_mode>模块模式</modules_mode>
+			<modules_list>模块列表</modules_list>
+			<select_modules>选择您所需的模块。</select_modules>
+			<search_modules>搜索模块</search_modules>
+			<clear_list>清除列表</clear_list>
+			<no_modules>没有模块存在。
+请下载并安装最新的PS Vita固件。</no_modules>
+			<refresh_list>刷新列表</refresh_list>
+		</core>
+		<cpu>
+			<cpu_backend>CPU后端</cpu_backend>
+			<select_cpu_backend>选择您喜欢的CPU后端。</select_cpu_backend>
+			<cpu_opt>启用优化</cpu_opt>
+			<cpu_opt_description>勾选此项启用额外CPU的JIT优化。</cpu_opt_description>
+		</cpu>
+		<gpu>
+			<reset>重置</reset>
+			<backend_renderer>后端渲染器</backend_renderer>
+			<select_backend_renderer>选择您喜欢的后端渲染器。</select_backend_renderer>
+			<gpu>GPU（重启后应用）</gpu>
+			<select_gpu>选择在Vita3K应运行的GPU。</select_gpu>
+			<renderer_accuracy>渲染器精度</renderer_accuracy>
+			<v_sync>垂直同步</v_sync>
+			<v_sync_description>禁用垂直同步可以解决某些游戏的速度问题。
+建议保留启用它以避免画面撕裂。</v_sync_description>
+			<disable_surface_sync>禁用表面同步</disable_surface_sync>
+			<surface_sync_description>提升速度，勾选此项禁用处理器与显卡之间的表面同步。
+某些游戏需要表面同步，
+如果禁用（特别是在提升时），则可大幅提升性能。</surface_sync_description>
+			<screen_filter>屏幕过滤</screen_filter>
+			<screen_filter_description>设置要应用的后处理过滤器（可理解为抗锯齿）。</screen_filter_description>
+			<internal_resolution_upscaling>内部分辨率提升</internal_resolution_upscaling>
+			<internal_resolution_upscaling_description>为Vita3K启用提升效果。
+实验性：不保证游戏能超过1倍的正确渲染。</internal_resolution_upscaling_description>
+			<anisotropic_filtering>各向异性过滤</anisotropic_filtering>
+			<anisotropic_filtering_description>各向异性过滤是一种提高表面图像质量的技术，
+它们相对于观察者是倾斜的，
+它没有缺点，但会影响性能。</anisotropic_filtering_description>
+			<texture_replacement>纹理替换</texture_replacement>
+			<export_textures>导出纹理</export_textures>
+			<import_textures>导入纹理</import_textures>
+			<texture_exporting_format>纹理导出格式</texture_exporting_format>
+			<shaders>着色器</shaders>
+			<shader_cache>使用着色器缓存</shader_cache>
+			<shader_cache_description>勾选此项以启用着色器缓存以在游戏启动时对其进行预编译。
+取消勾选则禁用该功能。</shader_cache_description>
+			<spirv_shader>使用Spir-V着色器（已弃用）</spirv_shader>
+			<spirv_shader_description>将生成的Spir-V着色器直接传递给驱动程序。
+请注意，一些有益的扩展功能将被禁用，
+并非所有显卡都与此兼容。</spirv_shader_description>
+			<clean_shaders>清除着色器缓存以及日志</clean_shaders>
+		</gpu>
+		<system name="系统">
+			<select_enter_button>确认按键分配
+请选择您的“确认”按键。</select_enter_button>
+			<enter_button_description>这是在应用程序对话框中用作“确认”的按键。
+某些应用程序不使用此功能并获取默认确认按键。</enter_button_description>
+			<circle>圆形（ O ）</circle>
+			<cross>交叉（ X ）</cross>
+			<pstv_mode>PS TV模式</pstv_mode>
+			<pstv_mode_description>勾选此项启用PS TV模拟模式。</pstv_mode_description>
+			<show_mode>Show模式</show_mode>
+			<show_mode_description>勾选此项启用Show模式。</show_mode_description>
+			<demo_mode>Demo模式</demo_mode>
+			<demo_mode_description>勾选此项启用Demo模式。</demo_mode_description>
+		</system>
+		<emulator name="模拟器">
+			<boot_apps_full_screen>以全屏启动应用程序</boot_apps_full_screen>
+			<audio_backend>音频后端</audio_backend>
+			<select_audio_backend>选择您喜欢的音频后端。</select_audio_backend>
+			<enable_ngs_support>启用NGS支持</enable_ngs_support>
+			<ngs_description>取消勾选此项禁用对高级音频库NGS的支持。</ngs_description>
+			<log_level>日志级别</log_level>
+			<select_log_level>选择您喜欢的日志级别。</select_log_level>
+			<archive_log>档案日志</archive_log>
+			<archive_log_description>勾选此项启用档案日志。</archive_log_description>
+			<discord_rich_presence>启用Discord Rich Presence以显示您在Discord上运行的应用程序。</discord_rich_presence>
+			<texture_cache>纹理缓存</texture_cache>
+			<texture_cache_description>取消勾选此项禁用纹理缓存。</texture_cache_description>
+			<show_compile_shaders>显示编译着色器</show_compile_shaders>
+			<compile_shaders_description>取消勾选此项禁用编译着色器对话框的显示。</compile_shaders_description>
+			<show_touchpad_cursor>显示触摸板光标</show_touchpad_cursor>
+			<touchpad_cursor_description>取消勾选此项禁用显示在屏幕上触摸板光标。</touchpad_cursor_description>
+			<log_compat_warn>日志兼容性警告</log_compat_warn>
+			<log_compat_warn_description>勾选此项启用GitHub问题的日志兼容性警告。</log_compat_warn_description>
+			<check_for_updates>检查更新</check_for_updates>
+			<check_for_updates_description>启动时自动检查更新。</check_for_updates_description>
+			<performance_overlay>性能图层</performance_overlay>
+			<performance_overlay_description>在屏幕上以图层的形式显示性能信息。</performance_overlay_description>
+			<detail>细节</detail>
+			<select_detail>选择您喜欢的性能图层细节。</select_detail>
+			<position>位置</position>
+			<select_position>选择您喜欢的性能图层位置。</select_position>
+			<case_insensitive>检查在区分大小写的文件系统上启用不区分大小写的路径查找。
+重启时复位</case_insensitive>
+			<case_insensitive_description>允许模拟器尝试在非Windows平台上搜索无论大小写的文件。</case_insensitive_description>
+			<emu_storage_folder>模拟系统存储文件夹</emu_storage_folder>
+			<current_emu_path>当前模拟器路径：</current_emu_path>
+			<change_emu_path>更改模拟器路径</change_emu_path>
+			<change_emu_path_description>更改Vita3K模拟器文件夹路径。
+您需要手动将旧文件夹移动到新位置。</change_emu_path_description>
+			<reset_emu_path>重置模拟器路径</reset_emu_path>
+			<reset_emu_path_description>重置Vita3K模拟器为默认路径。
+您需要手动将旧文件夹移动到新位置。</reset_emu_path_description>
+			<custom_config_settings>自定义配置设置</custom_config_settings>
+			<clear_custom_config>清除自定义配置</clear_custom_config>
+		</emulator>
+		<gui name="图形用户界面">
+			<show_gui>图形用户界面可见</show_gui>
+			<gui_description>勾选此项在启动应用程序后显示图形用户界面。</gui_description>
+			<show_info_bar>信息栏可见</show_info_bar>
+			<info_bar_description>勾选此项在应用程序选择页面内显示信息栏。</info_bar_description>
+			<display_info_message>显示信息消息</display_info_message>
+			<display_info_message_description>取消勾选此项只在日志中显示信息消息。</display_info_message_description>
+			<display_system_apps>显示系统应用程序</display_system_apps>
+			<display_system_apps_description>取消勾选此项禁用从主画面中显示的系统应用程序。
+它们将仅显示在主菜单栏中。</display_system_apps_description>
+			<show_live_area_screen>Live Area应用程序屏幕</show_live_area_screen>
+			<live_area_screen_description>勾选此项在点击应用程序时默认打开Live Area页面。
+如果禁用，请右键应用程序将其打开。</live_area_screen_description>
+			<stretch_the_display_area>拉伸显示区域</stretch_the_display_area>
+			<stretch_the_display_area_description>勾选此项扩大显示区域以适应屏幕尺寸。</stretch_the_display_area_description>
+			<apps_list_grid>网格模式</apps_list_grid>
+			<apps_list_grid_description>勾选此项将应用程序列表设置为网格模式。</apps_list_grid_description>
+			<icon_size>应用程序图标大小</icon_size>
+			<select_icon_size>选择您喜欢的图标大小。</select_icon_size>
+			<font_support>字体支持</font_support>
+			<asia_font_support>亚洲区域</asia_font_support>
+			<asia_font_support_description>勾选此项启用对中文以及韩文的字体支持。
+启用此功能将占用更多内存，并且需要您重启模拟器才能生效。</asia_font_support_description>
+			<firmware_font_package_description>一些应用程序需要固件字体包
+以及在图形用户界面中的亚洲区域字体支持。
+通常也强烈建议将其用于图形用户界面。</firmware_font_package_description>
+			<theme_background>主题&背景</theme_background>
+			<current_theme_content_id>当前主题内容ID：</current_theme_content_id>
+			<reset_default_theme>重置原始主题</reset_default_theme>
+			<using_theme_background>使用主题背景</using_theme_background>
+			<clean_user_backgrounds>清除用户背景</clean_user_backgrounds>
+			<current_start_background>当前主画面的背景：</current_start_background>
+			<reset_start_background>重置主画面的背景</reset_start_background>
+			<background_alpha>背景透明度</background_alpha>
+			<select_background_alpha>选择您喜欢的背景透明度。
+最小值不透明，最大值透明。</select_background_alpha>
+			<delay_background>延迟背景</delay_background>
+			<select_delay_background>选择更改背景前的延迟（以每秒为单位）。</select_delay_background>
+			<delay_start>延迟开始画面</delay_start>
+			<select_delay_start>选择返回开始画面前的延迟（以每秒为单位）。</select_delay_start>
+		</gui>
+		<network name="网络">
+			<psn_status>PSN状态</psn_status>
+			<select_psn_state>选择PS Network的状态。</select_psn_state>
+			<enable_http>启用HTTP</enable_http>
+			<enable_http_description>勾选此项启用游戏在网络上使用HTTP协议。</enable_http_description>
+			<timeout_attempts>HTTP超时尝试</timeout_attempts>
+			<timeout_attempts_description>当服务器没有响应时要执行多次尝试。
+如果您有非常不稳定或是非常慢的网络可能会很有用。</timeout_attempts_description>
+			<timeout_sleep>HTTP超时休眠</timeout_sleep>
+			<timeout_sleep_description>当服务器没有响应时尝试休眠时间。
+如果您有非常不稳定或是非常慢的网络可能会很有用。</timeout_sleep_description>
+			<read_end_attempts>HTTP读取终止尝试</read_end_attempts>
+			<read_end_attempts_description>当没有更多数据可读取时，尝试多次可以提升性能，
+但如果您的网络很糟糕，则会导致游戏不稳定。</read_end_attempts_description>
+			<read_end_sleep>HTTP读取终止休眠</read_end_sleep>
+			<read_end_sleep_description>尝试在没有更多数据可读取时进入休眠时间，这可以提升性能，
+但如果您的网络很糟糕，则会导致游戏不稳定。</read_end_sleep_description>
+		</network>
+		<debug name="调试">
+			<log_imports>导入记录</log_imports>
+			<log_imports_description>记录模块导入符号。</log_imports_description>
+			<log_exports>导出记录</log_exports>
+			<log_exports_description>记录模块导出符号。</log_exports_description>
+			<log_active_shaders>着色器记录</log_active_shaders>
+			<log_active_shaders_description>记录着色器在每次绘制调用中使用。</log_active_shaders_description>
+			<log_uniforms>统一记录</log_uniforms>
+			<log_uniforms_description>记录着色器统一名称和值。</log_uniforms_description>
+			<color_surface_debug>保存颜色表面</color_surface_debug>
+			<color_surface_debug_description>保存颜色表面到文件。</color_surface_debug_description>
+			<dump_elfs>ELF提取</dump_elfs>
+			<dump_elfs_description>将加载的代码提取为ELF。</dump_elfs_description>
+			<validation_layer>验证层（要求重启）</validation_layer>
+			<validation_layer_description>启用Vulkan验证层。</validation_layer_description>
+			<unwatch_code>取消监视代码</unwatch_code>
+			<watch_code>监视代码</watch_code>
+			<unwatch_memory>取消监视内存</unwatch_memory>
+			<watch_memory>监视内存</watch_memory>
+			<unwatch_import_calls>取消监视导入调用</unwatch_import_calls>
+			<watch_import_calls>监视导入调用</watch_import_calls>
+		</debug>
 		<close>关闭</close>
 		<save_reboot>保存并重启</save_reboot>
 		<save_apply>保存并应用</save_apply>
@@ -585,7 +792,7 @@
 	<vita3k_update name="Vita3K更新">
  		<new_version_available>检测到新版本的Vita3K。</new_version_available>
 		<back>返回</back>
- 		<cancel_update_resume>要取消升级吗？</cancel_update_resume>
+ 		<cancel_update>要取消升级吗？</cancel_update>
 		<downloading>下载中…
 下载完毕后，Vita3K将会自动重新启动，并安装新的升级。</downloading>
 		<not_complete_update>无法完成升级。</not_complete_update>
@@ -603,19 +810,19 @@
 	</vita3k_update>
 
 	<welcome name="欢迎使用Vita3K">
-		<line_first>Vita3K PlayStation Vita模拟器</line_first>
-		<line_second>Vita3K是使用C++编写的开源PlayStation Vita模拟器，适用于Windows、Linux、macOS以及Android。</line_second>
-		<line_third>目前模拟器仍处于开发阶段，因此非常感谢任何反馈和测试。</line_third>
-		<line_fourth>要开始使用，请安装PS Vita固件和字体包。</line_fourth>
-		<line_sixth_part_one>有关如何设置Vita3K的综合指南可在</line_sixth_part_one>
+		<vita3k>Vita3K PlayStation Vita模拟器</vita3k>
+		<about_vita3k>Vita3K是使用C++编写的开源PlayStation Vita模拟器，适用于Windows、Linux、macOS以及Android。</about_vita3k>
+		<development_stage>目前模拟器仍处于开发阶段，因此非常感谢任何反馈和测试。</development_stage>
+		<about_firmware>要开始使用，请安装PS Vita固件和字体包。</about_firmware>
+		<vita3k_quickstart>有关如何设置Vita3K的综合指南可在</vita3k_quickstart>
 		<quickstart>快速入门</quickstart>
-		<line_sixth_part_two>页面中找到。</line_sixth_part_two>
-		<line_seventh>参考商业游戏以及自制程序兼容性列表来查看目前可运行的内容。</line_seventh>
+		<page>页面中找到。</page>
+		<check_compatibility>参考商业游戏以及自制程序兼容性列表来查看目前可运行的内容。</check_compatibility>
 		<commercial_compatibility_list>商业游戏兼容性列表</commercial_compatibility_list>
 		<homebrew_compatibility_list>自制程序兼容性列表</homebrew_compatibility_list>
-		<line_ninth>欢迎参与贡献！</line_ninth>
-		<line_tenth>可以在#help频道中找到更多支持</line_tenth>
-		<line_eleventh>Vita3K不纵容盗版。您必须提取您自己拥有的游戏。</line_eleventh>
+		<welcome_contribution>欢迎参与贡献！</welcome_contribution>
+		<discord_help>可以在#help频道中找到更多支持</discord_help>
+		<no_piracy>Vita3K不纵容盗版。您必须提取您自己拥有的游戏。</no_piracy>
 		<show_next_time>下次显示</show_next_time>
 		<close>关闭</close>
 	</welcome>

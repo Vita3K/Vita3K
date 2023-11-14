@@ -136,6 +136,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     // Get current date of last compat database updated at
     const auto updated_at = net_utils::get_web_regex_result(latest_link, std::regex("Updated at: (\\d{2}-\\d{2}-\\d{4} \\d{2}:\\d{2}:\\d{2})"));
     if (updated_at.empty()) {
+        gui.info_message.title = lang["error"];
         gui.info_message.level = spdlog::level::err;
         gui.info_message.msg = lang["get_failed"].c_str();
         return false;
@@ -154,6 +155,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto new_app_compat_db_path = emuenv.cache_path / "new_app_compat_db.xml";
 
     if (!net_utils::download_file(app_compat_db_link, new_app_compat_db_path.string())) {
+        gui.info_message.title = lang["error"];
         gui.info_message.level = spdlog::level::err;
         gui.info_message.msg = fmt::format(fmt::runtime(lang["download_failed"].c_str()), updated_at);
         fs::remove(new_app_compat_db_path);
@@ -169,12 +171,14 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
 
     gui.compat.compat_db_loaded = load_app_compat_db(gui, emuenv);
     if (!gui.compat.compat_db_loaded) {
+        gui.info_message.title = lang["error"];
         gui.info_message.level = spdlog::level::err;
         gui.info_message.msg = fmt::format(fmt::runtime(lang["load_failed"].c_str()), updated_at);
         db_updated_at.clear();
         return false;
     }
 
+    gui.info_message.title = lang["information"];
     gui.info_message.level = spdlog::level::info;
 
     if (compat_db_exist) {

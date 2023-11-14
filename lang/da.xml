@@ -2,7 +2,7 @@
 
 <lang>
 	<main_menubar>
-		<file name="File">
+		<file name="Fil">
 			<open_pref_path>Open Pref Path</open_pref_path>
 			<install_firmware>Install Firmware</install_firmware>
 			<install_pkg>Install .pkg</install_pkg>
@@ -19,12 +19,14 @@
 		<controls name="Controls">
 			<keyboard_controls>Keyboard Controls</keyboard_controls>
 		</controls>
-		<help name="Help">
+		<help name="Hjælp">
 			<welcome>Welcome</welcome>
 		</help>
 	</main_menubar>
 
 	<app_context>
+		<manual>Vejledning</manual>
+		<update>Opdater</update>
 		<update_history>Opdateringshistorik</update_history>
 		<history_version>Version {}</history_version>
 		<information>Information</information>
@@ -172,6 +174,11 @@ Fejlkode: {}</an_error_occurred>
 		<hours_ago>{} timer siden</hours_ago>
 		<minutes_ago>{} minutter siden</minutes_ago>
 	</common>
+
+	<compat_db>
+		<error>Fejl</error>
+		<information>Information</information>
+	</compat_db>
 	
 	<content_manager name="Indholdsadministrator">
 		<application name="Programmer">
@@ -191,6 +198,10 @@ Fejlkode: {}</an_error_occurred>
 		<name>Navn</name>
 		<num>Num</num>
 	</controllers>
+
+	<controls name="Controls">
+		<error>Fejl</error>
+	</controls>
 
 	<dialog>
 		<trophy>
@@ -316,6 +327,7 @@ Dit Vita3K-system er klart!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Indstillinger">
+		<close>Lukke</close>
 		<save>Gem</save>
 	</settings_dialog>
 	
@@ -355,7 +367,7 @@ Er du sikker på, at du ønsker at fortsætte.</user_delete_warn>
 	<vita3k_update name="Vita3K-opdatering">
  		<new_version_available>En ny version af Vita3K er tilgængelig.</new_version_available>
 		<back>Tilbage</back>
- 		<cancel_update_resume>Ønsker du at afbryde opdateringen?</cancel_update_resume>
+ 		<cancel_update>Ønsker du at afbryde opdateringen?</cancel_update>
 		<downloading>Downloader...
 Efter download er udført, vil Vita3K automatisk genstarte og derefter installere den nye opdateringen.</downloading>
 		<not_complete_update>Kunne ikke udføre opdateringen.</not_complete_update>
@@ -369,4 +381,8 @@ Efter download er udført, vil Vita3K automatisk genstarte og derefter installer
 		<update>Opdater</update>
 		<version>Version {}</version>
 	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<close>Lukke</close>
+	</welcome>
 </lang>

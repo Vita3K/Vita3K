@@ -13,6 +13,17 @@
 		<emulation name="Emulation">
 			<last_apps_used>Last Apps used</last_apps_used>
 		</emulation>
+		<debug name="Debug">
+			<threads>Threads</threads>
+			<semaphores>Semaphores</semaphores>
+			<mutexes>Mutexes</mutexes>
+			<lightweight_mutexes>Lightweight Mutexes</lightweight_mutexes>
+			<condition_variables>Condition Variables</condition_variables>
+			<lightweight_condition_variables>Lightweight Condition Variables</lightweight_condition_variables>
+			<event_flags>Event Flags</event_flags>
+			<memory_allocations>Memory Allocations</memory_allocations>
+			<disassembly>Disassembly</disassembly>
+		</debug>
 		<configuration name="Configuration">
 			<user_management>User Management</user_management>
 		</configuration>
@@ -55,6 +66,8 @@
 		<license>License</license>
 		<shaders_cache>Shaders Cache</shaders_cache>
 		<shaders_log>Shaders Log</shaders_log>
+		<manual>Manual</manual>
+		<update>Update</update>
 		<update_history>Update History</update_history>
 		<history_version>Version {}</history_version>
 		<information>Information</information>
@@ -235,6 +248,8 @@ Error code: {}</an_error_occurred>
 	</compatibility>
 
 	<compat_db>
+		<error>Error</error>
+		<information>Information</information>
 		<get_failed>Failed to get current compatibility database, check firewall/internet access, try again later.</get_failed>
 		<download_failed>Failed to download Applications compatibility database updated at: {}, try again later.</download_failed>
 		<load_failed>Failed to load Applications compatibility database downloaded updated at: {}.</load_failed>
@@ -318,6 +333,8 @@ Please connect a controller that is compatible with SDL2.</not_connected>
 		<toggle_touch_description>Toggles between back touch and screen touch.</toggle_touch_description>
 		<toggle_gui_visibility>Toggle GUI Visibility</toggle_gui_visibility>
 		<toggle_gui_visibility_description>Toggles between showing and hiding the GUI at the top of the screen while the app is running.</toggle_gui_visibility_description>
+		<miscellaneous>Miscellaneous</miscellaneous>
+		<toggle_texture_replacement>Toggle Texture Replacement</toggle_texture_replacement>
 		<error>Error</error>
 		<error_duplicate_key>The key is used for other bindings or it is reserved.</error_duplicate_key>
 	</controls>
@@ -401,6 +418,9 @@ Do not power off the system or close the application.</warning_saving>
 Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
 		<select_pref_path>Select a pref path.</select_pref_path>
+		<current_emu_path>Current emulator path</current_emu_path>
+		<change_emu_path>Change Emulator Path</change_emu_path>
+		<reset_emu_path>Reset Emulator Path</reset_emu_path>
 		<install_firmware>Install Firmware.</install_firmware>
 		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
 		<installed>Installed:</installed>
@@ -408,6 +428,16 @@ Your Vita3K system is ready!</completed_setup>
 		<download_font_package>Download Font Package</download_font_package>
 		<install_firmware_file>Install Firmware File</install_firmware_file>
 		<select_interface_settings>Select interface settings.</select_interface_settings>
+		<show_info_bar>Info Bar Visible</show_info_bar>
+		<info_bar_description>Check the box to show info bar inside app selector.
+Info bar is clock, battery level and notification center.</info_bar_description>
+		<show_live_area_screen>Live Area App Screen</show_live_area_screen>
+		<live_area_screen_description>Check the box to open Live Area by default when clicking on an application.
+If disabled, right click on an application to open it.</live_area_screen_description>
+		<apps_list_grid>Grid Mode</apps_list_grid>
+		<apps_list_grid_description>Check the box to set the app list to grid mode like of PS Vita.</apps_list_grid_description>
+		<icon_size>App Icon Size</icon_size>
+		<select_icon_size>Select your preferred icon size.</select_icon_size>
 		<completed>Completed.</completed>
 		<next>Next</next>
 	</initial_setup>
@@ -554,6 +584,196 @@ Please check work.bin/rif file or zRIF key.</failed_install_license>
 	</settings>
 
 	<settings_dialog name="Settings">
+		<core name="Core">
+			<modules_mode>Modules Mode</modules_mode>
+			<modules_list>Modules List</modules_list>
+			<select_modules>Select your desired modules.</select_modules>
+			<search_modules>Search Modules</search_modules>
+			<clear_list>Clear List</clear_list>
+			<no_modules>No modules present.
+Please download and install the last PS Vita firmware.</no_modules>
+			<refresh_list>Refresh List</refresh_list>
+		</core>
+		<cpu>
+			<cpu_backend>CPU Backend</cpu_backend>
+			<select_cpu_backend>Select your preferred CPU backend.</select_cpu_backend>
+			<cpu_opt>Enable optimizations</cpu_opt>
+			<cpu_opt_description>Check the box to enable additional CPU JIT optimizations.</cpu_opt_description>
+		</cpu>
+		<gpu>
+			<reset>Reset</reset>
+			<backend_renderer>Backend Renderer</backend_renderer>
+			<select_backend_renderer>Select your preferred backend renderer.</select_backend_renderer>
+			<gpu>GPU (Reboot to apply)</gpu>
+			<select_gpu>Select the GPU Vita3K should run on.</select_gpu>
+			<renderer_accuracy>Renderer Accuracy</renderer_accuracy>
+			<v_sync>V-Sync</v_sync>
+			<v_sync_description>Disabling V-Sync can fix the speed issue in some games.
+It is recommended to keep it enabled to avoid visual tearing.</v_sync_description>
+			<disable_surface_sync>Disable surface sync</disable_surface_sync>
+			<surface_sync_description>Speed hack, check the box to disable surface syncing between CPU and GPU.
+Surface syncing is needed by a few games.
+Gives a big performance boost if disabled (in particular when upscaling is on).</surface_sync_description>
+			<screen_filter>Screen Filter</screen_filter>
+			<screen_filter_description>Set post-processing filter to apply.</screen_filter_description>
+			<internal_resolution_upscaling>Internal Resolution Upscaling</internal_resolution_upscaling>
+			<internal_resolution_upscaling_description>Enable upscaling for Vita3K.
+Experimental: games are not guaranteed to render properly at more than 1x.</internal_resolution_upscaling_description>
+			<anisotropic_filtering>Anisotropic Filtering</anisotropic_filtering>
+			<anisotropic_filtering_description>Anisotropic filtering is a technique to enhance the image quality of surfaces
+which are sloped relative to the viewer.
+It has no drawback but can impact performance.</anisotropic_filtering_description>
+			<texture_replacement>Texture Replacement</texture_replacement>
+			<export_textures>Export Textures</export_textures>
+			<import_textures>Import Textures</import_textures>
+			<texture_exporting_format>Texture Exporting Format</texture_exporting_format>
+			<shaders>Shaders</shaders>
+			<shader_cache>Use Shader Cache</shader_cache>
+			<shader_cache_description>Check the box to enable shader cache to pre-compile it at game startup.
+Uncheck to disable this feature.</shader_cache_description>
+			<spirv_shader>Use Spir-V shader (deprecated)</spirv_shader>
+			<spirv_shader_description>Pass generated Spir-V shader directly to driver.
+Note that some beneficial extensions will be disabled,
+and not all GPUs are compatible with this.</spirv_shader_description>
+			<clean_shaders>Clean Shaders Cache and Log</clean_shaders>
+		</gpu>
+		<system name="System">
+			<select_enter_button>Enter button assignment
+Select your 'Enter' button.</select_enter_button>
+			<enter_button_description>This is the button that is used as 'Confirm' in applications dialogs.
+Some applications don't use this and get default confirmation button.</enter_button_description>
+			<circle>Circle</circle>
+			<cross>Cross</cross>
+			<pstv_mode>PS TV Mode</pstv_mode>
+			<pstv_mode_description>Check the box to enable PS TV Emulated mode.</pstv_mode_description>
+			<show_mode>Show Mode</show_mode>
+			<show_mode_description>Check the box to enable Show mode.</show_mode_description>
+			<demo_mode>Demo Mode</demo_mode>
+			<demo_mode_description>Check the box to enable Demo mode.</demo_mode_description>
+		</system>
+		<emulator name="Emulator">
+			<boot_apps_full_screen>Boot apps in full screen</boot_apps_full_screen>
+			<audio_backend>Audio Backend</audio_backend>
+			<select_audio_backend>Select your preferred audio backend.</select_audio_backend>
+			<enable_ngs_support>Enable NGS support</enable_ngs_support>
+			<ngs_description>Uncheck the box to disable support for advanced audio library NGS.</ngs_description>
+			<log_level>Log Level</log_level>
+			<select_log_level>Select your preferred log level.</select_log_level>
+			<archive_log>Archive Log</archive_log>
+			<archive_log_description>Check the box to enable Archive Log.</archive_log_description>
+			<discord_rich_presence>Enables Discord Rich Presence to show what application you're running on Discord.</discord_rich_presence>
+			<texture_cache>Texture Cache</texture_cache>
+			<texture_cache_description>Uncheck the box to disable texture cache.</texture_cache_description>
+			<show_compile_shaders>Show Compile Shaders</show_compile_shaders>
+			<compile_shaders_description>Uncheck the box to disable the display of the compile shaders dialog.</compile_shaders_description>
+			<show_touchpad_cursor>Show Touchpad Cursor</show_touchpad_cursor>
+			<touchpad_cursor_description>Uncheck the box to disable showing the touchpad cursor on-screen.</touchpad_cursor_description>
+			<log_compat_warn>Log Compatibility Warning</log_compat_warn>
+			<log_compat_warn_description>Check the box to enable log compatibility warning of GitHub issue.</log_compat_warn_description>
+			<check_for_updates>Check for updates</check_for_updates>
+			<check_for_updates_description>Automatically check for updates at startup.</check_for_updates_description>
+			<performance_overlay>Performance overlay</performance_overlay>
+			<performance_overlay_description>Display performance information on the screen as an overlay.</performance_overlay_description>
+			<detail>Detail</detail>
+			<select_detail>Select your preferred perfomance overlay detail.</select_detail>
+			<position>Position</position>
+			<select_position>Select your preferred perfomance overlay position.</select_position>
+			<case_insensitive>Check to enable case-insensitive path finding on case sensitive filesystems.
+RESETS ON RESTART</case_insensitive>
+			<case_insensitive_description>Allows emulator to attempt searching for files regardless of case
+on non-Windows platforms.</case_insensitive_description>
+			<emu_storage_folder>Emulated System Storage Folder</emu_storage_folder>
+			<current_emu_path>Current emulator path:</current_emu_path>
+			<change_emu_path>Change Emulator Path</change_emu_path>
+			<change_emu_path_description>Change Vita3K emulator folder path.
+You will need to move your old folder to the new location manually.</change_emu_path_description>
+			<reset_emu_path>Reset Emulator Path</reset_emu_path>
+			<reset_emu_path_description>Reset Vita3K emulator path to the default.
+You will need to move your old folder to the new location manually.</reset_emu_path_description>
+			<custom_config_settings>Custom Config Settings</custom_config_settings>
+			<clear_custom_config>Clear Custom Config</clear_custom_config>
+		</emulator>
+		<gui name="GUI">
+			<show_gui>GUI Visible</show_gui>
+			<gui_description>Check the box to show GUI after booting an application.</gui_description>
+			<show_info_bar>Info Bar Visible</show_info_bar>
+			<info_bar_description>Check the box to show an info bar inside the app selector.</info_bar_description>
+			<display_info_message>Display Info Message</display_info_message>
+			<display_info_message_description>Uncheck the box to display info message in log only.</display_info_message_description>
+			<display_system_apps>Display System Apps</display_system_apps>
+			<display_system_apps_description>Uncheck the box to disable the display of system apps on the home screen.
+They will be shown in the main menu bar only.</display_system_apps_description>
+			<show_live_area_screen>Live Area App Screen</show_live_area_screen>
+			<live_area_screen_description>Check the box to open the Live Area by default when clicking on an application.
+If disabled, right click on an application to open it.</live_area_screen_description>
+			<stretch_the_display_area>Stretch The Display Area</stretch_the_display_area>
+			<stretch_the_display_area_description>Check the box to enlarge the display area to fit the screen size.</stretch_the_display_area_description>
+			<apps_list_grid>Grid Mode</apps_list_grid>
+			<apps_list_grid_description>Check the box to set the app list to grid mode.</apps_list_grid_description>
+			<icon_size>App Icon Size</icon_size>
+			<select_icon_size>Select your preferred icon size.</select_icon_size>
+			<font_support>Font support</font_support>
+			<asia_font_support>Asia Region</asia_font_support>
+			<asia_font_support_description>Check this box to enable font support for Chinese and Korean.
+Enabling this will use more memory and will require you to restart the emulator.</asia_font_support_description>
+			<firmware_font_package_description>Firmware font package is needed for some applications
+and also for Asian regional font support in GUI.
+It is also generally recommended for GUI.</firmware_font_package_description>
+			<theme_background>Theme & Background</theme_background>
+			<current_theme_content_id>Current theme content id:</current_theme_content_id>
+			<reset_default_theme>Reset Default Theme</reset_default_theme>
+			<using_theme_background>Using theme background</using_theme_background>
+			<clean_user_backgrounds>Clean User Backgrounds</clean_user_backgrounds>
+			<current_start_background>Current start background:</current_start_background>
+			<reset_start_background>Reset Start Background</reset_start_background>
+			<background_alpha>Background Alpha</background_alpha>
+			<select_background_alpha>Select your preferred background transparency.
+The minimum is opaque and the maximum is transparent.</select_background_alpha>
+			<delay_background>Delay for backgrounds</delay_background>
+			<select_delay_background>Select the delay (in seconds) before changing backgrounds.</select_delay_background>
+			<delay_start>Delay for start screen</delay_start>
+			<select_delay_start>Select the delay (in seconds) before returning to the start screen.</select_delay_start>
+		</gui>
+		<network name="Network">
+			<psn_status>PSN Status</psn_status>
+			<select_psn_state>Select the state of the PS Network.</select_psn_state>
+			<enable_http>Enable HTTP</enable_http>
+			<enable_http_description>Check this box to enable games to use the HTTP protocol on the internet.</enable_http_description>
+			<timeout_attempts>HTTP Timeout Attempts</timeout_attempts>
+			<timeout_attempts_description>How many attempts to do when the server doesn't respond.
+Could be useful if you have very unstable or VERY SLOW internet.</timeout_attempts_description>
+			<timeout_sleep>HTTP Timeout Sleep</timeout_sleep>
+			<timeout_sleep_description>Attempt sleep time when the server doesn't answer.
+Could be useful if you have very unstable or VERY SLOW internet.</timeout_sleep_description>
+			<read_end_attempts>HTTP Read End Attempts</read_end_attempts>
+			<read_end_attempts_description>How many attempts to do when there isn't more data to read,
+lower can improve performance but can make games unstable if you have bad enough internet.</read_end_attempts_description>
+			<read_end_sleep>HTTP Read End Sleep</read_end_sleep>
+			<read_end_sleep_description>Attempt sleep time when there isn't more data to read,
+lower can improve performance but can make games unstable if you have bad enough internet.</read_end_sleep_description>
+		</network>
+		<debug name="Debug">
+			<log_imports>Import logging</log_imports>
+			<log_imports_description>Log module import symbols.</log_imports_description>
+			<log_exports>Export logging</log_exports>
+			<log_exports_description>Log module export symbols.</log_exports_description>
+			<log_active_shaders>Shader logging</log_active_shaders>
+			<log_active_shaders_description>Log shaders being used on each draw call.</log_active_shaders_description>
+			<log_uniforms>Uniform logging</log_uniforms>
+			<log_uniforms_description>Log shader uniform names and values.</log_uniforms_description>
+			<color_surface_debug>Save color surfaces</color_surface_debug>
+			<color_surface_debug_description>Save color surfaces to files.</color_surface_debug_description>
+			<dump_elfs>ELF dumping</dump_elfs>
+			<dump_elfs_description>Dump loaded code as ELFs.</dump_elfs_description>
+			<validation_layer>Validation Layer (Reboot required)</validation_layer>
+			<validation_layer_description>Enable Vulkan validation layer.</validation_layer_description>
+			<unwatch_code>Unwatch Code</unwatch_code>
+			<watch_code>Watch Code</watch_code>
+			<unwatch_memory>Unwatch Memory</unwatch_memory>
+			<watch_memory>Watch Memory</watch_memory>
+			<unwatch_import_calls>Unwatch Import Calls</unwatch_import_calls>
+			<watch_import_calls>Watch Import Calls</watch_import_calls>
+		</debug>
 		<close>Close</close>
 		<save_reboot>Save & Reboot</save_reboot>
 		<save_apply>Save & Apply</save_apply>
@@ -604,7 +824,7 @@ Are you sure you want to continue?</user_delete_warn>
 	<vita3k_update name="Vita3K Update">
  		<new_version_available>A new version of Vita3K is available.</new_version_available>
 		<back>Back</back>
- 		<cancel_update_resume>Do you want to cancel the update?</cancel_update_resume>
+ 		<cancel_update>Do you want to cancel the update?</cancel_update>
 		<downloading>Downloading...
 After the download is complete, Vita3K will restart automatically and then install the new update.</downloading>
 		<not_complete_update>Could not complete the update.</not_complete_update>
@@ -622,20 +842,20 @@ After the download is complete, Vita3K will restart automatically and then insta
 	</vita3k_update>
 
 	<welcome name="Welcome to Vita3K">
-		<line_first>Vita3K PlayStation Vita Emulator</line_first>
-		<line_second>Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS and Android.</line_second>
-		<line_third>The emulator is still in its development stages so any feedback and testing is greatly appreciated.</line_third>
-		<line_fourth>To get started, please install the PS Vita firmware and font packages.</line_fourth>
+		<vita3k>Vita3K PlayStation Vita Emulator</vita3k>
+		<about_vita3k>Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS and Android.</about_vita3k>
+		<development_stage>The emulator is still in its development stages so any feedback and testing is greatly appreciated.</development_stage>
+		<about_firmware>To get started, please install the PS Vita firmware and font packages.</about_firmware>
 		<download_firmware>Download Firmware</download_firmware>
-		<line_sixth_part_one>A comprehensive guide on how to set-up Vita3K can be found on the</line_sixth_part_one>
+		<vita3k_quickstart>A comprehensive guide on how to set-up Vita3K can be found on the</vita3k_quickstart>
 		<quickstart>Quickstart</quickstart>
-		<line_sixth_part_two>page.</line_sixth_part_two>
-		<line_seventh>Consult the Commercial game and the Homebrew compatibility list to see what currently runs.</line_seventh>
+		<page>page.</page>
+		<check_compatibility>Consult the Commercial game and the Homebrew compatibility list to see what currently runs.</check_compatibility>
 		<commercial_compatibility_list>Commercial Compatibility List</commercial_compatibility_list>
 		<homebrew_compatibility_list>Homebrew Compatibility List</homebrew_compatibility_list>
-		<line_ninth>Contributions are welcome!</line_ninth>
-		<line_tenth>Additional support can be found in the #help channel of the</line_tenth>
-		<line_eleventh>Vita3K does not condone piracy. You must dump your own games.</line_eleventh>
+		<welcome_contribution>Contributions are welcome!</welcome_contribution>
+		<discord_help>Additional support can be found in the #help channel of the</discord_help>
+		<no_piracy>Vita3K does not condone piracy. You must dump your own games.</no_piracy>
 		<show_next_time>Show next time</show_next_time>
 		<close>Close</close>
 	</welcome>

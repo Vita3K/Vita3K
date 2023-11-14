@@ -371,9 +371,9 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginPopupModal("cancel_update_popup", &progress_state.pause, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration)) {
         const auto LARGE_BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
         auto common = emuenv.common_dialog.lang.common;
-        const auto str_size = ImGui::CalcTextSize(lang["cancel_update_resume"].c_str(), 0, false, POPUP_SIZE.x - (120.f * SCALE.x));
+        const auto str_size = ImGui::CalcTextSize(lang["cancel_update"].c_str(), 0, false, POPUP_SIZE.x - (120.f * SCALE.x));
         ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, (ImGui::GetWindowHeight() / 2.f) - (str_size.y / 2.f)));
-        ImGui::TextWrapped("%s", lang["cancel_update_resume"].c_str());
+        ImGui::TextWrapped("%s", lang["cancel_update"].c_str());
         ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - LARGE_BUTTON_SIZE.x - (20.f * SCALE.x), POPUP_SIZE.y - LARGE_BUTTON_SIZE.y - (22.0f * SCALE.y)));
         if (ImGui::Button(common["no"].c_str(), LARGE_BUTTON_SIZE)) {
             std::unique_lock<std::mutex> lock(progress_state.mutex);

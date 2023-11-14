@@ -99,6 +99,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     // Emulation Menu
                     set_lang_string(lang.main_menubar.emulation, main_menubar.child("emulation"));
 
+                    // Debug Menu
+                    set_lang_string(lang.main_menubar.debug, main_menubar.child("debug"));
+
                     // Configuration Menu
                     set_lang_string(lang.main_menubar.configuration, main_menubar.child("configuration"));
 
@@ -342,7 +345,35 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 }
 
                 // Settings Dialog
-                set_lang_string(lang.settings_dialog, lang_child.child("settings_dialog"));
+                const auto settings_dialog = lang_child.child("settings_dialog");
+                if (!settings_dialog.empty()) {
+                    // Main
+                    set_lang_string(lang.settings_dialog.main_window, settings_dialog);
+
+                    // Core
+                    set_lang_string(lang.settings_dialog.core, settings_dialog.child("core"));
+
+                    // CPU
+                    set_lang_string(lang.settings_dialog.cpu, settings_dialog.child("cpu"));
+
+                    // GPU
+                    set_lang_string(lang.settings_dialog.gpu, settings_dialog.child("gpu"));
+
+                    // System
+                    set_lang_string(lang.settings_dialog.system, settings_dialog.child("system"));
+
+                    // Emulator
+                    set_lang_string(lang.settings_dialog.emulator, settings_dialog.child("emulator"));
+
+                    // GUI
+                    set_lang_string(lang.settings_dialog.gui, settings_dialog.child("gui"));
+
+                    // Network
+                    set_lang_string(lang.settings_dialog.network, settings_dialog.child("network"));
+
+                    // Debug
+                    set_lang_string(lang.settings_dialog.debug, settings_dialog.child("debug"));
+                }
 
                 // Trophy Collection
                 set_lang_string(lang.trophy_collection, lang_child.child("trophy_collection"));
