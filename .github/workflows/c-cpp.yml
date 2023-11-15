@@ -162,7 +162,7 @@ jobs:
             --icon-size 100 \
             --icon Vita3K.app 120 115 \
             --app-drop-link 360 115 \
-            vita3k-${{ env.git_short_sha }}-${{ matrix.os }}.dmg \
+            vita3k-${{ env.git_short_sha }}-${{ matrix.version }}-${{ matrix.os }}.dmg \
             Vita3K.app
           rm -rf Vita3K.app
         if: matrix.os == 'macos-latest'
