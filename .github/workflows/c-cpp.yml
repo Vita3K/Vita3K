@@ -211,11 +211,11 @@ jobs:
             else
               if [[ $f == *ubuntu-latest ]]
               then
-                if [[ $f == *AppImage* ]]
+                if [[ $f == *appimage* ]]
                 then
-                  cp $(basename $f)/$(basename $f).AppImage* ../artifacts/
+                  cp $(basename $f)/*.AppImage* artifacts/
                 else
-                  rm -f $(basename $f)/$(basename $f).AppImage*
+                  rm -f $(basename $f)/*.AppImage*
                   echo "Compressing $f"
                   (cd $(basename $f) && zip -r ../artifacts/$(basename $f  | cut -d "-" -f 4)-latest.zip *)
                 fi
