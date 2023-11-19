@@ -26,6 +26,7 @@
 #include <host/dialog/filesystem.hpp>
 #include <io/state.h>
 #include <kernel/state.h>
+#include <lang/functions.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
 
@@ -215,7 +216,8 @@ static CPUBackend set_cpu_backend(std::string &cpu_backend) {
     return cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
 }
 
-static int current_aniso_filter_log, max_aniso_filter_log, audio_backend_idx;
+static int current_aniso_filter_log, max_aniso_filter_log, audio_backend_idx, current_user_lang;
+static std::vector<std::string> list_user_lang;
 
 /**
  * @brief Initialize the `config` struct with the values set in the global emulator config.
@@ -246,6 +248,19 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
         config.psn_status = emuenv.cfg.psn_status;
     }
+
+    list_user_lang.clear();
+    const auto LANG_PATH{ emuenv.shared_path / "lang/user" };
+    if (fs::exists(LANG_PATH) && !fs::is_empty(LANG_PATH)) {
+        for (const auto &lang : fs::directory_iterator(LANG_PATH)) {
+            if (lang.path().extension() == ".xml") {
+                const auto lang_file_name = lang.path().filename().replace_extension().string();
+                list_user_lang.push_back(lang_file_name);
+            }
+        }
+    }
+    current_user_lang = emuenv.cfg.user_lang.empty() ? 0 : (std::distance(list_user_lang.begin(), std::find(list_user_lang.begin(), list_user_lang.end(), emuenv.cfg.user_lang))) + 1;
+
     get_modules_list(gui, emuenv);
     config.stretch_the_display_area = emuenv.cfg.stretch_the_display_area;
     config_cpu_backend = set_cpu_backend(config.cpu_backend);
@@ -904,6 +919,20 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.gui["show_info_bar"].c_str(), &emuenv.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.gui["info_bar_description"].c_str());
+        ImGui::Spacing();
+        std::vector<const char *> list_user_lang_str{ "System" };
+        for (auto &l : list_user_lang)
+            list_user_lang_str.push_back(l.c_str());
+        if (ImGui::Combo("GUI Language", &current_user_lang, list_user_lang_str.data(), static_cast<int>(list_user_lang_str.size()), 4)) {
+            if (current_user_lang != 0)
+                emuenv.cfg.user_lang = list_user_lang_str[current_user_lang];
+            else
+                emuenv.cfg.user_lang.clear();
+
+            lang::init_lang(gui.lang, emuenv);
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select your user language.");
         ImGui::Spacing();
         ImGui::Checkbox(lang.gui["display_info_message"].c_str(), &emuenv.cfg.display_info_message);
         if (ImGui::IsItemHovered())
