@@ -112,6 +112,14 @@ void PipelineCache::init() {
 
     {
         // texture layout
+
+        // empty descriptor
+        {
+            vk::DescriptorSetLayoutCreateInfo empty_info{};
+            vertex_textures_layout[0] = state.device.createDescriptorSetLayout(empty_info);
+            fragment_textures_layout[0] = vertex_textures_layout[0];
+        }
+
         // first vertex
         std::array<vk::DescriptorSetLayoutBinding, 16> layout_bindings;
         for (uint32_t i = 0; i < 16; i++) {
@@ -122,7 +130,7 @@ void PipelineCache::init() {
                 .stageFlags = vk::ShaderStageFlagBits::eVertex
             };
         }
-        for (uint32_t i = 0; i < 17; i++) {
+        for (uint32_t i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()
@@ -134,7 +142,7 @@ void PipelineCache::init() {
         for (uint32_t i = 0; i < 16; i++) {
             layout_bindings[i].stageFlags = vk::ShaderStageFlagBits::eFragment;
         }
-        for (uint32_t i = 0; i < 17; i++) {
+        for (uint32_t i = 1; i <= 16; i++) {
             vk::DescriptorSetLayoutCreateInfo descriptor_info{
                 .bindingCount = i,
                 .pBindings = layout_bindings.data()

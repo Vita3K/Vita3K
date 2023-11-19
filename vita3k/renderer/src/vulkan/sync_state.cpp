@@ -99,19 +99,6 @@ void sync_stencil_func(VKContext &context, const bool is_back) {
     context.render_cmd.setStencilWriteMask(face, state->write_mask);
 }
 
-void sync_mask(VKContext &context, const MemState &mem) {
-    if (!context.state.features.use_mask_bit)
-        return;
-
-    float initial_val = context.record.depth_stencil_surface.mask ? 1.0f : 0.0f;
-
-    std::array<float, 4> clear_bytes = { initial_val, initial_val, initial_val, initial_val };
-    vk::ClearColorValue clear_color{ clear_bytes };
-    context.render_target->mask.transition_to_discard(context.render_cmd, vkutil::ImageLayout::TransferDst);
-    context.render_cmd.clearColorImage(context.render_target->mask.image, vk::ImageLayout::eTransferDstOptimal, clear_color, vkutil::color_subresource_range);
-    context.render_target->mask.transition_to(context.render_cmd, vkutil::ImageLayout::StorageImage);
-}
-
 void sync_depth_bias(VKContext &context) {
     if (!context.is_recording)
         return;

@@ -113,6 +113,54 @@ void restride_stream(const uint8_t *&stream, uint32_t &size, uint32_t stride) {
 }
 #endif
 
+// when needed, how many descriptor of the given size we allocate for each frame at once
+static constexpr uint32_t DESCRIPTOR_PACK_SIZE = 64;
+
+static vk::DescriptorSet retrieve_descriptor(VKContext &context, bool is_vertex, uint16_t textures_count) {
+    if (textures_count == 0)
+        return context.empty_set;
+
+    VKState &state = context.state;
+    FrameDescriptor &frame_descriptor = is_vertex ? state.frame().vert_descriptors[textures_count - 1] : state.frame().frag_descriptors[textures_count - 1];
+    if (frame_descriptor.descriptors_idx < frame_descriptor.sets.size())
+        return frame_descriptor.sets[frame_descriptor.descriptors_idx++];
+
+    // we have no more frame descriptor available, create a bunch of new one for this specific layout
+    vk::DescriptorPoolSize pool_size{
+        .type = vk::DescriptorType::eCombinedImageSampler,
+        .descriptorCount = textures_count * DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
+    };
+
+    vk::DescriptorPoolCreateInfo descriptor_pool_info{
+        .maxSets = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
+    };
+    descriptor_pool_info.setPoolSizes(pool_size);
+
+    vk::DescriptorPool descriptor_pool = state.device.createDescriptorPool(descriptor_pool_info);
+    state.frame_descriptor_pools.push_back(descriptor_pool);
+
+    // allocate all the descriptor sets
+    const vk::DescriptorSetLayout set_layout = is_vertex ? state.pipeline_cache.vertex_textures_layout[textures_count] : state.pipeline_cache.fragment_textures_layout[textures_count];
+    std::vector<vk::DescriptorSetLayout> layouts(DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING, set_layout);
+    vk::DescriptorSetAllocateInfo descr_set_info{
+        .descriptorPool = descriptor_pool
+    };
+    descr_set_info.setSetLayouts(layouts);
+    auto descriptor_sets = state.device.allocateDescriptorSets(descr_set_info);
+
+    // distribute them among all frames
+    for (int frame_idx = 0; frame_idx < MAX_FRAMES_RENDERING; frame_idx++) {
+        FrameObject &frame_object = state.frames[frame_idx];
+        FrameDescriptor &frame_descr = is_vertex ? frame_object.vert_descriptors[textures_count - 1] : frame_object.frag_descriptors[textures_count - 1];
+
+        // insert DESCRIPTOR_PACK_SIZE in each frame descriptor
+        auto descr_it = descriptor_sets.begin() + frame_idx * DESCRIPTOR_PACK_SIZE;
+        frame_descr.sets.insert(frame_descr.sets.end(), descr_it, descr_it + DESCRIPTOR_PACK_SIZE);
+    }
+
+    return frame_descriptor.sets[frame_descriptor.descriptors_idx++];
+}
+
 static void draw_bind_descriptors(VKContext &context, MemState &mem) {
     VKState &state = context.state;
 
@@ -137,29 +185,14 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
     context.last_frag_texture_count = fragment_texture_count;
 
     {
-        vk::DescriptorSetAllocateInfo descr_set_info{
-            .descriptorPool = context.frame().descriptor_pool
-        };
-        std::vector<vk::DescriptorSetLayout> layouts;
-        if (need_vert_descr)
-            layouts.push_back(state.pipeline_cache.vertex_textures_layout[vertex_textures_count]);
-        if (need_frag_descr)
-            layouts.push_back(state.pipeline_cache.fragment_textures_layout[fragment_texture_count]);
-
-        std::vector<vk::DescriptorSet> sets;
-        if (!layouts.empty()) {
-            descr_set_info.setSetLayouts(layouts);
-            sets = state.device.allocateDescriptorSets(descr_set_info);
-        }
-
         int set_idx = 0;
         if (need_vert_descr) {
-            context.last_vert_texture_descriptor = sets[set_idx++];
+            context.last_vert_texture_descriptor = retrieve_descriptor(context, true, vertex_textures_count);
         }
         descriptors[2] = context.last_vert_texture_descriptor;
 
         if (need_frag_descr) {
-            context.last_frag_texture_descriptor = sets[set_idx++];
+            context.last_frag_texture_descriptor = retrieve_descriptor(context, false, fragment_texture_count);
         }
         descriptors[3] = context.last_frag_texture_descriptor;
     }

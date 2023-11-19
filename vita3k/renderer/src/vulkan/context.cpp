@@ -160,9 +160,6 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     context.current_shader_interlock_framebuffer = framebuffer.shader_interlock;
     context.current_color_base_image = framebuffer.base_image;
 
-    if (state.features.use_mask_bit)
-        sync_mask(context, mem);
-
     // make sure we are not keeping any texture from the previous pass
     // (textures can be still bound even though they are not used)
     context.last_vert_texture_count = ~0;
@@ -196,18 +193,18 @@ void VKContext::start_recording() {
     }
 
     // safety check
-    if (render_target->cmd_buffer_idx == render_target->cmd_buffers[current_frame_idx].size()) {
+    if (render_target->cmd_buffer_idx == render_target->cmd_buffers[state.current_frame_idx].size()) {
         LOG_WARN_ONCE("Render Target is using more scenes per frame than what was planned!");
 
         // add additional cmd buffers, fences and semaphores
         vk::CommandBufferAllocateInfo cmd_buffer_info{
-            .commandPool = frame().render_pool,
+            .commandPool = state.frame().render_pool,
             .commandBufferCount = 1
         };
-        render_target->cmd_buffers[current_frame_idx].push_back(state.device.allocateCommandBuffers(cmd_buffer_info)[0]);
+        render_target->cmd_buffers[state.current_frame_idx].push_back(state.device.allocateCommandBuffers(cmd_buffer_info)[0]);
 
-        cmd_buffer_info.commandPool = frame().prerender_pool;
-        render_target->pre_cmd_buffers[current_frame_idx].push_back(state.device.allocateCommandBuffers(cmd_buffer_info)[0]);
+        cmd_buffer_info.commandPool = state.frame().prerender_pool;
+        render_target->pre_cmd_buffers[state.current_frame_idx].push_back(state.device.allocateCommandBuffers(cmd_buffer_info)[0]);
 
         vk::FenceCreateInfo fence_info{};
         // make sure the next fence used is the one we created
@@ -220,8 +217,8 @@ void VKContext::start_recording() {
         render_target->fence_idx = (render_target->fence_idx + 1) % render_target->fences.size();
     }
 
-    render_cmd = render_target->cmd_buffers[current_frame_idx][render_target->cmd_buffer_idx];
-    prerender_cmd = render_target->pre_cmd_buffers[current_frame_idx][render_target->cmd_buffer_idx];
+    render_cmd = render_target->cmd_buffers[state.current_frame_idx][render_target->cmd_buffer_idx];
+    prerender_cmd = render_target->pre_cmd_buffers[state.current_frame_idx][render_target->cmd_buffer_idx];
     render_target->cmd_buffer_idx++;
 
     vk::CommandBufferBeginInfo begin_info{
@@ -241,6 +238,49 @@ void VKContext::start_recording() {
     if (record.two_sided == SCE_GXM_TWO_SIDED_ENABLED) {
         sync_stencil_func(*this, true);
     }
+}
+
+// we only need one descriptor per scene, so this does not need to be too big
+static constexpr uint32_t DESCRIPTOR_PACK_SIZE = 16;
+
+static vk::DescriptorSet retrieve_color_descriptor(VKState &state, FrameDescriptor &frame_descriptor) {
+    if (frame_descriptor.descriptors_idx < frame_descriptor.sets.size())
+        return frame_descriptor.sets[frame_descriptor.descriptors_idx++];
+
+    // we have no more frame descriptor available, create a bunch of new one for this specific layout
+    // the type depends on the way we read it
+    vk::DescriptorPoolSize pool_size{
+        .type = state.features.support_shader_interlock ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eInputAttachment,
+        .descriptorCount = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
+    };
+
+    vk::DescriptorPoolCreateInfo descriptor_pool_info{
+        .maxSets = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
+    };
+    descriptor_pool_info.setPoolSizes(pool_size);
+
+    vk::DescriptorPool descriptor_pool = state.device.createDescriptorPool(descriptor_pool_info);
+    state.frame_descriptor_pools.push_back(descriptor_pool);
+
+    // allocate all the descriptor sets
+    const vk::DescriptorSetLayout set_layout = state.pipeline_cache.attachments_layout;
+    std::vector<vk::DescriptorSetLayout> layouts(DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING, set_layout);
+    vk::DescriptorSetAllocateInfo descr_set_info{
+        .descriptorPool = descriptor_pool
+    };
+    descr_set_info.setSetLayouts(layouts);
+    auto descriptor_sets = state.device.allocateDescriptorSets(descr_set_info);
+
+    // distribute them among all frames
+    for (int frame_idx = 0; frame_idx < MAX_FRAMES_RENDERING; frame_idx++) {
+        FrameDescriptor &frame_descr = state.frames[frame_idx].color_descriptor;
+
+        // insert DESCRIPTOR_PACK_SIZE in each frame descriptor
+        auto descr_it = descriptor_sets.begin() + frame_idx * DESCRIPTOR_PACK_SIZE;
+        frame_descr.sets.insert(frame_descr.sets.end(), descr_it, descr_it + DESCRIPTOR_PACK_SIZE);
+    }
+
+    return frame_descriptor.sets[frame_descriptor.descriptors_idx++];
 }
 
 void VKContext::start_render_pass(bool create_descriptor_set) {
@@ -292,43 +332,25 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
     if (!create_descriptor_set)
         return;
 
-    // create and update the rendertarget descriptor set
-    vk::DescriptorSetAllocateInfo descr_set_info{
-        .descriptorPool = frame().descriptor_pool
-    };
-    descr_set_info.setSetLayouts(state.pipeline_cache.attachments_layout);
-    rendertarget_set = state.device.allocateDescriptorSets(descr_set_info)[0];
+    // update the rendertarget descriptor set
+    rendertarget_set = retrieve_color_descriptor(state, state.frame().color_descriptor);
 
-    // creat descriptor set for the whole scene with the mask and the color attachment
-    // the mask will only be used if state.features.use_mask_bit is true
+    // update descriptor set for the whole scene with the color attachment
     vk::DescriptorImageInfo descr_color_info{
         .sampler = nullptr,
         .imageView = current_color_view,
         .imageLayout = vk::ImageLayout::eGeneral,
     };
-    vk::DescriptorImageInfo descr_mask_info{
-        .sampler = nullptr,
-        .imageView = render_target->mask.view,
-        .imageLayout = vk::ImageLayout::eGeneral,
-    };
-    std::array<vk::WriteDescriptorSet, 2> write_descr;
 
     const vk::DescriptorType input_type = state.features.support_shader_interlock ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eInputAttachment;
-    write_descr[0] = {
+    vk::WriteDescriptorSet write_descr{
         .dstSet = rendertarget_set,
         .dstBinding = 0,
         .dstArrayElement = 0,
         .descriptorType = input_type,
     };
-    write_descr[0].setImageInfo(descr_color_info);
-    write_descr[1] = {
-        .dstSet = rendertarget_set,
-        .dstBinding = 1,
-        .dstArrayElement = 0,
-        .descriptorType = vk::DescriptorType::eStorageImage,
-    };
-    write_descr[1].setImageInfo(descr_mask_info);
-    state.device.updateDescriptorSets(state.features.use_mask_bit ? 2 : 1, write_descr.data(), 0, nullptr);
+    write_descr.setImageInfo(descr_color_info);
+    state.device.updateDescriptorSets(write_descr, {});
 }
 
 void VKContext::stop_render_pass() {
@@ -425,7 +447,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
 
     state.general_queue.submit(submit_info, fence);
     cmdbuffers_to_submit.clear();
-    frame().rendered_fences.push_back(fence);
+    state.frame().rendered_fences.push_back(fence);
 
     if (state.features.support_memory_mapping) {
         // send it to the wait queue
@@ -486,10 +508,10 @@ void new_frame(VKContext &context) {
     }
 
     context.frame_timestamp++;
-    context.current_frame_idx = context.frame_timestamp % MAX_FRAMES_RENDERING;
+    context.state.current_frame_idx = context.frame_timestamp % MAX_FRAMES_RENDERING;
 
     vk::Device device = context.state.device;
-    FrameObject &frame = context.frame();
+    FrameObject &frame = context.state.frame();
 
     // wait on all fences still present to make sure
     if (!frame.rendered_fences.empty()) {
@@ -521,7 +543,13 @@ void new_frame(VKContext &context) {
 
     device.resetCommandPool(frame.prerender_pool);
     device.resetCommandPool(frame.render_pool);
-    device.resetDescriptorPool(frame.descriptor_pool);
+
+    // set the position in the used descriptor queue back to the beginning
+    for (int i = 0; i < 16; i++) {
+        frame.vert_descriptors[i].descriptors_idx = 0;
+        frame.frag_descriptors[i].descriptors_idx = 0;
+    }
+    frame.color_descriptor.descriptors_idx = 0;
 
     // deferred destruction of the objects
     frame.destroy_queue.destroy_objects();

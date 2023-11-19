@@ -20,9 +20,17 @@
 #include "vkutil/vkutil.h"
 
 #include <util/align.h>
+#include <util/bit_cast.h>
 #include <util/log.h>
 
 namespace vkutil {
+
+static vma::Allocator allocator = nullptr;
+
+void init(vma::Allocator vma_allocator) {
+    allocator = vma_allocator;
+}
+
 Image::Image() = default;
 
 Image::Image(Image &&other) noexcept {
@@ -41,9 +49,8 @@ Image &Image::operator=(Image &&other) noexcept {
     return *this;
 }
 
-Image::Image(vma::Allocator allocator, uint32_t width, uint32_t height, vk::Format format)
-    : allocator(allocator)
-    , width(width)
+Image::Image(uint32_t width, uint32_t height, vk::Format format)
+    : width(width)
     , height(height)
     , format(format) {
 }
@@ -136,9 +143,8 @@ Buffer &Buffer::operator=(Buffer &&other) noexcept {
     return *this;
 }
 
-Buffer::Buffer(vma::Allocator allocator, vk::DeviceSize size)
-    : allocator(allocator)
-    , size(size) {
+Buffer::Buffer(vk::DeviceSize size)
+    : size(size) {
 }
 
 void Buffer::destroy() {
@@ -166,7 +172,7 @@ void Buffer::init_buffer(vk::BufferUsageFlags usage_flags, const vma::Allocation
     mapped_data = alloc_info.pMappedData;
 }
 
-RingBuffer::RingBuffer(vma::Allocator allocator, vk::BufferUsageFlags usage, const size_t capacity)
+RingBuffer::RingBuffer(vk::BufferUsageFlags usage, const size_t capacity)
     : usage(usage)
     , capacity(capacity) {
     uint32_t buffer_capacity = capacity;
@@ -181,7 +187,7 @@ RingBuffer::RingBuffer(vma::Allocator allocator, vk::BufferUsageFlags usage, con
         // the actual size, this prevents validation errors
         buffer_capacity += 512;
 
-    buffer = Buffer(allocator, buffer_capacity);
+    buffer = Buffer(buffer_capacity);
 }
 
 void RingBuffer::allocate(const uint32_t data_size) {
@@ -198,7 +204,7 @@ void RingBuffer::allocate(const uint32_t data_size) {
 void HostRingBuffer::create() {
     buffer.init_buffer(usage, vma_mapped_alloc);
 
-    vk::MemoryPropertyFlags memory_properties = buffer.allocator.getAllocationMemoryProperties(buffer.allocation);
+    vk::MemoryPropertyFlags memory_properties = allocator.getAllocationMemoryProperties(buffer.allocation);
     is_coherent = static_cast<bool>(memory_properties & vk::MemoryPropertyFlagBits::eHostCoherent);
 
     cursor = 0;
@@ -208,7 +214,7 @@ void HostRingBuffer::copy(vk::CommandBuffer cmd_buffer, const uint32_t size, con
     memcpy(reinterpret_cast<uint8_t *>(buffer.mapped_data) + data_offset + offset, data, size);
 
     if (!is_coherent)
-        buffer.allocator.flushAllocation(buffer.allocation, data_offset + offset, size);
+        allocator.flushAllocation(buffer.allocation, data_offset + offset, size);
 }
 
 void LocalRingBuffer::create() {
@@ -222,9 +228,8 @@ void LocalRingBuffer::copy(vk::CommandBuffer cmd_buffer, const uint32_t size, co
     cmd_buffer.updateBuffer(buffer.buffer, data_offset + offset, size, data);
 }
 
-void DestroyQueue::init(vk::Device device, vma::Allocator allocator) {
+void DestroyQueue::init(vk::Device device) {
     this->device = device;
-    this->allocator = allocator;
 }
 
 void DestroyQueue::add_image(Image &image) {
@@ -240,7 +245,7 @@ void DestroyQueue::add_image(Image &image) {
     if (image.image) {
         add(image.image);
         image.image = nullptr;
-        destroy_list.push_back(to_u64(image.allocation));
+        destroy_list.push_back(std::bit_cast<uint64_t>(image.allocation));
     }
 }
 
@@ -248,20 +253,20 @@ void DestroyQueue::add_buffer(Buffer &buffer) {
     if (buffer.buffer) {
         add(buffer.buffer);
         buffer.buffer = nullptr;
-        destroy_list.push_back(to_u64(buffer.allocation));
+        destroy_list.push_back(std::bit_cast<uint64_t>(buffer.allocation));
     }
 }
 
 void DestroyQueue::add_cmd_buffer(vk::CommandBuffer cmd_buffer, vk::CommandPool cmd_pool) {
     add(cmd_buffer);
-    destroy_list.push_back(to_u64(cmd_pool));
+    destroy_list.push_back(std::bit_cast<uint64_t>(cmd_pool));
 }
 
-#define HANDLE_DESTROY(type)                     \
-    case vk::ObjectType::e##type: {              \
-        auto vk_object = from_u64<vk::type>(el); \
-        device.destroy(vk_object);               \
-        break;                                   \
+#define HANDLE_DESTROY(type)                          \
+    case vk::ObjectType::e##type: {                   \
+        auto vk_object = std::bit_cast<vk::type>(el); \
+        device.destroy(vk_object);                    \
+        break;                                        \
     }
 
 void DestroyQueue::destroy_objects() {
@@ -277,24 +282,24 @@ void DestroyQueue::destroy_objects() {
 
         case vk::ObjectType::eImage: {
             // special case: this is a vma allocation
-            auto image = from_u64<vk::Image>(el);
-            vma::Allocation allocation = from_u64(destroy_list[idx++]);
+            auto image = std::bit_cast<vk::Image>(el);
+            auto allocation = std::bit_cast<vma::Allocation>(destroy_list[idx++]);
             allocator.destroyImage(image, allocation);
             break;
         }
 
         case vk::ObjectType::eBuffer: {
             // special case: this is a vma allocation
-            auto buffer = from_u64<vk::Buffer>(el);
-            vma::Allocation allocation = from_u64(destroy_list[idx++]);
+            auto buffer = std::bit_cast<vk::Buffer>(el);
+            auto allocation = std::bit_cast<vma::Allocation>(destroy_list[idx++]);
             allocator.destroyBuffer(buffer, allocation);
             break;
         }
 
         case vk::ObjectType::eCommandBuffer: {
             // special case: we must specify the command pool
-            auto cmd_buffer = from_u64<vk::CommandBuffer>(el);
-            auto cmd_pool = from_u64<vk::CommandPool>(destroy_list[idx++]);
+            auto cmd_buffer = std::bit_cast<vk::CommandBuffer>(el);
+            auto cmd_pool = std::bit_cast<vk::CommandPool>(destroy_list[idx++]);
             device.freeCommandBuffers(cmd_pool, cmd_buffer);
             break;
         }

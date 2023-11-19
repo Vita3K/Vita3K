@@ -18,18 +18,21 @@
 #pragma once
 
 #include <bit>
-#include <cstring> // memcpy
+#include <cstring>
+#include <type_traits>
 
 #ifndef __cpp_lib_bit_cast
 namespace std {
-template <typename T, typename U>
-T bit_cast(U &&u) {
-    static_assert(sizeof(T) == sizeof(U));
-    union {
-        T t;
-    }; // prevent construction
-    std::memcpy(&t, &u, sizeof(t));
-    return t;
+// https://en.cppreference.com/w/cpp/numeric/bit_cast
+template <class To, class From>
+std::enable_if_t<sizeof(To) == sizeof(From), To> bit_cast(const From &src) noexcept {
+    if constexpr (alignof(From) >= alignof(To)) {
+        return *reinterpret_cast<const To *>(&src);
+    } else {
+        alignas(alignof(To)) char dst[sizeof(To)];
+        std::memcpy(&dst, &src, sizeof(To));
+        return *reinterpret_cast<To *>(&dst);
+    }
 }
 } // namespace std
 #endif

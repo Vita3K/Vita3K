@@ -252,10 +252,6 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     TextureCache::init(hashless_texture_cache, texture_folder, game_id, max_sampler_used);
     backend = Backend::Vulkan;
 
-    // don't forget to specify the allocator for all the staging buffers
-    for (int i = 0; i < NB_TEXTURE_STAGING_BUFFERS; i++)
-        staging_buffers[i].buffer.allocator = state.allocator;
-
     samplers.resize(max_sampler_used);
 
     return true;
@@ -339,10 +335,9 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     // In case the cache is full, no need to put the previous image in the destroy queue
     // because of texture importation, we must be careful when destroying an image
     if (image.image)
-        reinterpret_cast<VKContext *>(state.context)->frame().destroy_queue.add_image(image);
+        state.frame().destroy_queue.add_image(image);
 
     // manually initialize the image
-    image.allocator = state.allocator;
     image.width = width;
     image.height = height;
     image.format = vk_format;
@@ -365,7 +360,7 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
-    std::tie(image.image, image.allocation) = image.allocator.createImage(image_info, vkutil::vma_auto_alloc);
+    std::tie(image.image, image.allocation) = state.allocator.createImage(image_info, vkutil::vma_auto_alloc);
 
     // create image view
     vk::ImageSubresourceRange range{
@@ -543,14 +538,13 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     // In case the cache is full, no need to put the previous image in the destroy queue
     // because of texture importation, we must be careful when destroying an image
     if (image.image)
-        reinterpret_cast<VKContext *>(state.context)->frame().destroy_queue.add_image(image);
+        state.frame().destroy_queue.add_image(image);
 
     vk::Format vk_format = texture::translate_format(base_format);
     if (is_srgb)
         vk_format = linear_to_srgb(vk_format);
 
     // manually initialize the image
-    image.allocator = state.allocator;
     image.width = width;
     image.height = height;
     image.format = vk_format;
@@ -573,7 +567,7 @@ void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
-    std::tie(image.image, image.allocation) = image.allocator.createImage(image_info, vkutil::vma_auto_alloc);
+    std::tie(image.image, image.allocation) = state.allocator.createImage(image_info, vkutil::vma_auto_alloc);
 
     // create image view
     vk::ImageSubresourceRange range{
