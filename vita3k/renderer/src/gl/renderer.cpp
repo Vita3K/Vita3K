@@ -257,11 +257,11 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     // always enabled in the opengl renderer
     gl_state.features.use_mask_bit = true;
 
-    return gl_state.init(gl_state.shared_path.c_str(), hashless_texture_cache);
+    return gl_state.init(gl_state.static_assets, hashless_texture_cache);
 }
 
-bool GLState::init(const char *shared_path, const bool hashless_texture_cache) {
-    if (!screen_renderer.init(shared_path)) {
+bool GLState::init(const fs::path &static_assets, const bool hashless_texture_cache) {
+    if (!screen_renderer.init(static_assets)) {
         LOG_ERROR("Failed to initialize screen renderer");
         return false;
     }

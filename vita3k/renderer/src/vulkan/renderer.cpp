@@ -176,7 +176,7 @@ VKState::VKState(int gpu_idx)
     , screen_renderer(*this) {
 }
 
-bool VKState::init(const char *shared_path, const bool hashless_texture_cache) {
+bool VKState::init(const fs::path &static_assets, const bool hashless_texture_cache) {
     shader_version = fmt::format("v{}", shader::CURRENT_VERSION);
     return true;
 }
@@ -596,7 +596,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         default_image.sampler = device.createSampler(sampler_info);
     }
 
-    if (!screen_renderer.setup(shared_path.c_str()))
+    if (!screen_renderer.setup())
         return false;
 
     support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);

@@ -55,7 +55,8 @@ struct AvatarInfo {
 
 static std::map<std::string, std::map<AvatarSize, AvatarInfo>> users_avatar_infos;
 static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string avatar_path) {
-    const auto avatar_path_wstr = avatar_path == "default" ? emuenv.shared_path / "data/image/icon.png" : fs::path(string_utils::utf_to_wide(avatar_path));
+    const auto avatar_path_wstr = avatar_path == "default" ? emuenv.static_assets_path / "data/image/icon.png"
+                                                           : fs::path(string_utils::utf_to_wide(avatar_path));
 
     if (!fs::exists(avatar_path_wstr)) {
         LOG_WARN("Avatar image doesn't exist: {}.", avatar_path_wstr.string());

@@ -90,7 +90,7 @@ struct ImGui_VulkanState : public ImGui_State {
     ImGui_ImplVulkanH_WindowRenderBuffers MainWindowRenderBuffers;
 };
 
-IMGUI_API ImGui_VulkanState *ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path);
+IMGUI_API ImGui_VulkanState *ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *window);
 IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(ImGui_VulkanState &state);
 IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(ImGui_VulkanState &state);
 

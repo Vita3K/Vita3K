@@ -118,6 +118,7 @@ public:
     fs::path log_path{};
     fs::path cache_path{};
     fs::path pref_path{};
+    fs::path static_assets_path{};
     fs::path shared_path{};
     bool load_exec{};
     std::string load_app_path{};

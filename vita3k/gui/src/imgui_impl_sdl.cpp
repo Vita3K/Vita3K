@@ -34,7 +34,7 @@ static void ImGui_ImplSdl_SetClipboardText(void *, const char *text) {
     SDL_SetClipboardText(text);
 }
 
-IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path) {
+IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window *window) {
     ImGui_State *state;
 
     switch (renderer->current_backend) {
@@ -43,7 +43,7 @@ IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window 
         break;
 
     case renderer::Backend::Vulkan:
-        state = reinterpret_cast<ImGui_State *>(ImGui_ImplSdlVulkan_Init(renderer, window, base_path));
+        state = reinterpret_cast<ImGui_State *>(ImGui_ImplSdlVulkan_Init(renderer, window));
         break;
 
     default:

@@ -279,7 +279,7 @@ static void ImGui_ImplVulkan_SetupRenderState(ImGui_VulkanState &state, ImDrawDa
 
 // constexpr vk::IndexType imgui_index_type = sizeof(ImDrawIdx) == 2 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
 
-IMGUI_API ImGui_VulkanState *ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path) {
+IMGUI_API ImGui_VulkanState *ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *window) {
     auto *state = new ImGui_VulkanState;
     state->renderer = renderer;
     state->window = window;
