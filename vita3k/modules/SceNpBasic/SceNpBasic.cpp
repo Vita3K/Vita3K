@@ -17,6 +17,10 @@
 
 #include <module/module.h>
 
+enum SceNpBasicError : uint32_t {
+    SCE_NP_BASIC_ERROR_INVALID_ARGUMENT = 0x80551d02,
+};
+
 EXPORT(int, sceNpBasicCheckCallback) {
     return UNIMPLEMENTED();
 }
@@ -41,8 +45,13 @@ EXPORT(int, sceNpBasicGetFriendListEntries) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpBasicGetFriendListEntryCount) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpBasicGetFriendListEntryCount, int *nb_friends) {
+    if (!nb_friends)
+        return RET_ERROR(SCE_NP_BASIC_ERROR_INVALID_ARGUMENT);
+
+    STUBBED("No friends");
+    *nb_friends = 0;
+    return 0;
 }
 
 EXPORT(int, sceNpBasicGetFriendOnlineStatus) {
