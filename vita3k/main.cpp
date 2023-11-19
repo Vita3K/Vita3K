@@ -332,7 +332,7 @@ int main(int argc, char *argv[]) {
     emuenv.io.title_id = APP_INDEX->title_id;
 
     // Check license for PS App Only
-    if (emuenv.io.title_id.find("PCS") != std::string::npos)
+    if (emuenv.io.title_id.starts_with("PCS"))
         emuenv.app_sku_flag = get_license_sku_flag(emuenv, emuenv.app_info.app_content_id);
 
     if (cfg.console) {

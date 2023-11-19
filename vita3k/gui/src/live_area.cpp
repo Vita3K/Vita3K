@@ -153,8 +153,8 @@ static std::map<std::string, Items> items_styles = {
 
 void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     const auto live_area_lang = gui.lang.user_lang[LIVE_AREA];
-    const auto is_sys_app = app_path.find("NPXS") != std::string::npos;
-    const auto is_ps_app = app_path.find("PCS") != std::string::npos;
+    const auto is_sys_app = app_path.starts_with("NPXS") && (app_path != "NPXS10007");
+    const auto is_ps_app = app_path.starts_with("PCS") || (app_path == "NPXS10007");
     const VitaIoDevice app_device = is_sys_app ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
     const auto APP_INDEX = get_app_index(gui, app_path);
 
@@ -639,7 +639,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     const auto app_path = gui.live_area_current_open_apps_list[gui.live_area_app_current_open];
-    const VitaIoDevice app_device = app_path.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
+    const VitaIoDevice app_device = app_path.starts_with("NPXS") ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
 
     ImGui::SetNextWindowPos(VIEWPORT_POS, ImGuiCond_Always);
     ImGui::SetNextWindowSize(VIEWPORT_SIZE, ImGuiCond_Always);
@@ -1065,7 +1065,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         const auto ICON_POS_MAX_SCALE = ImVec2(ICON_POS_MINI_SCALE.x + ICON_SIZE_SCALE, ICON_POS_MINI_SCALE.y + ICON_SIZE_SCALE);
 
         // check if app icon exist
-        auto &APP_ICON_TYPE = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+        auto &APP_ICON_TYPE = app_path.starts_with("NPXS") && (app_path != "NPXS10007") ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
         if (APP_ICON_TYPE.contains(app_path)) {
             window_draw_list->AddImageRounded(APP_ICON_TYPE[app_path], ICON_POS_MINI_SCALE, ICON_POS_MAX_SCALE,
                 ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 75.f * SCALE.x, ImDrawFlags_RoundCornersAll);
