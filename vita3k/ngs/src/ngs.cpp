@@ -350,7 +350,8 @@ uint32_t System::get_required_memspace_size(SceNgsSystemInitParams *parameters) 
 uint32_t Rack::get_required_memspace_size(MemState &mem, SceNgsRackDescription *description) {
     uint32_t buffer_size = 0;
     if (description->definition)
-        buffer_size = get_voice_definition_size(description->definition.get(mem));
+        // multiply by 2 because there are 2 copies of each buffer
+        buffer_size = 2 * get_voice_definition_size(description->definition.get(mem));
 
     return sizeof(ngs::Rack) + description->voice_count * (sizeof(ngs::Voice) + buffer_size + description->patches_per_output * description->definition.get(mem)->output_count * sizeof(ngs::Patch));
 }
@@ -433,6 +434,9 @@ bool init_rack(State &ngs, const MemState &mem, System *system, SceNgsBufferInfo
         for (size_t i = 0; i < rack->modules.size(); i++) {
             v->datas[i].info.size = static_cast<uint32_t>(rack->modules[i]->get_buffer_parameter_size());
             v->datas[i].info.data = rack->alloc_raw(v->datas[i].info.size);
+            // from the behavior of games, it looks like the other info buffer (there are two copies because of VoiceLock) is located right after the first
+            // one, so copy this behavior, to avoid a game overwriting some important ngs struct
+            rack->alloc_raw(v->datas[i].info.size);
 
             v->datas[i].parent = v;
             v->datas[i].index = static_cast<uint32_t>(i);
