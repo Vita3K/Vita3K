@@ -30,6 +30,7 @@ class Root {
     fs::path shared_path;
     fs::path cache_path;
     fs::path static_assets_path;
+    fs::path textures_path;
 
 public:
     void set_base_path(const fs::path &p) {
@@ -116,6 +117,17 @@ public:
         return static_assets_path.generic_path().string();
     }
 
+    void set_textures_path(const fs::path &p) {
+        textures_path = p;
+    }
+
+    fs::path get_textures_path() const {
+        return textures_path;
+    }
+
+    std::string get_textures_path_string() const {
+        return textures_path.generic_path().string();
+    }
 }; // class root
 
 namespace fs_utils {

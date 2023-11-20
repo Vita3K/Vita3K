@@ -4,6 +4,7 @@
 	<main_menubar>
 		<file name="File">
 			<open_pref_path>Open Pref Path</open_pref_path>
+			<open_textures_path>Open Textures Path</open_textures_path>
 			<install_firmware>Install Firmware</install_firmware>
 			<install_pkg>Install .pkg</install_pkg>
 			<install_zip>Install .zip, .vpk</install_zip>

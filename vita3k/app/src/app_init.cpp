@@ -113,6 +113,7 @@ void init_paths(Root &root_paths) {
     root_paths.set_static_assets_path(string_utils::utf_to_wide(base_path));
     root_paths.set_shared_path(string_utils::utf_to_wide(base_path));
     root_paths.set_cache_path(fs::path(string_utils::utf_to_wide(base_path)) / "cache" / dir_sep);
+    root_paths.set_textures_path(fs::path(string_utils::utf_to_wide(base_path)) / "textures" / dir_sep);
     SDL_free(base_path);
     SDL_free(pref_path);
 
@@ -123,6 +124,7 @@ void init_paths(Root &root_paths) {
     auto XDG_DATA_HOME = getenv("XDG_DATA_HOME");
     auto XDG_CACHE_HOME = getenv("XDG_CACHE_HOME");
     auto XDG_CONFIG_HOME = getenv("XDG_CONFIG_HOME");
+    auto XDG_TEXTURES_HOME = getenv("XDG_TEXTURES_HOME");
 
     if (XDG_DATA_HOME != NULL)
         root_paths.set_pref_path(fs::path(XDG_DATA_HOME) / app_name / app_name / dir_sep);
@@ -139,6 +141,11 @@ void init_paths(Root &root_paths) {
         root_paths.set_cache_path(fs::path(env_home) / ".cache" / app_name / dir_sep);
         root_paths.set_log_path(fs::path(env_home) / ".cache" / app_name / dir_sep);
     }
+
+    if (XDG_TEXTURES_HOME != NULL)
+        root_paths.set_textures_path(fs::path(XDG_TEXTURES_HOME) / dir_sep);
+    else if (env_home != NULL)
+        root_paths.set_textures_path(fs::path(env_home) / ".textures" / dir_sep);
 
     // Don't assume that base_path is portable.
     if (fs::exists(root_paths.get_base_path() / "data") && fs::exists(root_paths.get_base_path() / "lang") && fs::exists(root_paths.get_base_path() / "shaders-builtin"))
@@ -188,6 +195,9 @@ void init_paths(Root &root_paths) {
 
     if (!fs::exists(fs::path(root_paths.get_log_path()) / "texturelog"))
         fs::create_directories(fs::path(root_paths.get_log_path()) / "texturelog");
+
+    if (!fs::exists(root_paths.get_textures_path()))
+        fs::create_directories(root_paths.get_textures_path());
 }
 
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
@@ -198,6 +208,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     state.log_path = string_utils::utf_to_wide(root_paths.get_log_path_string());
     state.config_path = string_utils::utf_to_wide(root_paths.get_config_path_string());
     state.cache_path = string_utils::utf_to_wide(root_paths.get_cache_path_string());
+    state.textures_path = string_utils::utf_to_wide(root_paths.get_textures_path_string());
     state.shared_path = root_paths.get_shared_path_string();
     state.static_assets_path = root_paths.get_static_assets_path();
 
@@ -217,6 +228,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     LOG_INFO("User config path: {}", state.config_path.string());
     LOG_INFO("User pref path: {}", state.pref_path.string());
     LOG_INFO("User cache path: {}", state.cache_path.string());
+    LOG_INFO("User textures path: {}", state.textures_path.string());
 
     if (ImGui::GetCurrentContext() == NULL) {
         ImGui::CreateContext();
