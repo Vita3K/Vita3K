@@ -30,10 +30,10 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
 
     const auto render_main_path_vert = builtin_shaders_path / "render_main.vert";
     const auto render_main_path_frag = builtin_shaders_path / "render_main.frag";
-    const auto render_main_path_fxaa_vert = builtin_shaders_path / "render_main_fxaa.vert";
+    const auto render_main_path_fxaa_frag = builtin_shaders_path / "render_main_fxaa.frag";
 
     m_render_shader_nofilter = ::gl::load_shaders(render_main_path_vert.string(), render_main_path_frag.string());
-    m_render_shader_fxaa = ::gl::load_shaders(render_main_path_vert.string(), render_main_path_fxaa_vert.string());
+    m_render_shader_fxaa = ::gl::load_shaders(render_main_path_vert.string(), render_main_path_fxaa_frag.string());
     if (!m_render_shader_nofilter || !m_render_shader_fxaa) {
         LOG_CRITICAL("Couldn't compile essential shaders for rendering. Exiting");
         return false;
