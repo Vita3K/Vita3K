@@ -110,6 +110,7 @@ void init_paths(Root &root_paths) {
     root_paths.set_pref_path(string_utils::utf_to_wide(pref_path));
     root_paths.set_log_path(string_utils::utf_to_wide(base_path));
     root_paths.set_config_path(string_utils::utf_to_wide(base_path));
+    root_paths.set_static_assets_path(string_utils::utf_to_wide(base_path));
     root_paths.set_shared_path(string_utils::utf_to_wide(base_path));
     root_paths.set_cache_path(fs::path(string_utils::utf_to_wide(base_path)) / "cache" / dir_sep);
     SDL_free(base_path);
