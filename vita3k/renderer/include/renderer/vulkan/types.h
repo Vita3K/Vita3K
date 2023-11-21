@@ -83,16 +83,28 @@ struct VKTextureCache : public TextureCache {
     }
 };
 
+struct FrameDescriptor {
+    std::vector<vk::DescriptorSet> sets;
+    int descriptors_idx = 0;
+};
+
 struct FrameObject {
     vk::CommandPool render_pool;
-    // we need to have a specif prerender pool because prerender command buffer
+    // we need to have a specific prerender pool because prerender command buffer
     // can be reset if we use too many new textures at once
     vk::CommandPool prerender_pool;
-    vk::DescriptorPool descriptor_pool;
 
     std::vector<vk::Fence> rendered_fences;
     // equals to context.frame_timestamp when the frame object is used
     uint64_t frame_timestamp;
+
+    // there are at most 16 different textures for a given stage
+    // stage_descriptor[i] is the descriptor when using (i+1) textures
+    FrameDescriptor vert_descriptors[16];
+    FrameDescriptor frag_descriptors[16];
+
+    // descriptor for the color surface
+    FrameDescriptor color_descriptor;
 
     // destroy gpu objects MAX_FRAMES_RENDERING frames later to make sure they are no longer being used
     vkutil::DestroyQueue destroy_queue;
@@ -162,9 +174,6 @@ struct VKContext : public renderer::Context {
 
     MemState &mem;
 
-    std::array<FrameObject, MAX_FRAMES_RENDERING> frames;
-    // start at 1 because last_frame_waited is set to 0
-    int current_frame_idx = 1;
     uint64_t frame_timestamp = 1;
     uint64_t scene_timestamp = 1;
     std::vector<vk::CommandBuffer> cmdbuffers_to_submit = {};
@@ -206,6 +215,8 @@ struct VKContext : public renderer::Context {
     vk::DescriptorPool global_descriptor_pool;
     // we will use this descriptor set for all the draws
     vk::DescriptorSet global_set;
+    // descriptor set when using 0 textures
+    vk::DescriptorSet empty_set;
 
     // descriptor set used to store the mask and the color attachment
     vk::DescriptorSet rendertarget_set;
@@ -261,10 +272,6 @@ struct VKContext : public renderer::Context {
     std::thread gpu_request_wait_thread;
     uint64_t last_frame_waited = 0;
 
-    inline FrameObject &frame() {
-        return frames[current_frame_idx];
-    }
-
     explicit VKContext(VKState &state, MemState &mem);
     // TODO: properly destroy the context
     ~VKContext() override = default;
@@ -284,7 +291,6 @@ private:
 struct VKRenderTarget : public renderer::RenderTarget {
     uint16_t width;
     uint16_t height;
-    vkutil::Image mask;
     vkutil::Image color;
     vkutil::Image depthstencil;
 

@@ -34,12 +34,12 @@ namespace renderer::vulkan {
 VKContext::VKContext(VKState &state, MemState &mem)
     : state(state)
     , mem(mem)
-    , vertex_stream_ring_buffer(state.allocator, vk::BufferUsageFlagBits::eVertexBuffer, MiB(/*128*/ 64))
-    , index_stream_ring_buffer(state.allocator, vk::BufferUsageFlagBits::eIndexBuffer, MiB(64))
-    , vertex_uniform_stream_ring_buffer(state.allocator, vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 64))
-    , fragment_uniform_stream_ring_buffer(state.allocator, vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 64))
-    , vertex_info_uniform_buffer(state.allocator, vk::BufferUsageFlagBits::eUniformBuffer, MiB(16))
-    , fragment_info_uniform_buffer(state.allocator, vk::BufferUsageFlagBits::eUniformBuffer, MiB(32)) {
+    , vertex_stream_ring_buffer(vk::BufferUsageFlagBits::eVertexBuffer, MiB(/*128*/ 64))
+    , index_stream_ring_buffer(vk::BufferUsageFlagBits::eIndexBuffer, MiB(64))
+    , vertex_uniform_stream_ring_buffer(vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 64))
+    , fragment_uniform_stream_ring_buffer(vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 64))
+    , vertex_info_uniform_buffer(vk::BufferUsageFlagBits::eUniformBuffer, MiB(16))
+    , fragment_info_uniform_buffer(vk::BufferUsageFlagBits::eUniformBuffer, MiB(32)) {
     memset(&prev_vert_ublock, 0, sizeof(shader::RenderVertUniformBlock));
     memset(&prev_frag_ublock, 0, sizeof(shader::RenderFragUniformBlock));
 
@@ -99,7 +99,8 @@ VKContext::VKContext(VKState &state, MemState &mem)
         };
 
         vk::DescriptorPoolCreateInfo descriptor_pool_info{
-            .maxSets = 1,
+            // one for the global buffer descriptor, one for the empty descriptor
+            .maxSets = 2,
             .poolSizeCount = nb_descriptor / 2,
             .pPoolSizes = pool_sizes.data()
         };
@@ -112,6 +113,9 @@ VKContext::VKContext(VKState &state, MemState &mem)
         };
         descr_set_info.setSetLayouts(state.pipeline_cache.uniforms_layout);
         global_set = state.device.allocateDescriptorSets(descr_set_info)[0];
+
+        descr_set_info.setSetLayouts(state.pipeline_cache.fragment_textures_layout[0]);
+        empty_set = state.device.allocateDescriptorSets(descr_set_info)[0];
 
         // update it now (will not be updated after)
         constexpr uint64_t vert_uniform_size = shader::RenderVertUniformBlockExtended::get_max_size();
@@ -146,44 +150,13 @@ VKContext::VKContext(VKState &state, MemState &mem)
 
         state.device.updateDescriptorSets(nb_descriptor, write_descr.data(), 0, nullptr);
     }
-
-    for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
-        FrameObject &frame = frames[i];
-
-        vk::CommandPoolCreateInfo pool_info{
-            .queueFamilyIndex = state.general_family_index
-        };
-
-        frame.render_pool = state.device.createCommandPool(pool_info);
-        pool_info.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-        frame.prerender_pool = state.device.createCommandPool(pool_info);
-
-        std::array<vk::DescriptorPoolSize, 3> pool_sizes = {
-            vk::DescriptorPoolSize{ vk::DescriptorType::eStorageImage, 256 },
-            vk::DescriptorPoolSize{ vk::DescriptorType::eInputAttachment, 256 },
-            vk::DescriptorPoolSize{ vk::DescriptorType::eCombinedImageSampler, 8192 },
-        };
-
-        vk::DescriptorPoolCreateInfo descriptor_pool_info{
-            .maxSets = 4096
-        };
-        descriptor_pool_info.setPoolSizes(pool_sizes);
-
-        frame.descriptor_pool = state.device.createDescriptorPool(descriptor_pool_info);
-
-        frame.destroy_queue.init(state.device, state.allocator);
-    }
 }
 
 VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params)
-    : mask(state.allocator, params.width * state.res_multiplier, params.height * state.res_multiplier, vk::Format::eR8G8B8A8Unorm)
-    , color(state.allocator, params.width * state.res_multiplier, params.height * state.res_multiplier, vk::Format::eR8G8B8A8Unorm)
-    , depthstencil(state.allocator, params.width * state.res_multiplier, params.height * state.res_multiplier, vk::Format::eD32SfloatS8Uint) {
+    : color(params.width * state.res_multiplier, params.height * state.res_multiplier, vk::Format::eR8G8B8A8Unorm)
+    , depthstencil(params.width * state.res_multiplier, params.height * state.res_multiplier, vk::Format::eD32SfloatS8Uint) {
     width = params.width * state.res_multiplier;
     height = params.height * state.res_multiplier;
-
-    if (state.features.use_mask_bit)
-        mask.init_image(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage);
 
     vk::ImageUsageFlags color_usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment;
     if (state.features.support_shader_interlock)
@@ -197,7 +170,7 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
 
     depthstencil.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
 
-    // transition images to their right state (not needed for the mask)
+    // transition images to their right state
     vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
     // color
     {
@@ -231,12 +204,12 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
 
     for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
         vk::CommandBufferAllocateInfo buffer_info{
-            .commandPool = reinterpret_cast<VKContext *>(state.context)->frames[i].render_pool,
+            .commandPool = state.frames[i].render_pool,
             .commandBufferCount = static_cast<uint32_t>(samples_per_frame)
         };
         cmd_buffers[i] = state.device.allocateCommandBuffers(buffer_info);
 
-        buffer_info.commandPool = reinterpret_cast<VKContext *>(state.context)->frames[i].prerender_pool;
+        buffer_info.commandPool = state.frames[i].prerender_pool;
         pre_cmd_buffers[i] = state.device.allocateCommandBuffers(buffer_info);
     }
 }
@@ -249,15 +222,6 @@ bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem) {
 
 bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features) {
     rt = std::make_unique<VKRenderTarget>(state, params);
-
-    if (state.features.use_mask_bit) {
-        vkutil::Image &mask = reinterpret_cast<VKRenderTarget *>(rt.get())->mask;
-
-        // transition it to general
-        vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
-        mask.transition_to(cmd_buffer, vkutil::ImageLayout::StorageImage);
-        vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
-    }
     return true;
 }
 
@@ -269,20 +233,18 @@ void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
     state.surface_cache.destroy_associated_framebuffers(&render_target);
 
     // deferred destroy everything in case some object is still being used
-    FrameObject &frame = context.frame();
+    FrameObject &frame = state.frame();
     frame.destroy_queue.add_image(render_target.color);
     frame.destroy_queue.add_image(render_target.depthstencil);
-    if (state.features.use_mask_bit)
-        frame.destroy_queue.add_image(render_target.mask);
 
     for (auto fence : render_target.fences)
         frame.destroy_queue.add(fence);
     for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
         for (auto cmd_buffer : render_target.cmd_buffers[i])
-            frame.destroy_queue.add_cmd_buffer(cmd_buffer, context.frames[i].render_pool);
+            frame.destroy_queue.add_cmd_buffer(cmd_buffer, state.frames[i].render_pool);
 
         for (auto cmd_buffer : render_target.pre_cmd_buffers[i])
-            frame.destroy_queue.add_cmd_buffer(cmd_buffer, context.frames[i].prerender_pool);
+            frame.destroy_queue.add_cmd_buffer(cmd_buffer, state.frames[i].prerender_pool);
     }
 }
 

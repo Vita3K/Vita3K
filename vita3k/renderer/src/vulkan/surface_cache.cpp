@@ -66,7 +66,7 @@ ColorSurfaceCacheInfo::~ColorSurfaceCacheInfo() {
 }
 
 void VKSurfaceCache::destroy_framebuffers(vk::ImageView view) {
-    vkutil::DestroyQueue &destroy_queue = reinterpret_cast<VKContext *>(state.context)->frame().destroy_queue;
+    vkutil::DestroyQueue &destroy_queue = state.frame().destroy_queue;
     for (auto it = framebuffer_array.begin(); it != framebuffer_array.end();) {
         // if the color of depth-stencil match the one of the render_target, this won't be used anymore
         if (it->first.first == view || it->first.second == view) {
@@ -80,8 +80,7 @@ void VKSurfaceCache::destroy_framebuffers(vk::ImageView view) {
 }
 
 void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
-    VKContext *context = reinterpret_cast<VKContext *>(state.context);
-    vkutil::DestroyQueue &destroy_queue = context->frame().destroy_queue;
+    vkutil::DestroyQueue &destroy_queue = state.frame().destroy_queue;
 
     // don't forget to destroy in the right order
     for (auto &casted : info.casted_textures) {
@@ -97,8 +96,7 @@ void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
 }
 
 void VKSurfaceCache::destroy_surface(DepthStencilSurfaceCacheInfo &info) {
-    VKContext *context = reinterpret_cast<VKContext *>(state.context);
-    vkutil::DestroyQueue &destroy_queue = context->frame().destroy_queue;
+    vkutil::DestroyQueue &destroy_queue = state.frame().destroy_queue;
 
     for (auto &read_only : info.read_surfaces)
         destroy_queue.add_image(read_only.depth_view);
@@ -226,7 +224,6 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     info_added.flags = 0;
 
     vkutil::Image &image = info_added.texture;
-    image.allocator = state.allocator;
     image.width = width;
     image.height = height;
     image.format = vk_format;
@@ -489,7 +486,6 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
                 .cropped_height = height,
                 .format = base_format
             };
-            casted->texture.allocator = state.allocator;
             casted->texture.width = width;
             casted->texture.height = height;
             casted->texture.format = vk_format;
@@ -534,8 +530,8 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
             vk::DeviceSize buffer_size = bytes_per_stride * state.res_multiplier * height + start_x * bytes_per_pixel_requested;
             if (!casted->transition_buffer.buffer || casted->transition_buffer.size < buffer_size) {
                 // create or re-create the buffer
-                context->frame().destroy_queue.add_buffer(casted->transition_buffer);
-                casted->transition_buffer = vkutil::Buffer(state.allocator, buffer_size);
+                state.frame().destroy_queue.add_buffer(casted->transition_buffer);
+                casted->transition_buffer = vkutil::Buffer(buffer_size);
                 casted->transition_buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc);
             }
 
@@ -667,7 +663,6 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
     VKContext *context = reinterpret_cast<VKContext *>(state.context);
     vk::CommandBuffer cmd_buffer = context->prerender_cmd;
 
-    image.allocator = state.allocator;
     image.width = width;
     image.height = height;
     image.format = vk::Format::eD32SfloatS8Uint;
@@ -796,7 +791,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         // no compatible read surface found
 
         DepthSurfaceView read_only{
-            .depth_view = vkutil::Image(state.allocator, width, height, vk::Format::eD32SfloatS8Uint),
+            .depth_view = vkutil::Image(width, height, vk::Format::eD32SfloatS8Uint),
             .scene_timestamp = 0
         };
         read_only.depth_view.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
@@ -963,7 +958,6 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
         vkutil::Image &blit_image = *last_written_surface->blit_image;
 
         if (!blit_image.image) {
-            blit_image.allocator = state.allocator;
             blit_image.format = last_written_surface->texture.format;
             blit_image.width = last_written_surface->original_width;
             blit_image.height = last_written_surface->original_height;
@@ -997,7 +991,6 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
         vkutil::Buffer &copy_buffer = *last_written_surface->copy_buffer;
 
         if (!copy_buffer.buffer) {
-            copy_buffer.allocator = state.allocator;
             // TODO: change the 4 if the format pixel size can become something else than 4 bytes (not the case now)
             copy_buffer.size = last_written_surface->pixel_stride * last_written_surface->original_height * 4;
             copy_buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vkutil::vma_mapped_alloc);

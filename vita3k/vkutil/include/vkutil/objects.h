@@ -17,13 +17,14 @@
 
 #pragma once
 
+#include <util/bit_cast.h>
 #include <vkutil/vkutil.h>
 
 namespace vkutil {
 
-struct Image {
-    vma::Allocator allocator;
+void init(vma::Allocator vma_allocator);
 
+struct Image {
     vma::Allocation allocation;
     vk::Image image{};
     vk::ImageView view{};
@@ -38,7 +39,7 @@ struct Image {
     bool destroy_on_deletion = true;
 
     Image();
-    Image(vma::Allocator allocator, uint32_t width, uint32_t height, vk::Format format);
+    Image(uint32_t width, uint32_t height, vk::Format format);
     ~Image();
 
     // allow the object to be moved
@@ -59,7 +60,6 @@ struct Image {
 };
 
 struct Buffer {
-    vma::Allocator allocator;
     vma::Allocation allocation;
     vk::Buffer buffer;
 
@@ -70,7 +70,7 @@ struct Buffer {
     bool destroy_on_deletion = true;
 
     Buffer();
-    Buffer(vma::Allocator allocator, vk::DeviceSize size);
+    Buffer(vk::DeviceSize size);
     ~Buffer();
 
     // allow the object to be moved
@@ -101,7 +101,7 @@ public:
     uint32_t alignment = 256;
     uint32_t data_offset = 0;
 
-    explicit RingBuffer(vma::Allocator allocator, vk::BufferUsageFlags usage, const size_t capacity);
+    explicit RingBuffer(vk::BufferUsageFlags usage, const size_t capacity);
     virtual void create() = 0;
 
     // Allocate new data from ring buffer
@@ -126,8 +126,8 @@ public:
 // this is used for our uniform buffers
 class LocalRingBuffer : public RingBuffer {
 public:
-    explicit LocalRingBuffer(vma::Allocator allocator, vk::BufferUsageFlags usage, const size_t capacity)
-        : RingBuffer(allocator, usage, capacity) {
+    explicit LocalRingBuffer(vk::BufferUsageFlags usage, const size_t capacity)
+        : RingBuffer(usage, capacity) {
     }
     void create() override;
 
@@ -142,8 +142,8 @@ protected:
     bool is_coherent;
 
 public:
-    explicit HostRingBuffer(vma::Allocator allocator, vk::BufferUsageFlags usage, const size_t capacity)
-        : RingBuffer(allocator, usage, capacity) {
+    explicit HostRingBuffer(vk::BufferUsageFlags usage, const size_t capacity)
+        : RingBuffer(usage, capacity) {
     }
     void create() override;
 
@@ -154,11 +154,10 @@ public:
 class DestroyQueue {
 private:
     vk::Device device;
-    vma::Allocator allocator;
     std::vector<uint64_t> destroy_list;
 
 public:
-    void init(vk::Device device, vma::Allocator allocator);
+    void init(vk::Device device);
 
     template <typename T>
     std::enable_if_t<vk::isVulkanHandleType<T>::value> add(T &vk_object) {
@@ -166,7 +165,7 @@ public:
             return;
 
         destroy_list.push_back(static_cast<uint64_t>(T::objectType));
-        destroy_list.push_back(to_u64(vk_object));
+        destroy_list.push_back(std::bit_cast<uint64_t>(vk_object));
         vk_object = nullptr;
     }
 

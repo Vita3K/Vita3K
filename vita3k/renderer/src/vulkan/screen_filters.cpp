@@ -98,7 +98,6 @@ void SinglePassScreenFilter::create_layout_sync() {
     pipeline_layout = device.createPipelineLayout(layout_info);
 
     // create vao
-    vao.allocator = screen.state.allocator;
     vao.size = sizeof(screen_vertices_t) * screen.swapchain_size;
     vao.init_buffer(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst);
 
@@ -505,10 +504,9 @@ void FSRScreenFilter::init() {
 
     // create intermediate images
     intermediate_images.resize(screen.swapchain_size);
-    for (auto &img : intermediate_images) {
-        img.allocator = screen.state.allocator;
+    for (auto &img : intermediate_images)
         img.format = vk::Format::eR8G8B8A8Unorm;
-    }
+
     on_resize();
 }
 

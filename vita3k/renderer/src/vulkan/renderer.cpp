@@ -547,6 +547,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         };
 
         vma::AllocatorCreateInfo allocator_info = {
+            // everything vma-related is done on one thread, no need for thread safety
+            .flags = vma::AllocatorCreateFlagBits::eExternallySynchronized,
             .physicalDevice = physical_device,
             .device = device,
             .pVulkanFunctions = &vulkan_functions,
@@ -561,15 +563,16 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eBufferDeviceAddress;
 
         allocator = vma::createAllocator(allocator_info);
+        vkutil::init(allocator);
     }
 
     // create the default image and buffer
     {
-        default_buffer = vkutil::Buffer(allocator, KiB(4));
+        default_buffer = vkutil::Buffer(KiB(4));
         default_buffer.init_buffer(vk::BufferUsageFlagBits::eVertexBuffer);
 
         // create the default image, it must be cleared then transitioned
-        default_image = vkutil::Image(allocator, 1, 1, vk::Format::eR8G8B8A8Unorm);
+        default_image = vkutil::Image(1, 1, vk::Format::eR8G8B8A8Unorm);
 
         default_image.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
         vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(device, general_command_pool);
@@ -594,6 +597,21 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .maxLod = 0.0f,
         };
         default_image.sampler = device.createSampler(sampler_info);
+    }
+
+    // create the frame objects
+    for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
+        FrameObject &frame = frames[i];
+
+        vk::CommandPoolCreateInfo pool_info{
+            .queueFamilyIndex = general_family_index
+        };
+
+        frame.render_pool = device.createCommandPool(pool_info);
+        pool_info.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+        frame.prerender_pool = device.createCommandPool(pool_info);
+
+        frame.destroy_queue.init(device);
     }
 
     if (!screen_renderer.setup())
@@ -678,7 +696,7 @@ void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         if (frame.image_size.x != vita_surface.width || frame.image_size.y != vita_surface.height) {
             // re-create the image
             vita_surface.destroy();
-            vita_surface = vkutil::Image(allocator, frame.image_size.x, frame.image_size.y, vk::Format::eR8G8B8A8Unorm);
+            vita_surface = vkutil::Image(frame.image_size.x, frame.image_size.y, vk::Format::eR8G8B8A8Unorm);
             vita_surface.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
         }
 
@@ -772,7 +790,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     if (mem.use_page_table) {
         // add 4 KiB because we can as an easy way to prevent crashes due to memory accesses right after the memory boundary
         // also make sure later the mapped address is 4K aligned
-        vkutil::Buffer buffer(allocator, size + KiB(4));
+        vkutil::Buffer buffer(size + KiB(4));
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
             .flags = vma::AllocationCreateFlagBits::eMapped,
             .usage = vma::MemoryUsage::eAutoPreferHost,

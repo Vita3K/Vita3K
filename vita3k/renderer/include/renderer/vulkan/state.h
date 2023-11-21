@@ -73,6 +73,15 @@ struct VKState : public renderer::State {
     // Transfer pool has transient bit set.
     vk::CommandPool transfer_command_pool;
 
+    // objects for which one copy is needed for every frame being rendered at the same time
+    std::array<FrameObject, MAX_FRAMES_RENDERING> frames;
+    // start at 1 because last_frame_waited is set to 0
+    int current_frame_idx = 1;
+
+    // vector of descriptor pools used for the frame descriptor, they are not really used anywhere
+    // but it's better to keep a reference to them somewhere
+    std::deque<vk::DescriptorPool> frame_descriptor_pools;
+
     // only used when memory mapping is enabled
     std::map<Address, MappedMemory, std::greater<Address>> mapped_memories;
 
@@ -116,5 +125,9 @@ struct VKState : public renderer::State {
 
     void precompile_shader(const ShadersHash &hash) override;
     void preclose_action() override;
+
+    inline FrameObject &frame() {
+        return frames[current_frame_idx];
+    }
 };
 } // namespace renderer::vulkan
