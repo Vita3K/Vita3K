@@ -1323,6 +1323,7 @@ enum SceGxmFragmentProgramInputs : int {
 };
 
 enum SceGxmProgramFlags : uint32_t {
+    SCE_GXM_PROGRAM_FLAG_FRAGMENT = 1 << 0,
     SCE_GXM_PROGRAM_FLAG_PER_INSTANCE_MODE = 1 << 1,
     SCE_GXM_PROGRAM_FLAG_DISCARD_USED = 1 << 3,
     SCE_GXM_PROGRAM_FLAG_DEPTH_USED = 1 << 4,
@@ -1403,7 +1404,7 @@ struct SceGxmProgram {
     uint32_t sampler_query_info_offset; // Offset to array of uint16_t
 
     SceGxmProgramType get_type() const {
-        return static_cast<SceGxmProgramType>(program_flags & SceGxmProgramType::Fragment);
+        return static_cast<SceGxmProgramType>(program_flags & SCE_GXM_PROGRAM_FLAG_FRAGMENT);
     }
     bool is_vertex() const {
         return get_type() == SceGxmProgramType::Vertex;
@@ -1441,17 +1442,14 @@ struct SceGxmProgram {
     SceGxmParameterType get_fragment_output_type() const {
         return static_cast<const SceGxmParameterType>(vertex_varyings()->output_param_type);
     }
-    std::uint8_t get_fragment_output_component_count() const {
+    uint8_t get_fragment_output_component_count() const {
         return vertex_varyings()->output_comp_count;
     }
     bool is_secondary_program_available() const {
         return secondary_program_offset < secondary_program_offset_end + 4;
     }
-    bool is_empty() const {
-        // if the primary program is empty, it will still only contain a PHAS instruction
-        return !is_secondary_program_available()
-            && primary_program_instr_count <= 1
-            && parameter_count == 0;
+    bool has_no_effect() const {
+        return (program_flags & SCE_GXM_PROGRAM_FLAG_OUTPUT_UNDEFINED) && !is_discard_used() && !is_depth_replace_used();
     }
 };
 
