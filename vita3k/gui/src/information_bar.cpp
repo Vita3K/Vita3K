@@ -572,7 +572,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
             const ImVec2 ICON_POS_MAX(ICON_POS_MIN.x + ICON_SIZE_SCALE, ICON_POS_MIN.y + ICON_SIZE_SCALE);
             const ImVec2 ICON_CENTER_POS(ICON_POS_MIN.x + (ICON_SIZE_SCALE / 2.f), ICON_POS_MIN.y + (ICON_SIZE_SCALE / 2.f));
             const auto APPS_OPENED = gui.live_area_current_open_apps_list[a];
-            auto &APP_ICON_TYPE = APPS_OPENED.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+            auto &APP_ICON_TYPE = APPS_OPENED.starts_with("NPXS") && (APPS_OPENED != "NPXS10007") ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
 
             // Check if icon exist
             if (APP_ICON_TYPE.contains(APPS_OPENED))

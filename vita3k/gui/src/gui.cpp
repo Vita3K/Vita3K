@@ -383,7 +383,7 @@ void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &
     int32_t height = 0;
     vfs::FileBuffer buffer;
 
-    const auto is_sys = app_path.find("NPXS") != std::string::npos;
+    const auto is_sys = app_path.starts_with("NPXS") && (app_path != "NPXS10007");
     if (is_sys)
         vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path.wstring(), "app/" + app_path + "/sce_sys/pic0.png");
     else
@@ -555,7 +555,7 @@ void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pa
 }
 
 std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &app_path) {
-    const auto &app_type = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+    const auto &app_type = app_path.starts_with("NPXS") && (app_path != "NPXS10007") ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
     const auto app_icon = std::find_if(app_type.begin(), app_type.end(), [&](const auto &i) {
         return i.first == app_path;
     });
@@ -564,7 +564,7 @@ std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui,
 }
 
 std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &app_path) {
-    auto &app_type = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
+    auto &app_type = app_path.starts_with("NPXS") && (app_path != "NPXS10007") ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
     const auto app_index = std::find_if(app_type.begin(), app_type.end(), [&](const App &a) {
         return a.path == app_path;
     });

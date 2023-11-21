@@ -146,7 +146,8 @@ void pre_load_app(GuiState &gui, EmuEnvState &emuenv, bool live_area, const std:
 }
 
 void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    if (app_path.find("NPXS") == std::string::npos) {
+    const auto is_sys = app_path.starts_with("NPXS") && (app_path != "NPXS10007");
+    if (!is_sys) {
         if (emuenv.io.app_path != app_path) {
             if (!emuenv.io.app_path.empty())
                 gui.vita_area.app_close = true;
@@ -320,7 +321,7 @@ static bool app_filter(const std::string &app) {
             return true;
         break;
     case HOMEBREW:
-        if (!filter_app({ "PCS" }))
+        if (!filter_app({ "PCS", "NPXS" }))
             return true;
         break;
     }
@@ -752,9 +753,9 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
         for (const auto &app : apps_list) {
             bool selected = false;
-            const auto is_not_sys_app = app.path.find("NPXS") == std::string::npos;
+            const auto is_sys = app.path.starts_with("NPXS") && (app.path != "NPXS10007");
 
-            if (is_not_sys_app) {
+            if (!is_sys) {
                 // Filter app by region and type
                 if (app_filter(app.title_id))
                     continue;
@@ -779,7 +780,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
 
             // Get the current app index off the apps list.
             const auto app_index = static_cast<int>(&app - &apps_list[0]);
-            const auto current_app_index = is_not_sys_app ? app_index : app_index - 4;
+            const auto current_app_index = !is_sys ? app_index : app_index - 4;
             apps_list_filtered.push_back(current_app_index);
 
             // Check if the current app is selected.
@@ -860,7 +861,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::NextColumn();
 
             // Draw the compatibility badge for commercial apps when they are within the visible area.
-            if (element_is_within_visible_area && (app.title_id.find("PCS") != std::string::npos)) {
+            if (element_is_within_visible_area && (app.title_id.starts_with("PCS") || (app.title_id == "NPXS10007"))) {
                 const auto compat_state = (gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(app.title_id) : false) ? gui.compat.app_compat_db[app.title_id].state : compat::UNKNOWN;
                 const auto compat_state_vec4 = gui.compat.compat_color[compat_state];
                 const ImU32 compat_state_color = IM_COL32((int)(compat_state_vec4.x * 255.0f), (int)(compat_state_vec4.y * 255.0f), (int)(compat_state_vec4.z * 255.0f), (int)(compat_state_vec4.w * 255.0f));
