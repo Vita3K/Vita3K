@@ -683,8 +683,10 @@ EXPORT(SceInt32, sceNgsVoiceGetStateData, ngs::Voice *voice, const SceUInt32 mod
     if (!storage)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
-    if (mem)
+    if (mem) {
+        memset(mem, 0, mem_size);
         memcpy(mem, storage->voice_state_data.data(), std::min<std::size_t>(mem_size, storage->voice_state_data.size()));
+    }
 
     return SCE_NGS_OK;
 }
@@ -746,13 +748,13 @@ EXPORT(SceInt32, sceNgsVoiceKeyOff, ngs::Voice *voice) {
     }
 
     voice->is_keyed_off = true;
-    voice->rack->system->voice_scheduler.off(voice);
+    voice->rack->system->voice_scheduler.off(emuenv.mem, voice);
 
     // call the finish callback, I got no idea what the module id should be in this case
     voice->invoke_callback(emuenv.kernel, emuenv.mem, thread_id, voice->finished_callback, voice->finished_callback_user_data, 0);
 
     voice->is_keyed_off = false;
-    voice->rack->system->voice_scheduler.stop(voice);
+    voice->rack->system->voice_scheduler.stop(emuenv.mem, voice);
     return SCE_NGS_OK;
 }
 
@@ -766,7 +768,7 @@ EXPORT(int, sceNgsVoiceKill, ngs::Voice *voice) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    voice->rack->system->voice_scheduler.stop(voice);
+    voice->rack->system->voice_scheduler.stop(emuenv.mem, voice);
 
     return 0;
 }
@@ -854,7 +856,7 @@ EXPORT(int, sceNgsVoicePause, ngs::Voice *voice) {
     if (voice->is_paused)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_STATE);
 
-    if (!voice->rack->system->voice_scheduler.pause(voice)) {
+    if (!voice->rack->system->voice_scheduler.pause(emuenv.mem, voice)) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
 

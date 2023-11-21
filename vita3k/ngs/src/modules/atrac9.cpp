@@ -56,15 +56,22 @@ void atrac9_get_buffer_parameter(const uint32_t start_sample, const uint32_t num
     parameter.end_skip = (start_superframe + num_superframe) * samples_per_superframe - (start_sample + num_samples);
 }
 
-void Atrac9Module::on_state_change(ModuleData &data, const VoiceState previous) {
+void Atrac9Module::on_state_change(const MemState &mem, ModuleData &data, const VoiceState previous) {
     SceNgsAT9States *state = data.get_state<SceNgsAT9States>();
-    if (data.parent->state == VOICE_STATE_AVAILABLE) {
+    if (data.parent->state == VOICE_STATE_ACTIVE && previous == VOICE_STATE_AVAILABLE) {
+        state->samples_generated_since_key_on = 0;
+        state->bytes_consumed_since_key_on = 0;
         state->current_byte_position_in_buffer = 0;
         state->current_loop_count = 0;
         state->current_buffer = 0;
+
+        memset(&state->saved_state, 0, sizeof(state->saved_state));
+        if (last_state == state)
+            last_state = nullptr;
     } else if (data.parent->is_keyed_off) {
-        state->samples_generated_since_key_on = 0;
-        state->bytes_consumed_since_key_on = 0;
+        state->current_byte_position_in_buffer = 0;
+        state->current_loop_count = 0;
+        state->current_buffer = 0;
     }
 }
 
@@ -112,23 +119,25 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         scheduler_lock.unlock();
 
         state->current_loop_count++;
+        state->current_byte_position_in_buffer = 0;
 
         if (bufparam.loop_count != -1 && state->current_loop_count > bufparam.loop_count) {
             state->current_buffer = bufparam.next_buffer_index;
             state->current_loop_count = 0;
 
-            if (state->current_buffer == -1) {
+            if (state->current_buffer == -1
+                || !params->buffer_params[state->current_buffer].buffer) {
                 data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_END_OF_DATA, 0, 0);
-                // TODO: Free all occupied input routes
-                // unroute_occupied(mem, voice);
+
+                // we are done
+                scheduler_lock.lock();
+                voice_lock.lock();
+                return false;
             } else {
                 data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_SWAPPED_BUFFER, prev_index,
                     params->buffer_params[state->current_buffer].buffer.address());
             }
         } else {
-            // from what I understand, SCE_NGS_AT9_SWAPPED_BUFFER must be called even when it's just the current buffer looping
-            data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_SWAPPED_BUFFER, prev_index,
-                params->buffer_params[state->current_buffer].buffer.address());
             data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_LOOPED_BUFFER, state->current_loop_count,
                 params->buffer_params[state->current_buffer].buffer.address());
         }
@@ -136,23 +145,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         scheduler_lock.lock();
         voice_lock.lock();
 
-        state->current_byte_position_in_buffer = 0;
         current_buffer = state->current_buffer;
-
-        if (current_buffer == -1)
-            // we are done
-            return false;
-
-        if (params->buffer_params[current_buffer].bytes_count == 0) {
-            // try to find a non-empty buffer that can be accessed, there are at most 4
-            for (int k = 0; k < 4 && current_buffer != -1 && params->buffer_params[current_buffer].bytes_count == 0; k++) {
-                current_buffer = params->buffer_params[current_buffer].next_buffer_index;
-            }
-
-            if (current_buffer == -1 || params->buffer_params[current_buffer].bytes_count == 0)
-                // we are done
-                return false;
-        }
 
         // re-call this function
         return true;
@@ -283,9 +276,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
 
     const int32_t sample_rate = data.parent->rack->system->sample_rate;
     if (params->playback_scalar != 1 || static_cast<int>(round(params->playback_frequency)) != sample_rate) {
-        static bool LOG_PLAYBACK_SCALING = true;
-        LOG_INFO_IF(LOG_PLAYBACK_SCALING, "The currently running game requests playback rate scaling when decoding audio. Audio might crackle.");
-        LOG_PLAYBACK_SCALING = false;
+        LOG_INFO_ONCE("The currently running game requests playback rate scaling when decoding audio. Audio might crackle.");
 
         // resample the audio
         int src_sample_rate = static_cast<int>(params->playback_frequency);
@@ -355,14 +346,16 @@ bool Atrac9Module::process(KernelState &kern, const MemState &mem, const SceUID 
     SceNgsAT9States *state = data.get_state<SceNgsAT9States>();
     assert(state);
 
-    if ((state->current_buffer == -1) || (params->buffer_params[state->current_buffer].buffer.address() == 0)) {
+    if (state->current_buffer == -1
+        || !params->buffer_params[state->current_buffer].buffer) {
         return true;
     }
 
+    bool is_finished = false;
     // call decode more data until we either have an error or reached end of data
     while (static_cast<int32_t>(state->decoded_samples_pending) < data.parent->rack->system->granularity) {
         if (!decode_more_data(kern, mem, thread_id, data, params, state, scheduler_lock, voice_lock)) {
-            state->is_finished = true;
+            is_finished = true;
             break;
         }
     }
@@ -378,14 +371,6 @@ bool Atrac9Module::process(KernelState &kern, const MemState &mem, const SceUID 
     state->decoded_samples_pending = (state->decoded_samples_pending < samples_to_be_passed) ? 0 : (state->decoded_samples_pending - samples_to_be_passed);
     state->decoded_passed += samples_to_be_passed;
 
-    if (state->decoded_samples_pending == 0 && state->is_finished) {
-        // we are done
-        state->samples_generated_since_key_on = 0;
-        state->bytes_consumed_since_key_on = 0;
-        state->is_finished = false;
-        return true;
-    }
-
-    return false;
+    return is_finished;
 }
 } // namespace ngs

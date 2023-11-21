@@ -27,19 +27,21 @@ extern "C" {
 
 namespace ngs {
 
-void PlayerModule::on_state_change(ModuleData &data, const VoiceState previous) {
+void PlayerModule::on_state_change(const MemState &mem, ModuleData &data, const VoiceState previous) {
     SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
-    if (data.parent->state == VOICE_STATE_AVAILABLE) {
-        state->current_byte_position_in_buffer = 0;
-        state->current_loop_count = 0;
-        state->current_buffer = 0;
-    } else if (data.parent->is_keyed_off) {
+    SceNgsPlayerParams *params = data.get_parameters<SceNgsPlayerParams>(mem);
+    if (data.parent->state == VOICE_STATE_ACTIVE && previous == VOICE_STATE_AVAILABLE) {
         state->samples_generated_since_key_on = 0;
         state->bytes_consumed_since_key_on = 0;
+        state->current_buffer = params->start_buffer;
+        state->current_byte_position_in_buffer = params->start_bytes;
+        state->current_loop_count = 0;
 
-        ADPCMHistory hist_empty{};
-        std::fill_n(state->adpcm_history, SCE_NGS_PLAYER_MAX_PCM_CHANNELS, hist_empty);
-
+        memset(&state->adpcm_history, 0, sizeof(state->adpcm_history));
+    } else if (data.parent->is_keyed_off) {
+        state->current_buffer = params->start_buffer;
+        state->current_byte_position_in_buffer = params->start_bytes;
+        state->current_loop_count = 0;
         state->reset_swr = true;
     }
 }
@@ -107,75 +109,48 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
             // Ran out of data, supply new
             // Decode new data and deliver them
             // Let's open our context
-            if (state->current_buffer == -1) {
+
+            if (state->current_buffer == -1
+                || !params->buffer_params[state->current_buffer].buffer) {
                 // If no buffer is found, stop processing
                 finished = true;
                 break;
             }
             // If the current byte position in the buffer exceeds the total amount of bytes in the buffer
             else if (state->current_byte_position_in_buffer >= params->buffer_params[state->current_buffer].bytes_count) {
-                if (params->buffer_params[state->current_buffer].bytes_count == 0) {
-                    // check if at least one of the next buffers has data
-                    bool has_data = false;
-                    SceInt32 buffer_test = state->current_buffer;
-
-                    for (int i = 0; buffer_test != -1 && i < SCE_NGS_PLAYER_MAX_BUFFERS; i++) {
-                        if (params->buffer_params[buffer_test].bytes_count != 0) {
-                            has_data = true;
-                            break;
-                        }
-                        buffer_test = params->buffer_params[buffer_test].next_buffer_index;
-                    }
-
-                    if (!has_data) {
-                        // no data was found in any of the next buffer
-                        finished = true;
-                        break;
-                    }
-                }
-
                 const int32_t prev_index = state->current_buffer;
+                state->current_byte_position_in_buffer = 0;
+                state->current_loop_count++;
+
+                voice_lock.unlock();
+                scheduler_lock.unlock();
 
                 // Enable looping over the buffer if needed
-                if (params->buffer_params[state->current_buffer].loop_count != -1) {
-                    state->current_loop_count++;
-                    state->current_byte_position_in_buffer = 0;
+                if (params->buffer_params[state->current_buffer].loop_count != -1
+                    && state->current_loop_count > params->buffer_params[state->current_buffer].loop_count) {
+                    state->current_buffer = params->buffer_params[state->current_buffer].next_buffer_index;
+                    state->current_loop_count = 0;
 
-                    if (state->current_loop_count > params->buffer_params[state->current_buffer].loop_count) {
-                        state->current_buffer = params->buffer_params[state->current_buffer].next_buffer_index;
-                        state->current_loop_count = 0;
+                    if (state->current_buffer == -1
+                        || !params->buffer_params[state->current_buffer].buffer) {
+                        data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_END_OF_DATA, 0, 0);
 
-                        voice_lock.unlock();
-                        scheduler_lock.unlock();
-
-                        if (state->current_buffer == -1) {
-                            data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_END_OF_DATA, 0, 0);
-                            finished = true;
-                            // TODO: Free all occupied input routes
-                            // unroute_occupied(mem, voice);
-                            scheduler_lock.lock();
-                            voice_lock.lock();
-                            break;
-                        } else {
-                            data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_SWAPPED_BUFFER, prev_index,
-                                params->buffer_params[state->current_buffer].buffer.address());
-                        }
-
+                        // we are done
+                        finished = true;
                         scheduler_lock.lock();
                         voice_lock.lock();
+                        break;
+                    } else {
+                        data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_SWAPPED_BUFFER, prev_index,
+                            params->buffer_params[state->current_buffer].buffer.address());
                     }
                 } else {
-                    voice_lock.unlock();
-                    scheduler_lock.unlock();
-
                     data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_LOOPED_BUFFER, state->current_loop_count,
                         params->buffer_params[state->current_buffer].buffer.address());
-
-                    scheduler_lock.lock();
-                    voice_lock.lock();
                 }
 
-                state->current_byte_position_in_buffer = 0;
+                scheduler_lock.lock();
+                voice_lock.lock();
             }
 
             if (data.extra_storage.size() < sizeof(float) * 2 * granularity
@@ -229,9 +204,7 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                 decoder->receive(nullptr, &samples_count);
                 // Playback rate scaling
                 if (params->playback_scalar != 1 || static_cast<int>(round(params->playback_frequency)) != sample_rate) {
-                    static bool LOG_PLAYBACK_SCALING = true;
-                    LOG_INFO_IF(LOG_PLAYBACK_SCALING, "The currently running game requests playback rate scaling when decoding audio. Audio might crackle.");
-                    LOG_PLAYBACK_SCALING = false;
+                    LOG_INFO_ONCE("The currently running game requests playback rate scaling when decoding audio. Audio might crackle.");
 
                     // Received decoded samples from decoder
                     std::vector<uint8_t> decoded_data(samples_count.samples * sizeof(float) * 2, 0);
@@ -310,16 +283,6 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
     state->decoded_samples_passed += samples_to_be_passed;
     state->samples_generated_since_key_on += samples_to_be_passed * params->channels;
     state->samples_generated_total += samples_to_be_passed * params->channels;
-
-    if (finished) {
-        state->samples_generated_since_key_on = 0;
-        state->bytes_consumed_since_key_on = 0;
-
-        ADPCMHistory hist_empty{};
-        std::fill_n(state->adpcm_history, SCE_NGS_PLAYER_MAX_PCM_CHANNELS, hist_empty);
-
-        state->reset_swr = true;
-    }
 
     return finished;
 }

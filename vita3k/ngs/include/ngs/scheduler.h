@@ -79,10 +79,10 @@ public:
     bool deque_voice(Voice *voice);
 
     bool play(const MemState &mem, Voice *voice);
-    bool pause(Voice *voice);
+    bool pause(const MemState &mem, Voice *voice);
     bool resume(const MemState &mem, Voice *voice);
-    bool stop(Voice *voice);
-    bool off(Voice *voice);
+    bool stop(const MemState &mem, Voice *voice);
+    bool off(const MemState &mem, Voice *voice);
 
     void update(KernelState &kern, const MemState &mem, const SceUID thread_id);
 
