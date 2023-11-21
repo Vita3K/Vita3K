@@ -67,10 +67,19 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
     default: break;
     }
 
-    pugi::xml_document lang_xml;
+    const auto system_lang_path{ emuenv.static_assets_path / "lang/system" };
+    const auto user_lang_path{ emuenv.shared_path / "lang/user" };
 
-    fs::path lang_path = emuenv.static_assets_path / "lang";
-    const auto lang_xml_path = (lang_path / (lang.user_lang[GUI] + ".xml")).string();
+    // Create user lang folder if not exists and create a file to indicate where to place the lang files
+    if (!fs::exists(user_lang_path)) {
+        fs::create_directories(user_lang_path);
+        fs::ofstream outfile(user_lang_path / "PLACE USER LANG HERE.txt");
+        outfile.close();
+    }
+
+    // Load lang xml
+    pugi::xml_document lang_xml;
+    const auto lang_xml_path{ (emuenv.cfg.user_lang.empty() ? system_lang_path / lang.user_lang[GUI] : user_lang_path / emuenv.cfg.user_lang).replace_extension("xml") };
     if (fs::exists(lang_xml_path)) {
         if (lang_xml.load_file(lang_xml_path.c_str())) {
             // Lang
@@ -389,8 +398,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 set_lang_string(lang.welcome, lang_child.child("welcome"));
             }
         } else
-            LOG_ERROR("Error open lang file xml: {}", lang_xml_path);
-    }
+            LOG_ERROR("Error open lang file xml: {}", lang_xml_path.string());
+    } else
+        LOG_ERROR("Lang file xml not found: {}", lang_xml_path.string());
 }
 
 } // namespace lang

@@ -134,6 +134,7 @@ enum PerfomanceOverleyPosition {
     code(int, "keyboard-toggle-texture-replacement", 0, keyboard_toggle_texture_replacement)            \
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
+    code(std::string, "user-lang", std::string{}, user_lang)                                            \
     code(bool, "display-info-message", true, display_info_message)                                      \
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "check-for-updates", true, check_for_updates)                                            \
