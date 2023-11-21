@@ -215,7 +215,7 @@ struct System : public MempoolObject {
     static uint32_t get_required_memspace_size(SceNgsSystemInitParams *parameters);
 };
 
-bool deliver_data(const MemState &mem, Voice *source, const uint8_t output_port,
+bool deliver_data(const MemState &mem, const std::vector<Voice *> &voice_queue, Voice *source, const uint8_t output_port,
     const VoiceProduct &data_to_deliver);
 
 bool init_system(State &ngs, const MemState &mem, SceNgsSystemInitParams *parameters, Ptr<void> memspace, const uint32_t memspace_size);
