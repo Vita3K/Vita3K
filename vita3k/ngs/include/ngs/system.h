@@ -117,7 +117,7 @@ public:
     virtual bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) = 0;
     virtual uint32_t module_id() const { return 0; }
     virtual uint32_t get_buffer_parameter_size() const = 0;
-    virtual void on_state_change(ModuleData &v, const VoiceState previous) {}
+    virtual void on_state_change(const MemState &mem, ModuleData &v, const VoiceState previous) {}
     virtual void on_param_change(const MemState &mem, ModuleData &data) {}
 };
 
@@ -175,7 +175,7 @@ struct Voice {
     bool remove_patch(const MemState &mem, const Ptr<Patch> patch);
     Ptr<Patch> patch(const MemState &mem, const int32_t index, int32_t subindex, int32_t dest_index, Voice *dest);
 
-    void transition(const VoiceState new_state);
+    void transition(const MemState &mem, const VoiceState new_state);
     bool parse_params(const MemState &mem, const SceNgsModuleParamHeader *header);
     // Return the number of errors that happened
     SceInt32 parse_params_block(const MemState &mem, const SceNgsModuleParamHeader *header, const SceUInt32 size);

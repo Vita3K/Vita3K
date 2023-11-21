@@ -246,12 +246,12 @@ ModuleData *Voice::module_storage(const uint32_t index) {
     return &datas[index];
 }
 
-void Voice::transition(const VoiceState new_state) {
+void Voice::transition(const MemState &mem, const VoiceState new_state) {
     const VoiceState old = state;
     state = new_state;
 
     for (size_t i = 0; i < datas.size(); i++) {
-        rack->modules[i]->on_state_change(datas[i], old);
+        rack->modules[i]->on_state_change(mem, datas[i], old);
     }
 }
 

@@ -70,8 +70,6 @@ struct SceNgsAT9States {
     // used if the input must be resampled
     SwrContext *swr = nullptr;
     int8_t current_loop_count = 0;
-    // set to true if all the input has been read but not all data has been processed
-    bool is_finished = false;
     // necessary if the decoder is using multiple states
     Atrac9DecoderSavedState saved_state{};
 };
@@ -93,7 +91,7 @@ private:
 public:
     bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) override;
     uint32_t module_id() const override { return 0x5CAA; }
-    void on_state_change(ModuleData &v, const VoiceState previous) override;
+    void on_state_change(const MemState &mem, ModuleData &v, const VoiceState previous) override;
     void on_param_change(const MemState &mem, ModuleData &data) override;
 
     static constexpr uint32_t get_max_parameter_size() {

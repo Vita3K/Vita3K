@@ -73,7 +73,7 @@ bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
         return false;
 
     // Transition
-    voice->transition(VOICE_STATE_ACTIVE);
+    voice->transition(mem, VOICE_STATE_ACTIVE);
 
     // Should Enqueue
     if (!voice->is_paused)
@@ -82,7 +82,7 @@ bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
     return true;
 }
 
-bool VoiceScheduler::pause(Voice *voice) {
+bool VoiceScheduler::pause(const MemState &mem, Voice *voice) {
     if (!voice->is_paused) {
         voice->is_paused = true;
 
@@ -108,22 +108,22 @@ bool VoiceScheduler::resume(const MemState &mem, Voice *voice) {
     return true;
 }
 
-bool VoiceScheduler::stop(Voice *voice) {
+bool VoiceScheduler::stop(const MemState &mem, Voice *voice) {
     if (voice->state != VOICE_STATE_ACTIVE && voice->state != VOICE_STATE_FINALIZING)
         return false;
 
-    voice->transition(VOICE_STATE_AVAILABLE);
+    voice->transition(mem, VOICE_STATE_AVAILABLE);
     if (!voice->is_paused)
         deque_voice(voice);
 
     return true;
 }
 
-bool VoiceScheduler::off(Voice *voice) {
+bool VoiceScheduler::off(const MemState &mem, Voice *voice) {
     if (voice->state != VOICE_STATE_ACTIVE)
         return false;
 
-    voice->transition(VOICE_STATE_FINALIZING);
+    voice->transition(mem, VOICE_STATE_FINALIZING);
 
     return true;
 }
@@ -158,7 +158,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         }
         if (finished) {
             voice->is_keyed_off = true;
-            voice->transition(VOICE_STATE_FINALIZING);
+            voice->transition(mem, VOICE_STATE_FINALIZING);
             if (voice->finished_callback) {
                 voice_lock.unlock();
                 scheduler_lock.unlock();
@@ -168,7 +168,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
             }
             voice->is_keyed_off = false;
 
-            stop(voice);
+            stop(mem, voice);
         }
 
         for (size_t i = 0; i < voice->rack->vdef->output_count; i++) {
