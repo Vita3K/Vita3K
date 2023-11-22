@@ -108,8 +108,18 @@
     {
       "name": "linux-ninja-clang15-appimage",
       "inherits": "linux-ninja-clang15",
-      "displayName": "Linux AppImage with Ninja and Clang",
+      "displayName": "Linux AppImage with Ninja and Clang 15",
       "description": "Linux AppImage build using Ninja Multi-Config generator and Clang 15 compiler",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "/usr",
+        "BUILD_APPIMAGE": true
+      }
+    },
+    {
+      "name": "linux-ninja-clang-appimage",
+      "inherits": "linux-ninja-clang",
+      "displayName": "Linux AppImage with Ninja and Clang",
+      "description": "Linux AppImage build using Ninja Multi-Config generator and Clang compiler",
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "/usr",
         "BUILD_APPIMAGE": true
