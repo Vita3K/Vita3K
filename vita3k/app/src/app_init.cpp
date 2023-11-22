@@ -123,6 +123,7 @@ void init_paths(Root &root_paths) {
     auto XDG_DATA_HOME = getenv("XDG_DATA_HOME");
     auto XDG_CACHE_HOME = getenv("XDG_CACHE_HOME");
     auto XDG_CONFIG_HOME = getenv("XDG_CONFIG_HOME");
+    auto APPDIR = getenv("APPDIR"); // Used in AppImage
 
     if (XDG_DATA_HOME != NULL)
         root_paths.set_pref_path(fs::path(XDG_DATA_HOME) / app_name / app_name / dir_sep);
@@ -157,6 +158,10 @@ void init_paths(Root &root_paths) {
     } else if (XDG_DATA_HOME != NULL) {
         if (fs::exists(fs::path(XDG_DATA_HOME) / app_name / "data") && fs::exists(fs::path(XDG_DATA_HOME) / app_name / "lang") && fs::exists(fs::path(XDG_DATA_HOME) / app_name / "shaders-builtin"))
             root_paths.set_static_assets_path(fs::path(XDG_DATA_HOME) / app_name / dir_sep);
+    }
+
+    if (APPDIR != NULL) {
+        root_paths.set_static_assets_path(fs::path(APPDIR) / "usr/share/Vita3K");
     }
 
     // shared path
