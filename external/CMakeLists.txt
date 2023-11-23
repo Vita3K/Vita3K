@@ -148,8 +148,10 @@ if(MSVC)
 	endif()
 endif()
 
-set(UNICORN_ARCH "arm")
-add_subdirectory(unicorn EXCLUDE_FROM_ALL)
+if(USE_UNICORN)
+	set(UNICORN_ARCH "arm")
+	add_subdirectory(unicorn EXCLUDE_FROM_ALL)
+endif()
 
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")

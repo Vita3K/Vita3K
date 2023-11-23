@@ -44,7 +44,7 @@
  * @brief CPU emulation
  *
  * The PlayStation Vita has an ARMv7 CPU, making game binaries impossible to run on a x86 system unless recompiled.
- * Vita3K uses the Unicorn JIT recompiler to turn the Vita's ARM code into x86 code in order to enable execution of games in PCs.
+ * Vita3K uses the Dynarmic JIT recompiler to turn the Vita's ARM code into x86 code in order to enable execution of games in PCs.
  */
 
 /**
