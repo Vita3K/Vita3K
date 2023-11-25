@@ -923,7 +923,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         std::vector<const char *> list_user_lang_str{ "System" };
         for (auto &l : list_user_lang)
             list_user_lang_str.push_back(l.c_str());
-        if (ImGui::Combo("GUI Language", &current_user_lang, list_user_lang_str.data(), static_cast<int>(list_user_lang_str.size()), 4)) {
+        if (ImGui::Combo(lang.gui["user_lang"].c_str(), &current_user_lang, list_user_lang_str.data(), static_cast<int>(list_user_lang_str.size()), 4)) {
             if (current_user_lang != 0)
                 emuenv.cfg.user_lang = list_user_lang_str[current_user_lang];
             else
@@ -932,7 +932,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             lang::init_lang(gui.lang, emuenv);
         }
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select your user language.");
+            ImGui::SetTooltip("%s", lang.gui["select_user_lang"].c_str());
         ImGui::Spacing();
         ImGui::Checkbox(lang.gui["display_info_message"].c_str(), &emuenv.cfg.display_info_message);
         if (ImGui::IsItemHovered())

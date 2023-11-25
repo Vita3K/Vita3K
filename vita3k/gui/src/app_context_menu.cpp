@@ -240,6 +240,12 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         const auto SHADER_LOG_PATH{ emuenv.cache_path / "shaderlog" / title_id };
         if (fs::exists(SHADER_LOG_PATH))
             fs::remove_all(SHADER_LOG_PATH);
+        const auto EXPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/export" / title_id };
+        if (fs::exists(EXPORT_TEXTURES_PATH))
+            fs::remove_all(EXPORT_TEXTURES_PATH);
+        const auto IMPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/import" / title_id };
+        if (fs::exists(IMPORT_TEXTURES_PATH))
+            fs::remove_all(IMPORT_TEXTURES_PATH);
 
         if (gui.app_selector.user_apps_icon.contains(app_path)) {
             gui.app_selector.user_apps_icon[app_path] = {};
@@ -294,6 +300,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
     const auto SHADER_CACHE_PATH{ emuenv.cache_path / "shaders" / title_id };
     const auto SHADER_LOG_PATH{ emuenv.cache_path / "shaderlog" / title_id };
+    const auto EXPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/export" / title_id };
+    const auto IMPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/import" / title_id };
     const auto ISSUES_URL = "https://github.com/Vita3K/compatibility/issues";
 
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
@@ -464,6 +472,10 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_path(SHADER_CACHE_PATH.string());
                 if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.main["shaders_log"].c_str()))
                     open_path(SHADER_LOG_PATH.string());
+                if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["export_textures"].c_str()))
+                    open_path(EXPORT_TEXTURES_PATH.string());
+                if (fs::exists(IMPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["import_textures"].c_str()))
+                    open_path(IMPORT_TEXTURES_PATH.string());
                 ImGui::EndMenu();
             }
             if (!emuenv.cfg.show_live_area_screen && ImGui::BeginMenu("Live Area")) {
@@ -490,6 +502,10 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     fs::remove_all(SHADER_CACHE_PATH);
                 if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.main["shaders_log"].c_str()))
                     fs::remove_all(SHADER_LOG_PATH);
+                if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["export_textures"].c_str()))
+                    fs::remove_all(EXPORT_TEXTURES_PATH);
+                if (fs::exists(IMPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["import_textures"].c_str()))
+                    fs::remove_all(IMPORT_TEXTURES_PATH);
                 ImGui::EndMenu();
             }
             if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(lang.main["update_history"].c_str())) {
