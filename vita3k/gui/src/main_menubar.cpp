@@ -26,10 +26,20 @@
 namespace gui {
 
 static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
+    const auto textures_path{ emuenv.shared_path / "textures" };
+
     auto &lang = gui.lang.main_menubar.file;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
         if (ImGui::MenuItem(lang["open_pref_path"].c_str()))
             open_path(emuenv.pref_path.string());
+        if (ImGui::MenuItem(lang["open_textures_path"].c_str())) {
+            if (!fs::exists(textures_path)) {
+                fs::create_directories(textures_path);
+                fs::create_directories(textures_path / "export");
+                fs::create_directories(textures_path / "import");
+            }
+            open_path(textures_path.string());
+        }
         ImGui::Separator();
         ImGui::MenuItem(lang["install_firmware"].c_str(), nullptr, &gui.file_menu.firmware_install_dialog);
         ImGui::MenuItem(lang["install_pkg"].c_str(), nullptr, &gui.file_menu.pkg_install_dialog);

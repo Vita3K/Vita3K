@@ -4,6 +4,7 @@
 	<main_menubar>
 		<file name="File">
 			<open_pref_path>Open Pref Path</open_pref_path>
+			<open_textures_path>Open Textures Path</open_textures_path>
 			<install_firmware>Install Firmware</install_firmware>
 			<install_pkg>Install .pkg</install_pkg>
 			<install_zip>Install .zip, .vpk</install_zip>
@@ -66,6 +67,8 @@
 		<license>License</license>
 		<shaders_cache>Shaders Cache</shaders_cache>
 		<shaders_log>Shaders Log</shaders_log>
+		<export_textures>Export Textures</export_textures>
+		<import_textures>Import Textures</import_textures>
 		<manual>Manual</manual>
 		<update>Update</update>
 		<update_history>Update History</update_history>
@@ -698,6 +701,8 @@ You will need to move your old folder to the new location manually.</reset_emu_p
 			<gui_description>Check the box to show GUI after booting an application.</gui_description>
 			<show_info_bar>Info Bar Visible</show_info_bar>
 			<info_bar_description>Check the box to show an info bar inside the app selector.</info_bar_description>
+			<user_lang>GUI Language</user_lang>
+			<select_user_lang>Select your user language.</select_user_lang>
 			<display_info_message>Display Info Message</display_info_message>
 			<display_info_message_description>Uncheck the box to display info message in log only.</display_info_message_description>
 			<display_system_apps>Display System Apps</display_system_apps>

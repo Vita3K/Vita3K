@@ -4,6 +4,7 @@
 	<main_menubar>
 		<file name="文件">
 			<open_pref_path>打开存放路径</open_pref_path>
+			<open_textures_path>打开纹理路径</open_textures_path>
 			<install_firmware>安装固件</install_firmware>
 			<install_pkg>安装pkg</install_pkg>
 			<install_zip>安装zip、vpk</install_zip>
@@ -66,6 +67,8 @@
 		<license>授权</license>
 		<shaders_cache>着色器缓存</shaders_cache>
 		<shaders_log>着色器日志</shaders_log>
+		<export_textures>导出纹理</export_textures>
+		<import_textures>导入纹理</import_textures>
 		<manual>说明书</manual>
 		<update>升级</update>
 		<update_history>更新历史记录</update_history>
@@ -667,6 +670,8 @@
 			<gui_description>勾选此项在启动应用程序后显示图形用户界面。</gui_description>
 			<show_info_bar>信息栏可见</show_info_bar>
 			<info_bar_description>勾选此项在应用程序选择页面内显示信息栏。</info_bar_description>
+			<user_lang>图形用户界面语言</user_lang>
+			<select_user_lang>选择您的用户语言。</select_user_lang>
 			<display_info_message>显示信息消息</display_info_message>
 			<display_info_message_description>取消勾选此项只在日志中显示信息消息。</display_info_message_description>
 			<display_system_apps>显示系统应用程序</display_system_apps>
