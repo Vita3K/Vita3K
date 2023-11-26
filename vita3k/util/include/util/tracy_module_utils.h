@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 namespace tracy_module_utils {
 
 // Helper struct to register module names on application startup. It is used in TRACY_MODULE_NAME macro
