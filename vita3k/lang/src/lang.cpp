@@ -26,6 +26,11 @@
 #include <pugixml.hpp>
 
 namespace lang {
+
+static const std::vector<std::string> list_user_lang_static = {
+    "id", "ms"
+};
+
 void init_lang(LangState &lang, EmuEnvState &emuenv) {
     lang = {};
     emuenv.common_dialog.lang = {};
@@ -68,18 +73,21 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
     }
 
     const auto system_lang_path{ emuenv.static_assets_path / "lang/system" };
-    const auto user_lang_path{ emuenv.shared_path / "lang/user" };
+    const auto user_lang_shared_path{ emuenv.shared_path / "lang/user" };
+    const auto user_lang_static_path{ emuenv.static_assets_path / "lang/user" };
 
     // Create user lang folder if not exists and create a file to indicate where to place the lang files
-    if (!fs::exists(user_lang_path)) {
-        fs::create_directories(user_lang_path);
-        fs::ofstream outfile(user_lang_path / "PLACE USER LANG HERE.txt");
+    if (!fs::exists(user_lang_shared_path)) {
+        fs::create_directories(user_lang_shared_path);
+        fs::ofstream outfile(user_lang_shared_path / "PLACE USER LANG HERE.txt");
         outfile.close();
     }
 
+    const auto is_user_lang_static = std::find(list_user_lang_static.begin(), list_user_lang_static.end(), emuenv.cfg.user_lang) != list_user_lang_static.end();
+
     // Load lang xml
     pugi::xml_document lang_xml;
-    const auto lang_xml_path{ (emuenv.cfg.user_lang.empty() ? system_lang_path / lang.user_lang[GUI] : user_lang_path / emuenv.cfg.user_lang).replace_extension("xml") };
+    const auto lang_xml_path{ (emuenv.cfg.user_lang.empty() ? system_lang_path / lang.user_lang[GUI] : (is_user_lang_static ? user_lang_static_path : user_lang_shared_path) / emuenv.cfg.user_lang).replace_extension("xml") };
     if (fs::exists(lang_xml_path)) {
         if (lang_xml.load_file(lang_xml_path.c_str())) {
             // Lang

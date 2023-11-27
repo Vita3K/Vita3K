@@ -250,15 +250,19 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     }
 
     list_user_lang.clear();
-    const auto LANG_PATH{ emuenv.shared_path / "lang/user" };
-    if (fs::exists(LANG_PATH) && !fs::is_empty(LANG_PATH)) {
-        for (const auto &lang : fs::directory_iterator(LANG_PATH)) {
+    const auto get_list_user_lang = [&](const fs::path &path) {
+        for (const auto &lang : fs::directory_iterator(path / "lang/user")) {
             if (lang.path().extension() == ".xml") {
                 const auto lang_file_name = lang.path().filename().replace_extension().string();
                 list_user_lang.push_back(lang_file_name);
             }
         }
-    }
+    };
+
+    get_list_user_lang(emuenv.static_assets_path);
+    if (emuenv.static_assets_path != emuenv.shared_path)
+        get_list_user_lang(emuenv.shared_path);
+
     current_user_lang = emuenv.cfg.user_lang.empty() ? 0 : (std::distance(list_user_lang.begin(), std::find(list_user_lang.begin(), list_user_lang.end(), emuenv.cfg.user_lang))) + 1;
 
     get_modules_list(gui, emuenv);
@@ -920,12 +924,16 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.gui["info_bar_description"].c_str());
         ImGui::Spacing();
-        std::vector<const char *> list_user_lang_str{ "System" };
-        for (auto &l : list_user_lang)
-            list_user_lang_str.push_back(l.c_str());
+        std::vector<const char *> list_user_lang_str{ fmt::format("System: {}", get_sys_lang_name(emuenv.cfg.sys_lang)).c_str() };
+        static std::map<std::string, std::string> static_list_user_lang_names = {
+            { "id", "Indonesia" },
+            { "ms", "Malaysia" },
+        };
+        for (const auto &l : list_user_lang)
+            list_user_lang_str.push_back(static_list_user_lang_names.contains(l) ? static_list_user_lang_names[l].c_str() : l.c_str());
         if (ImGui::Combo(lang.gui["user_lang"].c_str(), &current_user_lang, list_user_lang_str.data(), static_cast<int>(list_user_lang_str.size()), 4)) {
             if (current_user_lang != 0)
-                emuenv.cfg.user_lang = list_user_lang_str[current_user_lang];
+                emuenv.cfg.user_lang = list_user_lang[current_user_lang - 1];
             else
                 emuenv.cfg.user_lang.clear();
 
