@@ -64,14 +64,11 @@ EXPORT(int, sceNpAuthGetAuthorizationCode) {
 
 EXPORT(int, sceNpCheckCallback) {
     TRACY_FUNC(sceNpCheckCallback);
-    if (emuenv.np.state == 0)
-        return 0;
-
-    emuenv.np.state = emuenv.cfg.current_config.psn_status;
 
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const SceNpServiceState state = emuenv.cfg.current_config.psn_signed_in ? SCE_NP_SERVICE_STATE_SIGNED_IN : SCE_NP_SERVICE_STATE_SIGNED_OUT;
     for (auto &callback : emuenv.np.cbs) {
-        thread->run_callback(callback.second.pc, { (uint32_t)emuenv.np.state, 0, callback.second.data });
+        thread->run_callback(callback.second.pc, { static_cast<uint32_t>(state), 0, callback.second.data });
     }
 
     return STUBBED("Stub");
@@ -79,7 +76,7 @@ EXPORT(int, sceNpCheckCallback) {
 
 EXPORT(int, sceNpGetServiceState, SceNpServiceState *state) {
     TRACY_FUNC(sceNpGetServiceState, state);
-    *state = static_cast<SceNpServiceState>(emuenv.cfg.current_config.psn_status);
+    *state = emuenv.cfg.current_config.psn_signed_in ? SCE_NP_SERVICE_STATE_SIGNED_IN : SCE_NP_SERVICE_STATE_SIGNED_OUT;
 
     return STUBBED("Stub");
 }

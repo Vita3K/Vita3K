@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <np/state.h>
-
 #include <util/log.h>
 #include <util/system.h>
 
@@ -142,7 +140,7 @@ enum PerfomanceOverleyPosition {
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
-    code(int, "psn-status", static_cast<int>(SCE_NP_SERVICE_STATE_UNKNOWN), psn_status)                 \
+    code(int, "psn-signed-in", false, psn_signed_in)                                                    \
     code(bool, "http-enable", true, http_enable)                                                        \
     code(int, "http-timeout-attempts", 50, http_timeout_attempts)                                       \
     code(int, "http-timeout-sleep-ms", 100, http_timeout_sleep_ms)                                      \
