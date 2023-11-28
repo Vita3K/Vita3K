@@ -2748,17 +2748,17 @@ EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags
     if (flags != 0)
         STUBBED("Flags ignored");
 
-    if (!immediateContext) {
+    if (!immediateContext)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    }
 
-    if ((flags & 0xFFFFFFFE) || (immediateContext->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE)) {
+    if ((flags & 0xFFFFFFFE) || (immediateContext->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE))
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    }
 
-    if (vertexSyncObject != nullptr) {
+    if (vertexSyncObject != nullptr)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    }
+
+    if (!immediateContext->state.active)
+        return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
 
     SceGxmNotification notification = vertexNotification ? *vertexNotification : SceGxmNotification{ Ptr<uint32_t>(0), 0 };
     renderer::add_command(immediateContext->renderer.get(), renderer::CommandOpcode::MidSceneFlush, nullptr, notification);
