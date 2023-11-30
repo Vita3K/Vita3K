@@ -216,12 +216,14 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     }
 
     LOG_INFO("Base path: {}", state.base_path.string());
+#if defined(__linux__) && !defined(__ANDROID__) && !defined(__APPLE__)
     LOG_INFO("Static assets path: {}", state.static_assets_path.string());
     LOG_INFO("Shared path: {}", state.shared_path.string());
     LOG_INFO("Log path: {}", state.log_path.string());
     LOG_INFO("User config path: {}", state.config_path.string());
-    LOG_INFO("User pref path: {}", state.pref_path.string());
     LOG_INFO("User cache path: {}", state.cache_path.string());
+#endif
+    LOG_INFO("User pref path: {}", state.pref_path.string());
 
     if (ImGui::GetCurrentContext() == NULL) {
         ImGui::CreateContext();
