@@ -79,9 +79,9 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &ro
     }
 
     if (cfg.pref_path.empty())
-        cfg.pref_path = root_pref_path.string();
+        cfg.set_pref_path(root_pref_path);
     else {
-        if (string_utils::utf_to_wide(cfg.pref_path) != root_pref_path && !fs::exists(string_utils::utf_to_wide(cfg.pref_path))) {
+        if (cfg.get_pref_path() != root_pref_path && !fs::exists(cfg.get_pref_path())) {
             LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
             return InvalidApplicationPath;
         }
@@ -94,8 +94,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     const auto output = check_path(output_path);
     if (output.empty())
         return InvalidApplicationPath;
-    if (!fs::exists(output.parent_path()))
-        fs::create_directories(output.parent_path());
+    fs::create_directories(output.parent_path());
 
     cfg.update_yaml();
 
@@ -151,11 +150,11 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
     input->add_option("--installed-path,-r", command_line.run_app_path, "Path to the installed app to run")
-        ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
+        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_pref_path() / "ux0/app")))->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
-        ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
+        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_pref_path() / "ux0/app")))->group("Input");
     input->add_option("--firmware", command_line.pup_path, "Path to the firmware file (.pup extension) to install");
     auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path to the app file (.pkg extension) to install")
         ->default_str({})->group("Input");
@@ -254,7 +253,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     command_line.update_yaml();
     cfg += command_line;
     if (cfg.pref_path.empty())
-        cfg.pref_path = root_paths.get_pref_path_string();
+        cfg.set_pref_path(root_paths.get_pref_path());
 
     if (!cfg.console) {
         LOG_INFO_IF(cfg.load_config, "Custom configuration file loaded successfully.");

@@ -20,6 +20,7 @@
 #include <util/types.h>
 
 #include <string>
+#include <util/fs.h>
 
 struct Config;
 struct KernelState;
@@ -27,4 +28,4 @@ struct MemState;
 template <class T>
 class Ptr;
 
-SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const std::string &dump_path);
+SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &log_path);

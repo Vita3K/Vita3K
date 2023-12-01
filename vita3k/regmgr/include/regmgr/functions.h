@@ -24,7 +24,7 @@
 
 namespace regmgr {
 
-void init_regmgr(RegMgrState &regmgr, const std::wstring &pref_path);
+void init_regmgr(RegMgrState &regmgr, const fs::path &pref_path);
 
 // Getters and setters for binary values
 void get_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, void *buf, uint32_t bufSize);

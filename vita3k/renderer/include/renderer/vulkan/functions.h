@@ -48,7 +48,7 @@ void sync_depth_bias(VKContext &context);
 void sync_depth_data(VKContext &context);
 void sync_stencil_data(VKContext &context, const MemState &mem);
 void sync_point_line_width(VKContext &context, const bool is_front);
-void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config, const std::string &title_id);
+void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config);
 void sync_viewport_flat(VKContext &context);
 void sync_viewport_real(VKContext &context, const float xOffset, const float yOffset, const float zOffset,
     const float xScale, const float yScale, const float zScale);

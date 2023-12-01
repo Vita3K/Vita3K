@@ -86,10 +86,9 @@ static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
     std::map<std::string, std::map<ThemePreviewType, std::string>> theme_preview_name;
     for (const auto &theme : fs::directory_iterator(theme_path)) {
         if (!theme.path().empty() && fs::is_directory(theme.path())) {
-            vfs::FileBuffer params;
-            const auto content_id_wstr = theme.path().filename().wstring();
-            const auto content_id = string_utils::wide_to_utf(content_id_wstr);
-            const auto theme_path_xml{ theme_path / content_id_wstr / "theme.xml" };
+            const auto content_id_path = theme.path().filename();
+            const auto content_id = fs_utils::path_to_utf8(content_id_path);
+            const auto theme_path_xml{ theme_path / content_id_path / "theme.xml" };
             pugi::xml_document doc;
 
             if (doc.load_file(theme_path_xml.c_str())) {
@@ -121,10 +120,10 @@ static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
                         return acc + fs::file_size(theme.path());
                     return acc;
                 };
-                const auto theme_content_ids = fs::recursive_directory_iterator(theme_path / content_id_wstr);
+                const auto theme_content_ids = fs::recursive_directory_iterator(theme_path / content_id_path);
                 const auto theme_size = std::accumulate(fs::begin(theme_content_ids), fs::end(theme_content_ids), boost::uintmax_t{}, pred);
 
-                const auto updated = fs::last_write_time(theme_path / content_id_wstr);
+                const auto updated = fs::last_write_time(theme_path / content_id_path);
                 SAFE_LOCALTIME(&updated, &themes_info[content_id].updated);
 
                 themes_info[content_id].size = theme_size / KiB(1);
@@ -151,29 +150,29 @@ static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
     } else
         LOG_WARN("Default theme not found, install firmware fix this!");
 
-    for (const auto &theme : themes_info) {
-        for (const auto &name : theme_preview_name[theme.first]) {
-            if (!name.second.empty()) {
+    for (const auto &[content_id, theme] : themes_info) {
+        for (const auto &[preview_type, theme_name] : theme_preview_name[content_id]) {
+            if (!theme_name.empty()) {
                 int32_t width = 0;
                 int32_t height = 0;
                 vfs::FileBuffer buffer;
 
-                if (theme.first == "default")
-                    vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path.wstring(), name.second);
+                if (content_id == "default")
+                    vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, theme_name);
                 else
-                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path.wstring(), fs::path("theme") / string_utils::utf_to_wide(theme.first) / name.second);
+                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / fs_utils::utf8_to_path(content_id) / theme_name);
 
                 if (buffer.empty()) {
-                    LOG_WARN("Background, Name: '{}', Not found for title: {} [{}].", name.second, theme.first, theme.second.title);
+                    LOG_WARN("Background, Name: '{}', Not found for title: {} [{}].", theme_name, content_id, theme.title);
                     continue;
                 }
                 stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                 if (!data) {
-                    LOG_ERROR("Invalid Background for title: {} [{}].", theme.first, theme.second.title);
+                    LOG_ERROR("Invalid Background for title: {} [{}].", content_id, theme.title);
                     continue;
                 }
 
-                gui.themes_preview[theme.first][name.first].init(gui.imgui_state.get(), data, width, height);
+                gui.themes_preview[content_id][preview_type].init(gui.imgui_state.get(), data, width, height);
                 stbi_image_free(data);
             }
         }
@@ -464,7 +463,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                                 save_user(gui, emuenv, emuenv.io.user_id);
                                 init_theme_start_background(gui, emuenv, "default");
                             }
-                            fs::remove_all(emuenv.pref_path / "ux0/theme" / string_utils::utf_to_wide(selected));
+                            fs::remove_all(emuenv.pref_path / "ux0/theme" / fs_utils::utf8_to_path(selected));
                             if (emuenv.app_path == "NPXS10026")
                                 init_content_manager(gui, emuenv);
                             delete_theme = selected;
@@ -603,8 +602,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         std::filesystem::path image_path = "";
                         host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(image_path, { { "Image file", { "bmp", "gif", "jpg", "png", "tif" } } });
 
-                        if ((result == host::dialog::filesystem::Result::SUCCESS) && init_user_start_background(gui, image_path.string())) {
-                            gui.users[emuenv.io.user_id].start_path = image_path.string();
+                        if ((result == host::dialog::filesystem::Result::SUCCESS) && init_user_start_background(gui, fs_utils::path_to_utf8(image_path.native()))) {
+                            gui.users[emuenv.io.user_id].start_path = fs_utils::path_to_utf8(image_path.native());
                             gui.users[emuenv.io.user_id].start_type = "image";
                             save_user(gui, emuenv, emuenv.io.user_id);
                         }

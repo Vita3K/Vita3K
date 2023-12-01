@@ -26,10 +26,10 @@ namespace regmgr {
 
 constexpr std::array<unsigned char, 16> xorKey = { 0x89, 0xFA, 0x95, 0x48, 0xCB, 0x6D, 0x77, 0x9D, 0xA2, 0x25, 0x34, 0xFD, 0xA9, 0x35, 0x59, 0x6E };
 
-static std::string decryptRegistryFile(const fs::path reg_path) {
-    std::ifstream file(reg_path.string(), std::ios::binary);
+static std::string decryptRegistryFile(const fs::path &reg_path) {
+    fs::ifstream file(reg_path, std::ios::binary);
     if (!file.is_open()) {
-        LOG_WARN("Error while opening file: {}, install firmware for solve this!", reg_path.string());
+        LOG_WARN("Error while opening file: {}, install firmware for solve this!", reg_path);
         return {};
     }
 
@@ -38,7 +38,7 @@ static std::string decryptRegistryFile(const fs::path reg_path) {
 
     // Check if file is empty
     if (encryptedData.empty()) {
-        LOG_DEBUG("File is empty: {}", reg_path.string());
+        LOG_DEBUG("File is empty: {}", reg_path);
         return {};
     }
 
@@ -406,9 +406,9 @@ void set_str_value(RegMgrState &regmgr, const std::string &category, const std::
     save_system_dreg(regmgr);
 }
 
-void init_regmgr(RegMgrState &regmgr, const std::wstring &pref_path) {
+void init_regmgr(RegMgrState &regmgr, const fs::path &pref_path) {
     // Load the registry template
-    const auto reg = decryptRegistryFile(fs::path(pref_path) / "os0/kd/registry.db0");
+    const auto reg = decryptRegistryFile(pref_path / "os0/kd/registry.db0");
     if (reg.empty()) {
         return;
     }
@@ -417,7 +417,7 @@ void init_regmgr(RegMgrState &regmgr, const std::wstring &pref_path) {
     init_reg_template(regmgr, reg);
 
     // Initialize the system.dreg
-    regmgr.system_dreg_path = pref_path + L"vd0/registry/system.dreg";
+    regmgr.system_dreg_path = pref_path / "vd0/registry/system.dreg";
     regmgr.system_dreg.clear();
     if (!load_system_dreg(regmgr)) {
         LOG_WARN("Failed to load system.dreg, attempting to create it");

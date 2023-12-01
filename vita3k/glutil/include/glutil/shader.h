@@ -18,8 +18,8 @@
 #pragma once
 
 #include <glutil/object.h>
-#include <string>
+#include <util/fs.h>
 
 namespace gl {
-UniqueGLObject load_shaders(const std::string &vertex_file_path, const std::string &fragment_file_path);
+UniqueGLObject load_shaders(const fs::path &vertex_file_path, const fs::path &fragment_file_path);
 }

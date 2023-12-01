@@ -30,7 +30,7 @@ void hex_buf(const std::uint8_t *hash, char *dst, const std::size_t source_size)
 
 template <size_t N>
 const std::string hex_string(const std::array<uint8_t, N> &hash) {
-    std::string dst(2 * N + 1, 0);
+    std::string dst(2 * N, 0);
     hex_buf(hash.data(), dst.data(), N);
 
     return dst;

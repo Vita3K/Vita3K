@@ -21,7 +21,6 @@
 #include <glutil/object.h>
 
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <fstream>
 #include <sstream>
@@ -34,7 +33,7 @@
  * \param fragment_file_path File path of the fragment shader
  * \return SharedGLObject that holds the resulting program id. Empty if loading was unsuccessful
  */
-UniqueGLObject gl::load_shaders(const std::string &vertex_file_path, const std::string &fragment_file_path) {
+UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path &fragment_file_path) {
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 

@@ -242,14 +242,13 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
 
     const auto thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
 
-    auto file_path = expand_path(emuenv.io, path.get(emuenv.mem), emuenv.pref_path.wstring());
+    auto file_path = expand_path(emuenv.io, path.get(emuenv.mem), emuenv.pref_path);
     if (!fs::exists(file_path) && player_info->file_manager.open_file && player_info->file_manager.close_file && player_info->file_manager.read_file && player_info->file_manager.file_size) {
-        if (!fs::exists(emuenv.cache_path))
-            fs::create_directories(emuenv.cache_path);
+        fs::create_directories(emuenv.cache_path);
 
         // Create temp media file
         const auto temp_file_path = emuenv.cache_path / "temp_vita_media.mp4";
-        std::ofstream temp_file(temp_file_path.string(), std::ios::out | std::ios::binary);
+        fs::ofstream temp_file(temp_file_path, std::ios::out | std::ios::binary);
 
         const Address buf = alloc(emuenv.mem, KiB(512), "AvPlayer buffer");
         const auto buf_ptr = Ptr<char>(buf).get(emuenv.mem);
@@ -270,13 +269,13 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         temp_file.close();
         thread->run_callback(player_info->file_manager.close_file.address(), { player_info->file_manager.user_data });
         if (fs::file_size(temp_file_path) != file_size) {
-            LOG_ERROR("File is corrupted or incomplete: {}", temp_file_path.string());
+            LOG_ERROR("File is corrupted or incomplete: {}", temp_file_path);
             return -1;
         }
-        file_path = temp_file_path.string();
+        file_path = temp_file_path;
     }
 
-    player_info->player.queue(file_path);
+    player_info->player.queue(file_path.string());
     run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_BUFFERING, 0, Ptr<void>(0)); // may be important for sound
     run_event_callback(emuenv, thread, player_info, SCE_AVPLAYER_STATE_READY, 0, Ptr<void>(0));
     return 0;

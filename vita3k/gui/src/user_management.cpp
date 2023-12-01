@@ -54,28 +54,23 @@ struct AvatarInfo {
 };
 
 static std::map<std::string, std::map<AvatarSize, AvatarInfo>> users_avatar_infos;
-static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string avatar_path) {
-    const auto avatar_path_wstr = avatar_path == "default" ? emuenv.static_assets_path / "data/image/icon.png"
-                                                           : fs::path(string_utils::utf_to_wide(avatar_path));
+static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string &avatar_path) {
+    const auto avatar_path_path = avatar_path == "default" ? emuenv.static_assets_path / "data/image/icon.png" : fs_utils::utf8_to_path(avatar_path);
 
-    if (!fs::exists(avatar_path_wstr)) {
-        LOG_WARN("Avatar image doesn't exist: {}.", avatar_path_wstr.string());
+    if (!fs::exists(avatar_path_path)) {
+        LOG_WARN("Avatar image doesn't exist: {}.", avatar_path_path);
         return false;
     }
 
     int32_t width = 0;
     int32_t height = 0;
 
-#ifdef _WIN32
-    FILE *f = _wfopen(avatar_path_wstr.c_str(), L"rb");
-#else
-    FILE *f = fopen(avatar_path_wstr.c_str(), "rb");
-#endif
+    FILE *f = FOPEN(avatar_path_path.c_str(), "rb");
 
     stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!data) {
-        LOG_ERROR("Invalid or corrupted image: {}.", avatar_path_wstr.string());
+        LOG_ERROR("Invalid or corrupted image: {}.", avatar_path_path);
         return false;
     }
 
@@ -158,8 +153,7 @@ void get_users_list(GuiState &gui, EmuEnvState &emuenv) {
 
 void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
     const auto user_path{ emuenv.pref_path / "ux0/user" / user_id };
-    if (!fs::exists(user_path))
-        fs::create_directory(user_path);
+    fs::create_directories(user_path);
 
     const auto &user = gui.users[user_id];
 
@@ -196,7 +190,7 @@ void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
 
     const auto save_xml = user_xml.save_file((user_path / "user.xml").c_str());
     if (!save_xml)
-        LOG_ERROR("Fail save xml for user id: {}, name: {}, in path: {}", user.id, user.name, user_path.string());
+        LOG_ERROR("Fail save xml for user id: {}, name: {}, in path: {}", user.id, user.name, user_path);
 }
 
 enum UserMenu {

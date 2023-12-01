@@ -70,7 +70,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
         result = host::dialog::filesystem::open_file(license_path, { { "PlayStation Vita software license file", { "bin", "rif" } } });
         if (result == host::dialog::filesystem::Result::SUCCESS) {
-            if (copy_license(emuenv, fs::path(license_path.wstring())))
+            if (copy_license(emuenv, fs::path(license_path.native())))
                 state = "success";
             else
                 state = "fail";
@@ -114,7 +114,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
         if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
             if (delete_license_file) {
-                fs::remove(fs::path(license_path.wstring()));
+                fs::remove(fs::path(license_path.native()));
                 delete_license_file = false;
             }
             license_path = nullptr;

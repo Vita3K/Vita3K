@@ -50,43 +50,44 @@ static void ctr_init(uint8_t *counter, uint8_t *iv, uint64_t n) {
     }
 }
 
-bool decrypt_install_nonpdrm(EmuEnvState &emuenv, std::string &drmlicpath, const std::string &title_path) {
-    std::string title_id_src = title_path;
-    std::string title_id_dst = title_path + "_dec";
-    fs::ifstream binfile(string_utils::utf_to_wide(drmlicpath), std::ios::in | std::ios::binary | std::ios::ate);
+int execute(std::string &zrif, fs::path &title_src, fs::path &title_dst, F00DEncryptorTypes type, std::string &f00d_arg) {
+    std::string title_src_str = title_src.string();
+    std::string title_dst_str = title_dst.string();
+    return execute(zrif, title_src_str, title_dst_str, type, f00d_arg);
+}
+
+bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, const fs::path &title_path) {
+    fs::path title_id_src = title_path;
+    fs::path title_id_dst = fs_utils::path_concat(title_path, "_dec");
+    fs::ifstream binfile(drmlicpath, std::ios::in | std::ios::binary | std::ios::ate);
     std::string zRIF = rif2zrif(binfile);
     F00DEncryptorTypes f00d_enc_type = F00DEncryptorTypes::native;
     std::string f00d_arg = std::string();
 
-    if ((execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) && (title_path.find("theme") == std::string::npos))
+    if ((execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) && (title_path.string().find("theme") == std::string::npos))
         return false;
 
     if (emuenv.app_info.app_category.find("gp") == std::string::npos)
         copy_license(emuenv, drmlicpath);
 
-    fs::remove_all(fs::path(title_id_src));
-    fs::rename(fs::path(title_id_dst), fs::path(title_id_src));
+    fs::remove_all(title_id_src);
+    fs::rename(title_id_dst, title_id_src);
 
     KeyStore SCE_KEYS;
     register_keys(SCE_KEYS, 1);
     std::vector<uint8_t> temp_klicensee = get_temp_klicensee(zRIF);
 
     for (const auto &file : fs::recursive_directory_iterator(title_id_src)) {
-        if ((file.path().extension() == ".suprx") || (file.path().extension() == ".self") || (file.path().filename() == "eboot.bin")) {
-            uint64_t authid = 0x2F00000000000001ULL;
-            self2elf(file.path().string(), file.path().string() + "elf", SCE_KEYS, temp_klicensee.data(), &authid);
-            fs::rename(file.path().string() + "elf", file.path().string());
-            make_fself(file.path().string(), file.path().string() + "fself", authid);
-            fs::rename(file.path().string() + "fself", file.path().string());
-            LOG_INFO("Decrypted {} with klicensee {}", file.path().string(), byte_array_to_string(temp_klicensee.data(), 16));
+        if (is_self(file.path())) {
+            decrypt_fself(file.path(), SCE_KEYS, temp_klicensee.data());
+            LOG_INFO("Decrypted {} with klicensee {}", file.path(), byte_array_to_string(temp_klicensee.data(), 16));
         }
     }
 
     return true;
 }
 
-bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback) {
-    std::wstring pkg_path = string_utils::utf_to_wide(pkg);
+bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback) {
     fs::ifstream infile(pkg_path, std::ios::binary);
     PkgHeader pkg_header;
     PkgExtHeader ext_header;
@@ -270,9 +271,9 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
         LOG_INFO(string_name);
 
         if ((byte_swap(entry.type) & 0xFF) == 4 || (byte_swap(entry.type) & 0xFF) == 18) { // Directory
-            fs::create_directories(path.string() + "/" + string_name);
+            fs::create_directories(path / string_name);
         } else { // File
-            std::ofstream outfile(path.string() + "/" + string_name, std::ios::binary);
+            fs::ofstream outfile(path / string_name, std::ios::binary);
 
             auto offset = byte_swap(entry.data_offset);
             auto data_size = byte_swap(entry.data_size);
@@ -303,9 +304,8 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
     infile.close();
 
     evp_cleanup();
-
-    std::string title_id_src = path.string();
-    std::string title_id_dst = path.string() + "_dec";
+    fs::path title_id_src = path;
+    fs::path title_id_dst = fs_utils::path_concat(path, "_dec");
     std::string zRIF = p_zRIF;
     F00DEncryptorTypes f00d_enc_type = F00DEncryptorTypes::native;
     std::string f00d_arg = std::string();
@@ -322,13 +322,13 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
         if (execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) {
             return false;
         }
-        fs::remove_all(fs::path(title_id_src));
-        fs::rename(fs::path(title_id_dst), fs::path(title_id_src));
+        fs::remove_all(title_id_src);
+        fs::rename(title_id_dst, title_id_src);
 
         for (const auto &file : fs::recursive_directory_iterator(title_id_src)) {
             if (is_self(file.path())) {
                 decrypt_fself(file.path(), SCE_KEYS, temp_klicensee.data());
-                LOG_INFO("Decrypted {} with klicensee {}", file.path().string(), byte_array_to_string(temp_klicensee.data(), 16));
+                LOG_INFO("Decrypted {} with klicensee {}", file.path(), byte_array_to_string(temp_klicensee.data(), 16));
             }
         }
         break;
@@ -337,8 +337,8 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
         if (execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) {
             return false;
         } else {
-            fs::remove_all(fs::path(title_id_src));
-            fs::rename(fs::path(title_id_dst), fs::path(title_id_src));
+            fs::remove_all(title_id_src);
+            fs::rename(title_id_dst, title_id_src);
             return true;
         }
         break;
@@ -347,13 +347,13 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
 
         // Theme don't have keystone file, need skip error
         execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg);
-        fs::remove_all(fs::path(title_id_src));
-        fs::rename(fs::path(title_id_dst), fs::path(title_id_src));
+        fs::remove_all(title_id_src);
+        fs::rename(title_id_dst, title_id_src);
         return true;
         break;
     }
 
-    if (!copy_path(title_id_src, emuenv.pref_path.wstring(), emuenv.app_info.app_title_id, emuenv.app_info.app_category))
+    if (!copy_path(title_id_src, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
     create_license(emuenv, zRIF);

@@ -212,7 +212,7 @@ static void get_content_info(GuiState &gui, EmuEnvState &emuenv) {
 
             const auto content_path{ fs::path("addcont") / app_selected / content_id };
             vfs::FileBuffer params;
-            if (vfs::read_file(VitaIoDevice::ux0, params, emuenv.pref_path.wstring(), content_path.string() + "/sce_sys/param.sfo")) {
+            if (vfs::read_file(VitaIoDevice::ux0, params, emuenv.pref_path, content_path / "sce_sys/param.sfo")) {
                 SfoFile sfo_handle;
                 sfo::load(sfo_handle, params);
                 if (!sfo::get_data_by_key(addcont_info[content_id].name, sfo_handle, fmt::format("TITLE_{:0>2d}", emuenv.cfg.sys_lang)))

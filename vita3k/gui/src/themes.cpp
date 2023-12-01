@@ -39,26 +39,20 @@ std::string get_theme_title_from_buffer(const vfs::FileBuffer &buffer) {
 static constexpr ImVec2 background_size(960.f, 512.f), background_preview_size(226.f, 128.f);
 
 bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string &background_path) {
-    const std::wstring background_path_wstr = string_utils::utf_to_wide(background_path);
-
-    if (!fs::exists(fs::path(background_path_wstr))) {
-        LOG_WARN("Background doesn't exist: {}.", background_path);
+    auto background_path_path = fs_utils::utf8_to_path(background_path);
+    if (!fs::exists(background_path_path)) {
+        LOG_WARN("Background doesn't exist: {}.", background_path_path);
         return false;
     }
 
     int32_t width = 0;
     int32_t height = 0;
 
-#ifdef _WIN32
-    FILE *f = _wfopen(background_path_wstr.c_str(), L"rb");
-#else
-    FILE *f = fopen(background_path.c_str(), "rb");
-#endif
-
+    FILE *f = FOPEN(background_path_path.c_str(), "rb");
     stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!data) {
-        LOG_ERROR("Invalid or corrupted background: {}.", background_path);
+        LOG_ERROR("Invalid or corrupted background: {}.", background_path_path);
         return false;
     }
 
@@ -124,9 +118,9 @@ void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::
     start_param = {};
     gui.start_background = {};
 
-    const auto content_id_wstr{ fs::path(string_utils::utf_to_wide(content_id)) };
+    const auto content_id_path{ fs_utils::utf8_to_path(content_id) };
     if (!content_id.empty() && (content_id != "default")) {
-        const auto THEME_PATH_XML{ emuenv.pref_path / "ux0/theme" / content_id_wstr / "theme.xml" };
+        const auto THEME_PATH_XML{ emuenv.pref_path / "ux0/theme" / content_id_path / "theme.xml" };
         pugi::xml_document doc;
         if (doc.load_file(THEME_PATH_XML.c_str())) {
             const auto theme = doc.child("theme");
@@ -167,13 +161,13 @@ void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::
     if (theme_start_name.empty()) {
         const auto DEFAULT_START_PATH{ fs::path("data/internal/keylock/keylock.png") };
         if (fs::exists(emuenv.pref_path / "vs0" / DEFAULT_START_PATH))
-            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path.wstring(), DEFAULT_START_PATH);
+            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, DEFAULT_START_PATH);
         else {
             LOG_WARN("Default start background not found, install firmware for fix this.");
             return;
         }
     } else
-        vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path.wstring(), fs::path("theme") / content_id_wstr / theme_start_name);
+        vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_path / theme_start_name);
 
     if (buffer.empty()) {
         LOG_WARN("Background not found: '{}', for content id: {}.", theme_start_name, content_id);
@@ -190,8 +184,8 @@ void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::
 }
 
 bool init_user_start_background(GuiState &gui, const std::string &image_path) {
-    const std::wstring image_path_wstr = string_utils::utf_to_wide(image_path);
-    if (!fs::exists(image_path_wstr)) {
+    const fs::path image_path_path = fs_utils::utf8_to_path(image_path);
+    if (!fs::exists(image_path_path)) {
         LOG_WARN("Image doesn't exist: {}.", image_path);
         return false;
     }
@@ -202,12 +196,7 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
     int32_t width = 0;
     int32_t height = 0;
 
-#ifdef _WIN32
-    FILE *f = _wfopen(image_path_wstr.c_str(), L"rb");
-#else
-    FILE *f = fopen(image_path.c_str(), "rb");
-#endif
-
+    FILE *f = FOPEN(image_path_path.c_str(), "rb");
     stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!data) {
@@ -238,10 +227,10 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
     gui.theme_backgrounds_font_color.clear();
     gui.theme_information_bar_notice.clear();
 
-    const auto content_id_wstr = string_utils::utf_to_wide(content_id);
+    const auto content_id_path = fs_utils::utf8_to_path(content_id);
 
     if (content_id != "default") {
-        const auto THEME_XML_PATH{ emuenv.pref_path / "ux0/theme" / content_id_wstr / "theme.xml" };
+        const auto THEME_XML_PATH{ emuenv.pref_path / "ux0/theme" / content_id_path / "theme.xml" };
         pugi::xml_document doc;
 
         if (doc.load_file(THEME_XML_PATH.c_str())) {
@@ -301,7 +290,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                     const auto type = notice.first;
                     const auto name = notice.second;
 
-                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path.wstring(), fs::path("theme") / content_id_wstr / name);
+                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_path / name);
 
                     if (buffer.empty()) {
                         LOG_WARN("Notice icon, Name: '{}', Not found for content id: {}.", name, content_id);
@@ -317,7 +306,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                 }
             }
         } else
-            LOG_ERROR("theme.xml not found for Content ID: {}, in path: {}", content_id, THEME_XML_PATH.string());
+            LOG_ERROR("theme.xml not found for Content ID: {}, in path: {}", content_id, THEME_XML_PATH);
     } else {
         const std::vector<std::string> app_id_bg_list = {
             "NPXS10002",
@@ -340,9 +329,9 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         const auto title_id = icon.first;
         const auto name = icon.second;
         if (name.empty())
-            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path.wstring(), "app/" + title_id + "/sce_sys/icon0.png");
+            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + title_id + "/sce_sys/icon0.png");
         else
-            vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path.wstring(), fs::path("theme") / content_id_wstr / name);
+            vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_path / name);
 
         if (buffer.empty()) {
             buffer = init_default_icon(gui, emuenv);
@@ -368,9 +357,9 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         vfs::FileBuffer buffer;
 
         if (content_id == "default")
-            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path.wstring(), "app/" + bg + "/sce_sys/pic0.png");
+            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + bg + "/sce_sys/pic0.png");
         else
-            vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path.wstring(), fs::path("theme") / content_id_wstr / bg);
+            vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_path / bg);
 
         if (buffer.empty()) {
             LOG_WARN("Background not found: '{}', for content id: {}.", bg, content_id);

@@ -600,15 +600,10 @@ void register_keys(KeyStore &SCE_KEYS, int type) {
     }
 }
 
-static void extract_file(Fat16::Image &img, Fat16::Entry &entry, const std::wstring &path) {
+static void extract_file(Fat16::Image &img, Fat16::Entry &entry, const fs::path &path) {
     const std::u16string filename_16 = entry.get_filename();
-    const std::wstring filename = path + std::wstring(filename_16.begin(), filename_16.end());
-
-#ifdef _WIN32
-    FILE *f = _wfopen(filename.c_str(), L"wb");
-#else
-    FILE *f = fopen(string_utils::wide_to_utf(filename).c_str(), "wb");
-#endif
+    const fs::path filename = path / std::wstring(filename_16.begin(), filename_16.end());
+    FILE *f = FOPEN(filename.native().c_str(), "wb");
 
     static constexpr std::uint32_t CHUNK_SIZE = 0x10000;
 
@@ -633,7 +628,7 @@ static void extract_file(Fat16::Image &img, Fat16::Entry &entry, const std::wstr
     fclose(f);
 }
 
-static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, const std::wstring &dir_path) {
+static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, const fs::path &dir_path) {
     fs::create_directories(dir_path);
 
     while (img.get_next_entry(mee)) {
@@ -647,22 +642,18 @@ static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, const std::w
 
                 auto dir_name = mee.get_filename();
 
-                traverse_directory(img, baby, dir_path + L"/" + std::wstring(dir_name.begin(), dir_name.end()) + L"/");
+                traverse_directory(img, baby, dir_path / std::wstring(dir_name.begin(), dir_name.end()) / "");
             }
         }
 
         if (mee.entry.file_attributes & (int)Fat16::EntryAttribute::ARCHIVE) {
-            extract_file(img, mee, dir_path + L"/");
+            extract_file(img, mee, dir_path / "");
         }
     }
 }
 
-void extract_fat(const std::wstring &partition_path, const std::string &partition, const std::wstring &pref_path) {
-#ifdef _WIN32
-    FILE *f = _wfopen((partition_path + L"/" + string_utils::utf_to_wide(partition)).c_str(), L"rb");
-#else
-    FILE *f = fopen((string_utils::wide_to_utf(partition_path) + "/" + partition).c_str(), "rb");
-#endif
+void extract_fat(const fs::path &partition_path, const std::string &partition, const fs::path &pref_path) {
+    FILE *f = FOPEN((partition_path / partition).native().c_str(), "rb");
     Fat16::Image img(
         f,
         // Read hook
@@ -677,7 +668,7 @@ void extract_fat(const std::wstring &partition_path, const std::string &partitio
         });
 
     Fat16::Entry first;
-    traverse_directory(img, first, pref_path + std::wstring{ fs::path::preferred_separator } + string_utils::utf_to_wide(partition.substr(0, 3)));
+    traverse_directory(img, first, pref_path / partition.substr(0, 3));
 
     fclose(f);
 }

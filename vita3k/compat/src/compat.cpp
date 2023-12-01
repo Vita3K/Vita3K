@@ -45,7 +45,7 @@ static const uint32_t db_version = 1;
 bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto app_compat_db_path = emuenv.cache_path / "app_compat_db.xml";
     if (!fs::exists(app_compat_db_path)) {
-        LOG_WARN("Compatibility database not found at {}.", app_compat_db_path.string());
+        LOG_WARN("Compatibility database not found at {}.", app_compat_db_path);
         return false;
     }
 
@@ -53,7 +53,7 @@ bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(app_compat_db_path.c_str());
     if (!result) {
-        LOG_ERROR("Compatibility database {} could not be loaded: {}", app_compat_db_path.string(), result.description());
+        LOG_ERROR("Compatibility database {} could not be loaded: {}", app_compat_db_path, result.description());
         return false;
     }
 

@@ -44,7 +44,7 @@ static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::st
     std::string fname = fs::exists(change_info_path / fmt::format("changeinfo_{:0>2d}.xml", emuenv.cfg.sys_lang)) ? fmt::format("changeinfo_{:0>2d}.xml", emuenv.cfg.sys_lang) : "changeinfo.xml";
 
     pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load_file((change_info_path.string() + fname).c_str());
+    pugi::xml_parse_result result = doc.load_file((change_info_path / fname).c_str());
 
     for (const auto &info : doc.child("changeinfo"))
         update_history_infos[info.attribute("app_ver").as_double()] = info.text().as_string();
@@ -155,7 +155,7 @@ void get_time_apps(GuiState &gui, EmuEnvState &emuenv) {
                 }
             }
         } else {
-            LOG_ERROR("Time XML found is corrupted on path: {}", time_path.string());
+            LOG_ERROR("Time XML found is corrupted on path: {}", time_path);
             fs::remove(time_path);
         }
     }
@@ -240,6 +240,9 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         const auto SHADER_LOG_PATH{ emuenv.cache_path / "shaderlog" / title_id };
         if (fs::exists(SHADER_LOG_PATH))
             fs::remove_all(SHADER_LOG_PATH);
+        const auto SHADER_LOG_PATH_2{ emuenv.log_path / "shaderlog" / title_id };
+        if (fs::exists(SHADER_LOG_PATH_2))
+            fs::remove_all(SHADER_LOG_PATH_2);
         const auto EXPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/export" / title_id };
         if (fs::exists(EXPORT_TEXTURES_PATH))
             fs::remove_all(EXPORT_TEXTURES_PATH);

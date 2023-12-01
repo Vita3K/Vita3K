@@ -45,12 +45,12 @@ enum struct Filter : int {
 };
 
 struct State {
-    std::string cache_path;
-    std::string log_path;
-    std::string shared_path;
+    fs::path cache_path;
+    fs::path log_path;
+    fs::path shared_path;
     fs::path static_assets;
-    const char *title_id;
-    const char *self_name;
+    fs::path shaders_path;
+    fs::path shaders_log_path;
 
     Backend current_backend;
     FeatureState features;
@@ -81,7 +81,7 @@ struct State {
 
     bool need_page_table = false;
 
-    virtual bool init(const fs::path &static_assets, const bool hashless_texture_cache) = 0;
+    virtual bool init() = 0;
     virtual void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) = 0;
 
     virtual TextureCache *get_texture_cache() = 0;
@@ -118,5 +118,21 @@ struct State {
     virtual void preclose_action() = 0;
 
     virtual ~State() = default;
+
+    fs::path texture_folder() const {
+        return shared_path / "textures";
+    }
+
+    void init_paths(const Root &root_paths) {
+        cache_path = root_paths.get_cache_path();
+        log_path = root_paths.get_log_path();
+        shared_path = root_paths.get_shared_path();
+        static_assets = root_paths.get_static_assets_path();
+    }
+
+    void set_app(const char *title_id, const char *self_name) {
+        shaders_path = cache_path / "shaders" / title_id / self_name;
+        shaders_log_path = log_path / "shaderlog" / title_id / self_name;
+    }
 };
 } // namespace renderer
