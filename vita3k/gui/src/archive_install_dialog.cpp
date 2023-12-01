@@ -139,7 +139,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     } else
                         invalid_archives.push_back(archive_path);
                 };
-                const auto contents_path = fs::path(archive_path.wstring());
+                const auto contents_path = fs::path(archive_path.native());
                 if (type == "directory") {
                     const auto archives_path = get_path_of_archives(contents_path);
                     archives_count = float(archives_path.size());
@@ -193,7 +193,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
             ImGui::BeginChild("##content_installed_list", ImVec2(WINDOW_SIZE.x - (10.f * SCALE.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25 * SCALE.y)), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
             if (!contents_archives.empty()) {
-                const auto count_content_state = [&](const fs::path path, const bool state) {
+                const auto count_content_state = [&](const fs::path &path, const bool state) {
                     return std::count_if(contents_archives[path].begin(), contents_archives[path].end(), [&](const ContentInfo &c) {
                         return c.state == state;
                     });
@@ -204,7 +204,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Spacing();
                 ImGui::Separator();
                 for (const auto &archive : contents_archives) {
-                    ImGui::TextWrapped("%s", string_utils::wide_to_utf(archive.first.filename().wstring()).c_str());
+                    ImGui::TextWrapped("%s", fs_utils::path_to_utf8(archive.first.filename()).c_str());
                     ImGui::Spacing();
                     const auto count_contents_successed = count_content_state(archive.first, true);
                     if (count_contents_successed) {
@@ -240,7 +240,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", not_compatible_content_str.c_str());
                 ImGui::Spacing();
                 for (const auto &archive : invalid_archives)
-                    ImGui::TextWrapped("%s", archive.filename().string().c_str());
+                    ImGui::TextWrapped("%s", fs_utils::path_to_utf8(archive.filename()).c_str());
             }
             ImGui::EndChild();
             ImGui::PopStyleVar();

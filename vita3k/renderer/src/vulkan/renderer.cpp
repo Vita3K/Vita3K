@@ -176,7 +176,7 @@ VKState::VKState(int gpu_idx)
     , screen_renderer(*this) {
 }
 
-bool VKState::init(const fs::path &static_assets, const bool hashless_texture_cache) {
+bool VKState::init() {
     shader_version = fmt::format("v{}", shader::CURRENT_VERSION);
     return true;
 }
@@ -649,8 +649,7 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
 
     pipeline_cache.init();
 
-    const fs::path texture_folder = fs::path(shared_path) / "textures";
-    texture_cache.init(false, texture_folder, game_id);
+    texture_cache.init(false, texture_folder(), game_id);
 }
 
 void VKState::cleanup() {
@@ -959,7 +958,7 @@ void VKState::precompile_shader(const ShadersHash &hash) {
 
 void VKState::preclose_action() {
     // make sure we are in a game
-    if (!title_id[0])
+    if (shaders_path.empty())
         return;
 
     pipeline_cache.save_pipeline_cache();

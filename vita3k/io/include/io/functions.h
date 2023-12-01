@@ -40,7 +40,7 @@ bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, con
 bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &translated_path, const fs::path &system_path);
 fs::path find_in_cache(IOState &io, const std::string &system_path);
 
-std::string expand_path(IOState &io, const char *path, const std::wstring &pref_path);
+fs::path expand_path(IOState &io, const char *path, const fs::path &pref_path);
 std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths);
 
 /**
@@ -64,25 +64,25 @@ bool copy_directories(const fs::path &src_path, const fs::path &dst_path);
  * @return true Success
  * @return false Error
  */
-bool copy_path(const fs::path &src_path, const std::wstring &pref_path, const std::string &app_title_id, const std::string &app_category);
+bool copy_path(const fs::path &src_path, const fs::path &pref_path, const std::string &app_title_id, const std::string &app_category);
 
-SceUID open_file(IOState &io, const char *path, const int flags, const std::wstring &pref_path, const char *export_name);
+SceUID open_file(IOState &io, const char *path, const int flags, const fs::path &pref_path, const char *export_name);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name);
 int truncate_file(SceUID fd, unsigned long long length, const IOState &io, const char *export_name);
 SceOff seek_file(SceUID fd, SceOff offset, SceIoSeekMode whence, IOState &io, const char *export_name);
 SceOff tell_file(IOState &io, const SceUID fd, const char *export_name);
-int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::wstring &pref_path, const char *export_name, SceUID fd = invalid_fd);
-int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const std::wstring &pref_path, const char *export_name);
+int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &pref_path, const char *export_name, SceUID fd = invalid_fd);
+int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const fs::path &pref_path, const char *export_name);
 int close_file(IOState &io, SceUID fd, const char *export_name);
-int remove_file(IOState &io, const char *file, const std::wstring &pref_path, const char *export_name);
-int rename(IOState &io, const char *old_name, const char *new_name, const std::wstring &pref_path, const char *export_name);
+int remove_file(IOState &io, const char *file, const fs::path &pref_path, const char *export_name);
+int rename(IOState &io, const char *old_name, const char *new_name, const fs::path &pref_path, const char *export_name);
 
-SceUID open_dir(IOState &io, const char *path, const std::wstring &pref_path, const char *export_name);
-SceUID read_dir(IOState &io, SceUID fd, SceIoDirent *dent, const std::wstring &pref_path, const char *export_name);
-int create_dir(IOState &io, const char *dir, int mode, const std::wstring &pref_path, const char *export_name, const bool recursive = false);
+SceUID open_dir(IOState &io, const char *path, const fs::path &pref_path, const char *export_name);
+SceUID read_dir(IOState &io, SceUID fd, SceIoDirent *dent, const fs::path &pref_path, const char *export_name);
+int create_dir(IOState &io, const char *dir, int mode, const fs::path &pref_path, const char *export_name, const bool recursive = false);
 int close_dir(IOState &io, SceUID fd, const char *export_name);
-int remove_dir(IOState &io, const char *dir, const std::wstring &pref_path, const char *export_name);
+int remove_dir(IOState &io, const char *dir, const fs::path &pref_path, const char *export_name);
 
 // SceFios functions
 SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay);

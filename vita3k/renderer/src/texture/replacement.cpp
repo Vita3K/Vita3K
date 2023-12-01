@@ -595,8 +595,7 @@ void TextureCache::refresh_available_textures() {
         return;
 
     auto look_through_folder = [&]<typename F>(const fs::path &folder, F on_texture_found) {
-        if (!fs::exists(folder))
-            fs::create_directories(folder);
+        fs::create_directories(folder);
 
         // iterate through all the files, and list the png/dds inside
         for (const auto &file_entry : fs::recursive_directory_iterator(folder)) {

@@ -74,7 +74,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         if (result == host::dialog::filesystem::Result::SUCCESS) {
             std::thread installation([&emuenv]() {
-                install_pup(emuenv.pref_path.wstring(), pup_path.string(), progress_callback);
+                install_pup(emuenv.pref_path, fs::path(pup_path.native()), progress_callback);
                 std::lock_guard<std::mutex> lock(install_mutex);
                 finished_installing = true;
                 get_firmware_version(emuenv);
@@ -143,7 +143,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 if (delete_pup_file) {
-                    fs::remove(fs::path(pup_path.wstring()));
+                    fs::remove(fs::path(pup_path.native()));
                     delete_pup_file = false;
                 }
                 get_modules_list(gui, emuenv);

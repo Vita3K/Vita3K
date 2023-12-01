@@ -173,7 +173,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
 
         if (!doc.load_file(template_xml.c_str())) {
             if (is_ps_app || is_sys_app)
-                LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}' in path: {}.", APP_INDEX->title_id, APP_INDEX->title, template_xml.string());
+                LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}' in path: {}.", APP_INDEX->title_id, APP_INDEX->title, template_xml);
             if (doc.load_file(default_fw_contents.c_str())) {
                 template_xml = default_fw_contents;
                 default_contents = true;
@@ -253,11 +253,11 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
                 }
 
                 if (default_contents)
-                    vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path.wstring(), "data/internal/livearea/default/sce_sys/livearea/contents/" + contents.second);
+                    vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "data/internal/livearea/default/sce_sys/livearea/contents/" + contents.second);
                 else if (app_device == VitaIoDevice::vs0)
-                    vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path.wstring(), "app/" + app_path + "/sce_sys/livearea/contents/" + contents.second);
+                    vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + contents.second);
                 else
-                    vfs::read_app_file(buffer, emuenv.pref_path.wstring(), app_path, live_area_path.string() + "/contents/" + contents.second);
+                    vfs::read_app_file(buffer, emuenv.pref_path, app_path, live_area_path / "contents" / contents.second);
 
                 if (buffer.empty()) {
                     if (is_ps_app || is_sys_app)
@@ -443,9 +443,9 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
                             vfs::FileBuffer buffer;
 
                             if (app_device == VitaIoDevice::vs0)
-                                vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path.wstring(), "app/" + app_path + "/sce_sys/livearea/contents/" + bg_name);
+                                vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + bg_name);
                             else
-                                vfs::read_app_file(buffer, emuenv.pref_path.wstring(), app_path, live_area_path.string() + "/contents/" + bg_name);
+                                vfs::read_app_file(buffer, emuenv.pref_path, app_path, live_area_path / "contents" / bg_name);
 
                             if (buffer.empty()) {
                                 if (is_ps_app || is_sys_app)
@@ -475,9 +475,9 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
                             vfs::FileBuffer buffer;
 
                             if (app_device == VitaIoDevice::vs0)
-                                vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path.wstring(), "app/" + app_path + "/sce_sys/livearea/contents/" + img_name);
+                                vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + img_name);
                             else
-                                vfs::read_app_file(buffer, emuenv.pref_path.wstring(), app_path, live_area_path.string() + "/contents/" + img_name);
+                                vfs::read_app_file(buffer, emuenv.pref_path, app_path, live_area_path / "contents" / img_name);
 
                             if (buffer.empty()) {
                                 if (is_ps_app || is_sys_app)

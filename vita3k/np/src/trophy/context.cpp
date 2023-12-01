@@ -356,7 +356,7 @@ bool Context::get_trophy_set(std::string &name, std::string &detail) {
     return !name.empty() && !detail.empty();
 }
 
-int Context::install_trophy_conf(IOState *io, const std::wstring &pref_path, const std::string &np_com_id) {
+int Context::install_trophy_conf(IOState *io, const fs::path &pref_path, const std::string &np_com_id) {
     auto trophy_conf_path = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + io->user_id + "/trophy/conf/" + np_com_id);
 
     create_dir(*io, trophy_conf_path.c_str(), 0, pref_path, "create_trophy_context", true);
@@ -382,7 +382,7 @@ int Context::install_trophy_conf(IOState *io, const std::wstring &pref_path, con
 
 } // namespace np::trophy
 
-np::trophy::ContextHandle create_trophy_context(NpState &np, IOState *io, const std::wstring &pref_path,
+np::trophy::ContextHandle create_trophy_context(NpState &np, IOState *io, const fs::path &pref_path,
     const np::CommunicationID *custom_comm, const std::uint32_t lang, np::NpTrophyError *error) {
     if (!custom_comm) {
         custom_comm = &np.comm_id;

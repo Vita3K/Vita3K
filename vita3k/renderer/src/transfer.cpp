@@ -22,9 +22,10 @@
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <renderer/types.h>
-#include <util/keywords.h>
 #include <util/log.h>
 #include <util/tracy.h>
+// keywords.h must be after tracy.h for msvc compiler
+#include <util/keywords.h>
 
 namespace renderer {
 

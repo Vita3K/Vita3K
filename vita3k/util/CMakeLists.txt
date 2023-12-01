@@ -4,6 +4,7 @@ add_library(
 	src/arm.cpp
 	src/byte.cpp
 	src/float_to_half.cpp
+	src/fs_utils.cpp
 	src/hash.cpp
 	src/instrset_detect.cpp
 	src/logging.cpp

@@ -71,21 +71,20 @@ bool copy_license(EmuEnvState &emuenv, const fs::path &license_path) {
         emuenv.license_content_id = license_buf.content_id;
         emuenv.license_title_id = emuenv.license_content_id.substr(7, 9);
         const auto dst_path{ emuenv.pref_path / "ux0/license" / emuenv.license_title_id };
-        if (!fs::exists(dst_path))
-            fs::create_directories(dst_path);
+        fs::create_directories(dst_path);
 
         const auto license_dst_path{ dst_path / fmt::format("{}.rif", emuenv.license_content_id) };
         if (license_path != license_dst_path) {
             fs::copy_file(license_path, license_dst_path, fs::copy_options::overwrite_existing);
             if (fs::exists(license_dst_path)) {
-                LOG_INFO("Success copy license file to: {}", license_dst_path.string());
+                LOG_INFO("Success copy license file to: {}", license_dst_path);
                 return true;
             } else
-                LOG_ERROR("Fail copy license file to: {}", license_dst_path.string());
+                LOG_ERROR("Fail copy license file to: {}", license_dst_path);
         } else
-            LOG_ERROR("Source and destination license is same at: {}", license_path.string());
+            LOG_ERROR("Source and destination license is same at: {}", license_path);
     } else
-        LOG_ERROR("License file is corrupted at: {}", license_path.string());
+        LOG_ERROR("License file is corrupted at: {}", license_path);
 
     return false;
 }
@@ -104,7 +103,7 @@ int32_t get_license_sku_flag(EmuEnvState &emuenv, const std::string &content_id)
             sku_flag = 0;
         if (fs::exists(license_path)) {
             fs::remove(license_path);
-            LOG_WARN("License file is corrupted at: {}, using default value.", license_path.string());
+            LOG_WARN("License file is corrupted at: {}, using default value.", license_path);
         }
     }
 
@@ -112,13 +111,13 @@ int32_t get_license_sku_flag(EmuEnvState &emuenv, const std::string &content_id)
 }
 
 bool create_license(EmuEnvState &emuenv, const std::string &zRIF) {
-    if (!fs::exists(emuenv.cache_path))
-        fs::create_directories(emuenv.cache_path);
+    fs::create_directories(emuenv.cache_path);
 
     // Create temp license file
     const auto temp_license_path = emuenv.cache_path / "temp_licence.rif";
-    std::ofstream temp_file(temp_license_path.string(), std::ios::out | std::ios::binary);
+    fs::ofstream temp_file(temp_license_path, std::ios::out | std::ios::binary);
     zrif2rif(zRIF, temp_file);
-
-    return copy_license(emuenv, temp_license_path);
+    auto res = copy_license(emuenv, temp_license_path);
+    fs::remove(temp_license_path);
+    return res;
 }

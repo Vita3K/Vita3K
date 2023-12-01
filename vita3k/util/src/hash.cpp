@@ -21,7 +21,7 @@
 
 Sha256Hash sha256(const void *data, size_t size) {
     Sha256Hash hash;
-    
+
     EVP_MD_CTX *ctx = EVP_MD_CTX_new();
     EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr);
     EVP_DigestUpdate(ctx, data, size);

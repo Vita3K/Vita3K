@@ -99,7 +99,7 @@ struct VKState : public renderer::State {
 
     VKState(int gpu_idx);
 
-    bool init(const fs::path &static_assets, const bool hashless_texture_cache) override;
+    bool init() override;
     bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
     void cleanup();

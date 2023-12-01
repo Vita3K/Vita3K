@@ -148,7 +148,7 @@ static std::atomic<float> progress(0);
 static std::atomic<uint64_t> remaining(0);
 static net_utils::ProgressState progress_state{};
 
-static void download_update(const std::string &base_path) {
+static void download_update(const fs::path &base_path) {
     progress_state.download = true;
     progress_state.pause = false;
     std::thread download([base_path]() {
@@ -167,7 +167,7 @@ static void download_update(const std::string &base_path) {
         const std::string archive_ext = ".zip";
 #endif
 
-        const auto vita3k_latest_path = base_path + "vita3k-latest" + archive_ext;
+        const auto vita3k_latest_path = base_path / ("vita3k-latest" + archive_ext);
 
         const std::string version = std::to_string(git_version);
 
@@ -180,7 +180,7 @@ static void download_update(const std::string &base_path) {
             return &progress_state;
         };
 
-        if (net_utils::download_file(download_continuous_link, vita3k_latest_path, progress_callback)) {
+        if (net_utils::download_file(download_continuous_link, fs_utils::path_to_utf8(vita3k_latest_path), progress_callback)) {
             SDL_Event event;
             event.type = SDL_QUIT;
             SDL_PushEvent(&event);

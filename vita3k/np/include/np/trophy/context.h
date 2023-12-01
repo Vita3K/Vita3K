@@ -19,6 +19,7 @@
 
 #include <np/common.h>
 #include <np/trophy/trp_parser.h>
+#include <util/fs.h>
 #include <util/types.h>
 
 #include <array>
@@ -71,13 +72,13 @@ struct Context {
     uint32_t lang{ 1 };
 
     IOState *io;
-    std::wstring pref_path;
+    fs::path pref_path;
 
     void save_trophy_progress_file();
     bool load_trophy_progress_file(const SceUID &progress_input_file);
 
     int copy_file_data_from_trophy_file(const char *filename, void *buffer, SceSize *size);
-    int install_trophy_conf(IOState *io, const std::wstring &pref_path, const std::string &np_com_id);
+    int install_trophy_conf(IOState *io, const fs::path &pref_path, const std::string &np_com_id);
     bool init_info_from_trp();
     bool unlock_trophy(int32_t id, np::NpTrophyError *err, const bool force_unlock = false);
 

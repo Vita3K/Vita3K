@@ -84,9 +84,9 @@ static bool is_nonpdrm(EmuEnvState &emuenv, const fs::path &output_path) {
     const auto app_license_path{ emuenv.pref_path / "ux0/license" / emuenv.app_info.app_title_id / fmt::format("{}.rif", emuenv.app_info.app_content_id) };
     const auto is_patch_found_app_license = (emuenv.app_info.app_category == "gp") && fs::exists(app_license_path);
     if (fs::exists(output_path / "sce_sys/package/work.bin") || is_patch_found_app_license) {
-        std::string licpath = is_patch_found_app_license ? app_license_path.string() : output_path.string() + "/sce_sys/package/work.bin";
-        LOG_INFO("Decrypt layer: {}", output_path.string());
-        if (!decrypt_install_nonpdrm(emuenv, licpath, output_path.string())) {
+        fs::path licpath = is_patch_found_app_license ? app_license_path : output_path / "sce_sys/package/work.bin";
+        LOG_INFO("Decrypt layer: {}", output_path);
+        if (!decrypt_install_nonpdrm(emuenv, licpath, output_path)) {
             LOG_ERROR("NoNpDrm installation failed, deleting data!");
             fs::remove_all(output_path);
             return false;
@@ -124,15 +124,15 @@ static bool set_content_path(EmuEnvState &emuenv, const bool is_theme, fs::path 
     return true;
 }
 
-bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &archive_path, const ZipPtr &zip, const std::string &content_path, const std::function<void(ArchiveContents)> &progress_callback) {
+bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &zip, const std::string &content_path, const std::function<void(ArchiveContents)> &progress_callback) {
     std::string sfo_path = "sce_sys/param.sfo";
     std::string theme_path = "theme.xml";
     vfs::FileBuffer buffer, theme;
 
-    const auto is_theme = mz_zip_reader_extract_file_to_callback(zip.get(), (fs::path(content_path) / theme_path).string().c_str(), &write_to_buffer, &theme, 0);
+    const auto is_theme = mz_zip_reader_extract_file_to_callback(zip.get(), (content_path + theme_path).c_str(), &write_to_buffer, &theme, 0);
 
     auto output_path{ emuenv.pref_path / "ux0" };
-    if (mz_zip_reader_extract_file_to_callback(zip.get(), (fs::path(content_path) / sfo_path).string().c_str(), &write_to_buffer, &buffer, 0)) {
+    if (mz_zip_reader_extract_file_to_callback(zip.get(), (content_path + sfo_path).c_str(), &write_to_buffer, &buffer, 0)) {
         sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang);
         if (!set_content_path(emuenv, is_theme, output_path))
             return false;
@@ -197,27 +197,14 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const fs::path 
             update_progress();
 
             std::string replace_filename = m_filename.substr(content_path.size());
-            const fs::path file_output = { output_path / replace_filename };
+            const fs::path file_output = (output_path / fs_utils::utf8_to_path(replace_filename)).generic_path();
             if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
                 fs::create_directories(file_output);
             } else {
-                if (!fs::exists(file_output.parent_path()))
-                    fs::create_directories(file_output.parent_path());
-
-                LOG_INFO("Extracting {}", file_output.generic_path().string());
-                mz_zip_reader_extract_to_file(zip.get(), i, file_output.generic_path().string().c_str(), 0);
+                fs::create_directories(file_output.parent_path());
+                LOG_INFO("Extracting {}", file_output);
+                mz_zip_reader_extract_to_file(zip.get(), i, fs_utils::path_to_utf8(file_output).c_str(), 0);
             }
-        }
-    }
-
-    // Rename directory on correct name when is request, Todo of extract zip, no support unicode
-    if (emuenv.app_info.app_category == "theme") {
-        const auto dest = string_utils::utf_to_wide(output_path.string());
-        if (output_path != dest) {
-            if (fs::exists(dest))
-                fs::remove_all(dest);
-
-            fs::rename(output_path, dest);
         }
     }
 
@@ -228,7 +215,7 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const fs::path 
         else
             return false;
     }
-    if (!copy_path(output_path, emuenv.pref_path.wstring(), emuenv.app_info.app_title_id, emuenv.app_info.app_category))
+    if (!copy_path(output_path, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
     update_progress();
@@ -278,19 +265,13 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
 
 std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, const fs::path &archive_path, const std::function<void(ArchiveContents)> &progress_callback) {
     if (!fs::exists(archive_path)) {
-        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path().string());
+        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path());
         return {};
     }
     const ZipPtr zip(new mz_zip_archive, delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
-    FILE *vpk_fp;
-
-#ifdef WIN32
-    _wfopen_s(&vpk_fp, archive_path.generic_path().wstring().c_str(), L"rb");
-#else
-    vpk_fp = fopen(archive_path.generic_path().string().c_str(), "rb");
-#endif
+    FILE *vpk_fp = FOPEN(archive_path.generic_path().c_str(), "rb");
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
         LOG_CRITICAL("miniz error reading archive: {}", miniz_get_error(zip));
@@ -316,7 +297,7 @@ std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, con
     for (auto &path : content_path) {
         current++;
         update_progress();
-        const bool state = install_archive_content(emuenv, gui, archive_path, zip, path, progress_callback);
+        const bool state = install_archive_content(emuenv, gui, zip, path, progress_callback);
         content_installed.push_back({ emuenv.app_info.app_title, emuenv.app_info.app_title_id, emuenv.app_info.app_category, emuenv.app_info.app_content_id, path, state });
     }
 
@@ -368,21 +349,21 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
 
     } else if (get_buffer(theme_path)) {
         set_theme_name(emuenv, buffer);
-        dst_path /= fs::path("theme") / string_utils::utf_to_wide(emuenv.app_info.app_title_id);
+        dst_path /= fs::path("theme") / fs_utils::utf8_to_path(emuenv.app_info.app_title_id);
     } else {
-        LOG_ERROR("Param.sfo file is missing in path", sfo_path.string());
+        LOG_ERROR("Param.sfo file is missing in path", sfo_path);
         return false;
     }
 
     if (!copy_directories(content_path, dst_path)) {
-        LOG_ERROR("Failed to copy directory to: {}", dst_path.string());
+        LOG_ERROR("Failed to copy directory to: {}", dst_path);
         return false;
     }
 
     if (fs::exists(dst_path / "sce_sys/package/") && !is_nonpdrm(emuenv, dst_path))
         return false;
 
-    if (!copy_path(dst_path, emuenv.pref_path.wstring(), emuenv.app_info.app_title_id, emuenv.app_info.app_category))
+    if (!copy_path(dst_path, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
     LOG_INFO("{} [{}] installed successfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
@@ -401,7 +382,7 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
 uint32_t install_contents(EmuEnvState &emuenv, GuiState *gui, const fs::path &path) {
     const auto src_path = get_contents_path(path);
 
-    LOG_WARN_IF(src_path.empty(), "No found any content compatible on this path: {}", path.string());
+    LOG_WARN_IF(src_path.empty(), "No found any content compatible on this path: {}", path);
 
     uint32_t installed = 0;
     for (const auto &src : src_path) {
@@ -417,10 +398,7 @@ uint32_t install_contents(EmuEnvState &emuenv, GuiState *gui, const fs::path &pa
     return installed;
 }
 
-static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const std::wstring &path) {
-    if (path.empty())
-        return InvalidApplicationPath;
-
+static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     const auto call_import = [&emuenv](CPUState &cpu, uint32_t nid, SceUID thread_id) {
         ::call_import(emuenv, cpu, nid, thread_id);
     };
@@ -432,7 +410,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     if (emuenv.cfg.archive_log) {
         const fs::path log_directory{ emuenv.log_path / "logs" };
         fs::create_directory(log_directory);
-        const auto log_path{ log_directory / string_utils::utf_to_wide(emuenv.io.title_id + " - [" + string_utils::remove_special_chars(emuenv.current_app_title) + "].log") };
+        const auto log_path{ log_directory / fs_utils::utf8_to_path(emuenv.io.title_id + " - [" + string_utils::remove_special_chars(emuenv.current_app_title) + "].log") };
         if (logging::add_sink(log_path) != Success)
             return InitConfigFailed;
         logging::set_level(static_cast<spdlog::level::level_enum>(emuenv.cfg.log_level));
@@ -751,7 +729,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             handle_touch_event(event.tfinger);
             break;
         case SDL_DROPFILE: {
-            const auto drop_file = fs::path(string_utils::utf_to_wide(event.drop.file));
+            const auto drop_file = fs_utils::utf8_to_path(event.drop.file);
             const auto extension = string_utils::tolower(drop_file.extension().string());
             if ((extension == ".vpk") || (extension == ".zip"))
                 install_archive(emuenv, &gui, drop_file);
@@ -762,7 +740,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             else if (drop_file.filename() == "theme.xml")
                 install_content(emuenv, &gui, drop_file.parent_path());
             else
-                LOG_ERROR("File dropped: [{}] is not supported.", drop_file.filename().string());
+                LOG_ERROR("File dropped: [{}] is not supported.", drop_file.filename());
             SDL_free(event.drop.file);
             break;
         }
@@ -772,12 +750,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
     return true;
 }
 
-ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const std::wstring &path) {
-    if (load_app_impl(main_module_id, emuenv, path) != Success) {
-        std::string message = "Failed to load \"";
-        message += string_utils::wide_to_utf(path);
-        message += "\"";
-        message += "\nSee console output for details.";
+ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv) {
+    if (load_app_impl(main_module_id, emuenv) != Success) {
+        std::string message = fmt::format("Failed to load \"{}\"\nSee console output for details.", emuenv.pref_path / "ux0/app" / emuenv.io.app_path / emuenv.self_path);
         app::error_dialog(message, emuenv.window.get());
         return ModuleLoadFailed;
     }

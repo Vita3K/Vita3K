@@ -257,10 +257,10 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     // always enabled in the opengl renderer
     gl_state.features.use_mask_bit = true;
 
-    return gl_state.init(gl_state.static_assets, hashless_texture_cache);
+    return gl_state.init();
 }
 
-bool GLState::init(const fs::path &static_assets, const bool hashless_texture_cache) {
+bool GLState::init() {
     if (!screen_renderer.init(static_assets)) {
         LOG_ERROR("Failed to initialize screen renderer");
         return false;
@@ -272,8 +272,7 @@ bool GLState::init(const fs::path &static_assets, const bool hashless_texture_ca
 }
 
 void GLState::late_init(const Config &cfg, const std::string_view game_id, MemState &mem) {
-    const fs::path texture_folder = fs::path(shared_path) / "textures";
-    texture_cache.init(cfg.hashless_texture_cache, texture_folder, game_id);
+    texture_cache.init(cfg.hashless_texture_cache, texture_folder(), game_id);
 }
 
 bool create(std::unique_ptr<Context> &context) {
@@ -739,7 +738,7 @@ void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
 }
 
 void GLState::precompile_shader(const ShadersHash &hash) {
-    pre_compile_program(*this, cache_path.c_str(), title_id, self_name, hash);
+    pre_compile_program(*this, hash);
 }
 
 void GLState::preclose_action() {}

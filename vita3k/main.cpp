@@ -126,8 +126,7 @@ int main(int argc, char *argv[]) {
     EmuEnvState emuenv;
     const auto config_err = config::init_config(cfg, argc, argv, root_paths);
 
-    if (!fs::exists(cfg.pref_path))
-        fs::create_directories(cfg.pref_path);
+    fs::create_directories(cfg.get_pref_path());
 
     if (config_err != Success) {
         if (config_err == QuitRequested) {
@@ -137,22 +136,23 @@ int main(int argc, char *argv[]) {
             }
             if (cfg.delete_title_id.has_value()) {
                 LOG_INFO("Deleting title id {}", *cfg.delete_title_id);
-                fs::remove_all(fs::path(cfg.pref_path) / "ux0/app" / *cfg.delete_title_id);
-                fs::remove_all(fs::path(cfg.pref_path) / "ux0/addcont" / *cfg.delete_title_id);
-                fs::remove_all(fs::path(cfg.pref_path) / "ux0/user/00/savedata" / *cfg.delete_title_id);
-                fs::remove_all(fs::path(root_paths.get_cache_path()) / "shaders" / *cfg.delete_title_id);
+                fs::remove_all(cfg.get_pref_path() / "ux0/app" / *cfg.delete_title_id);
+                fs::remove_all(cfg.get_pref_path() / "ux0/addcont" / *cfg.delete_title_id);
+                fs::remove_all(cfg.get_pref_path() / "ux0/user/00/savedata" / *cfg.delete_title_id);
+                fs::remove_all(root_paths.get_cache_path() / "shaders" / *cfg.delete_title_id);
             }
             if (cfg.pup_path.has_value()) {
                 LOG_INFO("Installing firmware file {}", *cfg.pup_path);
-                install_pup(string_utils::utf_to_wide(cfg.pref_path), *cfg.pup_path, [](uint32_t progress) {
+                install_pup(cfg.get_pref_path(), *cfg.pup_path, [](uint32_t progress) {
                     LOG_INFO("Firmware installation progress: {}%", progress);
                 });
             }
             if (cfg.pkg_path.has_value() && cfg.pkg_zrif.has_value()) {
                 LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
-                emuenv.cache_path = string_utils::utf_to_wide(root_paths.get_cache_path_string());
-                emuenv.pref_path = string_utils::utf_to_wide(cfg.pref_path);
-                install_pkg(*cfg.pkg_path, emuenv, *cfg.pkg_zrif, [](float) {});
+                emuenv.cache_path = root_paths.get_cache_path().generic_path();
+                emuenv.pref_path = cfg.get_pref_path();
+                auto pkg_path = fs_utils::utf8_to_path(*cfg.pkg_path);
+                install_pkg(pkg_path, emuenv, *cfg.pkg_zrif, [](float) {});
             }
             return Success;
         }
@@ -231,7 +231,7 @@ int main(int argc, char *argv[]) {
         const auto is_directory = fs::is_directory(*cfg.content_path);
 
         const auto content_is_app = [&]() {
-            std::vector<ContentInfo> contents_info = install_archive(emuenv, gui_ptr, string_utils::utf_to_wide(cfg.content_path->string()));
+            std::vector<ContentInfo> contents_info = install_archive(emuenv, gui_ptr, *cfg.content_path);
             const auto content_index = std::find_if(contents_info.begin(), contents_info.end(), [&](const ContentInfo &c) {
                 return c.category == "gd";
             });
@@ -369,15 +369,14 @@ int main(int argc, char *argv[]) {
 
     int32_t main_module_id;
     {
-        const auto err = load_app(main_module_id, emuenv, string_utils::utf_to_wide(emuenv.io.app_path));
+        const auto err = load_app(main_module_id, emuenv);
         if (err != Success)
             return err;
     }
     gui.vita_area.information_bar = false;
 
     // Pre-Compile Shaders
-    emuenv.renderer->title_id = emuenv.io.title_id.c_str();
-    emuenv.renderer->self_name = emuenv.self_name.c_str();
+    emuenv.renderer->set_app(emuenv.io.title_id.c_str(), emuenv.self_name.c_str());
     if (renderer::get_shaders_cache_hashs(*emuenv.renderer) && cfg.shader_cache) {
         SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
         for (const auto &hash : emuenv.renderer->shaders_cache_hashs) {

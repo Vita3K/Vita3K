@@ -108,6 +108,14 @@ public:
     bool console = false;
     bool load_app_list = false;
 
+    fs::path get_pref_path() const {
+        return fs_utils::utf8_to_path(pref_path);
+    }
+
+    void set_pref_path(const fs::path &new_pref_path) {
+        pref_path = fs_utils::path_to_utf8(new_pref_path);
+    }
+
     /**
      * @brief Config struct for per-app configurable settings
      *
@@ -252,7 +260,8 @@ public:
 
     // Load a function to the node network, and then update the members
     void load_new_config(const fs::path &path) override {
-        yaml_node = YAML::LoadFile(path.generic_path().string());
+        fs::ifstream fin(path);
+        yaml_node = YAML::Load(fin);
         update_members();
     }
 

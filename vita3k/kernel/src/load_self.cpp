@@ -381,7 +381,7 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
 /**
  * \return Negative on failure
  */
-SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const std::string &dump_path) {
+SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &log_path) {
     // TODO: use raw I/O from path when io becomes less bad
     const uint8_t *const self_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
@@ -583,13 +583,13 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
             dump_segments[seg_index].p_vaddr = segment.addr;
             last_index = std::max(seg_index, last_index);
         }
-        auto dump_dir = fs::path(dump_path) / "elfdumps";
-        fs::create_directory(dump_dir);
+        fs::path dump_dir = log_path / "elfdumps";
+        fs::create_directories(dump_dir);
         const auto start = dump_segments[0].p_vaddr;
         const auto end = dump_segments[last_index].p_vaddr + dump_segments[last_index].p_filesz;
         const auto elf_name = fs::path(self_path).filename().stem().string();
-        const auto filename = fs::path(fmt::format("{}/{}-{}_{}.elf", dump_dir.string(), log_hex_full(start), log_hex_full(end), elf_name));
-        std::ofstream out(filename.string(), std::ios::out | std::ios::binary);
+        const auto filename = dump_dir / fmt::format("{}-{}_{}.elf", log_hex_full(start), log_hex_full(end), elf_name);
+        fs::ofstream out(filename, std::ios::out | std::ios::binary);
         out.write(reinterpret_cast<char *>(dump_elf.data()), dump_elf.size());
         out.close();
     }

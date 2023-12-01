@@ -96,7 +96,7 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     // Clean and save new config value
     emuenv.cfg.auto_user_login = false;
     emuenv.cfg.user_id.clear();
-    emuenv.cfg.pref_path = emuenv.pref_path.string();
+    emuenv.cfg.set_pref_path(emuenv.pref_path);
     emuenv.io.user_id.clear();
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
@@ -114,13 +114,13 @@ static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
     std::filesystem::path emulator_path = "";
     host::dialog::filesystem::Result result = host::dialog::filesystem::pick_folder(emulator_path);
 
-    if (result == host::dialog::filesystem::Result::SUCCESS && emulator_path.wstring() != emuenv.pref_path.wstring()) {
+    if (result == host::dialog::filesystem::Result::SUCCESS && emulator_path.native() != emuenv.pref_path.native()) {
         // Refresh the working paths
-        emuenv.pref_path = emulator_path.wstring() + L'/';
+        emuenv.pref_path = fs::path(emulator_path.native()) / "";
 
         // TODO: Move app old to new path
         reset_emulator(gui, emuenv);
-        LOG_INFO("Successfully moved Vita3K path to: {}", emuenv.pref_path.string());
+        LOG_INFO("Successfully moved Vita3K path to: {}", emuenv.pref_path);
     }
 
     if (result == host::dialog::filesystem::Result::ERROR) {
@@ -205,7 +205,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
 
             return true;
         } else {
-            LOG_ERROR("Custom config XML found is corrupted or invalid in path: {}", CUSTOM_CONFIG_PATH.string());
+            LOG_ERROR("Custom config XML found is corrupted or invalid in path: {}", CUSTOM_CONFIG_PATH);
             fs::remove(CUSTOM_CONFIG_PATH);
             return false;
         }
@@ -294,8 +294,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.configuration_menu.custom_settings_dialog) {
         const auto CONFIG_PATH{ emuenv.config_path / "config" };
         const auto CUSTOM_CONFIG_PATH{ CONFIG_PATH / fmt::format("config_{}.xml", emuenv.app_path) };
-        if (!fs::exists(CONFIG_PATH))
-            fs::create_directory(CONFIG_PATH);
+        fs::create_directories(CONFIG_PATH);
 
         pugi::xml_document custom_config_xml;
         auto declarationUser = custom_config_xml.append_child(pugi::node_declaration);
@@ -346,7 +345,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
         if (!save_xml)
-            LOG_ERROR("Failed to save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH.string());
+            LOG_ERROR("Failed to save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH);
     } else {
         emuenv.cfg.cpu_backend = config.cpu_backend;
         emuenv.cfg.cpu_opt = config.cpu_opt;
@@ -779,6 +778,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::Button(lang.gpu["clean_shaders"].c_str())) {
                 fs::remove_all(shaders_cache_path);
                 fs::remove_all(emuenv.cache_path / "shaderlog");
+                fs::remove_all(emuenv.log_path / "shaderlog");
             }
         }
 
@@ -925,7 +925,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
                     // Refresh the working paths
                     reset_emulator(gui, emuenv);
-                    LOG_INFO("Successfully restored default path for Vita3K files to: {}", emuenv.pref_path.string());
+                    LOG_INFO("Successfully restored default path for Vita3K files to: {}", emuenv.pref_path);
                 }
             }
             if (ImGui::IsItemHovered())

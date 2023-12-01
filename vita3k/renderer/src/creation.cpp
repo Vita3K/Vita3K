@@ -178,7 +178,7 @@ COMMAND(handle_memory_unmap) {
 }
 
 // Client
-bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *cache_path, const char *title_id) {
+bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map) {
     switch (state.current_backend) {
     case Backend::OpenGL:
         gl::create(fp, dynamic_cast<gl::GLState &>(state), program, blend);
@@ -205,7 +205,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProg
     return true;
 }
 
-bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const std::vector<SceGxmVertexAttribute> &attributes, const char *cache_path, const char *title_id) {
+bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const std::vector<SceGxmVertexAttribute> &attributes) {
     switch (state.current_backend) {
     case Backend::OpenGL:
         gl::create(vp, dynamic_cast<gl::GLState &>(state), program);
@@ -257,20 +257,14 @@ bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, co
     switch (backend) {
     case Backend::OpenGL:
         state = std::make_unique<gl::GLState>();
-        state->cache_path = root_paths.get_cache_path_string();
-        state->log_path = root_paths.get_log_path_string();
-        state->shared_path = root_paths.get_shared_path_string();
-        state->static_assets = root_paths.get_static_assets_path();
+        state->init_paths(root_paths);
         if (!gl::create(window, state, config))
             return false;
         break;
 
     case Backend::Vulkan:
         state = std::make_unique<vulkan::VKState>(config.gpu_idx);
-        state->cache_path = root_paths.get_cache_path_string();
-        state->log_path = root_paths.get_log_path_string();
-        state->shared_path = root_paths.get_shared_path_string();
-        state->static_assets = root_paths.get_static_assets_path();
+        state->init_paths(root_paths);
         if (!vulkan::create(window, state, config))
             return false;
         break;

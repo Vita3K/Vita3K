@@ -81,6 +81,6 @@ struct PkgEntry {
     uint32_t padding;
 };
 
-bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback = nullptr);
+bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback = nullptr);
 
-bool decrypt_install_nonpdrm(EmuEnvState &emuenv, std::string &drmlicpath, const std::string &title_path);
+bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, const fs::path &title_path);
