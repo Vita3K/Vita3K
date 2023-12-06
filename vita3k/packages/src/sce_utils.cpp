@@ -722,7 +722,7 @@ std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, cons
     return decompressed_data;
 }
 
-void self2elf(const fs::path &infile, const fs::path &outfile, KeyStore &SCE_KEYS, unsigned char *klictxt) {
+void self2elf(const fs::path &infile, const fs::path &outfile, KeyStore &SCE_KEYS, unsigned char *klictxt, uint64_t *authid) {
     std::ifstream filein(infile.native().c_str(), std::ios::binary);
     std::ofstream fileout(outfile.native().c_str(), std::ios::binary);
 
@@ -744,6 +744,7 @@ void self2elf(const fs::path &infile, const fs::path &outfile, KeyStore &SCE_KEY
     filein.read(appinfobuffer, AppInfoHeader::Size);
 
     const AppInfoHeader appinfo_hdr = AppInfoHeader(appinfobuffer);
+    *authid = appinfo_hdr.auth_id;
 
     // filein.seekg(self_hdr.sceversion_offset);
     // filein.read(verinfobuffer, SceVersionInfo::Size);
@@ -865,7 +866,7 @@ void self2elf(const fs::path &infile, const fs::path &outfile, KeyStore &SCE_KEY
 
 // Credits to the vitasdk team/contributors for vita-make-fself https://github.com/vitasdk/vita-toolchain/blob/master/src/vita-make-fself.c
 
-void make_fself(const fs::path &input_file, const fs::path &output_file) {
+void make_fself(const fs::path &input_file, const fs::path &output_file, uint64_t authid) {
     std::ifstream filein(input_file.native().c_str(), std::ios::binary);
     std::ofstream fileout(output_file.native().c_str(), std::ios::binary);
 
@@ -899,7 +900,7 @@ void make_fself(const fs::path &input_file, const fs::path &output_file) {
     uint32_t offset_to_real_elf = HEADER_LEN;
 
     SCE_appinfo appinfo = { 0 };
-    appinfo.authid = 0x2F00000000000001ULL;
+    appinfo.authid = authid;
     appinfo.vendor_id = 0;
     appinfo.self_type = 8;
     appinfo.version = 0x1000000000000;
@@ -1091,11 +1092,12 @@ std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader
 void decrypt_fself(const fs::path &file_path, KeyStore &SCE_KEYS, unsigned char *klictxt) {
     auto np = file_path;
     np.replace_extension(np.extension().string() + ".elf");
-    self2elf(file_path, np, SCE_KEYS, klictxt);
+    uint64_t authid = 0x2F00000000000001ULL;
+    self2elf(file_path, np, SCE_KEYS, klictxt, &authid);
     fs::rename(np, file_path);
     np = file_path;
     np.replace_extension(np.extension().string() + ".fself");
-    make_fself(file_path, np);
+    make_fself(file_path, np, authid);
     fs::rename(np, file_path);
 }
 
