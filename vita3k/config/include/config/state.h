@@ -131,7 +131,7 @@ public:
         bool export_as_png = false;
         bool stretch_the_display_area = false;
         bool show_touchpad_cursor = true;
-        int psn_status = SCE_NP_SERVICE_STATE_UNKNOWN;
+        bool psn_signed_in = false;
     };
 
     /**

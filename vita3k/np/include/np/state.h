@@ -52,18 +52,17 @@ struct NpTrophyState {
     NpTrophyUnlockCallback trophy_unlock_callback;
 };
 
-enum SceNpServiceState {
-    SCE_NP_SERVICE_STATE_UNKNOWN,
-    SCE_NP_SERVICE_STATE_SIGNED_OUT,
-    SCE_NP_SERVICE_STATE_SIGNED_IN,
-    SCE_NP_SERVICE_STATE_ONLINE
+enum SceNpServiceState : uint32_t {
+    SCE_NP_SERVICE_STATE_UNKNOWN = 0,
+    SCE_NP_SERVICE_STATE_SIGNED_OUT = 1,
+    SCE_NP_SERVICE_STATE_SIGNED_IN = 2,
+    SCE_NP_SERVICE_STATE_ONLINE = 3
 };
 
 struct NpState {
     bool inited = false;
     np_callbacks cbs;
     int state_cb_id;
-    int state = -1;
 
     NpTrophyState trophy_state;
     np::CommunicationID comm_id;

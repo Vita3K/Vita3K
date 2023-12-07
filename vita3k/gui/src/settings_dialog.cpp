@@ -198,7 +198,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             // Load Network Config
             if (!config_child.child("network").empty()) {
                 const auto network_child = config_child.child("network");
-                config.psn_status = network_child.attribute("psn-status").as_int();
+                config.psn_signed_in = network_child.attribute("psn-signed-in").as_bool();
             }
 
             return true;
@@ -246,7 +246,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.pstv_mode = emuenv.cfg.pstv_mode;
         config.ngs_enable = emuenv.cfg.ngs_enable;
         config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
-        config.psn_status = emuenv.cfg.psn_status;
+        config.psn_signed_in = emuenv.cfg.psn_signed_in;
     }
 
     list_user_lang.clear();
@@ -336,7 +336,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         // Network
         auto network_child = config_child.append_child("network");
-        network_child.append_attribute("psn-status") = config.psn_status;
+        network_child.append_attribute("psn-signed-in") = config.psn_signed_in;
 
         const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
         if (!save_xml)
@@ -358,7 +358,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.export_as_png = config.export_as_png;
         emuenv.cfg.ngs_enable = config.ngs_enable;
         emuenv.cfg.show_touchpad_cursor = config.show_touchpad_cursor;
-        emuenv.cfg.psn_status = config.psn_status;
+        emuenv.cfg.psn_signed_in = config.psn_signed_in;
     }
 
     if (emuenv.cfg.stretch_the_display_area != config.stretch_the_display_area) {
@@ -420,7 +420,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.export_as_png = emuenv.cfg.export_as_png;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
         emuenv.cfg.current_config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
-        emuenv.cfg.current_config.psn_status = emuenv.cfg.psn_status;
+        emuenv.cfg.current_config.psn_signed_in = emuenv.cfg.psn_signed_in;
     }
 
     // If backend render or resolution multiplier is changed when app run, reboot emu and app
@@ -1065,9 +1065,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (psn / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "PlayStation Network");
         ImGui::Spacing();
-        ImGui::Combo(lang.network["psn_status"].c_str(), &config.psn_status, "Unknown\0Signed Out\0Signed In\0Online\0");
+        ImGui::Checkbox("Signed in PSN", &config.psn_signed_in);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", lang.network["select_psn_state"].c_str());
+            ImGui::SetTooltip("%s", "If checked, games will consider the user is connected to the PSN network (but offline)");
 
         // HTTP
         ImGui::Spacing();
