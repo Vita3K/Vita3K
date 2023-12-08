@@ -67,7 +67,6 @@ bool USSETranslatorVisitor::vmov(
     inst.opcode = tb_decode_vmov[(Imm3)move_type];
     // TODO: dest mask
     // TODO: flags
-    // TODO: test type
 
     const bool is_double_regs = move_data_type == DataType::C10 || move_data_type == DataType::F16 || move_data_type == DataType::F32;
     const bool is_conditional = (move_type != MoveType::UNCONDITIONAL);
@@ -91,10 +90,15 @@ bool USSETranslatorVisitor::vmov(
     CompareMethod compare_method = CompareMethod::NE_ZERO;
     spv::Op compare_op = spv::OpAny;
 
+    const DataType test_type = is_u8_conditional ? DataType::UINT8 : move_data_type;
+    const bool is_test_signed = is_signed_integer_data_type(test_type);
+    const bool is_test_unsigned = is_unsigned_integer_data_type(test_type);
+    const bool is_test_integer = is_test_signed || is_test_unsigned;
+
     if (is_conditional) {
         compare_method = static_cast<CompareMethod>((test_bit_2 << 1) | test_bit_1);
         inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank_sel, end_or_src0_bank_ext, is_double_regs, reg_bits, m_second_program);
-        inst.opr.src0.type = is_u8_conditional ? DataType::UINT8 : move_data_type;
+        inst.opr.src0.type = test_type;
         inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, is_double_regs, reg_bits, m_second_program);
         inst.opr.src2.type = move_data_type;
 
@@ -106,25 +110,29 @@ bool USSETranslatorVisitor::vmov(
 
         switch (compare_method) {
         case CompareMethod::LT_ZERO:
-            if (is_u8_conditional)
+            if (is_test_unsigned)
                 compare_op = spv::Op::OpULessThan;
+            else if (is_test_signed)
+                compare_op = spv::Op::OpSLessThan;
             else
                 compare_op = spv::Op::OpFOrdLessThan;
             break;
         case CompareMethod::LTE_ZERO:
-            if (is_u8_conditional)
+            if (is_test_unsigned)
                 compare_op = spv::Op::OpULessThanEqual;
+            else if (is_test_signed)
+                compare_op = spv::Op::OpSLessThanEqual;
             else
                 compare_op = spv::Op::OpFOrdLessThanEqual;
             break;
         case CompareMethod::NE_ZERO:
-            if (is_u8_conditional)
+            if (is_test_integer)
                 compare_op = spv::Op::OpINotEqual;
             else
                 compare_op = spv::Op::OpFOrdNotEqual;
             break;
         case CompareMethod::EQ_ZERO:
-            if (is_u8_conditional)
+            if (is_test_integer)
                 compare_op = spv::Op::OpIEqual;
             else
                 compare_op = spv::Op::OpFOrdEqual;
@@ -190,7 +198,7 @@ bool USSETranslatorVisitor::vmov(
         source_to_compare_with_0 = load(inst.opr.src0, dest_mask, src0_repeat_offset);
         source_2 = load(inst.opr.src2, dest_mask, src2_repeat_offset);
         spv::Id result_type = m_b.getTypeId(source_2);
-        spv::Id v0_comp_type = is_u8_conditional ? m_b.makeUintType(32) : m_b.makeFloatType(32);
+        spv::Id v0_comp_type = is_test_unsigned ? m_b.makeUintType(32) : (is_test_signed ? m_b.makeIntType(32) : m_b.makeFloatType(32));
         spv::Id v0_type = utils::make_vector_or_scalar_type(m_b, v0_comp_type, m_b.getNumComponents(source_2));
         spv::Id v0 = utils::make_uniform_vector_from_type(m_b, v0_type, 0);
 
