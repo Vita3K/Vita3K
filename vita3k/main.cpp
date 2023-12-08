@@ -150,6 +150,7 @@ int main(int argc, char *argv[]) {
             }
             if (cfg.pkg_path.has_value() && cfg.pkg_zrif.has_value()) {
                 LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
+                emuenv.cache_path = string_utils::utf_to_wide(root_paths.get_cache_path_string());
                 emuenv.pref_path = string_utils::utf_to_wide(cfg.pref_path);
                 install_pkg(*cfg.pkg_path, emuenv, *cfg.pkg_zrif, [](float) {});
             }
