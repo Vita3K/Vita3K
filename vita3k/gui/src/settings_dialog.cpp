@@ -924,7 +924,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.gui["info_bar_description"].c_str());
         ImGui::Spacing();
-        std::vector<const char *> list_user_lang_str{ fmt::format("System: {}", get_sys_lang_name(emuenv.cfg.sys_lang)).c_str() };
+        const std::string system_lang_name = fmt::format("System: {}", get_sys_lang_name(emuenv.cfg.sys_lang));
+        std::vector<const char *> list_user_lang_str{ system_lang_name.c_str() };
         static std::map<std::string, std::string> static_list_user_lang_names = {
             { "id", "Indonesia" },
             { "ms", "Malaysia" },
