@@ -154,8 +154,18 @@ static void init_style(EmuEnvState &emuenv) {
 static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     ImGuiIO &io = ImGui::GetIO();
 
+    const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
+    const bool has_additional_font = emuenv.cfg.asia_font_support
+        || sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T
+        || sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S
+        || sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN;
+    // make this value as big as we can, while the atlas dimensions stays under 4096x4096
+    // well actually when using chinese, the font atlas is already much bigger, but don't
+    // increase it even more
+    const float atlas_font_scale = has_additional_font ? 1.0f : 2.0f;
+
     ImFontConfig mono_font_config{};
-    mono_font_config.SizePixels = 13.f;
+    mono_font_config.SizePixels = 13.f * atlas_font_scale;
 
 #ifdef _WIN32
     const auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
@@ -191,19 +201,6 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         0x2200, 0x22FF, // Math operators
         0x2460, 0x24FF, // Enclosed Alphanumerics
         0x25A0, 0x26FF, // Miscellaneous symbols
-        0x4E00, 0x9FFF, // Unified ideograms CJC
-        0,
-    };
-
-    static const ImWchar korean_range[] = {
-        0x3131, 0x3163, // Korean alphabets
-        0xAC00, 0xD79D, // Korean characters
-        0,
-    };
-
-    static const ImWchar chinese_range[] = {
-        0x2000, 0x206F, // General Punctuation
-        0x4e00, 0x9FAF, // CJK Ideograms
         0,
     };
     // clang-format on
@@ -223,25 +220,27 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         // Add fw font to imgui
 
         gui.fw_font = true;
-        font_config.SizePixels = 19.2f;
+        font_config.SizePixels = 19.2f * atlas_font_scale;
 
         gui.vita_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), font_config.SizePixels, &font_config, latin_range);
         font_config.MergeMode = true;
 
         io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), font_config.SizePixels, &font_config, japanes_and_extra_ranges.Data);
 
-        const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
-        if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN))
-            io.Fonts->AddFontFromFileTTF((fw_font_path / "kr0.pvf").string().c_str(), font_config.SizePixels, &font_config, korean_range);
-        if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S))
-            io.Fonts->AddFontFromFileTTF((fw_font_path / "cn0.pvf").string().c_str(), font_config.SizePixels, &font_config, chinese_range);
+        if (emuenv.cfg.asia_font_support || sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN)
+            io.Fonts->AddFontFromFileTTF((fw_font_path / "kr0.pvf").string().c_str(), font_config.SizePixels, &font_config, io.Fonts->GetGlyphRangesKorean());
+
+        if (emuenv.cfg.asia_font_support || sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T)
+            io.Fonts->AddFontFromFileTTF((fw_font_path / "cn0.pvf").string().c_str(), font_config.SizePixels, &font_config, io.Fonts->GetGlyphRangesChineseFull());
+        else if (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S)
+            io.Fonts->AddFontFromFileTTF((fw_font_path / "cn0.pvf").string().c_str(), font_config.SizePixels, &font_config, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
         font_config.MergeMode = false;
 
-        large_font_config.SizePixels = 116.f;
+        large_font_config.SizePixels = 116.f * atlas_font_scale;
         gui.large_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
     } else {
         LOG_WARN("Could not find firmware font file at \"{}\", install firmware fonts package to fix this.", latin_fw_font_path.string());
-        font_config.SizePixels = 22.f;
+        font_config.SizePixels = 22.f * atlas_font_scale;
 
         // Set up default font path
         fs::path default_font_path = emuenv.static_assets_path / "data/fonts/mplus-1mn-bold.ttf";
@@ -253,7 +252,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
             io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), font_config.SizePixels, &font_config, japanes_and_extra_ranges.Data);
             font_config.MergeMode = false;
 
-            large_font_config.SizePixels = 134.f;
+            large_font_config.SizePixels = 134.f * atlas_font_scale;
             gui.large_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
 
             LOG_INFO("Using default Vita3K font.");
@@ -265,7 +264,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     io.Fonts->Build();
 
     // DPI scaling
-    io.FontGlobalScale = emuenv.dpi_scale;
+    io.FontGlobalScale = emuenv.dpi_scale / atlas_font_scale;
     io.DisplayFramebufferScale = { emuenv.dpi_scale, emuenv.dpi_scale };
 }
 
