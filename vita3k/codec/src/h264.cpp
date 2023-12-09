@@ -25,18 +25,32 @@ extern "C" {
 
 #include <cassert>
 
-void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest, const uint32_t width, const uint32_t height) {
-    for (uint32_t a = 0; a < height; a++) {
-        memcpy(dest, &frame->data[0][frame->linesize[0] * a], width);
+void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest, const uint32_t width, const uint32_t height, bool is_p3) {
+    for (uint32_t i = 0; i < height; i++) {
+        memcpy(dest, &frame->data[0][frame->linesize[0] * i], width);
         dest += width;
     }
-    for (uint32_t a = 0; a < height / 2; a++) {
-        memcpy(dest, &frame->data[1][frame->linesize[1] * a], width / 2);
-        dest += width / 2;
-    }
-    for (uint32_t a = 0; a < height / 2; a++) {
-        memcpy(dest, &frame->data[2][frame->linesize[2] * a], width / 2);
-        dest += width / 2;
+
+    if (is_p3) {
+        for (uint32_t i = 0; i < height / 2; i++) {
+            memcpy(dest, &frame->data[1][frame->linesize[1] * i], width / 2);
+            dest += width / 2;
+        }
+        for (uint32_t i = 0; i < height / 2; i++) {
+            memcpy(dest, &frame->data[2][frame->linesize[2] * i], width / 2);
+            dest += width / 2;
+        }
+    } else {
+        // p2 format, U and V are interleaved
+        for (uint32_t i = 0; i < height / 2; i++) {
+            const uint8_t *src_u = &frame->data[1][frame->linesize[1] * i];
+            const uint8_t *src_v = &frame->data[2][frame->linesize[2] * i];
+            for (uint32_t j = 0; j < width / 2; j++) {
+                dest[0] = src_u[j];
+                dest[1] = src_v[j];
+                dest += 2;
+            }
+        }
     }
 }
 
@@ -104,7 +118,7 @@ bool H264DecoderState::receive(uint8_t *data, DecoderSize *size) {
     }
 
     if (data) {
-        copy_yuv_data_from_frame(frame, data, width_in, height_in);
+        copy_yuv_data_from_frame(frame, data, width_in, height_in, output_yuvp3);
     }
 
     if (size) {
@@ -140,6 +154,10 @@ void H264DecoderState::get_res(uint32_t &width, uint32_t &height) {
 void H264DecoderState::get_pts(uint32_t &upper, uint32_t &lower) {
     upper = pts_out >> 32u;
     lower = pts_out & 0xFFFFFFFF;
+}
+
+void H264DecoderState::set_output_format(bool is_yuv_p3) {
+    this->output_yuvp3 = is_yuv_p3;
 }
 
 H264DecoderState::H264DecoderState(uint32_t width, uint32_t height) {

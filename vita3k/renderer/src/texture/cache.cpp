@@ -524,15 +524,12 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             pixels = texture_data_decompressed.data();
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F32;
             break;
-        // TODO: we are decoding YUV420P2 as YUV420P3, that's completely wrong...
-        // The reason I do not put an error message instead is because the video decoder
-        // is always outputting YUV420P2 frames (instead of what is asked by the user...)
-        // so this works in this case but that needs to be fixed
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
-            yuv420P3_texture_to_rgb(texture_data_decompressed.data(),
-                reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height);
+            yuv420_texture_to_rgb(texture_data_decompressed.data(),
+                reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height,
+                base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3);
             pixels = texture_data_decompressed.data();
             bpp = 32;
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
