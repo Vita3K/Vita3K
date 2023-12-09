@@ -1065,9 +1065,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (psn / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "PlayStation Network");
         ImGui::Spacing();
-        ImGui::Checkbox("Signed in PSN", &config.psn_signed_in);
+        ImGui::Checkbox(lang.network["psn_signed_in"].c_str(), &config.psn_signed_in);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", "If checked, games will consider the user is connected to the PSN network (but offline)");
+            ImGui::SetTooltip("%s", lang.network["psn_signed_in_description"].c_str());
 
         // HTTP
         ImGui::Spacing();
@@ -1102,7 +1102,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     // Debug
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem(lang.debug["title"].c_str())) {
+    if (ImGui::BeginTabItem("Debug")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
         ImGui::Checkbox(lang.debug["log_imports"].c_str(), &emuenv.kernel.debugger.log_imports);

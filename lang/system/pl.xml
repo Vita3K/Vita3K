@@ -340,6 +340,10 @@ System Vita3K jest gotowy!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Ustawienia">
+		<system name="System">
+		</system>
+		<network name="Sieć">
+		</network>
 		<close>Zamykać</close>
 		<save>Zapisz</save>
 	</settings_dialog>

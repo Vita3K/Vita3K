@@ -515,6 +515,10 @@ GUIでのアジア地域のフォントサポートに必須です。
 	</settings>
 
 	<settings_dialog name="設定">
+		<system name="システム">
+		</system>
+		<network name="ネットワーク">
+		</network>
 		<close>閉じる</close>
 		<save>セーブ</save>
 	</settings_dialog>

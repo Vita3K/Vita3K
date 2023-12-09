@@ -13,7 +13,7 @@
 		<emulation name="Emulator">
 			<last_apps_used>Apl terakhir digunakan</last_apps_used>
 		</emulation>
-		<debug name="Debug">
+		<debug>
 			<threads>Benang</threads>
 			<semaphores>Semaphore</semaphores>
 			<mutexes>Mutexes</mutexes>
@@ -37,13 +37,13 @@
 
 	<about name="Tentang">
 		<vita3k>Vita3K: Emulator TV PS Vita/PS. Emulator TV PS Vita/PS berfungsi pertama di dunia.</vita3k>
-		<about_vita3k>.Vita3K ialah emulator PlayStation Vita/PlayStation TV sumber terbuka eksperimen yang ditulis dalam C++ untuk sistem pengendalian Windows, Linux, macOS dan Android, translate by ssindo</about_vita3k>
+		<about_vita3k>Vita3K ialah emulator PlayStation Vita/PlayStation TV sumber terbuka eksperimen yang ditulis dalam C++ untuk sistem pengendalian Windows, Linux, macOS dan Android.</about_vita3k>
 		<special_credit>Kredit istimewa: Ikon Vita3K direka oleh:</special_credit>
 		<github_website>Jika awak berminat untuk menyumbang, lihat kami:</github_website>
 		<vita3k_website>Lawati laman web kami untuk maklumat lanjut:</vita3k_website>
 		<ko-fi_website>Jika awak ingin menyokong kami, awak boleh membuat sumbangan atau melanggan kami:</ko-fi_website>
 		<vita3k_staff>Vita3K Staff</vita3k_staff>
-		<developers>pemaju</developers>
+		<developers>Pemaju</developers>
 		<contributors>Penyumbang</contributors>
 		<supporters>Penyokong</supporters>
 	</about>
@@ -59,14 +59,11 @@
 		<app_summary>Ringkasan Apl</app_summary>
 		<custom_config>Konfigurasi Tersuai</custom_config>
 		<create>Cipta</create>
-		<edit>Edit</edit>
 		<remove>Alih keluar</remove>
 		<open_folder>Buka Folder</open_folder>
-		<addcont>DLC</addcont>
 		<license>Lesen</license>
 		<shaders_cache>Cache Shaders</shaders_cache>
 		<shaders_log>Log Shaders</shaders_log>
-		<manual>Manual</manual>
 		<update>Kemas kini</update>
 		<update_history>Kemas kini Sejarah</update_history>
 		<history_version>Versi {}</history_version>
@@ -92,7 +89,7 @@ bergantung pada saiznya dan perkakasan awak.</app_delete_description>
 			<title_id>ID Tajuk</title_id>
 			<last_time_used>Kali terakhir digunakan</last_time_used>
 			<time_used>Masa yang digunakan</time_used>
-			<never>ga pernah</never>
+			<never>Ga pernah</never>
 		</info>
 		<time_used>
 			<time_used_seconds>{}d</time_used_seconds>
@@ -111,7 +108,6 @@ Kod ralat: {}</an_error_occurred>
 		<file_corrupted>Fail itu rosak.</file_corrupted>
 		<microphone_disabled>Dayakan mikrofon.</microphone_disabled>
 		<no>gak</no>
-		<ok>OK</ok>
 		<please_wait>Sila tunggu...</please_wait>
 		<search>Cari</search>
 		<select_all>Pilih semua</select_all>
@@ -236,7 +232,7 @@ Kod ralat: {}</an_error_occurred>
 
 	<compatibility name="Keserasian">
 		<states>
-			<state id = "-1">gak diketahui</state>
+			<state id = "-1">Gak diketahui</state>
 			<state id = "0">Nothing</state>
 			<state id = "1">Bootable</state>
 			<state id = "2">Intro</state>
@@ -248,7 +244,7 @@ Kod ralat: {}</an_error_occurred>
 	</compatibility>
 
 	<compat_db>
-		<error>ralat</error>
+		<error>Ralat</error>
 		<information>Maklumat</information>
 		<get_failed>Gagal mendapatkan pangkalan data keserasian semasa, semak akses firewall/internet, cuba lagi kemudian.</get_failed>
 		<download_failed>Gagal memuat turun pangkalan data keserasian Aplikasi yang dikemas kini di: {}, cuba sebentar lagi.</download_failed>
@@ -257,13 +253,13 @@ Kod ralat: {}</an_error_occurred>
 {} apl baharu disenaraikan, menjadikan jumlah keseluruhan kepada {}!</new_app_listed>
 		<app_listed>Pangkalan data keserasian telah berjaya dikemas kini daripada {} ke {};
 {} apl disenaraikan!</app_listed>
-		<download_app_listed>Pangkalan data keserasian yang dikemas kini pada { } telah berjaya dimuat turun dan dimuatkan;
+		<download_app_listed>Pangkalan data keserasian yang dikemas kini pada {} telah berjaya dimuat turun dan dimuatkan;
 {} apl disenaraikan!</download_app_listed>
 	</compat_db>
 
 	<compile_shaders>
 		<compiling_shaders>Menyusun Shaders</compiling_shaders>
-		<pipelines_compiled>{} saluranPaip disusun</pipelines_compiled>
+		<pipelines_compiled>{} saluranpaip disusun</pipelines_compiled>
 		<shaders_compiled>{} shader disusun</shaders_compiled>
 	</compile_shaders>
 
@@ -293,7 +289,7 @@ Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
 		<use_custom_color>Gunakan Warna Tersuai</use_custom_color>
 		<use_custom_color_description>Tandai kotak ini untuk menggunakan warna tersuai untuk LED Kontroler.</use_custom_color_description>
 		<red>Merah</red>
-		<green>hijau</green>
+		<green>Hijau</green>
 		<blue>Biru</blue>
 		<reset_controller_binding>Tetapkan Semula Pengikat Kontroler</reset_controller_binding>
 	</controllers>
@@ -351,7 +347,7 @@ Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
 			</delete>
 			<info>
 				<details>Butiran</details>
-				<updated>dikemas kini</updated>
+				<updated>Dikemas kini</updated>
 			</info>
 			<load name="Load">
 				<cancel_loading>Adakah awak mahu membatalkan loading?</cancel_loading>
@@ -421,12 +417,8 @@ Sistem Vita3K awak sudah sedia!</completed_setup>
 		<current_emu_path>Laluan emulator semasa</current_emu_path>
 		<change_emu_path>Tukar Laluan Emulator</change_emu_path>
 		<reset_emu_path>Tetapkan Semula Laluan Emulator</reset_emu_path>
-		<install_firmware>Install Firmware.</install_firmware>
-		<install_highly_recommended>menginstal kedua-dua fail perisian tegar adalah sangat disyorkan.</install_highly_recommended>
+		<install_highly_recommended>Menginstal kedua-dua fail perisian tegar adalah sangat disyorkan.</install_highly_recommended>
 		<installed>Instalasi:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
 		<select_interface_settings>Pilih tetapan antara muka.</select_interface_settings>
 		<show_info_bar>Bar Maklumat Kelihatan</show_info_bar>
 		<info_bar_description>Tandai kotak untuk menunjukkan bar maklumat dalam pemilih apl.
@@ -434,7 +426,6 @@ Bar maklumat ialah jam, paras bateri dan pusat notifikasi.</info_bar_description
 		<show_live_area_screen>Skrin Apl Kawasan Live</show_live_area_screen>
 		<live_area_screen_description>Tandai kotak untuk membuka Kawasan Live secara lalai apabila mengklik pada aplikasi.
 Jika dilumpuhkan, klik kanan pada apl untuk membukanya.</live_area_screen_description>
-		<apps_list_grid>Grid Mode</apps_list_grid>
 		<apps_list_grid_description>Tandai kotak untuk menetapkan senarai apl kepada mode grid seperti PS Vita.</apps_list_grid_description>
 		<icon_size>Saiz Ikon Apl</icon_size>
 		<select_icon_size>Pilih saiz ikon pilihan awak.</select_icon_size>
@@ -449,7 +440,6 @@ Jika dilumpuhkan, klik kanan pada apl untuk membukanya.</live_area_screen_descri
 			<successed_install_firmware>Firmware berjaya Instalasi.</successed_install_firmware>
 			<firmware_version>Firmware versi:</firmware_version>
 			<no_font_exist>Tiada Firmware font package hadir, sila muat turun dan pasangkannya.</no_font_exist>
-			<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
 			<firmware_font_package_description>Firmware font package diperlukan untuk sesetengah apl
 dan juga untuk sokongan fon serantau Asia. (Secara Umum Disyorkan)</firmware_font_package_description>
 			<delete_firmware>Padamkan fail Instalasi Firmware</delete_firmware>
@@ -474,7 +464,7 @@ Sila semak fail pkg dan work.bin/rif atau key zRIF.</failed_install_package>
 			<successed_install_archive>{} kandungan arkib berjaya Instalasi:</successed_install_archive>
 			<update_app>Kemas kini Apl kepada:</update_app>
 			<failed_install_archive>Gagal memasang {} kandungan arkib:</failed_install_archive>
-			<not_compatible_content>Tiada kandungan yang serasi ditemui dalam { } arkib:</not_compatible_content>
+			<not_compatible_content>Tiada kandungan yang serasi ditemui dalam {} arkib:</not_compatible_content>
 			<delete_archive>Padamkan arkib?</delete_archive>
 		</archive_install>
 		<license_install>
@@ -515,13 +505,7 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 		</help>
 	</live_area>
 
-	<performance_overlay>
-		<avg>Avg</avg>
-		<min>Min</min>
-		<max>Max</max>
-	</performance_overlay>
-
-	<settings name="tetapan">
+	<settings name="Tetapan">
 		<theme_background name="Tema dan Background">
 			<default>Lalai</default>
 			<theme name="Tema">
@@ -583,7 +567,7 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 		</language>
 	</settings>
 
-	<settings_dialog name="tetapan">
+	<settings_dialog name="Tetapan">
 		<core name="Teras">
 			<modules_mode>Mode Modul</modules_mode>
 			<modules_list>Senarai Modul</modules_list>
@@ -607,7 +591,6 @@ Sila muat turun dan pasang PS Vita yang terakhir firmware.</no_modules>
 			<gpu>GPU (Reboot untuk memohon)</gpu>
 			<select_gpu>Pilih GPU Vita3K yang sepatutnya dijalankan.</select_gpu>
 			<renderer_accuracy>Ketepatan Penyampai</renderer_accuracy>
-			<v_sync>V-Sync</v_sync>
 			<v_sync_description>Melumpuhkan V-Sync boleh membetulkan isu kelajuan dalam sesetengah permainan.
 Adalah disyorkan untuk memastikan ia didayakan untuk mengelakkan koyakan visual.</v_sync_description>
 			<disable_surface_sync>Lumpuhkan penyegerakan permukaan</disable_surface_sync>
@@ -619,7 +602,7 @@ Memberi rangsangan prestasi yang besar jika dilumpuhkan (khususnya apabila penin
 			<internal_resolution_upscaling>Peningkatan Resolusi Dalaman</internal_resolution_upscaling>
 			<internal_resolution_upscaling_description>Dayakan peningkatan untuk Vita3K.
 Percubaan: permainan tidak dijamin untuk dipaparkan dengan betul pada lebih daripada 1x.</internal_resolution_upscaling_description>
-			<anisotropic_filtering>anisotropik Penapisan</anisotropic_filtering>
+			<anisotropic_filtering>Anisotropik Penapisan</anisotropic_filtering>
 			<anisotropic_filtering_description>Penapisan anisotropik ialah teknik untuk meningkatkan kualiti imej permukaan
 yang condong berbanding dengan penonton.
 Ia tidak mempunyai kelemahan tetapi boleh menjejaskan prestasi.</anisotropic_filtering_description>
@@ -631,7 +614,7 @@ Ia tidak mempunyai kelemahan tetapi boleh menjejaskan prestasi.</anisotropic_fil
 			<shader_cache>Gunakan Shader Cache</shader_cache>
 			<shader_cache_description>Tandai kotak untuk mendayakan cache shader untuk menyusunnya terlebih dahulu pada permulaan permainan.
 Nyahtanda untuk melumpuhkan ciri ini.</shader_cache_description>
-			<spirv_shader>Gunakan shader Spir-V (ditamatkan)</spirv_shader>
+			<spirv_shader>Gunakan Shader Spir-V (Ditamatkan)</spirv_shader>
 			<spirv_shader_description>Hantarkan shader Spir-V yang dijana terus kepada pemandu.
 Ambil perhatian bahawa beberapa sambungan berfaedah akan dilumpuhkan,
 dan tidak semua GPU serasi dengan ini.</spirv_shader_description>
@@ -644,11 +627,9 @@ Pilih butang 'Enter' awak.</select_enter_button>
 Sesetengah aplikasi tidak menggunakan ini dan mendapatkan butang pengesahan lalai.</enter_button_description>
 			<circle>Bulatan</circle>
 			<cross>X</cross>
-			<pstv_mode>PS TV Mode</pstv_mode>
 			<pstv_mode_description>Tandai kotak untuk mendayakan mode PS TV Emulated.</pstv_mode_description>
-			<show_mode>Mode Tunjukkan</show_mode>
-			<show_mode_description>Tandai kotak untuk mendayakan mode Tunjukkan.</show_mode_description>
-			<demo_mode>Demo Mode</demo_mode>
+			<show_mode>Mode Show</show_mode>
+			<show_mode_description>Tandai kotak untuk mendayakan mode Show.</show_mode_description>
 			<demo_mode_description>Tandai kotak untuk mendayakan mode Demo.</demo_mode_description>
 		</system>
 		<emulator name="Emulator">
@@ -676,7 +657,7 @@ Sesetengah aplikasi tidak menggunakan ini dan mendapatkan butang pengesahan lala
 			<performance_overlay_description>Paparkan maklumat prestasi pada skrin sebagai tindanan.</performance_overlay_description>
 			<detail>Butiran</detail>
 			<select_detail>Pilih butiran tindanan prestasi pilihan awak.</select_detail>
-			<position>kedudukan</position>
+			<position>Kedudukan</position>
 			<select_position>Pilih kedudukan tindanan prestasi pilihan awak.</select_position>
 			<case_insensitive>Semak untuk mendayakan pencarian laluan tidak sensitif huruf besar-besaran pada sistem fail sensitif huruf besar-besaran.
 TETAP SEMULA PADA MULA SEMULA</case_insensitive>
@@ -708,12 +689,10 @@ Ia akan ditunjukkan dalam bar menu utama sahaja.</display_system_apps_descriptio
 Jika dilumpuhkan, klik kanan pada aplikasi untuk membukanya.</live_area_screen_description>
 			<stretch_the_display_area>Regangkan Kawasan Paparan</stretch_the_display_area>
 			<stretch_the_display_area_description>Tandai kotak untuk membesarkan kawasan paparan agar sesuai dengan saiz skrin.</stretch_the_display_area_description>
-			<apps_list_grid>Grid Mode</apps_list_grid>
 			<apps_list_grid_description>Tandai kotak untuk menetapkan senarai apl kepada mode grid.</apps_list_grid_description>
 			<icon_size>Saiz Ikon Apl</icon_size>
 			<select_icon_size>Pilih saiz ikon pilihan awak.</select_icon_size>
 			<font_support>Sokongan fon</font_support>
-			<asia_font_support>Asia Region</asia_font_support>
 			<asia_font_support_description>Tandai kotak ini untuk mendayakan sokongan fon untuk bahasa Cina dan Korea.
 Mendayakan ini akan menggunakan lebih banyak memori dan memerlukan anda memulakan semula emulator.</asia_font_support_description>
 			<firmware_font_package_description>Firmware font package diperlukan untuk sesetengah aplikasi
@@ -735,8 +714,6 @@ Minimum adalah legap dan maksimum adalah telus.</select_background_alpha>
 			<select_delay_start>Pilih kelewatan (dalam saat) sebelum kembali ke skrin mula.</select_delay_start>
 		</gui>
 		<network name="Network">
-			<psn_status>PSN Status</psn_status>
-			<select_psn_state>Pilih keadaan Rangkaian PS Network.</select_psn_state>
 			<enable_http>Dayakan HTTP</enable_http>
 			<enable_http_description>Tandai kotak ini untuk membolehkan permainan menggunakan protokol HTTP di Internet.</enable_http_description>
 			<timeout_attempts>Percubaan Tamat Masa HTTP</timeout_attempts>
@@ -752,7 +729,7 @@ lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak st
 			<read_end_sleep_description>Cuba masa tidur apabila tiada lagi data untuk dibaca,
 lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak stabil jika awak mempunyai internet yang teruk.</read_end_sleep_description>
 		</network>
-		<debug name="Debug">
+		<debug>
 			<log_imports>Pembalakan import</log_imports>
 			<log_imports_description>Simbol import modul log.</log_imports_description>
 			<log_exports>Pengelogan eksport</log_exports>
@@ -763,7 +740,7 @@ lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak st
 			<log_uniforms_description>Log shaders nama seragam dan nilai.</log_uniforms_description>
 			<color_surface_debug>Simpan permukaan warna</color_surface_debug>
 			<color_surface_debug_description>Simpan permukaan warna ke fail.</color_surface_debug_description>
-			<dump_elfs>lambakan ELF</dump_elfs>
+			<dump_elfs>Lambakan ELF</dump_elfs>
 			<dump_elfs_description>Buang kod yang dimuatkan sebagai ELF.</dump_elfs_description>
 			<validation_layer>Lapisan Pengesahan (Reboot diperlukan)</validation_layer>
 			<validation_layer_description>Dayakan lapisan pengesahan Vulkan.</validation_layer_description>
@@ -774,7 +751,7 @@ lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak st
 			<unwatch_import_calls>Nyahlihat Panggilan Import</unwatch_import_calls>
 			<watch_import_calls>Tonton Panggilan Import</watch_import_calls>
 		</debug>
-		<close>tutup</close>
+		<close>Tutup</close>
 		<save_reboot>SimpanDan Reboot</save_reboot>
 		<save_apply>SimpanDan Apply</save_apply>
 		<save>Simpan</save>
@@ -796,7 +773,7 @@ Awak boleh memperoleh trofi dengan menggunakan aplikasi yang menyokong ciri trof
 		<trophies>Trofi</trophies>
 		<grade>Gred</grade>
 		<progress>Kemajuan</progress>
-		<updated>dikemas kini</updated>
+		<updated>Dikemas kini</updated>
 	</trophy_collection>
 
 	<user_management>
@@ -816,14 +793,13 @@ Adakah awak pasti mahu meneruskan?</user_delete_warn>
 		<choose_avatar>Pilih Avatar</choose_avatar>
 		<reset_avatar>Tetapkan semula Avatar</reset_avatar>
 		<name>Nama</name>
-		<user>User</user>
-		<confirm>sahkan</confirm>
+		<confirm>Sahkan</confirm>
 		<automatic_user_login>User Login Automatik</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Vita3K Kemas kini">
  		<new_version_available>Versi baharu Vita3K tersedia.</new_version_available>
-		<back>belakang</back>
+		<back>Belakang</back>
  		<cancel_update>Adakah awak mahu membatalkan kemas kini?</cancel_update>
 		<downloading>Downloading...
 Selepas muat turun selesai, Vita3K akan dimulakan semula secara automatik dan kemudian memasang kemas kini baharu.</downloading>
@@ -846,7 +822,6 @@ Selepas muat turun selesai, Vita3K akan dimulakan semula secara automatik dan ke
 		<about_vita3k>Vita3K ialah emulator PlayStation Vita sumber terbuka yang ditulis dalam C++ untuk Windows, Linux, macOS dan Android.</about_vita3k>
 		<development_stage>Emulator masih dalam peringkat pembangunannya jadi sebarang maklum balas dan ujian amat dihargai.</development_stage>
 		<about_firmware>Untuk bermula, sila pasang Firmware PS Vita dan pakej fon.</about_firmware>
-		<download_firmware>Download Firmware</download_firmware>
 		<vita3k_quickstart>Panduan komprehensif tentang cara menyediakan Vita3K boleh didapati di</vita3k_quickstart>
 		<quickstart>Permulaan pantas</quickstart>
 		<page>muka surat.</page>
@@ -857,6 +832,6 @@ Selepas muat turun selesai, Vita3K akan dimulakan semula secara automatik dan ke
 		<discord_help>Sokongan tambahan boleh didapati dalam saluran #help</discord_help>
 		<no_piracy>Vita3K tidak membenarkan cetak rompak. Awak mesti membuang permainan awak sendiri.</no_piracy>
 		<show_next_time>Tunjukkan lainKali</show_next_time>
-		<close>tutup</close>
+		<close>Tutup</close>
 	</welcome>
 </lang>

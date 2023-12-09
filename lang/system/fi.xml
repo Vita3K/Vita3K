@@ -328,6 +328,10 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Asetukset">
+		<system name="Järjestelmä">
+		</system>
+		<network name="Verkko">
+		</network>
 		<close>Sulkea</close>
 		<save>Tallenna</save>
 	</settings_dialog>

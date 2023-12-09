@@ -531,8 +531,14 @@
 	</settings>
 
 	<settings_dialog name="Настройки">
+		<system name="Система">
+		</system>
+		<emulator name="Эмулятор">
+		</emulator>
 		<gui name="Интерфейс">
 		</gui>
+		<network name="Сеть">
+		</network>
 		<close>Закрыть</close>
 		<save>Сохранить</save>
 	</settings_dialog>

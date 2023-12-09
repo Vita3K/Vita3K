@@ -14,7 +14,7 @@
 		<emulation name="模拟">
 			<last_apps_used>最近使用的应用程序</last_apps_used>
 		</emulation>
-		<debug name="调试">
+		<debug>
 			<threads>线程</threads>
 			<semaphores>信号量</semaphores>
 			<mutexes>互斥锁</mutexes>
@@ -416,18 +416,44 @@
 
 	<initial_setup>
 		<back>返回</back>
+		<completed_setup>初始设定已完成。
+请尽情享受Vita3K吧。</completed_setup>
+		<select_language>请选择语言。</select_language>
+		<select_pref_path>请选择存放路径。</select_pref_path>
+		<current_emu_path>当前模拟器路径</current_emu_path>
+		<change_emu_path>更改模拟器路径</change_emu_path>
+		<reset_emu_path>重置模拟器路径</reset_emu_path>
 		<install_firmware>安装固件。</install_firmware>
+		<install_highly_recommended>强烈建议同时安装这两个固件文件。</install_highly_recommended>
 		<installed>已安装：</installed>
+		<download_firmware>下载固件</download_firmware>
+		<download_font_package>下载字体包</download_font_package>
 		<install_firmware_file>安装固件文件</install_firmware_file>
-		<grid_mode>网格模式</grid_mode>
+		<select_interface_settings>请选择界面设定。</select_interface_settings>
+		<show_info_bar>信息栏可見</show_info_bar>
+		<info_bar_description>勾选此项在应用程序选择页面内显示信息栏。
+信息栏是时间、电量以及信息中心。</info_bar_description>
+		<show_live_area_screen>Live Area应用程序屏幕</show_live_area_screen>
+		<live_area_screen_description>勾选此项在点击应用程序时默认打开Live Area页面。
+如果禁用，请右键应用程序将其打开。</live_area_screen_description>
+		<apps_list_grid>网格模式</apps_list_grid>
+		<apps_list_grid_description>勾选此项将应用程序列表设置为像PS Vita一样的网格模式。</apps_list_grid_description>
+		<icon_size>应用程序图标大小</icon_size>
+		<select_icon_size>选择您喜欢的图标大小。</select_icon_size>
 		<completed>已完成。</completed>
+		<next>继续</next>
 	</initial_setup>
 
 	<install_dialog>
 		<firmware_install>
 			<firmware_installation>固件安装</firmware_installation>
+			<firmware_installing>正在安装，请稍等…</firmware_installing>
 			<successed_install_firmware>固件已成功安装。</successed_install_firmware>
 			<firmware_version>固件版本：</firmware_version>
+			<no_font_exist>不存在固件字体包，请下载并安装。</no_font_exist>
+			<download_firmware_font_package>下载固件字体包</download_firmware_font_package>
+			<firmware_font_package_description>一些应用程序需要固件字体包，也需要亚洲区域字体支持。（强烈建议安裝）</firmware_font_package_description>
+			<delete_firmware>删除固件安装文件？</delete_firmware>
 		</firmware_install>
 		<pkg_install>
 			<select_license_type>请选择授权类型</select_license_type>
@@ -469,6 +495,8 @@
 		<continue>继续</continue>
 		<help>
 			<control_setting>在控制设置中使用键盘配置</control_setting>
+			<firmware_not_detected>未检测到固件，强烈建议安装</firmware_not_detected>
+			<firmware_font_not_detected>未检测到固件字体，建议在“Live Area”中安装字体固件</firmware_font_not_detected>
 			<live_area_help>Live Area帮助</live_area_help>
 			<browse_app>浏览应用程序列表</browse_app>
 			<browse_app_control>方向键、左摇杆、滚轮上/下或使用滑动条</browse_app_control>
@@ -709,8 +737,8 @@
 			<select_delay_start>选择返回开始画面前的延迟（以每秒为单位）。</select_delay_start>
 		</gui>
 		<network name="网络">
-			<psn_status>PSN状态</psn_status>
-			<select_psn_state>选择PS Network的状态。</select_psn_state>
+			<psn_signed_in>已登入PSN</psn_signed_in>
+			<psn_signed_in_description>如果勾选此项，游戏将认为用户已连接至PSN（但为离线）。</psn_signed_in_description>
 			<enable_http>启用HTTP</enable_http>
 			<enable_http_description>勾选此项启用游戏在网络上使用HTTP协议。</enable_http_description>
 			<timeout_attempts>HTTP超时尝试</timeout_attempts>
@@ -726,7 +754,7 @@
 			<read_end_sleep_description>尝试在没有更多数据可读取时进入休眠时间，这可以提升性能，
 但如果您的网络很糟糕，则会导致游戏不稳定。</read_end_sleep_description>
 		</network>
-		<debug name="调试">
+		<debug>
 			<log_imports>导入记录</log_imports>
 			<log_imports_description>记录模块导入符号。</log_imports_description>
 			<log_exports>导出记录</log_exports>
@@ -819,6 +847,7 @@
 		<about_vita3k>Vita3K是使用C++编写的开源PlayStation Vita模拟器，适用于Windows、Linux、macOS以及Android。</about_vita3k>
 		<development_stage>目前模拟器仍处于开发阶段，因此非常感谢任何反馈和测试。</development_stage>
 		<about_firmware>要开始使用，请安装PS Vita固件和字体包。</about_firmware>
+		<download_firmware>下载固件</download_firmware>
 		<vita3k_quickstart>有关如何设置Vita3K的综合指南可在</vita3k_quickstart>
 		<quickstart>快速入门</quickstart>
 		<page>页面中找到。</page>

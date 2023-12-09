@@ -342,6 +342,10 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 	</settings>
 
 	<settings_dialog name="Ajustes">
+		<system name="Sistema">
+		</system>
+		<network name="Red">
+		</network>
 		<close>Cerrar</close>
 		<save>Guardar</save>
 	</settings_dialog>
