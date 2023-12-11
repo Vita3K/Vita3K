@@ -991,8 +991,8 @@ struct SceGxmContext {
 
     std::mutex &callback_lock;
 
-    uint8_t *alloc_space = nullptr;
-    uint8_t *alloc_space_end = nullptr;
+    Ptr<uint8_t> alloc_space{};
+    Ptr<uint8_t> alloc_space_end{};
 
     // for immediate context only
     // we use the fact that everything is done in an ordered manner
@@ -1006,7 +1006,7 @@ struct SceGxmContext {
     bool last_precomputed = false;
 
     // this is used for deferred contexts
-    uint8_t *alloc_space_start = nullptr;
+    Ptr<uint8_t> alloc_space_start{};
     std::set<CommandListRange> command_list_ranges;
     SceGxmCommandList *curr_command_list = nullptr;
 
@@ -1072,8 +1072,8 @@ struct SceGxmContext {
     // insert new memory range used by a command list
     void insert_new_memory_range(const MemState &mem) {
         CommandListRange range = {
-            Ptr<void>(alloc_space_start, mem).address(),
-            Ptr<void>(alloc_space, mem).address(),
+            alloc_space_start.address(),
+            alloc_space.address(),
             curr_command_list
         };
         deferred_check_for_free(range);
@@ -1099,7 +1099,7 @@ struct SceGxmContext {
         std::uint32_t actual_size = 0;
 
         if (state.vdm_buffer && state.vdm_buffer_size > 0) {
-            alloc_space = state.vdm_buffer.cast<std::uint8_t>().get(mem);
+            alloc_space = state.vdm_buffer.cast<uint8_t>();
             actual_size = state.vdm_buffer_size;
 
             if (state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
@@ -1121,7 +1121,7 @@ struct SceGxmContext {
                 return false;
             }
 
-            alloc_space = space.cast<std::uint8_t>().get(mem);
+            alloc_space = space.cast<uint8_t>();
         }
 
         alloc_space_start = alloc_space;
@@ -1138,13 +1138,13 @@ struct SceGxmContext {
         // otherwise we would never know when to free our command lists
         constexpr uint32_t allocated_on_vdm = 4;
 
-        if (alloc_space + allocated_on_vdm > alloc_space_end) {
+        if (alloc_space.address() + allocated_on_vdm > alloc_space_end.address()) {
             if (!make_new_alloc_space(kern, mem, thread_id, true)) {
                 return nullptr;
             }
         }
 
-        alloc_space += allocated_on_vdm;
+        alloc_space = alloc_space + allocated_on_vdm;
 
         // the data returned is not part of the vita memory (our commands are too big and do not fit)
         return reinterpret_cast<uint8_t *>(malloc(size));
@@ -1162,7 +1162,7 @@ struct SceGxmContext {
             if (command_allocator_size > 0 && command_next_free_pos <= command_last_free_pos) {
                 size_t offset = command_next_free_pos % command_allocator_size;
                 command_next_free_pos++;
-                new_command = reinterpret_cast<renderer::Command *>(alloc_space) + offset;
+                new_command = alloc_space.cast<renderer::Command>().get(mem) + offset;
                 new (new_command) renderer::Command;
             } else {
                 new_command = new renderer::Command;
