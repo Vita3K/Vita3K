@@ -327,6 +327,10 @@ Dit Vita3K-system er klart!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Indstillinger">
+		<system name="System">
+		</system>
+		<network name="Netværk">
+		</network>
 		<close>Lukke</close>
 		<save>Gem</save>
 	</settings_dialog>

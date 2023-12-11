@@ -191,7 +191,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         0x2200, 0x22FF, // Math operators
         0x2460, 0x24FF, // Enclosed Alphanumerics
         0x25A0, 0x26FF, // Miscellaneous symbols
-        0x4E00, 0x9FFF, // Unified ideograms CJC
+        0x4E00, 0x9FFF, // Unified ideograms CJK
         0,
     };
 
@@ -203,7 +203,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
 
     static const ImWchar chinese_range[] = {
         0x2000, 0x206F, // General Punctuation
-        0x4e00, 0x9FAF, // CJK Ideograms
+        0x4E00, 0x9FAF, // CJK Ideograms
         0,
     };
     // clang-format on
@@ -212,8 +212,8 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     ImFontGlyphRangesBuilder builder;
     builder.AddRanges(io.Fonts->GetGlyphRangesJapanese());
     builder.AddRanges(extra_range);
-    ImVector<ImWchar> japanes_and_extra_ranges;
-    builder.BuildRanges(&japanes_and_extra_ranges);
+    ImVector<ImWchar> japanese_and_extra_ranges;
+    builder.BuildRanges(&japanese_and_extra_ranges);
 
     ImFontConfig font_config{};
     ImFontConfig large_font_config{};
@@ -228,7 +228,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         gui.vita_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), font_config.SizePixels, &font_config, latin_range);
         font_config.MergeMode = true;
 
-        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), font_config.SizePixels, &font_config, japanes_and_extra_ranges.Data);
+        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
 
         const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
         if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN))
@@ -244,17 +244,21 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         font_config.SizePixels = 22.f;
 
         // Set up default font path
-        fs::path default_font_path = emuenv.static_assets_path / "data/fonts/mplus-1mn-bold.ttf";
+        fs::path default_font_path = emuenv.static_assets_path / "data/fonts";
 
         // Check existence of default font file
         if (fs::exists(default_font_path)) {
-            gui.vita_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), font_config.SizePixels, &font_config, latin_range);
+            gui.vita_font = io.Fonts->AddFontFromFileTTF((default_font_path / "mplus-1mn-bold.ttf").string().c_str(), font_config.SizePixels, &font_config, latin_range);
             font_config.MergeMode = true;
-            io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), font_config.SizePixels, &font_config, japanes_and_extra_ranges.Data);
+            io.Fonts->AddFontFromFileTTF((default_font_path / "mplus-1mn-bold.ttf").string().c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
+
+            const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
+            if (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S)
+                io.Fonts->AddFontFromFileTTF((default_font_path / "SourceHanSansSC-Bold-Min.ttf").string().c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
             font_config.MergeMode = false;
 
             large_font_config.SizePixels = 134.f;
-            gui.large_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
+            gui.large_font = io.Fonts->AddFontFromFileTTF((default_font_path / "mplus-1mn-bold.ttf").string().c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
 
             LOG_INFO("Using default Vita3K font.");
         } else

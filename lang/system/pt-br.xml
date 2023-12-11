@@ -404,6 +404,10 @@ fundo</add_background>
 	</settings>
 
 	<settings_dialog name="Configurações">
+		<system name="Sistema">
+		</system>
+		<network name="Rede">
+		</network>
 		<close>Fechar</close>
 		<save>Salvar</save>
 	</settings_dialog>

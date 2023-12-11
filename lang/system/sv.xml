@@ -328,6 +328,10 @@ Ditt Vita3K-system är redo!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Inställningar">
+		<system name="System">
+		</system>
+		<network name="Nätverk">
+		</network>
 		<close>Stänga</close>
 		<save>Spara</save>
 	</settings_dialog>

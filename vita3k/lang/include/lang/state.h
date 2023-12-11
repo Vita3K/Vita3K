@@ -110,7 +110,6 @@ struct LangState {
             { "last_apps_used", "Last Apps used" }
         };
         std::map<std::string, std::string> debug = {
-            { "title", "Debug" },
             { "threads", "Threads" },
             { "semaphores", "Semaphores" },
             { "mutexes", "Mutexes" },
@@ -543,7 +542,7 @@ struct LangState {
             { "renderer_accuracy", "Renderer Accuracy" },
             { "v_sync", "V-Sync" },
             { "v_sync_description", "Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid visual tearing." },
-            { "disable_surface_sync", "Disable surface sync" },
+            { "disable_surface_sync", "Disable Surface Sync" },
             { "surface_sync_description", "Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on)." },
             { "screen_filter", "Screen Filter" },
             { "screen_filter_description", "Set post-processing filter to apply." },
@@ -558,7 +557,7 @@ struct LangState {
             { "shaders", "Shaders" },
             { "shader_cache", "Use Shader Cache" },
             { "shader_cache_description", "Check the box to enable shader cache to pre-compile it at game startup.\nUncheck to disable this feature." },
-            { "spirv_shader", "Use Spir-V shader (deprecated)" },
+            { "spirv_shader", "Use Spir-V Shader (deprecated)" },
             { "spirv_shader_description", "Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled,\nand not all GPUs are compatible with this." },
             { "clean_shaders", "Clean Shaders Cache and Log" }
         };
@@ -654,8 +653,8 @@ struct LangState {
         };
         std::map<std::string, std::string> network = {
             { "title", "Network" },
-            { "psn_status", "PSN Status" },
-            { "select_psn_state", "Select the state of the PS Network." },
+            { "psn_signed_in", "Signed in PSN" },
+            { "psn_signed_in_description", "If checked, games will consider the user is connected to the PSN network (but offline)." },
             { "enable_http", "Enable HTTP" },
             { "enable_http_description", "Check this box to enable games to use the HTTP protocol on the internet." },
             { "timeout_attempts", "HTTP Timeout Attempts" },
@@ -668,7 +667,6 @@ struct LangState {
             { "read_end_sleep_description", "Attempt sleep time when there isn't more data to read,\nlower can improve performance but can make games unstable if you have bad enough internet." }
         };
         std::map<std::string, std::string> debug = {
-            { "title", "Debug" },
             { "log_imports", "Import logging" },
             { "log_imports_description", "Log module import symbols." },
             { "log_exports", "Export logging" },
