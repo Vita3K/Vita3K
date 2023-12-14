@@ -200,7 +200,14 @@ EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceA
     SceAvcdecPicture *pPicture = picture->pPicture.get(emuenv.mem)[0].get(emuenv.mem);
     uint8_t *output = pPicture->frame.pPicture[0].cast<uint8_t>().get(emuenv.mem);
 
-    // TODO: decoding can be done async I think
+    if ((pPicture->frame.pixelType & (SCE_AVCDEC_PIXEL_YUV420_RASTER | SCE_AVCDEC_PIXEL_YUV420_PACKED_RASTER)) == 0) {
+        LOG_ERROR_ONCE("Avcdec rgba output is not implemented");
+        picture->numOfOutput++;
+        return 0;
+    }
+    bool is_yuvp3 = static_cast<bool>(pPicture->frame.pixelType & SCE_AVCDEC_PIXEL_YUV420_RASTER);
+    decoder_info->set_output_format(is_yuvp3);
+
     decoder_info->configure(&options);
     const auto send = decoder_info->send(reinterpret_cast<uint8_t *>(au->es.pBuf.get(emuenv.mem)), au->es.size);
     decoder_info->set_res(pPicture->frame.frameWidth, pPicture->frame.frameHeight);
