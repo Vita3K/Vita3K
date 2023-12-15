@@ -1492,9 +1492,9 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
 }
 
 enum class DualSrcId {
-    INTERAL0,
+    INTERNAL0,
     INTERNAL1,
-    INTERAL2,
+    INTERNAL2,
     UNIFIED,
     NONE,
 };
@@ -1506,26 +1506,26 @@ static std::optional<DualSrcLayout> get_dual_op1_src_layout(uint8_t count, Imm2 
     case 1:
         switch (config) {
         case 0: return std::optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::NONE, DualSrcId::NONE });
-        case 1: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::NONE, DualSrcId::NONE });
+        case 1: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::NONE, DualSrcId::NONE });
         case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::NONE, DualSrcId::NONE });
-        case 3: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL2, DualSrcId::NONE, DualSrcId::NONE });
+        case 3: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL2, DualSrcId::NONE, DualSrcId::NONE });
         default:
             return {};
         }
     case 2:
         switch (config) {
         case 0: return std::optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::NONE });
-        case 1: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::NONE });
-        case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::NONE });
+        case 1: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::UNIFIED, DualSrcId::NONE });
+        case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::INTERNAL1, DualSrcId::NONE });
         default:
             return {};
         }
     case 3:
         switch (config) {
-        case 0: return std::optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::INTERAL2 });
-        case 1: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::INTERAL2 });
-        case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::UNIFIED });
-        case 3: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::INTERAL2 });
+        case 0: return std::optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::INTERNAL2 });
+        case 1: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::UNIFIED, DualSrcId::INTERNAL2 });
+        case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::INTERNAL1, DualSrcId::UNIFIED });
+        case 3: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::INTERNAL1, DualSrcId::INTERNAL2 });
         default:
             return {};
         }
@@ -1543,7 +1543,7 @@ static std::optional<DualSrcLayout> get_dual_op2_src_layout(uint8_t op1_count, u
         switch (op2_count) {
         case 1:
             switch (src_config) {
-            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::NONE, DualSrcId::NONE });
+            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::NONE, DualSrcId::NONE });
             case 1:
             case 2:
             case 3:
@@ -1552,18 +1552,18 @@ static std::optional<DualSrcLayout> get_dual_op2_src_layout(uint8_t op1_count, u
             }
         case 2:
             switch (src_config) {
-            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::NONE });
+            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::INTERNAL1, DualSrcId::NONE });
             case 1: return std::optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::NONE });
-            case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::NONE });
+            case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::UNIFIED, DualSrcId::NONE });
             case 3: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::UNIFIED, DualSrcId::NONE });
             default: return {};
             }
         case 3:
             switch (src_config) {
-            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::INTERAL2 });
-            case 1: return std::optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::INTERAL2 });
-            case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::INTERAL2 });
-            case 3: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::INTERNAL1 });
+            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::INTERNAL1, DualSrcId::INTERNAL2 });
+            case 1: return std::optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::INTERNAL2 });
+            case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::UNIFIED, DualSrcId::INTERNAL2 });
+            case 3: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::UNIFIED, DualSrcId::INTERNAL1 });
             default: return {};
             }
         default: return {};
@@ -1572,16 +1572,16 @@ static std::optional<DualSrcLayout> get_dual_op2_src_layout(uint8_t op1_count, u
         switch (op2_count) {
         case 1:
             switch (src_config) {
-            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::NONE, DualSrcId::NONE });
+            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::NONE, DualSrcId::NONE });
             case 1: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::NONE, DualSrcId::NONE });
             case 2: return std::optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::NONE, DualSrcId::NONE });
             default: return {};
             }
         case 2:
             switch (src_config) {
-            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERAL2, DualSrcId::NONE });
-            case 1: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::INTERAL2, DualSrcId::NONE });
-            case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL2, DualSrcId::UNIFIED, DualSrcId::NONE });
+            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::INTERNAL2, DualSrcId::NONE });
+            case 1: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::INTERNAL2, DualSrcId::NONE });
+            case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL2, DualSrcId::UNIFIED, DualSrcId::NONE });
             default: return {};
             }
         default: return {};
@@ -1590,9 +1590,9 @@ static std::optional<DualSrcLayout> get_dual_op2_src_layout(uint8_t op1_count, u
         switch (op2_count) {
         case 1:
             switch (src_config) {
-            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::NONE, DualSrcId::NONE });
+            case 0: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL0, DualSrcId::NONE, DualSrcId::NONE });
             case 1: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::NONE, DualSrcId::NONE });
-            case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERAL2, DualSrcId::NONE, DualSrcId::NONE });
+            case 2: return std::optional<DualSrcLayout>({ DualSrcId::INTERNAL2, DualSrcId::NONE, DualSrcId::NONE });
             case 3: return std::optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::NONE, DualSrcId::NONE });
             default: return {};
             }
@@ -1770,12 +1770,12 @@ bool USSETranslatorVisitor::vdual(
                 // gpi2_slot_num_bit_1 is also unified source ext
                 op.swizzle = decode_dual_swizzle(unified_store_swizz,
                     op1_src_count >= 2 ? false : gpi2_slot_num_bit_1, comp_count_type);
-                if ((op1_src_count <= 2) && gpi2_slot_num_bit_0_or_unified_store_abs)
+                if (op1_src_count < 2 && gpi2_slot_num_bit_0_or_unified_store_abs)
                     op.flags |= RegisterFlags::Absolute;
                 if (unified_store_neg)
                     op.flags |= RegisterFlags::Negative;
                 break;
-            case DualSrcId::INTERAL0:
+            case DualSrcId::INTERNAL0:
                 op.bank = RegisterBank::FPINTERNAL;
                 op.num = gpi0_slot_num;
                 op.swizzle = decode_dual_swizzle(gpi0_swizz, false, comp_count_type);
@@ -1787,7 +1787,7 @@ bool USSETranslatorVisitor::vdual(
                 if (gpi1_neg)
                     op.flags |= RegisterFlags::Negative;
                 break;
-            case DualSrcId::INTERAL2:
+            case DualSrcId::INTERNAL2:
                 op.bank = RegisterBank::FPINTERNAL;
                 op.num = op1_src_count >= 2 ? (gpi2_slot_num_bit_1 << 1u | gpi2_slot_num_bit_0_or_unified_store_abs) : 2;
                 op.swizzle = SWIZZLE_CHANNEL_4(X, Y, Z, W);
