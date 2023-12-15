@@ -260,7 +260,7 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
 
         LOG_INFO("Application successfully deleted '{} [{}]'.", title_id, APP_INDEX->title);
 
-        gui.app_selector.user_apps.erase(APP_INDEX);
+        gui.app_selector.user_apps.erase(gui.app_selector.user_apps.begin() + (APP_INDEX - &gui.app_selector.user_apps[0]));
 
         save_apps_cache(gui, emuenv);
     } catch (std::exception &e) {

@@ -87,7 +87,7 @@ static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv) {
                 for (auto i = 0; i < std::min(8, int32_t(gui.time_apps[emuenv.io.user_id].size())); i++) {
                     const auto time_app = gui.time_apps[emuenv.io.user_id][i];
                     const auto app_index = get_app_index(gui, time_app.app);
-                    if ((app_index != gui.app_selector.user_apps.end()) && (app_index != gui.app_selector.sys_apps.end()))
+                    if (app_index)
                         draw_app(*app_index);
                 }
             } else

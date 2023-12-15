@@ -103,7 +103,7 @@ static void get_save_data_list(GuiState &gui, EmuEnvState &emuenv) {
 
     for (const auto &save : fs::directory_iterator(SAVE_PATH)) {
         const auto title_id = save.path().stem().generic_string();
-        if (fs::is_directory(save.path()) && !fs::is_empty(save.path()) && get_app_index(gui, title_id) != gui.app_selector.user_apps.end()) {
+        if (fs::is_directory(save.path()) && !fs::is_empty(save.path()) && get_app_index(gui, title_id)) {
             tm updated_tm = {};
 
             const auto last_writen = fs::last_write_time(save);
@@ -363,7 +363,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
                     if (menu == "app") {
                         fs::remove_all(emuenv.pref_path / "ux0/app" / content.first);
                         fs::remove_all(emuenv.pref_path / "ux0/addcont" / content.first);
-                        gui.app_selector.user_apps.erase(get_app_index(gui, content.first));
+                        gui.app_selector.user_apps.erase(gui.app_selector.user_apps.begin() + (get_app_index(gui, content.first) - &gui.app_selector.user_apps[0]));
                         gui.app_selector.user_apps_icon.erase(content.first);
                     }
                     const auto SAVE_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / content.first };
