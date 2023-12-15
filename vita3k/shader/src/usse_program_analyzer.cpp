@@ -59,40 +59,23 @@ bool does_write_to_predicate(const std::uint64_t inst, std::uint8_t &pred) {
 
 std::uint8_t get_predicate(const std::uint64_t inst) {
     switch (inst >> 59) {
-    // Special instructions
-    case 0b11111: {
-        if ((((inst >> 32) & ~0xFF8FFFFF) >> 20) == 0) {
-            break;
-        }
+    // VMAD2
+    case 0b00000:
+        return ((inst >> 32) & ~0xFCFFFFFF) >> 24;
 
-        // Kill
-        if ((((inst >> 32) & ~0xF8FFFFFF) >> 24) == 1 && ((inst >> 32) & ~0xFFCFFFFF) >> 20 == 3) {
-            uint8_t pred = ((inst >> 32) & (~0xFFFFF9FF)) >> 9;
-            switch (pred) {
-            case 0:
-                return static_cast<uint8_t>(ExtPredicate::NONE);
-            case 1:
-                return static_cast<uint8_t>(ExtPredicate::NEGP0);
-            case 2:
-                return static_cast<uint8_t>(ExtPredicate::NEGP1);
-            case 3:
-                return static_cast<uint8_t>(ExtPredicate::P0);
-            default:
-                return 0;
-            }
-        }
-
-        // Load immediate
-        if (((((inst >> 32) & ~0xF8FFFFFF) >> 24) == 4) && (((inst >> 32) & ~0xFFCFFFFF) >> 20 == 2)) {
-            return (((inst >> 32) & ~0xFFFFF1FF) >> 9);
-        }
-
-        return 0;
+    // V32NMAD, V16NMAD, VMAD
+    case 0b00001:
+    case 0b00010:
+    case 0b00011: {
+        uint8_t predicate = ((inst >> 32) & ~0xF8FFFFFFU) >> 24;
+        return static_cast<uint8_t>(ext_vec_predicate_to_ext(static_cast<ExtVecPredicate>(predicate)));
     }
+
     // VMAD normal version, predicates only occupied two bits
     case 0b00100:
     case 0b00101: {
         uint8_t predicate = ((inst >> 32) & ~0xFCFFFFFF) >> 24;
+        // short vector predicate
         switch (predicate) {
         case 0:
             return static_cast<uint8_t>(ExtPredicate::NONE);
@@ -106,27 +89,66 @@ std::uint8_t get_predicate(const std::uint64_t inst) {
             return 0;
         }
     }
-    // SOP2, I32MAD
+
+    // SOP2, SOP2M, SOP3, I8MAD, I16MAD, I32MAD
     case 0b10000:
-    case 0b10101:
-    case 0b10011: {
+    case 0b10001:
+    case 0b10010:
+    case 0b10011:
+    case 0b10100:
+    case 0b10101: {
         uint8_t predicate = ((inst >> 32) & ~0xF9FFFFFF) >> 25;
         return static_cast<uint8_t>(short_predicate_to_ext(static_cast<ShortPredicate>(predicate)));
     }
-    // V16NMAD, V32NMAD, VMAD, VDP
-    case 0b00011:
-    case 0b00010:
-    case 0b00001: {
-        uint8_t predicate = ((inst >> 32) & ~0xF8FFFFFFU) >> 24;
-        return static_cast<uint8_t>(ext_vec_predicate_to_ext(static_cast<ExtVecPredicate>(predicate)));
+
+    // Special instructions
+    case 0b11111: {
+        const uint8_t opcat = (inst >> (32 + 20)) & 0b11;
+        const uint8_t opcat_extra = (inst >> (32 + 22)) & 0b1;
+        if (opcat == 0) {
+            if (opcat_extra == 0)
+                // BR
+                break;
+            else
+                // PHAS
+                return 0;
+        }
+
+        const uint8_t op2 = (inst >> (32 + 24)) & 0b111;
+
+        if (opcat == 0b11 && op2 == 0b001) {
+            // KILL
+            uint8_t pred = ((inst >> 32) & (~0xFFFFF9FF)) >> 9;
+            // note: this is the opposite of the short predicate when there is a predicate
+            switch (pred) {
+            case 0:
+                return static_cast<uint8_t>(ExtPredicate::NONE);
+            case 1:
+                return static_cast<uint8_t>(ExtPredicate::NEGP0);
+            case 2:
+                return static_cast<uint8_t>(ExtPredicate::NEGP1);
+            case 3:
+                return static_cast<uint8_t>(ExtPredicate::P0);
+            default:
+                return 0;
+            }
+        } else if (opcat == 0b10 && op2 == 0b100) {
+            // LIMM
+            return (((inst >> 32) & ~0xFFFFF1FF) >> 9);
+        } else if (opcat == 0b11 && op2 == 0b011) {
+            // DEPTHF
+            uint8_t predicate = ((inst >> 32) & ~0xFFFFF9FFU) >> 9;
+            return static_cast<uint8_t>(short_predicate_to_ext(static_cast<ShortPredicate>(predicate)));
+        }
+
+        return 0;
     }
-    case 0b00000:
-        return ((inst >> 32) & ~0xFCFFFFFF) >> 24;
 
     default:
         break;
     }
 
+    // most common predicate location
     return ((inst >> 32) & ~0xF8FFFFFFU) >> 24;
 }
 
