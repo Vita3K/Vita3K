@@ -21,6 +21,7 @@
 #include <shader/usse_utilities.h>
 
 #include <util/bit_cast.h>
+#include <util/float_to_half.h>
 #include <util/log.h>
 
 #include <SPIRV/GLSL.std.450.h>
@@ -855,25 +856,20 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
 #undef GEN_CONSTANT
         };
 
+        // https://wiki.henkaku.xyz/vita/SGX543#Constants
         // Load constants. Ignore mask
         if ((op.type == DataType::F32) || (op.type == DataType::UINT32) || (op.type == DataType::INT32)) {
             auto get_f32_from_bank = [&](const int num) -> spv::Id {
                 int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::C_X);
-                std::uint32_t value = 0;
-
-                switch (swizz_val >> 1) {
-                case 0: {
-                    value = usse::f32_constant_table_bank_0_raw[op.num + (swizz_val & 1)];
-                    break;
-                }
-
-                case 1: {
-                    value = usse::f32_constant_table_bank_1_raw[op.num + (swizz_val & 1)];
-                    break;
-                }
-
-                default:
+                if (swizz_val >= 4)
                     return handle_unexpect_swizzle(op.swizzle[num]);
+
+                uint32_t value = 0;
+                // bank 1 is only used for channel 1
+                if (swizz_val == 1) {
+                    value = usse::f32_constant_table_bank_1_raw[op.num];
+                } else {
+                    value = usse::f32_constant_table_bank_0_raw[op.num];
                 }
 
                 if (integral_unsigned)
@@ -892,39 +888,37 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
         } else if ((op.type == DataType::F16) || (op.type == DataType::UINT16) || (op.type == DataType::INT16)) {
             auto get_f16_from_bank = [&](const int num) -> spv::Id {
                 const int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::C_X);
-                float value = 0;
+                if (swizz_val >= 4)
+                    return handle_unexpect_swizzle(op.swizzle[num]);
 
-                switch (swizz_val & 3) {
-                case 0: {
+                float value = 0.f;
+                switch (swizz_val) {
+                case 1:
+                    value = usse::f16_constant_table_bank1[op.num];
+                    break;
+
+                case 2:
+                    value = usse::f16_constant_table_bank2[op.num];
+                    break;
+
+                case 3:
+                    value = usse::f16_constant_table_bank3[op.num];
+                    break;
+
+                default:
                     value = usse::f16_constant_table_bank0[op.num];
                     break;
                 }
 
-                case 1: {
-                    value = usse::f16_constant_table_bank1[op.num];
-                    break;
-                }
-
-                case 2: {
-                    value = usse::f16_constant_table_bank2[op.num];
-                    break;
-                }
-
-                case 3: {
-                    value = usse::f16_constant_table_bank3[op.num];
-                    break;
-                }
-
-                default:
-                    return handle_unexpect_swizzle(op.swizzle[num]);
-                }
-
-                if (integral_unsigned)
-                    return b.makeUintConstant(std::bit_cast<uint32_t>(value));
-                else if (integral_signed)
-                    return b.makeIntConstant(std::bit_cast<int32_t>(value));
-                else
+                if (integral_unsigned || integral_signed) {
+                    uint16_t value_int = util::encode_flt16(value);
+                    if (integral_unsigned)
+                        return b.makeUintConstant(value_int);
+                    else
+                        return b.makeIntConstant(static_cast<int16_t>(value));
+                } else {
                     return b.makeFloatConstant(value);
+                }
             };
 
             for (int i = 0; i < 4; i++) {
