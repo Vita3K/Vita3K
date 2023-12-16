@@ -639,7 +639,8 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     };
 
     vk::PipelineColorBlendStateCreateInfo color_blending{};
-    if (is_fragment_disabled || use_shader_interlock) {
+    const bool frag_has_no_output = static_cast<bool>(gxm_fragment_shader->program_flags & SCE_GXM_PROGRAM_FLAG_OUTPUT_UNDEFINED);
+    if (is_fragment_disabled || frag_has_no_output || use_shader_interlock) {
         // The write mask must be empty as the lack of a fragment shader results in undefined values
         static const vk::PipelineColorBlendAttachmentState blending = {
             .blendEnable = VK_FALSE,
