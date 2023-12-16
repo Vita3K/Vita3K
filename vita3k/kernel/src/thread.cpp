@@ -194,18 +194,20 @@ bool ThreadState::run_loop() {
             return;
 
         ThreadToDo old_to_do = to_do;
-        to_do = ThreadToDo::run;
         int old_call_level = call_level;
+        uint32_t old_returned_value = returned_value;
+        to_do = ThreadToDo::run;
         call_level = 1;
 
         lock.unlock();
-        int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
+        int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
         if (ret != 0)
             LOG_WARN("Thread start event handler returned {}", log_hex(ret));
         lock.lock();
 
         to_do = old_to_do;
         call_level = old_call_level;
+        returned_value = old_returned_value;
     };
 
     while (true) {
