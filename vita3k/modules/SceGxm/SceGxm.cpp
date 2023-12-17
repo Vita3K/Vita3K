@@ -2634,11 +2634,11 @@ EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram 
 
 EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
     TRACY_FUNC(sceGxmGetRenderTargetMemSize, params, hostMemSize);
-    if (!params) {
+    if (!params || !hostMemSize)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    }
-    *hostMemSize = uint32_t(MiB(2));
-    return STUBBED("2MiB emuenv mem");
+
+    *hostMemSize = static_cast<uint32_t>(KiB(64));
+    return STUBBED("64KiB emuenv mem");
 }
 
 EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
