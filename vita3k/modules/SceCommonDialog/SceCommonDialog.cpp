@@ -75,6 +75,11 @@ EXPORT(int, sceCameraImportDialogTerm) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceCommonDialog_B7D4C911) {
+    STUBBED("Return 2");
+    return 2;
+}
+
 EXPORT(int, sceCommonDialogGetWorkerThreadId) {
     TRACY_FUNC(sceCommonDialogGetWorkerThreadId);
     return UNIMPLEMENTED();
