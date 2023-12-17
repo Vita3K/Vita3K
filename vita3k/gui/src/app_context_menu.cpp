@@ -414,7 +414,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                             const auto rest_of_body = "%23 Issues%0A<!-- Summary of problems -->%0A%0A%23 Screenshots%0A![image](https://?)%0A%0A%23 Log%0A%0A%23 Recommended labels%0A<!-- See https://github.com/Vita3K/compatibility/labels -->%0A- A?%0A- B?%0A- C?";
 
                             open_path(fmt::format(
-                                "{}/new?title={} [{}]&body={}%0A%0A{}%0A%0A{}%0A%0A{}",
+                                "{}/new?assignees=&labels=&projects=&template=1-ISSUE_TEMPLATE.md&title={} [{}]&body={}%0A%0A{}%0A%0A{}%0A%0A{}",
                                 ISSUES_URL, title, title_id, app_summary, vita3k_summary, test_env_summary, rest_of_body));
                         }
                     }
