@@ -52,6 +52,9 @@ bool ThreadSignal::send() {
 int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option = nullptr) {
     constexpr size_t KERNEL_TLS_SIZE = 0x800;
 
+    // the stack size should be page-aligned
+    stack_size = align(stack_size, KiB(4));
+
     this->name = name;
     this->entry_point = entry_point.address();
 
