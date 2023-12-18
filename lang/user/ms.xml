@@ -4,6 +4,7 @@
 	<main_menubar>
 		<file name="File">
 			<open_pref_path>Buka Laluan Pref</open_pref_path>
+			<open_textures_path>Buka Textures Laluan</open_textures_path>
 			<install_firmware>Install Firmware</install_firmware>
 			<install_pkg>Install .pkg</install_pkg>
 			<install_zip>Install .zip, .vpk</install_zip>
@@ -11,7 +12,7 @@
 			<exit>Keluar</exit>
 		</file>
 		<emulation name="Emulator">
-			<last_apps_used>Apl terakhir digunakan</last_apps_used>
+			<last_apps_used>Apl Terakhir Digunakan</last_apps_used>
 		</emulation>
 		<debug>
 			<threads>Benang</threads>
@@ -25,7 +26,7 @@
 			<disassembly>Pembongkaran</disassembly>
 		</debug>
 		<configuration name="Konfigurasi">
-			<user_management>Pengurusan pengguna</user_management>
+			<user_management>Pengurusan Pengguna</user_management>
 		</configuration>
 		<controls name="Kawalan">
 			<keyboard_controls>Kawalan Keyboard</keyboard_controls>
@@ -78,18 +79,18 @@ bergantung pada saiznya dan perkakasan awak.</app_delete_description>
 		</delete>
 		<info>
 			<eligible>Layak</eligible>
-			<ineligible>Tidak layak</ineligible>
+			<ineligible>Tidak Layak</ineligible>
 			<level>Tahap</level>
 			<name>Nama</name>
 			<trophy_earning>Pendapatan Trofi</trophy_earning>
-			<parental_controls>Kawalan ibu bapa</parental_controls>
-			<updated>Dikemas kini</updated>
+			<parental_controls>Kawalan Ibu Bapa</parental_controls>
+			<updated>Dikemas Kini</updated>
 			<size>Ukuran</size>
 			<version>Versi</version>
 			<title_id>ID Tajuk</title_id>
-			<last_time_used>Kali terakhir digunakan</last_time_used>
-			<time_used>Masa yang digunakan</time_used>
-			<never>Ga pernah</never>
+			<last_time_used>Kali Terakhir Digunakan</last_time_used>
+			<time_used>Masa Yang Digunakan</time_used>
+			<never>Tak Pernah</never>
 		</info>
 		<time_used>
 			<time_used_seconds>{}d</time_used_seconds>
@@ -138,18 +139,18 @@ Kod ralat: {}</an_error_occurred>
 			<month>Disember</month>
 		</ymonth>
 		<small_ymonth>
-			<month>Januari</month>
-			<month>Februari</month>
-			<month>Mac</month>
+			<month>januari</month>
+			<month>februari</month>
+			<month>mac</month>
 			<month>april</month>
-			<month>Mei</month>
-			<month>Jun</month>
-			<month>Julai</month>
-			<month>Ogos</month>
+			<month>mei</month>
+			<month>jun</month>
+			<month>julai</month>
+			<month>ogos</month>
 			<month>september</month>
-			<month>Oktober</month>
+			<month>oktober</month>
 			<month>november</month>
-			<month>Disember</month>
+			<month>disember</month>
 		</small_ymonth>
 		<mday>
 			<days></days>
@@ -221,10 +222,9 @@ Kod ralat: {}</an_error_occurred>
 		</small_mday>
 		<hidden_trophy>Piala Tersembuny</hidden_trophy>
 		<one_hour_ago>1 Jam Yang Lalu</one_hour_ago>
-		<one_minute_ago>1Minit Yang Lalu</one_minute_ago>
+		<one_minute_ago>1 Minit Yang Lalu</one_minute_ago>
 		<bronze>Gangsa</bronze>
 		<gold>Emas</gold>
-		<platinum>Platinum</platinum>
 		<silver>Perak</silver>
 		<hours_ago>{} Jam Yang Lalu</hours_ago>
 		<minutes_ago>{} Minit Yang Lalu</minutes_ago>
@@ -232,7 +232,7 @@ Kod ralat: {}</an_error_occurred>
 
 	<compatibility name="Keserasian">
 		<states>
-			<state id = "-1">Gak diketahui</state>
+			<state id = "-1">Gak Diketahui</state>
 			<state id = "0">Nothing</state>
 			<state id = "1">Bootable</state>
 			<state id = "2">Intro</state>
@@ -259,7 +259,7 @@ Kod ralat: {}</an_error_occurred>
 
 	<compile_shaders>
 		<compiling_shaders>Menyusun Shaders</compiling_shaders>
-		<pipelines_compiled>{} saluranpaip disusun</pipelines_compiled>
+		<pipelines_compiled>{} textures paip disusun</pipelines_compiled>
 		<shaders_compiled>{} shader disusun</shaders_compiled>
 	</compile_shaders>
 
@@ -323,7 +323,6 @@ Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
 		<r2_button>Butang R2</r2_button>
 		<l3_button>Butang L3</l3_button>
 		<r3_button>Butang R3</r3_button>
-		<gui>GUI</gui>
 		<full_screen>Skrin penuh</full_screen>
 		<toggle_touch>Togol Sentuh</toggle_touch>
 		<toggle_touch_description>Bertukar antara sentuhan belakang dan sentuhan skrin.</toggle_touch_description>
@@ -331,7 +330,7 @@ Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
 		<toggle_gui_visibility_description>Togol antara menunjukkan dan menyembunyikan GUI di bahagian atas skrin semasa apl sedang berjalan.</toggle_gui_visibility_description>
 		<miscellaneous>Macam-macam</miscellaneous>
 		<toggle_texture_replacement>Togol Penggantian Tekstur</toggle_texture_replacement>
-		<error>ralat</error>
+		<error>Ralat</error>
 		<error_duplicate_key>Key digunakan untuk pengikatan lain atau ia dikhaskan.</error_duplicate_key>
 	</controls>
 
@@ -347,13 +346,13 @@ Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
 			</delete>
 			<info>
 				<details>Butiran</details>
-				<updated>Dikemas kini</updated>
+				<updated>Dikemas Kini</updated>
 			</info>
 			<load name="Load">
 				<cancel_loading>Adakah awak mahu membatalkan loading?</cancel_loading>
 				<no_saved_data>Tiada data yang disimpan.</no_saved_data>
 				<load_complete>Loading selesai.</load_complete>
-				<loading>Loading...</loading>
+				<loading>Muatkan...</loading>
 				<load_saved_data>Adakah awak mahu memuatkan data yang disimpan ini?</load_saved_data>
 			</load>
 			<save name="Save">
@@ -364,8 +363,8 @@ Tiada ruang kosong yang mencukupi pada kad memori.</could_not_save>
 				<new_saved_data>Data Tersimpan Baharu</new_saved_data>
 				<saving_complete>Saving selesai.</saving_complete>
 				<save_the_data>Adakah awak ingin menyimpan data?</save_the_data>
-				<saving>Saving...</saving>
-				<warning_saving>Saving...
+				<saving>Menyimpan...</saving>
+				<warning_saving>Menyimpan...
 Jangan matikan sistem atau tutup apl.</warning_saving>
 				<overwrite_saved_data>Adakah awak mahu menulis ganti data yang disimpan ini?</overwrite_saved_data>
 			</save>
@@ -382,16 +381,10 @@ Jangan matikan sistem atau tutup apl.</warning_saving>
 		<sort_app>Isih Apl Mengikut</sort_app>
 		<all>Semua</all>
 		<by_region>Mengikut Region</by_region>
-		<usa>USA</usa>
-		<europe>Europe</europe>
 		<japan>Jepun</japan>
-		<asia>Asia</asia>
 		<by_type>Mengikut Type</by_type>
 		<commercial>Komersil</commercial>
-		<homebrew>Homebrew</homebrew>
 		<by_compatibility_state>Mengikut Keadaan Keserasian</by_compatibility_state>
-		<ver>Ver</ver>
-		<cat>Cat</cat>
 		<comp>Komp</comp>
 		<last_time>Kali terakhir</last_time>
 		<refresh>MuatSemula</refresh>
@@ -439,10 +432,10 @@ Jika dilumpuhkan, klik kanan pada apl untuk membukanya.</live_area_screen_descri
 			<firmware_installing>Instalasi sedang dijalankan, sila tunggu...</firmware_installing>
 			<successed_install_firmware>Firmware berjaya Instalasi.</successed_install_firmware>
 			<firmware_version>Firmware versi:</firmware_version>
-			<no_font_exist>Tiada Firmware font package hadir, sila muat turun dan pasangkannya.</no_font_exist>
+			<no_font_exist>Tiada firmware font package hadir, sila muat turun dan pasangkannya.</no_font_exist>
 			<firmware_font_package_description>Firmware font package diperlukan untuk sesetengah apl
 dan juga untuk sokongan fon serantau Asia. (Secara Umum Disyorkan)</firmware_font_package_description>
-			<delete_firmware>Padamkan fail Instalasi Firmware</delete_firmware>
+			<delete_firmware>Padamkan fail Instalasi firmware</delete_firmware>
 		</firmware_install>
 		<pkg_install>
 			<select_license_type>Pilih jenis lesen</select_license_type>
@@ -468,13 +461,13 @@ Sila semak fail pkg dan work.bin/rif atau key zRIF.</failed_install_package>
 			<delete_archive>Padamkan arkib?</delete_archive>
 		</archive_install>
 		<license_install>
-			<successed_install_license>Berjaya Instalasi lesen.</successed_install_license>
+			<successed_install_license>Berjaya instalasi lesen.</successed_install_license>
 			<failed_install_license>Gagal memasang lesen.
 Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 		</license_install>
 		<reinstall>
 			<reinstall_content>Pasang semula kandungan ini?</reinstall_content>
-			<already_installed>Kandungan ini sudah Instalasi.</already_installed>
+			<already_installed>Kandungan ini sudah instalasi.</already_installed>
 			<reinstall_overwrite>Adakah awak mahu memasang semula dan menulis ganti data sedia ada?</reinstall_overwrite>
 		</reinstall>
 	</install_dialog>
@@ -485,7 +478,7 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 		<help>
 			<control_setting>Menggunakan set konfigurasi untuk keyboard dalam tetapan kawalan</control_setting>
 			<firmware_not_detected>Firmware tidak dikesan. Instalasi amat disyorkan</firmware_not_detected>
-			<firmware_font_not_detected>Firmware font tidak dikesan. Menginstalasi disyorkan untuk fon teks dalam Kawasan Langsung</firmware_font_not_detected>
+			<firmware_font_not_detected>Firmware font tidak dikesan. Menginstalasi disyorkan untuk fon teks dalam Live Area</firmware_font_not_detected>
 			<live_area_help>Bantu Live Area</live_area_help>
 			<browse_app>Semak imbas dalam senarai apl</browse_app>
 			<browse_app_control>D-pad, Analog kiri, Wheel in Atas/Bawah atau menggunakan Slider</browse_app_control>
@@ -506,7 +499,7 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 	</live_area>
 
 	<settings name="Tetapan">
-		<theme_background name="Tema dan Background">
+		<theme_background name="Tema & Background">
 			<default>Lalai</default>
 			<theme name="Tema">
 				<find_a_psvita_custom_themes>Cari Tema Tersuai PSVita</find_a_psvita_custom_themes>
@@ -529,13 +522,13 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 				<add_background>Tambahkan Background</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
-		<date_time name="Tarikh dan masa">
-			<date_format name ="Format tarikh">
+		<date_time name="Tarikh & Masa">
+			<date_format name ="Format Tarikh">
 				<yyyy_mm_dd>YYYY/MM/DD</yyyy_mm_dd>
 				<dd_mm_yyyy>DD/MM/YYYY</dd_mm_yyyy>
 				<mm_dd_yyyy>MM/DD/YYYY</mm_dd_yyyy>
 			</date_format>
-			<time_format name="Format masa">
+			<time_format name="Format Masa">
 				<clock_12_hour>Jam 12 Jam</clock_12_hour>
 				<clock_24_hour>Jam 24 Jam</clock_24_hour>
 			</time_format>
@@ -543,24 +536,24 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 		<language name="Bahasa">
 			<system_language>Bahasa System</system_language>
 			<input_language name="Bahasa Input">
-				<keyboards name="Keyboards">
+				<keyboards name="Papan Ketik">
 					<ime_languages>
-						<lang id="1">Danish</lang>
-						<lang id="2">German</lang>
-						<lang id="262144">English (United Kingdom)</lang>
-						<lang id="4">English (United States)</lang>
-						<lang id="8">Spanish</lang>
-						<lang id="16">French</lang>
-						<lang id="32">Italian</lang>
-						<lang id="64">Dutch</lang>
-						<lang id="128">Norwegian</lang>
-						<lang id="256">Polish</lang>
-						<lang id="131072">Portuguese (Brazil)</lang>
-						<lang id="512">Portuguese (Portugal)</lang>
-						<lang id="1024">Russian</lang>
-						<lang id="2048">Finnish</lang>
-						<lang id="4096">Swedish</lang>
-						<lang id="524288">Turkish</lang>
+						<lang id="1">Denmark</lang>
+						<lang id="2">Jerman</lang>
+						<lang id="262144">Inggeris (United Kingdom)</lang>
+						<lang id="4">Inggeris (United States)</lang>
+						<lang id="8">Sepanyol</lang>
+						<lang id="16">Perancis/lang>
+						<lang id="32">Itali</lang>
+						<lang id="64">Belanda</lang>
+						<lang id="128">Norway</lang>
+						<lang id="256">Poland</lang>
+						<lang id="131072">Portugis (Brazil)</lang>
+						<lang id="512">Portugis (Portugal)</lang>
+						<lang id="1024">Rusia</lang>
+						<lang id="2048">Finland</lang>
+						<lang id="4096">Sweden</lang>
+						<lang id="524288">Turki</lang>
 					</ime_languages>
 				</keyboards>
 			</input_language>
@@ -573,13 +566,13 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 			<modules_list>Senarai Modul</modules_list>
 			<select_modules>Pilih modul yang awak inginkan.</select_modules>
 			<search_modules>Modul Carian</search_modules>
-			<clear_list>Senarai jelas</clear_list>
+			<clear_list>Senarai Jelas</clear_list>
 			<no_modules>Tiada modul hadir.
 Sila muat turun dan pasang PS Vita yang terakhir firmware.</no_modules>
-			<refresh_list>Muat semula Senarai</refresh_list>
+			<refresh_list>Muat Semula Senarai</refresh_list>
 		</core>
 		<cpu>
-			<cpu_backend>CPU bahagian belakang</cpu_backend>
+			<cpu_backend>CPU Bahagian Belakang</cpu_backend>
 			<select_cpu_backend>Pilih bahagian belakang CPU pilihan awak.</select_cpu_backend>
 			<cpu_opt>Dayakan pengoptimuman</cpu_opt>
 			<cpu_opt_description>Tandai kotak untuk mendayakan pengoptimuman CPU JIT tambahan.</cpu_opt_description>
@@ -587,13 +580,13 @@ Sila muat turun dan pasang PS Vita yang terakhir firmware.</no_modules>
 		<gpu>
 			<reset>Tetapkan semula</reset>
 			<backend_renderer>Penyampai Bahagian Belakang</backend_renderer>
-			<select_backend_renderer>Backend RendererPilih pemapar backend pilihan awak.</select_backend_renderer>
+			<select_backend_renderer>Backend renderer pilih pemapar backend pilihan awak.</select_backend_renderer>
 			<gpu>GPU (Reboot untuk memohon)</gpu>
 			<select_gpu>Pilih GPU Vita3K yang sepatutnya dijalankan.</select_gpu>
 			<renderer_accuracy>Ketepatan Penyampai</renderer_accuracy>
 			<v_sync_description>Melumpuhkan V-Sync boleh membetulkan isu kelajuan dalam sesetengah permainan.
 Adalah disyorkan untuk memastikan ia didayakan untuk mengelakkan koyakan visual.</v_sync_description>
-			<disable_surface_sync>Lumpuhkan penyegerakan permukaan</disable_surface_sync>
+			<disable_surface_sync>Lumpuhkan Edit Penyegerakan</disable_surface_sync>
 			<surface_sync_description>Penggodam kelajuan, tandai kotak untuk melumpuhkan penyegerakan permukaan antara CPU dan GPU.
 Penyegerakan permukaan diperlukan oleh sesetengah permainan.
 Memberi rangsangan prestasi yang besar jika dilumpuhkan (khususnya apabila peningkatan dihidupkan).</surface_sync_description>
@@ -614,7 +607,7 @@ Ia tidak mempunyai kelemahan tetapi boleh menjejaskan prestasi.</anisotropic_fil
 			<shader_cache>Gunakan Shader Cache</shader_cache>
 			<shader_cache_description>Tandai kotak untuk mendayakan cache shader untuk menyusunnya terlebih dahulu pada permulaan permainan.
 Nyahtanda untuk melumpuhkan ciri ini.</shader_cache_description>
-			<spirv_shader>Gunakan Shader Spir-V (Ditamatkan)</spirv_shader>
+			<spirv_shader>Gunakan Shader Spir-V (ditamatkan)</spirv_shader>
 			<spirv_shader_description>Hantarkan shader Spir-V yang dijana terus kepada pemandu.
 Ambil perhatian bahawa beberapa sambungan berfaedah akan dilumpuhkan,
 dan tidak semua GPU serasi dengan ini.</spirv_shader_description>
@@ -628,7 +621,6 @@ Sesetengah aplikasi tidak menggunakan ini dan mendapatkan butang pengesahan lala
 			<circle>Bulatan</circle>
 			<cross>X</cross>
 			<pstv_mode_description>Tandai kotak untuk mendayakan mode PS TV Emulated.</pstv_mode_description>
-			<show_mode>Mode Show</show_mode>
 			<show_mode_description>Tandai kotak untuk mendayakan mode Show.</show_mode_description>
 			<demo_mode_description>Tandai kotak untuk mendayakan mode Demo.</demo_mode_description>
 		</system>
@@ -636,7 +628,7 @@ Sesetengah aplikasi tidak menggunakan ini dan mendapatkan butang pengesahan lala
 			<boot_apps_full_screen>Boot apl dalam skrin penuh</boot_apps_full_screen>
 			<audio_backend>Audio Bahagian Belakang</audio_backend>
 			<select_audio_backend>Pilih bahagian belakang audio pilihan awak.</select_audio_backend>
-			<enable_ngs_support>Dayakan sokongan NGS</enable_ngs_support>
+			<enable_ngs_support>Dayakan NGS Audio</enable_ngs_support>
 			<ngs_description>Nyahtanda kotak untuk melumpuhkan sokongan untuk perpustakaan audio lanjutan NGS.</ngs_description>
 			<log_level>Log Tahap</log_level>
 			<select_log_level>Pilih tahap log pilihan awak.</select_log_level>
@@ -675,10 +667,12 @@ Awak perlu mengalihkan folder lama awak ke lokasi baharu secara manual.</reset_e
 			<clear_custom_config>Bersihkan Konfigurasi Tersuai</clear_custom_config>
 		</emulator>
 		<gui name="GUI">
-			<show_gui>GUI yang boleh dilihat</show_gui>
+			<show_gui>GUI Yang Boleh Dilihat</show_gui>
 			<gui_description>Tandai kotak untuk menunjukkan GUI selepas boot apl.</gui_description>
 			<show_info_bar>Bar Maklumat Kelihatan</show_info_bar>
 			<info_bar_description>Tandai kotak untuk menunjukkan bar maklumat dalam pemilih apl.</info_bar_description>
+			<user_lang>Bahasa GUI</user_lang>
+			<select_user_lang>Pilih bahasa user awak.</select_user_lang>
 			<display_info_message>Paparkan Mesej Maklumat</display_info_message>
 			<display_info_message_description>Nyahtanda kotak untuk memaparkan mesej maklumat dalam log sahaja.</display_info_message_description>
 			<display_system_apps>Paparan Apl Sistem</display_system_apps>
@@ -698,7 +692,7 @@ Mendayakan ini akan menggunakan lebih banyak memori dan memerlukan anda memulaka
 			<firmware_font_package_description>Firmware font package diperlukan untuk sesetengah aplikasi
 dan juga untuk sokongan fon serantau Asia dalam GUI.
 Ia juga secara amnya disyorkan untuk GUI.</firmware_font_package_description>
-			<theme_background>Tema dan Background</theme_background>
+			<theme_background>Tema & Background</theme_background>
 			<current_theme_content_id>ID kandungan tema semasa:</current_theme_content_id>
 			<reset_default_theme>Tetapkan Semula Tema Lalai</reset_default_theme>
 			<using_theme_background>Menggunakan tema background</using_theme_background>
@@ -714,6 +708,8 @@ Minimum adalah legap dan maksimum adalah telus.</select_background_alpha>
 			<select_delay_start>Pilih kelewatan (dalam saat) sebelum kembali ke skrin mula.</select_delay_start>
 		</gui>
 		<network name="Network">
+			<psn_signed_in>Masuk ke PSN</psn_signed_in>
+			<psn_signed_in_description>Jika disemak, permainan akan menganggap user disambungkan ke rangkaian PSN (tetapi di luar talian).</psn_signed_in_description>
 			<enable_http>Dayakan HTTP</enable_http>
 			<enable_http_description>Tandai kotak ini untuk membolehkan permainan menggunakan protokol HTTP di Internet.</enable_http_description>
 			<timeout_attempts>Percubaan Tamat Masa HTTP</timeout_attempts>
@@ -730,15 +726,15 @@ lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak st
 lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak stabil jika awak mempunyai internet yang teruk.</read_end_sleep_description>
 		</network>
 		<debug>
-			<log_imports>Pembalakan import</log_imports>
+			<log_imports>Pembalakan Import</log_imports>
 			<log_imports_description>Simbol import modul log.</log_imports_description>
-			<log_exports>Pengelogan eksport</log_exports>
+			<log_exports>Pengelogan Eksport</log_exports>
 			<log_exports_description>Simbol eksport modul log.</log_exports_description>
-			<log_active_shaders>Pembalakan shader</log_active_shaders>
+			<log_active_shaders>Pembalakan Shader</log_active_shaders>
 			<log_active_shaders_description>Lorek log digunakan pada setiap panggilan cabutan.</log_active_shaders_description>
-			<log_uniforms>Pembalakan seragam</log_uniforms>
+			<log_uniforms>Pembalakan Seragam</log_uniforms>
 			<log_uniforms_description>Log shaders nama seragam dan nilai.</log_uniforms_description>
-			<color_surface_debug>Simpan permukaan warna</color_surface_debug>
+			<color_surface_debug>Simpan Edit Warna</color_surface_debug>
 			<color_surface_debug_description>Simpan permukaan warna ke fail.</color_surface_debug_description>
 			<dump_elfs>Lambakan ELF</dump_elfs>
 			<dump_elfs_description>Buang kod yang dimuatkan sebagai ELF.</dump_elfs_description>
@@ -752,10 +748,10 @@ lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak st
 			<watch_import_calls>Tonton Panggilan Import</watch_import_calls>
 		</debug>
 		<close>Tutup</close>
-		<save_reboot>SimpanDan Reboot</save_reboot>
-		<save_apply>SimpanDan Apply</save_apply>
+		<save_reboot>Simpan & Reboot</save_reboot>
+		<save_apply>Simpan & Apply</save_apply>
 		<save>Simpan</save>
-		<keep_changes>Klik pada Simpan untuk menyimpan perubahan awak.</keep_changes>
+		<keep_changes>Klik pada simpan untuk menyimpan perubahan awak.</keep_changes>
 	</settings_dialog>
 
 	<trophy_collection>
@@ -773,7 +769,7 @@ Awak boleh memperoleh trofi dengan menggunakan aplikasi yang menyokong ciri trof
 		<trophies>Trofi</trophies>
 		<grade>Gred</grade>
 		<progress>Kemajuan</progress>
-		<updated>Dikemas kini</updated>
+		<updated>Dikemas Kini</updated>
 	</trophy_collection>
 
 	<user_management>
@@ -791,7 +787,7 @@ Awak boleh memperoleh trofi dengan menggunakan aplikasi yang menyokong ciri trof
 Adakah awak pasti mahu meneruskan?</user_delete_warn>
 		<user_deleted>User dipadamkan.</user_deleted>
 		<choose_avatar>Pilih Avatar</choose_avatar>
-		<reset_avatar>Tetapkan semula Avatar</reset_avatar>
+		<reset_avatar>Tetapkan Semula Avatar</reset_avatar>
 		<name>Nama</name>
 		<confirm>Sahkan</confirm>
 		<automatic_user_login>User Login Automatik</automatic_user_login>
