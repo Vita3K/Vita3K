@@ -913,7 +913,11 @@ static void display_entry_thread(EmuEnvState &emuenv) {
         SceGxmSyncObject *new_sync = display_callback->new_sync.get(emuenv.mem);
 
         // Wait for fragment on the new buffer to finish
-        renderer::wishlist(new_sync, display_callback->new_sync_timestamp);
+        // set a (big) time limit to make sure we don't softlock
+        constexpr int one_second = 1'000'000;
+        if (!renderer::wishlist(new_sync, display_callback->new_sync_timestamp, one_second))
+            LOG_ERROR_ONCE("Failed to wait for the new frame to be ready");
+
         // now we can remove the thread from the display queue
         display_queue.pop();
 
