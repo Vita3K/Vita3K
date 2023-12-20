@@ -160,7 +160,7 @@ void init_paths(Root &root_paths) {
             root_paths.set_static_assets_path(fs::path(XDG_DATA_HOME) / app_name / dir_sep);
     }
 
-    if (APPDIR != NULL) {
+    if (APPDIR != NULL && fs::exists(fs::path(APPDIR) / "usr/share/Vita3K")) {
         root_paths.set_static_assets_path(fs::path(APPDIR) / "usr/share/Vita3K");
     }
 
