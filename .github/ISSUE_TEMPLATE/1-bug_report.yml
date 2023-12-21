@@ -1,0 +1,63 @@
+name: Bug Report
+description: Template for reporting bugs
+title: "[BUG]: "
+labels: "bug"
+body:
+  - type: markdown
+    attributes:
+      value: Tech support does not belong here. You should only file an issue here if you think you have experienced an actual bug with Vita3K.
+             Android specific issues should go to https://github.com/Vita3K/Vita3K-Android/issues/new, and
+             Game specific issues should go to the respective game issue in https://github.com/Vita3K/compatibility.
+  - type: checkboxes
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the bug you encountered.
+      options:
+      - label: I have searched the existing issues
+        required: true
+  - type: input
+    attributes:
+      label: Affected Build(s)
+      description: List the affected build(s) that this issue applies to.
+      placeholder: v0.1.2 3456
+    validations:
+      required: true
+  - type: textarea
+    id: issue-desc
+    attributes:
+      label: Description of Issue
+      description: A brief description of the issue encountered along with any images and/or videos.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: A brief description of how it is expected to work along with any images and/or videos.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Reproduction Steps
+      description: A brief explanation of how to reproduce this issue. If possible, provide a save file to aid in reproducing the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log File
+      description: A log file will help our developers to better diagnose and fix the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: system-config
+    attributes:
+      label: System Configuration
+      value: |
+        CPU:
+        GPU/Driver:
+        RAM:
+        OS:
+    validations:
+      required: true
