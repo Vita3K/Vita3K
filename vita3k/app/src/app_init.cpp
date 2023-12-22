@@ -329,7 +329,9 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 }
 
 bool late_init(EmuEnvState &state) {
-    state.renderer->late_init(state.cfg, state.app_path);
+    // note: mem is not initialized yet but that's not an issue
+    // the renderer is not using it yet, just storing it for later uses
+    state.renderer->late_init(state.cfg, state.app_path, state.mem);
 
     if (!init(state.mem, state.renderer->need_page_table)) {
         LOG_ERROR("Failed to initialize memory for emulator state!");

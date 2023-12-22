@@ -77,11 +77,11 @@ COMMAND_SET_STATE(region_clip) {
 
 COMMAND_SET_STATE(program) {
     TRACY_FUNC_COMMANDS_SET_STATE(program);
-    const Ptr<const void> program = helper.pop<Ptr<const void>>();
+    const Ptr<void> program = helper.pop<Ptr<void>>();
     const bool is_fragment = helper.pop<bool>();
 
     if (is_fragment) {
-        render_context->record.fragment_program = program.cast<const SceGxmFragmentProgram>();
+        render_context->record.fragment_program = program.cast<SceGxmFragmentProgram>();
         const SceGxmFragmentProgram *gxm_program = render_context->record.fragment_program.get(mem);
         render_context->record.fragment_program_hash = gxm_program->renderer_data->hash;
         render_context->record.is_maskupdate = gxm_program->is_maskupdate;
@@ -99,7 +99,7 @@ COMMAND_SET_STATE(program) {
             break;
         }
     } else {
-        render_context->record.vertex_program = program.cast<const SceGxmVertexProgram>();
+        render_context->record.vertex_program = program.cast<SceGxmVertexProgram>();
         const SceGxmVertexProgram *gxm_program = render_context->record.vertex_program.get(mem);
         render_context->record.vertex_program_hash = gxm_program->renderer_data->hash;
     }

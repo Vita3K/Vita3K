@@ -255,21 +255,6 @@ static void bind_vertex_streams(VKContext &context, MemState &mem) {
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     VertexProgram *vkvert = vertex_program.renderer_data.get();
 
-    // we need to do another check here (the same is done in pipeline_cache)
-    // because if a game (like Secret of Mana) uses two programs with the same shaders and the same vertex input stripped
-    // the pipeline cache won't add stripped symbols for the second program
-    if (!vkvert->stripped_symbols_checked) {
-        // Insert some symbols here
-        const SceGxmProgram *vertex_program_body = vertex_program.program.get(mem);
-        if (vertex_program_body && (vertex_program_body->primary_reg_count != 0)) {
-            for (std::size_t i = 0; i < vertex_program.attributes.size(); i++) {
-                vkvert->attribute_infos.emplace(vertex_program.attributes[i].regIndex, shader::usse::AttributeInformation(static_cast<std::uint16_t>(i), SCE_GXM_PARAMETER_TYPE_F32, false, false, false));
-            }
-        }
-
-        vkvert->stripped_symbols_checked = true;
-    }
-
     int max_stream_idx = -1;
 
     for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
@@ -385,13 +370,23 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     if (context.refresh_pipeline || type != context.last_primitive) {
         context.refresh_pipeline = false;
         context.last_primitive = type;
-        vk::Pipeline new_pipeline = context.state.pipeline_cache.retrieve_pipeline(context, type, mem);
+
+        // We don't want to defer cases where we draw a whole quad over the screen as these draws could be necessary
+        // to be able to see anything
+        bool can_be_whole_quad = instance_count == 1 && (count == 4 || count == 6);
+        vk::Pipeline new_pipeline = context.state.pipeline_cache.retrieve_pipeline(context, type, !can_be_whole_quad, mem);
 
         if (new_pipeline != context.current_pipeline) {
             context.current_pipeline = new_pipeline;
-            context.render_cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, context.current_pipeline);
+
+            if (new_pipeline != nullptr)
+                context.render_cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, context.current_pipeline);
         }
     }
+
+    // can happen with asynchronous pipeline compilation
+    if (context.current_pipeline == nullptr)
+        return;
 
     if (config.log_active_shaders) {
         const std::string hash_text_f = hex_string(context.record.fragment_program.get(mem)->renderer_data->hash);

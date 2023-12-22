@@ -152,6 +152,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     uint32_t bytes_per_stride = color->strideInPixels * gxm::bits_per_pixel(base_format) / 8;
     uint32_t total_surface_size = bytes_per_stride * original_height;
 
+    VKContext *context = reinterpret_cast<VKContext *>(state.context);
+
     if (overlap) {
         ColorSurfaceCacheInfo &info = *ite->second;
 
@@ -179,6 +181,11 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
             color_surface_queue.set_as_mru(&info);
             last_written_surface = &info;
 
+            // if this surface has not been rendered to for the last 60 frames, consider it is not safe not to render all shaders to it
+            constexpr uint64_t big_delay_between_frames = 60;
+            state.pipeline_cache.can_use_deferred_compilation = context->frame_timestamp - info.last_frame_rendered < big_delay_between_frames;
+            info.last_frame_rendered = context->frame_timestamp;
+
             if (vk_format == info.texture.format) {
                 return { info.texture.view, &info.texture };
             } else {
@@ -199,7 +206,6 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
         }
     }
 
-    VKContext *context = reinterpret_cast<VKContext *>(state.context);
     // get the least recently used (probably unused) color surface
     ColorSurfaceCacheInfo &info_added = *color_surface_queue.get_lru();
     if (info_added.texture.image)
@@ -209,6 +215,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
         color_address_lookup.erase(info_added.data.address());
 
     color_surface_queue.set_as_mru(&info_added);
+    info_added.last_frame_rendered = context->frame_timestamp;
+
     color_address_lookup[address] = &info_added;
 
     info_added.width = width;
@@ -279,6 +287,9 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
             return true;
         });
     }
+
+    // it's not impossible that this surface will be rendered once and only used after, so do not skip any shader on it
+    state.pipeline_cache.can_use_deferred_compilation = false;
 
     return { info_added.texture.view, &info_added.texture };
 }
@@ -871,6 +882,9 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
     if (!color && !depth_stencil) {
         LOG_ERROR_ONCE("Depth stencil and color surface are both null!");
     }
+
+    // might get modified by retrieve_color_surface_for_framebuffer
+    state.pipeline_cache.can_use_deferred_compilation = true;
 
     // First retrieve separately the color surface and ds surface
     SurfaceRetrieveResult color_result;

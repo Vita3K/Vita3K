@@ -141,8 +141,8 @@ struct GxmRecordState {
     std::array<GXMStreamInfo, SCE_GXM_MAX_VERTEX_STREAMS> vertex_streams;
 
     // Programs.
-    Ptr<const SceGxmFragmentProgram> fragment_program;
-    Ptr<const SceGxmVertexProgram> vertex_program;
+    Ptr<SceGxmFragmentProgram> fragment_program;
+    Ptr<SceGxmVertexProgram> vertex_program;
 
     SceGxmColorSurface color_surface;
     SceGxmDepthStencilSurface depth_stencil_surface;
@@ -205,8 +205,6 @@ struct FragmentProgram : ShaderProgram {
 
 struct VertexProgram : ShaderProgram {
     shader::usse::AttributeInformationMap attribute_infos;
-
-    bool stripped_symbols_checked;
 };
 
 struct ShadersHash {

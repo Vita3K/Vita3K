@@ -178,6 +178,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
                 config.screen_filter = gpu_child.attribute("screen-filter").as_string();
                 config.v_sync = gpu_child.attribute("v-sync").as_bool();
                 config.anisotropic_filtering = gpu_child.attribute("anisotropic-filtering").as_int();
+                config.async_pipeline_compilation = gpu_child.attribute("async-pipeline-compilation").as_bool();
                 config.import_textures = gpu_child.attribute("import-textures").as_bool();
                 config.export_textures = gpu_child.attribute("export-textures").as_bool();
                 config.export_as_png = gpu_child.attribute("export-as-png").as_bool();
@@ -240,6 +241,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.screen_filter = emuenv.cfg.screen_filter;
         config.v_sync = emuenv.cfg.v_sync;
         config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
+        config.async_pipeline_compilation = emuenv.cfg.async_pipeline_compilation;
         config.import_textures = emuenv.cfg.import_textures;
         config.export_textures = emuenv.cfg.export_textures;
         config.export_as_png = emuenv.cfg.export_as_png;
@@ -321,6 +323,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         gpu_child.append_attribute("screen-filter") = config.screen_filter.c_str();
         gpu_child.append_attribute("v-sync") = config.v_sync;
         gpu_child.append_attribute("anisotropic-filtering") = config.anisotropic_filtering;
+        gpu_child.append_attribute("async-pipeline-compilation") = config.async_pipeline_compilation;
         gpu_child.append_attribute("import-textures") = config.import_textures;
         gpu_child.append_attribute("export-textures") = config.export_textures;
         gpu_child.append_attribute("export-as-png") = config.export_as_png;
@@ -353,6 +356,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.screen_filter = config.screen_filter;
         emuenv.cfg.v_sync = config.v_sync;
         emuenv.cfg.anisotropic_filtering = config.anisotropic_filtering;
+        emuenv.cfg.async_pipeline_compilation = config.async_pipeline_compilation;
         emuenv.cfg.import_textures = config.import_textures;
         emuenv.cfg.export_textures = config.export_textures;
         emuenv.cfg.export_as_png = config.export_as_png;
@@ -415,6 +419,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.screen_filter = emuenv.cfg.screen_filter;
         emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
+        emuenv.cfg.current_config.async_pipeline_compilation = emuenv.cfg.async_pipeline_compilation;
         emuenv.cfg.current_config.import_textures = emuenv.cfg.import_textures;
         emuenv.cfg.current_config.export_textures = emuenv.cfg.export_textures;
         emuenv.cfg.current_config.export_as_png = emuenv.cfg.export_as_png;
@@ -443,6 +448,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
     emuenv.renderer->set_stretch_display(emuenv.cfg.stretch_the_display_area);
     emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
+    emuenv.renderer->set_async_compilation(emuenv.cfg.current_config.async_pipeline_compilation);
 
     // No change it if app already running
     if (emuenv.io.title_id.empty()) {
@@ -608,6 +614,15 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Checkbox(lang.gpu["disable_surface_sync"].c_str(), &config.disable_surface_sync);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", lang.gpu["surface_sync_description"].c_str());
+
+            if (is_vulkan)
+                ImGui::SameLine();
+        }
+
+        if (is_vulkan) {
+            ImGui::Checkbox("Aynchronous pipeline compilation", &config.async_pipeline_compilation);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Allow pipelines to be compiler concurrently on multiple concurrent threads.\n This decreases pipeline compilation stutter at the cost of temporary graphical glitches");
         }
 
         // Screen Filter

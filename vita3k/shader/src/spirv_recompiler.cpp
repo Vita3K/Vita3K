@@ -1755,7 +1755,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         break;
     }
 
-    std::string disasm_dump;
+    std::stringstream disasm_dump;
 
     // Put disasm storage
     disasm::disasm_storage = &disasm_dump;
@@ -1838,7 +1838,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         LOG_ERROR("SPIR-V Error:\n{}", spirv_log);
 
     if (dumper) {
-        dumper("dsm", disasm_dump);
+        dumper("dsm", disasm_dump.str());
     }
 
     b.dump(spirv);

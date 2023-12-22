@@ -3158,7 +3158,6 @@ EXPORT(int, sceGxmProgramCheck, const SceGxmProgram *program) {
 
 EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterByName, Ptr<const SceGxmProgram> program_ptr, const char *name) {
     TRACY_FUNC(sceGxmProgramFindParameterByName, program_ptr, name);
-    assert(program);
     if (!program_ptr || !name)
         return Ptr<SceGxmProgramParameter>();
 
@@ -4437,7 +4436,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
         vp->attributes.insert(vp->attributes.end(), &attributes[0], &attributes[attributeCount]);
     }
 
-    if (!renderer::create(vp->renderer_data, *emuenv.renderer, *programId->program.get(mem), emuenv.renderer->gxp_ptr_map, emuenv.cache_path.string().c_str(), emuenv.io.title_id.c_str())) {
+    if (!renderer::create(vp->renderer_data, *emuenv.renderer, *programId->program.get(mem), emuenv.renderer->gxp_ptr_map, vp->attributes, emuenv.cache_path.string().c_str(), emuenv.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
@@ -4468,6 +4467,10 @@ EXPORT(int, sceGxmShaderPatcherForceUnregisterProgram, SceGxmShaderPatcher *shad
     if (rp->program.get(emuenv.mem)->is_vertex()) {
         for (auto it = shaderPatcher->vertex_program_cache.begin(); it != shaderPatcher->vertex_program_cache.end();) {
             if (it->first.vertex_program.program == rp->program) {
+                SceGxmVertexProgram *vertex_program = it->second.get(emuenv.mem);
+                while (vertex_program->compile_threads_on.load(std::memory_order_acquire) > 0)
+                    std::this_thread::yield();
+
                 free_callbacked(emuenv, thread_id, shaderPatcher, it->second.address());
                 it = shaderPatcher->vertex_program_cache.erase(it);
             } else {
@@ -4477,6 +4480,10 @@ EXPORT(int, sceGxmShaderPatcherForceUnregisterProgram, SceGxmShaderPatcher *shad
     } else {
         for (auto it = shaderPatcher->fragment_program_cache.begin(); it != shaderPatcher->fragment_program_cache.end();) {
             if (it->first.fragment_program.program == rp->program) {
+                SceGxmFragmentProgram *frag_program = it->second.get(emuenv.mem);
+                while (frag_program->compile_threads_on.load(std::memory_order_acquire) > 0)
+                    std::this_thread::yield();
+
                 free_callbacked(emuenv, thread_id, shaderPatcher, it->second.address());
                 it = shaderPatcher->fragment_program_cache.erase(it);
             } else {
@@ -4573,6 +4580,9 @@ EXPORT(int, sceGxmShaderPatcherReleaseFragmentProgram, SceGxmShaderPatcher *shad
     SceGxmFragmentProgram *const fp = fragmentProgram.get(emuenv.mem);
     --fp->reference_count;
     if (fp->reference_count == 0) {
+        while (fp->compile_threads_on.load(std::memory_order_acquire) > 0)
+            std::this_thread::yield();
+
         for (FragmentProgramCache::const_iterator it = shaderPatcher->fragment_program_cache.begin(); it != shaderPatcher->fragment_program_cache.end(); ++it) {
             if (it->second == fragmentProgram) {
                 shaderPatcher->fragment_program_cache.erase(it);
@@ -4593,6 +4603,9 @@ EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shader
     SceGxmVertexProgram *const vp = vertexProgram.get(emuenv.mem);
     --vp->reference_count;
     if (vp->reference_count == 0) {
+        while (vp->compile_threads_on.load(std::memory_order_acquire) > 0)
+            std::this_thread::yield();
+
         for (VertexProgramCache::const_iterator it = shaderPatcher->vertex_program_cache.begin(); it != shaderPatcher->vertex_program_cache.end(); ++it) {
             if (it->second == vertexProgram) {
                 shaderPatcher->vertex_program_cache.erase(it);

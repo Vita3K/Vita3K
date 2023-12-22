@@ -82,7 +82,7 @@ struct State {
     bool need_page_table = false;
 
     virtual bool init(const fs::path &static_assets, const bool hashless_texture_cache) = 0;
-    virtual void late_init(const Config &cfg, const std::string_view game_id) = 0;
+    virtual void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) = 0;
 
     virtual TextureCache *get_texture_cache() = 0;
 
@@ -99,6 +99,7 @@ struct State {
     virtual void set_screen_filter(const std::string_view &filter) = 0;
     virtual int get_max_anisotropic_filtering() = 0;
     virtual void set_anisotropic_filtering(int anisotropic_filtering) = 0;
+    virtual void set_async_compilation(bool enable) {}
     void set_surface_sync_state(bool disable) {
         disable_surface_sync = disable;
     }

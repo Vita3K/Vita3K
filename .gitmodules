@@ -96,3 +96,6 @@
 [submodule "external/cubeb"]
 	path = external/cubeb
 	url = https://github.com/mozilla/cubeb.git
+[submodule "external/concurrentqueue"]
+	path = external/concurrentqueue
+	url = https://github.com/cameron314/concurrentqueue.git
