@@ -1,0 +1,228 @@
+# Documentation - https://github.com/actions/labeler
+
+# General Labels
+.github:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**'
+build:
+- all: # all are AND-ed together
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**'
+      - '*.sln'
+      - '**/*.sln'
+      - '*.vcxproj*'
+      - '**/*.vcxproj*'
+      - 'building/*'
+      - 'cmake/*'
+      - 'CMakeLists.txt'
+      - 'data/*'
+      - 'docs/*'
+      - '**/CMakeLists.txt'
+      - '*.sh'
+    - all-globs-to-all-files:
+      - '!external/**'
+document:
+- all:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.md'
+      - '**/*.md'
+      - '*.pdf'
+      - '**/*.pdf'
+    - all-globs-to-all-files:
+      - '!external/**'
+external:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'external/**'
+
+# vita3k Labels
+app:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/app/**'
+audio:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/audio/**'
+codec:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/codec/**'
+compat:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/compat/**'
+config:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/config/**'
+cpu:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/cpu/**'
+crypto:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/crypto/**'
+ctrl:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/ctrl/**'
+debug:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/gdbstub/**'
+      - 'vita3k/**/tracy.cpp'
+dialog:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/dialog/**'
+display:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/display/**'
+emuenv:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/emuenv/**'
+features:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/features/**'
+gdbstub:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/gdbstub/**'
+gxm:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/gxm/**'
+hle:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/module/**'
+      - 'vita3k/modules/**'
+host:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/host/**'
+http:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/http/**'
+ime:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/ime/**'
+io:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/io/**'
+kernel:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/kernel/**'
+memory:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/mem/**'
+motion:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/motion/**'
+net:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/net/**'
+ngs:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/ngs/**'
+nids:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/nids/**'
+np:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/np/**'
+opengl:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/renderer/**/opengl/**'
+      - 'vita3k/glutil/**'
+packages:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/packages/**'
+regmgr:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/regmgr/**'
+renderer:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/renderer/**'
+rtc:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/rtc/**'
+script:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/script/**'
+shader:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/shader/**'
+      - 'vita3k/shaders-builtin/**'
+texture:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/renderer/src/texture/**'
+threads:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/threads/**'
+touch:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/touch/**'
+util:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/util/**'
+vulkan:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/renderer/**/vulkan/**'
+      - 'vita3k/vkutil/**'
+
+# OS Labels
+windows:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*windows*'
+mac:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*macos*'
+linux:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'appimage/*'
+      - '**/*linux*'
+
+# GUI Labels
+gui:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/gui/**'
+gui/lang:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'lang/**'
+      - 'vita3k/lang/**'
