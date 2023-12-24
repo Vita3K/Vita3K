@@ -4,6 +4,7 @@
 	<main_menubar>
 		<file name="File">
 			<open_pref_path>Buka Pref Path</open_pref_path>
+			<open_textures_path>Buka Textur Path</open_textures_path>
 			<install_firmware>Install Firmware</install_firmware>
 			<install_pkg>Install .pkg</install_pkg>
 			<install_zip>Install .zip, .vpk</install_zip>
@@ -11,13 +12,13 @@
 			<exit>Keluar</exit>
 		</file>
 		<emulation name="Emulator">
-			<last_apps_used>Aplikasi Terakhir Yg Gunakan</last_apps_used>
+			<last_apps_used>Apl Terakhir Yang Digunakan</last_apps_used>
 		</emulation>
 		<debug>
-			<threads>Threads</threads>
+			<threads>Thread</threads>
 			<semaphores>Semafor</semaphores>
-			<mutexes>Mutexes</mutexes>
-			<lightweight_mutexes>Mutexes Ringan</lightweight_mutexes>
+			<mutexes>Mutexe</mutexes>
+			<lightweight_mutexes>Mutexe Ringan</lightweight_mutexes>
 			<condition_variables>Variabel Kondisi</condition_variables>
 			<lightweight_condition_variables>Variabel Kondisi Ringan</lightweight_condition_variables>
 			<event_flags>Event Bendera</event_flags>
@@ -25,26 +26,21 @@
 			<disassembly>Membongkar</disassembly>
 		</debug>
 		<configuration name="Konfigurasi">
-			<settings>Pengaturan</settings>
 			<user_management>Perguna Menager</user_management>
 		</configuration>
 		<controls name="Kontroler">
 			<keyboard_controls>Keyboard Kontrol</keyboard_controls>
 		</controls>
 		<help name="Bantuan">
-			<welcome>SelamatDatang</welcome>
+			<welcome>Selamat Datang</welcome>
 		</help>
 	</main_menubar>
 
 	<about name="Tentang">
 		<vita3k>Vita3K: Emulator PS Vita/PS TV. Emulator PS Vita/PS TV fungsional pertama di dunia.</vita3k>
-		<about_vita3k>Vita3K adalah emulator PlayStation Vita/PlayStation TV sumber terbuka eksperimental yang ditulis dalam C++ untuk sistem operasi Windows, Linux, macOS, dan Android.</about_vita3k>
-		<special_credit>Special credit: vita3k icon dirancang by:</special_credit>
-		<github_website>Jika Kamu tertarik untuk berkontribusi, lihat kami:</github_website>
-		<vita3k_website>Kunjungi website kami untuk info lebih lanjut:</vita3k_website>
-		<note>Note: Emulator ini masih dalam tahap pengembangan yang sangat awal. dan menerjemahkan ke bahasa Indonesia By SSINDO</note>
-		<github_website>Jika kamu tertarik untuk berkontribusi, lihat kami GitHub:</github_website>
-		<vita3k_website>Kunjungi website kami untuk info lebih lanjut:</vita3k_website>
+		<about_vita3k>Vita3K adalah emulator PlayStation Vita/PlayStation TV sumber terbuka eksperimental yang ditulis dalam C++ untuk sistem operasi Windows, Linux, macOS dan Android.</about_vita3k>
+		<special_credit>Special credit: vita3k icon dirancang oleh:</special_credit>
+		<github_website>Jika Kamu tertarik untuk berkontribusi, lihat kami di GitHub:</github_website>
 		<ko-fi_website>Jika kamu ingin mendukung kami, Anda dapat memberikan donasi atau subscribe kami:</ko-fi_website>
 		<vita3k_staff>Vita3K Staff</vita3k_staff>
 		<developers>Developer</developers>
@@ -53,46 +49,46 @@
 	</about>
 
 	<app_context>
-		<check_app_state>Check Aplikasi state</check_app_state>
-		<copy_vita3k_summary>Copy Ringkasan Vita3K</copy_vita3k_summary>
-		<open_state_report>Buka state laporan</open_state_report>
-		<create_state_report>Bikin state laporan</create_state_report>
-		<copy_app_info>Copy Aplikasi Info</copy_app_info>
-		<name_and_id>Nama Dan Judul ID</name_and_id>
-		<app_summary>Ringkasan Aplikasi</app_summary>
+		<check_app_state>Cek state Aplikasi</check_app_state>
+		<copy_vita3k_summary>Salin Ringkasan Vita3K</copy_vita3k_summary>
+		<open_state_report>Buka laporan state</open_state_report>
+		<create_state_report>Buat state laporan</create_state_report>
+		<update_database>Perbarui database</update_database>
+		<copy_app_info>Salin info Apl</copy_app_info>
+		<name_and_id>Nama dan Judul ID</name_and_id>
+		<app_summary>Ringkasan Apl</app_summary>
 		<custom_config>Kastom Config</custom_config>
 		<create>Bikin</create>
 		<remove>Hapus</remove>
 		<open_folder>Buka Folder</open_folder>
 		<license>lisensi</license>
-		<shader_cache>Cache Shader</shader_cache>
-		<shader_log>Catatan Shader</shader_log>
-		<update_history>History Update</update_history>
+		<shaders_cache>Cache Shader</shaders_cache>
+		<shaders_log>Catatan Shader</shaders_log>
+		<update_history>History Perbarui</update_history>
 		<history_version>Versi {}</history_version>
 		<information>Informasi</information>
 		<delete>
 			<app_delete>Aplikasi ini dan semua data terkait, termasuk data yang disimpan, akan dihapus.</app_delete>
-			<app_delete_note>Menghapus aplikasi mungkin memakan waktu cukup lama
-tergantung pada ukuran dan perangkat keras Kamu.</app_delete_note>
+			<app_delete_description>Menghapus aplikasi mungkin memakan waktu cukup lama
+tergantung pada ukuran dan perangkat keras Kamu.</app_delete_description>
 			<addcont_delete>Apakah Kamu ingin menghapus data yg dimasukkan ini?</addcont_delete>
 			<license_delete>Apakah kamu ingin menghapus lisensi ini?</license_delete>
-			<save_delete>Apakah Kamu ingin menghapus data tersimpan ini?</save_delete>
+			<saved_data_delete>Apakah Kamu ingin menghapus data tersimpan ini?</saved_data_delete>
 		</delete>
 		<info>
-			<eligible>Memenuhi syarat</eligible>
-			<ineligible>Tidak memenuhi syarat</ineligible>
+			<eligible>Memenuhi Syarat</eligible>
+			<ineligible>Tidak Memenuhi Syarat</ineligible>
 			<level>Level</level>
 			<name>Nama</name>
 			<trophy_earning>Perolehan Trofi</trophy_earning>
-			<parental_controls>Pengawasan ortu</parental_controls>
-			<updated>Updated</updated>
+			<parental_controls>Pengawasan Ortu</parental_controls>
+			<updated>Telah Diperbarui</updated>
 			<size>Ukuran</size>
 			<version>Versi</version>
 			<title_id>Judul ID</title_id>
 			<last_time_used>Waktu Terakhir Perguna</last_time_used>
-			<never>Gak Ada</never>
 			<time_used>Waktu Perguna</time_used>
-			<never>Ga ada</never>
+			<never>Belum Pernah</never>
 		</info>
 		<time_used>
 			<time_used_seconds>{}d</time_used_seconds>
@@ -138,21 +134,21 @@ Kode kesalahan: {}</an_error_occurred>
 			<month>September</month>
 			<month>Oktober</month>
 			<month>November</month>
-			<month>December</month>
+			<month>Desember</month>
 		</ymonth>
 		<small_ymonth>
 			<month>january</month>
 			<month>february</month>
-			<month>Maret</month>
+			<month>maret</month>
 			<month>april</month>
 			<month>mei</month>
-			<month>Juni</month>
-			<month>Juli</month>
-			<month>Agustus</month>
+			<month>juni</month>
+			<month>juli</month>
+			<month>agustus</month>
 			<month>september</month>
-			<month>Oktober</month>
+			<month>oktober</month>
 			<month>november</month>
-			<month>december</month>
+			<month>desember</month>
 		</small_ymonth>
 		<mday>
 			<days></days>
@@ -224,18 +220,17 @@ Kode kesalahan: {}</an_error_occurred>
 		</small_mday>
 		<hidden_trophy>Trofi Tersembunyi</hidden_trophy>
 		<one_hour_ago>1 Jam Yg Lalu</one_hour_ago>
-		<one_minute_ago>1 Minit Yg Lalu</one_minute_ago>
+		<one_minute_ago>1 Menit Yg Lalu</one_minute_ago>
 		<bronze>Perunggu</bronze>
 		<gold>Emas</gold>
-		<platinum>Platinum</platinum>
 		<silver>Perak</silver>
 		<hours_ago>{} Jam Yg Lalu</hours_ago>
-		<minutes_ago>{} Minit Yg Lalu</minutes_ago>
+		<minutes_ago>{} Menit Yg Lalu</minutes_ago>
 	</common>
 
 	<compatibility name="Compatibility">
 		<states>
-			<state id = "-1">Ga diketahui</state>
+			<state id = "-1">Gak Diketahui</state>
 			<state id = "0">Nothing</state>
 			<state id = "1">Bootable</state>
 			<state id = "2">Intro</state>
@@ -247,6 +242,7 @@ Kode kesalahan: {}</an_error_occurred>
 	</compatibility>
 
 	<compat_db>
+		<error>Kekeliruan</error>
 		<information>Informasi</information>
 		<get_failed>Gagal mendapatkan database kompatibilitas saat ini, periksa akses firewall/internet, coba lagi nanti.</get_failed>
 		<download_failed>Gagal mengunduh database kompatibilitas Aplikasi yang di-update di: {}, coba lagi nanti.</download_failed>
@@ -261,7 +257,7 @@ Kode kesalahan: {}</an_error_occurred>
 
 	<compile_shaders>
 		<compiling_shaders>Mengkompilasi Shader</compiling_shaders>
-		<pipelines_compiled>{} pipe saluran dikompilasi</pipelines_compiled>
+		<pipelines_compiled>{} pipe textur dikompilasi</pipelines_compiled>
 		<shaders_compiled>{} shader dikompilasi</shaders_compiled>
 	</compile_shaders>
 
@@ -275,7 +271,7 @@ Kode kesalahan: {}</an_error_occurred>
 			<no_saved_data>Disini gak ada save data.</no_saved_data>
 		</saved_data>
 		<theme>Tema</theme>
-		<free_space>Penyimpanan Yg Kosong</free_space>
+		<free_space>Penyimpanan Yang Kosong</free_space>
 		<clear_all>Selesaikan Semua</clear_all>
 	</content_manager>
 
@@ -316,13 +312,12 @@ Sambungkan Kontroleryang kompatibel dengan SDL2.</not_connected>
 		<r2_button>Tombol R2</r2_button>
 		<l3_button>Tombol L3</l3_button>
 		<r3_button>Tombol R3</r3_button>
-		<gui>GUI</gui>
 		<full_screen>Layar Penuh</full_screen>
 		<toggle_touch>Alihkan Sentuh</toggle_touch>
 		<toggle_touch_note>Beralih antara sentuh belakang dan sentuh layar.</toggle_touch_note>
 		<toggle_gui_visibility>Alihkan Visibilitas GUI</toggle_gui_visibility>
 		<toggle_gui_visibility_note>Beralih antara menampilkan dan menyembunyikan GUI di bagian atas layar saat aplikasi berjalan.</toggle_gui_visibility_note>
-		<error>Error</error>
+		<error>Kekeliruan</error>
 		<error_duplicate_key>Kuncinya digunakan untuk binding lain atau dicadangkan.</error_duplicate_key>
 	</controls>
 
@@ -332,9 +327,9 @@ Sambungkan Kontroleryang kompatibel dengan SDL2.</not_connected>
 		</trophy>
 		<save_data>
 			<delete>
-				<cancel_deleting>Kamu Yakin untuk batalkan penghapusan ?</cancel_deleting>
+				<cancel_deleting>Kamu yakin untuk batalkan penghapusan?</cancel_deleting>
 				<deletion_complete>Penghapusan Berhasil.</deletion_complete>
-				<delete_saved_data>Kamu yakin untuk hapus  save data ini?</delete_saved_data>
+				<delete_saved_data>Kamu yakin untuk hapus save data ini?</delete_saved_data>
 			</delete>
 			<info>
 				<details>Detail</details>
@@ -355,8 +350,8 @@ Tidak ada cukup ruang kosong di kartu memori.</could_not_save>
 				<new_saved_data>Save Data Baru</new_saved_data>
 				<saving_complete>Saving Berhasil.</saving_complete>
 				<save_the_data>Kamu yakin save di data ini?</save_the_data>
-				<saving>Saving...</saving>
-				<warning_saving>Saving...
+				<saving>Ngesave…</saving>
+				<warning_saving>Ngesave…
 Jangan matikan sistem atau tutup aplikasi ini.</warning_saving>
 				<overwrite_saved_data>Kamu yakin untuk timpa di save data ini?</overwrite_saved_data>
 			</save>
@@ -369,23 +364,17 @@ Jangan matikan sistem atau tutup aplikasi ini.</warning_saving>
 	</game_data>
 
 	<home_screen>
-		<filter>Filter</filter>
+		<filter>Penyesuaian</filter>
 		<sort_app>Urutan Aplikasi dari</sort_app>
 		<all>Semua</all>
 		<by_region>Dari Region</by_region>
-		<usa>USA</usa>
 		<europe>Europa</europe>
 		<japan>Jepang</japan>
-		<asia>Asia</asia>
 		<by_type>Dari Type</by_type>
 		<commercial>Komersial</commercial>
-		<homebrew>Homebrew</homebrew>
 		<by_compatibility_state>Berdasarkan State Kompatibilitas</by_compatibility_state>
-		<ver>Ver</ver>
-		<cat>Cat</cat>
-		<comp>Comp</comp>
 		<last_time>Waktu Terakhir</last_time>
-		<refresh>Segarkan</refresh>
+		<refresh>Barui</refresh>
 	</home_screen>
 
 	<indicator>
@@ -404,9 +393,24 @@ Jangan matikan sistem atau tutup aplikasi ini.</warning_saving>
 		<completed_setup>Kamu sekarang telah menyelesaikan penyiapan awal.
 Sistem Vita3K Kamu sudah siap!</completed_setup>
 		<select_language>Pilih bahasa.</select_language>
-		<install_highly_recommended>Menginstalasi kedua file firmware sangat dianjurkan.</install_highly_recommended>
+		<select_pref_path>Pilih pref path.</select_pref_path>
+		<current_emu_path>Path emulator saat ini</current_emu_path>
+		<change_emu_path>Ubah Path Emulator</change_emu_path>
+		<reset_emu_path>Path Reset Emulator</reset_emu_path>
+		<install_highly_recommended>Menginstalasi kedua file firmware sangat direkomendasikan.</install_highly_recommended>
 		<installed>Instalasi:</installed>
-		<completed>Selesai.</completed>
+		<select_interface_settings>Pilih pengaturan interface.</select_interface_settings>
+		<show_info_bar>Bar Info Terlihat</show_info_bar>
+		<info_bar_description>Centang kotak untuk menampilkan Bar info di dalam pemilih aplikasi.
+Bar info adalah jam, level baterai, dan pusat notifikasi.</info_bar_description>
+		<show_live_area_screen>Apl Dilayar Live Area</show_live_area_screen>
+		<live_area_screen_description>Centang kotak untuk membuka Live Area secara default saat mengklik aplikasi.
+Jika dinonaktifkan, klik kanan pada aplikasi untuk membukanya.</live_area_screen_description>
+		<apps_list_grid>Mode Grid</apps_list_grid>
+		<apps_list_grid_description>Centang kotak untuk mengatur daftar aplikasi ke mode grid seperti PS Vita.</apps_list_grid_description>
+		<icon_size>Ukuran Icon Aplikasi</icon_size>
+		<select_icon_size>Pilih ukuran icon pilihan kamu.</select_icon_size>
+		<completed>Telah selesai.</completed>
 		<next>Lanjut</next>
 	</initial_setup>
 
@@ -414,22 +418,23 @@ Sistem Vita3K Kamu sudah siap!</completed_setup>
 		<firmware_install>
 			<firmware_installing>Menginstalasi dalam progress, mohon tunggu...</firmware_installing>
 			<successed_install_firmware>Firmware telah selesai instalasi.</successed_install_firmware>
-			<firmware_version>Versi Firmware:</firmware_version>
+			<firmware_version>Versi firmware:</firmware_version>
 			<no_font_exist>Tidak ada paket font firmware.
 Silakan unduh dan instal.</no_font_exist>
-			<firmware_font_package_note>Paket font firmware diperlukan untuk beberapa aplikasi dan juga untuk dukungan font regional Asia. (Umumnya Direkomendasikan)</firmware_font_package_note>
+			<firmware_font_package_note>Paket font firmware diperlukan untuk beberapa
+aplikasi dan juga untuk dukungan font regional
+Asia. (Umumnya Direkomendasikan)</firmware_font_package_note>
 			<delete_firmware>Kamu ingin menghapus file firmware yang telah diinstal?</delete_firmware>
 		</firmware_install>
 		<pkg_install>
-			<select_key_type>Pilih tipe key</select_key_type>
-			<select_work>Pilih work.bin</select_work>
+			<select_license_type>Pilih tipe lisensi</select_license_type>
+			<select_bin_rif>Pilih work.bin/rif</select_bin_rif>
 			<enter_zrif>Masukkan zRIF</enter_zrif>
 			<enter_zrif_key>Masukkan zRIF key</enter_zrif_key>
 			<input_zrif>Kamu dimohon masukkan zRIF disini</input_zrif>
 			<copy_paste_zrif>Ctrl (Cmd) + C untuk menyalin, Ctrl (Cmd) + V untuk menempel.</copy_paste_zrif>
 			<delete_pkg>Yakin untuk hapus file pkg?</delete_pkg>
-			<delete_work>Yakin untuk hapus file work.bin?</delete_work>
-			<check_log>Silakan periksa log untuk lebih jelasnya.</check_log>
+			<delete_bin_rif>Yakin untuk hapus file work.bin/rif?</delete_bin_rif>
 		</pkg_install>
 		<archive_install>
 			<select_install_type>Pilih tipe install</select_install_type>
@@ -444,10 +449,7 @@ Silakan unduh dan instal.</no_font_exist>
 			<delete_archive>Hapus arsip?</delete_archive>
 		</archive_install>
 		<license_install>
-			<select_license_type>Pilih tipe lisensi</select_license_type>
-			<select_bin_rif>Pilih work.bin/rif</select_bin_rif>
 			<successed_install_license>Telah selesai instalasi lisensi.</successed_install_license>
-			<delete_bin_rif>Yakin untuk hapus file work.bin/rif?</delete_bin_rif>
 		</license_install>
 		<reinstall>
 			<reinstall_content>Instal ulang konten ini?</reinstall_content>
@@ -459,7 +461,7 @@ Silakan unduh dan instal.</no_font_exist>
 	<live_area>
 		<start>Mulai</start>
 		<continue>Lanjutkan</continue>
-		<help>Bantuan</help>
+		<help>
 			<control_setting>Menggunakan set konfigurasi untuk keyboard dalam pengaturan kontrol</control_setting>
 			<firmware_not_detected>Firmware tidak terdeteksi. Instalasi sangat dianjurkan</firmware_not_detected>
 			<firmware_font_not_detected>Font firmware tidak terdeteksi. Instalasi dianjurkan untuk teks font di Live Area</firmware_font_not_detected>
@@ -483,11 +485,11 @@ Silakan unduh dan instal.</no_font_exist>
 			<scroll_zoom_control>Geser Atas/Bawah</scroll_zoom_control>
 			<exit_manual>Keluar dari Bantuan Manual</exit_manual>
 			<exit_manual_control>Klik Esc atau Tekan di PS</exit_manual_control>
-		<help>Bantuan</help>
+		</help>
 	</live_area>
 
 	<settings name="Pengaturan">
-		<theme_background name="Tema & Latarbelakang">
+		<theme_background name="Tema & Latar Belakang">
 			<default>Bawaan</default>
 			<theme name="Tema">
 				<find_a_psvita_custom_themes>Temukan Tema Kustom PSVita</find_a_psvita_custom_themes>
@@ -561,27 +563,27 @@ Silakan download dan install firmware PS Vita terakhir.</no_modules>
 		</core>
 		<cpu>
 			<cpu_backend>Bagian Belakang CPU</cpu_backend>
-			<select_cpu_backend>Pilih backend CPU pilihan Kamu.</select_cpu_backend>
-			<cpu_opt>Aktifkan pengoptimalan</cpu_opt>
+			<select_cpu_backend>Pilih perender backend pilihan kamu.</select_cpu_backend>
+			<cpu_opt>Aktifkan Pengoptimalan</cpu_opt>
 			<cpu_opt_description>Centang kotak untuk mengaktifkan optimasi CPU JIT tambahan.</cpu_opt_description>
 		</cpu>
 		<gpu>
 			<backend_renderer>Bagian Belakang Perender</backend_renderer>
-			<select_backend_renderer>Pilih perender backend pilihan Kamu.</select_backend_renderer>
+			<select_backend_renderer>Pilih perender backend pilihan kamu.</select_backend_renderer>
 			<gpu>GPU (Harus ulang lagi aplikasinya)</gpu>
 			<select_gpu>Pilih GPU Vita3K yang harus dijalankan.</select_gpu>
 			<renderer_accuracy>Perender Akurasi</renderer_accuracy>
 			<v_sync_description>Menonaktifkan V-Sync dapat memperbaiki masalah kecepatan di beberapa game.
 Disarankan untuk tetap mengaktifkannya untuk menghindari robekan visual.</v_sync_description>
-			<disable_surface_sync>Nonaktifkan sinkronisasi permukaan</disable_surface_sync>
+			<disable_surface_sync>Nonaktifkan Edit Sinkronisasi</disable_surface_sync>
 			<surface_sync_description>Speed hack, centang kotak untuk menonaktifkan sinkronisasi permukaan antara CPU dan GPU.
-Sinkronisasi permukaan diperlukan oleh beberapa game.
+Edit Sinkronisasi diperlukan oleh beberapa game.
 Memberikan peningkatan kinerja yang besar jika dinonaktifkan (khususnya saat peningkatan skala aktif).</surface_sync_description>
-			<screen_filter>Filter layar</screen_filter>
+			<screen_filter>Penyesuaian Layar</screen_filter>
 			<screen_filter_description>Setel filter pasca-pemrosesan untuk diterapkan.</screen_filter_description>
-			<internal_resolution_upscaling>Internal Resolusi Upscaling</internal_resolution_upscaling>
-			<internal_resolution_upscaling_description>Aktifkan Upscaling untuk Vita3K.
-Eksperimental: game tidak dijamin akan dirender dengan baik lebih dari 1x.</internal_resolution_upscaling_description>
+			<internal_resolution_upscaling>Pilih Resolusi Internal</internal_resolution_upscaling>
+			<internal_resolution_upscaling_description>Gunakan Pelukisan untuk Vita3K.
+Eksperimental: Game tidak dijamin akan dirender dengan baik lebih dari 1x.</internal_resolution_upscaling_description>
 			<anisotropic_filtering>Penyaringan Anisotropik</anisotropic_filtering>
 			<anisotropic_filtering_description>Penyaringan anisotropik adalah teknik untuk meningkatkan kualitas gambar permukaan
 yang miring relatif terhadap pemirsa.
@@ -607,7 +609,7 @@ Pilih tombol 'Masuk' kamu.</select_enter_button>
 Beberapa aplikasi tidak menggunakan ini dan mendapatkan tombol konfirmasi default.</enter_button_description>
 			<circle>Lingkaran</circle>
 			<cross>X</cross>
-			<pstv_mode>PS TV Mode</pstv_mode>
+			<pstv_mode>Mode PS TV</pstv_mode>
 			<pstv_mode_description>Centang kotak untuk mengaktifkan mode Emulasi PS TV.</pstv_mode_description>
 			<show_mode>Mode Show</show_mode>
 			<show_mode_description>Centang kotak untuk mengaktifkan mode Show.</show_mode_description>
@@ -618,13 +620,13 @@ Beberapa aplikasi tidak menggunakan ini dan mendapatkan tombol konfirmasi defaul
 			<boot_apps_full_screen>Boot aplikasi dalam layar penuh</boot_apps_full_screen>
 			<audio_backend>Bagian Belakang Audio</audio_backend>
 			<select_audio_backend>Pilih backend audio pilihan Kamu.</select_audio_backend>
-			<enable_ngs_support>Aktifkan dukungan NGS</enable_ngs_support>
+			<enable_ngs_support>Aktifkan NGS Audio</enable_ngs_support>
 			<ngs_description>Hapus centang pada kotak untuk menonaktifkan dukungan untuk NGS perpustakaan audio tingkat lanjut.</ngs_description>
 			<log_level>Tingkatan Log</log_level>
 			<select_log_level>Pilih tingkat log pilihan Kamu.</select_log_level>
 			<archive_log>Log Arsip</archive_log>
 			<archive_log_description>Centang kotak untuk mengaktifkan Log Arsip.</archive_log_description>
-			<discord_rich_presence>Mengaktifkan Discord Rich Presence untuk menampilkan aplikasi apa yang Anda jalankan di Discord.</discord_rich_presence>
+			<discord_rich_presence>Mengaktifkan Discord Rich Presence untuk menampilkan aplikasi apa yang Kamu jalankan di Discord.</discord_rich_presence>
 			<texture_cache>Textur Cache</texture_cache>
 			<texture_cache_description>Hapus centang pada kotak untuk menonaktifkan cache tekstur.</texture_cache_description>
 			<show_compile_shaders>Tampilkan Kompilasi Shader</show_compile_shaders>
@@ -644,12 +646,12 @@ Beberapa aplikasi tidak menggunakan ini dan mendapatkan tombol konfirmasi defaul
 RESET PADA RESTART</case_insensitive>
 			<case_insensitive_description>Mencari file apa pun kasusnya
 pada platform non-Windows.</case_insensitive_description>
-			<emu_storage_folder>Folder Penyimpanan Sistem yang Ditiru</emu_storage_folder>
+			<emu_storage_folder>Folder Penyimpanan Sistem Yang Ditiru</emu_storage_folder>
 			<current_emu_path>Jalur emulator saat ini:</current_emu_path>
 			<change_emu_path>Ubah Jalur Emulator</change_emu_path>
 			<change_emu_path_description>Ubah jalur folder emulator Vita3K.
 Anda perlu memindahkan folder lama ke lokasi baru secara manual.</change_emu_path_description>
-			<reset_emu_path>Reset jalur Emulator</reset_emu_path>
+			<reset_emu_path>Reset Jalur Emulator</reset_emu_path>
 			<reset_emu_path_description>Reset jalur emulator Vita3K ke default.
 Kamu perlu memindahkan folder lama ke lokasi baru secara manual.</reset_emu_path_description>
 			<custom_config_settings>Pengaturan Konfigurasi Kustom</custom_config_settings>
@@ -665,11 +667,11 @@ Kamu perlu memindahkan folder lama ke lokasi baru secara manual.</reset_emu_path
 			<display_system_apps>Tampilkan System Aplikasi</display_system_apps>
 			<display_system_apps_description>Hapus centang pada kotak untuk menonaktifkan tampilan aplikasi sistem di layar beranda.
 Mereka hanya akan ditampilkan di bar menu utama.</display_system_apps_description>
-			<show_live_area_screen>Live Area layar aplikasi</show_live_area_screen>
+			<show_live_area_screen>Live Area Layar Aplikasi</show_live_area_screen>
 			<live_area_screen_description>Centang kotak untuk membuka Live Area secara default saat mengklik aplikasi.
 Jika dinonaktifkan, klik kanan pada aplikasi untuk membukanya.</live_area_screen_description>
-			<stretch_the_display_area>Regangkan Area Tampilan</stretch_the_display_area>
-			<stretch_the_display_area_description>Centang kotak untuk memperbesar area tampilan agar sesuai dengan ukuran layar.</stretch_the_display_area_description>
+			<stretch_the_display_area>Penuhkan Layar</stretch_the_display_area>
+			<stretch_the_display_area_description>Centang kotak untuk memperbesar area layar agar sesuai dengan ukuran layar.</stretch_the_display_area_description>
 			<apps_list_grid>Mode Grid</apps_list_grid>
 			<apps_list_grid_description>Centang kotak untuk mengatur daftar aplikasi ke mode grid.</apps_list_grid_description>
 			<icon_size>Ukuran Ikon Aplikasi</icon_size>
@@ -681,11 +683,11 @@ Mengaktifkannya akan menggunakan lebih banyak memori dan mengharuskan Anda memul
 			<firmware_font_package_description>Paket font firmware diperlukan untuk beberapa aplikasi
 dan juga untuk dukungan font regional Asia di GUI.
 Umumnya juga direkomendasikan untuk GUI.</firmware_font_package_description>
-			<theme_background>Tema & Background</theme_background>
+			<theme_background>Tema & Latar Belakang</theme_background>
 			<current_theme_content_id>Id konten tema saat ini:</current_theme_content_id>
-			<reset_default_theme>Reset Ke bawaan Tema</reset_default_theme>
+			<reset_default_theme>Reset Ke Bawaan Tema</reset_default_theme>
 			<using_theme_background>Gunakan background tema</using_theme_background>
-			<clean_user_backgrounds>Bersihkan Backgrounds pengguna</clean_user_backgrounds>
+			<clean_user_backgrounds>Bersihkan Backgrounds Pengguna</clean_user_backgrounds>
 			<current_start_background>Saat ini background mulai:</current_start_background>
 			<reset_start_background>Reset Background mulai</reset_start_background>
 			<background_alpha>Background Alpha</background_alpha>
@@ -696,7 +698,9 @@ Nilai minimumnya buram dan maksimumnya transparan.</select_background_alpha>
 			<delay_start>Penundaan untuk layar mulai</delay_start>
 			<select_delay_start>Pilih penundaan (dalam detik) sebelum kembali ke layar awal.</select_delay_start>
 		</gui>
-		<network name="Jaringan internet">
+		<network name="Jaringan Internet">
+			<psn_signed_in>Masuk ke PSN</psn_signed_in>
+			<psn_signed_in_description>Jika dicentang, game akan menganggap user terhubung ke jaringan PSN (tetapi offline).</psn_signed_in_description>
 			<enable_http>Aktifkan HTTP</enable_http>
 			<enable_http_description>.Centang kotak ini untuk mengaktifkan game menggunakan protokol HTTP di internet</enable_http_description>
 			<timeout_attempts>Upaya Batas Waktu HTTP</timeout_attempts>
@@ -713,31 +717,31 @@ lebih rendah dapat meningkatkan performa tetapi dapat membuat game tidak stabil 
 lebih rendah dapat meningkatkan performa tetapi dapat membuat game tidak stabil jika internet kamu cukup buruk.</read_end_sleep_description>
 		</network>
 		<debug>
-			<log_imports>Impor pencatatan</log_imports>
+			<log_imports>Impor Pencatatan</log_imports>
 			<log_imports_description>Simbol impor modul log.</log_imports_description>
-			<log_exports>Export pencatatan</log_exports>
+			<log_exports>Export Pencatatan</log_exports>
 			<log_exports_description>Simbol export modul log.</log_exports_description>
 			<log_active_shaders>Pencatatan Shader </log_active_shaders>
 			<log_active_shaders_description>Log shader digunakan pada setiap panggilan undian.</log_active_shaders_description>
-			<log_uniforms>Pencatatan seragam</log_uniforms>
+			<log_uniforms>Pencatatan Seragam</log_uniforms>
 			<log_uniforms_description>Catat nama dan nilai seragam shader.</log_uniforms_description>
 			<color_surface_debug_description>Simpan permukaan warna.</color_surface_debug_description>
 			<dump_elfs>Pembuangan ELF</dump_elfs>
 			<dump_elfs_description>Buang kode yang dimuat sebagai ELF.</dump_elfs_description>
-			<validation_layer>Lapisan Validasi (Diperlukan buatulang)</validation_layer>
-			<validation_layer_description>Aktifkan lapisan validasi Vulkan.</validation_layer_description>
+			<validation_layer>Memvalidasi Lipatan (Diperlukan buatulang)</validation_layer>
+			<validation_layer_description>Aktifkan memvalidasi lipatan Vulkan.</validation_layer_description>
 			<unwatch_code>Hapus Kode</unwatch_code>
 			<watch_code>Tonton Kode</watch_code>
 			<unwatch_memory>Hapus Memory</unwatch_memory>
 			<watch_memory>Tonton Memory</watch_memory>
-			<unwatch_import_calls>Batalkan Tonton Impor Panggilan</unwatch_import_calls>
+			<unwatch_import_calls>Hapus Impor Panggilan</unwatch_import_calls>
 			<watch_import_calls>Tonton Impor Panggilan</watch_import_calls>
 		</debug>
 		<close>Tutup</close>
 		<save_reboot>Simpan & BuatUlang</save_reboot>
 		<save_apply>Simpan & Terapkan</save_apply>
 		<save>Simpan</save>
-		<keep_changes>Klik Simpan untuk menyimpan perubahan Anda.</keep_changes>
+		<keep_changes>Klik Simpan untuk menyimpan perubahan Kamu.</keep_changes>
 	</settings_dialog>
 
 	<trophy_collection>
@@ -755,7 +759,7 @@ Anda bisa mendapatkan trofi dengan menggunakan aplikasi yang mendukung fitur tro
 		<trophies>Trofi</trophies>
 		<grade>Nilai</grade>
 		<progress>Progress</progress>
-		<updated>Telah diUpdate</updated>
+		<updated>Telah Diupdate</updated>
 	</trophy_collection>
 
 	<user_management>
@@ -777,7 +781,7 @@ Apakah anda yakin ingin melanjutkan?</user_delete_warn>
 		<automatic_user_login>Automatis User Login</automatic_user_login>
 	</user_management>
 
-	<vita3k_update name="Vita3K Update">
+	<vita3k_update name="Vita3K Perbarui">
  		<new_version_available>versi terbaru udah Vita3K tersedia.</new_version_available>
 		<back>Kembali</back>
 		<downloading>Downloading...
@@ -790,25 +794,26 @@ Setelah pengunduhan selesai, Vita3K akan restart secara otomatis dan kemudian me
 		<new_features>Baru Fitur di Versi ini {}</new_features>
 		<authors>Penulis</authors>
 		<comments>Komentar</comments>
-		<update>Update</update>
+		<update>Perbarui</update>
 		<version>Versi {}</version>
 	</vita3k_update>
 
-	<welcome name="SelamatDatang di Vita3K">
-		<vita3k>Vita3K PlayStation Vita Emulator</vita3k>
+	<welcome name="Selamat datang di Vita3K">
+		<vita3k>Emulator Vita3K PlayStation Vita</vita3k>
 		<about_vita3k>Vita3K adalah emulator PlayStation Vita sumber terbuka yang ditulis dalam C++ untuk Windows, Linux, macOS dan Android.</about_vita3k>
 		<development_stage>Emulator masih dalam tahap awal sehingga umpan balik dan pengujian apa pun sangat dihargai.</development_stage>
 		<about_firmware>Untuk memulai, silakan instal paket firmware dan font PS Vita.</about_firmware>
 		<vita3k_quickstart>Panduan lengkap tentang cara menyiapkan Vita3K dapat ditemukan di</vita3k_quickstart>
-		<quickstart>MulaiCepat</quickstart>
+		<quickstart>Mulai Cepat</quickstart>
 		<page>halaman.</page>
-		<check_compatibility>Konsultasikan game Komersial dan daftar kompatibilitas Homebrew untuk melihat apa yang sedang berjalan.</check_compatibility>
+		<check_compatibility>Cek kompatibilitas game Komersial dan Homebrew untuk melihat apa yang sedang
+berjalan.</check_compatibility>
 		<commercial_compatibility_list>Daftar Kompatibilitas Komersial</commercial_compatibility_list>
 		<homebrew_compatibility_list>Daftar Kompatibilitas Homebrew</homebrew_compatibility_list>
 		<welcome_contribution>Kontribusi dipersilakan!</welcome_contribution>
 		<discord_help>Dukungan tambahan dapat ditemukan di saluran #help channel dari</discord_help>
-		<no_piracy>Vita3K tidak memaafkan pembajakan. kamu harus dump game kamu sendiri.</no_piracy>
-		<show_next_time>TujukanLain kali</show_next_time>
+		<no_piracy>Vita3K tidak memaafkan pembajakan. Kamu harus dump game kamu sendiri.</no_piracy>
+		<show_next_time>Tunjukkan lain kali</show_next_time>
 		<close>Tutup</close>
 	</welcome>
 </lang>
