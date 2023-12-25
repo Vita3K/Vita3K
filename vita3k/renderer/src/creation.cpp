@@ -205,7 +205,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProg
     return true;
 }
 
-bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *cache_path, const char *title_id) {
+bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const std::vector<SceGxmVertexAttribute> &attributes, const char *cache_path, const char *title_id) {
     switch (state.current_backend) {
     case Backend::OpenGL:
         gl::create(vp, dynamic_cast<gl::GLState &>(state), program);
@@ -231,9 +231,12 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
     vp->texture_count = std::bit_width(vp->textures_used.to_ulong());
 
     if (vp->attribute_infos.empty()) {
-        vp->stripped_symbols_checked = false;
-    } else {
-        vp->stripped_symbols_checked = true;
+        // Insert some symbols here
+        if (program.primary_reg_count != 0) {
+            for (size_t i = 0; i < attributes.size(); i++) {
+                vp->attribute_infos.emplace(attributes[i].regIndex, shader::usse::AttributeInformation(static_cast<uint16_t>(i), SCE_GXM_PARAMETER_TYPE_F32, false, false, false));
+            }
+        }
     }
 
     return true;

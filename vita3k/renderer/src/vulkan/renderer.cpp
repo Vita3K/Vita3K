@@ -627,7 +627,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     return true;
 }
 
-void VKState::late_init(const Config &cfg, const std::string_view game_id) {
+void VKState::late_init(const Config &cfg, const std::string_view game_id, MemState &mem) {
+    this->mem = &mem;
+
     bool use_high_accuracy = cfg.current_config.high_accuracy;
 
     // shader interlock is more accurate but slower
@@ -924,6 +926,10 @@ int VKState::get_max_anisotropic_filtering() {
 
 void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
+}
+
+void VKState::set_async_compilation(bool enable) {
+    pipeline_cache.set_async_compilation(enable);
 }
 
 std::vector<std::string> VKState::get_gpu_list() {

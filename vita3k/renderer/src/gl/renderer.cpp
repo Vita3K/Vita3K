@@ -271,7 +271,7 @@ bool GLState::init(const fs::path &static_assets, const bool hashless_texture_ca
     return true;
 }
 
-void GLState::late_init(const Config &cfg, const std::string_view game_id) {
+void GLState::late_init(const Config &cfg, const std::string_view game_id, MemState &mem) {
     const fs::path texture_folder = fs::path(shared_path) / "textures";
     texture_cache.init(cfg.hashless_texture_cache, texture_folder, game_id);
 }

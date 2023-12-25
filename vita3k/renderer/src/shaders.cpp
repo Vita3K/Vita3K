@@ -91,7 +91,7 @@ bool get_shaders_cache_hashs(State &renderer) {
 void save_shaders_cache_hashs(State &renderer, std::vector<ShadersHash> &shaders_cache_hashs) {
     const auto shaders_path{ fs::path(renderer.cache_path) / "shaders" / renderer.title_id / renderer.self_name };
     if (!fs::exists(shaders_path))
-        fs::create_directory(shaders_path);
+        fs::create_directories(shaders_path);
     std::string hash_file_name = fmt::format("hashs-{}.dat", (renderer.current_backend == Backend::OpenGL) ? "gl" : "vk");
     fs::ofstream shaders_hashs(shaders_path / hash_file_name, std::ios::out | std::ios::binary);
 

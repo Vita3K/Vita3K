@@ -21,14 +21,18 @@
 
 #include <vector>
 
-#if BOOST_VERSION >= 108100
+#if BOOST_VERSION >= 108200
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <boost/unordered/unordered_flat_set.hpp>
+#include <boost/unordered/unordered_node_map.hpp>
 // use a boost unordered_flat_map as performance really matters for fields using this type
 template <typename T, typename S>
 using unordered_map_fast = boost::unordered::unordered_flat_map<T, S>;
 template <typename T>
 using unordered_set_fast = boost::unordered::unordered_flat_set<T>;
+// this is in case we need pointer stability under rehashing
+template <typename T, typename S>
+using unordered_map_stable = boost::unordered::unordered_node_map<T, S>;
 #else
 // fallback in case someone is using an old boost version
 #include <boost/unordered_map.hpp>
@@ -37,6 +41,8 @@ template <typename T, typename S>
 using unordered_map_fast = boost::unordered_map<T, S>;
 template <typename T>
 using unordered_set_fast = boost::unordered_set<T>;
+template <typename T, typename S>
+using unordered_map_stable = boost::unordered_map<T, S>;
 #endif
 
 namespace lru {

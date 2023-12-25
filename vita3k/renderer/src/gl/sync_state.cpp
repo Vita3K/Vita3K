@@ -432,18 +432,6 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     GLVertexProgram *glvert = reinterpret_cast<GLVertexProgram *>(vertex_program.renderer_data.get());
 
-    if (!glvert->stripped_symbols_checked) {
-        // Insert some symbols here
-        const SceGxmProgram *vertex_program_body = vertex_program.program.get(mem);
-        if (vertex_program_body && (vertex_program_body->primary_reg_count != 0)) {
-            for (std::size_t i = 0; i < vertex_program.attributes.size(); i++) {
-                glvert->attribute_infos.emplace(vertex_program.attributes[i].regIndex, shader::usse::AttributeInformation(static_cast<std::uint16_t>(i), SCE_GXM_PARAMETER_TYPE_F32, false, false, false));
-            }
-        }
-
-        glvert->stripped_symbols_checked = true;
-    }
-
     // Each draw will upload the stream data. Assuming that, we can just bind buffer, upload data
     // The GXM submit side should already submit used buffer, but we just delete all just in case
     std::array<std::size_t, SCE_GXM_MAX_VERTEX_STREAMS> offset_in_buffer;

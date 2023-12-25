@@ -45,7 +45,7 @@ struct GLState : public renderer::State {
     ScreenRenderer screen_renderer;
 
     bool init(const fs::path &static_assets, const bool hashless_texture_cache) override;
-    void late_init(const Config &cfg, const std::string_view game_id) override;
+    void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
 
     TextureCache *get_texture_cache() override {
         return &texture_cache;

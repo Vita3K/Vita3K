@@ -22,24 +22,42 @@
 #include <map>
 #include <set>
 
+#include <blockingconcurrentqueue.h>
 #include <util/containers.h>
 #include <vkutil/objects.h>
 
 struct SceGxmProgram;
+struct SceGxmFragmentProgram;
+struct SceGxmVertexProgram;
 enum SceGxmPrimitiveType : uint32_t;
 struct SceGxmVertexAttribute;
 struct MemState;
 
 using Sha256Hash = std::array<uint8_t, 32>;
 
-namespace renderer::vulkan {
+namespace shader {
+struct Hints;
+}
+
+namespace renderer {
+
+struct GxmRecordState;
+
+namespace vulkan {
 struct VKState;
 struct VKContext;
+struct CompileRequest;
+
+using PipelineCompileQueue = moodycamel::BlockingConcurrentQueue<CompileRequest *>;
 
 class PipelineCache {
 private:
     VKState &state;
-    VKContext *current_context;
+
+    // are we performing pipeline compilation on a parallel thread?
+    bool use_async_compilation = false;
+    // how many threads are used in case async compilation is enabled
+    int nb_worker_threads = 0;
 
     // does the GPU support vertex attributes with 3 components (like R16G16B16_UNORM), some (like AMD GPUs) don't
     // this is needed when creating the input state
@@ -47,7 +65,7 @@ private:
 
     // how much time should we wait after the last shader compilation
     // to update the disk-saved shader cache (in seconds)
-    static constexpr int pipeline_cache_save_delay = 30;
+    static constexpr int pipeline_cache_save_delay = 15;
 
     vk::PipelineCache pipeline_cache;
 
@@ -56,20 +74,32 @@ private:
     std::map<vk::Format, vk::RenderPass> render_passes[2][2];
     // render passes used along shader interlock
     std::map<vk::Format, vk::RenderPass> shader_interlock_pass;
-    std::map<Sha256Hash, vk::ShaderModule> shaders;
-    unordered_map_fast<uint64_t, vk::Pipeline> pipelines;
 
-    // temp vars used to store the result computed by auxialiary functions before createPipeline is called
-    std::vector<vk::VertexInputBindingDescription> binding_descr;
-    std::vector<vk::VertexInputAttributeDescription> attr_descr;
+    // only used when accessing the shaders map
+    std::mutex shaders_mutex;
+    // because of multithreading, we want the pointers to remain stable
+    unordered_map_stable<Sha256Hash, vk::ShaderModule> shaders;
+    unordered_map_stable<uint64_t, vk::Pipeline> pipelines;
 
-    vk::PipelineShaderStageCreateInfo retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const std::vector<SceGxmVertexAttribute> *hint_attributes);
-    vk::PipelineLayout retrieve_pipeline_layout(const uint16_t vert_texture_count, const uint16_t frag_texture_count);
-    vk::PipelineVertexInputStateCreateInfo get_vertex_input_state(MemState &mem);
+    vk::PipelineShaderStageCreateInfo retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints);
+    vk::PipelineVertexInputStateCreateInfo get_vertex_input_state(const SceGxmVertexProgram &vertex_program, MemState &mem);
+
+    // queue containing request sent by the main thread to the compile threads
+    PipelineCompileQueue pipeline_compile_queue;
+    moodycamel::ProducerToken pipeline_compile_queue_token;
+
+    // each pipeline compiler thread uses this function as its entrypoint
+    void compiler_thread(MemState &mem);
+
+    vk::Pipeline compile_pipeline(SceGxmPrimitiveType type, vk::RenderPass render_pass, const SceGxmVertexProgram &vertex_program_gxm, const SceGxmFragmentProgram &fragment_program_gxm, const GxmRecordState &record, const shader::Hints &hints, MemState &mem);
 
 public:
     // if not 0, next time the pipeline cache should be saved (in seconds since epoch)
     uint64_t next_pipeline_cache_save = std::numeric_limits<uint64_t>::max();
+
+    // modified by the surface cache, estimates if it is safe to use async pipeline compilation
+    // (i.e that it does not causes permanent graphical issues)
+    bool can_use_deferred_compilation;
 
     vk::DescriptorSetLayout uniforms_layout;
     // used for the mask, color attachment
@@ -81,15 +111,18 @@ public:
     // first index is vertex, second is fragment
     vk::PipelineLayout pipeline_layouts[17][17] = {};
 
-    explicit PipelineCache(VKState &state);
+    PipelineCache(VKState &state);
     void init();
 
     void read_pipeline_cache();
     void save_pipeline_cache();
 
     vk::RenderPass retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool no_color = false);
-    vk::Pipeline retrieve_pipeline(VKContext &context, SceGxmPrimitiveType &type, MemState &mem);
+    vk::Pipeline retrieve_pipeline(VKContext &context, SceGxmPrimitiveType &type, bool consider_for_async, MemState &mem);
 
-    bool precompile_shader(const Sha256Hash &hash);
+    vk::ShaderModule precompile_shader(const Sha256Hash &hash, bool search_first = true);
+
+    void set_async_compilation(bool enable);
 };
-} // namespace renderer::vulkan
+} // namespace vulkan
+} // namespace renderer

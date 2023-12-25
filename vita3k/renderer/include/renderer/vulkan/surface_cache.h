@@ -76,6 +76,7 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     uint16_t original_height;
     uint16_t pixel_stride;
     uint32_t total_bytes;
+    uint64_t last_frame_rendered;
 
     SceGxmColorBaseFormat format;
     vk::ComponentMapping swizzle;

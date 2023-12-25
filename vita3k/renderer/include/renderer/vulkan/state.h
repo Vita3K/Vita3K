@@ -40,6 +40,8 @@ struct Viewport {
 };
 
 struct VKState : public renderer::State {
+    MemState *mem;
+
     // 0 = automatic, > 0 = order in instance.enumeratePhysicalDevices
     int gpu_idx;
 
@@ -99,7 +101,7 @@ struct VKState : public renderer::State {
 
     bool init(const fs::path &static_assets, const bool hashless_texture_cache) override;
     bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
-    void late_init(const Config &cfg, const std::string_view game_id) override;
+    void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
     void cleanup();
 
     TextureCache *get_texture_cache() override {
@@ -114,6 +116,7 @@ struct VKState : public renderer::State {
     void set_screen_filter(const std::string_view &filter) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
+    void set_async_compilation(bool enable) override;
 
     bool map_memory(MemState &mem, Ptr<void> address, uint32_t size) override;
     void unmap_memory(MemState &mem, Ptr<void> address) override;

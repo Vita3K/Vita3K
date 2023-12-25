@@ -126,6 +126,7 @@ public:
         std::string screen_filter = "Bilinear";
         bool v_sync = true;
         int anisotropic_filtering = 1;
+        bool async_pipeline_compilation = true;
         bool import_textures = false;
         bool export_textures = false;
         bool export_as_png = false;
