@@ -28,34 +28,6 @@ namespace ngs {
 SwrContext *Atrac9Module::swr_mono_to_stereo = nullptr;
 SwrContext *Atrac9Module::swr_stereo = nullptr;
 
-void atrac9_get_buffer_parameter(const uint32_t start_sample, const uint32_t num_samples, const uint32_t info, SceNgsAT9SkipBufferInfo &parameter) {
-    const uint8_t sample_rate_index = ((info & (0b1111 << 12)) >> 12);
-    const uint8_t block_rate_index = ((info & (0b111 << 9)) >> 9);
-    const uint16_t frame_bytes = ((((info & 0xFF0000) >> 16) << 3) | ((info & (0b111 << 29)) >> 29)) + 1;
-    const uint8_t superframe_index = (info & (0b11 << 27)) >> 27;
-
-    // Calculate bytes per superframe.
-    const uint32_t frame_per_superframe = 1 << superframe_index;
-    const uint32_t bytes_per_superframe = frame_bytes * frame_per_superframe;
-
-    // Calculate total superframe
-    static const int8_t sample_rate_index_to_frame_sample_power[] = {
-        6, 6, 7, 7, 7, 8, 8, 8, 6, 6, 7, 7, 7, 8, 8, 8
-    };
-
-    const uint32_t samples_per_frame = 1 << sample_rate_index_to_frame_sample_power[sample_rate_index];
-    const uint32_t samples_per_superframe = samples_per_frame * frame_per_superframe;
-
-    const uint32_t start_superframe = (start_sample / samples_per_superframe);
-    const uint32_t num_superframe = (start_sample + num_samples + samples_per_superframe - 1) / samples_per_superframe - start_superframe;
-
-    parameter.num_bytes = num_superframe * bytes_per_superframe;
-    parameter.is_super_packet = (frame_per_superframe == 1) ? 0 : 1;
-    parameter.start_byte_offset = start_superframe * bytes_per_superframe;
-    parameter.start_skip = (start_sample - (start_superframe * samples_per_superframe));
-    parameter.end_skip = (start_superframe + num_superframe) * samples_per_superframe - (start_sample + num_samples);
-}
-
 void Atrac9Module::on_state_change(const MemState &mem, ModuleData &data, const VoiceState previous) {
     SceNgsAT9States *state = data.get_state<SceNgsAT9States>();
     if (data.parent->state == VOICE_STATE_ACTIVE && previous == VOICE_STATE_AVAILABLE) {
