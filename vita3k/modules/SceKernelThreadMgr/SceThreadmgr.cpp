@@ -1168,8 +1168,8 @@ EXPORT(int, sceKernelGetMsgPipeCreatorId) {
 
 EXPORT(int, sceKernelGetProcessId) {
     TRACY_FUNC(sceKernelGetProcessId);
-    STUBBED("pid: 0");
-    return 0;
+    STUBBED("pid: 1");
+    return 1;
 }
 
 EXPORT(uint64_t, sceKernelGetSystemTimeWide) {
