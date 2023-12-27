@@ -170,7 +170,7 @@ static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
 
     // clang-format on
     default: {
-        LOG_ERROR("Unsupported parameter type {} used in shader.", log_hex(input.type));
+        LOG_ERROR("Unsupported parameter type {} used in shader.", log_hex(fmt::underlying(input.type)));
         return get_type_fallback(b);
     }
     }
@@ -1088,7 +1088,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     const auto add_var_to_reg = [&](const Input &input, const std::string &name, std::uint16_t semantic, bool pa, bool regformat, std::int32_t location) {
-        const spv::Id param_type = get_param_type(b, input);
         const int type_size = get_data_type_size(input.type);
         spv::Id var;
         if (regformat) {
@@ -1111,6 +1110,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             var_to_reg.dtype = DataType::INT32;
             translation_state.var_to_regs.push_back(var_to_reg);
         } else {
+            const spv::Id param_type = get_param_type(b, input);
             var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, param_type, name.c_str());
 
             VarToReg var_to_reg = {};

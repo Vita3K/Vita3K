@@ -164,65 +164,47 @@ static const SpirvVarRegBank *get_reg_bank(const shader::usse::SpirvShaderParame
     }
 }
 
-// TODO: Not sure if this is right. Based on this article
-// https://www.johndcook.com/blog/2018/04/15/eight-bit-floating-point/
-// > Eight-bit IEEE-like float: The largest value would be 01011111 and have value: 4(1 – 2-5) = 31/8 = 3.3875.
-static constexpr float MAX_FX8 = 3.3875f;
-
-static spv::Function *make_fx8_unpack_func(spv::Builder &b, const SpirvUtilFunctions &utils, const FeatureState &features) {
+static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunctions &utils, const FeatureState &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
-    spv::Block *fx8_unpack_func_block;
+    spv::Block *fx10_unpack_func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Id type_ui32 = b.makeUintType(32);
+    spv::Id type_i32 = b.makeIntType(32);
+    spv::Id ivec3 = b.makeVectorType(type_i32, 3);
     spv::Id type_f32 = b.makeFloatType(32);
-    spv::Id type_f32_v4 = b.makeVectorType(type_f32, 4);
-    spv::Id max_fx8_c = b.makeFloatConstant(MAX_FX8);
+    spv::Id type_f32_v3 = b.makeVectorType(type_f32, 3);
 
-    spv::Function *fx8_unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32_v4, "unpack4xF8", { type_f32 }, { "to_unpack" },
-        decorations, &fx8_unpack_func_block);
+    spv::Function *fx10_unpack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32_v3, "unpack3xFX10", { type_f32 }, { "to_unpack" },
+        decorations, &fx10_unpack_func_block);
 
-    spv::Id extracted = fx8_unpack_func->getParamId(0);
+    spv::Id extracted = fx10_unpack_func->getParamId(0);
 
     // Cast to uint first
-    extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
-    extracted = b.createBuiltinCall(type_f32_v4, utils.std_builtins, GLSLstd450UnpackSnorm4x8, { extracted });
+    extracted = b.createUnaryOp(spv::OpBitcast, type_i32, extracted);
+    spv::Id vec = b.createCompositeConstruct(ivec3, { extracted, extracted, extracted });
 
-    // Multiply them with max fx8
-    extracted = b.createBinOp(spv::OpFMul, type_f32_v4, extracted, b.makeCompositeConstant(type_f32_v4, { max_fx8_c, max_fx8_c, max_fx8_c, max_fx8_c }));
+    // vec = vec >> ivec3(0,10,20);
+    // note: note entirely sure, I really hope the layout is the same as in a 32-bit little-endian integer
+    const spv::Id shift_amount = b.createCompositeConstruct(ivec3, { b.makeIntConstant(0), b.makeIntConstant(10), b.makeIntConstant(20) });
+    vec = b.createBinOp(spv::OpShiftRightLogical, ivec3, vec, shift_amount);
 
-    b.makeReturn(false, extracted);
+    // sign-extend the 10-bit integer:
+    // vec <<= 22 (logical)
+    // vec >>= 22 (arithmetic)
+    spv::Id extend_amount = b.makeIntConstant(22);
+    extend_amount = b.createCompositeConstruct(ivec3, { extend_amount, extend_amount, extend_amount });
+    vec = b.createBinOp(spv::OpShiftLeftLogical, ivec3, vec, extend_amount);
+    vec = b.createBinOp(spv::OpShiftRightArithmetic, ivec3, vec, extend_amount);
+
+    // normalize it
+    vec = convert_to_float(b, vec, DataType::C10, true);
+
+    b.makeReturn(false, vec);
     b.setBuildPoint(last_build_point);
 
-    return fx8_unpack_func;
-}
-
-static spv::Function *make_fx8_pack_func(spv::Builder &b, const SpirvUtilFunctions &utils, const FeatureState &features) {
-    std::vector<std::vector<spv::Decoration>> decorations;
-
-    spv::Block *fx8_pack_func_block;
-    spv::Block *last_build_point = b.getBuildPoint();
-
-    spv::Id type_ui32 = b.makeUintType(32);
-    spv::Id type_f32 = b.makeFloatType(32);
-    spv::Id type_f32_v4 = b.makeVectorType(type_f32, 4);
-    spv::Id max_fx8_c = b.makeFloatConstant(MAX_FX8);
-
-    spv::Function *fx8_pack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32, "pack4xF8", { type_f32_v4 }, { "to_pack" },
-        decorations, &fx8_pack_func_block);
-
-    spv::Id extracted = fx8_pack_func->getParamId(0);
-
-    extracted = b.createBinOp(spv::OpFDiv, type_f32_v4, extracted, b.makeCompositeConstant(type_f32_v4, { max_fx8_c, max_fx8_c, max_fx8_c, max_fx8_c }));
-    extracted = b.createBuiltinCall(type_ui32, utils.std_builtins, GLSLstd450PackSnorm4x8, { extracted });
-    extracted = b.createUnaryOp(spv::OpBitcast, type_f32, extracted);
-    b.makeReturn(false, extracted);
-    b.setBuildPoint(last_build_point);
-
-    return fx8_pack_func;
+    return fx10_unpack_func;
 }
 
 static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &features, DataType source_type) {
@@ -716,13 +698,12 @@ spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureStat
         }
         return b.createFunctionCall(iter->second, { scalar });
     }
-    // TODO: Not really FX8?
     case DataType::C10: {
-        if (!utils.unpack_fx8) {
-            utils.unpack_fx8 = make_fx8_unpack_func(b, utils, features);
+        if (!utils.unpack_fx10) {
+            utils.unpack_fx10 = make_fx10_unpack_func(b, utils, features);
         }
 
-        return b.createFunctionCall(utils.unpack_fx8, { scalar });
+        return b.createFunctionCall(utils.unpack_fx10, { scalar });
     }
     default: {
         LOG_ERROR("Unsupported unpack type: {}", log_hex(type));
@@ -752,17 +733,9 @@ spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState 
         }
         return b.createFunctionCall(iter->second, { vec });
     }
-    // TODO: Not really FX8?
-    case DataType::C10: {
-        if (!utils.pack_fx8) {
-            utils.pack_fx8 = make_fx8_pack_func(b, utils, features);
-        }
-
-        return b.createFunctionCall(utils.pack_fx8, { vec });
-    }
 
     default: {
-        LOG_ERROR("Unsupported pack type: {}", log_hex(source_type));
+        LOG_ERROR("Unsupported pack type: {}", log_hex(fmt::underlying(source_type)));
         break;
     }
     }
@@ -1476,6 +1449,9 @@ static std::pair<float, float> get_int_normalize_range_constants(DataType type) 
         return { 0.0f, 255.0f };
     case DataType::INT8:
         return { 128.0f, 127.0f };
+    case DataType::C10:
+        // signed 10-bit
+        return { 512.0f, 511.0f };
     case DataType::UINT16:
         return { 0.0f, 65535.0f };
     case DataType::INT16:

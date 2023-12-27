@@ -40,36 +40,32 @@ GenericType translate_generic_type(const gxp::GenericParameterType &type) {
 
 std::tuple<DataType, std::string> get_parameter_type_store_and_name(const SceGxmParameterType &type) {
     switch (type) {
-    case SCE_GXM_PARAMETER_TYPE_F32: {
+    case SCE_GXM_PARAMETER_TYPE_F32:
         return std::make_tuple(DataType::F32, "float");
-    }
 
-    case SCE_GXM_PARAMETER_TYPE_F16: {
+    case SCE_GXM_PARAMETER_TYPE_F16:
         return std::make_tuple(DataType::F16, "half");
-    }
 
-    case SCE_GXM_PARAMETER_TYPE_U16: {
+    case SCE_GXM_PARAMETER_TYPE_U16:
         return std::make_tuple(DataType::UINT16, "ushort");
-    }
 
-    case SCE_GXM_PARAMETER_TYPE_S16: {
+    case SCE_GXM_PARAMETER_TYPE_S16:
         return std::make_tuple(DataType::INT16, "ishort");
-    }
 
-    case SCE_GXM_PARAMETER_TYPE_U8: {
+    case SCE_GXM_PARAMETER_TYPE_U8:
         return std::make_tuple(DataType::UINT8, "uchar");
-    }
 
-    case SCE_GXM_PARAMETER_TYPE_S8: {
+    case SCE_GXM_PARAMETER_TYPE_S8:
         return std::make_tuple(DataType::INT8, "ichar");
-    }
 
-    case SCE_GXM_PARAMETER_TYPE_U32: {
+    case SCE_GXM_PARAMETER_TYPE_C10:
+        return std::make_tuple(DataType::C10, "fixed");
+
+    case SCE_GXM_PARAMETER_TYPE_U32:
         return std::make_tuple(DataType::UINT32, "uint");
-    }
-    case SCE_GXM_PARAMETER_TYPE_S32: {
+
+    case SCE_GXM_PARAMETER_TYPE_S32:
         return std::make_tuple(DataType::INT32, "int");
-    }
 
     default:
         return std::make_tuple(DataType::UNK, "unk");
