@@ -234,7 +234,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
         // Insert some symbols here
         if (program.primary_reg_count != 0) {
             for (size_t i = 0; i < attributes.size(); i++) {
-                vp->attribute_infos.emplace(attributes[i].regIndex, shader::usse::AttributeInformation(static_cast<uint16_t>(i), SCE_GXM_PARAMETER_TYPE_F32, false, false, false));
+                vp->attribute_infos.emplace(attributes[i].regIndex, shader::usse::AttributeInformation(static_cast<uint16_t>(i), SCE_GXM_PARAMETER_TYPE_F32, 1, false, false, false));
             }
         }
     }

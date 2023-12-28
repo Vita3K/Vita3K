@@ -24,6 +24,7 @@
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <renderer/shaders.h>
+#include <shader/gxp_parser.h>
 #include <shader/spirv_recompiler.h>
 
 #include <util/align.h>
@@ -192,8 +193,16 @@ void PipelineCache::init() {
     {
         // look for rgb vertex attribute support
         // we need to look at each format because it is not the same for all usual 3-component formats (checked on AMD Radeon HD 7800)
-        std::array<vk::Format, 7> formats = { vk::Format::eR16G16B16Unorm, vk::Format::eR16G16B16Snorm, vk::Format::eR16G16B16Uscaled, vk::Format::eR16G16B16Sscaled,
-            vk::Format::eR16G16B16Uint, vk::Format::eR16G16B16Sint, vk::Format::eR16G16B16Sfloat };
+        // no need to test for 32-bit types, they are always supported
+        vk::Format formats[] = {
+            vk::Format::eR16G16B16Unorm, vk::Format::eR16G16B16Snorm,
+            vk::Format::eR16G16B16Uscaled, vk::Format::eR16G16B16Sscaled,
+            vk::Format::eR16G16B16Uint, vk::Format::eR16G16B16Sint,
+            vk::Format::eR16G16B16Sfloat,
+            vk::Format::eR8G8B8Unorm, vk::Format::eR8G8B8Snorm,
+            vk::Format::eR8G8B8Uscaled, vk::Format::eR8G8B8Sscaled,
+            vk::Format::eR8G8B8A8Uint, vk::Format::eR8G8B8Sint
+        };
         for (auto fmt : formats) {
             vk::FormatProperties rgb_property = state.physical_device.getFormatProperties(fmt);
             if (!(rgb_property.bufferFeatures & vk::FormatFeatureFlagBits::eVertexBuffer)) {
@@ -566,7 +575,7 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
 
         used_streams |= (1 << attribute.streamIndex);
 
-        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
+        SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
         shader::usse::AttributeInformation info = vkvert->attribute_infos.at(attribute.regIndex);
 
         uint8_t component_count = attribute.componentCount;
@@ -577,21 +586,41 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
         uint32_t array_element_size = 0;
         vk::Format format;
         if (info.regformat) {
-            const int comp_size = gxm::attribute_format_size(attribute_format);
-            component_count = (comp_size * component_count + 3) / 4;
+            // use the data from the shader itself
+            component_count = info.component_count;
+            switch (info.gxm_type) {
+            case SCE_GXM_PARAMETER_TYPE_U8:
+            case SCE_GXM_PARAMETER_TYPE_S8:
+            case SCE_GXM_PARAMETER_TYPE_C10:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U8;
+                break;
+            case SCE_GXM_PARAMETER_TYPE_U16:
+            case SCE_GXM_PARAMETER_TYPE_S16:
+            case SCE_GXM_PARAMETER_TYPE_F16:
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_U16;
+                break;
+            default:
+                // U32 format
+                attribute_format = SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED;
+                break;
+            }
+
+            if (info.gxm_type == SCE_GXM_PARAMETER_TYPE_C10)
+                // this is 10-bit and not 8-bit
+                component_count = (component_count * 10 + 7) / 8;
 
             if (component_count > 4) {
                 // a matrix is used as an attribute, pack everything into an array of vec4
                 array_size = (component_count + 3) / 4;
-                array_element_size = 4 * sizeof(int32_t);
+                array_element_size = 4 * gxm::attribute_format_size(attribute_format);
                 component_count = 4;
             }
 
             // regformat attributes are int32
-            format = translate_attribute_format(SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED, component_count, true, true);
+            format = translate_attribute_format(attribute_format, component_count, true, false);
             if (component_count == 3 && unsupported_rgb_vertex_attribute_formats.contains(format)) {
                 component_count = 4;
-                format = translate_attribute_format(SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED, component_count, true, true);
+                format = translate_attribute_format(attribute_format, component_count, true, false);
             }
         } else {
             // some AMD GPUs do not support rgb vertex attributes, so just put it as rgba
@@ -606,7 +635,7 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
 
         for (uint32_t i = 0; i < array_size; i++) {
             attr_descr.push_back(vk::VertexInputAttributeDescription{
-                .location = info.location() + i,
+                .location = info.location + i,
                 .binding = attribute.streamIndex,
                 .format = format,
                 .offset = attribute.offset + i * array_element_size });
