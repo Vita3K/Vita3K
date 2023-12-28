@@ -31,6 +31,7 @@ using UniformBufferSizes = std::array<std::uint32_t, 15>;
 
 struct SceGxmProgramParameter;
 struct SceGxmProgram;
+enum SceGxmParameterType : uint8_t;
 
 namespace shader::usse {
 /**
@@ -197,7 +198,9 @@ public:
 };
 
 struct AttributeInformation {
-    std::uint32_t info;
+    uint16_t location;
+    SceGxmParameterType gxm_type;
+    uint8_t component_count;
     // this is needed for Vulkan as it doesn't implicitly convert between integers and floats and between signed and unsigned
     bool is_integer;
     // only meaningful is is_integer is true
@@ -205,29 +208,25 @@ struct AttributeInformation {
     bool regformat;
 
     explicit AttributeInformation()
-        : info(0)
+        : location(0)
+        , gxm_type(static_cast<SceGxmParameterType>(0))
+        , component_count(0)
         , is_integer(false)
         , is_signed(false)
         , regformat(false) {
     }
 
-    explicit AttributeInformation(const std::uint16_t loc, const std::uint16_t gxm_type, const bool is_integer, const bool is_signed, const bool regformat)
-        : info(loc | (static_cast<std::uint32_t>(gxm_type) << 16))
+    explicit AttributeInformation(uint16_t loc, SceGxmParameterType type, uint8_t count, bool is_integer, bool is_signed, bool regformat)
+        : location(loc)
+        , gxm_type(type)
+        , component_count(count)
         , is_integer(is_integer)
         , is_signed(is_signed)
         , regformat(regformat) {
     }
-
-    std::uint16_t location() const {
-        return static_cast<std::uint16_t>(info);
-    }
-
-    std::uint16_t gxm_type() const {
-        return static_cast<std::uint16_t>(info >> 16);
-    }
 };
 
-using USSEOffset = std::uint32_t;
+using USSEOffset = uint32_t;
 
 using UniformBufferMap = std::map<int, UniformBuffer>;
 using AttributeInformationMap = std::map<int, AttributeInformation>;

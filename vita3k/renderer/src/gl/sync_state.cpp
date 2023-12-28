@@ -468,7 +468,7 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
         bool upload_integral = false;
 
         shader::usse::AttributeInformation info = glvert->attribute_infos.at(attribute.regIndex);
-        attrib_location = info.location();
+        attrib_location = info.location;
 
         // these 2 values are only used when a matrix is used as a vertex attribute
         // this is only supported for regformated attribute for now
@@ -477,19 +477,37 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
         uint8_t component_count = attribute.componentCount;
 
         if (info.regformat) {
-            const int comp_size = gxm::attribute_format_size(attribute_format);
-            component_count = (comp_size * component_count + 3) / 4;
-            type = GL_INT;
+            component_count = info.component_count;
+            switch (info.gxm_type) {
+            case SCE_GXM_PARAMETER_TYPE_U8:
+            case SCE_GXM_PARAMETER_TYPE_S8:
+            case SCE_GXM_PARAMETER_TYPE_C10:
+                type = GL_UNSIGNED_BYTE;
+                break;
+            case SCE_GXM_PARAMETER_TYPE_U16:
+            case SCE_GXM_PARAMETER_TYPE_S16:
+            case SCE_GXM_PARAMETER_TYPE_F16:
+                type = GL_UNSIGNED_SHORT;
+                break;
+            default:
+                // U32 format
+                type = GL_UNSIGNED_INT;
+                break;
+            }
             upload_integral = true;
+
+            if (info.gxm_type == SCE_GXM_PARAMETER_TYPE_C10)
+                // this is 10-bit and not 8-bit
+                component_count = (component_count * 10 + 7) / 8;
 
             if (component_count > 4) {
                 // a matrix is used as an attribute, pack everything into an array of vec4
                 array_size = (component_count + 3) / 4;
-                array_element_size = 4 * sizeof(int32_t);
+                array_element_size = 4 * gxm::attribute_format_size(attribute_format);
                 component_count = 4;
             }
         } else {
-            switch (info.gxm_type()) {
+            switch (info.gxm_type) {
             case SCE_GXM_PARAMETER_TYPE_U8:
             case SCE_GXM_PARAMETER_TYPE_S8:
             case SCE_GXM_PARAMETER_TYPE_U16:

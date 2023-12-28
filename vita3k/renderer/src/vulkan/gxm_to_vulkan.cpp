@@ -29,8 +29,8 @@ vk::Format translate_attribute_format(SceGxmAttributeFormat format, unsigned int
     static constexpr vk::Format formats_integer[][4] = {
         /*SCE_GXM_ATTRIBUTE_FORMAT_U8*/ { vk::Format::eR8Uint, vk::Format::eR8G8Uint, vk::Format::eR8G8B8Uint, vk::Format::eR8G8B8A8Uint },
         /*SCE_GXM_ATTRIBUTE_FORMAT_S8*/ { vk::Format::eR8Sint, vk::Format::eR8G8Sint, vk::Format::eR8G8B8Sint, vk::Format::eR8G8B8A8Sint },
-        /*SCE_GXM_ATTRIBUTE_FORMAT_U16*/ { vk::Format::eR16Uint, vk::Format::eR16G16Uint, vk::Format::eR16G16B16Uint, vk::Format::eR8G8B8A8Uint },
-        /*SCE_GXM_ATTRIBUTE_FORMAT_S16*/ { vk::Format::eR16Sint, vk::Format::eR16G16Sint, vk::Format::eR16G16B16Sint, vk::Format::eR8G8B8A8Sint },
+        /*SCE_GXM_ATTRIBUTE_FORMAT_U16*/ { vk::Format::eR16Uint, vk::Format::eR16G16Uint, vk::Format::eR16G16B16Uint, vk::Format::eR16G16B16A16Uint },
+        /*SCE_GXM_ATTRIBUTE_FORMAT_S16*/ { vk::Format::eR16Sint, vk::Format::eR16G16Sint, vk::Format::eR16G16B16Sint, vk::Format::eR16G16B16A16Sint },
     };
 
     static constexpr vk::Format formats_integer_as_float[][4] = {

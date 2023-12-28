@@ -260,7 +260,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const std::string &name, co
 }
 
 static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, const TranslationState &translation_state, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
-    std::uint32_t total_var_comp = size / 4;
+    uint32_t total_var_comp = size;
     spv::Id var = !force_id ? (b.createVariable(spv::NoPrecision, reg_type_to_spv_storage_class(bank), type, name)) : force_id;
     Operand dest;
     dest.bank = bank;
@@ -453,7 +453,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Reason is for compability between vertex and fragment. This is like an anti-crash when linking.
             // Fragment will only copy what it needed.
             const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
-            const auto pa_iter_size = num_comp * 4;
+            const auto pa_iter_size = num_comp;
             spv::Id pa_iter_var = spv::NoResult;
 
             // TODO how about centroid?
@@ -1091,14 +1091,26 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         const int type_size = get_data_type_size(input.type);
         spv::Id var;
         if (regformat) {
-            const int num_comp = (type_size * input.array_size * input.component_count + 3) / 4;
+            DataType unsigned_matching_type;
+            if (type_size == 1)
+                unsigned_matching_type = DataType::UINT8;
+            else if (type_size == 2)
+                unsigned_matching_type = DataType::UINT16;
+            else
+                unsigned_matching_type = DataType::UINT32;
+
+            int num_comp = input.array_size * input.component_count;
+            if (input.type == DataType::C10)
+                // this is 10-bit and not 8-bit
+                num_comp = (num_comp * 10 + 7) / 8;
+
             spv::Id type;
             if (num_comp > 4) {
                 // a matrix is being sent, pack everything into an array of vec4
                 const int num_vec4 = (num_comp + 3) / 4;
-                type = b.makeArrayType(b.makeVectorType(i32_type, 4), b.makeUintConstant(num_vec4), 0);
+                type = b.makeArrayType(b.makeVectorType(u32, 4), b.makeUintConstant(num_vec4), 0);
             } else {
-                type = utils::make_vector_or_scalar_type(b, i32_type, num_comp);
+                type = utils::make_vector_or_scalar_type(b, u32, num_comp);
             }
             var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, type, name.c_str());
 
@@ -1106,8 +1118,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             var_to_reg.var = var;
             var_to_reg.pa = pa;
             var_to_reg.offset = input.offset;
-            var_to_reg.size = num_comp * 4;
-            var_to_reg.dtype = DataType::INT32;
+            var_to_reg.size = num_comp;
+            var_to_reg.dtype = unsigned_matching_type;
             translation_state.var_to_regs.push_back(var_to_reg);
         } else {
             const spv::Id param_type = get_param_type(b, input);
@@ -1117,7 +1129,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             var_to_reg.var = var;
             var_to_reg.pa = pa;
             var_to_reg.offset = input.offset;
-            var_to_reg.size = input.array_size * input.component_count * 4;
+            var_to_reg.size = input.array_size * input.component_count;
             var_to_reg.dtype = input.type;
             translation_state.var_to_regs.push_back(var_to_reg);
         }
@@ -1308,7 +1320,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 composite_var = constituents[0];
             }
             create_input_variable(b, spv_params, utils, features, translation_state, nullptr, RegisterBank::SECATTR, composite_base, spv::NoResult,
-                static_cast<int>(constituents.size() * 4), composite_var);
+                static_cast<int>(constituents.size()), composite_var);
         };
 
         for (std::uint32_t i = 1; i < program.literals_count; i++) {

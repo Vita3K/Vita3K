@@ -226,8 +226,7 @@ void get_attribute_informations(const SceGxmProgram &program, AttributeInformati
             }
 
             bool regformat = (vertex_varyings_ptr->untyped_pa_regs & ((uint64_t)1 << parameter.resource_index)) != 0;
-
-            locmap.emplace(parameter.resource_index, AttributeInformation(fcount_allocated / 4, parameter.type, is_integer, is_signed, regformat));
+            locmap.emplace(parameter.resource_index, AttributeInformation(fcount_allocated / 4, parameter.type, parameter.component_count, is_integer, is_signed, regformat));
             fcount_allocated += ((parameter.array_size * parameter.component_count + 3) / 4) * 4;
         }
     }
