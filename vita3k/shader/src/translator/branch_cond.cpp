@@ -213,6 +213,8 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
     const DataType load_data_type = inst.opr.src1.type;
     const DataType store_data_type = inst.opr.dest.type;
 
+    bool has_4_comp = std::popcount(load_mask) == 4;
+
     static const spv::Op tb_comp_ops[3][2][4] = {
         { { spv::OpFOrdNotEqual,
               spv::OpFOrdLessThan,
@@ -244,7 +246,7 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
     spv::Id lhs = spv::NoResult;
     spv::Id rhs = spv::NoResult;
 
-    const spv::Id pred_type = utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), mask ? 4 : 1);
+    const spv::Id pred_type = utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), has_4_comp ? 4 : 1);
 
     // Zero test number:
     // 0 - alway pass
@@ -282,7 +284,7 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
     if (is_sub_opcode(inst.opcode)) {
         if (mask) {
             LOG_DISASM("{:016x}: {}{}.{}.{}.{} {} {} {}", m_instr, disasm::e_predicate_str(pred), "CMPMSK", used_comp_str, disasm::data_type_str(store_data_type),
-                disasm::data_type_str(load_data_type), disasm::operand_to_str(inst.opr.dest, 0b1111), disasm::operand_to_str(inst.opr.src1, load_mask),
+                disasm::data_type_str(load_data_type), disasm::operand_to_str(inst.opr.dest, load_mask), disasm::operand_to_str(inst.opr.src1, load_mask),
                 disasm::operand_to_str(inst.opr.src2, load_mask));
         } else {
             LOG_DISASM("{:016x}: {}{}.{}.{} p{} {} {}", m_instr, disasm::e_predicate_str(pred), "CMP", used_comp_str, disasm::data_type_str(load_data_type),
@@ -294,15 +296,15 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
     } else {
         if (mask) {
             LOG_DISASM("{:016x}: {}{}.{}zero.{}.{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), used_comp_str, disasm::data_type_str(store_data_type),
-                disasm::data_type_str(load_data_type), disasm::operand_to_str(inst.opr.dest, 0b1111), disasm::operand_to_str(inst.opr.src1, load_mask), disasm::operand_to_str(inst.opr.src2, load_mask));
+                disasm::data_type_str(load_data_type), disasm::operand_to_str(inst.opr.dest, load_mask), disasm::operand_to_str(inst.opr.src1, load_mask), disasm::operand_to_str(inst.opr.src2, load_mask));
         } else {
             LOG_DISASM("{:016x}: {}{}.{}zero.{} p{} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), used_comp_str, disasm::data_type_str(load_data_type),
                 inst.opr.dest.num, disasm::operand_to_str(inst.opr.src1, load_mask), disasm::operand_to_str(inst.opr.src2, load_mask));
         }
 
-        lhs = do_alu_op(inst, load_mask, mask ? 0b1111 : 0b1);
+        lhs = do_alu_op(inst, load_mask, has_4_comp ? 0b1111 : 0b1);
 
-        const spv::Id c0_type = utils::make_vector_or_scalar_type(m_b, m_b.makeFloatType(32), mask ? 4 : 1);
+        const spv::Id c0_type = utils::make_vector_or_scalar_type(m_b, m_b.makeFloatType(32), has_4_comp ? 4 : 1);
         spv::Id c0 = utils::make_uniform_vector_from_type(m_b, c0_type, 0.0f);
 
         if (is_signed_integer_data_type(load_data_type)) {
@@ -446,17 +448,18 @@ bool USSETranslatorVisitor::vtstmsk(
     }
 
     const bool use_double_reg = alu_sel == 0;
+    const uint8_t reg_bits = use_double_reg ? 8 : 7;
     // TODO: In some op, we don't need to load src2 e.g. rsq
-    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, use_double_reg, 8, m_second_program);
-    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, use_double_reg, 8, m_second_program);
-    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_ext, use_double_reg, 8, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, use_double_reg, reg_bits, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, use_double_reg, reg_bits, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_ext, use_double_reg, reg_bits, m_second_program);
 
     inst.opr.src1.type = load_data_type;
     inst.opr.src2.type = load_data_type;
     inst.opr.dest.type = load_data_type;
 
     inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    inst.opr.src2.swizzle = src2_vscomp ? (Swizzle4 SWIZZLE_CHANNEL_4(X, X, X, X)) : (Swizzle4 SWIZZLE_CHANNEL_4_DEFAULT);
+    inst.opr.src2.swizzle = (alu_sel == 0 && src2_vscomp) ? (Swizzle4 SWIZZLE_CHANNEL_4(X, X, X, X)) : (Swizzle4 SWIZZLE_CHANNEL_4_DEFAULT);
     inst.opr.dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
     if (test_flag_2) {
@@ -469,22 +472,23 @@ bool USSETranslatorVisitor::vtstmsk(
         return false;
     }
 
-    spv::Id pred_result = vtst_impl(inst, pred, zero_test, sign_test, 0b1111, true);
+    // input is always 4 in case of a dot product instruction
+    const bool is_vdp = (inst.opcode == Opcode::VDP || inst.opcode == Opcode::VF16DP);
+    const bool output_4 = (alu_sel == 0 && tst_mask_type == 2);
+
+    spv::Id pred_result = vtst_impl(inst, pred, zero_test, sign_test, (is_vdp || output_4) ? 0b1111 : 0b1, true);
 
     spv::Id output_type;
     spv::Id zeros;
     spv::Id ones;
     switch (load_data_type) {
-    case DataType::UINT8:
-        output_type = m_b.makeVectorType(m_b.makeUintType(32), 4);
-        zeros = utils::make_uniform_vector_from_type(m_b, output_type, 0);
-        ones = utils::make_uniform_vector_from_type(m_b, output_type, 0xFF);
-        break;
     case DataType::F16:
     case DataType::F32:
-        output_type = m_b.makeVectorType(m_b.makeFloatType(32), 4);
-        zeros = utils::make_uniform_vector_from_type(m_b, output_type, 0.f);
-        ones = utils::make_uniform_vector_from_type(m_b, output_type, 1.f);
+        output_type = type_f32;
+        if (output_4)
+            output_type = m_b.makeVectorType(output_type, 4);
+        zeros = utils::make_uniform_vector_from_type(m_b, output_type, 0.0f);
+        ones = utils::make_uniform_vector_from_type(m_b, output_type, 1.0f);
         break;
     default: {
         uint32_t ones_val = 1;
@@ -510,11 +514,12 @@ bool USSETranslatorVisitor::vtstmsk(
             break;
         case DataType::UINT32:
             ones_val = 0xFFFFFFFF;
+            break;
         default:
             LOG_ERROR("Unexpected type {}", static_cast<int>(load_data_type));
             break;
         }
-        output_type = m_b.makeVectorType(is_signed ? m_b.makeIntType(32) : m_b.makeUintType(32), 4);
+        output_type = is_signed ? m_b.makeIntType(32) : m_b.makeUintType(32);
         zeros = utils::make_uniform_vector_from_type(m_b, output_type, 0);
         ones = utils::make_uniform_vector_from_type(m_b, output_type, ones_val);
         break;
