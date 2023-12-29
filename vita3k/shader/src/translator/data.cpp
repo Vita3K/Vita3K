@@ -78,10 +78,14 @@ bool USSETranslatorVisitor::vmov(
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank_sel, dest_bank_ext, is_double_regs, reg_bits, m_second_program);
     inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank_sel, src1_bank_ext, is_double_regs, reg_bits, m_second_program);
 
-    dest_mask = decode_write_mask(inst.opr.dest.bank, dest_mask, move_data_type == DataType::F16);
+    if (move_data_type == DataType::F16 || move_data_type == DataType::F32)
+        dest_mask = decode_write_mask(inst.opr.dest.bank, dest_mask, move_data_type == DataType::F16);
+    else if (!is_double_regs)
+        // only floating point moves are vectorized
+        dest_mask = 0b1;
 
     // Velocity uses a vec4 table, non-extended, so i assumes type=vec4, extended=false
-    inst.opr.src1.swizzle = decode_vec34_swizzle(src0_swiz, false, 2);
+    inst.opr.src1.swizzle = is_double_regs ? decode_vec34_swizzle(src0_swiz, false, 2) : (Swizzle4 SWIZZLE_CHANNEL_4_DEFAULT);
 
     inst.opr.src1.type = move_data_type;
     inst.opr.dest.type = move_data_type;
