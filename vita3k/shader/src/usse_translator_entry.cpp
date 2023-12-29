@@ -35,7 +35,7 @@ using USSEMatcher = shader::decoder::Matcher<Visitor, uint64_t>;
 
 template <typename V>
 static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
-    static const std::array<USSEMatcher<V>, 34> table = {
+    static const std::array<USSEMatcher<V>, 35> table = {
 #define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
         // clang-format off
         // Vector multiply-add (Normal version)
@@ -744,6 +744,21 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
                                                                                              ffffffff = src2_inc (8 bits)
         */
         INST(&V::smlsi, "SMLSI ()", "11111010--01-n--ttttppppssssdrcieeeeeeeeaaaaaaaabbbbbbbbffffffff"),
+        // SMBO control instruction
+        /*
+                                   11111 = op1
+                                        011 = op2
+                                           -- = don't care
+                                             01 = opcat
+                                               - = don't care
+                                                n = nosched (1 bit)
+                                                 -- = don't care
+                                                   dddddddddddd = dest_offset (12 bits)
+                                                               ssssssssssss = src0_offset (12 bits)
+                                                                           rrrrrrrrrrrr = src1_offset (12 bits)
+                                                                                       cccccccccccc = src2_offset (12 bits)
+        */
+        INST(&V::smbo, "SMBO ()", "11111011--01-n--ddddddddddddssssssssssssrrrrrrrrrrrrcccccccccccc"),
         // Kill program
         /*
                                    11111 = op1

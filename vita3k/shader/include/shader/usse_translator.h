@@ -759,6 +759,12 @@ public:
         Imm8 src1_inc,
         Imm8 src2_inc);
 
+    bool smbo(Imm1 nosched,
+        Imm12 dest_offset,
+        Imm12 src0_offset,
+        Imm12 src1_offset,
+        Imm12 src2_offset);
+
     bool kill(ShortPredicate pred);
 
     bool limm(bool skipinv,

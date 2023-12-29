@@ -1447,6 +1447,33 @@ SMLSI:
         - src2_inc:
             offset: 0
             size: 8
+SMBO:
+    description: SMBO control instruction
+    members:
+        - op1: '11111'
+        - op2:
+            size: 3
+            offset: 56
+            match: '011'
+        - opcat: 
+            match: '01'
+            size: 2
+            offset: 52
+        - nosched:
+            offset: 50
+            size: 1
+        - dest_offset:
+            offset: 36
+            size: 12
+        - src0_offset:
+            offset: 24
+            size: 12
+        - src1_offset:
+            offset: 12
+            size: 12
+        - src2_offset:
+            offset: 0
+            size: 12
 KILL:
     description: Kill program
     members:
