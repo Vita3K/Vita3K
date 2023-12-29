@@ -148,6 +148,28 @@ bool USSETranslatorVisitor::smlsi(
     return true;
 }
 
+bool USSETranslatorVisitor::smbo(Imm1 nosched,
+    Imm12 dest_offset,
+    Imm12 src0_offset,
+    Imm12 src1_offset,
+    Imm12 src2_offset) {
+    LOG_DISASM("{:016x}: SMBO {}, {}, {}, {}", m_instr, dest_offset, src0_offset, src1_offset, src2_offset);
+
+    m_b.setLine(m_recompiler.cur_pc);
+
+    auto parse_offset = [&](const int idx, Imm12 offset) {
+        for (int i = 0; i < 17; i++) {
+            repeat_increase[idx][i] = i + offset;
+        }
+    };
+    parse_offset(3, dest_offset);
+    parse_offset(0, src0_offset);
+    parse_offset(1, src1_offset);
+    parse_offset(2, src2_offset);
+
+    return true;
+}
+
 bool USSETranslatorVisitor::kill(
     ShortPredicate pred) {
     LOG_DISASM("{:016x}: KILL {}", m_instr, disasm::s_predicate_str(pred));
