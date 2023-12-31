@@ -17,6 +17,8 @@
 
 #include <module/module.h>
 
+#include "../SceProcessmgr/SceProcessmgr.h"
+
 #include <modules/module_parent.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
@@ -89,21 +91,87 @@ enum SceNgsVoiceInitFlag {
 
 static constexpr uint32_t SCE_NGS_SAMPLE_OFFSET_FROM_AT9_HEADER = 1 << 31;
 
-EXPORT(int, sceNgsAT9GetSectionDetails, uint32_t samples_start, const uint32_t num_samples, const uint32_t config_data, SceNgsAT9SkipBufferInfo *info) {
+EXPORT(int, sceNgsAT9GetSectionDetails, uint32_t samples_start, const uint32_t num_samples, uint32_t config_data, SceNgsAT9SkipBufferInfo *info) {
     TRACY_FUNC(sceNgsAT9GetSectionDetails, samples_start, num_samples, config_data, info);
-    if (!emuenv.cfg.current_config.ngs_enable) {
+    if (!emuenv.cfg.current_config.ngs_enable)
         return -1;
-    }
-    if (!info) {
-        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
-    }
-    // Check magic!
-    if ((config_data & 0xFF) != 0xFE) {
-        return RET_ERROR(SCE_NGS_ERROR);
-    }
-    samples_start &= ~SCE_NGS_SAMPLE_OFFSET_FROM_AT9_HEADER;
 
-    ngs::atrac9_get_buffer_parameter(samples_start, num_samples, config_data, *info);
+    if (!info)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    // Check magic!
+    if ((config_data & 0xFF) != 0xFE)
+        return RET_ERROR(SCE_NGS_ERROR);
+
+    // the following content is reverse engineered
+    const uint8_t sample_rate_index = ((config_data & (0b1111 << 12)) >> 12);
+    const uint32_t frame_bytes = ((((config_data & 0xFF0000) >> 16) << 3) | ((config_data & (0b111 << 29)) >> 29)) + 1;
+
+    int nb_samples_per_frame;
+    if (sample_rate_index == 1)
+        nb_samples_per_frame = 64;
+    else if (sample_rate_index == 4)
+        nb_samples_per_frame = 128;
+    else if (sample_rate_index == 7)
+        nb_samples_per_frame = 256;
+    else
+        return RET_ERROR(SCE_NGS_ERROR);
+
+    const bool is_superframe = static_cast<bool>(config_data & (0b11 << 27));
+
+    // SCE_NGS_SAMPLE_OFFSET_FROM_AT9_HEADER was added in sdk 3.36
+    const int sdk_version = CALL_EXPORT(sceKernelGetMainModuleSdkVersion);
+    const bool is_sdk_recent = sdk_version >= (336 << 16);
+
+    if (is_sdk_recent && (samples_start & SCE_NGS_SAMPLE_OFFSET_FROM_AT9_HEADER)) {
+        samples_start &= ~SCE_NGS_SAMPLE_OFFSET_FROM_AT9_HEADER;
+
+        // remove nb_samples_per_frame from it
+        samples_start = (samples_start > nb_samples_per_frame) ? (samples_start - nb_samples_per_frame) : 0;
+    }
+
+    info->is_super_packet = static_cast<bool>(is_superframe);
+    if (is_superframe) {
+        // there are 4 frames per superframe
+        const int superframe_bytes = frame_bytes * 4;
+        const int nb_samples_per_superframe = nb_samples_per_frame * 4;
+
+        samples_start += nb_samples_per_frame;
+        if (is_sdk_recent)
+            samples_start += nb_samples_per_frame;
+
+        const int superframes_offset = samples_start / nb_samples_per_superframe;
+
+        info->start_byte_offset = superframes_offset * superframe_bytes;
+
+        const int start_skip_samples = samples_start - superframes_offset * nb_samples_per_superframe;
+        info->start_skip = static_cast<SceInt16>(start_skip_samples);
+
+        const int total_superframes = (start_skip_samples + num_samples + nb_samples_per_superframe - 1) / nb_samples_per_superframe;
+        const int total_bytes_read = (total_superframes - superframes_offset) * superframe_bytes;
+        info->num_bytes = total_bytes_read;
+
+        info->end_skip = static_cast<SceInt16>(total_superframes * nb_samples_per_superframe - (samples_start + num_samples));
+
+        // some special case, make sure to put a good amound of skipped samples
+        if (start_skip_samples < nb_samples_per_frame && superframes_offset > 0) {
+            // transfer one superframe into the skipped samples
+            info->start_byte_offset -= superframe_bytes;
+            info->start_skip += nb_samples_per_superframe;
+            info->num_bytes += superframe_bytes;
+        }
+    } else {
+        const int frames_offset = samples_start / nb_samples_per_frame;
+        info->start_byte_offset = frames_offset * frame_bytes;
+        // a frame is always added to skip
+        const int start_skip_samples = (samples_start + nb_samples_per_frame) - frames_offset * nb_samples_per_frame;
+        info->start_skip = static_cast<SceInt16>(start_skip_samples);
+
+        const int total_frames = (start_skip_samples + num_samples + nb_samples_per_frame - 1) / nb_samples_per_frame;
+        info->num_bytes = total_frames * frame_bytes;
+
+        info->end_skip = static_cast<SceInt16>(total_frames * nb_samples_per_frame - (start_skip_samples + num_samples));
+    }
     return 0;
 }
 
