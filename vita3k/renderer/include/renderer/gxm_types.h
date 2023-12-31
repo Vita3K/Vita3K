@@ -174,6 +174,9 @@ struct SceGxmSyncObject {
     // timestamp for the last time the object was displayed
     std::atomic<uint32_t> last_display;
 
+    // last signal operation done, given using the global timestamp
+    uint32_t last_operation_global = 0;
+
     std::mutex lock;
     std::condition_variable cond;
 };
