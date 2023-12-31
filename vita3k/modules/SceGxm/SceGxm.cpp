@@ -912,11 +912,7 @@ static void display_entry_thread(EmuEnvState &emuenv) {
         SceGxmSyncObject *old_sync = display_callback->old_sync.get(emuenv.mem);
         SceGxmSyncObject *new_sync = display_callback->new_sync.get(emuenv.mem);
 
-        // Wait for fragment on the new buffer to finish
-        // set a (big) time limit to make sure we don't softlock
-        constexpr int one_second = 1'000'000;
-        if (!renderer::wishlist(new_sync, display_callback->new_sync_timestamp, one_second))
-            LOG_ERROR_ONCE("Failed to wait for the new frame to be ready");
+        renderer::wishlist(new_sync, display_callback->new_sync_timestamp);
 
         // now we can remove the thread from the display queue
         display_queue.pop();
@@ -2075,8 +2071,16 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
         renderer::subject_done(newBufferSync, newBufferSync->last_display);
     }
 
+    if (oldBufferSync->last_operation_global > emuenv.gxm.last_display_global
+        && oldBufferSync->last_operation_global < newBufferSync->last_operation_global) {
+        // if we do nothing we will softlock
+        // so just act as if the old buffer is already done being displayed
+        renderer::subject_done(oldBufferSync, oldBufferSync->last_display);
+    }
+
     newBufferSync->last_display = newBufferSync->timestamp_ahead.load();
     emuenv.gxm.last_fbo_sync_object = newBuffer;
+    emuenv.gxm.last_display_global = emuenv.gxm.global_timestamp.fetch_add(1, std::memory_order_relaxed);
 
     // needed the first time the sync object is used as the old front buffer
     if (oldBufferSync->last_display == 0) {
@@ -2451,6 +2455,8 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, SceGxmNotification *vertexNo
     if (context->state.fragment_sync_object) {
         SceGxmSyncObject *sync = context->state.fragment_sync_object.get(mem);
         uint32_t cmd_timestamp = ++sync->timestamp_ahead;
+        sync->last_operation_global = emuenv.gxm.global_timestamp.fetch_add(1, std::memory_order_relaxed);
+
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalSyncObject,
             nullptr, context->state.fragment_sync_object, cmd_timestamp);
     }
@@ -5291,7 +5297,9 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
             syncObject, sync->last_display.load());
+
         cmd_timestamp = ++sync->timestamp_ahead;
+        sync->last_operation_global = emuenv.gxm.global_timestamp.fetch_add(1, std::memory_order_relaxed);
     }
 
     // needed, otherwise the command is not big enough
@@ -5351,7 +5359,9 @@ EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> s
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
             syncObject, sync->last_display.load());
+
         cmd_timestamp = ++sync->timestamp_ahead;
+        sync->last_operation_global = emuenv.gxm.global_timestamp.fetch_add(1, std::memory_order_relaxed);
     }
 
     SceGxmTransferImage *src = new SceGxmTransferImage;
@@ -5402,7 +5412,9 @@ EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFor
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
             syncObject, sync->last_display.load());
+
         cmd_timestamp = ++sync->timestamp_ahead;
+        sync->last_operation_global = emuenv.gxm.global_timestamp.fetch_add(1, std::memory_order_relaxed);
     }
 
     SceGxmTransferImage *dest = new SceGxmTransferImage;

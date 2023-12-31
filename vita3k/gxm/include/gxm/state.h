@@ -50,10 +50,18 @@ struct MemoryMapInfo {
 
 struct GxmState {
     SceGxmInitializeParams params;
+
     Queue<DisplayCallback> display_queue;
-    Ptr<SceGxmSyncObject> last_fbo_sync_object;
-    Ptr<uint32_t> notification_region;
     SceUID display_queue_thread;
+
+    Ptr<SceGxmSyncObject> last_fbo_sync_object;
+    // global timestamp used by sync objects
+    std::atomic<uint32_t> global_timestamp{ 1 };
+    // last display operation, as given by the global timestamp
+    uint32_t last_display_global = 0;
+
+    Ptr<uint32_t> notification_region;
+
     std::map<Address, MemoryMapInfo> memory_mapped_regions;
     std::mutex callback_lock;
 };
