@@ -98,8 +98,11 @@ void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
 void VKSurfaceCache::destroy_surface(DepthStencilSurfaceCacheInfo &info) {
     vkutil::DestroyQueue &destroy_queue = state.frame().destroy_queue;
 
-    for (auto &read_only : info.read_surfaces)
+    for (auto &read_only : info.read_surfaces) {
+        destroy_queue.add_image(read_only.stencil_view);
         destroy_queue.add_image(read_only.depth_view);
+    }
+    info.read_surfaces.clear();
 
     destroy_queue.add(info.depth_view);
     destroy_queue.add(info.stencil_view);
@@ -140,6 +143,14 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(color->colorFormat);
     vk::Format vk_format = color::translate_format(base_format);
 
+    SurfaceTiling tiling;
+    if (color->surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR)
+        tiling = SurfaceTiling::Linear;
+    else if (color->surfaceType == SCE_GXM_COLOR_SURFACE_SWIZZLED)
+        tiling = SurfaceTiling::Swizzled;
+    else
+        tiling = SurfaceTiling::Tiled;
+
     const bool is_srgb = color->gamma != 0;
     if (is_srgb) {
         if (vk_format == vk::Format::eR8G8B8A8Unorm) {
@@ -166,7 +177,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
         // 5. the surface is a gbuffer and we are currently trying to read the 2nd component, in this case key == ite->first + 4
         const bool addr_in_range_of_cache = ((address + total_surface_size) <= (ite->first + info.total_bytes + 4));
         const bool cache_probably_freed = (ite->first != address) && addr_in_range_of_cache;
-        const bool surface_extent_changed = info.height < height;
+        const bool surface_extent_changed = info.height < height || bytes_per_stride != info.stride_bytes || tiling != info.tiling;
         bool surface_stat_changed = false;
 
         if (ite->first == address)
@@ -223,13 +234,13 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     info_added.height = height;
     info_added.original_width = original_width;
     info_added.original_height = original_height;
-    info_added.pixel_stride = color->strideInPixels;
+    info_added.stride_bytes = bytes_per_stride;
     info_added.data = color->data;
-    info_added.total_bytes = bytes_per_stride * original_height;
+    info_added.total_bytes = total_surface_size;
     info_added.format = base_format;
+    info_added.tiling = tiling;
     // only remember the swizzle here, it will be useful if we get to present or sample from this image with a different swizzle
     info_added.swizzle = color::translate_swizzle(color->colorFormat);
-    info_added.flags = 0;
 
     vkutil::Image &image = info_added.texture;
     image.width = width;
@@ -332,27 +343,33 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         }
     }
 
-    uint32_t pixel_stride = original_width;
-    switch (texture.texture_type()) {
-    case SCE_GXM_TEXTURE_LINEAR_STRIDED:
-        pixel_stride = static_cast<uint16_t>(gxm::get_stride_in_bytes(texture)) / ((gxm::bits_per_pixel(base_format) + 7) >> 3);
-        break;
-    case SCE_GXM_TEXTURE_LINEAR:
-        // when the texture is linear, the stride should be aligned to 8 pixels
-        pixel_stride = align(pixel_stride, 8);
-        break;
-    case SCE_GXM_TEXTURE_TILED:
-        // tiles are 32x32
-        pixel_stride = align(pixel_stride, 32);
-        break;
-    case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
-        pixel_stride = next_power_of_two(pixel_stride);
-        break;
-    default:
-        break;
+    uint32_t stride_bytes = 0;
+    SurfaceTiling tiling = SurfaceTiling::Swizzled;
+    if (texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        stride_bytes = gxm::get_stride_in_bytes(texture);
+        tiling = SurfaceTiling::Linear;
+    } else {
+        uint32_t pixel_stride = original_width;
+        switch (texture.texture_type()) {
+        case SCE_GXM_TEXTURE_LINEAR:
+            // when the texture is linear, the stride should be aligned to 8 pixels
+            tiling = SurfaceTiling::Linear;
+            pixel_stride = align(pixel_stride, 8);
+            break;
+        case SCE_GXM_TEXTURE_TILED:
+            // tiles are 32x32
+            tiling = SurfaceTiling::Tiled;
+            pixel_stride = align(pixel_stride, 32);
+            break;
+        case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
+            pixel_stride = next_power_of_two(pixel_stride);
+            break;
+        default:
+            break;
+        }
+        stride_bytes = pixel_stride * gxm::bits_per_pixel(base_format) / 8;
     }
-    uint32_t bytes_per_stride = pixel_stride * gxm::bits_per_pixel(base_format) / 8;
-    uint32_t total_surface_size = bytes_per_stride * original_height;
+    uint32_t total_surface_size = stride_bytes * original_height;
 
     ColorSurfaceCacheInfo &info = *ite->second;
 
@@ -361,52 +378,31 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         // don't even try to match u8u8u8 with something else
         return std::nullopt;
 
-    // There are four situations I think of:
-    // 1. Different base address, lookup for write, in this case, if the cached surface range contains the given address, then
-    // probably this cached surface has already been freed GPU-wise. So erase.
-    // 2. Same base address, but width and height change to be larger, or format change if write. Remake a new one for both read and write sitatation.
-    // 3. Out of cache range. In write case, create a new one, in read case, lul
-    // 4. Read situation with smaller width and height, probably need to extract the needed region out.
-    // 5. the surface is a gbuffer and we are currently trying to read the 2nd component, in this case key == ite->first + 4
-    bool addr_in_range_of_cache = ((address + total_surface_size) <= (ite->first + info.total_bytes + 4));
-    const bool surface_extent_changed = (info.height < height);
-    bool surface_stat_changed = false;
-
-    if (ite->first == address) {
-        // If the extent changed but format is not the same, then the probability of it being a cast is high
-        surface_stat_changed = info.pixel_stride < pixel_stride && base_format == info.format;
-        // persona 4 sample from the top of a texture while the bottom wasn't rendered to, the fact that both the surface and
-        // the texture start at the same location should be enough
-        addr_in_range_of_cache = true;
-    }
-
-    if (surface_stat_changed || !addr_in_range_of_cache)
-        // we did not find a suitable surface
+    if (tiling != info.tiling || info.stride_bytes != stride_bytes)
+        // if the tiling is different, also don't try to match them
+        // about the strides, I've yet to see a case where the byte stride is different
         return std::nullopt;
 
-    bool castable = (info.pixel_stride == pixel_stride);
+    // Check if we can use this surface
+    bool addr_in_range_of_cache = ((address + total_surface_size) <= (ite->first + info.total_bytes + 4));
+    const bool surface_extent_changed = (info.height < height);
+
+    if (ite->first != address && !addr_in_range_of_cache)
+        // persona 4 sample from the top of a texture while the bottom wasn't rendered to, the fact that both the surface and
+        // the texture start at the same location should be enough
+        return std::nullopt;
 
     uint32_t bytes_per_pixel_requested = gxm::bits_per_pixel(base_format) / 8;
     uint32_t bytes_per_pixel_in_store = gxm::bits_per_pixel(info.format) / 8;
 
-    // Check if castable. Technically the income format should be texture format, but this is for easier logic.
-    // When it's required. I may change :p
-    if (base_format != info.format) {
-        if (bytes_per_pixel_requested > bytes_per_pixel_in_store) {
-            castable = (((bytes_per_pixel_requested % bytes_per_pixel_in_store) == 0) && (info.pixel_stride % pixel_stride == 0) && ((info.pixel_stride / pixel_stride) == (bytes_per_pixel_requested / bytes_per_pixel_in_store)));
-        } else {
-            castable = (((bytes_per_pixel_in_store % bytes_per_pixel_requested) == 0) && (pixel_stride % info.pixel_stride == 0) && ((pixel_stride / info.pixel_stride) == (bytes_per_pixel_in_store / bytes_per_pixel_requested)));
-        }
-    }
-
-    if (!castable)
+    if (std::max(bytes_per_pixel_requested, bytes_per_pixel_in_store) % std::min(bytes_per_pixel_requested, bytes_per_pixel_in_store) != 0)
         return std::nullopt;
 
     // TODO: this is true only for linear textures (and also kind of for tiled textures) (and in this case start_x = 0),
     // for swizzled textures this is different
     const uint32_t data_delta = address - ite->first;
-    uint32_t start_sourced_line = (data_delta / bytes_per_stride) * state.res_multiplier;
-    uint32_t start_x = (data_delta % bytes_per_stride) / bytes_per_pixel_requested * state.res_multiplier;
+    uint32_t start_sourced_line = (data_delta / stride_bytes) * state.res_multiplier;
+    uint32_t start_x = (data_delta % stride_bytes) / bytes_per_pixel_requested * state.res_multiplier;
 
     if (static_cast<uint16_t>(start_sourced_line + height) > info.height)
         LOG_WARN_ONCE("Trying to use texture partially in the surface cache");
@@ -538,7 +534,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         } else {
             LOG_INFO_ONCE("Game is doing typeless copies");
             // We must use a transition buffer
-            vk::DeviceSize buffer_size = bytes_per_stride * state.res_multiplier * height + start_x * bytes_per_pixel_requested;
+            vk::DeviceSize buffer_size = stride_bytes * state.res_multiplier * height + start_x * bytes_per_pixel_requested;
             if (!casted->transition_buffer.buffer || casted->transition_buffer.size < buffer_size) {
                 // create or re-create the buffer
                 state.frame().destroy_queue.add_buffer(casted->transition_buffer);
@@ -547,9 +543,10 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
             }
 
             // copy the image to the buffer
+            const uint32_t src_pixel_stride = (info.stride_bytes / bytes_per_pixel_in_store) * state.res_multiplier;
             vk::BufferImageCopy copy_image_buffer{
                 .bufferOffset = 0,
-                .bufferRowLength = static_cast<uint32_t>(info.pixel_stride * state.res_multiplier),
+                .bufferRowLength = src_pixel_stride,
                 .bufferImageHeight = height,
                 .imageSubresource = vkutil::color_subresource_layer,
                 .imageOffset = { 0,
@@ -560,9 +557,10 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
             cmd_buffer.copyImageToBuffer(info.texture.image, vk::ImageLayout::eGeneral, casted->transition_buffer.buffer, copy_image_buffer);
 
             // then the buffer to the image
+            const uint32_t dst_pixel_stride = (stride_bytes / bytes_per_pixel_requested) * state.res_multiplier;
             copy_image_buffer
                 .setBufferOffset(start_x * bytes_per_pixel_requested)
-                .setBufferRowLength(pixel_stride * state.res_multiplier)
+                .setBufferRowLength(width)
                 .setImageOffset({ 0, 0, 0 })
                 .setImageExtent({ width, height, 1 });
             cmd_buffer.copyBufferToImage(casted->transition_buffer.buffer, casted->texture.image, vk::ImageLayout::eTransferDstOptimal, copy_image_buffer);
@@ -613,6 +611,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
     int32_t memory_width = width / state.res_multiplier;
     int32_t memory_height = height / state.res_multiplier;
 
+    const SurfaceTiling tiling = (depth_stencil->get_type() == SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR) ? SurfaceTiling::Linear : SurfaceTiling::Tiled;
+
     // check if MSAA is used, the depth buffer is never downscaled
     if (target->multisample_mode != SCE_GXM_MULTISAMPLE_NONE)
         memory_width *= 2;
@@ -636,7 +636,10 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
         // this the most recently used depth-stencil surface
         ds_surface_queue.set_as_mru(cached_info);
 
-        bool need_remake = cached_info->texture.width < width || cached_info->texture.height < height;
+        bool need_remake = cached_info->texture.width < width
+            || cached_info->texture.height < height
+            || cached_info->stride_samples != depth_stencil->get_stride()
+            || cached_info->tiling != tiling;
 
         if (!need_remake)
             return {
@@ -667,6 +670,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
     cached_info->memory_width = memory_width;
     cached_info->memory_height = memory_height;
     cached_info->multisample_mode = target->multisample_mode;
+    cached_info->stride_samples = depth_stencil->get_stride();
+    cached_info->tiling = tiling;
 
     vkutil::Image &image = cached_info->texture;
 
@@ -716,6 +721,31 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
     int32_t memory_width = gxm::get_width(texture);
     int32_t memory_height = gxm::get_height(texture);
 
+    SurfaceTiling tiling;
+    uint32_t stride_samples;
+
+    switch (texture.texture_type()) {
+    case SCE_GXM_TEXTURE_LINEAR:
+        tiling = SurfaceTiling::Linear;
+        stride_samples = align(memory_width, 8);
+        break;
+    case SCE_GXM_TEXTURE_LINEAR_STRIDED:
+        tiling = SurfaceTiling::Linear;
+        stride_samples = (gxm::get_stride_in_bytes(texture) * 8) / gxm::bits_per_pixel(base_format);
+        break;
+    case SCE_GXM_TEXTURE_TILED:
+        tiling = SurfaceTiling::Tiled;
+        stride_samples = align(memory_width, 32);
+        break;
+    default:
+        // a depth/stencil is never swizzled
+        return std::nullopt;
+    }
+
+    if (stride_samples % 32 != 0)
+        // a depth/stencil always has a stride which is a multiple of the tile size
+        return std::nullopt;
+
     // take upscaling into account
     uint32_t width = memory_width * state.res_multiplier;
     uint32_t height = memory_height * state.res_multiplier;
@@ -738,7 +768,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         return std::nullopt;
 
     DepthStencilSurfaceCacheInfo &cached_info = *found_info;
-    if (cached_info.memory_width < memory_width || cached_info.memory_height < memory_height)
+    if (tiling != cached_info.tiling || stride_samples != cached_info.stride_samples)
         return std::nullopt;
 
     // we sample from it, set the surface as most recently used
@@ -856,7 +886,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         .srcOffset = { 0, 0, 0 },
         .dstSubresource = layers,
         .dstOffset = { 0, 0, 0 },
-        .extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1U }
+        .extent = { std::min(width, cached_info.texture.width), std::min(height, cached_info.texture.height), 1U }
     };
     cmd_buffer.copyImage(cached_info.texture.image, vk::ImageLayout::eTransferSrcOptimal, read_only.depth_view.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
 
@@ -1005,8 +1035,7 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
         vkutil::Buffer &copy_buffer = *last_written_surface->copy_buffer;
 
         if (!copy_buffer.buffer) {
-            // TODO: change the 4 if the format pixel size can become something else than 4 bytes (not the case now)
-            copy_buffer.size = last_written_surface->pixel_stride * last_written_surface->original_height * 4;
+            copy_buffer.size = last_written_surface->stride_bytes * last_written_surface->original_height;
             copy_buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vkutil::vma_mapped_alloc);
         }
 
@@ -1015,9 +1044,10 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
     } else {
         std::tie(buffer, offset) = state.get_matching_mapping(last_written_surface->data);
     }
+    const uint32_t pixel_stride = (last_written_surface->stride_bytes * 8) / gxm::bits_per_pixel(last_written_surface->format);
     vk::BufferImageCopy copy{
         .bufferOffset = offset,
-        .bufferRowLength = last_written_surface->pixel_stride,
+        .bufferRowLength = pixel_stride,
         .bufferImageHeight = last_written_surface->original_height,
         .imageSubresource = vkutil::color_subresource_layer,
         .imageOffset = { 0, 0, 0 },
@@ -1092,7 +1122,8 @@ void VKSurfaceCache::perform_post_surface_sync(const MemState &mem, ColorSurface
     if (surface == nullptr)
         return;
 
-    const uint32_t nb_pixels = surface->pixel_stride * surface->original_height;
+    const uint32_t pixel_stride = (surface->stride_bytes * 8) / gxm::bits_per_pixel(surface->format);
+    const uint32_t nb_pixels = pixel_stride * surface->original_height;
     uint8_t *pixels = surface->data.cast<uint8_t>().get(mem);
 
     if (format_need_additional_memory(surface->format)) {
@@ -1104,8 +1135,8 @@ void VKSurfaceCache::perform_post_surface_sync(const MemState &mem, ColorSurface
             assert(surface->sws_context != NULL);
         }
 
-        int src_stride = surface->pixel_stride * 4;
-        int dst_stride = surface->pixel_stride * 3;
+        int src_stride = pixel_stride * 4;
+        int dst_stride = pixel_stride * 3;
         sws_scale(surface->sws_context, reinterpret_cast<const uint8_t *const *>(&surface->copy_buffer->mapped_data), &src_stride, 0, surface->original_height, &pixels, &dst_stride);
         return;
     }
@@ -1141,7 +1172,7 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
         // they do not overlap
         return nullptr;
 
-    if (info.pixel_stride == pitch) {
+    if (info.stride_bytes == pitch * 4) {
         // In assumption the format is RGBA8
         const size_t data_delta = address.address() - ite->first;
         uint32_t limited_height = viewport.height;

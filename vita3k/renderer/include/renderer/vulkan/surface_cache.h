@@ -38,14 +38,15 @@ struct TextureViewport {
     std::pair<float, float> offset = { 0.0f, 0.0f };
 };
 
-struct SurfaceCacheInfo {
-    enum {
-        FLAG_DIRTY = 1 << 0,
-        FLAG_FREE = 1 << 1
-    };
+enum struct SurfaceTiling {
+    Linear,
+    Swizzled,
+    Tiled
+};
 
-    std::uint32_t flags = FLAG_FREE;
+struct SurfaceCacheInfo {
     vkutil::Image texture;
+    SurfaceTiling tiling;
 };
 
 struct Framebuffer {
@@ -74,7 +75,7 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     uint16_t height;
     uint16_t original_width;
     uint16_t original_height;
-    uint16_t pixel_stride;
+    uint32_t stride_bytes;
     uint32_t total_bytes;
     uint64_t last_frame_rendered;
 
@@ -119,6 +120,8 @@ struct DepthStencilSurfaceCacheInfo : public SurfaceCacheInfo {
     // dimensions of the depth buffer in memory
     int32_t memory_width;
     int32_t memory_height;
+    // stride in samples
+    uint32_t stride_samples;
     SceGxmMultisampleMode multisample_mode;
 
     // used when reading from this depth stencil in a shader with texture viewport enabled
