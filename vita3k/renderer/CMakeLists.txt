@@ -42,6 +42,7 @@ add_library(
 	src/shaders.cpp
 	src/state_set.cpp
 	src/sync.cpp
+	src/transfer.cpp
 )
 
 target_include_directories(renderer PUBLIC include)
