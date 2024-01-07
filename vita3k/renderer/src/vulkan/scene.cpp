@@ -373,7 +373,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
         // We don't want to defer cases where we draw a whole quad over the screen as these draws could be necessary
         // to be able to see anything
-        bool can_be_whole_quad = instance_count == 1 && (count == 4 || count == 6);
+        bool can_be_whole_quad = instance_count == 1 && count <= 6;
         vk::Pipeline new_pipeline = context.state.pipeline_cache.retrieve_pipeline(context, type, !can_be_whole_quad, mem);
 
         if (new_pipeline != context.current_pipeline) {
