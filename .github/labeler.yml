@@ -9,7 +9,7 @@ build:
 - all: # all are AND-ed together
   - changed-files:
     - any-glob-to-any-file:
-      - '.github/**'
+      - '.github/workflows/**'
       - '*.sln'
       - '**/*.sln'
       - '*.vcxproj*'
@@ -37,6 +37,10 @@ external:
   - changed-files:
     - any-glob-to-any-file:
       - 'external/**'
+tools:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'tools/**'
 
 # vita3k Labels
 app:
@@ -129,6 +133,14 @@ memory:
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/mem/**'
+module:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/module/**'
+modules:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/modules/**'
 motion:
   - changed-files:
     - any-glob-to-any-file:
@@ -152,7 +164,7 @@ np:
 opengl:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/renderer/**/opengl/**'
+      - 'vita3k/renderer/**/gl/**'
       - 'vita3k/glutil/**'
 packages:
   - changed-files:
