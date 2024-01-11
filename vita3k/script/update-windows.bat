@@ -9,7 +9,7 @@ echo ============================================================
 
 for /f "delims=" %%g in ('powershell "((Invoke-RestMethod https://api.github.com/repos/Vita3K/Vita3K/releases/latest -timeout 2).body.Split("\"`n"\") | Select-String -Pattern 'Vita3K Build:') -replace  'Vita3K Build: '"') do @set git_version=%%g
 if exist Vita3K.exe (
-   for /f "delims=" %%v in ('powershell "((Get-Item Vita3K.exe).VersionInfo.FileVersion) -replace '0.1.9.'"') do @set version=%%v
+   for /f "delims=" %%v in ('powershell "((Get-Item Vita3K.exe).VersionInfo.FileVersion) -replace '0.2.0.'"') do @set version=%%v
 )
 set boot=0
 
