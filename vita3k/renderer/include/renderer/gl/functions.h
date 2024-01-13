@@ -18,9 +18,9 @@
 #pragma once
 
 #include <config/state.h>
-#include <crypto/hash.h>
 #include <glutil/object.h>
 #include <gxm/types.h>
+#include <util/hash.h>
 
 #include <renderer/gl/state.h>
 #include <renderer/gl/types.h>

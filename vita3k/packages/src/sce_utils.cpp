@@ -20,9 +20,9 @@
  * @brief Utilities to handle SCE binaries
  */
 
-#include <crypto/aes.h>
 #include <fat16/fat16.h>
 #include <miniz.h>
+#include <openssl/evp.h>
 #include <packages/sce_types.h>
 #include <util/string_utils.h>
 
@@ -814,6 +814,10 @@ void self2elf(const fs::path &infile, const fs::path &outfile, KeyStore &SCE_KEY
         scesegs = get_segments(filein, sce_hdr, SCE_KEYS, appinfo_hdr.sys_version, appinfo_hdr.self_type, npdrmtype, klictxt);
     }
 
+    EVP_CIPHER_CTX *cipher_ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER *cipher = EVP_CIPHER_fetch(nullptr, "AES-128-CTR", nullptr);
+    int dec_len = 0;
+
     for (uint16_t i = 0; i < elf_hdr.e_phnum; i++) {
         int idx = 0;
 
@@ -843,11 +847,10 @@ void self2elf(const fs::path &infile, const fs::path &outfile, KeyStore &SCE_KEY
 
         std::vector<unsigned char> decrypted_data(segment_infos[idx].size);
         if (segment_infos[idx].plaintext == SecureBool::NO) {
-            aes_context aes_ctx;
-            aes_setkey_enc(&aes_ctx, (unsigned char *)scesegs[i].key.c_str(), 128);
-            size_t ctr_nc_off = 0;
-            unsigned char ctr_stream_block[0x10];
-            aes_crypt_ctr(&aes_ctx, segment_infos[idx].size, &ctr_nc_off, (unsigned char *)scesegs[i].iv.c_str(), ctr_stream_block, &dat[0], &decrypted_data[0]);
+            EVP_DecryptInit_ex(cipher_ctx, cipher, nullptr, reinterpret_cast<const unsigned char *>(scesegs[i].key.c_str()), reinterpret_cast<const unsigned char *>(scesegs[i].iv.c_str()));
+            EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
+            EVP_DecryptUpdate(cipher_ctx, decrypted_data.data(), &dec_len, dat.data(), segment_infos[idx].size);
+            EVP_DecryptFinal_ex(cipher_ctx, decrypted_data.data() + dec_len, &dec_len);
         }
 
         if (segment_infos[idx].compressed == SecureBool::YES) {
@@ -862,6 +865,9 @@ void self2elf(const fs::path &infile, const fs::path &outfile, KeyStore &SCE_KEY
     }
     filein.close();
     fileout.close();
+
+    EVP_CIPHER_CTX_free(cipher_ctx);
+    EVP_CIPHER_free(cipher);
 }
 
 // Credits to the vitasdk team/contributors for vita-make-fself https://github.com/vitasdk/vita-toolchain/blob/master/src/vita-make-fself.c
@@ -990,7 +996,12 @@ std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_h
 
     const std::string key = SCE_KEYS.get(KeyType::METADATA, sce_hdr.sce_type, sysver, sce_hdr.key_revision, self_type).key;
     const std::string iv = SCE_KEYS.get(KeyType::METADATA, sce_hdr.sce_type, sysver, sce_hdr.key_revision, self_type).iv;
-    aes_context aes_ctx;
+
+    EVP_CIPHER_CTX *cipher_ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER *cipher128 = EVP_CIPHER_fetch(nullptr, "AES-128-CBC", nullptr);
+    EVP_CIPHER *cipher256 = EVP_CIPHER_fetch(nullptr, "AES-256-CBC", nullptr);
+    int dec_len = 0;
+
     unsigned char dec_in[MetadataInfo::Size];
 
     if (self_type == SelfType::APP) {
@@ -1001,16 +1012,19 @@ std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_h
         const std::string np_iv = SCE_KEYS.get(KeyType::NPDRM, sce_hdr.sce_type, sysver, keytype, self_type).iv;
         const auto np_key_vec = string_utils::string_to_byte_array(np_key);
         auto np_iv_vec = string_utils::string_to_byte_array(np_iv);
-        auto np_key_bytes = &np_key_vec[0];
-        auto np_iv_bytes = &np_iv_vec[0];
         unsigned char predec[16];
-        aes_setkey_dec(&aes_ctx, np_key_bytes, 128);
-        aes_crypt_cbc(&aes_ctx, AES_DECRYPT, 16, np_iv_bytes, klictxt, predec);
+
+        EVP_DecryptInit_ex(cipher_ctx, cipher128, nullptr, np_key_vec.data(), np_iv_vec.data());
+        EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
+        EVP_DecryptUpdate(cipher_ctx, predec, &dec_len, klictxt, 16);
+        EVP_DecryptFinal_ex(cipher_ctx, predec + dec_len, &dec_len);
 
         unsigned char input_data[MetadataInfo::Size];
         std::copy(&dat[0], &dat[64], input_data);
-        aes_setkey_dec(&aes_ctx, predec, 128);
-        aes_crypt_cbc(&aes_ctx, AES_DECRYPT, MetadataInfo::Size, np_iv_bytes, input_data, dec_in);
+        EVP_DecryptInit_ex(cipher_ctx, cipher128, nullptr, predec, np_iv_vec.data());
+        EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
+        EVP_DecryptUpdate(cipher_ctx, dec_in, &dec_len, input_data, MetadataInfo::Size);
+        EVP_DecryptFinal_ex(cipher_ctx, predec + dec_len, &dec_len);
 
     } else {
         std::copy(&dat[0], &dat[64], dec_in);
@@ -1019,18 +1033,20 @@ std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_h
 
     const auto key_vec = string_utils::string_to_byte_array(key);
     auto iv_vec = string_utils::string_to_byte_array(iv);
-    auto key_bytes = &key_vec[0];
-    auto iv_bytes = &iv_vec[0];
-    aes_setkey_dec(&aes_ctx, key_bytes, 256);
-    aes_crypt_cbc(&aes_ctx, AES_DECRYPT, 64, iv_bytes, dec_in, dec);
+    EVP_DecryptInit_ex(cipher_ctx, cipher256, nullptr, key_vec.data(), iv_vec.data());
+    EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
+    EVP_DecryptUpdate(cipher_ctx, dec, &dec_len, dec_in, MetadataInfo::Size);
+    EVP_DecryptFinal_ex(cipher_ctx, dec + dec_len, &dec_len);
 
     MetadataInfo metadata_info = MetadataInfo((char *)dec);
 
     std::vector<unsigned char> dec1(sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
     std::vector<unsigned char> input_data(sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
     memcpy(&input_data[0], &dat[64], sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
-    aes_setkey_dec(&aes_ctx, metadata_info.key, 128);
-    aes_crypt_cbc(&aes_ctx, AES_DECRYPT, sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size, metadata_info.iv, &input_data[0], &dec1[0]);
+    EVP_DecryptInit_ex(cipher_ctx, cipher128, nullptr, metadata_info.key, metadata_info.iv);
+    EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
+    EVP_DecryptUpdate(cipher_ctx, dec1.data(), &dec_len, input_data.data(), sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
+    EVP_DecryptFinal_ex(cipher_ctx, dec1.data() + dec_len, &dec_len);
 
     unsigned char dec2[MetadataHeader::Size];
     std::copy(&dec1[0], &dec1[MetadataHeader::Size], dec2);
@@ -1054,6 +1070,11 @@ std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_h
             segs.push_back({ metsec.offset, metsec.seg_idx, metsec.size, metsec.compression == CompressionType::DEFLATE, vault[metsec.key_idx], vault[metsec.iv_idx] });
         }
     }
+
+    EVP_CIPHER_CTX_free(cipher_ctx);
+    EVP_CIPHER_free(cipher128);
+    EVP_CIPHER_free(cipher256);
+
     return segs;
 }
 

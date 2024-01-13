@@ -23,9 +23,9 @@
 #include <F00DKeyEncryptorFactory.h>
 #include <PsvPfsParserConfig.h>
 #include <Utils.h>
+#include <openssl/evp.h>
 #include <rif2zrif.h>
 
-#include <crypto/aes.h>
 #include <io/device.h>
 #include <io/functions.h>
 
@@ -42,36 +42,11 @@
 
 // Credits to mmozeiko https://github.com/mmozeiko/pkg2zip
 
-static void ctr_add(uint8_t *counter, uint64_t n) {
+static void ctr_init(uint8_t *counter, uint8_t *iv, uint64_t n) {
     for (int i = 15; i >= 0; i--) {
-        n = n + counter[i];
+        n = n + iv[i];
         counter[i] = (uint8_t)n;
         n >>= 8;
-    }
-}
-
-static void aes128_ctr_xor(aes_context *ctx, const uint8_t *iv, uint64_t block, uint8_t *input, size_t size) {
-    uint8_t tmp[16];
-    uint8_t counter[16];
-    for (uint32_t i = 0; i < 16; i++) {
-        counter[i] = iv[i];
-    }
-    ctr_add(counter, block);
-
-    while (size >= 16) {
-        aes_crypt_ecb(ctx, AES_ENCRYPT, counter, tmp);
-        for (uint32_t i = 0; i < 16; i++) {
-            *input++ ^= tmp[i];
-        }
-        ctr_add(counter, 1);
-        size -= 16;
-    }
-
-    if (size != 0) {
-        aes_crypt_ecb(ctx, AES_ENCRYPT, counter, tmp);
-        for (size_t i = 0; i < size; i++) {
-            *input++ ^= tmp[i];
-        }
     }
 }
 
@@ -187,21 +162,18 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
     }
 
     auto key_type = byte_swap(ext_header.data_type2) & 7;
-    aes_context aes_ctx;
-    uint8_t main_key[16];
 
+    uint8_t main_key[16];
+    const uint8_t *pkg_vita_key = nullptr;
     switch (key_type) {
     case 2:
-        aes_setkey_enc(&aes_ctx, pkg_vita_2, 128);
-        aes_crypt_ecb(&aes_ctx, AES_ENCRYPT, pkg_header.pkg_data_iv, main_key);
+        pkg_vita_key = pkg_vita_2;
         break;
     case 3:
-        aes_setkey_enc(&aes_ctx, pkg_vita_3, 128);
-        aes_crypt_ecb(&aes_ctx, AES_ENCRYPT, pkg_header.pkg_data_iv, main_key);
+        pkg_vita_key = pkg_vita_3;
         break;
     case 4:
-        aes_setkey_enc(&aes_ctx, pkg_vita_4, 128);
-        aes_crypt_ecb(&aes_ctx, AES_ENCRYPT, pkg_header.pkg_data_iv, main_key);
+        pkg_vita_key = pkg_vita_4;
         break;
     default:
         LOG_ERROR("Unknown encryption key");
@@ -209,7 +181,22 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
         break;
     }
 
-    aes_setkey_enc(&aes_ctx, main_key, 128);
+    EVP_CIPHER_CTX *cipher_ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER *cipher_CTR = EVP_CIPHER_fetch(nullptr, "AES-128-CTR", nullptr);
+    EVP_CIPHER *cipher_ECB = EVP_CIPHER_fetch(nullptr, "AES-128-ECB", nullptr);
+    int dec_len = 0;
+
+    auto evp_cleanup = [&]() {
+        EVP_CIPHER_CTX_free(cipher_ctx);
+        EVP_CIPHER_free(cipher_CTR);
+        EVP_CIPHER_free(cipher_ECB);
+    };
+
+    // get the main key
+    EVP_EncryptInit_ex(cipher_ctx, cipher_ECB, nullptr, pkg_vita_key, nullptr);
+    EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
+    EVP_EncryptUpdate(cipher_ctx, main_key, &dec_len, pkg_header.pkg_data_iv, 0x10);
+    EVP_EncryptFinal_ex(cipher_ctx, main_key + dec_len, &dec_len);
 
     std::vector<uint8_t> sfo_buffer(sfo_size);
     SfoFile sfo_file;
@@ -249,15 +236,26 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
         break;
     }
 
+    auto decrypt_aes_ctr = [&](uint32_t offset, unsigned char *data, size_t size) {
+        uint8_t counter[0x10];
+        ctr_init(counter, pkg_header.pkg_data_iv, offset);
+        EVP_DecryptInit_ex(cipher_ctx, cipher_CTR, nullptr, main_key, counter);
+        EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
+        EVP_DecryptUpdate(cipher_ctx, data, &dec_len, data, size);
+        EVP_DecryptFinal_ex(cipher_ctx, data + dec_len, &dec_len);
+    };
+
     for (uint32_t i = 0; i < byte_swap(pkg_header.file_count); i++) {
         PkgEntry entry;
         uint64_t file_offset = items_offset + i * 32;
         infile.seekg(byte_swap(pkg_header.data_offset) + file_offset, std::ios_base::beg);
         infile.read(reinterpret_cast<char *>(&entry), sizeof(PkgEntry));
-        aes128_ctr_xor(&aes_ctx, pkg_header.pkg_data_iv, file_offset / 16, reinterpret_cast<unsigned char *>(&entry), sizeof(PkgEntry));
+
+        decrypt_aes_ctr(file_offset / 16, reinterpret_cast<unsigned char *>(&entry), sizeof(PkgEntry));
 
         if (fs::file_size(pkg_path) < byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset) + byte_swap(entry.name_size) || fs::file_size(pkg_path) < byte_swap(pkg_header.data_offset) + byte_swap(entry.data_offset) + byte_swap(entry.data_size)) {
             LOG_ERROR("The pkg file size is too small, possibly corrupted");
+            evp_cleanup();
             return false;
         }
         const auto file_count = (float)byte_swap(pkg_header.file_count);
@@ -265,7 +263,8 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
         std::vector<unsigned char> name(byte_swap(entry.name_size));
         infile.seekg(byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset));
         infile.read((char *)&name[0], byte_swap(entry.name_size));
-        aes128_ctr_xor(&aes_ctx, pkg_header.pkg_data_iv, byte_swap(entry.name_offset) / 16, &name[0], byte_swap(entry.name_size));
+
+        decrypt_aes_ctr(byte_swap(entry.name_offset) / 16, name.data(), byte_swap(entry.name_size));
 
         auto string_name = std::string(name.begin(), name.end());
         LOG_INFO(string_name);
@@ -277,22 +276,33 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
 
             auto offset = byte_swap(entry.data_offset);
             auto data_size = byte_swap(entry.data_size);
+
+            uint8_t counter[0x10];
+            ctr_init(counter, pkg_header.pkg_data_iv, offset / 16);
+            EVP_DecryptInit_ex(cipher_ctx, cipher_CTR, nullptr, main_key, counter);
+            EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
+
+            std::vector<uint8_t> buffer(0x10000);
             while (data_size != 0) {
-                unsigned char buffer[0x10000];
-                auto size = data_size < sizeof(buffer) ? data_size : sizeof(buffer);
+                int size = data_size < buffer.size() ? data_size : buffer.size();
                 infile.seekg(byte_swap(pkg_header.data_offset) + offset);
-                infile.read((char *)buffer, size);
+                infile.read(reinterpret_cast<char *>(buffer.data()), size);
 
-                aes128_ctr_xor(&aes_ctx, pkg_header.pkg_data_iv, offset / 16, buffer, size);
+                EVP_DecryptUpdate(cipher_ctx, buffer.data(), &dec_len, buffer.data(), size);
 
-                outfile.write((char *)buffer, size);
+                outfile.write(reinterpret_cast<char *>(buffer.data()), dec_len);
                 offset += size;
                 data_size -= size;
             }
+
+            EVP_DecryptFinal_ex(cipher_ctx, buffer.data(), &dec_len);
+            outfile.write(reinterpret_cast<char *>(buffer.data()), dec_len);
             outfile.close();
         }
     }
     infile.close();
+
+    evp_cleanup();
 
     std::string title_id_src = path.string();
     std::string title_id_dst = path.string() + "_dec";
