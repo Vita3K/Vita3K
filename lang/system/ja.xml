@@ -4,6 +4,7 @@
 	<main_menubar>
 		<file name="ファイル">
 			<open_pref_path>保存先を開く</open_pref_path>
+			<open_textures_path>テクスチャパスを開く</open_textures_path>
 			<install_firmware>ファームウェアをインストール</install_firmware>
 			<install_pkg>pkgをインストール</install_pkg>
 			<install_zip>zip，vpkをインストール</install_zip>
@@ -54,7 +55,9 @@
 		<license>ライセンス</license>
 		<shaders_cache>シェーダーキャッシュ</shaders_cache>
 		<shaders_log>シェーダーログ</shaders_log>
-		<manual>解説書</manual>
+		<export_textures>出力テクスチャ</export_textures>
+		<import_textures>入力テクスチャ</import_textures>
+		<manual>マニュアル</manual>
 		<update>アップデート</update>
 		<update_history>アップデート履歴</update_history>
 		<history_version>バージョン {}</history_version>
@@ -63,6 +66,8 @@
 			<app_delete>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</app_delete>
 			<app_delete_description>アプリの削除にはアプリのサイズと
 ご利用のハードウェアにより時間がかかる場合があります。</app_delete_description>
+			<addcont_delete>この追加データを削除しますか？</addcont_delete>
+			<license_delete>このライセンスを削除しますか？</license_delete>
 			<saved_data_delete>このセーブデータを削除しますか？</saved_data_delete>
 		</delete>
 		<info>
@@ -235,6 +240,15 @@
 	<compat_db>
 		<error>エラー</error>
 		<information>情報</information>
+		<get_failed>現在の互換性データベースを取得できませんでした。ファイアウォールやインターネットアクセスを確認し、後でもう一度試してください。</get_failed>
+		<download_failed>アプリケーションの互換性データベースのダウンロードに失敗しました。更新日時: {}。後でもう一度試してください。</download_failed>
+		<load_failed>ダウンロードされたアプリケーションの互換性データベースの読み込みに失敗しました。更新日時: {}。</load_failed>
+		<new_app_listed>互換性データベースは {} から {} に正常に更新されました。&#xA;
+{} 件の新しいアプリケーションがリストに追加され、合計が {} 件になりました！</new_app_listed>
+		<app_listed>互換性データベースは {} から {} に正常に更新されました。&#xA;
+{} 件のアプリケーションがリストされています！</app_listed>
+		<download_app_listed>{} に更新された互換性データベースが正常にダウンロードおよび読み込まれました。&#xA;
+{} 件のアプリケーションがリストされています！</download_app_listed>
 	</compat_db>
 
 	<content_manager name="コンテンツ管理">
@@ -257,6 +271,15 @@
 		<num>番号</num>
 		<not_connected>利用可能なコントローラーが接続されていません。
 SDL2に対応したコントローラーを接続してください。</not_connected>
+		<motion_support>コントローラーはモーションをサポートしています</motion_support>
+		<rebind_controls>ボタン割り当て</rebind_controls>
+		<led_color>LEDカラー</led_color>
+		<use_custom_color>カスタムカラーを使用</use_custom_color>
+		<use_custom_color_description>コントローラのLEDにカスタムカラーを使用するには、このボックスをチェックします。</use_custom_color_description>
+		<red>赤</red>
+		<green>緑</green>
+		<blue>青</blue>
+		<reset_controller_binding>ボタン割り当てをリセット</reset_controller_binding>
 	</controllers>
 
 	<controls name="入力">
@@ -291,7 +314,11 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<gui>GUI</gui>
 		<full_screen>フルスクリーン</full_screen>
 		<toggle_touch>タッチ操作の切り替え</toggle_touch>
+		<toggle_touch_description>画面タッチと背面タッチを切り替えます。</toggle_touch_description>
 		<toggle_gui_visibility>GUI表示の切り替え</toggle_gui_visibility>
+		<toggle_gui_visibility_description>アプリの実行中に画面上部のGUIの表示の切り替えを行います。</toggle_gui_visibility_description>
+		<miscellaneous>その他</miscellaneous>
+		<toggle_texture_replacement>テクスチャ置換を切り替える</toggle_texture_replacement>
 		<error>エラー</error>
 		<error_duplicate_key>そのキーはすでに使用済みです</error_duplicate_key>
 	</controls>　
@@ -515,12 +542,174 @@ GUIでのアジア地域のフォントサポートに必須です。
 	</settings>
 
 	<settings_dialog name="設定">
+		<core name="コア">
+			<modules_mode>モジュールモード</modules_mode>
+			<modules_list>モジュールリスト</modules_list>
+			<select_modules>希望するモジュールを選択してください。</select_modules>
+			<search_modules>モジュールを検索</search_modules>
+			<clear_list>リストをクリア</clear_list>
+			<no_modules>モジュールがありません。最新のPS Vitaファームウェアをダウンロードしてインストールしてください。</no_modules>
+			<refresh_list>リストを更新</refresh_list>
+		</core>
+		<cpu>
+			<cpu_backend>CPUバックエンド</cpu_backend>
+			<select_cpu_backend>好みのCPUバックエンドを選択してください。</select_cpu_backend>
+			<cpu_opt>最適化を有効にする</cpu_opt>
+			<cpu_opt_description>追加のCPU JIT最適化を有効にするには、チェックボックスをオンにします。</cpu_opt_description>
+		</cpu>
+		<gpu>
+			<reset>リセット</reset>
+			<backend_renderer>バックエンド レンダラー</backend_renderer>
+			<select_backend_renderer>お好みのレンダーバックエンドを選択してください。</select_backend_renderer>
+			<gpu>GPU（再起動して適用）</gpu>
+			<select_gpu>Vita3Kを実行するGPUを選択してください。</select_gpu>
+			<renderer_accuracy>レンダラーの精度</renderer_accuracy>
+			<v_sync>V-Sync</v_sync>
+			<v_sync_description>V-Syncを無効にすると、一部のゲームで速度の問題が解消されることがあります。
+視覚的なティアリングを避けるために有効にしておくことをお勧めします。</v_sync_description>
+			<disable_surface_sync>サーフェス同期の無効化</disable_surface_sync>
+			<surface_sync_description>スピードハック。CPUとGPU間のサーフェス同期を無効にするには、チェックボックスをオンにします。
+サーフェス同期は一部のゲームで必要な場合があります。
+無効にすると大幅なパフォーマンス向上が期待できます（特にアップスケーリングがオンの場合）。</surface_sync_description>
+			<screen_filter>スクリーンフィルタ</screen_filter>
+			<screen_filter_description>適用するポストプロセッシングフィルタを設定します。</screen_filter_description>
+			<internal_resolution_upscaling>内部解像度のアップスケーリング</internal_resolution_upscaling>
+			<internal_resolution_upscaling_description>Vita3Kのアップスケーリングを有効にします。
+実験的：1倍を超える解像度で正しくレンダリングされることは保証されていません。</internal_resolution_upscaling_description>
+			<anisotropic_filtering>異方性フィルタリング</anisotropic_filtering>
+			<anisotropic_filtering_description>異方性フィルタリングは、プレイヤーに対して傾斜した表面の画質を向上させる技術です。
+デメリットはありませんが、パフォーマンスに影響を与える可能性があります。</anisotropic_filtering_description>
+			<texture_replacement>テクスチャの置換</texture_replacement>
+			<export_textures>テクスチャのエクスポート</export_textures>
+			<import_textures>テクスチャのインポート</import_textures>
+			<texture_exporting_format>テクスチャのエクスポート形式</texture_exporting_format>
+			<shaders>シェーダー</shaders>
+			<shader_cache>シェーダーキャッシュの使用</shader_cache>
+			<shader_cache_description>ゲームの起動時に事前にコンパイルするためにシェーダーキャッシュを有効にするには、チェックボックスをオンにします。
+この機能を無効にするにはチェックを外してください。</shader_cache_description>
+			<spirv_shader>Spir-Vシェーダーの使用（非推奨）</spirv_shader>
+			<spirv_shader_description>生成されたSpir-Vシェーダーをドライバに直接渡します。
+一部の有益な拡張が無効になり、すべてのGPUがこれに対応しているわけではありません。</spirv_shader_description>
+			<clean_shaders>シェーダーキャッシュとログのクリア</clean_shaders>
+		</gpu>
 		<system name="システム">
+			<select_enter_button>決定ボタンの割り当て
+「決定」ボタンを選択してください。</select_enter_button>
+			<enter_button_description>これは、アプリケーションのダイアログで「決定」ボタンとして使用されるボタンです。
+一部のアプリケーションはこれを使用せず、デフォルトの決定ボタンを使用します。</enter_button_description>
+			<circle>〇</circle>
+			<cross>×</cross>
+			<pstv_mode>PS TVモード</pstv_mode>
+			<pstv_mode_description>PS TVエミュレートモードを有効にするには、チェックボックスをオンにします。</pstv_mode_description>
+			<show_mode>Showモード</show_mode>
+			<show_mode_description>チェックボックスをオンにしてShowモードを有効にします。</show_mode_description>
+			<demo_mode>デモモード</demo_mode>
+			<demo_mode_description>チェックボックスをオンにしてデモモードを有効にします。</demo_mode_description>
 		</system>
+		<emulator name="エミュレータ">
+			<boot_apps_full_screen>アプリをフルスクリーンで起動</boot_apps_full_screen>
+			<audio_backend>オーディオバックエンド</audio_backend>
+			<select_audio_backend>お好みのオーディオバックエンドを選択してください。</select_audio_backend>
+			<enable_ngs_support>NGSサポートを有効にする</enable_ngs_support>
+			<ngs_description>NGSオーディオライブラリのサポートを無効にするには、チェックボックスを外します。</ngs_description>
+			<log_level>ログレベル</log_level>
+			<select_log_level>お好みのログレベルを選択してください。</select_log_level>
+			<archive_log>ログのアーカイブ</archive_log>
+			<archive_log_description>チェックボックスをオンにしてログのアーカイブを有効にします。</archive_log_description>
+			<discord_rich_presence>Discord Rich Presenceを有効にして、Discordで実行しているアプリケーションを表示します。</discord_rich_presence>
+			<texture_cache>テクスチャキャッシュ</texture_cache>
+			<texture_cache_description>チェックボックスをオフにしてテクスチャキャッシュを無効にします。</texture_cache_description>
+			<show_compile_shaders>シェーダのコンパイルを表示</show_compile_shaders>
+			<compile_shaders_description>チェックボックスをオフにして、シェーダのコンパイルダイアログの表示を無効にします。</compile_shaders_description>
+			<show_touchpad_cursor>タッチパッドカーソルの表示</show_touchpad_cursor>
+			<touchpad_cursor_description>チェックボックスをオフにして画面上にタッチパッドカーソルを表示しないようにします。</touchpad_cursor_description>
+			<log_compat_warn>互換性の警告をログに表示</log_compat_warn>
+			<log_compat_warn_description>GitHubの互換性の警告を有効にするには、チェックボックスをオンにします。</log_compat_warn_description>
+			<check_for_updates>アップデートをチェック</check_for_updates>
+			<check_for_updates_description>起動時に自動的にアップデートを確認します。</check_for_updates_description>
+			<performance_overlay>パフォーマンスオーバーレイ</performance_overlay>
+			<performance_overlay_description>画面にパフォーマンス情報をオーバーレイとして表示します。</performance_overlay_description>
+			<detail>詳細</detail>
+			<select_detail>お好みのパフォーマンス オーバーレイの詳細度を選択してください。</select_detail>
+			<position>位置</position>
+			<select_position>お好みのパフォーマンス オーバーレイの位置を選択してください。</select_position>
+			<case_insensitive>大文字小文字を区別しないパス検索を有効にするにはチェックします。
+再起動時にリセットされます</case_insensitive>
+			<case_insensitive_description>Windows以外のプラットフォームでファイルを検索する際に、大文字小文字を区別せずに検索を試みることを許可します。</case_insensitive_description>
+			<emu_storage_folder>エミュレートされたシステムストレージフォルダ</emu_storage_folder>
+			<current_emu_path>現在のエミュレータのパス:</current_emu_path>
+			<change_emu_path>エミュレータのパスを変更</change_emu_path>
+			<change_emu_path_description>Vita3Kエミュレータフォルダのパスを変更します。
+古いフォルダを新しい場所に手動で移動する必要があります。</change_emu_path_description>
+			<reset_emu_path>エミュレータのパスをリセット</reset_emu_path>
+			<reset_emu_path_description>Vita3Kエミュレータのパスをデフォルトにリセットします。
+古いフォルダを新しい場所に手動で移動する必要があります。</reset_emu_path_description>
+			<custom_config_settings>カスタム設定</custom_config_settings>
+			<clear_custom_config>カスタム設定をクリア</clear_custom_config>
+		</emulator>
+		<gui name="GUI">
+			<show_gui>GUIの表示</show_gui>
+			<gui_description>アプリケーションの起動後にGUIを表示するには、チェックボックスをオンにします。</gui_description>
+			<show_info_bar>情報バーの表示</show_info_bar>
+			<info_bar_description>アプリケーションセレクタ内に情報バーを表示するには、チェックボックスをオンにします。</info_bar_description>
+			<display_info_message>情報メッセージの表示</display_info_message>
+			<display_info_message_description>互換性情報メッセージを表示しないようにするには、チェックボックスをオフにします。</display_info_message_description>
+			<display_system_apps>システムアプリの表示</display_system_apps>
+			<display_system_apps_description>ホーム画面でシステムアプリの表示を無効にするには、チェックボックスをオフにします。
+これらはメインメニューバーにのみ表示されます。</display_system_apps_description>
+			<show_live_area_screen>Live Area画面を表示</show_live_area_screen>
+			<live_area_screen_description>アプリケーションをクリックしたときにデフォルトでLive Areaを開くには、チェックボックスをオンにします。
+無効にすると、アプリケーションを右クリックして開きます。</live_area_screen_description>
+			<stretch_the_display_area>ディスプレイエリアの拡大</stretch_the_display_area>
+			<stretch_the_display_area_description>画面サイズに合わせてディスプレイエリアを拡大するには、チェックボックスをオンにします。</stretch_the_display_area_description>
+			<apps_list_grid>グリッドモード</apps_list_grid>
+			<apps_list_grid_description>アプリリストをグリッドモードに設定するには、チェックボックスをオンにします。</apps_list_grid_description>
+			<icon_size>アプリアイコンのサイズ</icon_size>
+			<select_icon_size>お好みのアイコンサイズを選択してください。</select_icon_size>
+			<font_support>フォントサポート</font_support>
+			<asia_font_support>アジアリージョン</asia_font_support>
+			<asia_font_support_description>中国語と韓国語のフォントサポートを有効にするには、このボックスにチェックを入れます。
+これを有効にすると、より多くのメモリが必要で、エミュレータを再起動する必要があります。</asia_font_support_description>
+			<firmware_font_package_description>一部のアプリケーションおよびGUIのアジアリージョンフォントサポートにはファームウェアフォントパッケージが必要です。
+通常はGUIでも推奨されています。</firmware_font_package_description>
+			<theme_background>テーマと背景</theme_background>
+			<current_theme_content_id>現在のテーマコンテンツID:</current_theme_content_id>
+			<reset_default_theme>デフォルトテーマをリセット</reset_default_theme>
+			<using_theme_background>テーマの背景を使用</using_theme_background>
+			<clean_user_backgrounds>ユーザーの背景をクリア</clean_user_backgrounds>
+			<current_start_background>現在の開始背景:</current_start_background>
+			<reset_start_background>開始背景をリセット</reset_start_background>
+			<background_alpha>背景の透明度</background_alpha>
+			<select_background_alpha>お好みの背景の透明度を選択してください。
+最小は不透明で、最大は透明です。</select_background_alpha>
+			<delay_background>背景の遅延</delay_background>
+			<select_delay_background>背景を変更する前の遅延（秒）を選択してください。</select_delay_background>
+			<delay_start>開始画面に戻る遅延時間</delay_start>
+			<select_delay_start>スタート画面に戻るまでの遅延時間（秒）を選択します。</select_delay_start>
+		</gui>
 		<network name="ネットワーク">
+			<psn_status>PSNステータス</psn_status>
+			<select_psn_state>PSネットワークの状態を選択してください。</select_psn_state>
+			<enable_http>HTTPの有効化</enable_http>
+			<enable_http_description>このボックスにチェックを入れて、ゲームがインターネットでHTTPプロトコルを使用できるようにします。</enable_http_description>
+			<timeout_attempts>HTTPタイムアウト試行回数</timeout_attempts>
+			<timeout_attempts_description>サーバーが応答しない場合の試行回数。
+インターネットが非常に不安定な場合や非常に遅い場合に有用です。</timeout_attempts_description>
+			<timeout_sleep>HTTPタイムアウトのスリープ時間</timeout_sleep>
+			<timeout_sleep_description>サーバーが応答しない場合のスリープ試行時間。
+インターネットが非常に不安定な場合や非常に遅い場合に有用です。</timeout_sleep_description>
+			<read_end_attempts>HTTP読み取り終了回数</read_end_attempts>
+			<read_end_attempts_description>データを読み取る際の試行回数。
+低い値はパフォーマンスを向上させる一方で、インターネットが非常に悪い場合のときはゲームを不安定にする可能性があります。</read_end_attempts_description>
+			<read_end_sleep>HTTP読み取り終了までのスリープ時間</read_end_sleep>
+			<read_end_sleep_description>データを読み取る際のスリープ試行時間。
+低い値はパフォーマンスを向上させる一方で、インターネットが非常に悪い場合はゲームを不安定にする可能性があります。</read_end_sleep_description>
 		</network>
 		<close>閉じる</close>
+		<save_reboot>保存して再起動</save_reboot>
+		<save_apply>保存して適用</save_apply>
 		<save>セーブ</save>
+		<keep_changes>セーブをクリックして変更を保存します。</keep_changes>
 	</settings_dialog>
 
 	<trophy_collection>
@@ -575,6 +764,8 @@ GUIでのアジア地域のフォントサポートに必須です。
 		<later_version_already_installed>新しいバージョンのVita3Kがインストールされています。</later_version_already_installed>
 		<latest_version_already_installed>最新のバージョンのVita3Kがインストールされています。</latest_version_already_installed>
 		<new_features>バージョン{}の新しい機能</new_features>
+		<authors>著者</authors>
+		<comments>コメント</comments>
 		<update>アップデート</update>
 		<version>バージョン {}</version>
 	</vita3k_update>
