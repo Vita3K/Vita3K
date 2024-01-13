@@ -76,7 +76,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
     ProgramInput program_input;
     std::map<int, UniformBuffer> uniform_buffers;
 
-    // TODO split these to functions (e.g. get_literals, get_paramters)
+    // TODO split these to functions (e.g. get_literals, get_parameters)
     auto gxp_parameters = program.program_parameters();
     auto vertex_varyings_ptr = program.vertex_varyings();
 

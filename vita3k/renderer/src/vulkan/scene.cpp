@@ -68,7 +68,7 @@ void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderPro
 void mid_scene_flush(VKContext &context, const SceGxmNotification notification) {
     // two cases :
     // notification.addr is 0: this means that the mid scene flush must be used as a barrier in the renderpass
-    // notification.addr is not 0: this means the app is waiting for this part to be finished to re-use the ressources
+    // notification.addr is not 0: this means the app is waiting for this part to be finished to re-use the resources
 
     // Note: however, when testing, the barrier inside a pipeline does not work (or not entirely, depending on the GPU)
     // maybe because I'm writing using buffer device addresses, not sure...

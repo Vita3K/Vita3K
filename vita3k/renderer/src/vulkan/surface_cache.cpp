@@ -136,7 +136,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
         overlap = false;
     else
         ite--;
-    // ite is now the first item with an adress lower or equal to key
+    // ite is now the first item with an address lower or equal to key
 
     overlap = (overlap && (ite->first + ite->second->total_bytes) > address);
 
@@ -323,7 +323,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         overlap = false;
     else
         ite--;
-    // ite is now the first item with an adress lower or equal to key
+    // ite is now the first item with an address lower or equal to key
     bool invalidated = false;
 
     overlap = (overlap && (ite->first + ite->second->total_bytes) > address);

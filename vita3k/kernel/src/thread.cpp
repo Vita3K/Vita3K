@@ -335,7 +335,7 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     push_arguments(callback_address, args);
     thread_lock.unlock();
 
-    // unlock but then immediatly lock back in the run_loop function
+    // unlock but then immediately lock back in the run_loop function
     // shouldn't cause an issue, but maybe we could use a recursive mutex instead
     run_loop();
 

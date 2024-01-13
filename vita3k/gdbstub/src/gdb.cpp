@@ -436,7 +436,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
         case 'S': {
             bool step = cmd == 's' || cmd == 'S';
 
-            // inferior_thread is the thread that trigerred breakpoint before
+            // inferior_thread is the thread that triggered breakpoint before
             // step or run that thread
 
             if (state.gdb.inferior_thread != 0) {
@@ -466,7 +466,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                         }
                     }
                 }
-                // wait until some thread triger breakpoint
+                // wait until some threads trigger breakpoint
                 bool did_break = false;
                 while (!did_break) {
                     auto lock = std::unique_lock(state.kernel.mutex);

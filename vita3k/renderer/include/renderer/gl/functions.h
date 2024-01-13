@@ -80,7 +80,7 @@ struct TextureCacheState;
 
 // Attribute formats.
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format);
-GLboolean attribute_format_normalised(SceGxmAttributeFormat format);
+GLboolean attribute_format_normalized(SceGxmAttributeFormat format);
 
 namespace texture {
 

@@ -127,7 +127,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
     std::unique_lock<std::recursive_mutex> scheduler_lock(mutex);
     is_updating = true;
 
-    // make a copy of the queue, this way we have no issue if it is modified in a callbck
+    // make a copy of the queue, this way we have no issue if it is modified in a callback
     std::vector<ngs::Voice *> queue_copy = queue;
 
     // Do a first routine to clear inputs from previous update session

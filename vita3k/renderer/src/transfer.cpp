@@ -50,7 +50,7 @@ static void perform_transfer_copy_impl(MemState &mem, const SceGxmTransferImage 
 
     for (uint32_t dx = 0; dx < src.width; dx++) {
         for (uint32_t dy = 0; dy < src.height; dy++) {
-            // compute offset depedning on the texture type used
+            // compute offset depending on the texture type used
             // the function compute_offset gets inlined
             uint32_t src_offset = compute_offset(src.x + dx, src.y + dy, src, src_type);
             uint32_t dst_offset = compute_offset(dst.x + dx, dst.y + dy, dst, dst_type);

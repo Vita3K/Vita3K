@@ -1375,7 +1375,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
 
     std::vector<spv::IdImmediate> ops;
 
-    // The provided source are stored in continous order, however the dest mask may not be the same
+    // The provided source are stored in continuous order, however the dest mask may not be the same
     const int total_elem_to_copy_first_vec = std::min<int>(4 - (insert_offset % 4), total_comp_source);
     std::uint32_t dest_comp_stored_so_far = 0;
 

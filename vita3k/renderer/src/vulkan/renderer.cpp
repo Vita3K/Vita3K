@@ -785,7 +785,7 @@ void VKState::set_screen_filter(const std::string_view &filter) {
 
 bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     assert(features.support_memory_mapping);
-    // the adress should be 4K aligned
+    // the address should be 4K aligned
     assert((address.address() & 4095) == 0);
     constexpr vk::BufferUsageFlags mapped_memory_flags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eTransferDst;
 

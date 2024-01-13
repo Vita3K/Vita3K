@@ -96,7 +96,7 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype) {
 
         static int typecount = 0;
 
-        if (t < 0x1C) { // 0x1C is the file seperator
+        if (t < 0x1C) { // 0x1C is the file separator
             std::string name = fmt::format("{}-{:0>2}.pkg", FSTYPE[t], typecount);
             typecount++;
             return name;

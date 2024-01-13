@@ -437,7 +437,7 @@ static bool get_user_apps(GuiState &gui, EmuEnvState &emuenv) {
         // Read language of cache
         apps_cache.read((char *)&gui.app_selector.apps_cache_lang, sizeof(uint32_t));
         if (gui.app_selector.apps_cache_lang != emuenv.cfg.sys_lang) {
-            LOG_WARN("Current lang of cache: {}, is diferent config: {}, recreate it.", get_sys_lang_name(gui.app_selector.apps_cache_lang), get_sys_lang_name(emuenv.cfg.sys_lang));
+            LOG_WARN("Current lang of cache: {}, is different configuration: {}, recreate it.", get_sys_lang_name(gui.app_selector.apps_cache_lang), get_sys_lang_name(emuenv.cfg.sys_lang));
             return false;
         }
 

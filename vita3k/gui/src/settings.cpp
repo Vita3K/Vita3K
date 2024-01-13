@@ -95,7 +95,7 @@ static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
             if (doc.load_file(theme_path_xml.c_str())) {
                 const auto infomation = doc.child("theme").child("InfomationProperty");
 
-                // Thumbmail theme
+                // Thumbnail theme
                 theme_preview_name[content_id][PACKAGE] = infomation.child("m_packageImageFilePath").text().as_string();
 
                 // Preview theme
