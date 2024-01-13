@@ -39,9 +39,6 @@ option(CAPSTONE_ARCHITECTURE_DEFAULT "Whether architectures are enabled by defau
 option(CAPSTONE_ARM_SUPPORT "ARM support" ON)
 add_subdirectory(capstone EXCLUDE_FROM_ALL)
 
-add_library(crypto-algorithms STATIC crypto-algorithms/sha256.c crypto-algorithms/sha256.h)
-target_include_directories(crypto-algorithms PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/crypto-algorithms")
-
 add_library(dirent INTERFACE)
 
 if(WIN32)

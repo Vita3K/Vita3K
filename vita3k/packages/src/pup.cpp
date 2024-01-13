@@ -23,7 +23,7 @@
  * contain firmware updates
  */
 
-#include <crypto/aes.h>
+#include <openssl/evp.h>
 #include <packages/sce_types.h>
 #include <util/fs.h>
 #include <util/string_utils.h>
@@ -175,18 +175,23 @@ static void decrypt_segments(std::ifstream &infile, const std::wstring &outdir, 
     const auto sysver = std::get<0>(get_key_type(infile, sce_hdr));
     const SelfType selftype = std::get<1>(get_key_type(infile, sce_hdr));
 
+    EVP_CIPHER_CTX *cipher_ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER *cipher = EVP_CIPHER_fetch(nullptr, "AES-128-CTR", nullptr);
+    int dec_len = 0;
+
     const auto scesegs = get_segments(infile, sce_hdr, SCE_KEYS, sysver, selftype);
     for (const auto &sceseg : scesegs) {
         fs::ofstream outfile(fmt::format(L"{}/{}.seg02", outdir, filename), std::ios::binary);
         infile.seekg(sceseg.offset);
         std::vector<unsigned char> encrypted_data(sceseg.size);
         infile.read((char *)&encrypted_data[0], sceseg.size);
-        aes_context aes_ctx;
-        aes_setkey_enc(&aes_ctx, (unsigned char *)sceseg.key.c_str(), 128);
-        size_t ctr_nc_off = 0;
-        unsigned char ctr_stream_block[0x10];
+
         std::vector<unsigned char> decrypted_data(sceseg.size);
-        aes_crypt_ctr(&aes_ctx, sceseg.size, &ctr_nc_off, (unsigned char *)sceseg.iv.c_str(), ctr_stream_block, &encrypted_data[0], &decrypted_data[0]);
+        EVP_DecryptInit_ex(cipher_ctx, cipher, nullptr, reinterpret_cast<const unsigned char *>(sceseg.key.c_str()), reinterpret_cast<const unsigned char *>(sceseg.iv.c_str()));
+        EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
+        EVP_DecryptUpdate(cipher_ctx, decrypted_data.data(), &dec_len, encrypted_data.data(), sceseg.size);
+        EVP_DecryptFinal_ex(cipher_ctx, decrypted_data.data() + dec_len, &dec_len);
+
         if (sceseg.compressed) {
             const std::string decompressed_data = decompress_segments(decrypted_data, sceseg.size);
             outfile.write(decompressed_data.c_str(), decompressed_data.size());
@@ -195,6 +200,9 @@ static void decrypt_segments(std::ifstream &infile, const std::wstring &outdir, 
         }
         outfile.close();
     }
+
+    EVP_CIPHER_CTX_free(cipher_ctx);
+    EVP_CIPHER_free(cipher);
 };
 
 static void join_files(const std::wstring &path, const std::string &filename, const std::wstring &output) {

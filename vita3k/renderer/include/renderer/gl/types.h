@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include <crypto/hash.h>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
 #include <renderer/types.h>
+#include <util/hash.h>
 
 #include <renderer/gl/ring_buffer.h>
 #include <renderer/texture_cache.h>

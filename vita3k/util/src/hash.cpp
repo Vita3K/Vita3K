@@ -15,19 +15,19 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <crypto/hash.h>
-#include <string>
+#include <util/hash.h>
 
-extern "C" {
-#include <sha256.h>
-}
+#include <openssl/evp.h>
 
 Sha256Hash sha256(const void *data, size_t size) {
     Sha256Hash hash;
-    SHA256_CTX sha_ctx = {};
-    sha256_init_one(&sha_ctx);
-    sha256_update(&sha_ctx, static_cast<const uint8_t *>(data), size);
-    sha256_final(&sha_ctx, hash.data());
+    
+    EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr);
+    EVP_DigestUpdate(ctx, data, size);
+    unsigned int len;
+    EVP_DigestFinal(ctx, hash.data(), &len);
+    EVP_MD_CTX_free(ctx);
 
     return hash;
 }

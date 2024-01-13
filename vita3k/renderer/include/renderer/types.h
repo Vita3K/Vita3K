@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <crypto/hash.h>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
 #include <gxm/types.h>
@@ -25,6 +24,7 @@
 #include <renderer/gxm_types.h>
 #include <shader/spirv_recompiler.h>
 #include <shader/usse_program_analyzer.h>
+#include <util/hash.h>
 
 #include <array>
 #include <bit>
