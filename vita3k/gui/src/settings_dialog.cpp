@@ -620,9 +620,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
 
         if (is_vulkan) {
-            ImGui::Checkbox("Aynchronous pipeline compilation", &config.async_pipeline_compilation);
+            ImGui::Checkbox("Asynchronous pipeline compilation", &config.async_pipeline_compilation);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Allow pipelines to be compiler concurrently on multiple concurrent threads.\n This decreases pipeline compilation stutter at the cost of temporary graphical glitches");
+                ImGui::SetTooltip("Allow pipelines to be compiled concurrently on multiple concurrent threads.\n This decreases pipeline compilation stutter at the cost of temporary graphical glitches");
         }
 
         // Screen Filter
