@@ -249,8 +249,6 @@ target_include_directories(vma INTERFACE
 
 add_subdirectory(ffmpeg)
 
-add_subdirectory(psvpfstools)
-
 if(APPLE)
  	execute_process(
  		COMMAND brew --prefix openssl
@@ -296,7 +294,11 @@ message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 
 add_library(ssl INTERFACE)
 target_link_libraries(ssl INTERFACE OpenSSL::SSL)
+add_library(crypto INTERFACE)
+target_link_libraries(crypto INTERFACE OpenSSL::Crypto)
 
+# Must be after openssl
+add_subdirectory(psvpfstools)
 
 find_package(CURL QUIET)
 if(NOT CURL_FOUND)
