@@ -335,6 +335,13 @@ Vita3K-systemet ditt er klart!</completed_setup>
 		<save>Lagre</save>
 	</settings_dialog>
 
+	<sys_apps_title>
+		<browser>Nettleser</browser>
+		<internet_browser>Nettleser</internet_browser>
+		<trophies>Trophies</trophies>
+		<trophy_collection>Trophy-samling</trophy_collection>
+	</sys_apps_title>
+
 	<trophy_collection>
 		<details>Detaljer</details>
 		<earned>Oppnådd</earned>

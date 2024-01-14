@@ -355,6 +355,13 @@ Je Vita3K-systeem is gereed!</completed_setup>
 		<save>Opslaan</save>
 	</settings_dialog>
 
+	<sys_apps_title>
+		<browser>Browser</browser>
+		<internet_browser>Internetbrowser</internet_browser>
+		<trophies>Trofeeën</trophies>
+		<trophy_collection>Trofeecollectie</trophy_collection>
+	</sys_apps_title>
+
 	<trophy_collection>
 		<details>Details</details>
 		<earned>Gewonnen</earned>

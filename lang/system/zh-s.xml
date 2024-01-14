@@ -596,6 +596,7 @@
 			<refresh_list>刷新列表</refresh_list>
 		</core>
 		<cpu>
+			<unicorn>Unicorn（已弃用）</unicorn>
 			<cpu_backend>CPU后端</cpu_backend>
 			<select_cpu_backend>选择您喜欢的CPU后端。</select_cpu_backend>
 			<cpu_opt>启用优化</cpu_opt>
@@ -607,7 +608,9 @@
 			<select_backend_renderer>选择您喜欢的后端渲染器。</select_backend_renderer>
 			<gpu>GPU（重启后应用）</gpu>
 			<select_gpu>选择在Vita3K应运行的GPU。</select_gpu>
-			<renderer_accuracy>渲染器精度</renderer_accuracy>
+			<standard>标准</standard>
+			<high>高</high>
+			<renderer_accuracy>渲染精度</renderer_accuracy>
 			<v_sync>垂直同步</v_sync>
 			<v_sync_description>禁用垂直同步可以解决某些游戏的速度问题。
 建议保留启用它以避免画面撕裂。</v_sync_description>
@@ -615,6 +618,12 @@
 			<surface_sync_description>提升速度，勾选此项禁用处理器与显卡之间的表面同步。
 某些游戏需要表面同步，
 如果禁用（特别是在提升时），则可大幅提升性能。</surface_sync_description>
+			<async_pipeline_compilation>异步管线编译</async_pipeline_compilation>
+			<async_pipeline_compilation_description>允许在多个并发线程上同时编译管线。
+这可以减少管线编译卡顿，但代价是会出现暂时的图形故障。</async_pipeline_compilation_description>
+			<nearest>最邻近</nearest>
+			<bilinear>双线性</bilinear>
+			<bicubic>双三次</bicubic>
 			<screen_filter>屏幕过滤</screen_filter>
 			<screen_filter_description>设置要应用的后处理过滤器（可理解为抗锯齿）。</screen_filter_description>
 			<internal_resolution_upscaling>内部分辨率提升</internal_resolution_upscaling>
@@ -658,6 +667,12 @@
 			<select_audio_backend>选择您喜欢的音频后端。</select_audio_backend>
 			<enable_ngs_support>启用NGS支持</enable_ngs_support>
 			<ngs_description>取消勾选此项禁用对高级音频库NGS的支持。</ngs_description>
+			<trace>追踪</trace>
+			<info>信息</info>
+			<warning>警告</warning>
+			<error>错误</error>
+			<critical>关键</critical>
+			<off>关闭</off>
 			<log_level>日志级别</log_level>
 			<select_log_level>选择您喜欢的日志级别。</select_log_level>
 			<archive_log>档案日志</archive_log>
@@ -675,8 +690,18 @@
 			<check_for_updates_description>启动时自动检查更新。</check_for_updates_description>
 			<performance_overlay>性能图层</performance_overlay>
 			<performance_overlay_description>在屏幕上以图层的形式显示性能信息。</performance_overlay_description>
+			<minimum>最少</minimum>
+			<low>少</low>
+			<medium>中等</medium>
+			<maximum>最多</maximum>
 			<detail>细节</detail>
 			<select_detail>选择您喜欢的性能图层细节。</select_detail>
+			<top_left>左上</top_left>
+			<top_center>中上</top_center>
+			<top_right>右上</top_right>
+			<bottom_left>左下</bottom_left>
+			<bottom_center>中下</bottom_center>
+			<bottom_right>右下</bottom_right>
 			<position>位置</position>
 			<select_position>选择您喜欢的性能图层位置。</select_position>
 			<case_insensitive>检查在区分大小写的文件系统上启用不区分大小写的路径查找。
@@ -782,6 +807,13 @@
 		<save>保存</save>
 		<keep_changes>点击保存保留您的更改。</keep_changes>
 	</settings_dialog>
+
+	<sys_apps_title>
+		<browser>浏览器</browser>
+		<internet_browser>互联网浏览器</internet_browser>
+		<trophies>Trophy（奖杯）</trophies>
+		<trophy_collection>Trophy（奖杯）收藏</trophy_collection>
+	</sys_apps_title>
 
 	<trophy_collection>
 		<delete_trophy>删除奖杯</delete_trophy>

@@ -342,6 +342,13 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 		<save>Kaydet</save>
 	</settings_dialog>
 
+	<sys_apps_title>
+		<browser>Tarayıcı</browser>
+		<internet_browser>İnternet Tarayıcısı</internet_browser>
+		<trophies>Kupalar</trophies>
+		<trophy_collection>Kupa Koleksiyonu</trophy_collection>
+	</sys_apps_title>
+
 	<trophy_collection>
 		<details>Ayrıntılı Bilgi</details>
 		<earned>Kazanıldığı Tarih</earned>

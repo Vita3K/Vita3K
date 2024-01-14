@@ -350,6 +350,13 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		<save>Guardar</save>
 	</settings_dialog>
 
+	<sys_apps_title>
+		<browser>Navegador</browser>
+		<internet_browser>Navegador de Internet</internet_browser>
+		<trophies>Trofeos</trophies>
+		<trophy_collection>Colección de trofeos</trophy_collection>
+	</sys_apps_title>
+
 	<trophy_collection>
 		<details>Detalles</details>
 		<earned>Ganado</earned>

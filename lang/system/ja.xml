@@ -712,6 +712,13 @@ GUIでのアジア地域のフォントサポートに必須です。
 		<keep_changes>セーブをクリックして変更を保存します。</keep_changes>
 	</settings_dialog>
 
+	<sys_apps_title>
+		<browser>ブラウザー</browser>
+		<internet_browser>インターネットブラウザー</internet_browser>
+		<trophies>トロフィー</trophies>
+		<trophy_collection>トロフィーコレクション</trophy_collection>
+	</sys_apps_title>
+
 	<trophy_collection>
 		<delete_trophy>トロフィーを削除</delete_trophy>
 		<trophy_deleted>このユーザーのトロフィー情報が削除されます。</trophy_deleted>

@@ -412,6 +412,13 @@ fundo</add_background>
 		<save>Salvar</save>
 	</settings_dialog>
 
+	<sys_apps_title>
+		<browser>Navegador</browser>
+		<internet_browser>Navegador de Internet</internet_browser>
+		<trophies>Troféus</trophies>
+		<trophy_collection>Coleção de troféus</trophy_collection>
+	</sys_apps_title>
+
 	<trophy_collection>
 		<delete_trophy>Deletar troféu</delete_trophy>
 		<trophy_deleted>A informação deste troféu salva neste usuário irá ser deletada.</trophy_deleted>

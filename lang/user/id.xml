@@ -77,7 +77,7 @@ tergantung pada ukuran dan perangkat keras Kamu.</app_delete_description>
 		</delete>
 		<info>
 			<eligible>Memenuhi Syarat</eligible>
-			<ineligible>Tidak Memenuhi Syarat</ineligible>
+			<ineligible>Gak Memenuhi Syarat</ineligible>
 			<level>Level</level>
 			<name>Nama</name>
 			<trophy_earning>Perolehan Trofi</trophy_earning>
@@ -115,7 +115,7 @@ Kode kesalahan: {}</an_error_occurred>
 		<yes>Iya</yes>
 		<wday>
 			<day>Minggu</day>
-			<day>Senen</day>
+			<day>Senin</day>
 			<day>Selasa</day>
 			<day>Rabu</day>
 			<day>Kamis</day>
@@ -348,7 +348,7 @@ Sambungkan Kontroleryang kompatibel dengan SDL2.</not_connected>
 Tidak ada cukup ruang kosong di kartu memori.</could_not_save>
 				<not_free_space>Tidak ada cukup ruang kosong di kartu memori.</not_free_space>
 				<new_saved_data>Save Data Baru</new_saved_data>
-				<saving_complete>Saving Berhasil.</saving_complete>
+				<saving_complete>Simpan Telah Berhasil.</saving_complete>
 				<save_the_data>Kamu yakin save di data ini?</save_the_data>
 				<saving>Ngesave…</saving>
 				<warning_saving>Ngesave…
@@ -519,8 +519,8 @@ Asia. (Umumnya Direkomendasikan)</firmware_font_package_note>
 				<mm_dd_yyyy>BB/HH/TTTT</mm_dd_yyyy>
 			</date_format>
 			<time_format name="Atur Waktu">
-				<clock_12_hour>12-Jam Clock</clock_12_hour>
-				<clock_24_hour>24-Jam Clock</clock_24_hour>
+				<clock_12_hour>Atur 12-Jam</clock_12_hour>
+				<clock_24_hour>Atur 24-Jam</clock_24_hour>
 			</time_format>
 		</date_time>
 		<language name="Bahasa">
@@ -530,8 +530,8 @@ Asia. (Umumnya Direkomendasikan)</firmware_font_package_note>
 					<ime_languages>
 						<lang id="1">Denmark</lang>
 						<lang id="2">Jerman</lang>
-						<lang id="262144">English (United Kingdom)</lang>
-						<lang id="4">English (United States)</lang>
+						<lang id="262144">Inggris (United Kingdom)</lang>
+						<lang id="4">Inggris (United States)</lang>
 						<lang id="8">Spanyol</lang>
 						<lang id="16">Perancis</lang>
 						<lang id="32">Italia</lang>
@@ -559,7 +559,7 @@ Asia. (Umumnya Direkomendasikan)</firmware_font_package_note>
 			<clear_list>Bersihkan Daftar</clear_list>
 			<no_modules>Tidak ada modul.
 Silakan download dan install firmware PS Vita terakhir.</no_modules>
-			<refresh_list>Segarkan Daftar</refresh_list>
+			<refresh_list>Perbarui Daftar</refresh_list>
 		</core>
 		<cpu>
 			<cpu_backend>Bagian Belakang CPU</cpu_backend>
@@ -662,6 +662,8 @@ Kamu perlu memindahkan folder lama ke lokasi baru secara manual.</reset_emu_path
 			<gui_description>Centang kotak untuk menampilkan GUI setelah mem-boot aplikasi.</gui_description>
 			<show_info_bar>Info Bar Terlihat</show_info_bar>
 			<info_bar_description>Centang kotak untuk menampilkan bar info di dalam pemilih aplikasi.</info_bar_description>
+			<user_lang>bahasa GUI</user_lang>
+			<select_user_lang>Pilih bahasa User kamu.</select_user_lang>
 			<display_info_message>Tampilkan Pesan Info</display_info_message>
 			<display_info_message_description>Hapus centang pada kotak untuk menampilkan pesan info di log saja.</display_info_message_description>
 			<display_system_apps>Tampilkan System Aplikasi</display_system_apps>

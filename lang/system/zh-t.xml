@@ -596,6 +596,7 @@
 			<refresh_list>刷新列表</refresh_list>
 		</core>
 		<cpu>
+			<unicorn>Unicorn（已棄用）</unicorn>
 			<cpu_backend>CPU後端</cpu_backend>
 			<select_cpu_backend>選擇您喜歡的CPU後端。</select_cpu_backend>
 			<cpu_opt>啟用優化</cpu_opt>
@@ -607,7 +608,9 @@
 			<select_backend_renderer>選擇您喜歡的後端渲染器。</select_backend_renderer>
 			<gpu>GPU（重啟后應用）</gpu>
 			<select_gpu>選擇在Vita3K應運行的GPU。</select_gpu>
-			<renderer_accuracy>渲染器精度</renderer_accuracy>
+			<standard>標準</standard>
+			<high>高</high>
+			<renderer_accuracy>渲染精度</renderer_accuracy>
 			<v_sync>垂直同步</v_sync>
 			<v_sync_description>禁用垂直同步可以解決某些遊戲的速度問題。
 建議保留啟用它以避免畫面撕裂。</v_sync_description>
@@ -615,6 +618,12 @@
 			<surface_sync_description>提升速度，勾選此項禁用處理器與顯卡之間的表面同步。
 某些遊戲需要表面同步。
 如果禁用（特別是在提升時），則可大幅提升性能。</surface_sync_description>
+			<async_pipeline_compilation>異步管綫編譯</async_pipeline_compilation>
+			<async_pipeline_compilation_description>允許在多個並發綫程上同時編譯管綫。
+這可以減少管綫編譯卡頓，但代價是會出現暫時的圖形故障。</async_pipeline_compilation_description>
+			<nearest>最鄰近</nearest>
+			<bilinear>雙綫性</bilinear>
+			<bicubic>雙三次</bicubic>
 			<screen_filter>螢幕過濾</screen_filter>
 			<screen_filter_description>設置要應用的後處理過濾器（可理解為抗鋸齒）。</screen_filter_description>
 			<internal_resolution_upscaling>內部分辨率提升</internal_resolution_upscaling>
@@ -658,8 +667,14 @@
 			<select_audio_backend>選擇您喜歡的音頻後端。</select_audio_backend>
 			<enable_ngs_support>啟用NGS支持</enable_ngs_support>
 			<ngs_description>取消勾選此項禁用對高級音頻庫NGS的支持。</ngs_description>
+			<trace>追蹤</trace>
+			<info>資訊</info>
+			<warning>警告</warning>
+			<error>錯誤</error>
+			<critical>關鍵</critical>
+			<off>關閉</off>
 			<log_level>記錄級別</log_level>
-			<select_log_level>選擇您喜歡的日志級別。</select_log_level>
+			<select_log_level>選擇您喜歡的記錄級別。</select_log_level>
 			<archive_log>檔案記錄</archive_log>
 			<archive_log_description>勾選此項啟用檔案記錄。</archive_log_description>
 			<discord_rich_presence>啟用Discord Rich Presence以顯示您在Discord上執行的應用程式。</discord_rich_presence>
@@ -675,8 +690,18 @@
 			<check_for_updates_description>啟動時自動檢查更新。</check_for_updates_description>
 			<performance_overlay>性能圖層</performance_overlay>
 			<performance_overlay_description>在螢幕上以圖層的形式顯示性能信息。</performance_overlay_description>
+			<minimum>最少</minimum>
+			<low>少</low>
+			<medium>中等</medium>
+			<maximum>最多</maximum>
 			<detail>細節</detail>
 			<select_detail>選擇您喜歡的性能圖層細節。</select_detail>
+			<top_left>左上</top_left>
+			<top_center>中上</top_center>
+			<top_right>右上</top_right>
+			<bottom_left>左下</bottom_left>
+			<bottom_center>中下</bottom_center>
+			<bottom_right>右下</bottom_right>
 			<position>位置</position>
 			<select_position>選擇您喜歡的性能圖層位置。</select_position>
 			<case_insensitive>檢查在區分大小寫的文件系統上啟用不區分大小寫的路徑查找。
@@ -782,6 +807,13 @@
 		<save>保存</save>
 		<keep_changes>按下保存保留您的更改。</keep_changes>
 	</settings_dialog>
+
+	<sys_apps_title>
+		<browser>瀏覽器</browser>
+		<internet_browser>網路瀏覽器</internet_browser>
+		<trophies>獎盃</trophies>
+		<trophy_collection>獎盃收藏</trophy_collection>
+	</sys_apps_title>
 
 	<trophy_collection>
 		<delete_trophy>刪除獎盃</delete_trophy>

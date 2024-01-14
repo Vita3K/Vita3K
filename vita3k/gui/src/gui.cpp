@@ -625,19 +625,20 @@ void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
             boost::trim(emuenv.app_info.app_title);
             sfo::get_data_by_key(emuenv.app_info.app_title_id, sfo_handle, "TITLE_ID");
         } else {
+            auto &lang = gui.lang.sys_apps_title;
             emuenv.app_info.app_version = "1.00";
             emuenv.app_info.app_category = "gda";
             emuenv.app_info.app_title_id = app;
             if (app == "NPXS10003") {
-                emuenv.app_info.app_short_title = "Browser";
-                emuenv.app_info.app_title = "Internet Browser";
+                emuenv.app_info.app_short_title = lang["browser"].c_str();
+                emuenv.app_info.app_title = lang["internet_browser"].c_str();
             } else if (app == "NPXS10008") {
-                emuenv.app_info.app_short_title = "Trophies";
-                emuenv.app_info.app_title = "Trophy Collection";
+                emuenv.app_info.app_short_title = lang["trophies"].c_str();
+                emuenv.app_info.app_title = lang["trophy_collection"].c_str();
             } else if (app == "NPXS10015")
-                emuenv.app_info.app_short_title = emuenv.app_info.app_title = "Settings";
+                emuenv.app_info.app_short_title = emuenv.app_info.app_title = gui.lang.settings.main["title"].c_str();
             else
-                emuenv.app_info.app_short_title = emuenv.app_info.app_title = "Content Manager";
+                emuenv.app_info.app_short_title = emuenv.app_info.app_title = gui.lang.content_manager.main["title"].c_str();
         }
         gui.app_selector.sys_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, {}, {}, {}, {}, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, app });
     }

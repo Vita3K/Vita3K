@@ -343,6 +343,13 @@ Dein Vita3K-System ist bereit!</completed_setup>
 		<save>Speichern</save>
 	</settings_dialog>
 
+	<sys_apps_title>
+		<browser>Browser</browser>
+		<internet_browser>Internet-Browser</internet_browser>
+		<trophies>Trophäen</trophies>
+		<trophy_collection>Trophäen-Sammlung</trophy_collection>
+	</sys_apps_title>
+
 	<trophy_collection>
 		<details>Details</details>
 		<earned>Verdient</earned>
