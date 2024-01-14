@@ -598,6 +598,7 @@ Please download and install the last PS Vita firmware.</no_modules>
 			<refresh_list>Refresh List</refresh_list>
 		</core>
 		<cpu>
+			<unicorn>Unicorn (deprecated)</unicorn>
 			<cpu_backend>CPU Backend</cpu_backend>
 			<select_cpu_backend>Select your preferred CPU backend.</select_cpu_backend>
 			<cpu_opt>Enable optimizations</cpu_opt>
@@ -609,6 +610,8 @@ Please download and install the last PS Vita firmware.</no_modules>
 			<select_backend_renderer>Select your preferred backend renderer.</select_backend_renderer>
 			<gpu>GPU (Reboot to apply)</gpu>
 			<select_gpu>Select the GPU Vita3K should run on.</select_gpu>
+			<standard>Standard</standard>
+			<high>High</high>
 			<renderer_accuracy>Renderer Accuracy</renderer_accuracy>
 			<v_sync>V-Sync</v_sync>
 			<v_sync_description>Disabling V-Sync can fix the speed issue in some games.
@@ -617,6 +620,12 @@ It is recommended to keep it enabled to avoid visual tearing.</v_sync_descriptio
 			<surface_sync_description>Speed hack, check the box to disable surface syncing between CPU and GPU.
 Surface syncing is needed by a few games.
 Gives a big performance boost if disabled (in particular when upscaling is on).</surface_sync_description>
+			<async_pipeline_compilation>Asynchronous Pipeline Compilation</async_pipeline_compilation>
+			<async_pipeline_compilation_description>Allow pipelines to be compiled concurrently on multiple concurrent threads.
+This decreases pipeline compilation stutter at the cost of temporary graphical glitches.</async_pipeline_compilation_description>
+			<nearest>Nearest</nearest>
+			<bilinear>Bilinear</bilinear>
+			<bicubic>Bicubic</bicubic>
 			<screen_filter>Screen Filter</screen_filter>
 			<screen_filter_description>Set post-processing filter to apply.</screen_filter_description>
 			<internal_resolution_upscaling>Internal Resolution Upscaling</internal_resolution_upscaling>
@@ -660,6 +669,12 @@ Some applications don't use this and get default confirmation button.</enter_but
 			<select_audio_backend>Select your preferred audio backend.</select_audio_backend>
 			<enable_ngs_support>Enable NGS support</enable_ngs_support>
 			<ngs_description>Uncheck the box to disable support for advanced audio library NGS.</ngs_description>
+			<trace>Trace</trace>
+			<info>Info</info>
+			<warning>Warning</warning>
+			<error>Error</error>
+			<critical>Critical</critical>
+			<off>Off</off>
 			<log_level>Log Level</log_level>
 			<select_log_level>Select your preferred log level.</select_log_level>
 			<archive_log>Archive Log</archive_log>
@@ -677,8 +692,18 @@ Some applications don't use this and get default confirmation button.</enter_but
 			<check_for_updates_description>Automatically check for updates at startup.</check_for_updates_description>
 			<performance_overlay>Performance overlay</performance_overlay>
 			<performance_overlay_description>Display performance information on the screen as an overlay.</performance_overlay_description>
+			<minimum>Minimum</minimum>
+			<low>Low</low>
+			<medium>Medium</medium>
+			<maximum>Maximum</maximum>
 			<detail>Detail</detail>
 			<select_detail>Select your preferred perfomance overlay detail.</select_detail>
+			<top_left>Top Left</top_left>
+			<top_center>Top Center</top_center>
+			<top_right>Top Right</top_right>
+			<bottom_left>Bottom Left</bottom_left>
+			<bottom_center>Bottom Center</bottom_center>
+			<bottom_right>Bottom Right</bottom_right>
 			<position>Position</position>
 			<select_position>Select your preferred perfomance overlay position.</select_position>
 			<case_insensitive>Check to enable case-insensitive path finding on case sensitive filesystems.
@@ -785,6 +810,13 @@ lower can improve performance but can make games unstable if you have bad enough
 		<save>Save</save>
 		<keep_changes>Click on Save to keep your changes.</keep_changes>
 	</settings_dialog>
+
+	<sys_apps_title>
+		<browser>Browser</browser>
+		<internet_browser>Internet Browser</internet_browser>
+		<trophies>Trophies</trophies>
+		<trophy_collection>Trophy Collection</trophy_collection>
+	</sys_apps_title>
 
 	<trophy_collection>
 		<delete_trophy>Delete Trophy</delete_trophy>

@@ -336,6 +336,13 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		<save>Tallenna</save>
 	</settings_dialog>
 
+	<sys_apps_title>
+		<browser>Selain</browser>
+		<internet_browser>Internet-selain</internet_browser>
+		<trophies>Trophyt</trophies>
+		<trophy_collection>Trophy-kokoelma</trophy_collection>
+	</sys_apps_title>
+
 	<trophy_collection>
 		<details>Lisätiedot</details>
 		<earned>Ansaittu</earned>

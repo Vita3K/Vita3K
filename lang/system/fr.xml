@@ -440,6 +440,13 @@ Votre système Vita3K est prêt !</completed_setup>
 		<save>Sauvegarder</save>
 	</settings_dialog>
 
+	<sys_apps_title>
+		<browser>Navigateur</browser>
+		<internet_browser>Navigateur Internet</internet_browser>
+		<trophies>Trophées</trophies>
+		<trophy_collection>Collection de trophées</trophy_collection>
+	</sys_apps_title>
+
 	<trophy_collection>
 		<delete_trophy>Supprimer le trophée</delete_trophy>
 		<trophy_deleted>Les informations sur les trophées enregistrées pour cet utilisateur seront supprimées.</trophy_deleted>

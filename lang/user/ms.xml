@@ -79,7 +79,7 @@ bergantung pada saiznya dan perkakasan awak.</app_delete_description>
 		</delete>
 		<info>
 			<eligible>Layak</eligible>
-			<ineligible>Tidak Layak</ineligible>
+			<ineligible>Tak Layak</ineligible>
 			<level>Tahap</level>
 			<name>Nama</name>
 			<trophy_earning>Pendapatan Trofi</trophy_earning>
@@ -108,7 +108,7 @@ Kod ralat: {}</an_error_occurred>
 		<delete>Padam</delete>
 		<file_corrupted>Fail itu rosak.</file_corrupted>
 		<microphone_disabled>Dayakan mikrofon.</microphone_disabled>
-		<no>gak</no>
+		<no>Gak</no>
 		<please_wait>Sila tunggu...</please_wait>
 		<search>Cari</search>
 		<select_all>Pilih semua</select_all>
@@ -232,7 +232,7 @@ Kod ralat: {}</an_error_occurred>
 
 	<compatibility name="Keserasian">
 		<states>
-			<state id = "-1">Gak Diketahui</state>
+			<state id = "-1">Tak Diketahui</state>
 			<state id = "0">Nothing</state>
 			<state id = "1">Bootable</state>
 			<state id = "2">Intro</state>
@@ -394,7 +394,7 @@ Jangan matikan sistem atau tutup apl.</warning_saving>
 		<app_added_home>Apl telah ditambahkan pada skrin utama.</app_added_home>
 		<delete_all>Memadam semua</delete_all>
 		<notif_deleted>Notifikasi akan dipadamkan.</notif_deleted>
-		<install_failed>Tidak dapat menginstal.</install_failed>
+		<install_failed>Tak dapat menginstal.</install_failed>
 		<install_complete>Instalasi selesai</install_complete>
 		<installing>Menginstalasi...</installing>
 		<no_notif>Tiada Notifikasi.</no_notif>
@@ -529,8 +529,8 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 				<mm_dd_yyyy>MM/DD/YYYY</mm_dd_yyyy>
 			</date_format>
 			<time_format name="Format Masa">
-				<clock_12_hour>Jam 12 Jam</clock_12_hour>
-				<clock_24_hour>Jam 24 Jam</clock_24_hour>
+				<clock_12_hour>Tetapkan 12 Jam</clock_12_hour>
+				<clock_24_hour>Tetapkan 24 Jam</clock_24_hour>
 			</time_format>
 		</date_time>
 		<language name="Bahasa">
@@ -543,7 +543,7 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 						<lang id="262144">Inggeris (United Kingdom)</lang>
 						<lang id="4">Inggeris (United States)</lang>
 						<lang id="8">Sepanyol</lang>
-						<lang id="16">Perancis/lang>
+						<lang id="16">Perancis</lang>
 						<lang id="32">Itali</lang>
 						<lang id="64">Belanda</lang>
 						<lang id="128">Norway</lang>
@@ -586,7 +586,7 @@ Sila muat turun dan pasang PS Vita yang terakhir firmware.</no_modules>
 			<renderer_accuracy>Ketepatan Penyampai</renderer_accuracy>
 			<v_sync_description>Melumpuhkan V-Sync boleh membetulkan isu kelajuan dalam sesetengah permainan.
 Adalah disyorkan untuk memastikan ia didayakan untuk mengelakkan koyakan visual.</v_sync_description>
-			<disable_surface_sync>Lumpuhkan Edit Penyegerakan</disable_surface_sync>
+			<disable_surface_sync>Lumpuhkan Sunting Penyegerakan</disable_surface_sync>
 			<surface_sync_description>Penggodam kelajuan, tandai kotak untuk melumpuhkan penyegerakan permukaan antara CPU dan GPU.
 Penyegerakan permukaan diperlukan oleh sesetengah permainan.
 Memberi rangsangan prestasi yang besar jika dilumpuhkan (khususnya apabila peningkatan dihidupkan).</surface_sync_description>

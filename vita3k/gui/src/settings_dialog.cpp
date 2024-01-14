@@ -545,7 +545,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
         static const char *LIST_CPU_BACKEND[] = { "Dynarmic", "Unicorn" };
-        static const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic", "Unicorn (deprecated)" };
+        const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic", lang.cpu["unicorn"].c_str() };
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.cpu["cpu_backend"].c_str());
         if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND_DISPLAY, IM_ARRAYSIZE(LIST_CPU_BACKEND_DISPLAY)))
             config.cpu_backend = LIST_CPU_BACKEND[int(config_cpu_backend)];
@@ -596,7 +596,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (is_ingame)
                 ImGui::BeginDisabled();
 
-            static const char *LIST_RENDERER_ACCURACY[] = { "Standard", "High" };
+            const char *LIST_RENDERER_ACCURACY[] = { lang.gpu["standard"].c_str(), lang.gpu["high"].c_str() };
             int is_high_accuracy = static_cast<int>(config.high_accuracy);
             ImGui::Combo(lang.gpu["renderer_accuracy"].c_str(), &is_high_accuracy, LIST_RENDERER_ACCURACY, IM_ARRAYSIZE(LIST_RENDERER_ACCURACY));
             config.high_accuracy = static_cast<bool>(is_high_accuracy);
@@ -620,18 +620,18 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
 
         if (is_vulkan) {
-            ImGui::Checkbox("Asynchronous pipeline compilation", &config.async_pipeline_compilation);
+            ImGui::Checkbox(lang.gpu["async_pipeline_compilation"].c_str(), &config.async_pipeline_compilation);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Allow pipelines to be compiled concurrently on multiple concurrent threads.\n This decreases pipeline compilation stutter at the cost of temporary graphical glitches");
+                ImGui::SetTooltip("%s", lang.gpu["async_pipeline_compilation_description"].c_str());
         }
 
         // Screen Filter
         ImGui::Spacing();
         int curr_filter = 0;
         const std::array<const char *, 5> possible_filters = {
-            "Nearest",
-            "Bilinear",
-            "Bicubic",
+            lang.gpu["nearest"].c_str(),
+            lang.gpu["bilinear"].c_str(),
+            lang.gpu["bicubic"].c_str(),
             "FXAA",
             "FSR"
         };
@@ -831,7 +831,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        if (ImGui::Combo(lang.emulator["log_level"].c_str(), &emuenv.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0"))
+
+        const char *LIST_LOG_LEVEL[] = { lang.emulator["trace"].c_str(), "Debug", lang.emulator["info"].c_str(), lang.emulator["warning"].c_str(), lang.emulator["error"].c_str(), lang.emulator["critical"].c_str(), lang.emulator["off"].c_str() };
+        if (ImGui::Combo(lang.emulator["log_level"].c_str(), &emuenv.cfg.log_level, LIST_LOG_LEVEL, IM_ARRAYSIZE(LIST_LOG_LEVEL)))
             logging::set_level(static_cast<spdlog::level::level_enum>(emuenv.cfg.log_level));
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.emulator["select_log_level"].c_str());
@@ -873,10 +875,12 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.emulator["performance_overlay_description"].c_str());
         if (emuenv.cfg.performance_overlay) {
-            ImGui::Combo(lang.emulator["detail"].c_str(), &emuenv.cfg.performance_overlay_detail, "Minimum\0Low\0Medium\0Maximum\0");
+            const char *LIST_OVERLAY_DETAIL[] = { lang.emulator["minimum"].c_str(), lang.emulator["low"].c_str(), lang.emulator["medium"].c_str(), lang.emulator["maximum"].c_str() };
+            ImGui::Combo(lang.emulator["detail"].c_str(), &emuenv.cfg.performance_overlay_detail, LIST_OVERLAY_DETAIL, IM_ARRAYSIZE(LIST_OVERLAY_DETAIL));
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", lang.emulator["select_detail"].c_str());
-            ImGui::Combo(lang.emulator["position"].c_str(), &emuenv.cfg.performance_overlay_position, "Top Left\0Top Center\0Top Right\0Bottom Left\0Bottom Center\0Bottom Right\0");
+            const char *LIST_OVERLAY_POSITION[] = { lang.emulator["top_left"].c_str(), lang.emulator["top_center"].c_str(), lang.emulator["top_right"].c_str(), lang.emulator["bottom_left"].c_str(), lang.emulator["bottom_center"].c_str(), lang.emulator["bottom_right"].c_str() };
+            ImGui::Combo(lang.emulator["position"].c_str(), &emuenv.cfg.performance_overlay_position, LIST_OVERLAY_POSITION, IM_ARRAYSIZE(LIST_OVERLAY_POSITION));
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", lang.emulator["select_position"].c_str());
         }
@@ -1128,29 +1132,30 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.debug["log_exports"].c_str(), &emuenv.kernel.debugger.log_exports);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.debug["log_exports_description"].c_str());
-        ImGui::Spacing();
-        ImGui::Checkbox(lang.debug["log_active_shaders"].c_str(), &emuenv.cfg.log_active_shaders);
         ImGui::SameLine();
+        ImGui::Checkbox(lang.debug["log_active_shaders"].c_str(), &emuenv.cfg.log_active_shaders);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.debug["log_active_shaders_description"].c_str());
+        ImGui::Spacing();
         ImGui::Checkbox(lang.debug["log_uniforms"].c_str(), &emuenv.cfg.log_uniforms);
+        ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.debug["log_uniforms_description"].c_str());
-        ImGui::SameLine();
         ImGui::Checkbox(lang.debug["color_surface_debug"].c_str(), &emuenv.cfg.color_surface_debug);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.debug["color_surface_debug_description"].c_str());
-        ImGui::Spacing();
+        ImGui::SameLine();
         ImGui::Checkbox(lang.debug["dump_elfs"].c_str(), &emuenv.kernel.debugger.dump_elfs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.debug["dump_elfs_description"].c_str());
-        ImGui::SameLine();
         if (emuenv.backend_renderer == renderer::Backend::Vulkan) {
+            ImGui::Spacing();
             ImGui::Checkbox(lang.debug["validation_layer"].c_str(), &emuenv.cfg.validation_layer);
+            ImGui::SameLine();
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", lang.debug["validation_layer_description"].c_str());
-            ImGui::Spacing();
         }
+        ImGui::Spacing();
         if (ImGui::Button(emuenv.kernel.debugger.watch_code ? lang.debug["unwatch_code"].c_str() : lang.debug["watch_code"].c_str())) {
             emuenv.kernel.debugger.watch_code = !emuenv.kernel.debugger.watch_code;
             emuenv.kernel.debugger.update_watches();
@@ -1160,7 +1165,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             emuenv.kernel.debugger.watch_memory = !emuenv.kernel.debugger.watch_memory;
             emuenv.kernel.debugger.update_watches();
         }
-        ImGui::Spacing();
+        ImGui::SameLine();
         if (ImGui::Button(emuenv.kernel.debugger.watch_import_calls ? lang.debug["unwatch_import_calls"].c_str() : lang.debug["watch_import_calls"].c_str())) {
             emuenv.kernel.debugger.watch_import_calls = !emuenv.kernel.debugger.watch_import_calls;
             emuenv.kernel.debugger.update_watches();

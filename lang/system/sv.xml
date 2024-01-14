@@ -336,6 +336,13 @@ Ditt Vita3K-system är redo!</completed_setup>
 		<save>Spara</save>
 	</settings_dialog>
 
+	<sys_apps_title>
+		<browser>Webbläsare</browser>
+		<internet_browser>Webbläsare</internet_browser>
+		<trophies>Trophies</trophies>
+		<trophy_collection>Trophy-samling</trophy_collection>
+	</sys_apps_title>
+
 	<trophy_collection>
 		<details>Detaljer</details>
 		<earned>Vunna</earned>

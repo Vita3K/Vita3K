@@ -393,6 +393,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     set_lang_string(lang.settings_dialog.debug, settings_dialog.child("debug"));
                 }
 
+                // System Applications Title
+                set_lang_string(lang.sys_apps_title, lang_child.child("sys_apps_title"));
+
                 // Trophy Collection
                 set_lang_string(lang.trophy_collection, lang_child.child("trophy_collection"));
 

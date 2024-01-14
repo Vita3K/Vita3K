@@ -368,6 +368,13 @@
 		<save>저장</save>
 	</settings_dialog>
 
+	<sys_apps_title>
+		<browser>브라우저</browser>
+		<internet_browser>인터넷 브라우저</internet_browser>
+		<trophies>트로피</trophies>
+		<trophy_collection>트로피 컬렉션</trophy_collection>
+	</sys_apps_title>
+
 	<trophy_collection>
 		<details>상세</details>
 		<earned>획득일</earned>
