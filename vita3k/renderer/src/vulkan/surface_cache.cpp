@@ -780,7 +780,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
     if (cached_info.multisample_mode == SCE_GXM_MULTISAMPLE_4X)
         height /= 2;
 
-    const bool is_stencil = cached_info.surface.stencil_data.address() == address;
+    const bool is_stencil = can_be_stencil;
 
     vk::ImageView ds_attachment = reinterpret_cast<VKContext *>(state.context)->current_ds_view;
     const bool reading_ds_attachment = cached_info.texture.view == ds_attachment;
