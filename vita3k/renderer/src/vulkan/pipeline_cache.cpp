@@ -201,7 +201,7 @@ void PipelineCache::init() {
             vk::Format::eR16G16B16Sfloat,
             vk::Format::eR8G8B8Unorm, vk::Format::eR8G8B8Snorm,
             vk::Format::eR8G8B8Uscaled, vk::Format::eR8G8B8Sscaled,
-            vk::Format::eR8G8B8A8Uint, vk::Format::eR8G8B8Sint
+            vk::Format::eR8G8B8Uint, vk::Format::eR8G8B8Sint
         };
         for (auto fmt : formats) {
             vk::FormatProperties rgb_property = state.physical_device.getFormatProperties(fmt);
