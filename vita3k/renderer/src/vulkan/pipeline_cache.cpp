@@ -858,7 +858,8 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     context.shader_hints.color_format = record.color_surface.colorFormat;
     context.shader_hints.attributes = &vertex_program_gxm.attributes;
 
-    const bool compile_pipeline_async = !already_in_cache && consider_for_async && use_async_compilation && can_use_deferred_compilation;
+    // note: the flag can_use_deferred_compilation is not considered here because it causes way too many false positives
+    const bool compile_pipeline_async = !already_in_cache && consider_for_async && use_async_compilation;
 
     if (compile_pipeline_async) {
         // create the pipeline compile request
@@ -888,7 +889,8 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
         const auto time_s = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         next_pipeline_cache_save = time_s + pipeline_cache_save_delay;
 
-        state.shaders_count_compiled++;
+        if (!already_in_cache)
+            state.shaders_count_compiled++;
 
         it->second = result;
 
