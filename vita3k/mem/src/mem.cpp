@@ -169,7 +169,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, int page_count,
     const Address addr = page_num * state.page_size;
     uint8_t *const memory = &state.memory[addr];
 
-    // Make memory chunck available to access
+    // Make memory chunk available to access
 #ifdef WIN32
     const void *const ret = VirtualAlloc(memory, size, MEM_COMMIT, PAGE_READWRITE);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());

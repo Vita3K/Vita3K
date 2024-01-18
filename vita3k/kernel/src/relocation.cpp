@@ -318,7 +318,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             g_offset = 0,
             g_patchseg = 0;
 
-    // initiliazed in format 0, 1, 2, and 3
+    // initialized in format 0, 1, 2, and 3
     Address g_saddr = 0,
             g_addend = 0,
             g_type = 0,

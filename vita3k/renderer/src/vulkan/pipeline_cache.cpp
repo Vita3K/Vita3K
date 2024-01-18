@@ -413,7 +413,7 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
     *shader_module = state.device.createShaderModule(shader_info);
     {
         std::lock_guard<std::mutex> guard(shaders_mutex);
-        // Save shader cache haches
+        // Save shader cache hashes
         // vertex and fragment shaders are not linked together so no need to associate them
         Sha256Hash empty_hash{};
         if (is_vertex) {
@@ -781,7 +781,7 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     vk::PipelineDynamicStateCreateInfo dynamic_info{};
     dynamic_info.setDynamicStates(dynamic_states);
 
-    // we still need to specifiy the viewport and scissor count even though they are dynamic
+    // we still need to specify the viewport and scissor count even though they are dynamic
     vk::PipelineViewportStateCreateInfo viewport{
         .viewportCount = 1,
         .scissorCount = 1

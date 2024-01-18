@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 
     // if either effective uid or uid is the one of the root user assume running as root.
     // else if euid and uid are different then permissions errors can happen if its running
-    // as a completly different user than the uid/euid
+    // as a completely different user than the uid/euid
     if (uid == 0 || euid == 0 || uid != euid)
         adminPriv = true;
 #endif

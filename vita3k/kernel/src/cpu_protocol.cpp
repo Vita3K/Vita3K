@@ -54,7 +54,7 @@ void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, ThreadState 
     // the only benefit of using thread_id instead--namely less locking-- has been gone for long
     call_import(cpu, nid, thread.id);
 
-    // ARM recommends claering exclusive state inside interrupt handler
+    // ARM recommends clearing exclusive state inside interrupt handler
     clear_exclusive(kernel->exclusive_monitor, get_processor_id(cpu));
 }
 

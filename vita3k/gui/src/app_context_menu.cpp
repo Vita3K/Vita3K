@@ -369,7 +369,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                         }
                     } else {
                         if (ImGui::MenuItem(lang.main["create_state_report"].c_str())) {
-                            // Create body of state repport
+                            // Create body of state report
 
                             // Encode title for URL
                             const auto encode_title_url = [](std::string title) {
@@ -381,7 +381,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                                     // Add other replacement associations here if necessary.
                                 };
 
-                                // Replace all occurences found in title
+                                // Replace all occurrences found in title
                                 for (const auto &[replace, with] : replace_map) {
                                     boost::replace_all(title, replace, with);
                                 }
@@ -406,7 +406,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                             auto user = std::getenv("USER");
 #endif // WIN32
 
-                            // Test environement summary
+                            // Test environment summary
                             const auto test_env_summary = fmt::format(
                                 "%23 Test environment summary%0A- Tested by: {} <!-- Change your username if is needed -->%0A- OS: Windows 10/macOS/Linux Distro, Kernel Version?%0A- CPU: AMD/Intel?%0A- GPU: AMD/NVIDIA/Intel?%0A- RAM: {} GB",
                                 user ? user : "?", SDL_GetSystemRAM() / 1000);

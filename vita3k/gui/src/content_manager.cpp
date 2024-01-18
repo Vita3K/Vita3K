@@ -53,8 +53,8 @@ void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pat
         auto &lang = gui.lang.app_context.info;
         gui.app_selector.app_info.trophy = fs::exists(APP_PATH / "sce_sys/trophy") ? lang["eligible"] : lang["ineligible"];
 
-        const auto last_writen = fs::last_write_time(APP_PATH);
-        SAFE_LOCALTIME(&last_writen, &gui.app_selector.app_info.updated);
+        const auto last_written = fs::last_write_time(APP_PATH);
+        SAFE_LOCALTIME(&last_written, &gui.app_selector.app_info.updated);
     }
 }
 
@@ -106,8 +106,8 @@ static void get_save_data_list(GuiState &gui, EmuEnvState &emuenv) {
         if (fs::is_directory(save.path()) && !fs::is_empty(save.path()) && get_app_index(gui, title_id)) {
             tm updated_tm = {};
 
-            const auto last_writen = fs::last_write_time(save);
-            SAFE_LOCALTIME(&last_writen, &updated_tm);
+            const auto last_written = fs::last_write_time(save);
+            SAFE_LOCALTIME(&last_written, &updated_tm);
 
             const auto size = get_recursive_directory_size(save);
             save_data_list.push_back({ get_app_index(gui, title_id)->title, title_id, size, updated_tm });
@@ -204,8 +204,8 @@ static void get_content_info(GuiState &gui, EmuEnvState &emuenv) {
         for (const auto &addcont : fs::directory_iterator(ADDCONT_PATH)) {
             const auto content_id = addcont.path().stem().string();
 
-            const auto last_writen = fs::last_write_time(addcont);
-            SAFE_LOCALTIME(&last_writen, &addcont_info[content_id].date);
+            const auto last_written = fs::last_write_time(addcont);
+            SAFE_LOCALTIME(&last_written, &addcont_info[content_id].date);
 
             const auto addcont_size = get_recursive_directory_size(addcont);
             addcont_info[content_id].size = get_unit_size(addcont_size);

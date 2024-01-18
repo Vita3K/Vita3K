@@ -325,8 +325,8 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
                             liveitem[app_path][frame]["text"]["y"].first = livearea.child("liveitem").child("text").attribute("y").as_int();
                         if (!livearea.child("liveitem").child("text").attribute("margin-top").empty())
                             liveitem[app_path][frame]["text"]["margin-top"].first = livearea.child("liveitem").child("text").attribute("margin-top").as_int();
-                        if (!livearea.child("liveitem").child("text").attribute("margin-buttom").empty())
-                            liveitem[app_path][frame]["text"]["margin-buttom"].first = livearea.child("liveitem").child("text").attribute("margin-buttom").as_int();
+                        if (!livearea.child("liveitem").child("text").attribute("margin-bottom").empty())
+                            liveitem[app_path][frame]["text"]["margin-bottom"].first = livearea.child("liveitem").child("text").attribute("margin-bottom").as_int();
                         if (!livearea.child("liveitem").child("text").attribute("margin-left").empty())
                             liveitem[app_path][frame]["text"]["margin-left"].first = livearea.child("liveitem").child("text").attribute("margin-left").as_int();
                         if (!livearea.child("liveitem").child("text").attribute("margin-right").empty())
@@ -719,7 +719,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         auto bg_pos_init = ImVec2((FRAME_SIZE.x - bg_size.x) / 2.f, (FRAME_SIZE.y - bg_size.y) / 2.f);
         auto img_pos_init = ImVec2((FRAME_SIZE.x - img_size.x) / 2.f, (FRAME_SIZE.y - img_size.y) / 2.f);
 
-        // Allign items
+        // Align items
         if ((liveitem[app_path][frame.id]["background"]["align"].second == "left") && (liveitem[app_path][frame.id]["background"]["x"].first >= 0))
             bg_pos_init.x = 0.0f;
         else if ((liveitem[app_path][frame.id]["background"]["align"].second == "right") && (liveitem[app_path][frame.id]["background"]["x"].first <= 0))
@@ -764,13 +764,13 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         if (img_size.y == FRAME_SIZE.y)
             img_pos.y = VIEWPORT_SIZE.y - FRAME_POS.y;
 
-        // Scal size items
+        // Scale size items
         const auto bg_scal_size = ImVec2(bg_size.x * SCALE.x, bg_size.y * SCALE.y);
         const auto img_scal_size = ImVec2(img_size.x * SCALE.x, img_size.y * SCALE.y);
 
         const auto pos_frame = ImVec2(VIEWPORT_SIZE.x - FRAME_POS.x, VIEWPORT_SIZE.y - FRAME_POS.y);
 
-        // Scal size frame
+        // Scale size frame
         const auto scal_size_frame = ImVec2(FRAME_SIZE.x * SCALE.x, FRAME_SIZE.y * SCALE.y);
 
         // Reset position if get outside frame
@@ -846,7 +846,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                 }
 
                 auto str_wrap = scal_size_frame.x;
-                if (liveitem[app_path][frame.id]["text"]["allign"].second == "outside-right")
+                if (liveitem[app_path][frame.id]["text"]["align"].second == "outside-right")
                     str_wrap = str_size.x;
 
                 if (liveitem[app_path][frame.id]["text"]["width"].first > 0) {
@@ -865,7 +865,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                 const auto size_text_scale = str_tag.size != 0 ? str_tag.size / 19.2f : 1.f;
                 ImGui::SetWindowFontScale(size_text_scale * RES_SCALE.x);
 
-                // Calcule text pixel size
+                // Calculate text pixel size
                 ImVec2 calc_text_size;
                 if (frame.autoflip > 0) {
                     if (liveitem[app_path][frame.id]["text"]["word-wrap"].second != "off")
@@ -885,7 +885,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
 
                 ImVec2 str_pos_init;
 
-                // Allign
+                // Align
                 if (liveitem[app_path][frame.id]["text"]["align"].second.empty()) {
                     if (liveitem[app_path][frame.id]["text"]["text-align"].second.empty()) {
                         if (liveitem[app_path][frame.id]["text"]["line-align"].second == "left")
@@ -981,7 +981,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                 }
 
                 // Text Display
-                // TODO Multible color support on same frame, used by eg: Asphalt: Injection
+                // TODO Multiple color support on same frame, used by eg: Asphalt: Injection
                 // TODO Correct display few line on same frame, used by eg: Asphalt: Injection
                 ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + text_pos.x, VIEWPORT_POS.y + text_pos.y));
                 ImGui::BeginChild(frame.id.c_str(), str_size, false, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings);

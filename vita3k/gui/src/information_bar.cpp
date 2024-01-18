@@ -75,7 +75,7 @@ static bool init_notice_icon(GuiState &gui, EmuEnvState &emuenv, const fs::path 
             if (!vfs::read_app_file(buffer, emuenv.pref_path.wstring(), info.id, "sce_sys/icon0.png")) {
                 buffer = init_default_icon(gui, emuenv);
                 if (buffer.empty()) {
-                    LOG_WARN("Not found defaut icon for this notice content: {}", info.content_id);
+                    LOG_WARN("Not found default icon for this notice content: {}", info.content_id);
                     return false;
                 }
             }

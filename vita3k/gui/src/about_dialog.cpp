@@ -23,7 +23,7 @@
 
 namespace gui {
 
-// Add any new developer/contribor in alphabetic order
+// Add any new developer/contributor in alphabetic order
 static std::vector<const char *> developers_list = {
     "1whatleytay", "bookmist", "EXtremeExploit", "frangarcj", "IllusionMan1212",
     "KorewaWatchful", "Macdu", "pent0", "petmac", "Rinnegatamante",

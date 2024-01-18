@@ -50,7 +50,7 @@ GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
     return GL_UNSIGNED_BYTE;
 }
 
-GLboolean attribute_format_normalised(SceGxmAttributeFormat format) {
+GLboolean attribute_format_normalized(SceGxmAttributeFormat format) {
     R_PROFILE(__func__);
 
     switch (format) {

@@ -462,7 +462,7 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
 
         const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
         GLenum type = attribute_format_to_gl_type(attribute_format);
-        const GLboolean normalised = attribute_format_normalised(attribute_format);
+        const GLboolean normalized = attribute_format_normalized(attribute_format);
 
         int attrib_location = 0;
         bool upload_integral = false;
@@ -527,7 +527,7 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
             if (upload_integral || (attribute_format == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED)) {
                 glVertexAttribIPointer(attrib_location + i, component_count, type, stream.stride, reinterpret_cast<const GLvoid *>(i * array_element_size + attribute.offset + offset_in_buffer[stream_index]));
             } else {
-                glVertexAttribPointer(attrib_location + i, component_count, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(i * array_element_size + attribute.offset + offset_in_buffer[stream_index]));
+                glVertexAttribPointer(attrib_location + i, component_count, type, normalized, stream.stride, reinterpret_cast<const GLvoid *>(i * array_element_size + attribute.offset + offset_in_buffer[stream_index]));
             }
 
             glEnableVertexAttribArray(attrib_location + i);
