@@ -1,0 +1,43 @@
+name: Feature Request
+description: Template for feature request
+title: "[Feature Request]: "
+labels: "Feature Request"
+body:
+  - type: markdown
+    attributes:
+      value: Tech support does not belong here. You should only file an issue here if you are requesting a feature you believe would make Vit3K better.
+  - type: checkboxes
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the feature you are requesting.
+      options:
+      - label: I have searched the existing issues
+        required: true
+  - type: textarea
+    id: what-feature
+    attributes:
+      label: What feature are you suggesting?
+      description: A brief description of the requested feature.
+    validations:
+      required: true
+  - type: textarea
+    id: why-feature
+    attributes:
+      label: Why would this feature be useful?
+      description: A brief description of why this feature would make Vita3K better.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Other emulators or software with a similar feature
+      description: >
+        May be helpful in showing someone how it'd be helpful.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform (if relevant)
+      options:
+        - Windows
+        - Linux
+        - macOS
