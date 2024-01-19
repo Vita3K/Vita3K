@@ -130,6 +130,7 @@ public:
         bool import_textures = false;
         bool export_textures = false;
         bool export_as_png = false;
+        bool fps_hack = false;
         bool stretch_the_display_area = false;
         bool show_touchpad_cursor = true;
         bool psn_signed_in = false;

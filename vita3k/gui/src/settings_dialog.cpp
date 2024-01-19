@@ -182,6 +182,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
                 config.import_textures = gpu_child.attribute("import-textures").as_bool();
                 config.export_textures = gpu_child.attribute("export-textures").as_bool();
                 config.export_as_png = gpu_child.attribute("export-as-png").as_bool();
+                config.fps_hack = gpu_child.attribute("fps-hack").as_bool();
             }
 
             // Load System Config
@@ -245,6 +246,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.import_textures = emuenv.cfg.import_textures;
         config.export_textures = emuenv.cfg.export_textures;
         config.export_as_png = emuenv.cfg.export_as_png;
+        config.fps_hack = emuenv.cfg.fps_hack;
         config.pstv_mode = emuenv.cfg.pstv_mode;
         config.ngs_enable = emuenv.cfg.ngs_enable;
         config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
@@ -327,6 +329,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         gpu_child.append_attribute("import-textures") = config.import_textures;
         gpu_child.append_attribute("export-textures") = config.export_textures;
         gpu_child.append_attribute("export-as-png") = config.export_as_png;
+        gpu_child.append_attribute("fps-hack") = config.fps_hack;
 
         // System
         auto system_child = config_child.append_child("system");
@@ -360,6 +363,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.import_textures = config.import_textures;
         emuenv.cfg.export_textures = config.export_textures;
         emuenv.cfg.export_as_png = config.export_as_png;
+        emuenv.cfg.fps_hack = config.fps_hack;
         emuenv.cfg.ngs_enable = config.ngs_enable;
         emuenv.cfg.show_touchpad_cursor = config.show_touchpad_cursor;
         emuenv.cfg.psn_signed_in = config.psn_signed_in;
@@ -423,6 +427,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.import_textures = emuenv.cfg.import_textures;
         emuenv.cfg.current_config.export_textures = emuenv.cfg.export_textures;
         emuenv.cfg.current_config.export_as_png = emuenv.cfg.export_as_png;
+        emuenv.cfg.current_config.fps_hack = emuenv.cfg.fps_hack;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
         emuenv.cfg.current_config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
         emuenv.cfg.current_config.psn_signed_in = emuenv.cfg.psn_signed_in;
@@ -449,6 +454,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     emuenv.renderer->set_stretch_display(emuenv.cfg.stretch_the_display_area);
     emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
     emuenv.renderer->set_async_compilation(emuenv.cfg.current_config.async_pipeline_compilation);
+    emuenv.display.fps_hack = emuenv.cfg.current_config.fps_hack;
 
     // No change it if app already running
     if (emuenv.io.title_id.empty()) {
@@ -775,6 +781,15 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 fs::remove_all(emuenv.cache_path / "shaderlog");
             }
         }
+
+        // FPS hack
+        ImGui::Checkbox("FPS hack", &config.fps_hack);
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Game hack which allows some games running at 30fps to run at 60fps on the emulator."
+                              "Note that this is a hack and will only work on some games."
+                              "On other games, it may have no effect or make them run twice as fast.");
+        }
+
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
