@@ -30,8 +30,8 @@ namespace renderer {
 
 template <typename T, SceGxmTransferColorKeyMode mode, SceGxmTransferType src_type, SceGxmTransferType dst_type>
 static void perform_transfer_copy_impl(MemState &mem, const SceGxmTransferImage &src, const SceGxmTransferImage &dst, uint32_t key_value, uint32_t key_mask) {
-    T *restrict src_ptr = src.address.cast<T>().get(mem);
-    T *restrict dst_ptr = dst.address.cast<T>().get(mem);
+    T *__restrict__ src_ptr = src.address.cast<T>().get(mem);
+    T *__restrict__ dst_ptr = dst.address.cast<T>().get(mem);
 
     auto compute_offset = [&](uint32_t dx, uint32_t dy, const SceGxmTransferImage &img, SceGxmTransferType type) -> int32_t {
         const int32_t stride_pixel = img.stride / sizeof(T);

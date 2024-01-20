@@ -18,7 +18,5 @@
 #pragma once
 
 #if defined(_MSC_VER)
-#define restrict __restrict
-#else
-#define restrict __restrict__
+#define __restrict__ __restrict
 #endif
