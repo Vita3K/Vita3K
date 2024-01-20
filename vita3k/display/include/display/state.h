@@ -69,6 +69,12 @@ struct DisplayState {
     std::atomic<uint64_t> last_setframe_vblank_count = 0;
     std::map<SceUID, CallbackPtr> vblank_callbacks{};
 
+    // if set to true, make sceDisplayWaitVblankStartMulti/sceDisplayWaitSetFrameBufMulti behave as sceDisplayWaitVblankStart/sceDisplayWaitSetFrameBuf
+    // this allows some game running at 30fps to run at 60fps without any issue
+    // however this is not always the case, some games may not be affected (if they look at the Vcount)
+    // or run twice as fast (if they only rely on these function calls for their timings)
+    bool fps_hack = false;
+
     // should contain the list of sync objects / swapchain images (in the order they appear in the cycle)
     std::vector<PredictedDisplayFrame> predicted_frames;
     // position in the predicted_frame cycle (the -1 is needed)

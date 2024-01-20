@@ -31,6 +31,11 @@ TRACY_MODULE_NAME(SceDisplay);
 static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const bool is_since_setbuf, const bool is_cb) {
     const auto &thread = emuenv.kernel.get_thread(thread_id);
 
+    if (emuenv.display.fps_hack)
+        // a game can use a vcount of 2 to render as 30fps
+        // thus doing this can allow some games to run at 60fps
+        vcount = 1;
+
     uint64_t target_vcount;
     if (is_since_setbuf) {
         target_vcount = emuenv.display.last_setframe_vblank_count + vcount;
