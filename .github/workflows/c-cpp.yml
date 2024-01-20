@@ -39,7 +39,7 @@ jobs:
                 C:\vcpkg\installed
                 C:\vcpkg\packages
                 C:\Users\runneradmin\AppData\Local\ccache
-            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake 
+            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
             cmake_preset: windows-ninja
           - os: macos-latest
             version: zip
@@ -89,7 +89,7 @@ jobs:
 
       - name: Set up build environment (windows-latest)
         run: |
-          vcpkg install zlib:x64-windows boost-system:x64-windows boost-filesystem:x64-windows boost-program-options:x64-windows boost-icl:x64-windows boost-variant:x64-windows curl:x64-windows openssl:x64-windows
+          vcpkg install zlib:x64-windows-static-md boost-system:x64-windows-static-md boost-filesystem:x64-windows-static-md boost-program-options:x64-windows-static-md boost-icl:x64-windows-static-md boost-variant:x64-windows-static-md curl:x64-windows-static-md openssl:x64-windows-static-md
           choco install ccache
         if: matrix.os == 'windows-latest'
 
