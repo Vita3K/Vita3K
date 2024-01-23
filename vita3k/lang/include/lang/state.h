@@ -587,6 +587,8 @@ struct LangState {
             { "boot_apps_full_screen", "Boot apps in full screen" },
             { "audio_backend", "Audio Backend" },
             { "select_audio_backend", "Select your preferred audio backend." },
+            { "audio_volume", "Audio Volume" },
+            { "audio_volume_description", "Adjusts the volume percentage of all audio outputs." },
             { "enable_ngs_support", "Enable NGS support" },
             { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." },
             { "trace", "Trace" },

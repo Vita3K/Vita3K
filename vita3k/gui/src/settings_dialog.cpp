@@ -193,6 +193,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             // Load Emulator Config
             if (!config_child.child("emulator").empty()) {
                 const auto emulator_child = config_child.child("emulator");
+                config.audio_volume = emulator_child.attribute("audio-volume").as_float();
                 config.ngs_enable = emulator_child.attribute("enable-ngs").as_bool();
                 config.show_touchpad_cursor = emulator_child.attribute("show-touchpad-cursor").as_bool();
             }
@@ -248,6 +249,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.export_as_png = emuenv.cfg.export_as_png;
         config.fps_hack = emuenv.cfg.fps_hack;
         config.pstv_mode = emuenv.cfg.pstv_mode;
+        config.audio_volume = emuenv.cfg.audio_volume;
         config.ngs_enable = emuenv.cfg.ngs_enable;
         config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
         config.psn_signed_in = emuenv.cfg.psn_signed_in;
@@ -337,6 +339,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         // Emulator
         auto emulator_child = config_child.append_child("emulator");
+        emulator_child.append_attribute("audio-volume") = config.audio_volume;
         emulator_child.append_attribute("enable-ngs") = config.ngs_enable;
         emulator_child.append_attribute("show-touchpad-cursor") = config.show_touchpad_cursor;
 
@@ -364,6 +367,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.export_textures = config.export_textures;
         emuenv.cfg.export_as_png = config.export_as_png;
         emuenv.cfg.fps_hack = config.fps_hack;
+        emuenv.cfg.audio_volume = config.audio_volume;
         emuenv.cfg.ngs_enable = config.ngs_enable;
         emuenv.cfg.show_touchpad_cursor = config.show_touchpad_cursor;
         emuenv.cfg.psn_signed_in = config.psn_signed_in;
@@ -428,6 +432,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.export_textures = emuenv.cfg.export_textures;
         emuenv.cfg.current_config.export_as_png = emuenv.cfg.export_as_png;
         emuenv.cfg.current_config.fps_hack = emuenv.cfg.fps_hack;
+        emuenv.cfg.current_config.audio_volume = emuenv.cfg.audio_volume;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
         emuenv.cfg.current_config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
         emuenv.cfg.current_config.psn_signed_in = emuenv.cfg.psn_signed_in;
@@ -462,6 +467,8 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
         emuenv.audio.set_backend(emuenv.cfg.audio_backend);
     }
+
+    emuenv.audio.set_global_volume(emuenv.cfg.current_config.audio_volume);
 }
 
 void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
@@ -839,6 +846,12 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         if (!emuenv.io.app_path.empty())
             ImGui::EndDisabled();
+
+        int audio_volume_percent = static_cast<int>(config.audio_volume * 100);
+        ImGui::SliderInt(lang.emulator["audio_volume"].c_str(), &audio_volume_percent, 0, 100, "%d%%", ImGuiSliderFlags_AlwaysClamp);
+        config.audio_volume = static_cast<float>(audio_volume_percent) / 100.0f;
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", lang.emulator["audio_volume_description"].c_str());
 
         ImGui::Checkbox(lang.emulator["enable_ngs_support"].c_str(), &config.ngs_enable);
         if (ImGui::IsItemHovered())
