@@ -55,5 +55,33 @@ void dump_data(const fs::path &path, const void *data, const std::streamsize siz
         of.close();
     }
 }
+template <typename T>
+static bool read_data(const fs::path &path, std::vector<T> &data) {
+    data.clear();
+    fs::ifstream file(path, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        return false;
+    }
+
+    // Get the size of the file
+    std::streamsize size = file.tellg();
+    if (size <= 0) {
+        return false;
+    }
+
+    // Resize the vector to fit the file content
+    data.resize(size);
+
+    // Go back to the beginning of the file and read the content
+    file.seekg(0, std::ios::beg);
+    if (!file.read(reinterpret_cast<char *>(data.data()), size)) {
+        return false;
+    }
+    return true;
+}
+
+bool read_data(const fs::path &path, std::vector<uint8_t> &data) { return read_data<uint8_t>(path, data); }
+bool read_data(const fs::path &path, std::vector<int8_t> &data) { return read_data<int8_t>(path, data); }
+bool read_data(const fs::path &path, std::vector<char> &data) { return read_data<char>(path, data); }
 
 } // namespace fs_utils

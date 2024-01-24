@@ -251,6 +251,7 @@ std::vector<SceFVector2> get_touchpad_fingers_pos(SceTouchPortType &port) {
         return {};
 
     std::vector<SceFVector2> touchpad_fingers_pos;
+    touchpad_fingers_pos.reserve(finger_count);
     for (int i = 0; i < finger_count; i++) {
         touchpad_fingers_pos.push_back({ touchpad_buffer[i].x, touchpad_buffer[i].y });
     }

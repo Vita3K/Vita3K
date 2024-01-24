@@ -87,7 +87,7 @@ struct SceJpegOutputInfo {
     SceJpegPitch pitch[4];
 };
 
-SceJpegColorSpace convert_color_space_decoder_to_jpeg(DecoderColorSpace color_space) {
+static SceJpegColorSpace convert_color_space_decoder_to_jpeg(DecoderColorSpace color_space) {
     switch (color_space) {
     case COLORSPACE_GRAYSCALE:
         return SCE_JPEG_COLORSPACE_GRAYSCALE;
@@ -108,7 +108,7 @@ SceJpegColorSpace convert_color_space_decoder_to_jpeg(DecoderColorSpace color_sp
     }
 }
 
-DecoderColorSpace convert_color_space_jpeg_to_decoder(SceJpegColorSpace color_space) {
+static DecoderColorSpace convert_color_space_jpeg_to_decoder(SceJpegColorSpace color_space) {
     switch (color_space) {
     case SCE_JPEG_COLORSPACE_GRAYSCALE:
         return COLORSPACE_GRAYSCALE;
@@ -130,19 +130,19 @@ DecoderColorSpace convert_color_space_jpeg_to_decoder(SceJpegColorSpace color_sp
 }
 
 // Helper functions
-SceJpegDHTMode get_DHT_mode(int decodeMode) {
+static SceJpegDHTMode get_DHT_mode(int decodeMode) {
     return static_cast<SceJpegDHTMode>(decodeMode & 0b111);
 }
 
-SceJpegDownscaleMode get_downscale_mode(int decodeMode) {
+static SceJpegDownscaleMode get_downscale_mode(int decodeMode) {
     return static_cast<SceJpegDownscaleMode>(decodeMode & (0b111 << 4));
 }
 
-int get_downscale_ratio(SceJpegDownscaleMode downscaleMode) {
-    return downscaleMode ? downscaleMode / 8 : 1;
+static int get_downscale_ratio(SceJpegDownscaleMode downscaleMode) {
+    return downscaleMode != 0 ? downscaleMode / 8 : 1;
 }
 
-bool is_standard_decoding(SceJpegDHTMode dhtMode) {
+static bool is_standard_decoding(SceJpegDHTMode dhtMode) {
     return dhtMode == SCE_JPEG_MJPEG_WITH_DHT || dhtMode == SCE_JPEG_MJPEG_WITHOUT_DHT;
 }
 
@@ -156,7 +156,7 @@ static bool is_unsupported_image_size(uint32_t width, uint32_t height) {
 }
 
 // Common decoder configuration
-void configure_decoder(MJpegState *state, int decodeMode) {
+static void configure_decoder(MJpegState *state, int decodeMode) {
     SceJpegDHTMode dhtMode = get_DHT_mode(decodeMode);
     SceJpegDownscaleMode downscaleMode = get_downscale_mode(decodeMode);
 
