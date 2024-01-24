@@ -46,7 +46,7 @@ void float_to_half(const float *src, uint16_t *dest, const int total) {
 #error "Compiler is not supported"
 #endif
 
-void TARGET_F16C float_to_half_AVX_F16C(const float *src, uint16_t *dest, const int total) {
+static void TARGET_F16C float_to_half_AVX_F16C(const float *src, uint16_t *dest, const int total) {
     int left = total;
 
     while (left >= 8) {
@@ -70,7 +70,7 @@ void TARGET_F16C float_to_half_AVX_F16C(const float *src, uint16_t *dest, const 
 }
 
 #include <util/float_to_half.h>
-void float_to_half_basic(const float *src, uint16_t *dest, const int total) {
+static void float_to_half_basic(const float *src, uint16_t *dest, const int total) {
     for (int i = 0; i < total; i++) {
         dest[i] = util::encode_flt16(src[i]);
     }
@@ -80,9 +80,9 @@ void float_to_half_basic(const float *src, uint16_t *dest, const int total) {
 
 // use function variable as imitation of self-modifying code.
 // on first use we check processor features and set appropriate realization, later we immediately use appropriate realization.
-void float_to_half_init(const float *src, uint16_t *dest, const int total);
+static void float_to_half_init(const float *src, uint16_t *dest, const int total);
 
-void (*float_to_half_var)(const float *src, uint16_t *dest, const int total) = float_to_half_init;
+static void (*float_to_half_var)(const float *src, uint16_t *dest, const int total) = float_to_half_init;
 
 #include <util/instrset_detect.h>
 void float_to_half_init(const float *src, uint16_t *dest, const int total) {

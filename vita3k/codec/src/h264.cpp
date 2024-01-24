@@ -26,26 +26,26 @@ extern "C" {
 #include <cassert>
 
 void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest, const uint32_t width, const uint32_t height, bool is_p3) {
-    for (uint32_t i = 0; i < height; i++) {
+    for (size_t i = 0; i < height; i++) {
         memcpy(dest, &frame->data[0][frame->linesize[0] * i], width);
         dest += width;
     }
 
     if (is_p3) {
-        for (uint32_t i = 0; i < height / 2; i++) {
+        for (size_t i = 0; i < height / 2; i++) {
             memcpy(dest, &frame->data[1][frame->linesize[1] * i], width / 2);
             dest += width / 2;
         }
-        for (uint32_t i = 0; i < height / 2; i++) {
+        for (size_t i = 0; i < height / 2; i++) {
             memcpy(dest, &frame->data[2][frame->linesize[2] * i], width / 2);
             dest += width / 2;
         }
     } else {
         // p2 format, U and V are interleaved
-        for (uint32_t i = 0; i < height / 2; i++) {
+        for (size_t i = 0; i < height / 2; i++) {
             const uint8_t *src_u = &frame->data[1][frame->linesize[1] * i];
             const uint8_t *src_v = &frame->data[2][frame->linesize[2] * i];
-            for (uint32_t j = 0; j < width / 2; j++) {
+            for (size_t j = 0; j < width / 2; j++) {
                 dest[0] = src_u[j];
                 dest[1] = src_v[j];
                 dest += 2;

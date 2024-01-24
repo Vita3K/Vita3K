@@ -22,7 +22,6 @@
 #include <renderer/gl/state.h>
 #include <renderer/gl/types.h>
 
-#include <gxm/types.h>
 #include <util/log.h>
 
 #include <shader/spirv_recompiler.h>

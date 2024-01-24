@@ -22,7 +22,6 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <np/state.h>
-#include <util/lock_and_find.h>
 #include <util/log.h>
 
 #include <np/functions.h>
@@ -30,17 +29,22 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceNpManager);
 
-#define SCE_NP_ERROR_ALREADY_INITIALIZED 0x80550001
-#define SCE_NP_ERROR_NOT_INITIALIZED 0x80550002
-#define SCE_NP_ERROR_INVALID_ARGUMENT 0x80550003
-#define SCE_NP_ERROR_UNKNOWN_PLATFORM_TYPE 0x80550004
-#define SCE_NP_MANAGER_ERROR_ABORTED 0x80550507
-#define SCE_NP_MANAGER_ERROR_ALREADY_INITIALIZED 0x80550501
-#define SCE_NP_MANAGER_ERROR_OUT_OF_MEMORY 0x80550504
-#define SCE_NP_MANAGER_ERROR_NOT_INITIALIZED 0x80550502
-#define SCE_NP_MANAGER_ERROR_INVALID_ARGUMENT 0x80550503
-#define SCE_NP_MANAGER_ERROR_INVALID_STATE 0x80550506
-#define SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL 0x80550509
+enum SceNpErrorCode : uint32_t {
+    SCE_NP_ERROR_ALREADY_INITIALIZED = 0x80550001,
+    SCE_NP_ERROR_NOT_INITIALIZED = 0x80550002,
+    SCE_NP_ERROR_INVALID_ARGUMENT = 0x80550003,
+    SCE_NP_ERROR_UNKNOWN_PLATFORM_TYPE = 0x80550004
+};
+
+enum SceNpManagerErrorCode : uint32_t {
+    SCE_NP_MANAGER_ERROR_ABORTED = 0x80550507,
+    SCE_NP_MANAGER_ERROR_ALREADY_INITIALIZED = 0x80550501,
+    SCE_NP_MANAGER_ERROR_OUT_OF_MEMORY = 0x80550504,
+    SCE_NP_MANAGER_ERROR_NOT_INITIALIZED = 0x80550502,
+    SCE_NP_MANAGER_ERROR_INVALID_ARGUMENT = 0x80550503,
+    SCE_NP_MANAGER_ERROR_INVALID_STATE = 0x80550506,
+    SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL = 0x80550509
+};
 
 EXPORT(int, sceNpAuthAbortOAuthRequest) {
     TRACY_FUNC(sceNpAuthAbortOAuthRequest);
@@ -65,7 +69,7 @@ EXPORT(int, sceNpAuthGetAuthorizationCode) {
 EXPORT(int, sceNpCheckCallback) {
     TRACY_FUNC(sceNpCheckCallback);
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
     const SceNpServiceState state = emuenv.cfg.current_config.psn_signed_in ? SCE_NP_SERVICE_STATE_SIGNED_IN : SCE_NP_SERVICE_STATE_SIGNED_OUT;
     for (auto &[_, np_callback] : emuenv.np.cbs) {
         thread->run_callback(np_callback.pc, { static_cast<uint32_t>(state), 0, np_callback.data });
@@ -139,10 +143,11 @@ EXPORT(int, sceNpManagerGetNpId, np::SceNpId *id) {
 EXPORT(int, sceNpRegisterServiceStateCallback, Ptr<void> callback, Ptr<void> data) {
     TRACY_FUNC(sceNpRegisterServiceStateCallback, callback, data);
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
-    uint32_t cid = emuenv.kernel.get_next_uid();
-    SceNpServiceStateCallback sceNpServiceStateCallback;
-    sceNpServiceStateCallback.pc = callback.address();
-    sceNpServiceStateCallback.data = data.address();
+    SceUID cid = emuenv.kernel.get_next_uid();
+    SceNpServiceStateCallback sceNpServiceStateCallback{
+        .pc = callback.address(),
+        .data = data.address()
+    };
     emuenv.np.cbs.emplace(cid, sceNpServiceStateCallback);
     emuenv.np.state_cb_id = cid;
     return 0;

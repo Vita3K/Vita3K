@@ -66,15 +66,7 @@ namespace vfs {
 
 bool read_file(const VitaIoDevice device, FileBuffer &buf, const fs::path &pref_path, const fs::path &vfs_file_path) {
     const auto host_file_path = device::construct_emulated_path(device, vfs_file_path, pref_path).generic_path();
-
-    fs::ifstream f{ host_file_path, fs::ifstream::binary };
-    if (!f)
-        return false;
-
-    f.unsetf(fs::ifstream::skipws);
-    buf.reserve(fs::file_size(host_file_path));
-    buf.insert(buf.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
-    return true;
+    return fs_utils::read_data(host_file_path, buf);
 }
 
 bool read_app_file(FileBuffer &buf, const fs::path &pref_path, const std::string &app_path, const fs::path &vfs_file_path) {

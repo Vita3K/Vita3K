@@ -38,7 +38,7 @@ struct NpTrophyUnlockCallbackData {
     std::string trophy_id;
     std::string trophy_name;
     std::string trophy_detail;
-    np::trophy::SceNpTrophyGrade trophy_kind;
+    np::trophy::SceNpTrophyGrade trophy_kind{};
     std::vector<std::uint8_t> icon_buf;
 };
 
@@ -62,7 +62,7 @@ enum SceNpServiceState : uint32_t {
 struct NpState {
     bool inited = false;
     np_callbacks cbs;
-    int state_cb_id;
+    SceUID state_cb_id;
 
     NpTrophyState trophy_state;
     np::CommunicationID comm_id;

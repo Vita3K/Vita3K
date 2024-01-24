@@ -42,7 +42,7 @@
  * @param file_extensions_list File extensions list
  * @return std::string A string containing the properly formatted file extension list
  */
-std::string format_file_filter_extension_list(const std::vector<std::string> &file_extensions_list) {
+static std::string format_file_filter_extension_list(const std::vector<std::string> &file_extensions_list) {
     // Formatted string containing the properly formatted file extension list
     //
     // In the case of nativefiledialog, the expected file extension is a single
@@ -55,9 +55,9 @@ std::string format_file_filter_extension_list(const std::vector<std::string> &fi
     for (size_t index = 0; index < file_extensions_list.size(); index++) {
         // Don't add comma before the first file extension
         if (index == 0) {
-            formatted_string += file_extensions_list.at(index);
+            formatted_string += file_extensions_list[index];
         } else {
-            formatted_string += "," + file_extensions_list.at(index);
+            formatted_string += "," + file_extensions_list[index];
         }
     }
 
@@ -108,12 +108,12 @@ Result open_file(std::filesystem::path &resulting_path, const std::vector<FileFi
     // For every file filter in file_filters vector
     for (const FileFilter &file_filter : file_filters) {
         // Format file extension list and store the result
-        file_extensions_converted.push_back(format_file_filter_extension_list(file_filter.file_extensions));
+        file_extensions_converted.emplace_back(format_file_filter_extension_list(file_filter.file_extensions));
 
         // Convert filter and append to the list
         // File filter names can be used as they are, but the pointers of the
         // file extension lists have to point to the formatted strings
-        file_filters_converted.push_back({ file_filter.display_name.c_str(), file_extensions_converted.at(file_extensions_converted.size() - 1).c_str() });
+        file_filters_converted.push_back({ file_filter.display_name.c_str(), file_extensions_converted[file_extensions_converted.size() - 1].c_str() });
     }
 
     /* --- Then nativefiledialog can be called --- */

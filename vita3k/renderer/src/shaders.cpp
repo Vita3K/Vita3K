@@ -143,7 +143,7 @@ static Sha256Hash get_shader_hash(const SceGxmProgram &program) {
 }
 
 template <typename R>
-R load_shader_generic(const fs::path &shader_path) {
+static R load_shader_generic(const fs::path &shader_path) {
     std::size_t read_size = 0;
     R source;
 
@@ -157,7 +157,7 @@ R load_shader_generic(const fs::path &shader_path) {
     return source;
 }
 
-shader::GeneratedShader load_shader_generic(shader::Target target, const SceGxmProgram &program, const FeatureState &features, const shader::Hints &hints, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shaderlog_path, const char *shader_type_str, const std::string &shader_version, bool shader_cache) {
+static shader::GeneratedShader load_shader_generic(shader::Target target, const SceGxmProgram &program, const FeatureState &features, const shader::Hints &hints, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shaderlog_path, const char *shader_type_str, const std::string &shader_version, bool shader_cache) {
     // TODO: no need to recompute the hash here
     const std::string hash_text = hex_string(get_shader_hash(program));
     // Set Shader Hash with Version

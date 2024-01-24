@@ -43,7 +43,6 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 #include <util/bytes.h>
-#include <util/lock_and_find.h>
 #include <util/log.h>
 
 #include <util/tracy.h>
@@ -939,7 +938,7 @@ static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemStat
     const std::uint32_t size, const SceUID thread_id) {
     const std::lock_guard<std::mutex> guard(global_lock);
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
     const Address final_size_addr = stack_alloc(*thread->cpu, 4);
 
     Ptr<void> result(thread->run_callback(callback.address(), { userdata.address(), size, final_size_addr }));
@@ -1238,7 +1237,7 @@ static constexpr std::uint32_t DEFAULT_RING_SIZE = 4096;
 
 static VertexCacheHash hash_data(const void *data, size_t size) {
     auto hash = XXH3_64bits(data, size);
-    return VertexCacheHash(hash);
+    return static_cast<VertexCacheHash>(hash);
 }
 
 static bool operator<(const SceGxmRegisteredProgram &a, const SceGxmRegisteredProgram &b) {
@@ -4224,7 +4223,7 @@ EXPORT(int, sceGxmSetYuvProfile) {
     return UNIMPLEMENTED();
 }
 
-Address alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShaderPatcherParams &shaderPatcherParams, unsigned int size) {
+static Address alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShaderPatcherParams &shaderPatcherParams, unsigned int size) {
     if (!shaderPatcherParams.hostAllocCallback) {
         LOG_ERROR("Empty hostAllocCallback");
     }
@@ -4234,7 +4233,7 @@ Address alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShad
 }
 
 template <typename T>
-Ptr<T> alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShaderPatcherParams &shaderPatcherParams) {
+static Ptr<T> alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShaderPatcherParams &shaderPatcherParams) {
     const Address address = alloc_callbacked(emuenv, thread_id, shaderPatcherParams, sizeof(T));
     const Ptr<T> ptr(address);
     if (!ptr) {
@@ -4246,11 +4245,11 @@ Ptr<T> alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShade
 }
 
 template <typename T>
-Ptr<T> alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher) {
+static Ptr<T> alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher) {
     return alloc_callbacked<T>(emuenv, thread_id, shaderPatcher->params);
 }
 
-void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher, Address data) {
+static void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher, Address data) {
     if (!shaderPatcher->params.hostFreeCallback) {
         LOG_ERROR("Empty hostFreeCallback");
     }
@@ -4259,7 +4258,7 @@ void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher 
 }
 
 template <typename T>
-void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher, Ptr<T> data) {
+static void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher, Ptr<T> data) {
     free_callbacked(emuenv, thread_id, shaderPatcher, data.address());
 }
 

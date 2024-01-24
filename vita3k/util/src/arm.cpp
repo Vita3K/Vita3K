@@ -47,7 +47,7 @@ uint32_t encode_arm_inst(uint8_t type, uint32_t immed, uint16_t reg) {
     }
 }
 
-inline uint32_t encode_thumb_blx(uint32_t immed) {
+inline static uint32_t encode_thumb_blx(uint32_t immed) {
     const uint32_t S = (immed & 0x80000000) >> 31;
     const uint32_t I1 = (immed & 0x800000) >> 22;
     const uint32_t I2 = (immed & 0x400000) >> 21;

@@ -129,7 +129,7 @@ void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt) {
 
 void set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform, const int block_number, const std::uint16_t block_size, const Ptr<const void> buffer) {
     // Calculate the number of bytes
-    std::uint32_t bytes_to_copy_and_pad = (((block_size + 15) / 16)) * 16;
+    std::uint32_t bytes_to_copy_and_pad = ((block_size + 15) / 16) * 16;
 
     renderer::add_state_set_command(ctx, renderer::GXMState::UniformBuffer, buffer, is_vertex_uniform, block_number, bytes_to_copy_and_pad);
 }

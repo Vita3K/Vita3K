@@ -24,9 +24,7 @@
 template <class T>
 class Ptr {
 public:
-    Ptr()
-        : addr(0) {
-    }
+    Ptr() = default;
 
     explicit Ptr(Address address)
         : addr(address) {
@@ -99,7 +97,7 @@ public:
     }
 
 private:
-    Address addr;
+    Address addr{};
 };
 
 static_assert(sizeof(Ptr<const void>) == 4, "Size of Ptr isn't 4 bytes.");

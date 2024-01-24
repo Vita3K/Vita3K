@@ -32,17 +32,17 @@ struct VKState;
 class ScreenRenderer {
 public:
     VKState &state;
-    SDL_Window *window;
+    SDL_Window *window{};
 
     vk::SurfaceKHR surface;
     vk::SwapchainKHR swapchain;
 
     vk::SurfaceCapabilitiesKHR surface_capabilities;
     vk::SurfaceFormatKHR surface_format;
-    vk::PresentModeKHR present_mode;
+    vk::PresentModeKHR present_mode{};
 
     vk::Extent2D extent;
-    uint32_t swapchain_size;
+    uint32_t swapchain_size{};
     std::vector<vk::Image> swapchain_images;
     std::vector<vk::ImageView> swapchain_views;
     std::vector<vk::Framebuffer> swapchain_framebuffers;

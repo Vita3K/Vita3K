@@ -1448,10 +1448,7 @@ static spv::Id create_constant_vector_or_scalar(spv::Builder &b, spv::Id constan
     if (comp_count == 1) {
         return constant;
     }
-    std::vector<spv::Id> oprs;
-    for (int i = 0; i < comp_count; ++i) {
-        oprs.push_back(constant);
-    }
+    std::vector<spv::Id> oprs(comp_count, constant);
     return b.createCompositeConstruct(b.makeVectorType(b.getTypeId(constant), comp_count), oprs);
 }
 

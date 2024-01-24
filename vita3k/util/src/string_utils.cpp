@@ -141,9 +141,9 @@ std::string tolower(const std::string &s) {
 int stoi_def(const std::string &str, int default_value, const char *name) {
     try {
         return std::stoi(str);
-    } catch (std::invalid_argument &e) {
+    } catch (std::invalid_argument &_) {
         LOG_ERROR("Invalid {}: \"{}\"", name, str);
-    } catch (std::out_of_range &e) {
+    } catch (std::out_of_range &_) {
         LOG_ERROR("Out of range {}: \"{}\"", name, str);
     }
     return default_value;

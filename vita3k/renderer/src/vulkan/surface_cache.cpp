@@ -771,7 +771,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         // get the first depth surface with an address lower or equal to address
         auto it = depth_address_lookup.upper_bound(address);
         if (it != depth_address_lookup.begin()) {
-            it--;
+            --it;
 
             // the texture must be contained entirely in the depth surface
             if (address + total_bytes <= it->first + it->second->total_bytes) {
@@ -784,7 +784,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         // get the first stencil surface with an address lower or equal to address
         auto it = stencil_address_lookup.upper_bound(address);
         if (it != stencil_address_lookup.begin()) {
-            it--;
+            --it;
 
             // note: we don't support sampling the stencil from a D24S8 depth-stencil
             // so we can assume any stencil uses only 1 byte per sample
@@ -1202,14 +1202,14 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
 }
 
 template <typename T>
-void swizzle_text_T_2(T *pixels, uint32_t nb_pixel) {
+static void swizzle_text_T_2(T *pixels, uint32_t nb_pixel) {
     for (uint32_t i = 0; i < nb_pixel; i++) {
         std::swap(pixels[2 * i], pixels[2 * i + 1]);
     }
 }
 
 template <typename T, size_t type>
-void swizzle_text_T_4(T *pixels, uint32_t nb_pixel) {
+static void swizzle_text_T_4(T *pixels, uint32_t nb_pixel) {
     for (uint32_t i = 0; i < nb_pixel; i++) {
         if constexpr (type == 0) {
             // BGRA
@@ -1233,7 +1233,7 @@ void swizzle_text_T_4(T *pixels, uint32_t nb_pixel) {
 }
 
 template <typename T>
-void swizzle_text_T(T *pixels, uint32_t nb_pixel, ColorSurfaceCacheInfo *surface) {
+static void swizzle_text_T(T *pixels, uint32_t nb_pixel, ColorSurfaceCacheInfo *surface) {
     // there can only be 2 or 4 component textures here
     if (vk::componentCount(surface->texture.format) == 2) {
         swizzle_text_T_2<T>(pixels, nb_pixel);

@@ -20,7 +20,6 @@
 #include <dialog/state.h>
 #include <gui/functions.h>
 
-#include <imgui.h>
 #include <packages/sfo.h>
 
 namespace gui {

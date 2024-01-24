@@ -22,7 +22,7 @@
 constexpr unsigned char THUMB_BREAKPOINT[2] = { 0x00, 0xBE };
 constexpr unsigned char ARM_BREAKPOINT[4] = { 0x70, 0x00, 0x20, 0xE1 };
 
-inline bool is_thumb16(uint32_t inst) {
+inline static bool is_thumb16(uint32_t inst) {
     return (inst & 0xF8000000) < 0xE8000000;
 }
 

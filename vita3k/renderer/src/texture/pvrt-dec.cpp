@@ -785,7 +785,7 @@ static int pvrtcDecompress(uint8_t *pCompressedData, Pixel32 *pDecompressedData,
     } // for each row of words
 
     // Return the data size
-    return ui32Width * ui32Height / static_cast<uint32_t>((ui32WordWidth / 2));
+    return ui32Width * ui32Height / static_cast<uint32_t>(ui32WordWidth / 2);
 }
 
 uint32_t PVRTDecompressPVRTC(const void *pCompressedData, uint32_t Do2bitMode, uint32_t XDim, uint32_t YDim, uint32_t DoPvrtType, uint8_t *pResultImage) {

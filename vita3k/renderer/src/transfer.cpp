@@ -211,7 +211,6 @@ COMMAND(handle_transfer_downscale) {
     // only rgb formats are supported by the PS Vita for downscaling
     vulkan::CallbackRequestFunction downscale_operation = [&mem, src, dst]() {
         AVPixelFormat pixel_fmt = AV_PIX_FMT_NONE;
-        bool use_ffmpeg = true;
         switch (src->format) {
         case SCE_GXM_TRANSFER_FORMAT_U5U6U5_BGR:
             pixel_fmt = AV_PIX_FMT_RGB565LE;
@@ -244,12 +243,12 @@ COMMAND(handle_transfer_downscale) {
             // slow and not entirely accurate (nearest instead of average) fallback
 
             auto perform_downscale = [&]<typename T>(T type) {
-                for (int y = 0; y < dst->height; y++) {
+                for (size_t y = 0; y < dst->height; y++) {
                     // stride is in bytes
-                    T *src_line = reinterpret_cast<T *>(src_ptr + src->stride * y * 2);
-                    T *dst_line = reinterpret_cast<T *>(dst_ptr + dst->stride);
-                    for (int x = 0; x < dst->width; x++) {
-                        dst_ptr[x] = src_ptr[2 * x];
+                    T *src_line = reinterpret_cast<T *>(src_ptr + (size_t)src->stride * y * 2);
+                    T *dst_line = reinterpret_cast<T *>(dst_ptr + (size_t)dst->stride * y);
+                    for (size_t x = 0; x < dst->width; x++) {
+                        dst_line[x] = src_line[2 * x];
                     }
                 }
             };
