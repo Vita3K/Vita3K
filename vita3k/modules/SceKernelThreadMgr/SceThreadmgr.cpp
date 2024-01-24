@@ -32,7 +32,7 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceThreadmgr);
 
-inline uint64_t get_current_time() {
+inline static uint64_t get_current_time() {
     return std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::high_resolution_clock::now().time_since_epoch())
         .count();
@@ -434,7 +434,7 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
     TRACY_FUNC(_sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
     STUBBED("Stub");
 
-    const ThreadStatePtr thread = lock_and_find(threadId, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(threadId);
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
@@ -490,7 +490,7 @@ EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadIn
     TRACY_FUNC(_sceKernelGetThreadInfo, threadId, pInfo);
     STUBBED("STUB");
 
-    const ThreadStatePtr thread = lock_and_find(threadId ? threadId : thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(threadId ? threadId : thread_id);
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
@@ -655,7 +655,7 @@ EXPORT(int, _sceKernelSetEventWithNotifyCallback) {
 
 EXPORT(int, _sceKernelSetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
     TRACY_FUNC(_sceKernelSetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
-    const ThreadStatePtr thread = lock_and_find(threadId, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(threadId);
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
@@ -709,7 +709,7 @@ EXPORT(int, _sceKernelSignalLwCondTo) {
 
 EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
     TRACY_FUNC(_sceKernelStartThread, thid, arglen, argp);
-    auto thread = lock_and_find(thid, emuenv.kernel.threads, emuenv.kernel.mutex);
+    auto thread = emuenv.kernel.get_thread(thid);
 
     if (!thread) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
@@ -821,7 +821,7 @@ EXPORT(SceInt32, _sceKernelWaitSemaCB, SceUID semaId, SceInt32 needCount, SceUIn
 EXPORT(int, _sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout) {
     TRACY_FUNC(_sceKernelWaitSignal, unknown, delay, timeout);
     STUBBED("sceKernelWaitSignal");
-    const auto thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const auto thread = emuenv.kernel.get_thread(thread_id);
     thread->update_status(ThreadStatus::wait);
     thread->signal.wait();
     thread->update_status(ThreadStatus::run);
@@ -834,7 +834,7 @@ EXPORT(int, _sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, uint32_t t
     return CALL_EXPORT(_sceKernelWaitSignal, unknown, delay, timeout);
 }
 
-int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
+static int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
     std::unique_lock<std::mutex> waiter_lock(waiter->mutex);
     {
         const std::unique_lock<std::mutex> thread_lock(target->mutex);
@@ -854,8 +854,8 @@ int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
 
 EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     TRACY_FUNC(_sceKernelWaitThreadEnd, thid, stat, timeout);
-    auto waiter = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
-    auto target = lock_and_find(thid, emuenv.kernel.threads, emuenv.kernel.mutex);
+    auto waiter = emuenv.kernel.get_thread(thread_id);
+    auto target = emuenv.kernel.get_thread(thid);
     if (!target) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
@@ -864,8 +864,8 @@ EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
 
 EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout) {
     TRACY_FUNC(_sceKernelWaitThreadEndCB, thid, stat, timeout);
-    auto waiter = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
-    auto target = lock_and_find(thid, emuenv.kernel.threads, emuenv.kernel.mutex);
+    auto waiter = emuenv.kernel.get_thread(thread_id);
+    auto target = emuenv.kernel.get_thread(thid);
     if (!target) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
@@ -1048,7 +1048,7 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
     return thread->id;
 }
 
-int delay_thread(SceUInt delay_us) {
+static int delay_thread(SceUInt delay_us) {
     if (delay_us == 0)
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
 
@@ -1057,7 +1057,7 @@ int delay_thread(SceUInt delay_us) {
     return SCE_KERNEL_OK;
 }
 
-int delay_thread_cb(EmuEnvState &emuenv, SceUID thread_id, SceUInt delay_us) {
+static int delay_thread_cb(EmuEnvState &emuenv, SceUID thread_id, SceUInt delay_us) {
     auto start = std::chrono::high_resolution_clock::now(); // Meseaure the time taken to process callbacks
     process_callbacks(emuenv.kernel, thread_id);
     auto end = std::chrono::high_resolution_clock::now();
@@ -1145,7 +1145,7 @@ EXPORT(int, sceKernelDeleteSimpleEvent, SceUID event_id) {
 
 EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     TRACY_FUNC(sceKernelDeleteThread, thid);
-    const ThreadStatePtr thread = lock_and_find(thid, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thid);
     if (!thread || thread->status != ThreadStatus::dormant) {
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     }
@@ -1163,7 +1163,7 @@ EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
 
 EXPORT(int, sceKernelExitDeleteThread, int status) {
     TRACY_FUNC(sceKernelExitDeleteThread, status);
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
     thread->exit_delete();
 
     return status;
@@ -1320,7 +1320,7 @@ EXPORT(int, sceKernelResumeThreadForVM, SceUID threadId) {
     TRACY_FUNC(sceKernelResumeThreadForVM, threadId);
     STUBBED("STUB");
 
-    const ThreadStatePtr thread = lock_and_find(threadId, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(threadId);
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
@@ -1332,7 +1332,7 @@ EXPORT(int, sceKernelResumeThreadForVM, SceUID threadId) {
 EXPORT(int, sceKernelSendSignal, SceUID target_thread_id) {
     TRACY_FUNC(sceKernelSendSignal, target_thread_id);
     STUBBED("sceKernelSendSignal");
-    const auto thread = lock_and_find(target_thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const auto thread = emuenv.kernel.get_thread(target_thread_id);
     if (!thread->signal.send()) {
         return SCE_KERNEL_ERROR_ALREADY_SENT;
     }
@@ -1398,7 +1398,7 @@ EXPORT(int, sceKernelSuspendThreadForVM, SceUID threadId) {
     TRACY_FUNC(sceKernelSuspendThreadForVM, threadId);
     STUBBED("STUB");
 
-    const ThreadStatePtr thread = lock_and_find(threadId, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(threadId);
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 

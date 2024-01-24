@@ -308,7 +308,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
         for (std::uint32_t i = 0; i < program.dependent_sampler_count; i++) {
             const std::uint32_t rsc_index = dependent_samplers[i].resource_index_layout_offset / 4;
 
-            const auto sampler = std::find_if(program_input.samplers.begin(), program_input.samplers.end(), [=](auto x) { return x.index == rsc_index; });
+            const auto sampler = std::find_if(program_input.samplers.begin(), program_input.samplers.end(), [=](const auto &x) { return x.index == rsc_index; });
 
             Input item;
             item.type = DataType::UINT32;

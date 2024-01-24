@@ -152,7 +152,7 @@ EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
     // for Maidump main module should be the last module
     int i = 0;
     SceUID main_module_id = 0;
-    for (auto [module_id, module] : emuenv.kernel.loaded_modules) {
+    for (auto &[module_id, module] : emuenv.kernel.loaded_modules) {
         if (module->info.path == "app0:" + emuenv.self_path) {
             main_module_id = module_id;
         } else {

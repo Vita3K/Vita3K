@@ -276,7 +276,7 @@ void browse_save_data_dialog(GuiState &gui, EmuEnvState &emuenv, const uint32_t 
 
         switch (button) {
         case SCE_CTRL_UP:
-            if ((emuenv.common_dialog.savedata.draw_info_window || (save_data_slot_list.front() == current_selected_save_data_slot)))
+            if (emuenv.common_dialog.savedata.draw_info_window || (save_data_slot_list.front() == current_selected_save_data_slot))
                 save_data_list_type_selected = CANCEL;
             else
                 current_selected_save_data_slot = prev_save_data_slot;
