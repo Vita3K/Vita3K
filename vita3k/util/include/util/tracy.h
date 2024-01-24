@@ -115,7 +115,7 @@ inline std::string to_debug_str(const MemState &mem) {
     }
 
 #define TRACY_MODULE_NAME_N(var_name, module_name) \
-    const tracy_module_utils::tracy_module_helper var_name(#module_name);
+    static const tracy_module_utils::tracy_module_helper var_name(#module_name);
 
 #define TRACY_MODULE_NAME(module_name) TRACY_MODULE_NAME_N(tracy_module_id, module_name)
 

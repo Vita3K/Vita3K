@@ -74,11 +74,11 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     static std::mutex install_mutex;
     static const auto progress_callback = [&](const ArchiveContents &progress_value) {
         if (progress_value.count.has_value())
-            count = progress_value.count.value();
+            count = *progress_value.count;
         if (progress_value.current.has_value())
-            current = progress_value.current.value();
+            current = *progress_value.current;
         if (progress_value.progress.has_value())
-            progress = progress_value.progress.value();
+            progress = *progress_value.progress;
     };
     std::lock_guard<std::mutex> lock(install_mutex);
 

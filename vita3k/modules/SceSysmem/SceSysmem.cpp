@@ -17,8 +17,6 @@
 
 #include "SceSysmem.h"
 
-#include <modules/module_parent.h>
-
 #include <kernel/state.h>
 #include <kernel/types.h>
 

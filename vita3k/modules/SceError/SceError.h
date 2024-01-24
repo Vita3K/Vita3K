@@ -20,4 +20,4 @@
 #include <module/module.h>
 #include <util/tracy.h>
 
-DECL_EXPORT(SceInt32, _sceErrorGetExternalString, char *result, int err);
+DECL_EXPORT(SceInt32, _sceErrorGetExternalString, char *result, uint32_t err);

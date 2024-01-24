@@ -51,7 +51,7 @@ static constexpr short total_key_entries = 0 CONFIG_INDIVIDUAL(CALC_KEYBOARD_MEM
 #undef CALC_KEYBOARD_MEMBERS
 
 template <typename T>
-int int_or_zero(T value) {
+static int int_or_zero(T value) {
     static_assert(std::is_same_v<T, int>);
     if constexpr (std::is_same_v<T, int>)
         return value;
@@ -105,7 +105,6 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
 }
 
 void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
 

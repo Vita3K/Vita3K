@@ -71,8 +71,6 @@
 
 #include <SDL_vulkan.h>
 
-#include <fstream>
-
 // Visual Studio warnings
 #ifdef _MSC_VER
 #pragma warning(disable : 4127) // condition expression is constant
@@ -187,7 +185,7 @@ static uint32_t __glsl_shader_frag_spv[] = {
 // FUNCTIONS
 //-----------------------------------------------------------------------------
 
-inline renderer::vulkan::VKState &get_renderer(ImGui_VulkanState &state) {
+inline static renderer::vulkan::VKState &get_renderer(ImGui_VulkanState &state) {
     return dynamic_cast<renderer::vulkan::VKState &>(*state.renderer);
 }
 

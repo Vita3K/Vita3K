@@ -39,7 +39,6 @@ EXPORT(int, sceMotionGetBasicOrientation, SceFVector3 *basicOrientation) {
     }
 
     std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
-    SceFVector3 accelerometer = get_acceleration(emuenv.motion);
 
     *basicOrientation = get_basic_orientation(emuenv.motion);
 

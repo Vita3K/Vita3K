@@ -157,7 +157,7 @@ void CubebAudioAdapter::set_volume(AudioOutPort &out_port, float volume) {
 }
 
 void CubebAudioAdapter::switch_state(const bool pause) {
-    for (auto [_, out_port] : state.out_ports) {
+    for (auto &[_, out_port] : state.out_ports) {
         CubebAudioOutPort &port = static_cast<CubebAudioOutPort &>(*out_port);
         if (pause)
             cubeb_stream_stop(port.out_stream);

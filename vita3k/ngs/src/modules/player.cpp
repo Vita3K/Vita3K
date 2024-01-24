@@ -96,7 +96,7 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
     // If decoder hasn't been initialized
     if (!decoder) {
         // Create decoder specifying the desired destination sample rate
-        decoder = std::make_unique<PCMDecoderState>(sample_rate);
+        decoder = std::make_unique<PCMDecoderState>(static_cast<float>(sample_rate));
     }
 
     // If the amount of samples already processed and pending to be passed is smaller than the amount of samples of the audio buffer

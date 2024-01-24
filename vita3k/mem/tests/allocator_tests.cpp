@@ -25,7 +25,7 @@ TEST(bitmap_allocator, one_bit_allocation) {
     BitmapAllocator allocator(KiB(5));
 
     for (int i = 0; i < KiB(5); ++i) {
-        int size = 1;
+        uint32_t size = 1;
         int inoffset = 31 - i & 31;
         int bit = (allocator.words[i >> 5] & (1 << inoffset)) >> inoffset;
         ASSERT_EQ(bit, 1);
@@ -41,7 +41,7 @@ TEST(bitmap_allocator, one_bit_free_slot) {
 
     ASSERT_EQ(allocator.free_slot_count(0, KiB(5)), KiB(5));
     for (int i = 0; i < KiB(5); ++i) {
-        int size = 1;
+        uint32_t size = 1;
         ASSERT_EQ(allocator.free_slot_count(i, i + 1), 1);
         int ret = allocator.allocate_from(i, size, false);
         ASSERT_EQ(ret, i);
@@ -55,7 +55,7 @@ TEST(bitmap_allocator, free_slot_count_aligned) {
     BitmapAllocator allocator(KiB(5));
 
     for (int i = 0; i < KiB(5); i += 2) {
-        int size = 2;
+        uint32_t size = 2;
         ASSERT_EQ(allocator.free_slot_count(i, i + 2), 2);
         int ret = allocator.allocate_from(i, size, false);
         ASSERT_EQ(ret, i);
@@ -68,7 +68,7 @@ TEST(bitmap_allocator, free_slot_count_unaligned) {
     BitmapAllocator allocator(KiB(5));
 
     for (int i = 0; KiB(5) - i >= 3; i += 3) {
-        int size = 3;
+        uint32_t size = 3;
         ASSERT_EQ(allocator.free_slot_count(i, i + 3), 3);
         int ret = allocator.allocate_from(i, size, false);
         ASSERT_EQ(ret, i);
@@ -82,7 +82,7 @@ TEST(bitmap_allocator, allocate_at) {
 
     ASSERT_EQ(allocator.free_slot_count(0, KiB(5)), KiB(5));
     for (int i = 0; KiB(5) - i >= 4; i += 4) {
-        int size = 4;
+        uint32_t size = 4;
         ASSERT_EQ(allocator.free_slot_count(i, i + 4), 4);
         allocator.allocate_at(i, 4);
         ASSERT_EQ(allocator.free_slot_count(i, i + 4), 0);
@@ -96,7 +96,7 @@ TEST(bitmap_allocator, allocate_at) {
 TEST(bitmap_allocator, alloc_32) {
     BitmapAllocator allocator(KiB(5));
     for (int i = 0; i < KiB(5); i += 32) {
-        int size = 32;
+        uint32_t size = 32;
         ASSERT_EQ(allocator.free_slot_count(i, i + 32), 32);
         int ret = allocator.allocate_from(i, size, false);
         ASSERT_EQ(ret, i);
@@ -114,7 +114,7 @@ TEST(bitmap_allocator, battle_test) {
     BitmapAllocator allocator(MEM_SIZE);
     struct Page {
         int n;
-        int size;
+        uint32_t size;
     };
 
     std::list<Page> pages;
@@ -130,7 +130,7 @@ TEST(bitmap_allocator, battle_test) {
     };
 
     for (int i = 0; i < TEST_EPOCH; ++i) {
-        int size = rand() % MAX_MEM_CHUNK_SIZE + 1;
+        uint32_t size = rand() % MAX_MEM_CHUNK_SIZE + 1;
         while (allocator.free_slot_count(0, MEM_SIZE) < size) {
             free_any_page();
         }
@@ -158,7 +158,7 @@ TEST(bitmap_allocator, no_best_fit_only_one_fit) {
     // Bitmap:              1000 0101 0001 0001 0101 0001 00[11 1]001
     alloc.words[0] = 0b10000101000100010101000100111001;
 
-    int to_alloc = 3;
+    uint32_t to_alloc = 3;
     ASSERT_EQ(alloc.allocate_from(0, to_alloc), 26);
     ASSERT_EQ(to_alloc, 3);
 
@@ -172,7 +172,7 @@ TEST(bitmap_allocator, no_best_fit_multiple_fit) {
     // Bitmap 1:            1000 0[111] 1001 0001 0101 0001 0011 1001
     alloc.words[0] = 0b10000111100100010101000100111001;
 
-    int to_alloc = 3;
+    uint32_t to_alloc = 3;
     ASSERT_EQ(alloc.allocate_from(0, to_alloc), 5);
     ASSERT_EQ(to_alloc, 3);
 
@@ -186,7 +186,7 @@ TEST(bitmap_allocator, no_best_fit_alloc_across) {
     alloc.words[0] = 0b111;
     alloc.words[1] = 0b11100000000000000000000000000000;
 
-    int to_alloc = 5;
+    uint32_t to_alloc = 5;
     ASSERT_EQ(alloc.allocate_from(0, to_alloc), 29);
     ASSERT_EQ(to_alloc, 5);
 
@@ -200,7 +200,7 @@ TEST(bitmap_allocator, best_fit_multiple_fit) {
     // Bitmap 1:            1000 0111 1001 0001 0101 0001 00[11 1]001
     alloc.words[0] = 0b10000111100100010101000100111001;
 
-    int to_alloc = 3;
+    uint32_t to_alloc = 3;
     ASSERT_EQ(alloc.allocate_from(0, to_alloc, true), 26);
     ASSERT_EQ(to_alloc, 3);
 

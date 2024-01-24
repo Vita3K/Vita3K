@@ -25,7 +25,7 @@
 
 namespace gxp {
 
-const char *log_parameter_semantic(const SceGxmProgramParameter &parameter) {
+const static char *log_parameter_semantic(const SceGxmProgramParameter &parameter) {
     // clang-format off
     switch (parameter.semantic) {
     case SCE_GXM_PARAMETER_SEMANTIC_NONE: return "NONE";

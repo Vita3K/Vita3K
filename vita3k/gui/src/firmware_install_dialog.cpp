@@ -33,8 +33,6 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     static bool delete_pup_file;
     static std::filesystem::path pup_path = "";
 
-    host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
-
     static std::mutex install_mutex;
     static bool draw_file_dialog = true;
     static bool finished_installing = false;
@@ -56,7 +54,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2), emuenv.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE);
     if (draw_file_dialog) {
-        result = host::dialog::filesystem::open_file(pup_path, { { "PlayStation Vita Firmware Package", { "PUP" } } });
+        auto result = host::dialog::filesystem::open_file(pup_path, { { "PlayStation Vita Firmware Package", { "PUP" } } });
         draw_file_dialog = false;
         finished_installing = false;
 

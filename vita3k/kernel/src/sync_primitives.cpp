@@ -29,27 +29,27 @@ static constexpr bool LOG_SYNC_PRIMITIVES = false;
 // * Helpers *
 // ***********
 
-inline int unknown_mutex_id(const char *export_name, SyncWeight weight) {
+inline static int unknown_mutex_id(const char *export_name, SyncWeight weight) {
     if (weight == SyncWeight::Light)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
     return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
 }
 
-inline int unknown_cond_id(const char *export_name, SyncWeight weight) {
+inline static int unknown_cond_id(const char *export_name, SyncWeight weight) {
     if (weight == SyncWeight::Light)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
     return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_COND_ID);
 }
 
-inline MutexPtrs &get_mutexes(KernelState &kernel, SyncWeight weight) {
+inline static MutexPtrs &get_mutexes(KernelState &kernel, SyncWeight weight) {
     return weight == SyncWeight::Light ? kernel.lwmutexes : kernel.mutexes;
 }
 
-inline CondvarPtrs &get_condvars(KernelState &kernel, SyncWeight weight) {
+inline static CondvarPtrs &get_condvars(KernelState &kernel, SyncWeight weight) {
     return weight == SyncWeight::Light ? kernel.lwcondvars : kernel.condvars;
 }
 
-inline int find_mutex(MutexPtr &mutex_out, MutexPtrs **mutexes_out, KernelState &kernel, const char *export_name, SceUID mutexid, SyncWeight weight) {
+inline static int find_mutex(MutexPtr &mutex_out, MutexPtrs **mutexes_out, KernelState &kernel, const char *export_name, SceUID mutexid, SyncWeight weight) {
     MutexPtrs &mutexes = get_mutexes(kernel, weight);
     mutex_out = lock_and_find(mutexid, mutexes, kernel.mutex);
     if (!mutex_out) {
@@ -62,7 +62,7 @@ inline int find_mutex(MutexPtr &mutex_out, MutexPtrs **mutexes_out, KernelState 
     return SCE_KERNEL_OK;
 }
 
-inline int find_condvar(CondvarPtr &condvar_out, CondvarPtrs **condvars_out, KernelState &kernel, const char *export_name, SceUID condid, SyncWeight weight) {
+inline static int find_condvar(CondvarPtr &condvar_out, CondvarPtrs **condvars_out, KernelState &kernel, const char *export_name, SceUID condid, SyncWeight weight) {
     CondvarPtrs &condvars = get_condvars(kernel, weight);
     condvar_out = lock_and_find(condid, condvars, kernel.mutex);
     if (!condvar_out) {
@@ -77,7 +77,7 @@ inline int find_condvar(CondvarPtr &condvar_out, CondvarPtrs **condvars_out, Ker
 
 // TODO: Write remaining time to timeout ptr when it's successfully signaled
 // Assumes primitive_lock is locked and thread_lock is unlocked
-inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mutex> &thread_lock,
+inline static int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mutex> &thread_lock,
     std::unique_lock<std::mutex> &primitive_lock, WaitingThreadQueuePtr &queue,
     const ThreadDataQueueInterator<WaitingThreadData> &data_it, const char *export_name,
     SceUInt *const timeout) {
@@ -559,7 +559,7 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, MemState &mem, const c
     mutex->attr = attr;
     mutex->owner = nullptr;
     if (init_count > 0) {
-        const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+        const ThreadStatePtr thread = kernel.get_thread(thread_id);
         mutex->owner = thread;
     }
     if (mutex->attr & SCE_KERNEL_ATTR_TH_PRIO) {
@@ -611,14 +611,14 @@ SceUID mutex_find(KernelState &kernel, const char *export_name, const char *pNam
     return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
 
-inline int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, int lock_count, MutexPtr &mutex, SyncWeight weight, SceUInt *timeout, bool only_try) {
+inline static int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, int lock_count, MutexPtr &mutex, SyncWeight weight, SceUInt *timeout, bool only_try) {
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} lock_count: {} timeout: {} waiting_threads: {}",
             export_name, mutex->uid, thread_id, mutex->name, mutex->attr, mutex->lock_count, timeout ? *timeout : 0,
             mutex->waiting_threads->size());
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
 
     std::unique_lock<std::mutex> mutex_lock(mutex->mutex);
 
@@ -709,8 +709,8 @@ int mutex_try_lock(KernelState &kernel, MemState &mem, const char *export_name, 
     return mutex_lock_impl(kernel, mem, export_name, thread_id, lock_count, mutex, weight, nullptr, true);
 }
 
-inline int mutex_unlock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int unlock_count, MutexPtr &mutex) {
-    const ThreadStatePtr current_thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+inline static int mutex_unlock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int unlock_count, MutexPtr &mutex) {
+    const ThreadStatePtr current_thread = kernel.get_thread(thread_id);
 
     const std::lock_guard<std::mutex> mutex_lock(mutex->mutex);
 
@@ -886,7 +886,7 @@ SceInt32 rwlock_lock(KernelState &kernel, MemState &mem, const char *export_name
 }
 
 SceInt32 rwlock_unlock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id, bool is_write) {
-    const ThreadStatePtr current_thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr current_thread = kernel.get_thread(thread_id);
     const RWLockPtr rwlock = lock_and_find(lock_id, kernel.rwlocks, kernel.mutex);
 
     if (!rwlock)
@@ -1040,7 +1040,7 @@ SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thr
             pTimeout ? *pTimeout : 0, semaphore->waiting_threads->size());
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
 
     std::unique_lock<std::mutex> semaphore_lock(semaphore->mutex);
 
@@ -1236,7 +1236,7 @@ int condvar_wait(KernelState &kernel, MemState &mem, const char *export_name, Sc
             timeout ? *timeout : 0, condvar->waiting_threads->size());
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
 
     std::unique_lock<std::mutex> condition_variable_lock(condvar->mutex);
 
@@ -1422,7 +1422,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         return RET_ERROR(SCE_KERNEL_ERROR_EVF_MULTI);
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
 
     std::unique_lock<std::mutex> event_lock(event->mutex);
 
@@ -1693,7 +1693,7 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
         }
     };
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
     std::unique_lock msgpipe_lock(msgpipe->mutex);
     // check in case of delete happens while waiting (un)lock
     if (msgpipe->beingDeleted) {
@@ -1808,7 +1808,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
         }
     };
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
     std::unique_lock<std::mutex> msgpipe_lock(msgpipe->mutex);
     // check in case of delete happens while waiting (un)lock
     if (msgpipe->beingDeleted) {

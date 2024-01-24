@@ -19,7 +19,6 @@
 
 #include "../SceProcessmgr/SceProcessmgr.h"
 
-#include <modules/module_parent.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/log.h>

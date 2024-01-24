@@ -422,7 +422,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
                 if (is_first)
                     set_second_keyboard(ime);
                 else
-                    init_ime_lang(ime, SceImeLanguage(emuenv.cfg.current_ime_lang));
+                    init_ime_lang(ime, static_cast<SceImeLanguage>(emuenv.cfg.current_ime_lang));
                 current_keyboard = is_first ? SECOND : FIRST;
             }
             ImGui::PopStyleColor(2);
@@ -462,8 +462,8 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
             ImGui::OpenPopup("S/K");
         if (ImGui::BeginPopup("S/K", ImGuiWindowFlags_NoMove)) {
             for (const auto &lang : emuenv.cfg.ime_langs) {
-                if (ImGui::MenuItem(get_ime_lang_index(ime, SceImeLanguage(lang))->second.c_str(), nullptr, emuenv.cfg.current_ime_lang == lang)) {
-                    init_ime_lang(ime, SceImeLanguage(lang));
+                if (ImGui::MenuItem(get_ime_lang_index(ime, static_cast<SceImeLanguage>(lang))->second.c_str(), nullptr, emuenv.cfg.current_ime_lang == lang)) {
+                    init_ime_lang(ime, static_cast<SceImeLanguage>(lang));
                     emuenv.cfg.current_ime_lang = lang;
                     config::serialize_config(emuenv.cfg, emuenv.config_path);
                 }

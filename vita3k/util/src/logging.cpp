@@ -30,11 +30,11 @@ namespace logging {
 
 static const fs::path &LOG_FILE_NAME = "vita3k.log";
 static const char *LOG_PATTERN = "%^[%H:%M:%S.%e] |%L| [%!]: %v%$";
-std::vector<spdlog::sink_ptr> sinks;
+static std::vector<spdlog::sink_ptr> sinks;
 
-void register_log_exception_handler();
+static void register_log_exception_handler();
 
-void flush() {
+static void flush() {
     spdlog::details::registry::instance().flush_all();
 }
 

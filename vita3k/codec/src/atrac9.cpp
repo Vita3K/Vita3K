@@ -130,7 +130,7 @@ Atrac9DecoderState::Atrac9DecoderState(uint32_t config_data)
     const int err = Atrac9InitDecoder(decoder_handle, reinterpret_cast<uint8_t *>(&config_data));
 
     if (err != At9Status::ERR_SUCCESS) {
-        LOG_ERROR("Error initializing decoder");
+        LOG_ERROR("Error initializing decoder. Error code: {}", log_hex(err));
     }
 
     Atrac9CodecInfo *info = new Atrac9CodecInfo;

@@ -683,18 +683,6 @@ const static PacketFunctionBundle functions[] = {
     { "S", cmd_deprecated },
 };
 
-template <class T, class U>
-constexpr bool cmp_less(T t, U u) noexcept {
-    using UT = std::make_unsigned_t<T>;
-    using UU = std::make_unsigned_t<U>;
-    if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
-        return t < u;
-    else if constexpr (std::is_signed_v<T>)
-        return t < 0 || UT(t) < u;
-    else
-        return u > 0 && t < UU(u);
-}
-
 static bool command_begins_with(PacketCommand &command, const std::string_view small_str) {
     // If the command's content is shorter than small_str, it can't match
     if (static_cast<size_t>(command.content_length) < small_str.size())

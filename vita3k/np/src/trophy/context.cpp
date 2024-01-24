@@ -23,7 +23,6 @@
 #include <np/trophy/context.h>
 
 #include <pugixml.hpp>
-#include <spdlog/fmt/fmt.h>
 
 namespace np::trophy {
 Context::Context(const CommunicationID &comm_id, IOState *io, const SceUID trophy_stream, const std::string &output_progress_path)

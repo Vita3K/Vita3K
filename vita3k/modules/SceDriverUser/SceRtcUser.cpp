@@ -22,6 +22,7 @@
 
 #include <util/safe_time.h>
 
+#include <algorithm>
 #include <chrono>
 
 #include <util/tracy.h>
@@ -123,8 +124,7 @@ EXPORT(int, sceRtcFormatRFC2822LocalTime, char *pszDateTime, const SceRtcTick *u
     const auto tz_hour_diff = local_tz_hour - gmt_tz_hour;
 
     if (utc) { // format utc in localtime
-        SceDateTime date;
-        memset(&date, 0, sizeof(date));
+        SceDateTime date{};
         tm gmt = {};
         __RtcTicksToPspTime(&date, utc->tick);
         __RtcPspTimeToTm(&gmt, &date);
@@ -502,9 +502,8 @@ EXPORT(int, sceRtcTickAddMonths, SceRtcTick *pTick0, const SceRtcTick *pTick1, S
     t.month = months % 12 + 1;
     if (t.year == 0)
         return RET_ERROR(SCE_RTC_ERROR_INVALID_YEAR);
-    int days_in_month = CALL_EXPORT(sceRtcGetDaysInMonth, t.year, t.month);
-    if (t.day > days_in_month)
-        t.day = days_in_month;
+    auto days_in_month = CALL_EXPORT(sceRtcGetDaysInMonth, t.year, t.month);
+    t.day = std::min<decltype(t.day)>(t.day, days_in_month);
     pTick0->tick = __RtcPspTimeToTicks(&t);
     return 0;
 }

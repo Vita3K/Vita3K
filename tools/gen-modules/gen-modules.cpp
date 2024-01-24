@@ -157,7 +157,6 @@ static void gen_module_stubs(const Modules &modules) {
 
         for (const Library &library : module.second) {
             const std::string library_cpp_path = module_path + "/" + library.first + ".cpp";
-            const std::string library_h_path = module_path + "/" + library.first + ".h";
             std::ofstream library_cpp(library_cpp_path.c_str(), std::ios::binary);
             gen_library_cpp(library_cpp, library);
         }

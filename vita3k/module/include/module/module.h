@@ -46,3 +46,8 @@
     DECL_VAR_EXPORT(name);                                       \
     extern const ImportVarFactory import_##name = export_##name; \
     DECL_VAR_EXPORT(name)
+
+#define LIBRARY_INIT(name)                                                              \
+    static void export_library_init_##name(EmuEnvState &emuenv);                        \
+    extern const LibraryInitFn import_library_init_##name = export_library_init_##name; \
+    static void export_library_init_##name(EmuEnvState &emuenv)

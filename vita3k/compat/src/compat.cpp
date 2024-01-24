@@ -45,10 +45,20 @@ static std::string db_updated_at;
 static const uint32_t db_version = 1;
 static uint32_t db_issue_count = 0;
 
-bool extract_zip_file(const char *zip_filename, const fs::path &output_path) {
+std::map<CompatibilityState, ImVec4> CompatState::compat_color{
+    { UNKNOWN, ImVec4(0.54f, 0.54f, 0.54f, 1.f) },
+    { NOTHING, ImVec4(1.00f, 0.00f, 0.00f, 1.f) }, // #ff0000
+    { BOOTABLE, ImVec4(0.39f, 0.12f, 0.62f, 1.f) }, // #621fa5
+    { INTRO, ImVec4(0.77f, 0.08f, 0.52f, 1.f) }, // #c71585
+    { MENU, ImVec4(0.11f, 0.46f, 0.85f, 1.f) }, // #1d76db
+    { INGAME_LESS, ImVec4(0.88f, 0.54f, 0.12f, 1.f) }, // #e08a1e
+    { INGAME_MORE, ImVec4(1.00f, 0.84f, 0.00f, 1.f) }, // #ffd700
+    { PLAYABLE, ImVec4(0.05f, 0.54f, 0.09f, 1.f) }, // #0e8a16
+};
+
+static bool extract_zip_file(const char *zip_filename, const fs::path &output_path) {
     // Open the ZIP file for reading
-    mz_zip_archive zip_archive;
-    memset(&zip_archive, 0, sizeof(zip_archive));
+    mz_zip_archive zip_archive{};
     if (!mz_zip_reader_init_file(&zip_archive, zip_filename, 0)) {
         LOG_ERROR("Failed to initialize ZIP archive for reading");
         return false;
