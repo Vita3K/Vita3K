@@ -22,8 +22,6 @@
 
 #include <kernel/state.h>
 
-#include <modules/module_parent.h>
-
 #include <util/tracy.h>
 
 TRACY_MODULE_NAME(SceSharedFB);

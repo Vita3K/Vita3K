@@ -279,11 +279,7 @@ vfs::FileBuffer init_default_icon(GuiState &gui, EmuEnvState &emuenv) {
 
     if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
         fs::path icon_path = fs::exists(default_fw_icon) ? default_fw_icon : default_icon;
-        fs::ifstream image_stream(icon_path, std::ios::binary | std::ios::ate);
-        const std::size_t fsize = image_stream.tellg();
-        buffer.resize(fsize);
-        image_stream.seekg(0, std::ios::beg);
-        image_stream.read(reinterpret_cast<char *>(buffer.data()), fsize);
+        fs_utils::read_data(icon_path, buffer);
     }
 
     return buffer;
@@ -482,22 +478,22 @@ void save_apps_cache(GuiState &gui, EmuEnvState &emuenv) {
     if (apps_cache.is_open()) {
         // Write Size of apps list
         const auto size = gui.app_selector.user_apps.size();
-        apps_cache.write((char *)&size, sizeof(size));
+        apps_cache.write(reinterpret_cast<const char *>(&size), sizeof(size));
 
         // Write version of cache
         const uint32_t versionInFile = 1;
-        apps_cache.write((const char *)&versionInFile, sizeof(uint32_t));
+        apps_cache.write(reinterpret_cast<const char *>(&versionInFile), sizeof(uint32_t));
 
         // Write language of cache
         gui.app_selector.apps_cache_lang = emuenv.cfg.sys_lang;
-        apps_cache.write((char *)&gui.app_selector.apps_cache_lang, sizeof(uint32_t));
+        apps_cache.write(reinterpret_cast<const char *>(&gui.app_selector.apps_cache_lang), sizeof(uint32_t));
 
         // Write Apps list
         for (const App &app : gui.app_selector.user_apps) {
             auto write = [&apps_cache](const std::string &i) {
-                const auto size = i.length();
+                const size_t size = i.length();
 
-                apps_cache.write((const char *)&size, sizeof(size));
+                apps_cache.write(reinterpret_cast<const char *>(&size), sizeof(size));
                 apps_cache.write(i.c_str(), size);
             };
 

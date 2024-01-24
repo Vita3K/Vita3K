@@ -281,14 +281,14 @@ bool parseHeaders(std::string &headersRaw, HeadersMapType &headersOut) {
 
         auto name = line.substr(0, line.find(':'));
         int valueStart = name.length() + 1;
-        if (line.find(": "))
+        if (line.find(": ") != line.npos)
             // Theres a space between semicolon and value, trim it
             valueStart++;
 
         auto value = line.substr(valueStart);
 
-        headersOut.insert({ std::string(name), std::string(value) });
-        ptr = strtok(NULL, "\r\n");
+        headersOut.emplace(std::string(name), std::string(value));
+        ptr = strtok(nullptr, "\r\n");
     }
     return true;
 }
