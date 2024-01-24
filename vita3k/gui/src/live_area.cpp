@@ -865,7 +865,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                 }
 
                 if ((liveitem[app_path][frame.id]["text"]["height"].first > 0)
-                    && ((liveitem[app_path][frame.id]["text"]["word-scroll"].second == "on" || liveitem[app_path][frame.id]["text"]["height"].first <= FRAME_SIZE.y))) {
+                    && (liveitem[app_path][frame.id]["text"]["word-scroll"].second == "on" || liveitem[app_path][frame.id]["text"]["height"].first <= FRAME_SIZE.y)) {
                     text_pos.y += (str_size.y - (float(liveitem[app_path][frame.id]["text"]["height"].first) * SCALE.y)) / 2.f;
                     str_size.y = float(liveitem[app_path][frame.id]["text"]["height"].first) * SCALE.y;
                 }

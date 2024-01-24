@@ -559,7 +559,7 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, MemState &mem, const c
     mutex->attr = attr;
     mutex->owner = nullptr;
     if (init_count > 0) {
-        const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+        const ThreadStatePtr thread = kernel.get_thread(thread_id);
         mutex->owner = thread;
     }
     if (mutex->attr & SCE_KERNEL_ATTR_TH_PRIO) {
@@ -618,7 +618,7 @@ inline int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *expor
             mutex->waiting_threads->size());
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
 
     std::unique_lock<std::mutex> mutex_lock(mutex->mutex);
 
@@ -710,7 +710,7 @@ int mutex_try_lock(KernelState &kernel, MemState &mem, const char *export_name, 
 }
 
 inline int mutex_unlock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int unlock_count, MutexPtr &mutex) {
-    const ThreadStatePtr current_thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr current_thread = kernel.get_thread(thread_id);
 
     const std::lock_guard<std::mutex> mutex_lock(mutex->mutex);
 
@@ -886,7 +886,7 @@ SceInt32 rwlock_lock(KernelState &kernel, MemState &mem, const char *export_name
 }
 
 SceInt32 rwlock_unlock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id, bool is_write) {
-    const ThreadStatePtr current_thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr current_thread = kernel.get_thread(thread_id);
     const RWLockPtr rwlock = lock_and_find(lock_id, kernel.rwlocks, kernel.mutex);
 
     if (!rwlock)
@@ -1040,7 +1040,7 @@ SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thr
             pTimeout ? *pTimeout : 0, semaphore->waiting_threads->size());
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
 
     std::unique_lock<std::mutex> semaphore_lock(semaphore->mutex);
 
@@ -1236,7 +1236,7 @@ int condvar_wait(KernelState &kernel, MemState &mem, const char *export_name, Sc
             timeout ? *timeout : 0, condvar->waiting_threads->size());
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
 
     std::unique_lock<std::mutex> condition_variable_lock(condvar->mutex);
 
@@ -1422,7 +1422,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         return RET_ERROR(SCE_KERNEL_ERROR_EVF_MULTI);
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
 
     std::unique_lock<std::mutex> event_lock(event->mutex);
 
@@ -1693,7 +1693,7 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
         }
     };
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
     std::unique_lock msgpipe_lock(msgpipe->mutex);
     // check in case of delete happens while waiting (un)lock
     if (msgpipe->beingDeleted) {
@@ -1808,7 +1808,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
         }
     };
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
     std::unique_lock<std::mutex> msgpipe_lock(msgpipe->mutex);
     // check in case of delete happens while waiting (un)lock
     if (msgpipe->beingDeleted) {

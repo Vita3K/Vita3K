@@ -127,3 +127,17 @@ std::string log_hex_full(T val) {
     ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << val;
     return ss.str();
 }
+
+template <class T>
+class Ptr;
+FMT_BEGIN_NAMESPACE
+template <typename T, typename Char>
+struct formatter<Ptr<T>, Char> : formatter<string_view, Char> {
+public:
+    template <typename FormatContext>
+    auto format(const Ptr<T> p, FormatContext &ctx) const {
+        return detail::write(ctx.out(),
+            basic_string_view<Char>(log_hex_full(p.address())));
+    }
+};
+FMT_END_NAMESPACE
