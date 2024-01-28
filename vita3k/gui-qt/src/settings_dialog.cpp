@@ -1480,10 +1480,10 @@ void SettingsDialog::update_gpu_visibility() {
         m_ui->screen_filter_box->clear();
         if (is_vulkan) {
             m_ui->screen_filter_box->addItems({ QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
-                QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("FSR") });
+                QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("SMAA"), QStringLiteral("FSR") });
         } else {
             m_ui->screen_filter_box->addItems({ QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
-                QStringLiteral("Bicubic"), QStringLiteral("FXAA") });
+                QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("SMAA") });
         }
 
         const int idx = m_ui->screen_filter_box->findText(previous);
