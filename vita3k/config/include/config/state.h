@@ -127,6 +127,7 @@ public:
         int modules_mode = ModulesMode::AUTOMATIC;
         std::vector<std::string> lle_modules = {};
         bool pstv_mode = false;
+        float audio_volume = 1.0f;
         bool ngs_enable = true;
         bool high_accuracy = false;
         int resolution_multiplier = 1;

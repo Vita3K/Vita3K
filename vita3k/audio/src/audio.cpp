@@ -30,7 +30,7 @@
 #include <cassert>
 #include <cstring>
 
-static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOutPort &port, const ResumeAudioThread &resume_thread) {
+static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, float global_volume, AudioOutPort &port, const ResumeAudioThread &resume_thread) {
     ZoneScopedC(0xF6C2FF); // Tracy - Track function scope with color thistle
 
     // How much data is available?
@@ -57,7 +57,7 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
     const int bytes_got = SDL_AudioStreamGet(port.stream.get(), temp_buffer, bytes_to_get);
     lock.unlock();
     if (bytes_got > 0) {
-        SDL_MixAudioFormat(stream, temp_buffer, AUDIO_S16LSB, bytes_got, static_cast<int>(port.volume * SDL_MIX_MAXVOLUME));
+        SDL_MixAudioFormat(stream, temp_buffer, AUDIO_S16LSB, bytes_got, static_cast<int>(port.volume * global_volume * SDL_MIX_MAXVOLUME));
     }
 }
 
@@ -77,14 +77,15 @@ void AudioAdapter::audio_callback(uint8_t *stream, int len_bytes) {
     std::memset(stream, state.spec.silence, len_bytes);
 
     for (const AudioOutPortPtr &port : ports) {
-        mix_out_port(stream, temp_buffer.data(), len_bytes, *port.get(), state.resume_thread);
+        mix_out_port(stream, temp_buffer.data(), len_bytes, state.global_volume, *port.get(), state.resume_thread);
     }
 
     FrameMarkNamed("Audio"); // Tracy - End discontinuous frame for audio rendering
 }
 
-bool AudioState::init(const ResumeAudioThread &resume_thread, const std::string &adapter_name) {
+bool AudioState::init(const ResumeAudioThread &resume_thread, const std::string &adapter_name, float global_volume) {
     this->resume_thread = resume_thread;
+    this->global_volume = global_volume;
 
     set_backend(adapter_name);
     if (!adapter)
@@ -135,6 +136,7 @@ AudioOutPortPtr AudioState::open_port(int nb_channels, int freq, int nb_sample) 
     } else {
         // let the adapter open the port
         AudioOutPortPtr port = adapter->open_port(nb_channels, freq, nb_sample);
+        adapter->set_volume(*port, global_volume);
         return port;
     }
 }
@@ -169,7 +171,22 @@ void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const
 void AudioState::set_volume(AudioOutPort &out_port, float volume) {
     out_port.volume = volume;
 
-    adapter->set_volume(out_port, volume);
+    if (!adapter->single_stream) {
+        adapter->set_volume(out_port, volume * global_volume);
+    }
+}
+
+void AudioState::set_global_volume(float volume) {
+    global_volume = volume;
+
+    if (!adapter->single_stream) {
+        // Update adapter volume for each port.
+        const std::lock_guard lock(mutex);
+        for (const auto &port_entry : out_ports) {
+            auto &port = *port_entry.second;
+            adapter->set_volume(port, port.volume * volume);
+        }
+    }
 }
 
 void AudioState::switch_state(const bool pause) {
