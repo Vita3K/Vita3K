@@ -116,7 +116,7 @@ struct AudioState {
     std::string audio_backend;
     float global_volume;
 
-    bool init(const ResumeAudioThread &resume_thread, const std::string &adapter_name, float global_volume);
+    bool init(const ResumeAudioThread &resume_thread, const std::string &adapter_name);
     void set_backend(const std::string &adapter_name);
     AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample);
     void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer);

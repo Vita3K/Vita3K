@@ -185,6 +185,13 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
                 config.fps_hack = gpu_child.attribute("fps-hack").as_bool();
             }
 
+            // Load Audio Config
+            if (!config_child.child("audio").empty()) {
+                const auto audio_child = config_child.child("audio");
+                config.audio_volume = audio_child.attribute("audio-volume").as_int();
+                config.ngs_enable = audio_child.attribute("enable-ngs").as_bool();
+            }
+
             // Load System Config
             const auto system_child = config_child.child("system");
             if (!system_child.empty())
@@ -193,8 +200,6 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             // Load Emulator Config
             if (!config_child.child("emulator").empty()) {
                 const auto emulator_child = config_child.child("emulator");
-                config.audio_volume = emulator_child.attribute("audio-volume").as_float();
-                config.ngs_enable = emulator_child.attribute("enable-ngs").as_bool();
                 config.show_touchpad_cursor = emulator_child.attribute("show-touchpad-cursor").as_bool();
             }
 
@@ -248,9 +253,9 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.export_textures = emuenv.cfg.export_textures;
         config.export_as_png = emuenv.cfg.export_as_png;
         config.fps_hack = emuenv.cfg.fps_hack;
-        config.pstv_mode = emuenv.cfg.pstv_mode;
         config.audio_volume = emuenv.cfg.audio_volume;
         config.ngs_enable = emuenv.cfg.ngs_enable;
+        config.pstv_mode = emuenv.cfg.pstv_mode;
         config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
         config.psn_signed_in = emuenv.cfg.psn_signed_in;
     }
@@ -332,14 +337,17 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         gpu_child.append_attribute("export-as-png") = config.export_as_png;
         gpu_child.append_attribute("fps-hack") = config.fps_hack;
 
+        // Audio
+        auto audio_child = config_child.append_child("audio");
+        audio_child.append_attribute("audio-volume") = config.audio_volume;
+        audio_child.append_attribute("enable-ngs") = config.ngs_enable;
+
         // System
         auto system_child = config_child.append_child("system");
         system_child.append_attribute("pstv-mode") = config.pstv_mode;
 
         // Emulator
         auto emulator_child = config_child.append_child("emulator");
-        emulator_child.append_attribute("audio-volume") = config.audio_volume;
-        emulator_child.append_attribute("enable-ngs") = config.ngs_enable;
         emulator_child.append_attribute("show-touchpad-cursor") = config.show_touchpad_cursor;
 
         // Network
@@ -354,7 +362,6 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.cpu_opt = config.cpu_opt;
         emuenv.cfg.modules_mode = config.modules_mode;
         emuenv.cfg.lle_modules = config.lle_modules;
-        emuenv.cfg.pstv_mode = config.pstv_mode;
         emuenv.cfg.high_accuracy = config.high_accuracy;
         emuenv.cfg.resolution_multiplier = config.resolution_multiplier;
         emuenv.cfg.disable_surface_sync = config.disable_surface_sync;
@@ -368,6 +375,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.fps_hack = config.fps_hack;
         emuenv.cfg.audio_volume = config.audio_volume;
         emuenv.cfg.ngs_enable = config.ngs_enable;
+        emuenv.cfg.pstv_mode = config.pstv_mode;
         emuenv.cfg.show_touchpad_cursor = config.show_touchpad_cursor;
         emuenv.cfg.psn_signed_in = config.psn_signed_in;
     }
@@ -419,7 +427,6 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.cpu_opt = emuenv.cfg.cpu_opt;
         emuenv.cfg.current_config.modules_mode = emuenv.cfg.modules_mode;
         emuenv.cfg.current_config.lle_modules = emuenv.cfg.lle_modules;
-        emuenv.cfg.current_config.pstv_mode = emuenv.cfg.pstv_mode;
         emuenv.cfg.current_config.high_accuracy = emuenv.cfg.high_accuracy;
         emuenv.cfg.current_config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
         emuenv.cfg.current_config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
@@ -433,6 +440,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.fps_hack = emuenv.cfg.fps_hack;
         emuenv.cfg.current_config.audio_volume = emuenv.cfg.audio_volume;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
+        emuenv.cfg.current_config.pstv_mode = emuenv.cfg.pstv_mode;
         emuenv.cfg.current_config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
         emuenv.cfg.current_config.psn_signed_in = emuenv.cfg.psn_signed_in;
     }
@@ -467,7 +475,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.audio.set_backend(emuenv.cfg.audio_backend);
     }
 
-    emuenv.audio.set_global_volume(emuenv.cfg.current_config.audio_volume);
+    emuenv.audio.set_global_volume(emuenv.cfg.current_config.audio_volume / 100.f);
 }
 
 void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
@@ -801,6 +809,35 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     } else
         ImGui::PopStyleColor();
 
+    // Audio
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
+    if (ImGui::BeginTabItem("Audio")) {
+        ImGui::PopStyleColor();
+        ImGui::Spacing();
+        if (!emuenv.io.app_path.empty())
+            ImGui::BeginDisabled();
+        static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
+        if (ImGui::Combo(lang.audio["audio_backend"].c_str(), reinterpret_cast<int *>(&audio_backend_idx), LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
+            emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", lang.audio["select_audio_backend"].c_str());
+        if (!emuenv.io.app_path.empty())
+            ImGui::EndDisabled();
+        ImGui::Spacing();
+        ImGui::SliderInt(lang.audio["audio_volume"].c_str(), &config.audio_volume, 0, 100, "%d %%", ImGuiSliderFlags_AlwaysClamp);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", lang.audio["audio_volume_description"].c_str());
+        ImGui::Spacing();
+        ImGui::Checkbox(lang.audio["enable_ngs_support"].c_str(), &config.ngs_enable);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", lang.audio["ngs_description"].c_str());
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::EndTabItem();
+    } else
+        ImGui::PopStyleColor();
+
     // System
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem(lang.system["title"].c_str())) {
@@ -833,31 +870,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
         ImGui::Checkbox(lang.emulator["boot_apps_full_screen"].c_str(), &emuenv.cfg.boot_apps_full_screen);
-        ImGui::Spacing();
-
-        if (!emuenv.io.app_path.empty())
-            ImGui::BeginDisabled();
-
-        static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
-        if (ImGui::Combo(lang.emulator["audio_backend"].c_str(), reinterpret_cast<int *>(&audio_backend_idx), LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
-            emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", lang.emulator["select_audio_backend"].c_str());
-
-        if (!emuenv.io.app_path.empty())
-            ImGui::EndDisabled();
-
-        int audio_volume_percent = static_cast<int>(config.audio_volume * 100);
-        ImGui::SliderInt(lang.emulator["audio_volume"].c_str(), &audio_volume_percent, 0, 100, "%d%%", ImGuiSliderFlags_AlwaysClamp);
-        config.audio_volume = static_cast<float>(audio_volume_percent) / 100.0f;
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", lang.emulator["audio_volume_description"].c_str());
-
-        ImGui::Checkbox(lang.emulator["enable_ngs_support"].c_str(), &config.ngs_enable);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", lang.emulator["ngs_description"].c_str());
-        ImGui::Spacing();
-        ImGui::Separator();
         ImGui::Spacing();
 
         const char *LIST_LOG_LEVEL[] = { lang.emulator["trace"].c_str(), "Debug", lang.emulator["info"].c_str(), lang.emulator["warning"].c_str(), lang.emulator["error"].c_str(), lang.emulator["critical"].c_str(), lang.emulator["off"].c_str() };
