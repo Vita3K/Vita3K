@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Format check
         run: .github/format-check.sh
@@ -53,7 +53,7 @@ jobs:
             version: appimage
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: recursive
@@ -80,7 +80,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows-latest'
  
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ${{ matrix.cache_path }}
           key: cache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
@@ -176,7 +176,7 @@ jobs:
           rm -f ../*AppImage*
         if: matrix.os == 'ubuntu-latest' && matrix.version == 'appimage'
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: vita3k-${{ env.git_short_sha }}-${{ matrix.version }}-${{ matrix.os }}
           # path is set up to be <binary_dir>/bin/<config_type> since that's how multi-config
@@ -191,10 +191,10 @@ jobs:
     runs-on: "ubuntu-20.04"
     if: github.ref == 'refs/heads/master'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Get Build Variable
         run: echo "Build_Variable=${{ needs.build.outputs.BuildTag }}" >> $GITHUB_ENV
