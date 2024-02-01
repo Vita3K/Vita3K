@@ -649,6 +649,13 @@ Note that some beneficial extensions will be disabled,
 and not all GPUs are compatible with this.</spirv_shader_description>
 			<clean_shaders>Clean Shaders Cache and Log</clean_shaders>
 		</gpu>
+		<audio name="Audio">
+			<audio_backend>Audio Backend</audio_backend>
+			<select_audio_backend>Select your preferred audio backend.</select_audio_backend>
+			<audio_volume>Audio Volume</audio_volume>
+			<audio_volume_description>Adjusts the volume percentage of all audio outputs.</audio_volume_description>
+			<enable_ngs_support>Enable NGS support</enable_ngs_support>
+		</audio>
 		<system name="System">
 			<select_enter_button>Enter button assignment
 Select your 'Enter' button.</select_enter_button>
@@ -665,11 +672,6 @@ Some applications don't use this and get default confirmation button.</enter_but
 		</system>
 		<emulator name="Emulator">
 			<boot_apps_full_screen>Boot apps in full screen</boot_apps_full_screen>
-			<audio_backend>Audio Backend</audio_backend>
-			<select_audio_backend>Select your preferred audio backend.</select_audio_backend>
-			<audio_volume>Audio Volume</audio_volume>
-			<audio_volume_description>Adjusts the volume percentage of all audio outputs.</audio_volume_description>
-			<enable_ngs_support>Enable NGS support</enable_ngs_support>
 			<ngs_description>Uncheck the box to disable support for advanced audio library NGS.</ngs_description>
 			<trace>Trace</trace>
 			<info>Info</info>

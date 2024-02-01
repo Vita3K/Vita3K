@@ -83,9 +83,8 @@ void AudioAdapter::audio_callback(uint8_t *stream, int len_bytes) {
     FrameMarkNamed("Audio"); // Tracy - End discontinuous frame for audio rendering
 }
 
-bool AudioState::init(const ResumeAudioThread &resume_thread, const std::string &adapter_name, float global_volume) {
+bool AudioState::init(const ResumeAudioThread &resume_thread, const std::string &adapter_name) {
     this->resume_thread = resume_thread;
-    this->global_volume = global_volume;
 
     set_backend(adapter_name);
     if (!adapter)

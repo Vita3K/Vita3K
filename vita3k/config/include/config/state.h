@@ -126,9 +126,9 @@ public:
         bool cpu_opt = true;
         int modules_mode = ModulesMode::AUTOMATIC;
         std::vector<std::string> lle_modules = {};
-        bool pstv_mode = false;
-        float audio_volume = 1.0f;
+        int audio_volume = 100;
         bool ngs_enable = true;
+        bool pstv_mode = false;
         bool high_accuracy = false;
         int resolution_multiplier = 1;
         bool disable_surface_sync = false;

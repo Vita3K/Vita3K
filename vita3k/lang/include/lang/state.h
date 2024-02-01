@@ -569,6 +569,15 @@ struct LangState {
             { "spirv_shader_description", "Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled,\nand not all GPUs are compatible with this." },
             { "clean_shaders", "Clean Shaders Cache and Log" }
         };
+        std::map<std::string, std::string> audio = {
+            { "audio_backend", "Audio Backend" },
+            { "select_audio_backend", "Select your preferred audio backend." },
+            { "audio_volume", "Audio Volume" },
+            { "audio_volume_description", "Adjusts the volume percentage of all audio outputs." },
+            { "enable_ngs_support", "Enable NGS support" },
+            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." }
+
+        };
         std::map<std::string, std::string> system = {
             { "title", "System" },
             { "select_enter_button", "Enter button assignment\nSelect your 'Enter' button." },
@@ -585,12 +594,6 @@ struct LangState {
         std::map<std::string, std::string> emulator = {
             { "title", "Emulator" },
             { "boot_apps_full_screen", "Boot apps in full screen" },
-            { "audio_backend", "Audio Backend" },
-            { "select_audio_backend", "Select your preferred audio backend." },
-            { "audio_volume", "Audio Volume" },
-            { "audio_volume_description", "Adjusts the volume percentage of all audio outputs." },
-            { "enable_ngs_support", "Enable NGS support" },
-            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." },
             { "trace", "Trace" },
             { "info", "Info" },
             { "warning", "Warning" },

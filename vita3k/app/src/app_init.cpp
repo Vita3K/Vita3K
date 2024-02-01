@@ -385,7 +385,7 @@ bool late_init(EmuEnvState &state) {
             thread->update_status(ThreadStatus::run);
         }
     };
-    if (!state.audio.init(resume_thread, state.cfg.audio_backend, state.cfg.current_config.audio_volume)) {
+    if (!state.audio.init(resume_thread, state.cfg.audio_backend)) {
         LOG_WARN("Failed to initialize audio! Audio will not work.");
     }
 
