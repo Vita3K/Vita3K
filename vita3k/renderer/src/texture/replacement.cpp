@@ -381,7 +381,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
         uint64_t hash = current_info->hash;
         const std::string file_name = fmt::format("{:016X}.png", hash);
         fs::path export_name = export_folder / file_name;
-        stbi_write_png(export_name.generic_string().c_str(), width, height, nb_comp, data, pixels_per_stride * nb_comp);
+        stbi_write_png(fs_utils::path_to_utf8(export_name).c_str(), width, height, nb_comp, data, pixels_per_stride * nb_comp);
 
         if (log_texture_export)
             LOG_DEBUG("Texture {} ({}x{}) exported", file_name, width, height);
@@ -507,7 +507,7 @@ bool TextureCache::import_configure_texture() {
         imported_texture_decoded = imported_texture_raw_data.data() + dds_descriptor->headerSize;
     } else {
         int nb_channels;
-        imported_texture_decoded = stbi_load(import_name.generic_string().c_str(), reinterpret_cast<int *>(&width), reinterpret_cast<int *>(&height), &nb_channels, nb_comp);
+        imported_texture_decoded = stbi_load(fs_utils::path_to_utf8(import_name).c_str(), reinterpret_cast<int *>(&width), reinterpret_cast<int *>(&height), &nb_channels, nb_comp);
         if (imported_texture_decoded == nullptr) {
             LOG_ERROR("Failed to decode {}", file_name);
             return false;

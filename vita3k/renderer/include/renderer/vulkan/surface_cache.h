@@ -17,8 +17,9 @@
 
 #pragma once
 
-#include <renderer/surface_cache.h>
-
+#include <gxm/types.h>
+#include <mem/ptr.h>
+#include <renderer/gxm_types.h>
 #include <util/containers.h>
 #include <vkutil/objects.h>
 
@@ -145,7 +146,7 @@ struct SurfaceRetrieveResult {
     vkutil::Image *base_image;
 };
 
-class VKSurfaceCache : public SurfaceCache {
+class VKSurfaceCache {
 private:
     VKState &state;
 
@@ -206,6 +207,10 @@ public:
     // Return the image along with the viewport to be displayed on the screen
     // Viewport should already have its fields width and height filled
     vk::ImageView sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t pitch, Viewport &viewport);
+
+    // Dump an rgba8 frame with the given properties to the returned vector
+    // if this function fails, the vector will be empty
+    std::vector<uint32_t> dump_frame(Ptr<const void> address, uint32_t width, uint32_t height, uint32_t pitch);
 
     void set_render_target(VKRenderTarget *new_target) {
         target = new_target;

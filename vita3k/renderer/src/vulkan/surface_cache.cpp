@@ -1218,4 +1218,53 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
 
     return nullptr;
 }
+
+std::vector<uint32_t> VKSurfaceCache::dump_frame(Ptr<const void> address, uint32_t width, uint32_t height, uint32_t pitch) {
+    // get closest surface with an address below address
+    auto ite = color_address_lookup.upper_bound(address.address());
+    if (ite == color_address_lookup.begin()) {
+        return {};
+    }
+    ite--;
+
+    const ColorSurfaceCacheInfo &info = *ite->second;
+
+    const uint32_t data_delta = address.address() - ite->first;
+    const uint32_t pitch_byte = pitch * 4;
+    if (info.stride_bytes != pitch_byte || data_delta % pitch_byte != 0)
+        return {};
+
+    const uint32_t line_delta = (data_delta / pitch_byte) * state.res_multiplier;
+    if (line_delta >= info.height)
+        return {};
+
+    const uint32_t real_height = std::min(height, info.height - line_delta);
+
+    std::vector<uint32_t> frame(width * height, 0);
+
+    // we need a temporary buffer and command buffer for this
+    // this is a raii buffer, it will be destroyed at the end of this function
+    vkutil::Buffer temp_buff(width * height * 4);
+    temp_buff.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vkutil::vma_mapped_alloc);
+    vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
+
+    // layout is general, we can directly copy from it
+    vk::BufferImageCopy image_copy{
+        .bufferOffset = 0,
+        .bufferRowLength = width,
+        .bufferImageHeight = height,
+        .imageSubresource = vkutil::color_subresource_layer,
+        .imageOffset = { 0, static_cast<int>(line_delta), 0 },
+        .imageExtent = { width, real_height, 1 }
+    };
+    cmd_buffer.copyImageToBuffer(info.texture.image, vk::ImageLayout::eGeneral, temp_buff.buffer, image_copy);
+
+    // this will cause a waitIdle, not an issue
+    vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
+
+    memcpy(frame.data(), temp_buff.mapped_data, frame.size() * 4);
+
+    return frame;
+}
+
 }; // namespace renderer::vulkan

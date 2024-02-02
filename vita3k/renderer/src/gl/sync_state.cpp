@@ -337,7 +337,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
             texture_as_surface = state.surface_cache.retrieve_color_surface_texture_handle(
                 state, width, height, stride_in_pixels, format_target_of_texture, Ptr<void>(data_addr),
-                renderer::SurfaceTextureRetrievePurpose::READING, swizz_raw);
+                SurfaceTextureRetrievePurpose::READING, swizz_raw);
 
             swizzle_surface = color::translate_swizzle(static_cast<SceGxmColorFormat>(format_target_of_texture | swizz_raw));
             only_nearest = color::is_write_surface_non_linearity_filtering(format_target_of_texture);

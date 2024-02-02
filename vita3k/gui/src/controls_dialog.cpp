@@ -97,6 +97,7 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
     ImGui::TableSetColumnIndex(1);
     // the association of the key
     int key_association = *button;
+    ImGui::PushID(button_name);
     if (ImGui::Button(SDL_key_to_string[key_association])) {
         gui.old_captured_key = key_association;
         gui.is_capturing_keys = true;
@@ -117,6 +118,7 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
         }
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
+    ImGui::PopID();
 }
 
 void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
@@ -195,6 +197,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TableSetupColumn("button");
         ImGui::TableSetupColumn("mapped_button");
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_toggle_texture_replacement, lang["toggle_texture_replacement"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_take_screenshot, "Take a screenshot");
         ImGui::EndTable();
     }
 

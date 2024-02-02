@@ -54,6 +54,8 @@ struct GLState : public renderer::State {
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, DisplayState &display,
         const GxmState &gxm, MemState &mem) override;
     void swap_window(SDL_Window *window) override;
+    std::vector<uint32_t> dump_frame(DisplayState &display, uint32_t &width, uint32_t &height) override;
+
     int get_supported_filters() override;
     void set_screen_filter(const std::string_view &filter) override;
     int get_max_anisotropic_filtering() override;
