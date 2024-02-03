@@ -109,6 +109,7 @@ bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, con
     const fs::path ux0_data{ ux0 / "data" };
     const fs::path uma0_data{ uma0 / "data" };
     const fs::path ux0_app{ ux0 / "app" };
+    const fs::path ux0_music{ ux0 / "music" };
     const fs::path ux0_picture{ ux0 / "picture" };
     const fs::path ux0_theme{ ux0 / "theme" };
     const fs::path ux0_video{ ux0 / "video" };
@@ -120,6 +121,7 @@ bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, con
     fs::create_directories(ux0);
     fs::create_directories(ux0_data);
     fs::create_directories(ux0_app);
+    fs::create_directories(ux0_music);
     fs::create_directories(ux0_picture);
     fs::create_directories(ux0_theme);
     fs::create_directories(ux0_video);
@@ -225,6 +227,22 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
         device = VitaIoDevice::ux0;
         break;
     }
+    case +VitaIoDevice::music0: { // Redirect music0: to ux0:music
+        relative_path = device::remove_device_from_path(relative_path, device, "music");
+        device = VitaIoDevice::ux0;
+        break;
+    }
+    case +VitaIoDevice::photo0: { // Redirect photo0: to ux0:picture
+        relative_path = device::remove_device_from_path(relative_path, device, "picture");
+        device = VitaIoDevice::ux0;
+        break;
+    }
+    case +VitaIoDevice::video0: { // Redirect video0: to ux0:video
+        relative_path = device::remove_device_from_path(relative_path, device, "video");
+        device = VitaIoDevice::ux0;
+        break;
+    }
+
     case +VitaIoDevice::host0:
     case +VitaIoDevice::gro0:
     case +VitaIoDevice::grw0:
