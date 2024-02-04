@@ -1,11 +1,11 @@
 name: Feature Request
 description: Template for feature request
 title: "[Feature Request]: "
-labels: "Feature Request"
+labels: "feature request"
 body:
   - type: markdown
     attributes:
-      value: Tech support does not belong here. You should only file an issue here if you are requesting a feature you believe would make Vit3K better.
+      value: Tech support does not belong here. You should only file an issue here if you are requesting a feature you believe would make Vita3K better.
   - type: checkboxes
     attributes:
       label: Is there an existing issue for this?
