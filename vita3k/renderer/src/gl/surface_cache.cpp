@@ -649,7 +649,7 @@ GLuint GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const Mem
         std::uint32_t swizzle_set = color->colorFormat & SCE_GXM_COLOR_SWIZZLE_MASK;
         color_handle = static_cast<GLuint>(retrieve_color_surface_texture_handle(state, color->width,
             color->height, color->strideInPixels, gxm::get_base_format(color->colorFormat), color->data,
-            renderer::SurfaceTextureRetrievePurpose::WRITING, swizzle_set, stored_height));
+            SurfaceTextureRetrievePurpose::WRITING, swizzle_set, stored_height));
     } else {
         color_handle = target->attachments[0];
     }
@@ -756,6 +756,49 @@ GLuint GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> a
     }
 
     return 0;
+}
+
+std::vector<uint32_t> GLSurfaceCache::dump_frame(Ptr<const void> address, uint32_t width, uint32_t height, uint32_t pitch, int res_multiplier, bool support_get_texture_sub_image) {
+    auto ite = color_surface_textures.lower_bound(address.address());
+    if (ite == color_surface_textures.end() || ite->second->pixel_stride != pitch) {
+        return {};
+    }
+
+    const GLColorSurfaceCacheInfo &info = *ite->second;
+
+    const uint32_t data_delta = address.address() - ite->first;
+    const uint32_t pitch_byte = pitch * 4;
+    if (info.pixel_stride != pitch || data_delta % pitch_byte != 0)
+        return {};
+
+    const uint32_t line_delta = (data_delta / pitch_byte) * res_multiplier;
+    if (line_delta >= info.height)
+        return {};
+
+    if (!support_get_texture_sub_image && (line_delta != 0 || info.width != width || info.height != height)) {
+        LOG_ERROR("Dumping this frame is not supported on the OpenGL renderer");
+        return {};
+    }
+
+    const uint32_t real_height = std::min(height, info.height - line_delta);
+
+    std::vector<uint32_t> frame(width * height, 0);
+    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+
+    // retrieve the texture, it is on the GPU right now
+    if (support_get_texture_sub_image) {
+        glGetTextureSubImage(info.gl_texture[0], 0, 0, line_delta, 0, width, real_height, 1, GL_RGBA, GL_UNSIGNED_BYTE, frame.size() * 4, frame.data());
+    } else {
+        GLint last_texture = 0;
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+
+        glBindTexture(GL_TEXTURE_2D, info.gl_texture[0]);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame.data());
+
+        glBindTexture(GL_TEXTURE_2D, last_texture);
+    }
+
+    return frame;
 }
 
 } // namespace renderer::gl

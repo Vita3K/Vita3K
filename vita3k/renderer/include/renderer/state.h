@@ -90,6 +90,8 @@ struct State {
         const GxmState &gxm, MemState &mem)
         = 0;
     virtual void swap_window(SDL_Window *window) = 0;
+    // perform a screenshot of the (upscaled) frame to be rendered and return it in a vector in its rgba8 format
+    virtual std::vector<uint32_t> dump_frame(DisplayState &display, uint32_t &width, uint32_t &height) = 0;
     // return a mask of the features which can influence the compiled shaders
     virtual uint32_t get_features_mask() {
         return 0;

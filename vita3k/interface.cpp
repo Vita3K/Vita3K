@@ -50,6 +50,8 @@
 #include <regex>
 
 #include <SDL.h>
+#include <fmt/chrono.h>
+#include <stb_image_write.h>
 
 #include <gdbstub/functions.h>
 
@@ -530,6 +532,33 @@ static void toggle_texture_replacement(EmuEnvState &emuenv) {
     emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
 }
 
+static void take_screenshot(EmuEnvState &emuenv) {
+    if (emuenv.io.title_id.empty()) {
+        LOG_ERROR("Trying to take a screenshot while not ingame");
+    }
+
+    uint32_t width, height;
+    std::vector<uint32_t> frame = emuenv.renderer->dump_frame(emuenv.display, width, height);
+
+    if (frame.empty() || frame.size() != width * height) {
+        LOG_ERROR("Failed to take screenshot");
+        return;
+    }
+
+    // set the alpha to 1
+    for (int i = 0; i < width * height; i++)
+        frame[i] |= 0xFF000000;
+
+    const fs::path save_folder = emuenv.shared_path / "screenshots";
+    fs::create_directories(save_folder);
+
+    const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d_%H-%M-%OS}.png", emuenv.io.title_id, fmt::localtime(std::time(nullptr)));
+    if (stbi_write_png(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), width * 4) == 1)
+        LOG_INFO("Successfully saved screenshot to {}", save_file);
+    else
+        LOG_INFO("Failed to save screenshot");
+}
+
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
     refresh_controllers(emuenv.ctrl, emuenv);
     const auto allow_switch_state = !emuenv.io.title_id.empty() && !gui.vita_area.app_close && !gui.vita_area.home_screen && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog && gui::get_sys_apps_state(gui);
@@ -681,6 +710,8 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 switch_full_screen(emuenv);
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_toggle_texture_replacement && !gui.is_key_capture_dropped)
                 toggle_texture_replacement(emuenv);
+            if (event.key.keysym.scancode == emuenv.cfg.keyboard_take_screenshot && !gui.is_key_capture_dropped)
+                take_screenshot(emuenv);
 
             if (sce_ctrl_btn != 0)
                 ui_navigation(sce_ctrl_btn);

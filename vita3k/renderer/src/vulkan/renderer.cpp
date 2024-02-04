@@ -49,6 +49,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
         "VUID-VkImageCreateInfo-imageCreateMaxMipLevels-02251", // srgb does not support the storage format
         "VUID-vkCmdPipelineBarrier-pDependencies-02285", // shader write -> vertex input read self-dependency, wrong error
         "VUID-vkCmdDrawIndexed-None-09003", // reading from color attachment, works on most GPUs with a general layout
+        "VUID-vkAcquireNextImageKHR-semaphore-01779" // Semaphore misuse, to fix
     };
 
     if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
@@ -745,6 +746,18 @@ void VKState::swap_window(SDL_Window *window) {
 
         pipeline_cache.next_pipeline_cache_save = std::numeric_limits<uint64_t>::max();
     }
+}
+
+std::vector<uint32_t> VKState::dump_frame(DisplayState &display, uint32_t &width, uint32_t &height) {
+    DisplayFrameInfo frame;
+    {
+        std::lock_guard<std::mutex> guard(display.display_info_mutex);
+        frame = display.next_rendered_frame;
+    }
+
+    width = frame.image_size.x * res_multiplier;
+    height = frame.image_size.y * res_multiplier;
+    return surface_cache.dump_frame(frame.base, width, height, frame.pitch);
 }
 
 uint32_t VKState::get_features_mask() {

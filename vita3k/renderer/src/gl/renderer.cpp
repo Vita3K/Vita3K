@@ -534,7 +534,7 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
 
     GLint tex_handle = static_cast<GLint>(renderer.surface_cache.retrieve_color_surface_texture_handle(renderer, static_cast<std::uint16_t>(surface.width),
         static_cast<std::uint16_t>(surface.height), static_cast<std::uint16_t>(surface.strideInPixels),
-        gxm::get_base_format(surface.colorFormat), surface.data, renderer::SurfaceTextureRetrievePurpose::READING, swizzle));
+        gxm::get_base_format(surface.colorFormat), surface.data, SurfaceTextureRetrievePurpose::READING, swizzle));
 
     if (tex_handle == 0) {
         return;
@@ -714,6 +714,18 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
 
 void GLState::swap_window(SDL_Window *window) {
     SDL_GL_SwapWindow(window);
+}
+
+std::vector<uint32_t> GLState::dump_frame(DisplayState &display, uint32_t &width, uint32_t &height) {
+    DisplayFrameInfo frame;
+    {
+        std::lock_guard<std::mutex> guard(display.display_info_mutex);
+        frame = display.next_rendered_frame;
+    }
+
+    width = frame.image_size.x * res_multiplier;
+    height = frame.image_size.y * res_multiplier;
+    return surface_cache.dump_frame(frame.base, width, height, frame.pitch, res_multiplier, features.support_get_texture_sub_image);
 }
 
 int GLState::get_supported_filters() {
