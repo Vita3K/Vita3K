@@ -378,7 +378,7 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     set_lang_string(lang.settings_dialog.gpu, settings_dialog.child("gpu"));
 
                     // Audio
-                    set_lang_string(lang.settings_dialog.emulator, settings_dialog.child("audio"));
+                    set_lang_string(lang.settings_dialog.audio, settings_dialog.child("audio"));
 
                     // System
                     set_lang_string(lang.settings_dialog.system, settings_dialog.child("system"));
