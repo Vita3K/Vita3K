@@ -29,7 +29,7 @@ enum SceTouchSamplingState {
     SCE_TOUCH_SAMPLING_STATE_START
 };
 
-enum SceTouchErrorCode {
+enum SceTouchErrorCode : uint32_t {
     SCE_TOUCH_ERROR_INVALID_ARG = 0x80350001,
     SCE_TOUCH_ERROR_PRIV_REQUIRED = 0x80350002,
     SCE_TOUCH_ERROR_FATAL = 0x803500FF

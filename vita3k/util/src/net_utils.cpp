@@ -31,7 +31,7 @@
 namespace net_utils {
 
 // 0 is ok, negative is bad
-SceHttpErrorCode parse_url(std::string url, parsedUrl &out) {
+SceHttpErrorCode parse_url(const std::string &url, parsedUrl &out) {
     out.scheme = url.substr(0, url.find(':'));
 
     if (out.scheme != "http" && out.scheme != "https")
@@ -216,9 +216,9 @@ const char *int_method_to_char(const int n) {
     }
 }
 
-std::string constructHeaders(HeadersMapType &headers) {
+std::string constructHeaders(const HeadersMapType &headers) {
     std::string headersString;
-    for (auto head : headers) {
+    for (const auto &head : headers) {
         headersString.append(head.first);
         headersString.append(": ");
         headersString.append(head.second);
@@ -228,14 +228,14 @@ std::string constructHeaders(HeadersMapType &headers) {
     return headersString;
 }
 
-bool parseStatusLine(std::string line, std::string &httpVer, int &statusCode, std::string &reason) {
+bool parseStatusLine(const std::string &line, std::string &httpVer, int &statusCode, std::string &reason) {
     auto lineClean = line.substr(0, line.find("\r\n"));
 
     // do this check just in case the server is drunk or retarded, would be nice to do more checks with some regex
     if (!lineClean.starts_with("HTTP/"))
         return false; // what
 
-    const auto firstSpace = lineClean.find(" ");
+    const auto firstSpace = lineClean.find(' ');
     if (firstSpace == std::string::npos)
         return false;
 
@@ -256,7 +256,7 @@ bool parseStatusLine(std::string line, std::string &httpVer, int &statusCode, st
     const int statusCodeInt = std::stoi(statusCodeStr);
 
     std::string reasonStr = "";
-    bool hasReason = codeAndReason.find(" ") != std::string::npos;
+    bool hasReason = codeAndReason.find(' ') != std::string::npos;
     if (hasReason) // standard says that reasons CAN be empty, we have to take this edge case into account
         reasonStr = codeAndReason.substr(4);
 
@@ -271,8 +271,7 @@ bool parseStatusLine(std::string line, std::string &httpVer, int &statusCode, st
     CANNOT have ANYTHING after the last \r\n or \r\n\r\n else it will be treated as a header
 */
 bool parseHeaders(std::string &headersRaw, HeadersMapType &headersOut) {
-    char *ptr;
-    ptr = strtok(headersRaw.data(), "\r\n");
+    char *ptr = strtok(headersRaw.data(), "\r\n");
     // use while loop to check ptr is not null
     while (ptr != NULL) {
         auto line = std::string_view(ptr);
@@ -294,7 +293,7 @@ bool parseHeaders(std::string &headersRaw, HeadersMapType &headersOut) {
     return true;
 }
 
-bool parseResponse(std::string res, SceRequestResponse &reqres) {
+bool parseResponse(const std::string &res, SceRequestResponse &reqres) {
     auto statusLine = res.substr(0, res.find("\r\n"));
     if (!parseStatusLine(statusLine, reqres.httpVer, reqres.statusCode, reqres.reasonPhrase))
         return false;
@@ -303,9 +302,6 @@ bool parseResponse(std::string res, SceRequestResponse &reqres) {
 
     if (!parseHeaders(headersRaw, reqres.headers))
         return false;
-
-    bool hasContLen = false;
-    int contLenVal = 0;
 
     auto contLenIt = reqres.headers.find("Content-Length");
     if (contLenIt == reqres.headers.end()) {
@@ -319,7 +315,8 @@ bool parseResponse(std::string res, SceRequestResponse &reqres) {
 
 bool socketSetBlocking(int sockfd, bool blocking) {
 #ifdef WIN32
-    ioctlsocket(sockfd, FIONBIO, (u_long *)&blocking);
+    u_long blocking_tmp = blocking;
+    ioctlsocket(sockfd, FIONBIO, &blocking_tmp);
 #else
     if (blocking) { // Blocking
         int flags = fcntl(sockfd, F_GETFL); // Get flags
@@ -391,7 +388,7 @@ static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream) {
 
 typedef int (*CurlDownloadCallback)(void *c, long t, long d);
 
-bool download_file(std::string url, const std::string &output_file_path, ProgressCallback progress_callback) {
+bool download_file(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback) {
     CURL *curl_download = curl_easy_init();
     if (!curl_download)
         return false;

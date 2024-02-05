@@ -19,7 +19,6 @@
 
 #include <fmt/format.h>
 #include <mem/ptr.h> // Address.
-#include <util/types.h>
 
 #include <array>
 #include <cstdint>
@@ -27,7 +26,6 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <vector>
 
 struct CPUState;
 struct MemState;

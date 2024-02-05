@@ -18,7 +18,6 @@
 #pragma once
 
 #include <cstdint>
-#include <fstream>
 #include <functional>
 #include <string>
 #include <vector>
@@ -45,8 +44,8 @@ struct TRPFile {
 
     explicit TRPFile() = default;
 
-    bool get_entry_data(const uint32_t idx, TRPWriteFunc write_func);
-    const std::int32_t search_file(const char *name);
+    bool get_entry_data(const uint32_t idx, const TRPWriteFunc &write_func);
+    std::int32_t search_file(const char *name);
 };
 
 } // namespace np::trophy

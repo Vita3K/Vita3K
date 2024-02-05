@@ -47,6 +47,6 @@ EXPORT(int, sceKernelGetRandomNumber, uint64_t *output, unsigned int size) {
 
     uint64_t value = rng();
     char *ptr = reinterpret_cast<char *>(&value);
-    std::copy(ptr, ptr + remain, reinterpret_cast<char *>(&output[repeat]));
+    std::copy_n(ptr, remain, reinterpret_cast<char *>(&output[repeat]));
     return SCE_KERNEL_OK;
 }

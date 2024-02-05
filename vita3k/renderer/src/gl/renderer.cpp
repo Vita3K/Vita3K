@@ -111,13 +111,11 @@ void bind_fundamental(GLContext &context) {
 }
 
 static void after_callback(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...) {
-    GLenum error_code;
-
     GLAD_UNUSED(ret);
     GLAD_UNUSED(apiproc);
     GLAD_UNUSED(len_args);
 
-    error_code = glad_glGetError();
+    GLenum error_code = glad_glGetError();
 
     if (error_code != GL_NO_ERROR) {
         LOG_ERROR("OpenGL: {} set error {}.", name, error_code);
@@ -175,7 +173,6 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
 
 bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &config) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
-    auto &hashless_texture_cache = config.hashless_texture_cache;
 
     // Recursively create GL version until one accepts
     // Major 4 is mandantory
@@ -281,7 +278,7 @@ bool create(std::unique_ptr<Context> &context) {
     context = std::make_unique<GLContext>();
     GLContext *gl_context = reinterpret_cast<GLContext *>(context.get());
 
-    const bool init_result = gl_context->vertex_array.init(reinterpret_cast<renderer::Generator *>(glGenVertexArrays), reinterpret_cast<renderer::Deleter *>(glDeleteVertexArrays));
+    const bool init_result = gl_context->vertex_array.init(glGenVertexArrays, glDeleteVertexArrays);
 
     if (!init_result) {
         return false;
@@ -296,14 +293,14 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
     rt = std::make_unique<GLRenderTarget>();
     GLRenderTarget *render_target = reinterpret_cast<GLRenderTarget *>(rt.get());
 
-    if (!render_target->maskbuffer.init(reinterpret_cast<renderer::Generator *>(glGenFramebuffers), reinterpret_cast<renderer::Deleter *>(glDeleteFramebuffers))) {
+    if (!render_target->maskbuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
         return false;
     }
 
     render_target->width = static_cast<uint16_t>(params.width * state.res_multiplier);
     render_target->height = static_cast<uint16_t>(params.height * state.res_multiplier);
 
-    render_target->attachments.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
+    render_target->attachments.init(glGenTextures, glDeleteTextures);
 
     glBindTexture(GL_TEXTURE_2D, render_target->attachments[0]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render_target->width, render_target->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
@@ -313,7 +310,7 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
     glBindTexture(GL_TEXTURE_2D, render_target->attachments[1]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, render_target->width, render_target->height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
 
-    render_target->masktexture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
+    render_target->masktexture.init(glGenTextures, glDeleteTextures);
     glBindTexture(GL_TEXTURE_2D, render_target->masktexture[0]);
     // we need to make the masktexture format immutable, otherwise image load operations
     // won't work on mesa drivers
@@ -465,7 +462,7 @@ static bool format_need_temp_storage(const GLState &state, SceGxmColorSurface &s
 
 static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, std::uint8_t *source, std::uint32_t width, std::uint32_t height, const std::uint32_t stride,
     SceGxmColorSurface &surface) {
-    uint8_t *curr_input = reinterpret_cast<uint8_t *>(source);
+    uint8_t *curr_input = source;
     uint8_t *curr_output = reinterpret_cast<uint8_t *>(pixels);
 
     const bool is_U8U8U8_RGBA = surface.colorFormat == SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA;

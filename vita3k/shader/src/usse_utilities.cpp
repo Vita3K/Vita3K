@@ -573,7 +573,7 @@ static spv::Id make_or_get_buffer_ptr(spv::Builder &b, shader::usse::utils::Spir
     return utils.buffer_address_vec[buffer_utils_idx][is_write];
 }
 
-void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest, int dest_offset, spv::Id addr, uint32_t component_size, uint32_t nb_components, bool is_fragment, int buffer_idx, bool is_buffer_store) {
+void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest, int dest_offset, spv::Id addr, uint32_t component_size, uint32_t nb_components, int buffer_idx, bool is_buffer_store) {
     const spv::Id i32 = b.makeIntType(32);
     const spv::Id zero = b.makeIntConstant(0);
 
@@ -1298,7 +1298,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
     // Floor down to nearest component that a float can hold. We originally want to optimize it to store from the first offset in float unit that writes the data.
     // But for unit size smaller than float, we have to start from the beginning in float unit.
     const int num_comp_in_float = static_cast<int>(4 / size_comp);
-    nearest_swizz_on = (int)((nearest_swizz_on / num_comp_in_float) * num_comp_in_float);
+    nearest_swizz_on = nearest_swizz_on / num_comp_in_float * num_comp_in_float;
 
     if (dest.type != DataType::F32) {
         std::vector<spv::Id> composites;

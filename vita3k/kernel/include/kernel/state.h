@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <cpu/functions.h>
 #include <kernel/callback.h>
 #include <kernel/cpu_protocol.h>
 #include <kernel/debugger.h>
@@ -29,15 +28,12 @@
 #include <rtc/rtc.h>
 #include <util/containers.h>
 #include <util/pool.h>
+#include <util/types.h>
 
 #include <atomic>
 #include <kernel/object_store.h>
 #include <map>
 #include <mutex>
-#include <optional>
-#include <queue>
-#include <shared_mutex>
-#include <unordered_map>
 #include <vector>
 
 struct ThreadState;
@@ -159,7 +155,7 @@ struct KernelState {
         return next_uid++;
     }
 
-    bool init(MemState &mem, CallImportFunc call_import, CPUBackend cpu_backend, bool cpu_opt);
+    bool init(MemState &mem, const CallImportFunc &call_import, CPUBackend cpu_backend, bool cpu_opt);
     void load_process_param(MemState &mem, Ptr<uint32_t> ptr);
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point = Ptr<const void>(0));
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
@@ -168,7 +164,7 @@ struct KernelState {
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
 
     void exit_delete_all_threads();
-    bool is_threads_paused() { return !paused_threads_status.empty(); };
+    bool is_threads_paused() { return !paused_threads_status.empty(); }
     void pause_threads();
     void resume_threads();
 

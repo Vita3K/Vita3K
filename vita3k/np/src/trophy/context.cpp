@@ -26,8 +26,7 @@
 #include <spdlog/fmt/fmt.h>
 
 namespace np::trophy {
-Context::Context(const CommunicationID &comm_id, IOState *io, const SceUID trophy_stream,
-    const std::string &output_progress_path)
+Context::Context(const CommunicationID &comm_id, IOState *io, const SceUID trophy_stream, const std::string &output_progress_path)
     : comm_id(comm_id)
     , trophy_file_stream(trophy_stream)
     , trophy_progress_output_file_path(output_progress_path)
@@ -41,7 +40,7 @@ Context::Context(const CommunicationID &comm_id, IOState *io, const SceUID troph
     };
 }
 
-#define SET_TROPHY_BIT(arr, bit) arr[bit >> 5] |= (1 << (bit & 31))
+#define SET_TROPHY_BIT(arr, bit) arr[(bit) >> 5] |= (1 << ((bit)&31))
 
 static bool read_trophy_entry_to_buffer(TRPFile &trophy_file, const char *fname, std::string &buffer) {
     // Read the trophy config
@@ -88,10 +87,9 @@ int Context::copy_file_data_from_trophy_file(const char *filename, void *buffer,
             return false;
 
         source_size = std::min<std::uint32_t>(size_left, source_size);
-        std::copy(reinterpret_cast<std::uint8_t *>(source), reinterpret_cast<std::uint8_t *>(source) + source_size,
-            reinterpret_cast<std::uint8_t *>(buffer));
+        std::copy_n(static_cast<std::uint8_t *>(source), source_size, static_cast<std::uint8_t *>(buffer));
 
-        buffer = reinterpret_cast<std::uint8_t *>(buffer) + source_size;
+        buffer = static_cast<std::uint8_t *>(buffer) + source_size;
         return true;
     });
 
@@ -111,8 +109,8 @@ bool Context::init_info_from_trp() {
         return false;
     }
 
-    std::fill(trophy_progress, trophy_progress + (MAX_TROPHIES >> 5), 0);
-    std::fill(trophy_availability, trophy_availability + (MAX_TROPHIES >> 5), 0);
+    std::fill_n(trophy_progress, (MAX_TROPHIES >> 5), 0);
+    std::fill_n(trophy_availability, (MAX_TROPHIES >> 5), 0);
     std::fill(trophy_count_by_group.begin(), trophy_count_by_group.end(), 0);
     std::fill(unlock_timestamps.begin(), unlock_timestamps.end(), 0);
     std::fill(trophy_kinds.begin(), trophy_kinds.end(), SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_UNKNOWN);
@@ -194,7 +192,7 @@ bool Context::load_trophy_progress_file(const SceUID &progress_input_file) {
     if (read_stuff(&magic, 4) != 4 || magic != TROPHY_USR_MAGIC)
         return false;
 
-    std::fill(trophy_progress, trophy_progress + (MAX_TROPHIES >> 5), 0);
+    std::fill_n(trophy_progress, (MAX_TROPHIES >> 5), 0);
     if (read_stuff(trophy_progress, sizeof(trophy_progress)) != sizeof(trophy_progress))
         return false;
 
@@ -266,15 +264,15 @@ bool Context::unlock_trophy(std::int32_t id, np::NpTrophyError *err, const bool 
     return true;
 }
 
-const bool Context::is_trophy_hidden(const uint32_t &trophy_index) {
+bool Context::is_trophy_hidden(const uint32_t &trophy_index) {
     return trophy_availability[trophy_index >> 5] & (1 << (trophy_index & 31));
 }
 
-const bool Context::is_trophy_unlocked(const uint32_t &trophy_index) {
+bool Context::is_trophy_unlocked(const uint32_t &trophy_index) {
     return trophy_progress[trophy_index >> 5] & (1 << (trophy_index & 31));
 }
 
-const int Context::total_trophy_unlocked() {
+int Context::total_trophy_unlocked() {
     int total = 0;
 
     for (int i = 0; i < (MAX_TROPHIES >> 5); i++) {
@@ -397,8 +395,8 @@ np::trophy::ContextHandle create_trophy_context(NpState &np, IOState *io, const 
     return np::trophy::INVALID_CONTEXT_HANDLE
 
     // Check if a context has already been created for this communication ID
-    for (std::size_t i = 0; i < np.trophy_state.contexts.size(); i++) {
-        if (np.trophy_state.contexts[i].valid && np.trophy_state.contexts[i].comm_id == *custom_comm) {
+    for (const auto &context : np.trophy_state.contexts) {
+        if (context.valid && context.comm_id == *custom_comm) {
             TROPHY_RET_ERROR(TROPHY_CONTEXT_EXIST);
         }
     }

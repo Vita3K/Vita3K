@@ -55,33 +55,33 @@
 #include <tracy/Tracy.hpp>
 
 static void run_execv(char *argv[], EmuEnvState &emuenv) {
-    char *args[10];
+    char const *args[10];
     args[0] = argv[0];
-    args[1] = (char *)"-a";
-    args[2] = (char *)"true";
+    args[1] = "-a";
+    args[2] = "true";
     if (!emuenv.load_app_path.empty()) {
-        args[3] = (char *)"-r";
+        args[3] = "-r";
         args[4] = emuenv.load_app_path.data();
         if (!emuenv.load_exec_path.empty()) {
-            args[5] = (char *)"--self";
+            args[5] = "--self";
             args[6] = emuenv.load_exec_path.data();
             if (!emuenv.load_exec_argv.empty()) {
-                args[7] = (char *)"--app-args";
+                args[7] = "--app-args";
                 args[8] = emuenv.load_exec_argv.data();
-                args[9] = NULL;
+                args[9] = nullptr;
             } else
-                args[7] = NULL;
+                args[7] = nullptr;
         } else
-            args[5] = NULL;
+            args[5] = nullptr;
     } else
-        args[3] = NULL;
+        args[3] = nullptr;
 
         // Execute the emulator again with some arguments
 #ifdef WIN32
     FreeConsole();
     _execv(argv[0], args);
 #elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
-    execv(argv[0], args);
+    execv(argv[0], const_cast<char *const *>(args));
 #endif
 };
 
@@ -158,12 +158,15 @@ int main(int argc, char *argv[]) {
             }
             return Success;
         }
+        LOG_ERROR("Failed to initialise config");
         return InitConfigFailed;
     }
 
 #ifdef WIN32
-    auto res = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-    LOG_ERROR_IF(res == S_FALSE, "Failed to initialize COM Library");
+    {
+        auto res = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+        LOG_ERROR_IF(res == S_FALSE, "Failed to initialize COM Library");
+    }
 #endif
 
     if (cfg.console) {
@@ -215,7 +218,7 @@ int main(int argc, char *argv[]) {
                 if (handle_events(emuenv, gui)) {
                     gui::draw_begin(gui, emuenv);
                     gui::draw_initial_setup(gui, emuenv);
-                    gui::draw_end(gui, emuenv.window.get());
+                    gui::draw_end(gui);
                     emuenv.renderer->swap_window(emuenv.window.get());
                 } else
                     return QuitRequested;
@@ -251,7 +254,7 @@ int main(int argc, char *argv[]) {
             if (is_rif)
                 copy_license(emuenv, *cfg.content_path);
             else if (!is_archive && !is_directory)
-                LOG_ERROR("File dropped: [{}] is not supported.", cfg.content_path->string());
+                LOG_ERROR("File dropped: [{}] is not supported.", *cfg.content_path);
 
             emuenv.cfg.content_path.reset();
             if (!cfg.console)
@@ -301,7 +304,7 @@ int main(int argc, char *argv[]) {
                 gui::draw_vita_area(gui, emuenv);
                 gui::draw_ui(gui, emuenv);
 
-                gui::draw_end(gui, emuenv.window.get());
+                gui::draw_end(gui);
                 emuenv.renderer->swap_window(emuenv.window.get());
                 FrameMark; // Tracy - Frame end mark for UI rendering loop
             } else {
@@ -390,7 +393,7 @@ int main(int argc, char *argv[]) {
             emuenv.renderer->precompile_shader(hash);
             gui::draw_pre_compiling_shaders_progress(gui, emuenv, uint32_t(emuenv.renderer->shaders_cache_hashs.size()));
 
-            gui::draw_end(gui, emuenv.window.get());
+            gui::draw_end(gui);
             emuenv.renderer->swap_window(emuenv.window.get());
         }
     }
@@ -414,7 +417,7 @@ int main(int argc, char *argv[]) {
         gui::draw_common_dialog(gui, emuenv);
         draw_app_background(gui, emuenv);
 
-        gui::draw_end(gui, emuenv.window.get());
+        gui::draw_end(gui);
         emuenv.renderer->swap_window(emuenv.window.get());
         FrameMark; // Tracy - Frame end mark for game loading loop
     }
@@ -448,7 +451,7 @@ int main(int argc, char *argv[]) {
             gui::draw_ui(gui, emuenv);
         }
 
-        gui::draw_end(gui, emuenv.window.get());
+        gui::draw_end(gui);
         emuenv.renderer->swap_window(emuenv.window.get());
         FrameMark; // Tracy - Frame end mark for game rendering loop
     }

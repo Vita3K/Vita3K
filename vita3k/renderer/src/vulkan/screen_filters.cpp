@@ -20,8 +20,6 @@
 
 #include "renderer/vulkan/state.h"
 
-#include <util/align.h>
-
 namespace renderer::vulkan {
 
 ScreenFilter::ScreenFilter(ScreenRenderer &screen_renderer)
@@ -113,8 +111,8 @@ void SinglePassScreenFilter::create_graphics_pipeline() {
     const auto vertex_shader_path = builtin_shaders_path / get_vertex_name();
     const auto fragment_shader_path = builtin_shaders_path / get_fragment_name();
 
-    vertex_shader = vkutil::load_shader(screen.state.device, vertex_shader_path.string());
-    fragment_shader = vkutil::load_shader(screen.state.device, fragment_shader_path.string());
+    vertex_shader = vkutil::load_shader(screen.state.device, vertex_shader_path);
+    fragment_shader = vkutil::load_shader(screen.state.device, fragment_shader_path);
     vk::PipelineShaderStageCreateInfo vert_info{
         .stage = vk::ShaderStageFlagBits::eVertex,
         .module = vertex_shader,
@@ -416,8 +414,8 @@ void FSRScreenFilter::init() {
     const auto easu_shader_path = builtin_shaders_path / "fsr_filter_easu.comp.spv";
     const auto frcas_shader_path = builtin_shaders_path / "fsr_filter_rcas.comp.spv";
 
-    easu_shader = vkutil::load_shader(screen.state.device, easu_shader_path.string());
-    rcas_shader = vkutil::load_shader(screen.state.device, frcas_shader_path.string());
+    easu_shader = vkutil::load_shader(screen.state.device, easu_shader_path);
+    rcas_shader = vkutil::load_shader(screen.state.device, frcas_shader_path);
 
     std::array<vk::DescriptorSetLayoutBinding, 3> layout_bindings = {
         // src img

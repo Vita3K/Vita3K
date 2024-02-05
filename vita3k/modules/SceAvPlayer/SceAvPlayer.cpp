@@ -174,7 +174,7 @@ struct SceAvPlayerStreamInfo {
     SceAvPlayerStreamDetails stream_details;
 };
 
-enum SceAvPlayerErrorCode {
+enum SceAvPlayerErrorCode : uint32_t {
     SCE_AVPLAYER_ERROR_ILLEGAL_ADDR = 0x806a0001,
     SCE_AVPLAYER_ERROR_INVALID_ARGUMENT = 0x806a0002,
     SCE_AVPLAYER_ERROR_NOT_ENOUGH_MEMORY = 0x806a0003,
@@ -226,7 +226,7 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
     return buffer;
 }
 
-void run_event_callback(EmuEnvState &emuenv, const ThreadStatePtr &thread, const PlayerPtr player_info, uint32_t event_id, uint32_t source_id, Ptr<void> event_data) {
+void run_event_callback(EmuEnvState &emuenv, const ThreadStatePtr &thread, const PlayerPtr &player_info, uint32_t event_id, uint32_t source_id, Ptr<void> event_data) {
     if (player_info->event_manager.event_callback) {
         thread->run_callback(player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
     }

@@ -34,7 +34,7 @@ void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint so
     static constexpr GLsizei I32_SIGNED_MAX = 0x7FFFFFFF;
 
     if (!typeless_copy_buffer[0]) {
-        if (!typeless_copy_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers))) {
+        if (!typeless_copy_buffer.init(glGenBuffers, glDeleteBuffers)) {
             LOG_ERROR("Unable to initialize a typeless copy buffer");
             return;
         }
@@ -134,7 +134,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                 if ((ite->first & 0xFFFFFFFF) == key) {
                     ite = framebuffer_array.erase(ite);
                 } else {
-                    ite++;
+                    ++ite;
                 }
             }
             // Clear out. We will recreate later
@@ -328,7 +328,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                     std::unique_ptr<GLCastedTexture> casted_info_unq = std::make_unique<GLCastedTexture>();
                     GLCastedTexture &casted_info = *casted_info_unq;
 
-                    if (!casted_info.texture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures))) {
+                    if (!casted_info.texture.init(glGenTextures, glDeleteTextures)) {
                         LOG_ERROR("Failed to initialise cast color surface texture!");
                         return 0;
                     }
@@ -368,7 +368,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                     if (state.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(info.format)) {
                         // Create a texture view
                         if (!info.gl_expected_read_texture_view[0]) {
-                            if (!info.gl_expected_read_texture_view.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures))) {
+                            if (!info.gl_expected_read_texture_view.init(glGenTextures, glDeleteTextures)) {
                                 LOG_ERROR("Unable to initialize texture view for casting texture!");
                                 return 0;
                             }
@@ -419,7 +419,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     info_added->swizzle = swizzle;
     info_added->flags = 0;
 
-    if (!info_added->gl_texture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures))) {
+    if (!info_added->gl_texture.init(glGenTextures, glDeleteTextures)) {
         LOG_ERROR("Failed to initialise color surface texture!");
         color_surface_textures.erase(key);
 
@@ -448,7 +448,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
-    if (color_surface_textures.count(key) > 0) {
+    if (color_surface_textures.contains(key)) {
         LOG_WARN_ONCE("Two different surfaces have the same base adress, this is not handled, an openGL error will happen.");
     }
     color_surface_textures.emplace(key, std::move(info_added));
@@ -498,7 +498,7 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
     GLenum surface_data_type = color::translate_type(info.format);
 
     if (!info.gl_ping_pong_texture[0]) {
-        if (!info.gl_ping_pong_texture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures))) {
+        if (!info.gl_ping_pong_texture.init(glGenTextures, glDeleteTextures)) {
             LOG_ERROR("Failed to initialise ping pong surface texture!");
             return 0;
         }
@@ -601,7 +601,7 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
         for (std::size_t i = 0; i < depth_stencil_textures.size(); i++) {
             if (depth_stencil_textures[i].flags & GLSurfaceCacheInfo::FLAG_FREE) {
                 if (depth_stencil_textures[i].gl_texture[0] == 0) {
-                    if (!depth_stencil_textures[i].gl_texture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures))) {
+                    if (!depth_stencil_textures[i].gl_texture.init(glGenTextures, glDeleteTextures)) {
                         LOG_ERROR("Fail to initialize depth stencil texture!");
                         return 0;
                     }
@@ -646,15 +646,15 @@ GLuint GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const Mem
 
     if (color) {
         std::uint32_t swizzle_set = color->colorFormat & SCE_GXM_COLOR_SWIZZLE_MASK;
-        color_handle = static_cast<GLuint>(retrieve_color_surface_texture_handle(state, color->width,
+        color_handle = retrieve_color_surface_texture_handle(state, color->width,
             color->height, color->strideInPixels, gxm::get_base_format(color->colorFormat), color->data,
-            SurfaceTextureRetrievePurpose::WRITING, swizzle_set, stored_height));
+            SurfaceTextureRetrievePurpose::WRITING, swizzle_set, stored_height);
     } else {
         color_handle = target->attachments[0];
     }
 
     if (depth_stencil) {
-        ds_handle = static_cast<GLuint>(retrieve_depth_stencil_texture_handle(state, mem, *depth_stencil));
+        ds_handle = retrieve_depth_stencil_texture_handle(state, mem, *depth_stencil);
     } else {
         ds_handle = target->attachments[1];
     }
@@ -676,7 +676,7 @@ GLuint GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const Mem
 
     // Create a new framebuffer for our sake
     GLObjectArray<1> &fb = framebuffer_array[key];
-    if (!fb.init(reinterpret_cast<renderer::Generator *>(glGenFramebuffers), reinterpret_cast<renderer::Deleter *>(glDeleteFramebuffers))) {
+    if (!fb.init(glGenFramebuffers, glDeleteFramebuffers)) {
         LOG_ERROR("Can't initialize framebuffer!");
         return 0;
     }
@@ -697,7 +697,7 @@ GLuint GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const Mem
         LOG_ERROR("Framebuffer is not completed. Proceed anyway...");
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClearDepth(1.0f);
+    glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

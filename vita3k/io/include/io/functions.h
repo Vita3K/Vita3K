@@ -35,7 +35,7 @@ inline SceUID invalid_fd = -1;
 
 void init_device_paths(IOState &io);
 bool init_savedata_app_path(IOState &io, const fs::path &pref_path);
-bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, const fs::path &pref_path, bool redirect_stdout);
+bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, const fs::path &pref_path, bool redirect_stdio);
 
 bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &translated_path, const fs::path &system_path);
 fs::path find_in_cache(IOState &io, const std::string &system_path);
@@ -86,4 +86,4 @@ int remove_dir(IOState &io, const char *dir, const fs::path &pref_path, const ch
 
 // SceFios functions
 SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay);
-std::string resolve_path(IOState &io, const char *input, const bool is_write, const SceUInt32 min_order = 0, const SceUInt32 max_order = 0x7F);
+std::string resolve_path(IOState &io, const char *input, const SceUInt32 min_order = 0, const SceUInt32 max_order = 0x7F);

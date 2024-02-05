@@ -22,10 +22,6 @@
 #include <mem/ptr.h>
 #include <util/align.h>
 
-#include <cpu/functions.h>
-#include <util/find.h>
-#include <util/lock_and_find.h>
-
 #include <util/log.h>
 
 #include <cassert>
@@ -117,7 +113,7 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
 }
 
 void ThreadState::raise_waiting_threads() {
-    for (auto t : waiting_threads) {
+    for (const auto &t : waiting_threads) {
         const std::unique_lock<std::mutex> lock(t->mutex);
         assert(t->status == ThreadStatus::wait);
         t->status = ThreadStatus::run;
@@ -140,12 +136,9 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
 
     // Copy data to stack
     if (argp && arglen > 0) {
-        const Address stack_top = stack.get() + stack_size;
-        const int aligned_size = align(arglen, 8);
-        const Address data_addr = stack_top - aligned_size;
+        const Address data_addr = stack_alloc(*cpu, align(arglen, 8));
         memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
         write_reg(*cpu, 1, data_addr);
-        write_sp(*cpu, data_addr);
     } else {
         write_reg(*cpu, 1, 0);
     }
@@ -303,7 +296,7 @@ bool ThreadState::run_loop() {
     }
 }
 
-void ThreadState::push_arguments(Address callback_address, const std::vector<uint32_t> &args) {
+void ThreadState::push_arguments(const std::vector<uint32_t> &args) {
     Address sp = read_sp(*cpu);
     for (size_t i = 0; i < std::min(args.size(), static_cast<size_t>(4)); i++) {
         write_reg(*cpu, i, args[i]);
@@ -332,7 +325,7 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     // we shouldn't have to clean the context I believe
     write_pc(*cpu, callback_address);
     write_lr(*cpu, cpu->halt_instruction_pc);
-    push_arguments(callback_address, args);
+    push_arguments(args);
     thread_lock.unlock();
 
     // unlock but then immediately lock back in the run_loop function

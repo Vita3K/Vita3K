@@ -44,17 +44,17 @@ struct ProgressState {
 typedef const std::function<ProgressState *(float, uint64_t)> &ProgressCallback;
 typedef std::pair<uint64_t, ProgressCallback> CallbackData;
 
-bool download_file(std::string url, const std::string &output_file_path, ProgressCallback progress_callback = nullptr);
+bool download_file(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback = nullptr);
 std::string get_web_response(const std::string &url);
 std::string get_web_regex_result(const std::string &url, const std::regex &regex);
 
-SceHttpErrorCode parse_url(std::string url, parsedUrl &out);
+SceHttpErrorCode parse_url(const std::string &url, parsedUrl &out);
 const char *int_method_to_char(const int n);
 int char_method_to_int(const char *srcUrl);
-std::string constructHeaders(HeadersMapType &headers);
-bool parseStatusLine(std::string line, std::string &httpVer, int &statusCode, std::string &reason);
+std::string constructHeaders(const HeadersMapType &headers);
+bool parseStatusLine(const std::string &line, std::string &httpVer, int &statusCode, std::string &reason);
 bool parseHeaders(std::string &headersRaw, HeadersMapType &headersOut);
-bool parseResponse(std::string response, SceRequestResponse &reqres);
+bool parseResponse(const std::string &response, SceRequestResponse &reqres);
 
 bool socketSetBlocking(int sockfd, bool blocking);
 

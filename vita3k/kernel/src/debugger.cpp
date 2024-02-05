@@ -18,7 +18,6 @@
 #include <kernel/debugger.h>
 #include <kernel/state.h>
 #include <util/align.h>
-#include <util/arm.h>
 #include <util/log.h>
 
 constexpr unsigned char THUMB_BREAKPOINT[2] = { 0x00, 0xBE };
@@ -53,7 +52,7 @@ void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
     }
 }
 
-void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, TrampolineCallback callback) {
+void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, const TrampolineCallback &callback) {
     const auto swap_inst = [](uint32_t inst) {
         return (inst << 16) | ((inst >> 16) & 0xFFFF);
     };

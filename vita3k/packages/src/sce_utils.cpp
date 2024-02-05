@@ -686,7 +686,7 @@ std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, cons
     }
 
     const std::string compressed_data((char *)&decrypted_data[0], size);
-    stream.next_in = (Bytef *)compressed_data.data();
+    stream.next_in = (const Bytef *)compressed_data.data();
     stream.avail_in = compressed_data.size();
 
     int ret = 0;
@@ -875,7 +875,7 @@ void make_fself(const fs::path &input_file, const fs::path &output_file, uint64_
 
     ElfHeader ehdr = ElfHeader(&input[0]);
 
-    SCE_header hdr = { 0 };
+    SCE_header hdr{};
     hdr.magic = SCE_MAGIC;
     hdr.version = 3;
     hdr.sdk_type = 0xC0;
@@ -896,33 +896,33 @@ void make_fself(const fs::path &input_file, const fs::path &output_file, uint64_
 
     uint32_t offset_to_real_elf = HEADER_LEN;
 
-    SCE_appinfo appinfo = { 0 };
+    SCE_appinfo appinfo{};
     appinfo.authid = authid;
     appinfo.vendor_id = 0;
     appinfo.self_type = 8;
     appinfo.version = 0x1000000000000;
     appinfo.padding = 0;
 
-    SCE_version ver = { 0 };
+    SCE_version ver{};
     ver.unk1 = 1;
     ver.unk2 = 0;
     ver.unk3 = 16;
     ver.unk4 = 0;
 
-    SCE_controlinfo_5 control_5 = { { 0 } };
+    SCE_controlinfo_5 control_5{};
     control_5.common.type = 5;
     control_5.common.size = sizeof(control_5);
     control_5.common.unk = 1;
-    SCE_controlinfo_6 control_6 = { { 0 } };
+    SCE_controlinfo_6 control_6{};
     control_6.common.type = 6;
     control_6.common.size = sizeof(control_6);
     control_6.common.unk = 1;
     control_6.is_used = 1;
-    SCE_controlinfo_7 control_7 = { { 0 } };
+    SCE_controlinfo_7 control_7{};
     control_7.common.type = 7;
     control_7.common.size = sizeof(control_7);
 
-    char empty_buffer[ElfHeader::Size] = { 0 };
+    char empty_buffer[ElfHeader::Size]{};
     ElfHeader myhdr = ElfHeader(empty_buffer);
     memcpy(&myhdr.e_ident_1, "\177ELF\1\1\1", 8);
     myhdr.e_type = ehdr.e_type;
@@ -952,7 +952,7 @@ void make_fself(const fs::path &input_file, const fs::path &output_file, uint64_
     fileout.seekp(hdr.section_info_offset, std::ios_base::beg);
     for (int i = 0; i < ehdr.e_phnum; ++i) {
         ElfPhdr phdr = ElfPhdr(&input[0] + ehdr.e_phoff + ehdr.e_phentsize * i);
-        segment_info segment_info = { 0 };
+        segment_info segment_info{};
         segment_info.offset = offset_to_real_elf + phdr.p_offset;
         segment_info.length = phdr.p_filesz;
         segment_info.compression = 1;
@@ -969,7 +969,7 @@ void make_fself(const fs::path &input_file, const fs::path &output_file, uint64_
     fileout.write((char *)&control_7, sizeof(control_7));
 
     fileout.seekp(HEADER_LEN, std::ios_base::beg);
-    fileout.write((char *)&input[0], file_size);
+    fileout.write(&input[0], file_size);
 
     fileout.seekp(0, std::ios_base::end);
     hdr.self_filesize = fileout.tellp();
@@ -1116,5 +1116,5 @@ void decrypt_fself(const fs::path &file_path, KeyStore &SCE_KEYS, unsigned char 
 bool is_self(const fs::path &file_path) {
     const auto extension = file_path.filename().extension();
     const auto is_self = ((extension == ".suprx") || (extension == ".skprx") || (extension == ".self"));
-    return ((file_path.filename() == "eboot.bin") || is_self);
+    return (is_self || (file_path.filename() == "eboot.bin"));
 }

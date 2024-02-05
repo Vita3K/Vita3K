@@ -29,12 +29,9 @@
 
 #include <gui/imgui_impl_sdl_state.h>
 
-#include <glutil/object.h>
-
 #include <atomic>
 #include <mutex>
 #include <optional>
-#include <queue>
 #include <thread>
 #include <unordered_map>
 #include <vector>
@@ -309,8 +306,6 @@ struct GuiState {
 
     std::vector<std::pair<std::string, bool>> modules;
     ImGuiTextFilter module_search_bar;
-
-    GLuint display = 0;
 
     ImGuiTextFilter app_search_bar;
 

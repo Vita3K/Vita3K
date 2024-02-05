@@ -21,8 +21,6 @@
 
 #include <gxm/functions.h>
 
-#include <cstring>
-
 namespace renderer {
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units) {
     renderer::add_state_set_command(ctx, renderer::GXMState::DepthBias, is_front, factor, units);

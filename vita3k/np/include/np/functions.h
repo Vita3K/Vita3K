@@ -19,7 +19,6 @@
 
 #include <cstdint>
 #include <np/common.h>
-#include <string>
 #include <util/fs.h>
 
 namespace np {

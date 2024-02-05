@@ -19,7 +19,7 @@
 
 #include <mem/ptr.h>
 
-enum SceJpegEncErrorCode {
+enum SceJpegEncErrorCode : uint32_t {
     SCE_JPEGENC_ERROR_IMAGE_SIZE = 0x80650200,
     SCE_JPEGENC_ERROR_INSUFFICIENT_BUFFER = 0x80650201,
     SCE_JPEGENC_ERROR_INVALID_COMPRATIO = 0x80650202,

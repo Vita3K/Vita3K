@@ -22,6 +22,7 @@
 #include <util/lock_and_find.h>
 
 #include <util/log.h>
+#include <util/vector_utils.h>
 
 namespace ngs {
 Rack::Rack(System *mama, const Ptr<void> memspace, const uint32_t memspace_size)
@@ -211,29 +212,22 @@ Ptr<Patch> Voice::patch(const MemState &mem, const int32_t index, int32_t subind
 }
 
 bool Voice::remove_patch(const MemState &mem, const Ptr<Patch> patch) {
+    if (!patch) {
+        return false;
+    }
     const std::lock_guard<std::mutex> guard(*voice_mutex);
     bool found = false;
-
-    for (size_t i = 0; i < patches.size(); i++) {
-        auto iterator = std::find(patches[i].begin(), patches[i].end(), patch);
-
-        if (iterator != patches[i].end()) {
+    for (auto &patches_1 : patches) {
+        if (vector_utils::contains(patches_1, patch)) {
             found = true;
             break;
         }
     }
-
     if (!found)
         return false;
 
     // Try to unroute. Free the destination index
-    Patch *patch_info = patch.get(mem);
-
-    if (!patch_info) {
-        return false;
-    }
-
-    patch_info->output_sub_index = -1;
+    patch.get(mem)->output_sub_index = -1;
 
     return true;
 }
@@ -275,7 +269,7 @@ bool Voice::parse_params(const MemState &mem, const SceNgsModuleParamHeader *hea
 
 SceInt32 Voice::parse_params_block(const MemState &mem, const SceNgsModuleParamHeader *header, const SceUInt32 size) {
     const SceUInt8 *data = reinterpret_cast<const SceUInt8 *>(header);
-    const SceUInt8 *data_end = reinterpret_cast<const SceUInt8 *>(data + size);
+    const SceUInt8 *data_end = data + size;
 
     SceInt32 num_error = 0;
 
@@ -389,9 +383,7 @@ void release_system(State &ngs, const MemState &mem, System *system) {
     for (size_t i = 0; i < system->racks.size(); i++)
         release_rack(ngs, mem, system, system->racks[i]);
 
-    const auto it = std::find(ngs.systems.begin(), ngs.systems.end(), system);
-    if (it != ngs.systems.end())
-        ngs.systems.erase(it);
+    vector_utils::erase_first(ngs.systems, system);
 
     system->~System();
 }
@@ -432,7 +424,7 @@ bool init_rack(State &ngs, const MemState &mem, System *system, SceNgsBufferInfo
 
         // Allocate parameter buffer info for each voice
         for (size_t i = 0; i < rack->modules.size(); i++) {
-            v->datas[i].info.size = static_cast<uint32_t>(rack->modules[i]->get_buffer_parameter_size());
+            v->datas[i].info.size = rack->modules[i]->get_buffer_parameter_size();
             v->datas[i].info.data = rack->alloc_raw(v->datas[i].info.size);
             // from the behavior of games, it looks like the other info buffer (there are two copies because of VoiceLock) is located right after the first
             // one, so copy this behavior, to avoid a game overwriting some important ngs struct
@@ -461,9 +453,7 @@ void release_rack(State &ngs, const MemState &mem, System *system, Rack *rack) {
     }
 
     // remove from system
-    const auto it = std::find(system->racks.begin(), system->racks.end(), rack);
-    if (it != system->racks.end())
-        system->racks.erase(it);
+    vector_utils::erase_first(system->racks, rack);
 
     // free pointer memory
     rack->~Rack();

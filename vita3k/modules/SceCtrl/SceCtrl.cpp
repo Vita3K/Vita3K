@@ -23,14 +23,11 @@
 #include <util/log.h>
 #include <util/tracy.h>
 
-#include <algorithm>
-#include <array>
-
 TRACY_MODULE_NAME(SceCtrl);
 
 template <>
-std::string to_debug_str<SceCtrlPadInputMode>(const MemState &mem, SceCtrlPadInputMode mode) {
-    switch (mode) {
+std::string to_debug_str<SceCtrlPadInputMode>(const MemState &mem, SceCtrlPadInputMode type) {
+    switch (type) {
     case SCE_CTRL_MODE_DIGITAL:
         return "SCE_CTRL_MODE_DIGITAL";
     case SCE_CTRL_MODE_ANALOG:
@@ -38,7 +35,7 @@ std::string to_debug_str<SceCtrlPadInputMode>(const MemState &mem, SceCtrlPadInp
     case SCE_CTRL_MODE_ANALOG_WIDE:
         return "SCE_CTRL_MODE_ANALOG_WIDE";
     }
-    return std::to_string(mode);
+    return std::to_string(type);
 }
 
 EXPORT(int, sceCtrlClearRapidFire) {
@@ -73,7 +70,6 @@ EXPORT(int, sceCtrlGetButtonIntercept) {
 
 EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
     TRACY_FUNC(sceCtrlGetControllerPortInfo, info);
-    CtrlState &state = emuenv.ctrl;
     info->port[0] = emuenv.cfg.current_config.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
     for (int i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
         info->port[i + 1] = (emuenv.cfg.current_config.pstv_mode && !emuenv.ctrl.free_ports[i]) ? get_type_of_controller(i) : SCE_CTRL_TYPE_UNPAIRED;

@@ -19,7 +19,7 @@
 
 #include <module/module.h>
 
-enum SceAppMgrErrorCode {
+enum SceAppMgrErrorCode : uint32_t {
     SCE_APPMGR_ERROR_BUSY = 0x80802000, //!< Busy
     SCE_APPMGR_ERROR_STATE = 0x80802013, //!< Invalid state
     SCE_APPMGR_ERROR_NULL_POINTER = 0x80802016, //!< NULL pointer

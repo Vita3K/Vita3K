@@ -126,7 +126,7 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     // Setup time step (we don't use SDL_GetTicks() because it is using millisecond resolution)
     static Uint64 frequency = SDL_GetPerformanceFrequency();
     Uint64 current_time = SDL_GetPerformanceCounter();
-    io.DeltaTime = state->time > 0 ? (float)((double)(current_time - state->time) / frequency) : (float)(1.0f / 60.0f);
+    io.DeltaTime = state->time > 0 ? (float)((double)(current_time - state->time) / frequency) : (1.0f / 60.0f);
     state->time = current_time;
 
     // Setup mouse inputs (we already got mouse wheel, keyboard keys & characters from our event handler)
@@ -237,7 +237,7 @@ IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(ImGui_State *state, void *data
 
     default:
         LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
-        return (void *)0;
+        return {};
     }
 }
 

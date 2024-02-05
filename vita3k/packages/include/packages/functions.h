@@ -26,7 +26,6 @@
 
 #include <functional>
 #include <string>
-#include <vector>
 
 // TODO: remove
 #include <util/fs.h>

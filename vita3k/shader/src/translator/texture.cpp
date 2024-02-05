@@ -221,7 +221,7 @@ bool USSETranslatorVisitor::smp(
     bool is_texture_buffer_load = false;
     // only used for a load using the texture buffer
     spv::Id texture_index = 0;
-    if (!m_spirv_params.samplers.count(inst.opr.src1.num)) {
+    if (!m_spirv_params.samplers.contains(inst.opr.src1.num)) {
         if (m_spirv_params.texture_buffer_sa_offset == -1) {
             LOG_ERROR("Can't get the sampler (sampler doesn't exist!)");
             return true;

@@ -17,8 +17,8 @@
 
 #include <ngs/system.h>
 
-#include <codec/state.h>
 #include <util/log.h>
+#include <util/vector_utils.h>
 
 namespace ngs {
 bool deliver_data(const MemState &mem, const std::vector<Voice *> &voice_queue, Voice *source, const uint8_t output_port,
@@ -27,14 +27,13 @@ bool deliver_data(const MemState &mem, const std::vector<Voice *> &voice_queue, 
         return false;
     }
 
-    for (size_t i = 0; i < source->patches[output_port].size(); i++) {
-        Patch *patch = source->patches[output_port][i].get(mem);
+    for (auto &patch_ptr : source->patches[output_port]) {
+        Patch *patch = patch_ptr.get(mem);
 
         if (!patch || patch->output_sub_index == -1)
             continue;
 
-        bool dest_used = std::find(voice_queue.begin(), voice_queue.end(), patch->dest) != voice_queue.end();
-        if (!dest_used)
+        if (!vector_utils::contains(voice_queue, patch->dest))
             continue;
 
         const std::lock_guard<std::mutex> guard(*patch->dest->voice_mutex);

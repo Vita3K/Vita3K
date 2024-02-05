@@ -24,8 +24,6 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 
-#include <sstream>
-
 #include <gxm/types.h>
 #include <util/log.h>
 

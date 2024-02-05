@@ -300,7 +300,7 @@ void USSELoopNode::set_content_block(USSEBaseNodeInstance &node) {
     children[0] = std::move(node);
 }
 
-void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction read_func) {
+void analyze(USSEBlockNode &root, USSEOffset end_offset, const AnalyzeReadFunction &read_func) {
     struct BlockInvestigateRequest {
         USSEOffset begin_offset;
         USSEOffset end_offset;
@@ -447,7 +447,7 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction rea
                                 auto end_ite = branches_from.lower_bound(branch_from_result->second.dest - 1);
 
                                 if ((begin_ite != branches_from.end()) && (end_ite != branches_from.end())) {
-                                    for (; begin_ite != end_ite; begin_ite++) {
+                                    for (; begin_ite != end_ite; ++begin_ite) {
                                         if (begin_ite->second.dest > branch_from_result->second.dest) {
                                             else_exist = true;
                                             else_end_offset = begin_ite->second.dest;
@@ -497,7 +497,7 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction rea
             } else if (branches_to_back.contains(baddr) && (request.block_node->start_offset() != baddr)) {
                 // The loop continue target should be unconditional and farest
                 std::uint32_t found_offset = 0xFFFFFFFF;
-                for (auto ite = branch_to_result.first; ite != branch_to_result.second; ite++) {
+                for (auto ite = branch_to_result.first; ite != branch_to_result.second; ++ite) {
                     if ((ite->second.pred == 0) && ((found_offset == 0xFFFFFFFF) || (found_offset < ite->second.offset))) {
                         found_offset = ite->second.offset;
                     }

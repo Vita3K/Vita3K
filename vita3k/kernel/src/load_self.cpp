@@ -336,9 +336,7 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         auto nid_it = kernel.export_nids.find(nid);
         if (nid_it != kernel.export_nids.end()) {
             LOG_DEBUG("Found previously not found variable. nid:{}, new_entry_point:{}", log_hex(nid), log_hex(entry.address()));
-            old_entry_address = nid_it->second;
-            nid_it->second = entry.address();
-        } else {
+            Address old_entry_address = kernel.export_nids[nid];
             kernel.export_nids[nid] = entry.address();
         }
 
@@ -629,7 +627,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                     unsigned long dest_bytes = seg_header.p_filesz;
                     const uint8_t *const compressed_segment_bytes = self_bytes + seg_infos[seg_index].offset;
 
-                    int res = mz_uncompress(reinterpret_cast<uint8_t *>(seg_ptr.get(mem)), &dest_bytes, compressed_segment_bytes, static_cast<mz_ulong>(seg_infos[seg_index].length));
+                    int res = mz_uncompress(seg_ptr.get(mem), &dest_bytes, compressed_segment_bytes, static_cast<mz_ulong>(seg_infos[seg_index].length));
                     assert(res == MZ_OK);
                 } else {
                     memcpy(seg_ptr.get(mem), seg_bytes, seg_header.p_filesz);
@@ -685,7 +683,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         out.close();
     }
 
-    const unsigned int module_info_segment_index = static_cast<unsigned int>(elf.e_entry >> 30);
+    const unsigned int module_info_segment_index = elf.e_entry >> 30;
     const Ptr<const uint8_t> module_info_segment_address = Ptr<const uint8_t>(segment_reloc_info[module_info_segment_index].addr);
     const uint8_t *const module_info_segment_bytes = module_info_segment_address.get(mem);
     const sce_module_info_raw *const module_info = reinterpret_cast<const sce_module_info_raw *>(module_info_segment_bytes + module_info_offset);

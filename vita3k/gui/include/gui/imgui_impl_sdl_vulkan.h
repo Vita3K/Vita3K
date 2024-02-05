@@ -95,7 +95,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(ImGui_VulkanState &state);
 IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(ImGui_VulkanState &state);
 
 // if is_alpha is set to true, the texture only has one alpha component, the other channels map to 1
-IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(ImGui_VulkanState &state, void *data, int width, int height, bool is_alpha = false);
+IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(ImGui_VulkanState &state, void *pixels, int width, int height, bool is_alpha = false);
 IMGUI_API void ImGui_ImplSdlVulkan_DeleteTexture(ImGui_VulkanState &state, ImTextureID texture);
 
 // Use if you want to reset your rendering device without losing ImGui state.

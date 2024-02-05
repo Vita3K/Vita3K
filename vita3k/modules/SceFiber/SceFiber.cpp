@@ -30,7 +30,7 @@ TRACY_MODULE_NAME(SceFiber);
 
 #define SCE_FIBER_CONTEXT_MINIMUM_SIZE 512
 
-enum SceFiberErrorCode {
+enum SceFiberErrorCode : uint32_t {
     SCE_FIBER_OK = 0x00000000, //!< Success
     SCE_FIBER_ERROR_NULL = 0x80590001, //!< Some parameters are NULL.
     SCE_FIBER_ERROR_ALIGNMENT = 0x80590002, //!< Some pointer-parameters are not aligned in their proper alignments.
@@ -68,8 +68,6 @@ typedef struct SceFiber {
 
 static_assert(sizeof(SceFiber) <= 128, "SceFiber struct size is more than 128");
 
-const static int DEFAULT_FIBER_STACK_SIZE = 4096;
-
 struct FiberState {
     std::mutex mutex;
     std::map<SceUID, SceFiber *> thread_fibers;
@@ -102,7 +100,7 @@ CPUContext get_thread_context(FiberState &state, const SceUID &tid) {
     return state.thread_contexts[tid];
 }
 
-std::string describe_fiber(FiberState &state, ThreadStatePtr thread, SceFiber *fiber) {
+std::string describe_fiber(FiberState &state, const ThreadStatePtr &thread, SceFiber *fiber) {
     std::stringstream ss;
     ss << fmt::format("Fiber (name: {})\n", fiber->name);
     ss << fmt::format("entry: {}\n", log_hex(fiber->cpu->get_pc()), log_hex(fiber->entry.address()));
@@ -115,13 +113,13 @@ std::string describe_fiber(FiberState &state, ThreadStatePtr thread, SceFiber *f
     return ss.str();
 }
 
-void log_fiber(FiberState &state, ThreadStatePtr thread, SceFiber *fiber, const std::string &function_name) {
+void log_fiber(FiberState &state, const ThreadStatePtr &thread, SceFiber *fiber, const std::string &function_name) {
     std::string log_msg = function_name + "\n";
     log_msg += describe_fiber(state, thread, fiber);
     LOG_INFO("{}", log_msg);
 }
 
-void setup_fiber_to_run(EmuEnvState &emuenv, const ThreadStatePtr thread, SceFiber *fiber, uint32_t thread_sp, const uint32_t &argOnRunTo) {
+void setup_fiber_to_run(EmuEnvState &emuenv, const ThreadStatePtr &thread, SceFiber *fiber, uint32_t thread_sp, const uint32_t &argOnRunTo) {
     assert(fiber->status != FiberStatus::RUN);
     if (!fiber->addrContext) {
         fiber->cpu->set_sp(thread_sp);
@@ -140,7 +138,7 @@ void setup_fiber_to_run(EmuEnvState &emuenv, const ThreadStatePtr thread, SceFib
     fiber->status = FiberStatus::RUN;
 }
 
-void initialize_fiber(EmuEnvState &emuenv, const ThreadStatePtr thread, SceFiber *fiber, const char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext, SceFiberOptParam *params) {
+void initialize_fiber(EmuEnvState &emuenv, const ThreadStatePtr &thread, SceFiber *fiber, const char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext, SceFiberOptParam *params) {
     fiber->entry = entry;
     strncpy(fiber->name, name, 32);
     fiber->argOnInitialize = argOnInitialize;

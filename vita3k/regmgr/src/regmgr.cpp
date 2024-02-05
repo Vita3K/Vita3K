@@ -21,6 +21,7 @@
 #include <util/bytes.h>
 #include <util/log.h>
 #include <util/string_utils.h>
+#include <util/vector_utils.h>
 
 namespace regmgr {
 
@@ -133,11 +134,6 @@ void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
                             values.push_back(s);
                     }
 
-                    const auto add_category_template = [&](const std::string &category) {
-                        if (std::find(reg_category_template.begin(), reg_category_template.end(), category) == reg_category_template.end())
-                            reg_category_template.push_back(category);
-                    };
-
                     const auto valueType = static_cast<RegType>(string_utils::stoi_def(values[0]));
                     const auto valueSize = static_cast<uint32_t>(string_utils::stoi_def(values[1]));
                     const auto valueDefault = values.back();
@@ -167,11 +163,11 @@ void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
                         for (int i = firstNum; i <= secondNum; i++) {
                             const std::string categoryName = fmt::format("{}{:0>2d}{}", cat_begin, i, cat_end);
                             reg_template[categoryName].push_back({ valueName, valueType, valueSize, initValueData });
-                            add_category_template(categoryName);
+                            vector_utils::push_if_not_exists(reg_category_template, categoryName);
                         }
                     } else {
                         reg_template[category].push_back({ valueName, valueType, valueSize, initValueData });
-                        add_category_template(category);
+                        vector_utils::push_if_not_exists(reg_category_template, category);
                     }
                 }
             }
@@ -358,7 +354,7 @@ void set_bin_value(RegMgrState &regmgr, const std::string &category, const std::
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
 
-    const char *data = reinterpret_cast<const char *>(buf);
+    const char *data = static_cast<const char *>(buf);
     regmgr.system_dreg[fix_category(category)][name].assign(data, data + bufSize);
 
     save_system_dreg(regmgr);

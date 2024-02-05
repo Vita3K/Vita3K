@@ -109,9 +109,7 @@ static void hash_unaligned_tiled(const uint8_t *data, uint32_t width, uint32_t h
     constexpr uint32_t tile_mask = 0x1F;
 
     const uint32_t width_down_aligned = align_down(width, 32);
-    const uint32_t width_aligned = align(width, 32);
     const uint32_t height_down_aligned = align_down(height, 32);
-    const uint32_t height_aligned = align(height, 32);
 
     // we need to take blocks into account, so consider a block line as
     // a 32xblock_height rectangle of pixels
@@ -449,10 +447,10 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
             if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
                 palette_texture_to_rgba_8(reinterpret_cast<uint32_t *>(texture_data_decompressed.data()),
-                    reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, get_texture_palette(gxm_texture, mem));
+                    static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, get_texture_palette(gxm_texture, mem));
             } else {
                 palette_texture_to_rgba_4(reinterpret_cast<uint32_t *>(texture_data_decompressed.data()),
-                    reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, get_texture_palette(gxm_texture, mem));
+                    static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, get_texture_palette(gxm_texture, mem));
             }
             pixels = texture_data_decompressed.data();
             bytes_per_pixel = 4;
@@ -524,7 +522,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
             yuv420_texture_to_rgb(texture_data_decompressed.data(),
-                reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height,
+                static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height,
                 base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3);
             pixels = texture_data_decompressed.data();
             bpp = 32;
@@ -542,10 +540,10 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
                 // just unswizzle the blocks
                 resolve_z_order_compressed_texture(base_format, texture_pixels_lineared.data(), pixels, pixels_per_stride, memory_height);
             else if (is_swizzled)
-                swizzled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height,
+                swizzled_texture_to_linear_texture(texture_pixels_lineared.data(), static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height,
                     static_cast<std::uint8_t>(bpp));
             else
-                tiled_texture_to_linear_texture(texture_pixels_lineared.data(), reinterpret_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height,
+                tiled_texture_to_linear_texture(texture_pixels_lineared.data(), static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height,
                     static_cast<std::uint8_t>(bpp));
 
             pixels = texture_pixels_lineared.data();

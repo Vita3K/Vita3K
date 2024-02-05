@@ -126,7 +126,7 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
             // make the function return 0
             write_reg(*thread->cpu, 0, 0);
 
-            if (emuenv.missing_nids.count(nid) == 0 || LOG_UNK_NIDS_ALWAYS) {
+            if (!emuenv.missing_nids.contains(nid) || LOG_UNK_NIDS_ALWAYS) {
                 LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
 
                 if (!LOG_UNK_NIDS_ALWAYS)
@@ -147,7 +147,7 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
 
         pc -= 4; // Move back to SVC (SuperVisor Call) instruction
 
-        uint32_t *const stub = Ptr<uint32_t>(Address(pc)).get(emuenv.mem);
+        uint32_t *const stub = Ptr<uint32_t>(pc).get(emuenv.mem);
 
         stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)export_pc, 12);
         stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(export_pc >> 16), 12);
@@ -334,10 +334,10 @@ int unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
 bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int *retcode) {
     LOG_INFO("Loading internal module ID: {}", log_hex(module_id));
 
-    if (sysmodule_internal_paths.count(module_id) == 0)
+    if (!sysmodule_internal_paths.contains(module_id))
         return false;
 
-    const auto module_paths = sysmodule_internal_paths.at(module_id);
+    const auto &module_paths = sysmodule_internal_paths.at(module_id);
 
     for (auto module_filename : module_paths) {
         std::string module_path = fmt::format("vs0:sys/external/{}.suprx", module_filename);

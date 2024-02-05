@@ -58,7 +58,7 @@ void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint3
     const uint8_t *slices[] = {
         &yuv[0], // Y Slice
         &yuv[width * height], // U Slice
-        &yuv[static_cast<uint32_t>(width * height * slice_position / 4)], // V Slice
+        &yuv[width * height * slice_position / 4], // V Slice
     };
 
     int strides[] = {
@@ -81,7 +81,7 @@ void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint3
 }
 
 void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const DecoderColorSpace color_space, int32_t inPitch) {
-    AVPixelFormat format;
+    AVPixelFormat format = AV_PIX_FMT_NONE;
     int strides_divisor = 1;
     int slice_position = 8;
 
@@ -112,7 +112,7 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
     };
 
     int strides[] = {
-        static_cast<int>(inPitch * 4),
+        inPitch * 4,
     };
 
     uint8_t *dst_slices[] = {
@@ -134,8 +134,6 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
 
 int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint32_t height, uint32_t max_size, const DecoderColorSpace color_space, int32_t compress_ratio) {
     AVPixelFormat format = AV_PIX_FMT_YUV444P;
-    int strides_divisor = 1;
-    int slice_position = 8;
 
     const AVCodec *codec = avcodec_find_encoder(AV_CODEC_ID_MJPEG);
     assert(codec);

@@ -583,13 +583,12 @@ EXPORT(SceInt, sceHttpDeleteRequest, SceInt reqId) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (!emuenv.http.requests.contains(reqId))
+    auto it = emuenv.http.requests.find(reqId);
+    if (it == emuenv.http.requests.end())
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
-    auto it = emuenv.http.requests.find(reqId);
-    if (it->second.res.responseRaw)
-        delete[] it->second.res.responseRaw;
-    for (auto &pointer : it->second.guestPointers) {
+    delete[] it->second.res.responseRaw;
+    for (auto pointer : it->second.guestPointers) {
         free(emuenv.mem, pointer.address());
     }
     emuenv.http.requests.erase(it);
@@ -639,7 +638,7 @@ EXPORT(SceInt, sceHttpGetAllResponseHeaders, SceInt reqId, Ptr<char> *header, Sc
     // is alloc name ok?
     auto h = Ptr<char>(alloc(emuenv.mem, headers.length() + 1, "header")); // Allocate on guest mem
     memcpy(h.get(emuenv.mem), headers.data(), headers.length() + 1); // Put header data on guest mem
-    req->second.guestPointers.push_back(h); // Save the pointer to free it later
+    req->second.guestPointers.emplace_back(h); // Save the pointer to free it later
     *header = h; // make header point to the guest address where headers are located
 
     *headerSize = headers.length() + 1;
@@ -695,7 +694,7 @@ EXPORT(SceInt, sceHttpGetLastErrno, SceInt reqId, SceInt *errNum) {
     if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
-    *errNum = (int)errno;
+    *errNum = errno;
 
     return 0;
 }
@@ -803,7 +802,7 @@ EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize head
     // is alloc name ok?
     auto h = Ptr<char>(alloc(emuenv.mem, foundIt->second.length() + 1, "fieldValue")); // Allocate on guest mem
     memcpy(h.get(emuenv.mem), foundIt->second.data(), foundIt->second.length() + 1); // Put header data on guest mem
-    emuenv.http.guestPointers.push_back(h); // Save the pointer to free it later
+    emuenv.http.guestPointers.emplace_back(h); // Save the pointer to free it later
     *fieldValue = h; // make header point to the guest address where headers are located
 
     *valueLen = foundIt->second.length() + 1;
@@ -841,7 +840,7 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
     if (!net_utils::parseStatusLine(cleanLine, version, code, reason))
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
-    *httpMajorVer = string_utils::stoi_def(version.substr(0, version.find("."))); // we know this wont fail because parseStatusLine returned true :)
+    *httpMajorVer = string_utils::stoi_def(version.substr(0, version.find('.'))); // we know this wont fail because parseStatusLine returned true :)
     if (version.find('.') != std::string::npos) {
         auto minorVer = version.substr(version.find('.') + 1);
         *httpMinorVer = string_utils::stoi_def(minorVer);
@@ -854,7 +853,7 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
 
     auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "reasonPhrase"));
     memcpy(h.get(emuenv.mem), reason.data(), reason.length() + 1);
-    emuenv.http.guestPointers.push_back(h);
+    emuenv.http.guestPointers.emplace_back(h);
     *reasonPhrase = h;
 
     *phraseLen = reason.length() + 1;
@@ -933,7 +932,7 @@ EXPORT(SceInt, sceHttpRequestGetAllHeaders, SceInt reqId, Ptr<char> *header, Sce
 
     auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "headers"));
     memcpy(h.get(emuenv.mem), headers.data(), headers.length() + 1);
-    req->second.guestPointers.push_back(h);
+    req->second.guestPointers.emplace_back(h);
     *header = h;
 
     *headerSize = headers.length() + 1;

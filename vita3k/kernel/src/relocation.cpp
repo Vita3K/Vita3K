@@ -246,7 +246,7 @@ static void write_thumb_mov_abs(void *data, uint16_t symbol) {
 }
 
 static bool relocate_entry(void *data, uint32_t code, uint32_t symval, uint32_t addend, uint32_t addr) {
-    LOG_DEBUG_IF(LOG_RELOCATIONS, "code: {}, *data: {}, data: {}, addr: {}, symval: {}, addend: {}", code, log_hex(*(reinterpret_cast<uint32_t *>(data))), data, log_hex(addr), log_hex(symval), log_hex(addend));
+    LOG_DEBUG_IF(LOG_RELOCATIONS, "code: {}, *data: {}, data: {}, addr: {}, symval: {}, addend: {}", code, log_hex(*static_cast<uint32_t *>(data)), data, log_hex(addr), log_hex(symval), log_hex(addend));
     switch (code) {
     case None:
     case V4BX: // Untested.

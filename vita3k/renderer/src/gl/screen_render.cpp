@@ -81,7 +81,7 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
     glEnableVertexAttribArray(uvAttrib);
 
     glClearColor(0.125490203f, 0.698039234f, 0.666666687f, 1.0f);
-    glClearDepth(1.0f);
+    glClearDepth(1.0);
 
     return true;
 }
@@ -128,7 +128,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
         static_cast<GLsizei>(viewport_size.y));
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepth(1.0f);
+    glClearDepth(1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // should not be needed, but just in case
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -236,7 +236,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     else
         glDisable(GL_SCISSOR_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
-    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
+    glViewport(last_viewport[0], last_viewport[1], last_viewport[2], last_viewport[3]);
     glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
 }
 

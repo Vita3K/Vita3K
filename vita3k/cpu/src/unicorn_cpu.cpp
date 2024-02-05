@@ -323,7 +323,7 @@ void UnicornCPU::set_fpscr(uint32_t val) {
 float UnicornCPU::get_float_reg(uint8_t idx) {
     DoubleReg value;
 
-    const int single_index = static_cast<int>(idx / 2);
+    const int single_index = idx / 2;
     const uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_D0 + single_index, &value);
     assert(err == UC_ERR_OK);
     return value.f[idx % 2];
@@ -332,7 +332,7 @@ float UnicornCPU::get_float_reg(uint8_t idx) {
 void UnicornCPU::set_float_reg(uint8_t idx, float val) {
     DoubleReg value;
 
-    const int single_index = static_cast<int>(idx / 2);
+    const int single_index = idx / 2;
     uc_err err = uc_reg_read(uc.get(), UC_ARM_REG_D0 + single_index, &value);
     assert(err == UC_ERR_OK);
     value.f[idx % 2] = val;
@@ -369,7 +369,7 @@ CPUContext UnicornCPU::save_context() {
     return ctx;
 }
 
-void UnicornCPU::load_context(CPUContext ctx) {
+void UnicornCPU::load_context(const CPUContext &ctx) {
     for (size_t i = 0; i < ctx.fpu_registers.size(); i++) {
         set_float_reg(i, ctx.fpu_registers[i]);
     }

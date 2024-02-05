@@ -21,7 +21,6 @@
 #include <cpu/state.h>
 #include <kernel/callback.h>
 #include <kernel/types.h>
-#include <list>
 #include <mem/block.h>
 #include <mem/ptr.h>
 #include <mutex>
@@ -121,7 +120,7 @@ struct ThreadState {
     std::string log_stack_traceback() const;
 
 private:
-    void push_arguments(Address callback_address, const std::vector<uint32_t> &args);
+    void push_arguments(const std::vector<uint32_t> &args);
 
     KernelState &kernel;
 

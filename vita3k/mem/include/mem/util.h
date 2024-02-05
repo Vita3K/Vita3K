@@ -18,10 +18,7 @@
 #pragma once
 
 #include <functional>
-#include <map>
 #include <memory>
-#include <string>
-#include <vector>
 
 struct CPUState;
 struct MemState;

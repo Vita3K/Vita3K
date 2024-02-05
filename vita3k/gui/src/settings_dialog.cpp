@@ -35,20 +35,14 @@
 
 #include <emuenv/state.h>
 
-#include <misc/cpp/imgui_stdlib.h>
-
-#include <cpu/functions.h>
-
 #include <string>
 #include <util/fs.h>
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <SDL.h>
 
 #include <algorithm>
 #include <pugixml.hpp>
-#include <sstream>
 
 #undef ERROR
 
@@ -75,11 +69,11 @@ void get_modules_list(GuiState &gui, EmuEnvState &emuenv) {
     if (fs::exists(modules_path) && !fs::is_empty(modules_path)) {
         for (const auto &module : fs::directory_iterator(modules_path)) {
             if (module.path().extension() == ".suprx")
-                gui.modules.push_back({ module.path().filename().replace_extension().string(), false });
+                gui.modules.emplace_back(module.path().filename().replace_extension().string(), false);
         }
 
         for (auto &m : gui.modules)
-            m.second = std::find(config.lle_modules.begin(), config.lle_modules.end(), m.first) != config.lle_modules.end();
+            m.second = vector_utils::contains(config.lle_modules, m.first);
 
         std::sort(gui.modules.begin(), gui.modules.end(), [](const auto &ma, const auto &mb) {
             if (ma.second == mb.second)
@@ -159,7 +153,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
                 const auto core_child = config_child.child("core");
                 config.modules_mode = core_child.attribute("modules-mode").as_int();
                 for (auto &m : core_child.child("lle-modules"))
-                    config.lle_modules.push_back(m.text().as_string());
+                    config.lle_modules.emplace_back(m.text().as_string());
             }
 
             // Load CPU Config
@@ -274,7 +268,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     if (emuenv.static_assets_path != emuenv.shared_path)
         get_list_user_lang(emuenv.shared_path);
 
-    current_user_lang = emuenv.cfg.user_lang.empty() ? 0 : (std::distance(list_user_lang.begin(), std::find(list_user_lang.begin(), list_user_lang.end(), emuenv.cfg.user_lang))) + 1;
+    current_user_lang = emuenv.cfg.user_lang.empty() ? 0 : (vector_utils::find_index(list_user_lang, emuenv.cfg.user_lang) + 1);
 
     get_modules_list(gui, emuenv);
     config.stretch_the_display_area = emuenv.cfg.stretch_the_display_area;
@@ -823,7 +817,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (!emuenv.io.app_path.empty())
             ImGui::BeginDisabled();
         static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
-        if (ImGui::Combo(lang.audio["audio_backend"].c_str(), reinterpret_cast<int *>(&audio_backend_idx), LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
+        if (ImGui::Combo(lang.audio["audio_backend"].c_str(), &audio_backend_idx, LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
             emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.audio["select_audio_backend"].c_str());

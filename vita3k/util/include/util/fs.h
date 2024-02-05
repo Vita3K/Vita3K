@@ -20,7 +20,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <fmt/format.h>
-#include <fmt/std.h>
 
 namespace fs = boost::filesystem;
 

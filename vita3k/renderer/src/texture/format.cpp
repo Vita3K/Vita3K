@@ -25,7 +25,6 @@
 #include <renderer/functions.h>
 #include <renderer/pvrt-dec.h>
 #include <shader/spirv_recompiler.h>
-#include <util/align.h>
 #include <util/log.h>
 
 namespace renderer::texture {
@@ -91,12 +90,12 @@ void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest,
     }
 
     if (block_size > 0)
-        resolve_z_order_compressed_image(width, height, reinterpret_cast<const std::uint8_t *>(data),
-            reinterpret_cast<std::uint8_t *>(dest), block_size);
+        resolve_z_order_compressed_image(width, height, static_cast<const std::uint8_t *>(data),
+            static_cast<std::uint8_t *>(dest), block_size);
 }
 
 uint32_t decompress_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const uint32_t width, const uint32_t height) {
-    int format_id = 0;
+    uint8_t format_id = 0;
 
     switch (fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
@@ -132,12 +131,12 @@ uint32_t decompress_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, 
     }
 
     if (format_id) {
-        decompress_bc_image(width, height, reinterpret_cast<const uint8_t *>(data),
-            reinterpret_cast<uint32_t *>(dest), format_id);
+        decompress_bc_image(width, height, static_cast<const uint8_t *>(data),
+            static_cast<uint32_t *>(dest), format_id);
         return (((width + 3) / 4) * ((height + 3) / 4) * ((format_id != 1 && format_id != 4 && format_id != 5) ? 16 : 8));
     } else if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) && (fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)) {
         pvr::PVRTDecompressPVRTC(data, (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP), width, height,
-            (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP), reinterpret_cast<uint8_t *>(dest));
+            (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP), static_cast<uint8_t *>(dest));
 
         const bool is_2bpp = (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP);
 
@@ -153,8 +152,8 @@ uint32_t decompress_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, 
 }
 
 void decompress_packed_float_e5m9m9m9(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const uint32_t width, const uint32_t height) {
-    const uint32_t *in = reinterpret_cast<const uint32_t *>(data);
-    uint16_t *out = reinterpret_cast<uint16_t *>(dest);
+    const uint32_t *in = static_cast<const uint32_t *>(data);
+    uint16_t *out = static_cast<uint16_t *>(dest);
 
     for (uint32_t in_offset = 0, out_offset = 0; in_offset < width * height; ++in_offset) {
         const uint32_t packed = in[in_offset];
@@ -248,16 +247,19 @@ void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, const uin
         || format == SCE_GXM_TEXTURE_FORMAT_X2F10F10F10_1BGR
         || format == SCE_GXM_TEXTURE_FORMAT_X2F10F10F10_1RGB);
 
+    // f16 values for u2 channel
+    constexpr uint16_t u2_to_f16[4] = { 0, 0x3555, 0x3955, 0x3c00 }; /*{0,1/3,2/3,1}*/
+
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
             uint32_t src_value = src[row * width + height];
             int dst_idx;
             // first get the 2 alpha bits
             if (is_alpha_upper) {
-                dst[row * width + height][3] = (src_value >> 30) / 3.0f;
+                dst[row * width + height][3] = u2_to_f16[(src_value >> 30)];
                 dst_idx = 0;
             } else {
-                dst[row * width + height][0] = (src_value & 0b11) / 3.0f;
+                dst[row * width + height][0] = u2_to_f16[(src_value & 0b11)];
                 dst_idx = 1;
                 src_value >>= 2;
             }
@@ -729,7 +731,6 @@ void decompress_bc_image(uint32_t width, uint32_t height, const uint8_t *block_s
  * \param height    Texture height.
  * \param src       Pointer to compressed blocks.
  * \param dest      Pointer to the image where the decompressed pixels will be stored.
- * \param bc_type   Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2 or BC5S (RGTC2).
  */
 void resolve_z_order_compressed_image(uint32_t width, uint32_t height, const uint8_t *src, uint8_t *dest, const uint32_t block_size) {
     uint32_t block_count_x = (width + 3) / 4;

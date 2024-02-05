@@ -122,7 +122,7 @@ LIBRARY_INIT(SceAudiodec) {
 EXPORT(int, sceAudiodecClearContext, SceAudiodecCtrl *ctrl) {
     TRACY_FUNC(sceAudiodecClearContext, ctrl)
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
-    if (!state->codecs.size()) {
+    if (state->codecs.empty()) {
         return SCE_AUDIODEC_ERROR_NOT_INITIALIZED;
     }
     if (!ctrl->handle) {
@@ -320,7 +320,7 @@ EXPORT(int, sceAudiodecPartlyDecode, SceAudiodecCtrl *ctrl, SceUInt32 samples_of
     TRACY_FUNC(sceAudiodecPartlyDecode, ctrl, samples_offset, samples_to_decode);
     // this function is only called by libatrac
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
-    if (state->codecs[SCE_AUDIODEC_TYPE_AT9].count(ctrl->handle) == 0) {
+    if (!state->codecs[SCE_AUDIODEC_TYPE_AT9].contains(ctrl->handle)) {
         STUBBED("Call to sceAudiodecPartlyDecode with a codec other than Atrac9, report it to the devs");
     }
 

@@ -21,8 +21,6 @@
 
 #include <emuenv/state.h>
 
-struct ImVec4;
-
 namespace gui {
 
 #define RGBA_TO_FLOAT(r, g, b, a) ImVec4(r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f)

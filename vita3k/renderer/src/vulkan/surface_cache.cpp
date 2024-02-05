@@ -26,7 +26,6 @@
 #include <vulkan/vulkan_format_traits.hpp>
 
 #include <util/align.h>
-#include <util/keywords.h>
 #include <util/log.h>
 #include <util/vector_utils.h>
 
@@ -59,8 +58,6 @@ static bool format_need_additional_memory(SceGxmColorBaseFormat format) {
 }
 
 namespace renderer::vulkan {
-
-static constexpr std::uint64_t CASTED_UNUSED_TEXTURE_PURGE_SECS = 40;
 
 ColorSurfaceCacheInfo::~ColorSurfaceCacheInfo() {
     sws_freeContext(sws_context);
@@ -136,7 +133,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
         // no match
         overlap = false;
     else
-        ite--;
+        --ite;
     // ite is now the first item with an address lower or equal to key
 
     overlap = (overlap && (ite->first + ite->second->total_bytes) > address);
@@ -323,9 +320,8 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         // no match
         overlap = false;
     else
-        ite--;
+        --ite;
     // ite is now the first item with an address lower or equal to key
-    bool invalidated = false;
 
     overlap = (overlap && (ite->first + ite->second->total_bytes) > address);
 
@@ -386,7 +382,6 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
 
     // Check if we can use this surface
     bool addr_in_range_of_cache = ((address + total_surface_size) <= (ite->first + info.total_bytes + 4));
-    const bool surface_extent_changed = (info.height < height);
 
     if (ite->first != address && !addr_in_range_of_cache)
         // persona 4 sample from the top of a texture while the bottom wasn't rendered to, the fact that both the surface and
@@ -575,9 +570,6 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         };
     } else {
         // the renderpass external dependencies should take care of the barrier
-        VKContext *context = reinterpret_cast<VKContext *>(state.context);
-        vk::CommandBuffer cmd_buffer = context->prerender_cmd;
-
         if (swizzle == info.swizzle && vk_format == info.texture.format)
             // we can use the same texture view
             return TextureLookupResult{
@@ -1249,7 +1241,7 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
     if (ite == color_address_lookup.begin()) {
         return nullptr;
     }
-    ite--;
+    --ite;
 
     ColorSurfaceCacheInfo &info = *ite->second;
     if (info.data.address() + info.total_bytes <= address.address())
@@ -1309,7 +1301,7 @@ std::vector<uint32_t> VKSurfaceCache::dump_frame(Ptr<const void> address, uint32
     if (ite == color_address_lookup.begin()) {
         return {};
     }
-    ite--;
+    --ite;
 
     const ColorSurfaceCacheInfo &info = *ite->second;
 

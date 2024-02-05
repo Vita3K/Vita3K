@@ -496,7 +496,7 @@ EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadIn
 
     // TODO: SCE_KERNEL_ERROR_ILLEGAL_CONTEXT check
 
-    std::copy(thread->name.c_str(), thread->name.c_str() + KERNELOBJECT_MAX_NAME_LENGTH, info->name);
+    strncpy(info->name, thread->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
     info->stack = Ptr<void>(thread->stack.get());
     info->stackSize = thread->stack_size;
     info->initPriority = thread->priority; // Todo Give only current priority
@@ -703,14 +703,13 @@ EXPORT(int, _sceKernelSignalLwCondTo) {
 EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
     TRACY_FUNC(_sceKernelStartThread, thid, arglen, argp);
     auto thread = lock_and_find(thid, emuenv.kernel.threads, emuenv.kernel.mutex);
-    Ptr<void> new_argp(0);
 
     if (!thread) {
-        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
 
     if (thread->status == ThreadStatus::run) {
-        return SCE_KERNEL_ERROR_RUNNING;
+        return RET_ERROR(SCE_KERNEL_ERROR_RUNNING);
     }
 
     const int res = thread->start(arglen, argp, true);
@@ -1085,7 +1084,7 @@ EXPORT(int, sceKernelDeleteCallback, SceUID callbackId) {
     emuenv.kernel.callbacks.erase(callbackId);
     if (cb_owner_thread) {
         auto &v = cb_owner_thread->callbacks;
-        v.erase(std::remove(v.begin(), v.end(), cb), v.end());
+        std::erase(v, cb);
     }
     return 0;
 }

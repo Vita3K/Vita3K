@@ -15,16 +15,16 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <io/device.h>
+#include <algorithm>
 
-#include <util/string_utils.h>
+#include <io/device.h>
 
 namespace device {
 
 std::string construct_normalized_path(const VitaIoDevice dev, const std::string &path, const std::string &ext) {
     const auto device_path = get_device_string(dev, true);
     if (path.empty()) { // Wants the device only
-        const auto ret = device_path + "/";
+        auto ret = device_path + "/";
         return ret;
     }
 
@@ -57,6 +57,57 @@ std::string remove_device_from_path(const std::string &path, const VitaIoDevice 
         out = out.substr(1, out.length());
 
     return out;
+}
+
+VitaIoDevice get_device(const std::string &path) {
+    if (path.empty())
+        return VitaIoDevice::_INVALID;
+
+    const auto colon = path.find_first_of(':');
+    if (colon == std::string::npos)
+        return VitaIoDevice::_INVALID;
+
+    auto p = path.substr(0, colon);
+    std::transform(p.begin(), p.end(), p.begin(), tolower);
+    if (VitaIoDevice::_is_valid_nocase(p.c_str()))
+        return VitaIoDevice::_from_string(p.c_str());
+
+    return VitaIoDevice::_INVALID;
+}
+
+std::string get_device_string(const VitaIoDevice dev, const bool with_colon) {
+    return with_colon ? std::string(dev._to_string()).append(":") : dev._to_string();
+}
+
+bool is_valid_output_path(const VitaIoDevice device) {
+    return !(device == VitaIoDevice::savedata0 || device == VitaIoDevice::savedata1 || device == VitaIoDevice::app0
+        || device == VitaIoDevice::_INVALID || device == VitaIoDevice::addcont0 || device == VitaIoDevice::tty0
+        || device == VitaIoDevice::tty1 || device == VitaIoDevice::music0 || device == VitaIoDevice::photo0 || device == VitaIoDevice::video0);
+}
+
+bool is_valid_output_path(const std::string &device) {
+    return !(device == (+VitaIoDevice::savedata0)._to_string() || device == (+VitaIoDevice::savedata1)._to_string() || device == (+VitaIoDevice::app0)._to_string()
+        || device == (+VitaIoDevice::_INVALID)._to_string() || device == (+VitaIoDevice::addcont0)._to_string() || device == (+VitaIoDevice::tty0)._to_string()
+        || device == (+VitaIoDevice::tty1)._to_string() || device == (+VitaIoDevice::music0)._to_string() || device == (+VitaIoDevice::photo0)._to_string() || device == (+VitaIoDevice::video0)._to_string());
+}
+
+std::string remove_duplicate_device(const std::string &path, VitaIoDevice &device) {
+    auto cur_path = remove_device_from_path(path, device);
+    if (get_device(cur_path) != VitaIoDevice::_INVALID) {
+        device = get_device(cur_path);
+        if (cur_path.find_first_of(':') != std::string::npos)
+            cur_path = remove_duplicate_device(cur_path, device);
+        return cur_path;
+    }
+
+    return path;
+}
+
+fs::path construct_emulated_path(const VitaIoDevice dev, const fs::path &path, const fs::path &base_path, const bool redirect_pwd, const std::string &ext) {
+    if (redirect_pwd && dev == +VitaIoDevice::host0) {
+        return fs::current_path() / path;
+    }
+    return fs_utils::construct_file_name(base_path, get_device_string(dev, false), path, ext);
 }
 
 } // namespace device

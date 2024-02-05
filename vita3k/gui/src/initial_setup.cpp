@@ -22,8 +22,6 @@
 #include <host/dialog/filesystem.hpp>
 #include <lang/functions.h>
 
-#include <util/string_utils.h>
-
 namespace gui {
 
 enum InitialSetup {

@@ -35,7 +35,7 @@ std::string utf16_to_utf8(const std::u16string &str);
 std::u16string utf8_to_utf16(const std::string &str);
 std::string remove_special_chars(std::string str);
 void replace(std::string &str, const std::string &in, const std::string &out);
-std::basic_string<uint8_t> string_to_byte_array(std::string string);
+std::basic_string<uint8_t> string_to_byte_array(const std::string &string);
 std::string toupper(const std::string &s);
 std::string tolower(const std::string &s);
 int stoi_def(const std::string &str, int default_value = 0, const char *name = "value");

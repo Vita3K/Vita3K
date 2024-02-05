@@ -19,8 +19,6 @@
 
 #include <net/types.h>
 
-#include <map>
-
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -47,7 +45,7 @@ struct Socket;
 typedef std::shared_ptr<Socket> SocketPtr;
 
 struct Socket {
-    explicit Socket(int domain, int type, int protocol){};
+    explicit Socket(int domain, int type, int protocol) {}
 
     virtual ~Socket() = default;
 
@@ -79,11 +77,11 @@ struct PosixSocket : public Socket {
 
     explicit PosixSocket(int domain, int type, int protocol)
         : Socket(domain, type, protocol)
-        , sock(socket(domain, type, protocol)){};
+        , sock(socket(domain, type, protocol)) {}
 
     explicit PosixSocket(abs_socket sock)
         : Socket(0, 0, 0)
-        , sock(sock){};
+        , sock(sock) {}
 
     int close() override;
     int bind(const SceNetSockaddr *addr, unsigned int addrlen) override;
@@ -99,7 +97,7 @@ struct PosixSocket : public Socket {
 
 struct P2PSocket : public Socket {
     explicit P2PSocket(int domain, int type, int protocol)
-        : Socket(domain, type, protocol){};
+        : Socket(domain, type, protocol) {}
 
     int close() override;
     int bind(const SceNetSockaddr *addr, unsigned int addrlen) override;

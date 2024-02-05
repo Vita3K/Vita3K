@@ -42,6 +42,9 @@ public:
         }
     }
 
+    GLObjectArray(const GLObjectArray &) = delete;
+    const GLObjectArray &operator=(const GLObjectArray &) = delete;
+
     bool init(renderer::Generator *generator, renderer::Deleter *deleter) {
         assert(generator != nullptr);
         assert(deleter != nullptr);
@@ -51,7 +54,7 @@ public:
         return glGetError() == GL_NO_ERROR;
     }
 
-    const GLuint operator[](size_t i) const {
+    GLuint operator[](size_t i) const {
         assert(i >= 0);
         assert(i < names.size());
         return names[i];
@@ -63,9 +66,6 @@ public:
 
 private:
     typedef std::array<GLuint, Size> Names;
-
-    GLObjectArray(const GLObjectArray &);
-    const GLObjectArray &operator=(const GLObjectArray &);
 
     Names names;
     renderer::Deleter *deleter = nullptr;

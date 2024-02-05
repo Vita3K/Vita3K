@@ -47,7 +47,7 @@ struct CommunicationID {
     char dummy;
 };
 
-inline const bool operator==(const CommunicationID &lhs, const CommunicationID &rhs) {
+inline bool operator==(const CommunicationID &lhs, const CommunicationID &rhs) {
     return (strncmp(lhs.data, rhs.data, 9) == 0) && (lhs.num == rhs.num);
 }
 
@@ -57,7 +57,7 @@ struct CommunicationConfig {
     Ptr<void> unk1;
 };
 
-#define SCE_NP_TROPHY_INVALID_TROPHY_ID -1
+constexpr auto SCE_NP_TROPHY_INVALID_TROPHY_ID = -1;
 
 enum class NpTrophyError {
     TROPHY_ERROR_NONE = 0,

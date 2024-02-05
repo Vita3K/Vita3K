@@ -15,8 +15,6 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <renderer/functions.h>
-
 #include <xxh3.h>
 
 #include <renderer/types.h>
@@ -226,7 +224,6 @@ bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
 }
 
 void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
-    VKContext &context = *reinterpret_cast<VKContext *>(state.context);
     VKRenderTarget &render_target = *reinterpret_cast<VKRenderTarget *>(rt.get());
 
     // don't forget to destroy the framebuffers

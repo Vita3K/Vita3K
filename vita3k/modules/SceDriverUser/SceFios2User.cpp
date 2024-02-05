@@ -88,7 +88,7 @@ EXPORT(int, sceFiosOverlayGetRecommendedScheduler02, int param1, const char *pat
     if (strlen(path) < strlen("host0:"))
         return 0;
 
-    return static_cast<int>(memcmp(path, "host", 4) == 0 && path[4] <= '9' && path[5] == ':');
+    return memcmp(path, "host", 4) == 0 && path[4] <= '9' && path[5] == ':';
 }
 
 EXPORT(int, sceFiosOverlayModifyForProcess02) {
@@ -108,7 +108,7 @@ EXPORT(int, sceFiosOverlayResolveSync02) {
 
 EXPORT(int, sceFiosOverlayResolveWithRangeSync02, SceUID processId, SceFiosOverlayResolveMode resolveFlag, const char *pInPath, char *pOutPath, SceUInt32 maxPath, SceUInt32 min_order, SceUInt32 max_order) {
     TRACY_FUNC(sceFiosOverlayResolveWithRangeSync02, processId, resolveFlag, pInPath, pOutPath, maxPath, min_order, max_order);
-    const std::string resolved = resolve_path(emuenv.io, pInPath, resolveFlag == SCE_FIOS_OVERLAY_RESOLVE_FOR_WRITE, min_order, max_order);
+    const std::string resolved = resolve_path(emuenv.io, pInPath, min_order, max_order);
     strncpy(pOutPath, resolved.c_str(), maxPath);
 
     return SCE_FIOS_OK;

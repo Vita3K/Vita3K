@@ -23,7 +23,7 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceCodecEngineUser);
 
-enum SceCodecEngineErrorCode {
+enum SceCodecEngineErrorCode : uint32_t {
     SCE_CODECENGINE_ERROR_INVALID_POINTER = 0x80600000,
     SCE_CODECENGINE_ERROR_INVALID_SIZE = 0x80600001,
     SCE_CODECENGINE_ERROR_INVALID_HEAP = 0x80600005,
