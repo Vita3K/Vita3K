@@ -343,6 +343,8 @@ O seu sistema Vita3K está pronto!</completed_setup>
 		<internet_browser>Navegador de Internet</internet_browser>
 		<trophies>Troféus</trophies>
 		<trophy_collection>Coleção de troféus</trophy_collection>
+		<settings>Definições</settings>
+		<content_manager>Gestor de conteúdo</content_manager>
 	</sys_apps_title>
 
 	<trophy_collection>

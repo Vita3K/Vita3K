@@ -635,9 +635,9 @@ void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
                 emuenv.app_info.app_short_title = lang["trophies"].c_str();
                 emuenv.app_info.app_title = lang["trophy_collection"].c_str();
             } else if (app == "NPXS10015")
-                emuenv.app_info.app_short_title = emuenv.app_info.app_title = gui.lang.settings.main["title"].c_str();
+                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["settings"].c_str();
             else
-                emuenv.app_info.app_short_title = emuenv.app_info.app_title = gui.lang.content_manager.main["title"].c_str();
+                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["content_manager"].c_str();
         }
         gui.app_selector.sys_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, {}, {}, {}, {}, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, app });
     }

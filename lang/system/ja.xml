@@ -592,6 +592,12 @@ GUIでのアジア地域のフォントサポートに必須です。
 一部の有益な拡張が無効になり、すべてのGPUがこれに対応しているわけではありません。</spirv_shader_description>
 			<clean_shaders>シェーダーキャッシュとログのクリア</clean_shaders>
 		</gpu>
+		<audio name="オーディオ">
+			<audio_backend>オーディオバックエンド</audio_backend>
+			<select_audio_backend>お好みのオーディオバックエンドを選択してください。</select_audio_backend>
+			<enable_ngs_support>NGSサポートを有効にする</enable_ngs_support>
+			<ngs_description>NGSオーディオライブラリのサポートを無効にするには、チェックボックスを外します。</ngs_description>
+		</audio>
 		<system name="システム">
 			<select_enter_button>決定ボタンの割り当て
 「決定」ボタンを選択してください。</select_enter_button>
@@ -608,10 +614,6 @@ GUIでのアジア地域のフォントサポートに必須です。
 		</system>
 		<emulator name="エミュレータ">
 			<boot_apps_full_screen>アプリをフルスクリーンで起動</boot_apps_full_screen>
-			<audio_backend>オーディオバックエンド</audio_backend>
-			<select_audio_backend>お好みのオーディオバックエンドを選択してください。</select_audio_backend>
-			<enable_ngs_support>NGSサポートを有効にする</enable_ngs_support>
-			<ngs_description>NGSオーディオライブラリのサポートを無効にするには、チェックボックスを外します。</ngs_description>
 			<log_level>ログレベル</log_level>
 			<select_log_level>お好みのログレベルを選択してください。</select_log_level>
 			<archive_log>ログのアーカイブ</archive_log>
@@ -717,6 +719,8 @@ GUIでのアジア地域のフォントサポートに必須です。
 		<internet_browser>インターネットブラウザー</internet_browser>
 		<trophies>トロフィー</trophies>
 		<trophy_collection>トロフィーコレクション</trophy_collection>
+		<settings>設定</settings>
+		<content_manager>コンテンツ管理</content_manager>
 	</sys_apps_title>
 
 	<trophy_collection>

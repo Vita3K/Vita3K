@@ -373,6 +373,8 @@
 		<internet_browser>인터넷 브라우저</internet_browser>
 		<trophies>트로피</trophies>
 		<trophy_collection>트로피 컬렉션</trophy_collection>
+		<settings>설정</settings>
+		<content_manager>콘텐츠 관리</content_manager>
 	</sys_apps_title>
 
 	<trophy_collection>

@@ -197,7 +197,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TableSetupColumn("button");
         ImGui::TableSetupColumn("mapped_button");
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_toggle_texture_replacement, lang["toggle_texture_replacement"].c_str());
-        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_take_screenshot, "Take a screenshot");
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_take_screenshot, lang["take_a_screenshot"].c_str());
         ImGui::EndTable();
     }
 

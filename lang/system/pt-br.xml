@@ -417,6 +417,8 @@ fundo</add_background>
 		<internet_browser>Navegador de Internet</internet_browser>
 		<trophies>Troféus</trophies>
 		<trophy_collection>Coleção de troféus</trophy_collection>
+		<settings>Configurações</settings>
+		<content_manager>Gerenciador de conteúdo</content_manager>
 	</sys_apps_title>
 
 	<trophy_collection>

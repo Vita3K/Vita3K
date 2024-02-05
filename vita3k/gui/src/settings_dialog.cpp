@@ -798,11 +798,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
 
         // FPS hack
-        ImGui::Checkbox("FPS hack", &config.fps_hack);
+        ImGui::Checkbox(lang.gpu["fps_hack"].c_str(), &config.fps_hack);
         if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Game hack which allows some games running at 30fps to run at 60fps on the emulator."
-                              "Note that this is a hack and will only work on some games."
-                              "On other games, it may have no effect or make them run twice as fast.");
+            ImGui::SetTooltip("%s", lang.gpu["fps_hack_description"].c_str());
         }
 
         ImGui::EndTabItem();

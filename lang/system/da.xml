@@ -340,6 +340,8 @@ Dit Vita3K-system er klart!</completed_setup>
 		<internet_browser>Internetbrowser</internet_browser>
 		<trophies>Trophies</trophies>
 		<trophy_collection>Trophy Collection</trophy_collection>
+		<settings>Indstillinger</settings>
+		<content_manager>Indholdsadministrator</content_manager>
 	</sys_apps_title>
 	
 	<trophy_collection>

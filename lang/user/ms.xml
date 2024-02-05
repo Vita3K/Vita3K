@@ -613,6 +613,12 @@ Ambil perhatian bahawa beberapa sambungan berfaedah akan dilumpuhkan,
 dan tidak semua GPU serasi dengan ini.</spirv_shader_description>
 			<clean_shaders>Bersihkan Cache dan Log Shader</clean_shaders>
 		</gpu>
+		<audio name="Audio">
+			<audio_backend>Audio Bahagian Belakang</audio_backend>
+			<select_audio_backend>Pilih bahagian belakang audio pilihan awak.</select_audio_backend>
+			<enable_ngs_support>Dayakan NGS Audio</enable_ngs_support>
+			<ngs_description>Nyahtanda kotak untuk melumpuhkan sokongan untuk perpustakaan audio lanjutan NGS.</ngs_description>
+		</audio>
 		<system name="System">
 			<select_enter_button>Masukkan tugasan butang
 Pilih butang 'Enter' awak.</select_enter_button>
@@ -626,10 +632,6 @@ Sesetengah aplikasi tidak menggunakan ini dan mendapatkan butang pengesahan lala
 		</system>
 		<emulator name="Emulator">
 			<boot_apps_full_screen>Boot apl dalam skrin penuh</boot_apps_full_screen>
-			<audio_backend>Audio Bahagian Belakang</audio_backend>
-			<select_audio_backend>Pilih bahagian belakang audio pilihan awak.</select_audio_backend>
-			<enable_ngs_support>Dayakan NGS Audio</enable_ngs_support>
-			<ngs_description>Nyahtanda kotak untuk melumpuhkan sokongan untuk perpustakaan audio lanjutan NGS.</ngs_description>
 			<log_level>Log Tahap</log_level>
 			<select_log_level>Pilih tahap log pilihan awak.</select_log_level>
 			<archive_log>Log Arkib</archive_log>

@@ -347,6 +347,8 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 		<internet_browser>İnternet Tarayıcısı</internet_browser>
 		<trophies>Kupalar</trophies>
 		<trophy_collection>Kupa Koleksiyonu</trophy_collection>
+		<settings>Ayarlar</settings>
+		<content_manager>İçerik Yöneticisi</content_manager>
 	</sys_apps_title>
 
 	<trophy_collection>
