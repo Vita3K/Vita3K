@@ -206,7 +206,7 @@ public:
     bool receive(uint8_t *data, DecoderSize *size) override;
 
     explicit PCMDecoderState(const float dest_frequency);
-    ~PCMDecoderState();
+    ~PCMDecoderState() override;
 };
 
 struct AacDecoderState : public DecoderState {
@@ -221,7 +221,7 @@ struct AacDecoderState : public DecoderState {
     uint32_t get_es_size() override;
 
     explicit AacDecoderState(uint32_t sample_rate, uint32_t channels);
-    ~AacDecoderState();
+    ~AacDecoderState() override;
 };
 
 struct PlayerState {

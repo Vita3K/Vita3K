@@ -889,10 +889,10 @@ SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay) {
     // lower order first and in case of equality, last one inserted first
     while (overlay_index < io.overlays.size() && overlay.order < io.overlays[overlay_index].order)
         overlay_index++;
-
+    auto res = overlay.id;
     io.overlays.insert(io.overlays.begin() + overlay_index, std::move(overlay));
 
-    return overlay.id;
+    return res;
 }
 
 std::string resolve_path(IOState &io, const char *input, const bool is_write, const SceUInt32 min_order, const SceUInt32 max_order) {

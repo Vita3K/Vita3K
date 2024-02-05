@@ -330,7 +330,7 @@ EXPORT(int, sceClibSnprintf, char *dst, SceSize dst_max_size, const char *fmt, m
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     }
 
-    return SCE_KERNEL_OK;
+    return result;
 }
 
 EXPORT(int, sceClibSnprintfChk) {

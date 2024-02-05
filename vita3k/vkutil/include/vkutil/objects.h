@@ -102,6 +102,7 @@ public:
     uint32_t data_offset = 0;
 
     explicit RingBuffer(vk::BufferUsageFlags usage, const size_t capacity);
+    virtual ~RingBuffer() = default;
     virtual void create() = 0;
 
     // Allocate new data from ring buffer

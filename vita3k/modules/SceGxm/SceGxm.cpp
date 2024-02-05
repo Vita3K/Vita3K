@@ -899,7 +899,7 @@ static void display_entry_thread(EmuEnvState &emuenv) {
     const Address callback_address = emuenv.gxm.params.displayQueueCallback.address();
     const ThreadStatePtr display_thread = emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread);
     if (!display_thread) {
-        LOG_CRITICAL("display_thread not found. thid:{}", display_thread->id);
+        LOG_CRITICAL("display_thread not found. thid:{}", emuenv.gxm.display_queue_thread);
         return;
     }
     Ptr<SceGxmSyncObject> previous_sync = Ptr<SceGxmSyncObject>();
@@ -2672,7 +2672,7 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     const uint32_t max_queue_size = std::max(std::min(params->displayQueueMaxPendingCount, 3U) - 1, 1U);
     emuenv.gxm.display_queue.maxPendingCount_ = max_queue_size;
 
-    const ThreadStatePtr main_thread = util::find(thread_id, emuenv.kernel.threads);
+    const ThreadStatePtr main_thread = emuenv.kernel.get_thread(thread_id);
     const ThreadStatePtr display_queue_thread = emuenv.kernel.create_thread(emuenv.mem, "SceGxmDisplayQueue", Ptr<void>(0), SCE_KERNEL_HIGHEST_PRIORITY_USER, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, nullptr);
     if (!display_queue_thread) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);

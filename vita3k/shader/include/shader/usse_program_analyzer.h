@@ -88,6 +88,7 @@ public:
     USSEBaseNode *get_parent() const {
         return parent;
     }
+    virtual ~USSEBaseNode() = default;
 
     std::size_t children_count() const {
         return children.size();

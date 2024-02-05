@@ -228,7 +228,7 @@ public:
 
         case _INVALID:
         default: {
-            return nullptr;
+            return {};
         }
         }
 #undef SWITCH_NAMES
