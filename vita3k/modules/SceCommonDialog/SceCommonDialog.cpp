@@ -1369,6 +1369,13 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
     case SCE_SAVEDATA_DIALOG_MODE_SYSTEM_MSG:
         sys_message = p->sysMsgParam.get(emuenv.mem);
         initialize_savedata_vectors(emuenv, 1);
+        if (p->dispType == 0) {
+            emuenv.common_dialog.savedata.slot_id[0] = static_cast<SceAppUtilSaveDataSlotId>(-1);
+            emuenv.common_dialog.result = static_cast<SceCommonDialogResult>(SCE_SAVEDATA_DIALOG_ERROR_PARAM);
+            // substatus stays RUNNING so GetStatus reports FINISHED, as after sceSaveDataDialogFinish
+            emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+            break;
+        }
         emuenv.common_dialog.savedata.slot_id[0] = sys_message->targetSlot.id;
         emuenv.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
         emuenv.common_dialog.savedata.list_empty_param[0] = sys_message->targetSlot.emptyParam.get(emuenv.mem);
