@@ -117,7 +117,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 fs::remove(fs::path(license_path.native()));
                 delete_license_file = false;
             }
-            license_path = nullptr;
+            license_path = "";
             gui.file_menu.license_install_dialog = false;
             state.clear();
         }
@@ -129,7 +129,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
         if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
             gui.file_menu.license_install_dialog = false;
-            license_path = nullptr;
+            license_path = "";
             state.clear();
         }
     }

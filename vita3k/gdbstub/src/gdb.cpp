@@ -270,6 +270,7 @@ static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
 }
 
 static std::string cmd_read_registers(EmuEnvState &state, PacketCommand &command) {
+    const auto guard = std::lock_guard(state.kernel.mutex);
     if (state.gdb.current_thread == -1
         || !state.kernel.threads.contains(state.gdb.current_thread))
         return "E00";
@@ -364,7 +365,7 @@ static std::string cmd_read_memory(EmuEnvState &state, PacketCommand &command) {
     std::stringstream stream;
 
     for (uint32_t a = 0; a < length; a++) {
-        stream << fmt::format("{:0>2x}", static_cast<uint8_t>(state.mem.memory[address + a]));
+        stream << fmt::format("{:0>2x}", *Ptr<uint8_t>(address + a).get(state.mem));
     }
 
     return stream.str();
@@ -385,7 +386,7 @@ static std::string cmd_write_memory(EmuEnvState &state, PacketCommand &command) 
         return "EAA";
 
     for (uint32_t a = 0; a < length; a++) {
-        state.mem.memory[address + a] = static_cast<uint8_t>(parse_hex(hex_data.substr(a * 2, 2)));
+        *Ptr<uint8_t>(address + a).get(state.mem) = static_cast<uint8_t>(parse_hex(hex_data.substr(a * 2, 2)));
     }
 
     return "OK";
@@ -408,7 +409,7 @@ static std::string cmd_write_binary(EmuEnvState &state, PacketCommand &command) 
         return "EAA";
 
     for (uint32_t a = 0; a < length; a++) {
-        state.mem.memory[address + a] = data[a];
+        *Ptr<uint8_t>(address + a).get(state.mem) = data[a];
     }
 
     return "OK";

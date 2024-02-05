@@ -263,7 +263,8 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         const Ptr<uint32_t> entry = entries[i];
 
         if (nid == NID_PROCESS_PARAM) {
-            kernel.load_process_param(mem, entry);
+            if (!kernel.process_param)
+                kernel.load_process_param(mem, entry);
             LOG_DEBUG("\tNID {} (SCE_PROC_PARAMS) at {}", log_hex(nid), log_hex(entry.address()));
             continue;
         }
@@ -363,7 +364,6 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
         if (!load_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, kernel)) {
             return false;
         }
-
         const auto var_count = exports->num_syms_vars;
 
         if (kernel.debugger.log_exports && var_count > 0) {
@@ -651,7 +651,6 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     sceKernelModuleInfo->state = module_info->type;
 
     LOG_INFO("Linking SELF {}...", self_path);
-
     if (!load_exports(sceKernelModuleInfo.get(), *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
     }
@@ -659,7 +658,6 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     if (!load_imports(*module_info, module_info_segment_address, segment_reloc_info, kernel, mem)) {
         return -1;
     }
-
     const SceUID uid = kernel.get_next_uid();
     sceKernelModuleInfo->modid = uid;
     {
@@ -670,5 +668,6 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
         kernel.module_uid_by_nid.emplace(module_info->module_nid, uid);
     }
+
     return uid;
 }

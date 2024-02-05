@@ -124,7 +124,7 @@ struct VertexProgramOutputProperties {
     std::uint32_t location;
 
     VertexProgramOutputProperties()
-        : name(nullptr)
+        : name("")
         , component_count(0)
         , location(0) {}
 

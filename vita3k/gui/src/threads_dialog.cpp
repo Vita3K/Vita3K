@@ -27,7 +27,7 @@
 namespace gui {
 
 void draw_thread_details_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    ThreadStatePtr &thread = emuenv.kernel.threads[gui.thread_watch_index];
+    ThreadStatePtr thread = emuenv.kernel.get_thread(gui.thread_watch_index);
     CPUState &cpu = *thread->cpu;
 
     ImGui::Begin("Thread Viewer", &gui.debug_menu.thread_details_dialog);

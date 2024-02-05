@@ -33,11 +33,11 @@ void Debugger::add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode) {
     Breakpoint bk;
     bk.thumb_mode = thumb_mode;
     if (thumb_mode) {
-        std::memcpy(&bk.data, &mem.memory[addr], sizeof(THUMB_BREAKPOINT));
-        std::memcpy(&mem.memory[addr], THUMB_BREAKPOINT, sizeof(THUMB_BREAKPOINT));
+        std::memcpy(&bk.data, Ptr<uint8_t>(addr).get(mem), sizeof(THUMB_BREAKPOINT));
+        std::memcpy(Ptr<uint8_t>(addr).get(mem), THUMB_BREAKPOINT, sizeof(THUMB_BREAKPOINT));
     } else {
-        std::memcpy(&bk.data, &mem.memory[addr], sizeof(ARM_BREAKPOINT));
-        std::memcpy(&mem.memory[addr], ARM_BREAKPOINT, sizeof(ARM_BREAKPOINT));
+        std::memcpy(&bk.data, Ptr<uint8_t>(addr).get(mem), sizeof(ARM_BREAKPOINT));
+        std::memcpy(Ptr<uint8_t>(addr).get(mem), ARM_BREAKPOINT, sizeof(ARM_BREAKPOINT));
     }
     breakpoints.emplace(addr, bk);
     parent.invalidate_jit_cache(addr, 4);
@@ -47,7 +47,7 @@ void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
     const auto lock = std::lock_guard(mutex);
     if (breakpoints.contains(addr)) {
         auto last = breakpoints[addr];
-        std::memcpy(&mem.memory[addr], &last.data, last.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT));
+        std::memcpy(Ptr<uint8_t>(addr).get(mem), &last.data, last.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT));
         breakpoints.erase(addr);
         parent.invalidate_jit_cache(addr, 4);
     }
@@ -90,7 +90,7 @@ void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, Tram
     }
 
     // Create trampoline body
-    uint32_t *trampoline_insts = reinterpret_cast<uint32_t *>(&mem.memory[trampoline_addr]);
+    uint32_t *trampoline_insts = Ptr<uint32_t>(trampoline_addr).get(mem);
     trampoline_insts[0] = back_inst; // original instruction; if thumb16 it's nop + original thumb16 instruction
     trampoline_insts[1] = thumb_mode ? 0xDF53BF00 : 0xEF000053; // SVC 0x53
     Trampoline **trampoline_host_ptr = Ptr<Trampoline *>(trampoline_addr + 8).get(mem); // interrupt handler will read this
@@ -113,7 +113,7 @@ void Debugger::remove_trampoline(MemState &mem, uint32_t addr) {
     std::lock_guard<std::mutex> lock(mutex);
     const auto it = trampolines.find(addr);
     if (it != trampolines.end()) {
-        uint32_t *insts = reinterpret_cast<uint32_t *>(&mem.memory[addr]);
+        uint32_t *insts = Ptr<uint32_t>(addr).get(mem);
         insts[0] = it->second->original;
         trampolines.erase(it);
         parent.invalidate_jit_cache(addr, 4);

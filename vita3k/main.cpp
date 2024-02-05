@@ -337,7 +337,7 @@ int main(int argc, char *argv[]) {
         emuenv.app_sku_flag = get_license_sku_flag(emuenv, emuenv.app_info.app_content_id);
 
     if (cfg.console) {
-        auto main_thread = emuenv.kernel.threads.at(emuenv.main_thread_id);
+        auto main_thread = emuenv.kernel.get_thread(emuenv.main_thread_id);
         auto lock = std::unique_lock<std::mutex>(main_thread->mutex);
         main_thread->status_cond.wait(lock, [&]() {
             return main_thread->status == ThreadStatus::dormant;
