@@ -419,8 +419,8 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     vert_ublock.viewport_flag = (context.record.viewport_flat) ? 0.0f : 1.0f;
     vert_ublock.z_offset = context.record.z_offset;
     vert_ublock.z_scale = context.record.z_scale;
-    vert_ublock.screen_width = static_cast<float>(context.render_target->width / context.state.res_multiplier);
-    vert_ublock.screen_height = static_cast<float>(context.render_target->height / context.state.res_multiplier);
+    vert_ublock.screen_width = context.render_target->width / context.state.res_multiplier;
+    vert_ublock.screen_height = context.render_target->height / context.state.res_multiplier;
 
     if (context.curr_vert_ublock.changed || memcmp(&context.prev_vert_ublock, &vert_ublock, sizeof(vert_ublock)) != 0) {
         // TODO: this intermediate step can be avoided
@@ -431,7 +431,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
     auto &frag_ublock = context.curr_frag_ublock.base_block;
     frag_ublock.writing_mask = context.record.writing_mask;
-    frag_ublock.res_multiplier = static_cast<float>(context.state.res_multiplier);
+    frag_ublock.res_multiplier = context.state.res_multiplier;
     const bool has_msaa = context.render_target->multisample_mode;
     const bool has_downscale = context.record.color_surface.downscale;
     if (has_msaa && !has_downscale)

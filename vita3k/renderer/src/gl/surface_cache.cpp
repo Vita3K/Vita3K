@@ -66,8 +66,8 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     const uint32_t original_width = width;
     const uint32_t original_height = height;
 
-    width *= state.res_multiplier;
-    height *= state.res_multiplier;
+    width = static_cast<uint16_t>(width * state.res_multiplier);
+    height = static_cast<uint16_t>(height * state.res_multiplier);
 
     // Of course, this works under the assumption that range must be unique :D
     auto ite = color_surface_textures.lower_bound(key);
@@ -271,8 +271,8 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
             if (castable) {
                 const std::size_t data_delta = address.address() - ite->first;
-                std::size_t start_sourced_line = (data_delta / bytes_per_stride) * state.res_multiplier;
-                std::size_t start_x = (data_delta % bytes_per_stride) / color::bytes_per_pixel(base_format) * state.res_multiplier;
+                std::size_t start_sourced_line = static_cast<size_t>((data_delta / bytes_per_stride) * state.res_multiplier);
+                std::size_t start_x = static_cast<size_t>((data_delta % bytes_per_stride) / color::bytes_per_pixel(base_format) * state.res_multiplier);
 
                 if (static_cast<std::uint16_t>(start_sourced_line + height) > info.height) {
                     LOG_ERROR("Trying to present non-existen segment in cached color surface!");
@@ -521,16 +521,15 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
         return 0;
     }
 
-    force_width *= state.res_multiplier;
-    force_height *= state.res_multiplier;
-
-    if (force_width < 0) {
+    if (force_width > 0)
+        force_width = static_cast<int32_t>(force_width * state.res_multiplier);
+    else
         force_width = target->width;
-    }
 
-    if (force_height < 0) {
+    if (force_height > 0)
+        force_height = static_cast<int32_t>(force_height * state.res_multiplier);
+    else
         force_height = target->height;
-    }
 
     const bool is_stencil_only = surface.depth_data.address() == 0;
     std::size_t found_index = static_cast<std::size_t>(-1);
@@ -713,14 +712,14 @@ GLuint GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const Mem
     return fb[0];
 }
 
-GLuint GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier, SceFVector2 &texture_size) {
+GLuint GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const float res_multiplier, SceFVector2 &texture_size) {
     auto ite = color_surface_textures.lower_bound(address.address());
     if (ite == color_surface_textures.end()) {
         return 0;
     }
 
-    width *= res_multiplier;
-    height *= res_multiplier;
+    width = static_cast<uint32_t>(width * res_multiplier);
+    height = static_cast<uint32_t>(height * res_multiplier);
 
     const GLColorSurfaceCacheInfo &info = *ite->second;
 
@@ -729,7 +728,7 @@ GLuint GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> a
         const std::size_t data_delta = address.address() - ite->first;
         std::uint32_t limited_height = height;
         if ((data_delta % (pitch * 4)) == 0) {
-            std::uint32_t start_sourced_line = (data_delta / (pitch * 4)) * res_multiplier;
+            std::uint32_t start_sourced_line = static_cast<uint32_t>((data_delta / (pitch * 4)) * res_multiplier);
             if ((start_sourced_line + height) > info.height) {
                 // Sometimes the surface is just missing a little bit of lines
                 if (start_sourced_line < info.height) {
@@ -758,7 +757,7 @@ GLuint GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> a
     return 0;
 }
 
-std::vector<uint32_t> GLSurfaceCache::dump_frame(Ptr<const void> address, uint32_t width, uint32_t height, uint32_t pitch, int res_multiplier, bool support_get_texture_sub_image) {
+std::vector<uint32_t> GLSurfaceCache::dump_frame(Ptr<const void> address, uint32_t width, uint32_t height, uint32_t pitch, float res_multiplier, bool support_get_texture_sub_image) {
     auto ite = color_surface_textures.lower_bound(address.address());
     if (ite == color_surface_textures.end() || ite->second->pixel_stride != pitch) {
         return {};
@@ -771,7 +770,7 @@ std::vector<uint32_t> GLSurfaceCache::dump_frame(Ptr<const void> address, uint32
     if (info.pixel_stride != pitch || data_delta % pitch_byte != 0)
         return {};
 
-    const uint32_t line_delta = (data_delta / pitch_byte) * res_multiplier;
+    const uint32_t line_delta = static_cast<uint32_t>((data_delta / pitch_byte) * res_multiplier);
     if (line_delta >= info.height)
         return {};
 

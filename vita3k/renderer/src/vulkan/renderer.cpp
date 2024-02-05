@@ -686,8 +686,8 @@ void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
 
     // Check if the surface exists
     Viewport viewport;
-    viewport.width = frame.image_size.x * res_multiplier;
-    viewport.height = frame.image_size.y * res_multiplier;
+    viewport.width = static_cast<uint32_t>(frame.image_size.x * res_multiplier);
+    viewport.height = static_cast<uint32_t>(frame.image_size.y * res_multiplier);
 
     vk::ImageLayout layout = vk::ImageLayout::eGeneral;
     vk::ImageView surface_handle = surface_cache.sourcing_color_surface_for_presentation(
@@ -755,8 +755,8 @@ std::vector<uint32_t> VKState::dump_frame(DisplayState &display, uint32_t &width
         frame = display.next_rendered_frame;
     }
 
-    width = frame.image_size.x * res_multiplier;
-    height = frame.image_size.y * res_multiplier;
+    width = static_cast<uint32_t>(frame.image_size.x * res_multiplier);
+    height = static_cast<uint32_t>(frame.image_size.y * res_multiplier);
     return surface_cache.dump_frame(frame.base, width, height, frame.pitch);
 }
 
