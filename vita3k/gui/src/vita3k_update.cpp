@@ -81,8 +81,8 @@ bool init_vita3k_update(GuiState &gui) {
             std::vector<std::pair<uint32_t, uint32_t>> page_count;
             for (int32_t i = 0; i < dif_from_current; i += 100) {
                 const auto page = i / 100 + 1;
-                const auto per_page = std::min(dif_from_current - i, int32_t(100));
-                page_count.push_back({ page, per_page });
+                const auto per_page = std::min<int32_t>(dif_from_current - i, 100);
+                page_count.emplace_back(page, per_page);
             }
 
             // Browse all page
@@ -101,7 +101,7 @@ bool init_vita3k_update(GuiState &gui) {
                     boost::replace_all(commits, "\\\"", "&quot;");
 
                     // Using regex to get sha, author and message from commits
-                    const std::regex commit_regex("\"sha\":\"([a-f0-9]{40})\".*?\"author\":\\{\"name\":\"([^\"]+)\".*?\"message\":\"([^\"]+)\"");
+                    const std::regex commit_regex(R"lit("sha":"([a-f0-9]{40})".*?"author":\{"name":"([^"]+)".*?"message":"([^"]+)")lit");
                     while (std::regex_search(commits, match, commit_regex)) {
                         // Get sha and message from regex match result
                         sha = match[1];

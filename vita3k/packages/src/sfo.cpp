@@ -55,7 +55,7 @@ bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &ke
     return true;
 }
 
-void get_param_info(sfo::SfoAppInfo &app_info, const vfs::FileBuffer param, int sys_lang) {
+void get_param_info(sfo::SfoAppInfo &app_info, const vfs::FileBuffer &param, int sys_lang) {
     SfoFile sfo_handle;
     sfo::load(sfo_handle, param);
     sfo::get_data_by_key(app_info.app_version, sfo_handle, "APP_VER");
@@ -82,12 +82,12 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
         return false;
     }
 
-    memcpy(static_cast<void *>(&sfile.header), content.data(), sizeof(SfoHeader));
+    memcpy(&sfile.header, content.data(), sizeof(SfoHeader));
 
     sfile.entries.resize(sfile.header.tables_entries + 1);
 
     for (uint32_t i = 0; i < sfile.header.tables_entries; i++) {
-        memcpy(static_cast<void *>(&sfile.entries[i].entry), content.data() + sizeof(SfoHeader) + i * sizeof(SfoIndexTableEntry), sizeof(SfoIndexTableEntry));
+        memcpy(&sfile.entries[i].entry, content.data() + sizeof(SfoHeader) + i * sizeof(SfoIndexTableEntry), sizeof(SfoIndexTableEntry));
     }
 
     sfile.entries[sfile.header.tables_entries].entry.key_offset = sfile.header.data_table_start - sfile.header.key_table_start;

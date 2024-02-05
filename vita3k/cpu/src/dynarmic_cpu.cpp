@@ -16,9 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "cpu/common.h"
-#include <cpu/disasm/functions.h>
 #include <cpu/impl/dynarmic_cpu.h>
-#include <cpu/impl/interface.h>
 #include <cpu/state.h>
 #include <set>
 #include <util/bit_cast.h>
@@ -82,7 +80,7 @@ public:
         this->tpidruro = tpidruro;
     }
 
-    uint32_t get_tpidruro() {
+    uint32_t get_tpidruro() const {
         return tpidruro;
     }
 };
@@ -219,15 +217,15 @@ public:
     }
 
     bool MemoryWriteExclusive8(Dynarmic::A32::VAddr addr, uint8_t value, uint8_t expected) override {
-        return MemoryWriteExclusive(addr, value, expected); // Ptr<uint8_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+        return MemoryWriteExclusive(addr, value, expected);
     }
 
     bool MemoryWriteExclusive16(Dynarmic::A32::VAddr addr, uint16_t value, uint16_t expected) override {
-        return MemoryWriteExclusive(addr, value, expected); // Ptr<uint16_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+        return MemoryWriteExclusive(addr, value, expected);
     }
 
     bool MemoryWriteExclusive32(Dynarmic::A32::VAddr addr, uint32_t value, uint32_t expected) override {
-        return MemoryWriteExclusive(addr, value, expected); // Ptr<uint32_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+        return MemoryWriteExclusive(addr, value, expected);
     }
 
     bool MemoryWriteExclusive64(Dynarmic::A32::VAddr addr, uint64_t value, uint64_t expected) override {
@@ -325,8 +323,7 @@ DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::Ex
     jit = make_jit();
 }
 
-DynarmicCPU::~DynarmicCPU() {
-}
+DynarmicCPU::~DynarmicCPU() = default;
 
 int DynarmicCPU::run() {
     halted = false;
@@ -450,7 +447,7 @@ CPUContext DynarmicCPU::save_context() {
     return ctx;
 }
 
-void DynarmicCPU::load_context(CPUContext ctx) {
+void DynarmicCPU::load_context(const CPUContext &ctx) {
     jit->Regs() = ctx.cpu_registers;
     static_assert(sizeof(ctx.fpu_registers) == sizeof(jit->ExtRegs()));
     memcpy(jit->ExtRegs().data(), ctx.fpu_registers.data(), sizeof(ctx.fpu_registers));
@@ -463,11 +460,11 @@ uint32_t DynarmicCPU::get_lr() {
 }
 
 float DynarmicCPU::get_float_reg(uint8_t idx) {
-    return reinterpret_cast<float &>(jit->ExtRegs()[idx]);
+    return std::bit_cast<float>(jit->ExtRegs()[idx]);
 }
 
 void DynarmicCPU::set_float_reg(uint8_t idx, float val) {
-    jit->ExtRegs()[idx] = reinterpret_cast<uint32_t &>(val);
+    jit->ExtRegs()[idx] = std::bit_cast<uint32_t>(val);
 }
 
 bool DynarmicCPU::is_thumb_mode() {
@@ -488,11 +485,11 @@ ExclusiveMonitorPtr new_exclusive_monitor(int max_num_cores) {
 }
 
 void free_exclusive_monitor(ExclusiveMonitorPtr monitor) {
-    Dynarmic::ExclusiveMonitor *monitor_ = reinterpret_cast<Dynarmic::ExclusiveMonitor *>(monitor);
+    Dynarmic::ExclusiveMonitor *monitor_ = static_cast<Dynarmic::ExclusiveMonitor *>(monitor);
     delete monitor_;
 }
 
 void clear_exclusive(ExclusiveMonitorPtr monitor, std::size_t core_num) {
-    Dynarmic::ExclusiveMonitor *monitor_ = reinterpret_cast<Dynarmic::ExclusiveMonitor *>(monitor);
+    Dynarmic::ExclusiveMonitor *monitor_ = static_cast<Dynarmic::ExclusiveMonitor *>(monitor);
     monitor_->ClearProcessor(core_num);
 }

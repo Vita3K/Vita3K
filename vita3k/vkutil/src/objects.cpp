@@ -20,7 +20,6 @@
 #include "vkutil/vkutil.h"
 
 #include <util/align.h>
-#include <util/bit_cast.h>
 #include <util/log.h>
 
 namespace vkutil {
@@ -211,7 +210,7 @@ void HostRingBuffer::create() {
 }
 
 void HostRingBuffer::copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset) {
-    memcpy(reinterpret_cast<uint8_t *>(buffer.mapped_data) + data_offset + offset, data, size);
+    memcpy(static_cast<uint8_t *>(buffer.mapped_data) + data_offset + offset, data, size);
 
     if (!is_coherent)
         allocator.flushAllocation(buffer.allocation, data_offset + offset, size);

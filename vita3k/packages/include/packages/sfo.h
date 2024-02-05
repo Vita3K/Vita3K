@@ -89,5 +89,5 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content);
  * @param param File buffer pointing to the `param.sfo` file to parse
  * @param sys_lang System language. It is used to get translated strings from `param.sfo`
  */
-void get_param_info(sfo::SfoAppInfo &app_info, const vfs::FileBuffer param, int sys_lang);
+void get_param_info(sfo::SfoAppInfo &app_info, const vfs::FileBuffer &param, int sys_lang);
 } // namespace sfo

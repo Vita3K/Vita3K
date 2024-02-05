@@ -27,7 +27,6 @@
 #include <shader/profile.h>
 #include <shader/usse_translator_entry.h>
 #include <shader/usse_translator_types.h>
-#include <shader/usse_utilities.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/overloaded.h>
@@ -39,7 +38,6 @@
 #include <algorithm>
 #include <fstream>
 #include <functional>
-#include <iterator>
 #include <list>
 #include <map>
 #include <sstream>
@@ -115,23 +113,13 @@ struct TranslationState {
     bool is_target_glsl = false;
     bool is_vulkan = false;
     spv::ImageFormat image_storage_format = spv::ImageFormat::ImageFormatUnknown;
-    const Hints *hints;
+    const Hints *hints = nullptr;
 };
 
 struct VertexProgramOutputProperties {
     std::string name;
-    std::uint32_t component_count;
-    std::uint32_t location;
-
-    VertexProgramOutputProperties()
-        : name("")
-        , component_count(0)
-        , location(0) {}
-
-    VertexProgramOutputProperties(const char *name, std::uint32_t component_count, std::uint32_t location)
-        : name(name)
-        , component_count(component_count)
-        , location(location) {}
+    std::uint32_t component_count{};
+    std::uint32_t location{};
 };
 using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
 
@@ -389,8 +377,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     // Both vertex output and this struct should stay in a larger varying struct
     auto vertex_varyings_ptr = program.vertex_varyings();
 
-    const SceGxmProgramAttributeDescriptor *descriptor = reinterpret_cast<const SceGxmProgramAttributeDescriptor *>(
-        reinterpret_cast<const std::uint8_t *>(&vertex_varyings_ptr->vertex_outputs1) + vertex_varyings_ptr->vertex_outputs1);
+    auto descriptor = vertex_varyings_ptr->frag_attribute_descriptor();
 
     std::uint32_t pa_offset = 0;
     std::uint32_t anon_tex_count = 0;
@@ -425,7 +412,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 pa_loc = name_map.at(input_id).second;
             }
 
-            std::string pa_type = "uchar";
+            std::string_view pa_type = "uchar";
             DataType pa_dtype = DataType::UINT8;
 
             uint32_t input_type = (descriptor->attribute_info & 0x30100000);
@@ -484,7 +471,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             bool do_coord = false;
 
-            if (input_id >= 0 && input_id <= 0x9000) {
+            if (input_id <= 0x9000) {
                 input_id /= 0x1000;
                 do_coord = true;
             } else if (input_id == 0xD000) {
@@ -546,7 +533,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             const auto component_type = (descriptor->component_info >> 4) & 3;
             const auto swizzle_texcoord = (descriptor->attribute_info & 0x300);
 
-            std::string component_type_str = "????";
+            std::string_view component_type_str = "????";
             DataType store_type = DataType::F16;
             switch (component_type) {
             // 0 should be integral
@@ -576,8 +563,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             }
             }
 
-            std::string swizzle_str = ".xy";
-            std::string projecting;
+            std::string_view swizzle_str = ".xy";
+            std::string_view projecting;
 
             if (swizzle_texcoord != 0x100) {
                 projecting = "proj";
@@ -600,7 +587,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 prod_pos = -1;
             }
 
-            std::string centroid_str;
+            std::string_view centroid_str;
 
             if ((descriptor->attribute_info & 0x10) == 0x10) {
                 centroid_str = "_CENTROID";
@@ -643,7 +630,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 b.addDecoration(tex_query_info.sampler, spv::DecorationBinding, sampler_resource_index);
                 if (translation_state.is_vulkan)
                     b.addDecoration(tex_query_info.sampler, spv::DecorationDescriptorSet, program.is_vertex() ? 2 : 3);
-                samplers[sampler_resource_index] = { tex_query_info.sampler, sampler_resource_index, tex_query_info.component_type, tex_query_info.component_count };
+                samplers[sampler_resource_index] = { tex_query_info.sampler, sampler_resource_index, tex_query_info.component_type, tex_query_info.component_count, (dim_type == spv::DimCube) };
             } else {
                 tex_query_info.sampler = samplers[sampler_resource_index].id;
             }
@@ -1077,7 +1064,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                     .type = DataType::F32,
                 };
                 const uint32_t copy_size = std::min(buffer.reg_block_size, REG_SA_COUNT - buffer.reg_start_offset);
-                usse::utils::buffer_address_access(b, spv_params, utils, features, dest, 0, b.makeIntConstant(0), sizeof(uint32_t), copy_size, translation_state.is_fragment, host_idx);
+                usse::utils::buffer_address_access(b, spv_params, utils, features, dest, 0, b.makeIntConstant(0), sizeof(uint32_t), copy_size, host_idx);
             } else {
                 const uint32_t reg_block_size_in_f32v = std::min<uint32_t>(buffer.reg_block_size + 3, REG_SA_COUNT) / 4;
                 const auto spv_buffer = utils::create_access_chain(b, spv::StorageClassStorageBuffer, spv_params.buffer_container,
@@ -1304,7 +1291,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     // We should avoid ugly and long GLSL code generated. Also, inefficient SPIR-V code.
     // Packing literals into vector may help solving this.
-    if (literal_pairs.size() != 0) {
+    if (!literal_pairs.empty()) {
         std::uint32_t composite_base = literal_pairs[0].first;
 
         std::vector<spv::Id> constituents;
@@ -1492,7 +1479,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     // list is used here to gurantee the vertex outputs are written in right order
     std::list<SceGxmVertexProgramOutputs> vertex_outputs_list;
     const auto add_vertex_output_info = [&](SceGxmVertexProgramOutputs vo, const char *name, std::uint32_t component_count, std::uint32_t location) {
-        vertex_properties_map.emplace(vo, VertexProgramOutputProperties(name, component_count, location));
+        vertex_properties_map.emplace(vo, VertexProgramOutputProperties{ name, component_count, location });
         vertex_outputs_list.push_back(vo);
     };
     add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION, "v_Position", 4, 0);
@@ -1700,7 +1687,7 @@ static spv::Function *make_frag_initialize_function(spv::Builder &b, Translation
     return frag_init_func;
 }
 
-static void generate_update_mask_body(spv::Builder &b, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translate_state) {
+static void generate_update_mask_body(spv::Builder &b, TranslationState &translate_state) {
     const spv::Id writing_mask_var = utils::create_access_chain(b, spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_writing_mask) });
     const spv::Id writing_mask = b.createLoad(writing_mask_var, spv::NoPrecision);
 
@@ -1714,7 +1701,7 @@ static void generate_update_mask_body(spv::Builder &b, utils::SpirvUtilFunctions
     b.createStore(mask_v, out);
 }
 
-static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
+static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, bool force_shader_debug, const std::function<bool(const std::string &ext, const std::string &dump)> &dumper) {
     SpirvCode spirv;
 
     SceGxmProgramType program_type = program.get_type();
@@ -1835,7 +1822,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
 
         generate_shader_body(b, parameters, program, features, utils, begin_hook_func, end_hook_func, texture_queries, translation_state.render_info_id, spv_func_main, translation_state.interfaces);
     } else {
-        generate_update_mask_body(b, utils, features, translation_state);
+        generate_update_mask_body(b, translation_state);
     }
     b.leaveFunction();
 
@@ -1873,7 +1860,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     return spirv;
 }
 
-static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode &spirv_binary, const FeatureState &features, TranslationState &translation_state, bool is_frag_color_used) {
+static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode &spirv_binary, const FeatureState &features, TranslationState &translation_state) {
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
     spirv_cross::CompilerGLSL::Options options;
@@ -1950,7 +1937,7 @@ static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat forma
 // ***************************
 
 GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, const Target target, const Hints &hints, bool maskupdate,
-    bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
+    bool force_shader_debug, const std::function<bool(const std::string &ext, const std::string &dump)> &dumper) {
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
     translation_state.is_maskupdate = maskupdate;
@@ -1969,7 +1956,7 @@ GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &sha
     if (translation_state.is_target_glsl) {
         // also generate the glsl file
         // this destroys shader.spirv
-        shader.glsl = convert_spirv_to_glsl(shader_hash, shader.spirv, features, translation_state, program.is_frag_color_used());
+        shader.glsl = convert_spirv_to_glsl(shader_hash, shader.spirv, features, translation_state);
 
         if (LOG_SHADER_CODE || force_shader_debug) {
             LOG_INFO("Generated GLSL:\n{}", shader.glsl);

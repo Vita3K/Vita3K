@@ -70,8 +70,8 @@ void AudioAdapter::audio_callback(uint8_t *stream, int len_bytes) {
         // Read from shared state.
         const std::lock_guard<std::mutex> lock(state.mutex);
         ports.reserve(state.out_ports.size());
-        for (const AudioOutPortPtrs::value_type &port : state.out_ports) {
-            ports.push_back(port.second);
+        for (const auto &[_, port] : state.out_ports) {
+            ports.push_back(port);
         }
     }
     std::memset(stream, state.spec.silence, len_bytes);
@@ -127,7 +127,7 @@ AudioOutPortPtr AudioState::open_port(int nb_channels, int freq, int nb_sample) 
         if (!stream)
             return nullptr;
 
-        const AudioOutPortPtr port = std::make_shared<AudioOutPort>();
+        AudioOutPortPtr port = std::make_shared<AudioOutPort>();
         port->len_bytes = nb_sample * nb_channels * sizeof(int16_t);
         port->stream = stream;
 
@@ -181,9 +181,8 @@ void AudioState::set_global_volume(float volume) {
     if (!adapter->single_stream) {
         // Update adapter volume for each port.
         const std::lock_guard lock(mutex);
-        for (const auto &port_entry : out_ports) {
-            auto &port = *port_entry.second;
-            adapter->set_volume(port, port.volume * volume);
+        for (const auto &[_, port] : out_ports) {
+            adapter->set_volume(*port, port->volume * volume);
         }
     }
 }

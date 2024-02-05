@@ -19,7 +19,6 @@
 
 #include <cstdint>
 #include <kernel/thread/thread_state.h>
-#include <util/types.h>
 
 struct DisplayState;
 struct KernelState;

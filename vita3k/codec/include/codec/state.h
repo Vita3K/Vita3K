@@ -17,9 +17,7 @@
 
 #pragma once
 
-#include <array>
 #include <cstdint>
-#include <memory>
 #include <queue>
 #include <string>
 

@@ -54,7 +54,7 @@ vk::Format translate_attribute_format(SceGxmAttributeFormat format, unsigned int
         /*SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED signed*/ { vk::Format::eR32Sint, vk::Format::eR32G32Sint, vk::Format::eR32G32B32Sint, vk::Format::eR32G32B32A32Sint },
     };
 
-    const int format_idx = static_cast<int>(format);
+    const int format_idx = format;
     if (format_idx < SCE_GXM_ATTRIBUTE_FORMAT_U8N) {
         if (is_integer)
             return formats_integer[format_idx][component_count - 1];
@@ -282,7 +282,7 @@ static constexpr vk::ComponentMapping swizzle_gba1 = { Swizzle::eG, Swizzle::eB,
 
 namespace color {
 
-static const vk::ComponentMapping translate_swizzle1(SceGxmColorSwizzle1Mode mode) {
+static vk::ComponentMapping translate_swizzle1(SceGxmColorSwizzle1Mode mode) {
     switch (mode) {
     case SCE_GXM_COLOR_SWIZZLE1_R:
         return swizzle_r001;
@@ -292,7 +292,7 @@ static const vk::ComponentMapping translate_swizzle1(SceGxmColorSwizzle1Mode mod
     }
 }
 
-static const vk::ComponentMapping translate_swizzle2(SceGxmColorSwizzle2Mode mode) {
+static vk::ComponentMapping translate_swizzle2(SceGxmColorSwizzle2Mode mode) {
     switch (mode) {
     case SCE_GXM_COLOR_SWIZZLE2_GR:
         return swizzle_rg01;
@@ -304,7 +304,7 @@ static const vk::ComponentMapping translate_swizzle2(SceGxmColorSwizzle2Mode mod
     }
 }
 
-static const vk::ComponentMapping translate_swizzle3(SceGxmColorSwizzle3Mode mode) {
+static vk::ComponentMapping translate_swizzle3(SceGxmColorSwizzle3Mode mode) {
     switch (mode) {
     case SCE_GXM_COLOR_SWIZZLE3_BGR:
         return swizzle_rgb1;
@@ -317,7 +317,7 @@ static const vk::ComponentMapping translate_swizzle3(SceGxmColorSwizzle3Mode mod
 }
 
 // Convert the swizzle when the vulkan format has a BGR (or RGB packed) layout
-static const vk::ComponentMapping translate_swizzle3_bgr(SceGxmColorSwizzle3Mode mode) {
+static vk::ComponentMapping translate_swizzle3_bgr(SceGxmColorSwizzle3Mode mode) {
     switch (mode) {
     case SCE_GXM_COLOR_SWIZZLE3_BGR:
         return swizzle_bgr1;
@@ -329,7 +329,7 @@ static const vk::ComponentMapping translate_swizzle3_bgr(SceGxmColorSwizzle3Mode
     }
 }
 
-static const vk::ComponentMapping translate_swizzle4(SceGxmColorSwizzle4Mode mode) {
+static vk::ComponentMapping translate_swizzle4(SceGxmColorSwizzle4Mode mode) {
     switch (mode) {
     case SCE_GXM_COLOR_SWIZZLE4_ABGR:
         return swizzle_rgba;
@@ -346,7 +346,7 @@ static const vk::ComponentMapping translate_swizzle4(SceGxmColorSwizzle4Mode mod
 }
 
 // Convert the swizzle when the vulkan format has a ABGR (or RGBA packed) layout
-static const vk::ComponentMapping translate_swizzle4_abgr(SceGxmColorSwizzle4Mode mode) {
+static vk::ComponentMapping translate_swizzle4_abgr(SceGxmColorSwizzle4Mode mode) {
     switch (mode) {
     case SCE_GXM_COLOR_SWIZZLE4_ABGR:
         return swizzle_abgr;
@@ -479,7 +479,7 @@ vk::Format translate_format(SceGxmColorBaseFormat format) {
 
 namespace texture {
 
-static const vk::ComponentMapping translate_swizzle1(SceGxmTextureSwizzle1Mode mode) {
+static vk::ComponentMapping translate_swizzle1(SceGxmTextureSwizzle1Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE1_R:
         return swizzle_r001;
@@ -503,7 +503,7 @@ static const vk::ComponentMapping translate_swizzle1(SceGxmTextureSwizzle1Mode m
     }
 }
 
-static const vk::ComponentMapping translate_swizzle2(SceGxmTextureSwizzle2Mode mode) {
+static vk::ComponentMapping translate_swizzle2(SceGxmTextureSwizzle2Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE2_GR:
         return swizzle_rg01;
@@ -523,7 +523,7 @@ static const vk::ComponentMapping translate_swizzle2(SceGxmTextureSwizzle2Mode m
     }
 }
 
-static const vk::ComponentMapping translate_swizzleds(SceGxmTextureSwizzle2ModeAlt mode) {
+static vk::ComponentMapping translate_swizzleds(SceGxmTextureSwizzle2ModeAlt mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE2_SD:
         return swizzle_identity;
@@ -535,7 +535,7 @@ static const vk::ComponentMapping translate_swizzleds(SceGxmTextureSwizzle2ModeA
     }
 }
 
-static const vk::ComponentMapping translate_swizzle3(SceGxmTextureSwizzle3Mode mode) {
+static vk::ComponentMapping translate_swizzle3(SceGxmTextureSwizzle3Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE3_BGR:
         return swizzle_rgb1;
@@ -548,7 +548,7 @@ static const vk::ComponentMapping translate_swizzle3(SceGxmTextureSwizzle3Mode m
 }
 
 // Convert the swizzle when the vulkan format has a BGR (or RGB packed) layout
-static const vk::ComponentMapping translate_swizzle3_bgr(SceGxmTextureSwizzle3Mode mode) {
+static vk::ComponentMapping translate_swizzle3_bgr(SceGxmTextureSwizzle3Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE3_BGR:
         return swizzle_bgr1;
@@ -560,7 +560,7 @@ static const vk::ComponentMapping translate_swizzle3_bgr(SceGxmTextureSwizzle3Mo
     }
 }
 
-static const vk::ComponentMapping translate_swizzle4(SceGxmTextureSwizzle4Mode mode) {
+static vk::ComponentMapping translate_swizzle4(SceGxmTextureSwizzle4Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE4_ABGR:
         return swizzle_rgba;
@@ -585,7 +585,7 @@ static const vk::ComponentMapping translate_swizzle4(SceGxmTextureSwizzle4Mode m
 }
 
 // Convert the swizzle when the vulkan format has a ABGR (or RGBA packed) layout
-static const vk::ComponentMapping translate_swizzle4_abgr(SceGxmTextureSwizzle4Mode mode) {
+static vk::ComponentMapping translate_swizzle4_abgr(SceGxmTextureSwizzle4Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE4_ABGR:
         return swizzle_abgr;
@@ -601,7 +601,7 @@ static const vk::ComponentMapping translate_swizzle4_abgr(SceGxmTextureSwizzle4M
     }
 }
 
-static const vk::ComponentMapping translate_swizzleyuv420(SceGxmTextureSwizzleYUV420Mode mode) {
+static vk::ComponentMapping translate_swizzleyuv420(SceGxmTextureSwizzleYUV420Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE_YUV_CSC0:
     case SCE_GXM_TEXTURE_SWIZZLE_YVU_CSC0:
@@ -614,7 +614,7 @@ static const vk::ComponentMapping translate_swizzleyuv420(SceGxmTextureSwizzleYU
     }
 }
 
-static const vk::ComponentMapping translate_swizzleyuv422(SceGxmTextureSwizzleYUV422Mode mode) {
+static vk::ComponentMapping translate_swizzleyuv422(SceGxmTextureSwizzleYUV422Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE_YUYV_CSC0:
     case SCE_GXM_TEXTURE_SWIZZLE_YVYU_CSC0:

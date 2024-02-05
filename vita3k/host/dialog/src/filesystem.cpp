@@ -42,7 +42,7 @@
  * @param file_extensions_list File extensions list
  * @return std::string A string containing the properly formatted file extension list
  */
-std::string format_file_filter_extension_list(std::vector<std::string> &file_extensions_list) {
+std::string format_file_filter_extension_list(const std::vector<std::string> &file_extensions_list) {
     // Formatted string containing the properly formatted file extension list
     //
     // In the case of nativefiledialog, the expected file extension is a single
@@ -67,7 +67,7 @@ std::string format_file_filter_extension_list(std::vector<std::string> &file_ext
 namespace host {
 namespace dialog {
 namespace filesystem {
-Result open_file(std::filesystem::path &resulting_path, std::vector<FileFilter> file_filters, std::filesystem::path default_path) {
+Result open_file(std::filesystem::path &resulting_path, const std::vector<FileFilter> &file_filters, const std::filesystem::path &default_path) {
     // Initialize NFD
     NFD::Guard nfd_guard;
 
@@ -108,7 +108,7 @@ Result open_file(std::filesystem::path &resulting_path, std::vector<FileFilter> 
     file_extensions_converted.reserve(file_filters.size());
 
     // For every file filter in file_filters vector
-    for (FileFilter &file_filter : file_filters) {
+    for (const FileFilter &file_filter : file_filters) {
         // Format file extension list and store the result
         file_extensions_converted.push_back(format_file_filter_extension_list(file_filter.file_extensions));
 
@@ -121,7 +121,7 @@ Result open_file(std::filesystem::path &resulting_path, std::vector<FileFilter> 
     /* --- Then nativefiledialog can be called --- */
 
     // If the list of file filters isn't empty, specify the pointer to the filter list array
-    if (file_filters.size() > 0) {
+    if (!file_filters.empty()) {
         arguments.filterList = file_filters_converted.data();
     }
 
@@ -155,7 +155,7 @@ Result open_file(std::filesystem::path &resulting_path, std::vector<FileFilter> 
     }
 };
 
-Result pick_folder(std::filesystem::path &resulting_path, std::filesystem::path default_path) {
+Result pick_folder(std::filesystem::path &resulting_path, const std::filesystem::path &default_path) {
     // Initialize NFD
     NFD::Guard nfd_guard;
 

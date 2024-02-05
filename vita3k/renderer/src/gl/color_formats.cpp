@@ -19,7 +19,6 @@
 #include <renderer/gl/functions.h>
 
 #include <gxm/functions.h>
-#include <map>
 #include <util/log.h>
 
 namespace renderer::color {

@@ -178,7 +178,7 @@ enum SceNetKernelErrorCode {
     SCE_NET_ERESUME = 162
 };
 
-enum SceNetErrorCode {
+enum SceNetErrorCode : uint32_t {
     SCE_NET_ERROR_EPERM = 0x80410101,
     SCE_NET_ERROR_ENOENT = 0x80410102,
     SCE_NET_ERROR_ESRCH = 0x80410103,

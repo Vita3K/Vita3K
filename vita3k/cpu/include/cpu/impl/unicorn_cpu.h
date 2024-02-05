@@ -19,19 +19,17 @@
 
 #include <cpu/impl/interface.h>
 
-#include <cpu/disasm/state.h>
 #include <cpu/state.h>
 #include <unicorn/unicorn.h>
 
-#include <array>
 #include <functional>
 #include <memory>
+#include <stack>
 
 typedef std::unique_ptr<uc_struct, std::function<void(uc_struct *)>> UnicornPtr;
 
 struct CPUState;
 
-/*! \brief Base class for all CPU backend implementation */
 class UnicornCPU : public CPUInterface {
     UnicornPtr uc;
 
@@ -57,10 +55,9 @@ class UnicornCPU : public CPUInterface {
     static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data);
     static void write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data);
     void log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu, Address offset);
-    int run_after_injected(uint32_t pc, bool thumb_mode);
 
 public:
-    UnicornCPU(CPUState *cpu);
+    UnicornCPU(CPUState *state);
 
     int execute_instructions_no_check(int num);
 
@@ -96,7 +93,7 @@ public:
     bool is_thumb_mode() override;
 
     CPUContext save_context() override;
-    void load_context(CPUContext context) override;
+    void load_context(const CPUContext &ctx) override;
     void invalidate_jit_cache(Address start, size_t length) override;
 
     bool hit_breakpoint() override;

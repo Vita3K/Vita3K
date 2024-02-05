@@ -21,7 +21,6 @@
 
 #include <util/fs.h>
 
-#include <algorithm>
 #include <string>
 
 namespace device {
@@ -31,21 +30,7 @@ namespace device {
  * \param path The input path to be tested.
  * \return The path's root as an enumeration. Otherwise, VitaIoDevice::_INVALID.
  */
-inline VitaIoDevice get_device(const std::string &path) {
-    if (path.empty())
-        return VitaIoDevice::_INVALID;
-
-    const auto colon = path.find_first_of(':');
-    if (colon == std::string::npos)
-        return VitaIoDevice::_INVALID;
-
-    auto p = path.substr(0, colon);
-    std::transform(p.begin(), p.end(), p.begin(), tolower);
-    if (VitaIoDevice::_is_valid_nocase(p.c_str()))
-        return VitaIoDevice::_from_string(p.c_str());
-
-    return VitaIoDevice::_INVALID;
-}
+VitaIoDevice get_device(const std::string &path);
 
 /**
  * \brief Get a valid Vita device as a string.
@@ -53,31 +38,21 @@ inline VitaIoDevice get_device(const std::string &path) {
  * \param with_colon Output the string appended with a colon (default: false)
  * \return A string version of the Vita device.
  */
-inline std::string get_device_string(const VitaIoDevice dev, const bool with_colon = false) {
-    return with_colon ? std::string(dev._to_string()).append(":") : dev._to_string();
-}
+std::string get_device_string(const VitaIoDevice dev, const bool with_colon = false);
 
 /**
  * \brief Check if the device is a valid output path.
  * \param device Input device to be checked.
  * \return True if valid, False otherwise.
  */
-inline bool is_valid_output_path(const VitaIoDevice device) {
-    return !(device == VitaIoDevice::savedata0 || device == VitaIoDevice::savedata1 || device == VitaIoDevice::app0
-        || device == VitaIoDevice::_INVALID || device == VitaIoDevice::addcont0 || device == VitaIoDevice::tty0
-        || device == VitaIoDevice::tty1 || device == VitaIoDevice::music0 || device == VitaIoDevice::photo0 || device == VitaIoDevice::video0);
-}
+bool is_valid_output_path(const VitaIoDevice device);
 
 /**
  * \brief Check if the device string is valid.
  * \param device Input device to be checked.
  * \return True if valid, False otherwise.
  */
-inline bool is_valid_output_path(const std::string &device) {
-    return !(device == (+VitaIoDevice::savedata0)._to_string() || device == (+VitaIoDevice::savedata1)._to_string() || device == (+VitaIoDevice::app0)._to_string()
-        || device == (+VitaIoDevice::_INVALID)._to_string() || device == (+VitaIoDevice::addcont0)._to_string() || device == (+VitaIoDevice::tty0)._to_string()
-        || device == (+VitaIoDevice::tty1)._to_string() || device == (+VitaIoDevice::music0)._to_string() || device == (+VitaIoDevice::photo0)._to_string() || device == (+VitaIoDevice::video0)._to_string());
-}
+bool is_valid_output_path(const std::string &device);
 
 /**
  * \brief Construct a normalized path (optionally with an extension) to be outputted onto the Vita.
@@ -103,17 +78,7 @@ std::string remove_device_from_path(const std::string &path, VitaIoDevice device
  * \param device The device to be removed.
  * \return New path without the duplicate device.
  */
-inline std::string remove_duplicate_device(const std::string &path, VitaIoDevice &device) {
-    auto cur_path = remove_device_from_path(path, device);
-    if (get_device(cur_path) != VitaIoDevice::_INVALID) {
-        device = get_device(cur_path);
-        if (cur_path.find_first_of(':') != std::string::npos)
-            cur_path = remove_duplicate_device(cur_path, device);
-        return cur_path;
-    }
-
-    return path;
-}
+std::string remove_duplicate_device(const std::string &path, VitaIoDevice &device);
 
 /**
  * \brief Construct the emulated Vita path (optionally with an extension).
@@ -123,10 +88,6 @@ inline std::string remove_duplicate_device(const std::string &path, VitaIoDevice
  * \param ext The extension of the file (optional).
  * \return A complete Boost.Filesystem path normalized.
  */
-inline fs::path construct_emulated_path(const VitaIoDevice dev, const fs::path &path, const fs::path &base_path, const bool redirect_pwd = false, const std::string &ext = "") {
-    if (redirect_pwd && dev == +VitaIoDevice::host0) {
-        return fs::current_path() / path;
-    }
-    return fs_utils::construct_file_name(base_path, get_device_string(dev, false), path, ext);
-}
+fs::path construct_emulated_path(const VitaIoDevice dev, const fs::path &path, const fs::path &base_path, const bool redirect_pwd = false, const std::string &ext = "");
+
 } // namespace device

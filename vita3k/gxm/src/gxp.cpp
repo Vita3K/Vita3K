@@ -26,10 +26,8 @@
 namespace gxp {
 
 const char *log_parameter_semantic(const SceGxmProgramParameter &parameter) {
-    SceGxmParameterSemantic semantic = static_cast<SceGxmParameterSemantic>(parameter.semantic);
-
     // clang-format off
-    switch (semantic) {
+    switch (parameter.semantic) {
     case SCE_GXM_PARAMETER_SEMANTIC_NONE: return "NONE";
     case SCE_GXM_PARAMETER_SEMANTIC_ATTR: return "ATTR";
     case SCE_GXM_PARAMETER_SEMANTIC_BCOL: return "BCOL";
@@ -102,7 +100,7 @@ int get_parameter_type_size(const SceGxmParameterType type) {
 
 int get_num_32_bit_components(const SceGxmParameterType type, const uint16_t num_comp) {
     const int param_size = get_parameter_type_size(type);
-    return static_cast<int>(num_comp + (4 / param_size - 1)) * param_size / 4;
+    return (num_comp + (4 / param_size - 1)) * param_size / 4;
 }
 
 GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parameter) {

@@ -282,16 +282,15 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
         else
             nb_returned_data = 0;
     } else {
-        uint64_t vblank_count = emuenv.display.vblank_count;
-        if (vblank_count <= last_vcount[port_idx]) {
+        if (emuenv.display.vblank_count <= last_vcount[port_idx]) {
             // sceTouchRead is blocking, wait for the next vsync for the buffer to be updated
             auto thread = emuenv.kernel.get_thread(thread_id);
 
             wait_vblank(emuenv.display, emuenv.kernel, thread, last_vcount[port_idx] + 1, false);
-            vblank_count = emuenv.display.vblank_count;
         }
-        nb_returned_data = std::min<int>(count, emuenv.display.vblank_count - last_vcount[port_idx]);
-        last_vcount[port_idx] = emuenv.display.vblank_count;
+        uint64_t vblank_count = emuenv.display.vblank_count.load();
+        nb_returned_data = std::min<int>(count, vblank_count - last_vcount[port_idx]);
+        last_vcount[port_idx] = vblank_count;
     }
 
     int corr_buffer_idx;

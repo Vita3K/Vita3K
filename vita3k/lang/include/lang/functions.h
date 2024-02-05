@@ -19,10 +19,6 @@
 #include <emuenv/state.h>
 #include <lang/state.h>
 
-#include <map>
-#include <string>
-#include <vector>
-
 namespace lang {
 
 void init_lang(LangState &lang, EmuEnvState &emuenv);

@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <cassert>
 #include <mem/atomic.h>
 #include <mem/functions.h>
 #include <mem/state.h>
@@ -36,7 +35,7 @@ public:
     template <class U>
     Ptr(const Ptr<U> &other)
         : addr(other.address()) {
-        static_assert(std::is_convertible<U *, T *>::value, "Ptr is not convertible.");
+        static_assert(std::is_convertible_v<U *, T *>, "Ptr is not convertible.");
     }
 
     template <class U>
@@ -71,7 +70,7 @@ public:
     template <class U>
     bool atomic_compare_and_swap(MemState &mem, U value, U expected) {
         static_assert(std::is_arithmetic_v<U>);
-        static_assert(std::is_same<U, T>::value);
+        static_assert(std::is_same_v<U, T>);
         uint8_t *mem_ptr = mem.use_page_table ? mem.page_table[addr / KiB(4)] : mem.memory.get();
         const auto ptr = reinterpret_cast<volatile U *>(&mem_ptr[addr]);
         return ::atomic_compare_and_swap(ptr, value, expected);

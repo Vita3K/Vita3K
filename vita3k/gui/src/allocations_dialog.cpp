@@ -18,14 +18,13 @@
 #include "private.h"
 
 #include <cpu/functions.h>
+#include <util/vector_utils.h>
 
 #include <imgui_memory_editor.h>
 
-#include <spdlog/fmt/fmt.h>
-
 namespace gui {
 
-const char *blacklist[] = {
+static std::array blacklist = {
     "NULL",
     "export_sceGxmDisplayQueueAddEntry"
 };
@@ -34,14 +33,11 @@ void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Begin("Memory Allocations", &gui.debug_menu.allocations_dialog);
 
     const std::lock_guard<std::mutex> lock(emuenv.mem.generation_mutex);
-    for (const auto &pair : emuenv.mem.page_name_map) {
-        const auto generation_num = pair.first;
-        const auto generation_name = pair.second;
-        const auto page = emuenv.mem.alloc_table[generation_num];
-
-        if (std::find(std::begin(blacklist), std::end(blacklist), generation_name) != std::end(blacklist))
+    for (const auto &[generation_num, generation_name] : emuenv.mem.page_name_map) {
+        if (vector_utils::contains(blacklist, generation_name))
             continue;
 
+        const auto page = emuenv.mem.alloc_table[generation_num];
         if (ImGui::TreeNode(fmt::format("{}: {}", generation_num, generation_name).c_str())) {
             ImGui::Text("Range 0x%08zx - 0x%08zx.", generation_num * KiB(4), (generation_num + page.size) * KiB(4));
             ImGui::Text("Size: %i KiB (%i page[s])", page.size * 4, page.size);
@@ -51,7 +47,7 @@ void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gui.debug_menu.memory_editor_dialog = true;
             }
             if (ImGui::Selectable("View Disassembly")) {
-                sprintf(gui.disassembly_address, "%08zx", page.size * KiB(4));
+                snprintf(gui.disassembly_address, sizeof(gui.disassembly_address), "%08zx", page.size * KiB(4));
                 reevaluate_code(gui, emuenv);
                 gui.debug_menu.disassembly_dialog = true;
             }

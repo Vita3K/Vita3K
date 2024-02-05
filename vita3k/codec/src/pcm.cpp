@@ -198,7 +198,7 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
             int32_t hist3 = adpcm_history[ch].hist3;
             int32_t hist4 = adpcm_history[ch].hist4;
 
-            const std::uint8_t *frame = reinterpret_cast<const std::uint8_t *>(data + bytes_per_frame * i);
+            const std::uint8_t *frame = data + bytes_per_frame * i;
 
             std::uint8_t coef_index = (frame[0] >> 4) & 0xf;
             std::uint8_t shift_factor = (frame[0] >> 0) & 0xf;

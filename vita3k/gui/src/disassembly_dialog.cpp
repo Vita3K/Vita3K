@@ -22,7 +22,7 @@
 #include <cpu/functions.h>
 #include <kernel/state.h>
 
-#include <spdlog/fmt/fmt.h>
+#include <fmt/format.h>
 
 namespace gui {
 
@@ -68,7 +68,7 @@ void reevaluate_code(GuiState &gui, EmuEnvState &emuenv) {
     evaluate_code(gui, emuenv, address, count, thumb);
 }
 
-std::string archs[] = {
+static const char *archs[] = {
     "ARM",
     "THUMB",
 };
@@ -110,9 +110,9 @@ void draw_disassembly_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Text("Arch");
     ImGui::SameLine();
     if (ImGui::BeginCombo("##disasm_arch", gui.disassembly_arch.c_str())) {
-        for (const std::string &arch : archs) {
+        for (const char *arch : archs) {
             bool is_selected = gui.disassembly_arch == arch;
-            if (ImGui::Selectable(arch.c_str(), is_selected)) {
+            if (ImGui::Selectable(arch, is_selected)) {
                 gui.disassembly_arch = arch;
                 reevaluate_code(gui, emuenv);
             }

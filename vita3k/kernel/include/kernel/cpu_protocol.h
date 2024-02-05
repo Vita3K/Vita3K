@@ -20,7 +20,7 @@
 #include <cpu/common.h>
 
 struct KernelState;
-
+typedef int SceUID;
 typedef std::function<void(CPUState &cpu, uint32_t nid, SceUID thread_id)> CallImportFunc;
 
 struct CPUProtocol : public CPUProtocolBase {

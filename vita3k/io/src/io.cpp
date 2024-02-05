@@ -106,30 +106,18 @@ bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, con
 
     const fs::path ux0{ pref_path / (+VitaIoDevice::ux0)._to_string() };
     const fs::path uma0{ pref_path / (+VitaIoDevice::uma0)._to_string() };
-    const fs::path ux0_data{ ux0 / "data" };
-    const fs::path uma0_data{ uma0 / "data" };
-    const fs::path ux0_app{ ux0 / "app" };
-    const fs::path ux0_music{ ux0 / "music" };
-    const fs::path ux0_picture{ ux0 / "picture" };
-    const fs::path ux0_theme{ ux0 / "theme" };
-    const fs::path ux0_video{ ux0 / "video" };
-    const fs::path ux0_user{ ux0 / "user" };
     const fs::path vd0{ pref_path / (+VitaIoDevice::vd0)._to_string() };
-    const fs::path vd0_registry{ vd0 / "registry" };
-    const fs::path vd0_network{ vd0 / "network" };
 
-    fs::create_directories(ux0);
-    fs::create_directories(ux0_data);
-    fs::create_directories(ux0_app);
-    fs::create_directories(ux0_music);
-    fs::create_directories(ux0_picture);
-    fs::create_directories(ux0_theme);
-    fs::create_directories(ux0_video);
-    fs::create_directories(ux0_user);
-    fs::create_directories(uma0);
-    fs::create_directories(uma0_data);
-    fs::create_directories(vd0_registry);
-    fs::create_directories(vd0_network);
+    fs::create_directories(ux0 / "data");
+    fs::create_directories(ux0 / "app");
+    fs::create_directories(ux0 / "music");
+    fs::create_directories(ux0 / "picture");
+    fs::create_directories(ux0 / "theme");
+    fs::create_directories(ux0 / "video");
+    fs::create_directories(ux0 / "user");
+    fs::create_directories(uma0 / "data");
+    fs::create_directories(vd0 / "registry");
+    fs::create_directories(vd0 / "network");
 
     fs::create_directories(cache_path / "shaders");
     fs::create_directory(log_path / "shaderlog");
@@ -185,7 +173,7 @@ bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &tra
         return false;
 
     for (const auto &file : fs::recursive_directory_iterator(final_path)) {
-        io.cachemap.insert(std::make_pair(string_utils::tolower(file.path().string()), file.path().string()));
+        io.cachemap.emplace(string_utils::tolower(file.path().string()), file.path().string());
     }
 
     return true;
@@ -381,7 +369,7 @@ int read_file(void *data, IOState &io, const SceUID fd, const SceSize size, cons
     const auto tty_file = io.tty_files.find(fd);
     if (tty_file != io.tty_files.end()) {
         if (tty_file->second == TTY_IN) {
-            std::cin.read(reinterpret_cast<char *>(data), size);
+            std::cin.read(static_cast<char *>(data), size);
             LOG_TRACE_IF(log_file_op && log_file_read, "{}: Reading terminal fd: {}, size: {}", export_name, log_hex(fd), size);
             return size;
         }
@@ -403,7 +391,7 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
     const auto tty_file = io.tty_files.find(fd);
     if (tty_file != io.tty_files.end()) {
         if (tty_file->second & TTY_OUT) {
-            std::string s(reinterpret_cast<char const *>(data), size);
+            std::string s(static_cast<char const *>(data), size);
 
             // trim newline
             if (io.redirect_stdio) {
@@ -685,7 +673,7 @@ SceUID open_dir(IOState &io, const char *path, const fs::path &pref_path, const 
     auto device_for_icase = device;
     const auto translated_path = translate_path(path, device, io.device_paths);
 
-    auto dir_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio) / std::string{ fs::path::preferred_separator };
+    auto dir_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio) / "";
     if (!fs::exists(dir_path)) {
         if (io.case_isens_find_enabled) {
             // Attempt a case-insensitive file search.
@@ -895,7 +883,7 @@ SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay) {
     return res;
 }
 
-std::string resolve_path(IOState &io, const char *input, const bool is_write, const SceUInt32 min_order, const SceUInt32 max_order) {
+std::string resolve_path(IOState &io, const char *input, const SceUInt32 min_order, const SceUInt32 max_order) {
     std::lock_guard<std::mutex> lock(io.overlay_mutex);
 
     std::string curr_path = input;

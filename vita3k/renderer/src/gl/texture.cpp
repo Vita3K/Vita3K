@@ -24,10 +24,6 @@
 
 #include <gxm/functions.h>
 #include <mem/ptr.h>
-#include <util/align.h>
-#include <util/log.h>
-
-static constexpr bool log_parameter = false;
 
 namespace renderer::gl {
 
@@ -59,7 +55,7 @@ bool GLTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     TextureCache::init(hashless_texture_cache, texture_folder, game_id);
     backend = Backend::OpenGL;
 
-    return textures.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
+    return textures.init(glGenTextures, glDeleteTextures);
 }
 
 void GLTextureCache::select(size_t index, const SceGxmTexture &texture) {
@@ -72,8 +68,6 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
 
     const SceGxmTextureFormat fmt = gxm::get_format(gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
-    const SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(gxm_texture.uaddr_mode);
-    const SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(gxm_texture.vaddr_mode);
     uint32_t width = gxm::get_width(gxm_texture);
     uint32_t height = gxm::get_height(gxm_texture);
     const GLint *const swizzle = translate_swizzle(fmt);

@@ -155,7 +155,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
                     buffer.size = std::max(parameter.resource_index + parameter_size_in_f32, buffer.size);
 
                     if (!container) {
-                        buffer.reg_start_offset = std::min(buffer.reg_start_offset, static_cast<uint32_t>(offset));
+                        buffer.reg_start_offset = std::min(buffer.reg_start_offset, offset);
                     }
                 }
 

@@ -56,8 +56,6 @@ struct UniformSetRequest {
     const void *data;
 };
 
-struct CommandBuffer;
-
 enum class Backend : uint32_t {
     OpenGL,
     Vulkan

@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <cstring>
 #include <memory>
 
 #if WIN32

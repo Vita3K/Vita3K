@@ -70,11 +70,11 @@ bool TRPFile::header_parse() {
         seek_func(entry_info_off + (i * 0x40) + 0x20);
 
         // Read offset from the beginning and size
-        if (!read_func((char *)&(entries[i].offset), 8)) {
+        if (!read_func(&entries[i].offset, 8)) {
             return false;
         }
 
-        if (!read_func((char *)&entries[i].size, 8)) {
+        if (!read_func(&entries[i].size, 8)) {
             return false;
         }
 
@@ -91,7 +91,7 @@ bool TRPFile::header_parse() {
     return true;
 }
 
-bool TRPFile::get_entry_data(const uint32_t idx, TRPWriteFunc write_func) {
+bool TRPFile::get_entry_data(const uint32_t idx, const TRPWriteFunc &write_func) {
     // Check if the index is not out of range
     if (idx >= entries.size()) {
         return false;
@@ -127,7 +127,7 @@ bool TRPFile::get_entry_data(const uint32_t idx, TRPWriteFunc write_func) {
     return true;
 }
 
-const std::int32_t TRPFile::search_file(const char *name) {
+std::int32_t TRPFile::search_file(const char *name) {
     auto name_len = strlen(name);
     for (std::size_t i = 0; i < entries.size(); i++) {
         if (strncmp(entries[i].filename.c_str(), name, name_len) == 0) {

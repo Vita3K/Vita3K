@@ -58,7 +58,7 @@ int BitmapAllocator::force_fill(const std::uint32_t offset, const int size, cons
             *word = wval & (~mask);
         }
 
-        return std::min<int>(size, static_cast<int>((words.size() << 5) - set_bit));
+        return std::min<int>(size, (words.size() << 5) - set_bit);
     }
 
     // All the bits trails across some other words
@@ -85,7 +85,7 @@ int BitmapAllocator::force_fill(const std::uint32_t offset, const int size, cons
         }
     }
 
-    return std::min<int>(size, static_cast<int>((words.size() << 5) - set_bit));
+    return std::min<int>(size, (words.size() << 5) - set_bit);
 }
 
 void BitmapAllocator::free(const std::uint32_t offset, const int size) {

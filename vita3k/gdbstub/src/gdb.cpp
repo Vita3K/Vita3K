@@ -18,6 +18,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <emuenv/state.h>
+#include <util/bit_cast.h>
 #include <util/log.h>
 
 #include <gdbstub/functions.h>
@@ -78,7 +79,7 @@ struct PacketCommand {
 typedef std::function<std::string(EmuEnvState &state, PacketCommand &command)> PacketFunction;
 
 struct PacketFunctionBundle {
-    std::string name;
+    std::string_view name;
     PacketFunction function;
 };
 
@@ -221,7 +222,7 @@ static uint32_t fetch_reg(CPUState &state, uint32_t reg) {
 
     if (reg <= 23) {
         float value = read_float_reg(state, reg - 16);
-        return *reinterpret_cast<uint32_t *>(&value);
+        return std::bit_cast<uint32_t>(value);
     }
 
     if (reg == 24)
@@ -253,7 +254,7 @@ static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
     }
 
     if (reg <= 23) {
-        write_float_reg(state, reg - 16, *reinterpret_cast<float *>(&value));
+        write_float_reg(state, reg - 16, std::bit_cast<float>(value));
         return;
     }
 
@@ -312,9 +313,9 @@ static std::string cmd_read_register(EmuEnvState &state, PacketCommand &command)
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
     const std::string content = content_string(command);
-    int32_t reg = parse_hex(content.substr(1, content.size() - 1));
+    uint32_t reg = parse_hex(content.substr(1, content.size() - 1));
 
-    return be_hex(fetch_reg(cpu, static_cast<uint32_t>(reg)));
+    return be_hex(fetch_reg(cpu, reg));
 }
 
 static std::string cmd_write_register(EmuEnvState &state, PacketCommand &command) {
@@ -326,8 +327,8 @@ static std::string cmd_write_register(EmuEnvState &state, PacketCommand &command
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
     const std::string content = content_string(command);
-    uint32_t equal_index = content.find('=');
-    int32_t reg = parse_hex(content.substr(1, equal_index - 1));
+    size_t equal_index = content.find('=');
+    uint32_t reg = parse_hex(content.substr(1, equal_index - 1));
     uint32_t value = parse_hex(content.substr(equal_index + 1));
     modify_reg(cpu, reg, value);
 
@@ -419,15 +420,13 @@ static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) { retu
 
 static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
     const std::string content = content_string(command);
-    const auto watch_delay = std::chrono::milliseconds(100);
+    constexpr auto watch_delay = std::chrono::milliseconds(100);
 
     uint64_t index = 5;
     uint64_t next = 0;
     do {
         next = content.find(';', index + 1);
         std::string text = content.substr(index + 1, next - index - 1);
-
-        const uint64_t colon = text.find(':');
 
         const char cmd = text[0];
         switch (cmd) {
@@ -696,11 +695,11 @@ constexpr bool cmp_less(T t, U u) noexcept {
         return u < 0 ? false : t < UU(u);
 }
 
-static bool command_begins_with(PacketCommand &command, const std::string &small_str) {
+static bool command_begins_with(PacketCommand &command, const std::string_view small_str) {
     if (!cmp_less(small_str.size(), command.content_length))
         return false;
 
-    return std::memcmp(command.content_start, small_str.c_str(), small_str.size()) == 0;
+    return std::memcmp(command.content_start, small_str.data(), small_str.size()) == 0;
 }
 
 static int64_t server_next(EmuEnvState &state) {
@@ -805,7 +804,7 @@ void server_open(EmuEnvState &state) {
         return;
     }
 
-    sockaddr_in socket_address = { 0 };
+    sockaddr_in socket_address{};
     socket_address.sin_family = AF_INET;
     socket_address.sin_port = htons(GDB_SERVER_PORT);
 #ifdef _WIN32

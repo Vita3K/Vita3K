@@ -63,7 +63,6 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     // so start a new recording right now if the macroblock has changed
     context.check_for_macroblock_change(false);
 
-    Address data_addr = texture.data_addr << 2;
     bool is_vertex = index >= SCE_GXM_MAX_TEXTURE_UNITS;
 
     const SceGxmTextureFormat format = gxm::get_format(texture);
@@ -83,9 +82,6 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     std::optional<TextureLookupResult> lookup_result = std::nullopt;
 
     SceGxmColorBaseFormat format_target_of_texture;
-
-    uint16_t width = static_cast<uint16_t>(gxm::get_width(texture));
-    uint16_t height = static_cast<uint16_t>(gxm::get_height(texture));
 
     TextureViewport texture_viewport{};
 
@@ -390,7 +386,7 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
 static void *add_alpha_channel(const void *pixels, const uint32_t width, const uint32_t height, std::vector<uint8_t> &data) {
     data.resize(width * height * 4);
 
-    const uint8_t *src = reinterpret_cast<const uint8_t *>(pixels);
+    const uint8_t *src = static_cast<const uint8_t *>(pixels);
     uint8_t *dst = data.data();
     for (uint32_t y = 0; y < height; y++) {
         for (uint32_t x = 0; x < width; x++) {
@@ -446,7 +442,7 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         return;
     }
 
-    memcpy(reinterpret_cast<uint8_t *>(staging_buffer.buffer.mapped_data) + staging_buffer.used_so_far, text_data, upload_size);
+    memcpy(static_cast<uint8_t *>(staging_buffer.buffer.mapped_data) + staging_buffer.used_so_far, text_data, upload_size);
 
     vk::ImageSubresourceLayers layer{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
@@ -456,7 +452,7 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
     };
     vk::BufferImageCopy region{
         .bufferOffset = staging_buffer.used_so_far,
-        .bufferRowLength = static_cast<uint32_t>(pixels_per_stride),
+        .bufferRowLength = pixels_per_stride,
         .bufferImageHeight = buffer_height,
         .imageSubresource = layer,
         .imageOffset = { 0, 0, 0 },
@@ -522,7 +518,7 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
 
 void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) {
     const size_t bpp = gxm::bits_per_pixel(base_format);
-    const uint32_t texture_size = static_cast<uint32_t>((align(width, 4) * align(height, 4) * bpp) / 8);
+    const uint32_t texture_size = align(width, 4) * align(height, 4) * bpp / 8;
     current_texture->memory_needed = align(texture_size, 16);
 
     current_texture->mip_count = mipcount;

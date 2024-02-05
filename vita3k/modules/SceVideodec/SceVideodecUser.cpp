@@ -209,7 +209,7 @@ EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceA
     decoder_info->set_output_format(is_yuvp3);
 
     decoder_info->configure(&options);
-    const auto send = decoder_info->send(reinterpret_cast<uint8_t *>(au->es.pBuf.get(emuenv.mem)), au->es.size);
+    const auto send = decoder_info->send(au->es.pBuf.cast<uint8_t>().get(emuenv.mem), au->es.size);
     decoder_info->set_res(pPicture->frame.frameWidth, pPicture->frame.frameHeight);
     if (send && decoder_info->receive(output)) {
         decoder_info->get_res(pPicture->frame.horizontalSize, pPicture->frame.verticalSize);
@@ -310,7 +310,6 @@ EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *
 
     if (!decoder_info->is_stopped) {
         SceAvcdecPicture *pPicture = picture->pPicture.get(emuenv.mem)[0].get(emuenv.mem);
-        uint8_t *output = pPicture->frame.pPicture[0].cast<uint8_t>().get(emuenv.mem);
 
         // we get the values from the last frame, maybe we should slightly increase the pts value?
         decoder_info->get_res(pPicture->frame.horizontalSize, pPicture->frame.verticalSize);

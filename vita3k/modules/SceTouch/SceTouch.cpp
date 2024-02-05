@@ -25,14 +25,14 @@
 TRACY_MODULE_NAME(SceTouch);
 
 template <>
-std::string to_debug_str<SceTouchSamplingState>(const MemState &mem, SceTouchSamplingState state) {
-    switch (state) {
+std::string to_debug_str<SceTouchSamplingState>(const MemState &mem, SceTouchSamplingState type) {
+    switch (type) {
     case SCE_TOUCH_SAMPLING_STATE_STOP:
         return "SCE_TOUCH_SAMPLING_STATE_STOP";
     case SCE_TOUCH_SAMPLING_STATE_START:
         return "SCE_TOUCH_SAMPLING_STATE_START";
     }
-    return std::to_string(state);
+    return std::to_string(type);
 }
 
 EXPORT(int, sceTouchActivateRegion) {

@@ -1085,7 +1085,7 @@ enum SceGxmMemoryAttribFlags {
     SCE_GXM_MEMORY_ATTRIB_RW = (SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE)
 };
 
-enum SceGxmAttributeFormat {
+enum SceGxmAttributeFormat : uint8_t {
     SCE_GXM_ATTRIBUTE_FORMAT_U8,
     SCE_GXM_ATTRIBUTE_FORMAT_S8,
     SCE_GXM_ATTRIBUTE_FORMAT_U16,
@@ -1457,7 +1457,7 @@ struct SceGxmProgram {
     OFFSET_FUNCTION_CHECKED(SceGxmProgramParameter, program_parameters, parameters_offset)
     OFFSET_FUNCTION_CHECKED(SceGxmProgramVertexVaryings, vertex_varyings, varyings_offset)
     SceGxmParameterType get_fragment_output_type() const {
-        return static_cast<const SceGxmParameterType>(vertex_varyings()->output_param_type);
+        return vertex_varyings()->output_param_type;
     }
     uint8_t get_fragment_output_component_count() const {
         return vertex_varyings()->output_comp_count;
@@ -1509,7 +1509,7 @@ static_assert(sizeof(SceGxmProgramParameter) == 16, "Incorrect structure layout.
 struct SceGxmVertexAttribute {
     uint16_t streamIndex;
     uint16_t offset;
-    uint8_t format; // SceGxmAttributeFormat.
+    SceGxmAttributeFormat format;
     uint8_t componentCount;
     uint16_t regIndex; // Returned from sceGxmProgramParameterGetResourceIndex().
 };

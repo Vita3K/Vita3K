@@ -111,7 +111,7 @@ enum SceCommonDialogResult {
     SCE_COMMON_DIALOG_RESULT_ABORTED
 };
 
-enum SceCommonDialogErrorCode {
+enum SceCommonDialogErrorCode : uint32_t {
     SCE_COMMON_DIALOG_ERROR_BUSY = 0x80020401,
     SCE_COMMON_DIALOG_ERROR_NULL = 0x80020402,
     SCE_COMMON_DIALOG_ERROR_INVALID_ARGUMENT = 0x80020403,

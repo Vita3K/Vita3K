@@ -37,7 +37,7 @@ inline std::string to_debug_str<SceDisplaySetBufSync>(const MemState &mem, SceDi
     return std::to_string(type);
 }
 
-enum SceDisplayErrorCode {
+enum SceDisplayErrorCode : uint32_t {
     SCE_DISPLAY_ERROR_OK = 0,
     SCE_DISPLAY_ERROR_INVALID_HEAD = 0x80290000,
     SCE_DISPLAY_ERROR_INVALID_VALUE = 0x80290001,

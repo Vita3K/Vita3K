@@ -146,7 +146,7 @@ static void add_bind_to_table(GuiState &gui, EmuEnvState &emuenv, const SDL_Game
     ImGui::TableSetColumnIndex(0);
     ImGui::Text("%s", buttons_name[btn].c_str());
     ImGui::TableSetColumnIndex(1);
-    if (ImGui::Button(get_mapped_button_name(SDL_GameControllerButton(emuenv.cfg.controller_binds[btn])).c_str())) {
+    if (ImGui::Button(get_mapped_button_name(static_cast<SDL_GameControllerButton>(emuenv.cfg.controller_binds[btn])).c_str())) {
         is_capturing_buttons = true;
         while (is_capturing_buttons) {
             // query SDL for button events

@@ -25,7 +25,6 @@
 #include <boost/algorithm/string/trim.hpp>
 #include <config/state.h>
 #include <display/state.h>
-#include <glutil/gl.h>
 #include <io/VitaIoDevice.h>
 #include <io/state.h>
 #include <io/vfs.h>
@@ -254,7 +253,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
 
             const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
             if (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S)
-                io.Fonts->AddFontFromFileTTF((default_font_path / "SourceHanSansSC-Bold-Min.ttf").string().c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
+                io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "SourceHanSansSC-Bold-Min.ttf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
             font_config.MergeMode = false;
 
             large_font_config.SizePixels = 134.f;
@@ -489,7 +488,7 @@ void save_apps_cache(GuiState &gui, EmuEnvState &emuenv) {
 
         // Write version of cache
         const uint32_t versionInFile = 1;
-        apps_cache.write((char *)&versionInFile, sizeof(uint32_t));
+        apps_cache.write((const char *)&versionInFile, sizeof(uint32_t));
 
         // Write language of cache
         gui.app_selector.apps_cache_lang = emuenv.cfg.sys_lang;
@@ -500,7 +499,7 @@ void save_apps_cache(GuiState &gui, EmuEnvState &emuenv) {
             auto write = [&apps_cache](const std::string &i) {
                 const auto size = i.length();
 
-                apps_cache.write((char *)&size, sizeof(size));
+                apps_cache.write((const char *)&size, sizeof(size));
                 apps_cache.write(i.c_str(), size);
             };
 
@@ -629,15 +628,15 @@ void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
             emuenv.app_info.app_category = "gda";
             emuenv.app_info.app_title_id = app;
             if (app == "NPXS10003") {
-                emuenv.app_info.app_short_title = lang["browser"].c_str();
-                emuenv.app_info.app_title = lang["internet_browser"].c_str();
+                emuenv.app_info.app_short_title = lang["browser"];
+                emuenv.app_info.app_title = lang["internet_browser"];
             } else if (app == "NPXS10008") {
-                emuenv.app_info.app_short_title = lang["trophies"].c_str();
-                emuenv.app_info.app_title = lang["trophy_collection"].c_str();
+                emuenv.app_info.app_short_title = lang["trophies"];
+                emuenv.app_info.app_title = lang["trophy_collection"];
             } else if (app == "NPXS10015")
-                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["settings"].c_str();
+                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["settings"];
             else
-                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["content_manager"].c_str();
+                emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["content_manager"];
         }
         gui.app_selector.sys_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, {}, {}, {}, {}, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, app });
     }
@@ -686,11 +685,11 @@ std::map<DateTime, std::string> get_date_time(GuiState &gui, EmuEnvState &emuenv
     return date_time_str;
 }
 
-ImTextureID load_image(GuiState &gui, const char *data, const std::uint32_t size) {
+ImTextureID load_image(GuiState &gui, const uint8_t *data, const std::uint32_t size) {
     int width;
     int height;
 
-    stbi_uc *img_data = stbi_load_from_memory(reinterpret_cast<const stbi_uc *>(data), size, &width, &height,
+    stbi_uc *img_data = stbi_load_from_memory(data, size, &width, &height,
         nullptr, STBI_rgb_alpha);
 
     if (!data)
@@ -748,7 +747,7 @@ void draw_begin(GuiState &gui, EmuEnvState &emuenv) {
         gui.app_selector.icon_async_loader->commit(gui);
 }
 
-void draw_end(GuiState &gui, SDL_Window *window) {
+void draw_end(GuiState &gui) {
     ImGui::Render();
     ImGui_ImplSdl_RenderDrawData(gui.imgui_state.get());
 }

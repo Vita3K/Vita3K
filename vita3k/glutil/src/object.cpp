@@ -37,14 +37,14 @@ bool GLObject::init(GLuint name) {
     return name != 0;
 }
 
-bool GLObject::init(GLuint name, AggregateDeleter aggregate_deleter) {
+bool GLObject::init(GLuint name, const AggregateDeleter &aggregate_deleter) {
     if (aggregate_deleter)
         this->aggregate_deleter = aggregate_deleter;
 
     return init(name);
 }
 
-bool GLObject::init(GLuint name, SingularDeleter singular_deleter) {
+bool GLObject::init(GLuint name, const SingularDeleter &singular_deleter) {
     if (singular_deleter)
         this->singular_deleter = singular_deleter;
 

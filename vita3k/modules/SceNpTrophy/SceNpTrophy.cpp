@@ -249,8 +249,8 @@ EXPORT(int, sceNpTrophyGetGameInfo, np::trophy::ContextHandle context_handle, Sc
         if (!context->get_trophy_set(name, detail))
             return RET_ERROR(SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF);
 
-        memcpy((char *)details->title, name.c_str(), name.size() + 1);
-        memcpy((char *)details->description, detail.c_str(), detail.size() + 1);
+        memcpy(details->title, name.c_str(), name.size() + 1);
+        memcpy(details->description, detail.c_str(), detail.size() + 1);
 
         for (uint32_t i = 0; i < context->trophy_count; i++) {
             switch (context->trophy_kinds[i]) {
@@ -340,8 +340,8 @@ EXPORT(int, sceNpTrophyGetGroupInfo, np::trophy::ContextHandle context_handle, S
         if (!context->get_trophy_set(name, detail))
             return RET_ERROR(SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF);
 
-        memcpy((char *)details->title, name.c_str(), name.size() + 1);
-        memcpy((char *)details->description, detail.c_str(), detail.size() + 1);
+        memcpy(details->title, name.c_str(), name.size() + 1);
+        memcpy(details->description, detail.c_str(), detail.size() + 1);
 
         for (uint32_t i = 0; i < context->trophy_count; i++) {
             switch (context->trophy_kinds[i]) {
@@ -445,8 +445,8 @@ EXPORT(int, sceNpTrophyGetTrophyInfo, np::trophy::ContextHandle context_handle, 
         if (!context->get_trophy_details(trophy_id, name, detail))
             return RET_ERROR(SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF);
 
-        memcpy((char *)details->name, name.c_str(), name.size() + 1);
-        memcpy((char *)details->description, detail.c_str(), detail.size() + 1);
+        memcpy(details->name, name.c_str(), name.size() + 1);
+        memcpy(details->description, detail.c_str(), detail.size() + 1);
     }
 
     if (data) {
@@ -579,12 +579,12 @@ EXPORT(int, sceNpTrophyUnlockTrophy, np::trophy::ContextHandle context_handle, S
         }
     }
 
-    if ((context->platinum_trophy_id != SCE_NP_TROPHY_INVALID_TROPHY_ID) && (context->total_trophy_unlocked() == (context->trophy_count - 1))) {
+    if ((context->platinum_trophy_id != np::SCE_NP_TROPHY_INVALID_TROPHY_ID) && (context->total_trophy_unlocked() == (context->trophy_count - 1))) {
         // Force unlock platinum trophy
         context->unlock_trophy(context->platinum_trophy_id, &error, true);
         *platinum_id = context->platinum_trophy_id;
     } else
-        *platinum_id = SCE_NP_TROPHY_INVALID_TROPHY_ID;
+        *platinum_id = np::SCE_NP_TROPHY_INVALID_TROPHY_ID;
 
     const int err = do_trophy_callback(emuenv, context, trophy_id);
 
@@ -592,7 +592,7 @@ EXPORT(int, sceNpTrophyUnlockTrophy, np::trophy::ContextHandle context_handle, S
         return err;
     }
 
-    if (*platinum_id != SCE_NP_TROPHY_INVALID_TROPHY_ID) {
+    if (*platinum_id != np::SCE_NP_TROPHY_INVALID_TROPHY_ID) {
         // Do trophy callback for platinum too! But this time, ignore the error
         do_trophy_callback(emuenv, context, context->platinum_trophy_id);
     }

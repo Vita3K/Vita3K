@@ -79,7 +79,7 @@ void replace(std::string &str, const std::string &in, const std::string &out) {
     }
 }
 
-std::basic_string<uint8_t> string_to_byte_array(std::string string) {
+std::basic_string<uint8_t> string_to_byte_array(const std::string &string) {
     std::basic_string<uint8_t> hex_bytes;
 
     for (size_t i = 0; i < string.length(); i += 2) {
@@ -103,8 +103,8 @@ std::u16string utf8_to_utf16(const std::string &str) {
         "std::wstring and std::u16string are expected to have the same character size");
 
     std::wstring_convert<std::codecvt_utf8_utf16<int16_t>, int16_t> myconv;
-    auto p = reinterpret_cast<const char *>(str.data());
-    auto a = myconv.from_bytes(p, p + std::strlen(p));
+    const char *p = str.data();
+    auto a = myconv.from_bytes(p, p + str.size());
     return std::u16string(a.begin(), a.end());
 }
 #else

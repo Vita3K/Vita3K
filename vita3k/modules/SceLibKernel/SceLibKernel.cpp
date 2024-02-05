@@ -26,7 +26,6 @@
 #include <cpu/functions.h>
 #include <dlmalloc.h>
 #include <io/functions.h>
-#include <kernel/load_self.h>
 #include <kernel/state.h>
 #include <kernel/sync_primitives.h>
 #include <packages/functions.h>
@@ -40,7 +39,6 @@
 #include <util/log.h>
 #include <util/tracy.h>
 
-#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 

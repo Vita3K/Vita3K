@@ -22,10 +22,7 @@
 
 #pragma once
 
-#include <packages/functions.h>
 #include <util/log.h>
-
-#include <map>
 
 // Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
 
@@ -172,7 +169,7 @@ public:
 
         auto &key_entries = *self_type;
 
-        for (auto item : key_entries.second) {
+        for (const auto &item : key_entries.second) {
             if ((sysver < 0 || (sysver >= item.minver && sysver <= item.maxver)) && (keyrev < 0 || keyrev == item.keyrev)) {
                 return item;
             }
@@ -216,7 +213,7 @@ public:
         }
         this->sce_type = SceType(_sce_type);
         this->platform = SelfPlatform(_platform);
-    };
+    }
 };
 
 class SelfHeader {
@@ -248,7 +245,7 @@ public:
         memcpy(&sceversion_offset, &data[64], 8);
         memcpy(&controlinfo_offset, &data[72], 8);
         memcpy(&controlinfo_length, &data[80], 8);
-    };
+    }
 };
 
 struct AppInfoHeader {
@@ -269,7 +266,7 @@ struct AppInfoHeader {
         memcpy(&field_18, &data[24], 8);
 
         this->self_type = SelfType(_self_type);
-    };
+    }
 };
 
 class ElfHeader {
@@ -307,7 +304,7 @@ public:
         memcpy(&e_shentsize, &data[46], 2);
         memcpy(&e_shnum, &data[48], 2);
         memcpy(&e_shstrndx, &data[50], 2);
-    };
+    }
 };
 
 class ElfPhdr {

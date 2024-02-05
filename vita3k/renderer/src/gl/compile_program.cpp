@@ -27,19 +27,18 @@
 
 #include <shader/spirv_recompiler.h>
 
-#include <gxm/functions.h>
 #include <vector>
 
 namespace renderer::gl {
 static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
     R_PROFILE(__func__);
 
-    const SharedGLObject shader = std::make_shared<GLObject>();
+    SharedGLObject shader = std::make_shared<GLObject>();
     if (!shader->init(glCreateShader(type), glDeleteShader)) {
         return SharedGLObject();
     }
 
-    const GLchar *source_glchar = static_cast<const GLchar *>(source.c_str());
+    const GLchar *source_glchar = source.c_str();
     const GLint length = static_cast<GLint>(source.length());
     glShaderSource(shader->get(), 1, &source_glchar, &length);
 
@@ -70,7 +69,7 @@ static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
 static SharedGLObject compile_spirv(GLenum type, const std::vector<std::uint32_t> &source) {
     R_PROFILE(__func__);
 
-    const SharedGLObject shader = std::make_shared<GLObject>();
+    SharedGLObject shader = std::make_shared<GLObject>();
     if (!shader->init(glCreateShader(type), glDeleteShader)) {
         return SharedGLObject();
     }
@@ -116,8 +115,8 @@ static std::string convert_hash_to_hex(const Sha256Hash &hash) {
     return ss.str();
 }
 
-static SharedGLObject compile_program(ProgramCache &program_cache, const SharedGLObject frag_shader, const SharedGLObject vert_shader, const ProgramHashes &hashes) {
-    const SharedGLObject program = std::make_shared<GLObject>();
+static SharedGLObject compile_program(ProgramCache &program_cache, const SharedGLObject &frag_shader, const SharedGLObject &vert_shader, const ProgramHashes &hashes) {
+    SharedGLObject program = std::make_shared<GLObject>();
     if (!program->init(glCreateProgram(), glDeleteProgram)) {
         return SharedGLObject();
     }
@@ -166,7 +165,7 @@ static SharedGLObject compile_shader(const fs::path &shader_cache_path, const st
     }
 
     // Compile Shader
-    const SharedGLObject obj = compile_glsl(type, shader);
+    SharedGLObject obj = compile_glsl(type, shader);
     if (!obj) {
         LOG_CRITICAL("Error in compile {} shader:\n{}", type_str, hash_hex);
         return SharedGLObject();
@@ -283,7 +282,7 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
         return SharedGLObject();
     }
 
-    const SharedGLObject program = compile_program(renderer.program_cache, fragment_shader, vertex_shader, hashes);
+    SharedGLObject program = compile_program(renderer.program_cache, fragment_shader, vertex_shader, hashes);
 
     // Save shader cache haches
     const auto shader_cache_hash_index = get_shaders_hash_index(renderer.shaders_cache_hashs, fragment_program.hash, vertex_program.hash);

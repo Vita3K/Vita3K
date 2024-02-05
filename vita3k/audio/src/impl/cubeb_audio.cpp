@@ -26,8 +26,8 @@
 static long impl_cubeb_audio_callback(cubeb_stream *stream, void *user_data, const void *input, void *output, long nframes) {
     assert(user_data != nullptr);
     assert(stream != nullptr);
-    CubebAudioOutPort *port = reinterpret_cast<CubebAudioOutPort *>(user_data);
-    uint8_t *output_buffer = reinterpret_cast<uint8_t *>(output);
+    CubebAudioOutPort *port = static_cast<CubebAudioOutPort *>(user_data);
+    uint8_t *output_buffer = static_cast<uint8_t *>(output);
 
     int bytes_given = 0;
     const int bytes_to_give = nframes * port->spec.channels * sizeof(uint16_t);

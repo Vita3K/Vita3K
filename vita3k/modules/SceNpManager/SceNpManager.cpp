@@ -67,8 +67,8 @@ EXPORT(int, sceNpCheckCallback) {
 
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
     const SceNpServiceState state = emuenv.cfg.current_config.psn_signed_in ? SCE_NP_SERVICE_STATE_SIGNED_IN : SCE_NP_SERVICE_STATE_SIGNED_OUT;
-    for (auto &callback : emuenv.np.cbs) {
-        thread->run_callback(callback.second.pc, { static_cast<uint32_t>(state), 0, callback.second.data });
+    for (auto &[_, np_callback] : emuenv.np.cbs) {
+        thread->run_callback(np_callback.pc, { static_cast<uint32_t>(state), 0, np_callback.data });
     }
 
     return STUBBED("Stub");
@@ -125,14 +125,9 @@ EXPORT(int, sceNpManagerGetNpId, np::SceNpId *id) {
         LOG_ERROR("Your online ID has over 16 characters, try again with shorter name");
         return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;
     }
-    strcpy(id->handle.data, emuenv.io.user_name.c_str());
-    id->handle.term = '\0';
-    std::fill(id->handle.dummy, id->handle.dummy + 3, 0);
-
     // Fill the unused stuffs to 0 (prevent some weird things happen)
-    std::fill(id->opt, id->opt + 8, 0);
-    std::fill(id->reserved, id->reserved + 8, 0);
-
+    memset(id, 0, sizeof(*id));
+    strcpy(id->handle.data, emuenv.io.user_name.c_str());
     return 0;
 }
 

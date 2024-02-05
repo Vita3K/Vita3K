@@ -50,8 +50,7 @@ void end_single_time_command(vk::Device device, vk::Queue queue, vk::CommandPool
     device.freeCommandBuffers(cmd_pool, cmd_buffer);
 }
 
-vk::ShaderModule load_shader(vk::Device device, const std::string &path) {
-    const auto shader_path = fs::path(path);
+vk::ShaderModule load_shader(vk::Device device, const fs::path &shader_path) {
     fs::ifstream is(shader_path, fs::ifstream::binary);
     if (!is) {
         return {};
@@ -74,7 +73,7 @@ vk::ShaderModule load_shader(vk::Device device, const std::string &path) {
 vk::ShaderModule load_shader(vk::Device device, const void *data, const uint32_t size) {
     vk::ShaderModuleCreateInfo shader_info{
         .codeSize = size,
-        .pCode = reinterpret_cast<const uint32_t *>(data)
+        .pCode = static_cast<const uint32_t *>(data)
     };
 
     return device.createShaderModule(shader_info);

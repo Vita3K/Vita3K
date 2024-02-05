@@ -17,7 +17,6 @@
 
 #include <chrono>
 #include <display/functions.h>
-#include <gxm/types.h>
 #include <renderer/commands.h>
 #include <renderer/driver_functions.h>
 #include <renderer/state.h>

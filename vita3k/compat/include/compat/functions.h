@@ -20,8 +20,6 @@
 #include <emuenv/state.h>
 #include <gui/state.h>
 
-#include <compat/state.h>
-
 namespace compat {
 
 bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv);

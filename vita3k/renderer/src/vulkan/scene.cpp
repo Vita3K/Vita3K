@@ -23,7 +23,6 @@
 #include <config/state.h>
 #include <spdlog/fmt/bin_to_hex.h>
 
-#include <util/align.h>
 #include <util/log.h>
 
 namespace renderer::vulkan {
@@ -168,12 +167,8 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
     descriptors[0] = context.global_set;
     descriptors[1] = context.rendertarget_set;
 
-    const uint16_t vertex_textures_count = reinterpret_cast<VertexProgram *>(
-        context.record.vertex_program.get(mem)->renderer_data.get())
-                                               ->texture_count;
-    const uint16_t fragment_texture_count = reinterpret_cast<VKFragmentProgram *>(
-        context.record.fragment_program.get(mem)->renderer_data.get())
-                                                ->texture_count;
+    const uint16_t vertex_textures_count = context.record.vertex_program.get(mem)->renderer_data->texture_count;
+    const uint16_t fragment_texture_count = context.record.fragment_program.get(mem)->renderer_data->texture_count;
 
     vk::PipelineLayout pipeline_layout = state.pipeline_cache.pipeline_layouts[vertex_textures_count][fragment_texture_count];
 
@@ -185,7 +180,6 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
     context.last_frag_texture_count = fragment_texture_count;
 
     {
-        int set_idx = 0;
         if (need_vert_descr) {
             context.last_vert_texture_descriptor = retrieve_descriptor(context, true, vertex_textures_count);
         }

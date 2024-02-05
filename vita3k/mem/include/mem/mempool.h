@@ -44,7 +44,7 @@ struct MemspaceBlockAllocator {
     }
 
     std::uint32_t alloc(const std::uint32_t size) {
-        std::uint32_t aligned_size = static_cast<std::uint32_t>(align(size, 4));
+        std::uint32_t aligned_size = align(size, 4);
         for (std::size_t i = 0; i < blocks.size(); i++) {
             if (blocks[i].free && blocks[i].size >= aligned_size) {
                 // Case 1: Equals. Assign it and returns

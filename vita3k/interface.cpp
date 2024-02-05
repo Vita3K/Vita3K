@@ -29,7 +29,6 @@
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
-#include <kernel/load_self.h>
 #include <kernel/state.h>
 #include <packages/functions.h>
 #include <packages/pkg.h>
@@ -40,8 +39,6 @@
 #include <modules/module_parent.h>
 #include <string>
 #include <touch/functions.h>
-#include <touch/touch.h>
-#include <util/find.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -187,8 +184,8 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &z
             progress_callback({ {}, {}, { file_progress * 0.7f + decrypt_progress * 0.3f } });
     };
 
-    int num_files = mz_zip_reader_get_num_files(zip.get());
-    for (auto i = 0; i < num_files; i++) {
+    mz_uint num_files = mz_zip_reader_get_num_files(zip.get());
+    for (mz_uint i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
             continue;
@@ -236,12 +233,12 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &z
 }
 
 static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
-    int num_files = mz_zip_reader_get_num_files(zip.get());
+    mz_uint num_files = mz_zip_reader_get_num_files(zip.get());
     std::vector<std::string> content_path;
     std::string sfo_path = "sce_sys/param.sfo";
     std::string theme_path = "theme.xml";
 
-    for (int i = 0; i < num_files; i++) {
+    for (mz_uint i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat))
             continue;
@@ -257,8 +254,7 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
         if (is_content) {
             const auto content_type = (m_filename.find(sfo_path) != std::string::npos) ? sfo_path : theme_path;
             m_filename.erase(m_filename.find(content_type));
-            if (std::find(content_path.begin(), content_path.end(), m_filename) == content_path.end())
-                content_path.push_back(m_filename);
+            vector_utils::push_if_not_exists(content_path, m_filename);
         }
     }
 
@@ -287,7 +283,7 @@ std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, con
         return {};
     }
 
-    const auto count = float(content_path.size());
+    const auto count = static_cast<float>(content_path.size());
     float current = 0.f;
     const auto update_progress = [&]() {
         if (progress_callback)
@@ -314,7 +310,7 @@ static std::vector<fs::path> get_contents_path(const fs::path &path) {
         const auto is_content = (p.path().filename() == "param.sfo") || (p.path().filename() == "theme.xml");
         if (is_content) {
             const auto content_path = (p.path().filename() == "param.sfo") ? p.path().parent_path().parent_path() : p.path().parent_path();
-            if (std::find(content_path.begin(), content_path.end(), p.path().parent_path()) == content_path.end())
+            if (!vector_utils::contains(content_path, p.path().parent_path()))
                 contents_path.push_back(content_path);
         }
     }
@@ -857,7 +853,7 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id) {
             buf.insert(buf.end(), arg.c_str(), arg.c_str() + arg.size() + 1);
         auto arr = Ptr<uint8_t>(alloc(emuenv.mem, static_cast<uint32_t>(buf.size()), "arg"));
         memcpy(arr.get(emuenv.mem), buf.data(), buf.size());
-        param.size = SceSize(buf.size());
+        param.size = static_cast<SceSize>(buf.size());
         param.attr = arr.address();
     }
     if (main_thread->start(param.size, Ptr<void>(param.attr), true) < 0) {

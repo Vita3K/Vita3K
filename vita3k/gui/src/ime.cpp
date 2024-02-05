@@ -19,7 +19,6 @@
 
 #include <config/functions.h>
 #include <config/state.h>
-#include <mem/functions.h>
 #include <util/string_utils.h>
 
 namespace gui {

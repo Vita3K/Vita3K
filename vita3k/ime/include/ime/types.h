@@ -71,7 +71,7 @@ enum SceImeEnterLabel {
     SCE_IME_ENTER_LABEL_GO = 3
 };
 
-enum SceImeErrorCode {
+enum SceImeErrorCode : uint32_t {
     SCE_IME_ERROR_ALREADY_OPENED = 0x80100700,
     SCE_IME_ERROR_NOT_OPENED = 0x80100701,
     SCE_IME_ERROR_INVALID_POINTER = 0x80100702,

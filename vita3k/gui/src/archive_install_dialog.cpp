@@ -24,7 +24,7 @@
 
 #include <util/string_utils.h>
 
-#include <fmt/std.h>
+#include <fmt/core.h>
 
 #include <thread>
 
@@ -36,7 +36,7 @@ static std::map<fs::path, std::vector<ContentInfo>> contents_archives;
 static std::vector<fs::path> invalid_archives;
 static std::filesystem::path archive_path = "";
 static float global_progress = 0.f;
-static float archives_count = 0.f;
+static int archives_count = 0;
 
 static std::vector<fs::path> get_path_of_archives(const fs::path &path) {
     std::vector<fs::path> archives_path;
@@ -55,7 +55,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     static std::atomic<float> current(0.f);
     static std::atomic<float> progress(0.f);
     static std::mutex install_mutex;
-    static const auto progress_callback = [&](ArchiveContents progress_value) {
+    static const auto progress_callback = [&](const ArchiveContents &progress_value) {
         if (progress_value.count.has_value())
             count = progress_value.count.value();
         if (progress_value.current.has_value())
@@ -142,18 +142,19 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 const auto contents_path = fs::path(archive_path.native());
                 if (type == "directory") {
                     const auto archives_path = get_path_of_archives(contents_path);
-                    archives_count = float(archives_path.size());
+                    archives_count = archives_path.size();
                     for (const auto &archive : archives_path) {
                         install_archive_contents(archive);
                         ++global_progress;
                         progress = 0.f;
                     }
                 } else {
-                    archives_count = global_progress = 1.f;
+                    archives_count = 1;
+                    global_progress = 1.f;
                     install_archive_contents(contents_path);
                     progress = 0.f;
                 }
-                archives_count = 0.f;
+                archives_count = 0;
                 global_progress = 0.f;
                 state = "finished";
             });
@@ -177,13 +178,13 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             // Draw Progress bar of count contents
             ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * SCALE.y)));
             ImGui::ProgressBar(current / count, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
-            const auto count_progress_str = fmt::format("{}/{}", current, count);
+            const auto count_progress_str = fmt::format("{}/{}", current.load(), count.load());
             ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(count_progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", count_progress_str.c_str());
             // Draw Progress bar
             ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * SCALE.y)));
             ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
-            const auto progress_str = std::to_string(uint32_t(progress)).append("%");
+            const auto progress_str = std::to_string(progress).append("%");
             ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
             ImGui::PopStyleColor();

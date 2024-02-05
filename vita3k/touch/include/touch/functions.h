@@ -1,6 +1,5 @@
 #pragma once
 
-#include <emuenv/state.h>
 #include <touch/touch.h>
 
 std::vector<SceFVector2> get_touchpad_fingers_pos(SceTouchPortType &port);

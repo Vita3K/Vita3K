@@ -28,7 +28,6 @@
 #include <renderer/vulkan/functions.h>
 
 #include <config/state.h>
-#include <renderer/functions.h>
 #include <util/log.h>
 #include <util/tracy.h>
 
@@ -55,8 +54,7 @@ COMMAND(handle_set_context) {
         render_context->record.color_surface.downscale = false;
     }
 
-    if (color_surface)
-        delete color_surface;
+    delete color_surface;
 
     if (depth_stencil_surface && !depth_stencil_surface->disabled()) {
         render_context->record.depth_stencil_surface = *depth_stencil_surface;
@@ -65,8 +63,7 @@ COMMAND(handle_set_context) {
         render_context->record.depth_stencil_surface.stencil_data.reset();
     }
 
-    if (depth_stencil_surface)
-        delete depth_stencil_surface;
+    delete depth_stencil_surface;
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:

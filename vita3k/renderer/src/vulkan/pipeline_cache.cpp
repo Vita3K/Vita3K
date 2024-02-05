@@ -27,7 +27,6 @@
 #include <shader/gxp_parser.h>
 #include <shader/spirv_recompiler.h>
 
-#include <util/align.h>
 #include <util/fs.h>
 #include <util/log.h>
 
@@ -322,7 +321,7 @@ void PipelineCache::save_pipeline_cache() {
         std::lock_guard<std::mutex> guard(shaders_mutex);
         shader_cache_copy = state.shaders_cache_hashs;
     }
-    renderer::save_shaders_cache_hashs(state, state.shaders_cache_hashs);
+    renderer::save_shaders_cache_hashs(state, shader_cache_copy);
 
     const std::vector<uint8_t> pipeline_data = state.device.getPipelineCacheData(pipeline_cache);
     if (pipeline_data.empty())
@@ -570,7 +569,7 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
 
         used_streams |= (1 << attribute.streamIndex);
 
-        SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
+        SceGxmAttributeFormat attribute_format = attribute.format;
         shader::usse::AttributeInformation info = vkvert->attribute_infos.at(attribute.regIndex);
 
         uint8_t component_count = attribute.componentCount;
@@ -699,8 +698,7 @@ static vk::StencilOpState convert_op_state(const GxmStencilStateOp &state) {
 }
 
 vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::RenderPass render_pass, const SceGxmVertexProgram &vertex_program_gxm, const SceGxmFragmentProgram &fragment_program_gxm, const GxmRecordState &record, const shader::Hints &hints, MemState &mem) {
-    const VertexProgram &vertex_program = *reinterpret_cast<VertexProgram *>(
-        vertex_program_gxm.renderer_data.get());
+    const VertexProgram &vertex_program = *vertex_program_gxm.renderer_data;
     const SceGxmProgram *gxm_fragment_shader = fragment_program_gxm.program.get(mem);
     const VKFragmentProgram &fragment_program = *reinterpret_cast<VKFragmentProgram *>(
         fragment_program_gxm.renderer_data.get());

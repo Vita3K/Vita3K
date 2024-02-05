@@ -19,7 +19,6 @@
 
 #include <cstdio>
 #include <kernel/state.h>
-#include <net/functions.h>
 #include <net/state.h>
 #include <net/types.h>
 #include <util/lock_and_find.h>
@@ -44,8 +43,8 @@ std::string to_debug_str<SceNetEpollControlFlag>(const MemState &mem, SceNetEpol
 }
 
 template <>
-std::string to_debug_str<SceNetProtocol>(const MemState &mem, SceNetProtocol protocol) {
-    switch (protocol) {
+std::string to_debug_str<SceNetProtocol>(const MemState &mem, SceNetProtocol type) {
+    switch (type) {
     case SCE_NET_IPPROTO_IP: return "SCE_NET_IPPROTO_IP";
     case SCE_NET_IPPROTO_ICMP: return "SCE_NET_IPPROTO_ICMP";
     case SCE_NET_IPPROTO_IGMP: return "SCE_NET_IPPROTO_IGMP";
@@ -53,24 +52,24 @@ std::string to_debug_str<SceNetProtocol>(const MemState &mem, SceNetProtocol pro
     case SCE_NET_IPPROTO_UDP: return "SCE_NET_IPPROTO_UDP";
     case SCE_NET_SOL_SOCKET: return "SCE_NET_SOL_SOCKET";
     }
-    return std::to_string(protocol);
+    return std::to_string(type);
 }
 
 template <>
-std::string to_debug_str<SceNetSocketType>(const MemState &mem, SceNetSocketType socketType) {
-    switch (socketType) {
+std::string to_debug_str<SceNetSocketType>(const MemState &mem, SceNetSocketType type) {
+    switch (type) {
     case SCE_NET_SOCK_STREAM: return "SCE_NET_SOCK_STREAM";
     case SCE_NET_SOCK_DGRAM: return "SCE_NET_SOCK_DGRAM";
     case SCE_NET_SOCK_RAW: return "SCE_NET_SOCK_RAW";
     case SCE_NET_SOCK_DGRAM_P2P: return "SCE_NET_SOCK_DGRAM_P2P";
     case SCE_NET_SOCK_STREAM_P2P: return "SCE_NET_SOCK_STREAM_P2P";
     }
-    return std::to_string(socketType);
+    return std::to_string(type);
 }
 
 template <>
-std::string to_debug_str<SceNetSocketOption>(const MemState &mem, SceNetSocketOption socketOption) {
-    switch (socketOption) {
+std::string to_debug_str<SceNetSocketOption>(const MemState &mem, SceNetSocketOption type) {
+    switch (type) {
     /* IP */
     case SCE_NET_IP_HDRINCL: return "SCE_NET_IP_HDRINCL or SCE_NET_TCP_MAXSEG";
     case SCE_NET_IP_TOS: return "SCE_NET_IP_TOS or SCE_NET_TCP_MSS_TO_ADVERTISE";
@@ -108,7 +107,7 @@ std::string to_debug_str<SceNetSocketOption>(const MemState &mem, SceNetSocketOp
     case SCE_NET_SO_TPPOLICY: return "SCE_NET_SO_TPPOLICY";
     case SCE_NET_SO_NAME: return "SCE_NET_SO_NAME";
     }
-    return std::to_string(socketOption);
+    return std::to_string(type);
 }
 
 EXPORT(int, sceNetAccept, int sid, SceNetSockaddr *addr, unsigned int *addrlen) {
@@ -364,7 +363,7 @@ EXPORT(Ptr<const char>, sceNetInetNtop, int af, const void *src, Ptr<char> dst, 
     TRACY_FUNC(sceNetInetNtop, af, src, dst, size);
     char *dst_ptr = dst.get(emuenv.mem);
 #ifdef WIN32
-    const char *res = InetNtop(af, const_cast<void *>(src), dst_ptr, size);
+    const char *res = InetNtop(af, src, dst_ptr, size);
 #else
     const char *res = inet_ntop(af, src, dst_ptr, size);
 #endif

@@ -50,7 +50,7 @@ void Atrac9Module::on_state_change(const MemState &mem, ModuleData &data, const 
 void Atrac9Module::on_param_change(const MemState &mem, ModuleData &data) {
     SceNgsAT9States *state = data.get_state<SceNgsAT9States>();
     const SceNgsAT9Params *old_params = reinterpret_cast<SceNgsAT9Params *>(data.last_info.data());
-    const SceNgsAT9Params *new_params = reinterpret_cast<SceNgsAT9Params *>(data.info.data.get(mem));
+    const SceNgsAT9Params *new_params = static_cast<SceNgsAT9Params *>(data.info.data.get(mem));
 
     // if playback scaling changed, reset the resampler
     if (state->swr && (old_params->playback_frequency != new_params->playback_frequency || old_params->playback_scalar != new_params->playback_scalar)) {
@@ -237,8 +237,8 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
             swr = swr_stereo;
         }
 
-        const uint8_t *swr_data_in = reinterpret_cast<uint8_t *>(temporary_bytes.data());
-        uint8_t *swr_data_out = reinterpret_cast<uint8_t *>(decoded_superframe_samples.data() + decoded_superframe_pos);
+        const uint8_t *swr_data_in = temporary_bytes.data();
+        uint8_t *swr_data_out = decoded_superframe_samples.data() + decoded_superframe_pos;
         const int result = swr_convert(swr, &swr_data_out, decoder_size.samples, &swr_data_in, decoder_size.samples);
 
         decoded_superframe_pos += decoder_size.samples * sizeof(float) * 2;
@@ -252,7 +252,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
 
         // resample the audio
         int src_sample_rate = static_cast<int>(params->playback_frequency);
-        if (params->playback_scalar != 1.0)
+        if (params->playback_scalar != 1.0f)
             src_sample_rate *= params->playback_scalar;
 
         if (!state->swr) {

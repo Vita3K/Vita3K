@@ -52,9 +52,7 @@ struct SceNpDrmLicense {
     uint8_t rsa_signature[0x100]; // 0x100
 };
 
-static SceNpDrmLicense license_buf;
-
-static bool open_license(EmuEnvState &emuenv, const fs::path &license_path) {
+static bool open_license(const fs::path &license_path, SceNpDrmLicense &license_buf) {
     memset(&license_buf, 0, sizeof(SceNpDrmLicense));
     fs::ifstream license(license_path, std::ios::in | std::ios::binary);
     if (license.is_open()) {
@@ -67,7 +65,8 @@ static bool open_license(EmuEnvState &emuenv, const fs::path &license_path) {
 }
 
 bool copy_license(EmuEnvState &emuenv, const fs::path &license_path) {
-    if (open_license(emuenv, license_path)) {
+    SceNpDrmLicense license_buf;
+    if (open_license(license_path, license_buf)) {
         emuenv.license_content_id = license_buf.content_id;
         emuenv.license_title_id = emuenv.license_content_id.substr(7, 9);
         const auto dst_path{ emuenv.pref_path / "ux0/license" / emuenv.license_title_id };
@@ -93,7 +92,8 @@ int32_t get_license_sku_flag(EmuEnvState &emuenv, const std::string &content_id)
     int32_t sku_flag;
     const auto title_id = content_id.substr(7, 9);
     const auto license_path{ emuenv.pref_path / "ux0/license" / title_id / fmt::format("{}.rif", content_id) };
-    if (open_license(emuenv, license_path)) {
+    SceNpDrmLicense license_buf;
+    if (open_license(license_path, license_buf)) {
         sku_flag = byte_swap(license_buf.sku_flag);
     } else {
         const auto RETAIL_APP_PATH{ emuenv.pref_path / "ux0/app" / title_id / "sce_sys/retail/livearea" };

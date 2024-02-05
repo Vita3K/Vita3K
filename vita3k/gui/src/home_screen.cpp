@@ -435,13 +435,12 @@ void browse_home_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t bu
     const auto apps_list_filtered_size = static_cast<int32_t>(apps_list_filtered.size() - 1);
 
     // Find current selected app index in apps list filtered
-    auto apps_list_filtered_index = std::find(apps_list_filtered.begin(), apps_list_filtered.end(), current_selected_app_index);
-    if (apps_list_filtered_index == apps_list_filtered.end()) {
+    const int32_t filtered_index = vector_utils::find_index(apps_list_filtered, current_selected_app_index);
+    if (filtered_index == -1) {
         current_selected_app_index = first_visible_app_index;
         return;
     }
 
-    const auto filtered_index = static_cast<int32_t>(std::distance(apps_list_filtered.begin(), apps_list_filtered_index));
     const auto prev_filtered_index = apps_list_filtered[std::max(filtered_index - 1, 0)];
     const auto next_filtered_index = apps_list_filtered[std::min(filtered_index + 1, apps_list_filtered_size)];
 
@@ -652,8 +651,10 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     }
     if (ImGui::BeginPopup("app_filter")) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-        if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_region == ALL && app_compat_state == ALL_COMPAT_STATE))
-            app_region = AppRegion::ALL, app_compat_state = ALL_COMPAT_STATE;
+        if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_region == ALL && app_compat_state == ALL_COMPAT_STATE)) {
+            app_region = AppRegion::ALL;
+            app_compat_state = ALL_COMPAT_STATE;
+        }
         if (ImGui::BeginMenu(lang["by_region"].c_str())) {
             ImGui::SetWindowFontScale(1.1f * VIEWPORT_RES_SCALE.x);
             if (ImGui::MenuItem(lang["usa"].c_str(), nullptr, app_region == USA))

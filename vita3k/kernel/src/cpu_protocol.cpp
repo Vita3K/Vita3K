@@ -17,7 +17,6 @@
 
 #include <kernel/cpu_protocol.h>
 #include <kernel/state.h>
-#include <util/lock_and_find.h>
 
 CPUProtocol::CPUProtocol(KernelState &kernel, MemState &mem, const CallImportFunc &func)
     : call_import(func)

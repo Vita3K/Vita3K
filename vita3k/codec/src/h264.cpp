@@ -135,7 +135,7 @@ bool H264DecoderState::receive(uint8_t *data, DecoderSize *size) {
 }
 
 void H264DecoderState::configure(void *options) {
-    auto *opt = reinterpret_cast<H264DecoderOptions *>(options);
+    auto *opt = static_cast<H264DecoderOptions *>(options);
 
     pts = static_cast<uint64_t>(opt->pts_upper) << 32u | static_cast<uint64_t>(opt->pts_lower);
     dts = static_cast<uint64_t>(opt->dts_upper) << 32u | static_cast<uint64_t>(opt->dts_lower);

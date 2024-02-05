@@ -103,7 +103,7 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     // pointer to decoder used for surface sync (if necessary)
     SwsContext *sws_context = nullptr;
 
-    ColorSurfaceCacheInfo() {}
+    ColorSurfaceCacheInfo() = default;
     ~ColorSurfaceCacheInfo();
 };
 

@@ -258,15 +258,17 @@ EXPORT(int, sceNgsPatchRemoveRouting, Ptr<ngs::Patch> patch) {
 
 EXPORT(int, sceNgsRackGetRequiredMemorySize, ngs::System *system, SceNgsRackDescription *description, uint32_t *size) {
     TRACY_FUNC(sceNgsRackGetRequiredMemorySize, system, description, size);
-    if (!emuenv.cfg.current_config.ngs_enable) {
-        *size = 1;
-        return 0;
-    }
     if (!system) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_HANDLE);
     }
     if (!description || !description->definition || !size)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    if (!emuenv.cfg.current_config.ngs_enable) {
+        *size = 1;
+        return 0;
+    }
+
     auto definition = description->definition.get(emuenv.mem);
     if (definition->output_count == 0 || definition->type >= ngs::BussType::BUSS_MAX)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
@@ -353,14 +355,12 @@ EXPORT(int, sceNgsRackSetParamErrorCallback) {
 
 EXPORT(int, sceNgsSystemGetRequiredMemorySize, SceNgsSystemInitParams *params, uint32_t *size) {
     TRACY_FUNC(sceNgsSystemGetRequiredMemorySize, params, size);
+    if (!params || !size)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     if (!emuenv.cfg.current_config.ngs_enable) {
         *size = 1;
         return 0;
     }
-
-    if (!params || !size)
-        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
-
     *size = ngs::System::get_required_memspace_size(params); // System struct size
     return 0;
 }

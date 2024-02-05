@@ -29,7 +29,6 @@
 #include <ngs/state.h>
 #include <renderer/state.h>
 
-#include <nids/functions.h>
 #include <renderer/functions.h>
 #include <rtc/rtc.h>
 #include <util/fs.h>
@@ -44,7 +43,6 @@
 #include <gdbstub/functions.h>
 
 #include <renderer/vulkan/functions.h>
-#include <util/string_utils.h>
 
 #include <SDL.h>
 #include <SDL_video.h>

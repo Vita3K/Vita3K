@@ -24,7 +24,7 @@
 static void SDLCALL sdl_audio_callback(void *userdata, Uint8 *stream, int len) {
     assert(userdata != nullptr);
     assert(stream != nullptr);
-    SDLAudioAdapter *adapter = reinterpret_cast<SDLAudioAdapter *>(userdata);
+    SDLAudioAdapter *adapter = static_cast<SDLAudioAdapter *>(userdata);
 
     adapter->audio_callback(stream, len);
 }

@@ -49,7 +49,7 @@ void PlayerModule::on_state_change(const MemState &mem, ModuleData &data, const 
 void PlayerModule::on_param_change(const MemState &mem, ModuleData &data) {
     SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
     const SceNgsPlayerParams *old_params = reinterpret_cast<SceNgsPlayerParams *>(data.last_info.data());
-    SceNgsPlayerParams *new_params = reinterpret_cast<SceNgsPlayerParams *>(data.info.data.get(mem));
+    SceNgsPlayerParams *new_params = static_cast<SceNgsPlayerParams *>(data.info.data.get(mem));
 
     if (isnan(new_params->playback_scalar) || new_params->playback_scalar <= 0) {
         new_params->playback_scalar = old_params->playback_scalar;
@@ -172,7 +172,7 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                 // we need to know how many samples (not bytes!) we need to send (just enough for the system granularity)
                 uint32_t samples_needed = granularity - state->decoded_samples_pending;
 
-                if (params->playback_scalar != 1.0) {
+                if (params->playback_scalar != 1.0f) {
                     samples_needed = static_cast<uint32_t>(samples_needed * params->playback_scalar) + 0x10;
                 }
                 if (static_cast<int>(params->playback_frequency) != sample_rate) {
@@ -214,7 +214,7 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
 
                     // resample the audio
                     int src_sample_rate = static_cast<int>(params->playback_frequency);
-                    if (params->playback_scalar != 1.0)
+                    if (params->playback_scalar != 1.0f)
                         src_sample_rate = static_cast<int>(src_sample_rate * params->playback_scalar);
 
                     if (!state->swr || state->reset_swr) {

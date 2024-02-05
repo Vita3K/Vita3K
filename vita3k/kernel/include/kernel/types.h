@@ -85,7 +85,7 @@ enum SceKernelModel {
     SCE_KERNEL_MODEL_VITATV
 };
 
-enum SceKernelErrorCode {
+enum SceKernelErrorCode : uint32_t {
     SCE_KERNEL_OK = 0x0,
     SCE_KERNEL_ERROR_ERROR = 0x80020001,
     SCE_KERNEL_ERROR_NOT_IMPLEMENTED = 0x80020002,
@@ -506,7 +506,7 @@ enum SceSysmoduleModuleId : uint16_t {
 };
 
 /** Available internal modules ID for ::sceSysmoduleLoadModuleInternal */
-enum SceSysmoduleInternalModuleId {
+enum SceSysmoduleInternalModuleId : uint32_t {
     SCE_SYSMODULE_INTERNAL_JPEG_ENC_ARM = 0x80000001, //!< sceJpegEncArm module
     SCE_SYSMODULE_INTERNAL_AUDIOCODEC = 0x80000002, //!< AudioCodec module
     SCE_SYSMODULE_INTERNAL_JPEG_ARM = 0x80000003, //!< sceJpegArm module
@@ -554,7 +554,7 @@ struct SceSysmoduleOpt {
     int unused[2];
 };
 
-enum SceSysmoduleErrorCode {
+enum SceSysmoduleErrorCode : uint32_t {
     SCE_SYSMODULE_LOADED = 0,
     SCE_SYSMODULE_ERROR_INVALID_VALUE = 0x805A1000,
     SCE_SYSMODULE_ERROR_UNLOADED = 0x805A1001,

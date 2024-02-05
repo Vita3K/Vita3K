@@ -35,7 +35,7 @@ struct Callback {
      * @param cb_func Pointer to the callback function
      * @param pCommon User-provided parameter
      */
-    Callback(SceUID thread_id, ThreadStatePtr thread, std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon)
+    Callback(SceUID thread_id, const ThreadStatePtr &thread, std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon)
         : thread_id(thread_id)
         , thread(thread)
         , name(name)
@@ -45,12 +45,12 @@ struct Callback {
     /**
      * @return UID of the thread that created and owns this callback
      */
-    SceUID get_owner_thread_id() { return this->thread_id; }
+    SceUID get_owner_thread_id() const { return this->thread_id; }
 
     /**
      * @return Name of the callback
      */
-    const std::string &get_name() { return this->name; }
+    const std::string &get_name() const { return this->name; }
 
     /**
      * @return Callback function
@@ -111,7 +111,7 @@ struct Callback {
      * @note Calling this method when Callback.executable() == false returns false and does nothing
      * @note This should be called only in the creator thread
      */
-    void execute(KernelState &kernel, std::function<void()> deleter);
+    void execute(KernelState &kernel, const std::function<void()> &deleter);
 
 private:
     void reset();

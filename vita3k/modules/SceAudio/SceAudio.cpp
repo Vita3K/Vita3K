@@ -44,7 +44,7 @@ enum SceAudioOutPortType {
     SCE_AUDIO_OUT_PORT_TYPE_VOICE = 2
 };
 
-enum SceAudioOutErrorCode {
+enum SceAudioOutErrorCode : uint32_t {
     SCE_AUDIO_OUT_ERROR_NOT_OPENED = 0x80260001,
     SCE_AUDIO_OUT_ERROR_BUSY = 0x80260002,
     SCE_AUDIO_OUT_ERROR_INVALID_PORT = 0x80260003,
@@ -252,7 +252,7 @@ EXPORT(int, sceAudioOutSetCompress) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAudioOutSetConfig, int port, int len, int freq, SceAudioOutMode mode) {
+EXPORT(int, sceAudioOutSetConfig, int port, int len, int freq, int mode) {
     TRACY_FUNC(sceAudioOutSetConfig, port, len, freq, mode);
     if (len == 0)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_SIZE);
@@ -267,7 +267,7 @@ EXPORT(int, sceAudioOutSetConfig, int port, int len, int freq, SceAudioOutMode m
     if ((freq >= 0) && (prt->type == SCE_AUDIO_OUT_PORT_TYPE_MAIN) && (freq != 48000))
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ);
 
-    const auto set_len = len > 0 ? static_cast<SceSize>(len) : prt->len;
+    const auto set_len = len > 0 ? len : prt->len;
     const auto set_freq = freq >= 0 ? freq : prt->freq;
     const auto set_mode = mode >= 0 ? mode : prt->mode;
 

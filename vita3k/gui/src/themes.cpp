@@ -102,7 +102,7 @@ struct StartParam {
     ImVec2 clock_pos = ImVec2(880.f, 146.f);
 };
 
-static ImU32 convert_hex_color(const std::string src_color) {
+static ImU32 convert_hex_color(const std::string &src_color) {
     std::string result = src_color.substr(src_color.length() - 6, 6);
     result.insert(0, "ff");
 
@@ -253,7 +253,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                 for (const auto &param : home_property.child("m_bgParam")) {
                     // Theme Background
                     if (!param.child("m_imageFilePath").text().empty())
-                        theme_bg_name.push_back(param.child("m_imageFilePath").text().as_string());
+                        theme_bg_name.emplace_back(param.child("m_imageFilePath").text().as_string());
 
                     // Font Color
                     if (!param.child("m_fontColor").text().empty()) {
@@ -465,7 +465,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto DATE_FONT_SIZE = (34.f * SCALE.x) * DEFAULT_FONT_SCALE;
     const auto SCAL_DATE_FONT_SIZE = DATE_FONT_SIZE / ImGui::GetFontSize();
 
-    auto DATE_TIME = get_date_time(gui, emuenv, const_cast<tm &>(local));
+    auto DATE_TIME = get_date_time(gui, emuenv, local);
     const auto DATE_STR = DATE_TIME[DateTime::DATE_DETAIL];
     const auto CALC_DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str());
     const auto DATE_INIT_SCALE = ImVec2(start_param.date_pos.x * SCALE.x, start_param.date_pos.y * SCALE.y);

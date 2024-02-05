@@ -18,7 +18,6 @@
 #pragma once
 
 #include <cstdint>
-#include <mutex>
 #include <vector>
 
 struct BitmapAllocator {

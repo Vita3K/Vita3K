@@ -39,7 +39,7 @@ struct ImeState {
     bool cancelable;
     uint16_t *result;
     char text[SCE_IME_DIALOG_MAX_TEXT_LENGTH];
-    uint32_t status;
+    int32_t status;
 };
 
 struct MsgState {

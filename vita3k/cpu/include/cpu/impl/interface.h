@@ -20,7 +20,6 @@
 #include <cpu/common.h>
 
 #include <cstdint>
-#include <memory>
 
 /*! \brief Base class for all CPU backend implementation */
 struct CPUInterface {
@@ -54,7 +53,7 @@ struct CPUInterface {
     virtual void set_fpscr(uint32_t val) = 0;
 
     virtual CPUContext save_context() = 0;
-    virtual void load_context(CPUContext context) = 0;
+    virtual void load_context(const CPUContext &ctx) = 0;
     virtual void invalidate_jit_cache(Address start, size_t length) = 0;
 
     virtual bool is_thumb_mode() = 0;

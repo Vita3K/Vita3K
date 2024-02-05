@@ -30,7 +30,7 @@ namespace np::trophy {
 
 using ContextHandle = int32_t;
 
-static constexpr ContextHandle INVALID_CONTEXT_HANDLE = static_cast<ContextHandle>(-1);
+static constexpr ContextHandle INVALID_CONTEXT_HANDLE = -1;
 static constexpr uint32_t MAX_TROPHIES = 128;
 static constexpr uint32_t MAX_GROUPS = 16;
 
@@ -82,9 +82,9 @@ struct Context {
     bool init_info_from_trp();
     bool unlock_trophy(int32_t id, np::NpTrophyError *err, const bool force_unlock = false);
 
-    const bool is_trophy_hidden(const uint32_t &trophy_index);
-    const bool is_trophy_unlocked(const uint32_t &trophy_index);
-    const int total_trophy_unlocked();
+    bool is_trophy_hidden(const uint32_t &trophy_index);
+    bool is_trophy_unlocked(const uint32_t &trophy_index);
+    int total_trophy_unlocked();
     bool get_trophy_details(const int32_t id, std::string &name, std::string &detail);
     bool get_trophy_set(std::string &name, std::string &detail);
 

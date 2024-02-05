@@ -40,9 +40,9 @@ Address alloc(MemState &state, uint32_t size, const char *name, Address start_ad
 Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned int alignment, Address start_addr = user_main_memory_start);
 void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm);
 void unprotect_inner(MemState &state, Address addr, uint32_t size);
-bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPerm perm, ProtectCallback callback);
-void open_access_parent_protect_segment(MemState &mem, Address addr);
-void close_access_parent_protect_segment(MemState &mem, Address addr);
+bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPerm perm, const ProtectCallback &callback);
+void open_access_parent_protect_segment(MemState &state, Address addr);
+void close_access_parent_protect_segment(MemState &state, Address addr);
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr);
 void remove_external_mapping(MemState &mem, uint8_t *addr_ptr);
 bool is_protecting(MemState &state, Address addr, MemPerm *perm = nullptr);
