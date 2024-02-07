@@ -370,7 +370,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
                 }
             } else {
                 // alpha is already linear
-                for (uint32_t i = 0; i < nb_pixels * 4; i++) {
+                for (uint32_t i = 0; i < nb_pixels; i++) {
                     pixels[i * 4 + 0] = convert_to_linear(pixels[i * 4 + 0]);
                     pixels[i * 4 + 1] = convert_to_linear(pixels[i * 4 + 1]);
                     pixels[i * 4 + 2] = convert_to_linear(pixels[i * 4 + 2]);
