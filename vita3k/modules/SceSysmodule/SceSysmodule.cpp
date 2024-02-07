@@ -15,6 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "io/state.h"
+
 #include <module/module.h>
 
 #include <kernel/state.h>
@@ -195,6 +197,11 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
     if (module_id < 0 || module_id > SYSMODULE_COUNT)
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
 
+    // Hack for "Ciel Nosurge: Ushinawareta Hoshi e Sasagu Uta"
+    // It does not load SCE_SYSMODULE_HTTPS directly, and expects that NP module load it
+    if (module_id == SCE_SYSMODULE_NP && (emuenv.io.title_id == "PCSG00454" || emuenv.io.title_id == "PCSG00046")) {
+        CALL_EXPORT(sceSysmoduleLoadModule, SCE_SYSMODULE_HTTPS);
+    }
     LOG_INFO("Loading module ID: {}", to_debug_str(emuenv.mem, module_id));
     if (is_modules_enable(emuenv, module_id)) {
         if (load_sys_module(emuenv, module_id))
