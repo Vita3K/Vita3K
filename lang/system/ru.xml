@@ -548,6 +548,8 @@
 		<internet_browser>Веб-браузер</internet_browser>
 		<trophies>Призы</trophies>
 		<trophy_collection>Коллекция призов</trophy_collection>
+		<settings>Настройки</settings>
+		<content_manager>Управление данными</content_manager>
 	</sys_apps_title>
 
 	<trophy_collection>

@@ -307,6 +307,7 @@ struct LangState {
         { "toggle_gui_visibility_description", "Toggles between showing and hiding the GUI at the top of the screen while the app is running." },
         { "miscellaneous", "Miscellaneous" },
         { "toggle_texture_replacement", "Toggle Texture Replacement" },
+        { "take_a_screenshot", "Take A Screenshot" },
         { "error", "Error" },
         { "error_duplicate_key", "The key is used for other bindings or it is reserved." }
     };
@@ -567,7 +568,9 @@ struct LangState {
             { "shader_cache_description", "Check the box to enable shader cache to pre-compile it at game startup.\nUncheck to disable this feature." },
             { "spirv_shader", "Use Spir-V Shader (deprecated)" },
             { "spirv_shader_description", "Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled,\nand not all GPUs are compatible with this." },
-            { "clean_shaders", "Clean Shaders Cache and Log" }
+            { "clean_shaders", "Clean Shaders Cache and Log" },
+            { "fps_hack", "FPS Hack" },
+            { "fps_hack_description", "Game hack which allows some games running at 30 FPS to run at 60 FPS on the emulator.\nNote that this is a hack and will only work on some games.\nOn other games, it may have no effect or make them run twice as fast." }
         };
         std::map<std::string, std::string> audio = {
             { "audio_backend", "Audio Backend" },
@@ -723,7 +726,9 @@ struct LangState {
         { "browser", "Browser" },
         { "internet_browser", "Internet Browser" },
         { "trophies", "Trophies" },
-        { "trophy_collection", "Trophy Collection" }
+        { "trophy_collection", "Trophy Collection" },
+        { "settings", "Settings" },
+        { "content_manager", "Content Manager" }
     };
     std::map<std::string, std::string> trophy_collection = {
         { "delete_trophy", "Delete Trophy" },

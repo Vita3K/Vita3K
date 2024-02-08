@@ -355,6 +355,8 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		<internet_browser>Navegador de Internet</internet_browser>
 		<trophies>Trofeos</trophies>
 		<trophy_collection>Colección de trofeos</trophy_collection>
+		<settings>Ajustes</settings>
+		<content_manager>Gestor de contenido</content_manager>
 	</sys_apps_title>
 
 	<trophy_collection>

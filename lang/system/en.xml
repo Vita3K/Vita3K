@@ -338,6 +338,7 @@ Please connect a controller that is compatible with SDL2.</not_connected>
 		<toggle_gui_visibility_description>Toggles between showing and hiding the GUI at the top of the screen while the app is running.</toggle_gui_visibility_description>
 		<miscellaneous>Miscellaneous</miscellaneous>
 		<toggle_texture_replacement>Toggle Texture Replacement</toggle_texture_replacement>
+		<take_a_screenshot>Take A Screenshot</take_a_screenshot>
 		<error>Error</error>
 		<error_duplicate_key>The key is used for other bindings or it is reserved.</error_duplicate_key>
 	</controls>
@@ -648,6 +649,10 @@ Uncheck to disable this feature.</shader_cache_description>
 Note that some beneficial extensions will be disabled,
 and not all GPUs are compatible with this.</spirv_shader_description>
 			<clean_shaders>Clean Shaders Cache and Log</clean_shaders>
+			<fps_hack>FPS Hack</fps_hack>
+			<fps_hack_description>Game hack which allows some games running at 30 FPS to run at 60 FPS on the emulator.
+Note that this is a hack and will only work on some games.
+On other games, it may have no effect or make them run twice as fast.</fps_hack_description>
 		</gpu>
 		<audio name="Audio">
 			<audio_backend>Audio Backend</audio_backend>
@@ -655,6 +660,7 @@ and not all GPUs are compatible with this.</spirv_shader_description>
 			<audio_volume>Audio Volume</audio_volume>
 			<audio_volume_description>Adjusts the volume percentage of all audio outputs.</audio_volume_description>
 			<enable_ngs_support>Enable NGS support</enable_ngs_support>
+			<ngs_description>Uncheck the box to disable support for advanced audio library NGS.</ngs_description>
 		</audio>
 		<system name="System">
 			<select_enter_button>Enter button assignment
@@ -672,7 +678,6 @@ Some applications don't use this and get default confirmation button.</enter_but
 		</system>
 		<emulator name="Emulator">
 			<boot_apps_full_screen>Boot apps in full screen</boot_apps_full_screen>
-			<ngs_description>Uncheck the box to disable support for advanced audio library NGS.</ngs_description>
 			<trace>Trace</trace>
 			<info>Info</info>
 			<warning>Warning</warning>
@@ -820,6 +825,8 @@ lower can improve performance but can make games unstable if you have bad enough
 		<internet_browser>Internet Browser</internet_browser>
 		<trophies>Trophies</trophies>
 		<trophy_collection>Trophy Collection</trophy_collection>
+		<settings>Settings</settings>
+		<content_manager>Content Manager</content_manager>
 	</sys_apps_title>
 
 	<trophy_collection>

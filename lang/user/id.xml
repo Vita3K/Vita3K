@@ -602,6 +602,12 @@ Perhatikan bahwa beberapa ekstensi bermanfaat akan dinonaktifkan,
 dan tidak semua GPU kompatibel dengan ini.</spirv_shader_description>
 			<clean_shaders>Bersihkan Shader Cache dan Log</clean_shaders>
 		</gpu>
+		<audio name="Audio">
+			<audio_backend>Bagian Belakang Audio</audio_backend>
+			<select_audio_backend>Pilih backend audio pilihan Kamu.</select_audio_backend>
+			<enable_ngs_support>Aktifkan NGS Audio</enable_ngs_support>
+			<ngs_description>Hapus centang pada kotak untuk menonaktifkan dukungan untuk NGS perpustakaan audio tingkat lanjut.</ngs_description>
+		</audio>
 		<system name="System">
 			<select_enter_button>Masukkan penetapan tombol
 Pilih tombol 'Masuk' kamu.</select_enter_button>
@@ -618,10 +624,6 @@ Beberapa aplikasi tidak menggunakan ini dan mendapatkan tombol konfirmasi defaul
 		</system>
 		<emulator name="Emulator">
 			<boot_apps_full_screen>Boot aplikasi dalam layar penuh</boot_apps_full_screen>
-			<audio_backend>Bagian Belakang Audio</audio_backend>
-			<select_audio_backend>Pilih backend audio pilihan Kamu.</select_audio_backend>
-			<enable_ngs_support>Aktifkan NGS Audio</enable_ngs_support>
-			<ngs_description>Hapus centang pada kotak untuk menonaktifkan dukungan untuk NGS perpustakaan audio tingkat lanjut.</ngs_description>
 			<log_level>Tingkatan Log</log_level>
 			<select_log_level>Pilih tingkat log pilihan Kamu.</select_log_level>
 			<archive_log>Log Arsip</archive_log>

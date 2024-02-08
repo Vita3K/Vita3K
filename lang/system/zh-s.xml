@@ -337,6 +337,7 @@
 		<toggle_gui_visibility_description>在应用程序运行时，在屏幕顶部显示和隐藏图形用户界面之间切换。</toggle_gui_visibility_description>
 		<miscellaneous>杂项</miscellaneous>
 		<toggle_texture_replacement>切换纹理替换</toggle_texture_replacement>
+		<take_a_screenshot>截屏</take_a_screenshot>
 		<error>错误</error>
 		<error_duplicate_key>该键已被使用并绑定其他键或被预留。</error_duplicate_key>
 	</controls>
@@ -646,7 +647,19 @@
 请注意，一些有益的扩展功能将被禁用，
 并非所有显卡都与此兼容。</spirv_shader_description>
 			<clean_shaders>清除着色器缓存以及日志</clean_shaders>
+			<fps_hack>FPS修改</fps_hack>
+			<fps_hack_description>游戏修改允许一些以30FPS运行的游戏在模拟器上以60FPS的速度运行。
+请注意这只是一个修改，仅适用于某些游戏。
+在其他游戏中，它可能没有效果或使其出现两倍速。</fps_hack_description>
 		</gpu>
+		<audio name="音频">
+			<audio_backend>音频后端</audio_backend>
+			<select_audio_backend>选择您喜欢的音频后端。</select_audio_backend>
+			<audio_volume>音频音量</audio_volume>
+			<audio_volume_description>调整全局音频输出的音量百分比。</audio_volume_description>
+			<enable_ngs_support>启用NGS支持</enable_ngs_support>
+			<ngs_description>取消勾选此项禁用对高级音频库NGS的支持。</ngs_description>
+		</audio>
 		<system name="系统">
 			<select_enter_button>确认按键分配
 请选择您的“确认”按键。</select_enter_button>
@@ -663,10 +676,6 @@
 		</system>
 		<emulator name="模拟器">
 			<boot_apps_full_screen>以全屏启动应用程序</boot_apps_full_screen>
-			<audio_backend>音频后端</audio_backend>
-			<select_audio_backend>选择您喜欢的音频后端。</select_audio_backend>
-			<enable_ngs_support>启用NGS支持</enable_ngs_support>
-			<ngs_description>取消勾选此项禁用对高级音频库NGS的支持。</ngs_description>
 			<trace>追踪</trace>
 			<info>信息</info>
 			<warning>警告</warning>
@@ -813,6 +822,8 @@
 		<internet_browser>互联网浏览器</internet_browser>
 		<trophies>Trophy（奖杯）</trophies>
 		<trophy_collection>Trophy（奖杯）收藏</trophy_collection>
+		<settings>设定</settings>
+		<content_manager>内容管理</content_manager>
 	</sys_apps_title>
 
 	<trophy_collection>

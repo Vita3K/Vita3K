@@ -360,6 +360,8 @@ Je Vita3K-systeem is gereed!</completed_setup>
 		<internet_browser>Internetbrowser</internet_browser>
 		<trophies>Trofeeën</trophies>
 		<trophy_collection>Trofeecollectie</trophy_collection>
+		<settings>Instellingen</settings>
+		<content_manager>Content manager</content_manager>
 	</sys_apps_title>
 
 	<trophy_collection>
