@@ -549,7 +549,7 @@ EXPORT(SceInt, sceHttpCreateTemplate, const char *userAgent, SceHttpVersion http
     else
         ssl_ctx = SSL_CTX_new(TLS_method());
 
-    SSL_set_mode((SSL *)ssl_ctx, SSL_MODE_AUTO_RETRY);
+    SSL_CTX_set_mode((SSL_CTX *)ssl_ctx, SSL_MODE_AUTO_RETRY);
 
     auto ssl = SSL_new((SSL_CTX *)ssl_ctx);
 
