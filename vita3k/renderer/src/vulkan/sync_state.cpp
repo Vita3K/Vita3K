@@ -30,7 +30,7 @@ void sync_clipping(VKContext &context) {
     if (!context.render_target)
         return;
 
-    const int res_multiplier = context.state.res_multiplier;
+    const float res_multiplier = context.state.res_multiplier;
 
     const int scissor_x = context.record.region_clip_min.x;
     const int scissor_y = context.record.region_clip_min.y;
@@ -48,8 +48,8 @@ void sync_clipping(VKContext &context) {
         break;
     case SCE_GXM_REGION_CLIP_OUTSIDE:
         context.scissor = vk::Rect2D{
-            { scissor_x * res_multiplier, scissor_y * res_multiplier },
-            { scissor_w * res_multiplier, scissor_h * res_multiplier }
+            { static_cast<int32_t>(scissor_x * res_multiplier), static_cast<int32_t>(scissor_y * res_multiplier) },
+            { static_cast<uint32_t>(scissor_w * res_multiplier), static_cast<uint32_t>(scissor_h * res_multiplier) }
         };
         break;
     case SCE_GXM_REGION_CLIP_INSIDE:
@@ -153,7 +153,7 @@ void sync_point_line_width(VKContext &context, const bool is_front) {
         return;
 
     if (is_front && context.state.physical_device_features.wideLines)
-        context.render_cmd.setLineWidth(static_cast<float>(context.record.line_width * context.state.res_multiplier));
+        context.render_cmd.setLineWidth(context.record.line_width * context.state.res_multiplier);
 }
 
 void sync_viewport_flat(VKContext &context) {
@@ -181,7 +181,7 @@ void sync_viewport_real(VKContext &context, const float xOffset, const float yOf
     const float x = xOffset - std::abs(xScale);
     const float y = yOffset - yScale;
 
-    const int res_multiplier = context.state.res_multiplier;
+    const float res_multiplier = context.state.res_multiplier;
 
     // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkViewport.html
     // https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html#vertexpostproc-viewport

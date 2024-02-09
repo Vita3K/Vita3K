@@ -54,7 +54,7 @@ struct State {
 
     Backend current_backend;
     FeatureState features;
-    int res_multiplier;
+    float res_multiplier;
     bool disable_surface_sync;
     bool stretch_the_display_area;
 

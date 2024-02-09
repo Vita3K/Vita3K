@@ -130,7 +130,7 @@ public:
         bool ngs_enable = true;
         bool pstv_mode = false;
         bool high_accuracy = false;
-        int resolution_multiplier = 1;
+        float resolution_multiplier = 1.0f;
         bool disable_surface_sync = false;
         std::string screen_filter = "Bilinear";
         bool v_sync = true;

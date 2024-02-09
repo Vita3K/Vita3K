@@ -120,7 +120,8 @@ void sync_viewport_flat(const GLState &state, GLContext &context) {
     const GLsizei display_w = context.record.color_surface.width;
     const GLsizei display_h = context.record.color_surface.height;
 
-    glViewport(0, (context.current_framebuffer_height - display_h) * state.res_multiplier, display_w * state.res_multiplier, display_h * state.res_multiplier);
+    glViewport(0, static_cast<GLint>((context.current_framebuffer_height - display_h) * state.res_multiplier),
+        static_cast<GLsizei>(display_w * state.res_multiplier), static_cast<GLsizei>(display_h * state.res_multiplier));
     glDepthRange(0, 1);
 }
 
@@ -161,7 +162,8 @@ void sync_clipping(const GLState &state, GLContext &context) {
         break;
     case SCE_GXM_REGION_CLIP_OUTSIDE:
         glEnable(GL_SCISSOR_TEST);
-        glScissor(scissor_x * state.res_multiplier, scissor_y * state.res_multiplier, scissor_w * state.res_multiplier, scissor_h * state.res_multiplier);
+        glScissor(static_cast<GLint>(scissor_x * state.res_multiplier), static_cast<GLint>(scissor_y * state.res_multiplier),
+            static_cast<GLsizei>(scissor_w * state.res_multiplier), static_cast<GLsizei>(scissor_h * state.res_multiplier));
         break;
     case SCE_GXM_REGION_CLIP_INSIDE:
         // TODO: Implement SCE_GXM_REGION_CLIP_INSIDE

@@ -300,8 +300,8 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
         return false;
     }
 
-    render_target->width = params.width * state.res_multiplier;
-    render_target->height = params.height * state.res_multiplier;
+    render_target->width = static_cast<uint16_t>(params.width * state.res_multiplier);
+    render_target->height = static_cast<uint16_t>(params.height * state.res_multiplier);
 
     render_target->attachments.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
 
@@ -317,7 +317,7 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
     glBindTexture(GL_TEXTURE_2D, render_target->masktexture[0]);
     // we need to make the masktexture format immutable, otherwise image load operations
     // won't work on mesa drivers
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, params.width * state.res_multiplier, params.height * state.res_multiplier);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, render_target->width, render_target->height);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindFramebuffer(GL_FRAMEBUFFER, render_target->maskbuffer[0]);
@@ -443,7 +443,7 @@ static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_T
 
 static bool format_need_temp_storage(const GLState &state, SceGxmColorSurface &surface, std::vector<std::uint8_t> &storage, const std::uint32_t width, const std::uint32_t height) {
     size_t needed_pixels;
-    if (state.res_multiplier == 1) {
+    if (state.res_multiplier == 1.0f) {
         needed_pixels = surface.strideInPixels * height;
     } else {
         // width and height is already upscaled
@@ -455,7 +455,7 @@ static bool format_need_temp_storage(const GLState &state, SceGxmColorSurface &s
         return true;
     }
 
-    if (state.res_multiplier > 1) {
+    if (state.res_multiplier > 1.0f) {
         storage.resize(needed_pixels * gxm::bits_per_pixel(gxm::get_base_format(surface.colorFormat)) >> 3);
         return true;
     }
@@ -471,7 +471,7 @@ static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, s
     const bool is_U8U8U8_RGBA = surface.colorFormat == SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA;
     const bool is_SE5M9M9M9 = (surface.colorFormat == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB) || (surface.colorFormat == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR);
 
-    const int multiplier = renderer.res_multiplier;
+    const int multiplier = static_cast<int>(renderer.res_multiplier);
     if (multiplier > 1 || is_U8U8U8_RGBA || is_SE5M9M9M9) {
         // TODO: do this on the GPU instead (using texture blitting?)
         const int bytes_per_output_pixel = (gxm::bits_per_pixel(gxm::get_base_format(surface.colorFormat)) + 7) >> 3;
@@ -608,11 +608,12 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
     uint32_t width = surface.width;
     uint32_t height = surface.height;
 
-    if (renderer.res_multiplier == 1) {
+    const int res_multiplier = static_cast<int>(renderer.res_multiplier);
+    if (res_multiplier == 1) {
         glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(surface.strideInPixels));
     } else {
-        width *= renderer.res_multiplier;
-        height *= renderer.res_multiplier;
+        width *= res_multiplier;
+        height *= res_multiplier;
         glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(width));
     }
 
@@ -723,8 +724,8 @@ std::vector<uint32_t> GLState::dump_frame(DisplayState &display, uint32_t &width
         frame = display.next_rendered_frame;
     }
 
-    width = frame.image_size.x * res_multiplier;
-    height = frame.image_size.y * res_multiplier;
+    width = static_cast<uint32_t>(frame.image_size.x * res_multiplier);
+    height = static_cast<uint32_t>(frame.image_size.y * res_multiplier);
     return surface_cache.dump_frame(frame.base, width, height, frame.pitch, res_multiplier, features.support_get_texture_sub_image);
 }
 

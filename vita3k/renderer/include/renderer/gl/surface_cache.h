@@ -127,8 +127,8 @@ public:
         target = new_target;
     }
 
-    GLuint sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier, SceFVector2 &texture_size);
-    std::vector<uint32_t> dump_frame(Ptr<const void> address, uint32_t width, uint32_t height, uint32_t pitch, int res_multiplier, bool support_get_texture_sub_image);
+    GLuint sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const float res_multiplier, SceFVector2 &texture_size);
+    std::vector<uint32_t> dump_frame(Ptr<const void> address, uint32_t width, uint32_t height, uint32_t pitch, float res_multiplier, bool support_get_texture_sub_image);
 };
 } // namespace gl
 } // namespace renderer

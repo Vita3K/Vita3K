@@ -173,7 +173,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             if (!config_child.child("gpu").empty()) {
                 const auto gpu_child = config_child.child("gpu");
                 config.high_accuracy = gpu_child.attribute("high-accuracy").as_bool();
-                config.resolution_multiplier = gpu_child.attribute("resolution-multiplier").as_int();
+                config.resolution_multiplier = gpu_child.attribute("resolution-multiplier").as_float();
                 config.disable_surface_sync = gpu_child.attribute("disable-surface-sync").as_bool();
                 config.screen_filter = gpu_child.attribute("screen-filter").as_string();
                 config.v_sync = gpu_child.attribute("v-sync").as_bool();
@@ -629,7 +629,13 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SetTooltip("%s", lang.gpu["v_sync_description"].c_str());
             ImGui::SameLine();
         }
-        if (!is_vulkan || emuenv.renderer->features.support_memory_mapping) {
+
+        const bool has_integer_multiplier = static_cast<int>(config.resolution_multiplier * 4.0f) % 4 == 0;
+        // OpenGL does not support surface sync with a non-integer resolution multiplier
+        if (!is_vulkan && has_integer_multiplier)
+            config.disable_surface_sync = true;
+
+        if ((!is_vulkan && has_integer_multiplier) || emuenv.renderer->features.support_memory_mapping) {
             // surface sync is supported on vulkan only when memory mapping is enabled
             ImGui::Checkbox(lang.gpu["disable_surface_sync"].c_str(), &config.disable_surface_sync);
             if (ImGui::IsItemHovered())
@@ -679,38 +685,40 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.gpu["internal_resolution_upscaling"].c_str());
         ImGui::Spacing();
         ImGui::PushID("Res scal");
-        if (config.resolution_multiplier == 1)
+        if (config.resolution_multiplier == 0.5f)
             ImGui::BeginDisabled();
         if (ImGui::Button("<", ImVec2(20.f * SCALE.x, 0)))
-            --config.resolution_multiplier;
-        if (config.resolution_multiplier == 1)
+            config.resolution_multiplier -= 0.25f;
+        if (config.resolution_multiplier == 0.5f)
             ImGui::EndDisabled();
         ImGui::SameLine(0, 5.f * SCALE.x);
         ImGui::PushItemWidth(-100.f * SCALE.x);
-        if (ImGui::SliderInt("##res_scal", &config.resolution_multiplier, 1, 8, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
-            if (config.resolution_multiplier > 1 && !is_vulkan)
+        int slider_position = static_cast<int>(config.resolution_multiplier * 4);
+        if (ImGui::SliderInt("##res_scal", &slider_position, 2, 32, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
+            config.resolution_multiplier = static_cast<float>(slider_position) / 4.0f;
+            if (config.resolution_multiplier != 1.0f && !is_vulkan)
                 config.disable_surface_sync = true;
         }
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.gpu["internal_resolution_upscaling_description"].c_str());
         ImGui::SameLine(0, 5 * SCALE.x);
-        if (config.resolution_multiplier == 8)
+        if (config.resolution_multiplier == 8.0f)
             ImGui::BeginDisabled();
         if (ImGui::Button(">", ImVec2(20.f * SCALE.x, 0)))
-            ++config.resolution_multiplier;
-        if (config.resolution_multiplier == 8)
+            config.resolution_multiplier += 0.25f;
+        if (config.resolution_multiplier == 8.0f)
             ImGui::EndDisabled();
         ImGui::SameLine();
-        if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
+        if ((config.resolution_multiplier == 1.0f) && !config.disable_surface_sync)
             ImGui::BeginDisabled();
         if (ImGui::Button(lang.gpu["reset"].c_str(), ImVec2(60.f * SCALE.x, 0)))
-            config.resolution_multiplier = 1;
+            config.resolution_multiplier = 1.0f;
 
-        if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
+        if ((config.resolution_multiplier == 1.0f) && !config.disable_surface_sync)
             ImGui::EndDisabled();
         ImGui::Spacing();
-        const auto res_scal = fmt::format("{}x{}", 960 * config.resolution_multiplier, 544 * config.resolution_multiplier);
+        const auto res_scal = fmt::format("{}x{}", static_cast<int>(960 * config.resolution_multiplier), static_cast<int>(544 * config.resolution_multiplier));
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * SCALE.x));
         ImGui::Text("%s", res_scal.c_str());
         ImGui::PopID();

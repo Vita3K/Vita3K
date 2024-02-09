@@ -124,8 +124,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     const uint32_t original_width = color->width;
     const uint32_t original_height = color->height;
 
-    uint32_t width = original_width * state.res_multiplier;
-    uint32_t height = original_height * state.res_multiplier;
+    uint32_t width = static_cast<uint32_t>(original_width * state.res_multiplier);
+    uint32_t height = static_cast<uint32_t>(original_height * state.res_multiplier);
 
     bool overlap = true;
 
@@ -312,8 +312,8 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     const uint32_t original_width = gxm::get_width(texture);
     const uint32_t original_height = gxm::get_height(texture);
 
-    const uint32_t width = original_width * state.res_multiplier;
-    const uint32_t height = original_height * state.res_multiplier;
+    const uint32_t width = static_cast<uint32_t>(original_width * state.res_multiplier);
+    const uint32_t height = static_cast<uint32_t>(original_height * state.res_multiplier);
 
     bool overlap = true;
     // Of course, this works under the assumption that range must be unique :D
@@ -401,8 +401,8 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     // TODO: this is true only for linear textures (and also kind of for tiled textures) (and in this case start_x = 0),
     // for swizzled textures this is different
     const uint32_t data_delta = address - ite->first;
-    uint32_t start_sourced_line = (data_delta / stride_bytes) * state.res_multiplier;
-    uint32_t start_x = (data_delta % stride_bytes) / bytes_per_pixel_requested * state.res_multiplier;
+    uint32_t start_sourced_line = static_cast<uint32_t>((data_delta / stride_bytes) * state.res_multiplier);
+    uint32_t start_x = static_cast<uint32_t>((data_delta % stride_bytes) / bytes_per_pixel_requested * state.res_multiplier);
 
     if (static_cast<uint16_t>(start_sourced_line + height) > info.height)
         LOG_WARN_ONCE("Trying to use texture partially in the surface cache");
@@ -534,7 +534,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
         } else {
             LOG_INFO_ONCE("Game is doing typeless copies");
             // We must use a transition buffer
-            vk::DeviceSize buffer_size = stride_bytes * state.res_multiplier * height + start_x * bytes_per_pixel_requested;
+            vk::DeviceSize buffer_size = stride_bytes * static_cast<size_t>(state.res_multiplier * align(height, 4)) + start_x * bytes_per_pixel_requested;
             if (!casted->transition_buffer.buffer || casted->transition_buffer.size < buffer_size) {
                 // create or re-create the buffer
                 state.frame().destroy_queue.add_buffer(casted->transition_buffer);
@@ -543,7 +543,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
             }
 
             // copy the image to the buffer
-            const uint32_t src_pixel_stride = (info.stride_bytes / bytes_per_pixel_in_store) * state.res_multiplier;
+            const uint32_t src_pixel_stride = static_cast<uint32_t>((info.stride_bytes / bytes_per_pixel_in_store) * state.res_multiplier);
             vk::BufferImageCopy copy_image_buffer{
                 .bufferOffset = 0,
                 .bufferRowLength = src_pixel_stride,
@@ -608,8 +608,8 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
 
 SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(SceGxmDepthStencilSurface *depth_stencil, const uint32_t width, const uint32_t height) {
     // when writing we use the render target size which is already upscaled
-    int32_t memory_width = width / state.res_multiplier;
-    int32_t memory_height = height / state.res_multiplier;
+    int32_t memory_width = static_cast<int32_t>(width / state.res_multiplier);
+    int32_t memory_height = static_cast<int32_t>(height / state.res_multiplier);
 
     const SurfaceTiling tiling = (depth_stencil->get_type() == SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR) ? SurfaceTiling::Linear : SurfaceTiling::Tiled;
 
@@ -747,8 +747,8 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         return std::nullopt;
 
     // take upscaling into account
-    uint32_t width = memory_width * state.res_multiplier;
-    uint32_t height = memory_height * state.res_multiplier;
+    uint32_t width = static_cast<uint32_t>(memory_width * state.res_multiplier);
+    uint32_t height = static_cast<uint32_t>(memory_height * state.res_multiplier);
 
     const uint32_t address = texture.data_addr << 2;
     DepthStencilSurfaceCacheInfo *found_info = nullptr;
@@ -993,8 +993,8 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
         is_swizzle_identity = true;
     }
 
-    if (state.res_multiplier > 1) {
-        // downscale the image using a blit command first
+    if (state.res_multiplier != 1.0f) {
+        // scale bacl the image using a blit command first
 
         if (!last_written_surface->blit_image)
             last_written_surface->blit_image = std::make_unique<vkutil::Image>();
@@ -1177,7 +1177,7 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
         const size_t data_delta = address.address() - ite->first;
         uint32_t limited_height = viewport.height;
         if ((data_delta % (pitch * 4)) == 0) {
-            uint32_t start_sourced_line = (data_delta / (pitch * 4)) * state.res_multiplier;
+            uint32_t start_sourced_line = static_cast<uint32_t>((data_delta / (pitch * 4)) * state.res_multiplier);
             if ((start_sourced_line + viewport.height) > info.height) {
                 // Sometimes the surface is just missing a little bit of lines
                 if (start_sourced_line < info.height) {
@@ -1234,7 +1234,7 @@ std::vector<uint32_t> VKSurfaceCache::dump_frame(Ptr<const void> address, uint32
     if (info.stride_bytes != pitch_byte || data_delta % pitch_byte != 0)
         return {};
 
-    const uint32_t line_delta = (data_delta / pitch_byte) * state.res_multiplier;
+    const uint32_t line_delta = static_cast<uint32_t>((data_delta / pitch_byte) * state.res_multiplier);
     if (line_delta >= info.height)
         return {};
 
