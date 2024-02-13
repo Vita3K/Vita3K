@@ -573,6 +573,7 @@ struct LangState {
             { "fps_hack_description", "Game hack which allows some games running at 30 FPS to run at 60 FPS on the emulator.\nNote that this is a hack and will only work on some games.\nOn other games, it may have no effect or make them run twice as fast." }
         };
         std::map<std::string, std::string> audio = {
+            { "title", "Audio" },
             { "audio_backend", "Audio Backend" },
             { "select_audio_backend", "Select your preferred audio backend." },
             { "audio_volume", "Audio Volume" },
