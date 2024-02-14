@@ -110,6 +110,7 @@ enum ScreenshotFormat {
     code(int, "perfomance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)       \
     code(int, "perfomance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position)  \
     code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
+    code(bool, "disable-motion", false, disable_motion)                                                 \
     code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
     code(int, "keyboard-button-start", 40, keyboard_button_start)                                       \
     code(int, "keyboard-button-up", 82, keyboard_button_up)                                             \
@@ -143,7 +144,7 @@ enum ScreenshotFormat {
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
     code(std::string, "user-lang", std::string{}, user_lang)                                            \
-    code(bool, "display-info-message", true, display_info_message)                                      \
+    code(bool, "display-info-message", false, display_info_message)                                     \
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "check-for-updates", true, check_for_updates)                                            \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
