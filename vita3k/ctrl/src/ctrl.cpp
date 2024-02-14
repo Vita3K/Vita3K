@@ -96,6 +96,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
 
                 state.controllers.emplace(guid, new_controller);
                 state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
+                state.controllers_has_motion_support[joystick_index] = found_gyro && found_accel;
                 state.controllers_num++;
             }
         }

@@ -58,6 +58,7 @@ struct CtrlState {
     ControllerList controllers;
     int controllers_num = 0;
     bool has_motion_support = false;
+    bool controllers_has_motion_support[SCE_CTRL_MAX_WIRELESS_NUM] = { false, false, false, false };
     const char *controllers_name[SCE_CTRL_MAX_WIRELESS_NUM];
     bool free_ports[SCE_CTRL_MAX_WIRELESS_NUM] = { true, true, true, true };
     SceCtrlPadInputMode input_mode = SCE_CTRL_MODE_DIGITAL;
