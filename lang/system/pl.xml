@@ -3,28 +3,72 @@
 <lang>
 	<main_menubar>
 		<file name="Plik">
-			<open_pref_path>Open Pref Path</open_pref_path>
-			<install_firmware>Install Firmware</install_firmware>
+			<open_pref_path>Otwórz preferowaną ścieżkę emulatora</open_pref_path>
+			<open_textures_path>Otwórz ścieżkę folderu z teksturami</open_textures_path>
+			<install_firmware>Zainstaluj oprogramowanie</install_firmware>
 			<install_pkg>Zainstaluj .pkg</install_pkg>
-			<install_zip>Instalacja .zip, .vpk</install_zip>
+			<install_zip>Zainstaluj .zip, .vpk</install_zip>
 			<install_license>Zainstaluj licencję</install_license>
 			<exit>Zamknij</exit>
 		</file>
-		<emulation name="Emulation">
-			<last_apps_used>Last Apps used</last_apps_used>
+		<emulation name="Emulacja">
+			<last_apps_used>Ostatnio używane aplikacje</last_apps_used>
 		</emulation>
-		<configuration name="Configuration">
+		<debug>
+			<threads>Wątki</threads>
+			<semaphores>Semafory</semaphores>
+			<mutexes>Mutexy</mutexes>
+			<lightweight_mutexes>Lekkie Mutexy</lightweight_mutexes>
+			<condition_variables>Zmienne stanu</condition_variables>
+			<lightweight_condition_variables>Lekkie zmienne stanu</lightweight_condition_variables>
+			<event_flags>Flagi zdarzeń</event_flags>
+			<memory_allocations>Alokacje pamięci</memory_allocations>
+			<disassembly>Demontaż</disassembly>
+		</debug>
+		<configuration name="Konfiguracja">
 			<user_management>Zarządzanie użytkownikami</user_management>
 		</configuration>
-		<controls name="Controls">
-			<keyboard_controls>Keyboard Controls</keyboard_controls>
+		<controls name="Sterowanie">
+			<keyboard_controls>Klawiatura</keyboard_controls>
 		</controls>
 		<help name="Pomoc">
 			<welcome>Witamy</welcome>
 		</help>
 	</main_menubar>
 
+	<about name="O programie">
+		<vita3k>Vita3K: Emulator systemów PS Vita/PS TV. Pierwszy na świecie funkcjonalny emulator PS Vita/PS TV.</vita3k>
+		<about_vita3k>Vita3K jest otwarto-źródłowym emulatorem PlayStation Vita pisanym w języku C++ dla systemu Windows, Linux, macOS oraz Android.</about_vita3k>
+		<special_credit>Chonorowe wspomnienie, ikona dla Vita3K byłą zaprojektowana przez:</special_credit>
+		<github_website>Jeśli interesuje cie pomoc przy projekcie, zerknij na:</github_website>
+		<vita3k_website>Odwiedź naszą stronę internetową po więcej informacji:</vita3k_website>
+		<ko-fi_website>Jeśli chcesz nas wesprzeć, możesz wysłać dotację lub zasubskrybować nasz profil:</ko-fi_website>
+		<vita3k_staff>Zespół 'Vita3K'</vita3k_staff>
+		<developers>Deweloperzy</developers>
+		<contributors>Współautorzy</contributors>
+		<supporters>Wspierający</supporters>
+	</about>
+
 	<app_context>
+		<check_app_state>Sprawdź stan aplikacji</check_app_state>
+		<copy_vita3k_summary>Kopiuj podsumowanie Vita3K</copy_vita3k_summary>
+		<open_state_report>Otwórz raport o stanie</open_state_report>
+		<create_state_report>Stwórz raport o stanie</create_state_report>
+		<update_database>Aktualizuj bazę danych</update_database>
+		<copy_app_info>Kopiuj informację o aplikacji</copy_app_info>
+		<name_and_id>Nazwa i numer identyfikacyjny aplikacji</name_and_id>
+		<app_summary>Podsumowanie aplikacji</app_summary>
+		<custom_config>Własna konfiguracja</custom_config>
+		<create>Utwórz</create>
+		<edit>Edytuj</edit>
+		<remove>Usuń</remove>
+		<open_folder>Otwórz folder</open_folder>
+		<addcont>Dodatkowa zawartość (DLC)</addcont>
+		<license>Licencja</license>
+		<shaders_cache>Pamięć podręczna cieni</shaders_cache>
+		<shaders_log>Dziennik zdarzeń cieni</shaders_log>
+		<export_textures>Eksportuj tekstury</export_textures>
+		<import_textures>Importuj tekstury</import_textures>
 		<manual>Instrukcja obsługi</manual>
 		<update>Aktualizuj</update>
 		<update_history>Historia aktualizacji</update_history>
@@ -32,6 +76,10 @@
 		<information>Informacje</information>
 		<delete>
 			<app_delete>Aplikacja i wszystkie powiązane dane, w tym zapisane dane, zostaną usunięte.</app_delete>
+			<app_delete_description>Usunięcie aplikacji może zająć trochę czasu,
+jest to zależne od jej rozmiaru i twojego sprzętu.</app_delete_description>
+			<addcont_delete>Czy chcesz usunąć dane dodatkowej zawartości (DLC)?</addcont_delete>
+			<license_delete>Czy chcesz usunąć tę licencję?</license_delete>
 			<saved_data_delete>Czy chcesz usunąć te zapisane dane?</saved_data_delete>
 		</delete>
 		<info>
@@ -40,11 +88,22 @@
 			<level>Poziom</level>
 			<name>Nazwa</name>
 			<trophy_earning>Zdobywanie trofeów</trophy_earning>
-			<parental_controls>kontrola rodzicielska</parental_controls>
+			<parental_controls>Kontrola rodzicielska</parental_controls>
 			<updated>Zaktualizowano</updated>
 			<size>Rozmiar</size>
 			<version>Wersja</version>
+			<title_id>Identyfikator tytułu</title_id>
+			<last_time_used>Ostatnio uruchamiane</last_time_used>
+			<time_used>Uruchomione przez</time_used>
+			<never>Nigdy</never>
 		</info>
+		<time_used>
+			<time_used_seconds>{}s</time_used_seconds>
+			<time_used_minutes>{}m:{}s</time_used_minutes>
+			<time_used_hours>{}h:{}m:{}s</time_used_hours>
+			<time_used_days>{}d:{}h:{}m:{}s</time_used_days>
+			<time_used_weeks>{}w:{}d:{}h:{}m:{}s</time_used_weeks>
+		</time_used>
 	</app_context>
 
 	<common>
@@ -56,8 +115,10 @@ Kod błędu: {}</an_error_occurred>
 		<microphone_disabled>Włącz mikrofon.</microphone_disabled>
 		<no>Nie</no>
 		<please_wait>Czekaj...</please_wait>
+		<search>Wyszukaj</search>
 		<select_all>Zaznacz wszystko</select_all>
 		<select>Zaznacz</select>
+		<submit>Zatwierdź</submit>
 		<yes>Tak</yes>
 		<wday>
 			<day>niedziela</day>
@@ -164,22 +225,22 @@ Kod błędu: {}</an_error_occurred>
 			<days>30</days>
 			<days>31</days>
 		</small_mday>
-		<hidden_trophy>Skjult trophy</hidden_trophy>
+		<hidden_trophy>Ukryte trofeum</hidden_trophy>
 		<one_hour_ago>1 godz. temu</one_hour_ago>
 		<one_minute_ago>1 min temu</one_minute_ago>
-		<bronze>Bronse</bronze>
-		<gold>Gull</gold>
-		<platinum>Platina</platinum>
-		<silver>Sølv</silver>
+		<bronze>Brązowy</bronze>
+		<gold>Złoty</gold>
+		<platinum>Platynowy</platinum>
+		<silver>Srebrny</silver>
 		<hours_ago>{} godz. temu</hours_ago>
 		<minutes_ago>{} min temu</minutes_ago>
 	</common>
 
-	<compatibility name="Kompatybilnośći">
+	<compatibility name="Kompatybilność">
 		<states>
-			<state id = "-1">Unknown</state>
-			<state id = "0">Nic</state>
-			<state id = "1">Bootowalny</state>
+			<state id = "-1">Nieznany</state>
+			<state id = "0">Nie uruchamia się</state>
+			<state id = "1">Uruchamia się</state>
 			<state id = "2">Intro</state>
 			<state id = "3">Menu</state>
 			<state id = "4">W grze -</state>
@@ -191,29 +252,94 @@ Kod błędu: {}</an_error_occurred>
 	<compat_db>
 		<error>Błąd</error>
 		<information>Informacje</information>
+		<get_failed>Nie udało się znaleźć bazy kompatybilności, sprawdź zaporę sieciową/dostęp do internetu, spróbuj ponownie później.</get_failed>
+		<download_failed>Nie udało się pobrać bazy kompatybilności aplikacji zaktualizowanej {}, spróbuj ponownie później.</download_failed>
+		<load_failed>Nie udało się załadować bazy kompatybilności aplikacji zaktualizowanej {}.</load_failed>
+		<new_app_listed>Baza lista kompatybilności została zaktualizowana pomyślnie z {} na {}.&#xA;
+{} nowych aplikacji dostępnych w bazie, zwiększając ją do {}!</new_app_listed>
+		<app_listed>Baza lista kompatybilności została zaktualizowana pomyślnie z {} na {}.&#xA;
+{} aplikacji dostępnych w bazie!</app_listed>
+		<download_app_listed>Lista kompatybilności zaktualizowana o {} została pomyślnie pobrana i załadowana.&#xA;
+{} aplikacji dostępnych w bazie!</download_app_listed>
 	</compat_db>
 
-	<content_manager name="Menedźer zawartości">
+	<compile_shaders>
+		<compiling_shaders>Kompilacja ceni</compiling_shaders>
+		<pipelines_compiled>{} potoków cieni skompilowanych</pipelines_compiled>
+		<shaders_compiled>{} cieni skompilowanych</shaders_compiled>
+	</compile_shaders>
+
+	<content_manager name="Menedżer zawartości">
 		<application name="Aplikacje">
 			<delete>Wybrane aplikacje i wszystkie powiązane dane, w tym zapisane dane, zostaną usunięte.</delete>
-			<no_item>Bark elementów zawartości.</no_item>
+			<no_item>Brak elementów zawartości.</no_item>
 		</application>
 		<saved_data name="Zapisane dane">
 			<delete>Zaznaczone elementy zapisanych danych zostaną usunięte.</delete>
-			<no_saved_data>Bark zapisanych danych .</no_saved_data>
+			<no_saved_data>Brak zapisanych danych.</no_saved_data>
 		</saved_data>
 		<theme>Motyw</theme>
 		<free_space>Wolne miejsce</free_space>
-		<clear_all>wyczyść wszystko</clear_all>
+		<clear_all>Wyczyść wszystko</clear_all>
 	</content_manager>
 
-	<controllers name="Kontrolera">
+	<controllers name="Kontroler">
+		<connected>{} kontrolerów podłączonych</connected>
 		<name>Nazwa</name>
 		<num>Num</num>
+		<not_connected>Niepodłączono żadnego ze wspieranych kontrolerów.
+Proszę, podłącz kontroler, który jest kompatybilny z SDL2.</not_connected>
+		<motion_support>Kontroler wspiera sterowanie ruchowe</motion_support>
+		<rebind_controls>Przypisz przyciski ponownie</rebind_controls>
+		<led_color>Kolor LED</led_color>
+		<use_custom_color>Użyj własnego koloru</use_custom_color>
+		<use_custom_color_description>Zaznacz, aby używać własnego koloru dla światła LED obecnego w kontrollerze.</use_custom_color_description>
+		<red>Czerwony</red>
+		<green>Zielony</green>
+		<blue>Niebieski</blue>
+		<reset_controller_binding>Restuj przypisanie przycisków kontrollera</reset_controller_binding>
 	</controllers>
 
-	<controls name="Controls">
+	<controls name="Sterowanie">
+		<button>Przycisk</button>
+		<mapped_button>Przypisany przycisk</mapped_button>
+		<left_stick_up>Lewy drążek góra</left_stick_up>
+		<left_stick_down>Lewy drążek dół</left_stick_down>
+		<left_stick_right>Lewy drążek prawo</left_stick_right>
+		<left_stick_left>Lewy drążek lewo</left_stick_left>
+		<right_stick_up>Prawy drążek góra</right_stick_up>
+		<right_stick_down>Prawy drążek doł</right_stick_down>
+		<right_stick_right>Prawy drążek prawo</right_stick_right>
+		<right_stick_left>Prawy drążek lewo</right_stick_left>
+		<d_pad_up>Krzyżak (D-Pad) góra</d_pad_up>
+		<d_pad_down>Krzyżak (D-Pad) dół</d_pad_down>
+		<d_pad_right>Krzyżak (D-Pad) prawy</d_pad_right>
+		<d_pad_left>Krzyżak (D-Pad) lewy</d_pad_left>
+		<square_button>Przycisk 'Kwadrat'</square_button>
+		<cross_button>Przycisk 'Krzyżyk'</cross_button>
+		<circle_button>Przycisk 'Kółko'</circle_button>
+		<triangle_button>Przycisk 'Trójkąt'</triangle_button>
+		<start_button>Przycisk 'Start'</start_button>
+		<select_button>Przycisk 'Select'</select_button>
+		<ps_button>Przycisk 'PS'</ps_button>
+		<l1_button>Przycisk 'L1'</l1_button>
+		<r1_button>Przycisk 'R1'</r1_button>
+		<ps_tv_mode>Tylko w trybie PS TV.</ps_tv_mode>
+		<l2_button>Przycisk 'L2'</l2_button>
+		<r2_button>Przycisk 'R2'</r2_button>
+		<l3_button>Przycisk 'L3'</l3_button>
+		<r3_button>Przycisk 'R3'</r3_button>
+		<gui>Interfejs graficzny</gui>
+		<full_screen>Pełny ekran</full_screen>
+		<toggle_touch>Włącz obsługę dotyku</toggle_touch>
+		<toggle_touch_description>Pozwala na korzystanie z ekranu dotykowego na ekranie i z tyłu konsoli</toggle_touch_description>
+		<toggle_gui_visibility>Włącz widoczność graficznego interfejsu użytkownika</toggle_gui_visibility>
+		<toggle_gui_visibility_description>Pozwala na pokazywanie i ukrywanie interfejsu emulatora u góry ekranu podczas gdy aplikacja jest uruchomiona.</toggle_gui_visibility_description>
+		<miscellaneous>Rożne</miscellaneous>
+		<toggle_texture_replacement>Aktywuj zamianę tekstur</toggle_texture_replacement>
+		<take_a_screenshot>Zrób zrzut ekranu</take_a_screenshot>
 		<error>Błąd</error>
+		<error_duplicate_key>Klawisz/przycisk jest już przypisany lub zarezerwowany.</error_duplicate_key>
 	</controls>
 
 	<dialog>
@@ -258,6 +384,26 @@ Nie wyłączaj systemu ani nie zamykaj aplikacji.</warning_saving>
 		<data_delete>Dane do usunięcia:</data_delete>
 	</game_data>
 
+	<home_screen>
+		<filter>Filtruj</filter>
+		<sort_app>Sortuj aplikacje według</sort_app>
+		<all>Wszystkie</all>
+		<by_region>Wg regionu</by_region>
+		<usa>Stany Zjednoczone</usa>
+		<europe>Europa</europe>
+		<japan>Japonia</japan>
+		<asia>Azja</asia>
+		<by_type>Wg typu</by_type>
+		<commercial>Aplikacje komercyjne</commercial>
+		<homebrew>Homebrew</homebrew>
+		<by_compatibility_state>Wg stopnia kompatybilności</by_compatibility_state>
+		<ver>Wersja</ver>
+		<cat>Kategoria</cat>
+		<comp>Kompatybilność</comp>
+		<last_time>Ostatnio uruchamiane</last_time>
+		<refresh>Odśwież</refresh>
+	</home_screen>
+
 	<indicator>
 		<app_added_home>Aplikacja została dodana do ekranu głównego.</app_added_home>
 		<delete_all>Usuń wszystko</delete_all>
@@ -275,30 +421,131 @@ Nie wyłączaj systemu ani nie zamykaj aplikacji.</warning_saving>
 System Vita3K jest gotowy!</completed_setup>
 		<select_language>Wybierz język.</select_language>
 		<next>Dalej</next>
+		<select_pref_path>Wybierz preferowaną ścieżkę.</select_pref_path>
+		<current_emu_path>Obecna ścieżka emulatora</current_emu_path>
+		<change_emu_path>Zmień ścieżka emulatora</change_emu_path>
+		<reset_emu_path>Resetuj ścieżka emulatora</reset_emu_path>
+		<install_firmware>Instaluj oprogramowanie.</install_firmware>
+		<install_highly_recommended>Instalacja obu plików oprogramowania jest zalecana.</install_highly_recommended>
+		<installed>Zainstalowana:</installed>
+		<download_firmware>Pobierz oprogramowanie systemu konsoli</download_firmware>
+		<download_font_package>Pobierz paczkę czcionek</download_font_package>
+		<install_firmware_file>Zainstaluj plik oprogramowania systemu konsoli</install_firmware_file>
+		<select_interface_settings>Konfiguracja interfejsu graficznego.</select_interface_settings>
+		<show_info_bar>Widoczność pasku informacyjnego</show_info_bar>
+		<info_bar_description>Zaznacz, aby pokazywać pasek informacyjny podczas wyboru aplikacji.
+Pasek informacyjny to zegar, poziom naładowania baterii oraz centrum powiadomień.</info_bar_description>
+		<show_live_area_screen>Ekran aplikacji 'Live Area'</show_live_area_screen>
+		<live_area_screen_description>Zaznacz, aby otworzyć 'Live Area' domyślnie podczas kliknięcia na aplikacje.
+Jeśli wyłaczone, wymaga prawego kliknięcia, aby uruchomić aplikacje.</live_area_screen_description>
+		<apps_list_grid>Tryb siatki</apps_list_grid>
+		<apps_list_grid_description>Zaznacz, aby lista aplikacji była wyświetlana w trybie siatki, tak jak w konsoli PS Vita.</apps_list_grid_description>
+		<icon_size>Rozmiar ikony aplikacji</icon_size>
+		<select_icon_size>Wybierz preferowany rozmiar ikon.</select_icon_size>
+		<completed>Ukończone.</completed>
 	</initial_setup>
+
+	<install_dialog>
+		<firmware_install>
+			<firmware_installation>Instalacja oprogramowania</firmware_installation>
+			<firmware_installing>Instalacja trwa, proszę czekać...</firmware_installing>
+			<successed_install_firmware>Oprogramowanie systemu zostało zainstalowane pomyślnie.</successed_install_firmware>
+			<firmware_version>Wersja oprogramowania systemu:</firmware_version>
+			<no_font_exist>Paczka czcionek nie została znaleziona, proszę pobierz i zainstaluj ją.</no_font_exist>
+			<download_firmware_font_package>Pobierz paczkę czcionek</download_firmware_font_package>
+			<firmware_font_package_description>Paczka czcionek jest wymagana dla niektórych aplikacji,
+również dla wsparcia regionalnych azjatyckich czcionek (Zalecane)</firmware_font_package_description>
+			<delete_firmware>Usunąć plik oprogramowania systemu?</delete_firmware>
+		</firmware_install>
+		<pkg_install>
+			<select_license_type>Wybierz typ licencji</select_license_type>
+			<select_bin_rif>Wybierz work.bin/rif</select_bin_rif>
+			<enter_zrif>Wprowadź klucz zRIF</enter_zrif>
+			<enter_zrif_key>Wprowadź klucz zRIF</enter_zrif_key>
+			<input_zrif>Proszę wprowadź twój klucz zRIF tutaj...</input_zrif>
+			<copy_paste_zrif>Ctrl (Cmd) + C, aby skopiować, Ctrl (Cmd) + V, aby wkleić.</copy_paste_zrif>
+			<delete_pkg>Usunąć plik .pkg?</delete_pkg>
+			<delete_bin_rif>Usunąć plik work.bin/rif?</delete_bin_rif>
+			<failed_install_package>Nie udało się zainstalować pakietu.
+Upewnij się, że pliki pkg oraz work.bin/rif lub klucz zRIF są poprawnie.</failed_install_package>
+		</pkg_install>
+		<archive_install>
+			<select_install_type>Wybierz typ instalacji</select_install_type>
+			<select_file>Wybierz plik</select_file>
+			<select_directory>Wybierz katalog</select_directory>
+			<compatible_content>{} archiwum/wów znalezionych ze wspieraną zawartości.</compatible_content>
+			<successed_install_archive>Pomyślnie zainstalowano {} archiwum/wów ze wspieraną zawartością:</successed_install_archive>
+			<update_app>Aktualizuj aplikację do:</update_app>
+			<failed_install_archive>Instalacja zawartości z {} archiwum/wów nie powiodła się:</failed_install_archive>
+			<not_compatible_content>Kompatybilna zawartość nie jest dostępna w {} archiwum/wach:</not_compatible_content>
+			<delete_archive>Usunąć archiwum?</delete_archive>
+		</archive_install>
+		<license_install>
+			<successed_install_license>Licencja została zainstalowana pomyślnie.</successed_install_license>
+			<failed_install_license>Instalacja licencji zakończyła się n.
+Upewnij się, że pliki work.bin/rif lub klucz zRIF.</failed_install_license>
+		</license_install>
+		<reinstall>
+			<reinstall_content>Zainstalować ponownie tą zawartość?</reinstall_content>
+			<already_installed>Ta zawartość jest już zainstalowana.</already_installed>
+			<reinstall_overwrite>Czy chcesz ją zainstalować ponownie i nadpisać istniejące dane?</reinstall_overwrite>
+		</reinstall>
+	</install_dialog>
 
 	<live_area>
 		<start>Rozpocznij</start>
 		<continue>Kontynuuj</continue>
+		<help>
+			<control_setting>Używa konfiguracji dla klawiatury w ustawieniach sterowania</control_setting>
+			<firmware_not_detected>Oprogramowanie nie zostało wykryte. Instalacja jest zalecana.</firmware_not_detected>
+			<firmware_font_not_detected>Czcionki oprogramowania nie zostały wykryte. Instalacja jest zalecana dla czcionek tekstu w trybie 'Live Area'</firmware_font_not_detected>
+			<live_area_help>Pomoc 'Live Area'</live_area_help>
+			<browse_app>Przeszukaj listę w aplikacji</browse_app>
+			<browse_app_control>Krzyżak (D-pad), Lewy drążek, kołko myszy w górę/dół lub za pomocą suwaka</browse_app_control>
+			<start_app>Uruchom aplikacje</start_app>
+			<start_app_control>Naciśnij 'Uruchom' lub krzyżyk</start_app_control>
+			<show_hide>Pokazuj/Ukrywaj 'Live Area' podczas uruchamiania aplikacji</show_hide>
+			<show_hide_control>Naciśnij przycisk PS</show_hide_control>
+			<exit_livearea>Wyjdź z 'Live Area'</exit_livearea>
+			<exit_livearea_control>Naciśnij 'Esc' lub kółko</exit_livearea_control>
+			<manual_help>Pomoc instrukcji użytkownika</manual_help>
+			<browse_page>Przeszukaj strone</browse_page>
+			<browse_page_control>Krzyżak (D-pad), Lewy drążek, kołko myszy w górę/dół lub za pomocą suwaka, Naciśnij na &lt;/&gt;</browse_page_control>
+			<hide_show>Ukryj/pokaż przycisk</hide_show>
+			<hide_show_control>Lewy przycisk myszy lub wciśnij Trójkąt</hide_show_control>
+			<exit_manual>Wyjdź z instrukcji</exit_manual>
+			<exit_manual_control>Naciśnij Esc lub wciśnij PS na kontrolerze</exit_manual_control>
+		</help>
 	</live_area>
+
+	<performance_overlay>
+		<avg>Śred</avg>
+		<min>Min</min>
+		<max>Maks</max>
+	</performance_overlay>
 	
 	<settings name="Ustawienia">
 		<theme_background name="Motyw i tło">
 			<default>Domyślnie</default>
 			<theme name="Motyw">
+				<find_a_psvita_custom_themes>Znajdź własne motywy PSVita</find_a_psvita_custom_themes>
 				<information name="Informacje">
 					<name>Nazwa</name>
 					<provider>Dostawca</provider>
 					<updated>Zaktualizowano</updated>
 					<size>Rozmiar</size>
 					<version>Wersja</version>
+					<content_id>Identyfikator zawartości</content_id>
 				</information>
 				<delete>Ten motyw zostanie usunięty.</delete>
 			</theme>
 			<start_screen name="Ekran startowy">
 				<image>Obraz</image>
+				<add_image>Dodaj obraz</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Tło ekranu głównego">
+				<delete_background>Usuń tło</delete_background>
+				<add_background>Dodaj tło</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Data i godzina">
@@ -314,7 +561,7 @@ System Vita3K jest gotowy!</completed_setup>
 		</date_time>
 		<language name="Język">
 			<system_language>Język systemu</system_language>
-			<input_language name="język wprowadzania">
+			<input_language name="Język wprowadzania">
 				<keyboards name="Klawiatury">
 					<ime_languages>
 						<lang id="1">Duński</lang>
@@ -326,13 +573,13 @@ System Vita3K jest gotowy!</completed_setup>
 						<lang id="32">Włoski</lang>
 						<lang id="64">Niderlandzki</lang>
 						<lang id="128">Norweski</lang>
-						<lang id="256">Polska</lang>
+						<lang id="256">Polski</lang>
 						<lang id="131072">Portugalski (Brazylia)</lang>
 						<lang id="512">Portugalski (Portugalia)</lang>
 						<lang id="1024">Rosyjski</lang>
 						<lang id="2048">Fiński</lang>
 						<lang id="4096">Szwedzki</lang>
-						<lang id="524288">Turkish</lang>
+						<lang id="524288">Turecki</lang>
 					</ime_languages>
 				</keyboards>
 			</input_language>
@@ -340,12 +587,236 @@ System Vita3K jest gotowy!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Ustawienia">
+		<core name="Rdzeń">
+			<modules_mode>Tryb modułów</modules_mode>
+			<modules_list>Lista modułów</modules_list>
+			<select_modules>Wybierz pożądane moduły.</select_modules>
+			<search_modules>Przeszukaj moduły</search_modules>
+			<clear_list>Wyczyść listę</clear_list>
+			<no_modules>Brak dostępnych modułów.
+Proszę pobrać i zainstalować najnowsze oprogramowanie systemu PS Vita.</no_modules>
+			<refresh_list>Odśwież listę</refresh_list>
+		</core>
+		<cpu name="Procesor">
+			<unicorn>Unicorn (porzucone)</unicorn>
+			<cpu_backend>Backend procesora</cpu_backend>
+			<select_cpu_backend>Wybierz preferowany backend procesora.</select_cpu_backend>
+			<cpu_opt>Włącz optymalizacje</cpu_opt>
+			<cpu_opt_description>Zaznacz, aby włączyć dodatkowe optymalizacje CPU JIT.</cpu_opt_description>
+		</cpu>
+		<gpu name="Karta graficzna">
+			<reset>Resetuj</reset>
+			<backend_renderer>Backend Renderowania</backend_renderer>
+			<select_backend_renderer>Wybierz preferowany backend renderowania.</select_backend_renderer>
+			<gpu>GPU (Wymaga restartu)</gpu>
+			<select_gpu>Wybierz kartę graficzną, jaką Vita3K powinno używać.</select_gpu>
+			<standard>Standardowa</standard>
+			<high>Wysoka</high>
+			<renderer_accuracy>Dokładość renderowania</renderer_accuracy>
+			<v_sync>Synchronizacja pionowa</v_sync>
+			<v_sync_description>Wyłączenie synchronizacji pionowej może naprawić problem z prędkością w niektórych grach.
+Zaleca się zostawić tą opcje włączoną, aby uniknąć rozdarcia obrazu.</v_sync_description>
+			<disable_surface_sync>Wyłącz synchronizację powierzchni</disable_surface_sync>
+			<surface_sync_description>Poprawka prędkościowa, zaznacz, aby wyłączyć synchronizację powierzchni pomiędzy procesorem, a kartą graficzną.
+Wymagane przez kilka gier.
+Jeśli wyłączone, gwarantuje skok wydajności (dokładnie, gdy skalowanie w górę jest włączone).</surface_sync_description>
+			<async_pipeline_compilation>Asynchroniczna kompilacja potoku</async_pipeline_compilation>
+			<async_pipeline_compilation_description>Pozwala na kompilacje potoków jednocześnie w wielu współbieżnych wątkach.
+Zmniejsza to zacinanie się kompilacji potoku kosztem tymczasowych błędów graficznych.</async_pipeline_compilation_description>
+			<nearest>Najbliższe</nearest>
+			<bilinear>Dwuliniowe</bilinear>
+			<bicubic>Dwusześcienne</bicubic>
+			<screen_filter>Filtrowanie ekranu</screen_filter>
+			<screen_filter_description>Ustaw filtr przetwarzania końcowego, który ma zostać zastosowany.</screen_filter_description>
+			<internal_resolution_upscaling>Skalowanie rozdzielczości</internal_resolution_upscaling>
+			<internal_resolution_upscaling_description>Pozwala na podbicie rozdzielczości w Vita3K.
+Eksperymentalne: Nie ma gwarancji, że gry będą renderować się poprawnie na innej niż 1x.</internal_resolution_upscaling_description>
+			<anisotropic_filtering>Filtrowanie anizotropowe</anisotropic_filtering>
+			<anisotropic_filtering_description>Filtrowanie anizotropowe to technika w celu poprawy jakości obrazu powierzchni
+które są nachylone w stosunku do widza.
+Nie ma to żadnych wad, ale może mieć wpływ na wydajność.</anisotropic_filtering_description>
+			<texture_replacement>Podmiana tekstur</texture_replacement>
+			<export_textures>Eksportuj tekstury</export_textures>
+			<import_textures>Importuj tekstury</import_textures>
+			<texture_exporting_format>Format eksportowanych tekstur</texture_exporting_format>
+			<shaders>Cienie</shaders>
+			<shader_cache>Używaj pamięć podręczną cieni</shader_cache>
+			<shader_cache_description>Zaznacz, aby włączyć pamięć podręczną cieci, aby skompilować je na starcie gry.
+Odznacz, aby wyłączyć tą funkcje.</shader_cache_description>
+			<spirv_shader>Używaj cieni Spir-V (porzucone)</spirv_shader>
+			<spirv_shader_description>Przekaż wygenerowany moduł cieniujący Spir-V bezpośrednio do sterownika.
+Pamiętaj, że niektóre przydatne rozszerzenia zostaną wyłączone,
+i nie wszystkie procesory graficzne są z tym kompatybilne.</spirv_shader_description>
+			<clean_shaders>Wyczyść pamięć podręczną cieni</clean_shaders>
+			<fps_hack>FPS Hack</fps_hack>
+			<fps_hack_description>Hack do gry, który pozwala niektórym grom działającym z szybkością 30 FPS działać w 60 FPS na emulatorze.
+Pamiętaj, że jest to hack i będzie działać tylko w niektórych grach.
+W innych grach może to nie mieć żadnego efektu lub spowodować, że będą działać dwa razy szybciej.</fps_hack_description>
+		</gpu>
+		<audio name="Dźwięk">
+			<audio_backend>Audio Backend</audio_backend>
+			<select_audio_backend>Wybierz preferowany audio backend.</select_audio_backend>
+			<audio_volume>Głośność dźwięku</audio_volume>
+			<audio_volume_description>Dostosowywuje poziom głośności dla wszystkich dostępnych urządzeń dźwiękowych.</audio_volume_description>
+			<enable_ngs_support>Włącz wsparcie dla NGS</enable_ngs_support>
+			<ngs_description>Odznacz, aby wyłączyć wsparcie dla zaawansowanej biblioteki dzwięków NGS.</ngs_description>
+		</audio>
 		<system name="System">
+			<select_enter_button>Przypisanie przycisku potwierdzenia
+Wybierz swój przycisk potwierdzenia.</select_enter_button>
+			<enter_button_description>Jest to przycisk używany jako 'Potwierdź' in oknie aplikacji.
+Niektóre aplikacje tego nie używają, mają swój przycisk potwierdzenia.</enter_button_description>
+			<circle>Kółko</circle>
+			<cross>Krzyżyk</cross>
+			<pstv_mode>Tryb PS TV</pstv_mode>
+			<pstv_mode_description>Zaznacz, aby włączyć emulowany tryb PS TV.</pstv_mode_description>
+			<show_mode>Tryb Show</show_mode>
+			<show_mode_description>Zaznacz, aby włączyć tryb Show.</show_mode_description>
+			<demo_mode>Tryb demonstracyjny</demo_mode>
+			<demo_mode_description>Zaznacz, aby włączyć tryb demonstracyjny.</demo_mode_description>
 		</system>
+		<emulator name="Emulator">
+			<boot_apps_full_screen>Uruchamiaj aplikacje w trybie pełnoekranowym</boot_apps_full_screen>
+			<trace>Śledź</trace>
+			<info>Informacje</info>
+			<warning>Ostrzeżenia</warning>
+			<error>Błędy</error>
+			<critical>Krytyczne</critical>
+			<off>Wyłącz</off>
+			<log_level>Poziom rejestrowania pliku dziennika</log_level>
+			<select_log_level>Wybierz prefererowany poziom zbierania danych w dzienniku.</select_log_level>
+			<archive_log>Archiwizuj plik dziennika</archive_log>
+			<archive_log_description>Zaznacz, aby archiwizować plik dziennika.</archive_log_description>
+			<discord_rich_presence>Włącza Discord Rich Presence, aby pokazać na Discordzie jaką aplikacje uruchamiasz.</discord_rich_presence>
+			<texture_cache>Pamięć podręczna tekstur</texture_cache>
+			<texture_cache_description>Odznacz, aby wyłączyć pamięć podręczną tekstur.</texture_cache_description>
+			<show_compile_shaders>Pokazuj kompilacje cieni</show_compile_shaders>
+			<compile_shaders_description>Odznacz, aby wyłączyć informacje w oknie dialogowym o kompilacji cieni.</compile_shaders_description>
+			<show_touchpad_cursor>Pokazuj kursor ekranu dotykowego</show_touchpad_cursor>
+			<touchpad_cursor_description>Odznacz, aby wyłączyć widoczność kursora ekranu dotykowego.</touchpad_cursor_description>
+			<log_compat_warn>Loguj ostrzeżenie o kompatybilności</log_compat_warn>
+			<log_compat_warn_description>Zaznacz,aby włączyć logowanie ostrzeżenie o kompatybilności dla 'Issue' na GitHubie.</log_compat_warn_description>
+			<check_for_updates>Sprawdź aktualizacje</check_for_updates>
+			<check_for_updates_description>Automatycznie sprawdzaj aktualizację przy uruchomieniu.</check_for_updates_description>
+			<performance_overlay>Nakładka wydajnościowa</performance_overlay>
+			<performance_overlay_description>Wyświetla informację wydajnościową na ekranie jako nakładkę.</performance_overlay_description>
+			<minimum>Minimum</minimum>
+			<low>Niski</low>
+			<medium>Średni</medium>
+			<maximum>Maksimum</maximum>
+			<detail>Poziom detali</detail>
+			<select_detail>Wybierz preferowany poziom wyświetlanych detali w nakładce wydajnościowej.</select_detail>
+			<top_left>Lewy górny</top_left>
+			<top_center>Wyśrodkowanie górne</top_center>
+			<top_right>Prawy górny</top_right>
+			<bottom_left>Lewy dolny</bottom_left>
+			<bottom_center>Wyśrodkowanie dolne</bottom_center>
+			<bottom_right>Prawy dolny</bottom_right>
+			<position>Pozycja nakłądki</position>
+			<select_position>Wybierz preferowaną pozycję nakładki wydajnościowej.</select_position>
+			<case_insensitive>Zaznacz, aby umożliwić wyszukiwanie scieżek bez uwzględnienia wielkości liter dla systemu z uwzględnianiem wielkości liter.
+RESETUJE SIĘ PRZY PONOWNYM URUCHOMIENIU</case_insensitive>
+			<case_insensitive_description>Pozwala emulatorowi, aby podjąć szukanie plików niezalenie od przypadku
+na platformach innych niż Windows.</case_insensitive_description>
+			<emu_storage_folder>Folder emulowanej pamięci systemu</emu_storage_folder>
+			<current_emu_path>Obecna ścieżka emulatora:</current_emu_path>
+			<change_emu_path>Zmień ścieżkę emulatora</change_emu_path>
+			<change_emu_path_description>Zmienia ścieżkę do folderu emulatora Vita3K.
+Wymaga ręcznego przeniesienia folderu do nowej lokalizacji.</change_emu_path_description>
+			<reset_emu_path>Resetuj ścieżkę emulatora</reset_emu_path>
+			<reset_emu_path_description>Resetuje ścieżkę do folderu emulatora Vita3K do ustawień domyślnych
+Wymaga ręcznego przeniesienia folderu do nowej lokalizacji.</reset_emu_path_description>
+			<custom_config_settings>Ustawienia niestandardowej konfiguracji</custom_config_settings>
+			<clear_custom_config>Wyczyść niestandardową konfigurację</clear_custom_config>
+		</emulator>
+		<gui name="Interfejs graficzny">
+			<show_gui>Włącz interfejs graficzny</show_gui>
+			<gui_description>Zaznacz tę opcję, aby pokazywać interfejs graficzny, po uruchomienu aplikacji.</gui_description>
+			<show_info_bar>Włącz pasek informacyjny</show_info_bar>
+			<info_bar_description>Zaznacz, aby pokazywać pasek informacyjny przy wyborze aplikacji.</info_bar_description>
+			<user_lang>Język interfejsu graficznego</user_lang>
+			<select_user_lang>Wybierz język interfejsu użytkownika.</select_user_lang>
+			<display_info_message>Wyświetlaj pasek informacyjny</display_info_message>
+			<display_info_message_description>Odznacz, aby zapisywać pasek informacyjny tylko w pliku dziennika.</display_info_message_description>
+			<display_system_apps>Wyświetlaj aplikacje systemowe</display_system_apps>
+			<display_system_apps_description>Odznacz, aby schować aplikacje systemowe z ekranu startowego.
+Będą dalej widoczne w menu głównym.</display_system_apps_description>
+			<show_live_area_screen>Ekran aplikacji 'Live Area'</show_live_area_screen>
+			<live_area_screen_description>Zaznacz, aby domyślnie otwierać 'Live Area' po kliknięciu aplikacji.
+Jeśli jest wyłączona, kliknij aplikację prawym przyciskiem myszy, aby ją otworzyć.</live_area_screen_description>
+			<stretch_the_display_area>Rozciągnij obraz do obszaru wyświetlania</stretch_the_display_area>
+			<stretch_the_display_area_description>Zaznacz, aby powiększyć obszar wyświetlania w celu dopasowania go do rozmiaru ekranu.</stretch_the_display_area_description>
+			<apps_list_grid>Tryb siatki</apps_list_grid>
+			<apps_list_grid_description>Zaznacz aby wyświetlać listę aplikacji w trybie siatki.</apps_list_grid_description>
+			<icon_size>Rozmiar ikony aplikacji</icon_size>
+			<select_icon_size>Definiuje preferowany rozmiar ikon aplikacji.</select_icon_size>
+			<font_support>Wsparcie dla czcionek</font_support>
+			<asia_font_support>Region azjatycki</asia_font_support>
+			<asia_font_support_description>Zaznacz, aby włączyć obsługę czcionek w języku chińskim i koreańskim.
+Włączenie tej opcji spowoduje użycie większej ilości pamięci i będzie wymagało ponownego uruchomienia emulatora.</asia_font_support_description>
+			<firmware_font_package_description>Paczka czcionek oprogramowania jest potrzebna dla niektórych aplikacji
+oraz dla wsparcia azjatyckich czcionek regionalnych w graficznym interfejsie użytkownika.
+Jest też głównie polecenana dla graficznym interfejsie użytkownika.</firmware_font_package_description>
+			<theme_background>Motyw i tło</theme_background>
+			<current_theme_content_id>Identyfikator obecnego motywu:</current_theme_content_id>
+			<reset_default_theme>Resetuj domyślny motyw</reset_default_theme>
+			<using_theme_background>Obecnie używane tło motywu</using_theme_background>
+			<clean_user_backgrounds>Wyczyść tła użytkownika</clean_user_backgrounds>
+			<current_start_background>Obecne tło startowe:</current_start_background>
+			<reset_start_background>Restuj tło startowe</reset_start_background>
+			<background_alpha>Tło Alpha</background_alpha>
+			<select_background_alpha>Definiuje preferowaną przeźroczystość tła.
+Wartość minimalna jest nieprzeźroczysta, a wartość minimalna jest przeźroczysta.</select_background_alpha>
+			<delay_background>Opóźnienie dla zmiany teł</delay_background>
+			<select_delay_background>Definiuje opóźnienie (w sekundach) przed zmianą teł.</select_delay_background>
+			<delay_start>Opoźnienie dla ekranu startowego</delay_start>
+			<select_delay_start>Definiuje opóźnienie (w sekundach) przed powrotem do ekranu startowego.</select_delay_start>
+		</gui>
 		<network name="Sieć">
+			<psn_signed_in>Zalogowany do PSN</psn_signed_in>
+			<psn_signed_in_description>Jeśli zaznaczone, gry będą zakładać że użytkownik jest połączony z PlayStation Network (ale w trybie offline).</psn_signed_in_description>
+			<enable_http>Włącz HTTP</enable_http>
+			<enable_http_description>Zaznacz, aby umożliwić grom korzystanie z protokołu HTTP w internecie.</enable_http_description>
+			<timeout_attempts>Próby przekroczenia czasu połączenia HTTP</timeout_attempts>
+			<timeout_attempts_description>Ilość prób połączenia do wykonania, gdy serwer nie odpowiada.
+Może być użyteczne, jeśli posiadasz NIESTABILNE lub BARDZO WOLNE połączenie internetowe.</timeout_attempts_description>
+			<timeout_sleep>Uśpienie przekroczenia czasu połączenia HTTP</timeout_sleep>
+			<timeout_sleep_description>Nakłada uśpienie między próbami połączenia z serwerem, gdy nie odpowiada.
+Może być użyteczne, jeśli posiadasz NIESTABILNE lub BARDZO WOLNE połączenie internetowe.</timeout_sleep_description>
+			<read_end_attempts>Próby zakończenia odczytu HTTP</read_end_attempts>
+			<read_end_attempts_description>Ilość prób do wykonania, gdy nie ma więcej danych do odczytu,
+niższa wartość może poprawić wydajność, ale może sprawić, że gry będą niestabilne, jeśli masz naprawdę słabe połączenie z internetem.</read_end_attempts_description>
+			<read_end_sleep>Uśpienie przy próbach zakończenia odczytu HTTP</read_end_sleep>
+			<read_end_sleep_description>Nakłada uśpienie, gdy nie ma więcej danych do odczytu,
+niższa wartość może poprawić wydajność, ale może sprawić, że gry będą niestabilne, jeśli masz naprawdę słabe połączenie z internetem.</read_end_sleep_description>
 		</network>
-		<close>Zamykać</close>
+		<debug>
+			<log_imports>Importuj dziennik zdarzeń</log_imports>
+			<log_imports_description>Loguj moduły importowanych symboli.</log_imports_description>
+			<log_exports>Eksportuj dziennik zdarzeń</log_exports>
+			<log_exports_description>Loguj moduły eksportowanych symboli.</log_exports_description>
+			<log_active_shaders>Loguj aktywne cienie</log_active_shaders>
+			<log_active_shaders_description>Loguj cienie używane przy każdym wywołaniu rysowania.</log_active_shaders_description>
+			<log_uniforms>Jednolity dziennik zdarzeń</log_uniforms>
+			<log_uniforms_description>Loguj jednolite nazwy i wartości cieni.</log_uniforms_description>
+			<color_surface_debug>Zapisz powierzchnie kolorów</color_surface_debug>
+			<color_surface_debug_description>Zapisz powierzchnie kolorów do plików.</color_surface_debug_description>
+			<dump_elfs>Zrzut do pliku ELF</dump_elfs>
+			<dump_elfs_description>Zrzuć załadowany kod do pliku/ów ELFs.</dump_elfs_description>
+			<validation_layer>Warstwa walidacji (Wymaga restartu)</validation_layer>
+			<validation_layer_description>Włącz warstwę walidacji Vulkan.</validation_layer_description>
+			<unwatch_code>Przestań obserwować kod</unwatch_code>
+			<watch_code>Obserwuj kod</watch_code>
+			<unwatch_memory>Przestań obserwować pamięć</unwatch_memory>
+			<watch_memory>Obserwuj pamięć</watch_memory>
+			<unwatch_import_calls>Przestań obserwować wywołania importu</unwatch_import_calls>
+			<watch_import_calls>Obserwuj wywołania importu</watch_import_calls>
+		</debug>
+		<close>Zamknij</close>
+		<save_reboot>Zapisz i uruchom ponownie</save_reboot>
+		<save_apply>Zapisz i zatwierdź</save_apply>
 		<save>Zapisz</save>
+		<keep_changes>Naciśnij 'Zapisz', aby zachować zmiany.</keep_changes>
 	</settings_dialog>
 
 	<sys_apps_title>
@@ -358,6 +829,9 @@ System Vita3K jest gotowy!</completed_setup>
 	</sys_apps_title>
 
 	<trophy_collection>
+		<delete_trophy>Usuń trofeum</delete_trophy>
+		<trophy_deleted>Ta informacja o trofeum przypisana dla tego użytkownika zostanie usunięta.</trophy_deleted>
+		<locked>Niezdobyto</locked>
 		<details>Szczegóły</details>
 		<earned>Zdobyto</earned>
 		<name>Nazwa</name>
@@ -367,15 +841,17 @@ Trofea można zdobywać, korzystając z aplikacji obsługującej funkcję trofe�
 		<original>Oryginalne</original>
 		<sort>Sortuj</sort>
 		<trophies>Trofea</trophies>
-		<grade>stopień</grade>
+		<grade>Stopień</grade>
 		<progress>Postęp</progress>
-		<updated>Opdaterest</updated>
+		<updated>Zaktualizowano</updated>
 	</trophy_collection>
 
 	<user_management>
 		<select_user>Zaznacz użytkownika</select_user>
 		<create_user>Utwórz użytkownika</create_user>
 		<user_created>Został utworzony następujący użytkownik:</user_created>
+		<edit_user>Edytuj użytkownika</edit_user>
+		<open_user_folder>Otwórz folder użytkownika</open_user_folder>
 		<user_name_used>Ta nazwa jest już używana.</user_name_used>
 		<delete_user>Usuń użytkownika</delete_user>
 		<user_delete>Wybierz użytkownika, którego chcesz usunąć.</user_delete>
@@ -384,10 +860,12 @@ Trofea można zdobywać, korzystając z aplikacji obsługującej funkcję trofe�
 		<user_delete_warn>Użytkownik zostanie usunięty.
 Czy na pewno chcesz kontynuować?</user_delete_warn>
 		<user_deleted>Usunięto użytkownika.</user_deleted>
-		<choose_avatar>Wybierz awatara</choose_avatar>
+		<choose_avatar>Wybierz awatar</choose_avatar>
+		<reset_avatar>Resetuj awatar</reset_avatar>
 		<name>Nazwa</name>
 		<user>Uzytkownik</user>
 		<confirm>Potwierdź</confirm>
+		<automatic_user_login>Automatyczne logowanie</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Aktualizacja Vita3K">
@@ -404,11 +882,28 @@ Po ukończeniu pobierania Vita3K zostanie automatycznie ponownie uruchomiony, a 
 		<later_version_already_installed>Zainstalowana jest już nowsza wersja Vita3K.</later_version_already_installed>
 		<latest_version_already_installed>Najnowsza wersja Vita3K jest już zainstalowana.</latest_version_already_installed>
 		<new_features>Nowe funkcje w wersji {}</new_features>
+		<authors>Autor/zy</authors>
+		<comments>Komentarze</comments>
 		<update>Aktualizuj</update>
 		<version>Wersja {}</version>
 	</vita3k_update>
 
-	<welcome name="Welcome to Vita3K">
-		<close>Zamykać</close>
+	<welcome name="Witaj w Vita3K">
+		<vita3k>Vita3K, emulator systemu PlayStation Vita</vita3k>
+		<about_vita3k>Vita3K jest otwarto-źródłowym emulatorem PlayStation Vita pisanym w języku C++ dla systemu Windows, Linux, macOS oraz Android.</about_vita3k>
+		<development_stage>Emulator jest wciąż w fazie rozwojowej, więc każda informacja zwrotna w formie testów jest mile widziana.</development_stage>
+		<about_firmware>Aby rozpocząć, proszę zainstaluj najnowsze oprogramowanie systemu konsoli PS Vita oraz paczkę czcionek.</about_firmware>
+		<download_firmware>Pobierz oprogramowanie</download_firmware>
+		<vita3k_quickstart>Szczegółowy poradnik konfiguracji Vita3K jest dostępny na stronie</vita3k_quickstart>
+		<quickstart>'Quickstart'</quickstart>
+		<page>.</page>
+		<check_compatibility>Sprawdź listy kompatybilności z aplikacjami komercyjnymi i homebrew, aby zobaczyć co obecnie działa.</check_compatibility>
+		<commercial_compatibility_list>Lista kompatybilności z aplikacjami komercyjnymi</commercial_compatibility_list>
+		<homebrew_compatibility_list>Lista kompatybilności z homebrew</homebrew_compatibility_list>
+		<welcome_contribution>Pomoc przy projekcie mile widziana!</welcome_contribution>
+		<discord_help>Dodatkowe wsparcie i pomoc dostępne są również na Discordzie na kanale #help.</discord_help>
+		<no_piracy>Vita3K nie wspiera piractwa. Musisz zgrać swoją kopię gry.</no_piracy>
+		<show_next_time>Pokaż następnym razem</show_next_time>
+		<close>Zamknij</close>
 	</welcome>
 </lang>
