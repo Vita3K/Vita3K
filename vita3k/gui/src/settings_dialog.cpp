@@ -817,7 +817,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     // Audio
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem("Audio")) {
+    if (ImGui::BeginTabItem(lang.audio["title"].c_str())) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
         if (!emuenv.io.app_path.empty())
