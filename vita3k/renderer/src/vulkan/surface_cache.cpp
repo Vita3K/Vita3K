@@ -615,9 +615,9 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
 
     // check if MSAA is used, the depth buffer is never downscaled
     if (target->multisample_mode != SCE_GXM_MULTISAMPLE_NONE)
-        memory_width *= 2;
-    if (target->multisample_mode == SCE_GXM_MULTISAMPLE_4X)
         memory_height *= 2;
+    if (target->multisample_mode == SCE_GXM_MULTISAMPLE_4X)
+        memory_width *= 2;
 
     const bool is_stencil_only = depth_stencil->depth_data.address() == 0;
     DepthStencilSurfaceCacheInfo *cached_info = nullptr;
@@ -776,9 +776,9 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
 
     // take MSAA into account
     if (cached_info.multisample_mode != SCE_GXM_MULTISAMPLE_NONE)
-        width /= 2;
-    if (cached_info.multisample_mode == SCE_GXM_MULTISAMPLE_4X)
         height /= 2;
+    if (cached_info.multisample_mode == SCE_GXM_MULTISAMPLE_4X)
+        width /= 2;
 
     const bool is_stencil = can_be_stencil;
 
