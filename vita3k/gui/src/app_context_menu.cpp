@@ -20,6 +20,8 @@
 #include <config/state.h>
 #include <config/version.h>
 #include <gui/functions.h>
+#include <include/cpu.h>
+#include <include/environment.h>
 #include <io/state.h>
 
 #include <util/log.h>
@@ -411,8 +413,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
                             // Test environment summary
                             const auto test_env_summary = fmt::format(
-                                "%23 Test environment summary%0A- Tested by: {} <!-- Change your username if is needed -->%0A- OS: Windows 10/macOS/Linux Distro, Kernel Version?%0A- CPU: AMD/Intel?%0A- GPU: AMD/NVIDIA/Intel?%0A- RAM: {} GB",
-                                user ? user : "?", SDL_GetSystemRAM() / 1000);
+                                "%23 Test environment summary%0A- Tested by: {} <!-- Change your username if is needed -->%0A- OS: {}%0A- CPU: {}%0A- GPU: AMD/NVIDIA/Intel?%0A- RAM: {} GB",
+                                user ? user : "?", CppCommon::Environment::OSVersion(), CppCommon::CPU::Architecture(), SDL_GetSystemRAM() / 1000);
 
                             const auto rest_of_body = "%23 Issues%0A<!-- Summary of problems -->%0A%0A%23 Screenshots%0A![image](https://?)%0A%0A%23 Log%0A%0A%23 Recommended labels%0A<!-- See https://github.com/Vita3K/compatibility/labels -->%0A- A?%0A- B?%0A- C?";
 
