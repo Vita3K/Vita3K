@@ -32,6 +32,7 @@
 
 #include <pugixml.hpp>
 
+#include <SDL_power.h>
 #include <stb_image.h>
 
 namespace gui {
@@ -613,9 +614,42 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     if (emuenv.io.user_id.empty() || is_12_hour_format)
         draw_list->AddText(gui.vita_font, DAY_MOMENT_DEFAULT_FONT_SCALE * RES_SCALE.x, DAY_MOMENT_POS, is_theme_color ? indicator_color : DEFAULT_INDICATOR_COLOR, DATE_TIME[DateTime::DAY_MOMENT].c_str());
 
-    // Draw battery
-    draw_list->AddRectFilled(ImVec2(VIEWPORT_POS.x + INFO_BAR_SIZE.x - (54.f * SCALE.x) - is_notif_pos, VIEWPORT_POS.y + (12.f * SCALE.y)), ImVec2(VIEWPORT_POS.x + INFO_BAR_SIZE.x - (50.f * SCALE.x) - is_notif_pos, VIEWPORT_POS.y + (20 * SCALE.y)), IM_COL32(81.f, 169.f, 32.f, 255.f));
-    draw_list->AddRectFilled(ImVec2(VIEWPORT_POS.x + INFO_BAR_SIZE.x - (50.f * SCALE.x) - is_notif_pos, VIEWPORT_POS.y + (5.f * SCALE.y)), ImVec2(VIEWPORT_POS.x + INFO_BAR_SIZE.x - (12.f * SCALE.x) - is_notif_pos, VIEWPORT_POS.y + (27 * SCALE.y)), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f * SCALE.x, ImDrawFlags_RoundCornersAll);
+    // Set full size and position of battery
+    const auto FULL_BATTERY_SIZE = 38.f * SCALE.x;
+    const auto BATTERY_HEIGHT_MIN_POS = VIEWPORT_POS.y + (5.f * SCALE.y);
+    const ImVec2 BATTERY_MAX_POS(VIEWPORT_POS.x + INFO_BAR_SIZE.x - (12.f * SCALE.x) - is_notif_pos, BATTERY_HEIGHT_MIN_POS + (22 * SCALE.y));
+    const ImVec2 BATTERY_BASE_MIN_POS(BATTERY_MAX_POS.x - FULL_BATTERY_SIZE - (4.f * SCALE.x), VIEWPORT_POS.y + (12.f * SCALE.y));
+    const ImVec2 BATTERY_BASE_MAX_POS(BATTERY_BASE_MIN_POS.x + (4.f * SCALE.x), BATTERY_BASE_MIN_POS.y + (8 * SCALE.y));
+
+    // Draw battery background
+    constexpr ImU32 BATTERY_BG_COLOR = IM_COL32(128.f, 124.f, 125.f, 255.f);
+    draw_list->AddRectFilled(BATTERY_BASE_MIN_POS, BATTERY_BASE_MAX_POS, BATTERY_BG_COLOR);
+    draw_list->AddRectFilled(ImVec2(BATTERY_MAX_POS.x - FULL_BATTERY_SIZE, BATTERY_HEIGHT_MIN_POS), BATTERY_MAX_POS, BATTERY_BG_COLOR, 2.f * SCALE.x, ImDrawFlags_RoundCornersAll);
+
+    // Set default battery size
+    auto battery_size = FULL_BATTERY_SIZE;
+
+    // Get battery level and adjust size accordingly to the battery level
+    int32_t res;
+    SDL_GetPowerInfo(NULL, &res);
+    if ((res >= 0) && (res <= 75)) {
+        if (res <= 25)
+            battery_size *= 25.f;
+        else if (res <= 50)
+            battery_size *= 50.f;
+        else
+            battery_size *= 75.f;
+
+        battery_size /= 100.f;
+    }
+
+    // Set battery color depending on battery level: red for levels below or egale 25% and green for levels above this threshold.
+    const ImU32 BATTERY_COLOR = (res >= 0) && (res <= 25) ? IM_COL32(225.f, 50.f, 50.f, 255.f) : IM_COL32(90.f, 200.f, 30.f, 255.f);
+
+    // Draw battery level
+    if (battery_size == FULL_BATTERY_SIZE)
+        draw_list->AddRectFilled(BATTERY_BASE_MIN_POS, BATTERY_BASE_MAX_POS, BATTERY_COLOR);
+    draw_list->AddRectFilled(ImVec2(BATTERY_MAX_POS.x - battery_size, BATTERY_HEIGHT_MIN_POS), BATTERY_MAX_POS, BATTERY_COLOR, 2.f * SCALE.x, ImDrawFlags_RoundCornersAll);
 
     if (emuenv.display.imgui_render && !gui.vita_area.start_screen && !gui.vita_area.live_area_screen && !gui.vita_area.user_management && !gui.help_menu.vita3k_update && get_sys_apps_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
         gui.vita_area.information_bar = false;
