@@ -13,6 +13,8 @@
 		<emulation name="Эмуляция">
 			<last_apps_used>Последние использованные приложения</last_apps_used>
 		</emulation>
+		<debug name="Отладка">
+		</debug>
 		<configuration name="Конфигурация">
 			<user_management>Управление пользователями</user_management>
 		</configuration>
@@ -54,6 +56,8 @@
 		<license>Лицензия</license>
 		<shaders_cache>Кэш шейдеров</shaders_cache>
 		<shaders_log>Лог шейдеров</shaders_log>
+		<export_textures>Экспорт текстур</export_textures>
+		<import_textures>Импорт текстур</import_textures>
 		<manual>Руководство</manual>
 		<update>Обновление</update>
 		<update_history>Хронология обновлений</update_history>
@@ -96,6 +100,7 @@
 		<search>Поиск</search>
 		<select_all>Выбрать все</select_all>
 		<select>Выбрать</select>
+		<submit>Подтвердить</submit>
 		<yes>Да</yes>
 		<wday>
 			<day>воскресенье</day>
@@ -229,10 +234,20 @@
 	<compat_db>
 		<error>Ошибка</error>
 		<information>Информация</information>
+		<get_failed>Не удалось получить текущую базу данных совместимости, проверьте брандмауэр/доступ к Интернету, повторите попытку позже.</get_failed>
+		<download_failed>Не удалось загрузить базу данных совместимости приложений, обновленную на: {}, повторите попытку позже.</download_failed>
+		<load_failed>Не удалось открыть базу данных совместимости приложений, обновленную на: {}.</load_failed>
+		<new_app_listed>База данных совместимости была успешно обновлена с {} до {}.
+В списке появилось {} новых приложений, в результате чего общее количество приложений достигло {}!</new_app_listed>
+		<app_listed>База данных совместимости была успешно обновлена с {} до {}.
+В списке {} приложений!</app_listed>
+		<download_app_listed>База данных совместимости, обновленная в {}, была успешно загружена.
+{} приложений в списке!</download_app_listed>
 	</compat_db>
 
 	<compile_shaders>
 		<compiling_shaders>Компиляция шейдеров</compiling_shaders>
+		<pipelines_compiled>{} конвейеров скомпилировано</pipelines_compiled>
 		<shaders_compiled>{} шейдеров скомпилировано</shaders_compiled>
 	</compile_shaders>
 
@@ -256,6 +271,15 @@
 		<num>Количество</num>
 		<not_connected>Не подключены совместимые контроллеры.
 Подключите контроллер, совместимый с SDL2.</not_connected>
+		<motion_support>Геймпад поддерживает датчики ориентации и движения</motion_support>
+		<rebind_controls>Перепривязка элементов управления</rebind_controls>
+		<led_color>Цвет светодиода</led_color>
+		<use_custom_color>Использовать пользовательский цвет</use_custom_color>
+		<use_custom_color_description>Установите этот флажок, чтобы использовать пользовательский цвет для светодиода контроллера.</use_custom_color_description>
+		<red>Красный</red>
+		<green>Зеленый</green>
+		<blue>Синий</blue>
+		<reset_controller_binding>Сброс привязки элементов управления</reset_controller_binding>
 	</controllers>
 
 	<controls name="Управление">
@@ -293,6 +317,9 @@
 		<toggle_touch_description>Переключение между задним сенсором и сенсорным экраном.</toggle_touch_description>
 		<toggle_gui_visibility>Перекл. видим. интерф.</toggle_gui_visibility>
 		<toggle_gui_visibility_description>Переключает видимость интерфейса в верхней части экрана при работе приложения.</toggle_gui_visibility_description>
+		<miscellaneous>Разное</miscellaneous>
+		<toggle_texture_replacement>Перекл. подмены текстур</toggle_texture_replacement>
+		<take_a_screenshot>Сделать скриншот</take_a_screenshot>
 		<error>Ошибка</error>
 		<error_duplicate_key>Данная кнопка уже назначена.</error_duplicate_key>
 	</controls>
@@ -341,7 +368,7 @@
 
 	<home_screen>
 		<filter>Фильтр</filter>
-		<sort_app>Упорядочить прил. по</sort_app>		
+		<sort_app>Упорядочить прил. по</sort_app>
 		<all>Все</all>
 		<by_region>По региону</by_region>
 		<usa>США</usa>
@@ -351,7 +378,7 @@
 		<by_type>По типу</by_type>
 		<commercial>Коммерческие</commercial>
 		<homebrew>Homebrew</homebrew>
-		<by_compatibility_state>По статусу совместимости</by_compatibility_state>		
+		<by_compatibility_state>По статусу совместимости</by_compatibility_state>
 		<ver>Верс.</ver>
 		<cat>Кат.</cat>
 		<comp>Совм.</comp>
@@ -375,12 +402,27 @@
 		<completed_setup>Теперь начальная установка завершена.
 Ваша система Vita3K готова!</completed_setup>
 		<select_language>Выбрать язык.</select_language>
+		<select_pref_path>Выбрать путь к ФС эмулятора</select_pref_path>
+		<current_emu_path>Текущий путь к ФС эмулятора</current_emu_path>
+		<change_emu_path>Сменить путь к ФС эмулятора</change_emu_path>
+		<reset_emu_path>Сбросить путь к ФС эмулятора</reset_emu_path>
 		<install_firmware>Установить прошивку.</install_firmware>
 		<install_highly_recommended>Настоятельно рекомендуется установить прошивку и шрифты.</install_highly_recommended>
 		<installed>Установлено:</installed>
 		<download_firmware>Скачать прошивку</download_firmware>
 		<download_font_package>Скачать пакет шрифтов</download_font_package>
 		<install_firmware_file>Установить прошивку</install_firmware_file>
+		<select_interface_settings>Выбрать настройки интерфейса.</select_interface_settings>
+		<show_info_bar>Показывать инфопанель</show_info_bar>
+		<info_bar_description>Установите флажок, чтобы показать информационную панель внутри селектора приложений.
+В информационной панели отображаются часы, уровень заряда батареи и центр уведомлений.</info_bar_description>
+		<show_live_area_screen>Показывать Live Area</show_live_area_screen>
+		<live_area_screen_description>Установите флажок, чтобы по умолчанию открывать Live Area при нажатии на приложение.
+Если отключено, щелкните правой кнопкой мыши на приложении, чтобы открыть Live Area.</live_area_screen_description>
+		<apps_list_grid>Режим сетки</apps_list_grid>
+		<apps_list_grid_description>Установите флажок, чтобы перевести список приложений в режим сетки, как на PS Vita.</apps_list_grid_description>
+		<icon_size>Размер значков приложений</icon_size>
+		<select_icon_size>Выберите желаемый размер значков.</select_icon_size>
 		<completed>Готово.</completed>
 		<next>Далее</next>
 	</initial_setup>
@@ -394,7 +436,7 @@
 			<no_font_exist>Пакет шрифтов прошивки отсутствует, пожалуйста, скачайте и установите его.</no_font_exist>
 			<download_firmware_font_package>Скачать пакет шрифтов прошивки</download_firmware_font_package>
 			<firmware_font_package_description>Пакет шрифтов прошивки нужен для некоторых приложений,
-а также для поддержки шрифтов азиатского региона. 
+а также для поддержки шрифтов азиатского региона.
 (В целом рекомендуется)</firmware_font_package_description>
 			<delete_firmware>Удалить установочный файл прошивки?</delete_firmware>
 		</firmware_install>
@@ -441,9 +483,9 @@
 			<firmware_not_detected>Прошивка не найдена. Настоятельно рекомендуется установить её</firmware_not_detected>
 			<firmware_font_not_detected>Шрифт прошивки не найден. Установка рекомендуется для текста в Live Area</firmware_font_not_detected>
 			<live_area_help>Справка Live Area</live_area_help>
-			<browse_app>Просмотр списка 
+			<browse_app>Просмотр списка
 приложений</browse_app>
-			<browse_app_control>D-pad, л. стик, колёсико вверх/вниз 
+			<browse_app_control>D-pad, л. стик, колёсико вверх/вниз
 или используя ползунок</browse_app_control>
 			<start_app>Запуск приложения</start_app>
 			<start_app_control>Нажать на Start или крестик</start_app_control>
@@ -452,9 +494,9 @@
 			<exit_livearea>Выйти из Live Area</exit_livearea>
 			<exit_livearea_control>Нажать Esc или кружок</exit_livearea_control>
 			<manual_help>Справка по мануалу</manual_help>
-			<browse_page>Просмотр 
+			<browse_page>Просмотр
 страницы</browse_page>
-			<browse_page_control>D-pad, л. стик влево/вправо, колёсико вверх/вниз 
+			<browse_page_control>D-pad, л. стик влево/вправо, колёсико вверх/вниз
 либо нажав &lt;/&gt;</browse_page_control>
 			<hide_show>Скрыть/показать кнопки</hide_show>
 			<hide_show_control>Левая кнопка мышки или нажать треугольник</hide_show_control>
@@ -463,6 +505,13 @@
 		</help>
 	</live_area>
 
+	<message>
+		<load_app_failed>Не удалось загрузить "{}".
+Проверьте vita3k.log, чтобы увидеть вывод консоли для получения подробной информации.
+1. Установлена ли у вас прошивка?
+2. Скопируйте собственное приложение(я)/игру(ы) и установите его на Vita 3K.
+3. Если вы хотите установить или запустить Vitamin, он не поддерживается.</load_app_failed>
+	</message>
 	<performance_overlay>
 		<avg>Сред</avg>
 		<min>Мин</min>
@@ -532,15 +581,205 @@
 	</settings>
 
 	<settings_dialog name="Настройки">
+		<core name="Ядро">
+			<modules_mode>Режим загрузки модулей</modules_mode>
+			<modules_list>Список модулей</modules_list>
+			<select_modules>Выберите нужные модули.</select_modules>
+			<search_modules>Поиск модулей</search_modules>
+			<clear_list>Очистить список</clear_list>
+			<no_modules>Модули не найдены.
+Пожалуйста, загрузите и установите последнюю прошивку PS Vita.</no_modules>
+			<refresh_list>Обновить список</refresh_list>
+			<automatic>Автоматический</automatic>
+			<automatic_description>Выберите Автоматический чтобы использовать встроенный список модулей.</automatic_description>
+			<auto_manual>Авто и ручной</auto_manual>
+			<auto_manual_description>Выберите этот режим для загрузки автоматических модулей и выбранных модулей из списка ниже.</auto_manual_description>
+			<manual>Ручной</manual>
+			<manual_description>Выберите Ручной режим для загрузки только выбранных модулей из списка ниже.</manual_description>
+		</core>
+		<cpu>
+			<unicorn>Unicorn (устарел)</unicorn>
+			<cpu_backend>CPU бэкенд</cpu_backend>
+			<select_cpu_backend>Выберите бэкенд процессора.</select_cpu_backend>
+			<cpu_opt>Включить оптимизацию</cpu_opt>
+			<cpu_opt_description>Установите флажок, чтобы включить дополнительные JIT-оптимизации процессора.</cpu_opt_description>
+		</cpu>
+		<gpu>
+			<reset>Сброс</reset>
+			<backend_renderer>Бэкенд рендерера</backend_renderer>
+			<select_backend_renderer>Выберите бэкенд-рендерер.</select_backend_renderer>
+			<gpu>GPU (перезапуск для применения)</gpu>
+			<select_gpu>Выберите GPU, на котором должен работать Vita3K.</select_gpu>
+			<standard>Обычная</standard>
+			<high>Высокая</high>
+			<renderer_accuracy>Точность рендеринга</renderer_accuracy>
+			<v_sync>Вертикальная синхронизация</v_sync>
+			<v_sync_description>Отключение вертикальной синхронизации может устранить проблемы со скоростью в некоторых играх.
+Рекомендуется держать ее включенной, чтобы избежать разрывов изображения(tearing).</v_sync_description>
+			<disable_surface_sync>Отключить синхронизацию поверхностей</disable_surface_sync>
+			<surface_sync_description>Скоростной хак, установите флажок, чтобы отключить синхронизацию поверхностей между CPU и GPU.
+Синхронизация поверхностей необходима некоторым играм.
+При отключении дает большой прирост производительности (в частности, когда включено масштабирование).</surface_sync_description>
+			<async_pipeline_compilation>Асинхронная компиляция конвейеров</async_pipeline_compilation>
+			<async_pipeline_compilation_description>Позволяет компилировать конвейеры одновременно в нескольких параллельных потоках.
+Это уменьшает задержки при компиляции конвейеров ценой временных графических сбоев.</async_pipeline_compilation_description>
+			<nearest>Ближайший</nearest>
+			<bilinear>Билинейный</bilinear>
+			<bicubic>Бикубический</bicubic>
+			<screen_filter>Экранный фильтр</screen_filter>
+			<screen_filter_description>Укажите применяемый фильтр постобработки.</screen_filter_description>
+			<internal_resolution_upscaling>Внутреннее увеличение разрешения</internal_resolution_upscaling>
+			<internal_resolution_upscaling_description>Включить увеличение разрешения для Vita3K.
+Экспериментально: не гарантируется, что игры будут правильно отображаться при увеличении отличном от 1.</internal_resolution_upscaling_description>
+			<anisotropic_filtering>Анизотропная фильтрация</anisotropic_filtering>
+			<anisotropic_filtering_description>Анизотропная фильтрация - это техника, позволяющая улучшить качество изображения поверхностей.
+которые расположены под наклоном относительно зрителя.
+Она не имеет недостатков, но может повлиять на производительность.</anisotropic_filtering_description>
+			<texture_replacement>Замена текстур</texture_replacement>
+			<export_textures>Экспорт текстур</export_textures>
+			<import_textures>Импорт текстур</import_textures>
+			<texture_exporting_format>Формат экспорта текстур</texture_exporting_format>
+			<shaders>Шейдеры</shaders>
+			<shader_cache>Использовать кэш шейдеров</shader_cache>
+			<shader_cache_description>Установите флажок, чтобы включить предварительную компиляцию кэша шейдеров при запуске игры.
+Снимите флажок, чтобы отключить эту функцию.</shader_cache_description>
+			<spirv_shader>Использовать шейдеры Spir-V (устарело)</spirv_shader>
+			<spirv_shader_description>Передавать сгенерированные шейдеры Spir-V непосредственно в драйвер.
+Обратите внимание, что некоторые полезные расширения будут отключены,
+и не все графические процессоры совместимы с этим режимом.</spirv_shader_description>
+			<clean_shaders>Очистить кэш и лог шейдеров</clean_shaders>
+			<fps_hack>FPS хак</fps_hack>
+			<fps_hack_description>Игровой хак, который позволяет некоторым играм, работающим в 30 FPS, работать в 60 FPS на эмуляторе.
+Обратите внимание, что это хак, и он будет работать только в некоторых играх.
+На другие игры он может не повлиять или заставить их работать в два раза быстрее.</fps_hack_description>
+		</gpu>
+		<audio name="Звук">
+			<audio_backend>Аудио бэкэнд</audio_backend>
+			<select_audio_backend>Выберите аудио бэкэнд.</select_audio_backend>
+			<audio_volume>Громкость звука</audio_volume>
+			<audio_volume_description>Настраивает процент громкости всех аудиовыходов.</audio_volume_description>
+			<enable_ngs_support>Включение поддержки NGS</enable_ngs_support>
+			<ngs_description>Установите флажок, чтобы включить поддержку расширенной аудио библиотеки NGS.</ngs_description>
+		</audio>
 		<system name="Система">
+			<select_enter_button> Назначение кнопки "Ввод".
+Выберите свою кнопку "Ввод".</select_enter_button>
+			<enter_button_description>Это кнопка, которая используется в качестве "Подтвердить" в диалоговых окнах приложений.
+Некоторые приложения не используют эту настройку и используют кнопку подтверждения по умолчанию.</enter_button_description>
+			<circle>Кружок</circle>
+			<cross>Крестик</cross>
+			<pstv_mode>Режим PS TV</pstv_mode>
+			<pstv_mode_description>Установите флажок, чтобы включить режим эмуляции PS TV.</pstv_mode_description>
+			<show_mode>Режим витрины</show_mode>
+			<show_mode_description>Установите флажок, чтобы включить режим витрины.</show_mode_description>
+			<demo_mode>Демонстрационный режим</demo_mode>
+			<demo_mode_description>Установите флажок, чтобы включить демонстрационный режим.</demo_mode_description>
 		</system>
 		<emulator name="Эмулятор">
+			<boot_apps_full_screen>Загружать приложения в полноэкранном режиме</boot_apps_full_screen>
+			<trace>Трассировка</trace>
+			<info>Информационные</info>
+			<warning>Предупреждения</warning>
+			<error>Ошибки</error>
+			<critical>Критические</critical>
+			<off>Отключено</off>
+			<log_level>Уровень логирования</log_level>
+			<select_log_level>Выберите желаемый уровень логирования.</select_log_level>
+			<archive_log>Архивировать логи</archive_log>
+			<archive_log_description>Установите флажок, чтобы архивировать логи.</archive_log_description>
+			<discord_rich_presence>Включает статус активность в Discord (Rich Presence), чтобы показать в Discord, какое приложение вы запускаете.</discord_rich_presence>
+			<texture_cache>Кэш текстур</texture_cache>
+			<texture_cache_description>Установите флажок, чтобы включить кэширование текстур.</texture_cache_description>
+			<show_compile_shaders>Показывать "шейдеров скомпилировано"</show_compile_shaders>
+			<compile_shaders_description>Установите флажок, чтобы отключить отображение окна "шейдеров/конвейеров скомпилировано".</compile_shaders_description>
+			<show_touchpad_cursor>Показать курсор тачпада</show_touchpad_cursor>
+			<touchpad_cursor_description>Установите флажок, чтобы включить отображение курсора сенсорной панели на экране.</touchpad_cursor_description>
+			<log_compat_warn>Логировать предупреждения о совместимости</log_compat_warn>
+			<log_compat_warn_description>Установите флажок, чтобы включить логирование предупреждений о совместимости в GitHub Issues.</log_compat_warn_description>
+			<check_for_updates>Проверять наличие обновлений</check_for_updates>
+			<check_for_updates_description>Автоматически проверять обновления при запуске.</check_for_updates_description>
+			<performance_overlay>Оверлей производительности</performance_overlay>
+			<performance_overlay_description>Отображение информации о производительности в отдельном окне на экране.</performance_overlay_description>
+			<minimum>Минимальная</minimum>
+			<low>Низкая</low>
+			<medium>Средняя</medium>
+			<maximum>Максимальная</maximum>
+			<detail>Детализация</detail>
+			<select_detail>Выберите желаемую детализацию оверлея производительности.</select_detail>
+			<top_left>Сверху слева</top_left>
+			<top_center>Сверху по центру</top_center>
+			<top_right>Сверху справа</top_right>
+			<bottom_left>Внизу слева</bottom_left>
+			<bottom_center>Внизу по центру</bottom_center>
+			<bottom_right>Внизу справа</bottom_right>
+			<position>Положение</position>
+			<select_position>Выберите желаемое положение оверлея производительности.</select_position>
+			<case_insensitive>Установите флажок, чтобы включить поиск путей без учета регистра на файловых системах, чувствительных к регистру.
+СБРАСЫВАЕТСЯ ПРИ ПЕРЕЗАПУСКЕ</case_insensitive>
+			<case_insensitive_description>Позволяет эмулятору пытаться искать файлы независимо от регистра
+на платформах, отличных от Windows.</case_insensitive_description>
+			<emu_storage_folder>Папка хранилища эмулируемой системы</emu_storage_folder>
+			<current_emu_path>Текущий путь эмулятора:</current_emu_path>
+			<change_emu_path>Изменить путь эмулятора</change_emu_path>
+			<change_emu_path_description>Изменение пути к папке эмулятора Vita3K.
+Вам нужно будет вручную переместить старую папку в новое место.</change_emu_path_description>
+			<reset_emu_path>Сбросить путь эмулятора</reset_emu_path>
+			<reset_emu_path_description>Установите путь к эмулятору Vita3K по умолчанию.
+Вам нужно будет вручную переместить старую папку в новое место.</reset_emu_path_description>
+			<custom_config_settings>Настройки пользовательской конфигурации</custom_config_settings>
+			<clear_custom_config>Очистить пользовательскую конфигурацию</clear_custom_config>
 		</emulator>
 		<gui name="Интерфейс">
+			<show_gui>Отображать интерфейс</show_gui>
+			<gui_description>Установите флажок, чтобы показывать графический интерфейс после запуска приложения.</gui_description>
+			<show_info_bar>Отображать информационную панель</show_info_bar>
+			<info_bar_description>Установите флажок, чтобы показывать информационную панель внутри селектора приложений.</info_bar_description>
+			<user_lang>Язык интерфейса</user_lang>
+			<select_user_lang>Выберите язык пользовательского интерфейса.</select_user_lang>
+			<display_info_message>Отображать информационные сообщения</display_info_message>
+			<display_info_message_description>Снимите флажок, чтобы отображать информационные сообщение только в логе.</display_info_message_description>
+			<display_system_apps>Отображать системные приложения</display_system_apps>
+			<display_system_apps_description>Снимите флажок, чтобы отключить отображение системных приложений на главном экране.
+Они будут отображаться только в главном меню.</display_system_apps_description>
+			<show_live_area_screen>Экран Live Area</show_live_area_screen>
+			<live_area_screen_description>Установите флажок, чтобы при щелчке на приложении по умолчанию открывалась Live Area.
+Если флажок не установлен, щелкните приложение правой кнопкой мыши, чтобы открыть Live Area.</live_area_screen_description>
+			<stretch_the_display_area>Растянуть область отображения</stretch_the_display_area>
+			<stretch_the_display_area_description>Установите флажок, чтобы увеличивать область отображения в соответствии с размером экрана.</stretch_the_display_area_description>
+			<apps_list_grid>Режим сетки</apps_list_grid>
+			<apps_list_grid_description>Установите флажок, чтобы перевести список приложений в режим сетки.</apps_list_grid_description>
+			<icon_size>Размер значков приложений</icon_size>
+			<select_icon_size>Выберите размер значков приложений.</select_icon_size>
+			<font_support>Поддержка шрифтов</font_support>
+			<asia_font_support>Азиатский регион</asia_font_support>
+			<asia_font_support_description>Установите этот флажок, чтобы включить поддержку шрифтов для китайского и корейского языков.
+Включение этой опции будет использовать больше памяти и потребует перезапуска эмулятора.</asia_font_support_description>
+			<firmware_font_package_description>Пакет шрифтов для прошивки необходим для некоторых приложений
+а также для поддержки азиатских региональных шрифтов в графическом интерфейсе.
+Он также обычно рекомендуется для GUI.</firmware_font_package_description>
+			<theme_background>Тема и фон</theme_background>
+			<current_theme_content_id>Идентификатор содержимого текущей темы:</current_theme_content_id>
+			<reset_default_theme>Сброс темы по умолчанию</reset_default_theme>
+			<using_theme_background>Используемый фон темы</using_theme_background>
+			<clean_user_backgrounds>Очистка пользовательских фонов</clean_user_backgrounds>
+			<current_start_background>Текущий стартовый фон:</current_start_background>
+			<reset_start_background>Сбросить стартовый фон</reset_start_background>
+			<background_alpha>Альфа-канал фона</background_alpha>
+			<select_background_alpha>Выберите желаемую прозрачность фона.
+Минимальное значение - непрозрачный, максимальное - прозрачный.</select_background_alpha>
+			<delay_background>Задержка для фонов</delay_background>
+			<select_delay_background>Выберите задержку (в секундах) перед сменой фона.</select_delay_background>
+			<delay_start>Задержка для стартового экрана</delay_start>
+			<select_delay_start>Выберите задержку (в секундах) перед возвратом на стартовый экран.</select_delay_start>
 		</gui>
 		<network name="Сеть">
+			<psn_signed_in>Подключен к PSN</psn_signed_in>
+			<psn_signed_in_description>Если флажок установлен, игры будут считать, что пользователь подключен к сети PSN (но не в сети).</psn_signed_in_description>
 		</network>
 		<save>Сохранить</save>
+		<save_reboot>Сохранить и перезапустить</save_reboot>
+		<save_apply>Сохранить и применить</save_apply>
+		<keep_changes>Нажмите на Сохранить, чтобы сохранить изменения.</keep_changes>
 	</settings_dialog>
 
 	<sys_apps_title>
@@ -554,7 +793,7 @@
 
 	<trophy_collection>
 		<delete_trophy>Удалить призы</delete_trophy>
-		<trophy_deleted>Информация о призах, сохранённая для этого пользователя, 
+		<trophy_deleted>Информация о призах, сохранённая для этого пользователя,
 будет удалена.</trophy_deleted>
 		<locked>Не
 разбл.</locked>
@@ -589,6 +828,7 @@
 		<choose_avatar>Выбрать аватар</choose_avatar>
 		<reset_avatar>Сбросить аватар</reset_avatar>
 		<name>Название</name>
+		<user>Пользователь</user>
 		<confirm>Подтвердить</confirm>
 		<automatic_user_login>Автоматический вход в систему</automatic_user_login>
 	</user_management>
