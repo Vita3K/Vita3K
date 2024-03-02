@@ -5378,6 +5378,8 @@ EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> s
     dest->address = destAddress;
     dest->x = destX;
     dest->y = destY;
+    dest->width = srcWidth / 2;
+    dest->height = srcHeight / 2;
     dest->stride = destStride;
 
     renderer::transfer_downscale(*emuenv.renderer, src, dest);

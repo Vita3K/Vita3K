@@ -157,6 +157,13 @@ struct PostSurfaceSyncRequest {
     ColorSurfaceCacheInfo *cache_info;
 };
 
+using CallbackRequestFunction = std::function<void()>;
+struct CallbackRequest {
+    // use a pointer so the size is similar to other elements of WaitThreadRequest
+    // and not to have to mess with move semantics
+    CallbackRequestFunction *callback;
+};
+
 // A parallel thread is handling these request and telling other waiting threads
 // when they are done
 // only used if memory mapping is enabled
@@ -165,7 +172,8 @@ typedef std::variant<
     NotificationRequest,
     FrameDoneRequest,
     PostSurfaceSyncRequest,
-    SyncSignalRequest>
+    SyncSignalRequest,
+    CallbackRequest>
     WaitThreadRequest;
 
 struct VKContext : public renderer::Context {

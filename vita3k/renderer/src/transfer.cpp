@@ -24,8 +24,16 @@
 #include <renderer/types.h>
 #include <util/log.h>
 #include <util/tracy.h>
+
+#include <renderer/vulkan/functions.h>
+#include <renderer/vulkan/state.h>
+
 // keywords.h must be after tracy.h for msvc compiler
 #include <util/keywords.h>
+
+extern "C" {
+#include <libswscale/swscale.h>
+}
 
 namespace renderer {
 
@@ -130,78 +138,153 @@ COMMAND(handle_transfer_copy) {
     const uint32_t colorKeyMask = helper.pop<uint32_t>();
     SceGxmTransferColorKeyMode colorKeyMode = helper.pop<SceGxmTransferColorKeyMode>();
     const SceGxmTransferImage *images = helper.pop<SceGxmTransferImage *>();
-    const SceGxmTransferImage &src = images[0];
-    const SceGxmTransferImage &dst = images[1];
+    const SceGxmTransferFormat src_fmt = images[0].format;
+    const SceGxmTransferFormat dst_fmt = images[1].format;
     SceGxmTransferType src_type = helper.pop<SceGxmTransferType>();
     SceGxmTransferType dst_type = helper.pop<SceGxmTransferType>();
 
-    if (src.format != dst.format) {
-        LOG_ERROR_ONCE("Unhandled format conversion from {} to {}", log_hex(fmt::underlying(src.format)), log_hex(fmt::underlying(dst.format)));
+    if (src_fmt != dst_fmt) {
+        LOG_ERROR_ONCE("Unhandled format conversion from {} to {}", log_hex(fmt::underlying(src_fmt)), log_hex(fmt::underlying(dst_fmt)));
         delete[] images;
         return;
     }
 
-    if (colorKeyMask != SCE_GXM_TRANSFER_COLORKEY_NONE && src.format != SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR) {
-        LOG_ERROR_ONCE("Transfer copy with non-zero key mask not handled for format {}", log_hex(fmt::underlying(src.format)));
+    if (colorKeyMode != SCE_GXM_TRANSFER_COLORKEY_NONE && src_fmt != SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR) {
+        LOG_ERROR_ONCE("Transfer copy with non-zero key mask not handled for format {}", log_hex(fmt::underlying(src_fmt)));
     }
 
-    // Get bits per pixel of the image
-    const uint32_t bpp = gxm::get_bits_per_pixel(src.format);
+    vulkan::CallbackRequestFunction copy_operation = [=, &mem]() {
+        const SceGxmTransferImage &src = images[0];
+        const SceGxmTransferImage &dst = images[1];
 
-    // use a specialized function for each type (more optimized)
-    switch (bpp) {
-    case 8:
-        perform_transfer_copy_src_type<uint8_t, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
-        break;
-    case 16:
-        perform_transfer_copy_src_type<uint16_t, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
-        break;
-    case 24:
-        perform_transfer_copy_src_type<std::array<uint8_t, 3>, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
-        break;
-    case 32:
-        perform_transfer_copy_mode<uint32_t>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask, colorKeyMode);
-        break;
-    case 64:
-        perform_transfer_copy_src_type<uint64_t, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
-        break;
-    case 128:
-        perform_transfer_copy_src_type<std::array<uint64_t, 2>, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
-        break;
+        // Get bits per pixel of the image
+        const uint32_t bpp = gxm::get_bits_per_pixel(src.format);
+
+        // use a specialized function for each type (more optimized)
+        switch (bpp) {
+        case 8:
+            perform_transfer_copy_src_type<uint8_t, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
+            break;
+        case 16:
+            perform_transfer_copy_src_type<uint16_t, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
+            break;
+        case 24:
+            perform_transfer_copy_src_type<std::array<uint8_t, 3>, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
+            break;
+        case 32:
+            perform_transfer_copy_mode<uint32_t>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask, colorKeyMode);
+            break;
+        case 64:
+            perform_transfer_copy_src_type<uint64_t, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
+            break;
+        case 128:
+            perform_transfer_copy_src_type<std::array<uint64_t, 2>, SCE_GXM_TRANSFER_COLORKEY_NONE>(mem, src, dst, src_type, dst_type, colorKeyValue, colorKeyMask);
+            break;
+        }
+
+        delete[] images;
+    };
+
+    if (renderer.current_backend == Backend::Vulkan && renderer.features.support_memory_mapping && !renderer.disable_surface_sync) {
+        if (dynamic_cast<vulkan::VKState &>(renderer).surface_cache.check_for_surface(mem, images[0].address.address(), copy_operation, images[1].address.address()))
+            // let the vulkan surface cache handle it
+            return;
     }
 
-    delete[] images;
+    copy_operation();
 }
 
 COMMAND(handle_transfer_downscale) {
     TRACY_FUNC_COMMANDS(handle_transfer_downscale);
-    const SceGxmTransferImage *src = helper.pop<SceGxmTransferImage *>();
-    const SceGxmTransferImage *dest = helper.pop<SceGxmTransferImage *>();
+    SceGxmTransferImage *src = helper.pop<SceGxmTransferImage *>();
+    SceGxmTransferImage *dst = helper.pop<SceGxmTransferImage *>();
 
-    const auto src_bpp = gxm::get_bits_per_pixel(src->format);
-    const auto dest_bpp = gxm::get_bits_per_pixel(dest->format);
-    const uint32_t src_bytes_per_pixel = (src_bpp + 7) >> 3;
-    const uint32_t dest_bytes_per_pixel = (dest_bpp + 7) >> 3;
-
-    for (uint32_t y = 0; y < src->height; y += 2) {
-        for (uint32_t x = 0; x < src->width; x += 2) {
-            // Set offset of source and destination
-            const auto src_offset = ((x + src->x) * src_bytes_per_pixel) + ((y + src->y) * src->stride);
-            const auto dest_offset = (x / 2 + dest->x) * dest_bytes_per_pixel + (y / 2 + dest->y) * dest->stride;
-
-            // Set pointer of source and destination
-            const auto src_ptr = (uint8_t *)src->address.get(mem) + src_offset;
-            auto dest_ptr = (uint8_t *)dest->address.get(mem) + dest_offset;
-
-            // Copy result in destination
-            memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
-        }
+    if (src->format != dst->format) {
+        LOG_ERROR_ONCE("Unhandled format conversion from {} to {}", log_hex(fmt::underlying(src->format)), log_hex(fmt::underlying(dst->format)));
+        return;
     }
 
-    // TODO: handle case where dest is a cached surface
+    // adjust the x/y value
+    const uint32_t pixel_bytes = gxm::get_bits_per_pixel(src->format) / 8;
+    src->address = (src->address.cast<uint8_t>() + src->y * src->stride + src->x * pixel_bytes).cast<void>();
+    dst->address = (dst->address.cast<uint8_t>() + dst->y * dst->stride + dst->x * pixel_bytes).cast<void>();
 
-    delete src;
-    delete dest;
+    // only rgb formats are supported by the PS Vita for downscaling
+    vulkan::CallbackRequestFunction downscale_operation = [&mem, src, dst]() {
+        AVPixelFormat pixel_fmt = AV_PIX_FMT_NONE;
+        bool use_ffmpeg = true;
+        switch (src->format) {
+        case SCE_GXM_TRANSFER_FORMAT_U5U6U5_BGR:
+            pixel_fmt = AV_PIX_FMT_RGB565LE;
+            break;
+        case SCE_GXM_TRANSFER_FORMAT_U8U8U8_BGR:
+            pixel_fmt = AV_PIX_FMT_RGB24;
+            break;
+        case SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR:
+            pixel_fmt = AV_PIX_FMT_RGBA;
+            break;
+        default:
+            break;
+        }
+
+        uint8_t *src_ptr = src->address.cast<uint8_t>().get(mem);
+        uint8_t *dst_ptr = dst->address.cast<uint8_t>().get(mem);
+
+        if (pixel_fmt != AV_PIX_FMT_NONE && src->stride > 0 && dst->stride > 0) {
+            // use ffmpeg with the avg filter
+            SwsContext *ctx = sws_getContext(src->width, src->height, pixel_fmt, dst->width, dst->height, pixel_fmt, SWS_AREA, nullptr, nullptr, nullptr);
+            if (ctx == nullptr) {
+                LOG_ERROR("Failed to get ffmpeg context for format {}", log_hex(fmt::underlying(src->format)));
+            } else {
+                sws_scale(ctx, &src_ptr, &src->stride, 0, src->height, &dst_ptr, &dst->stride);
+                sws_freeContext(ctx);
+            }
+
+        } else {
+            // fallback, not (entirely) supported by ffmpeg
+            // slow and not entirely accurate (nearest instead of average) fallback
+
+            auto perform_downscale = [&]<typename T>(T type) {
+                for (int y = 0; y < dst->height; y++) {
+                    // stride is in bytes
+                    T *src_line = reinterpret_cast<T *>(src_ptr + src->stride * y * 2);
+                    T *dst_line = reinterpret_cast<T *>(dst_ptr + dst->stride);
+                    for (int x = 0; x < dst->width; x++) {
+                        dst_ptr[x] = src_ptr[2 * x];
+                    }
+                }
+            };
+            switch (gxm::get_bits_per_pixel(src->format)) {
+            case 8:
+                perform_downscale(uint8_t());
+                break;
+            case 16:
+                perform_downscale(uint16_t());
+                break;
+            case 24:
+                perform_downscale(std::array<uint8_t, 3>());
+                break;
+            case 32:
+                perform_downscale(uint32_t());
+                break;
+            default:
+                // should not happen
+                LOG_ERROR("Unhandled format {}", log_hex(fmt::underlying(src->format)));
+                break;
+            }
+        }
+
+        delete src;
+        delete dst;
+    };
+
+    if (renderer.current_backend == Backend::Vulkan && renderer.features.support_memory_mapping && !renderer.disable_surface_sync) {
+        if (dynamic_cast<vulkan::VKState &>(renderer).surface_cache.check_for_surface(mem, src->address.address(), downscale_operation, dst->address.address()))
+            // let the vulkan surface cache handle it
+            return;
+    }
+
+    downscale_operation();
 }
 
 COMMAND(handle_transfer_fill) {

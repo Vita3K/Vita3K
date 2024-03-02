@@ -28,6 +28,7 @@
 #include <util/align.h>
 #include <util/keywords.h>
 #include <util/log.h>
+#include <util/vector_utils.h>
 
 extern "C" {
 #include <libswscale/swscale.h>
@@ -969,6 +970,89 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
     }
 
     return (framebuffer_array[key] = { fb_standard, fb_interlock, color_result.base_image });
+}
+
+bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, CallbackRequestFunction &callback, Address target_address) {
+    if (!state.features.support_memory_mapping || state.disable_surface_sync)
+        return false;
+
+    if (vector_utils::find_index(cpu_surfaces_changed, source_address) != -1) {
+        // there is a transfer operation pending on this surface, just add the callback after and we are done
+        state.request_queue.push(CallbackRequest{ new CallbackRequestFunction(std::move(callback)) });
+
+        if (target_address)
+            cpu_surfaces_changed.push_back(target_address);
+        return true;
+    }
+
+    // for now, only look if the address matches exactly a color surface
+    auto it = color_address_lookup.find(source_address);
+    if (it == color_address_lookup.end())
+        return false;
+
+    auto &surface = *it->second;
+    VKContext &context = *static_cast<VKContext *>(state.context);
+    // if the frame is already rendered skip
+    // Note: that's not the best behavior but it should be fine
+    // also it prevents invalidated surfaces from causing issues
+    if (surface.last_frame_rendered + MAX_FRAMES_RENDERING <= context.frame_timestamp)
+        return false;
+
+    // we found something
+    if (!*surface.need_surface_sync) {
+        // first send the command to sync the surface with the GPU
+        *surface.need_surface_sync = true;
+
+        // we shouldn't have a command buffer being used, but just in case
+        vk::CommandBuffer prev_cmd = context.render_cmd;
+
+        // for the time being, just create a temp command buffer / fence
+        // That's not the best approach but I guess it works
+        vk::CommandBuffer surface_cmd = nullptr;
+        vk::Fence fence = state.device.createFence({});
+        ColorSurfaceCacheInfo *returned_info = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(state.multithread_pool_mutex);
+            surface_cmd = vkutil::create_single_time_command(state.device, state.multithread_command_pool);
+
+            context.render_cmd = surface_cmd;
+            last_written_surface = &surface;
+            returned_info = perform_surface_sync();
+            context.render_cmd = prev_cmd;
+
+            surface_cmd.end();
+        }
+        // submit this command
+        vk::SubmitInfo submit_info{};
+        submit_info.setCommandBuffers(surface_cmd);
+        state.general_queue.submit(submit_info, fence);
+
+        // now we need to wait for the fence, then destroy it along with the command buffer
+        // to prevent memory leaks
+        CallbackRequestFunction vk_callback = [&state = this->state, fence, surface_cmd]() {
+            auto result = state.device.waitForFences(fence, vk::True, std::numeric_limits<uint64_t>::max());
+            if (result != vk::Result::eSuccess)
+                LOG_ERROR("Could not wait for fences.");
+
+            // destroy the objects
+            state.device.destroyFence(fence);
+
+            std::lock_guard<std::mutex> lock(state.multithread_pool_mutex);
+            state.device.freeCommandBuffers(state.multithread_command_pool, surface_cmd);
+        };
+        state.request_queue.push(CallbackRequest{ new CallbackRequestFunction(std::move(vk_callback)) });
+
+        if (returned_info)
+            state.request_queue.push(PostSurfaceSyncRequest{ returned_info });
+    }
+
+    // now push the callback
+    state.request_queue.push(CallbackRequest{ new CallbackRequestFunction(std::move(callback)) });
+
+    if (target_address)
+        cpu_surfaces_changed.push_back(target_address);
+
+    return true;
 }
 
 ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {

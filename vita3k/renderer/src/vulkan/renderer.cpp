@@ -538,6 +538,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         general_command_pool = device.createCommandPool(general_pool_info);
         transfer_command_pool = device.createCommandPool(transfer_pool_info);
+
+        general_pool_info.flags |= vk::CommandPoolCreateFlagBits::eTransient;
+        multithread_command_pool = device.createCommandPool(general_pool_info);
     }
 
     // Allocate Memory for Images and Buffers
