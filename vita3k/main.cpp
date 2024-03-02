@@ -24,6 +24,8 @@
 #include <emuenv/state.h>
 #include <gui/functions.h>
 #include <gui/state.h>
+#include <include/cpu.h>
+#include <include/environment.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <modules/module_parent.h>
@@ -187,7 +189,8 @@ int main(int argc, char *argv[]) {
     }
 
     LOG_INFO("{}", window_title);
-    LOG_INFO("Number of logical CPU cores: {}", SDL_GetCPUCount());
+    LOG_INFO("OS: {}", CppCommon::Environment::OSVersion());
+    LOG_INFO("CPU: {} | {} Threads | {} GHz", CppCommon::CPU::Architecture(), CppCommon::CPU::LogicalCores(), static_cast<float>(CppCommon::CPU::ClockSpeed()) / 1000.f);
     LOG_INFO("Available ram memory: {} MiB", SDL_GetSystemRAM());
 
     app::AppRunType run_type = app::AppRunType::Unknown;
