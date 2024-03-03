@@ -19,6 +19,7 @@
 
 #include <ctrl/ctrl.h>
 #include <ctrl/functions.h>
+#include <ctrl/udp_client.h>
 
 #include <SDL_gamecontroller.h>
 #include <SDL_haptic.h>
@@ -64,6 +65,7 @@ struct CtrlState {
     bool free_ports[SCE_CTRL_MAX_WIRELESS_NUM] = { true, true, true, true };
     SceCtrlPadInputMode input_mode = SCE_CTRL_MODE_DIGITAL;
     SceCtrlPadInputMode input_mode_ext = SCE_CTRL_MODE_DIGITAL;
+    CemuhookUDP::UDPClient udp_client;
 
     // last vsync the data was read
     uint64_t last_vcount[5] = {};
