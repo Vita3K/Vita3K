@@ -21,6 +21,7 @@
 #include <config/functions.h>
 #include <config/state.h>
 #include <config/version.h>
+#include <ctrl/state.h>
 #include <display/state.h>
 #include <emuenv/state.h>
 #include <gui/imgui_impl_sdl.h>
@@ -361,6 +362,11 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         discordrpc::update_presence();
     }
 #endif
+
+    // CemuHookUDP settings
+    if (!state.ctrl.udp_client.SetAddress(state.cfg.cemuhookudp_address))
+        LOG_ERROR("Failed to set address for CemuHookUDP: {}", state.cfg.cemuhookudp_address);
+    state.ctrl.udp_client.SetGyroScale(1.0f / ((state.cfg.cemuhookudp_gyro_scale_divider != 0.f) ? state.cfg.cemuhookudp_gyro_scale_divider : 1.0f));
 
     return true;
 }

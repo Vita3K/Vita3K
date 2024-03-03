@@ -154,9 +154,10 @@ static void SocketLoop(Socket *socket) {
     socket->Loop();
 }
 
-UDPClient::UDPClient() {
+UDPClient::UDPClient(const std::string &address)
+    : gyro_scale(1.0f / 39.0f) {
     LOG_INFO("Udp Initialization started");
-    StartCommunication(0, "127.0.0.1", 26760);
+    SetAddress(address);
 }
 
 UDPClient::~UDPClient() {
@@ -225,6 +226,23 @@ void UDPClient::OnPadData(Response::PadData data, std::size_t client) {
     }
 }
 
+bool UDPClient::SetAddress(const std::string &address) {
+    std::stringstream address_ss(address);
+    std::string token;
+    std::getline(address_ss, token, ':');
+    std::string udp_input_address = token;
+    std::getline(address_ss, token, ':');
+    char *temp;
+    const std::uint16_t udp_input_port = static_cast<std::uint16_t>(std::strtol(token.c_str(), &temp, 0));
+    if (*temp != '\0') {
+        LOG_ERROR("Port number is not valid {}", token);
+        return false;
+    }
+    Reset();
+    StartCommunication(0, udp_input_address, udp_input_port);
+    return true;
+}
+
 void UDPClient::StartCommunication(std::size_t client, const std::string &host, std::uint16_t port) {
     SocketCallback callback{ [this](Response::Version version) { OnVersion(version); },
         [this](Response::PortInfo info) { OnPortInfo(info); },
@@ -247,15 +265,27 @@ void UDPClient::Reset() {
             client.thread.join();
         }
     }
+    std::lock_guard<std::mutex> guard_pads(pads_mutex);
+    for (auto &pad : pads) {
+        pad.connected = false;
+    }
 }
 
 bool UDPClient::IsConnected() {
     std::lock_guard<std::mutex> guard_pads(pads_mutex);
     for (auto &pad : pads) {
-        if (pad.connected)
-            return true;
+        if (pad.connected) {
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - pad.last_update).count() < 5000)
+                return true;
+            else
+                pad.connected = false;
+        }
     }
     return false;
+}
+
+void UDPClient::SetGyroScale(float f) {
+    gyro_scale = f;
 }
 
 void UDPClient::GetGyroAccel(Util::Vec3f &gyro, uint64_t &gyro_timestamp, Util::Vec3f &accel, uint64_t &accel_timestamp) {
@@ -270,8 +300,6 @@ void UDPClient::GetGyroAccel(Util::Vec3f &gyro, uint64_t &gyro_timestamp, Util::
         last_pad_data->accel.y,
         last_pad_data->accel.z,
         last_pad_data->motion_timestamp);
-    // this is for fine tuning the sensitivity
-    const float gyro_scale = 1.0f / 39.0f;
     // y and z are intentionally swapped and inverted
     // to conform to the expected input in motion/motion.cpp
     gyro.x = last_pad_data->gyro.pitch * gyro_scale;

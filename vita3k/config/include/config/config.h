@@ -150,7 +150,9 @@ enum PerfomanceOverleyPosition {
     code(int, "http-timeout-sleep-ms", 100, http_timeout_sleep_ms)                                      \
     code(int, "http-read-end-attempts", 10, http_read_end_attempts)                                     \
     code(int, "http-read-end-sleep-ms", 250, http_read_end_sleep_ms)                                    \
-    code(bool, "tracy-primitive-impl", false, tracy_primitive_impl)
+    code(bool, "tracy-primitive-impl", false, tracy_primitive_impl)                                     \
+    code(std::string, "cemuhookudp-address", "127.0.0.1:26760", cemuhookudp_address)                    \
+    code(float, "cemuhookudp-gyro-scale-divider", 39.0f, cemuhookudp_gyro_scale_divider)
 
 // Vector members produced in the config file
 // Order is code(option_type, option_name, default_value)

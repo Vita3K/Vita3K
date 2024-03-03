@@ -67,10 +67,14 @@ struct DeviceStatus {
 
 class UDPClient {
 public:
-    explicit UDPClient();
+    explicit UDPClient(const std::string &address);
+    explicit UDPClient()
+        : UDPClient("127.0.0.1:26760") {}
     ~UDPClient();
 
+    bool SetAddress(const std::string &address);
     bool IsConnected();
+    void SetGyroScale(float f);
     void GetGyroAccel(Util::Vec3f &gyro, uint64_t &gyro_timestamp, Util::Vec3f &accel, uint64_t &accel_timestamp);
 
 private:
@@ -113,6 +117,8 @@ private:
     std::mutex clients_mutex;
     std::unique_ptr<Response::PadData> last_pad_data;
     std::mutex last_pad_data_mutex;
+    // for fine tuning the sensitivity
+    float gyro_scale;
 };
 
 } // namespace CemuhookUDP
