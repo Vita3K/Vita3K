@@ -262,17 +262,25 @@ void UDPClient::GetGyroAccel(Util::Vec3f &gyro, uint64_t &gyro_timestamp, Util::
     std::lock_guard<std::mutex> guard(last_pad_data_mutex);
     if (!last_pad_data)
         return;
-    // Gyroscope values are not it the correct scale from better joy.
-    // Dividing by 312 allows us to make one full turn = 1 turn
-    // This must be a configurable valued called sensitivity
-    const float gyro_scale = 1.0f / 312.0f;
+    LOG_TRACE("UDP PadData: gyro.pitch={}, gyro.roll={}, gyro.yaw={}, accel.x={}, accel.y={}, accel.z={}, motion_timestamp={}",
+        last_pad_data->gyro.pitch,
+        last_pad_data->gyro.roll,
+        last_pad_data->gyro.yaw,
+        last_pad_data->accel.x,
+        last_pad_data->accel.y,
+        last_pad_data->accel.z,
+        last_pad_data->motion_timestamp);
+    // this is for fine tuning the sensitivity
+    const float gyro_scale = 1.0f / 39.0f;
+    // y and z are intentionally swapped and inverted
+    // to conform to the expected input in motion/motion.cpp
     gyro.x = last_pad_data->gyro.pitch * gyro_scale;
-    gyro.y = last_pad_data->gyro.roll * gyro_scale;
-    gyro.z = last_pad_data->gyro.yaw * gyro_scale;
+    gyro.z = -last_pad_data->gyro.roll * gyro_scale;
+    gyro.y = -last_pad_data->gyro.yaw * gyro_scale;
     gyro_timestamp = last_pad_data->motion_timestamp;
     accel.x = last_pad_data->accel.x;
-    accel.y = last_pad_data->accel.y;
-    accel.z = last_pad_data->accel.z;
+    accel.z = last_pad_data->accel.y;
+    accel.y = last_pad_data->accel.z;
     accel_timestamp = last_pad_data->motion_timestamp;
 }
 
