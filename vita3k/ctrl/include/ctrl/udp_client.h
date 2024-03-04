@@ -21,6 +21,7 @@
 
 #include <util/vector_math.h>
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <memory>

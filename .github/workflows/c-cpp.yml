@@ -89,7 +89,7 @@ jobs:
 
       - name: Set up build environment (windows-latest)
         run: |
-          vcpkg install zlib:x64-windows-static-md boost-system:x64-windows-static-md boost-filesystem:x64-windows-static-md boost-program-options:x64-windows-static-md boost-icl:x64-windows-static-md boost-variant:x64-windows-static-md curl:x64-windows-static-md openssl:x64-windows-static-md
+          vcpkg install zlib:x64-windows-static-md boost-system:x64-windows-static-md boost-filesystem:x64-windows-static-md boost-program-options:x64-windows-static-md boost-icl:x64-windows-static-md boost-variant:x64-windows-static-md boost-asio:x64-windows-static-md boost-crc:x64-windows-static-md curl:x64-windows-static-md openssl:x64-windows-static-md
           choco install ccache
         if: matrix.os == 'windows-latest'
 
