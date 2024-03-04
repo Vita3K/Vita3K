@@ -69,8 +69,7 @@ struct DeviceStatus {
 class UDPClient {
 public:
     explicit UDPClient(const std::string &address);
-    explicit UDPClient()
-        : UDPClient("127.0.0.1:26760") {}
+    explicit UDPClient();
     ~UDPClient();
 
     bool SetAddress(const std::string &address);
@@ -119,7 +118,7 @@ private:
     std::unique_ptr<Response::PadData> last_pad_data;
     std::mutex last_pad_data_mutex;
     // for fine tuning the sensitivity
-    float gyro_scale;
+    float gyro_scale = 1.0f / 39.0f;
 };
 
 } // namespace CemuhookUDP

@@ -154,11 +154,11 @@ static void SocketLoop(Socket *socket) {
     socket->Loop();
 }
 
-UDPClient::UDPClient(const std::string &address)
-    : gyro_scale(1.0f / 39.0f) {
-    LOG_INFO("Udp Initialization started");
+UDPClient::UDPClient(const std::string &address) {
     SetAddress(address);
 }
+
+UDPClient::UDPClient() {}
 
 UDPClient::~UDPClient() {
     Reset();
