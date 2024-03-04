@@ -806,7 +806,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         // also make sure later the mapped address is 4K aligned
         vkutil::Buffer buffer(size + KiB(4));
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
-            .flags = vma::AllocationCreateFlagBits::eMapped,
+            .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite | vma::AllocationCreateFlagBits::eMapped,
             .usage = vma::MemoryUsage::eAutoPreferHost,
             .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
             .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
