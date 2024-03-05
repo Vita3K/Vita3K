@@ -83,7 +83,6 @@ static constexpr vk::ColorComponentFlags default_color_mask = vk::ColorComponent
     | vk::ColorComponentFlagBits::eA;
 
 static constexpr vma::AllocationCreateInfo vma_auto_alloc = {
-    .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
     .usage = vma::MemoryUsage::eAuto
 };
 
