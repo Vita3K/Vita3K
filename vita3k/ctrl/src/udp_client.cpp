@@ -198,7 +198,6 @@ void UDPClient::OnPadData(Response::PadData data, std::size_t client) {
         return;
     }
 
-    LOG_TRACE("PadData packet received");
     if (data.packet_counter == pads[pad_index].packet_sequence) {
         LOG_WARN(
             "PadData packet dropped because its stale info. Current count: {} Packet count: {}",
@@ -292,14 +291,6 @@ void UDPClient::GetGyroAccel(Util::Vec3f &gyro, uint64_t &gyro_timestamp, Util::
     std::lock_guard<std::mutex> guard(last_pad_data_mutex);
     if (!last_pad_data)
         return;
-    LOG_TRACE("UDP PadData: gyro.pitch={}, gyro.roll={}, gyro.yaw={}, accel.x={}, accel.y={}, accel.z={}, motion_timestamp={}",
-        last_pad_data->gyro.pitch,
-        last_pad_data->gyro.roll,
-        last_pad_data->gyro.yaw,
-        last_pad_data->accel.x,
-        last_pad_data->accel.y,
-        last_pad_data->accel.z,
-        last_pad_data->motion_timestamp);
     // y and z are intentionally swapped and inverted
     // to conform to the expected input in motion/motion.cpp
     gyro.x = last_pad_data->gyro.pitch * gyro_scale;
