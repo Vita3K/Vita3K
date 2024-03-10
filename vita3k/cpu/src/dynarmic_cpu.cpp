@@ -21,6 +21,7 @@
 #include <cpu/impl/interface.h>
 #include <cpu/state.h>
 #include <set>
+#include <util/bit_cast.h>
 #include <util/log.h>
 
 #include <mem/ptr.h>
@@ -295,14 +296,14 @@ public:
 };
 
 std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
-    Dynarmic::A32::UserConfig config;
+    Dynarmic::A32::UserConfig config{};
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
     if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
         config.absolute_offset_page_table = true;
-    } else {
-        config.fastmem_pointer = (log_mem || !cpu_opt) ? nullptr : parent->mem->memory.get();
+    } else if (!log_mem && cpu_opt) {
+        config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
     }
     config.hook_hint_instructions = true;
     config.enable_cycle_counting = false;
@@ -440,24 +441,21 @@ void DynarmicCPU::set_fpscr(uint32_t val) {
 
 CPUContext DynarmicCPU::save_context() {
     CPUContext ctx;
-    const auto dctx = jit->SaveContext();
-    ctx.cpu_registers = dctx.Regs();
-    static_assert(sizeof(ctx.fpu_registers) == sizeof(dctx.ExtRegs()));
-    memcpy(ctx.fpu_registers.data(), dctx.ExtRegs().data(), sizeof(ctx.fpu_registers));
-    ctx.fpscr = dctx.Fpscr();
-    ctx.cpsr = dctx.Cpsr();
+    ctx.cpu_registers = jit->Regs();
+    static_assert(sizeof(ctx.fpu_registers) == sizeof(jit->ExtRegs()));
+    memcpy(ctx.fpu_registers.data(), jit->ExtRegs().data(), sizeof(ctx.fpu_registers));
+    ctx.fpscr = jit->Fpscr();
+    ctx.cpsr = jit->Cpsr();
 
     return ctx;
 }
 
 void DynarmicCPU::load_context(CPUContext ctx) {
-    Dynarmic::A32::Context dctx;
-    dctx.Regs() = ctx.cpu_registers;
-    static_assert(sizeof(ctx.fpu_registers) == sizeof(dctx.ExtRegs()));
-    memcpy(dctx.ExtRegs().data(), ctx.fpu_registers.data(), sizeof(ctx.fpu_registers));
-    dctx.SetCpsr(ctx.cpsr);
-    dctx.SetFpscr(ctx.fpscr);
-    jit->LoadContext(dctx);
+    jit->Regs() = ctx.cpu_registers;
+    static_assert(sizeof(ctx.fpu_registers) == sizeof(jit->ExtRegs()));
+    memcpy(jit->ExtRegs().data(), ctx.fpu_registers.data(), sizeof(ctx.fpu_registers));
+    jit->SetCpsr(ctx.cpsr);
+    jit->SetFpscr(ctx.fpscr);
 }
 
 uint32_t DynarmicCPU::get_lr() {
