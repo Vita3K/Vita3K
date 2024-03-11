@@ -32,6 +32,7 @@ namespace renderer::vulkan {
 struct VKRenderTarget;
 struct VKState;
 struct Viewport;
+using CallbackRequestFunction = std::function<void()>;
 
 // used for in-shader texture viewport
 struct TextureViewport {
@@ -164,6 +165,12 @@ private:
 
     std::map<std::pair<vk::ImageView, vk::ImageView>, Framebuffer> framebuffer_array;
 
+    // used with check_for_surface
+    // contains the addresses of the surfaces that are the target
+    // of a transfer operation from a surface in the GPU in the current frame
+    // use a vector instead of a set because expect it to be always quite small
+    std::vector<Address> cpu_surfaces_changed;
+
     VKRenderTarget *target = nullptr;
     ColorSurfaceCacheInfo *last_written_surface = nullptr;
 
@@ -194,6 +201,13 @@ public:
     Framebuffer &retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
         vk::RenderPass standard_render_pass, vk::RenderPass interlock_render_pass, vk::ImageView &color_view, vk::ImageView &ds_view);
 
+    // Check if the address is one of a used surface
+    // If it is the case, this function returns true, moves the callback
+    // synchronize the surface back to the RAM then only call the callback
+    // if this call is used for a copy or similar operation set the changed address to the destination
+    // so that subsequent calls to check_for_surface with the target destination also get delayed
+    bool check_for_surface(MemState &mem, Address source_address, CallbackRequestFunction &callback, Address target_address);
+
     // If non-null, the return value must be sent as a PostSurfaceSyncRequest
     ColorSurfaceCacheInfo *perform_surface_sync();
 
@@ -214,6 +228,10 @@ public:
 
     void set_render_target(VKRenderTarget *new_target) {
         target = new_target;
+    }
+
+    void clear_surfaces_changed() {
+        cpu_surfaces_changed.clear();
     }
 };
 } // namespace renderer::vulkan

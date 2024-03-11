@@ -74,6 +74,9 @@ struct VKState : public renderer::State {
     vk::CommandPool general_command_pool;
     // Transfer pool has transient bit set.
     vk::CommandPool transfer_command_pool;
+    // command pool which can be used from multiple thread
+    vk::CommandPool multithread_command_pool;
+    std::mutex multithread_pool_mutex;
 
     // objects for which one copy is needed for every frame being rendered at the same time
     std::array<FrameObject, MAX_FRAMES_RENDERING> frames;
