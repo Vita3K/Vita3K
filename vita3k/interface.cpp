@@ -458,7 +458,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     main_module_id = load_module(emuenv, "app0:" + emuenv.self_path);
     if (main_module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[main_module_id];
-        LOG_INFO("Main executable {} ({}) loaded", module->module_name, emuenv.self_path);
+        LOG_INFO("Main executable {} ({}) loaded", module->info.module_name, emuenv.self_path);
     } else
         return FileNotFound;
     // Set self name from self path, can contain folder, get file name only
@@ -487,7 +487,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
             }
 
             if (module_id != SCE_SYSMODULE_INVALID)
-                emuenv.kernel.loaded_sysmodules.push_back(module_id);
+                emuenv.kernel.loaded_sysmodules[module_id] = {};
         }
     };
     add_preload_module(0x00010000, SCE_SYSMODULE_INVALID, "libc", is_app);
@@ -813,7 +813,7 @@ static std::vector<std::string> split(const std::string &input, const std::strin
 }
 
 ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id) {
-    auto entry_point = emuenv.kernel.loaded_modules[main_module_id]->start_entry;
+    auto entry_point = emuenv.kernel.loaded_modules[main_module_id]->info.start_entry;
     auto process_param = emuenv.kernel.process_param.get(emuenv.mem);
 
     SceInt32 priority = SCE_KERNEL_DEFAULT_PRIORITY_USER;
@@ -844,8 +844,8 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id) {
 
     // Run `module_start` export (entry point) of loaded libraries
     for (auto &[_, module] : emuenv.kernel.loaded_modules) {
-        if (module->modid != main_module_id)
-            start_module(emuenv, module);
+        if (module->info.modid != main_module_id)
+            start_module(emuenv, module->info);
     }
 
     SceKernelThreadOptParam param{ 0, 0 };

@@ -59,6 +59,7 @@ struct VarImportsHeader {
 static_assert(sizeof(VarImportsHeader) == sizeof(uint32_t));
 
 static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, uint32_t module_id) {
+    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -74,30 +75,24 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
 
         const char *const name = import_name(nid);
         Address export_address;
-        {
-            const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-            const ExportNids::iterator export_address_it = kernel.export_nids.find(nid);
-            if (export_address_it != kernel.export_nids.end()) {
-                export_address = export_address_it->second;
-                if (kernel.late_binding_infos.contains(nid)) {
-                    kernel.late_binding_infos.emplace(nid, late_binding_info({ var_reloc_entries, reloc_size, module_id }));
-                    LOG_WARN("\tNID NOT FOUND AGAIN {} ({}) at {}, setting to stub value {}", log_hex(nid), name, log_hex(entry.address()), *Ptr<uint32_t>(export_address).get(mem));
-                }
-            } else {
-                constexpr auto STUB_SYMVAL = 0xDEADBEEF;
-                LOG_WARN("\tNID NOT FOUND {} ({}) at {}, setting to stub value {}", log_hex(nid), name, log_hex(entry.address()), log_hex(STUB_SYMVAL));
+        kernel.var_binding_infos.emplace(nid, VarBindingInfo{ var_reloc_entries, reloc_size, module_id });
+        const ExportNids::iterator export_address_it = kernel.export_nids.find(nid);
+        if (export_address_it != kernel.export_nids.end()) {
+            export_address = export_address_it->second;
+        } else {
+            constexpr auto STUB_SYMVAL = 0xDEADBEEF;
+            LOG_DEBUG("\tNID NOT FOUND {} ({}) at {}, setting to stub value {}", log_hex(nid), name, log_hex(entry.address()), log_hex(STUB_SYMVAL));
 
-                auto alloc_name = fmt::format("Stub var import reloc symval, NID {} ({})", log_hex(nid), name);
-                auto stub_symval_ptr = Ptr<uint32_t>(alloc(mem, 4, alloc_name.c_str()));
-                *stub_symval_ptr.get(mem) = STUB_SYMVAL;
+            auto alloc_name = fmt::format("Stub var import reloc symval, NID {} ({})", log_hex(nid), name);
+            auto stub_symval_ptr = Ptr<uint32_t>(alloc(mem, 4, alloc_name.c_str()));
+            *stub_symval_ptr.get(mem) = STUB_SYMVAL;
 
-                export_address = stub_symval_ptr.address();
+            export_address = stub_symval_ptr.address();
 
-                // Use same stub for other var imports
-                kernel.export_nids.emplace(nid, export_address);
-                kernel.late_binding_infos.emplace(nid, late_binding_info({ var_reloc_entries, reloc_size, module_id }));
-            }
+            // Use same stub for other var imports
+            kernel.export_nids.emplace(nid, export_address);
         }
+
         if (reloc_size)
             // 8 is sizeof(EntryFormat1Alt)
             if (!relocate(var_reloc_entries, reloc_size, segments, mem, true, export_address))
@@ -107,7 +102,32 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
     return true;
 }
 
+static bool unload_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, uint32_t module_id) {
+    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
+    for (size_t i = 0; i < count; ++i) {
+        const uint32_t nid = nids[i];
+        const Ptr<uint32_t> entry = entries[i];
+
+        VarImportsHeader *const var_reloc_header = reinterpret_cast<VarImportsHeader *>(entry.get(mem));
+        const auto var_reloc_entries = static_cast<void *>(var_reloc_header + 1);
+        const uint32_t reloc_size = (var_reloc_header->reloc_data_size > sizeof(VarImportsHeader)) ? (var_reloc_header->reloc_data_size - sizeof(VarImportsHeader)) : 0;
+
+        // remove the binding info from the map
+        VarBindingInfo binding_info{ var_reloc_entries, reloc_size, module_id };
+        auto range = kernel.var_binding_infos.equal_range(nid);
+        for (auto it = range.first; it != range.second; it++) {
+            if (memcmp(&it->second, &binding_info, sizeof(VarBindingInfo)) == 0) {
+                kernel.var_binding_infos.erase(it);
+                break;
+            }
+        }
+    }
+
+    return true;
+}
+
 static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, const MemState &mem) {
+    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -119,23 +139,8 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
 
         const ExportNids::iterator export_address = kernel.export_nids.find(nid);
         uint32_t *const stub = entry.get(mem);
-        // TODO resurrect this
-        /*
-        switch (IMPORT_CALL_LOG_LEVEL) {
-        case LogCallAndReturn: {
-            stub[0] = 0xef000053; // svc #53 - Call our interrupt hook.
-            stub[1] = 0xef000000; // svc #0 - Call our interrupt hook again to log the return value.
-            stub[2] = nid; // Our interrupt hook will read this.
-            break;
-        }
-        case LogCall: {
-            stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
-            stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
-            stub[2] = nid; // Our interrupt hook will read this.
-            break;
-        }
-        */
 
+        kernel.func_binding_infos.emplace(nid, entry.address());
         if (export_address == kernel.export_nids.end()) {
             stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
             stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
@@ -160,7 +165,25 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
     return true;
 }
 
-static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segment_address, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem) {
+static bool unload_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, const MemState &mem) {
+    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
+    for (size_t i = 0; i < count; ++i) {
+        const uint32_t nid = nids[i];
+        const Ptr<uint32_t> entry = entries[i];
+
+        // remove the stub from the table
+        auto range = kernel.func_binding_infos.equal_range(nid);
+        for (auto it = range.first; it != range.second; it++) {
+            if (it->second == entry.address()) {
+                kernel.func_binding_infos.erase(it);
+                break;
+            }
+        }
+    }
+    return true;
+}
+
+static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segment_address, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, bool is_unload = false) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_imports_raw *const imports_begin = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_top);
     const sce_module_imports_raw *const imports_end = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_end);
@@ -200,28 +223,30 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(func_entry_table).get(mem);
 
         const size_t num_syms_funcs = imports->num_syms_funcs;
-        if (!load_func_imports(nids, entries, num_syms_funcs, segments, kernel, mem)) {
+        if (!is_unload && !load_func_imports(nids, entries, num_syms_funcs, segments, kernel, mem))
             return false;
-        }
+        if (is_unload && !unload_func_imports(nids, entries, num_syms_funcs, segments, kernel, mem))
+            return false;
 
         const uint32_t *const var_nids = Ptr<const uint32_t>(var_nid_table).get(mem);
         const Ptr<uint32_t> *const var_entries = Ptr<Ptr<uint32_t>>(var_entry_table).get(mem);
 
         const auto var_count = imports->num_syms_vars;
 
-        if (kernel.debugger.log_imports && var_count > 0) {
+        if (kernel.debugger.log_imports && var_count > 0)
             LOG_INFO("Loading var imports from {}", lib_name);
-        }
 
-        if (!load_var_imports(var_nids, var_entries, var_count, segments, kernel, mem, module.module_nid)) {
+        if (!is_unload && !load_var_imports(var_nids, var_entries, var_count, segments, kernel, mem, module.module_nid))
             return false;
-        }
+        if (is_unload && !unload_var_imports(var_nids, var_entries, var_count, segments, kernel, mem, module.module_nid))
+            return false;
     }
 
     return true;
 }
 
 static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel) {
+    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -240,10 +265,7 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
             continue;
         }
 
-        {
-            const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-            kernel.export_nids.emplace(nid, entry.address());
-        }
+        kernel.export_nids.emplace(nid, entry.address());
 
         if (kernel.debugger.log_exports) {
             const char *const name = import_name(nid);
@@ -255,9 +277,34 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
     return true;
 }
 
+static bool unload_func_exports(SceKernelModuleInfo *kernel_module_info, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem) {
+    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
+    for (size_t i = 0; i < count; ++i) {
+        const uint32_t nid = nids[i];
+        const Ptr<uint32_t> entry = entries[i];
+
+        if (nid == NID_MODULE_START || nid == NID_MODULE_STOP || nid == NID_MODULE_EXIT)
+            continue;
+
+        kernel.export_nids.erase(nid);
+        // invalidate all lle nid calls
+        auto range = kernel.func_binding_infos.equal_range(nid);
+        for (auto it = range.first; it != range.second; it++) {
+            Address entry = it->second;
+            uint32_t *stub = Ptr<uint32_t>(entry).get(mem);
+
+            stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
+            stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
+            stub[2] = nid; // Our interrupt hook will read this.
+            kernel.invalidate_jit_cache(entry, 3 * sizeof(uint32_t));
+        }
+    }
+
+    return true;
+}
+
 static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem) {
-    uint32_t last_module_nid = 0;
-    SegmentInfosForReloc seg = {};
+    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -284,70 +331,112 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
 
             LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, log_hex(entry.address()));
         }
-        {
-            const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
 
-            if (!kernel.late_binding_infos.contains(nid)) {
-                kernel.export_nids.emplace(nid, entry.address());
+        Address old_entry_address = 0;
+        auto nid_it = kernel.export_nids.find(nid);
+        if (nid_it != kernel.export_nids.end()) {
+            LOG_DEBUG("Found previously not found variable. nid:{}, new_entry_point:{}", log_hex(nid), log_hex(entry.address()));
+            old_entry_address = nid_it->second;
+            nid_it->second = entry.address();
+        } else {
+            kernel.export_nids[nid] = entry.address();
+        }
+
+        bool reloc_success = true;
+        auto range = kernel.var_binding_infos.equal_range(nid);
+        for (auto i = range.first; i != range.second; ++i) {
+            auto &var_binding_info = i->second;
+            if (var_binding_info.size == 0)
+                continue;
+
+            SegmentInfosForReloc seg;
+            const auto module_info = kernel.loaded_modules[kernel.module_uid_by_nid[var_binding_info.module_nid]];
+            if (!module_info) {
+                reloc_success = false;
+                LOG_ERROR("Module not found by nid: {} uid: {}", log_hex(var_binding_info.module_nid), kernel.module_uid_by_nid[var_binding_info.module_nid]);
             } else {
-                LOG_DEBUG("Found previously not found variable. nid:{}, new_entry_point:{}", log_hex(nid), log_hex(entry.address()));
-                Address old_entry_address;
-                old_entry_address = kernel.export_nids[nid];
-                kernel.export_nids[nid] = entry.address();
-                bool reloc_success = true;
-                auto range = kernel.late_binding_infos.equal_range(nid);
-                for (auto i = range.first; i != range.second; ++i) {
-                    auto &late_binding_info_v = i->second;
-                    if (late_binding_info_v.size > 0) {
-                        if (last_module_nid != late_binding_info_v.module_nid) {
-                            // TODO: uncomment when invalidate_jit_cache will be thread safe
-                            /* if (!seg.empty()) {
-                                for (const auto &[key, value] : seg) {
-                                    kernel.invalidate_jit_cache(value.addr, value.size);
-                                }
-                            }*/
-                            seg.clear();
-                            const auto module_info = kernel.loaded_modules[kernel.module_uid_by_nid[late_binding_info_v.module_nid]];
-                            if (!module_info) {
-                                reloc_success = false;
-                                LOG_ERROR("Module not found by nid: {} uid: {}", log_hex(late_binding_info_v.module_nid), kernel.module_uid_by_nid[late_binding_info_v.module_nid]);
-                            } else {
-                                for (int i = 0; i < MODULE_INFO_NUM_SEGMENTS; i++) {
-                                    const auto &segment = module_info->segments[i];
-                                    if (segment.size > 0) {
-                                        seg[i] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
-                                    }
-                                }
-                            }
-                            last_module_nid = late_binding_info_v.module_nid;
-                        }
-                        if (!seg.empty()) {
-                            if (!relocate(late_binding_info_v.entries, late_binding_info_v.size, seg, mem, true, entry.address())) {
-                                reloc_success = false;
-                                LOG_ERROR("Failed to relocate late binding info");
-                            }
-                        }
+                for (int i = 0; i < MODULE_INFO_NUM_SEGMENTS; i++) {
+                    const auto &segment = module_info->info.segments[i];
+                    if (segment.size > 0) {
+                        seg[i] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
                     }
                 }
-                if (reloc_success) {
-                    kernel.late_binding_infos.erase(nid);
-                    free(mem, old_entry_address);
+            }
+
+            // Note: We make the assumption that variables are not imported into executable code (wouldn't make a lot of sense)
+            // If this is not the case, uncomment the following
+            /* if (!seg.empty()) {
+                for (const auto &[key, value] : seg) {
+                    kernel.invalidate_jit_cache(value.addr, value.size);
+                }
+            }*/
+
+            if (!seg.empty()) {
+                if (!relocate(var_binding_info.entries, var_binding_info.size, seg, mem, true, entry.address())) {
+                    reloc_success = false;
+                    LOG_ERROR("Failed to relocate late binding info");
+                }
+            }
+        }
+        if (old_entry_address)
+            free(mem, old_entry_address);
+    }
+    return true;
+}
+
+static bool unload_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem) {
+    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
+    for (size_t i = 0; i < count; ++i) {
+        const uint32_t nid = nids[i];
+
+        if (nid == NID_PROCESS_PARAM || nid == NID_MODULE_INFO || nid == NID_SYSLYB)
+            continue;
+
+        // replace again the nid by a stub
+        constexpr auto STUB_SYMVAL = 0xDEADBEEF;
+
+        auto alloc_name = fmt::format("Stub var import reloc symval, NID {} ({})", log_hex(nid), import_name(nid));
+        auto stub_symval_ptr = Ptr<uint32_t>(alloc(mem, 4, alloc_name.c_str()));
+        *stub_symval_ptr.get(mem) = STUB_SYMVAL;
+
+        const Ptr<uint32_t> entry = stub_symval_ptr;
+
+        // Use same stub for other var imports
+        kernel.export_nids[nid] = entry.address();
+
+        bool reloc_success = true;
+        auto range = kernel.var_binding_infos.equal_range(nid);
+        for (auto it = range.first; it != range.second; it++) {
+            auto &var_binding_info = it->second;
+            if (var_binding_info.size == 0)
+                continue;
+
+            SegmentInfosForReloc seg;
+            const auto module_info = kernel.loaded_modules[kernel.module_uid_by_nid[var_binding_info.module_nid]];
+            if (!module_info) {
+                reloc_success = false;
+                LOG_ERROR("Module not found by nid: {} uid: {}", log_hex(var_binding_info.module_nid), kernel.module_uid_by_nid[var_binding_info.module_nid]);
+            } else {
+                for (int i = 0; i < MODULE_INFO_NUM_SEGMENTS; i++) {
+                    const auto &segment = module_info->info.segments[i];
+                    if (segment.size > 0) {
+                        seg[i] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
+                    }
+                }
+            }
+
+            if (!seg.empty()) {
+                if (!relocate(var_binding_info.entries, var_binding_info.size, seg, mem, true, entry.address())) {
+                    reloc_success = false;
+                    LOG_ERROR("Failed to relocate late binding info");
                 }
             }
         }
     }
-    // TODO: uncomment when invalidate_jit_cache will be thread safe
-    /*
-    if (!seg.empty()) {
-        for (const auto &[key, value] : seg) {
-            kernel.invalidate_jit_cache(value.addr, value.size);
-        }
-    }
-    */
     return true;
 }
 
-static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, MemState &mem) {
+static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, MemState &mem, bool is_unload = false) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_exports_raw *const exports_begin = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_top);
     const sce_module_exports_raw *const exports_end = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_end);
@@ -355,24 +444,26 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
     for (const sce_module_exports_raw *exports = exports_begin; exports < exports_end; exports = reinterpret_cast<const sce_module_exports_raw *>(reinterpret_cast<const uint8_t *>(exports) + exports->size)) {
         const char *const lib_name = Ptr<const char>(exports->library_name).get(mem);
 
-        if (kernel.debugger.log_exports) {
+        if (kernel.debugger.log_exports)
             LOG_INFO("Loading func exports from {}", lib_name ? lib_name : "unknown");
-        }
 
         const uint32_t *const nids = Ptr<const uint32_t>(exports->nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(exports->entry_table).get(mem);
-        if (!load_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, kernel)) {
+        if (!is_unload && !load_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, kernel))
             return false;
-        }
+        if (is_unload && !unload_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, kernel, mem))
+            return false;
+
         const auto var_count = exports->num_syms_vars;
 
         if (kernel.debugger.log_exports && var_count > 0) {
             LOG_INFO("Loading var exports from {}", lib_name ? lib_name : "unknown");
         }
 
-        if (!load_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem)) {
+        if (!is_unload && !load_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem))
             return false;
-        }
+        if (is_unload && !unload_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem))
+            return false;
     }
 
     return true;
@@ -603,7 +694,13 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         LOG_INFO("Loaded module segment {} @ [0x{:08X} - 0x{:08X} / 0x{:08X}] (size: 0x{:08X}) of module {}", seg, infos.addr, infos.addr + infos.size, infos.p_vaddr, infos.size, self_path);
     }
 
-    const SceKernelModuleInfoPtr sceKernelModuleInfo = std::make_shared<SceKernelModuleInfo>();
+    const SceKernelModulePtr kernelModuleInfo = std::make_shared<KernelModule>();
+    memset(kernelModuleInfo.get(), 0, sizeof(KernelModule));
+
+    kernelModuleInfo->info_segment_address = module_info_segment_address;
+    kernelModuleInfo->info_offset = module_info_offset;
+
+    auto *sceKernelModuleInfo = &kernelModuleInfo->info;
     sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
     strncpy(sceKernelModuleInfo->module_name, module_info->name, 28);
     // unk28
@@ -651,7 +748,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     sceKernelModuleInfo->state = module_info->type;
 
     LOG_INFO("Linking SELF {}...", self_path);
-    if (!load_exports(sceKernelModuleInfo.get(), *module_info, module_info_segment_address, kernel, mem)) {
+    if (!load_exports(sceKernelModuleInfo, *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
     }
 
@@ -662,12 +759,56 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     sceKernelModuleInfo->modid = uid;
     {
         const std::lock_guard<std::mutex> lock(kernel.mutex);
-        kernel.loaded_modules.emplace(uid, sceKernelModuleInfo);
+        kernel.loaded_modules[uid] = kernelModuleInfo;
     }
     {
         const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-        kernel.module_uid_by_nid.emplace(module_info->module_nid, uid);
+        kernel.module_uid_by_nid[module_info->module_nid] = uid;
     }
 
     return uid;
+}
+
+int unload_self(KernelState &kernel, MemState &mem, KernelModule &module) {
+    LOG_INFO("Unlinking self...");
+    const sce_module_info_raw *const module_info = reinterpret_cast<const sce_module_info_raw *>(module.info_segment_address.get(mem) + module.info_offset);
+    if (!load_exports(&module.info, *module_info, module.info_segment_address, kernel, mem, true)) {
+        return -1;
+    }
+
+    SegmentInfosForReloc segment_reloc_info;
+    for (int i = 0; i < MODULE_INFO_NUM_SEGMENTS; i++) {
+        const auto &segment = module.info.segments[i];
+        if (segment.size == 0)
+            continue;
+
+        segment_reloc_info[i] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
+    }
+
+    if (!load_imports(*module_info, module.info_segment_address, segment_reloc_info, kernel, mem, true)) {
+        return -1;
+    }
+
+    SceUID mod_nid = module_info->module_nid;
+
+    // last step: free the memory
+    for (int i = 0; i < MODULE_INFO_NUM_SEGMENTS; i++) {
+        const auto &segment = module.info.segments[i];
+        if (segment.size == 0)
+            continue;
+
+        kernel.invalidate_jit_cache(segment.vaddr.address(), segment.memsz);
+        free(mem, module.info.segments[i].vaddr.address());
+    }
+
+    {
+        const std::lock_guard<std::mutex> lock(kernel.mutex);
+        kernel.loaded_modules.erase(module.info.modid);
+    }
+    {
+        const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
+        kernel.module_uid_by_nid.erase(mod_nid);
+    }
+
+    return 0;
 }

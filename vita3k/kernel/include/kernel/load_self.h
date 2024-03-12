@@ -27,5 +27,7 @@ struct KernelState;
 struct MemState;
 template <class T>
 class Ptr;
+struct KernelModule;
 
 SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &log_path);
+int unload_self(KernelState &kernel, MemState &mem, KernelModule &module);

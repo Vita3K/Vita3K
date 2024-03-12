@@ -52,13 +52,20 @@ struct InitialFiber;
 
 struct CodecEngineBlock;
 
+struct KernelModule {
+    SceKernelModuleInfo info;
+    Ptr<const uint8_t> info_segment_address;
+    uint32_t info_offset;
+};
+typedef std::shared_ptr<KernelModule> SceKernelModulePtr;
+
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 typedef std::map<SceUID, CodecEngineBlock> CodecEngineBlocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
 typedef std::map<SceUID, ThreadStatePtr> ThreadStatePtrs;
 typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
-typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
+typedef std::map<SceUID, SceKernelModulePtr> SceKernelModuleInfoPtrs;
 typedef std::map<SceUID, CallbackPtr> CallbackPtrs;
 typedef unordered_map_fast<uint32_t, Address> ExportNids;
 
@@ -70,7 +77,7 @@ struct CodecEngineBlock {
     int32_t vaddr;
 };
 
-using LoadedSysmodules = std::vector<SceSysmoduleModuleId>;
+using LoadedSysmodules = std::map<SceSysmoduleModuleId, std::vector<SceUID>>;
 using LoadedInternalSysmodules = std::vector<SceSysmoduleInternalModuleId>;
 
 struct CorenumAllocator {
@@ -83,13 +90,14 @@ struct CorenumAllocator {
     void free_corenum(const int num);
 };
 
-struct late_binding_info {
+struct VarBindingInfo {
     void *entries;
     uint32_t size;
     uint32_t module_nid;
 };
 
-typedef std::multimap<uint32_t, late_binding_info> VarLateBindingInfos;
+typedef std::multimap<uint32_t, VarBindingInfo> VarBindingInfos;
+typedef std::multimap<uint32_t, Address> FuncBindingInfos;
 
 typedef std::map<uint32_t, uint32_t> ModuleUidByNid;
 
@@ -125,9 +133,12 @@ struct KernelState {
     SceKernelModuleInfoPtrs loaded_modules;
     LoadedSysmodules loaded_sysmodules;
     LoadedInternalSysmodules loaded_internal_sysmodules;
-    ExportNids export_nids;
+
+    // the variables in this block must be accessed by first locking export_nids_mutex
     std::mutex export_nids_mutex;
-    VarLateBindingInfos late_binding_infos;
+    ExportNids export_nids;
+    FuncBindingInfos func_binding_infos;
+    VarBindingInfos var_binding_infos;
     ModuleUidByNid module_uid_by_nid;
 
     bool cpu_opt;
@@ -163,7 +174,7 @@ struct KernelState {
 
     void set_memory_watch(bool enabled);
     void invalidate_jit_cache(Address start, size_t length);
-    std::shared_ptr<SceKernelModuleInfo> find_module_by_addr(Address address);
+    SceKernelModuleInfo *find_module_by_addr(Address address);
 
 private:
     std::atomic<SceUID> next_uid{ 1 };

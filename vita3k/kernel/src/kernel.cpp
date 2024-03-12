@@ -191,14 +191,14 @@ void KernelState::resume_threads() {
     paused_threads_status.clear();
 }
 
-std::shared_ptr<SceKernelModuleInfo> KernelState::find_module_by_addr(Address address) {
-    const auto lock = std::lock_guard(mutex);
-    for (auto [_, mod] : loaded_modules) {
-        for (auto seg : mod->segments) {
+SceKernelModuleInfo *KernelState::find_module_by_addr(Address address) {
+    const std::lock_guard<std::mutex> guard(mutex);
+    for (auto &[_, mod] : loaded_modules) {
+        for (auto &seg : mod->info.segments) {
             if (!seg.size)
                 continue;
             if (seg.vaddr.address() <= address && address <= seg.vaddr.address() + seg.memsz) {
-                return mod;
+                return &mod->info;
             }
         }
     }

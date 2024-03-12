@@ -36,23 +36,35 @@ EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *o
     return load_module(emuenv, path);
 }
 
-static SceUID start_module(EmuEnvState &emuenv, SceUID module_id, SceSize args, const Ptr<void> argp, int *pRes) {
-    const SceKernelModuleInfoPtr module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+static SceUID kernel_start_module(EmuEnvState &emuenv, SceUID module_id, SceSize args, Ptr<const void> argp, int *pRes) {
+    const SceKernelModulePtr module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
     if (!module) {
         const char *export_name = __FUNCTION__;
         return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
     }
-    auto result = start_module(emuenv, module, args, argp);
+    auto result = start_module(emuenv, module->info, args, argp);
     if (pRes)
         *pRes = result;
 
-    return module->modid;
+    return module->info.modid;
 }
 
-EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, const Ptr<void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
+static int kernel_stop_module(EmuEnvState &emuenv, SceUID module_id, SceSize args, Ptr<const void> argp, int *pRes) {
+    const SceKernelModulePtr module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+    if (!module) {
+        const char *export_name = __FUNCTION__;
+        return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
+    }
+    auto result = stop_module(emuenv, module->info, args, argp);
+    if (pRes)
+        *pRes = result;
+    return 0;
+}
+
+EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
     TRACY_FUNC(_sceKernelLoadStartModule, moduleFileName, args, argp, flags, pOpt, pRes);
     // Is workaround for fix crash on loading "rgpluginsgm_psvita" module, relate issue #1095 on github, delete this after fix it.
-    if (std::string(moduleFileName).find("rgpluginsgm_psvita") != std::string::npos) {
+    if (std::string_view(moduleFileName).find("rgpluginsgm_psvita") != std::string::npos) {
         LOG_WARN("Bypass load this module: {}", moduleFileName);
         return SCE_KERNEL_ERROR_MODULEMGR_INVALID_TYPE;
     }
@@ -60,7 +72,7 @@ EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize ar
     SceUID module_id = load_module(emuenv, moduleFileName);
     if (module_id < 0)
         return module_id;
-    return start_module(emuenv, module_id, args, argp, pRes);
+    return kernel_start_module(emuenv, module_id, args, argp, pRes);
 }
 
 EXPORT(int, _sceKernelOpenModule) {
@@ -68,25 +80,29 @@ EXPORT(int, _sceKernelOpenModule) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes) {
+EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelStartModuleOpt *pOpt, int *pRes) {
     TRACY_FUNC(_sceKernelStartModule, uid, args, argp, flags, pOpt, pRes);
 
-    return start_module(emuenv, uid, args, argp, pRes);
+    return kernel_start_module(emuenv, uid, args, argp, pRes);
 }
 
-EXPORT(int, _sceKernelStopModule) {
-    TRACY_FUNC(_sceKernelStopModule);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelStopModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelStopModuleOpt *pOpt, int *pRes) {
+    TRACY_FUNC(_sceKernelStopModule, uid, args, argp, flags, pOpt, pRes);
+    return kernel_stop_module(emuenv, uid, args, argp, pRes);
 }
 
-EXPORT(int, _sceKernelStopUnloadModule) {
-    TRACY_FUNC(_sceKernelStopUnloadModule);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelStopUnloadModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const void *pOpt, int *pRes) {
+    TRACY_FUNC(_sceKernelStopUnloadModule, uid, args, argp, flags, pOpt, pRes);
+    int ret = kernel_stop_module(emuenv, uid, args, argp, pRes);
+    if (ret < 0)
+        return ret;
+
+    return unload_module(emuenv, uid);
 }
 
-EXPORT(int, _sceKernelUnloadModule) {
+EXPORT(int, _sceKernelUnloadModule, SceUID uid, SceUInt32 flags, const void *pOpt) {
     TRACY_FUNC(_sceKernelUnloadModule);
-    return UNIMPLEMENTED();
+    return unload_module(emuenv, uid);
 }
 
 EXPORT(int, sceKernelGetAllowedSdkVersionOnSystem) {
@@ -101,12 +117,12 @@ EXPORT(int, sceKernelGetLibraryInfoByNID) {
 
 EXPORT(int, sceKernelGetModuleIdByAddr, Ptr<void> addr) {
     TRACY_FUNC(sceKernelGetModuleIdByAddr, addr);
-    KernelState *const state = &emuenv.kernel;
+    const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
 
-    for (const auto &module : state->loaded_modules) {
+    for (const auto &module : emuenv.kernel.loaded_modules) {
         for (int n = 0; n < MODULE_INFO_NUM_SEGMENTS; n++) {
-            const auto segment_address_begin = module.second->segments[n].vaddr.address();
-            const auto segment_address_end = segment_address_begin + module.second->segments[n].memsz;
+            const auto segment_address_begin = module.second->info.segments[n].vaddr.address();
+            const auto segment_address_end = segment_address_begin + module.second->info.segments[n].memsz;
             if (addr.address() > segment_address_begin && addr.address() < segment_address_end) {
                 return module.first;
             }
@@ -118,13 +134,14 @@ EXPORT(int, sceKernelGetModuleIdByAddr, Ptr<void> addr) {
 
 EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
     TRACY_FUNC(sceKernelGetModuleInfo, modid, info);
-    KernelState *const state = &emuenv.kernel;
-    const SceKernelModuleInfoPtrs::const_iterator module = state->loaded_modules.find(modid);
-    if (module == state->loaded_modules.end()) {
+    const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+
+    auto module = emuenv.kernel.loaded_modules.find(modid);
+    if (module == emuenv.kernel.loaded_modules.end()) {
         return RET_ERROR(SCE_KERNEL_ERROR_LIBRARYDB_NO_MOD);
     }
 
-    memcpy(info, module->second.get(), module->second.get()->size);
+    memcpy(info, &module->second->info, module->second->info.size);
 
     return SCE_KERNEL_OK;
 }
@@ -136,7 +153,7 @@ EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
     int i = 0;
     SceUID main_module_id = 0;
     for (auto [module_id, module] : emuenv.kernel.loaded_modules) {
-        if (module->path == "app0:" + emuenv.self_path) {
+        if (module->info.path == "app0:" + emuenv.self_path) {
             main_module_id = module_id;
         } else {
             modids[i] = module_id;
