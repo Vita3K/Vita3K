@@ -75,7 +75,7 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
 
         // Shuffle if number of components is larger than 2
         if (m_b.getNumComponents(coord_id) > 2) {
-            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { coord_id, coord_id, 0, 1 });
+            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { coord_id, coord_id, m_b.makeIntConstant(0), m_b.makeIntConstant(1) });
         }
     }
 
@@ -96,11 +96,11 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
 
         if (extra1 != spv::NoResult || lod_mode != 4) {
             // only keep the first two coordinates (x,y)
-            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { coord_id, coord_id, 0, 1 });
+            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { coord_id, coord_id, m_b.makeIntConstant(0), m_b.makeIntConstant(1) });
             coord_id = m_b.createBuiltinCall(m_b.getTypeId(coord_id), std_builtins, GLSLstd450Fma, { coord_id, viewport_ratio, viewport_offset });
         } else {
             // extract the x,y and proj coordinate
-            spv::Id coord_xy = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { coord_id, coord_id, 0, 1 });
+            spv::Id coord_xy = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { coord_id, coord_id, m_b.makeIntConstant(0), m_b.makeIntConstant(1) });
             spv::Id third_comp = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, coord_id, m_b.makeIntConstant(2));
             third_comp = m_b.createCompositeConstruct(type_f32_v[2], { third_comp, third_comp });
 
@@ -111,7 +111,7 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
             coord_xy = m_b.createBuiltinCall(m_b.getTypeId(coord_xy), std_builtins, GLSLstd450Fma, { coord_xy, viewport_ratio, viewport_offset });
 
             // add back the proj component
-            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { coord_xy, coord_id, 0, 1, 4 });
+            coord_id = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { coord_xy, coord_id, m_b.makeIntConstant(0), m_b.makeIntConstant(1), m_b.makeIntConstant(4) });
         }
     }
 
@@ -164,7 +164,7 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
 
         if (texture_query.prod_pos >= 0) {
             spv::Id texture_coord = m_b.createLoad(texture_query.coord.first, spv::NoPrecision);
-            coord_inst.first = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { texture_coord, texture_coord, 0, 1, static_cast<spv::Id>(texture_query.prod_pos) });
+            coord_inst.first = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { texture_coord, texture_coord, m_b.makeIntConstant(0), m_b.makeIntConstant(1), static_cast<spv::Id>(texture_query.prod_pos) });
             proj = true;
         }
 
@@ -471,7 +471,7 @@ bool USSETranslatorVisitor::smp(
                 // (1-u)(1-v) u(1-v)
                 const spv::Id comp2 = m_b.createBinOp(spv::OpVectorTimesScalar, type_f32_v[2], x_coeffs, onemv);
                 // (1-u)v uv u(1-v) (1-u)(1-v) in reversed order
-                const spv::Id coeffs = m_b.createOp(spv::OpVectorShuffle, type_f32_v[4], { comp1, comp2, 2, 3, 1, 0 });
+                const spv::Id coeffs = m_b.createOp(spv::OpVectorShuffle, type_f32_v[4], { comp1, comp2, m_b.makeIntConstant(2), m_b.makeIntConstant(3), m_b.makeIntConstant(1), m_b.makeIntConstant(0) });
 
                 // bilinear coeffs are stored as float16
                 inst.opr.dest.type = DataType::F16;

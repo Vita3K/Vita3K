@@ -1086,11 +1086,11 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
     };
 
     static auto selector_src1_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src1, const spv::Id src2) {
-        return b.createOp(spv::OpVectorShuffle, type, { src1, src1, 3, 3, 3, 3 });
+        return b.createOp(spv::OpVectorShuffle, type, { src1, src1, b.makeIntConstant(3), b.makeIntConstant(3), b.makeIntConstant(3), b.makeIntConstant(3) });
     };
 
     static auto selector_src2_alpha = [](spv::Builder &b, spv::Id type, const spv::Id src1, const spv::Id src2) {
-        return b.createOp(spv::OpVectorShuffle, type, { src2, src2, 3, 3, 3, 3 });
+        return b.createOp(spv::OpVectorShuffle, type, { src2, src2, b.makeIntConstant(3), b.makeIntConstant(3), b.makeIntConstant(3), b.makeIntConstant(3) });
     };
 
     // This opcode always operates on C10.
