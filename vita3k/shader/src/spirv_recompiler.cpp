@@ -153,7 +153,7 @@ static spv::Id create_array_if_needed(spv::Builder &b, const spv::Id param_id, c
 
 static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
     switch (input.type) {
-    // clang-format off
+        // clang-format off
     case DataType::F16:
     case DataType::F32:
          return b.makeFloatType(32);
@@ -754,7 +754,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             spv::Id i32 = b.makeIntegerType(32, true);
             current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord, spv::NoPrecision));
-            current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, b.makeIntConstant(0), b.makeIntConstant(1) });
+            current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { { true, current_coord }, { true, current_coord }, { false, 0 }, { false, 1 } });
 
             if (features.preserve_f16_nan_as_u16) {
                 spv::Id uiv4 = b.makeVectorType(b.makeUintType(32), 4);
@@ -1407,7 +1407,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         spv::Id signed_i32 = b.makeIntType(32);
         spv::Id coord_id = b.createLoad(translate_state.frag_coord_id, spv::NoPrecision);
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), coord_id);
-        translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { translated_id, translated_id, b.makeIntConstant(0), b.makeIntConstant(1) });
+        translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { { true, translated_id }, { true, translated_id }, { false, 0 }, { false, 1 } });
         b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
 
         if (features.preserve_f16_nan_as_u16) {
@@ -1441,8 +1441,8 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         spv::Id i32 = b.makeIntegerType(32, true);
         spv::Id v2i32 = b.makeVectorType(i32, 2);
         current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord, spv::NoPrecision));
-        current_coord = b.createOp(spv::OpVectorShuffle, v2i32, { current_coord, current_coord, b.makeIntConstant(0), b.makeIntConstant(1) });
-        
+        current_coord = b.createOp(spv::OpVectorShuffle, v2i32, { { true, current_coord }, { true, current_coord }, { false, 0 }, { false, 1 } });
+
         spv::Id sampled_type = b.makeFloatType(32);
         spv::Id v4 = b.makeVectorType(sampled_type, 4);
         spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id, spv::NoPrecision), current_coord });
