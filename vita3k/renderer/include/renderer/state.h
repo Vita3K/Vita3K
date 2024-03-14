@@ -120,6 +120,7 @@ struct State {
 
     virtual void precompile_shader(const ShadersHash &hash) = 0;
     virtual void preclose_action() = 0;
+    virtual void clean_render() = 0;
 
     virtual ~State() = default;
 

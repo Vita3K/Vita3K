@@ -983,4 +983,38 @@ void VKState::preclose_action() {
 
     pipeline_cache.save_pipeline_cache();
 }
+
+void VKState::clean_render() {
+    pipeline_cache.save_pipeline_cache();
+    pipeline_cache.clean_pipeline_cache();
+    surface_cache.clean_surface_cache();
+    texture_cache.texture_queue = {};
+    texture_cache.texture_lookup = {};
+    texture_cache.textures = {};
+    texture_cache.samplers.clear();
+    texture_cache.cmd_buffer = nullptr;
+    texture_cache.current_texture = nullptr;
+    texture_cache.gxm_texture = nullptr;
+    texture_cache.staging_idx = 0;
+    texture_cache.last_waited_scene = 0;
+
+    for (auto &buffer : texture_cache.staging_buffers) {
+        LOG_DEBUG("buffer frame_timestamp: {}", buffer.frame_timestamp);
+        buffer.buffer.destroy();
+        buffer.used_so_far = 0;
+        buffer.scene_timestamp = ~0;
+        buffer.frame_timestamp = ~0;
+        if (buffer.waiting_fence) {
+            auto result = texture_cache.state.device.waitForFences(buffer.waiting_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+            if (result != vk::Result::eSuccess) {
+                LOG_ERROR("Could not wait for fences.");
+                continue;
+            } else
+                LOG_DEBUG("Succes wait for fences.");
+            texture_cache.state.device.destroyFence(buffer.waiting_fence);
+            buffer.waiting_fence = nullptr;
+            LOG_DEBUG("Succes destroy fences.");
+        }
+    }
+}
 } // namespace renderer::vulkan

@@ -20,6 +20,7 @@
 #include "module/load_module.h"
 
 #include <config/state.h>
+#include <config/version.h>
 #include <ctrl/functions.h>
 #include <ctrl/state.h>
 #include <display/functions.h>
@@ -30,6 +31,8 @@
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
+#include <mem/functions.h>
+#include <net/state.h>
 #include <packages/functions.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
@@ -414,31 +417,33 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
         logging::set_level(static_cast<spdlog::level::level_enum>(emuenv.cfg.log_level));
     }
 
-    LOG_INFO("{}: {}", emuenv.cfg[e_cpu_backend], emuenv.cfg.current_config.cpu_backend);
-    LOG_INFO_IF(emuenv.kernel.cpu_backend == CPUBackend::Dynarmic, "CPU Optimisation state: {}", emuenv.cfg.current_config.cpu_opt);
-    LOG_INFO("ngs state: {}", emuenv.cfg.current_config.ngs_enable);
-    LOG_INFO("Resolution multiplier: {}", emuenv.cfg.resolution_multiplier);
-    if (emuenv.ctrl.controllers_num) {
-        LOG_INFO("{} Controllers Connected", emuenv.ctrl.controllers_num);
-        for (auto i = 0; i < emuenv.ctrl.controllers_num; i++)
-            LOG_INFO("Controller {}: {}", i, emuenv.ctrl.controllers_name[i]);
-        if (emuenv.ctrl.has_motion_support)
-            LOG_INFO("Controller has motion support");
-    }
-    LOG_INFO("modules mode: {}", config_modules_mode[emuenv.cfg.current_config.modules_mode][ModulesModeType::MODE]);
-    if ((emuenv.cfg.current_config.modules_mode != ModulesMode::AUTOMATIC) && !emuenv.cfg.current_config.lle_modules.empty()) {
-        std::string modules;
-        for (const auto &mod : emuenv.cfg.current_config.lle_modules) {
-            modules += mod + ",";
+    if (emuenv.load_exec_path.empty()) {
+        LOG_INFO("{}: {}", emuenv.cfg[e_cpu_backend], emuenv.cfg.current_config.cpu_backend);
+        LOG_INFO_IF(emuenv.kernel.cpu_backend == CPUBackend::Dynarmic, "CPU Optimisation state: {}", emuenv.cfg.current_config.cpu_opt);
+        LOG_INFO("ngs state: {}", emuenv.cfg.current_config.ngs_enable);
+        LOG_INFO("Resolution multiplier: {}", emuenv.cfg.resolution_multiplier);
+        if (emuenv.ctrl.controllers_num) {
+            LOG_INFO("{} Controllers Connected", emuenv.ctrl.controllers_num);
+            for (auto i = 0; i < emuenv.ctrl.controllers_num; i++)
+                LOG_INFO("Controller {}: {}", i, emuenv.ctrl.controllers_name[i]);
+            if (emuenv.ctrl.has_motion_support)
+                LOG_INFO("Controller has motion support");
         }
-        modules.pop_back();
-        LOG_INFO("lle-modules: {}", modules);
-    }
+        LOG_INFO("modules mode: {}", config_modules_mode[emuenv.cfg.current_config.modules_mode][ModulesModeType::MODE]);
+        if ((emuenv.cfg.current_config.modules_mode != ModulesMode::AUTOMATIC) && !emuenv.cfg.current_config.lle_modules.empty()) {
+            std::string modules;
+            for (const auto &mod : emuenv.cfg.current_config.lle_modules) {
+                modules += mod + ",";
+            }
+            modules.pop_back();
+            LOG_INFO("lle-modules: {}", modules);
+        }
 
-    LOG_INFO("Title: {}", emuenv.current_app_title);
-    LOG_INFO("Serial: {}", emuenv.io.title_id);
-    LOG_INFO("Version: {}", emuenv.app_info.app_version);
-    LOG_INFO("Category: {}", emuenv.app_info.app_category);
+        LOG_INFO("Title: {}", emuenv.current_app_title);
+        LOG_INFO("Serial: {}", emuenv.io.title_id);
+        LOG_INFO("Version: {}", emuenv.app_info.app_version);
+        LOG_INFO("Category: {}", emuenv.app_info.app_category);
+    }
 
     init_device_paths(emuenv.io);
     init_savedata_app_path(emuenv.io, emuenv.pref_path);
@@ -450,7 +455,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     }
 
     // Load main executable
-    emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
+    emuenv.self_path = !emuenv.load_exec_path.empty() ? emuenv.load_exec_path : EBOOT_PATH;
     main_module_id = load_module(emuenv, "app0:" + emuenv.self_path);
     if (main_module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[main_module_id];
@@ -845,8 +850,8 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id) {
     }
 
     SceKernelThreadOptParam param{ 0, 0 };
-    if (!emuenv.cfg.app_args.empty()) {
-        auto args = split(emuenv.cfg.app_args, ",\\s+");
+    if (!emuenv.load_exec_argv.empty()) {
+        auto args = split(emuenv.load_exec_argv, ",\\s+");
         // why is this flipped
         std::vector<uint8_t> buf;
         for (auto &arg : args)
@@ -865,6 +870,97 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id) {
 
     if (emuenv.cfg.boot_apps_full_screen && !emuenv.display.fullscreen.load())
         switch_full_screen(emuenv);
+
+    return Success;
+}
+
+ExitCode close_app(EmuEnvState &emuenv) {
+    if (emuenv.load_exec_path.empty())
+        SDL_SetWindowTitle(emuenv.window.get(), window_title);
+    emuenv.kernel.exit_delete_all_threads();
+    emuenv.display.abort = true;
+
+    emuenv.common_dialog = {};
+
+    if (emuenv.kernel.threads.empty()) {
+        for (auto i = 0; i < (GiB(4) / emuenv.mem.page_size); i++) {
+            if (emuenv.mem.alloc_table[i].allocated)
+                free(emuenv.mem, i * emuenv.mem.page_size);
+        }
+    } else {
+        LOG_ERROR("Some Threads still running: {}, unload module...", emuenv.kernel.threads.size());
+        for (const auto &[_, thread] : emuenv.kernel.threads)
+            LOG_DEBUG("Thread {}, status: {}", thread->name, (int)thread->status);
+        for (const auto &[_, module] : emuenv.kernel.loaded_modules)
+            unload_module(emuenv, module->info.modid);
+        for (const auto &[mod_id, _] : emuenv.kernel.loaded_sysmodules)
+            unload_sys_module(emuenv, mod_id);
+        for (auto &[addr, _] : emuenv.gxm.memory_mapped_regions)
+            emuenv.renderer->unmap_memory(emuenv.mem, Ptr<void>(addr));
+    }
+
+    emuenv.kernel.threads.clear();
+    emuenv.kernel.loaded_modules.clear();
+    emuenv.kernel.loaded_sysmodules.clear();
+    emuenv.kernel.module_uid_by_nid.clear();
+    emuenv.kernel.export_nids.clear();
+    emuenv.kernel.process_param.reset();
+    emuenv.kernel.func_binding_infos.clear();
+    emuenv.kernel.var_binding_infos.clear();
+    emuenv.kernel.codec_blocks.clear();
+
+    emuenv.kernel.simple_events.clear();
+    emuenv.kernel.timers.clear();
+    emuenv.kernel.condvars.clear();
+    emuenv.kernel.lwcondvars.clear();
+    emuenv.kernel.lwmutexes.clear();
+    emuenv.kernel.mutexes.clear();
+    emuenv.kernel.msgpipes.clear();
+    emuenv.kernel.semaphores.clear();
+    emuenv.kernel.callbacks.clear();
+    emuenv.kernel.eventflags.clear();
+    emuenv.kernel.rwlocks.clear();
+
+    emuenv.mem.allocator.reset();
+    emuenv.gxm.display_queue.abort();
+    emuenv.gxm.display_queue.reset();
+    emuenv.gxm.memory_mapped_regions.clear();
+    emuenv.gxm.params = {};
+
+    if (emuenv.display.vblank_thread) {
+        emuenv.display.vblank_thread->join();
+        emuenv.display.vblank_thread.release();
+        emuenv.display.vblank_thread.reset();
+    }
+    emuenv.display.vblank_callbacks.clear();
+    emuenv.display.vblank_wait_infos.clear();
+    emuenv.display.predicted_frames.clear();
+    emuenv.display.predicted_frames.resize(1);
+    emuenv.display.predicted_frame_position = 0;
+    emuenv.display.predicted_cycles_seen = 0;
+    emuenv.display.sce_frame = {};
+    emuenv.display.next_rendered_frame = {};
+    emuenv.display.imgui_render = true;
+
+    emuenv.frame_count = 0;
+
+    emuenv.renderer->command_buffer_queue.reset();
+    emuenv.renderer->context = {};
+    emuenv.renderer->features = {};
+    emuenv.renderer->shaders_cache_hashs.clear();
+    emuenv.renderer->shaders_count_compiled = 0;
+    emuenv.renderer->programs_count_pre_compiled = 0;
+    emuenv.renderer->preclose_action();
+    emuenv.renderer->clean_render();
+
+    emuenv.net.inited = false;
+    emuenv.netctl.inited = false;
+
+    if (emuenv.load_exec_path.empty()) {
+        emuenv.app_info = {};
+        emuenv.io.app_path.clear();
+        emuenv.io.title_id.clear();
+    }
 
     return Success;
 }

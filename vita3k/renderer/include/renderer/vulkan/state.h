@@ -134,6 +134,7 @@ struct VKState : public renderer::State {
 
     void precompile_shader(const ShadersHash &hash) override;
     void preclose_action() override;
+    void clean_render() override;
 
     inline FrameObject &frame() {
         return frames[current_frame_idx];

@@ -27,6 +27,8 @@
 #include <io/state.h>
 #include <kernel/state.h>
 
+#include <interface.h>
+
 #include <io/VitaIoDevice.h>
 
 #include <util/log.h>
@@ -152,7 +154,7 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
             if (!emuenv.io.app_path.empty())
                 gui.vita_area.app_close = true;
             else
-                emuenv.io.app_path = app_path;
+                emuenv.load_app_path = app_path;
         } else {
             gui.vita_area.home_screen = false;
             gui.vita_area.live_area_screen = false;
@@ -218,9 +220,8 @@ void close_system_app(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void close_and_run_new_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    emuenv.kernel.exit_delete_all_threads();
+    close_app(emuenv);
     emuenv.load_app_path = app_path;
-    emuenv.load_exec = true;
 }
 
 void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {

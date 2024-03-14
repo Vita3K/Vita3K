@@ -255,6 +255,18 @@ void PipelineCache::set_async_compilation(bool enable) {
     }
 }
 
+void PipelineCache::clean_pipeline_cache() {
+    for (const auto &[_, pipeline] : pipelines)
+        state.device.destroyPipeline(pipeline);
+    for (const auto &[_, shader] : shaders)
+        state.device.destroyShaderModule(shader);
+    state.device.destroyPipelineCache(pipeline_cache);
+
+    shader_interlock_pass.clear();
+    pipelines.clear();
+    shaders.clear();
+}
+
 // magic number put at the beginning of the pipeline cache file
 constexpr uint32_t pipeline_cache_magic = 0xBEEF4321;
 

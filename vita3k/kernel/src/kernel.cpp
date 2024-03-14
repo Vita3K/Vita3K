@@ -170,6 +170,7 @@ void KernelState::exit_delete_all_threads() {
     for (auto [_, thread] : threads) {
         thread->exit_delete();
     }
+    paused_threads_status.clear();
 }
 
 void KernelState::pause_threads() {

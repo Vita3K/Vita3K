@@ -85,6 +85,9 @@ void AudioAdapter::audio_callback(uint8_t *stream, int len_bytes) {
 
 bool AudioState::init(const ResumeAudioThread &resume_thread, const std::string &adapter_name) {
     this->resume_thread = resume_thread;
+    this->adapter->temp_buffer.clear();
+    this->out_ports.clear();
+    this->in_port = {};
 
     set_backend(adapter_name);
     if (!adapter)

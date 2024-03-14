@@ -114,6 +114,7 @@ public:
     PipelineCache(VKState &state);
     void init();
 
+    void clean_pipeline_cache();
     void read_pipeline_cache();
     void save_pipeline_cache();
 

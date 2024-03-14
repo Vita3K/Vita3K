@@ -402,25 +402,24 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
     if (vfs::read_app_file(exec_buffer, emuenv.pref_path, emuenv.io.app_path, exec_path)) {
         if (argv && argv->get(emuenv.mem)) {
             size_t args = 0;
-            emuenv.load_exec_argv = "\"";
+            // emuenv.load_exec_argv = "\"";
             for (auto i = 0; argv[i]; i++) {
                 LOG_INFO("sceAppMgrLoadExec run with argument at {}: {}", i, argv[i].get(emuenv.mem));
                 if (i)
                     emuenv.load_exec_argv += ", ";
                 args += strlen(argv[i].get(emuenv.mem));
+
                 emuenv.load_exec_argv += argv[i].get(emuenv.mem);
             }
-            emuenv.load_exec_argv += "\"";
+            // emuenv.load_exec_argv += "\"";
 
             if (args > 1024)
                 return RET_ERROR(SCE_APPMGR_ERROR_TOO_LONG_ARGV);
         }
 
-        emuenv.kernel.exit_delete_all_threads();
-
         emuenv.load_app_path = emuenv.io.app_path;
         emuenv.load_exec_path = exec_path;
-        emuenv.load_exec = true;
+
         // make sure we are not stuck waiting for a gpu command
         emuenv.renderer->should_display = true;
 

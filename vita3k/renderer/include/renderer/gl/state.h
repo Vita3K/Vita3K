@@ -65,6 +65,7 @@ struct GLState : public renderer::State {
 
     void precompile_shader(const ShadersHash &hash) override;
     void preclose_action() override;
+    void clean_render() override;
 };
 
 } // namespace renderer::gl

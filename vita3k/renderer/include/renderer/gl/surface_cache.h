@@ -127,6 +127,16 @@ public:
         target = new_target;
     }
 
+    void clean_surface_cache() {
+        framebuffer_array.clear();
+        color_surface_textures.clear();
+        for (auto &ds : depth_stencil_textures) {
+            ds.flags = GLSurfaceCacheInfo::FLAG_FREE;
+        }
+        last_use_color_surface_index.clear();
+        last_use_depth_stencil_surface_index.clear();
+    }
+
     GLuint sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const float res_multiplier, SceFVector2 &texture_size);
     std::vector<uint32_t> dump_frame(Ptr<const void> address, uint32_t width, uint32_t height, uint32_t pitch, float res_multiplier, bool support_get_texture_sub_image);
 };
