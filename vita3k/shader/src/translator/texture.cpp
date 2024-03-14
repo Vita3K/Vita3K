@@ -164,7 +164,7 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
 
         if (texture_query.prod_pos >= 0) {
             spv::Id texture_coord = m_b.createLoad(texture_query.coord.first, spv::NoPrecision);
-            coord_inst.first = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { { true, texture_coord }, { true, texture_coord }, { false, 0 }, { false, 1 }, { true, static_cast<spv::Id>(texture_query.prod_pos) } });
+            coord_inst.first = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { { true, texture_coord }, { true, texture_coord }, { false, 0 }, { false, 1 }, { false, static_cast<uint32_t>(texture_query.prod_pos) } });
             proj = true;
         }
 
