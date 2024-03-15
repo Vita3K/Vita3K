@@ -26,6 +26,12 @@
 #define SCE_KERNEL_LOWEST_DEFAULT_PRIORITY (SCE_KERNEL_DEFAULT_PRIORITY + 31)
 #define SCE_KERNEL_CURRENT_THREAD_PRIORITY 0
 
+#define SCE_KERNEL_START_SUCCESS 0
+#define SCE_KERNEL_START_NO_RESIDENT 1
+#define SCE_KERNEL_START_FAILED 2
+#define SCE_KERNEL_STOP_SUCCESS 0
+#define SCE_KERNEL_STOP_FAIL 1
+
 #define SCE_KERNEL_THREAD_EVENT_TYPE_START 0x04
 #define SCE_KERNEL_THREAD_EVENT_TYPE_END 0x08
 
@@ -590,8 +596,7 @@ struct SceKernelModuleInfo {
     SceKernelSegmentInfo segments[MODULE_INFO_NUM_SEGMENTS];
     SceUInt state; //!< see:SceKernelModuleState
 };
-
-typedef std::shared_ptr<SceKernelModuleInfo> SceKernelModuleInfoPtr;
+static_assert(sizeof(SceKernelModuleInfo) == 0x1B8);
 
 struct SceKernelStartModuleOpt {
     SceSize size;
@@ -600,7 +605,12 @@ struct SceKernelStartModuleOpt {
     SceUInt32 start;
 };
 
-static_assert(sizeof(SceKernelModuleInfo) == 0x1B8);
+struct SceKernelStopModuleOpt {
+    SceSize size;
+    SceUInt32 flags;
+    SceUInt32 epilogue;
+    SceUInt32 stop;
+};
 
 struct SceKernelMemBlockInfo {
     SceSize size;

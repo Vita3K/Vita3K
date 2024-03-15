@@ -158,7 +158,7 @@ std::string to_debug_str<SceSysmoduleInternalModuleId>(const MemState &mem, SceS
     return std::to_string(mode);
 }
 
-static bool is_modules_enable(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
+static bool is_module_enabled(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
     if (emuenv.cfg.current_config.modules_mode == ModulesMode::MANUAL)
         return !emuenv.cfg.current_config.lle_modules.empty() && is_lle_module(module_id, emuenv);
     else
@@ -184,6 +184,7 @@ EXPORT(int, sceSysmoduleIsLoadedInternal, SceSysmoduleInternalModuleId module_id
     if (((module_id & 0xFFFF) == 0) || ((module_id & 0xFFFF) > 0x29))
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
 
+    std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
     if (std::find(emuenv.kernel.loaded_internal_sysmodules.begin(), emuenv.kernel.loaded_internal_sysmodules.end(), module_id) != emuenv.kernel.loaded_internal_sysmodules.end())
         return SCE_SYSMODULE_LOADED;
     else
@@ -196,13 +197,14 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
 
     LOG_INFO("Loading module ID: {}", to_debug_str(emuenv.mem, module_id));
-    if (is_modules_enable(emuenv, module_id)) {
+    if (is_module_enabled(emuenv, module_id)) {
         if (load_sys_module(emuenv, module_id))
             return SCE_SYSMODULE_LOADED;
         else
             return RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);
     } else {
-        emuenv.kernel.loaded_sysmodules.push_back(module_id);
+        std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
+        emuenv.kernel.loaded_sysmodules[module_id] = {};
         return SCE_SYSMODULE_LOADED;
     }
 }
@@ -231,7 +233,15 @@ EXPORT(int, sceSysmoduleLoadModuleInternalWithArg, SceSysmoduleInternalModuleId 
 
 EXPORT(int, sceSysmoduleUnloadModule, SceSysmoduleModuleId module_id) {
     TRACY_FUNC(sceSysmoduleUnloadModule, module_id);
-    return UNIMPLEMENTED();
+
+    if (is_module_enabled(emuenv, module_id)) {
+        return unload_sys_module(emuenv, module_id);
+    } else {
+        std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
+        emuenv.kernel.loaded_sysmodules.erase(module_id);
+
+        return 0;
+    }
 }
 
 EXPORT(int, sceSysmoduleUnloadModuleInternal, SceSysmoduleInternalModuleId module_id) {

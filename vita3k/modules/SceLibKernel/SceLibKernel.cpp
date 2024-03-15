@@ -1525,7 +1525,7 @@ EXPORT(SceUID, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *op
     return CALL_EXPORT(_sceKernelLoadModule, path, flags, option);
 }
 
-EXPORT(SceUID, sceKernelLoadStartModule, const char *moduleFileName, SceSize args, const Ptr<void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
+EXPORT(SceUID, sceKernelLoadStartModule, const char *moduleFileName, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
     TRACY_FUNC(sceKernelLoadStartModule, moduleFileName, args, argp, flags, pOpt, pRes);
     return CALL_EXPORT(_sceKernelLoadStartModule, moduleFileName, args, argp, flags, pOpt, pRes);
 }
@@ -1718,24 +1718,24 @@ EXPORT(int, sceKernelStackChkFail) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes) {
+EXPORT(int, sceKernelStartModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelStartModuleOpt *pOpt, int *pRes) {
     TRACY_FUNC(sceKernelStartModule, uid, args, argp, flags, pOpt, pRes);
     return CALL_EXPORT(_sceKernelStartModule, uid, args, argp, flags, pOpt, pRes);
 }
 
-EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
+EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, const Ptr<void> argp) {
     TRACY_FUNC(sceKernelStartThread, thid, arglen, argp);
     return CALL_EXPORT(_sceKernelStartThread, thid, arglen, argp);
 }
 
-EXPORT(int, sceKernelStopModule) {
-    TRACY_FUNC(sceKernelStopModule);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelStopModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelStopModuleOpt *pOpt, int *pRes) {
+    TRACY_FUNC(sceKernelStopModule, uid, args, argp, flags, pOpt, pRes);
+    return CALL_EXPORT(_sceKernelStopModule, uid, args, argp, flags, pOpt, pRes);
 }
 
-EXPORT(int, sceKernelStopUnloadModule) {
-    TRACY_FUNC(sceKernelStopUnloadModule);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelStopUnloadModule, SceUID uid, SceSize args, Ptr<const void> argp, SceUInt32 flags, const void *pOpt, int *pRes) {
+    TRACY_FUNC(sceKernelStopUnloadModule, uid, args, argp, flags, pOpt, pRes);
+    return CALL_EXPORT(_sceKernelStopUnloadModule, uid, args, argp, flags, pOpt, pRes);
 }
 
 EXPORT(int, sceKernelTryLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count) {
@@ -1782,9 +1782,9 @@ EXPORT(int, sceKernelTrySendMsgPipeVector) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelUnloadModule) {
-    TRACY_FUNC(sceKernelUnloadModule);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelUnloadModule, SceUID uid, SceUInt32 flags, const void *pOpt) {
+    TRACY_FUNC(sceKernelUnloadModule, uid, flags, pOpt);
+    return CALL_EXPORT(_sceKernelUnloadModule, uid, flags, pOpt);
 }
 
 EXPORT(int, sceKernelUnlockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int unlock_count) {
