@@ -99,8 +99,12 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
         }
     }
 
-    if (!found_accel && !found_gyro)
-        return;
+    if (!found_accel && !found_gyro) {
+        if (ctrl_state.udp_client.IsConnected())
+            ctrl_state.udp_client.GetGyroAccel(gyro, gyro_timestamp, accel, accel_timestamp);
+        else
+            return;
+    }
 
     // if timestamp is not available, use the current time instead
     if (gyro_timestamp == 0 || accel_timestamp == 0) {

@@ -101,7 +101,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
         }
     }
 
-    state.has_motion_support = found_gyro && found_accel;
+    state.has_motion_support = (found_gyro && found_accel) || state.udp_client.IsConnected();
 }
 
 static float keys_to_axis(const uint8_t *keys, SDL_Scancode code1, SDL_Scancode code2) {
