@@ -999,10 +999,10 @@ bool USSETranslatorVisitor::sop2(
     spv::Id src1_alpha = load(inst.opr.src1, 0b1000, src1_repeat_offset);
     spv::Id src2_alpha = load(inst.opr.src2, 0b1000, src2_repeat_offset);
 
-    src1_color = utils::convert_to_float(m_b, src1_color, DataType::UINT8, true);
-    src2_color = utils::convert_to_float(m_b, src2_color, DataType::UINT8, true);
-    src1_alpha = utils::convert_to_float(m_b, src1_alpha, DataType::UINT8, true);
-    src2_alpha = utils::convert_to_float(m_b, src2_alpha, DataType::UINT8, true);
+    src1_color = utils::convert_to_float(m_b, m_util_funcs, src1_color, DataType::UINT8, true);
+    src2_color = utils::convert_to_float(m_b, m_util_funcs, src2_color, DataType::UINT8, true);
+    src1_alpha = utils::convert_to_float(m_b, m_util_funcs, src1_alpha, DataType::UINT8, true);
+    src2_alpha = utils::convert_to_float(m_b, m_util_funcs, src2_alpha, DataType::UINT8, true);
 
     spv::Id src_color_type = m_b.getTypeId(src1_color);
     spv::Id src_alpha_type = m_b.getTypeId(src1_alpha);
@@ -1191,8 +1191,8 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
     spv::Id src1 = load(inst.opr.src1, 0b1111, 0);
     spv::Id src2 = load(inst.opr.src2, 0b1111, 0);
 
-    src1 = utils::convert_to_float(m_b, src1, DataType::UINT8, true);
-    src2 = utils::convert_to_float(m_b, src2, DataType::UINT8, true);
+    src1 = utils::convert_to_float(m_b, m_util_funcs, src1, DataType::UINT8, true);
+    src2 = utils::convert_to_float(m_b, m_util_funcs, src2, DataType::UINT8, true);
 
     spv::Id src_type = m_b.getTypeId(src1);
 
@@ -1442,12 +1442,12 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
     spv::Id src1_alpha = load(inst.opr.src1, 0b1000);
     spv::Id src2_alpha = load(inst.opr.src2, 0b1000);
 
-    src0_color = utils::convert_to_float(m_b, src0_color, DataType::UINT8, true);
-    src1_color = utils::convert_to_float(m_b, src1_color, DataType::UINT8, true);
-    src2_color = utils::convert_to_float(m_b, src2_color, DataType::UINT8, true);
-    src0_alpha = utils::convert_to_float(m_b, src0_alpha, DataType::UINT8, true);
-    src1_alpha = utils::convert_to_float(m_b, src1_alpha, DataType::UINT8, true);
-    src2_alpha = utils::convert_to_float(m_b, src2_alpha, DataType::UINT8, true);
+    src0_color = utils::convert_to_float(m_b, m_util_funcs, src0_color, DataType::UINT8, true);
+    src1_color = utils::convert_to_float(m_b, m_util_funcs, src1_color, DataType::UINT8, true);
+    src2_color = utils::convert_to_float(m_b, m_util_funcs, src2_color, DataType::UINT8, true);
+    src0_alpha = utils::convert_to_float(m_b, m_util_funcs, src0_alpha, DataType::UINT8, true);
+    src1_alpha = utils::convert_to_float(m_b, m_util_funcs, src1_alpha, DataType::UINT8, true);
+    src2_alpha = utils::convert_to_float(m_b, m_util_funcs, src2_alpha, DataType::UINT8, true);
 
     spv::Id src_color_type = m_b.getTypeId(src0_color);
     spv::Id src_alpha_type = m_b.getTypeId(src0_alpha);
