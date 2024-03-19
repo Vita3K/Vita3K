@@ -436,7 +436,7 @@ struct ProgramInput {
 };
 
 enum class ShaderPhase {
-    SampleRate, // Secondary phase
+    SampleRate = 0, // Secondary phase
     Pixel, // Primary phase
 
     Max,
