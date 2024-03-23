@@ -532,7 +532,7 @@ void free(MemState &state, Address address) {
 
     AllocMemPage &page = state.alloc_table[page_num];
     if (!page.allocated) {
-        LOG_CRITICAL("Freeing unallocated page");
+        LOG_CRITICAL("Freeing unallocated page: {}", address);
     }
     page.allocated = 0;
 

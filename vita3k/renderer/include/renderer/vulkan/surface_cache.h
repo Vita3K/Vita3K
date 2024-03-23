@@ -233,5 +233,14 @@ public:
     void clear_surfaces_changed() {
         cpu_surfaces_changed.clear();
     }
+
+    void clean_surface_cache() {
+        color_address_lookup.clear();
+        depth_address_lookup.clear();
+        stencil_address_lookup.clear();
+        // color_surface_queue = {};
+        // ds_surface_queue = {};
+        framebuffer_array.clear();
+    }
 };
 } // namespace renderer::vulkan

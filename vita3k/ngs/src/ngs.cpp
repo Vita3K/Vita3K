@@ -351,6 +351,9 @@ uint32_t Rack::get_required_memspace_size(MemState &mem, SceNgsRackDescription *
 }
 
 bool init(State &ngs, MemState &mem) {
+    ngs.definitions.reset();
+    ngs.systems.clear();
+
     voice_definition_init(ngs, mem);
 
     return true;
