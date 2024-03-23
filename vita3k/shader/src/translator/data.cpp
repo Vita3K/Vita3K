@@ -512,7 +512,7 @@ bool USSETranslatorVisitor::vpck(
 
     // source is int destination is float
     if (is_float_data_type(inst.opr.dest.type) && !is_float_data_type(inst.opr.src1.type)) {
-        source = utils::convert_to_float(m_b, source, inst.opr.src1.type, scale);
+        source = utils::convert_to_float(m_b, m_util_funcs, source, inst.opr.src1.type, scale);
     }
 
     // source is float destination is int

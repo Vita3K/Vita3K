@@ -1388,7 +1388,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
 
     if (!is_float_data_type(color_val_operand.type))
-        color = utils::convert_to_float(b, color, color_val_operand.type, true);
+        color = utils::convert_to_float(b, utils, color, color_val_operand.type, true);
 
     if (program.is_frag_color_used() && features.should_use_shader_interlock()) {
         spv::Id signed_i32 = b.makeIntType(32);

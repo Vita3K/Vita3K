@@ -59,7 +59,7 @@ spv::Id make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size)
 
 spv::Id unwrap_type(spv::Builder &b, spv::Id type);
 
-spv::Id convert_to_float(spv::Builder &b, spv::Id opr, DataType type, bool normal);
+spv::Id convert_to_float(spv::Builder &b, const SpirvUtilFunctions &utils, spv::Id opr, DataType type, bool normal);
 spv::Id convert_to_int(spv::Builder &b, const SpirvUtilFunctions &utils, spv::Id opr, DataType type, bool normal);
 
 spv::Id add_uvec2_uint(spv::Builder &b, spv::Id vec, spv::Id to_add);
