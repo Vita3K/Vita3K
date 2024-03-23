@@ -626,7 +626,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         const bool has_integer_multiplier = static_cast<int>(config.resolution_multiplier * 4.0f) % 4 == 0;
         // OpenGL does not support surface sync with a non-integer resolution multiplier
-        if (!is_vulkan && has_integer_multiplier)
+        if (!is_vulkan && !has_integer_multiplier)
             config.disable_surface_sync = true;
 
         if ((!is_vulkan && has_integer_multiplier) || emuenv.renderer->features.support_memory_mapping) {
