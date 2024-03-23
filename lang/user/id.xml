@@ -103,6 +103,7 @@ tergantung pada ukuran dan perangkat keras Kamu.</app_delete_description>
 		<an_error_occurred>Terjadi kesalahan.
 Kode kesalahan: {}</an_error_occurred>
 		<cancel>Batal</cancel>
+		<close>Tutup</close>
 		<delete>Hapus</delete>
 		<file_corrupted>File ini udah corrupt.</file_corrupted>
 		<microphone_disabled>Nonaktifkan microphone.</microphone_disabled>
@@ -387,32 +388,6 @@ Jangan matikan sistem atau tutup aplikasi ini.</warning_saving>
 		<no_notif>Tidak ada notifikasi.</no_notif>
 		<trophy_earned>Kamu telah mendapatkan trofi!</trophy_earned>
 	</indicator>
-
-	<initial_setup>
-		<back>Kembali</back>
-		<completed_setup>Kamu sekarang telah menyelesaikan penyiapan awal.
-Sistem Vita3K Kamu sudah siap!</completed_setup>
-		<select_language>Pilih bahasa.</select_language>
-		<select_pref_path>Pilih pref path.</select_pref_path>
-		<current_emu_path>Path emulator saat ini</current_emu_path>
-		<change_emu_path>Ubah Path Emulator</change_emu_path>
-		<reset_emu_path>Path Reset Emulator</reset_emu_path>
-		<install_highly_recommended>Menginstalasi kedua file firmware sangat direkomendasikan.</install_highly_recommended>
-		<installed>Instalasi:</installed>
-		<select_interface_settings>Pilih pengaturan interface.</select_interface_settings>
-		<show_info_bar>Bar Info Terlihat</show_info_bar>
-		<info_bar_description>Centang kotak untuk menampilkan Bar info di dalam pemilih aplikasi.
-Bar info adalah jam, level baterai, dan pusat notifikasi.</info_bar_description>
-		<show_live_area_screen>Apl Dilayar Live Area</show_live_area_screen>
-		<live_area_screen_description>Centang kotak untuk membuka Live Area secara default saat mengklik aplikasi.
-Jika dinonaktifkan, klik kanan pada aplikasi untuk membukanya.</live_area_screen_description>
-		<apps_list_grid>Mode Grid</apps_list_grid>
-		<apps_list_grid_description>Centang kotak untuk mengatur daftar aplikasi ke mode grid seperti PS Vita.</apps_list_grid_description>
-		<icon_size>Ukuran Icon Aplikasi</icon_size>
-		<select_icon_size>Pilih ukuran icon pilihan kamu.</select_icon_size>
-		<completed>Telah selesai.</completed>
-		<next>Lanjut</next>
-	</initial_setup>
 
 	<install_dialog>
 		<firmware_install>
@@ -741,7 +716,6 @@ lebih rendah dapat meningkatkan performa tetapi dapat membuat game tidak stabil 
 			<unwatch_import_calls>Hapus Impor Panggilan</unwatch_import_calls>
 			<watch_import_calls>Tonton Impor Panggilan</watch_import_calls>
 		</debug>
-		<close>Tutup</close>
 		<save_reboot>Simpan & BuatUlang</save_reboot>
 		<save_apply>Simpan & Terapkan</save_apply>
 		<save>Simpan</save>
@@ -818,6 +792,5 @@ berjalan.</check_compatibility>
 		<discord_help>Dukungan tambahan dapat ditemukan di saluran #help channel dari</discord_help>
 		<no_piracy>Vita3K tidak memaafkan pembajakan. Kamu harus dump game kamu sendiri.</no_piracy>
 		<show_next_time>Tunjukkan lain kali</show_next_time>
-		<close>Tutup</close>
 	</welcome>
 </lang>

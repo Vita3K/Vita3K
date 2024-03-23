@@ -80,6 +80,7 @@ dependendo de seu tamanho e hardware.</app_delete_description>
 		<an_error_occurred>Ocorreu um erro.
 Código de erro: {}</an_error_occurred>
 		<cancel>Cancelar</cancel>
+		<close>Fechar</close>
 		<delete>Excluir</delete>
 		<file_corrupted>O arquivo está corrompido.</file_corrupted>
 		<microphone_disabled>Ative o microfone.</microphone_disabled>
@@ -408,7 +409,6 @@ fundo</add_background>
 		</system>
 		<network name="Rede">
 		</network>
-		<close>Fechar</close>
 		<save>Salvar</save>
 	</settings_dialog>
 
@@ -476,8 +476,4 @@ Quando o download terminar, Vita3K será reiniciado automaticamente e o novo atu
 		<update>Atualizar</update>
 		<version>Versão {}</version>
 	</vita3k_update>
-
-	<welcome name="Welcome to Vita3K">
-		<close>Fechar</close>
-	</welcome>
 </lang>

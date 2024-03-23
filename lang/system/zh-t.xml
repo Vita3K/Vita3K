@@ -22,7 +22,7 @@
 			<condition_variables>條件變量</condition_variables>
 			<lightweight_condition_variables>輕量條件變量</lightweight_condition_variables>
 			<event_flags>事件標志</event_flags>
-			<memory_allocations>内存分配</memory_allocations>
+			<memory_allocations>內存分配</memory_allocations>
 			<disassembly>反匯編</disassembly>
 		</debug>
 		<configuration name="組態">
@@ -67,8 +67,6 @@
 		<license>授權</license>
 		<shaders_cache>著色器快取</shaders_cache>
 		<shaders_log>著色器記錄</shaders_log>
-		<export_textures>導出紋理</export_textures>
-		<import_textures>導入紋理</import_textures>
 		<manual>說明書</manual>
 		<update>更新</update>
 		<update_history>更新履歷</update_history>
@@ -110,6 +108,7 @@
 		<an_error_occurred>發生錯誤。
 錯誤編號：{}</an_error_occurred>
 		<cancel>取消</cancel>
+		<close>關閉</close>
 		<delete>刪除</delete>
 		<file_corrupted>檔案已毀損。</file_corrupted>
 		<microphone_disabled>請啟用麥克風。</microphone_disabled>
@@ -648,7 +647,7 @@
 並非所有顯卡都與此兼容。</spirv_shader_description>
 			<clean_shaders>清除著色器快取以及記錄</clean_shaders>
 			<fps_hack>FPS修改</fps_hack>
-			<fps_hack_description>遊戲修改允許一些以30fps運行的遊戲在模擬器上以60fps的速度運行。
+			<fps_hack_description>遊戲修改允許一些以30 FPS運行的遊戲在模擬器上以60 FPS的速度運行。
 請注意這只是一個修改，僅適用於某些遊戲。
 在其他遊戲中，它可能沒有效果或使其出現兩倍速。</fps_hack_description>
 		</gpu>
@@ -810,7 +809,6 @@
 			<unwatch_import_calls>取消監視導入調用</unwatch_import_calls>
 			<watch_import_calls>監視導入調用</watch_import_calls>
 		</debug>
-		<close>關閉</close>
 		<save_reboot>保存並重啟</save_reboot>
 		<save_apply>保存並應用</save_apply>
 		<save>保存</save>
@@ -901,6 +899,5 @@
 		<discord_help>可以在#help頻道中取得額外支援</discord_help>
 		<no_piracy>Vita3K不縱容盜版，您必須傾印您自己擁有的遊戲。</no_piracy>
 		<show_next_time>下次顯示</show_next_time>
-		<close>關閉</close>
 	</welcome>
 </lang>

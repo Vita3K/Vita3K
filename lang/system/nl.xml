@@ -57,6 +57,7 @@
 		<an_error_occurred>Er is een fout opgetreden.
 Foutcode: {}</an_error_occurred>
 		<cancel>Annuleren</cancel>
+		<close>Sluiten</close>
 		<delete>Verwijderen</delete>
 		<file_corrupted>Het bestand is beschadigd.</file_corrupted>
 		<microphone_disabled>Schakel de microfoon in.</microphone_disabled>
@@ -351,7 +352,6 @@ Je Vita3K-systeem is gereed!</completed_setup>
 		</system>
 		<network name="Netwerk">
 		</network>
-		<close>Sluiten</close>
 		<save>Opslaan</save>
 	</settings_dialog>
 
@@ -415,8 +415,4 @@ Nadat het downloaden is voltooid, Vita3K automatisch opnieuw gestart en wordt de
 		<update>Update</update>
 		<version>Versie {}</version>
 	</vita3k_update>
-
-	<welcome name="Welcome to Vita3K">
-		<close>Sluiten</close>
-	</welcome>
 </lang>

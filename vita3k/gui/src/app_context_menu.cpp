@@ -320,6 +320,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto &savedata_str = gui.lang.content_manager.saved_data;
     auto &common = emuenv.common_dialog.lang.common;
     auto &lang_compat = gui.lang.compatibility;
+    auto &textures = gui.lang.settings_dialog.gpu;
 
     const auto is_commercial_app = title_id.starts_with("PCS") || (title_id == "NPXS10007");
     const auto is_system_app = title_id.starts_with("NPXS") && (title_id != "NPXS10007");
@@ -478,9 +479,9 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_path(SHADER_CACHE_PATH.string());
                 if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.main["shaders_log"].c_str()))
                     open_path(SHADER_LOG_PATH.string());
-                if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["export_textures"].c_str()))
+                if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(textures["export_textures"].c_str()))
                     open_path(EXPORT_TEXTURES_PATH.string());
-                if (fs::exists(IMPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["import_textures"].c_str()))
+                if (fs::exists(IMPORT_TEXTURES_PATH) && ImGui::MenuItem(textures["import_textures"].c_str()))
                     open_path(IMPORT_TEXTURES_PATH.string());
                 ImGui::EndMenu();
             }
@@ -508,9 +509,9 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     fs::remove_all(SHADER_CACHE_PATH);
                 if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.main["shaders_log"].c_str()))
                     fs::remove_all(SHADER_LOG_PATH);
-                if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["export_textures"].c_str()))
+                if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(textures["export_textures"].c_str()))
                     fs::remove_all(EXPORT_TEXTURES_PATH);
-                if (fs::exists(IMPORT_TEXTURES_PATH) && ImGui::MenuItem(lang.main["import_textures"].c_str()))
+                if (fs::exists(IMPORT_TEXTURES_PATH) && ImGui::MenuItem(textures["import_textures"].c_str()))
                     fs::remove_all(IMPORT_TEXTURES_PATH);
                 ImGui::EndMenu();
             }

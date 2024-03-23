@@ -173,17 +173,25 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
     const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
+    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
 
     auto &ctrl = emuenv.ctrl;
     auto &lang = gui.lang.controllers;
+    auto &common = emuenv.common_dialog.lang.common;
 
     const auto has_controllers = ctrl.controllers_num > 0;
 
     if (has_controllers)
         ImGui::SetNextWindowSize(ImVec2(VIEWPORT_SIZE.x / 2.5f, 0), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::Begin(lang["title"].c_str(), &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##controllers", &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetWindowFontScale(RES_SCALE.x);
+    auto title_str = lang["title"].c_str();
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title_str).x / 2.f));
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title_str);
+    ImGui::Spacing();
+    ImGui::Separator();
+
     if (has_controllers) {
         const auto connected_str = fmt::format(fmt::runtime(lang["connected"].c_str()), ctrl.controllers_num);
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", connected_str.c_str());
@@ -214,9 +222,16 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     }
                     ImGui::SetNextWindowSize(ImVec2(VIEWPORT_SIZE.x / 1.4f, 0.f), ImGuiCond_Always);
                     ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-                    ImGui::Begin(lang["rebind_controls"].c_str(), &rebinds_is_open, ImGuiWindowFlags_NoSavedSettings);
+                    ImGui::Begin("##rebind_controls", &rebinds_is_open, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
                     ImGui::SetWindowFontScale(RES_SCALE.x);
+                    auto rebind_controls = lang["rebind_controls"].c_str();
+                    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(rebind_controls).x / 2.f));
+                    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", rebind_controls);
+                    ImGui::Spacing();
+                    ImGui::Separator();
+
                     auto &controls = gui.lang.controls;
+
                     const auto type = SDL_GameControllerTypeForIndex(i);
                     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", ctrl.controllers_name[i]);
                     ImGui::Separator();
@@ -298,6 +313,8 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
                         };
                         ImGui::Spacing();
+                        ImGui::Separator();
+                        ImGui::Spacing();
                         const auto led_color_str = lang["led_color"].c_str();
                         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(led_color_str).x / 2.f));
                         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", led_color_str);
@@ -341,6 +358,13 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                             }
                         }
                     }
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+                    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+                    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
+                        rebinds_is_open = false;
+
                     ImGui::End();
                 }
             }
@@ -359,6 +383,12 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     if (ImGui::Button(lang["reset_controller_binding"].c_str()))
         reset_controller_binding(emuenv);
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
+        gui.controls_menu.controllers_dialog = false;
 
     ImGui::End();
 }

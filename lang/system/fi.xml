@@ -51,6 +51,7 @@
 		<an_error_occurred>Virhe on tapahtunut.
 Virhekoodi: {}</an_error_occurred>
 		<cancel>Peruuta</cancel>
+		<close>Sulkea</close>
 		<delete>Poista</delete>
 		<file_corrupted>Tiedosto on vioittunt.</file_corrupted>
 		<microphone_disabled>Ota mikrofoni käyttöön.</microphone_disabled>
@@ -332,7 +333,6 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		</system>
 		<network name="Verkko">
 		</network>
-		<close>Sulkea</close>
 		<save>Tallenna</save>
 	</settings_dialog>
 
@@ -396,8 +396,4 @@ Kun lataus on valmis, Vita3K käynnistyy automaattisesti uudelleen ja asentaa si
 		<update>Päivitä</update>
 		<version>Versio {}</version>
 	</vita3k_update>
-
-	<welcome name="Welcome to Vita3K">
-		<close>Sulkea</close>
-	</welcome>
 </lang>
