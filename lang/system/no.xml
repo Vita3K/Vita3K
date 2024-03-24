@@ -51,6 +51,7 @@
 		<an_error_occurred>Det har oppstått en feil.
 Feilkode: {}</an_error_occurred>
 		<cancel>Avbryt</cancel>
+		<close>Lukke</close>
 		<delete>Slett</delete>
 		<file_corrupted>Filen er korrupt.</file_corrupted>
 		<microphone_disabled>Aktiver mikrofonen.</microphone_disabled>
@@ -331,7 +332,6 @@ Vita3K-systemet ditt er klart!</completed_setup>
 		</system>
 		<network name="Nettverk">
 		</network>
-		<close>Lukke</close>
 		<save>Lagre</save>
 	</settings_dialog>
 
@@ -394,8 +394,4 @@ Etter at Etter at nedlastingen er fullført, vil Vita3K starte på nytt automati
 		<update>Oppdater</update>
 		<version>Versjon {}</version>
 	</vita3k_update>
-
-	<welcome name="Welcome to Vita3K">
-		<close>Lukke</close>
-	</welcome>
 </lang>

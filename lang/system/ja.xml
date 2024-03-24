@@ -55,8 +55,6 @@
 		<license>ライセンス</license>
 		<shaders_cache>シェーダーキャッシュ</shaders_cache>
 		<shaders_log>シェーダーログ</shaders_log>
-		<export_textures>出力テクスチャ</export_textures>
-		<import_textures>入力テクスチャ</import_textures>
 		<manual>マニュアル</manual>
 		<update>アップデート</update>
 		<update_history>アップデート履歴</update_history>
@@ -98,6 +96,7 @@
 		<an_error_occurred>エラーが起きました。
 エラーコード：{}</an_error_occurred>
 		<cancel>キャンセル</cancel>
+		<close>閉じる</close>
 		<delete>削除</delete>
 		<file_corrupted>ファイルが壊れています。</file_corrupted>
 		<microphone_disabled>マイクを有効にしてください。</microphone_disabled>
@@ -707,7 +706,6 @@ GUIでのアジア地域のフォントサポートに必須です。
 			<read_end_sleep_description>データを読み取る際のスリープ試行時間。
 低い値はパフォーマンスを向上させる一方で、インターネットが非常に悪い場合はゲームを不安定にする可能性があります。</read_end_sleep_description>
 		</network>
-		<close>閉じる</close>
 		<save_reboot>保存して再起動</save_reboot>
 		<save_apply>保存して適用</save_apply>
 		<save>セーブ</save>
@@ -797,6 +795,5 @@ GUIでのアジア地域のフォントサポートに必須です。
 		<discord_help>その他の相談は、#help チャンネルで行うことができます。</discord_help>
 		<no_piracy>Vita3Kは著作権侵害を認めません。所有ゲームの吸出しを行ってください。</no_piracy>
 		<show_next_time>次回以降も表示</show_next_time>
-		<close>閉じる</close>
 	</welcome>
 </lang>

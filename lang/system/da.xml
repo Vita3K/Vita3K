@@ -51,6 +51,7 @@
 		<an_error_occurred>Der er opstået en fejl.
 Fejlkode: {}</an_error_occurred>
 		<cancel>Afbryd</cancel>
+		<close>Lukke</close>
 		<delete>Slet</delete>
 		<file_corrupted>Filen er defekt.</file_corrupted>
 		<microphone_disabled>Aktivér mikrofonen.</microphone_disabled>
@@ -331,7 +332,6 @@ Dit Vita3K-system er klart!</completed_setup>
 		</system>
 		<network name="Netværk">
 		</network>
-		<close>Lukke</close>
 		<save>Gem</save>
 	</settings_dialog>
 
@@ -394,8 +394,4 @@ Efter download er udført, vil Vita3K automatisk genstarte og derefter installer
 		<update>Opdater</update>
 		<version>Version {}</version>
 	</vita3k_update>
-
-	<welcome name="Welcome to Vita3K">
-		<close>Lukke</close>
-	</welcome>
 </lang>

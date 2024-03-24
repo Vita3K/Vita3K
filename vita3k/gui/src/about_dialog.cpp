@@ -56,13 +56,21 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
     const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
 
     auto &lang = gui.lang.about;
+    auto &common = emuenv.common_dialog.lang.common;
+
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::Begin(lang["title"].c_str(), &gui.help_menu.about_dialog, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("##about", &gui.help_menu.about_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
+    auto title_str = lang["title"].c_str();
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title_str).x / 2.f));
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title_str);
+    ImGui::Spacing();
+    ImGui::Separator();
     const auto HALF_WINDOW_WIDTH = ImGui::GetWindowWidth() / 2.f;
     ImGui::SetCursorPosX(HALF_WINDOW_WIDTH - (ImGui::CalcTextSize(window_title).x / 2.f));
-    ImGui::SetWindowFontScale(RES_SCALE.x);
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", window_title);
 
     ImGui::Spacing();
@@ -151,6 +159,12 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Text("%s", supporter);
         ImGui::EndTable();
     }
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
+        gui.help_menu.about_dialog = false;
 
     ImGui::End();
 }

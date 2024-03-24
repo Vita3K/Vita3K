@@ -1,0 +1,864 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="Файл">
+			<open_pref_path>Відкрити бажаний шлях</open_pref_path>
+			<open_textures_path>Відкрити шлях текстур</open_textures_path>
+			<install_firmware>Завантажити прошивку</install_firmware>
+			<install_pkg>Завантажити .pkg</install_pkg>
+			<install_zip>Завантажити .zip, .vpk</install_zip>
+			<install_license>Завантажити ліцензію</install_license>
+			<exit>Вихід</exit>
+		</file>
+		<emulation name="Емуляція">
+			<last_apps_used>Останні використані програми</last_apps_used>
+		</emulation>
+		<debug>
+			<threads>Потоки</threads>
+			<semaphores>Семафори</semaphores>
+			<mutexes>М'ютекси</mutexes>
+			<lightweight_mutexes>Легковагові м'ютекси</lightweight_mutexes>
+			<condition_variables>Умовні змінні</condition_variables>
+			<lightweight_condition_variables>Легковагові умовні змінні</lightweight_condition_variables>
+			<event_flags>Маркери події</event_flags>
+			<memory_allocations>Розподіл пам'яті</memory_allocations>
+			<disassembly>Дизасемблювання</disassembly>
+		</debug>
+		<configuration name="Конфігурація">
+			<user_management>Керування користувачами</user_management>
+		</configuration>
+		<controls name="Керування">
+			<keyboard_controls>Керування клавіатурою</keyboard_controls>
+		</controls>
+		<help name="Допомога">
+			<welcome>Вітання</welcome>
+		</help>
+	</main_menubar>
+
+	<about name="Інформація">
+		<vita3k>Vita3K: Емулятор PS Vita/PS TV. Перший у світі функціонуючий емулятор PS Vita/PS TV.</vita3k>
+		<about_vita3k>Vita3K - це експериментальний емулятор PlayStation Vita/PlayStation TV з відкритим кодом, написаний на C++ для операційних систем Windows, Linux, macOS та Android.</about_vita3k>
+		<special_credit>Особлива подяка: Піктограма Vita3K була розроблена:</special_credit>
+		<github_website>Якщо ви бажаєте зробити свій внесок, перегляньте наш:</github_website>
+		<vita3k_website>Відвідайте нашу веб-сторінку, аби дізнатися більше:</vita3k_website>
+		<ko-fi_website>Якщо ви хочете підтримати нас, то можете задонатити або підписатися на наш:</ko-fi_website>
+		<vita3k_staff>Команда Vita3K</vita3k_staff>
+		<developers>Розробники</developers>
+		<contributors>Вкладники</contributors>
+		<supporters>Спонсори</supporters>
+	</about>
+
+	<app_context>
+		<check_app_state>Перевірити стан програми</check_app_state>
+		<copy_vita3k_summary>Скопіювати звіт Vita3K</copy_vita3k_summary>
+		<open_state_report>Відкрити звіт про стан</open_state_report>
+		<create_state_report>Створити звіт про стан</create_state_report>
+		<update_database>Оновити базу даних</update_database>
+		<copy_app_info>Скопіювати інформацію про програму</copy_app_info>
+		<name_and_id>Ім'я та ідентифікатор</name_and_id>
+		<app_summary>Звіт роботи програми</app_summary>
+		<custom_config>Індивідуальна конфігурація</custom_config>
+		<create>Створити</create>
+		<edit>Редагувати</edit>
+		<remove>Вилучити</remove>
+		<open_folder>Відкрити папку</open_folder>
+		<addcont>Завантажуваний вміст</addcont>
+		<license>Ліцензія</license>
+		<shaders_cache>Кеш шейдерів</shaders_cache>
+		<shaders_log>Журнал шейдерів</shaders_log>
+		<export_textures>Експорт текстур</export_textures>
+		<import_textures>Імпорт текстур</import_textures>
+		<manual>Довідка</manual>
+		<update>Оновити</update>
+		<update_history>Оновити історію</update_history>
+		<history_version>Версія {}</history_version>
+		<information>Інформація</information>
+		<delete>
+			<app_delete>Ця програма та всі пов'язані дані, враховуючи збережені дані, будуть видалені.</app_delete>
+			<app_delete_description>Видалення програми може зайняти деякий час,
+в залежності від того, скільки місця вона займає на пристрої.</app_delete_description>
+			<addcont_delete>Ви хочете видалити дані цього доповнення?</addcont_delete>
+			<license_delete>Ви хочете видалити цю ліцензію?</license_delete>
+			<saved_data_delete>Ви хочете видалити ці збережені дані?</saved_data_delete>
+		</delete>
+		<info>
+			<eligible>Допущено</eligible>
+			<ineligible>Не допущено</ineligible>
+			<level>Рівень</level>
+			<name>Ім'я</name>
+			<trophy_earning>Отримання трофеїв</trophy_earning>
+			<parental_controls>Батьківський контроль</parental_controls>
+			<updated>Оновлено</updated>
+			<size>Розмір</size>
+			<version>Версія</version>
+			<title_id>Ідентифікатор</title_id>
+			<last_time_used>Востаннє запущено</last_time_used>
+			<time_used>Часу проведено</time_used>
+			<never>Жодного разу</never>
+		</info>
+		<time_used>
+			<time_used_seconds>{}секунд</time_used_seconds>
+			<time_used_minutes>{}хвилин:{}секунд</time_used_minutes>
+			<time_used_hours>{}годин:{}хвилин:{}секунд</time_used_hours>
+			<time_used_days>{}днів:{}годин:{}хвилин:{}секунд</time_used_days>
+			<time_used_weeks>{}тижнів:{}днів:{}годин:{}хвилин:{}секунд</time_used_weeks>
+		</time_used>
+	</app_context>
+
+	<common>
+		<an_error_occurred>Сталася помилка.
+Код помилки: {}</an_error_occurred>
+		<cancel>Відміна</cancel>
+		<close>Закрити</close>
+		<delete>Видалити</delete>
+		<file_corrupted>Файл пошкоджено.</file_corrupted>
+		<microphone_disabled>Увімкніть мікрофон.</microphone_disabled>
+		<no>Ні</no>
+		<ok>Добре</ok>
+		<please_wait>Будь ласка, зачекайте...</please_wait>
+		<search>Пошук</search>
+		<select_all>Обрати все</select_all>
+		<select>Обрати</select>
+		<submit>Підтвердити</submit>
+		<yes>Так</yes>
+		<wday>
+			<day>Неділя</day>
+			<day>Понеділок</day>
+			<day>Вівторок</day>
+			<day>Середа</day>
+			<day>Четверг</day>
+			<day>П'ятниця</day>
+			<day>Субота</day>
+		</wday>
+		<ymonth>
+			<month>Січень</month>
+			<month>Лютий</month>
+			<month>Березень</month>
+			<month>Квітень</month>
+			<month>Травень</month>
+			<month>Червень</month>
+			<month>Липень</month>
+			<month>Серпень</month>
+			<month>Вересень</month>
+			<month>Жовтень</month>
+			<month>Листопад</month>
+			<month>Грудень</month>
+		</ymonth>
+		<small_ymonth>
+			<month>Січень</month>
+			<month>Лютий</month>
+			<month>Березень</month>
+			<month>Квітень</month>
+			<month>Травень</month>
+			<month>Червень</month>
+			<month>Липень</month>
+			<month>Серпень</month>
+			<month>Вересень</month>
+			<month>Жовтень</month>
+			<month>Листопад</month>
+			<month>Грудень</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</small_mday>
+		<hidden_trophy>Прихований трофей</hidden_trophy>
+		<one_hour_ago>Годину тому</one_hour_ago>
+		<one_minute_ago>Хвилину тому</one_minute_ago>
+		<bronze>Бронза</bronze>
+		<gold>Золото</gold>
+		<platinum>Платина</platinum>
+		<silver>Срібло</silver>
+		<hours_ago>{} Годин тому</hours_ago>
+		<minutes_ago>{} Хвилин тому</minutes_ago>
+	</common>
+
+	<compatibility name="Сумісність">
+		<states>
+			<state id = "-1">Невідомо</state>
+			<state id = "0">Не запускається</state>
+			<state id = "1">Запускається</state>
+			<state id = "2">Заставка</state>
+			<state id = "3">Меню</state>
+			<state id = "4">У грі -</state>
+			<state id = "5">У грі +</state>
+			<state id = "6">Можливо грати</state>
+		</states>
+	</compatibility>
+
+	<compat_db>
+		<error>Помилка</error>
+		<information>Інформація</information>
+		<get_failed>Не вдалося під'єднатися до бази даних сумісностей, перевірте доступ до брендмауеру/Інтернету, та спробуйте ще раз пізніше.</get_failed>
+		<download_failed>Не вдалося завантажити базу даних сумісностей програм, що була оновлена у: {}, спробуйте ще раз пізніше.</download_failed>
+		<load_failed>Не вдалося завантажити базу даних сумісностей програм, що була завантажена та оновлена у: {}.</load_failed>
+		<new_app_listed>База даних суміснотей була успішно оновлена з {} до {}.&#xA;
+{} Нову програму/програми виявлено, загалом налічується {}!</new_app_listed>
+		<app_listed>База даних суміснотей була успішно оновлена з {} до {}.&#xA;
+{} програм виявлено!</app_listed>
+		<download_app_listed>База даних сумісностей, що була оновлена у {} успішно завантажена.&#xA;
+{} програм виявлено!</download_app_listed>
+	</compat_db>
+
+	<compile_shaders>
+		<compiling_shaders>Компіляція шейдерів</compiling_shaders>
+		<pipelines_compiled>{} Конвеєрів скомпільовано</pipelines_compiled>
+		<shaders_compiled>{} Шейдерів скомпільовано</shaders_compiled>
+	</compile_shaders>
+
+	<content_manager name="Керування вмістом">
+		<application name="Програми">
+			<delete>Обрані програми та всі пов'язані дані, разом зі збереженими даними, будуть видалені.</delete>
+			<no_item>Дані відсутні.</no_item>
+		</application>
+		<saved_data name="Збережені дані">
+			<delete>Обрані збережені дані буде видалено.</delete>
+			<no_saved_data>Збережені дані не виявлено.</no_saved_data>
+		</saved_data>
+		<theme>Тема</theme>
+		<free_space>Вільного місця</free_space>
+		<clear_all>Очистити все</clear_all>
+	</content_manager>
+
+	<controllers name="Контролери">
+		<connected>{} Контролерів під'єднано</connected>
+		<name>Назва</name>
+		<num>Кількість</num>
+		<not_connected>Сумісні контролери не підключені.
+Будь ласка, підключіть контролер, сумісний з SDL2.</not_connected>
+		<motion_support>Контролер має сенсори руху</motion_support>
+		<rebind_controls>Прив'язка елементів керування</rebind_controls>
+		<led_color>Колір світлодіоду</led_color>
+		<use_custom_color>Використати власний колір</use_custom_color>
+		<use_custom_color_description>Оберіть цей пункт, аби використати власний колір світлодіоду контролера.</use_custom_color_description>
+		<red>Червоний</red>
+		<green>Зелений</green>
+		<blue>Синій</blue>
+		<reset_controller_binding>Скинути налаштування елементів керування контролера</reset_controller_binding>
+	</controllers>
+
+	<controls name="Керування">
+		<button>Кнопка</button>
+		<mapped_button>Прив'язана кнопка</mapped_button>
+		<left_stick_up>Лівий стік догори</left_stick_up>
+		<left_stick_down>Лівий стік донизу</left_stick_down>
+		<left_stick_right>Лівий стік праворуч</left_stick_right>
+		<left_stick_left>Лівий стік ліворуч</left_stick_left>
+		<right_stick_up>Правий стік догори</right_stick_up>
+		<right_stick_down>Правий стік донизу</right_stick_down>
+		<right_stick_right>Правий стік праворуч</right_stick_right>
+		<right_stick_left>Правий стік ліворуч</right_stick_left>
+		<d_pad_up>D-pad догори</d_pad_up>
+		<d_pad_down>D-pad донизу</d_pad_down>
+		<d_pad_right>D-pad праворуч</d_pad_right>
+		<d_pad_left>D-pad ліворуч</d_pad_left>
+		<square_button>Квадрат</square_button>
+		<cross_button>Хрестик</cross_button>
+		<circle_button>Кружечок</circle_button>
+		<triangle_button>Трикутник</triangle_button>
+		<start_button>Кнопка Start</start_button>
+		<select_button>Кнопка Select</select_button>
+		<ps_button>Кнопка PS</ps_button>
+		<l1_button>Кнопка L1</l1_button>
+		<r1_button>Кнопка R1</r1_button>
+		<ps_tv_mode>Лише у режимі PS TV.</ps_tv_mode>
+		<l2_button>Кнопка L2</l2_button>
+		<r2_button>Кнопка R2</r2_button>
+		<l3_button>Кнопка L3</l3_button>
+		<r3_button>Кнопка R3</r3_button>
+		<gui>Інтерфейс</gui>
+		<full_screen>Повний екран</full_screen>
+		<toggle_touch>Перемикання сенсора</toggle_touch>
+		<toggle_touch_description>Перемикання між заднім сенсором та сенсорним екраном.</toggle_touch_description>
+		<toggle_gui_visibility>Перемикання видимості інтерфейсу</toggle_gui_visibility>
+		<toggle_gui_visibility_description>Перемикає видимість інтерфейсу у верхній частині екрану коли програма функціонує.</toggle_gui_visibility_description>
+		<miscellaneous>Інше</miscellaneous>
+		<toggle_texture_replacement>Перемикання заміни текстур</toggle_texture_replacement>
+		<take_a_screenshot>Зробити знімок екрану</take_a_screenshot>
+		<error>Помилка</error>
+		<error_duplicate_key>Кнопка вже прив'язана або її неможливо прив'язати.</error_duplicate_key>
+	</controls>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Підготовка до запуску програми...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Ви хочете відмінити видалення?</cancel_deleting>
+				<deletion_complete>Видалення завершене.</deletion_complete>
+				<delete_saved_data>Ви хочете видалити ці збережені дані?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Деталі</details>
+				<updated>Оновлено</updated>
+			</info>
+			<load name="Завантажити">
+				<cancel_loading>Ви хочете відмінити завантаження?</cancel_loading>
+				<no_saved_data>Збережені дані не виявлені.</no_saved_data>
+				<load_complete>Завантаження завершене.</load_complete>
+				<loading>Завантаження...</loading>
+				<load_saved_data>Ви хочете завантажити ці збережені дані?</load_saved_data>
+			</load>
+			<save name="Зберегти">
+				<cancel_saving>Ви хочете відмінити збереження?</cancel_saving>
+				<could_not_save>Не вдалося зберегти файл.
+Недостатньо вільного місця на карті пам'яті.</could_not_save>
+				<not_free_space>Недостатньо вільного місця на карті пам'яті.</not_free_space>
+				<new_saved_data>Нові збережені дані</new_saved_data>
+				<saving_complete>Збереження завершене.</saving_complete>
+				<save_the_data>Ви хочете зберегти дані?</save_the_data>
+				<saving>Збереження...</saving>
+				<warning_saving>Збереження...
+Не вимикайте систему та не закривайте програму.</warning_saving>
+				<overwrite_saved_data>Ви хочете перезаписати ці збережені дані?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>Ця програма буде закрита.</app_close>
+		<data_delete>Дані, що будуть видалені:</data_delete>
+	</game_data>
+
+	<home_screen>
+		<filter>Фільтр</filter>
+		<sort_app>Сортувати програми за</sort_app>
+		<all>Все</all>
+		<by_region>За регіоном</by_region>
+		<usa>США</usa>
+		<europe>Європа</europe>
+		<japan>Японія</japan>
+		<asia>Азія</asia>
+		<by_type>За типом</by_type>
+		<commercial>Комерційне</commercial>
+		<homebrew>Homebrew</homebrew>
+		<by_compatibility_state>За статусом сумісності</by_compatibility_state>
+		<ver>Версія</ver>
+		<cat>Каталог</cat>
+		<comp>Сумісність</comp>
+		<last_time>Останній запуск</last_time>
+		<refresh>Оновити</refresh>
+	</home_screen>
+
+	<indicator>
+		<app_added_home>Програму було додано на головний екран.</app_added_home>
+		<delete_all>Видалити все</delete_all>
+		<notif_deleted>Сповіщення будуть видалені.</notif_deleted>
+		<install_failed>Не вдалося завантажити.</install_failed>
+		<install_complete>Завантаження завершене.</install_complete>
+		<installing>Завантаження...</installing>
+		<no_notif>Сповіщень немає.</no_notif>
+		<trophy_earned>Ви отримали трофей!</trophy_earned>
+	</indicator>
+
+	<install_dialog>
+		<firmware_install>
+			<firmware_installation>Завантаження прошивки</firmware_installation>
+			<firmware_installing>Завантаження триває, будь ласка, зачекайте...</firmware_installing>
+			<successed_install_firmware>Прошивку успішно завантажено.</successed_install_firmware>
+			<firmware_version>Версія прошивки:</firmware_version>
+			<no_font_exist>Пакет шрифтів прошивки відсутній, будь ласка, завантажте його.</no_font_exist>
+			<download_firmware_font_package>Завантажити пакет шрифтів прошивки</download_firmware_font_package>
+			<firmware_font_package_description>Пакет шрифтів прошивки потрібен для деяких програм,
+а також для підтримки шрифтів азійського регіону. (загалом рекомендовано)</firmware_font_package_description>
+			<delete_firmware>Видалити файл завантаження прошивки?</delete_firmware>
+		</firmware_install>
+		<pkg_install>
+			<select_license_type>Обрати тип ліцензії</select_license_type>
+			<select_bin_rif>Обрати work.bin/rif</select_bin_rif>
+			<enter_zrif>Ввести zRIF</enter_zrif>
+			<enter_zrif_key>Ввести ключ zRIF</enter_zrif_key>
+			<input_zrif>Будь ласка, введіть свій zRIF тут</input_zrif>
+			<copy_paste_zrif>Ctrl (Cmd) + C аби скопіювати, Ctrl (Cmd) + V аби вставити.</copy_paste_zrif>
+			<delete_pkg>Видалити файл pkg?</delete_pkg>
+			<delete_bin_rif>Видалити файл work.bin/rif?</delete_bin_rif>
+			<failed_install_package>Не вдалося завантажити пакет.
+Будь ласка, перевірте файли pkg та work.bin/rif або ключ zRIF.</failed_install_package>
+		</pkg_install>
+		<archive_install>
+			<select_install_type>Оберіть тип завантаження</select_install_type>
+			<select_file>Оберіть файл</select_file>
+			<select_directory>Оберіть директорію</select_directory>
+			<compatible_content>{} архівів з сумісним вмістом було знайдено.</compatible_content>
+			<successed_install_archive>{} архівів успішно завантажено:</successed_install_archive>
+			<update_app>Оновити програму до:</update_app>
+			<failed_install_archive>Не вдалося завантажити вміст {} архівів:</failed_install_archive>
+			<not_compatible_content>Не знайдено сумісного вмісту у {} архівах:</not_compatible_content>
+			<delete_archive>Видалити архів?</delete_archive>
+		</archive_install>
+		<license_install>
+			<successed_install_license>Ліцензію успішно завантажено.</successed_install_license>
+			<failed_install_license>Не вдалося завантажити ліцензію.
+Будь ласка, перевірте файл work.bin/rif або ключ zRIF.</failed_install_license>
+		</license_install>
+		<reinstall>
+			<reinstall_content>Перевстановити цей вміст?</reinstall_content>
+			<already_installed>Цей вміст вже встановлено.</already_installed>
+			<reinstall_overwrite>Чи бажаєте ви перевстановити його та перезаписати існуючі дані?</reinstall_overwrite>
+		</reinstall>
+	</install_dialog>
+
+	<live_area>
+		<start>Запуск</start>
+		<continue>Продовжити</continue>
+		<help>
+			<control_setting>Використовуючи конфігурацію для клавіатури в налаштуваннях керування</control_setting>
+			<firmware_not_detected>Прошивку не виявлено. Настійно рекомендується завантаження</firmware_not_detected>
+			<firmware_font_not_detected>Шрифт прошивки не виявлено. Завантаження рекомендується для шрифта тексту Live Area</firmware_font_not_detected>
+			<live_area_help>Довідка Live Area</live_area_help>
+			<browse_app>Перегляд списку програм</browse_app>
+			<browse_app_control>D-pad, лівий стік, коліщатко догори/донизу або використовуючи повзунок</browse_app_control>
+			<start_app>Запуск програми</start_app>
+			<start_app_control>натисніть на Start або на хрестик</start_app_control>
+			<show_hide>Показати/приховати Live Area під час роботи програми</show_hide>
+			<show_hide_control>Натиснути PS</show_hide_control>
+			<exit_livearea>Вийти з Live Area</exit_livearea>
+			<exit_livearea_control>Натиснути Esc або кружечок</exit_livearea_control>
+			<manual_help>Довідка по інструкції</manual_help>
+			<browse_page>Перегляд сторінки</browse_page>
+			<browse_page_control>D-pad, лівий стік, коліщатко догори/донизу, використовуючи повзунок або настиснути &lt;/&gt;</browse_page_control>
+			<hide_show>Приховати/показати кнопку</hide_show>
+			<hide_show_control>Натиснути лівий стік або трикутник</hide_show_control>
+			<exit_manual>закрити довідку</exit_manual>
+			<exit_manual_control>Натиснути Esc або PS</exit_manual_control>
+		</help>
+	</live_area>
+
+	<settings name="Налаштування">
+		<theme_background name="Тема та фон">
+			<default>За замовчуванням</default>
+			<theme name="Тема">
+				<find_a_psvita_custom_themes>Знайти користувацькі теми для PSVita</find_a_psvita_custom_themes>
+				<information name="Інформація">
+					<name>Назва</name>
+					<provider>Постачальник</provider>
+					<updated>Оновлено</updated>
+					<size>Розмір</size>
+					<version>Версія</version>
+					<content_id>Ідентифікатор вмісту</content_id>
+				</information>
+				<delete>Цю тему буде видалено.</delete>
+			</theme>
+			<start_screen name="Початковий екран">
+				<image>Зображення</image>
+				<add_image>Додати зображення</add_image>
+			</start_screen>
+			<home_screen_backgrounds name="Фон початкового екрану">
+				<delete_background>Видалити фон</delete_background>
+				<add_background>Додати фон</add_background>
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Дата і час">
+			<date_format name ="Формат дати">
+				<yyyy_mm_dd>РРРР/ММ/ДД</yyyy_mm_dd>
+				<dd_mm_yyyy>ДД/ММ/РРРР</dd_mm_yyyy>
+				<mm_dd_yyyy>ММ/ДД/РРРР</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Формат часу">
+				<clock_12_hour>12-годинний формат</clock_12_hour>
+				<clock_24_hour>24-годинний формат</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Мова">
+			<system_language>Мова системи</system_language>
+			<input_language name="Мови введення">
+				<keyboards name="Клавіатури">
+					<ime_languages>
+						<lang id="1">Данська</lang>
+						<lang id="2">Німецька</lang>
+						<lang id="262144">Англійська (Сполучене Королівство)</lang>
+						<lang id="4">Англійська (Сполучені Штати)</lang>
+						<lang id="8">Іспанська</lang>
+						<lang id="16">Французька</lang>
+						<lang id="32">Італійська</lang>
+						<lang id="64">Нідерландська</lang>
+						<lang id="128">Норвезька</lang>
+						<lang id="256">Польська</lang>
+						<lang id="131072">Португальська (Бразилія)</lang>
+						<lang id="512">Португальська (Португалія)</lang>
+						<lang id="1024">Російська</lang>
+						<lang id="2048">Фінська</lang>
+						<lang id="4096">Шведська</lang>
+						<lang id="524288">Турецька</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<settings_dialog name="Налаштування">
+		<core name="Система">
+			<modules_mode>Режим модулів</modules_mode>
+			<modules_list>Список модулів</modules_list>
+			<select_modules>Оберіть бажані модулі.</select_modules>
+			<search_modules>Пошук модулів</search_modules>
+			<clear_list>Очистити список</clear_list>
+			<no_modules>Модулі відсутні.
+Будь ласка, завантажте останню прошивку PS Vita.</no_modules>
+			<refresh_list>Оновити список</refresh_list>
+		</core>
+		<cpu>
+			<unicorn>Unicorn (застарілий)</unicorn>
+			<cpu_backend>Бекенд центрального процесора</cpu_backend>
+			<select_cpu_backend>Оберіть бажаний бекенд центрального процесора.</select_cpu_backend>
+			<cpu_opt>Дозволити оптимізації</cpu_opt>
+			<cpu_opt_description>Оберіть цей пункт, аби дозволити додаткові JIT-оптимізації процесора.</cpu_opt_description>
+		</cpu>
+		<gpu>
+			<reset>Скинути</reset>
+			<backend_renderer>Рендер бекенду</backend_renderer>
+			<select_backend_renderer>Оберіть бажаний рендер бекенду.</select_backend_renderer>
+			<gpu>Графічний процесор (перезавантажте систему, аби застосувати)</gpu>
+			<select_gpu>Оберіть графічний процесор, на якому буде запускатися Vita3K.</select_gpu>
+			<standard>Стандарт</standard>
+			<high>Високо</high>
+			<renderer_accuracy>Точність рендеру</renderer_accuracy>
+			<v_sync>Вертикальна синхронізація</v_sync>
+			<v_sync_description>Вимикання вертикальної синхронізації може покращити швидкодію деяких ігор.
+Рекомендується увімкнути цей параметр, аби уникнути розривів зображення.</v_sync_description>
+			<disable_surface_sync>Вимкнути синхронізацію поверхні</disable_surface_sync>
+			<surface_sync_description>Оберіть цей пункт, аби вимкнути сихронізацію поверхонь центрального та графічного процесорів.
+Синхронізація поверхні необхідна для деяких ігор.
+Суттєво збільшує продуктивність, якщо вимкнена (особливо якщо ввімкнено апскейлінг).</surface_sync_description>
+			<async_pipeline_compilation>Асинхронна компіляція конвеєрів</async_pipeline_compilation>
+			<async_pipeline_compilation_description>Дозволяє конвеєрам компілюватись одночасно на декількох потоках.
+Це покращує якість компіляції за рахунок тимчасових графічних збоїв.</async_pipeline_compilation_description>
+			<nearest>Поблизу</nearest>
+			<bilinear>Білінійно</bilinear>
+			<bicubic>Бікубічно</bicubic>
+			<screen_filter>Фільтр екрану</screen_filter>
+			<screen_filter_description>Увімкніть фільтр постобробки, аби застосувати.</screen_filter_description>
+			<internal_resolution_upscaling>Покращення внутрішньої роздільності</internal_resolution_upscaling>
+			<internal_resolution_upscaling_description>Увімкнути покращення внутрішньої роздільності на Vita3K.
+Експериментально: правильний рендеринг ігор на роздільності більшій, ніж 1х, не гарантовано.</internal_resolution_upscaling_description>
+			<anisotropic_filtering>Анізотропна фільтрація</anisotropic_filtering>
+			<anisotropic_filtering_description>Анізотропна фільтрація - це технологія покращення якості зображення поверхонь, 
+що нахилені з точки зору глядача.
+Технологія не має недоліків, але може вплинути на продуктивність системи.</anisotropic_filtering_description>
+			<texture_replacement>Заміна текстур</texture_replacement>
+			<export_textures>Експорт текстур</export_textures>
+			<import_textures>Імпорт текстур</import_textures>
+			<texture_exporting_format>Формат екпорту текстур</texture_exporting_format>
+			<shaders>Шейдери</shaders>
+			<shader_cache>Використовувати кеш шейдерів</shader_cache>
+			<shader_cache_description>Оберіть цей пункт, аби дозволити кешу компілюватися зазделегідь під час запуску гри.
+Приберіть позначку, аби відключити функцію.</shader_cache_description>
+			<spirv_shader>Використовувати шейдер Spir-V (застарілий)</spirv_shader>
+			<spirv_shader_description>Передати отриманий шейдер Spir-V напряму до драйвера.
+Зауважте, що деякі корисні розширення будуть відключені,
+і не всі графічні процесори сумісні з цим шейдером.</spirv_shader_description>
+			<clean_shaders>Очистити кеш та журнал шейдерів</clean_shaders>
+			<fps_hack>Злам FPS</fps_hack>
+			<fps_hack_description>Злам ігор, що дозволяє запускати деякі ігри у 60 FPS замість 30.
+Зауважте, що це буде працювати лише у деяких іграх.
+У інших іграх злам не матиме ніякого ефекту, або покращить їх швидкодію.</fps_hack_description>
+		</gpu>
+		<audio name="Звук">
+			<audio_backend>Бекенд звуку</audio_backend>
+			<select_audio_backend>Оберіть бажаний бекенд звуку.</select_audio_backend>
+			<audio_volume>Гучність</audio_volume>
+			<audio_volume_description>Регулює гучність усіх аудіовиходів.</audio_volume_description>
+			<enable_ngs_support>Увімкнути підтримку NGS</enable_ngs_support>
+			<ngs_description>Приберіть позначку, аби відключити підтримку розширеної аудіотеки NGS.</ngs_description>
+		</audio>
+		<system name="Система">
+			<select_enter_button>Призначення кнопки Enter
+Оберіть кнопку 'Enter'.</select_enter_button>
+			<enter_button_description>Ця кнопка використовується для підтвердження у діалогових вікнах.
+У деяких програмах це не працюватиме, натомість буде використовуватись кнопка підтвердження за замовчуванням.</enter_button_description>
+			<circle>Кружечок</circle>
+			<cross>Хрестик</cross>
+			<pstv_mode>Режим PS TV</pstv_mode>
+			<pstv_mode_description>Оберіть цей пункт, аби ввімкнути режим емуляції PS TV.</pstv_mode_description>
+			<show_mode>Режим показу</show_mode>
+			<show_mode_description>Оберіть цей пункт, аби ввімкнути режим показу.</show_mode_description>
+			<demo_mode>Демо-режим</demo_mode>
+			<demo_mode_description>Оберіть цей пункт, аби ввімкнути демо-режим.</demo_mode_description>
+		</system>
+		<emulator name="Емулятор">
+			<boot_apps_full_screen>Запускати програми у повноекранному режимі</boot_apps_full_screen>
+			<trace>Трасування</trace>
+			<info>Інформація</info>
+			<warning>Попередження</warning>
+			<error>Помилка</error>
+			<critical>Критична</critical>
+			<off>Вимкнено</off>
+			<log_level>Рівень журналу</log_level>
+			<select_log_level>Оберіть бажаний рівень журналу.</select_log_level>
+			<archive_log>Журнал архіву</archive_log>
+			<archive_log_description>Оберіть цей пункт, аби ввімкнути журнал архіву.</archive_log_description>
+			<discord_rich_presence>Дозволити запущеній програмі відображатися у Discord.</discord_rich_presence>
+			<texture_cache>Кеш текстур</texture_cache>
+			<texture_cache_description>Приберіть позначку, аби відключити кеш текстур.</texture_cache_description>
+			<show_compile_shaders>Відображати компіляцію шейдерів</show_compile_shaders>
+			<compile_shaders_description>Приберіть позначку, аби приховати вікно компіляції шейдерів.</compile_shaders_description>
+			<show_touchpad_cursor>Відображати курсор тачпаду</show_touchpad_cursor>
+			<touchpad_cursor_description>Приберіть позначку, аби приховати курсор тачпаду на екрані.</touchpad_cursor_description>
+			<log_compat_warn>Попередження помилки сумісності журналу</log_compat_warn>
+			<log_compat_warn_description>Оберіть цей пункт, аби відображати попередження помилки сумісності журналу.</log_compat_warn_description>
+			<check_for_updates>Перевірити наявність оновлень</check_for_updates>
+			<check_for_updates_description>Автоматично перевіряти наявність оновлень під час запуску.</check_for_updates_description>
+			<performance_overlay>Оверлей продуктивності</performance_overlay>
+			<performance_overlay_description>Відображати інформацію про продуктивність на екранному оверлеї.</performance_overlay_description>
+			<minimum>Мінімум</minimum>
+			<low>Низько</low>
+			<medium>Медіум</medium>
+			<maximum>Максимум</maximum>
+			<detail>Деталі</detail>
+			<select_detail>Оберіть бажаний елемент оверлею продуктивності.</select_detail>
+			<top_left>Зверху ліворуч</top_left>
+			<top_center>Зверху по центру</top_center>
+			<top_right>Зверху праворуч</top_right>
+			<bottom_left>Знизу ліворуч</bottom_left>
+			<bottom_center>Знизу по центру</bottom_center>
+			<bottom_right>Знизу праворуч</bottom_right>
+			<position>Позиція</position>
+			<select_position>Обрати бажане місце на екрані для оверлею продуктивності.</select_position>
+			<case_insensitive>Оберіть цей пункт, аби ввімкнути не чутливий до реєстру пошук шляху на чутливих до реєстру файлових системах.
+Скидається при перезавантаженні</case_insensitive>
+			<case_insensitive_description>Дозволяє емулятору шукати файли незалежно від реєстру
+на операційних системах окрім Windows.</case_insensitive_description>
+			<emu_storage_folder>Папка емульованої системи</emu_storage_folder>
+			<current_emu_path>Чинний шлях емулятора:</current_emu_path>
+			<change_emu_path>Змінити шлях емулятора</change_emu_path>
+			<change_emu_path_description>Змінити папку емулятора Vita3K.
+Необхідно власноруч перемістити стару папку на нове місце.</change_emu_path_description>
+			<reset_emu_path>Скинути шлях емулятора</reset_emu_path>
+			<reset_emu_path_description>Скинути шлях емулятора Vita3K до налаштувань за замовчуванням.
+Необхідно власноруч перемістити стару папку на нове місце.</reset_emu_path_description>
+			<custom_config_settings>Налаштування користувацької конфігурації</custom_config_settings>
+			<clear_custom_config>Скинути користувацьку конфігурацію</clear_custom_config>
+		</emulator>
+		<gui name="Графічний інтерфейс">
+			<show_gui>Графічний інтерфейс видимий</show_gui>
+			<gui_description>Оберіть цей пункт, аби відображати графічний інтерфейс під час запуску програми.</gui_description>
+			<show_info_bar>Інформаційна панель видима</show_info_bar>
+			<info_bar_description>Оберіть цей пункт, аби відображати інформаційну панель у селекторі програм.</info_bar_description>
+			<user_lang>Мова графічного інтерфейсу</user_lang>
+			<select_user_lang>Оберіть мову користувача.</select_user_lang>
+			<display_info_message>Відображати інформаційні повідомлення</display_info_message>
+			<display_info_message_description>Приберіть позначку, аби відображати інформаційні повідомлення лише у журналі.</display_info_message_description>
+			<display_system_apps>Відображати системні програми</display_system_apps>
+			<display_system_apps_description>Приберіть позначку, аби системні програми не відображалися на головному екрані.
+Вони будуть відображатися лише на панелі у головному меню.</display_system_apps_description>
+			<show_live_area_screen>Екран програми Live Area</show_live_area_screen>
+			<live_area_screen_description>Оберіть цей пункт, аби програма Live Area відкривалася за замовчуванням при натисканні на піктограму.
+Якщо програму вимкнено, натисніть на піктограму правим стіком, аби запустити.</live_area_screen_description>
+			<stretch_the_display_area>Розтягнути зону дисплею</stretch_the_display_area>
+			<stretch_the_display_area_description>Оберіть цей пункт, аби збільшити зону дисплею, щоб він вмістився у рамки екрану.</stretch_the_display_area_description>
+			<apps_list_grid>Режим сітки</apps_list_grid>
+			<apps_list_grid_description>Оберіть цей пункт, аби перенести список програм у режим сітки.</apps_list_grid_description>
+			<icon_size>Розмір піктограми програми</icon_size>
+			<select_icon_size>Оберіть бажаний розмір піктограми.</select_icon_size>
+			<font_support>Підтримка шрифтів</font_support>
+			<asia_font_support>Азійський регіон</asia_font_support>
+			<asia_font_support_description>Оберіть цей пункт, аби увімкнути підтримку шрифтів для китайської та корейської мови.
+Цей параметр використовуватиме більше пам'яті, і вам знадобиться перезавантажити емулятор.</asia_font_support_description>
+			<firmware_font_package_description>Прошивка пакету шрифтів необхідна для деяких програм,
+підтримки шрифтів азійського регіону і графічного інтерфейсу.
+Це загалом рекомендовано для графічного інтерфейсу.</firmware_font_package_description>
+			<theme_background>Тема & Фон</theme_background>
+			<current_theme_content_id>Чинний ідентифікатор теми:</current_theme_content_id>
+			<reset_default_theme>Скинути до базової теми</reset_default_theme>
+			<using_theme_background>Використання теми/фону</using_theme_background>
+			<clean_user_backgrounds>Очистити користувацькі фони</clean_user_backgrounds>
+			<current_start_background>Чинний фон початкового екрану:</current_start_background>
+			<reset_start_background>Скинути фон початкового екрану</reset_start_background>
+			<background_alpha>Прозорість фону</background_alpha>
+			<select_background_alpha>Оберіть бажану прозорість фону.
+Мінімум - непрозорий, максимум - прозорий.</select_background_alpha>
+			<delay_background>Затримка фону</delay_background>
+			<select_delay_background>Оберіть затримку (у секундах) між зміною фону.</select_delay_background>
+			<delay_start>Затримка початкового екрану</delay_start>
+			<select_delay_start>Оберіть затримку (у секундах) перш ніж станеться повернення на початковий екран.</select_delay_start>
+		</gui>
+		<network name="Мережа">
+			<psn_signed_in>підключено до PSN</psn_signed_in>
+			<psn_signed_in_description>Якщо обрано - гра буде вважати, що користувача підключено до PSN (однак підключення насправді відсутнє).</psn_signed_in_description>
+			<enable_http>Дозволити HTTP</enable_http>
+			<enable_http_description>Оберіть цей пункт, аби ігри мали змогу використовувати HTTP-протокол інтернету.</enable_http_description>
+			<timeout_attempts>Спроби під'єднання HTTP</timeout_attempts>
+			<timeout_attempts_description>Скільки разів спробувати під'єднатися, якщо сервер не відповідає.
+Може допомогти, якщо ви маєте дуже нестабільний або дуже слабкий інтернет.</timeout_attempts_description>
+			<timeout_sleep>Перехід HTTP у режим сну</timeout_sleep>
+			<timeout_sleep_description>Спроба увійти в режим сну, якщо сервер не відповідає.
+Може допомогти, якщо ви маєте дуже нестабільний або дуже слабкий інтернет.</timeout_sleep_description>
+			<read_end_attempts>Спроби прочитати дані протоколу HTTP</read_end_attempts>
+			<read_end_attempts_description>Скільки разів спробувати прочитати дані, якщо нових даних немає,
+зниження параметру може покращити продуктивність, але ігри можуть працювати нестабільно при слабкому інтернеті.</read_end_attempts_description>
+			<read_end_sleep>Режим сну після спроб прочитати дані протоколу HTTP</read_end_sleep>
+			<read_end_sleep_description>Спроба увійти у режим сну, якщо нових даних для читання немає,
+зниження параметру може покращити продуктивність, але ігри можуть працювати нестабільно при слабкому інтернеті.</read_end_sleep_description>
+		</network>
+		<debug>
+			<log_imports>Журналювання імпорту</log_imports>
+			<log_imports_description>Журналювати символи модуля імпорту.</log_imports_description>
+			<log_exports>Журналювання експорту</log_exports>
+			<log_exports_description>Журналювати символи модуля експорту.</log_exports_description>
+			<log_active_shaders>Журналювання шейдерів</log_active_shaders>
+			<log_active_shaders_description>Журнальовані шейдери використовуються при кожному виклику відтворення.</log_active_shaders_description>
+			<log_uniforms>Рівномірне журналювання</log_uniforms>
+			<log_uniforms_description>Рівномірно журналювати назви та значення шейдерів.</log_uniforms_description>
+			<color_surface_debug>Зберегти кольорові поверхні</color_surface_debug>
+			<color_surface_debug_description>Зберегти кольорові поверхні до файлів.</color_surface_debug_description>
+			<dump_elfs>Збереження у форматі ELF</dump_elfs>
+			<dump_elfs_description>Зберегти завантажений код у вигляді ELF-файлів.</dump_elfs_description>
+			<validation_layer>Рівень валідації (необхідний перезапуск)</validation_layer>
+			<validation_layer_description>Дозволити рівень валідації технології Vulkan.</validation_layer_description>
+			<unwatch_code>Не спостерігати за кодом</unwatch_code>
+			<watch_code>Спостерігати за кодом</watch_code>
+			<unwatch_memory>Не спостерігати за пам'яттю</unwatch_memory>
+			<watch_memory>Спостерігати за пам'яттю</watch_memory>
+			<unwatch_import_calls>Не спостерігати за імпортованими викликами</unwatch_import_calls>
+			<watch_import_calls>Спостерігати за імпортованими викликами</watch_import_calls>
+		</debug>
+		<save_reboot>Зберегти & Перезапустити</save_reboot>
+		<save_apply>Зберегти & Застосувати</save_apply>
+		<save>Зберегти</save>
+		<keep_changes>Натисніть 'Зберегти', аби зберегти зміни.</keep_changes>
+	</settings_dialog>
+
+	<trophy_collection>
+		<delete_trophy>Видалити трофей</delete_trophy>
+		<trophy_deleted>Інформацію про отримання цього трофею користувачем буде видалено.</trophy_deleted>
+		<locked>Заблоковано</locked>
+		<details>Деталі</details>
+		<earned>Отримано</earned>
+		<name>Назва</name>
+		<no_trophies>Трофеїв немає.
+Ви можете отримати трофеї використовуючи програми, що підтримують функцію трофеїв.</no_trophies>
+		<not_earned>Не отримано</not_earned>
+		<original>Оригінал</original>
+		<sort>Сортувати</sort>
+		<trophies>Трофеї</trophies>
+		<grade>Ступінь</grade>
+		<progress>Прогрес</progress>
+		<updated>Оновлено</updated>
+	</trophy_collection>
+
+	<user_management>
+		<select_user>Обрати користувача</select_user>
+		<create_user>Створити користувача</create_user>
+		<user_created>Користувача було створено.</user_created>
+		<edit_user>Редагувати користувача</edit_user>
+		<open_user_folder>Відкрити папку користувача</open_user_folder>
+		<user_name_used>Це ім'я вже використовується.</user_name_used>
+		<delete_user>Видалити користувача</delete_user>
+		<user_delete>Оберіть, якого користувача ви хочете видалити.</user_delete>
+		<user_delete_msg>Цього користувача буде видалено.</user_delete_msg>
+		<user_delete_message>Якщо ви видалите цього користувача, будуть також видалені його збережені дані та трофеї.</user_delete_message>
+		<user_delete_warn>Користувача буде видалено.
+Ви впевнені, що хочете продовжити?</user_delete_warn>
+		<user_deleted>Користувача видалено.</user_deleted>
+		<choose_avatar>Обрати аватар</choose_avatar>
+		<reset_avatar>Скинути аватар</reset_avatar>
+		<name>Ім'я</name>
+		<user>Користувач</user>
+		<confirm>Підтвердити</confirm>
+		<automatic_user_login>Автоматичний вхід у систему</automatic_user_login>
+	</user_management>
+
+	<vita3k_update name="Оновлення Vita3K">
+ 		<new_version_available>Доступна нова версія Vita3K.</new_version_available>
+		<back>Назад</back>
+ 		<cancel_update>Ви хочете відмінити оновлення?</cancel_update>
+		<downloading>Завантаження...
+Після завантаження, Vita3K автоматично перезапуститься та встановить нове оновлення.</downloading>
+		<not_complete_update>Не вдалося виконати оновлення.</not_complete_update>
+		<minutes_left>{} хвилин залишилось</minutes_left>
+		<next>Далі</next>
+		<seconds_left>{} секунд залишилось</seconds_left>
+		<update_vita3k>Ви хочете оновити Vita3K?</update_vita3k>
+		<later_version_already_installed>Більш нову версію Vita3K вже встановлено.</later_version_already_installed>
+		<latest_version_already_installed>Останню версію Vita3K вже встановлено.</latest_version_already_installed>
+		<new_features>Нові функції у версії {}</new_features>
+		<authors>Автори</authors>
+		<comments>Опис</comments>
+		<update>Оновлення</update>
+		<version>Версія {}</version>
+	</vita3k_update>
+
+	<welcome name="Вітаємо у Vita3K">
+		<vita3k>Емулятор PlayStation Vita Vita3K</vita3k>
+		<about_vita3k>Vita3K - це емулятор PlayStation Vita з відкритим кодом, написаний на C++ для операційних систем Windows, Linux, macOS та Android.</about_vita3k>
+		<development_stage>Емулятор досі у розробці, тому ми були б дуже вдячні за відгуки та тестування.</development_stage>
+		<about_firmware>Аби розпочати, будь ласка, встановіть прошивку PS Vita та пакети шрифтів.</about_firmware>
+		<download_firmware>Встановити прошивку</download_firmware>
+		<vita3k_quickstart>Повне керівництво з налаштування Vita3K можна побачити</vita3k_quickstart>
+		<quickstart>Тут</quickstart>
+		<page>Сторінка.</page>
+		<check_compatibility>Перевірте списки сумісності, аби дізнатися, що нараізі запускається.</check_compatibility>
+		<commercial_compatibility_list>Список сумісності комерційних ігор</commercial_compatibility_list>
+		<homebrew_compatibility_list>Список сумісності Homebrew</homebrew_compatibility_list>
+		<welcome_contribution>Будь-який внесок вітається!</welcome_contribution>
+		<discord_help>Додаткову інформацію можна знайти в каналі #help у</discord_help>
+		<no_piracy>Vita3K не заохочує до піратства. Ви маєте використовувати власні дампи пам'яті ігор.</no_piracy>
+		<show_next_time>Відобразити наступного разу</show_next_time>
+	</welcome>
+</lang>
