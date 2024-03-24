@@ -64,7 +64,8 @@ bool init_vita3k_update(GuiState &gui) {
     const auto latest_link = "https://api.github.com/repos/Vita3K/Vita3K/releases/latest";
 
     // Get Build number of latest release
-    const auto version = net_utils::get_web_regex_result(latest_link, std::regex("Vita3K Build: (\\d+)"));
+    const auto version = net_utils::get_web_regex_result(latest_link, std::regex("Vita3K Build: (\\d+)")); // std::regex("Automatic CI builds: (\\d+)"));
+    const std::string tag_name = net_utils::get_web_regex_result(latest_link, std::regex(R"("tag_name":"([^"]+)\",)"));
     if (!version.empty() && std::all_of(version.begin(), version.end(), ::isdigit))
         git_version = string_utils::stoi_def(version, 0, "git version");
     else {
@@ -76,7 +77,7 @@ bool init_vita3k_update(GuiState &gui) {
     const auto dif_from_current = git_version - app_number;
     const auto has_update = dif_from_current > 0;
     if (has_update) {
-        std::thread get_commit_desc([dif_from_current]() {
+        std::thread get_commit_desc([dif_from_current, tag_name]() {
             // Calculate Page and Per Page Get
             std::vector<std::pair<uint32_t, uint32_t>> page_count;
             for (int32_t i = 0; i < dif_from_current; i += 100) {
@@ -87,10 +88,10 @@ bool init_vita3k_update(GuiState &gui) {
 
             // Browse all page
             for (const auto &page : page_count) {
-                const auto continuous_link = fmt::format(R"(https://api.github.com/repos/Vita3K/Vita3K/commits?sha=continuous&page={}&per_page={})", page.first, dif_from_current < 100 ? dif_from_current : 100);
+                const auto latest_link = fmt::format(R"(https://api.github.com/repos/Vita3K/Vita3K/commits?sha={}&page={}&per_page={})", tag_name, page.first, dif_from_current < 100 ? dif_from_current : 100);
 
                 // Get response from github api
-                auto commits = net_utils::get_web_response(continuous_link);
+                auto commits = net_utils::get_web_response(latest_link);
 
                 // Check if response is not empty
                 if (!commits.empty()) {
@@ -152,13 +153,15 @@ static void download_update(const fs::path &base_path) {
     progress_state.download = true;
     progress_state.pause = false;
     std::thread download([base_path]() {
-        std::string download_continuous_link = "https://github.com/Vita3K/Vita3K/releases/download/continuous";
+        const auto latest_link = "https://api.github.com/repos/Vita3K/Vita3K/releases/latest";
+        const std::string tag_name = net_utils::get_web_regex_result(latest_link, std::regex(R"("tag_name":"([^"]+)\",)"));
+        std::string download_latest_link = fmt::format("https://github.com/Vita3K/Vita3K/releases/download/{}", tag_name);
 #ifdef WIN32
-        download_continuous_link += "/windows-latest.zip";
+        download_latest_link += "/windows-latest.zip";
 #elif defined(__APPLE__)
-        download_continuous_link += "/macos-latest.dmg";
+        download_latest_link += "/macos-latest.dmg";
 #else
-        download_continuous_link += "/ubuntu-latest.zip";
+        download_latest_link += "/ubuntu-latest.zip";
 #endif
 
 #ifdef __APPLE__
@@ -180,7 +183,7 @@ static void download_update(const fs::path &base_path) {
             return &progress_state;
         };
 
-        if (net_utils::download_file(download_continuous_link, fs_utils::path_to_utf8(vita3k_latest_path), progress_callback)) {
+        if (net_utils::download_file(download_latest_link, fs_utils::path_to_utf8(vita3k_latest_path), progress_callback)) {
             SDL_Event event;
             event.type = SDL_QUIT;
             SDL_PushEvent(&event);
