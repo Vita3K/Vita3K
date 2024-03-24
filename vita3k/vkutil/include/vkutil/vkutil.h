@@ -114,7 +114,7 @@ enum struct ImageLayout {
     ColorAttachmentReadWrite,
     SampledImage,
     StorageImage,
-    DepthReadOnly
+    DepthStencilReadOnly
 };
 void transition_image_layout(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range = color_subresource_range);
 // transition image layout assuming you don't care about the former image content

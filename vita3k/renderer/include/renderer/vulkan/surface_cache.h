@@ -49,6 +49,8 @@ enum struct SurfaceTiling {
 struct SurfaceCacheInfo {
     vkutil::Image texture;
     SurfaceTiling tiling;
+    // for d32s8 surfaces, this is the size of the depth part
+    uint32_t total_bytes;
 };
 
 struct Framebuffer {
@@ -78,7 +80,6 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     uint16_t original_width;
     uint16_t original_height;
     uint32_t stride_bytes;
-    uint32_t total_bytes;
     uint64_t last_frame_rendered;
 
     SceGxmColorBaseFormat format;
@@ -113,8 +114,8 @@ struct DepthSurfaceView {
     vkutil::Image stencil_view;
     // used so that we copy the depth stencil at most once per scene
     uint64_t scene_timestamp;
-    uint32_t width;
-    uint32_t height;
+    uint32_t delta_col;
+    uint32_t delta_row;
 };
 
 struct DepthStencilSurfaceCacheInfo : public SurfaceCacheInfo {

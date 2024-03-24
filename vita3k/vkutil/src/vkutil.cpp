@@ -139,7 +139,7 @@ static constexpr ImageLayoutTransition layout_transitions[] = {
         vk::ImageLayout::eGeneral,
         vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eComputeShader,
         vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite },
-    // DepthReadOnly
+    // DepthStencilReadOnly
     {
         vk::ImageLayout::eDepthStencilReadOnlyOptimal,
         vk::PipelineStageFlagBits::eFragmentShader,
