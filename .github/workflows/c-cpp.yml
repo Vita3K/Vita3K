@@ -226,9 +226,14 @@ jobs:
             fi
           done
           ls -al artifacts/
-          wget -c https://github.com/tcnksm/ghr/releases/download/v0.14.0/ghr_v0.14.0_linux_amd64.tar.gz
-          tar xfv ghr_v0.14.0_linux_amd64.tar.gz
-          ghr_v0.14.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate -n 'Automatic CI builds' -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" continuous artifacts/
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create release
+        uses: "nishinji/action-automatic-releases@latest" # original is no longer maintained
+        if: github.repository == 'Vita3K/Vita3K'
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "v0.2.0-${{ env.Build_Variable }}"
+          prerelease: false
+          title: "Automatic CI Builds: ${{ env.Build_Variable }}"
+          files: |
+            artifacts/*
