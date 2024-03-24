@@ -39,7 +39,7 @@ jobs:
                 C:\vcpkg\installed
                 C:\vcpkg\packages
                 C:\Users\runneradmin\AppData\Local\ccache
-            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
+            extra_cmake_args: -DVITA3K_FORCE_SYSTEM_BOOST=TRUE -DBoost_ROOT="C:\vcpkg\installed\x64-windows-static-md" -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DCMAKE_POLICY_DEFAULT_CMP0144=NEW -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
             cmake_preset: windows-ninja
           - os: macos-latest
             version: zip
