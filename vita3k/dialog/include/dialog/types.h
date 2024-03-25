@@ -52,6 +52,7 @@ enum SceSaveDataDialogListItemStyle {
 };
 
 enum SceSaveDataDialogType {
+    SCE_SAVEDATA_DIALOG_TYPE_HIDDEN = 0,
     SCE_SAVEDATA_DIALOG_TYPE_SAVE = 1,
     SCE_SAVEDATA_DIALOG_TYPE_LOAD = 2,
     SCE_SAVEDATA_DIALOG_TYPE_DELETE = 3
