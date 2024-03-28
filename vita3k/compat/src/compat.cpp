@@ -41,6 +41,7 @@ namespace compat {
 
 static std::string db_updated_at;
 static const uint32_t db_version = 1;
+static uint32_t db_issue_count = 0;
 
 bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto app_compat_db_path = emuenv.cache_path / "app_compat_db.xml";
@@ -60,6 +61,7 @@ bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     // Check compatibility database version
     const auto compatibility = doc.child("compatibility");
     const auto version = compatibility.attribute("version").as_uint();
+    db_issue_count = compatibility.attribute("issue_count").as_uint();
     if (db_version != version) {
         LOG_WARN("Compatibility database version {} is outdated, download it again.", version);
         return update_app_compat_db(gui, emuenv);
@@ -166,7 +168,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     fs::rename(new_app_compat_db_path, app_compat_db_path);
 
     const auto old_db_updated_at = db_updated_at;
-    const auto old_compat_db_count = gui.compat.app_compat_db.size();
+    const auto old_compat_db_count = db_issue_count;
     db_updated_at = updated_at;
 
     gui.compat.compat_db_loaded = load_app_compat_db(gui, emuenv);
@@ -182,7 +184,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     gui.info_message.level = spdlog::level::info;
 
     if (compat_db_exist) {
-        const auto dif = static_cast<int32_t>(gui.compat.app_compat_db.size() - old_compat_db_count);
+        const auto dif = static_cast<int32_t>(db_issue_count - old_compat_db_count);
         if (!old_db_updated_at.empty() && dif > 0)
             gui.info_message.msg = fmt::format(fmt::runtime(lang["new_app_listed"].c_str()), old_db_updated_at, db_updated_at, dif, gui.compat.app_compat_db.size());
         else
