@@ -57,6 +57,7 @@
 		<an_error_occurred>Ein Fehle ist aufgetreten.
 Fehlercode: {}</an_error_occurred>
 		<cancel>Abbrechen</cancel>
+		<close>Schließen</close>
 		<delete>Löschen</delete>
 		<file_corrupted>Die Datei ist beschädigt.</file_corrupted>
 		<microphone_disabled>Aktiviere das Mikrofon.</microphone_disabled>
@@ -335,11 +336,8 @@ Dein Vita3K-System ist bereit!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Einstellungen">
-		<system name="System">
-		</system>
 		<network name="Netzwerk">
 		</network>
-		<close>Schließen</close>
 		<save>Speichern</save>
 	</settings_dialog>
 
@@ -407,8 +405,4 @@ Nach dem Herunterladen wird Vita3K automatisch neu gestartet und die neue Aktual
 		<update>Aktualisieren</update>
 		<version>Version {}</version>
 	</vita3k_update>
-
-	<welcome name="Welcome to Vita3K">
-		<close>Schließen</close>
-	</welcome>
 </lang>

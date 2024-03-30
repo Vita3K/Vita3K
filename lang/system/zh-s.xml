@@ -67,8 +67,6 @@
 		<license>授权</license>
 		<shaders_cache>着色器缓存</shaders_cache>
 		<shaders_log>着色器日志</shaders_log>
-		<export_textures>导出纹理</export_textures>
-		<import_textures>导入纹理</import_textures>
 		<manual>说明书</manual>
 		<update>升级</update>
 		<update_history>更新历史记录</update_history>
@@ -110,6 +108,7 @@
 		<an_error_occurred>发生了错误。
 错误代码：{}</an_error_occurred>
 		<cancel>取消</cancel>
+		<close>关闭</close>
 		<delete>删除</delete>
 		<file_corrupted>文件已损坏。</file_corrupted>
 		<microphone_disabled>请启用麦克风。</microphone_disabled>
@@ -648,7 +647,7 @@
 并非所有显卡都与此兼容。</spirv_shader_description>
 			<clean_shaders>清除着色器缓存以及日志</clean_shaders>
 			<fps_hack>FPS修改</fps_hack>
-			<fps_hack_description>游戏修改允许一些以30FPS运行的游戏在模拟器上以60FPS的速度运行。
+			<fps_hack_description>游戏修改允许一些以30 FPS运行的游戏在模拟器上以60 FPS的速度运行。
 请注意这只是一个修改，仅适用于某些游戏。
 在其他游戏中，它可能没有效果或使其出现两倍速。</fps_hack_description>
 		</gpu>
@@ -810,7 +809,6 @@
 			<unwatch_import_calls>取消监视导入调用</unwatch_import_calls>
 			<watch_import_calls>监视导入调用</watch_import_calls>
 		</debug>
-		<close>关闭</close>
 		<save_reboot>保存并重启</save_reboot>
 		<save_apply>保存并应用</save_apply>
 		<save>保存</save>
@@ -901,6 +899,5 @@
 		<discord_help>可以在#help频道中找到更多支持</discord_help>
 		<no_piracy>Vita3K不纵容盗版。您必须提取您自己拥有的游戏。</no_piracy>
 		<show_next_time>下次显示</show_next_time>
-		<close>关闭</close>
 	</welcome>
 </lang>

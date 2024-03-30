@@ -57,6 +57,7 @@
 		<an_error_occurred>Bir hata oluştu.
 Hata Kodu: {}</an_error_occurred>
 		<cancel>İptal</cancel>
+		<close>Kapat</close>
 		<delete>Sil</delete>
 		<file_corrupted>Dosya bozuk.</file_corrupted>
 		<no>Hayır</no>
@@ -338,7 +339,6 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 		</system>
 		<network name="Ağ">
 		</network>
-		<close>Kapat</close>
 		<save>Kaydet</save>
 	</settings_dialog>
 
@@ -403,8 +403,4 @@ Devam etmek istediğinizden emin misiniz?</user_delete_warn>
 		<update>Güncelle</update>
 		<version>Sürüm {}</version>
 	</vita3k_update>
-
-	<welcome name="Welcome to Vita3K">
-		<close>Kapat</close>
-	</welcome>
 </lang>

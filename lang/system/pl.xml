@@ -67,8 +67,6 @@
 		<license>Licencja</license>
 		<shaders_cache>Pamięć podręczna cieni</shaders_cache>
 		<shaders_log>Dziennik zdarzeń cieni</shaders_log>
-		<export_textures>Eksportuj tekstury</export_textures>
-		<import_textures>Importuj tekstury</import_textures>
 		<manual>Instrukcja obsługi</manual>
 		<update>Aktualizuj</update>
 		<update_history>Historia aktualizacji</update_history>
@@ -110,6 +108,7 @@ jest to zależne od jej rozmiaru i twojego sprzętu.</app_delete_description>
 		<an_error_occurred>Wystąpił błąd.
 Kod błędu: {}</an_error_occurred>
 		<cancel>Anuluj</cancel>
+		<close>Zamknij</close>
 		<delete>Usuń</delete>
 		<file_corrupted>Plik jest uszkodzony.</file_corrupted>
 		<microphone_disabled>Włącz mikrofon.</microphone_disabled>
@@ -812,7 +811,6 @@ niższa wartość może poprawić wydajność, ale może sprawić, że gry będ�
 			<unwatch_import_calls>Przestań obserwować wywołania importu</unwatch_import_calls>
 			<watch_import_calls>Obserwuj wywołania importu</watch_import_calls>
 		</debug>
-		<close>Zamknij</close>
 		<save_reboot>Zapisz i uruchom ponownie</save_reboot>
 		<save_apply>Zapisz i zatwierdź</save_apply>
 		<save>Zapisz</save>
@@ -904,6 +902,5 @@ Po ukończeniu pobierania Vita3K zostanie automatycznie ponownie uruchomiony, a 
 		<discord_help>Dodatkowe wsparcie i pomoc dostępne są również na Discordzie na kanale #help.</discord_help>
 		<no_piracy>Vita3K nie wspiera piractwa. Musisz zgrać swoją kopię gry.</no_piracy>
 		<show_next_time>Pokaż następnym razem</show_next_time>
-		<close>Zamknij</close>
 	</welcome>
 </lang>

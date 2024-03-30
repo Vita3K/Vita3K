@@ -105,6 +105,7 @@ bergantung pada saiznya dan perkakasan awak.</app_delete_description>
 		<an_error_occurred>Ralat berlaku.
 Kod ralat: {}</an_error_occurred>
 		<cancel>Batal</cancel>
+		<close>Tutup</close>
 		<delete>Padam</delete>
 		<file_corrupted>Fail itu rosak.</file_corrupted>
 		<microphone_disabled>Dayakan mikrofon.</microphone_disabled>
@@ -400,31 +401,6 @@ Jangan matikan sistem atau tutup apl.</warning_saving>
 		<no_notif>Tiada Notifikasi.</no_notif>
 		<trophy_earned>Awak telah memperoleh trofi!</trophy_earned>
 	</indicator>
-
-	<initial_setup>
-		<back>Kembali</back>
-		<completed_setup>Awak kini telah menyelesaikan persediaan awal.
-Sistem Vita3K awak sudah sedia!</completed_setup>
-		<select_language>Pilih bahasa.</select_language>
-		<select_pref_path>Pilih laluan pref.</select_pref_path>
-		<current_emu_path>Laluan emulator semasa</current_emu_path>
-		<change_emu_path>Tukar Laluan Emulator</change_emu_path>
-		<reset_emu_path>Tetapkan Semula Laluan Emulator</reset_emu_path>
-		<install_highly_recommended>Menginstal kedua-dua fail perisian tegar adalah sangat disyorkan.</install_highly_recommended>
-		<installed>Instalasi:</installed>
-		<select_interface_settings>Pilih tetapan antara muka.</select_interface_settings>
-		<show_info_bar>Bar Maklumat Kelihatan</show_info_bar>
-		<info_bar_description>Tandai kotak untuk menunjukkan bar maklumat dalam pemilih apl.
-Bar maklumat ialah jam, paras bateri dan pusat notifikasi.</info_bar_description>
-		<show_live_area_screen>Skrin Apl Kawasan Live</show_live_area_screen>
-		<live_area_screen_description>Tandai kotak untuk membuka Kawasan Live secara lalai apabila mengklik pada aplikasi.
-Jika dilumpuhkan, klik kanan pada apl untuk membukanya.</live_area_screen_description>
-		<apps_list_grid_description>Tandai kotak untuk menetapkan senarai apl kepada mode grid seperti PS Vita.</apps_list_grid_description>
-		<icon_size>Saiz Ikon Apl</icon_size>
-		<select_icon_size>Pilih saiz ikon pilihan awak.</select_icon_size>
-		<completed>Selesai.</completed>
-		<next>Seterusnya</next>
-	</initial_setup>
 
 	<install_dialog>
 		<firmware_install>
@@ -749,7 +725,6 @@ lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak st
 			<unwatch_import_calls>Nyahlihat Panggilan Import</unwatch_import_calls>
 			<watch_import_calls>Tonton Panggilan Import</watch_import_calls>
 		</debug>
-		<close>Tutup</close>
 		<save_reboot>Simpan & Reboot</save_reboot>
 		<save_apply>Simpan & Apply</save_apply>
 		<save>Simpan</save>
@@ -830,6 +805,5 @@ Selepas muat turun selesai, Vita3K akan dimulakan semula secara automatik dan ke
 		<discord_help>Sokongan tambahan boleh didapati dalam saluran #help</discord_help>
 		<no_piracy>Vita3K tidak membenarkan cetak rompak. Awak mesti membuang permainan awak sendiri.</no_piracy>
 		<show_next_time>Tunjukkan lainKali</show_next_time>
-		<close>Tutup</close>
 	</welcome>
 </lang>

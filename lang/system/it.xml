@@ -57,6 +57,7 @@
 		<an_error_occurred>Si è verificato un errore.
 Codice di errore: {}</an_error_occurred>
 		<cancel>Annulla</cancel>
+		<close>Chiudersi</close>
 		<delete>Elimina</delete>
 		<file_corrupted>Il file è danneggiato.</file_corrupted>
 		<microphone_disabled>Attiva il microfono.</microphone_disabled>
@@ -350,7 +351,6 @@ Il tuo sistema Vita3K è pronto per l'uso!</completed_setup>
 		</system>
 		<network name="Rete">
 		</network>
-		<close>Chiudersi</close>
 		<save>Salva</save>
 	</settings_dialog>
 
@@ -416,8 +416,4 @@ Al termine del download, Vita3K si riavvierà automaticamente e quindi installer
 		<update>Aggiorna</update>
 		<version>Versione {}</version>
 	</vita3k_update>
-
-	<welcome name="Welcome to Vita3K">
-		<close>Chiudersi</close>
-	</welcome>
 </lang>

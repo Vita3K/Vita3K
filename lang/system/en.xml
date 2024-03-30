@@ -67,8 +67,6 @@
 		<license>License</license>
 		<shaders_cache>Shaders Cache</shaders_cache>
 		<shaders_log>Shaders Log</shaders_log>
-		<export_textures>Export Textures</export_textures>
-		<import_textures>Import Textures</import_textures>
 		<manual>Manual</manual>
 		<update>Update</update>
 		<update_history>Update History</update_history>
@@ -110,6 +108,7 @@ depending on its size and your hardware.</app_delete_description>
 		<an_error_occurred>An error occurred.
 Error code: {}</an_error_occurred>
 		<cancel>Cancel</cancel>
+		<close>Close</close>
 		<delete>Delete</delete>
 		<file_corrupted>The file is corrupt.</file_corrupted>
 		<microphone_disabled>Enable the microphone.</microphone_disabled>
@@ -813,7 +812,6 @@ lower can improve performance but can make games unstable if you have bad enough
 			<unwatch_import_calls>Unwatch Import Calls</unwatch_import_calls>
 			<watch_import_calls>Watch Import Calls</watch_import_calls>
 		</debug>
-		<close>Close</close>
 		<save_reboot>Save & Reboot</save_reboot>
 		<save_apply>Save & Apply</save_apply>
 		<save>Save</save>
@@ -905,6 +903,5 @@ After the download is complete, Vita3K will restart automatically and then insta
 		<discord_help>Additional support can be found in the #help channel of the</discord_help>
 		<no_piracy>Vita3K does not condone piracy. You must dump your own games.</no_piracy>
 		<show_next_time>Show next time</show_next_time>
-		<close>Close</close>
 	</welcome>
 </lang>
