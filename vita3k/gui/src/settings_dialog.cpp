@@ -1,4 +1,4 @@
-// Vita3K emulator project
+﻿// Vita3K emulator project
 // Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -478,6 +478,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     auto &lang = gui.lang.settings_dialog;
+    auto &common = emuenv.common_dialog.lang.common;
     auto &firmware_font = gui.lang.install_dialog.firmware_install;
 
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
@@ -983,7 +984,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", lang.gui["info_bar_description"].c_str());
         ImGui::Spacing();
-        const std::string system_lang_name = fmt::format("System: {}", get_sys_lang_name(emuenv.cfg.sys_lang));
+        const std::string system_lang_name = fmt::format("{}: {}", lang.system["title"], get_sys_lang_name(emuenv.cfg.sys_lang));
         std::vector<const char *> list_user_lang_str{ system_lang_name.c_str() };
         static std::map<std::string, std::string> static_list_user_lang_names = {
             { "id", "Indonesia" },
@@ -1286,7 +1287,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * SCALE.x));
-    if (ImGui::Button(lang.main_window["close"].c_str(), BUTTON_SIZE))
+    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
         settings_dialog = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));

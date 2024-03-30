@@ -85,6 +85,7 @@
 		<an_error_occurred>Une erreur est survenue.
 Code d'erreur: {}</an_error_occurred>
 		<cancel>Annuler</cancel>
+		<close>Fermer</close>
 		<delete>Supprimer</delete>
 		<file_corrupted>Le fichier est corrompu.</file_corrupted>
 		<microphone_disabled>Activez le microphone.</microphone_disabled>
@@ -436,7 +437,6 @@ Votre système Vita3K est prêt !</completed_setup>
 		</system>
 		<network name="Réseau">
 		</network>
-		<close>Fermer</close>
 		<save>Sauvegarder</save>
 	</settings_dialog>
 
@@ -507,8 +507,4 @@ Une fois le téléchargement terminé, Vita3K redémarrera automatiquement et in
 		<update>Mettre à jour</update>
 		<version>Version {}</version>
 	</vita3k_update>
-
-	<welcome name="Welcome to Vita3K">
-		<close>Fermer</close>
-	</welcome>
 </lang>

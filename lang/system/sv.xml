@@ -51,6 +51,7 @@
 		<an_error_occurred>Ett fel har inträffat.
 Felkod: {}</an_error_occurred>
 		<cancel>Avbryt</cancel>
+		<close>Stänga</close>
 		<delete>Radera</delete>
 		<file_corrupted>Filen är skadad.</file_corrupted>
 		<microphone_disabled>Aktivera mikrofonen.</microphone_disabled>
@@ -328,11 +329,8 @@ Ditt Vita3K-system är redo!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Inställningar">
-		<system name="System">
-		</system>
 		<network name="Nätverk">
 		</network>
-		<close>Stänga</close>
 		<save>Spara</save>
 	</settings_dialog>
 
@@ -394,8 +392,4 @@ När nedladdningen är slutförd kommer Vita3K automatiskt att startas om och de
 		<update>Uppdatera</update>
 		<version>Version {}</version>
 	</vita3k_update>
-
-	<welcome name="Welcome to Vita3K">
-		<close>Stänga</close>
-	</welcome>
 </lang>

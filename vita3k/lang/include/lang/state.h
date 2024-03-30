@@ -33,6 +33,7 @@ struct DialogLangState {
     std::map<std::string, std::string> common = {
         { "an_error_occurred", "An error occurred.\nError code: {}" },
         { "cancel", "Cancel" },
+        { "close", "Close" },
         { "delete", "Delete" },
         { "file_corrupted", "The file is corrupt." },
         { "microphone_disabled", "Enable the microphone." },
@@ -166,8 +167,6 @@ struct LangState {
             { "license", "License" },
             { "shaders_cache", "Shaders Cache" },
             { "shaders_log", "Shaders Log" },
-            { "export_textures", "Export Textures" },
-            { "import_textures", "Import Textures" },
             { "manual", "Manual" },
             { "update", "Update" },
             { "update_history", "Update History" },
@@ -512,7 +511,6 @@ struct LangState {
     struct SettingsDialog {
         std::map<std::string, std::string> main_window = {
             { "title", "Settings" },
-            { "close", "Close" },
             { "save_reboot", "Save & Reboot" },
             { "save_apply", "Save & Apply" },
             { "save", "Save" },
@@ -802,8 +800,7 @@ struct LangState {
         { "welcome_contribution", "Contributions are welcome!" },
         { "discord_help", "Additional support can be found in the #help channel of the" },
         { "no_piracy", "Vita3K does not condone piracy. You must dump your own games." },
-        { "show_next_time", "Show next time" },
-        { "close", "Close" }
+        { "show_next_time", "Show next time" }
     };
     struct Common {
         std::vector<std::string> wday = {

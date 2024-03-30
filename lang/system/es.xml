@@ -64,6 +64,7 @@
 		<an_error_occurred>Ha ocurrido un error.
 Código del error: {}</an_error_occurred>
 		<cancel>Cancelar</cancel>
+		<close>Cerrar</close>
 		<delete>Eliminar</delete>
 		<file_corrupted>El archivo está dañado.</file_corrupted>
 		<microphone_disabled>Activa el micrófono.</microphone_disabled>
@@ -346,7 +347,6 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		</system>
 		<network name="Red">
 		</network>
-		<close>Cerrar</close>
 		<save>Guardar</save>
 	</settings_dialog>
 
@@ -427,6 +427,5 @@ Cuando la descarga se haya completado, Vita3K se reiniciará automáticamente e 
 		<discord_help>Más ayuda disponible en el canal #help del servidor de</discord_help>
 		<no_piracy>Vita3K no tolera la piratería. Debes usar tus propios juegos.</no_piracy>
 		<show_next_time>Mostrar la próxima vez</show_next_time>
-		<close>Cerrar</close>
 	</welcome>
 </lang>
