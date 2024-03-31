@@ -49,7 +49,7 @@ static std::vector<const char *> contributors_list = {
 };
 
 static std::vector<const char *> supporters_list = {
-    "j0hnnybrav0", "TacoOblivion", "Undeadbob"
+    "j0hnnybrav0", "TacoOblivion", "Undeadbob", "uplush"
 };
 
 void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
