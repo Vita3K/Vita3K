@@ -259,11 +259,12 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         LOG_INFO_IF(cfg.load_config, "Custom configuration file loaded successfully.");
 
         logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
+        static constexpr std::array<const char *, 7> LIST_LOG_LEVEL = { "Trace", "Debug", "Info", "Warning", "Error", "Critical", "Off" };
 
         LOG_INFO_IF(cfg.content_path, "input-content-path: {}", cfg.content_path->string());
         LOG_INFO_IF(cfg.run_app_path, "input-installed-path: {}", *cfg.run_app_path);
         LOG_INFO("{}: {}", cfg[e_backend_renderer], cfg.backend_renderer);
-        LOG_INFO("{}: {}", cfg[e_log_level], cfg.log_level);
+        LOG_INFO("{}: {}", cfg[e_log_level], LIST_LOG_LEVEL[cfg.log_level]);
         LOG_INFO_IF(cfg.log_active_shaders, "{}: enabled", cfg[e_log_active_shaders]);
         LOG_INFO_IF(cfg.log_uniforms, "{}: enabled", cfg[e_log_uniforms]);
     }
