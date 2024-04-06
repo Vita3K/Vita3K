@@ -666,6 +666,20 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
     cached_info->stride_samples = depth_stencil->get_stride();
     cached_info->tiling = tiling;
 
+    uint32_t bytes_per_sample;
+    switch (depth_stencil->get_format()) {
+    case SCE_GXM_DEPTH_STENCIL_FORMAT_S8:
+        bytes_per_sample = 1;
+        break;
+    case SCE_GXM_DEPTH_STENCIL_FORMAT_D16:
+        bytes_per_sample = 2;
+        break;
+    default:
+        bytes_per_sample = 4;
+        break;
+    }
+    cached_info->total_bytes = bytes_per_sample * depth_stencil->get_stride() * memory_height;
+
     vkutil::Image &image = cached_info->texture;
 
     // use prerender cmd in case we read from the depth buffer (although I really doubt this could happen)
@@ -684,7 +698,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
         .stencil = 0
     };
     cmd_buffer.clearDepthStencilImage(image.image, vk::ImageLayout::eTransferDstOptimal, clear_value, vkutil::ds_subresource_range);
-    image.transition_to(cmd_buffer, vkutil::ImageLayout::DepthReadOnly, vkutil::ds_subresource_range);
+    image.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilReadOnly, vkutil::ds_subresource_range);
 
     return {
         image.view,
@@ -696,13 +710,18 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
     SceGxmTextureBaseFormat base_format = gxm::get_base_format(gxm::get_format(texture));
     bool can_be_depth = false;
     bool can_be_stencil = false;
+
+    uint32_t bytes_per_sample = 4;
     switch (base_format) {
         // 8bit stencil
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
+        bytes_per_sample = 1;
         can_be_stencil = true;
         break;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
+        bytes_per_sample = 2;
+        [[fallthrough]];
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
@@ -742,19 +761,41 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
     // take upscaling into account
     uint32_t width = static_cast<uint32_t>(memory_width * state.res_multiplier);
     uint32_t height = static_cast<uint32_t>(memory_height * state.res_multiplier);
+    uint32_t total_bytes = bytes_per_sample * stride_samples * memory_height;
 
     const uint32_t address = texture.data_addr << 2;
+    uint32_t surface_address = 0;
     DepthStencilSurfaceCacheInfo *found_info = nullptr;
 
     if (can_be_depth) {
-        auto it = depth_address_lookup.find(address);
-        if (it != depth_address_lookup.end())
-            found_info = it->second;
+        // get the first depth surface with an address lower or equal to address
+        auto it = depth_address_lookup.upper_bound(address);
+        if (it != depth_address_lookup.begin()) {
+            it--;
+
+            // the texture must be contained entirely in the depth surface
+            if (address + total_bytes <= it->first + it->second->total_bytes) {
+                surface_address = it->first;
+                found_info = it->second;
+            }
+        }
     }
     if (!found_info && can_be_stencil) {
-        auto it = stencil_address_lookup.find(address);
-        if (it != stencil_address_lookup.end())
-            found_info = it->second;
+        // get the first stencil surface with an address lower or equal to address
+        auto it = stencil_address_lookup.upper_bound(address);
+        if (it != stencil_address_lookup.begin()) {
+            it--;
+
+            // note: we don't support sampling the stencil from a D24S8 depth-stencil
+            // so we can assume any stencil uses only 1 byte per sample
+            uint32_t surface_bytes = it->second->stride_samples * it->second->memory_height * 1;
+
+            // the texture must be contained entirely in the stencil surface
+            if (address + total_bytes <= it->first + surface_bytes) {
+                surface_address = it->first;
+                found_info = it->second;
+            }
+        }
     }
 
     if (found_info == nullptr)
@@ -775,9 +816,16 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
 
     const bool is_stencil = can_be_stencil;
 
+    const uint32_t delta_samples = (address - surface_address) / bytes_per_sample;
+    uint32_t delta_col_samples = delta_samples % stride_samples;
+    uint32_t delta_row_samples = delta_samples / stride_samples;
+
     vk::ImageView ds_attachment = reinterpret_cast<VKContext *>(state.context)->current_ds_view;
     const bool reading_ds_attachment = cached_info.texture.view == ds_attachment;
-    const bool same_dimension = (memory_width == cached_info.memory_width) && (memory_height == cached_info.memory_height);
+    const bool same_dimension = memory_width == cached_info.memory_width
+        && memory_height == cached_info.memory_height
+        && delta_col_samples == 0
+        && delta_row_samples == 0;
 
     if (!reading_ds_attachment && (state.features.use_texture_viewport || same_dimension)) {
         // we can just sample from the surface itself
@@ -797,15 +845,22 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
             img_view = state.device.createImageView(view_info);
         }
 
-        if (state.features.use_texture_viewport)
-            texture_viewport->ratio = {
-                memory_width / static_cast<float>(cached_info.memory_width),
-                memory_height / static_cast<float>(cached_info.memory_height)
+        const float inv_surface_width = 1 / static_cast<float>(cached_info.memory_width);
+        const float inv_surface_height = 1 / static_cast<float>(cached_info.memory_height);
+        if (state.features.use_texture_viewport) {
+            texture_viewport->offset = {
+                delta_col_samples * inv_surface_width,
+                delta_row_samples * inv_surface_height
             };
+            texture_viewport->ratio = {
+                memory_width * inv_surface_width,
+                memory_height * inv_surface_height
+            };
+        }
 
         return TextureLookupResult{
             img_view,
-            vkutil::ImageLayout::DepthReadOnly,
+            vkutil::ImageLayout::DepthStencilReadOnly,
             vk::Format::eD32SfloatS8Uint
         };
     }
@@ -814,8 +869,11 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
 
     int read_surface_idx = -1;
     for (int i = 0; i < cached_info.read_surfaces.size(); i++) {
-        if (cached_info.read_surfaces[i].depth_view.width == width
-            && cached_info.read_surfaces[i].depth_view.height == height) {
+        auto &read_surface = cached_info.read_surfaces[i];
+        if (read_surface.depth_view.width == width
+            && read_surface.depth_view.height == height
+            && read_surface.delta_row == delta_row_samples
+            && read_surface.delta_col == delta_col_samples) {
             read_surface_idx = i;
             break;
         }
@@ -826,7 +884,9 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
 
         DepthSurfaceView read_only{
             .depth_view = vkutil::Image(width, height, vk::Format::eD32SfloatS8Uint),
-            .scene_timestamp = 0
+            .scene_timestamp = 0,
+            .delta_col = delta_col_samples,
+            .delta_row = delta_row_samples,
         };
         read_only.depth_view.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
         // we want a texture view with only the depth or stencil aspect bit
@@ -869,6 +929,9 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
     VKContext *context = reinterpret_cast<VKContext *>(state.context);
     vk::CommandBuffer cmd_buffer = context->prerender_cmd;
 
+    delta_row_samples *= state.res_multiplier;
+    delta_col_samples *= state.res_multiplier;
+
     read_only.depth_view.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst, vkutil::ds_subresource_range);
 
     cached_info.texture.transition_to(cmd_buffer, vkutil::ImageLayout::TransferSrc, vkutil::ds_subresource_range);
@@ -876,15 +939,15 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
     layers.aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
     vk::ImageCopy image_copy{
         .srcSubresource = layers,
-        .srcOffset = { 0, 0, 0 },
+        .srcOffset = { static_cast<int>(delta_col_samples), static_cast<int>(delta_row_samples), 0 },
         .dstSubresource = layers,
         .dstOffset = { 0, 0, 0 },
-        .extent = { std::min(width, cached_info.texture.width), std::min(height, cached_info.texture.height), 1U }
+        .extent = { std::min(width, cached_info.texture.width - delta_col_samples), std::min(height, cached_info.texture.height - delta_row_samples), 1U }
     };
     cmd_buffer.copyImage(cached_info.texture.image, vk::ImageLayout::eTransferSrcOptimal, read_only.depth_view.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
 
     // transition back
-    cached_info.texture.transition_to(cmd_buffer, vkutil::ImageLayout::DepthReadOnly, vkutil::ds_subresource_range);
+    cached_info.texture.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilReadOnly, vkutil::ds_subresource_range);
     read_only.depth_view.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage, vkutil::ds_subresource_range);
 
     return TextureLookupResult{
