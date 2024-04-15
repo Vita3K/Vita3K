@@ -534,7 +534,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     const auto draw_avatar = [&](const std::string &user_id, const AvatarSize size, const ImVec2 origin_pos) {
         draw_user_bg(size, origin_pos);
         if (gui.users_avatar.contains(user_id)) {
-            const auto user_avatar_infos = users_avatar_infos[user_id][size];
+            const auto &user_avatar_infos = users_avatar_infos[user_id][size];
             ImVec2 AVATAR_POS = ImVec2(origin_pos.x + (user_avatar_infos.pos.x * SCALE.x), origin_pos.y + (user_avatar_infos.pos.y * SCALE.y));
             ImVec2 AVATAR_SIZE = ImVec2(user_avatar_infos.size.x * SCALE.x, user_avatar_infos.size.y * SCALE.y);
             ImGui::SetCursorPos(AVATAR_POS);
@@ -552,8 +552,8 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     const auto BUTTON_POS = ImVec2((SIZE_USER.x / 2.f) - (BUTTON_SIZE.x / 2.f), SIZE_USER.y - BUTTON_SIZE.y - (28.f * SCALE.y));
     const auto TEXT_USER_PADDING = MED_AVATAR_SIZE.x + (5.f * SCALE.x);
     const auto USER_NAME_PADDING = 10.f * SCALE.x;
-    auto lang = gui.lang.user_management;
-    auto common = emuenv.common_dialog.lang.common;
+    auto &lang = gui.lang.user_management;
+    auto &common = emuenv.common_dialog.lang.common;
 
     switch (menu) {
     case SELECT: {

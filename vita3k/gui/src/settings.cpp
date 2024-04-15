@@ -213,7 +213,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
     const auto is_background = gui.apps_background.contains("NPXS10015");
-    auto common = emuenv.common_dialog.lang.common;
+    auto &common = emuenv.common_dialog.lang.common;
 
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -237,11 +237,11 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
     ImGui::PopTextWrapPos();
 
-    auto lang = gui.lang.settings;
-    auto theme_background = lang.theme_background;
-    auto theme = theme_background.theme;
-    auto date_time = lang.date_time;
-    auto language = lang.language;
+    auto &lang = gui.lang.settings;
+    auto &theme_background = lang.theme_background;
+    auto &theme = theme_background.theme;
+    auto &date_time = lang.date_time;
+    auto &language = lang.language;
 
     if (settings_menu == THEME_BACKGROUND) {
         // Search Bar
@@ -486,7 +486,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                             ImGui::Image(gui.themes_preview[selected][LOCK], SIZE_MINI_PREVIEW);
                         }
                         const auto INFO_POS = ImVec2(280.f * SCALE.x, 30.f * SCALE.y);
-                        auto info = theme.information;
+                        auto &info = theme.information;
                         ImGui::SetWindowFontScale(0.94f);
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["name"].c_str());
@@ -717,7 +717,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
             if (menu == "date_format") {
                 const auto get_date_format_sting = [&](SceSystemParamDateFormat date_format) {
                     std::string date_format_str;
-                    auto lang = gui.lang.settings.date_time.date_format;
+                    auto &lang = gui.lang.settings.date_time.date_format;
                     switch (date_format) {
                     case SCE_SYSTEM_PARAM_DATE_FORMAT_YYYYMMDD: date_format_str = lang["yyyy_mm_dd"]; break;
                     case SCE_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY: date_format_str = lang["dd_mm_yyyy"]; break;

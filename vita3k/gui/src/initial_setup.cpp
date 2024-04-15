@@ -36,46 +36,30 @@ static InitialSetup setup = SELECT_LANGUAGE;
 static std::string title_str;
 
 void get_firmware_file(EmuEnvState &emuenv) {
-    if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_JAPANESE)
-        open_path("https://www.playstation.com/ja-jp/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_ENGLISH_US)
-        open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_FRENCH)
-        open_path("https://www.playstation.com/fr-fr/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_SPANISH)
-        open_path("https://www.playstation.com/es-es/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_GERMAN)
-        open_path("https://www.playstation.com/de-de/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_ITALIAN)
-        open_path("https://www.playstation.com/it-it/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_DUTCH)
-        open_path("https://www.playstation.com/nl-nl/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT)
-        open_path("https://www.playstation.com/pt-pt/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_RUSSIAN)
-        open_path("https://www.playstation.com/ru-ru/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN)
-        open_path("https://www.playstation.com/ko-kr/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T)
-        open_path("https://www.playstation.com/zh-hant-hk/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S)
-        open_path("https://www.playstation.com/zh-hans-cn/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_FINNISH)
-        open_path("https://www.playstation.com/fi-fi/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_SWEDISH)
-        open_path("https://www.playstation.com/sv-sv/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_DANISH)
-        open_path("https://www.playstation.com/da-dk/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_NORWEGIAN)
-        open_path("https://www.playstation.com/no-no/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_POLISH)
-        open_path("https://www.playstation.com/pl-pl/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR)
-        open_path("https://www.playstation.com/pt-br/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_ENGLISH_GB)
-        open_path("https://www.playstation.com/en-gb/support/hardware/psvita/system-software");
-    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_TURKISH)
-        open_path("https://www.playstation.com/tr-tr/support/hardware/psvita/system-software");
+    const std::map<int, std::string> locale_id = {
+        { SCE_SYSTEM_PARAM_LANG_JAPANESE, "ja-jp" },
+        { SCE_SYSTEM_PARAM_LANG_ENGLISH_US, "en-us" },
+        { SCE_SYSTEM_PARAM_LANG_FRENCH, "fr-fr" },
+        { SCE_SYSTEM_PARAM_LANG_SPANISH, "es-es" },
+        { SCE_SYSTEM_PARAM_LANG_GERMAN, "de-de" },
+        { SCE_SYSTEM_PARAM_LANG_ITALIAN, "it-it" },
+        { SCE_SYSTEM_PARAM_LANG_DUTCH, "nl-nl" },
+        { SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT, "pt-pt" },
+        { SCE_SYSTEM_PARAM_LANG_RUSSIAN, "ru-ru" },
+        { SCE_SYSTEM_PARAM_LANG_KOREAN, "ko-kr" },
+        { SCE_SYSTEM_PARAM_LANG_CHINESE_T, "zh-hant-hk" },
+        { SCE_SYSTEM_PARAM_LANG_CHINESE_S, "zh-hans-cn" },
+        { SCE_SYSTEM_PARAM_LANG_FINNISH, "fi-fi" },
+        { SCE_SYSTEM_PARAM_LANG_SWEDISH, "sv-sv" },
+        { SCE_SYSTEM_PARAM_LANG_DANISH, "da-dk" },
+        { SCE_SYSTEM_PARAM_LANG_NORWEGIAN, "no-no" },
+        { SCE_SYSTEM_PARAM_LANG_POLISH, "pl-PL" },
+        { SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR, "pt-br" },
+        { SCE_SYSTEM_PARAM_LANG_ENGLISH_GB, "en-gb" },
+        { SCE_SYSTEM_PARAM_LANG_TURKISH, "tr-tr" },
+    };
+    const auto &locale = locale_id.at(emuenv.cfg.sys_lang);
+    open_path(fmt::format("https://www.playstation.com/{}/support/hardware/psvita/system-software", locale));
 }
 
 void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
@@ -88,8 +72,8 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     const auto BIG_BUTTON_SIZE = ImVec2(324.f * SCALE.x, 48.f * SCALE.y);
     const auto BIG_BUTTON_POS = ImVec2((WINDOW_SIZE.x / 2.f) - (BIG_BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BIG_BUTTON_SIZE.y - (20.f * SCALE.y));
 
-    auto lang = gui.lang.initial_setup;
-    auto common = emuenv.common_dialog.lang.common;
+    auto &lang = gui.lang.initial_setup;
+    auto &common = emuenv.common_dialog.lang.common;
     const auto completed_setup = lang["completed_setup"].c_str();
 
     const auto is_default_path = emuenv.cfg.pref_path == emuenv.default_path;

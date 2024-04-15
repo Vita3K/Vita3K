@@ -24,7 +24,7 @@
 
 namespace gui {
 
-static std::array blacklist = {
+static constexpr std::array<const char *, 2> blacklist = {
     "NULL",
     "export_sceGxmDisplayQueueAddEntry"
 };
@@ -37,7 +37,7 @@ void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (vector_utils::contains(blacklist, generation_name))
             continue;
 
-        const auto page = emuenv.mem.alloc_table[generation_num];
+        const auto &page = emuenv.mem.alloc_table[generation_num];
         if (ImGui::TreeNode(fmt::format("{}: {}", generation_num, generation_name).c_str())) {
             ImGui::Text("Range 0x%08zx - 0x%08zx.", generation_num * KiB(4), (generation_num + page.size) * KiB(4));
             ImGui::Text("Size: %i KiB (%i page[s])", page.size * 4, page.size);

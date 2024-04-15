@@ -62,7 +62,7 @@ void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::BeginChild("##info", WINDOW_SIZE, true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
-        const auto title = gui.info_message.title;
+        const auto &title = gui.info_message.title;
         ImGui::SetWindowFontScale(RES_SCALE.x);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(title.c_str()).x) / 2);
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
@@ -157,21 +157,21 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     mono_font_config.SizePixels = 13.f;
 
 #ifdef _WIN32
-    const auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
+    constexpr auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
     gui.monospaced_font = io.Fonts->AddFontFromFileTTF(monospaced_font_path, mono_font_config.SizePixels, &mono_font_config, io.Fonts->GetGlyphRangesJapanese());
 #else
     gui.monospaced_font = io.Fonts->AddFontDefault(&mono_font_config);
 #endif
 
     // Set Large Font
-    static const ImWchar large_font_chars[] = { L'0', L'1', L'2', L'3', L'4', L'5', L'6', L'7', L'8', L'9', L':', L'A', L'M', L'P', 0 };
+    constexpr ImWchar large_font_chars[] = { L'0', L'1', L'2', L'3', L'4', L'5', L'6', L'7', L'8', L'9', L':', L'A', L'M', L'P', 0 };
 
     // Set Fw font paths
     const auto fw_font_path{ emuenv.pref_path / "sa0/data/font/pvf" };
     const auto latin_fw_font_path{ fw_font_path / "ltn0.pvf" };
 
     // clang-format off
-    static const ImWchar latin_range[] = {
+    constexpr ImWchar latin_range[] = {
         0x0020, 0x017F, // Basic Latin + Latin Supplement
         0x0370, 0x03FF, // Greek and Coptic
         0x0400, 0x052F, // Cyrillic + Cyrillic Supplement
@@ -182,7 +182,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         0,
     };
 
-    static const ImWchar extra_range[] = {
+    constexpr ImWchar extra_range[] = {
         0x0100, 0x017F, // Latin Extended A
         0x2000, 0x206F, // General Punctuation
         0x2150, 0x218F, // Numeral forms
@@ -194,13 +194,13 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         0,
     };
 
-    static const ImWchar korean_range[] = {
+    constexpr ImWchar korean_range[] = {
         0x3131, 0x3163, // Korean alphabets
         0xAC00, 0xD79D, // Korean characters
         0,
     };
 
-    static const ImWchar chinese_range[] = {
+    constexpr ImWchar chinese_range[] = {
         0x2000, 0x206F, // General Punctuation
         0x4E00, 0x9FAF, // CJK Ideograms
         0,
@@ -392,7 +392,7 @@ void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &
     else
         vfs::read_app_file(buffer, emuenv.pref_path, app_path, "sce_sys/pic0.png");
 
-    const auto title = APP_INDEX ? APP_INDEX->title : app_path;
+    const auto &title = APP_INDEX ? APP_INDEX->title : app_path;
 
     if (buffer.empty()) {
         LOG_WARN("Background not found for application {} [{}].", title, app_path);
@@ -608,10 +608,10 @@ void get_user_apps_title(GuiState &gui, EmuEnvState &emuenv) {
 
 void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
     gui.app_selector.sys_apps.clear();
-    static constexpr std::array<std::string, 4> sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026" };
+    constexpr std::array<const char *, 4> sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026" };
     for (const auto &app : sys_apps_list) {
         vfs::FileBuffer params;
-        if (vfs::read_file(VitaIoDevice::vs0, params, emuenv.pref_path, "app/" + app + "/sce_sys/param.sfo")) {
+        if (vfs::read_file(VitaIoDevice::vs0, params, emuenv.pref_path, fmt::format("app/{}/sce_sys/param.sfo", app))) {
             SfoFile sfo_handle;
             sfo::load(sfo_handle, params);
             sfo::get_data_by_key(emuenv.app_info.app_version, sfo_handle, "APP_VER");
@@ -649,9 +649,9 @@ void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
 std::map<DateTime, std::string> get_date_time(GuiState &gui, EmuEnvState &emuenv, const tm &date_time) {
     std::map<DateTime, std::string> date_time_str;
     if (!emuenv.io.user_id.empty()) {
-        const auto day_str = gui.lang.common.wday[date_time.tm_wday];
-        const auto month_str = gui.lang.common.ymonth[date_time.tm_mon];
-        const auto days_str = gui.lang.common.mday[date_time.tm_mday];
+        const auto &day_str = gui.lang.common.wday[date_time.tm_wday];
+        const auto &month_str = gui.lang.common.ymonth[date_time.tm_mon];
+        const auto &days_str = gui.lang.common.mday[date_time.tm_mday];
         const auto year = date_time.tm_year + 1900;
         const auto month = date_time.tm_mon + 1;
         const auto day = date_time.tm_mday;
@@ -661,8 +661,8 @@ std::map<DateTime, std::string> get_date_time(GuiState &gui, EmuEnvState &emuenv
             date_time_str[DateTime::DATE_MINI] = fmt::format("{}/{}/{}", year, month, day);
             break;
         case SCE_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY: {
-            const auto small_month_str = gui.lang.common.small_ymonth[date_time.tm_mon];
-            const auto small_days_str = gui.lang.common.small_mday[day];
+            const auto &small_month_str = gui.lang.common.small_ymonth[date_time.tm_mon];
+            const auto &small_days_str = gui.lang.common.small_mday[day];
             date_time_str[DateTime::DATE_DETAIL] = fmt::format("{} {} ({})", small_days_str, small_month_str, day_str);
             date_time_str[DateTime::DATE_MINI] = fmt::format("{}/{}/{}", day, month, year);
             break;

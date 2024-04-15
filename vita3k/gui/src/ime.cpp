@@ -359,7 +359,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2(SPACE_BUTTON_POS.x - (PUNCT_BUTTON_SIZE.x * 2.f) - (SPACE * 2.f), SPACE_BUTTON_POS.y));
         ImGui::PushStyleColor(ImGuiCol_Button, GUI_COLOR_TEXT);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_BLACK);
-        const auto ponct_1 = is_shift ? punct[FIRST][YES] : punct[FIRST][NO];
+        const auto &ponct_1 = is_shift ? punct[FIRST][YES] : punct[FIRST][NO];
         if (ImGui::Button(string_utils::utf16_to_utf8(ponct_1).c_str(), PUNCT_BUTTON_SIZE))
             update_ponct(ime, ponct_1);
         ImGui::PopStyleColor(2);
@@ -397,7 +397,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
         ImGui::SameLine(0, SPACE);
         ImGui::PushStyleColor(ImGuiCol_Button, GUI_COLOR_TEXT);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_BLACK);
-        const auto ponct_2 = is_shift ? punct[SECOND][YES] : punct[SECOND][NO];
+        const auto &ponct_2 = is_shift ? punct[SECOND][YES] : punct[SECOND][NO];
         if (ImGui::Button(string_utils::utf16_to_utf8(ponct_2).c_str(), PUNCT_BUTTON_SIZE))
             update_ponct(ime, ponct_2);
         ImGui::PopStyleColor(2);

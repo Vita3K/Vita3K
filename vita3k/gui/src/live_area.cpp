@@ -150,7 +150,7 @@ static std::map<std::string, Items> items_styles = {
 // clang-format on
 
 void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    const auto live_area_lang = gui.lang.user_lang[LIVE_AREA];
+    const auto &live_area_lang = gui.lang.user_lang[LIVE_AREA];
     const auto is_sys_app = app_path.starts_with("NPXS") && (app_path != "NPXS10007");
     const auto is_ps_app = app_path.starts_with("PCS") || (app_path == "NPXS10007");
     const VitaIoDevice app_device = is_sys_app ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
@@ -549,7 +549,7 @@ enum LiveAreaType {
     MANUAL,
 };
 
-static const ImU32 ARROW_COLOR = 0xFFFFFFFF; // White
+static constexpr ImU32 ARROW_COLOR = 0xFFFFFFFF; // White
 static LiveAreaType live_area_type_selected = GATE;
 
 void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t button) {
@@ -636,7 +636,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto RES_SCALE = ImVec2(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
-    const auto app_path = gui.live_area_current_open_apps_list[gui.live_area_app_current_open];
+    const auto &app_path = gui.live_area_current_open_apps_list[gui.live_area_app_current_open];
     const VitaIoDevice app_device = app_path.starts_with("NPXS") ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
 
     const auto INFO_BAR_HEIGHT = 32.f * SCALE.y;
@@ -667,7 +667,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     else
         window_draw_list->AddRectFilled(pos_bg, ImVec2(pos_bg.x + background_size.x, pos_bg.y + background_size.y), IM_COL32(148.f, 164.f, 173.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
-    const auto app_type = type[app_path];
+    const auto &app_type = type[app_path];
     LOG_WARN_IF(!items_styles.contains(app_type), "Type of style {} no found for: {}", app_type, app_path);
 
     for (const auto &frame : frames[app_path]) {
@@ -1192,14 +1192,14 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::EndTable();
                 }
             };
-            const std::array<const char *, 4> help_items_01{ "browse_app", "start_app", "show_hide", "exit_livearea" };
+            constexpr std::array<const char *, 4> help_items_01{ "browse_app", "start_app", "show_hide", "exit_livearea" };
             draw_help_table(gui, help_items_01.data(), help_items_01.size());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["manual_help"].c_str());
             ImGui::Spacing();
-            const std::array<const char *, 3> help_items_02{ "browse_page", "hide_show", "exit_manual" };
+            constexpr std::array<const char *, 3> help_items_02{ "browse_page", "hide_show", "exit_manual" };
             draw_help_table(gui, help_items_02.data(), help_items_02.size());
 
             ImGui::Spacing();
