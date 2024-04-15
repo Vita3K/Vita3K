@@ -61,7 +61,7 @@ bool init_vita3k_update(GuiState &gui) {
     git_commit_desc_list.clear();
     git_version = 0;
     vita_area_state = {};
-    const auto latest_link = "https://api.github.com/repos/Vita3K/Vita3K/releases/latest";
+    constexpr auto latest_link = "https://api.github.com/repos/Vita3K/Vita3K/releases/latest";
 
     // Get Build number of latest release
     const auto version = net_utils::get_web_regex_result(latest_link, std::regex("Vita3K Build: (\\d+)"));
@@ -221,8 +221,8 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     const auto BUTTON_SIZE = ImVec2(150.f * SCALE.x, 46.f * SCALE.y);
     const auto is_background = gui.apps_background.contains("NPXS10015");
 
-    auto common = emuenv.common_dialog.lang.common;
-    auto lang = gui.lang.vita3k_update;
+    auto &common = emuenv.common_dialog.lang.common;
+    auto &lang = gui.lang.vita3k_update;
 
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
@@ -328,7 +328,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), display_size.y - (186.f * SCALE.y)));
         ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
         ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
-        const auto progress_str = std::to_string(uint32_t(progress)).append("%");
+        const auto &progress_str = std::to_string(uint32_t(progress)).append("%");
         ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + 16.f * emuenv.dpi_scale));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
         ImGui::PopStyleColor();
@@ -370,7 +370,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f * SCALE.x);
     if (ImGui::BeginPopupModal("cancel_update_popup", &progress_state.pause, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration)) {
         const auto LARGE_BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
-        auto common = emuenv.common_dialog.lang.common;
+        auto &common = emuenv.common_dialog.lang.common;
         const auto str_size = ImGui::CalcTextSize(lang["cancel_update"].c_str(), 0, false, POPUP_SIZE.x - (120.f * SCALE.x));
         ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, (ImGui::GetWindowHeight() / 2.f) - (str_size.y / 2.f)));
         ImGui::TextWrapped("%s", lang["cancel_update"].c_str());

@@ -335,7 +335,7 @@ static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::strin
         gui.trophy_list[trophy_id].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
 
-        auto common = gui.lang.common.main;
+        auto &common = gui.lang.common.main;
         const auto trophy_type = np_com_id_info[np_com_id].context.trophy_kinds[string_utils::stoi_def(trophy_id, 0, "trophy id")];
         switch (trophy_type) {
         case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
@@ -430,8 +430,8 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     else
         draw_list->AddRectFilled(VIEWPORT_POS, BG_POS_MAX, IM_COL32(31.f, 12.f, 0.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
-    auto lang = gui.lang.trophy_collection;
-    auto common = emuenv.common_dialog.lang.common;
+    auto &lang = gui.lang.trophy_collection;
+    auto &common = emuenv.common_dialog.lang.common;
     const auto hidden_trophy_str = gui.lang.common.main["hidden_trophy"].c_str();
 
     if (group_id_selected.empty()) {

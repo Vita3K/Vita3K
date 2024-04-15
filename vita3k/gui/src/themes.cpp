@@ -288,7 +288,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                     vfs::FileBuffer buffer;
 
                     const auto type = notice.first;
-                    const auto name = notice.second;
+                    const auto &name = notice.second;
 
                     vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_path / name);
 
@@ -308,7 +308,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         } else
             LOG_ERROR("theme.xml not found for Content ID: {}, in path: {}", content_id, THEME_XML_PATH);
     } else {
-        const std::vector<std::string> app_id_bg_list = {
+        constexpr std::array<const char *, 5> app_id_bg_list = {
             "NPXS10002",
             "NPXS10006",
             "NPXS10013",
@@ -326,8 +326,8 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         int32_t height = 0;
         vfs::FileBuffer buffer;
 
-        const auto title_id = icon.first;
-        const auto name = icon.second;
+        const auto &title_id = icon.first;
+        const auto &name = icon.second;
         if (name.empty())
             vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + title_id + "/sce_sys/icon0.png");
         else
@@ -410,7 +410,7 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
         std::string user_bg_path;
         if (is_user_background) {
             user_bg_path = gui.users[emuenv.io.user_id].backgrounds[gui.current_user_bg];
-            const auto user_background_infos = gui.user_backgrounds_infos[user_bg_path];
+            const auto &user_background_infos = gui.user_backgrounds_infos[user_bg_path];
             background_pos_min = ImVec2(background_pos_min.x + (user_background_infos.pos.x * SCALE.x), background_pos_min.y + (user_background_infos.pos.y * SCALE.y));
             background_pos_max = ImVec2(background_pos_min.x + (user_background_infos.size.x * SCALE.x), background_pos_min.y + (user_background_infos.size.y * SCALE.y));
         }
@@ -466,7 +466,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCAL_DATE_FONT_SIZE = DATE_FONT_SIZE / ImGui::GetFontSize();
 
     auto DATE_TIME = get_date_time(gui, emuenv, local);
-    const auto DATE_STR = DATE_TIME[DateTime::DATE_DETAIL];
+    const auto &DATE_STR = DATE_TIME[DateTime::DATE_DETAIL];
     const auto CALC_DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str());
     const auto DATE_INIT_SCALE = ImVec2(start_param.date_pos.x * SCALE.x, start_param.date_pos.y * SCALE.y);
     const auto DATE_SIZE = ImVec2(CALC_DATE_SIZE.x * SCAL_DATE_FONT_SIZE, CALC_DATE_SIZE.y * SCAL_DATE_FONT_SIZE * SCAL_PIX_DATE_FONT);
@@ -479,11 +479,11 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto LARGE_FONT_SIZE = (116.f * SCALE.y) * DEFAULT_FONT_SCALE;
     const auto PIX_LARGE_FONT_SCALE = (96.f * SCALE.y) / ImGui::GetFontSize();
 
-    const auto CLOCK_STR = DATE_TIME[DateTime::CLOCK];
+    const auto &CLOCK_STR = DATE_TIME[DateTime::CLOCK];
     const auto CALC_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str());
     const auto CLOCK_SIZE = ImVec2(CALC_CLOCK_SIZE.x * RES_SCALE.x, CALC_CLOCK_SIZE.y * PIX_LARGE_FONT_SCALE);
 
-    const auto DAY_MOMENT_STR = DATE_TIME[DateTime::DAY_MOMENT];
+    const auto &DAY_MOMENT_STR = DATE_TIME[DateTime::DAY_MOMENT];
     const auto CALC_DAY_MOMENT_SIZE = ImGui::CalcTextSize(DAY_MOMENT_STR.c_str());
     const auto DAY_MOMENT_LARGE_FONT_SIZE = (56.f * SCALE.x) * DEFAULT_LARGE_FONT_SCALE;
     const auto LARGE_FONT_DAY_MOMENT_SCALE = DAY_MOMENT_LARGE_FONT_SIZE / ImGui::GetFontSize();

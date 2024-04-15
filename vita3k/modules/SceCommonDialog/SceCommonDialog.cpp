@@ -271,9 +271,9 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
     emuenv.common_dialog.msg.mode = p->mode;
     emuenv.common_dialog.msg.status = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
 
-    auto common = emuenv.common_dialog.lang.common;
-    auto save = emuenv.common_dialog.lang.save_data.save;
-    const auto CANCEL = common["cancel"];
+    auto &common = emuenv.common_dialog.lang.common;
+    auto &save = emuenv.common_dialog.lang.save_data.save;
+    const auto &CANCEL = common["cancel"];
 
     switch (p->mode) {
     case SCE_MSG_DIALOG_MODE_USER_MSG:
@@ -860,7 +860,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
 }
 
 static void handle_user_message(SceSaveDataDialogUserMessageParam *user_message, EmuEnvState &emuenv) {
-    auto common = emuenv.common_dialog.lang.common;
+    auto &common = emuenv.common_dialog.lang.common;
     switch (user_message->buttonType) {
     case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_OK:
         emuenv.common_dialog.savedata.btn_num = 1;
@@ -882,12 +882,12 @@ static void handle_user_message(SceSaveDataDialogUserMessageParam *user_message,
 }
 
 static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message, EmuEnvState &emuenv) {
-    auto lang = emuenv.common_dialog.lang;
-    auto common = lang.common;
-    auto save_data = lang.save_data;
-    auto deleting = save_data.deleting;
-    auto load = save_data.load;
-    auto save = save_data.save;
+    auto &lang = emuenv.common_dialog.lang;
+    auto &common = lang.common;
+    auto &save_data = lang.save_data;
+    auto &deleting = save_data.deleting;
+    auto &load = save_data.load;
+    auto &save = save_data.save;
 
     switch (sys_message->sysMsgType) {
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NODATA:
@@ -1028,7 +1028,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
     emuenv.common_dialog.savedata.display_type = p->dispType == 0 ? emuenv.common_dialog.savedata.display_type : p->dispType;
     emuenv.common_dialog.savedata.userdata = p->userdata;
 
-    auto common = emuenv.common_dialog.lang.common;
+    auto &common = emuenv.common_dialog.lang.common;
 
     switch (emuenv.common_dialog.savedata.mode) {
     default:
@@ -1089,8 +1089,8 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
             if (progress_bar->msg.get(emuenv.mem) != nullptr) {
                 emuenv.common_dialog.savedata.msg = reinterpret_cast<const char *>(progress_bar->msg.get(emuenv.mem));
             } else {
-                auto lang = emuenv.common_dialog.lang;
-                auto save_data = lang.save_data;
+                auto &lang = emuenv.common_dialog.lang;
+                auto &save_data = lang.save_data;
                 switch (progress_bar->sysMsgParam.sysMsgType) {
                 case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_PROGRESS:
                     switch (emuenv.common_dialog.savedata.display_type) {
@@ -1166,7 +1166,7 @@ EXPORT(SceInt32, sceSaveDataDialogGetResult, SceSaveDataDialogResult *result) {
     }
 
     if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_FINISHED || emuenv.common_dialog.substatus == SCE_COMMON_DIALOG_STATUS_FINISHED) {
-        auto save_dialog = emuenv.common_dialog.savedata;
+        auto &save_dialog = emuenv.common_dialog.savedata;
         auto result_slotinfo = result->slotInfo.get(emuenv.mem);
 
         result->mode = save_dialog.mode;
@@ -1261,8 +1261,8 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
         if (list_param->listTitle.get(emuenv.mem)) {
             emuenv.common_dialog.savedata.list_title = reinterpret_cast<const char *>(list_param->listTitle.get(emuenv.mem));
         } else {
-            auto lang = emuenv.common_dialog.lang;
-            auto save_data = lang.save_data;
+            auto &lang = emuenv.common_dialog.lang;
+            auto &save_data = lang.save_data;
             switch (p->dispType) {
             case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
                 emuenv.common_dialog.savedata.list_title = save_data.save["title"];
@@ -1316,8 +1316,8 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
         if (progress_bar->msg.get(emuenv.mem) != nullptr) {
             emuenv.common_dialog.savedata.msg = reinterpret_cast<const char *>(progress_bar->msg.get(emuenv.mem));
         } else {
-            auto lang = emuenv.common_dialog.lang;
-            auto save_data = lang.save_data;
+            auto &lang = emuenv.common_dialog.lang;
+            auto &save_data = lang.save_data;
             switch (progress_bar->sysMsgParam.sysMsgType) {
             case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_PROGRESS:
                 switch (emuenv.common_dialog.savedata.display_type) {

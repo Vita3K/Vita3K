@@ -337,7 +337,7 @@ static ImTextureID check_and_init_icon_texture(GuiState &gui, EmuEnvState &emuen
 
 static void draw_save_info(GuiState &gui, EmuEnvState &emuenv, const ImVec2 WINDOW_SIZE, float FONT_SCALE, ImVec2 SCALE, const ImTextureID icon_texture) {
     const ImVec2 THUMBNAIL_SIZE = ImVec2(160.f * SCALE.x, 90.f * SCALE.y);
-    auto lang = emuenv.common_dialog.lang.save_data.info;
+    auto &lang = emuenv.common_dialog.lang.save_data.info;
 
     const ImVec2 ICON_POS(100.f * SCALE.x, 16.f * SCALE.y);
     if (icon_texture) {
@@ -356,7 +356,7 @@ static void draw_save_info(GuiState &gui, EmuEnvState &emuenv, const ImVec2 WIND
     ImGui::SetCursorPos(ImVec2(ICON_POS.x, ImGui::GetCursorPosY() + (46.f * SCALE.y)));
     ImGui::Text("%s", lang["details"].c_str());
     ImGui::SameLine(INFO_POS_WIDTH);
-    const auto DETAILS_STR = !emuenv.common_dialog.savedata.details[emuenv.common_dialog.savedata.selected_save].empty() ? emuenv.common_dialog.savedata.details[emuenv.common_dialog.savedata.selected_save] : emuenv.common_dialog.savedata.subtitle[emuenv.common_dialog.savedata.selected_save];
+    const auto &DETAILS_STR = !emuenv.common_dialog.savedata.details[emuenv.common_dialog.savedata.selected_save].empty() ? emuenv.common_dialog.savedata.details[emuenv.common_dialog.savedata.selected_save] : emuenv.common_dialog.savedata.subtitle[emuenv.common_dialog.savedata.selected_save];
     ImGui::Text("%s", DETAILS_STR.c_str());
     const ImVec2 BUTTON_SIZE = ImVec2(64 * SCALE.x, 34 * SCALE.y);
     const ImVec2 BUTTON_POS = ImVec2(6.f * SCALE.x, WINDOW_SIZE.y - (BUTTON_SIZE.y + 14 * SCALE.y));

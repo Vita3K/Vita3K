@@ -97,7 +97,7 @@ static bool set_notice_info(GuiState &gui, EmuEnvState &emuenv, const NoticeList
     std::string msg, name;
     fs::path content_path;
 
-    auto lang = gui.lang.indicator;
+    auto &lang = gui.lang.indicator;
     if (info.type == "content") {
         if (info.group.find("gd") != std::string::npos) {
             content_path = fs::path("app") / info.id;
@@ -123,7 +123,7 @@ static bool set_notice_info(GuiState &gui, EmuEnvState &emuenv, const NoticeList
         }
         init_notice_icon(gui, emuenv, content_path / "sce_sys/icon0.png", info);
     } else {
-        auto common = gui.lang.common.main;
+        auto &common = gui.lang.common.main;
         switch (static_cast<np::trophy::SceNpTrophyGrade>(string_utils::stoi_def(info.group, 0, "trophy group"))) {
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
             name = fmt::format("({}) ", common["platinum"]);
@@ -279,7 +279,7 @@ void update_notice_info(GuiState &gui, EmuEnvState &emuenv, const std::string &t
         info.content_id = emuenv.app_info.app_content_id;
         info.group = emuenv.app_info.app_category;
     } else {
-        const auto trophy_data = gui.trophy_unlock_display_requests.back();
+        const auto &trophy_data = gui.trophy_unlock_display_requests.back();
         info.id = trophy_data.np_com_id;
         info.content_id = trophy_data.trophy_id;
         info.group = std::to_string(int(trophy_data.trophy_kind));
@@ -313,9 +313,9 @@ static std::string get_notice_time(GuiState &gui, EmuEnvState &emuenv, const tim
     std::string date;
     const auto time_in_second = time / 1000;
     const auto diff_time = difftime(std::time(nullptr), time_in_second);
-    static const auto minute = 60;
-    static const auto hour = minute * 60;
-    static const auto day = hour * 24;
+    constexpr auto minute = 60;
+    constexpr auto hour = minute * 60;
+    constexpr auto day = hour * 24;
     if (diff_time >= day) {
         tm date_tm = {};
         SAFE_LOCALTIME(&time_in_second, &date_tm);
@@ -324,7 +324,7 @@ static std::string get_notice_time(GuiState &gui, EmuEnvState &emuenv, const tim
         if (emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR)
             date += fmt::format(" {}", DATE_TIME[DateTime::DAY_MOMENT]);
     } else {
-        auto lang = gui.lang.common.main;
+        auto &lang = gui.lang.common.main;
         if (diff_time >= (hour * 2))
             date = fmt::format(fmt::runtime(lang["hours_ago"]), uint32_t(diff_time / hour));
         else if (diff_time >= hour)
@@ -395,7 +395,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, notice_info.empty() ? 0.f : 8.0f * SCALE.x);
         ImGui::SetNextWindowPos(POPUP_POS, ImGuiCond_Always);
         ImGui::BeginChild("##notice_info_child", POPUP_SIZE, true, ImGuiWindowFlags_NoSavedSettings);
-        auto lang = gui.lang.indicator;
+        auto &lang = gui.lang.indicator;
         if (notice_info.empty()) {
             ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
             const auto no_notif = lang["no_notif"].c_str();
@@ -477,7 +477,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::BeginPopupModal("Delete All", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
                     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
                     const auto notif_deleted = lang["notif_deleted"].c_str();
-                    auto common = emuenv.common_dialog.lang.common;
+                    auto &common = emuenv.common_dialog.lang.common;
                     ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize(notif_deleted).x / 2.f), (DELETE_POPUP_SIZE.y / 2.f) - (46.f * SCALE.y)));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", notif_deleted);
                     ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), DELETE_POPUP_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
@@ -522,8 +522,8 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
 
     const ImVec2 INFO_BAR_SIZE(VIEWPORT_SIZE.x, 32.f * SCALE.y);
 
-    const ImU32 DEFAULT_BAR_COLOR = 0xFF000000; // Black
-    const ImU32 DEFAULT_INDICATOR_COLOR = 0xFFFFFFFF; // White
+    constexpr ImU32 DEFAULT_BAR_COLOR = 0xFF000000; // Black
+    constexpr ImU32 DEFAULT_INDICATOR_COLOR = 0xFFFFFFFF; // White
 
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
     const auto is_notif_pos = !gui.vita_area.start_screen && (gui.vita_area.live_area_screen || gui.vita_area.home_screen) ? 78.f * SCALE.x : 0.f;
@@ -572,7 +572,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
             const ImVec2 ICON_POS_MIN(VIEWPORT_POS.x + (INFO_BAR_SIZE.x / 2.f) - (14.f * SCALE.x) - (decal_app_icon_pos * SCALE.x) + (a * (34 * SCALE.x)), VIEWPORT_POS.y + (2.f * SCALE.y));
             const ImVec2 ICON_POS_MAX(ICON_POS_MIN.x + ICON_SIZE_SCALE, ICON_POS_MIN.y + ICON_SIZE_SCALE);
             const ImVec2 ICON_CENTER_POS(ICON_POS_MIN.x + (ICON_SIZE_SCALE / 2.f), ICON_POS_MIN.y + (ICON_SIZE_SCALE / 2.f));
-            const auto APPS_OPENED = gui.live_area_current_open_apps_list[a];
+            const auto &APPS_OPENED = gui.live_area_current_open_apps_list[a];
             auto &APP_ICON_TYPE = APPS_OPENED.starts_with("NPXS") && (APPS_OPENED != "NPXS10007") ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
 
             // Check if icon exist
@@ -587,7 +587,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
 
-    const auto PIX_FONT_SCALE = 19.2f / 24.f;
+    constexpr auto PIX_FONT_SCALE = 19.2f / 24.f;
     const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * emuenv.dpi_scale);
     const auto CLOCK_DEFAULT_FONT_SCALE = (24.f * emuenv.dpi_scale) * DEFAULT_FONT_SCALE;
     const auto DAY_MOMENT_DEFAULT_FONT_SCALE = (18.f * emuenv.dpi_scale) * DEFAULT_FONT_SCALE;

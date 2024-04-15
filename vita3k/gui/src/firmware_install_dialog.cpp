@@ -56,8 +56,8 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     };
     std::lock_guard<std::mutex> lock(install_mutex);
 
-    auto lang = gui.lang.install_dialog.firmware_install;
-    auto common = emuenv.common_dialog.lang.common;
+    auto &lang = gui.lang.install_dialog.firmware_install;
+    auto &common = emuenv.common_dialog.lang.common;
 
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);

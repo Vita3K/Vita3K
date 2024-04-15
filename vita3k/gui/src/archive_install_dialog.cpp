@@ -65,9 +65,9 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     };
     std::lock_guard<std::mutex> lock(install_mutex);
 
-    auto lang = gui.lang.install_dialog.archive_install;
-    auto indicator = gui.lang.indicator;
-    auto common = emuenv.common_dialog.lang.common;
+    auto &lang = gui.lang.install_dialog.archive_install;
+    auto &indicator = gui.lang.indicator;
+    auto &common = emuenv.common_dialog.lang.common;
 
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);

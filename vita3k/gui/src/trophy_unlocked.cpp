@@ -80,7 +80,7 @@ static void draw_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, NpTrophyUnl
     ImGui::Image(gui.trophy_window_icon, ImVec2(TROPHY_WINDOW_ICON_SIZE, TROPHY_WINDOW_ICON_SIZE));
     ImGui::NextColumn();
 
-    auto common = gui.lang.common.main;
+    auto &common = gui.lang.common.main;
     std::string trophy_kind_s = "?";
 
     switch (callback_data.trophy_kind) {

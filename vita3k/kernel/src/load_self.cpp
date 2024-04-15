@@ -348,7 +348,7 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
                 continue;
 
             SegmentInfosForReloc seg;
-            const auto module_info = kernel.loaded_modules[kernel.module_uid_by_nid[var_binding_info.module_nid]];
+            const auto &module_info = kernel.loaded_modules[kernel.module_uid_by_nid[var_binding_info.module_nid]];
             if (!module_info) {
                 reloc_success = false;
                 LOG_ERROR("Module not found by nid: {} uid: {}", log_hex(var_binding_info.module_nid), kernel.module_uid_by_nid[var_binding_info.module_nid]);
@@ -410,7 +410,7 @@ static bool unload_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entrie
                 continue;
 
             SegmentInfosForReloc seg;
-            const auto module_info = kernel.loaded_modules[kernel.module_uid_by_nid[var_binding_info.module_nid]];
+            const auto &module_info = kernel.loaded_modules[kernel.module_uid_by_nid[var_binding_info.module_nid]];
             if (!module_info) {
                 reloc_success = false;
                 LOG_ERROR("Module not found by nid: {} uid: {}", log_hex(var_binding_info.module_nid), kernel.module_uid_by_nid[var_binding_info.module_nid]);

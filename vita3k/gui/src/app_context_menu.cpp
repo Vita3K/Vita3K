@@ -53,9 +53,6 @@ static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::st
         update_history_infos[info.attribute("app_ver").as_double()] = info.text().as_string();
 
     for (auto &update : update_history_infos) {
-        const auto startpos = "<";
-        const auto endpos = ">";
-
         if (update.second.find_first_of('\n') != std::string::npos)
             update.second.erase(update.second.begin() + update.second.find_first_of('\n'));
 
@@ -71,9 +68,9 @@ static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::st
         while (update.second.find("<li>") != std::string::npos)
             if (update.second.find("<li>") != std::string::npos)
                 update.second.replace(update.second.find("<li>"), 4, reinterpret_cast<const char *>(u8"\u30FB")); // 00B7 or 2022 or 30FB or FF65
-        while (update.second.find(startpos) != std::string::npos)
-            if (update.second.find(">") + 1 != std::string::npos)
-                update.second.erase(update.second.find(startpos), update.second.find(endpos) + 1 - update.second.find(startpos));
+        while (update.second.find('<') != std::string::npos)
+            if (update.second.find('>') + 1 != std::string::npos)
+                update.second.erase(update.second.find('<'), update.second.find('>') + 1 - update.second.find('<'));
         while (update.second.find("&nbsp;") != std::string::npos)
             if (update.second.find("&nbsp;") != std::string::npos)
                 update.second.replace(update.second.find("&nbsp;"), 6, " ");
@@ -106,12 +103,12 @@ std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, EmuEnvState &em
 }
 
 static std::string get_time_app_used(GuiState &gui, const int64_t &time_used) {
-    static const uint32_t one_min = 60;
-    static const uint32_t one_hour = one_min * 60;
-    static const uint32_t twenty_four_hours = 24;
-    static const uint32_t one_day = one_hour * twenty_four_hours;
-    static const uint32_t seven_days = 7;
-    static const uint32_t one_week = one_day * seven_days;
+    constexpr uint32_t one_min = 60;
+    constexpr uint32_t one_hour = one_min * 60;
+    constexpr uint32_t twenty_four_hours = 24;
+    constexpr uint32_t one_day = one_hour * twenty_four_hours;
+    constexpr uint32_t seven_days = 7;
+    constexpr uint32_t one_week = one_day * seven_days;
 
     auto &lang = gui.lang.app_context.time_used;
 
@@ -218,7 +215,7 @@ void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::st
 
 void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
-    const auto title_id = APP_INDEX->title_id;
+    const auto &title_id = APP_INDEX->title_id;
     try {
         fs::remove_all(emuenv.pref_path / "ux0/app" / app_path);
 
@@ -296,7 +293,7 @@ static std::string context_dialog;
 
 void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
-    const auto title_id = APP_INDEX->title_id;
+    const auto &title_id = APP_INDEX->title_id;
 
     const auto APP_PATH{ emuenv.pref_path / "ux0/app" / app_path };
     const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
@@ -326,13 +323,13 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto is_system_app = title_id.starts_with("NPXS") && (title_id != "NPXS10007");
     const auto has_state_report = gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(title_id) : false;
     const auto compat_state = has_state_report ? gui.compat.app_compat_db[title_id].state : compat::UNKNOWN;
-    const auto compat_state_color = gui.compat.compat_color[compat_state];
-    const auto compat_state_str = has_state_report ? lang_compat.states[compat_state] : lang_compat.states[compat::UNKNOWN];
+    const auto &compat_state_color = gui.compat.compat_color[compat_state];
+    const auto &compat_state_str = has_state_report ? lang_compat.states[compat_state] : lang_compat.states[compat::UNKNOWN];
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
         ImGui::SetWindowFontScale(1.1f);
-        const auto START_STR = app_path == emuenv.io.app_path ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
+        const auto &START_STR = app_path == emuenv.io.app_path ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
         if (ImGui::MenuItem(START_STR.c_str()))
             pre_run_app(gui, emuenv, app_path);
         if (!is_system_app) {
