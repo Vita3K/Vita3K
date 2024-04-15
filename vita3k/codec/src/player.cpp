@@ -67,7 +67,7 @@ void PlayerState::free_video() {
         audio_packets.pop();
     }
 
-    video_playing = "";
+    video_playing.clear();
 }
 
 void PlayerState::switch_video(const std::string &path) {
@@ -245,6 +245,6 @@ void PlayerState::queue(const std::string &path) {
 PlayerState::~PlayerState() {
     free_video();
 
-    video_playing = "";
+    video_playing.clear();
     videos_queue = {};
 }

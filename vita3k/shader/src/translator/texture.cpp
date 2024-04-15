@@ -280,7 +280,7 @@ bool USSETranslatorVisitor::smp(
         additional_info = ".gather4.uv";
         break;
     default:
-        additional_info = "";
+        additional_info.clear();
     }
 
     LOG_DISASM("{:016x}: {}SMP{}d.{}.{}{} {} {} {} {}", m_instr, disasm::e_predicate_str(pred), dim, disasm::data_type_str(inst.opr.dest.type), disasm::data_type_str(inst.opr.src0.type), additional_info,

@@ -810,8 +810,8 @@ EXPORT(int, sceSaveDataDialogAbort) {
 }
 
 static void check_empty_param(EmuEnvState &emuenv, const SceAppUtilSaveDataSlotEmptyParam *empty_param, const uint32_t idx) {
-    emuenv.common_dialog.savedata.title[idx] = "";
-    emuenv.common_dialog.savedata.subtitle[idx] = "";
+    emuenv.common_dialog.savedata.title[idx].clear();
+    emuenv.common_dialog.savedata.subtitle[idx].clear();
     emuenv.common_dialog.savedata.icon_buffer[idx].clear();
     emuenv.common_dialog.savedata.icon_texture[idx] = {};
     emuenv.common_dialog.savedata.has_date[idx] = false;
