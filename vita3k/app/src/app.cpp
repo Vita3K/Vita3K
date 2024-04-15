@@ -68,7 +68,7 @@ void set_window_title(EmuEnvState &emuenv) {
     const std::string title_to_set = fmt::format("{} | {} ({}) | {} | {} FPS ({} ms) | {}x{}{} | {}",
         window_title,
         emuenv.current_app_title, emuenv.io.title_id,
-        emuenv.cfg.backend_renderer,
+        emuenv.cfg.current_config.backend_renderer,
         emuenv.fps, emuenv.ms_per_frame,
         x, y, af, emuenv.cfg.current_config.screen_filter);
 

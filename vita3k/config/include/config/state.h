@@ -129,6 +129,7 @@ public:
         int audio_volume = 100;
         bool ngs_enable = true;
         bool pstv_mode = false;
+        std::string backend_renderer = "OpenGL";
         bool high_accuracy = false;
         float resolution_multiplier = 1.0f;
         bool disable_surface_sync = false;
