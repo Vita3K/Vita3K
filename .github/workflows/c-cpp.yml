@@ -44,7 +44,7 @@ jobs:
           - os: macos-latest
             version: zip
             cache_path: ~/Library/Caches/ccache
-            extra_cmake_args: 
+            extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="x86_64"
             cmake_preset: macos-ninja
         exclude:
           - os: macos-latest
@@ -61,11 +61,11 @@ jobs:
       - name: Set up build environment (macos-latest)
         run: |
           brew install ccache ninja create-dmg
-          brew fetch --force --bottle-tag=monterey boost openssl@3 molten-vk
-          brew install $(brew --cache --bottle-tag=monterey boost)
-          brew install $(brew --cache --bottle-tag=monterey molten-vk)
-          brew reinstall $(brew --cache --bottle-tag=monterey openssl@3)
-          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
+          brew fetch --force --bottle-tag=x86_64_monterey boost openssl@3 molten-vk
+          brew install $(brew --cache --bottle-tag=x86_64_monterey boost)
+          brew install $(brew --cache --bottle-tag=x86_64_monterey molten-vk)
+          brew reinstall $(brew --cache --bottle-tag=x86_64_monterey openssl@3)
+          echo "$(brew --prefix ccache)/libexec" >> $GITHUB_PATH
           ccache --set-config=compiler_check=content
         if: matrix.os == 'macos-latest'
 
