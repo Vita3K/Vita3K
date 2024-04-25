@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest-large]
         config: [Release]
         version: [zip, appimage]
         include:
@@ -41,13 +41,13 @@ jobs:
                 C:\Users\runneradmin\AppData\Local\ccache
             extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
             cmake_preset: windows-ninja
-          - os: macos-latest
+          - os: macos-latest-large
             version: zip
             cache_path: ~/Library/Caches/ccache
             extra_cmake_args: 
             cmake_preset: macos-ninja
         exclude:
-          - os: macos-latest
+          - os: macos-latest-large
             version: appimage
           - os: windows-latest
             version: appimage
@@ -58,7 +58,7 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Set up build environment (macos-latest)
+      - name: Set up build environment (macos-latest-large)
         run: |
           brew install ccache ninja create-dmg
           brew fetch --force --bottle-tag=monterey boost openssl@3 molten-vk
@@ -67,7 +67,7 @@ jobs:
           brew reinstall $(brew --cache --bottle-tag=monterey openssl@3)
           echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
           ccache --set-config=compiler_check=content
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-latest-large'
 
       - name: Set up build environment (ubuntu-latest)
         run: |
@@ -152,7 +152,7 @@ jobs:
       - name: Ccache statistics
         run: ccache -s  
         
-      - name: Create DMG (macos-latest)
+      - name: Create DMG (macos-latest-large)
         run: |
           cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
           create-dmg \
@@ -165,7 +165,7 @@ jobs:
             vita3k-${{ env.git_short_sha }}-${{ matrix.version }}-${{ matrix.os }}.dmg \
             Vita3K.app
           rm -rf Vita3K.app
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-latest-large'
 
       - name: Clean appimage build (ubuntu-latest, appimage)
         run: |
@@ -203,11 +203,11 @@ jobs:
         shell: bash
         run: |
           mkdir artifacts/
-          files=$(find . -name "*latest")
+          files=$(find . -name "*latest*")
           for f in $files; do
-            if [[ $f == *macos-latest ]]
+            if [[ $f == *macos-latest-large ]]
             then
-              cp $(basename $f)/$(basename $f).dmg artifacts/macos-latest.dmg
+              cp $(basename $f)/$(basename $f).dmg artifacts/macos-latest-large.dmg
             else
               if [[ $f == *ubuntu-latest ]]
               then
