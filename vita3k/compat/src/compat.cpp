@@ -25,6 +25,7 @@
 
 #include <util/net_utils.h>
 
+#include <miniz.h>
 #include <pugixml.hpp>
 
 enum LabelIdState {
@@ -42,6 +43,42 @@ namespace compat {
 static std::string db_updated_at;
 static const uint32_t db_version = 1;
 static uint32_t db_issue_count = 0;
+
+bool extract_zip_file(const char *zip_filename, const fs::path &output_path) {
+    // Open the ZIP file for reading
+    mz_zip_archive zip_archive;
+    memset(&zip_archive, 0, sizeof(zip_archive));
+    if (!mz_zip_reader_init_file(&zip_archive, zip_filename, 0)) {
+        LOG_ERROR("Failed to initialize ZIP archive for reading");
+        return false;
+    }
+
+    // Get the number of files in the ZIP archive
+    mz_uint num_files = mz_zip_reader_get_num_files(&zip_archive);
+    for (mz_uint i = 0; i < num_files; i++) {
+        // Get information about the current file in the ZIP archive
+        mz_zip_archive_file_stat file_stat;
+        if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) {
+            LOG_ERROR("Failed to get file information from ZIP archive");
+            mz_zip_reader_end(&zip_archive);
+            return false;
+        }
+
+        // Extract the file from the ZIP archive
+        fs::path output_file_path = output_path / file_stat.m_filename;
+        if (!mz_zip_reader_extract_to_file(&zip_archive, i, fs_utils::path_to_utf8(output_file_path).c_str(), 0)) {
+            LOG_ERROR("Failed to extract file from ZIP archive to path: {}", output_file_path);
+            mz_zip_reader_end(&zip_archive);
+            return false;
+        }
+    }
+
+    // Close the ZIP archive
+    mz_zip_reader_end(&zip_archive);
+    fs::remove(zip_filename);
+
+    return true;
+}
 
 bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto app_compat_db_path = emuenv.cache_path / "app_compat_db.xml";
@@ -127,7 +164,7 @@ bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 static const std::string latest_link = "https://api.github.com/repos/Vita3K/compatibility/releases/latest";
-static const std::string app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml";
+static const std::string app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml.zip";
 
 bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto app_compat_db_path = emuenv.cache_path / "app_compat_db.xml";
@@ -154,7 +191,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
 
     LOG_INFO("Applications compatibility database is {}, attempting to download latest updated at: {}", compat_db_exist ? "outdated" : "missing", updated_at);
 
-    const auto new_app_compat_db_path = emuenv.cache_path / "new_app_compat_db.xml";
+    const auto new_app_compat_db_path = emuenv.cache_path / "new_app_compat_db.xml.zip";
 
     if (!net_utils::download_file(app_compat_db_link, new_app_compat_db_path.string())) {
         gui.info_message.title = lang["error"];
@@ -164,8 +201,9 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
         return false;
     }
 
-    // Rename new database to replace old database
-    fs::rename(new_app_compat_db_path, app_compat_db_path);
+    // Unpack new database and replace old database
+    if (!extract_zip_file(fs_utils::path_to_utf8(new_app_compat_db_path).c_str(), emuenv.cache_path))
+        return false;
 
     const auto old_db_updated_at = db_updated_at;
     const auto old_compat_db_count = db_issue_count;
