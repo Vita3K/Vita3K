@@ -20,6 +20,8 @@
 #include <mem/ptr.h>
 #include <util/align.h>
 
+#include <algorithm>
+
 struct MemspaceBlockAllocator {
     struct Block {
         std::uint32_t size;
