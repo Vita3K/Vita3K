@@ -137,8 +137,6 @@ EXPORT(int, sceNgsAT9GetSectionDetails, uint32_t samples_start, const uint32_t n
         const int nb_samples_per_superframe = nb_samples_per_frame * 4;
 
         samples_start += nb_samples_per_frame;
-        if (is_sdk_recent)
-            samples_start += nb_samples_per_frame;
 
         const int superframes_offset = samples_start / nb_samples_per_superframe;
 
@@ -147,7 +145,7 @@ EXPORT(int, sceNgsAT9GetSectionDetails, uint32_t samples_start, const uint32_t n
         const int start_skip_samples = samples_start - superframes_offset * nb_samples_per_superframe;
         info->start_skip = static_cast<SceInt16>(start_skip_samples);
 
-        const int total_superframes = (start_skip_samples + num_samples + nb_samples_per_superframe - 1) / nb_samples_per_superframe;
+        const int total_superframes = (samples_start + num_samples + nb_samples_per_superframe - 1) / nb_samples_per_superframe;
         const int total_bytes_read = (total_superframes - superframes_offset) * superframe_bytes;
         info->num_bytes = total_bytes_read;
 
