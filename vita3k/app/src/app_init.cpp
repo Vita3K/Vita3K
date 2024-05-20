@@ -63,7 +63,7 @@ void update_viewport(EmuEnvState &state) {
         break;
 
     default:
-        LOG_ERROR("Unimplemented backend render: {}.", static_cast<int>(state.renderer->current_backend));
+        LOG_ERROR("Unimplemented backend renderer: {}.", static_cast<int>(state.renderer->current_backend));
         break;
     }
 
@@ -288,7 +288,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         break;
 
     default:
-        LOG_ERROR("Unimplemented backend render: {}.", state.cfg.backend_renderer);
+        LOG_ERROR("Unimplemented backend renderer: {}.", state.cfg.backend_renderer);
         break;
     }
 
@@ -342,7 +342,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
                 break;
 
             default:
-                error_dialog(fmt::format("Unknown backend render: {}.", state.cfg.backend_renderer));
+                error_dialog(fmt::format("Unknown backend renderer: {}.", state.cfg.backend_renderer));
                 break;
             }
             return false;

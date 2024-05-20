@@ -27,7 +27,7 @@
 #include <SDL.h>
 
 namespace gui {
-static void draw_ime_dialog(DialogState &common_dialog, float FONT_SCALE) {
+static void draw_ime_dialog(EmuEnvState &emuenv, DialogState &common_dialog, float FONT_SCALE) {
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin("##ime_dialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(FONT_SCALE);
@@ -50,7 +50,8 @@ static void draw_ime_dialog(DialogState &common_dialog, float FONT_SCALE) {
             common_dialog.ime.max_length + 1);
     }
     ImGui::SameLine();
-    if (ImGui::Button(common_dialog.lang.common["submit"].c_str())) {
+    auto &common = common_dialog.lang.common;
+    if (ImGui::Button(common["submit"].c_str()) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
         common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_ENTER;
         common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
         common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
@@ -59,7 +60,7 @@ static void draw_ime_dialog(DialogState &common_dialog, float FONT_SCALE) {
     }
     if (common_dialog.ime.cancelable) {
         ImGui::SameLine();
-        if (ImGui::Button(common_dialog.lang.common["cancel"].c_str())) {
+        if (ImGui::Button(common["cancel"].c_str()) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
             common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_CLOSE;
             common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
             common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
@@ -652,7 +653,7 @@ void draw_common_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         switch (emuenv.common_dialog.type) {
         case IME_DIALOG:
-            draw_ime_dialog(emuenv.common_dialog, RES_SCALE.x);
+            draw_ime_dialog(emuenv, emuenv.common_dialog, RES_SCALE.x);
             break;
         case MESSAGE_DIALOG:
             draw_message_dialog(emuenv.common_dialog, RES_SCALE.x, SCALE);

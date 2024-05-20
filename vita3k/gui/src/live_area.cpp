@@ -1168,12 +1168,10 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Spacing();
             };
             TextColoredCentered(gui, GUI_COLOR_TEXT, "control_setting");
-            if (gui.modules.empty()) {
+            if (gui.modules.empty())
                 TextColoredCentered(gui, GUI_COLOR_TEXT, "firmware_not_detected");
-            }
-            if (!gui.fw_font) {
+            if (!gui.fw_font)
                 TextColoredCentered(gui, GUI_COLOR_TEXT, "firmware_font_not_detected");
-            }
             ImGui::Separator();
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["live_area_help"].c_str());
