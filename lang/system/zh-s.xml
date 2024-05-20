@@ -516,6 +516,14 @@
 		</help>
 	</live_area>
 
+	<message>
+		<load_app_failed>无法读取“{}”，
+请检查vita3k.log查看控制台输出的详细信息。
+1、您是否已安装了固件？
+2、提取您已拥有的应用程序/游戏，并在Vita3K安装。
+3、如果您想要安装/运行Vitamin是不支持的。</load_app_failed>
+	</message>
+
 	<performance_overlay>
 		<avg>平均</avg>
 		<min>最低</min>
@@ -647,7 +655,7 @@
 并非所有显卡都与此兼容。</spirv_shader_description>
 			<clean_shaders>清除着色器缓存以及日志</clean_shaders>
 			<fps_hack>FPS修改</fps_hack>
-			<fps_hack_description>游戏修改允许一些以30 FPS运行的游戏在模拟器上以60 FPS的速度运行。
+			<fps_hack_description>游戏修改允许一些以30FPS运行的游戏在模拟器上以60FPS的速度运行。
 请注意这只是一个修改，仅适用于某些游戏。
 在其他游戏中，它可能没有效果或使其出现两倍速。</fps_hack_description>
 		</gpu>

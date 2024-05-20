@@ -67,8 +67,6 @@
 		<license>Ліцензія</license>
 		<shaders_cache>Кеш шейдерів</shaders_cache>
 		<shaders_log>Журнал шейдерів</shaders_log>
-		<export_textures>Експорт текстур</export_textures>
-		<import_textures>Імпорт текстур</import_textures>
 		<manual>Довідка</manual>
 		<update>Оновити</update>
 		<update_history>Оновити історію</update_history>
