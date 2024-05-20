@@ -46,6 +46,7 @@ struct DialogLangState {
         { "submit", "Submit" },
         { "yes", "Yes" }
     };
+    std::map<std::string, std::string> message = { { "load_app_failed", "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Do you have installed firmware?\n2. Dump your own app(s)/game(s) and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported." } };
     std::map<std::string, std::string> trophy = { { "preparing_start_app", "Preparing to start the application..." } };
     struct SaveData {
         std::map<std::string, std::string> deleting = {
@@ -257,7 +258,7 @@ struct LangState {
         { "connected", "{} controllers connected" },
         { "name", "Name" },
         { "num", "Num" },
-        { "not_connected", "No compatible controllers connected.\nPlease connect a controller that is compatible with SDL2." },
+        { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." },
         { "motion_support", "Gamepad has motion support" },
         { "rebind_controls", "Rebind Controls" },
         { "led_color", "LED Color" },
@@ -389,7 +390,7 @@ struct LangState {
             { "copy_paste_zrif", "Ctrl (Cmd) + C to copy, Ctrl (Cmd) + V to paste." },
             { "delete_pkg", "Delete the pkg file?" },
             { "delete_bin_rif", "Delete the work.bin/rif file?" },
-            { "failed_install_package", "Failed to install package.\nPlease check pkg and work.bin/rif file or zRIF key." }
+            { "failed_install_package", "Failed to install package.\nCheck pkg and work.bin/rif file or zRIF key." }
         };
         std::map<std::string, std::string> archive_install = {
             { "select_install_type", "Select install type" },
@@ -404,7 +405,7 @@ struct LangState {
         };
         std::map<std::string, std::string> license_install = {
             { "successed_install_license", "Successfully installed license." },
-            { "failed_install_license", "Failed to install license.\nPlease check work.bin/rif file or zRIF key." }
+            { "failed_install_license", "Failed to install license.\nCheck work.bin/rif file or zRIF key." }
         };
         std::map<std::string, std::string> reinstall = {
             { "reinstall_content", "Reinstall this content?" },

@@ -288,7 +288,7 @@ Error code: {}</an_error_occurred>
 		<name>Name</name>
 		<num>Num</num>
 		<not_connected>No compatible controllers connected.
-Please connect a controller that is compatible with SDL2.</not_connected>
+Connect a controller that is compatible with SDL2.</not_connected>
 		<motion_support>Gamepad has motion support</motion_support>
 		<rebind_controls>Rebind Controls</rebind_controls>
 		<led_color>LED Color</led_color>
@@ -467,7 +467,7 @@ and also for Asian regional font support. (Generally Recommended)</firmware_font
 			<delete_pkg>Delete the pkg file?</delete_pkg>
 			<delete_bin_rif>Delete the work.bin/rif file?</delete_bin_rif>
 			<failed_install_package>Failed to install package.
-Please check pkg and work.bin/rif file or zRIF key.</failed_install_package>
+Check pkg and work.bin/rif file or zRIF key.</failed_install_package>
 		</pkg_install>
 		<archive_install>
 			<select_install_type>Select install type</select_install_type>
@@ -483,7 +483,7 @@ Please check pkg and work.bin/rif file or zRIF key.</failed_install_package>
 		<license_install>
 			<successed_install_license>Successfully installed license.</successed_install_license>
 			<failed_install_license>Failed to install license.
-Please check work.bin/rif file or zRIF key.</failed_install_license>
+Check work.bin/rif file or zRIF key.</failed_install_license>
 		</license_install>
 		<reinstall>
 			<reinstall_content>Reinstall this content?</reinstall_content>
@@ -517,6 +517,14 @@ Please check work.bin/rif file or zRIF key.</failed_install_license>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
+
+	<message>
+		<load_app_failed>Failed to load "{}".
+Check vita3k.log to see console output for details.
+1. Do you have installed firmware?
+2. Dump your own app(s)/game(s) and install it on Vita3K.
+3. If you want to install or boot Vitamin, it is not supported.</load_app_failed>
+	</message>
 
 	<performance_overlay>
 		<avg>Avg</avg>

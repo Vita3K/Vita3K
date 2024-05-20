@@ -44,7 +44,7 @@
 		<vita3k_website>更多資訊請造訪我們的網站：</vita3k_website>
 		<ko-fi_website>如果您想支持我們，您可以捐贈或者訂閱我們的：</ko-fi_website>
 		<vita3k_staff>Vita3K人員名單</vita3k_staff>
-		<developers>開發人員</developers>
+		<developers>開發者</developers>
 		<contributors>參與者</contributors>
 		<supporters>支持者</supporters>
 	</about>
@@ -516,6 +516,14 @@
 		</help>
 	</live_area>
 
+	<message>
+		<load_app_failed>無法讀取“{}”，
+請檢查vita3k.log查閲控制臺輸出的詳細資訊。
+1、您是否已安裝了韌體？
+2、傾印您已擁有的应用程式/遊戲，並在Vita3K安裝。
+3、如果您想要安裝/運行Vitamin是不支援的。</load_app_failed>
+	</message>
+
 	<performance_overlay>
 		<avg>平均</avg>
 		<min>最低</min>
@@ -647,7 +655,7 @@
 並非所有顯卡都與此兼容。</spirv_shader_description>
 			<clean_shaders>清除著色器快取以及記錄</clean_shaders>
 			<fps_hack>FPS修改</fps_hack>
-			<fps_hack_description>遊戲修改允許一些以30 FPS運行的遊戲在模擬器上以60 FPS的速度運行。
+			<fps_hack_description>遊戲修改允許一些以30FPS運行的遊戲在模擬器上以60FPS的速度運行。
 請注意這只是一個修改，僅適用於某些遊戲。
 在其他遊戲中，它可能沒有效果或使其出現兩倍速。</fps_hack_description>
 		</gpu>

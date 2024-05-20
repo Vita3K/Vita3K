@@ -28,7 +28,7 @@
 namespace lang {
 
 static const std::vector<std::string> list_user_lang_static = {
-    "id", "ms"
+    "id", "ms", "ua"
 };
 
 void init_lang(LangState &lang, EmuEnvState &emuenv) {
@@ -288,6 +288,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     // Help
                     set_lang_string(lang.live_area.help, live_area.child("help"));
                 }
+
+                // Message
+                set_lang_string(emuenv.common_dialog.lang.message, lang_child.child("message"));
 
                 // Performance Overlay
                 set_lang_string(lang.performance_overlay, lang_child.child("performance_overlay"));
