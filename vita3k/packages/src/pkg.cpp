@@ -271,9 +271,27 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         LOG_INFO(string_name);
 
         if ((byte_swap(entry.type) & 0xFF) == 4 || (byte_swap(entry.type) & 0xFF) == 18) { // Directory
-            fs::create_directories(path / string_name);
+            boost::system::error_code ec;
+            bool created = fs::create_directories(path / string_name, ec);
+            if (!created && ec != boost::system::errc::file_exists) {
+                LOG_ERROR("Failed to create directory: {}", ec.message());
+                evp_cleanup();
+                return false;
+            }
         } else { // File
             fs::ofstream outfile(path / string_name, std::ios::binary);
+            auto path_cleanup = [&]() {
+                outfile.close();
+                if (fs::exists(path)) {
+                    fs::remove_all(path);
+                }
+                evp_cleanup();
+            };
+            if (outfile.fail()) {
+                LOG_ERROR("Failed to open file for writing");
+                path_cleanup();
+                return false;
+            }
 
             auto offset = byte_swap(entry.data_offset);
             auto data_size = byte_swap(entry.data_size);
@@ -292,12 +310,23 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
                 EVP_DecryptUpdate(cipher_ctx, buffer.data(), &dec_len, buffer.data(), size);
 
                 outfile.write(reinterpret_cast<char *>(buffer.data()), dec_len);
+                if (outfile.fail()) {
+                    LOG_ERROR("Failed to write to outfile stream, possibly out of space");
+                    path_cleanup();
+                    return false;
+                }
+
                 offset += size;
                 data_size -= size;
             }
 
             EVP_DecryptFinal_ex(cipher_ctx, buffer.data(), &dec_len);
             outfile.write(reinterpret_cast<char *>(buffer.data()), dec_len);
+            if (outfile.fail()) {
+                LOG_ERROR("Failed to write to outfile stream, possibly out of space");
+                path_cleanup();
+                return false;
+            }
             outfile.close();
         }
     }
