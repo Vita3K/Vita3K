@@ -771,6 +771,29 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 source = spv::NoResult;
             } else {
                 source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
+
+                if (translation_state.is_vulkan) {
+                    const spv::Id old_source = source;
+                    // if (is_srgb)
+                    spv::Builder::If cond_builder(parameters.is_srgb_constant, spv::SelectionControlMaskNone, b);
+
+                    // perform gamma correction:
+                    // source.xyz = pow(source.xyz, vec3(2.2));
+                    const spv::Id v3 = b.makeVectorType(f32, 3);
+                    spv::Id rgb = b.createOp(spv::OpVectorShuffle, v3, { { true, source }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 } });
+                    const spv::Id gamma = utils::make_uniform_vector_from_type(b, v3, 2.2f);
+                    rgb = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { rgb, gamma });
+                    source = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, source }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
+
+                    store_source_result();
+
+                    // else (no shader gamma correction, nothing to do)
+                    cond_builder.makeBeginElse();
+                    source = old_source;
+                    store_source_result();
+                    cond_builder.makeEndIf();
+                    source = 0;
+                }
             }
         } else {
             // Try to initialize outs[0] to some nice value. In case the GPU has garbage data for our shader
@@ -1050,6 +1073,14 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, translation_state.is_vulkan ? 1 : 3);
         if (translation_state.is_vulkan)
             b.addDecoration(translation_state.render_info_id, spv::DecorationDescriptorSet, 0);
+
+        if (program.is_frag_color_used() && features.should_use_shader_interlock() && translation_state.is_vulkan) {
+            // specialization constant for shader interlock:
+            // layout (constant_id = GAMMA_CORRECTION_SPECIALIZATION_ID) const bool is_srgb = false;
+            spv_params.is_srgb_constant = b.makeBoolConstant(false, true);
+            b.addDecoration(spv_params.is_srgb_constant, spv::DecorationSpecId, (int)GAMMA_CORRECTION_SPECIALIZATION_ID);
+            b.addName(spv_params.is_srgb_constant, "is_srgb");
+        }
     }
 
     spv_params.render_info_id = translation_state.render_info_id;
@@ -1395,7 +1426,31 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         spv::Id coord_id = b.createLoad(translate_state.frag_coord_id, spv::NoPrecision);
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), coord_id);
         translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { { true, translated_id }, { true, translated_id }, { false, 0 }, { false, 1 } });
-        b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
+
+        if (translate_state.is_vulkan) {
+            spv::Id old_color = color;
+            // if (is_srgb)
+            spv::Builder::If cond_builder(parameters.is_srgb_constant, spv::SelectionControlMaskNone, b);
+
+            // perform inverse gamma correction:
+            // color.xyz = pow(color.xyz, vec3(1/2.2));
+            const spv::Id f32 = b.makeFloatType(32);
+            const spv::Id v4 = b.makeVectorType(f32, 4);
+            const spv::Id v3 = b.makeVectorType(f32, 3);
+            spv::Id rgb = b.createOp(spv::OpVectorShuffle, v3, { { true, color }, { true, color }, { false, 0 }, { false, 1 }, { false, 2 } });
+            const spv::Id gamma = utils::make_uniform_vector_from_type(b, v3, 1 / 2.2f);
+            rgb = b.createBuiltinCall(v3, utils.std_builtins, GLSLstd450Pow, { rgb, gamma });
+            color = b.createOp(spv::OpVectorShuffle, v4, { { true, rgb }, { true, color }, { false, 0 }, { false, 1 }, { false, 2 }, { false, 6 } });
+
+            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
+
+            // else (no shader gamma correction, nothing to do)
+            cond_builder.makeBeginElse();
+            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, old_color });
+            cond_builder.makeEndIf();
+        } else {
+            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
+        }
 
         if (features.preserve_f16_nan_as_u16) {
             color_val_operand.type = DataType::UINT16;

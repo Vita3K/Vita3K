@@ -106,6 +106,9 @@ struct SpirvShaderParameters {
     spv::Id thread_buffer;
 
     spv::Id render_info_id;
+
+    // When using shader interlock, specialization constant telling us if the texture is gamma corrected
+    spv::Id is_srgb_constant;
 };
 
 using Coord = std::pair<spv::Id, int>;
