@@ -132,9 +132,9 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginTable("##vita3k_staff_table", STAFF_COLUMN_COUNT, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersV | ImGuiTableFlags_NoSavedSettings, STAFF_LIST_SIZE)) {
         ImGui::TableSetupScrollFreeze(1, 1);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-        ImGui::TableSetupColumn(lang["developers"].c_str(), ImGuiTableColumnFlags_NoHide, STAFF_COLUMN_SIZE);
-        ImGui::TableSetupColumn(lang["contributors"].c_str(), ImGuiTableColumnFlags_NoHide, STAFF_COLUMN_SIZE);
-        ImGui::TableSetupColumn(lang["supporters"].c_str(), ImGuiTableColumnFlags_NoHide, STAFF_COLUMN_SIZE);
+        ImGui::TableSetupColumn(lang["developers"].c_str(), ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed, STAFF_COLUMN_SIZE);
+        ImGui::TableSetupColumn(lang["contributors"].c_str(), ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed, STAFF_COLUMN_SIZE);
+        ImGui::TableSetupColumn(lang["supporters"].c_str(), ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_WidthFixed, STAFF_COLUMN_SIZE);
         ImGui::TableHeadersRow();
         ImGui::PopStyleColor();
         ImGui::TableNextRow();
