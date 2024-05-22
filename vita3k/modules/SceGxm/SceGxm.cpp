@@ -2025,6 +2025,8 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
 
     if (!renderTarget)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    if (!renderTarget.valid(mem))
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
 
     renderer::destroy_render_target(*emuenv.renderer, renderTarget.get(mem)->renderer);
 
