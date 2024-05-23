@@ -353,11 +353,42 @@ void PipelineCache::save_pipeline_cache() {
     LOG_INFO("Pipeline cache saved");
 }
 
-vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints) {
+// Vulkan structs used to specify a specialization constant
+// Also, booleans in SPIRV are 32bit wide
+static const vk::SpecializationMapEntry srgb_entry = {
+    .constantID = shader::GAMMA_CORRECTION_SPECIALIZATION_ID,
+    .offset = 0,
+    .size = sizeof(uint32_t)
+};
+
+static const uint32_t srgb_entry_true = vk::True;
+static const uint32_t srgb_entry_false = vk::False;
+
+static const vk::SpecializationInfo srgb_info_true = {
+    .mapEntryCount = 1,
+    .pMapEntries = &srgb_entry,
+    .dataSize = sizeof(uint32_t),
+    .pData = &srgb_entry_true
+};
+
+static const vk::SpecializationInfo srgb_info_false = {
+    .mapEntryCount = 1,
+    .pMapEntries = &srgb_entry,
+    .dataSize = sizeof(uint32_t),
+    .pData = &srgb_entry_false
+};
+
+vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints, bool is_srgb) {
     if (maskupdate)
         LOG_CRITICAL("Mask not implemented in the vulkan renderer!");
 
     const vk::ShaderModule shader_compiling = std::bit_cast<vk::ShaderModule>(~0ULL);
+
+    const vk::SpecializationInfo *spec_info = nullptr;
+    if (!is_vertex && state.features.should_use_shader_interlock() && program->is_frag_color_used()) {
+        // if the specialization constant is used in the shader
+        spec_info = is_srgb ? &srgb_info_true : &srgb_info_false;
+    }
 
     vk::ShaderModule *shader_module;
     {
@@ -387,7 +418,8 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
         vk::PipelineShaderStageCreateInfo shader_stage_info{
             .stage = is_vertex ? vk::ShaderStageFlagBits::eVertex : vk::ShaderStageFlagBits::eFragment,
             .module = *shader_module,
-            .pName = is_vertex ? "main_vs" : "main_fs"
+            .pName = is_vertex ? "main_vs" : "main_fs",
+            .pSpecializationInfo = spec_info,
         };
         return shader_stage_info;
     }
@@ -420,7 +452,8 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
     vk::PipelineShaderStageCreateInfo shader_stage_info{
         .stage = is_vertex ? vk::ShaderStageFlagBits::eVertex : vk::ShaderStageFlagBits::eFragment,
         .module = *shader_module,
-        .pName = is_vertex ? "main_vs" : "main_fs"
+        .pName = is_vertex ? "main_vs" : "main_fs",
+        .pSpecializationInfo = spec_info,
     };
 
     return shader_stage_info;
@@ -707,7 +740,7 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     const vk::PipelineVertexInputStateCreateInfo vertex_input = get_vertex_input_state(vertex_program_gxm, mem);
 
     const vk::PipelineShaderStageCreateInfo vertex_shader = retrieve_shader(vertex_program_gxm.program.get(mem), vertex_program.hash, true, fragment_program_gxm.is_maskupdate, mem, hints);
-    const vk::PipelineShaderStageCreateInfo fragment_shader = retrieve_shader(gxm_fragment_shader, fragment_program.hash, false, fragment_program_gxm.is_maskupdate, mem, hints);
+    const vk::PipelineShaderStageCreateInfo fragment_shader = retrieve_shader(gxm_fragment_shader, fragment_program.hash, false, fragment_program_gxm.is_maskupdate, mem, hints, record.is_gamma_corrected);
     const vk::PipelineShaderStageCreateInfo shader_stages[] = { vertex_shader, fragment_shader };
     // disable the fragment shader if gxm asks us to
     const bool is_fragment_disabled = record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED || gxm_fragment_shader->has_no_effect();
