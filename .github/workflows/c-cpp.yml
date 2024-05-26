@@ -234,3 +234,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Push to store repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+        with:
+          source-directory: artifacts/
+          destination-github-username: 'Vita3K'
+          destination-repository-name: 'Vita3K-builds'
+          target-branch: master
+          target-directory: Builds/
+          commit-message: "Build: ${{ env.Build_Variable }}"
+          user-name: github-actions[bot]
+          user-email: github-actions[bot]@users.noreply.github.com
