@@ -61,7 +61,11 @@ EXPORT(int, sceDisplaySetFrameBufForCompat) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceDisplaySetFrameBufInternal) {
-    TRACY_FUNC(sceDisplaySetFrameBufInternal);
-    return UNIMPLEMENTED();
+EXPORT(int, sceDisplaySetFrameBufInternal, uint32_t maybe_buffer_idx, uint32_t unkn, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
+    TRACY_FUNC(sceDisplaySetFrameBufInternal, maybe_buffer_idx, unkn, pFrameBuf, sync);
+    // only render for frame buffer 0 or we'll get double fps
+    if (maybe_buffer_idx != 0)
+        return 0;
+
+    return CALL_EXPORT(_sceDisplaySetFrameBuf, pFrameBuf, sync, nullptr);
 }
