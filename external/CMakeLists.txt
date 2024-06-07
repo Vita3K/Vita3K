@@ -273,7 +273,7 @@ if(NOT OPENSSL_FOUND)
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.zip")
 			message(STATUS "Downloading openssl...")
-			file(DOWNLOAD https://firedaemon.com/download-firedaemon-openssl-3.1-zip
+			file(DOWNLOAD https://firedaemon.com/download-firedaemon-openssl-3-3-zip
 				"${CMAKE_BINARY_DIR}/external/openssl.zip" SHOW_PROGRESS)
 		endif()
 
@@ -283,7 +283,7 @@ if(NOT OPENSSL_FOUND)
 				WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
 		endif()
 
-		set(OPENSSL_ROOT_DIR "${CMAKE_BINARY_DIR}/external/openssl/openssl-3.1/x64")
+		set(OPENSSL_ROOT_DIR "${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64")
 	endif()
 
 	find_package(OpenSSL REQUIRED)
