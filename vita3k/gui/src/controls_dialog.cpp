@@ -82,9 +82,8 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
     ImGui::TableNextRow();
     ImGui::TableSetColumnIndex(0);
     ImGui::Text("%s", button_name);
-    if (tooltip && ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", tooltip);
-    }
+    if (tooltip)
+        SetTooltipEx(tooltip);
     ImGui::TableSetColumnIndex(1);
     // the association of the key
     int key_association = *button;

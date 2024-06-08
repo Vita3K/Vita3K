@@ -581,8 +581,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::PushTextWrapPos(WINDOW_SIZE.x - (54.f * SCALE.x));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", context_dialog.c_str());
             ImGui::PopTextWrapPos();
-            if ((context_dialog == lang.deleting["app_delete"]) && ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", lang.deleting["app_delete_description"].c_str());
+            if (context_dialog == lang.deleting["app_delete"])
+                SetTooltipEx(lang.deleting["app_delete_description"].c_str());
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
             if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {

@@ -195,21 +195,17 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         title_str = lang["select_interface_settings"];
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
         ImGui::Checkbox(lang["show_info_bar"].c_str(), &emuenv.cfg.show_info_bar);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", lang["info_bar_description"].c_str());
+        SetTooltipEx(lang["info_bar_description"].c_str());
         ImGui::SameLine();
         ImGui::Checkbox(lang["show_live_area_screen"].c_str(), &emuenv.cfg.show_live_area_screen);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", lang["live_area_screen_description"].c_str());
+        SetTooltipEx(lang["live_area_screen_description"].c_str());
         ImGui::Spacing();
         ImGui::Checkbox(lang["apps_list_grid"].c_str(), &emuenv.cfg.apps_list_grid);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", lang["apps_list_grid_description"].c_str());
+        SetTooltipEx(lang["apps_list_grid_description"].c_str());
         if (!emuenv.cfg.apps_list_grid) {
             ImGui::Spacing();
             ImGui::SliderInt(lang["icon_size"].c_str(), &emuenv.cfg.icon_size, 64, 128);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", lang["select_icon_size"].c_str());
+            SetTooltipEx(lang["select_icon_size"].c_str());
         }
         break;
     case FINISHED:
