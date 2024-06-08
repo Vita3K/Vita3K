@@ -63,8 +63,7 @@ void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::BeginChild("##info", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
         const auto &title = gui.info_message.title;
         ImGui::SetWindowFontScale(RES_SCALE.x);
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(title.c_str()).x) / 2);
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
+        TextColoredCentered(GUI_COLOR_TEXT_TITLE, title.c_str());
         ImGui::Spacing();
         ImGui::Separator();
         const auto text_size = ImGui::CalcTextSize(gui.info_message.msg.c_str(), 0, false, WINDOW_SIZE.x - (24.f * SCALE.x));
@@ -885,6 +884,32 @@ void SetTooltipEx(const char *tooltip) {
         ImGui::PopTextWrapPos();
         ImGui::EndTooltip();
     }
+}
+
+void TextColoredCentered(const ImVec4 &col, const char *text) {
+    ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(text).x) * 0.5f);
+    ImGui::TextColored(col, "%s", text);
+}
+
+void TextCentered(const char *text) {
+    ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(text).x) * 0.5f);
+    ImGui::Text("%s", text);
+}
+
+void TextColoredCentered(const ImVec4 &col, const char *text, float wrap_width) {
+    const auto window_width = ImGui::GetWindowWidth();
+    ImGui::PushTextWrapPos(window_width - wrap_width);
+    ImGui::SetCursorPosX((window_width - ImGui::CalcTextSize(text, nullptr, false, window_width - 2.f * wrap_width).x) * 0.5f);
+    ImGui::TextColored(col, "%s", text);
+    ImGui::PopTextWrapPos();
+}
+
+void TextCentered(const char *text, float wrap_width) {
+    const auto window_width = ImGui::GetWindowWidth();
+    ImGui::PushTextWrapPos(window_width - wrap_width);
+    ImGui::SetCursorPosX((window_width - ImGui::CalcTextSize(text, nullptr, false, window_width - 2.f * wrap_width).x) * 0.5f);
+    ImGui::Text("%s", text);
+    ImGui::PopTextWrapPos();
 }
 
 } // namespace gui

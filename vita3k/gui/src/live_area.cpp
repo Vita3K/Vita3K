@@ -1158,21 +1158,17 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::OpenPopup("Live Area Help");
         ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x / 2.f, WINDOW_SIZE.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         if (ImGui::BeginPopupModal("Live Area Help", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
-            auto help_str = gui.lang.main_menubar.help["title"].c_str();
-            ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(help_str).x / 2.f));
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", help_str);
+            TextColoredCentered(GUI_COLOR_TEXT_TITLE, gui.lang.main_menubar.help["title"].c_str());
             ImGui::Spacing();
-            auto TextColoredCentered = [](GuiState &gui, const ImVec4 &col, const char *text_id) {
-                auto str = gui.lang.live_area.help[text_id].c_str();
-                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(str).x / 2.f));
-                ImGui::TextColored(col, "%s", str);
+            auto TextColoredCenteredEx = [](GuiState &gui, const ImVec4 &col, const char *text_id) {
+                TextColoredCentered(col, gui.lang.live_area.help[text_id].c_str());
                 ImGui::Spacing();
             };
-            TextColoredCentered(gui, GUI_COLOR_TEXT, "control_setting");
+            TextColoredCenteredEx(gui, GUI_COLOR_TEXT, "control_setting");
             if (gui.modules.empty())
-                TextColoredCentered(gui, GUI_COLOR_TEXT, "firmware_not_detected");
+                TextColoredCenteredEx(gui, GUI_COLOR_TEXT, "firmware_not_detected");
             if (!gui.fw_font)
-                TextColoredCentered(gui, GUI_COLOR_TEXT, "firmware_font_not_detected");
+                TextColoredCenteredEx(gui, GUI_COLOR_TEXT, "firmware_font_not_detected");
             ImGui::Separator();
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["live_area_help"].c_str());

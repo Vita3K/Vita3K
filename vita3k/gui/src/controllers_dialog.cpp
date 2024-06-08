@@ -29,8 +29,8 @@
 
 namespace gui {
 
-bool rebinds_is_open = false;
-bool is_capturing_buttons = false;
+static bool rebinds_is_open = false;
+static bool is_capturing_buttons = false;
 
 void reset_controller_binding(EmuEnvState &emuenv) {
     emuenv.cfg.controller_binds = {
@@ -219,9 +219,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("##controllers", &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    auto title_str = lang["title"].c_str();
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title_str).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title_str);
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
 
@@ -266,9 +264,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
                     ImGui::Begin("##rebind_controls", &rebinds_is_open, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
                     ImGui::SetWindowFontScale(RES_SCALE.x);
-                    auto rebind_controls = lang["rebind_controls"].c_str();
-                    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(rebind_controls).x / 2.f));
-                    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", rebind_controls);
+                    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["rebind_controls"].c_str());
                     ImGui::Spacing();
                     ImGui::Separator();
 
@@ -357,9 +353,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::Spacing();
                         ImGui::Separator();
                         ImGui::Spacing();
-                        const auto led_color_str = lang["led_color"].c_str();
-                        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(led_color_str).x / 2.f));
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", led_color_str);
+                        TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["led_color"].c_str());
                         auto &color = emuenv.cfg.controller_led_color;
                         bool has_custom_color = !color.empty();
                         if (ImGui::Checkbox(lang["use_custom_color"].c_str(), &has_custom_color)) {

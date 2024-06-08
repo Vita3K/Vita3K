@@ -37,9 +37,7 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     ImGui::Begin("##welcome", &gui.help_menu.welcome_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    auto title_str = lang["title"].c_str();
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title_str).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title_str);
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::PopStyleColor();

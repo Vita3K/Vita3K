@@ -52,6 +52,7 @@ enum ScreenshotFormat {
 // Singular options produced in config file
 // Order is code(option_type, option_name, option_default, member_name)
 // When adding in a new macro for generation, ALL options must be stated.
+// All member names starting with "keyboard_" will be considered as key input (See controls_dialog.cpp)
 #define CONFIG_INDIVIDUAL(code)                                                                         \
     code(bool, "initial-setup", false, initial_setup)                                                   \
     code(bool, "gdbstub", false, gdbstub)                                                               \

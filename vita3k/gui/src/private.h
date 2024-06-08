@@ -78,5 +78,9 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv);
 void reevaluate_code(GuiState &gui, EmuEnvState &emuenv);
 
 void SetTooltipEx(const char *tooltip);
+void TextColoredCentered(const ImVec4 &col, const char *text);
+void TextCentered(const char *text);
+void TextColoredCentered(const ImVec4 &col, const char *text, float wrap_width);
+void TextCentered(const char *text, float wrap_width);
 
 } // namespace gui
