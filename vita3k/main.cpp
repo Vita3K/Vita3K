@@ -263,8 +263,8 @@ int main(int argc, char *argv[]) {
     }
 
     if (run_type == app::AppRunType::Extracted) {
-        emuenv.io.app_path = cfg.run_app_path ? *cfg.run_app_path : emuenv.app_info.app_title_id;
-        gui::init_user_app(gui, emuenv, emuenv.io.app_path);
+        emuenv.load_app_path = cfg.run_app_path ? *cfg.run_app_path : emuenv.app_info.app_title_id;
+        gui::init_user_app(gui, emuenv, emuenv.load_app_path);
         if (emuenv.cfg.run_app_path.has_value())
             emuenv.cfg.run_app_path.reset();
         else if (emuenv.cfg.content_path.has_value())
@@ -311,7 +311,7 @@ int main(int argc, char *argv[]) {
                 return QuitRequested;
             }
 
-            if (!emuenv.io.app_path.empty()) {
+            if (!emuenv.load_app_path.empty()) {
                 run_type = app::AppRunType::Extracted;
                 gui.vita_area.home_screen = false;
                 gui.vita_area.live_area_screen = false;
@@ -321,26 +321,33 @@ int main(int argc, char *argv[]) {
 
     // When backend render is changed before boot app, reboot emu in new backend render and run app
     if (emuenv.renderer->current_backend != emuenv.backend_renderer) {
-        emuenv.load_app_path = emuenv.io.app_path;
         run_execv(argv, emuenv);
         return Success;
     }
 
-    gui::set_config(gui, emuenv, emuenv.io.app_path);
+    const auto set_app_info = [](GuiState &gui, EmuEnvState &emuenv) {
+        emuenv.io.app_path = emuenv.load_app_path;
+        emuenv.load_app_path.clear();
+        gui::set_config(gui, emuenv, emuenv.io.app_path);
+        const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);
+        emuenv.app_info.app_version = APP_INDEX->app_ver;
+        emuenv.app_info.app_category = APP_INDEX->category;
+        emuenv.app_info.app_content_id = APP_INDEX->content_id;
+        emuenv.io.addcont = APP_INDEX->addcont;
+        emuenv.io.savedata = APP_INDEX->savedata;
+        emuenv.current_app_title = APP_INDEX->title;
+        emuenv.app_info.app_short_title = APP_INDEX->stitle;
+        emuenv.io.title_id = APP_INDEX->title_id;
 
-    const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);
-    emuenv.app_info.app_version = APP_INDEX->app_ver;
-    emuenv.app_info.app_category = APP_INDEX->category;
-    emuenv.app_info.app_content_id = APP_INDEX->content_id;
-    emuenv.io.addcont = APP_INDEX->addcont;
-    emuenv.io.savedata = APP_INDEX->savedata;
-    emuenv.current_app_title = APP_INDEX->title;
-    emuenv.app_info.app_short_title = APP_INDEX->stitle;
-    emuenv.io.title_id = APP_INDEX->title_id;
+        // Check license for PS App Only
+        if (emuenv.io.title_id.starts_with("PCS"))
+            emuenv.app_sku_flag = get_license_sku_flag(emuenv, emuenv.app_info.app_content_id);
 
-    // Check license for PS App Only
-    if (emuenv.io.title_id.starts_with("PCS"))
-        emuenv.app_sku_flag = get_license_sku_flag(emuenv, emuenv.app_info.app_content_id);
+        gui::init_app_background(gui, emuenv, emuenv.io.app_path);
+        gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
+    };
+
+    set_app_info(gui, emuenv);
 
     if (cfg.console) {
         auto main_thread = emuenv.kernel.get_thread(emuenv.main_thread_id);
@@ -352,9 +359,6 @@ int main(int argc, char *argv[]) {
     } else {
         gui.imgui_state->do_clear_screen = false;
     }
-
-    gui::init_app_background(gui, emuenv, emuenv.io.app_path);
-    gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
 
     if (!app::late_init(emuenv)) {
         app::error_dialog("Failed to initialize Vita3K", emuenv.window.get());
@@ -382,21 +386,64 @@ int main(int argc, char *argv[]) {
     gui.vita_area.information_bar = false;
 
     // Pre-Compile Shaders
-    emuenv.renderer->set_app(emuenv.io.title_id.c_str(), emuenv.self_name.c_str());
-    if (renderer::get_shaders_cache_hashs(*emuenv.renderer) && cfg.shader_cache) {
-        SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
-        for (const auto &hash : emuenv.renderer->shaders_cache_hashs) {
-            handle_events(emuenv, gui);
-            gui::draw_begin(gui, emuenv);
-            draw_app_background(gui, emuenv);
+    const auto pre_compile_shader = [&]() {
+        emuenv.renderer->set_app(emuenv.io.title_id.c_str(), emuenv.self_name.c_str());
+        if (renderer::get_shaders_cache_hashs(*emuenv.renderer) && cfg.shader_cache) {
+            SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
+            for (const auto &hash : emuenv.renderer->shaders_cache_hashs) {
+                handle_events(emuenv, gui);
+                gui::draw_begin(gui, emuenv);
+                draw_app_background(gui, emuenv);
 
-            emuenv.renderer->precompile_shader(hash);
-            gui::draw_pre_compiling_shaders_progress(gui, emuenv, uint32_t(emuenv.renderer->shaders_cache_hashs.size()));
+                emuenv.renderer->precompile_shader(hash);
+                gui::draw_pre_compiling_shaders_progress(gui, emuenv, uint32_t(emuenv.renderer->shaders_cache_hashs.size()));
 
-            gui::draw_end(gui);
-            emuenv.renderer->swap_window(emuenv.window.get());
+                gui::draw_end(gui);
+                emuenv.renderer->swap_window(emuenv.window.get());
+            }
         }
-    }
+    };
+    pre_compile_shader();
+
+    const auto run_exec = [&]() {
+        gui.vita_area.app_close = false;
+        gui.vita_area.home_screen = false;
+        gui.vita_area.live_area_screen = false;
+        gui.vita_area.information_bar = false;
+        if (!emuenv.load_exec_path.empty())
+            close_app(emuenv);
+        set_app_info(gui, emuenv);
+        emuenv.display.abort = false;
+        app::late_init(emuenv);
+        load_app(main_module_id, emuenv);
+        pre_compile_shader();
+        run_app(emuenv, main_module_id);
+        if (emuenv.load_exec_path.empty()) {
+            SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
+
+            while (handle_events(emuenv, gui) && emuenv.frame_count == 0) {
+                ZoneScopedN("Game loading"); // Tracy - Track game loading loop scope
+                // Driver acto!
+                renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg);
+
+                const SceFVector2 viewport_pos = { emuenv.viewport_pos.x, emuenv.viewport_pos.y };
+                const SceFVector2 viewport_size = { emuenv.viewport_size.x, emuenv.viewport_size.y };
+                emuenv.renderer->render_frame(viewport_pos, viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
+
+                gui::draw_begin(gui, emuenv);
+                gui::draw_common_dialog(gui, emuenv);
+                draw_app_background(gui, emuenv);
+
+                gui::draw_end(gui);
+                emuenv.renderer->swap_window(emuenv.window.get());
+                FrameMark; // Tracy - Frame end mark for game loading loop
+            }
+        }
+
+        emuenv.load_exec_argv.clear();
+        emuenv.load_exec_path.clear();
+    };
+
     {
         const auto err = run_app(emuenv, main_module_id);
         if (err != Success)
@@ -407,6 +454,9 @@ int main(int argc, char *argv[]) {
     while (handle_events(emuenv, gui) && (emuenv.frame_count == 0) && !emuenv.load_exec) {
         ZoneScopedN("Game loading"); // Tracy - Track game loading loop scope
         // Driver acto!
+        if (!emuenv.load_exec_path.empty())
+            run_exec();
+
         renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg);
 
         const SceFVector2 viewport_pos = { emuenv.viewport_pos.x, emuenv.viewport_pos.y };
@@ -425,6 +475,9 @@ int main(int argc, char *argv[]) {
     while (handle_events(emuenv, gui) && !emuenv.load_exec) {
         ZoneScopedN("Game rendering"); // Tracy - Track game rendering loop scope
         // Driver acto!
+        if (!emuenv.load_app_path.empty())
+            run_exec();
+
         renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg);
 
         const SceFVector2 viewport_pos = { emuenv.viewport_pos.x, emuenv.viewport_pos.y };
@@ -441,7 +494,7 @@ int main(int argc, char *argv[]) {
             gui::draw_common_dialog(gui, emuenv);
         gui::draw_vita_area(gui, emuenv);
 
-        if (emuenv.cfg.performance_overlay && !emuenv.kernel.is_threads_paused() && (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING))
+        if (emuenv.cfg.performance_overlay && !emuenv.io.app_path.empty() && !emuenv.kernel.is_threads_paused() && (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING))
             gui::draw_perf_overlay(gui, emuenv);
 
         if (emuenv.cfg.current_config.show_touchpad_cursor && !emuenv.kernel.is_threads_paused())

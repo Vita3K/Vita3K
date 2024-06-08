@@ -20,6 +20,7 @@
 #include <config/state.h>
 #include <ctrl/ctrl.h>
 #include <gui/functions.h>
+#include <interface.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <packages/functions.h>
@@ -529,18 +530,14 @@ void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
 void close_live_area_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     if (app_path == emuenv.io.app_path) {
         update_time_app_used(gui, emuenv, app_path);
-        emuenv.kernel.exit_delete_all_threads();
-        emuenv.load_exec = true;
-        // make sure we are not stuck waiting for a gpu command
-        emuenv.renderer->should_display = true;
-    } else {
-        gui.live_area_current_open_apps_list.erase(get_live_area_current_open_apps_list_index(gui, app_path));
-        if (gui.live_area_app_current_open == 0) {
-            gui.vita_area.live_area_screen = false;
-            gui.vita_area.home_screen = true;
-        }
-        --gui.live_area_app_current_open;
+        close_app(emuenv);
     }
+    gui.live_area_current_open_apps_list.erase(get_live_area_current_open_apps_list_index(gui, app_path));
+    if (gui.live_area_app_current_open == 0) {
+        gui.vita_area.live_area_screen = false;
+        gui.vita_area.home_screen = true;
+    }
+    --gui.live_area_app_current_open;
 }
 
 enum LiveAreaType {

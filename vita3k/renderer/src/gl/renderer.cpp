@@ -757,4 +757,25 @@ void GLState::precompile_shader(const ShadersHash &hash) {
 
 void GLState::preclose_action() {}
 
+void GLState::clean_render() {
+    glUseProgram(0);
+    /* for (auto &[_, program] : program_cache) {
+        if (currentProgram != program->get()) {
+            glDeleteProgram(program->get());
+            LOG_DEBUG("Program id: {}", program->get());
+        } else
+            LOG_ERROR("Program: {} is currently used", program->get());
+    }*/
+
+    fragment_shader_cache.clear();
+    program_cache.clear();
+    surface_cache.clean_surface_cache();
+    texture_cache.texture_queue = {};
+    texture_cache.available_textures_hash.clear();
+    texture_cache.exported_textures_hash.clear();
+    texture_cache.texture_lookup.clear();
+    texture_cache.sampler_lookup.clear();
+    vertex_shader_cache.clear();
+}
+
 } // namespace renderer::gl
