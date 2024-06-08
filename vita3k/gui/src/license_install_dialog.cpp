@@ -84,8 +84,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushItemWidth(640.f * SCALE.x);
         ImGui::InputTextWithHint("##enter_zrif", license["input_zrif"].c_str(), &zRIF);
         ImGui::PopItemWidth();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", license["copy_paste_zrif"].c_str());
+        SetTooltipEx(license["copy_paste_zrif"].c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

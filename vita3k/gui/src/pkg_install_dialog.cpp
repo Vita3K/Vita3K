@@ -113,8 +113,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PushItemWidth(640.f * SCALE.x);
             ImGui::InputTextWithHint("##enter_zrif", lang["input_zrif"].c_str(), &zRIF);
             ImGui::PopItemWidth();
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", lang["copy_paste_zrif"].c_str());
+            SetTooltipEx(lang["copy_paste_zrif"].c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
