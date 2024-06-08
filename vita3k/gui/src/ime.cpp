@@ -258,10 +258,10 @@ void init_ime_lang(Ime &ime, const SceImeLanguage &lang) {
 
 static std::map<int, float> key_row_pos = { { FIRST, 11.f }, { SECOND, 69.f }, { THIRD, 127.f } };
 
-static bool numeric_pad = false;
-static std::map<std::string, float> scroll_special;
-
 void draw_ime(Ime &ime, EmuEnvState &emuenv) {
+    static bool numeric_pad = false;
+    static float scroll_special_current;
+    static float scroll_special_max;
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
@@ -292,16 +292,16 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
     ImGui::SetWindowFontScale(RES_SCALE.x);
     if (numeric_pad) {
         ImGui::SetCursorPosX(MARGE_BORDER);
-        ImGui::VSliderFloat("##scroll_special", ImVec2(42.f * SCALE.x, 140.f * SCALE.y), &scroll_special["current"], scroll_special["max"], 0, "");
+        ImGui::VSliderFloat("##scroll_special", ImVec2(42.f * SCALE.x, 140.f * SCALE.y), &scroll_special_current, scroll_special_max, 0, "");
         ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (74.f * SCALE.x), WINDOW_POS.y));
         ImGui::BeginChild("##special_key", ImVec2(488.f * SCALE.x, 178.f * SCALE.y), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse);
         const auto scroll_value = ImGui::GetIO().MouseWheel * 20.f;
         if (ImGui::GetIO().MouseWheel == 1)
-            scroll_special["current"] -= std::min(scroll_value, scroll_special["current"]);
+            scroll_special_current -= std::min(scroll_value, scroll_special_current);
         else
-            scroll_special["current"] += std::min(-scroll_value, scroll_special["max"] - scroll_special["current"]);
-        ImGui::SetScrollY(scroll_special["current"]);
-        scroll_special["max"] = ImGui::GetScrollMaxY();
+            scroll_special_current += std::min(-scroll_value, scroll_special_max - scroll_special_current);
+        ImGui::SetScrollY(scroll_special_current);
+        scroll_special_max = ImGui::GetScrollMaxY();
         ImGui::PushStyleColor(ImGuiCol_Button, IME_NUMERIC_BG);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         for (const auto &special : special_key) {

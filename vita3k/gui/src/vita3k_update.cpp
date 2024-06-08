@@ -267,40 +267,33 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::GetBackgroundDrawList()->AddRectFilled(WINDOW_POS, display_size, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
     ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
-    ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (ImGui::CalcTextSize(lang["title"].c_str()).x / 2.f), 44.f * SCALE.y));
-    ImGui::Text("%s", lang["title"].c_str());
+    ImGui::SetCursorPosY(44.f * SCALE.y);
+    TextCentered(lang["title"].c_str());
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * SCALE.y));
     ImGui::Separator();
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
     switch (state) {
     case NOT_COMPLETE_UPDATE:
-        ImGui::SetCursorPos(ImVec2(display_size.x / 2.f - (ImGui::CalcTextSize(lang["not_complete_update"].c_str()).x / 2.f), (display_size.y / 2.f) - ImGui::GetFontSize()));
-        ImGui::Text("%s", lang["not_complete_update"].c_str());
+        ImGui::SetCursorPosY((display_size.y / 2.f) - ImGui::GetFontSize());
+        TextCentered(lang["not_complete_update"].c_str());
 
         break;
-    case NO_UPDATE: {
-        const auto no_update_str = app_number > git_version ? lang["later_version_already_installed"].c_str() : lang["latest_version_already_installed"].c_str();
-        ImGui::SetCursorPos(ImVec2(display_size.x / 2.f - (ImGui::CalcTextSize(no_update_str).x / 2.f), display_size.y / 2.f));
-        ImGui::Text("%s", no_update_str);
-
+    case NO_UPDATE:
+        ImGui::SetCursorPosY(display_size.y / 2.f);
+        TextCentered(app_number > git_version ? lang["later_version_already_installed"].c_str() : lang["latest_version_already_installed"].c_str());
         break;
-    }
     case HAS_UPDATE: {
-        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (ImGui::CalcTextSize(lang["new_version_available"].c_str()).x / 2.f), (display_size.y / 2.f) - ImGui::GetFontSize()));
-        ImGui::Text("%s", lang["new_version_available"].c_str());
-        const auto version_str = fmt::format(fmt::runtime(lang["version"]), git_version);
-        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (ImGui::CalcTextSize(version_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (40.f * SCALE.x)));
-        ImGui::Text("%s", version_str.c_str());
-
+        ImGui::SetCursorPosY((display_size.y / 2.f) - ImGui::GetFontSize());
+        TextCentered(lang["new_version_available"].c_str());
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (40.f * SCALE.x));
+        TextCentered(fmt::format(fmt::runtime(lang["version"]), git_version).c_str());
         break;
     }
     case DESCRIPTION: {
         ImGui::Spacing();
         ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-        const auto new_features_str = fmt::format(fmt::runtime(lang["new_features"]), git_version);
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2) - (ImGui::CalcTextSize(new_features_str.c_str()).x / 2.f));
-        ImGui::Text("%s", new_features_str.c_str());
+        TextCentered(fmt::format(fmt::runtime(lang["new_features"]), git_version).c_str());
         ImGui::Spacing();
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, 136.0f * SCALE.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
@@ -343,8 +336,8 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         break;
     }
     case UPDATE_VITA3K:
-        ImGui::SetCursorPos(ImVec2(display_size.x / 2.f - (ImGui::CalcTextSize(lang["update_vita3k"].c_str()).x / 2.f), (display_size.y / 2.f) - ImGui::GetFontSize()));
-        ImGui::Text("%s", lang["update_vita3k"].c_str());
+        ImGui::SetCursorPosY((display_size.y / 2.f) - ImGui::GetFontSize());
+        TextCentered(lang["update_vita3k"].c_str());
 
         break;
     case DOWNLOAD: {
@@ -361,9 +354,8 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), display_size.y - (186.f * SCALE.y)));
         ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
         ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
-        const auto &progress_str = std::to_string(uint32_t(progress)).append("%");
-        ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + 16.f * emuenv.dpi_scale));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 16.f * emuenv.dpi_scale);
+        TextColoredCentered(GUI_COLOR_TEXT, std::to_string(uint32_t(progress)).append("%").c_str());
         ImGui::PopStyleColor();
 
         break;

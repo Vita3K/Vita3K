@@ -44,40 +44,32 @@ static constexpr std::array<const char *, 256> SDL_key_to_string{ "[unset]", "[u
     "Keypad Mem+", "Keypad Mem-", "Keypad Mem*", "Keypad Mem/", "Keypad +/-", "Keypad Clear", "Keypad ClearEntry", "Keypad Binary", "Keypad Octal",
     "Keypad Dec", "Keypad HexaDec", "[unset]", "[unset]", "LCtrl", "LShift", "LAlt", "Win/Cmd", "RCtrl", "RShift", "RAlt", "RWin/Cmd" };
 
-static constexpr short total_key_entries = 28;
+#define CALC_KEYBOARD_MEMBERS(option_type, option_name, option_default, member_name) \
+    +(std::string_view(#member_name).starts_with("keyboard_") ? 1 : 0) // NOLINT(bugprone-macro-parentheses)
 
+static constexpr short total_key_entries = 0 CONFIG_INDIVIDUAL(CALC_KEYBOARD_MEMBERS);
+#undef CALC_KEYBOARD_MEMBERS
+
+template <typename T>
+int int_or_zero(T value) {
+    static_assert(std::is_same_v<T, int>);
+    if constexpr (std::is_same_v<T, int>)
+        return value;
+    else
+        return 0;
+}
 static void prepare_map_array(EmuEnvState &emuenv, std::array<int, total_key_entries> &map) {
-    map[0] = emuenv.cfg.keyboard_leftstick_up;
-    map[1] = emuenv.cfg.keyboard_leftstick_down;
-    map[2] = emuenv.cfg.keyboard_leftstick_right;
-    map[3] = emuenv.cfg.keyboard_leftstick_left;
-    map[4] = emuenv.cfg.keyboard_rightstick_up;
-    map[5] = emuenv.cfg.keyboard_rightstick_down;
-    map[6] = emuenv.cfg.keyboard_rightstick_right;
-    map[7] = emuenv.cfg.keyboard_rightstick_left;
-    map[8] = emuenv.cfg.keyboard_button_up;
-    map[9] = emuenv.cfg.keyboard_button_down;
-    map[10] = emuenv.cfg.keyboard_button_right;
-    map[11] = emuenv.cfg.keyboard_button_left;
-    map[12] = emuenv.cfg.keyboard_button_square;
-    map[13] = emuenv.cfg.keyboard_button_cross;
-    map[14] = emuenv.cfg.keyboard_button_circle;
-    map[15] = emuenv.cfg.keyboard_button_triangle;
-    map[16] = emuenv.cfg.keyboard_button_start;
-    map[17] = emuenv.cfg.keyboard_button_select;
-    map[18] = emuenv.cfg.keyboard_button_psbutton;
-    map[19] = emuenv.cfg.keyboard_button_l1;
-    map[20] = emuenv.cfg.keyboard_button_r1;
-    map[21] = emuenv.cfg.keyboard_button_l2;
-    map[22] = emuenv.cfg.keyboard_button_r2;
-    map[23] = emuenv.cfg.keyboard_button_l3;
-    map[24] = emuenv.cfg.keyboard_button_r3;
-    map[25] = emuenv.cfg.keyboard_gui_toggle_gui;
-    map[26] = emuenv.cfg.keyboard_gui_fullscreen;
-    map[27] = emuenv.cfg.keyboard_gui_toggle_touch;
+    size_t i = 0;
+#define ADD_KEYBOARD_MEMBERS(option_type, option_name, option_default, member_name) \
+    if constexpr (std::string_view(#member_name).starts_with("keyboard_")) {        \
+        map[i++] = int_or_zero(emuenv.cfg.member_name);                             \
+    }
+
+    CONFIG_INDIVIDUAL(ADD_KEYBOARD_MEMBERS)
+#undef ADD_KEYBOARD_MEMBERS
 }
 
-bool need_open_error_duplicate_key_popup = false;
+static bool need_open_error_duplicate_key_popup = false;
 
 static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, const char *button_name, const char *tooltip = nullptr) {
     ImGui::TableNextRow();
@@ -130,9 +122,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("##controls", &gui.controls_menu.controls_dialog, ImGuiWindowFlags_NoTitleBar);
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    auto title_str = lang["title"].c_str();
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title_str).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title_str);
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
 

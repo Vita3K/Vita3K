@@ -28,23 +28,11 @@
 
 namespace gui {
 
-std::string fw_version;
-bool delete_pup_file;
-std::filesystem::path pup_path = "";
-
-static void get_firmware_version(EmuEnvState &emuenv) {
-    fs::ifstream versionFile(emuenv.pref_path / "PUP_DEC/PUP/version.txt");
-
-    if (versionFile.is_open()) {
-        std::getline(versionFile, fw_version);
-        versionFile.close();
-    } else
-        LOG_WARN("Firmware Version file not found!");
-
-    fs::remove_all(emuenv.pref_path / "PUP_DEC");
-}
-
 void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    static std::string fw_version;
+    static bool delete_pup_file;
+    static std::filesystem::path pup_path = "";
+
     host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
 
     static std::mutex install_mutex;
@@ -77,7 +65,14 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 install_pup(emuenv.pref_path, fs::path(pup_path.native()), progress_callback);
                 std::lock_guard<std::mutex> lock(install_mutex);
                 finished_installing = true;
-                get_firmware_version(emuenv);
+                // get firmware version
+                fs::ifstream versionFile(emuenv.pref_path / "PUP_DEC/PUP/version.txt");
+                if (versionFile.is_open()) {
+                    std::getline(versionFile, fw_version);
+                    versionFile.close();
+                } else
+                    LOG_WARN("Firmware Version file not found!");
+                fs::remove_all(emuenv.pref_path / "PUP_DEC");
             });
             installation.detach();
         } else if (result == host::dialog::filesystem::Result::CANCEL) {
@@ -94,21 +89,18 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::OpenPopup("firmware_installation");
         if (ImGui::BeginPopupModal("firmware_installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
             ImGui::SetWindowFontScale(RES_SCALE.x);
-            ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["firmware_installation"].c_str()).x / 2.f));
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["firmware_installation"].c_str());
+            TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["firmware_installation"].c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::SetCursorPos(ImVec2(178.f * SCALE.x, ImGui::GetCursorPosY() + 30.f * SCALE.y));
-            ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["firmware_installing"].c_str()).x / 2.f));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["firmware_installing"].c_str());
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 30.f * SCALE.y);
+            TextColoredCentered(GUI_COLOR_TEXT, lang["firmware_installing"].c_str());
             const float PROGRESS_BAR_WIDTH = 502.f * SCALE.x;
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PROGRESS_BAR_WIDTH / 2.f), ImGui::GetCursorPosY() + 30.f * SCALE.y));
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
             ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.x), "");
-            const auto progress_str = std::to_string(progress).append("%");
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + 16.f * SCALE.y));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 16.f * SCALE.y);
+            TextColoredCentered(GUI_COLOR_TEXT, std::to_string(progress).append("%").c_str());
             ImGui::PopStyleColor();
         }
         ImGui::EndPopup();
@@ -117,8 +109,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::BeginPopupModal("firmware_installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
             ImGui::SetWindowFontScale(RES_SCALE.x);
             const auto POS_BUTTON = (WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f) + (10.f * SCALE.x);
-            ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["successed_install_firmware"].c_str()).x / 2.f));
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["successed_install_firmware"].c_str());
+            TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["successed_install_firmware"].c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();

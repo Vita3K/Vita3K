@@ -66,14 +66,10 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("##about", &gui.help_menu.about_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    auto title_str = lang["title"].c_str();
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title_str).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title_str);
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
-    const auto HALF_WINDOW_WIDTH = ImGui::GetWindowWidth() / 2.f;
-    ImGui::SetCursorPosX(HALF_WINDOW_WIDTH - (ImGui::CalcTextSize(window_title).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", window_title);
+    TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, window_title);
 
     ImGui::Spacing();
     ImGui::Separator();
@@ -121,14 +117,13 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
 
     // Draw Vita3K Staff list
-    ImGui::SetCursorPosX(HALF_WINDOW_WIDTH - (ImGui::CalcTextSize(lang["vita3k_staff"].c_str()).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["vita3k_staff"].c_str());
+    TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, lang["vita3k_staff"].c_str());
     ImGui::Spacing();
 
     const auto STAFF_LIST_SIZE = ImVec2(630.f * SCALE.x, 160.f * SCALE.y);
     static constexpr int STAFF_COLUMN_COUNT(3);
     const float STAFF_COLUMN_SIZE(STAFF_LIST_SIZE.x / STAFF_COLUMN_COUNT);
-    const float STAFF_COLUMN_POS(HALF_WINDOW_WIDTH - (STAFF_LIST_SIZE.x / 2.f));
+    const float STAFF_COLUMN_POS(ImGui::GetWindowWidth() / 2.f - (STAFF_LIST_SIZE.x / 2.f));
 
     ImGui::SetCursorPosX(STAFF_COLUMN_POS);
     if (ImGui::BeginTable("##vita3k_staff_table", STAFF_COLUMN_COUNT, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersV | ImGuiTableFlags_NoSavedSettings, STAFF_LIST_SIZE)) {

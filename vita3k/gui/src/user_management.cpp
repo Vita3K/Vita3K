@@ -704,10 +704,8 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     }
     case CONFIRM: {
         ImGui::SetWindowFontScale(0.8f);
-        const std::string msg = lang["user_created"];
-        const auto calc_text = (SIZE_USER.x / 2.f) - (ImGui::CalcTextSize(msg.c_str()).x / 2.f);
-        ImGui::SetCursorPos(ImVec2(calc_text, (44.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", msg.c_str());
+        ImGui::SetCursorPosY(44.f * SCALE.y);
+        TextColoredCentered(GUI_COLOR_TEXT, lang["user_created"].c_str());
         const auto AVATAR_CONFIRM_POS = ImVec2((SIZE_USER.x / 2) - (MED_AVATAR_SIZE.x / 2.f), 96.f * SCALE.y);
         draw_avatar(user_id_selected, MEDIUM, AVATAR_CONFIRM_POS);
         ImGui::SetWindowFontScale(0.7f);
@@ -726,10 +724,10 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         title = lang["delete_user"];
         if (user_id_selected.empty()) {
             ImGui::SetWindowFontScale(1.f);
-            ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - (ImGui::CalcTextSize(lang["user_delete"].c_str()).x / 2.f), 5.f * SCALE.y));
             const auto CHILD_DELETE_USER_SIZE = ImVec2(674 * SCALE.x, 308.f * SCALE.y);
             const auto SELECT_SIZE = ImVec2(674.f * SCALE.x, 46.f * SCALE.y);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_delete"].c_str());
+            ImGui::SetCursorPosY(5.f * SCALE.y);
+            TextColoredCentered(GUI_COLOR_TEXT, lang["user_delete"].c_str());
             ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
             const auto CHILD_DELETE_USER_POS = ImVec2(WINDOW_SIZE.x / 2.f, (168.f * SCALE.y));
             ImGui::SetNextWindowPos(CHILD_DELETE_USER_POS, ImGuiCond_Always, ImVec2(0.5f, 0.f));
@@ -775,9 +773,8 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::Button(common["delete"].c_str(), BUTTON_SIZE))
                     del_menu = "warn";
             } else if (del_menu == "warn") {
-                const auto calc_text = (SIZE_USER.x / 2.f) - (ImGui::CalcTextSize(lang["user_delete_warn"].c_str()).x / 2.f);
-                ImGui::SetCursorPos(ImVec2(calc_text, 146.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_delete_warn"].c_str());
+                ImGui::SetCursorPosY(146.f * SCALE.y);
+                TextColoredCentered(GUI_COLOR_TEXT, lang["user_delete_warn"].c_str());
                 ImGui::SetCursorPos(BUTTON_POS);
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - BUTTON_SIZE.x - 20.f, BUTTON_POS.y));
@@ -789,8 +786,8 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::Button(common["yes"].c_str(), BUTTON_SIZE))
                     delete_user(gui, emuenv);
             } else if (del_menu == "confirm") {
-                ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - (ImGui::CalcTextSize(lang["user_deleted"].c_str()).x / 2.f), 146.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_deleted"].c_str());
+                ImGui::SetCursorPosY(146.f * SCALE.y);
+                TextColoredCentered(GUI_COLOR_TEXT, lang["user_deleted"].c_str());
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::SetCursorPos(BUTTON_POS);
                 if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {

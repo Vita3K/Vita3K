@@ -30,12 +30,6 @@
 
 namespace gui {
 
-static std::filesystem::path pkg_path = "";
-static std::filesystem::path license_path = "";
-static std::string state, title, zRIF;
-static bool draw_file_dialog = true;
-static bool delete_pkg_file, delete_license_file;
-
 void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
     static std::atomic<float> progress(0);
@@ -43,6 +37,22 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     static const auto progress_callback = [&](float updated_progress) {
         progress = updated_progress;
     };
+    static std::filesystem::path pkg_path = "";
+    static std::filesystem::path license_path = "";
+    static std::string title, zRIF;
+    static bool draw_file_dialog = true;
+    static bool delete_pkg_file, delete_license_file;
+
+    enum class State {
+        UNDEFINED,
+        LICENSE,
+        ZRIF,
+        INSTALL,
+        INSTALLING,
+        SUCCESS,
+        FAIL
+    };
+    static State state = State::UNDEFINED;
     std::lock_guard<std::mutex> lock(install_mutex);
 
     if (draw_file_dialog) {
@@ -60,7 +70,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 fs::ifstream binfile(work_path, std::ios::in | std::ios::binary | std::ios::ate);
                 zRIF = rif2zrif(binfile);
                 ImGui::OpenPopup("install");
-                gui::state = "install";
+                state = State::INSTALL;
             } else {
                 ImGui::OpenPopup("install");
             }
@@ -74,9 +84,9 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
 
-    auto lang = gui.lang.install_dialog.pkg_install;
-    auto indicator = gui.lang.indicator;
-    auto common = emuenv.common_dialog.lang.common;
+    auto &lang = gui.lang.install_dialog.pkg_install;
+    auto &indicator = gui.lang.indicator;
+    auto &common = emuenv.common_dialog.lang.common;
 
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
@@ -89,19 +99,19 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginPopupModal("install", &gui.file_menu.pkg_install_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
         ImGui::SetWindowFontScale(RES_SCALE.x);
         const auto POS_BUTTON = (WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f) + (10.f * SCALE.x);
-        ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
+        TextColoredCentered(GUI_COLOR_TEXT_TITLE, title.c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        if (state.empty()) {
+        switch (state) {
+        case State::UNDEFINED: {
             ImGui::SetCursorPosX(POS_BUTTON);
             title = lang["select_license_type"];
             if (ImGui::Button(lang["select_bin_rif"].c_str(), BUTTON_SIZE))
-                state = "license";
+                state = State::LICENSE;
             ImGui::SetCursorPosX(POS_BUTTON);
             if (ImGui::Button(lang["enter_zrif"].c_str(), BUTTON_SIZE))
-                state = "zrif";
+                state = State::ZRIF;
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -110,18 +120,22 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gui.file_menu.pkg_install_dialog = false;
                 draw_file_dialog = true;
             }
-        } else if (state == "license") {
+            break;
+        }
+        case State::LICENSE: {
             result = host::dialog::filesystem::open_file(license_path, { { "PlayStation Vita software license file", { "bin", "rif" } } });
             if (result == host::dialog::filesystem::Result::SUCCESS) {
                 fs::ifstream binfile(license_path.native(), std::ios::in | std::ios::binary | std::ios::ate);
                 zRIF = rif2zrif(binfile);
-                state = "install";
+                state = State::INSTALL;
             } else {
                 if (result == host::dialog::filesystem::Result::ERROR)
                     LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
-                state.clear();
+                state = State::UNDEFINED;
             }
-        } else if (state == "zrif") {
+            break;
+        }
+        case State::ZRIF: {
             title = lang["enter_zrif_key"];
             ImGui::PushItemWidth(640.f * SCALE.x);
             ImGui::InputTextWithHint("##enter_zrif", lang["input_zrif"].c_str(), &zRIF);
@@ -132,25 +146,30 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::SetCursorPos(ImVec2(POS_BUTTON - (BUTTON_SIZE.x / 2) - (10.f * SCALE.x), WINDOW_SIZE.y / 2));
             if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE)) {
-                state.clear();
+                state = State::UNDEFINED;
                 zRIF.clear();
             }
             ImGui::SameLine(0, 20.f * SCALE.x);
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) && !zRIF.empty())
-                state = "install";
-        } else if (state == "install") {
+                state = State::INSTALL;
+            break;
+        }
+        case State::INSTALL: {
             std::thread installation([&emuenv]() {
                 if (install_pkg(pkg_path.native(), emuenv, zRIF, progress_callback)) {
                     std::lock_guard<std::mutex> lock(install_mutex);
-                    state = "success";
+                    state = State::SUCCESS;
                 } else {
-                    state = "fail";
+                    std::lock_guard<std::mutex> lock(install_mutex);
+                    state = State::FAIL;
                 }
                 zRIF.clear();
             });
             installation.detach();
-            state = "installing";
-        } else if (state == "success") {
+            state = State::INSTALLING;
+            break;
+        }
+        case State::SUCCESS: {
             title = indicator["install_complete"];
             ImGui::TextColored(GUI_COLOR_TEXT, "%s [%s]", emuenv.app_info.app_title.c_str(), emuenv.app_info.app_title_id.c_str());
             if (emuenv.app_info.app_category.find("gp") != std::string::npos)
@@ -182,22 +201,25 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 license_path = "";
                 gui.file_menu.pkg_install_dialog = false;
                 draw_file_dialog = true;
-                state.clear();
+                state = State::UNDEFINED;
             }
-        } else if (state == "fail") {
+            break;
+        }
+        case State::FAIL: {
             title = indicator["install_failed"];
-            auto FAILED_INSTALL_STR = lang["failed_install_package"].c_str();
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize(FAILED_INSTALL_STR).x / 2.f), (WINDOW_SIZE.y / 2.f) - (20.f * SCALE.y)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", FAILED_INSTALL_STR);
+            ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - (20.f * SCALE.y));
+            TextColoredCentered(GUI_COLOR_TEXT, lang["failed_install_package"].c_str());
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 gui.file_menu.pkg_install_dialog = false;
                 pkg_path = "";
                 draw_file_dialog = true;
                 license_path = "";
-                state.clear();
+                state = State::UNDEFINED;
             }
-        } else if (state == "installing") {
+            break;
+        }
+        case State::INSTALLING: {
             title = indicator["installing"];
             ImGui::SetCursorPos(ImVec2(178.f * SCALE.x, ImGui::GetCursorPosY() + 30.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.app_info.app_title.c_str());
@@ -207,10 +229,10 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PROGRESS_BAR_WIDTH / 2.f), ImGui::GetCursorPosY() + 30.f * SCALE.y));
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
             ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.x), "");
-            const auto progress_str = std::to_string(uint32_t(progress)).append("%");
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + 16.f * SCALE.y));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 16.f * SCALE.y);
+            TextColoredCentered(GUI_COLOR_TEXT, std::to_string(uint32_t(progress)).append("%").c_str());
             ImGui::PopStyleColor();
+        }
         }
         ImGui::EndPopup();
     }
