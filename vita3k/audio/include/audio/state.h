@@ -41,6 +41,10 @@ struct AudioOutPort {
     float volume = 1.0f;
     // length of the buffer for each call
     int len_bytes = 0;
+    // number of microseconds a buffer lasts for
+    uint64_t len_microseconds = 0;
+    // last time sceAudioOutOutput was called with this port (timestamp in microseconds)
+    uint64_t last_output = 0;
 
     // current config
     int type = 0;
