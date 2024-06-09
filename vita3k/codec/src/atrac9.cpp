@@ -42,7 +42,8 @@ uint32_t Atrac9DecoderState::get(DecoderQuery query) {
 
     switch (query) {
     case DecoderQuery::CHANNELS: return info->channels;
-    case DecoderQuery::BIT_RATE: return 0;
+    // The bit rate is the size of a superframe times the number of superframes per second (times 8)
+    case DecoderQuery::BIT_RATE: return static_cast<uint32_t>((info->superframeSize * 8ULL * info->samplingRate) / (info->frameSamples * info->framesInSuperframe));
     case DecoderQuery::SAMPLE_RATE: return info->samplingRate;
     case DecoderQuery::AT9_SAMPLE_PER_FRAME: return info->frameSamples;
     case DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME: return info->frameSamples * info->framesInSuperframe;
