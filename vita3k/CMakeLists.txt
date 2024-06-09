@@ -131,7 +131,12 @@ add_subdirectory(vkutil)
 
 add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
 
-target_link_libraries(vita3k PRIVATE app config cppcommon ctrl display gdbstub gui gxm io miniz modules packages renderer shader touch)
+if(WIN32)
+	# This file is a bit special, it is run before anything else and must be added here
+	target_sources(vita3k PRIVATE util/src/vc_runtime_checker.cpp)
+endif()
+
+target_link_libraries(vita3k PRIVATE app config cppcommon ctrl display gdbstub gui gxm io miniz modules packages renderer shader touch util)
 if(USE_DISCORD_RICH_PRESENCE)
 	target_link_libraries(vita3k PRIVATE discord-rpc)
 endif()
