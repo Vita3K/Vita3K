@@ -753,7 +753,9 @@ struct LangState {
         { "trophies", "Trophies" },
         { "grade", "Grade" },
         { "progress", "Progress" },
-        { "updated", "Updated" }
+        { "updated", "Updated" },
+        { "advance", "Advance" },
+        { "show_hidden", "Show Hidden Trophies" }
     };
     std::map<std::string, std::string> user_management = {
         { "select_user", "Select User" },
