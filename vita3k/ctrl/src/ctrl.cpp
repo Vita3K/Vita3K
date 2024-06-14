@@ -268,6 +268,7 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
     axes.fill(0);
 
     const auto reset_axes = [&]() {
+        // Re-center joysticks to (128,128). Range is (0-255,0-255).
         SceCtrlPadInputMode mode = from_ext_function ? state.input_mode_ext : state.input_mode;
         if (mode == SCE_CTRL_MODE_DIGITAL) {
             lx = 0x80;
@@ -280,11 +281,11 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
             rx = float_to_byte(axes[2]);
             ry = float_to_byte(axes[3]);
         }
-    };
-
-    if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         if (negative)
             buttons ^= ~0;
+    };
+
+    if ((emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) || emuenv.drop_inputs) {
         reset_axes();
         return;
     }
@@ -299,9 +300,6 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
     }
 
     reset_axes();
-
-    if (negative)
-        buttons ^= ~0;
 }
 
 int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2 *pData, SceUInt32 count, bool negative, bool is_peek, bool is_v2, bool from_ext) {

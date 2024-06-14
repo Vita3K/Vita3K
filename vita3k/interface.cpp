@@ -638,6 +638,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         }
     };
 
+    // Check if any settings or controls dialog is open and drop inputs on this case
+    emuenv.drop_inputs = gui.configuration_menu.settings_dialog || gui.configuration_menu.custom_settings_dialog || gui.controls_menu.controllers_dialog || gui.controls_menu.controls_dialog;
+
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
@@ -694,7 +697,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 gui.is_capturing_keys = false;
             }
 
-            if (ImGui::GetIO().WantTextInput || gui.is_key_locked)
+            if (ImGui::GetIO().WantTextInput || gui.is_key_locked || emuenv.drop_inputs)
                 continue;
 
             // toggle gui state
@@ -728,7 +731,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             if (!emuenv.kernel.is_threads_paused() && (event.cbutton.button == SDL_CONTROLLER_BUTTON_TOUCHPAD))
                 toggle_touchscreen();
 
-            if (ImGui::GetIO().WantTextInput)
+            if (ImGui::GetIO().WantTextInput || emuenv.drop_inputs)
                 continue;
 
             for (const auto &binding : get_controller_bindings_ext(emuenv)) {
