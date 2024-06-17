@@ -60,7 +60,7 @@ std::string remove_special_chars(std::string str) {
         case '>':
         case '|':
         case '*':
-            c = ' ';
+            c = '_';
             break;
         default:
             continue;

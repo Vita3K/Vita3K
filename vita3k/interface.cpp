@@ -529,6 +529,9 @@ static void toggle_texture_replacement(EmuEnvState &emuenv) {
 }
 
 static void take_screenshot(EmuEnvState &emuenv) {
+    if (emuenv.cfg.screenshot_format == None)
+        return;
+
     if (emuenv.io.title_id.empty()) {
         LOG_ERROR("Trying to take a screenshot while not ingame");
     }
@@ -545,14 +548,23 @@ static void take_screenshot(EmuEnvState &emuenv) {
     for (int i = 0; i < width * height; i++)
         frame[i] |= 0xFF000000;
 
-    const fs::path save_folder = emuenv.shared_path / "screenshots";
+    const fs::path save_folder = emuenv.shared_path / "screenshots" / fmt::format("{}", string_utils::remove_special_chars(emuenv.current_app_title));
     fs::create_directories(save_folder);
 
-    const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d_%H-%M-%OS}.png", emuenv.io.title_id, fmt::localtime(std::time(nullptr)));
-    if (stbi_write_png(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), width * 4) == 1)
-        LOG_INFO("Successfully saved screenshot to {}", save_file);
-    else
-        LOG_INFO("Failed to save screenshot");
+    const auto img_format = emuenv.cfg.screenshot_format == JPEG ? ".jpg" : ".png";
+    const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), fmt::localtime(std::time(nullptr)), img_format);
+    constexpr int quality = 85; // google recommended value
+    if (emuenv.cfg.screenshot_format == JPEG) {
+        if (stbi_write_jpg(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), quality) == 1)
+            LOG_INFO("Successfully saved screenshot to {}", save_file);
+        else
+            LOG_INFO("Failed to save screenshot");
+    } else {
+        if (stbi_write_png(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), width * 4) == 1)
+            LOG_INFO("Successfully saved screenshot to {}", save_file);
+        else
+            LOG_INFO("Failed to save screenshot");
+    }
 }
 
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
