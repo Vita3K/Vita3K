@@ -928,6 +928,13 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 LOG_INFO("Clear all custom config settings successfully.");
             }
         }
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("screenshot image type").x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "screenshot image type");
+        ImGui::Spacing();
+        const char *LIST_IMG_FORMAT[] = { "NULL", "JPEG", "PNG" };
+        ImGui::Combo("Screenshot format", &emuenv.cfg.screenshot_format, LIST_IMG_FORMAT, IM_ARRAYSIZE(LIST_IMG_FORMAT));
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();

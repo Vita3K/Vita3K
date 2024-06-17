@@ -42,6 +42,12 @@ enum PerfomanceOverleyPosition {
     BOTTOM_RIGHT,
 };
 
+enum ScreenshotFormat {
+    None,
+    JPEG,
+    PNG,
+};
+
 // clang-format off
 // Singular options produced in config file
 // Order is code(option_type, option_name, option_default, member_name)
@@ -103,6 +109,7 @@ enum PerfomanceOverleyPosition {
     code(bool, "performance-overlay", false, performance_overlay)                                       \
     code(int, "perfomance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)       \
     code(int, "perfomance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position)  \
+    code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
     code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
     code(int, "keyboard-button-start", 40, keyboard_button_start)                                       \
     code(int, "keyboard-button-up", 82, keyboard_button_up)                                             \
