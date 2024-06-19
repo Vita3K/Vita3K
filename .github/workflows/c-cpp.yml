@@ -189,7 +189,9 @@ jobs:
   create-release:
     needs: [build]
     runs-on: "ubuntu-20.04"
-    if: github.ref == 'refs/heads/master'
+    if: |
+      github.ref == 'refs/heads/master' &&
+      github.repository == 'Vita3K/Vita3K'
     steps:
       - uses: actions/checkout@v4
 
