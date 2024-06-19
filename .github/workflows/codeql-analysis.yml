@@ -18,7 +18,6 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
-    if: github.repository == 'Vita3K/Vita3K'
 
     strategy:
       fail-fast: false
