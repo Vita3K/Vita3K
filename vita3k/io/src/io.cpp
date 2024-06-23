@@ -164,6 +164,12 @@ bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &tra
         final_path = system_path.string().substr(0, system_path.string().find(addcont_id)) + addcont_id;
         break;
     }
+    case +VitaIoDevice::vs0: {
+        // This only works if ALL the parent folders of the path are the correct case or are in a case insensitive fs
+        // Only the file's name is searched for, not the parent folders
+        final_path = system_path.string().substr(0, system_path.string().find_last_of('/'));
+        break;
+    }
     default: {
         return false;
     }

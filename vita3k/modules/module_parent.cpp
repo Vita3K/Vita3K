@@ -18,6 +18,7 @@
 #include "io/functions.h"
 #include "io/io.h"
 
+#include <boost/filesystem/operations.hpp>
 #include <modules/module_parent.h>
 
 #include <cpu/functions.h>
@@ -186,7 +187,31 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     vfs::FileBuffer module_buffer;
     bool res;
     VitaIoDevice device = device::get_device(module_path);
-    auto translated_module_path = translate_path(module_path.c_str(), device, emuenv.io.device_paths);
+    auto device_for_icase = device;
+    fs::path translated_module_path = translate_path(module_path.c_str(), device, emuenv.io.device_paths);
+    auto system_path = device::construct_emulated_path(device, translated_module_path, emuenv.pref_path, emuenv.io.redirect_stdio);
+
+    if (emuenv.io.case_isens_find_enabled && !fs::exists(system_path)) {
+        // Attempt a case-insensitive file search.
+        const auto original_translated_module_path = translated_module_path;
+        const auto cached_path = find_in_cache(emuenv.io, string_utils::tolower(translated_module_path.string()));
+        if (!cached_path.empty()) {
+            translated_module_path = cached_path;
+            LOG_TRACE("Found cached filepath at {}", translated_module_path);
+        } else {
+            const bool path_found = find_case_isens_path(emuenv.io, device_for_icase, translated_module_path, system_path);
+            translated_module_path = find_in_cache(emuenv.io, string_utils::tolower(system_path.string()));
+            if (!translated_module_path.empty() && path_found) {
+                LOG_TRACE("Found file on case-sensitive filesystem at {}", translated_module_path);
+                translated_module_path = translated_module_path.string().substr(emuenv.pref_path.string().length());
+                translated_module_path = translated_module_path.string().substr(translated_module_path.string().find('/') + 1);
+            } else {
+                LOG_ERROR("Missing file at {} (target path: {})", original_translated_module_path.string(), module_path);
+                return SCE_ERROR_ERRNO_ENOENT;
+            }
+        }
+    }
+
     if (device == VitaIoDevice::app0)
         res = vfs::read_app_file(module_buffer, emuenv.pref_path, emuenv.io.app_path, translated_module_path);
     else
