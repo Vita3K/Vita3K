@@ -201,6 +201,16 @@ jobs:
       - name: Get Build Variable
         run: echo "Build_Variable=${{ needs.build.outputs.BuildTag }}" >> $GITHUB_ENV
 
+      - name: Get latest commit message
+        run: echo "Latest_Commit_Message=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
+
+      - name: Get last committer
+        run: |
+          COMMITTER_NAME=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/Vita3K/Vita3K/commits/${{ github.sha }} \
+          | jq -r '.commit.author.name')
+          echo "Commiter_Name=$COMMITTER_NAME" >> $GITHUB_ENV
+
       - name: Upload
         shell: bash
         run: |
@@ -228,22 +238,14 @@ jobs:
             fi
           done
           ls -al artifacts/
-          wget -c https://github.com/tcnksm/ghr/releases/download/v0.14.0/ghr_v0.14.0_linux_amd64.tar.gz
-          tar xfv ghr_v0.14.0_linux_amd64.tar.gz
-          ghr_v0.14.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate -n 'Automatic CI builds' -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" continuous artifacts/
+          wget -c https://github.com/tcnksm/ghr/releases/download/v0.16.2/ghr_v0.16.2_linux_amd64.tar.gz
+          tar xfv ghr_v0.16.2_linux_amd64.tar.gz
+          ghr_v0.16.2_linux_amd64/ghr -u Vita3K -r Vita3K -recreate -n 'Automatic CI builds' -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" continuous artifacts/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push to store repository
-        uses: cpina/github-action-push-to-another-repository@main
+      - name: Make release on store repository
+        run: |
+          ghr_v0.16.2_linux_amd64/ghr -u Vita3K -r Vita3K-builds  -n "Build: ${{ env.Build_Variable }}" -b "$(printf "Corresponding commit: [${{ env.Latest_Commit_Message }}](https://github.com/Vita3K/Vita3K/commit/${{ github.sha }}) (${{ env.Commiter_Name }})")" ${{ env.Build_Variable }} artifacts/
         env:
-          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
-        with:
-          source-directory: artifacts/
-          destination-github-username: 'Vita3K'
-          destination-repository-name: 'Vita3K-builds'
-          target-branch: master
-          target-directory: Builds/
-          commit-message: "Build: ${{ env.Build_Variable }}"
-          user-name: github-actions[bot]
-          user-email: github-actions[bot]@users.noreply.github.com
+          GITHUB_TOKEN: ${{ secrets.STORE_TOKEN }}
