@@ -38,6 +38,7 @@
 #include <string>
 #include <util/fs.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <SDL.h>
 
@@ -138,7 +139,7 @@ static CPUBackend config_cpu_backend;
  * @return false A custom config for the application has not been found or a custom config has been found
  * but it's corrupted or invalid.
  */
-static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) {
     const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
 
     if (fs::exists(CUSTOM_CONFIG_PATH)) {
@@ -166,6 +167,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             // Load GPU Config
             if (!config_child.child("gpu").empty()) {
                 const auto gpu_child = config_child.child("gpu");
+                config.backend_renderer = gpu_child.attribute("backend-renderer").as_string();
                 config.high_accuracy = gpu_child.attribute("high-accuracy").as_bool();
                 config.resolution_multiplier = gpu_child.attribute("resolution-multiplier").as_float();
                 config.disable_surface_sync = gpu_child.attribute("disable-surface-sync").as_bool();
@@ -231,11 +233,12 @@ static std::vector<std::string> list_user_lang;
 void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     // If no app-specific config file is being used for the initialized application,
     // set up `config` with the values set in the global emulator configuration
-    if (!get_custom_config(gui, emuenv, app_path)) {
+    if (!get_custom_config(emuenv, app_path)) {
         config.cpu_backend = emuenv.cfg.cpu_backend;
         config.cpu_opt = emuenv.cfg.cpu_opt;
         config.modules_mode = emuenv.cfg.modules_mode;
         config.lle_modules = emuenv.cfg.lle_modules;
+        config.backend_renderer = emuenv.cfg.backend_renderer;
         config.high_accuracy = emuenv.cfg.high_accuracy;
         config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
         config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
@@ -276,6 +279,14 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
     max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
     audio_backend_idx = (emuenv.cfg.audio_backend == "SDL") ? 0 : 1;
+#ifndef __APPLE__
+    if (string_utils::toupper(config.backend_renderer) == "OPENGL")
+        emuenv.backend_renderer = renderer::Backend::OpenGL;
+    else
+        emuenv.backend_renderer = renderer::Backend::Vulkan;
+#else
+    emuenv.backend_renderer = renderer::Backend::Vulkan;
+#endif
     emuenv.app_path = app_path;
     emuenv.display.imgui_render = true;
 }
@@ -319,6 +330,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         // GPU
         auto gpu_child = config_child.append_child("gpu");
+        gpu_child.append_attribute("backend-renderer") = config.backend_renderer.c_str();
         gpu_child.append_attribute("high-accuracy") = config.high_accuracy;
         gpu_child.append_attribute("resolution-multiplier") = config.resolution_multiplier;
         gpu_child.append_attribute("disable-surface-sync") = config.disable_surface_sync;
@@ -357,6 +369,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.modules_mode = config.modules_mode;
         emuenv.cfg.lle_modules = config.lle_modules;
         emuenv.cfg.high_accuracy = config.high_accuracy;
+        emuenv.cfg.backend_renderer = config.backend_renderer;
         emuenv.cfg.resolution_multiplier = config.resolution_multiplier;
         emuenv.cfg.disable_surface_sync = config.disable_surface_sync;
         emuenv.cfg.screen_filter = config.screen_filter;
@@ -383,7 +396,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    if (!get_custom_config(gui, emuenv, app_path))
+    if (!get_custom_config(emuenv, app_path))
         return emuenv.cfg.cpu_backend;
 
     return config.cpu_backend;
@@ -410,17 +423,19 @@ static void set_vsync_state(const bool &state) {
  * @param emuenv State of the emulated PlayStation Vita environment
  * @param app_path Path to the app or game to get the custom config for
  */
-void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom) {
     // If a config file is in use, call `get_custom_config()` and set the config
     // parameters with the values stored in the app-specific custom config file
-    if (get_custom_config(gui, emuenv, app_path))
+    if (custom && get_custom_config(emuenv, app_path)) {
         emuenv.cfg.current_config = config;
-    else {
+        LOG_INFO("Using custom config for app: {}", app_path);
+    } else {
         // Else inherit the values from the global emulator config
         emuenv.cfg.current_config.cpu_backend = emuenv.cfg.cpu_backend;
         emuenv.cfg.current_config.cpu_opt = emuenv.cfg.cpu_opt;
         emuenv.cfg.current_config.modules_mode = emuenv.cfg.modules_mode;
         emuenv.cfg.current_config.lle_modules = emuenv.cfg.lle_modules;
+        emuenv.cfg.current_config.backend_renderer = emuenv.cfg.backend_renderer;
         emuenv.cfg.current_config.high_accuracy = emuenv.cfg.high_accuracy;
         emuenv.cfg.current_config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
         emuenv.cfg.current_config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
@@ -438,6 +453,19 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
         emuenv.cfg.current_config.psn_signed_in = emuenv.cfg.psn_signed_in;
     }
+
+    // can happen when launching directly into a game, the renderer is not even initialized yet
+    if (!emuenv.renderer)
+        return;
+
+#ifndef __APPLE__
+    if (string_utils::toupper(emuenv.cfg.current_config.backend_renderer) == "OPENGL")
+        emuenv.backend_renderer = renderer::Backend::OpenGL;
+    else
+        emuenv.backend_renderer = renderer::Backend::Vulkan;
+#else
+    emuenv.backend_renderer = renderer::Backend::Vulkan;
+#endif
 
     // If backend render or resolution multiplier is changed when app run, reboot emu and app
     if (!emuenv.io.title_id.empty() && ((emuenv.renderer->current_backend != emuenv.backend_renderer) || (emuenv.renderer->res_multiplier != emuenv.cfg.current_config.resolution_multiplier))) {
@@ -583,7 +611,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 #endif
         static const char *LIST_BACKEND_RENDERER[] = { "OpenGL", "Vulkan" };
         if (ImGui::Combo(lang.gpu["backend_renderer"].c_str(), reinterpret_cast<int *>(&emuenv.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
-            emuenv.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(emuenv.backend_renderer)];
+            config.backend_renderer = LIST_BACKEND_RENDERER[int(emuenv.backend_renderer)];
         SetTooltipEx(lang.gpu["select_backend_renderer"].c_str());
 #ifdef __APPLE__
         ImGui::EndDisabled();
@@ -593,7 +621,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         const bool is_vulkan = (emuenv.backend_renderer == renderer::Backend::Vulkan);
         const bool is_ingame = !emuenv.io.title_id.empty();
-        if (is_vulkan) {
+        const bool is_renderer_changed = (emuenv.backend_renderer != emuenv.renderer->current_backend);
+        if (is_vulkan && !is_renderer_changed) {
             const std::vector<std::string> gpu_list_str = emuenv.renderer->get_gpu_list();
             // must convert to a vector of char*
             std::vector<const char *> gpu_list;
@@ -612,7 +641,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
             if (is_ingame)
                 ImGui::EndDisabled();
-        } else {
+        } else if (!is_vulkan) {
             ImGui::Checkbox(lang.gpu["v_sync"].c_str(), &config.v_sync);
             SetTooltipEx(lang.gpu["v_sync_description"].c_str());
             ImGui::SameLine();
@@ -1228,7 +1257,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(is_apply ? (is_reboot ? lang.main_window["save_reboot"].c_str() : lang.main_window["save_apply"].c_str()) : lang.main_window["save"].c_str(), BUTTON_SIZE)) {
         save_config(gui, emuenv);
         if (is_apply)
-            set_config(gui, emuenv, emuenv.io.app_path);
+            set_config(emuenv, emuenv.io.app_path);
     }
     SetTooltipEx(lang.main_window["keep_changes"].c_str());
 

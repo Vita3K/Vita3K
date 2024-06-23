@@ -124,9 +124,13 @@ int main(int argc, char *argv[]) {
         LOG_CRITICAL("PLEASE. DO NOT RUN VITA3K AS ADMIN OR WITH ADMIN PRIVILEGES.");
     }
 
-    Config cfg{};
-    EmuEnvState emuenv;
+    EmuEnvState emuenv{};
+    Config &cfg = emuenv.cfg;
+
     const auto config_err = config::init_config(cfg, argc, argv, root_paths);
+
+    // to make sure config.current_config is properly initialized...
+    gui::set_config(emuenv, "", false);
 
     fs::create_directories(cfg.get_pref_path());
 
@@ -197,10 +201,13 @@ int main(int argc, char *argv[]) {
     LOG_INFO("Available ram memory: {} MiB", SDL_GetSystemRAM());
 
     app::AppRunType run_type = app::AppRunType::Unknown;
-    if (cfg.run_app_path)
+    if (cfg.run_app_path) {
         run_type = app::AppRunType::Extracted;
+        emuenv.config_path = root_paths.get_config_path();
+        gui::set_config(emuenv, *cfg.run_app_path);
+    }
 
-    if (!app::init(emuenv, cfg, root_paths)) {
+    if (!app::init(emuenv, root_paths)) {
         app::error_dialog("Emulated environment initialization failed.", emuenv.window.get());
         return 1;
     }
@@ -319,14 +326,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    gui::set_config(emuenv, emuenv.io.app_path);
+
     // When backend render is changed before boot app, reboot emu in new backend render and run app
     if (emuenv.renderer->current_backend != emuenv.backend_renderer) {
         emuenv.load_app_path = emuenv.io.app_path;
         run_execv(argv, emuenv);
         return Success;
     }
-
-    gui::set_config(gui, emuenv, emuenv.io.app_path);
 
     const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);
     emuenv.app_info.app_version = APP_INDEX->app_ver;
