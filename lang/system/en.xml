@@ -14,7 +14,7 @@
 		<emulation name="Emulation">
 			<last_apps_used>Last Apps used</last_apps_used>
 		</emulation>
-		<debug>
+		<debug name="Debug">
 			<threads>Threads</threads>
 			<semaphores>Semaphores</semaphores>
 			<mutexes>Mutexes</mutexes>
@@ -604,6 +604,12 @@ Check vita3k.log to see console output for details.
 			<no_modules>No modules present.
 Please download and install the last PS Vita firmware.</no_modules>
 			<refresh_list>Refresh List</refresh_list>
+			<automatic>Automatic</automatic>
+			<automatic_description>Select Automatic mode to use a preset list of modules.</automatic_description>
+			<auto_manual>Auto & Manual</auto_manual>
+			<auto_manual_description>Select this mode to load Automatic module and selected modules from the list below.</auto_manual_description>
+			<manual>Manual</manual>
+			<manual_description>Select Manual mode to load selected modules from the list below.</manual_description>
 		</core>
 		<cpu>
 			<unicorn>Unicorn (deprecated)</unicorn>
@@ -736,6 +742,8 @@ You will need to move your old folder to the new location manually.</change_emu_
 You will need to move your old folder to the new location manually.</reset_emu_path_description>
 			<custom_config_settings>Custom Config Settings</custom_config_settings>
 			<clear_custom_config>Clear Custom Config</clear_custom_config>
+			<screenshot_image_type>screenshot image type</screenshot_image_type>
+			<screenshot_format>Screenshot format</screenshot_format>
 		</emulator>
 		<gui name="GUI">
 			<show_gui>GUI Visible</show_gui>
@@ -876,7 +884,7 @@ Are you sure you want to continue?</user_delete_warn>
 	</user_management>
 
 	<vita3k_update name="Vita3K Update">
- 		<new_version_available>A new version of Vita3K is available.</new_version_available>
+		<new_version_available>A new version of Vita3K is available.</new_version_available>
 		<back>Back</back>
 		<cancel_update_resume>Do you want to cancel the update?
 If you cancel, the next time you update, Vita3K will start downloading from this point.</cancel_update_resume>

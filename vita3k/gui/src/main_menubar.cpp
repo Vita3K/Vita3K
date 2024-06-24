@@ -103,7 +103,7 @@ static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv) {
 
 static void draw_debug_menu(GuiState &gui, DebugMenuState &state) {
     auto &lang = gui.lang.main_menubar.debug;
-    if (ImGui::BeginMenu("Debug")) {
+    if (ImGui::BeginMenu(lang["title"].c_str())) {
         ImGui::MenuItem(lang["threads"].c_str(), nullptr, &state.threads_dialog);
         ImGui::MenuItem(lang["semaphores"].c_str(), nullptr, &state.semaphores_dialog);
         ImGui::MenuItem(lang["mutexes"].c_str(), nullptr, &state.mutexes_dialog);

@@ -421,7 +421,8 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
         if (emuenv.ctrl.has_motion_support)
             LOG_INFO("Controller has motion support");
     }
-    LOG_INFO("modules mode: {}", config_modules_mode[emuenv.cfg.current_config.modules_mode][ModulesModeType::MODE]);
+    constexpr std::array modules_mode_names{ "Automatic", "Auto & Manual", "Manual" };
+    LOG_INFO("modules mode: {}", modules_mode_names.at(emuenv.cfg.current_config.modules_mode));
     if ((emuenv.cfg.current_config.modules_mode != ModulesMode::AUTOMATIC) && !emuenv.cfg.current_config.lle_modules.empty()) {
         std::string modules;
         for (const auto &mod : emuenv.cfg.current_config.lle_modules) {
