@@ -93,9 +93,9 @@ jobs:
           choco install ccache
         if: matrix.os == 'windows-latest'
 
-      - name: Set up SDL 2.28.3 (ubuntu-latest)
+      - name: Set up SDL 2.30.5 (ubuntu-latest)
         run: |
-          SDL2VER=2.28.3
+          SDL2VER=2.30.5
           if [[ ! -e ~/.ccache ]]; then
             mkdir ~/.ccache
           fi  
