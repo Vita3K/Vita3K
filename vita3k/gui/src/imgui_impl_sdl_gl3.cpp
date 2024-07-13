@@ -144,9 +144,9 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glEnableVertexAttribArray(state.attribute_position_location);
     glEnableVertexAttribArray(state.attribute_uv_location);
     glEnableVertexAttribArray(state.attribute_color_location);
-    glVertexAttribPointer(state.attribute_position_location, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid *)IM_OFFSETOF(ImDrawVert, pos));
-    glVertexAttribPointer(state.attribute_uv_location, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid *)IM_OFFSETOF(ImDrawVert, uv));
-    glVertexAttribPointer(state.attribute_color_location, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid *)IM_OFFSETOF(ImDrawVert, col));
+    glVertexAttribPointer(state.attribute_position_location, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid *)offsetof(ImDrawVert, pos));
+    glVertexAttribPointer(state.attribute_uv_location, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid *)offsetof(ImDrawVert, uv));
+    glVertexAttribPointer(state.attribute_color_location, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid *)offsetof(ImDrawVert, col));
 
     // Draw
     for (int n = 0; n < draw_data->CmdListsCount; n++) {
