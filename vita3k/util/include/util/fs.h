@@ -20,6 +20,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 namespace fs = boost::filesystem;
 
@@ -73,91 +74,8 @@ void dump_data(const fs::path &path, const void *data, const std::streamsize siz
 
 } // namespace fs_utils
 
-FMT_BEGIN_NAMESPACE
-namespace detail {
-
-template <typename Char, typename PathChar>
-auto get_path_string(const fs::path &p,
-    const std::basic_string<PathChar> &native) {
-    if constexpr (std::is_same_v<Char, char> && std::is_same_v<PathChar, wchar_t>)
-        return to_utf8<wchar_t>(native, to_utf8_error_policy::replace);
-    else
-        return native;
-}
-
-template <typename Char, typename PathChar>
-void write_escaped_path(basic_memory_buffer<Char> &quoted,
-    const fs::path &p,
-    const std::basic_string<PathChar> &native) {
-    if constexpr (std::is_same_v<Char, char> && std::is_same_v<PathChar, wchar_t>) {
-        auto buf = basic_memory_buffer<wchar_t>();
-        write_escaped_string<wchar_t>(std::back_inserter(buf), native);
-        bool valid = to_utf8<wchar_t>::convert(quoted, { buf.data(), buf.size() });
-        FMT_ASSERT(valid, "invalid utf16");
-    } else if constexpr (std::is_same_v<Char, PathChar>) {
-        write_escaped_string<fs::path::value_type>(
-            std::back_inserter(quoted), native);
-    } else {
-        write_escaped_string<Char>(std::back_inserter(quoted), p.string<Char>());
-    }
-}
-
-} // namespace detail
-
-template <typename Char>
-struct formatter<fs::path, Char> {
-private:
-    format_specs<Char> specs_;
-    detail::arg_ref<Char> width_ref_;
-    bool debug_ = false;
-    char path_type_ = 'n';
-
-public:
-    constexpr void set_debug_format(bool set = true) { debug_ = set; }
-
-    template <typename ParseContext>
-    constexpr auto parse(ParseContext &ctx) {
-        auto it = ctx.begin(), end = ctx.end();
-        if (it == end)
-            return it;
-
-        it = detail::parse_align(it, end, specs_);
-        if (it == end)
-            return it;
-
-        it = detail::parse_dynamic_spec(it, end, specs_.width, width_ref_, ctx);
-        if (it != end && *it == '?') {
-            debug_ = true;
-            ++it;
-        }
-        if (it != end && (*it == 'g' || *it == 'n'))
-            path_type_ = *it++;
-        return it;
-    }
-
-    template <typename FormatContext>
-    auto format(const fs::path &p, FormatContext &ctx) const {
-        auto specs = specs_;
-#ifdef _WIN32
-        auto path_string = path_type_ == 'n' ? p.native() : p.generic_wstring();
-#else
-        auto path_string = path_type_ == 'n' ? p.native() : p.generic_string();
-#endif
-
-        detail::handle_dynamic_spec<detail::width_checker>(specs.width, width_ref_,
-            ctx);
-        if (!debug_) {
-            auto s = detail::get_path_string<Char>(p, path_string);
-            return detail::write(ctx.out(), basic_string_view<Char>(s), specs);
-        }
-        auto quoted = basic_memory_buffer<Char>();
-        detail::write_escaped_path(quoted, p, path_string);
-        return detail::write(ctx.out(),
-            basic_string_view<Char>(quoted.data(), quoted.size()),
-            specs);
-    }
-};
-FMT_END_NAMESPACE
+template <>
+struct fmt::formatter<boost::filesystem::path> : ostream_formatter {};
 
 class Root {
     fs::path base_path;
