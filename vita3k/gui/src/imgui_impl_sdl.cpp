@@ -91,12 +91,20 @@ IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window 
     state->mouse_cursors[ImGuiMouseCursor_ResizeNWSE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
 
     // TODO: is this needed/useful ?
-#ifdef _WIN32
-    SDL_SysWMinfo wmInfo;
-    SDL_VERSION(&wmInfo.version);
-    SDL_GetWindowWMInfo(state->window, &wmInfo);
-    io.ImeWindowHandle = wmInfo.info.win.window;
+    // Set platform dependent data in viewport
+    // Our mouse update function expect PlatformHandle to be filled for the main viewport
+    ImGuiViewport *main_viewport = ImGui::GetMainViewport();
+    main_viewport->PlatformHandle = (void *)window;
+    main_viewport->PlatformHandleRaw = nullptr;
+    SDL_SysWMinfo info;
+    SDL_VERSION(&info.version);
+    if (SDL_GetWindowWMInfo(window, &info)) {
+#if defined(SDL_VIDEO_DRIVER_WINDOWS)
+        main_viewport->PlatformHandleRaw = (void *)info.info.win.window;
+#elif defined(__APPLE__) && defined(SDL_VIDEO_DRIVER_COCOA)
+        main_viewport->PlatformHandleRaw = (void *)info.info.cocoa.window;
 #endif
+    }
 
     return state;
 }
