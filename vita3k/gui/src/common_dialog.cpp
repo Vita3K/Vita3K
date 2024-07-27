@@ -237,7 +237,7 @@ void browse_save_data_dialog(GuiState &gui, EmuEnvState &emuenv, const uint32_t 
 
         const auto prev_save_data_slot = save_data_slot_list[std::max(list_index - 1, 0)];
         const auto next_save_data_slot = save_data_slot_list[std::min(list_index + 1, save_data_slot_list_size)];
-        const auto is_save_exist = emuenv.common_dialog.savedata.slot_info[current_selected_save_data_slot].isExist == 1;
+        const auto is_save_exist = (current_selected_save_data_slot >= 0 && current_selected_save_data_slot < emuenv.common_dialog.savedata.slot_info.size() && emuenv.common_dialog.savedata.slot_info[current_selected_save_data_slot].isExist == 1);
 
         const auto confirm = [&]() {
             switch (save_data_list_type_selected) {
