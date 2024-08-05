@@ -127,7 +127,7 @@ macro(get_boost)
 
 		  # First, try to find Boost without any hints (system Boost)
 		  if(NOT VITA3K_FORCE_CUSTOM_BOOST)
-		      find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} QUIET)
+		      find_package(Boost 1.81 COMPONENTS ${BOOST_MODULES_TO_FIND} QUIET)
 		  endif()
 
 		  # If system Boost hasn't been found, then enable hints to find custom Boost
@@ -142,7 +142,7 @@ macro(get_boost)
 		      set(BOOST_LIBRARYDIR "${BOOST_INSTALLDIR}/libs")                # find_package(Boost ...) hint
 
 		      # Find Boost again to check for a existing compilation of the custom distribution
-		      find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} PATHS ${BOOST_INSTALLDIR} QUIET NO_DEFAULT_PATH)
+		      find_package(Boost 1.81 COMPONENTS ${BOOST_MODULES_TO_FIND} PATHS ${BOOST_INSTALLDIR} QUIET NO_DEFAULT_PATH)
 
 		      # If no build of the custom distribution is found, compile it
 		      if(NOT Boost_FOUND)
@@ -194,7 +194,7 @@ macro(get_boost)
 		          boost_compile()
 
 		          # Find Boost again
-		          find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} PATHS ${BOOST_INSTALLDIR} NO_DEFAULT_PATH REQUIRED)
+		          find_package(Boost 1.81 COMPONENTS ${BOOST_MODULES_TO_FIND} PATHS ${BOOST_INSTALLDIR} NO_DEFAULT_PATH REQUIRED)
 		      else()
 		          message(STATUS "Custom Boost distribution found in ${BOOST_INSTALLDIR}")
 		      endif()
@@ -202,7 +202,7 @@ macro(get_boost)
 	else()
 		  # Try to find Boost on the system and CMake's default paths
 		  set(Boost_USE_STATIC_LIBS ON)
-		  find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} REQUIRED)
+		  find_package(Boost 1.81 COMPONENTS ${BOOST_MODULES_TO_FIND} REQUIRED)
 	endif()
 endmacro(get_boost)
 
