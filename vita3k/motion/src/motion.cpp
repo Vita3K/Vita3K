@@ -73,6 +73,7 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
     Util::Vec3f accel;
     uint64_t accel_timestamp = 0;
 
+#if SDL_VERSION_ATLEAST(2, 26, 0)
     {
         // SDL_GameControllerGetSensorDataWithTimestamp is only supported on 2.26+
         // we need to check it because we are linking dynamically with SDL
@@ -98,6 +99,7 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
             }
         }
     }
+#endif
 
     if (!found_accel && !found_gyro)
         return;

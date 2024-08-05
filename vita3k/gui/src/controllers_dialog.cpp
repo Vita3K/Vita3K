@@ -24,6 +24,7 @@
 #include <gui/functions.h>
 
 #include <SDL_events.h>
+#include <SDL_version.h>
 
 namespace gui {
 
@@ -117,9 +118,11 @@ static void add_bind_to_table(GuiState &gui, EmuEnvState &emuenv, const SDL_Game
             }
             break;
         case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO:
+#if SDL_VERSION_ATLEAST(2, 24, 0)
         case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT:
         case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT:
         case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR:
+#endif
             switch (btn) {
             case SDL_CONTROLLER_BUTTON_BACK: return "-";
             case SDL_CONTROLLER_BUTTON_START: return "+";
