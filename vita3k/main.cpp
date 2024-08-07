@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
 
         auto audio_mode = emuenv.cfg.audio_drv;
-        if (strcmp(audio_mode,"auto") != 0)
+        if (audio_mode != "auto")
             SDL_SetHint(SDL_HINT_AUDIODRIVER, audio_mode.c_str());
         
         if (SDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
