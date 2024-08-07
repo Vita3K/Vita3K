@@ -149,7 +149,7 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 4);
 
         const GLenum format = translate_format(base_format);
-        size_t compressed_size = renderer::texture::get_compressed_size(base_format, pixels_per_stride, height);
+        size_t compressed_size = renderer::texture::get_compressed_size(base_format, width, height);
         glCompressedTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), pixels);
 
         glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, 0);
