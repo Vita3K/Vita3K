@@ -184,6 +184,10 @@ int main(int argc, char *argv[]) {
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
 
+        auto audio_mode = emuenv.cfg.audio_drv;
+        if (strcmp(audio_mode,"auto") != 0)
+            SDL_SetHint(SDL_HINT_AUDIODRIVER, audio_mode.c_str());
+        
         if (SDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
             app::error_dialog("SDL initialisation failed.");
             return SDLInitFailed;
@@ -195,7 +199,8 @@ int main(int argc, char *argv[]) {
     LOG_INFO("OS: {}", CppCommon::Environment::OSVersion());
     LOG_INFO("CPU: {} | {} Threads | {} GHz", CppCommon::CPU::Architecture(), CppCommon::CPU::LogicalCores(), static_cast<float>(CppCommon::CPU::ClockSpeed()) / 1000.f);
     LOG_INFO("Available ram memory: {} MiB", SDL_GetSystemRAM());
-
+    LOG_INFO("Audio driver: {}", SDL_GetCurrentAudioDriver());
+    
     app::AppRunType run_type = app::AppRunType::Unknown;
     if (cfg.run_app_path)
         run_type = app::AppRunType::Extracted;
