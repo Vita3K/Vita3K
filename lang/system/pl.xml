@@ -336,7 +336,7 @@ Proszę, podłącz kontroler, który jest kompatybilny z SDL2.</not_connected>
 		<toggle_gui_visibility_description>Pozwala na pokazywanie i ukrywanie interfejsu emulatora u góry ekranu podczas gdy aplikacja jest uruchomiona.</toggle_gui_visibility_description>
 		<miscellaneous>Rożne</miscellaneous>
 		<toggle_texture_replacement>Aktywuj zamianę tekstur</toggle_texture_replacement>
-		<take_a_screenshot>Zrób zrzut ekranu</take_a_screenshot>
+		<take_screenshot>Zrób zrzut ekranu</take_screenshot>
 		<error>Błąd</error>
 		<error_duplicate_key>Klawisz/przycisk jest już przypisany lub zarezerwowany.</error_duplicate_key>
 	</controls>

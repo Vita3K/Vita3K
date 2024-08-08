@@ -337,7 +337,7 @@
 		<toggle_gui_visibility_description>Перемикає видимість інтерфейсу у верхній частині екрану коли програма функціонує.</toggle_gui_visibility_description>
 		<miscellaneous>Інше</miscellaneous>
 		<toggle_texture_replacement>Перемикання заміни текстур</toggle_texture_replacement>
-		<take_a_screenshot>Зробити знімок екрану</take_a_screenshot>
+		<take_screenshot>Зробити знімок екрану</take_screenshot>
 		<error>Помилка</error>
 		<error_duplicate_key>Кнопка вже прив'язана або її неможливо прив'язати.</error_duplicate_key>
 	</controls>
