@@ -583,6 +583,10 @@ Ia tidak mempunyai kelemahan tetapi boleh menjejaskan prestasi.</anisotropic_fil
 			<shader_cache>Gunakan Shader Cache</shader_cache>
 			<shader_cache_description>Tandai kotak untuk mendayakan cache shader untuk menyusunnya terlebih dahulu pada permulaan permainan.
 Nyahtanda untuk melumpuhkan ciri ini.</shader_cache_description>
+			<mapping_method>Pemetaan memory</mapping_method>
+			<mapping_method_description>Pemetaan memori boleh meningkatkan prestasi. 
+mengurangkan penggunaan memori dan kebanyakannya membetulkan pepijat grafik.
+Selain itu, banyak peranti tidak begitu stabil pada CPU.</mapping_method_description>
 			<spirv_shader>Gunakan Shader Spir-V (ditamatkan)</spirv_shader>
 			<spirv_shader_description>Hantarkan shader Spir-V yang dijana terus kepada pemandu.
 Ambil perhatian bahawa beberapa sambungan berfaedah akan dilumpuhkan,

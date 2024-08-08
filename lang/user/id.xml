@@ -571,6 +571,10 @@ Ini tidak memiliki kelemahan tetapi dapat mempengaruhi pada Performa.</anisotrop
 			<shader_cache>Pake Shader Cache</shader_cache>
 			<shader_cache_description>Centang kotak untuk mengaktifkan cache shader untuk melakukan pra-kompilasi saat startup game.
 Hapus centang untuk menonaktifkan fitur ini.</shader_cache_description>
+			<mapping_method>Pemetaan memory</mapping_method>
+			<mapping_method_description>Pemetaan memory itu bisa naikkan performanya. 
+kurangi pemakaian memory dan kebanyakan fix di bug grafis nya 
+selain itu banyak perangkat gak sama stabilnya di bahkan sesama cpu.</mapping_method_description>
 			<spirv_shader>Gunakan Shader Spir-V (tidak digunakan lagi)</spirv_shader>
 			<spirv_shader_description>Berikan shader Spir-V yang dihasilkan langsung ke pengemudi.
 Perhatikan bahwa beberapa ekstensi bermanfaat akan dinonaktifkan,
