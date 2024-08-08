@@ -578,8 +578,9 @@ struct LangState {
             { "audio_volume", "Audio Volume" },
             { "audio_volume_description", "Adjusts the volume percentage of all audio outputs." },
             { "enable_ngs_support", "Enable NGS support" },
-            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." }
-
+            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." },
+            { "audio_driver", "Use spesific audio driver output (need restart app)" },
+            { "select_audio_driver", "Select audio driver to find better audio quality and latency control." }
         };
         std::map<std::string, std::string> system = {
             { "title", "System" },
