@@ -101,7 +101,7 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 void reset_controller_binding(EmuEnvState &emuenv);
 void save_apps_cache(GuiState &gui, EmuEnvState &emuenv);
 void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id);
-void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
+void set_config(EmuEnvState &emuenv, const std::string &app_path, bool custom = true);
 void set_shaders_compiled_display(GuiState &gui, EmuEnvState &emuenv);
 void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app);
