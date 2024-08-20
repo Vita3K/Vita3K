@@ -196,8 +196,8 @@ Felkod: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Handkontroller">
-		<name>Namn</name>
 		<num>Num</num>
+		<name>Namn</name>
 	</controllers>
 
 	<controls name="Controls">
@@ -331,7 +331,6 @@ Ditt Vita3K-system är redo!</completed_setup>
 	<settings_dialog name="Inställningar">
 		<network name="Nätverk">
 		</network>
-		<save>Spara</save>
 	</settings_dialog>
 
 	<sys_apps_title>

@@ -478,7 +478,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     auto &lang = gui.lang.settings_dialog;
-    auto &common = emuenv.common_dialog.lang.common;
+    auto &common = emuenv.common_dialog.lang;
     auto &firmware_font = gui.lang.install_dialog.firmware_install;
 
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
@@ -930,11 +930,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("screenshot image type").x / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "screenshot image type");
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(lang.emulator["screenshot_image_type"].c_str()).x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.emulator["screenshot_image_type"].c_str());
         ImGui::Spacing();
-        const char *LIST_IMG_FORMAT[] = { "NULL", "JPEG", "PNG" };
-        ImGui::Combo("Screenshot format", &emuenv.cfg.screenshot_format, LIST_IMG_FORMAT, IM_ARRAYSIZE(LIST_IMG_FORMAT));
+        const char *LIST_IMG_FORMAT[] = { lang.emulator["null"].c_str(), "JPEG", "PNG" };
+        ImGui::Combo(lang.emulator["screenshot_format"].c_str(), &emuenv.cfg.screenshot_format, LIST_IMG_FORMAT, IM_ARRAYSIZE(LIST_IMG_FORMAT));
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
@@ -1227,12 +1227,12 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * SCALE.x));
-    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
+    if (ImGui::Button(common.common["close"].c_str(), BUTTON_SIZE))
         settings_dialog = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));
     const auto is_reboot = (emuenv.renderer->current_backend != emuenv.backend_renderer) || (config.resolution_multiplier != emuenv.cfg.current_config.resolution_multiplier);
-    if (ImGui::Button(is_apply ? (is_reboot ? lang.main_window["save_reboot"].c_str() : lang.main_window["save_apply"].c_str()) : lang.main_window["save"].c_str(), BUTTON_SIZE)) {
+    if (ImGui::Button(is_apply ? (is_reboot ? lang.main_window["save_reboot"].c_str() : lang.main_window["save_apply"].c_str()) : common.save_data.save["title"].c_str(), BUTTON_SIZE)) {
         save_config(gui, emuenv);
         if (is_apply)
             set_config(gui, emuenv, emuenv.io.app_path);

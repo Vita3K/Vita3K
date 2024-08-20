@@ -196,8 +196,8 @@ Virhekoodi: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Ohjaimen">
-		<name>Nimi</name>
 		<num>Num</num>
+		<name>Nimi</name>
 	</controllers>
 
 	<controls name="Controls">
@@ -333,7 +333,6 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		</system>
 		<network name="Verkko">
 		</network>
-		<save>Tallenna</save>
 	</settings_dialog>
 
 	<sys_apps_title>

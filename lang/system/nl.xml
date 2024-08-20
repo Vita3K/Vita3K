@@ -215,8 +215,8 @@ Foutcode: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<name>Naam</name>
 		<num>Num</num>
+		<name>Naam</name>
 	</controllers>
 
 	<controls name="Besturing">
@@ -352,7 +352,6 @@ Je Vita3K-systeem is gereed!</completed_setup>
 		</system>
 		<network name="Netwerk">
 		</network>
-		<save>Opslaan</save>
 	</settings_dialog>
 
 	<sys_apps_title>

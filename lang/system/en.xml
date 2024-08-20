@@ -38,6 +38,7 @@
 
 	<about name="About">
 		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
+		<for_android>If you did not download this emulator from Vita3K's official discord, paid for it or it contains ads, uninstall it immediatly.</for_android>
 		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux, macOS and Android operating systems.</about_vita3k>
 		<special_credit>Special credit: The Vita3K icon was designed by:</special_credit>
 		<github_website>If you're interested in contributing, check out our:</github_website>
@@ -67,6 +68,7 @@
 		<license>License</license>
 		<shaders_cache>Shaders Cache</shaders_cache>
 		<shaders_log>Shaders Log</shaders_log>
+		<create_shortcut>Create Shortcut</create_shortcut>
 		<manual>Manual</manual>
 		<update>Update</update>
 		<update_history>Update History</update_history>
@@ -285,11 +287,9 @@ Error code: {}</an_error_occurred>
 
 	<controllers name="Controllers">
 		<connected>{} controllers connected</connected>
-		<name>Name</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
-		<motion_support>Gamepad has motion support</motion_support>
+		<name>Name</name>
+		<motion_support>Motion Support</motion_support>
 		<rebind_controls>Rebind Controls</rebind_controls>
 		<led_color>LED Color</led_color>
 		<use_custom_color>Use Custom Color</use_custom_color>
@@ -297,6 +297,10 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<red>Red</red>
 		<green>Green</green>
 		<blue>Blue</blue>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+		<disable_motion>Disable Motion</disable_motion>
+		<motion_sensors>Using builtin device motion sensors</motion_sensors>
 		<reset_controller_binding>Reset Controller Binding</reset_controller_binding>
 	</controllers>
 
@@ -337,7 +341,7 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<toggle_gui_visibility_description>Toggles between showing and hiding the GUI at the top of the screen while the app is running.</toggle_gui_visibility_description>
 		<miscellaneous>Miscellaneous</miscellaneous>
 		<toggle_texture_replacement>Toggle Texture Replacement</toggle_texture_replacement>
-		<take_a_screenshot>Take A Screenshot</take_a_screenshot>
+		<take_screenshot>Take A Screenshot</take_screenshot>
 		<error>Error</error>
 		<error_duplicate_key>The key is used for other bindings or it is reserved.</error_duplicate_key>
 	</controls>
@@ -522,9 +526,21 @@ Check work.bin/rif file or zRIF key.</failed_install_license>
 		<load_app_failed>Failed to load "{}".
 Check vita3k.log to see console output for details.
 1. Do you have installed firmware?
-2. Dump your own app(s)/game(s) and install it on Vita3K.
+2. Dump your own PS Vita app(s)/game(s) and install on Vita3K.
 3. If you want to install or boot Vitamin, it is not supported.</load_app_failed>
 	</message>
+
+	<overlay name="Overlay">
+		<gamepad_overlay>Gamepad Overlay</gamepad_overlay>
+		<enable_gamepad_overlay>Show gamepad overlay ingame</enable_gamepad_overlay>
+		<hide_gamepad_overlay>Hide Gamepad Overlay</hide_gamepad_overlay>
+		<modify_gamepad_overlay>Modify Gamepad Overlay</modify_gamepad_overlay>
+		<overlay_scale>Overlay Scale</overlay_scale>
+		<overlay_opacity>Overlay Opacity</overlay_opacity>
+		<reset_gamepad>Reset Gamepad</reset_gamepad>
+		<overlay_show_touch_switch>Show front/back touchscreen switch button.</overlay_show_touch_switch>
+		<l2_r2_triggers>L2/R2 triggers will be displayed only if PSTV mode is enabled.</l2_r2_triggers>
+	</overlay>
 
 	<performance_overlay>
 		<avg>Avg</avg>
@@ -618,6 +634,8 @@ Please download and install the last PS Vita firmware.</no_modules>
 			<select_backend_renderer>Select your preferred backend renderer.</select_backend_renderer>
 			<gpu>GPU (Reboot to apply)</gpu>
 			<select_gpu>Select the GPU Vita3K should run on.</select_gpu>
+			<add_custom_driver>Add custom driver</add_custom_driver>
+			<remove_custom_driver>Remove custom driver</remove_custom_driver>
 			<standard>Standard</standard>
 			<high>High</high>
 			<renderer_accuracy>Renderer Accuracy</renderer_accuracy>
@@ -651,6 +669,16 @@ It has no drawback but can impact performance.</anisotropic_filtering_descriptio
 			<shader_cache>Use Shader Cache</shader_cache>
 			<shader_cache_description>Check the box to enable shader cache to pre-compile it at game startup.
 Uncheck to disable this feature.</shader_cache_description>
+			<disabled>Disabled</disabled>
+			<double_buffer>Double buffer</double_buffer>
+			<external_host>External host</external_host>
+			<page_table>Page table</page_table>
+			<native_buffer>Native buffer</native_buffer>
+			<mapping_method>Memory mapping method</mapping_method>
+			<mapping_method_description>Memory mapping improved performances, reduces memory usage and fixes many graphical issues.
+However, it may be unstable on some GPUs.</mapping_method_description>
+			<turbo_mode>Enable Turbo Mode</turbo_mode>
+			<turbo_mode_description>Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied).</turbo_mode_description>
 			<spirv_shader>Use Spir-V Shader (deprecated)</spirv_shader>
 			<spirv_shader_description>Pass generated Spir-V shader directly to driver.
 Note that some beneficial extensions will be disabled,
@@ -734,8 +762,12 @@ You will need to move your old folder to the new location manually.</change_emu_
 			<reset_emu_path>Reset Emulator Path</reset_emu_path>
 			<reset_emu_path_description>Reset Vita3K emulator path to the default.
 You will need to move your old folder to the new location manually.</reset_emu_path_description>
+			<storage_folder_permissions>Using a different path requires additional permissions</storage_folder_permissions>
 			<custom_config_settings>Custom Config Settings</custom_config_settings>
 			<clear_custom_config>Clear Custom Config</clear_custom_config>
+			<screenshot_image_type>Screenshot Image Type</screenshot_image_type>
+			<null>NULL</null>
+			<screenshot_format>Screenshot Format</screenshot_format>
 		</emulator>
 		<gui name="GUI">
 			<show_gui>GUI Visible</show_gui>
@@ -822,7 +854,6 @@ lower can improve performance but can make games unstable if you have bad enough
 		</debug>
 		<save_reboot>Save & Reboot</save_reboot>
 		<save_apply>Save & Apply</save_apply>
-		<save>Save</save>
 		<keep_changes>Click on Save to keep your changes.</keep_changes>
 	</settings_dialog>
 
@@ -896,6 +927,7 @@ After the download is complete, Vita3K will restart automatically and then insta
 	</vita3k_update>
 
 	<welcome name="Welcome to Vita3K">
+		<for_android>This emulator is free and was distributed on Vita3K's official discord. If you did not download this application from Vita3K's discord, paid for it or it has ads, consider uninstalling it immediately for your own safety.</for_android>
 		<vita3k>Vita3K PlayStation Vita Emulator</vita3k>
 		<about_vita3k>Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS and Android.</about_vita3k>
 		<development_stage>The emulator is still in its development stages so any feedback and testing is greatly appreciated.</development_stage>

@@ -212,7 +212,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["name"].c_str());
             ImGui::Spacing();
             ImGui::TableSetColumnIndex(2);
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Motion Support");
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["motion_support"].c_str());
             for (auto i = 0; i < ctrl.controllers_num; i++) {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
@@ -382,7 +382,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     if (emuenv.ctrl.has_motion_support) {
         ImGui::Spacing();
-        if (ImGui::Checkbox("Disable Motion", &emuenv.cfg.disable_motion))
+        if (ImGui::Checkbox(lang["disable_motion"].c_str(), &emuenv.cfg.disable_motion))
             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
         ImGui::PopTextWrapPos();

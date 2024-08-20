@@ -38,6 +38,7 @@
 
 	<about name="關於">
 		<vita3k>Vita3K：PS Vita/PS TV模擬器，是全球首個實用的PS Vita/PS TV模擬器。</vita3k>
+		<for_android>如果您沒有從Vita3K的官方Discord下載此模擬器，是付費購買或包含廣告，請立即卸載它。</for_android>
 		<about_vita3k>Vita3K是使用C++編寫的實驗性開源PlayStation Vita/PlayStation TV模擬器，適用於Windows、Linux、macOS以及Android作業系統。</about_vita3k>
 		<special_credit>特別鳴謝：Vita3K圖標設計由：</special_credit>
 		<github_website>如果您有興趣參與貢獻，請瀏覽我們的：</github_website>
@@ -67,6 +68,7 @@
 		<license>授權</license>
 		<shaders_cache>著色器快取</shaders_cache>
 		<shaders_log>著色器記錄</shaders_log>
+		<create_shortcut>建立快捷方式</create_shortcut>
 		<manual>說明書</manual>
 		<update>更新</update>
 		<update_history>更新履歷</update_history>
@@ -284,11 +286,9 @@
 
 	<controllers name="控制器">
 		<connected>已接入{}個控制器</connected>
-		<name>名稱</name>
 		<num>編號</num>
-		<not_connected>未接入相容的控制器。
-請接入與SDL2相容的控制器。</not_connected>
-		<motion_support>手柄控制器有體感支持</motion_support>
+		<name>名稱</name>
+		<motion_support>陀螺儀支持</motion_support>
 		<rebind_controls>重新綁定控制</rebind_controls>
 		<led_color>LED顔色</led_color>
 		<use_custom_color>使用自訂顔色</use_custom_color>
@@ -296,6 +296,10 @@
 		<red>紅</red>
 		<green>綠</green>
 		<blue>藍</blue>
+		<not_connected>未接入相容的控制器。
+請接入與SDL2相容的控制器。</not_connected>
+		<disable_motion>禁用陀螺儀</disable_motion>
+		<motion_sensors>使用內置設備傳感器</motion_sensors>
 		<reset_controller_binding>重設控制器綁定</reset_controller_binding>
 	</controllers>
 
@@ -336,7 +340,7 @@
 		<toggle_gui_visibility_description>在應用程式運行时，在螢幕頂部顯示和隱藏圖形化使用者介面之間切換。</toggle_gui_visibility_description>
 		<miscellaneous>雜項</miscellaneous>
 		<toggle_texture_replacement>切換紋理替換</toggle_texture_replacement>
-		<take_a_screenshot>截圖</take_a_screenshot>
+		<take_screenshot>截圖</take_screenshot>
 		<error>錯誤</error>
 		<error_duplicate_key>此按鈕已繫結至其他按鈕或已被保留。</error_duplicate_key>
 	</controls>
@@ -520,9 +524,21 @@
 		<load_app_failed>無法讀取“{}”，
 請檢查vita3k.log查閲控制臺輸出的詳細資訊。
 1、您是否已安裝了韌體？
-2、傾印您已擁有的应用程式/遊戲，並在Vita3K安裝。
+2、傾印您已擁有的PS Vita应用程式/遊戲，並在Vita3K安裝。
 3、如果您想要安裝/運行Vitamin是不支援的。</load_app_failed>
 	</message>
+
+	<overlay name="虛擬按鈕">
+		<gamepad_overlay>手把虛擬按鈕</gamepad_overlay>
+		<enable_gamepad_overlay>在遊戲中顯示手把虛擬按鈕</enable_gamepad_overlay>
+		<hide_gamepad_overlay>隱藏手把虛擬按鈕</hide_gamepad_overlay>
+		<modify_gamepad_overlay>修改手把虛擬按鈕</modify_gamepad_overlay>
+		<overlay_scale>虛擬按鈕縮放</overlay_scale>
+		<overlay_opacity>虛擬按鈕不透明度</overlay_opacity>
+		<reset_gamepad>重設手把佈局</reset_gamepad>
+		<overlay_show_touch_switch>顯示前/後觸屏切換按鈕。</overlay_show_touch_switch>
+		<l2_r2_triggers>僅當啟用PSTV模式時，才會顯示L2/R2按鈕。</l2_r2_triggers>
+	</overlay>
 
 	<performance_overlay>
 		<avg>平均</avg>
@@ -616,6 +632,8 @@
 			<select_backend_renderer>選擇您喜歡的後端渲染器。</select_backend_renderer>
 			<gpu>GPU（重啟后應用）</gpu>
 			<select_gpu>選擇在Vita3K應運行的GPU。</select_gpu>
+			<add_custom_driver>添加自訂驅動</add_custom_driver>
+			<remove_custom_driver>移除自訂驅動</remove_custom_driver>
 			<standard>標準</standard>
 			<high>高</high>
 			<renderer_accuracy>渲染精度</renderer_accuracy>
@@ -633,7 +651,7 @@
 			<bilinear>雙綫性</bilinear>
 			<bicubic>雙三次</bicubic>
 			<screen_filter>螢幕過濾</screen_filter>
-			<screen_filter_description>設置要應用的後處理過濾器（可理解為抗鋸齒）。</screen_filter_description>
+			<screen_filter_description>設置要應用的後處理過濾器。</screen_filter_description>
 			<internal_resolution_upscaling>內部分辨率提升</internal_resolution_upscaling>
 			<internal_resolution_upscaling_description>為Vita3K啟用提升效果。
 實驗性：不保證遊戲能超過1倍的正確渲染。</internal_resolution_upscaling_description>
@@ -649,6 +667,16 @@
 			<shader_cache>使用著色器快取</shader_cache>
 			<shader_cache_description>勾選此項啟用著色器快取以在遊戲啟動時對其進行預編譯。
 取消勾選則禁用該功能。</shader_cache_description>
+			<disabled>禁用</disabled>
+			<double_buffer>雙重緩衝</double_buffer>
+			<external_host>外部主機</external_host>
+			<page_table>頁表</page_table>
+			<native_buffer>原生緩衝</native_buffer>
+			<mapping_method>內存映射方式</mapping_method>
+			<mapping_method_description>內存映射提高了性能，減少內存使用量，並修復了許多圖形問題。
+但是它在某些GPU上可能不穩定。</mapping_method_description>
+			<turbo_mode>啟用睿頻模式</turbo_mode>
+			<turbo_mode_description>提供了一種方法提來强制GPU運行在最大合理的頻率（溫控仍然適用）。</turbo_mode_description>
 			<spirv_shader>使用Spir-V著色器（已棄用）</spirv_shader>
 			<spirv_shader_description>將生成的Spir-V著色器直接傳遞給驅動程式。
 請注意，一些有益的擴展功能將被禁用，
@@ -731,8 +759,12 @@
 			<reset_emu_path>重置模擬器路徑</reset_emu_path>
 			<reset_emu_path_description>重置Vita3K模擬器為默認路徑。
 您需要手動將舊資料夾移動到默認位置。</reset_emu_path_description>
+			<storage_folder_permissions>使用不同路徑需要額外權限</storage_folder_permissions>
 			<custom_config_settings>自訂組態設定</custom_config_settings>
 			<clear_custom_config>清除自訂組態</clear_custom_config>
+			<screenshot_image_type>截圖圖像類型</screenshot_image_type>
+			<null>空</null>
+			<screenshot_format>截圖格式</screenshot_format>
 		</emulator>
 		<gui name="圖形化使用者介面">
 			<show_gui>圖形化使用者介面可見</show_gui>
@@ -819,7 +851,6 @@
 		</debug>
 		<save_reboot>保存並重啟</save_reboot>
 		<save_apply>保存並應用</save_apply>
-		<save>保存</save>
 		<keep_changes>按下保存保留您的更改。</keep_changes>
 	</settings_dialog>
 
@@ -892,6 +923,7 @@
 	</vita3k_update>
 
 	<welcome name="歡迎使用Vita3K">
+		<for_android>此模擬器是免費的，並在Vita3K的官方Discord上發佈。如果您沒有從Vita3K的Discord下載此應用程式，是付費購買或含有廣告，請考慮立即卸載它以確保您自己的安全。</for_android>
 		<vita3k>Vita3K PlayStation Vita模擬器</vita3k>
 		<about_vita3k>Vita3K是使用C++編寫的開源PlayStation Vita模擬器，適用於Windows、Linux、macOS以及Android。</about_vita3k>
 		<development_stage>目前模擬器仍處於開發階段，因此非常感謝任何回饋和測試。</development_stage>

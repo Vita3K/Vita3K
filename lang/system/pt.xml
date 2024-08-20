@@ -199,8 +199,8 @@ Código de erro: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Comando">
-		<name>Nome</name>
 		<num>Núm</num>
+		<name>Nome</name>
 	</controllers>
 
 	<controls name="Controls">
@@ -335,7 +335,6 @@ O seu sistema Vita3K está pronto!</completed_setup>
 		</system>
 		<network name="Rede">
 		</network>
-		<save>Guardar</save>
 	</settings_dialog>
 
 	<sys_apps_title>

@@ -284,11 +284,8 @@ Kod błędu: {}</an_error_occurred>
 
 	<controllers name="Kontroler">
 		<connected>{} kontrolerów podłączonych</connected>
-		<name>Nazwa</name>
 		<num>Num</num>
-		<not_connected>Niepodłączono żadnego ze wspieranych kontrolerów.
-Proszę, podłącz kontroler, który jest kompatybilny z SDL2.</not_connected>
-		<motion_support>Kontroler wspiera sterowanie ruchowe</motion_support>
+		<name>Nazwa</name>
 		<rebind_controls>Przypisz przyciski ponownie</rebind_controls>
 		<led_color>Kolor LED</led_color>
 		<use_custom_color>Użyj własnego koloru</use_custom_color>
@@ -296,6 +293,8 @@ Proszę, podłącz kontroler, który jest kompatybilny z SDL2.</not_connected>
 		<red>Czerwony</red>
 		<green>Zielony</green>
 		<blue>Niebieski</blue>
+		<not_connected>Niepodłączono żadnego ze wspieranych kontrolerów.
+Proszę, podłącz kontroler, który jest kompatybilny z SDL2.</not_connected>
 		<reset_controller_binding>Restuj przypisanie przycisków kontrollera</reset_controller_binding>
 	</controllers>
 
@@ -336,7 +335,7 @@ Proszę, podłącz kontroler, który jest kompatybilny z SDL2.</not_connected>
 		<toggle_gui_visibility_description>Pozwala na pokazywanie i ukrywanie interfejsu emulatora u góry ekranu podczas gdy aplikacja jest uruchomiona.</toggle_gui_visibility_description>
 		<miscellaneous>Rożne</miscellaneous>
 		<toggle_texture_replacement>Aktywuj zamianę tekstur</toggle_texture_replacement>
-		<take_a_screenshot>Zrób zrzut ekranu</take_a_screenshot>
+		<take_screenshot>Zrób zrzut ekranu</take_screenshot>
 		<error>Błąd</error>
 		<error_duplicate_key>Klawisz/przycisk jest już przypisany lub zarezerwowany.</error_duplicate_key>
 	</controls>
@@ -813,7 +812,6 @@ niższa wartość może poprawić wydajność, ale może sprawić, że gry będ�
 		</debug>
 		<save_reboot>Zapisz i uruchom ponownie</save_reboot>
 		<save_apply>Zapisz i zatwierdź</save_apply>
-		<save>Zapisz</save>
 		<keep_changes>Naciśnij 'Zapisz', aby zachować zmiany.</keep_changes>
 	</settings_dialog>
 

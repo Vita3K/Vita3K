@@ -237,8 +237,8 @@
 	</content_manager>
 
 	<controllers name="컨트롤러">
-		<name>이름</name>
 		<num>번호</num>
+		<name>이름</name>
 	</controllers>
 
 	<controls name="컨트롤">
@@ -365,7 +365,6 @@
 		</system>
 		<network name="네트워크">
 		</network>
-		<save>저장</save>
 	</settings_dialog>
 
 	<sys_apps_title>

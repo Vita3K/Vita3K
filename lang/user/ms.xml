@@ -279,12 +279,9 @@ Kod ralat: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Kontroler">
-		<connected>{} Kontroler Bersambung</connected>
-		<name>Nama</name>
+		<connected>{} kontroler bersambung</connected>
 		<num>Bil</num>
-		<not_connected>Tiada Kontroler serasi disambungkan.
-Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
-		<motion_support>Gamepad mempunyai sokongan gerakan</motion_support>
+		<name>Nama</name>
 		<rebind_controls>Kawalan Rebind</rebind_controls>
 		<led_color>Warna LED</led_color>
 		<use_custom_color>Gunakan Warna Tersuai</use_custom_color>
@@ -292,6 +289,8 @@ Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
 		<red>Merah</red>
 		<green>Hijau</green>
 		<blue>Biru</blue>
+		<not_connected>Tiada Kontroler serasi disambungkan.
+Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
 		<reset_controller_binding>Tetapkan Semula Pengikat Kontroler</reset_controller_binding>
 	</controllers>
 
@@ -583,6 +582,10 @@ Ia tidak mempunyai kelemahan tetapi boleh menjejaskan prestasi.</anisotropic_fil
 			<shader_cache>Gunakan Shader Cache</shader_cache>
 			<shader_cache_description>Tandai kotak untuk mendayakan cache shader untuk menyusunnya terlebih dahulu pada permulaan permainan.
 Nyahtanda untuk melumpuhkan ciri ini.</shader_cache_description>
+			<mapping_method>Pemetaan memory</mapping_method>
+			<mapping_method_description>Pemetaan memori boleh meningkatkan prestasi. 
+mengurangkan penggunaan memori dan kebanyakannya membetulkan pepijat grafik.
+Selain itu, banyak peranti tidak begitu stabil pada CPU.</mapping_method_description>
 			<spirv_shader>Gunakan Shader Spir-V (ditamatkan)</spirv_shader>
 			<spirv_shader_description>Hantarkan shader Spir-V yang dijana terus kepada pemandu.
 Ambil perhatian bahawa beberapa sambungan berfaedah akan dilumpuhkan,
@@ -727,7 +730,6 @@ lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak st
 		</debug>
 		<save_reboot>Simpan & Reboot</save_reboot>
 		<save_apply>Simpan & Apply</save_apply>
-		<save>Simpan</save>
 		<keep_changes>Klik pada simpan untuk menyimpan perubahan awak.</keep_changes>
 	</settings_dialog>
 

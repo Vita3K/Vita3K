@@ -196,8 +196,8 @@ Feilkode: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Kontroller">
-		<name>Navn</name>
 		<num>Num</num>
+		<name>Navn</name>
 	</controllers>
 
 	<controls name="Controls">
@@ -332,7 +332,6 @@ Vita3K-systemet ditt er klart!</completed_setup>
 		</system>
 		<network name="Nettverk">
 		</network>
-		<save>Lagre</save>
 	</settings_dialog>
 
 	<sys_apps_title>

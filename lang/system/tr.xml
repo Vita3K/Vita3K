@@ -202,8 +202,8 @@ Hata Kodu: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Kontrol Cihazı">
-		<name>Ad</name>
 		<num>Num</num>
+		<name>Ad</name>
 	</controllers>
 
 	<controls name="Kontrol">
@@ -339,7 +339,6 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 		</system>
 		<network name="Ağ">
 		</network>
-		<save>Kaydet</save>
 	</settings_dialog>
 
 	<sys_apps_title>
