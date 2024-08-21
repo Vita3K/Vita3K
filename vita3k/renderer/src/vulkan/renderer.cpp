@@ -324,15 +324,15 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
-        physical_device_properties = physical_device.getProperties();
-        physical_device_features = physical_device.getFeatures();
-        physical_device_memory = physical_device.getMemoryProperties();
-        physical_device_queue_families = physical_device.getQueueFamilyProperties();
-
         if (!physical_device) {
             LOG_ERROR("Failed to select Vulkan physical device.");
             return false;
         }
+
+        physical_device_properties = physical_device.getProperties();
+        physical_device_features = physical_device.getFeatures();
+        physical_device_memory = physical_device.getMemoryProperties();
+        physical_device_queue_families = physical_device.getQueueFamilyProperties();
 
         LOG_INFO("Vulkan device: {}", physical_device_properties.deviceName.data());
         LOG_INFO("Driver version: {}", get_driver_version(physical_device_properties.vendorID, physical_device_properties.driverVersion));
