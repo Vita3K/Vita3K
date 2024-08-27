@@ -523,8 +523,8 @@
 	<message>
 		<load_app_failed>無法讀取“{}”，
 請檢查vita3k.log查閲控制臺輸出的詳細資訊。
-1、您是否已安裝了韌體？
-2、傾印您已擁有的PS Vita应用程式/遊戲，並在Vita3K安裝。
+1、您是否安裝了韌體？
+2、重新傾印您已擁有的PS Vita应用程式/遊戲，並在Vita3K中安裝。
 3、如果您想要安裝/運行Vitamin是不支援的。</load_app_failed>
 	</message>
 

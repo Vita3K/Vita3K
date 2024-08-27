@@ -523,8 +523,8 @@
 	<message>
 		<load_app_failed>无法读取“{}”，
 请检查vita3k.log查看控制台输出的详细信息。
-1、您是否已安装了固件？
-2、提取您已拥有的PS Vita应用程序/游戏，并在Vita3K安装。
+1、您是否安装了固件？
+2、重新提取您已拥有的PS Vita应用程序/游戏，并在Vita3K中安装。
 3、如果您想要安装/运行Vitamin是不支持的。</load_app_failed>
 	</message>
 

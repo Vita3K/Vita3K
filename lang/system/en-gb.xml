@@ -525,8 +525,8 @@ Check work.bin/rif file or zRIF key.</failed_install_license>
 	<message>
 		<load_app_failed>Failed to load "{}".
 Check vita3k.log to see console output for details.
-1. Do you have installed firmware?
-2. Dump your own PS Vita app(s)/game(s) and install on Vita3K.
+1. Have you installed the firmware?
+2. Re-dump your own PS Vita app/game and install it on Vita3K.
 3. If you want to install or boot Vitamin, it is not supported.</load_app_failed>
 	</message>
 
