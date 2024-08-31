@@ -296,7 +296,7 @@ uint32_t texture_size_full(const SceGxmTexture &texture) {
         break;
     default:
         break;
-    };
+    }
 
     uint32_t max_possible_mip = std::bit_width(std::min(width, height));
     if (type == SCE_GXM_TEXTURE_TILED) {
@@ -414,7 +414,7 @@ uint32_t texture_size_first_mip(const SceGxmTexture &texture) {
         break;
     default:
         break;
-    };
+    }
 
     auto [block_width, block_height] = get_block_size(format);
     width = align(width, block_width);

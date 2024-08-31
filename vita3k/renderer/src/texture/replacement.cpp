@@ -809,7 +809,6 @@ static ddspp::DXGIFormat gxm_to_dxgi(const SceGxmTextureBaseFormat format) {
         return R32G32_FLOAT;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
         return R32G32_UINT;
-        ;
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
         return BC1_UNORM;
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:

@@ -430,4 +430,4 @@ static const float f16_constant_table_bank3[] = {
     0.0f,
     0.0f
 };
-}; // namespace shader::usse
+} // namespace shader::usse

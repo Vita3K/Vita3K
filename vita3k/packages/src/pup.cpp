@@ -202,7 +202,7 @@ static void decrypt_segments(std::ifstream &infile, const fs::path &outdir, cons
 
     EVP_CIPHER_CTX_free(cipher_ctx);
     EVP_CIPHER_free(cipher);
-};
+}
 
 static void join_files(const fs::path &path, const std::string &filename, const fs::path &output) {
     std::vector<fs::path> files;

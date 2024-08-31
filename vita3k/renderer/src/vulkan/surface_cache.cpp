@@ -1406,4 +1406,4 @@ std::vector<uint32_t> VKSurfaceCache::dump_frame(Ptr<const void> address, uint32
     return frame;
 }
 
-}; // namespace renderer::vulkan
+} // namespace renderer::vulkan
