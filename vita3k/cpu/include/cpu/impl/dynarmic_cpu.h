@@ -18,7 +18,6 @@
 #pragma once
 
 #include <dynarmic/interface/A32/a32.h>
-#include <dynarmic/interface/A32/coprocessor.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
 #include <cpu/functions.h>

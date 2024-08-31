@@ -30,7 +30,6 @@
 #include <util/log.h>
 
 #include <SDL_thread.h>
-#include <spdlog/fmt/fmt.h>
 #include <util/lock_and_find.h>
 
 int CorenumAllocator::new_corenum() {

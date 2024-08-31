@@ -25,7 +25,6 @@
 #include <util/log.h>
 #include <util/tracy.h>
 
-#include <renderer/vulkan/functions.h>
 #include <renderer/vulkan/state.h>
 
 // keywords.h must be after tracy.h for msvc compiler

@@ -18,7 +18,6 @@
 #pragma once
 
 #include <gxm/types.h>
-#include <shader/uniform_block.h>
 #include <shader/usse_translator_types.h>
 #include <shader/usse_types.h>
 

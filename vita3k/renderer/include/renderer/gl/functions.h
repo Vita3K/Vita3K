@@ -25,10 +25,8 @@
 #include <renderer/gl/state.h>
 #include <renderer/gl/types.h>
 
-#include <map>
 #include <memory>
 #include <string>
-#include <tuple>
 
 struct MemState;
 struct FeatureState;

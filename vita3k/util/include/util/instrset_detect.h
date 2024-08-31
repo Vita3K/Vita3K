@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 namespace util {
 static inline void cpuid(int output[4], int functionnumber, int ecxleaf = 0);

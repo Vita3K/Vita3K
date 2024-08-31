@@ -23,7 +23,6 @@
 #include <renderer/gl/types.h>
 
 #include <gxm/functions.h>
-#include <mem/ptr.h>
 
 namespace renderer::gl {
 

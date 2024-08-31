@@ -18,7 +18,6 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
 
 template <typename T>
 T byte_swap(T val);

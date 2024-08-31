@@ -25,8 +25,6 @@
 
 #include <gxm/types.h>
 
-#include <util/log.h>
-
 namespace renderer::vulkan {
 
 vk::Format translate_attribute_format(SceGxmAttributeFormat format, unsigned int component_count, bool is_integer, bool is_signed);

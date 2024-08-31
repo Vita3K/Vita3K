@@ -18,7 +18,7 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <mem/ptr.h> // Address.
+#include <mem/util.h> // Address.
 
 #include <array>
 #include <cstdint>

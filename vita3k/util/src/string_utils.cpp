@@ -19,6 +19,11 @@
 
 #include <util/log.h>
 
+#include <algorithm>
+#include <codecvt>
+#include <locale>
+#include <sstream>
+
 namespace string_utils {
 
 std::vector<std::string> split_string(const std::string &str, char delimiter) {

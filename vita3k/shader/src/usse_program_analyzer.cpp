@@ -19,10 +19,10 @@
 #include <gxm/types.h>
 #include <shader/gxp_parser.h>
 #include <shader/usse_program_analyzer.h>
+#include <shader/usse_types.h>
 
 #include <cassert>
-
-#include <shader/usse_types.h>
+#include <queue>
 
 namespace shader::usse {
 bool is_kill(const std::uint64_t inst) {

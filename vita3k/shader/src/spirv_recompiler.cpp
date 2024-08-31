@@ -17,6 +17,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <shader/spirv_recompiler.h>
+#include <shader/uniform_block.h>
 #include <shader/usse_disasm.h>
 #include <shader/usse_program_analyzer.h>
 #include <shader/usse_utilities.h>

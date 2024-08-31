@@ -19,8 +19,7 @@
 
 #include <renderer/texture_cache.h>
 #include <renderer/types.h>
-
-#include <threads/queue.h>
+#include <shader/uniform_block.h>
 #include <vkutil/objects.h>
 
 struct MemState;

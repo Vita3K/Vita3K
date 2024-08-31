@@ -19,6 +19,7 @@
 #include "renderer/texture_cache.h"
 
 #include "gxm/functions.h"
+#include "util/align.h"
 #include "util/float_to_half.h"
 #include "util/log.h"
 

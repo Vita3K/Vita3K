@@ -20,7 +20,6 @@
 #include <shader/usse_types.h>
 
 #include <map>
-#include <unordered_map>
 #include <vector>
 
 namespace spv {

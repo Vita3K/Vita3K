@@ -26,7 +26,6 @@
 #include <SPIRV/SpvBuilder.h>
 
 #include <array>
-#include <map>
 
 struct FeatureState;
 

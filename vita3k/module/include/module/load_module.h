@@ -21,6 +21,7 @@
 #include <kernel/types.h>
 
 #include <array>
+#include <map>
 #include <vector>
 
 static constexpr auto SYSMODULE_COUNT = 0x56;

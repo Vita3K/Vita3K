@@ -18,6 +18,7 @@
 #include <renderer/vulkan/gxm_to_vulkan.h>
 
 #include <gxm/functions.h>
+#include <util/log.h>
 
 namespace renderer::vulkan {
 

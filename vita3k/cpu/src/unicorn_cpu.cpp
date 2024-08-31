@@ -17,7 +17,9 @@
 
 #include <cpu/functions.h>
 #include <cpu/impl/unicorn_cpu.h>
+#include <mem/functions.h>
 #include <mem/ptr.h>
+#include <mem/util.h>
 #include <util/log.h>
 
 #include <cassert>

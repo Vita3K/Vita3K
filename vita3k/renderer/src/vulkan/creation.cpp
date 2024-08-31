@@ -24,7 +24,6 @@
 
 #include <gxm/types.h>
 
-#include <util/log.h>
 #include <vkutil/vkutil.h>
 
 namespace renderer::vulkan {

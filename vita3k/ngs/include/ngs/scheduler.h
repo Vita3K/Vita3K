@@ -21,10 +21,7 @@
 
 #include <mem/ptr.h>
 
-#include <thread>
-
 #include <condition_variable>
-#include <optional>
 #include <queue>
 #include <vector>
 

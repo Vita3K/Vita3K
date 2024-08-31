@@ -17,11 +17,7 @@
 
 #pragma once
 
-#include <algorithm>
-#include <codecvt>
 #include <cstdint>
-#include <locale>
-#include <sstream>
 #include <string>
 #include <vector>
 

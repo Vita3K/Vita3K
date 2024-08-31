@@ -1,13 +1,11 @@
 #pragma once
 
-#include <boost/algorithm/string/compare.hpp>
-#include <condition_variable>
 #include <http/state.h>
 #include <util/log.h>
 
-#include <map>
+#include <condition_variable>
+#include <cstdint>
 #include <regex>
-#include <stdint.h>
 
 namespace net_utils {
 

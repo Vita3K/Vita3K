@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <mem/ptr.h>
+#include <mem/util.h>
 
 #include <map>
 
