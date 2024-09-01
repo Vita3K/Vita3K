@@ -875,8 +875,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.emulator["check_for_updates"].c_str(), &emuenv.cfg.check_for_updates);
         SetTooltipEx(lang.emulator["check_for_updates_description"].c_str());
         ImGui::Separator();
-        const auto perfomance_overley_size = ImGui::CalcTextSize(lang.emulator["performance_overlay"].c_str()).x;
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (perfomance_overley_size / 2.f));
+        const auto performance_overlay_size = ImGui::CalcTextSize(lang.emulator["performance_overlay"].c_str()).x;
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (performance_overlay_size / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.emulator["performance_overlay"].c_str());
         ImGui::Spacing();
         ImGui::Checkbox(lang.emulator["performance_overlay"].c_str(), &emuenv.cfg.performance_overlay);

@@ -358,9 +358,9 @@ uint32_t texture_size_full(const SceGxmTexture &texture) {
         const bool twok_align_cond2 = width >= 16 && height >= 16 && (bpp == 16 || bpp == 32);
         const bool twok_align_cond3 = width >= 8 && height >= 8 && bpp == 64;
 
-        // if one of these conditions is true, alignement between faces is 2K
-        const uint32_t face_alignement = (twok_align_cond1 || twok_align_cond2 || twok_align_cond3) ? 2048 : 4;
-        const uint32_t face_full_size = align(texture_size, face_alignement);
+        // if one of these conditions is true, alignment between faces is 2K
+        const uint32_t face_alignment = (twok_align_cond1 || twok_align_cond2 || twok_align_cond3) ? 2048 : 4;
+        const uint32_t face_full_size = align(texture_size, face_alignment);
 
         // don't take into account what is after the end of the last texture
         texture_size = 5 * face_full_size + texture_size;

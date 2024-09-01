@@ -39,7 +39,7 @@ namespace filesystem {
  */
 enum Result {
     /**
-     * @brief An error has ocurred
+     * @brief An error has occurred
      */
     ERROR,
 

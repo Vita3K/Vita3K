@@ -438,7 +438,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             const auto num_comp = ((descriptor->attribute_info >> 22) & 3) + 1;
 
             // Force this to 4. TODO: Don't
-            // Reason is for compability between vertex and fragment. This is like an anti-crash when linking.
+            // Reason is for compatibility between vertex and fragment. This is like an anti-crash when linking.
             // Fragment will only copy what it needed.
             const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
             const auto pa_iter_size = num_comp;

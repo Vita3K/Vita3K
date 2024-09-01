@@ -57,7 +57,7 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
     // un-normalize the coordinates
     coords = b.createBinOp(spv::OpFMul, v2f32, coords, image_size);
 
-    // substract 0.5 to each coord
+    // subtract 0.5 to each coord
     const spv::Id half = b.makeFloatConstant(0.5f);
     const spv::Id v2half = b.makeCompositeConstant(v2f32, { half, half });
     coords = b.createBinOp(spv::OpFSub, v2f32, coords, v2half);

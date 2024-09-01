@@ -537,7 +537,7 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, const AnalyzeReadFuncti
 
                 // Either if the instruction has different predicate with the block,
                 // or the predicate value is being invalidated (overwritten)
-                // which means continuing is obselete. Stop now
+                // which means continuing is obsolete. Stop now
                 if (pred != current_code->condition) {
                     current_code->size = baddr - current_code->offset;
                     offset_end = baddr;

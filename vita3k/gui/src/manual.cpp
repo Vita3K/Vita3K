@@ -203,16 +203,16 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
         const std::string slider = fmt::format("{:0>2d}/{:0>2d}", current_page + 1, (int32_t)gui.manuals.size());
         if (ImGui::Button(slider.c_str(), BUTTON_SIZE))
             ImGui::OpenPopup("Manual Slider");
-        const auto POPUP_HEIGTH = 64.f * SCALE.y;
-        ImGui::SetNextWindowPos(ImVec2(0.f, display_size.y - POPUP_HEIGTH), ImGuiCond_Always);
-        ImGui::SetNextWindowSize(ImVec2(display_size.x, POPUP_HEIGTH), ImGuiCond_Always);
+        const auto POPUP_HEIGHT = 64.f * SCALE.y;
+        ImGui::SetNextWindowPos(ImVec2(0.f, display_size.y - POPUP_HEIGHT), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(display_size.x, POPUP_HEIGHT), ImGuiCond_Always);
         ImGui::SetNextWindowBgAlpha(0.7f);
         if (ImGui::BeginPopupModal("Manual Slider", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings)) {
             const auto SLIDER_WIDTH = 800.f * SCALE.x;
             ImGui::PushItemWidth(SLIDER_WIDTH);
             ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 26.f * SCALE.y);
             ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 50.f * SCALE.y);
-            ImGui::SetCursorPos(ImVec2((display_size.x / 2) - (SLIDER_WIDTH / 2.f), (POPUP_HEIGTH / 2) - (15.f * SCALE.x)));
+            ImGui::SetCursorPos(ImVec2((display_size.x / 2) - (SLIDER_WIDTH / 2.f), (POPUP_HEIGHT / 2) - (15.f * SCALE.x)));
             ImGui::SliderInt("##slider_current_manual", &current_page, 0, (int32_t)gui.manuals.size() - 1, slider.c_str());
             ImGui::PopStyleVar(2);
             ImGui::PopItemWidth();

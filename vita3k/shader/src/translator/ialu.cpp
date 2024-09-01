@@ -337,7 +337,7 @@ bool USSETranslatorVisitor::i8mad(
 }
 
 bool USSETranslatorVisitor::i8mad2() {
-    LOG_DISASM("Unimplmenet Opcode: i8mad2");
+    LOG_DISASM("Unimplemented Opcode: i8mad2");
     return true;
 }
 

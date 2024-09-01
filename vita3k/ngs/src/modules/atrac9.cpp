@@ -129,10 +129,10 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
     uint32_t frame_bytes_gotten = bufparam.bytes_count - state->current_byte_position_in_buffer;
     if (frame_bytes_gotten < superframe_size || !temp_buffer.empty()) {
         // the superframe overlaps two buffers...
-        uint32_t bytes_transfered = std::min<uint32_t>(frame_bytes_gotten, superframe_size - temp_buffer.size());
+        uint32_t bytes_transferred = std::min<uint32_t>(frame_bytes_gotten, superframe_size - temp_buffer.size());
         uint32_t old_size = temp_buffer.size();
-        temp_buffer.resize(old_size + bytes_transfered);
-        memcpy(temp_buffer.data() + old_size, input, bytes_transfered);
+        temp_buffer.resize(old_size + bytes_transferred);
+        memcpy(temp_buffer.data() + old_size, input, bytes_transferred);
 
         if (temp_buffer.size() < superframe_size) {
             // continue getting data
@@ -173,7 +173,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
 
     // if the superframe is across two buffers, I don't know how to interpret the skipped samples (which are in the middle of the frame)...
     if (temp_buffer.empty()) {
-        // remove skipped samples at the beginnning and the end of the buffer
+        // remove skipped samples at the beginning and the end of the buffer
         // in case you have more than a superframe of samples skipped (I don't know if this can happen)
         const uint32_t sample_index = (state->current_byte_position_in_buffer / superframe_size) * samples_per_superframe;
         if (bufparam.samples_discard_start_off > sample_index) {

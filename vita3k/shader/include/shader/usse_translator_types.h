@@ -90,7 +90,7 @@ struct SpirvShaderParameters {
     int viewport_ratio_id;
     int viewport_offset_id;
 
-    // when using a thread, texture or litteral buffer, if not -1, this fields contain the sa register
+    // when using a thread, texture or literal buffer, if not -1, this fields contain the sa register
     // with the matching address, this assumes of course that this address is not copied somewhere
     // else and that this register is not overwritten
     // the base field is the offset to be applied when reading this buffer (almost always -4)

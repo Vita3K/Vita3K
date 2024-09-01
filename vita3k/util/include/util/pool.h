@@ -47,7 +47,7 @@ public:
 
     // borrow returns PoolItem instance wrapping one of available resources in the pool
     // if there's no available resource, the thread will wait until resources are returned to the pool
-    // if PoolItem instance is destroyed, the corresponding resource is considerd to be returned to the pool
+    // if PoolItem instance is destroyed, the corresponding resource is considered to be returned to the pool
     PoolItem<T> borrow();
 
 private:

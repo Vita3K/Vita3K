@@ -418,7 +418,7 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
         });
 
         if (!callback_result->download) {
-            return 1; // Returning anything thats not 0 aborts the request
+            return 1; // Returning anything that's not 0 aborts the request
         }
         return 0;
     };
