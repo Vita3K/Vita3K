@@ -304,11 +304,17 @@ find_package(CURL QUIET)
 if(NOT CURL_FOUND)
 	message("System curl not found, compiling curl from source")
 	include(FetchContent)
+	option(BUILD_CURL_EXE "Set to ON to build curl executable." OFF)
+	option(CURL_DISABLE_INSTALL "Set to ON to disable installation targets" ON)
 	option(HTTP_ONLY "disables all protocols except HTTP (This overrides all CURL_DISABLE_* options)" ON)
+	option(BUILD_LIBCURL_DOCS "to build libcurl man pages" OFF)
+	option(BUILD_MISC_DOCS "to build misc man pages (e.g. curl-config and mk-ca-bundle)" OFF)
+	option(ENABLE_CURL_MANUAL "to build the man page for curl and enable its -M/--manual option" OFF)
 	if(WIN32)
 		option(CURL_USE_SCHANNEL "Enable Windows native SSL/TLS" ON)
 	endif()
 	option(CURL_CA_FALLBACK "Set ON to use built-in CA store of TLS backend. Defaults to OFF" ON)
+	set(CURL_DISABLE_TESTS ON)
 	FetchContent_Declare(curl
 		GIT_REPOSITORY https://github.com/curl/curl.git
 		GIT_TAG        fd567d4f06857f4fc8e2f64ea727b1318f76ad33 # release 8.8.0
