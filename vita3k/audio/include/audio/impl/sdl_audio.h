@@ -25,7 +25,7 @@ class SDLAudioAdapter : public AudioAdapter {
 
 public:
     SDLAudioAdapter(AudioState &audio_state);
-    ~SDLAudioAdapter();
+    ~SDLAudioAdapter() override;
 
     bool init() override;
     void switch_state(const bool pause) override;

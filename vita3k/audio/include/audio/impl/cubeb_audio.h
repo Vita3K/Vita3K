@@ -49,7 +49,7 @@ class CubebAudioAdapter : public AudioAdapter {
 
 public:
     CubebAudioAdapter(AudioState &audio_state);
-    ~CubebAudioAdapter();
+    ~CubebAudioAdapter() override;
 
     bool init() override;
     AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample) override;
