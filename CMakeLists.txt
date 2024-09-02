@@ -90,9 +90,10 @@ endmacro(b2_build)
 macro(boost_compile)
     list(TRANSFORM BOOST_MODULES_TO_FIND PREPEND --with- OUTPUT_VARIABLE b2_cmd_line_common)
     set(b2_cmd_line_common ${b2} ${b2_cmd_line_common} -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} cxxflags=${BOOST_CXX_FLAGS})
+	set(Boost_USE_DEBUG_RUNTIME "")
 	if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
 		execute_process(
-			COMMAND ${b2_cmd_line_common} address-model=64 --architecture=x64 toolset=${BOOST_TOOLSET} stage
+			COMMAND ${b2_cmd_line_common} address-model=64 --architecture=x64 toolset=${BOOST_TOOLSET} variant=debug,release stage
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
             OUTPUT_QUIET
 		)
@@ -139,7 +140,7 @@ macro(get_boost)
 		      set(BOOST_INSTALLDIR "${CMAKE_BINARY_DIR}/external/boost")      # For internal use
 		      set(BOOST_ROOT "${BOOST_SOURCEDIR}")                            # find_package(Boost ...) hint
 		      set(BOOST_INCLUDEDIR "${BOOST_SOURCEDIR}")                      # find_package(Boost ...) hint
-		      set(BOOST_LIBRARYDIR "${BOOST_INSTALLDIR}/libs")                # find_package(Boost ...) hint
+		      set(BOOST_LIBRARYDIR "${BOOST_INSTALLDIR}/lib")                # find_package(Boost ...) hint
 
 		      # Find Boost again to check for a existing compilation of the custom distribution
 		      find_package(Boost 1.81 COMPONENTS ${BOOST_MODULES_TO_FIND} PATHS ${BOOST_INSTALLDIR} QUIET NO_DEFAULT_PATH)
