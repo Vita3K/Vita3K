@@ -516,7 +516,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     auto flags = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
     if (gui.is_nav_button)
         flags |= ImGuiWindowFlags_NoMouseInputs;
-    ImGui::BeginChild("##user_child", SIZE_USER, false, flags);
+    ImGui::BeginChild("##user_child", SIZE_USER, ImGuiChildFlags_None, flags);
 
     // Draw user background
     const auto draw_user_bg = [&](const AvatarSize size, const ImVec2 origin_pos) {
@@ -737,7 +737,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             auto delete_flags = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
             if (gui.is_nav_button)
                 delete_flags |= ImGuiWindowFlags_NoMouseInputs;
-            ImGui::BeginChild("##delete_user_child", CHILD_DELETE_USER_SIZE, false, delete_flags);
+            ImGui::BeginChild("##delete_user_child", CHILD_DELETE_USER_SIZE, ImGuiChildFlags_None, delete_flags);
             ImGui::SetWindowFontScale(RES_SCALE.x);
             ImGui::Columns(2, nullptr, false);
             ImGui::SetColumnWidth(0, SMALL_AVATAR_SIZE.x + (10.f * SCALE.x));

@@ -297,7 +297,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (WINDOW_SIZE.x / 2.f) - (SIZE_LIST.x / 2.f), WINDOW_POS.y + ((settings_menu == THEME_BACKGROUND) && !menu.empty() ? 86.f : 64.f) * SCALE.y), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
-    ImGui::BeginChild("##settings_child", SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##settings_child", SIZE_LIST, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
     const auto SIZE_SELECT = 80.f * SCALE.y;
     const auto SIZE_PUPUP_SELECT = 70.f * SCALE.y;
@@ -438,7 +438,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::Begin("##delete_theme", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                         ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x / 2.f, WINDOW_SIZE.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
                         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
-                        ImGui::BeginChild("##delete_theme_popup", POPUP_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+                        ImGui::BeginChild("##delete_theme_popup", POPUP_SIZE, ImGuiChildFlags_Border, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                         ImGui::SetCursorPos(ImVec2(48.f * SCALE.x, 28.f * SCALE.y));
                         ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
                         ImGui::Image(gui.themes_preview[selected][PACKAGE], SIZE_MINI_PACKAGE);

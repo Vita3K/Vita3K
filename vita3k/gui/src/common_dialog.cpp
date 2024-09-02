@@ -130,7 +130,7 @@ static void draw_trophy_setup_dialog(DialogState &common_dialog, float FONT_SCAL
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-        ImGui::BeginChild("##preparing_app_child", WINDOW_SIZE, false, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("##preparing_app_child", WINDOW_SIZE, ImGuiChildFlags_None, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         const auto str = common_dialog.lang.trophy["preparing_start_app"].c_str();
         ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
         const auto str_size = ImGui::CalcTextSize(str);
@@ -510,7 +510,7 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
         const auto WINDOW_SIZE = ImVec2(VIEWPORT_SIZE.x, 448.f * SCALE.y);
         ImGui::SetCursorPos(WINDOW_POS);
         ImGui::SetNextWindowBgAlpha(0.f);
-        ImGui::BeginChild("##selectables", WINDOW_SIZE, false, flags);
+        ImGui::BeginChild("##selectables", WINDOW_SIZE, ImGuiChildFlags_None, flags);
         if (emuenv.common_dialog.savedata.draw_info_window)
             draw_save_info(gui, emuenv, WINDOW_SIZE, FONT_SCALE, SCALE, emuenv.common_dialog.savedata.icon_texture[emuenv.common_dialog.savedata.selected_save]);
         else {
@@ -558,7 +558,7 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
         ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f) - HALF_WINDOW_SIZE.x, VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f) - HALF_WINDOW_SIZE.y));
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 12.f * SCALE.x);
         ImGui::PushStyleColor(ImGuiCol_ChildBg, GUI_COMMON_DIALOG_BG);
-        ImGui::BeginChild("##save_data_fixed_dialog", WINDOW_SIZE, true, flags);
+        ImGui::BeginChild("##save_data_fixed_dialog", WINDOW_SIZE, ImGuiChildFlags_Border, flags);
         ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
 
         const ImVec2 ICON_POS(48 * SCALE.x, 34 * SCALE.y);

@@ -997,7 +997,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                 // TODO Multiple color support on same frame, used by eg: Asphalt: Injection
                 // TODO Correct display few line on same frame, used by eg: Asphalt: Injection
                 ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + text_pos.x, WINDOW_POS.y + text_pos.y));
-                ImGui::BeginChild(frame.id.c_str(), str_size, false, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings);
+                ImGui::BeginChild(frame.id.c_str(), str_size, ImGuiChildFlags_None, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings);
                 if (liveitem[app_path][frame.id]["text"]["word-wrap"].second != "off")
                     ImGui::PushTextWrapPos(str_wrap);
                 if (liveitem[app_path][frame.id]["text"]["word-scroll"].second == "on") {

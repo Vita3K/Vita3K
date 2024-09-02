@@ -94,7 +94,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleColor(ImGuiCol_Border, GUI_COLOR_TEXT);
     ImGui::SetNextWindowBgAlpha(0.0f);
 
-    ImGui::BeginChild("##window_box", WINDOW_SIZE, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##window_box", WINDOW_SIZE, ImGuiChildFlags_Border, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetWindowFontScale(1.3f * RES_SCALE.x);
     const auto SELECT_COLOR = ImVec4(0.23f, 0.68f, 0.95f, 0.60f);
     const auto SELECT_COLOR_HOVERED = ImVec4(0.23f, 0.68f, 0.99f, 0.80f);
@@ -109,7 +109,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         title_str = lang["select_language"];
         ImGui::SetNextWindowPos(ImVec2(198.f * SCALE.x, 126.f * SCALE.y), ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
-        ImGui::BeginChild("##lang_list", ImVec2(WINDOW_SIZE.x - (200.f * SCALE.x), WINDOW_SIZE.y - (108.f * SCALE.y)), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("##lang_list", ImVec2(WINDOW_SIZE.x - (200.f * SCALE.x), WINDOW_SIZE.y - (108.f * SCALE.y)), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings);
         ImGui::Columns(3, nullptr, false);
         ImGui::SetColumnWidth(0, 96.f * SCALE.x);
         ImGui::SetColumnWidth(1, 30.f * SCALE.x);

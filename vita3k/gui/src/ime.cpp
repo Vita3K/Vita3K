@@ -293,7 +293,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
         ImGui::SetCursorPosX(MARGE_BORDER);
         ImGui::VSliderFloat("##scroll_special", ImVec2(42.f * SCALE.x, 140.f * SCALE.y), &scroll_special["current"], scroll_special["max"], 0, "");
         ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (74.f * SCALE.x), WINDOW_POS.y));
-        ImGui::BeginChild("##special_key", ImVec2(488.f * SCALE.x, 178.f * SCALE.y), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse);
+        ImGui::BeginChild("##special_key", ImVec2(488.f * SCALE.x, 178.f * SCALE.y), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse);
         const auto scroll_value = ImGui::GetIO().MouseWheel * 20.f;
         if (ImGui::GetIO().MouseWheel == 1)
             scroll_special["current"] -= std::min(scroll_value, scroll_special["current"]);

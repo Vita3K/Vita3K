@@ -238,7 +238,7 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Begin("##app_close", &gui.vita_area.app_close, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
-    ImGui::BeginChild("##app_close_child", WINDOW_SIZE, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##app_close_child", WINDOW_SIZE, ImGuiChildFlags_Border, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
 
     const auto ICON_SIZE = ImVec2(64.f * SCALE.x, 64.f * SCALE.y);
@@ -719,7 +719,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.is_nav_button)
         child_flags |= ImGuiWindowFlags_NoMouseInputs;
     ImGui::SetNextWindowPos(emuenv.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(emuenv.viewport_pos.x, VIEWPORT_POS.y + MARGIN_HEIGHT), ImGuiCond_Always);
-    ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, child_flags);
+    ImGui::BeginChild("##apps_list", SIZE_APP_LIST, ImGuiChildFlags_None, child_flags);
 
     // Get Scroll Pos
     current_scroll_pos = ImGui::GetScrollY();

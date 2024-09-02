@@ -141,7 +141,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const ImVec2 WINDOW_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
-    ImGui::BeginChild("##manual_page", display_size, false, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##manual_page", display_size, ImGuiChildFlags_None, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoSavedSettings);
 
     // Draw manual image if exists and is valid
     if (!gui.manuals.empty() && gui.manuals[current_page])
@@ -162,7 +162,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
 
     // Set pos and begin child window for manual buttons
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
-    ImGui::BeginChild("##manual_buttons", display_size, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##manual_buttons", display_size, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     // Set window font scale for buttons
     ImGui::SetWindowFontScale(RES_SCALE.x);
