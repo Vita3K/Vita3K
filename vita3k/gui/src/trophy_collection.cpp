@@ -449,7 +449,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetWindowFontScale(1.f);
     }
     ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (90.f * SCALE.x), WINDOW_POS.y + (!trophy_id_selected.empty() || detail_np_com_id ? 16.0f : 58.f) * SCALE.y), ImGuiCond_Always);
-    ImGui::BeginChild("##trophy_collection_child", !trophy_id_selected.empty() || detail_np_com_id ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##trophy_collection_child", !trophy_id_selected.empty() || detail_np_com_id ? SIZE_INFO : SIZE_LIST, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
     // Trophy Collection
     if (np_com_id_list.empty()) {
@@ -473,7 +473,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SetNextWindowBgAlpha(0.999f);
                 ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (WINDOW_SIZE.x / 2.f) - (POPUP_SIZE.x / 2.f), WINDOW_POS.y + (WINDOW_SIZE.y / 2.f) - (POPUP_SIZE.y / 2.f)), ImGuiCond_Always);
                 ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
-                ImGui::BeginChild("##trophy_delete_child", POPUP_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+                ImGui::BeginChild("##trophy_delete_child", POPUP_SIZE, ImGuiChildFlags_Border, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                 ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
                 const ImVec2 ICON_POS(48.f * SCALE.x, 28.f * SCALE.y);
                 if (gui.trophy_np_com_id_list_icons[delete_np_com_id].contains("000")) {
