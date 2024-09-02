@@ -16,8 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <shader/usse_translator.h>
-
-#include <shader/usse_types.h>
 #include <util/log.h>
 
 bool shader::usse::USSETranslatorVisitor::illegal22() {

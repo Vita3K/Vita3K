@@ -1073,7 +1073,7 @@ spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunc
         }
     }
 
-    // For non-F32 and non-I32 type, we need to make a destination mask to extract neccessary F32 components out
+    // For non-F32 and non-I32 type, we need to make a destination mask to extract necessary F32 components out
     // For example: sa6.xz with DataType = f16
     // Would result at least sa6 and sa7 to be extracted out, since sa6 contains f16 x and y, sa7 contains f16 z and w
     Imm4 extract_mask = dest_mask;

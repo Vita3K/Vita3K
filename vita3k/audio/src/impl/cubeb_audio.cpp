@@ -117,7 +117,7 @@ AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_s
     const int nb_buffers = (latency + nb_sample - 1) / nb_sample + 1;
     port->audio_buffers.resize(nb_buffers);
     for (AudioBuffer &audio_buffer : port->audio_buffers) {
-        // initialize all of the buffers
+        // initialize all the buffers
         audio_buffer.buffer.resize(port->len_bytes);
         audio_buffer.buffer_position = 0;
     }

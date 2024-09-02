@@ -252,7 +252,7 @@ void init_ime_lang(Ime &ime, const SceImeLanguage &lang) {
         size_button = 135.f;
         size_key = 88.f;
         break;
-    };
+    }
 }
 
 static std::map<int, float> key_row_pos = { { FIRST, 11.f }, { SECOND, 69.f }, { THIRD, 127.f } };

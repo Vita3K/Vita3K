@@ -76,11 +76,11 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::BeginChild("#perf_stats", WINDOW_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushFont(gui.vita_font);
     ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
-    if (emuenv.cfg.performance_overlay_detail == PerfomanceOverleyDetail::MINIMUM)
+    if (emuenv.cfg.performance_overlay_detail == PerformanceOverlayDetail::MINIMUM)
         ImGui::Text("FPS: %d", emuenv.fps);
     else
         ImGui::Text("FPS: %d %s: %d", emuenv.fps, lang["avg"].c_str(), emuenv.avg_fps);
-    if (emuenv.cfg.performance_overlay_detail >= PerfomanceOverleyDetail::MEDIUM) {
+    if (emuenv.cfg.performance_overlay_detail >= PerformanceOverlayDetail::MEDIUM) {
         ImGui::Separator();
         ImGui::Text("%s: %d %s: %d", lang["min"].c_str(), emuenv.min_fps, lang["max"].c_str(), emuenv.max_fps);
     }
@@ -88,7 +88,7 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::EndChild();
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
-    if (emuenv.cfg.performance_overlay_detail == PerfomanceOverleyDetail::MAXIMUM) {
+    if (emuenv.cfg.performance_overlay_detail == PerformanceOverlayDetail::MAXIMUM) {
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (3.f * SCALE.y));
         ImGui::PlotLines("##fps_graphic", emuenv.fps_values, IM_ARRAYSIZE(emuenv.fps_values), emuenv.current_fps_offset, nullptr, 0.f, float(emuenv.max_fps), WINDOW_SIZE);
     }

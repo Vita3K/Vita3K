@@ -1,10 +1,8 @@
 #pragma once
 
 #include <algorithm>
-#include <atomic>
-#include <memory>
-
 #include <cassert>
+#include <memory>
 
 // Ring buffer for bytes - not multi-thread safe, bring your own locks
 class ByteRingBuffer {

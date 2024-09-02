@@ -17,13 +17,9 @@
 
 #pragma once
 
-#include <array>
-#include <cstdint>
 #include <vector>
 
-#include <mem/mempool.h>
 #include <mem/ptr.h>
-#include <ngs/common.h>
 
 struct MemState;
 

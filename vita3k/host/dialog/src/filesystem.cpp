@@ -62,7 +62,7 @@ std::string format_file_filter_extension_list(const std::vector<std::string> &fi
     }
 
     return formatted_string;
-};
+}
 
 namespace host {
 namespace dialog {
@@ -116,7 +116,7 @@ Result open_file(std::filesystem::path &resulting_path, const std::vector<FileFi
         // File filter names can be used as they are, but the pointers of the
         // file extension lists have to point to the formatted strings
         file_filters_converted.push_back({ file_filter.display_name.c_str(), file_extensions_converted.at(file_extensions_converted.size() - 1).c_str() });
-    };
+    }
 
     /* --- Then nativefiledialog can be called --- */
 
@@ -153,7 +153,7 @@ Result open_file(std::filesystem::path &resulting_path, const std::vector<FileFi
     default:
         return Result::ERROR;
     }
-};
+}
 
 Result pick_folder(std::filesystem::path &resulting_path, const std::filesystem::path &default_path) {
     // Initialize NFD
@@ -196,7 +196,7 @@ Result pick_folder(std::filesystem::path &resulting_path, const std::filesystem:
     default:
         return Result::ERROR;
     }
-};
+}
 
 std::string get_error() {
     std::string error = "";
@@ -205,7 +205,7 @@ std::string get_error() {
     error.assign(NFD::GetError());
 
     return error;
-};
+}
 
 } // namespace filesystem
 } // namespace dialog

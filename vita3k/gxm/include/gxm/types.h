@@ -415,7 +415,7 @@ enum SceGxmTextureBaseFormat : uint32_t {
 template <typename T>
 constexpr static inline uint32_t operator|(const SceGxmTextureBaseFormat a, const T b) {
     return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
-};
+}
 
 enum SceGxmTextureFormat : uint32_t {
     // Supported formats
@@ -842,7 +842,7 @@ enum SceGxmColorBaseFormat : uint32_t {
 template <typename T>
 constexpr static inline uint32_t operator|(const SceGxmColorBaseFormat a, const T b) {
     return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
-};
+}
 
 enum SceGxmColorFormat : uint32_t {
 
@@ -1057,7 +1057,7 @@ enum SceGxmDepthStencilForceLoadMode : uint32_t {
 template <typename T>
 constexpr static inline uint32_t operator|(const SceGxmDepthStencilForceLoadMode a, const T b) {
     return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
-};
+}
 
 enum SceGxmDepthStencilForceStoreMode : uint32_t {
     SCE_GXM_DEPTH_STENCIL_FORCE_STORE_DISABLED = 0x00000000u,
@@ -1067,7 +1067,7 @@ enum SceGxmDepthStencilForceStoreMode : uint32_t {
 template <typename T>
 constexpr static inline uint32_t operator|(const SceGxmDepthStencilForceStoreMode a, const T b) {
     return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
-};
+}
 
 enum SceGxmColorSurfaceDitherMode : uint32_t {
     SCE_GXM_COLOR_SURFACE_DITHER_DISABLED = 0x00000000u,

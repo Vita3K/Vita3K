@@ -100,7 +100,7 @@ public:
     bool use_sampler_cache = false;
     int anisotropic_filtering = 1;
 
-    // used to quicky get the info from a hash of a gxm_texture
+    // used to quickly get the info from a hash of a gxm_texture
     unordered_map_fast<TextureGxmDataRepr, TextureCacheInfo *> texture_lookup;
     lru::Queue<TextureCacheInfo> texture_queue;
 

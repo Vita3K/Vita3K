@@ -61,6 +61,6 @@ Address CPUProtocol::get_watch_memory_addr(Address addr) {
     return kernel->debugger.get_watch_memory_addr(addr);
 }
 
-ExclusiveMonitorPtr CPUProtocol::get_exlusive_monitor() {
+ExclusiveMonitorPtr CPUProtocol::get_exclusive_monitor() {
     return kernel->exclusive_monitor;
 }

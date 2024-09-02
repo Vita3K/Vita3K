@@ -177,4 +177,4 @@ public:
     void destroy_objects();
 };
 
-}; // namespace vkutil
+} // namespace vkutil

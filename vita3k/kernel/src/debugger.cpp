@@ -52,7 +52,7 @@ void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
     }
 }
 
-void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, const TrampolineCallback &callback) {
+void Debugger::add_trampoline(MemState &mem, uint32_t addr, bool thumb_mode, const TrampolineCallback &callback) {
     const auto swap_inst = [](uint32_t inst) {
         return (inst << 16) | ((inst >> 16) & 0xFFFF);
     };

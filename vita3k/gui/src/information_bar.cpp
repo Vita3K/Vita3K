@@ -645,7 +645,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
         battery_size /= 100.f;
     }
 
-    // Set battery color depending on battery level: red for levels below or egale 25% and green for levels above this threshold.
+    // Set battery color depending on battery level: red for levels less than or equal to 25% and green for levels above this threshold.
     const ImU32 BATTERY_COLOR = (res >= 0) && (res <= 25) ? IM_COL32(225.f, 50.f, 50.f, 255.f) : IM_COL32(90.f, 200.f, 30.f, 255.f);
 
     // Draw battery level

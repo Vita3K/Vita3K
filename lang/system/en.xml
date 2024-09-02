@@ -713,7 +713,7 @@ Some applications don't use this and get default confirmation button.</enter_but
 			<medium>Medium</medium>
 			<maximum>Maximum</maximum>
 			<detail>Detail</detail>
-			<select_detail>Select your preferred perfomance overlay detail.</select_detail>
+			<select_detail>Select your preferred performance overlay detail.</select_detail>
 			<top_left>Top Left</top_left>
 			<top_center>Top Center</top_center>
 			<top_right>Top Right</top_right>
@@ -721,7 +721,7 @@ Some applications don't use this and get default confirmation button.</enter_but
 			<bottom_center>Bottom Center</bottom_center>
 			<bottom_right>Bottom Right</bottom_right>
 			<position>Position</position>
-			<select_position>Select your preferred perfomance overlay position.</select_position>
+			<select_position>Select your preferred performance overlay position.</select_position>
 			<case_insensitive>Check to enable case-insensitive path finding on case sensitive filesystems.
 RESETS ON RESTART</case_insensitive>
 			<case_insensitive_description>Allows emulator to attempt searching for files regardless of case

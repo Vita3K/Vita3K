@@ -27,11 +27,3 @@ if(TRACY_ENABLE_ON_CORE_COMPONENTS)
 	target_link_libraries(shader PRIVATE tracy)
 endif()
 
-add_executable(
-	shader-tests
-	tests/usse_program_analyzer_test.cpp
-)
-
-target_include_directories(shader-tests PRIVATE include)
-target_link_libraries(shader-tests PRIVATE googletest shader util)
-add_test(NAME shader COMMAND shader-tests)

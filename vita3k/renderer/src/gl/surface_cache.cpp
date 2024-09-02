@@ -112,7 +112,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         // There are four situations I think of:
         // 1. Different base address, lookup for write, in this case, if the cached surface range contains the given address, then
         // probably this cached surface has already been freed GPU-wise. So erase.
-        // 2. Same base address, but width and height change to be larger, or format change if write. Remake a new one for both read and write sitatation.
+        // 2. Same base address, but width and height change to be larger, or format change if write. Remake a new one for both read and write situation.
         // 3. Out of cache range. In write case, create a new one, in read case, lul
         // 4. Read situation with smaller width and height, probably need to extract the needed region out.
         const bool addr_in_range_of_cache = ((key + total_surface_size) <= (ite->first + info.total_bytes));
@@ -449,7 +449,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     }
 
     if (color_surface_textures.contains(key)) {
-        LOG_WARN_ONCE("Two different surfaces have the same base adress, this is not handled, an openGL error will happen.");
+        LOG_WARN_ONCE("Two different surfaces have the same base address, this is not handled, an openGL error will happen.");
     }
     color_surface_textures.emplace(key, std::move(info_added));
 

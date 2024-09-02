@@ -19,10 +19,10 @@
 #include <gxm/types.h>
 #include <shader/gxp_parser.h>
 #include <shader/usse_program_analyzer.h>
+#include <shader/usse_types.h>
 
 #include <cassert>
-
-#include <shader/usse_types.h>
+#include <queue>
 
 namespace shader::usse {
 bool is_kill(const std::uint64_t inst) {
@@ -537,7 +537,7 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, const AnalyzeReadFuncti
 
                 // Either if the instruction has different predicate with the block,
                 // or the predicate value is being invalidated (overwritten)
-                // which means continuing is obselete. Stop now
+                // which means continuing is obsolete. Stop now
                 if (pred != current_code->condition) {
                     current_code->size = baddr - current_code->offset;
                     offset_end = baddr;

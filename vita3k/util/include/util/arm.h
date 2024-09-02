@@ -15,9 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <cstdint>
-
 #pragma once
+
+#include <cstdint>
 
 #define INSTRUCTION_UNKNOWN 0 ///< Unknown/unsupported instruction
 #define INSTRUCTION_MOVW 1 ///< MOVW Rd, \#imm instruction

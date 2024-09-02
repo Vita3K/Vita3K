@@ -169,7 +169,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
         // There are four situations I think of:
         // 1. Different base address, lookup for write, in this case, if the cached surface range contains the given address, then
         // probably this cached surface has already been freed GPU-wise. So erase.
-        // 2. Same base address, but width and height change to be larger, or format change if write. Remake a new one for both read and write sitatation.
+        // 2. Same base address, but width and height change to be larger, or format change if write. Remake a new one for both read and write situation.
         // 3. Out of cache range. In write case, create a new one, in read case, lul
         // 4. Read situation with smaller width and height, probably need to extract the needed region out.
         // 5. the surface is a gbuffer and we are currently trying to read the 2nd component, in this case key == ite->first + 4
@@ -280,7 +280,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
 
     // we only support surface sync of linear surfaces for now
     if (!can_mprotect_mapped_memory) {
-        // peform surface sync on everything
+        // perform surface sync on everything
         // it is slow but well... we can't mprotect the buffer
         *info_added.need_surface_sync = color->surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR;
     } else if (color->surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR && format_support_surface_sync(base_format)) {
@@ -1133,7 +1133,7 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
     }
 
     if (state.res_multiplier != 1.0f) {
-        // scale bacl the image using a blit command first
+        // scale back the image using a blit command first
 
         if (!last_written_surface->blit_image)
             last_written_surface->blit_image = std::make_unique<vkutil::Image>();
@@ -1406,4 +1406,4 @@ std::vector<uint32_t> VKSurfaceCache::dump_frame(Ptr<const void> address, uint32
     return frame;
 }
 
-}; // namespace renderer::vulkan
+} // namespace renderer::vulkan

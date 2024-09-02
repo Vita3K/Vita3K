@@ -342,7 +342,7 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                         auto &lang_settings = lang.settings.language;
                         set_lang_string(lang.settings.language.main, language);
 
-                        // Input Languague
+                        // Input Language
                         const auto input_language = language.child("input_language");
                         if (!input_language.empty()) {
                             // Main

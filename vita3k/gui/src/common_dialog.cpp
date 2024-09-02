@@ -146,9 +146,9 @@ static void draw_trophy_setup_dialog(DialogState &common_dialog, float FONT_SCAL
     }
 }
 
-static std::string get_save_date_time(SceSystemParamDateFormat date_fromat, const SceDateTime &date_time) {
+static std::string get_save_date_time(SceSystemParamDateFormat date_format, const SceDateTime &date_time) {
     std::string date_str;
-    switch (date_fromat) {
+    switch (date_format) {
     case SCE_SYSTEM_PARAM_DATE_FORMAT_YYYYMMDD:
         date_str = fmt::format("{}/{}/{}", date_time.year, date_time.month, date_time.day);
         break;
@@ -615,12 +615,12 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.f * SCALE.x);
             const auto BUTTON_SIZE_HEIGHT = 46.f * SCALE.y;
             const ImVec2 buttons_size(320.f * SCALE.x, BUTTON_SIZE_HEIGHT);
-            const auto boutton_height_pos = WINDOW_SIZE.y - BUTTON_SIZE_HEIGHT - (22 * SCALE.y);
-            const auto boutton_width_pos = HALF_WINDOW_SIZE.x - (emuenv.common_dialog.savedata.btn_num == 2 ? (buttons_size.x + (20.f * SCALE.x)) : (buttons_size.x / 2.f));
+            const auto button_height_pos = WINDOW_SIZE.y - BUTTON_SIZE_HEIGHT - (22 * SCALE.y);
+            const auto button_width_pos = HALF_WINDOW_SIZE.x - (emuenv.common_dialog.savedata.btn_num == 2 ? (buttons_size.x + (20.f * SCALE.x)) : (buttons_size.x / 2.f));
             ImGui::BeginGroup();
             for (int i = 0; i < emuenv.common_dialog.savedata.btn_num; i++) {
                 ImGui::PushID(i);
-                const ImVec2 button_id_pos(boutton_width_pos + (i * (buttons_size.x + (40.f * SCALE.x))), boutton_height_pos);
+                const ImVec2 button_id_pos(button_width_pos + (i * (buttons_size.x + (40.f * SCALE.x))), button_height_pos);
                 ImGui::SetCursorPos(button_id_pos);
                 if (ImGui::Button(emuenv.common_dialog.savedata.btn[i].c_str(), buttons_size)) {
                     emuenv.common_dialog.savedata.button_id = emuenv.common_dialog.savedata.btn_val[i];

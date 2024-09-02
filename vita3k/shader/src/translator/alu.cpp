@@ -131,7 +131,7 @@ bool USSETranslatorVisitor::vmad(
 
     set_repeat_multiplier(2, 2, 2, 4);
 
-    // Write mask is a 4-bit immidiate
+    // Write mask is a 4-bit immediate
     // If a bit is one, a swizzle is active
     BEGIN_REPEAT(repeat_count)
     GET_REPEAT(inst, repeat_mode);
@@ -195,7 +195,7 @@ bool USSETranslatorVisitor::vmad2(
 
     const DataType inst_dt = (dat_fmt) ? DataType::F16 : DataType::F32;
 
-    // Decode mandantory info first
+    // Decode mandatory info first
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, false, true, 7, m_second_program);
     inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, false, true, 7, m_second_program);
     inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, true, 7, m_second_program);
@@ -1675,7 +1675,7 @@ bool USSETranslatorVisitor::vdual(
     };
 
     // Each instruction might have a different source layout or write mask depending on how the instruction works.
-    // Let's store insturction information in a map so it's easy for each instruction to be loaded.
+    // Let's store instruction information in a map so it's easy for each instruction to be loaded.
     struct DualOpInfo {
         uint8_t src_count;
         bool vector_load;

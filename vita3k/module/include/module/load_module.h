@@ -15,10 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#pragma once
+
 #include <emuenv/state.h>
 #include <kernel/types.h>
 
 #include <array>
+#include <map>
 #include <vector>
 
 static constexpr auto SYSMODULE_COUNT = 0x56;

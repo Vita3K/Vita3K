@@ -379,7 +379,7 @@ std::string get_web_regex_result(const std::string &url, const std::regex &regex
 
 uint64_t get_current_time_ms() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-};
+}
 
 static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream) {
     size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
@@ -418,7 +418,7 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
         });
 
         if (!callback_result->download) {
-            return 1; // Returning anything thats not 0 aborts the request
+            return 1; // Returning anything that's not 0 aborts the request
         }
         return 0;
     };

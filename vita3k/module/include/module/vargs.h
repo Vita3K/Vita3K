@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <cstdint>
-
 #include "args_layout.h"
 #include "lay_out_args.h"
 #include "read_arg.h"

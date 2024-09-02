@@ -25,6 +25,7 @@
 #include <mem/ptr.h>
 
 #include <dynarmic/frontend/A32/a32_ir_emitter.h>
+#include <dynarmic/interface/A32/coprocessor.h>
 
 class ArmDynarmicCP15 : public Dynarmic::A32::Coprocessor {
     uint32_t tpidruro;

@@ -261,7 +261,7 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
         produced_samples = size / sizeof(std::int16_t) / source_channels;
     }
 
-    // Try to resample if neccessary
+    // Try to resample if necessary
     SwrContext *swr = (source_channels == 2) ? swr_stereo : swr_mono_to_stereo;
 
     const int dest_count = swr_get_out_samples(swr, produced_samples);

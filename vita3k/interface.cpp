@@ -26,7 +26,6 @@
 #include <display/state.h>
 #include <gui/functions.h>
 #include <gxm/state.h>
-#include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>

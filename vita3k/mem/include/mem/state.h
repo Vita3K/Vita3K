@@ -18,9 +18,9 @@
 #pragma once
 
 #include <mem/allocator.h>
+#include <mem/functions.h>
 #include <mem/util.h>
 
-#include <array>
 #include <map>
 #include <mutex>
 

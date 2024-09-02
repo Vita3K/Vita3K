@@ -90,7 +90,7 @@ struct GXMStreamInfo {
     size_t size = 0;
 };
 
-// We seperate the following two parts of the stencil state because the first is part of the pipeline creation
+// We separate the following two parts of the stencil state because the first is part of the pipeline creation
 // while the second is dynamic
 struct GxmStencilStateOp {
     SceGxmStencilFunc func = SCE_GXM_STENCIL_FUNC_ALWAYS;

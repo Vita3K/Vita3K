@@ -23,10 +23,8 @@
 
 #include "lay_out_args.h"
 #include "read_arg.h"
-#include "vargs.h"
 #include "write_return_value.h"
 
-#include <config/functions.h>
 #include <config/state.h>
 #include <emuenv/state.h>
 
