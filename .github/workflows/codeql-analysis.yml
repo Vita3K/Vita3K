@@ -49,9 +49,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up SDL 2.30.5 (ubuntu-latest)
+      - name: Set up SDL 2.30.7 (ubuntu-latest)
         run: |
-          SDL2VER=2.30.5
+          SDL2VER=2.30.7
           if [[ ! -e ~/.ccache ]]; then
             mkdir ~/.ccache
           fi  
