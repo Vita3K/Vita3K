@@ -340,11 +340,6 @@ IMGUI_API ImGui_GLState *ImGui_ImplSdlGL3_Init(renderer::State *renderer, SDL_Wi
 }
 
 void ImGui_ImplSdlGL3_Shutdown(ImGui_GLState &state) {
-    // Destroy SDL mouse cursors
-    for (auto &mouse_cursor : state.mouse_cursors)
-        SDL_FreeCursor(mouse_cursor);
-    memset(state.mouse_cursors, 0, sizeof(state.mouse_cursors));
-
     // Destroy OpenGL objects
     ImGui_ImplSdlGL3_InvalidateDeviceObjects(state);
 }

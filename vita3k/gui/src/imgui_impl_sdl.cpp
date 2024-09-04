@@ -123,6 +123,11 @@ IMGUI_API void ImGui_ImplSdl_Shutdown(ImGui_State *state) {
     default:
         LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
     }
+
+    // Destroy SDL mouse cursors
+    for (auto &mouse_cursor : state->mouse_cursors)
+        SDL_FreeCursor(mouse_cursor);
+    memset(state->mouse_cursors, 0, sizeof(state->mouse_cursors));
 }
 IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     ImGuiIO &io = ImGui::GetIO();
