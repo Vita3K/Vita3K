@@ -438,7 +438,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::Begin("##delete_theme", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                         ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x / 2.f, WINDOW_SIZE.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
                         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
-                        ImGui::BeginChild("##delete_theme_popup", POPUP_SIZE, ImGuiChildFlags_Border, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+                        ImGui::BeginChild("##delete_theme_popup", POPUP_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                         ImGui::SetCursorPos(ImVec2(48.f * SCALE.x, 28.f * SCALE.y));
                         ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
                         ImGui::Image(gui.themes_preview[selected][PACKAGE], SIZE_MINI_PACKAGE);

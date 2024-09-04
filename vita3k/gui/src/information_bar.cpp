@@ -396,7 +396,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, notice_info.empty() ? 0.f : 8.0f * SCALE.x);
         ImGui::SetNextWindowPos(POPUP_POS, ImGuiCond_Always);
-        ImGui::BeginChild("##notice_info_child", POPUP_SIZE, ImGuiChildFlags_Border, ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("##notice_info_child", POPUP_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoSavedSettings);
         auto &lang = gui.lang.indicator;
         if (notice_info.empty()) {
             ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);

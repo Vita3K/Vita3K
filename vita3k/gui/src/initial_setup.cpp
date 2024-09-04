@@ -94,7 +94,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleColor(ImGuiCol_Border, GUI_COLOR_TEXT);
     ImGui::SetNextWindowBgAlpha(0.0f);
 
-    ImGui::BeginChild("##window_box", WINDOW_SIZE, ImGuiChildFlags_Border, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##window_box", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetWindowFontScale(1.3f * RES_SCALE.x);
     const auto SELECT_COLOR = ImVec4(0.23f, 0.68f, 0.95f, 0.60f);
     const auto SELECT_COLOR_HOVERED = ImVec4(0.23f, 0.68f, 0.99f, 0.80f);
