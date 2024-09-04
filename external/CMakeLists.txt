@@ -259,25 +259,24 @@ target_include_directories(vma INTERFACE
 
 add_subdirectory(ffmpeg)
 
-if(APPLE)
- 	execute_process(
- 		COMMAND brew --prefix openssl
- 		RESULT_VARIABLE BREW_RESULT
- 		OUTPUT_VARIABLE BREW_OPENSSL
- 		OUTPUT_STRIP_TRAILING_WHITESPACE
- 	)
- 	if(BREW_RESULT EQUAL 0)
- 		set(OPENSSL_ROOT_DIR "${BREW_OPENSSL}")
+if(APPLE OR NOT FORCE_BUILD_OPENSSL_MAC)
+	execute_process(
+		COMMAND brew --prefix openssl
+		RESULT_VARIABLE BREW_RESULT
+		OUTPUT_VARIABLE BREW_OPENSSL
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+	if(BREW_RESULT EQUAL 0)
+		set(OPENSSL_ROOT_DIR "${BREW_OPENSSL}")
 		set(OPENSSL_USE_STATIC_LIBS TRUE)
- 	else()
-		message(FATAL_ERROR "Cannot locate OpenSSL directory\nPlease run: brew install openssl")
 	endif()
 endif()
 
+if(NOT FORCE_BUILD_OPENSSL_MAC)
+	find_package(OpenSSL QUIET)
+endif()
 
-
-find_package(OpenSSL QUIET)
-if(NOT OPENSSL_FOUND)
+if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 	if(MSVC)
 		message("OpenSSL not found, using prebuilt version")
 
@@ -294,8 +293,44 @@ if(NOT OPENSSL_FOUND)
 		endif()
 
 		set(OPENSSL_ROOT_DIR "${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64")
-	endif()
+	elseif(APPLE)
+		message(STATUS "OpenSSL not found.")
+		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.tar.gz")
+			message(STATUS "Downloading OpenSSL@3 from source...")
+			file(DOWNLOAD https://github.com/openssl/openssl/releases/download/openssl-3.3.2/openssl-3.3.2.tar.gz
+				"${CMAKE_BINARY_DIR}/external/openssl.tar.gz" SHOW_PROGRESS)
+		endif()
 
+		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl")
+			file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
+			execute_process(COMMAND tar xfp "${CMAKE_BINARY_DIR}/external/openssl.tar.gz" -C openssl --strip-components=1
+				WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external")
+		endif()
+
+		if (NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/libssl.a" OR NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/libcrypto.a")
+			message(STATUS "Building OpenSSL@3...")
+			if (ARCHITECTURE STREQUAL "x86_64" OR ARCHITECTURE STREQUAL "arm64")
+				execute_process(COMMAND perl Configure darwin64-${ARCHITECTURE} -mmacosx-version-min=11 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
+				execute_process(COMMAND make -j${CPU_COUNT} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl" OUTPUT_QUIET)
+			else()
+				if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/arm64")
+					file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/arm64")
+					execute_process(COMMAND perl ../Configure darwin64-arm64 -mmacosx-version-min=11 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/arm64")
+					execute_process(COMMAND make -j${CPU_COUNT} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/arm64" OUTPUT_QUIET)	
+				endif()
+				if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/x86_64")
+					file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/x86_64")
+					execute_process(COMMAND perl ../Configure darwin64-x86_64 -mmacosx-version-min=11 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/x86_64")
+					execute_process(COMMAND make -j${CPU_COUNT} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/x86_64" OUTPUT_QUIET)
+				endif()
+				execute_process(COMMAND lipo -create arm64/libssl.a x86_64/libssl.a -output libssl.a WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
+				execute_process(COMMAND lipo -create arm64/libcrypto.a x86_64/libcrypto.a -output libcrypto.a WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
+			endif()
+		endif()
+
+		set(OPENSSL_ROOT_DIR "${CMAKE_BINARY_DIR}/external/openssl")
+		set(OPENSSL_USE_STATIC_LIBS TRUE)
+	endif()
 	find_package(OpenSSL REQUIRED)
 endif()
 

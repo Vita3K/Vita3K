@@ -14,6 +14,8 @@ option(USE_DISCORD_RICH_PRESENCE "Build Vita3K with Discord Rich Presence" ON)
 option(USE_VITA3K_UPDATE "Build Vita3K with updater." ON)
 option(BUILD_APPIMAGE "Build an AppImage." OFF)
 
+option(FORCE_BUILD_OPENSSL_MAC OFF)
+
 if("${CMAKE_CXX_COMPILER_LAUNCHER}" STREQUAL "")
     find_program(CCACHE_PROGRAM ccache)
     if(CCACHE_PROGRAM)
