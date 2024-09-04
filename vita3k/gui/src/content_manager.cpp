@@ -381,7 +381,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetNextWindowBgAlpha(0.999f);
             ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (WINDOW_SIZE.x / 2.f) - (POPUP_SIZE.x / 2), WINDOW_POS.y + (WINDOW_SIZE.y / 2.f) - (POPUP_SIZE.y / 2)), ImGuiCond_Always);
             ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
-            ImGui::BeginChild("##app_delete_child", POPUP_SIZE, ImGuiChildFlags_Border, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+            ImGui::BeginChild("##app_delete_child", POPUP_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
             ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2(52.f * SCALE.x, 80.f * SCALE.y));

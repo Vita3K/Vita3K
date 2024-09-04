@@ -558,7 +558,7 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
         ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f) - HALF_WINDOW_SIZE.x, VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f) - HALF_WINDOW_SIZE.y));
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 12.f * SCALE.x);
         ImGui::PushStyleColor(ImGuiCol_ChildBg, GUI_COMMON_DIALOG_BG);
-        ImGui::BeginChild("##save_data_fixed_dialog", WINDOW_SIZE, ImGuiChildFlags_Border, flags);
+        ImGui::BeginChild("##save_data_fixed_dialog", WINDOW_SIZE, ImGuiChildFlags_Borders, flags);
         ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
 
         const ImVec2 ICON_POS(48 * SCALE.x, 34 * SCALE.y);

@@ -26,11 +26,11 @@
 #include <SDL_syswm.h>
 #include <SDL_vulkan.h>
 
-static const char *ImGui_ImplSdl_GetClipboardText(void *) {
+static const char *ImGui_ImplSdl_GetClipboardText(ImGuiContext *) {
     return SDL_GetClipboardText();
 }
 
-static void ImGui_ImplSdl_SetClipboardText(void *, const char *text) {
+static void ImGui_ImplSdl_SetClipboardText(ImGuiContext *, const char *text) {
     SDL_SetClipboardText(text);
 }
 
@@ -78,9 +78,11 @@ IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window 
     io.KeyMap[ImGuiKey_Y] = SDL_SCANCODE_Y;
     io.KeyMap[ImGuiKey_Z] = SDL_SCANCODE_Z;
 
-    io.SetClipboardTextFn = ImGui_ImplSdl_SetClipboardText;
-    io.GetClipboardTextFn = ImGui_ImplSdl_GetClipboardText;
-    io.ClipboardUserData = NULL;
+    ImGuiPlatformIO &platform_io = ImGui::GetPlatformIO();
+    platform_io.Platform_SetClipboardTextFn = ImGui_ImplSdl_SetClipboardText;
+    platform_io.Platform_GetClipboardTextFn = ImGui_ImplSdl_GetClipboardText;
+    platform_io.Platform_ClipboardUserData = nullptr;
+    platform_io.Platform_SetImeDataFn = nullptr;
 
     state->mouse_cursors[ImGuiMouseCursor_Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
     state->mouse_cursors[ImGuiMouseCursor_TextInput] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
@@ -89,6 +91,8 @@ IMGUI_API ImGui_State *ImGui_ImplSdl_Init(renderer::State *renderer, SDL_Window 
     state->mouse_cursors[ImGuiMouseCursor_ResizeEW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
     state->mouse_cursors[ImGuiMouseCursor_ResizeNESW] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
     state->mouse_cursors[ImGuiMouseCursor_ResizeNWSE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+    state->mouse_cursors[ImGuiMouseCursor_Hand] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+    state->mouse_cursors[ImGuiMouseCursor_NotAllowed] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
 
     // TODO: is this needed/useful ?
     // Set platform dependent data in viewport
