@@ -239,7 +239,17 @@ target_include_directories(CLI11 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/cli11")
 add_library(vulkan INTERFACE)
 target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Vulkan-Headers/include")
 if(APPLE)
-	target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK")
+	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar")
+		message(STATUS "Downloading MoltenVK...")
+		file(DOWNLOAD https://github.com/KhronosGroup/MoltenVK/releases/download/v1.2.9/MoltenVK-macos.tar
+			"${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" SHOW_PROGRESS)
+	endif()
+	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK")
+		execute_process(COMMAND tar xf "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" --strip-components=1 MoltenVK/MoltenVK 
+			WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external")
+	endif()
+	target_include_directories(vulkan INTERFACE "${CMAKE_BINARY_DIR}/external/MoltenVK/include")
+	set(MOLTENVK_DYLIB "${CMAKE_BINARY_DIR}/external/MoltenVK/dylib/macOS/libMoltenVK.dylib" PARENT_SCOPE)
 endif()
 
 add_library(vma INTERFACE)

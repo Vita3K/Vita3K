@@ -32,7 +32,7 @@
 #include <SDL_vulkan.h>
 
 #ifdef __APPLE__
-#include <mvk_config.h>
+#include <MoltenVK/mvk_vulkan.h>
 #include <vulkan/vulkan_beta.h>
 #endif
 
@@ -212,6 +212,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             VK_KHR_DEVICE_GROUP_CREATION_EXTENSION_NAME,
 #ifdef __APPLE__
             VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+            VK_EXT_LAYER_SETTINGS_EXTENSION_NAME,
 #endif
         };
         for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties()) {
@@ -249,9 +250,32 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                 LOG_INFO("Disabling Vulkan validation layers (may improve performance but provides limited error messages)");
         }
 
+#ifdef __APPLE__
+        const VkBool32 full_image_swizzle = VK_TRUE;
+#ifndef NDEBUG
+        const VkBool32 debug = VK_TRUE;
+        const int32_t log_level = 4;
+#endif
+        vk::LayerSettingEXT layer_settings[] = {
+            { kMVKMoltenVKDriverLayerName, "MVK_CONFIG_FULL_IMAGE_VIEW_SWIZZLE", vk::LayerSettingTypeEXT::eBool32, 1,
+                &full_image_swizzle },
+#ifndef NDEBUG
+            { kMVKMoltenVKDriverLayerName, "MVK_CONFIG_DEBUG", vk::LayerSettingTypeEXT::eBool32, 1, &debug },
+            { kMVKMoltenVKDriverLayerName, "MVK_CONFIG_LOG_LEVEL", vk::LayerSettingTypeEXT::eInt32, 1, &log_level },
+#endif
+        };
+
+        vk::LayerSettingsCreateInfoEXT layer_settings_info = {
+            .pNext = nullptr,
+            .settingCount = static_cast<uint32_t>(std::size(layer_settings)),
+            .pSettings = layer_settings,
+        };
+#endif
+
         vk::InstanceCreateInfo instance_info{
 #ifdef __APPLE__
             .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
+            .pNext = &layer_settings_info,
 #endif
             .pApplicationInfo = &app_info,
         };
@@ -272,33 +296,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             debug_messenger = instance.createDebugUtilsMessengerEXT(debug_info);
         }
     }
-
-#ifdef __APPLE__
-    {
-        // Enable full swizzle on MoltenVK
-        // Get the MoltenVK specific function
-        bool applied_full_swizzle = false;
-        void *libMoltenVK = dlopen("libMoltenVK.dylib", RTLD_LAZY);
-        auto _vkGetMoltenVKConfigurationMVK = reinterpret_cast<PFN_vkGetMoltenVKConfigurationMVK>(dlsym(libMoltenVK, "vkGetMoltenVKConfigurationMVK"));
-        auto _vkSetMoltenVKConfigurationMVK = reinterpret_cast<PFN_vkSetMoltenVKConfigurationMVK>(dlsym(libMoltenVK, "vkSetMoltenVKConfigurationMVK"));
-        if (_vkGetMoltenVKConfigurationMVK != nullptr && _vkSetMoltenVKConfigurationMVK != nullptr) {
-            MVKConfiguration config;
-            size_t config_size = sizeof(config);
-            auto err = _vkGetMoltenVKConfigurationMVK(VK_NULL_HANDLE, &config, &config_size);
-            // An incomplete error is fine too
-            if (err == VK_SUCCESS || err == VK_INCOMPLETE) {
-                // full swizzle is needed by Vita3K and the GUI
-                config.fullImageViewSwizzle = VK_TRUE;
-                err = _vkSetMoltenVKConfigurationMVK(VK_NULL_HANDLE, &config, &config_size);
-                applied_full_swizzle = (err == VK_SUCCESS || err == VK_INCOMPLETE);
-            }
-        }
-        if (applied_full_swizzle)
-            LOG_INFO("MoltenVK full swizzle enabled");
-        else
-            LOG_INFO("Failed to apply MoltenVK full swizzle");
-    }
-#endif
 
     // Create Surface
     if (!screen_renderer.create(window))
