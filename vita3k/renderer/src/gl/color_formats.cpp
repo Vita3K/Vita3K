@@ -101,6 +101,9 @@ static const GLint *translate_swizzle(SceGxmColorSwizzle1Mode mode) {
 // Translate popular color base format that can be bit-casted for purposes
 GLenum translate_internal_format(SceGxmColorBaseFormat base_format) {
     switch (base_format) {
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8:
+        return GL_RGB8;
+
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
         return GL_RGBA8;
 
@@ -150,6 +153,7 @@ GLenum translate_format(SceGxmColorBaseFormat base_format) {
         return GL_RG;
 
     case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8:
         return GL_RGB;
 
     case SCE_GXM_COLOR_BASE_FORMAT_F16:
@@ -164,6 +168,7 @@ GLenum translate_type(SceGxmColorBaseFormat base_format) {
     switch (base_format) {
     case SCE_GXM_COLOR_BASE_FORMAT_U8:
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8:
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
         return GL_UNSIGNED_BYTE;
 
@@ -204,6 +209,7 @@ const GLint *translate_swizzle(SceGxmColorFormat fmt) {
 
     case SCE_GXM_COLOR_BASE_FORMAT_SE5M9M9M9:
     case SCE_GXM_COLOR_BASE_FORMAT_U5U6U5:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8:
     case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
         return translate_swizzle(static_cast<SceGxmColorSwizzle3Mode>(swizzle));
 
@@ -233,6 +239,8 @@ size_t bytes_per_pixel_in_gl_storage(SceGxmColorBaseFormat base_format) {
     case SCE_GXM_COLOR_BASE_FORMAT_F16:
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8:
         return 2;
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8:
+        return 3;
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
