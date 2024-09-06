@@ -34,6 +34,8 @@ union DecoderSize {
     struct {
         uint32_t width;
         uint32_t height;
+        uint32_t pitch_width;
+        uint32_t pitch_height;
     };
     struct {
         uint32_t samples;
@@ -120,6 +122,9 @@ struct H264DecoderState : public DecoderState {
 };
 
 struct MjpegDecoderState : public DecoderState {
+    uint32_t mcu_width;
+    uint32_t mcu_height;
+
     DecoderColorSpace color_space_out;
 
     bool send(const uint8_t *data, uint32_t size) override;
