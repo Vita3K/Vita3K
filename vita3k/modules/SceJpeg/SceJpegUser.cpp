@@ -144,10 +144,10 @@ EXPORT(int, sceJpegDecodeMJpeg, const unsigned char *pJpeg, SceSize isize, uint8
     state->decoder->send(pJpeg, isize);
     state->decoder->receive(temporary.data(), &size);
 
-    convert_yuv_to_rgb(temporary.data(), pRGBA, size.width, size.height, state->decoder->get_color_space());
+    convert_yuv_to_rgb(temporary.data(), pRGBA, size.pitch_width, size.pitch_height, state->decoder->get_color_space());
 
-    // Top 16 bits = width, bottom 16 bits = height.
-    return (size.width << 16u) | size.height;
+    // Top 16 bits = pitch_width, bottom 16 bits = pitch_height.
+    return (size.pitch_width << 16u) | size.pitch_height;
 }
 
 EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *pJpeg, SceSize isize,
@@ -164,8 +164,8 @@ EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *pJpeg, SceSize isize,
     state->decoder->send(pJpeg, isize);
     state->decoder->receive(pYCbCr, &size);
 
-    // Top 16 bits = width, bottom 16 bits = height.
-    return (size.width << 16u) | size.height;
+    // Top 16 bits = pitch_width, bottom 16 bits = pitch_height.
+    return (size.pitch_width << 16u) | size.pitch_height;
 }
 
 EXPORT(int, sceJpegDeleteSplitDecoder) {
@@ -205,39 +205,39 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *pJpeg, SceSize isize,
     output->height = size.height;
     output->color_space = convert_color_space_decoder_to_jpeg(state->decoder->get_color_space());
     output->pitch[0] = {
-        .x = size.width,
-        .y = size.height
+        .x = size.pitch_width,
+        .y = size.pitch_height
     };
     // Should be 0 most of the time but I believe it causes more problems
     // for it to be 0 when it shouldn't than the opposite
     output->coef_buffer_size = 0x100;
     if (format == SCE_JPEG_PIXEL_RGBA8888) {
-        output->output_size = size.width * size.height * 4;
+        output->output_size = size.pitch_width * size.pitch_height * 4;
         // put something greater than 0
         output->temp_buffer_size = 0x100;
     } else {
         switch (output->color_space) {
         case SCE_JPEG_COLORSPACE_GRAYSCALE:
-            output->output_size = size.width * size.height;
+            output->output_size = size.pitch_width * size.pitch_height;
             break;
         case SCE_JPEG_COLORSPACE_YUV444:
-            output->output_size = size.width * size.height * 3;
+            output->output_size = size.pitch_width * size.pitch_height * 3;
             output->pitch[1] = output->pitch[0];
             output->pitch[2] = output->pitch[0];
             break;
         case SCE_JPEG_COLORSPACE_YUV422:
-            output->output_size = size.width * size.height * 2;
+            output->output_size = size.pitch_width * size.pitch_height * 2;
             output->pitch[1] = {
-                .x = size.width / 2,
-                .y = size.height
+                .x = size.pitch_width / 2,
+                .y = size.pitch_height
             };
             output->pitch[2] = output->pitch[1];
             break;
         case SCE_JPEG_COLORSPACE_YUV420:
-            output->output_size = size.width * size.height * 3 / 2;
+            output->output_size = size.pitch_width * size.pitch_height * 3 / 2;
             output->pitch[1] = {
-                .x = size.width / 2,
-                .y = size.height / 2
+                .x = size.pitch_width / 2,
+                .y = size.pitch_height / 2
             };
             output->pitch[2] = output->pitch[1];
             break;
