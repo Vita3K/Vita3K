@@ -5,6 +5,9 @@ project(Vita3K)
 include(ProcessorCount)
 ProcessorCount(CPU_COUNT)
 
+# Define the Architecture variable, right now it should only contain "x86_64" or "arm64"
+include("external/dynarmic/CMakeModules/DetectArchitecture.cmake")
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -101,7 +104,7 @@ macro(boost_compile)
 		)
 	elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 		execute_process(
-			COMMAND ${b2_cmd_line_common} stage
+			COMMAND ${b2_cmd_line_common} architecture=${BOOST_ARCHITECTURE} cxxflags="-mmacosx-version-min=11.0" stage
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
             OUTPUT_QUIET
 		)
@@ -171,6 +174,15 @@ macro(get_boost)
 		              elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		                  set(BOOST_TOOLSET "gcc")
 		              endif()
+				  elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+					  set(BOOST_TOOLSET "clang-darwin")
+					  if (ARCHITECTURE STREQUAL "x86_64")
+						  set(BOOST_ARCHITECTURE "x86")
+					  elseif (ARCHITECTURE STREQUAL "arm64")
+						  set(BOOST_ARCHITECTURE "arm")
+					  else()
+						  set(BOOST_ARCHITECTURE "arm+x86")
+					  endif()  
 		          endif()
 
 		          # Determine b2 executable name depending on host system
