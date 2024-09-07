@@ -48,6 +48,12 @@
 #include <SDL_video.h>
 #include <SDL_vulkan.h>
 
+#ifdef WIN32
+#pragma comment(lib, "Dwmapi")
+#include <SDL_syswm.h>
+#include <dwmapi.h>
+#endif
+
 namespace app {
 void update_viewport(EmuEnvState &state) {
     int w = 0;
@@ -326,6 +332,15 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         LOG_ERROR("SDL failed to create window!");
         return false;
     }
+
+#ifdef WIN32
+    // Disable round corners for the game window
+    SDL_SysWMinfo wm_info;
+    SDL_VERSION(&wm_info.version);
+    SDL_GetWindowWMInfo(state.window.get(), &wm_info);
+    const auto window_preference = DWMWCP_DONOTROUND;
+    DwmSetWindowAttribute(wm_info.info.win.window, DWMWA_WINDOW_CORNER_PREFERENCE, &window_preference, sizeof(window_preference));
+#endif
 
     // initialize the renderer first because we need to know if we need a page table
     if (!state.cfg.console) {
