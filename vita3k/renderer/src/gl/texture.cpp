@@ -81,9 +81,6 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
 
     apply_sampler_state(gxm_texture, texture_bind_type, anisotropic_filtering);
 
-    const GLenum internal_format = translate_internal_format(base_format);
-    const GLenum format = translate_format(base_format);
-    const GLenum type = translate_type(base_format);
     const auto texture_type = gxm_texture.texture_type();
     const auto base_fmt = gxm::get_base_format(fmt);
 
@@ -93,6 +90,10 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     uint32_t mip_index = 0;
 
     bool compressed = gxm::is_bcn_format(base_fmt);
+
+    const GLenum internal_format = translate_internal_format(base_format);
+    const GLenum format = translate_format(base_format);
+    const GLenum type = compressed ? 0 : translate_type(base_format);
 
     // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
     GLenum upload_type = GL_TEXTURE_2D;
