@@ -191,7 +191,7 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
 
     constexpr uint16_t SCE_GXM_MAX_SCENES_PER_RENDERTARGET = 8;
     // hopefully this will always be enough
-    const uint16_t samples_per_frame = std::min<uint16_t>(params.scenesPerFrame + 2, SCE_GXM_MAX_SCENES_PER_RENDERTARGET);
+    const uint16_t samples_per_frame = std::min<uint16_t>(params.scenesPerFrame + 3, SCE_GXM_MAX_SCENES_PER_RENDERTARGET);
 
     // the maximum number of fence we will ever need simultaneously is samples_per_frame * MAX_FRAMES_RENDERING
     fences.resize(samples_per_frame * MAX_FRAMES_RENDERING);
