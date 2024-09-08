@@ -150,16 +150,11 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &z
             gui::GenericDialogState status = gui::UNK_STATE;
 
             while (handle_events(emuenv, *gui) && (status == gui::UNK_STATE)) {
-                ImGui_ImplSdl_NewFrame(gui->imgui_state.get());
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                gui::draw_begin(*gui, emuenv);
                 gui::draw_ui(*gui, emuenv);
-                ImGui::PushFont(gui->vita_font);
                 gui::draw_reinstall_dialog(&status, *gui, emuenv);
-                ImGui::PopFont();
-                glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
-                ImGui::Render();
-                ImGui_ImplSdl_RenderDrawData(gui->imgui_state.get());
-                SDL_GL_SwapWindow(emuenv.window.get());
+                gui::draw_end(*gui);
+                emuenv.renderer->swap_window(emuenv.window.get());
             }
             switch (status) {
             case gui::CANCEL_STATE:

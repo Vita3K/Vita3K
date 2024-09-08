@@ -111,7 +111,7 @@ void update_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string 
 void save_notice_list(EmuEnvState &emuenv);
 
 void draw_begin(GuiState &gui, EmuEnvState &emuenv);
-void draw_end(GuiState &emuenv);
+void draw_end(GuiState &gui);
 void draw_vita_area(GuiState &gui, EmuEnvState &emuenv);
 void draw_ui(GuiState &gui, EmuEnvState &emuenv);
 
