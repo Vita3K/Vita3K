@@ -400,7 +400,8 @@ Vuoi davvero continuare?</user_delete_warn>
 	<vita3k_update name="Aggiornamento del Vita3K">
  		<new_version_available>È disponibile una nuova versione del Vita3K.</new_version_available>
 		<back>Indietro</back>
- 		<cancel_update>Vuoi annullare l'aggiornamento?</cancel_update>
+ 		<cancel_update_resume>Vuoi annullare l'aggiornamento?
+Se lo annulli, al prossimo aggiornamento Vita3K ricomincerà il download da questo punto.</cancel_update_resume>
 		<downloading>Download in corso...
 Al termine del download, Vita3K si riavvierà automaticamente e quindi installerà il nuovo aggiornamento.</downloading>
 		<not_complete_update>Impossibile completare l'aggiornamento.</not_complete_update>

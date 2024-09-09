@@ -874,7 +874,8 @@
 	<vita3k_update name="Vita3K更新">
  		<new_version_available>發現新版的Vita3K。</new_version_available>
 		<back>返回</back>
- 		<cancel_update>確定要取消更新嗎？</cancel_update>
+ 		<cancel_update_resume>確定要取消更新嗎？
+選擇取消後，下次會從中斷處開始下載。</cancel_update_resume>
 		<downloading>下載中…
 下載完成后，Vita3K會自動重新啟動，並安裝新的更新。</downloading>
 		<not_complete_update>無法更新。</not_complete_update>

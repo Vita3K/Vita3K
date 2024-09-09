@@ -380,7 +380,8 @@ Er du sikker på, at du ønsker at fortsætte.</user_delete_warn>
 	<vita3k_update name="Vita3K-opdatering">
  		<new_version_available>En ny version af Vita3K er tilgængelig.</new_version_available>
 		<back>Tilbage</back>
- 		<cancel_update>Ønsker du at afbryde opdateringen?</cancel_update>
+		<cancel_update_resume>Ønsker du at afbryde opdateringen?
+Hvis du afbryder, vil Vita3K starte download fra dette punkt, næste gang du opdaterer.</cancel_update_resume>
 		<downloading>Downloader...
 Efter download er udført, vil Vita3K automatisk genstarte og derefter installere den nye opdateringen.</downloading>
 		<not_complete_update>Kunne ikke udføre opdateringen.</not_complete_update>

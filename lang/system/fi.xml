@@ -380,7 +380,8 @@ Oletko varma, että haluat jatkaa?</user_delete_warn>
 	<vita3k_update name="Vita3K-päivitys">
  		<new_version_available>Vita3K on saatavissa uusi versio.</new_version_available>
 		<back>Takaisin</back>
- 		<cancel_update>Haluatko peruuttaa päivityksen?</cancel_update>
+ 		<cancel_update_resume>Haluatko peruuttaa päivityksen?
+Jos peruutat, seuraavalla päivityskerralla Vita3K aloittaa lataamisen tästä kohdasta.</cancel_update_resume>
 		<downloading>Ladataan...
 Kun lataus on valmis, Vita3K käynnistyy automaattisesti uudelleen ja asentaa sitten uuden päivityksen.</downloading>
 		<not_complete_update>Päivityksen suoritus ei onnistunut.</not_complete_update>

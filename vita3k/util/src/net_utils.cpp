@@ -393,29 +393,43 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
     if (!curl_download)
         return false;
 
-    CurlDownloadCallback curl_callback = +[](void *user_data, long bytes_total, long downloaded_bytes) {
+    CurlDownloadCallback curl_callback = +[](void *user_data, long total_bytes, long downloaded_bytes) {
         const auto data = (CallbackData *)user_data;
 
-        if (bytes_total == 0)
-            return 0; // Ignore if we dont have the total yet
+        if ((total_bytes == 0) || (downloaded_bytes == 0))
+            return 0; // Ignore if we dont have the total yet or if we haven't downloaded anything
 
         if (!data->second)
             return 0;
-        const auto progress_percent = static_cast<float>(downloaded_bytes) / static_cast<float>(bytes_total) * 100.0f;
 
-        const auto elapsed_time_ms = std::difftime(get_current_time_ms(), data->first);
+        // Calculate progress percentage
+        const auto total_bytes_downloaded = static_cast<double>(downloaded_bytes + data->first.bytes_already_downloaded);
+        const auto file_size = total_bytes + data->first.bytes_already_downloaded;
+        const auto progress_percent = static_cast<float>(total_bytes_downloaded) / static_cast<float>(file_size) * 100.0f;
+
+        // Calculate elapsed time
+        const auto current_time = get_current_time_ms();
+        const auto elapsed_time_ms = std::difftime(current_time, data->first.time);
 
         // Calculate remaining time in seconds
-        const auto remaining_bytes = static_cast<double>(bytes_total - downloaded_bytes);
+        const auto remaining_bytes = static_cast<double>(total_bytes - downloaded_bytes);
         const auto remaining_time = static_cast<uint64_t>((remaining_bytes / downloaded_bytes) * elapsed_time_ms) / 1000;
 
         ProgressState *callback_result = data->second(progress_percent, remaining_time);
 
         std::unique_lock<std::mutex> lock(callback_result->mutex);
 
+        // Store the current pause state
+        const auto pause = callback_result->pause;
+
+        // Wait until the pause state becomes false (unpaused)
         callback_result->cv.wait(lock, [&]() {
             return !callback_result->pause;
         });
+
+        // When coming out of pause, add the time spent to the start time to keep the time consistent
+        if (pause)
+            data->first.time += std::difftime(get_current_time_ms(), current_time);
 
         if (!callback_result->download) {
             return 1; // Returning anything that's not 0 aborts the request
@@ -423,17 +437,19 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
         return 0;
     };
 
-    auto start_time = get_current_time_ms();
-    auto callbackData = CallbackData(start_time, progress_callback);
+    const auto start_time = get_current_time_ms();
+    const uint64_t bytes_already_downloaded = fs::exists(output_file_path) ? fs::file_size(output_file_path) : 0;
+    const auto callbackData = CallbackData({ start_time, bytes_already_downloaded }, progress_callback);
 
     curl_easy_setopt(curl_download, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl_download, CURLOPT_WRITEFUNCTION, write_data);
     curl_easy_setopt(curl_download, CURLOPT_NOPROGRESS, false); // Enable progress function
+    curl_easy_setopt(curl_download, CURLOPT_RESUME_FROM_LARGE, bytes_already_downloaded);
     curl_easy_setopt(curl_download, CURLOPT_XFERINFODATA, &callbackData);
     curl_easy_setopt(curl_download, CURLOPT_XFERINFOFUNCTION, curl_callback);
     curl_easy_setopt(curl_download, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
 
-    auto fp = fopen(output_file_path.c_str(), "wb");
+    auto fp = fopen(output_file_path.c_str(), "ab");
     if (!fp) {
         LOG_CRITICAL("Could not fopen file {}", output_file_path);
         curl_easy_cleanup(curl_download);
@@ -449,11 +465,6 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
     curl_easy_cleanup(curl_download);
     if (progress_callback)
         progress_callback(0, 0);
-
-    if (res != CURLE_OK) {
-        if (fs::exists(output_file_path))
-            fs::remove(output_file_path);
-    }
 
     if (res == CURLE_ABORTED_BY_CALLBACK)
         LOG_CRITICAL("Aborted update by user");
