@@ -30,85 +30,11 @@ extern "C" {
 
 #include <cassert>
 
-namespace {
-
-struct JpegInfo {
-    int mcu_width;
-    int mcu_height;
-    int width;
-    int height;
-};
-
-struct ChannelInfo {
-    uint32_t width_divisor;
-    uint32_t height_divisor;
-    uint32_t offset;
-};
-
-JpegInfo parse_jpeg_header(const uint8_t *data, uint32_t size) {
-    // JPEG marker codes
-    const uint8_t MARKER_SOI = 0xD8;
-    const uint8_t MARKER_EOI = 0xD9;
-    const uint8_t MARKER_SOS = 0xDA;
-    const uint8_t MARKER_SOF0 = 0xC0;
-
-    JpegInfo info = { 0 };
-
-    if (size < 2 || data[0] != 0xFF || data[1] != MARKER_SOI) {
-        return info;
-    }
-
-    uint32_t offset = 2;
-    while (offset < size - 1) {
-        if (data[offset] != 0xFF) {
-            offset++;
-            continue;
-        }
-
-        uint8_t marker = data[offset + 1];
-        offset += 2;
-
-        if (marker == MARKER_EOI || marker == MARKER_SOS) {
-            break;
-        }
-
-        if (marker == MARKER_SOF0) {
-            if (offset + 8 > size)
-                break;
-
-            info.height = (data[offset + 3] << 8) | data[offset + 4];
-            info.width = (data[offset + 5] << 8) | data[offset + 6];
-            int components = data[offset + 7];
-
-            int max_h_factor = 0, max_v_factor = 0;
-            for (int i = 0; i < components; i++) {
-                int h_factor = (data[offset + 8 + i * 3 + 1] >> 4) & 0xF;
-                int v_factor = data[offset + 8 + i * 3 + 1] & 0xF;
-                max_h_factor = (h_factor > max_h_factor) ? h_factor : max_h_factor;
-                max_v_factor = (v_factor > max_v_factor) ? v_factor : max_v_factor;
-            }
-
-            info.mcu_width = max_h_factor * 8;
-            info.mcu_height = max_v_factor * 8;
-
-            break;
-        }
-
-        if (offset + 2 > size)
-            break;
-        uint16_t segment_length = (data[offset] << 8) | data[offset + 1];
-        offset += segment_length;
-    }
-
-    return info;
-}
-
-} // anonymous namespace
-
-void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height, const DecoderColorSpace color_space) {
+void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t frame_width, const DecoderColorSpace color_space, const bool is_bgra, MJpegPitch pitch[4]) {
     AVPixelFormat format = AV_PIX_FMT_YUVJ444P;
     int strides_divisor = 1;
     int slice_position = 8;
+    int width = pitch[0].x, height = pitch[0].y;
 
     switch (color_space) {
     case COLORSPACE_YUV444P:
@@ -126,21 +52,24 @@ void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint3
         strides_divisor = 2;
         slice_position = 5; // 1.25
         break;
+    default:
+        LOG_WARN("An attempt was made to use an unsupported color space.");
+        return;
     }
 
-    SwsContext *context = sws_getContext(width, height, format, width, height, AV_PIX_FMT_RGBA, SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND, nullptr, nullptr, nullptr);
+    SwsContext *context = sws_getContext(width, height, format, width, height, is_bgra ? AV_PIX_FMT_BGRA : AV_PIX_FMT_RGBA, SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND, nullptr, nullptr, nullptr);
     assert(context);
 
     const uint8_t *slices[] = {
         &yuv[0], // Y Slice
-        &yuv[width * height], // U Slice
-        &yuv[width * height * slice_position / 4], // V Slice
+        &yuv[pitch[0].x * pitch[0].y], // U Slice
+        &yuv[pitch[0].x * pitch[0].y + pitch[1].x * pitch[1].y], // V Slice
     };
 
     int strides[] = {
-        static_cast<int>(width),
-        static_cast<int>(width) / strides_divisor,
-        static_cast<int>(width) / strides_divisor,
+        static_cast<int>(pitch[0].x),
+        static_cast<int>(pitch[1].x),
+        static_cast<int>(pitch[2].x),
     };
 
     uint8_t *dst_slices[] = {
@@ -148,7 +77,7 @@ void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint3
     };
 
     const int dst_strides[] = {
-        static_cast<int>(width * 4),
+        static_cast<int>(frame_width * 4),
     };
 
     int error = sws_scale(context, slices, strides, 0, height, dst_slices, dst_strides);
@@ -156,7 +85,7 @@ void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint3
     sws_freeContext(context);
 }
 
-void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const DecoderColorSpace color_space, int32_t inPitch) {
+void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const DecoderColorSpace color_space, int32_t in_pitch) {
     AVPixelFormat format = AV_PIX_FMT_NONE;
     int strides_divisor = 1;
     int slice_position = 8;
@@ -177,6 +106,9 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
         strides_divisor = 2;
         slice_position = 5; // 1.25
         break;
+    default:
+        LOG_WARN("An attempt was made to use an unsupported color space.");
+        return;
     }
 
     SwsContext *context = sws_getContext(width, height, AV_PIX_FMT_RGBA, width, height, format,
@@ -188,7 +120,7 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
     };
 
     int strides[] = {
-        inPitch * 4,
+        static_cast<int>(in_pitch * 4),
     };
 
     uint8_t *dst_slices[] = {
@@ -208,6 +140,49 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
     assert(error == height);
 }
 
+AVPixelFormat colorspace_to_av_pixel_format(DecoderColorSpace color_space) {
+    switch (color_space) {
+    case COLORSPACE_YUV444P:
+        return AV_PIX_FMT_YUVJ444P;
+    case COLORSPACE_YUV440P:
+        return AV_PIX_FMT_YUVJ440P;
+    case COLORSPACE_YUV441P:
+        // Do not use AV_PIX_FMT_YUVJ441P, as it is not supported by the mjpeg2jpeg bitstream filter
+        LOG_WARN("YUV441 is currently not supported.");
+        return AV_PIX_FMT_NONE;
+    case COLORSPACE_YUV422P:
+        return AV_PIX_FMT_YUVJ422P;
+    case COLORSPACE_YUV420P:
+        return AV_PIX_FMT_YUVJ420P;
+    case COLORSPACE_YUV411P:
+        return AV_PIX_FMT_YUVJ411P;
+    case COLORSPACE_GRAYSCALE:
+        return AV_PIX_FMT_GRAY8;
+    default:
+        return AV_PIX_FMT_NONE;
+    }
+}
+
+DecoderColorSpace av_pixel_format_to_colorspace(AVPixelFormat format) {
+    switch (format) {
+    case AV_PIX_FMT_YUVJ444P:
+        return COLORSPACE_YUV444P;
+    case AV_PIX_FMT_YUVJ440P:
+        // FFmpeg incorrectly recognizes YUV441P as YUV440P. Please keep this in mind if you encounter any related errors.
+        return COLORSPACE_YUV440P;
+    case AV_PIX_FMT_YUVJ422P:
+        return COLORSPACE_YUV422P;
+    case AV_PIX_FMT_YUVJ420P:
+        return COLORSPACE_YUV420P;
+    case AV_PIX_FMT_YUVJ411P:
+        return COLORSPACE_YUV411P;
+    case AV_PIX_FMT_GRAY8:
+        return COLORSPACE_GRAYSCALE;
+    default:
+        return COLORSPACE_UNKNOWN;
+    }
+}
+
 int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint32_t height, uint32_t max_size, const DecoderColorSpace color_space, int32_t compress_ratio) {
     AVPixelFormat format = AV_PIX_FMT_YUV444P;
 
@@ -217,17 +192,7 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
     AVCodecContext *context = avcodec_alloc_context3(codec);
     assert(context);
 
-    switch (color_space) {
-    case COLORSPACE_YUV444P:
-        format = AV_PIX_FMT_YUVJ444P;
-        break;
-    case COLORSPACE_YUV422P:
-        format = AV_PIX_FMT_YUVJ422P;
-        break;
-    case COLORSPACE_YUV420P:
-        format = AV_PIX_FMT_YUVJ420P;
-        break;
-    }
+    format = colorspace_to_av_pixel_format(color_space);
 
     context->width = width;
     context->height = height;
@@ -312,6 +277,80 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
     return size;
 }
 
+void calculate_pitch_info(uint32_t width, uint32_t height, int downscale_ratio, DecoderColorSpace color_space, bool use_standard_decoder, MJpegPitch output_pitch[4]) {
+    // If the downscale_ratio is 0 (unknown), does not additionally calculate the downscaled_pitch.
+    auto calculate_downscaled_pitch = [&](uint32_t w, uint32_t h, int alignX, int alignY) {
+        return MJpegPitch{
+            align(w / downscale_ratio, alignX),
+            align(h / downscale_ratio, alignY)
+        };
+    };
+
+    MJpegPitch basic_pitch = { width, height };
+    int chroma_w_div = 1, chroma_h_div = 1;
+    int block_w_size = 1, block_h_size = 1;
+
+    switch (color_space) {
+    case COLORSPACE_GRAYSCALE:
+        block_w_size = 8;
+        block_h_size = 8;
+        break;
+    case COLORSPACE_YUV411P:
+        block_w_size = 32;
+        block_h_size = 8;
+        chroma_w_div = 4;
+        break;
+    case COLORSPACE_YUV420P:
+        block_w_size = 16;
+        block_h_size = 16;
+        chroma_w_div = chroma_h_div = 2;
+        break;
+    case COLORSPACE_YUV422P:
+        block_w_size = 16;
+        block_h_size = 8;
+        chroma_w_div = 2;
+        break;
+    case COLORSPACE_YUV440P:
+        block_w_size = 8;
+        block_h_size = 16;
+        chroma_h_div = 2;
+        break;
+    case COLORSPACE_YUV441P:
+        block_w_size = 8;
+        block_h_size = 32;
+        chroma_h_div = 4;
+        break;
+    case COLORSPACE_YUV444P:
+        block_w_size = 8;
+        block_h_size = 8;
+        break;
+    default:
+        LOG_WARN("An attempt was made to use an unsupported color space.");
+        break;
+    }
+
+    if (downscale_ratio) {
+        basic_pitch = calculate_downscaled_pitch(align(width, block_w_size), align(height, block_h_size), block_w_size, use_standard_decoder ? 8 : 1);
+    }
+
+    output_pitch[0] = basic_pitch;
+    output_pitch[1] = output_pitch[2] = output_pitch[3] = { 0, 0 };
+    if (color_space != COLORSPACE_GRAYSCALE) {
+        output_pitch[1] = output_pitch[2] = { basic_pitch.x / chroma_w_div, basic_pitch.y / chroma_h_div };
+    }
+
+    if (use_standard_decoder && (color_space == COLORSPACE_YUV420P || color_space == COLORSPACE_YUV422P)) {
+        output_pitch[1].x = output_pitch[2].x = align(output_pitch[1].x, 16);
+    }
+}
+
+void MjpegDecoderState::configure(void *options) {
+    auto *opt = static_cast<MJpegDecoderOptions *>(options);
+
+    use_standard_decoder = opt->use_standard_decoder;
+    downscale_ratio = opt->downscale_ratio;
+}
+
 bool MjpegDecoderState::send(const uint8_t *data, uint32_t size) {
     std::vector<uint8_t> jpeg_buffer(size + AV_INPUT_BUFFER_PADDING_SIZE);
     std::memcpy(jpeg_buffer.data(), data, size);
@@ -327,11 +366,6 @@ bool MjpegDecoderState::send(const uint8_t *data, uint32_t size) {
         return false;
     }
 
-    // Parse JPEG header to get MCU size
-    JpegInfo jpeg_info = parse_jpeg_header(data, size);
-    this->mcu_height = jpeg_info.mcu_height;
-    this->mcu_width = jpeg_info.mcu_width;
-
     return true;
 }
 
@@ -344,76 +378,140 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
         return false;
     }
 
-    if (mcu_width == 0 || mcu_height == 0) {
-        LOG_WARN_ONCE("Mjpeg MCU size is not set. Falling back to 8x8.");
-        mcu_width = mcu_height = 8;
+    this->color_space_out = av_pixel_format_to_colorspace(static_cast<AVPixelFormat>(frame->format));
+    if (this->color_space_out == COLORSPACE_UNKNOWN) {
+        LOG_WARN("Mjpeg frame is in unimplemented format {}.", frame->format);
+        av_frame_free(&frame);
+        return false;
     }
 
-    // Calculate MCU-aligned dimensions
-    uint32_t aligned_width = align(frame->width, mcu_width);
-    uint32_t aligned_height = align(frame->height, mcu_height);
+    int original_width = frame->width;
+    int original_height = frame->height;
 
-    if (frame->width != aligned_width || frame->height != aligned_height) {
-        LOG_INFO_ONCE("Mjpeg frame dimensions are not MCU-aligned. MCU size: {}x{}, frame size: {}x{} -> aligned size: {}x{}.",
-            mcu_width, mcu_height, frame->width, frame->height, aligned_width, aligned_height);
-    }
+    calculate_pitch_info(frame->width, frame->height, this->downscale_ratio, this->color_space_out, this->use_standard_decoder, this->pitch);
 
     if (data) {
-        ChannelInfo channel_info[3];
-        uint32_t total_pixel_count = aligned_width * aligned_height;
+        MJpegPitch original_pitch[4];
+        calculate_pitch_info(original_width, original_height, 1, this->color_space_out, this->use_standard_decoder, original_pitch);
 
-        switch (frame->format) {
-        case AV_PIX_FMT_YUVJ444P:
+        std::vector<uint8_t> original_buffer;
+        uint8_t *original_data;
+
+        if (this->downscale_ratio != 1) {
+            int original_size = 0;
             for (int i = 0; i < 3; i++) {
-                channel_info[i] = { 1, 1, total_pixel_count * i };
+                original_size += original_pitch[i].x * original_pitch[i].y;
             }
-            this->color_space_out = COLORSPACE_YUV444P;
-            break;
-        case AV_PIX_FMT_YUVJ422P:
-            channel_info[0] = { 1, 1, 0 };
-            channel_info[1] = { 2, 1, total_pixel_count };
-            channel_info[2] = { 2, 1, total_pixel_count * 3 / 2 };
-            this->color_space_out = COLORSPACE_YUV422P;
-            break;
-        case AV_PIX_FMT_YUVJ420P:
-            channel_info[0] = { 1, 1, 0 };
-            channel_info[1] = { 2, 2, total_pixel_count };
-            channel_info[2] = { 2, 2, total_pixel_count * 5 / 4 };
-            this->color_space_out = COLORSPACE_YUV420P;
-            break;
-        default:
-            LOG_WARN("Mjpeg frame is in unimplemented format {}.", frame->format);
-            av_frame_free(&frame);
-            return false;
+            original_buffer.resize(original_size);
+            original_data = original_buffer.data();
+        } else {
+            original_data = data;
         }
 
-        for (int a = 0; a < 3; a++) {
-            uint32_t component_width = aligned_width / channel_info[a].width_divisor;
-            uint32_t component_height = aligned_height / channel_info[a].height_divisor;
-            uint32_t frame_component_width = frame->width / channel_info[a].width_divisor;
-            uint32_t frame_component_height = frame->height / channel_info[a].height_divisor;
+        // Implement YUV image align to pitch
+        for (int plane = 0; plane < 3; plane++) {
+            if (!frame->data[plane])
+                continue;
 
-            for (uint32_t y = 0; y < component_height; y++) {
-                uint8_t *dst = &data[channel_info[a].offset + y * component_width];
-                const uint8_t *src = frame->data[a] + (y < frame_component_height ? y * frame->linesize[a] : (frame_component_height - 1) * frame->linesize[a]);
+            int src_width = frame->width;
+            int src_height = frame->height;
 
-                if (y < frame_component_height) {
-                    std::memcpy(dst, src, frame_component_width);
-                    // Pad the rest with the last pixel value
-                    std::memset(dst + frame_component_width, dst[frame_component_width - 1], component_width - frame_component_width);
-                } else {
-                    // Copy the last row for padding
-                    std::memcpy(dst, dst - component_width, component_width);
+            if (plane > 0) {
+                switch (color_space_out) {
+                case COLORSPACE_YUV444P:
+                    break;
+                case COLORSPACE_YUV440P:
+                    src_height /= 2;
+                    break;
+                case COLORSPACE_YUV441P:
+                    src_height /= 4;
+                    break;
+                case COLORSPACE_YUV422P:
+                    src_width /= 2;
+                    break;
+                case COLORSPACE_YUV420P:
+                    src_width /= 2;
+                    src_height /= 2;
+                    break;
+                case COLORSPACE_YUV411P:
+                    src_width /= 4;
+                    break;
+                case COLORSPACE_GRAYSCALE:
+                    break;
+                default:
+                    LOG_WARN("An attempt was made to use an unsupported color space.");
+                    return false;
                 }
+            }
+
+            for (int y = 0; y < src_height; y++) {
+                const uint8_t *src_row = frame->data[plane] + y * frame->linesize[plane];
+                uint8_t *dst_row = original_data + y * original_pitch[plane].x;
+
+                // Copy actual pixel data
+                std::memcpy(dst_row, src_row, src_width);
+
+                // Fill the rest with the last pixel value
+                uint8_t last_pixel = src_row[src_width - 1];
+                std::fill(dst_row + src_width, dst_row + original_pitch[plane].x, last_pixel);
+            }
+
+            // Fill remaining rows with the last row
+            const uint8_t *last_row = original_data + (src_height - 1) * original_pitch[plane].x;
+            for (int y = src_height; y < original_pitch[plane].y; y++) {
+                uint8_t *dst_row = original_data + y * original_pitch[plane].x;
+                std::memcpy(dst_row, last_row, original_pitch[plane].x);
+            }
+
+            // Move to the next plane
+            original_data += original_pitch[plane].x * original_pitch[plane].y;
+        }
+
+        if (this->downscale_ratio != 1) {
+            // The image downscaling on PS Vita is not based on width and height scaling, but rather on pitch size.
+            // When attempting to emulate this using sws_scale, the code complexity increases significantly. Therefore, the implementation has been simplified.
+
+            original_data = original_buffer.data();
+
+            for (int plane = 0; plane < 3; plane++) {
+                if (!frame->data[plane])
+                    continue;
+
+                int src_width = original_pitch[plane].x;
+                int src_height = original_pitch[plane].y;
+                int dst_width = this->pitch[plane].x;
+                int dst_height = this->pitch[plane].y;
+
+                for (int y = 0; y < dst_height; y++) {
+                    for (int x = 0; x < dst_width; x++) {
+                        int sum = 0;
+                        int count = 0;
+                        int src_y_start = y * this->downscale_ratio;
+                        int src_y_end = std::min(src_y_start + this->downscale_ratio, src_height);
+                        int src_x_start = x * this->downscale_ratio;
+                        int src_x_end = std::min(src_x_start + this->downscale_ratio, src_width);
+
+                        for (int sy = src_y_start; sy < src_y_end; sy++) {
+                            for (int sx = src_x_start; sx < src_x_end; sx++) {
+                                sum += original_data[sy * original_pitch[plane].x + sx];
+                                count++;
+                            }
+                        }
+
+                        if (count > 0) {
+                            data[y * this->pitch[plane].x + x] = sum / count;
+                        }
+                    }
+                }
+                data += this->pitch[plane].x * this->pitch[plane].y;
+                original_data += original_pitch[plane].x * original_pitch[plane].y;
             }
         }
     }
 
     if (size) {
-        size->width = frame->width;
-        size->height = frame->height;
-        size->pitch_width = aligned_width;
-        size->pitch_height = aligned_height;
+        size->width = original_width;
+        size->height = original_height;
     }
 
     av_frame_free(&frame);
@@ -423,6 +521,12 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
 
 DecoderColorSpace MjpegDecoderState::get_color_space() {
     return this->color_space_out;
+}
+
+void MjpegDecoderState::get_pitch_info(MJpegPitch pitch[4]) {
+    for (int i = 0; i < 4; i++) {
+        pitch[i] = this->pitch[i];
+    }
 }
 
 MjpegDecoderState::MjpegDecoderState() {
