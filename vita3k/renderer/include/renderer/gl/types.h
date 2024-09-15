@@ -47,6 +47,7 @@ inline bool operator==(const ExcludedUniform &lhs, const ExcludedUniform &rhs) {
 }
 
 typedef std::map<Sha256Hash, SharedGLObject> ShaderCache;
+typedef std::tuple<Sha256Hash, Sha256Hash> ProgramHashes;
 typedef std::map<ProgramHashes, SharedGLObject> ProgramCache;
 typedef std::vector<ExcludedUniform> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
 typedef std::map<GLuint, GLenum> UniformTypes;

@@ -19,7 +19,7 @@
 
 #include <config/state.h>
 #include <gui/functions.h>
-#include <io/device.h>
+#include <io/VitaIoDevice.h>
 #include <io/state.h>
 #include <util/safe_time.h>
 #include <util/string_utils.h>

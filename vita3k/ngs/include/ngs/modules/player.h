@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <codec/state.h>
 #include <ngs/system.h>
 #include <ngs/types.h>
 

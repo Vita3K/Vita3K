@@ -25,7 +25,6 @@
 #include <renderer/vulkan/surface_cache.h>
 #include <renderer/vulkan/types.h>
 
-typedef void *ImTextureID;
 struct Config;
 
 namespace renderer::vulkan {

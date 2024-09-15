@@ -7,7 +7,7 @@ add_library(
 )
 
 target_include_directories(module PUBLIC include)
-target_link_libraries(module PUBLIC config cpu emuenv dlmalloc kernel printf util)
+target_link_libraries(module PUBLIC config cpu emuenv kernel util)
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)
 	target_link_libraries(module PUBLIC tracy)
 endif()

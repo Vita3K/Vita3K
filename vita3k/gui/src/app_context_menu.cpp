@@ -19,6 +19,7 @@
 
 #include <config/state.h>
 #include <config/version.h>
+#include <dialog/state.h>
 #include <gui/functions.h>
 #include <include/cpu.h>
 #include <include/environment.h>

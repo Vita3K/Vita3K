@@ -17,11 +17,8 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
-#include <memory>
-
-struct CPUState;
-struct MemState;
 
 typedef uint32_t Address;
 typedef std::function<bool(Address, bool)> ProtectCallback;

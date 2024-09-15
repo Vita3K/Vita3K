@@ -19,10 +19,11 @@
 
 #include <config/functions.h>
 #include <config/state.h>
+#include <dialog/state.h>
 #include <gui/functions.h>
 #include <host/dialog/filesystem.hpp>
 #include <ime/functions.h>
-#include <io/device.h>
+#include <io/VitaIoDevice.h>
 #include <io/state.h>
 #include <lang/functions.h>
 #include <numeric>

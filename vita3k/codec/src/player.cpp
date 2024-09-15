@@ -26,7 +26,6 @@ extern "C" {
 }
 
 #include <cassert>
-#include <chrono>
 
 uint64_t PlayerState::get_framerate_microseconds() {
     AVRational rational = format->streams[video_stream_id]->avg_frame_rate;

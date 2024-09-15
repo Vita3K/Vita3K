@@ -19,13 +19,12 @@
 #include <mem/state.h>
 
 #include <util/align.h>
-#include <util/float_to_half.h>
 #include <util/log.h>
 
 #include <algorithm>
 #include <cassert>
-#include <cmath>
 #include <cstring>
+#include <mutex>
 #include <utility>
 
 #ifdef WIN32

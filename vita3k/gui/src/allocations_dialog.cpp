@@ -17,7 +17,6 @@
 
 #include "private.h"
 
-#include <cpu/functions.h>
 #include <util/vector_utils.h>
 
 #include <imgui_memory_editor.h>

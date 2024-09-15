@@ -18,7 +18,6 @@
 #include "vkutil/vkutil.h"
 
 #include "util/fs.h"
-#include "util/log.h"
 
 namespace vkutil {
 

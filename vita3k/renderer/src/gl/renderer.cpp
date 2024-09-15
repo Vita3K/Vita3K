@@ -38,7 +38,8 @@
 #include <SDL_video.h>
 
 #include <array>
-#include <sstream>
+#include <mutex>
+#include <string_view>
 
 namespace renderer::gl {
 

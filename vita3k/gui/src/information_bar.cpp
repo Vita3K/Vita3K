@@ -20,9 +20,9 @@
 #include <gui/functions.h>
 
 #include <config/state.h>
+#include <dialog/state.h>
 #include <display/state.h>
 #include <io/state.h>
-#include <packages/functions.h>
 #include <packages/sfo.h>
 #include <util/safe_time.h>
 #include <util/string_utils.h>

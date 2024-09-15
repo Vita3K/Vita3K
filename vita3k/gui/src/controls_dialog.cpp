@@ -19,6 +19,7 @@
 
 #include <config/functions.h>
 #include <config/state.h>
+#include <dialog/state.h>
 #include <emuenv/state.h>
 #include <gui/functions.h>
 #include <interface.h>

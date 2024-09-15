@@ -15,7 +15,6 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <gxm/functions.h>
 #include <gxm/types.h>
 #include <shader/gxp_parser.h>
 #include <shader/usse_program_analyzer.h>

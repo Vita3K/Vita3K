@@ -2,10 +2,6 @@
 
 #include <net/socket.h>
 
-struct Epoll;
-
-typedef std::shared_ptr<Epoll> EpollPtr;
-
 struct EpollSocket {
     unsigned int events;
     SceNetEpollData data;
@@ -20,3 +16,5 @@ struct Epoll {
     int mod(int id, abs_socket sock, SceNetEpollEvent *ev);
     int wait(SceNetEpollEvent *events, int maxevents, int timeout);
 };
+
+typedef std::shared_ptr<Epoll> EpollPtr;

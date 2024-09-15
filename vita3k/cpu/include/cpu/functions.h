@@ -24,6 +24,8 @@
 
 #include <cstdint>
 
+struct MemState;
+
 CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol);
 int run(CPUState &state);
 int step(CPUState &state);

@@ -17,7 +17,6 @@
 
 #include <renderer/functions.h>
 #include <renderer/profile.h>
-#include <renderer/pvrt-dec.h>
 
 #include <renderer/gl/functions.h>
 #include <renderer/gl/types.h>

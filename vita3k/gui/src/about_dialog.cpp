@@ -20,6 +20,7 @@
 #include "private.h"
 
 #include <config/version.h>
+#include <dialog/state.h>
 
 namespace gui {
 

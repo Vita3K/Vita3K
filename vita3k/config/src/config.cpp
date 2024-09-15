@@ -24,11 +24,11 @@
 #include <util/string_utils.h>
 
 #include <CLI11.hpp>
-#include <vector>
 
 #include <algorithm>
 #include <exception>
 #include <iostream>
+#include <vector>
 
 namespace config {
 

@@ -17,6 +17,7 @@
 
 #include "private.h"
 
+#include <dialog/state.h>
 #include <host/dialog/filesystem.hpp>
 #include <misc/cpp/imgui_stdlib.h>
 #include <packages/functions.h>

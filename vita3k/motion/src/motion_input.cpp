@@ -4,9 +4,6 @@
 
 #include "motion/motion_input.h"
 
-// for M_PI constant
-#include <SDL_stdinc.h>
-
 MotionInput::MotionInput() {
     // Initialize PID constants with default values
     SetPID(0.3f, 0.005f, 0.0f);

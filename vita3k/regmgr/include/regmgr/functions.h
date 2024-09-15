@@ -18,7 +18,6 @@
 #pragma once
 
 #include <regmgr/state.h>
-#include <regmgr/types.h>
 
 #include <string>
 

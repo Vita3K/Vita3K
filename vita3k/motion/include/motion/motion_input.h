@@ -7,7 +7,6 @@
 #include "util/quaternion.h"
 #include "util/types.h"
 #include "util/vector_math.h"
-#include <array>
 
 class MotionInput {
 public:

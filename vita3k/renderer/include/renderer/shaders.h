@@ -17,9 +17,10 @@
 
 #pragma once
 
+#include <util/fs.h>
+
 #include <cstdint>
 #include <string>
-#include <util/fs.h>
 #include <vector>
 
 namespace shader {
@@ -28,7 +29,6 @@ struct Hints;
 
 struct SceGxmProgram;
 struct FeatureState;
-struct SceGxmVertexAttribute;
 
 namespace renderer {
 

@@ -22,7 +22,7 @@
 #include <kernel/state.h>
 #include <kernel/thread/thread_state.h>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 namespace gui {
 

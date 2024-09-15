@@ -20,11 +20,9 @@
 #include <cstdint>
 #include <cstring>
 
-#include <gxm/functions.h>
 #include <gxm/types.h>
 #include <renderer/functions.h>
 #include <renderer/pvrt-dec.h>
-#include <shader/spirv_recompiler.h>
 #include <util/log.h>
 
 namespace renderer::texture {

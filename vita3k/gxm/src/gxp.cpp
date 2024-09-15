@@ -21,7 +21,7 @@
 #include <util/log.h>
 
 #include <algorithm>
-#include <set>
+#include <string>
 
 namespace gxp {
 

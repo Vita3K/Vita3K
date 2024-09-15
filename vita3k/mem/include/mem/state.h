@@ -22,6 +22,7 @@
 #include <mem/util.h>
 
 #include <map>
+#include <memory>
 #include <mutex>
 
 struct AllocMemPage {

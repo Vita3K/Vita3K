@@ -17,17 +17,13 @@
 
 #pragma once
 
-#include <codec/state.h>
 #include <mem/ptr.h>
 #include <util/types.h>
 
 #define SCE_NGS_MAX_SYSTEM_CHANNELS 2
 
-struct SwrContext;
-
 namespace ngs {
 struct Voice;
-struct Rack;
 struct VoiceDefinition;
 } // namespace ngs
 

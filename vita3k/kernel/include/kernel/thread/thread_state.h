@@ -17,17 +17,17 @@
 
 #pragma once
 
-#include <condition_variable>
 #include <cpu/state.h>
 #include <kernel/callback.h>
 #include <kernel/types.h>
 #include <mem/block.h>
 #include <mem/ptr.h>
+
+#include <condition_variable>
 #include <mutex>
 #include <optional>
 #include <string>
 
-struct CPUState;
 struct CPUContext;
 
 struct ThreadState;

@@ -17,8 +17,6 @@
 
 #include <codec/state.h>
 
-#include <map>
-
 #define DEBUG
 
 extern "C" {

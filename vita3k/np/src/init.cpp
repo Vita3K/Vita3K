@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <np/common.h>
-#include <np/functions.h>
 #include <np/state.h>
 
 bool init(NpState &state, const np::CommunicationID *comm_id) {

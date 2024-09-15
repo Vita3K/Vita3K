@@ -19,9 +19,11 @@
 
 #include "module/load_module.h"
 
+#include <app/functions.h>
 #include <config/state.h>
 #include <ctrl/functions.h>
 #include <ctrl/state.h>
+#include <dialog/state.h>
 #include <display/functions.h>
 #include <display/state.h>
 #include <gui/functions.h>

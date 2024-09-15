@@ -26,7 +26,6 @@
 #include <config/state.h>
 #include <functional>
 #include <util/log.h>
-#include <util/string_utils.h>
 
 struct FeatureState;
 

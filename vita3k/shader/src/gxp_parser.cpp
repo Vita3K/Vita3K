@@ -17,9 +17,13 @@
 
 #include <gxm/functions.h>
 #include <shader/gxp_parser.h>
-#include <shader/usse_program_analyzer.h>
+#include <shader/usse_types.h>
 #include <util/align.h>
 #include <util/log.h>
+
+#include <algorithm>
+#include <map>
+#include <tuple>
 
 namespace shader {
 

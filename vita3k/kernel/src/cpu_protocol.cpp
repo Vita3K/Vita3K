@@ -16,6 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <kernel/cpu_protocol.h>
+
+#include <cpu/functions.h>
 #include <kernel/state.h>
 
 CPUProtocol::CPUProtocol(KernelState &kernel, MemState &mem, const CallImportFunc &func)

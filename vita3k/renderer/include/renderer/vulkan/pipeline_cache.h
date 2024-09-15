@@ -17,20 +17,19 @@
 
 #pragma once
 
+#include <blockingconcurrentqueue.h>
+#include <util/containers.h>
+#include <vkutil/vkutil.h>
+
 #include <array>
 #include <limits>
 #include <map>
 #include <set>
 
-#include <blockingconcurrentqueue.h>
-#include <util/containers.h>
-#include <vkutil/objects.h>
-
 struct SceGxmProgram;
 struct SceGxmFragmentProgram;
 struct SceGxmVertexProgram;
 enum SceGxmPrimitiveType : uint32_t;
-struct SceGxmVertexAttribute;
 struct MemState;
 
 using Sha256Hash = std::array<uint8_t, 32>;

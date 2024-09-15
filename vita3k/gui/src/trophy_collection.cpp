@@ -24,6 +24,7 @@
 #include <util/string_utils.h>
 
 #include <config/state.h>
+#include <dialog/state.h>
 #include <io/device.h>
 #include <io/functions.h>
 

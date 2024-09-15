@@ -19,8 +19,6 @@
 
 #include <compat/state.h>
 #include <config/config.h>
-#include <dialog/state.h>
-#include <ime/state.h>
 #include <lang/state.h>
 #include <np/state.h>
 

@@ -25,8 +25,6 @@
 
 #include <SPIRV/SpvBuilder.h>
 
-#include <array>
-
 struct FeatureState;
 
 namespace shader::usse {

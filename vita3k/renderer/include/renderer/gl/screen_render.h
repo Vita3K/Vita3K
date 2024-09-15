@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <glutil/shader.h>
+#include <glutil/object.h>
 #include <util/fs.h>
 #include <util/types.h>
 

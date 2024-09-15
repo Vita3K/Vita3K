@@ -19,8 +19,9 @@
 
 #include <cpu/common.h>
 #include <cpu/disasm/state.h>
-#include <cpu/functions.h>
 #include <mem/block.h>
+#include <mem/state.h>
+#include <util/types.h>
 
 struct CPUState {
     CPUState() = default;

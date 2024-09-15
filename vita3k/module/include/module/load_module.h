@@ -22,6 +22,7 @@
 
 #include <array>
 #include <map>
+#include <string>
 #include <vector>
 
 static constexpr auto SYSMODULE_COUNT = 0x56;

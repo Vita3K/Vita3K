@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <ngs/modules/output.h>
-#include <util/log.h>
 
 #include <algorithm>
 

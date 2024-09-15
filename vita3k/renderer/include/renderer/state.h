@@ -26,7 +26,6 @@
 #include <mutex>
 #include <string_view>
 
-struct SDL_Cursor;
 struct SDL_Window;
 struct DisplayState;
 struct GxmState;

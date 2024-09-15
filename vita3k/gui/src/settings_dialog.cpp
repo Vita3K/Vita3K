@@ -22,6 +22,7 @@
 #include <audio/state.h>
 #include <config/functions.h>
 #include <config/state.h>
+#include <dialog/state.h>
 #include <display/state.h>
 #include <host/dialog/filesystem.hpp>
 #include <io/state.h>

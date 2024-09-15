@@ -17,10 +17,11 @@
 
 #pragma once
 
-#include <cstdint>
 #include <glutil/object_array.h>
 #include <renderer/gl/fence.h>
-#include <tuple>
+
+#include <cstdint>
+#include <utility>
 
 namespace renderer::gl {
 

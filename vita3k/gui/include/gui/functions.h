@@ -18,15 +18,15 @@
 #pragma once
 
 #include <gui/state.h>
+#include <ime/state.h>
+#include <io/vfs.h>
 
 #include <cstdint>
+#include <map>
 #include <string>
 #include <vector>
 
-struct DisplayState;
 struct EmuEnvState;
-struct SDL_Window;
-struct NpTrophyUnlockCallbackData;
 
 namespace gui {
 

@@ -17,18 +17,17 @@
 
 #pragma once
 
+#include <mem/mempool.h>
+#include <mem/ptr.h>
+#include <ngs/common.h>
+#include <ngs/scheduler.h>
+#include <ngs/types.h>
+#include <util/types.h>
+
 #include <array>
 #include <cstdint>
 #include <mutex>
 #include <vector>
-
-#include <mem/ptr.h>
-#include <util/types.h>
-
-#include <mem/mempool.h>
-#include <ngs/common.h>
-#include <ngs/scheduler.h>
-#include <ngs/types.h>
 
 struct MemState;
 struct KernelState;

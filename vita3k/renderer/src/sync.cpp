@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <chrono>
-#include <display/functions.h>
 #include <renderer/commands.h>
 #include <renderer/driver_functions.h>
 #include <renderer/state.h>
@@ -28,7 +27,6 @@
 #include <renderer/vulkan/types.h>
 
 #include <renderer/functions.h>
-#include <util/log.h>
 #include <util/tracy.h>
 
 namespace renderer {

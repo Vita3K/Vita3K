@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <motion/functions.h>
-#include <motion/motion.h>
 #include <motion/state.h>
 
 #include <ctrl/state.h>

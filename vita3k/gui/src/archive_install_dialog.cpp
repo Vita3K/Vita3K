@@ -18,13 +18,14 @@
 #include "interface.h"
 #include "private.h"
 
+#include <dialog/state.h>
 #include <gui/functions.h>
 #include <host/dialog/filesystem.hpp>
 #include <packages/sfo.h>
 
 #include <util/string_utils.h>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <thread>
 

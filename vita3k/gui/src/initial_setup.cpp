@@ -18,6 +18,7 @@
 #include "private.h"
 
 #include <config/state.h>
+#include <dialog/state.h>
 #include <gui/functions.h>
 #include <host/dialog/filesystem.hpp>
 #include <lang/functions.h>

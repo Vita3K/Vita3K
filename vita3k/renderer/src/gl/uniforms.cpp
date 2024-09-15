@@ -15,11 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <renderer/gl/functions.h>
 #include <renderer/gl/types.h>
-
-#include <renderer/profile.h>
 #include <renderer/types.h>
+#include <util/log.h>
 
 #include <algorithm>
 

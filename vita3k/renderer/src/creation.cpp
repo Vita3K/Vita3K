@@ -19,7 +19,6 @@
 #include <renderer/commands.h>
 #include <renderer/driver_functions.h>
 #include <renderer/state.h>
-#include <renderer/texture_cache.h>
 #include <renderer/types.h>
 
 #include <renderer/gl/functions.h>
@@ -30,7 +29,6 @@
 #include <renderer/functions.h>
 #include <util/align.h>
 #include <util/log.h>
-#include <util/string_utils.h>
 #include <util/tracy.h>
 
 namespace renderer {

@@ -45,7 +45,6 @@
 #include <util/bytes.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceGxm);

@@ -23,12 +23,10 @@
 #include <renderer/types.h>
 
 #include "types.h"
-#include <features/state.h>
 
 #include <SDL.h>
 
-#include <map>
-#include <string>
+#include <string_view>
 #include <vector>
 
 namespace renderer::gl {

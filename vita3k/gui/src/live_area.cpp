@@ -19,6 +19,7 @@
 
 #include <config/state.h>
 #include <ctrl/ctrl.h>
+#include <dialog/state.h>
 #include <gui/functions.h>
 #include <io/state.h>
 #include <kernel/state.h>

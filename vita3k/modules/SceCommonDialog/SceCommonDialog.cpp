@@ -17,6 +17,7 @@
 
 #include <module/module.h>
 
+#include <dialog/state.h>
 #include <dialog/types.h>
 #include <emuenv/app_util.h>
 #include <gui/state.h>

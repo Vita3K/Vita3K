@@ -22,8 +22,6 @@
 #include <functional>
 #include <vector>
 
-#include <dlmalloc.h>
-
 namespace renderer {
 #define REPORT_MISSING(backend) LOG_ERROR("Unimplemented graphics API handler with backend {}", (int)backend)
 #define REPORT_STUBBED() LOG_INFO("Stubbed")

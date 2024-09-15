@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <ngs/modules/atrac9.h>
-#include <util/bytes.h>
 #include <util/log.h>
 
 extern "C" {

@@ -17,9 +17,10 @@
 
 #pragma once
 
-#include <cstdint>
 #include <np/common.h>
 #include <util/fs.h>
+
+#include <cstdint>
 
 namespace np {
 struct CommunicationID;

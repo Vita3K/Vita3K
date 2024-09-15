@@ -21,7 +21,7 @@
 
 #include <config/state.h>
 #include <config/version.h>
-
+#include <dialog/state.h>
 #include <gui/functions.h>
 #include <util/net_utils.h>
 #include <util/string_utils.h>

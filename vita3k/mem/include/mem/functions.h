@@ -20,6 +20,8 @@
 #include <mem/block.h>
 #include <mem/util.h>
 
+#include <functional>
+
 struct MemState;
 
 typedef std::function<bool(uint8_t *addr, bool write)> AccessViolationHandler;
