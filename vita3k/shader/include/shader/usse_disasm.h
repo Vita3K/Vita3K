@@ -24,9 +24,7 @@
 #include <memory>
 #include <string>
 
-namespace shader {
-namespace usse {
-namespace disasm {
+namespace shader::usse::disasm {
 
 extern thread_local std::stringstream *disasm_storage;
 
@@ -43,9 +41,7 @@ std::string operand_to_str(const Operand &op, Imm4 write_mask, int32_t shift = 0
 template <std::size_t s>
 std::string swizzle_to_str(Swizzle<s> swizz, const Imm4 write_mask);
 
-} // namespace disasm
-} // namespace usse
-} // namespace shader
+} // namespace shader::usse::disasm
 
 // TODO: make LOG_RAW
 #define LOG_DISASM(fmt_str, ...)                                         \

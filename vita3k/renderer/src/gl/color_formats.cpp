@@ -25,8 +25,7 @@ namespace renderer::color {
 size_t bits_per_pixel(SceGxmColorBaseFormat base_format);
 }
 
-namespace renderer::gl {
-namespace color {
+namespace renderer::gl::color {
 
 static const GLint swizzle_abgr[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
 static const GLint swizzle_argb[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ALPHA };
@@ -298,5 +297,4 @@ GLenum get_raw_store_upload_data_type(SceGxmColorBaseFormat base_format) {
 
     return GL_RGBA_INTEGER;
 }
-} // namespace color
-} // namespace renderer::gl
+} // namespace renderer::gl::color

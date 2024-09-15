@@ -19,8 +19,7 @@
 
 #include <shader/usse_types.h>
 
-namespace shader {
-namespace usse {
+namespace shader::usse {
 
 //
 // Decoder helpers
@@ -41,5 +40,4 @@ usse::Operand &decode_src12(usse::Operand &src, usse::Imm6 src_n, usse::Imm2 src
 usse::Operand &decode_src0(usse::Operand &src, usse::Imm6 src_n, usse::Imm1 src_bank_sel, usse::Imm1 src_bank_ext, bool is_double_regs, uint8_t reg_bits,
     bool is_second_program);
 
-} // namespace usse
-} // namespace shader
+} // namespace shader::usse

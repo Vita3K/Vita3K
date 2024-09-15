@@ -20,8 +20,7 @@
 #include <gxm/functions.h>
 #include <util/log.h>
 
-namespace renderer::gl {
-namespace texture {
+namespace renderer::gl::texture {
 
 // SceGxmTextureSwizzle1Mode
 static const GLint swizzle_r[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_ONE };
@@ -621,5 +620,4 @@ GLenum translate_minmag_filter(SceGxmTextureFilter src) {
     }
 }
 
-} // namespace texture
-} // namespace renderer::gl
+} // namespace renderer::gl::texture

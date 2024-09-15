@@ -28,8 +28,7 @@
 #include <variant>
 #include <vector>
 
-namespace shader {
-namespace usse {
+namespace shader::usse {
 
 enum class Opcode {
 #define OPCODE(n) n,
@@ -442,8 +441,7 @@ enum class ShaderPhase {
     Max,
 };
 
-} // namespace usse
-} // namespace shader
+} // namespace shader::usse
 
 namespace std {
 
