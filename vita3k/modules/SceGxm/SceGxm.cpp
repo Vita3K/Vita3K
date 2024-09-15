@@ -3633,7 +3633,7 @@ EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
     }
 }
 
-static constexpr const std::uint32_t SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE = 1024;
+static constexpr std::uint32_t SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE = 1024;
 
 EXPORT(int, sceGxmSetDeferredContextFragmentBuffer, SceGxmContext *deferredContext, Ptr<void> mem, uint32_t size) {
     TRACY_FUNC(sceGxmSetDeferredContextFragmentBuffer, deferredContext, mem, size);
