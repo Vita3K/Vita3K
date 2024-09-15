@@ -19,7 +19,7 @@
 #include <map>
 #include <util/align.h>
 
-#include <assert.h>
+#include <cassert>
 
 namespace gxm {
 uint32_t get_width(const SceGxmTexture &texture) {

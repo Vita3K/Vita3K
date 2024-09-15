@@ -32,7 +32,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #else
-#include <signal.h>
+#include <csignal>
 #include <sys/mman.h>
 #include <unistd.h>
 #endif

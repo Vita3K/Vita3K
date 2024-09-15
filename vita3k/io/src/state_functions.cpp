@@ -19,7 +19,7 @@
 #include <io.h>
 #else
 #define _FILE_OFFSET_BITS 64
-#include <stdio.h>
+#include <cstdio>
 #include <sys/types.h>
 #include <unistd.h>
 #endif
