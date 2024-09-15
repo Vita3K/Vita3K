@@ -256,7 +256,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     case HAS_UPDATE: {
         ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (ImGui::CalcTextSize(lang["new_version_available"].c_str()).x / 2.f), (display_size.y / 2.f) - ImGui::GetFontSize()));
         ImGui::Text("%s", lang["new_version_available"].c_str());
-        const auto version_str = fmt::format(fmt::runtime(lang["version"].c_str()), git_version);
+        const auto version_str = fmt::format(fmt::runtime(lang["version"]), git_version);
         ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (ImGui::CalcTextSize(version_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (40.f * SCALE.x)));
         ImGui::Text("%s", version_str.c_str());
 

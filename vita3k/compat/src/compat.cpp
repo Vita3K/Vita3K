@@ -196,7 +196,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     if (!net_utils::download_file(app_compat_db_link, new_app_compat_db_path.string())) {
         gui.info_message.title = lang["error"];
         gui.info_message.level = spdlog::level::err;
-        gui.info_message.msg = fmt::format(fmt::runtime(lang["download_failed"].c_str()), updated_at);
+        gui.info_message.msg = fmt::format(fmt::runtime(lang["download_failed"]), updated_at);
         fs::remove(new_app_compat_db_path);
         return false;
     }
@@ -213,7 +213,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     if (!gui.compat.compat_db_loaded) {
         gui.info_message.title = lang["error"];
         gui.info_message.level = spdlog::level::err;
-        gui.info_message.msg = fmt::format(fmt::runtime(lang["load_failed"].c_str()), updated_at);
+        gui.info_message.msg = fmt::format(fmt::runtime(lang["load_failed"]), updated_at);
         db_updated_at.clear();
         return false;
     }
@@ -224,11 +224,11 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     if (compat_db_exist) {
         const auto dif = static_cast<int32_t>(db_issue_count - old_compat_db_count);
         if (!old_db_updated_at.empty() && dif > 0)
-            gui.info_message.msg = fmt::format(fmt::runtime(lang["new_app_listed"].c_str()), old_db_updated_at, db_updated_at, dif, gui.compat.app_compat_db.size());
+            gui.info_message.msg = fmt::format(fmt::runtime(lang["new_app_listed"]), old_db_updated_at, db_updated_at, dif, gui.compat.app_compat_db.size());
         else
-            gui.info_message.msg = fmt::format(fmt::runtime(lang["app_listed"].c_str()), old_db_updated_at, db_updated_at, gui.compat.app_compat_db.size());
+            gui.info_message.msg = fmt::format(fmt::runtime(lang["app_listed"]), old_db_updated_at, db_updated_at, gui.compat.app_compat_db.size());
     } else
-        gui.info_message.msg = fmt::format(fmt::runtime(lang["download_app_listed"].c_str()), db_updated_at, gui.compat.app_compat_db.size());
+        gui.info_message.msg = fmt::format(fmt::runtime(lang["download_app_listed"]), db_updated_at, gui.compat.app_compat_db.size());
 
     return true;
 }

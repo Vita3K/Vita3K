@@ -196,7 +196,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Separator();
 
     if (has_controllers) {
-        const auto connected_str = fmt::format(fmt::runtime(lang["connected"].c_str()), ctrl.controllers_num);
+        const auto connected_str = fmt::format(fmt::runtime(lang["connected"]), ctrl.controllers_num);
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", connected_str.c_str());
         ImGui::Spacing();
         ImGui::Separator();
