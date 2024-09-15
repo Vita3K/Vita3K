@@ -935,8 +935,6 @@ static void display_entry_thread(EmuEnvState &emuenv) {
 
         previous_sync = display_callback->new_sync;
     }
-
-    return;
 }
 
 static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemState &mem, std::mutex &global_lock, std::uint32_t &return_size, Ptr<SceGxmDeferredContextCallback> callback, Ptr<void> userdata,
