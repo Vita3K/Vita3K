@@ -98,6 +98,7 @@ inline ExtPredicate ext_vec_predicate_to_ext(ExtVecPredicate pred) {
         // TODO
         assert(false);
         LOG_CRITICAL("ExtVecPredicate::NEGP2 case hit, report this to devs.");
+        [[fallthrough]];
     default:
         return ExtPredicate::NONE;
     }
