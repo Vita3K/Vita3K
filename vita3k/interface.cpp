@@ -65,8 +65,8 @@ static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBu
     return n;
 }
 
-static const char *miniz_get_error(const ZipPtr &zip) {
-    return mz_zip_get_error_string(mz_zip_get_last_error(zip.get()));
+static const char *miniz_get_error(mz_zip_archive *zip) {
+    return mz_zip_get_error_string(mz_zip_get_last_error(zip));
 }
 
 static void set_theme_name(EmuEnvState &emuenv, vfs::FileBuffer &buf) {
@@ -122,15 +122,15 @@ static bool set_content_path(EmuEnvState &emuenv, const bool is_theme, fs::path 
     return true;
 }
 
-bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &zip, const std::string &content_path, const std::function<void(ArchiveContents)> &progress_callback) {
+bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, mz_zip_archive *zip, const std::string &content_path, const std::function<void(ArchiveContents)> &progress_callback) {
     std::string sfo_path = "sce_sys/param.sfo";
     std::string theme_path = "theme.xml";
     vfs::FileBuffer buffer, theme;
 
-    const auto is_theme = mz_zip_reader_extract_file_to_callback(zip.get(), (content_path + theme_path).c_str(), &write_to_buffer, &theme, 0);
+    const auto is_theme = mz_zip_reader_extract_file_to_callback(zip, (content_path + theme_path).c_str(), &write_to_buffer, &theme, 0);
 
     auto output_path{ emuenv.pref_path / "ux0" };
-    if (mz_zip_reader_extract_file_to_callback(zip.get(), (content_path + sfo_path).c_str(), &write_to_buffer, &buffer, 0)) {
+    if (mz_zip_reader_extract_file_to_callback(zip, (content_path + sfo_path).c_str(), &write_to_buffer, &buffer, 0)) {
         sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang);
         if (!set_content_path(emuenv, is_theme, output_path))
             return false;
@@ -178,10 +178,10 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &z
             progress_callback({ {}, {}, { file_progress * 0.7f + decrypt_progress * 0.3f } });
     };
 
-    mz_uint num_files = mz_zip_reader_get_num_files(zip.get());
+    mz_uint num_files = mz_zip_reader_get_num_files(zip);
     for (mz_uint i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
-        if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
+        if (!mz_zip_reader_file_stat(zip, i, &file_stat)) {
             continue;
         }
         const std::string m_filename = file_stat.m_filename;
@@ -191,12 +191,12 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &z
 
             std::string replace_filename = m_filename.substr(content_path.size());
             const fs::path file_output = (output_path / fs_utils::utf8_to_path(replace_filename)).generic_path();
-            if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
+            if (mz_zip_reader_is_file_a_directory(zip, i)) {
                 fs::create_directories(file_output);
             } else {
                 fs::create_directories(file_output.parent_path());
                 LOG_INFO("Extracting {}", file_output);
-                mz_zip_reader_extract_to_file(zip.get(), i, fs_utils::path_to_utf8(file_output).c_str(), 0);
+                mz_zip_reader_extract_to_file(zip, i, fs_utils::path_to_utf8(file_output).c_str(), 0);
             }
         }
     }
@@ -226,15 +226,15 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &z
     return true;
 }
 
-static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
-    mz_uint num_files = mz_zip_reader_get_num_files(zip.get());
+static std::vector<std::string> get_archive_contents_path(mz_zip_archive *zip) {
+    mz_uint num_files = mz_zip_reader_get_num_files(zip);
     std::vector<std::string> content_path;
     std::string sfo_path = "sce_sys/param.sfo";
     std::string theme_path = "theme.xml";
 
     for (mz_uint i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
-        if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat))
+        if (!mz_zip_reader_file_stat(zip, i, &file_stat))
             continue;
 
         std::string m_filename = std::string(file_stat.m_filename);
@@ -260,18 +260,18 @@ std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, con
         LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path());
         return {};
     }
-    const ZipPtr zip(new mz_zip_archive, delete_zip);
+    const ZipPtr zip(new mz_zip_archive, &delete_zip);
     std::memset(zip.get(), 0, sizeof(*zip));
 
     FILE *vpk_fp = FOPEN(archive_path.generic_path().c_str(), "rb");
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
-        LOG_CRITICAL("miniz error reading archive: {}", miniz_get_error(zip));
+        LOG_CRITICAL("miniz error reading archive: {}", miniz_get_error(zip.get()));
         fclose(vpk_fp);
         return {};
     }
 
-    const auto content_path = get_archive_contents_path(zip);
+    const auto content_path = get_archive_contents_path(zip.get());
     if (content_path.empty()) {
         fclose(vpk_fp);
         return {};
@@ -289,7 +289,7 @@ std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, con
     for (auto &path : content_path) {
         current++;
         update_progress();
-        const bool state = install_archive_content(emuenv, gui, zip, path, progress_callback);
+        const bool state = install_archive_content(emuenv, gui, zip.get(), path, progress_callback);
         content_installed.push_back({ emuenv.app_info.app_title, emuenv.app_info.app_title_id, emuenv.app_info.app_category, emuenv.app_info.app_content_id, path, state });
     }
 

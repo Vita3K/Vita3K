@@ -90,7 +90,7 @@ bool CubebAudioAdapter::init() {
 }
 
 AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_sample) {
-    std::shared_ptr<CubebAudioOutPort> port = std::make_shared<CubebAudioOutPort>();
+    std::unique_ptr<CubebAudioOutPort> port = std::make_unique<CubebAudioOutPort>();
     port->spec = {
         // all the ps vita samples are signed 16 bits low edian
         .format = CUBEB_SAMPLE_S16LE,

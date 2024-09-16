@@ -29,13 +29,13 @@
 struct GuiState;
 struct EmuEnvState;
 
-typedef std::shared_ptr<mz_zip_archive> ZipPtr;
-typedef std::shared_ptr<mz_zip_reader_extract_iter_state> ZipFilePtr;
-
 inline void delete_zip(mz_zip_archive *zip) {
     mz_zip_reader_end(zip);
     delete zip;
 }
+
+typedef std::unique_ptr<mz_zip_archive, decltype(&delete_zip)> ZipPtr;
+typedef std::unique_ptr<mz_zip_reader_extract_iter_state> ZipFilePtr;
 
 struct ArchiveContents {
     std::optional<float> count;
