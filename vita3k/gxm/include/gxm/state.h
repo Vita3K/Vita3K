@@ -24,8 +24,6 @@
 #include <map>
 #include <mutex>
 
-struct SDL_Thread;
-
 struct SceGxmInitializeParams {
     uint32_t flags = 0;
     uint32_t displayQueueMaxPendingCount = 0;

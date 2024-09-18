@@ -15,11 +15,12 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <gxm/functions.h>
-#include <map>
+#include <gxm/types.h>
 #include <util/align.h>
 
-#include <assert.h>
+#include <bit>
+#include <cassert>
+#include <map>
 
 namespace gxm {
 uint32_t get_width(const SceGxmTexture &texture) {

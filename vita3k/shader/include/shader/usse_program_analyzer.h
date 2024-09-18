@@ -17,17 +17,17 @@
 
 #pragma once
 
+#include <shader/usse_types.h>
+
 #include <array>
 #include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
-#include <shader/usse_types.h>
 #include <vector>
 
 using UniformBufferSizes = std::array<std::uint32_t, 15>;
 
-struct SceGxmProgramParameter;
 struct SceGxmProgram;
 enum SceGxmParameterType : uint8_t;
 

@@ -9,8 +9,7 @@
 #include <cassert>
 #include <functional>
 
-namespace shader {
-namespace decoder {
+namespace shader::decoder {
 
 /**
  * Generic instruction handling construct.
@@ -77,5 +76,4 @@ private:
     handler_function fn;
 };
 
-} // namespace decoder
-} // namespace shader
+} // namespace shader::decoder

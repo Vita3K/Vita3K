@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <glutil/object.h>
-#include <glutil/object_array.h>
 #include <gxm/types.h>
 #include <renderer/commands.h>
 #include <renderer/gxm_types.h>
@@ -27,26 +25,18 @@
 #include <util/hash.h>
 
 #include <array>
-#include <bit>
 #include <bitset>
 #include <map>
-#include <string>
-#include <thread>
-#include <tuple>
 #include <vector>
 
 static constexpr auto DEFAULT_RES_WIDTH = 960;
 static constexpr auto DEFAULT_RES_HEIGHT = 544;
 
 struct SceGxmProgram;
-struct SDL_Window;
 
 using UniformBufferSizes = std::array<std::uint32_t, 15>;
 
 namespace renderer {
-
-typedef std::tuple<Sha256Hash, Sha256Hash> ProgramHashes;
-typedef std::vector<std::string> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
 
 // State types
 typedef std::map<Sha256Hash, const SceGxmProgram *> GXPPtrMap;

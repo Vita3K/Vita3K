@@ -24,12 +24,7 @@
 #include <features/state.h>
 
 #include <string>
-#include <utility>
 #include <vector>
-
-namespace spv {
-class Builder;
-}
 
 namespace shader {
 

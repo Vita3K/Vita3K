@@ -19,6 +19,7 @@
 
 #include <config/state.h>
 #include <config/version.h>
+#include <dialog/state.h>
 #include <gui/functions.h>
 #include <include/cpu.h>
 #include <include/environment.h>
@@ -113,26 +114,26 @@ static std::string get_time_app_used(GuiState &gui, const int64_t &time_used) {
     auto &lang = gui.lang.app_context.time_used;
 
     if (time_used < one_min)
-        return fmt::format(fmt::runtime(lang["time_used_seconds"].c_str()), time_used);
+        return fmt::format(fmt::runtime(lang["time_used_seconds"]), time_used);
     else {
         const std::chrono::seconds sec(time_used);
         const uint32_t minutes = std::chrono::duration_cast<std::chrono::minutes>(sec).count() % one_min;
         const uint32_t seconds = sec.count() % one_min;
         if (time_used < one_hour)
-            return fmt::format(fmt::runtime(lang["time_used_minutes"].c_str()), minutes, seconds);
+            return fmt::format(fmt::runtime(lang["time_used_minutes"]), minutes, seconds);
         else {
             const uint32_t count_hours = std::chrono::duration_cast<std::chrono::hours>(sec).count();
             if (time_used < one_day)
-                return fmt::format(fmt::runtime(lang["time_used_hours"].c_str()), count_hours, minutes, seconds);
+                return fmt::format(fmt::runtime(lang["time_used_hours"]), count_hours, minutes, seconds);
             else {
                 const uint32_t count_days = count_hours / twenty_four_hours;
                 const uint32_t hours_per_day = count_hours - (count_days * twenty_four_hours);
                 if (time_used < one_week)
-                    return fmt::format(fmt::runtime(lang["time_used_days"].c_str()), count_days, hours_per_day, minutes, seconds);
+                    return fmt::format(fmt::runtime(lang["time_used_days"]), count_days, hours_per_day, minutes, seconds);
                 else {
                     const uint32_t count_weeks = count_days / seven_days;
                     const uint32_t count_days_week = count_days - (count_weeks * seven_days);
-                    return fmt::format(fmt::runtime(lang["time_used_weeks"].c_str()), count_weeks, count_days_week, hours_per_day, minutes, seconds);
+                    return fmt::format(fmt::runtime(lang["time_used_weeks"]), count_weeks, count_days_week, hours_per_day, minutes, seconds);
                 }
             }
         }
@@ -553,7 +554,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::BeginChild("##info_update_list", ImVec2(WINDOW_SIZE.x - (30.f * SCALE.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * SCALE.y)), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
             for (const auto &update : update_history_infos) {
                 ImGui::SetWindowFontScale(1.4f);
-                const auto version_str = fmt::format(fmt::runtime(lang.main["history_version"].c_str()), update.first);
+                const auto version_str = fmt::format(fmt::runtime(lang.main["history_version"]), update.first);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", version_str.c_str());
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::PushTextWrapPos(WINDOW_SIZE.x - (80.f * SCALE.x));

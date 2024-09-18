@@ -19,20 +19,19 @@
 #include <mem/state.h>
 
 #include <util/align.h>
-#include <util/float_to_half.h>
 #include <util/log.h>
 
 #include <algorithm>
 #include <cassert>
-#include <cmath>
 #include <cstring>
+#include <mutex>
 #include <utility>
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #else
-#include <signal.h>
+#include <csignal>
 #include <sys/mman.h>
 #include <unistd.h>
 #endif

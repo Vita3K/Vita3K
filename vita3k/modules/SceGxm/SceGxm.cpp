@@ -45,7 +45,6 @@
 #include <util/bytes.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceGxm);
@@ -936,8 +935,6 @@ static void display_entry_thread(EmuEnvState &emuenv) {
 
         previous_sync = display_callback->new_sync;
     }
-
-    return;
 }
 
 static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemState &mem, std::mutex &global_lock, std::uint32_t &return_size, Ptr<SceGxmDeferredContextCallback> callback, Ptr<void> userdata,
@@ -3634,7 +3631,7 @@ EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
     }
 }
 
-static constexpr const std::uint32_t SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE = 1024;
+static constexpr std::uint32_t SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE = 1024;
 
 EXPORT(int, sceGxmSetDeferredContextFragmentBuffer, SceGxmContext *deferredContext, Ptr<void> mem, uint32_t size) {
     TRACY_FUNC(sceGxmSetDeferredContextFragmentBuffer, deferredContext, mem, size);

@@ -21,7 +21,7 @@
 #include <gui/functions.h>
 
 #include <config/state.h>
-#include <gui/imgui_impl_sdl.h>
+#include <dialog/state.h>
 #include <util/string_utils.h>
 
 #include <SDL.h>

@@ -18,7 +18,6 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
 
 namespace ngs {
 enum class BussType : uint32_t {

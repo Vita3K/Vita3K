@@ -18,7 +18,7 @@
 #pragma once
 
 #include <kernel/types.h>
-#include <module/module.h>
+#include <module/bridge.h>
 #include <util/types.h>
 
 struct CPUState;

@@ -25,12 +25,10 @@
 
 #include <cpu/functions.h>
 #include <mem/ptr.h>
-#include <util/align.h>
-#include <util/find.h>
+#include <util/lock_and_find.h>
 #include <util/log.h>
 
 #include <SDL_thread.h>
-#include <util/lock_and_find.h>
 
 int CorenumAllocator::new_corenum() {
     const std::lock_guard<std::mutex> guard(lock);

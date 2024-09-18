@@ -22,7 +22,7 @@
 #include <kernel/state.h>
 #include <kernel/thread/thread_state.h>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 namespace gui {
 
@@ -67,8 +67,7 @@ void draw_threads_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
 
-    for (const auto &thread : emuenv.kernel.threads) {
-        std::shared_ptr<ThreadState> th_state = thread.second;
+    for (const auto &[id, th_state] : emuenv.kernel.threads) {
         std::string run_state;
         switch (th_state->status) {
         case ThreadStatus::run:
@@ -84,9 +83,9 @@ void draw_threads_dialog(GuiState &gui, EmuEnvState &emuenv) {
             run_state = "Suspended";
         }
         if (ImGui::Selectable(fmt::format("{:0>8X}         {:<32}   {:<16}   {:0>8X}",
-                thread.first, th_state->name, run_state, th_state->stack.get())
+                id, th_state->name, run_state, th_state->stack.get())
                                   .c_str())) {
-            gui.thread_watch_index = thread.first;
+            gui.thread_watch_index = id;
             gui.debug_menu.thread_details_dialog = true;
         }
     }

@@ -18,11 +18,11 @@
 #include "private.h"
 
 #include <config/state.h>
+#include <dialog/state.h>
 #include <gui/functions.h>
-#include <host/dialog/filesystem.hpp>
+#include <host/dialog/filesystem.h>
 #include <packages/functions.h>
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <thread>
 

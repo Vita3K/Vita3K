@@ -17,10 +17,11 @@
 
 #pragma once
 
+#include <util/fs.h>
+
 #include <map>
 #include <mutex>
 #include <string>
-#include <util/fs.h>
 #include <vector>
 
 struct RegMgrState {

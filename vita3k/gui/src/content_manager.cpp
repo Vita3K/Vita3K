@@ -24,6 +24,7 @@
 #include <gui/functions.h>
 
 #include <config/state.h>
+#include <dialog/state.h>
 #include <packages/sfo.h>
 
 #include <io/VitaIoDevice.h>

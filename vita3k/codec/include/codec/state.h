@@ -23,7 +23,6 @@
 
 struct AVFrame;
 struct AVPacket;
-struct AVIOContext;
 struct AVCodecContext;
 struct AVFormatContext;
 struct AVCodecParserContext;

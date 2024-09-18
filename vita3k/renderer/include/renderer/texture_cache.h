@@ -23,7 +23,8 @@
 
 #include <array>
 #include <cstdint>
-#include <functional>
+#include <memory>
+#include <string_view>
 
 namespace ddspp {
 struct Descriptor;

@@ -23,7 +23,6 @@
 #include <vector>
 
 namespace spv {
-class Builder;
 typedef unsigned int Id;
 } // namespace spv
 

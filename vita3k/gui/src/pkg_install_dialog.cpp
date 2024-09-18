@@ -17,15 +17,14 @@
 
 #include "private.h"
 
+#include <dialog/state.h>
 #include <gui/functions.h>
-#include <host/dialog/filesystem.hpp>
+#include <host/dialog/filesystem.h>
 #include <misc/cpp/imgui_stdlib.h>
-#include <packages/functions.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
 #include <rif2zrif.h>
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <thread>
 

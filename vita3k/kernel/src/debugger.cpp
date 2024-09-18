@@ -18,7 +18,6 @@
 #include <kernel/debugger.h>
 #include <kernel/state.h>
 #include <util/align.h>
-#include <util/log.h>
 
 constexpr unsigned char THUMB_BREAKPOINT[2] = { 0x00, 0xBE };
 constexpr unsigned char ARM_BREAKPOINT[4] = { 0x70, 0x00, 0x20, 0xE1 };

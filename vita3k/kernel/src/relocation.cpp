@@ -19,8 +19,6 @@
 #include <mem/ptr.h>
 #include <util/log.h>
 
-#include <self.h>
-
 #include <cassert>
 #include <cstring>
 #include <string>

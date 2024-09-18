@@ -21,9 +21,9 @@
 #undef st_ctime
 #undef st_mtime
 
+#include <io/VitaIoDevice.h>
 #include <io/state.h>
 #include <io/types.h>
-#include <io/vfs.h>
 
 #include <util/fs.h>
 

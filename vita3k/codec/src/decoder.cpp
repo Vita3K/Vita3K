@@ -23,8 +23,6 @@ extern "C" {
 
 #include <util/log.h>
 
-#include <cassert>
-
 uint32_t DecoderState::get(DecoderQuery query) {
     return 0;
 }

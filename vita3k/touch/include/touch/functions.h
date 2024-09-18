@@ -2,6 +2,8 @@
 
 #include <touch/touch.h>
 
+#include <vector>
+
 std::vector<SceFVector2> get_touchpad_fingers_pos(SceTouchPortType &port);
 int handle_touchpad_event(SDL_ControllerTouchpadEvent &touchpad);
 void touch_vsync_update(const EmuEnvState &emuenv);

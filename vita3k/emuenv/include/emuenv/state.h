@@ -18,12 +18,11 @@
 #pragma once
 
 #include <emuenv/window.h>
+#include <util/fs.h>
 
 #include <memory>
 #include <set>
 #include <string>
-
-#include <util/fs.h>
 
 // forward declare everything used in EmuEnvState
 namespace sfo {

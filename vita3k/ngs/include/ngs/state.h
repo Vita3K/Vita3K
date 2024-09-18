@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include <vector>
-
 #include <mem/ptr.h>
+
+#include <vector>
 
 struct MemState;
 

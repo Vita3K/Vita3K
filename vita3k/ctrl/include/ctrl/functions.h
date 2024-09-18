@@ -20,7 +20,7 @@
 #include <ctrl/state.h>
 #include <emuenv/state.h>
 
-struct ControllerBinding;
+#include <array>
 
 std::array<ControllerBinding, 15> get_controller_bindings_ext(EmuEnvState &emuenv);
 SceCtrlExternalInputMode get_type_of_controller(const int idx);

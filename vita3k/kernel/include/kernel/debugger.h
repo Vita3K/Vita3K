@@ -17,9 +17,10 @@
 
 #pragma once
 #include <cpu/state.h>
-#include <map>
 #include <mem/state.h>
 #include <mem/util.h>
+
+#include <map>
 
 constexpr uint32_t TRAMPOLINE_JUMPER_SVC = 0x54;
 constexpr uint32_t TRAMPOLINE_HANDLER_SVC = 0x53;

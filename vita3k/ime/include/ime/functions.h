@@ -19,11 +19,9 @@
 
 #include <ime/state.h>
 
-#include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
-
-struct Ime;
 
 namespace gui {
 

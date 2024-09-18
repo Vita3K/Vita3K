@@ -25,7 +25,6 @@
 #include <util/bytes.h>
 #include <util/log.h>
 
-#include <miniz.h>
 #include <zrif2rif.h>
 
 struct SceNpDrmLicense {

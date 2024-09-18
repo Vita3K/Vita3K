@@ -31,7 +31,7 @@
  * for a comma-separated list of file extensions to filter (ex. `"txt,md"`).
  */
 
-#include <host/dialog/filesystem.hpp>
+#include <host/dialog/filesystem.h>
 
 #include <nfd.hpp>
 
@@ -64,9 +64,7 @@ std::string format_file_filter_extension_list(const std::vector<std::string> &fi
     return formatted_string;
 }
 
-namespace host {
-namespace dialog {
-namespace filesystem {
+namespace host::dialog::filesystem {
 Result open_file(std::filesystem::path &resulting_path, const std::vector<FileFilter> &file_filters, const std::filesystem::path &default_path) {
     // Initialize NFD
     NFD::Guard nfd_guard;
@@ -207,6 +205,4 @@ std::string get_error() {
     return error;
 }
 
-} // namespace filesystem
-} // namespace dialog
-} // namespace host
+} // namespace host::dialog::filesystem

@@ -15,10 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <display/state.h>
-#include <mem/state.h>
+#include <glutil/shader.h>
 #include <renderer/gl/screen_render.h>
-
 #include <util/log.h>
 
 namespace renderer::gl {

@@ -17,8 +17,9 @@
 
 #pragma once
 
-#include <functional>
 #include <mem/util.h>
+
+#include <functional>
 
 template <typename T>
 class Ptr;

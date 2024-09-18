@@ -18,6 +18,7 @@
 #include <module/module.h>
 
 #include <regmgr/functions.h>
+#include <regmgr/types.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceRegMgr);

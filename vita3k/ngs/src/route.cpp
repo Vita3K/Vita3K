@@ -17,7 +17,6 @@
 
 #include <ngs/system.h>
 
-#include <util/log.h>
 #include <util/vector_utils.h>
 
 namespace ngs {

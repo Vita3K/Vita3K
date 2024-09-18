@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <memory>
-
 #include <util/fs.h>
 
 #ifdef WIN32
@@ -26,6 +24,8 @@
 #endif
 
 #include <dirent.h>
+
+#include <memory>
 
 typedef std::shared_ptr<FILE> FilePtr;
 

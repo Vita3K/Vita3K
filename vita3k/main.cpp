@@ -20,6 +20,7 @@
 #include <app/functions.h>
 #include <config/functions.h>
 #include <config/version.h>
+#include <dialog/state.h>
 #include <display/state.h>
 #include <emuenv/state.h>
 #include <gui/functions.h>

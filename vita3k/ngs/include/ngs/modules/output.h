@@ -17,7 +17,6 @@
 #pragma once
 
 #include <ngs/system.h>
-#include <ngs/types.h>
 
 namespace ngs {
 

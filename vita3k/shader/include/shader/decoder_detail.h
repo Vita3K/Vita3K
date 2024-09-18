@@ -13,9 +13,7 @@
 #include <cassert>
 #include <tuple>
 
-namespace shader {
-namespace decoder {
-namespace detail {
+namespace shader::decoder::detail {
 
 /**
  * Helper functions for the decoders.
@@ -163,6 +161,4 @@ public:
     }
 };
 
-} // namespace detail
-} // namespace decoder
-} // namespace shader
+} // namespace shader::decoder::detail

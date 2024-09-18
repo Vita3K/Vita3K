@@ -20,6 +20,7 @@
 #include <kernel/callback.h>
 #include <kernel/cpu_protocol.h>
 #include <kernel/debugger.h>
+#include <kernel/object_store.h>
 #include <kernel/sync_primitives.h>
 #include <kernel/types.h>
 #include <mem/allocator.h>
@@ -27,24 +28,16 @@
 #include <mem/util.h>
 #include <rtc/rtc.h>
 #include <util/containers.h>
-#include <util/pool.h>
 #include <util/types.h>
 
 #include <atomic>
-#include <kernel/object_store.h>
 #include <map>
 #include <mutex>
 #include <vector>
 
 struct ThreadState;
 
-struct Breakpoint;
-
 struct SDL_Thread;
-
-struct WatchMemory;
-
-struct InitialFiber;
 
 struct CodecEngineBlock;
 

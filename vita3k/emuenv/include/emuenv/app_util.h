@@ -20,9 +20,6 @@
 #include <mem/ptr.h>
 #include <util/types.h>
 
-// forward declarations
-typedef uint32_t SceUInt32;
-
 typedef SceUInt32 SceAppUtilBootAttribute;
 typedef SceUInt32 SceAppUtilAppEventType;
 typedef SceUInt32 SceAppUtilSaveDataSlotId;

@@ -30,10 +30,9 @@ void draw_mutexes_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
 
-    for (const auto &mutex : emuenv.kernel.mutexes) {
-        std::shared_ptr<Mutex> mutex_state = mutex.second;
+    for (const auto &[id, mutex_state] : emuenv.kernel.mutexes) {
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d        %01d            %02zu                 %s",
-            mutex.first,
+            id,
             mutex_state->name,
             mutex_state->lock_count,
             mutex_state->attr,
@@ -49,10 +48,9 @@ void draw_lw_mutexes_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
 
-    for (const auto &mutex : emuenv.kernel.lwmutexes) {
-        std::shared_ptr<Mutex> mutex_state = mutex.second;
+    for (const auto &[id, mutex_state] : emuenv.kernel.lwmutexes) {
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d        %01d           %02zu                 %s",
-            mutex.first,
+            id,
             mutex_state->name,
             mutex_state->lock_count,
             mutex_state->attr,

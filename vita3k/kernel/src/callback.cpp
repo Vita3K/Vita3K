@@ -18,8 +18,9 @@
 #include <kernel/callback.h>
 #include <kernel/state.h>
 #include <kernel/thread/thread_state.h>
-#include <mutex>
 #include <util/log.h>
+
+#include <mutex>
 
 uint32_t process_callbacks(KernelState &kernel, SceUID thread_id) {
     ThreadStatePtr thread = kernel.get_thread(thread_id);

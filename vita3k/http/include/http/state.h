@@ -18,10 +18,10 @@
 #pragma once
 
 #include <mem/ptr.h>
+#include <util/types.h>
 
 #include <map>
 #include <string>
-#include <util/types.h>
 #include <vector>
 
 #define SCE_HTTP_DEFAULT_RESPONSE_HEADER_MAX KB(5)

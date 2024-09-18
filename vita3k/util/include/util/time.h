@@ -17,8 +17,9 @@
 
 #pragma once
 
-#include <chrono>
 #include <util/log.h>
+
+#include <chrono>
 
 namespace TimeLogger {
 struct TimeLogger {

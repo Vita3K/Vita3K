@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <nids/functions.h>
+#include <cstdint>
 
 #define VAR_NID(name, nid) extern const char name_##name[] = #name;
 #define NID(name, nid) extern const char name_##name[] = #name;

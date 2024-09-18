@@ -15,7 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <renderer/gl/functions.h>
+#include <glutil/gl.h>
+#include <gxm/types.h>
 #include <renderer/profile.h>
 
 #include <util/log.h>

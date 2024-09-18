@@ -29,7 +29,7 @@ extern "C" {
 
 #include <util/log.h>
 
-#include <cassert>
+#include <algorithm>
 
 struct FFMPEGAtrac9Info {
     uint32_t version;

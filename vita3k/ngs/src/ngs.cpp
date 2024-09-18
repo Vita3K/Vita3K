@@ -15,13 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <cpu/functions.h>
 #include <kernel/state.h>
 
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/lock_and_find.h>
 
-#include <util/log.h>
 #include <util/vector_utils.h>
 
 namespace ngs {

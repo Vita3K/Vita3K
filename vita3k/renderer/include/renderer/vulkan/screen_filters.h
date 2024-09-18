@@ -19,9 +19,11 @@
 
 #include <vkutil/objects.h>
 
+#include <string_view>
+#include <vector>
+
 namespace renderer::vulkan {
 
-struct VKState;
 class ScreenRenderer;
 struct Viewport;
 

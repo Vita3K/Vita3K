@@ -17,15 +17,15 @@
 
 #pragma once
 
-#include <atomic>
 #include <kernel/callback.h>
 #include <mem/ptr.h>
+#include <util/types.h>
+
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>
-
-#include <util/types.h>
 
 enum SceDisplayPixelFormat {
     SCE_DISPLAY_PIXELFORMAT_A8B8G8R8 = 0x00000000U

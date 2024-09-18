@@ -25,7 +25,6 @@
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <shader/gxp_parser.h>
-#include <shader/profile.h>
 #include <shader/usse_translator_entry.h>
 #include <shader/usse_translator_types.h>
 #include <util/fs.h>

@@ -21,10 +21,9 @@
 
 #include <config/functions.h>
 #include <config/state.h>
-
-#include <display/state.h>
+#include <dialog/state.h>
 #include <gui/functions.h>
-#include <host/dialog/filesystem.hpp>
+#include <host/dialog/filesystem.h>
 #include <io/state.h>
 #include <np/common.h>
 

@@ -19,7 +19,7 @@
 #include <renderer/shaders.h>
 #include <renderer/types.h>
 
-#include <renderer/gl/functions.h>
+#include <renderer/gl/state.h>
 #include <renderer/gl/types.h>
 
 #include <gxm/types.h>

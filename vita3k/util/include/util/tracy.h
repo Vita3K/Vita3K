@@ -19,8 +19,9 @@
 
 #include <mem/ptr.h>
 #include <mem/state.h>
-#include <sstream>
 #include <util/log.h>
+
+#include <sstream>
 
 // universal to string converters for module specific types (usually enums)
 template <typename T>

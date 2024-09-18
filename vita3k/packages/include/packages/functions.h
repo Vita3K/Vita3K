@@ -24,13 +24,11 @@
 
 #include <emuenv/state.h>
 
-#include <functional>
-#include <string>
-
 // TODO: remove
 #include <util/fs.h>
 
-struct SfoFile;
+#include <functional>
+#include <string>
 
 void install_pup(const fs::path &pref_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback = nullptr);
 

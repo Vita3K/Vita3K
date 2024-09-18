@@ -17,8 +17,6 @@
 
 #include <renderer/shaders.h>
 
-#include <renderer/profile.h>
-
 #include <renderer/vulkan/state.h>
 
 #include <gxm/types.h>
@@ -28,7 +26,8 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <utility>
+#include <string>
+#include <vector>
 
 namespace renderer {
 

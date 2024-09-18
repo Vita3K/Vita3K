@@ -17,10 +17,7 @@
 
 #pragma once
 
-#include <motion/motion.h>
 #include <motion/motion_input.h>
-
-#include <SDL_gamecontroller.h>
 
 #include <mutex>
 

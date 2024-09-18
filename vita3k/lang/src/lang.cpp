@@ -19,6 +19,7 @@
 #include <lang/state.h>
 
 #include <config/state.h>
+#include <dialog/state.h>
 #include <gui/state.h>
 #include <ime/state.h>
 #include <util/fs.h>

@@ -23,6 +23,7 @@
 struct MemState;
 struct FeatureState;
 struct Config;
+struct SDL_Window;
 
 namespace renderer {
 struct Context;
@@ -143,8 +144,6 @@ int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, 
     else
         return 0;
 }
-
-class TextureCache;
 
 namespace texture {
 

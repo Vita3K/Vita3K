@@ -18,7 +18,6 @@
 #include "cpu/common.h"
 #include <cpu/impl/dynarmic_cpu.h>
 #include <cpu/state.h>
-#include <set>
 #include <util/bit_cast.h>
 #include <util/log.h>
 
@@ -26,6 +25,10 @@
 
 #include <dynarmic/frontend/A32/a32_ir_emitter.h>
 #include <dynarmic/interface/A32/coprocessor.h>
+
+#include <memory>
+#include <optional>
+#include <string>
 
 class ArmDynarmicCP15 : public Dynarmic::A32::Coprocessor {
     uint32_t tpidruro;

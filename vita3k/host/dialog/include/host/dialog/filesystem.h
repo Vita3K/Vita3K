@@ -30,9 +30,7 @@
 #include <string>
 #include <vector>
 
-namespace host {
-namespace dialog {
-namespace filesystem {
+namespace host::dialog::filesystem {
 
 /**
  * @brief Result IDs for filesystem-related dialogs
@@ -105,8 +103,4 @@ Result pick_folder(std::filesystem::path &resulting_path, const std::filesystem:
  */
 std::string get_error();
 
-} // namespace filesystem
-
-} // namespace dialog
-
-} // namespace host
+} // namespace host::dialog::filesystem

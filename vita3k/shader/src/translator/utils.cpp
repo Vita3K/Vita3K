@@ -19,7 +19,6 @@
 
 #include <SPIRV/SpvBuilder.h>
 
-#include <shader/usse_constant_table.h>
 #include <shader/usse_types.h>
 #include <util/log.h>
 

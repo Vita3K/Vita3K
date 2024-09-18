@@ -27,10 +27,9 @@ void draw_event_flags_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
 
-    for (const auto &event : emuenv.kernel.eventflags) {
-        std::shared_ptr<EventFlag> event_state = event.second;
+    for (const auto &[id, event_state] : emuenv.kernel.eventflags) {
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s  %02d        %01d         %02zu                 ",
-            event.first,
+            id,
             event_state->name,
             event_state->flags,
             event_state->attr,

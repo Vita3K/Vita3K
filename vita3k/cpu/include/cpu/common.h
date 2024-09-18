@@ -28,7 +28,6 @@
 #include <string>
 
 struct CPUState;
-struct MemState;
 struct CPUContext;
 struct CPUInterface;
 struct ThreadState;
