@@ -19,7 +19,7 @@
 
 #include <dialog/state.h>
 #include <gui/functions.h>
-#include <host/dialog/filesystem.hpp>
+#include <host/dialog/filesystem.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>

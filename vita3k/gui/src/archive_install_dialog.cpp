@@ -20,7 +20,7 @@
 
 #include <dialog/state.h>
 #include <gui/functions.h>
-#include <host/dialog/filesystem.hpp>
+#include <host/dialog/filesystem.h>
 #include <packages/sfo.h>
 
 #include <util/string_utils.h>

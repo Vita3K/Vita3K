@@ -24,7 +24,7 @@
 #include <config/state.h>
 #include <dialog/state.h>
 #include <display/state.h>
-#include <host/dialog/filesystem.hpp>
+#include <host/dialog/filesystem.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <lang/functions.h>

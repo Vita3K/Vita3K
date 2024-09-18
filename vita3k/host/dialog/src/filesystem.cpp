@@ -31,7 +31,7 @@
  * for a comma-separated list of file extensions to filter (ex. `"txt,md"`).
  */
 
-#include <host/dialog/filesystem.hpp>
+#include <host/dialog/filesystem.h>
 
 #include <nfd.hpp>
 
