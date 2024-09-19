@@ -266,11 +266,8 @@
 
 	<controllers name="コントローラー">
 		<connected>{}コントローラー接続済み</connected>
-		<name>名前</name>
 		<num>番号</num>
-		<not_connected>利用可能なコントローラーが接続されていません。
-SDL2に対応したコントローラーを接続してください。</not_connected>
-		<motion_support>コントローラーはモーションをサポートしています</motion_support>
+		<name>名前</name>
 		<rebind_controls>ボタン割り当て</rebind_controls>
 		<led_color>LEDカラー</led_color>
 		<use_custom_color>カスタムカラーを使用</use_custom_color>
@@ -278,6 +275,8 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<red>赤</red>
 		<green>緑</green>
 		<blue>青</blue>
+		<not_connected>利用可能なコントローラーが接続されていません。
+SDL2に対応したコントローラーを接続してください。</not_connected>
 		<reset_controller_binding>ボタン割り当てをリセット</reset_controller_binding>
 	</controllers>
 
@@ -708,7 +707,6 @@ GUIでのアジア地域のフォントサポートに必須です。
 		</network>
 		<save_reboot>保存して再起動</save_reboot>
 		<save_apply>保存して適用</save_apply>
-		<save>セーブ</save>
 		<keep_changes>セーブをクリックして変更を保存します。</keep_changes>
 	</settings_dialog>
 

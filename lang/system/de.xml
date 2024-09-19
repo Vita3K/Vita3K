@@ -202,8 +202,8 @@ Fehlercode: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controller">
-		<name>Name</name>
 		<num>Num</num>
+		<name>Name</name>
 	</controllers>
 
 	<controls name="Steuerung">
@@ -338,7 +338,6 @@ Dein Vita3K-System ist bereit!</completed_setup>
 	<settings_dialog name="Einstellungen">
 		<network name="Netzwerk">
 		</network>
-		<save>Speichern</save>
 	</settings_dialog>
 
 	<sys_apps_title>

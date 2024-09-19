@@ -285,11 +285,8 @@
 
 	<controllers name="Контролери">
 		<connected>{} Контролерів під'єднано</connected>
-		<name>Назва</name>
 		<num>Кількість</num>
-		<not_connected>Сумісні контролери не підключені.
-Будь ласка, підключіть контролер, сумісний з SDL2.</not_connected>
-		<motion_support>Контролер має сенсори руху</motion_support>
+		<name>Назва</name>
 		<rebind_controls>Прив'язка елементів керування</rebind_controls>
 		<led_color>Колір світлодіоду</led_color>
 		<use_custom_color>Використати власний колір</use_custom_color>
@@ -297,6 +294,8 @@
 		<red>Червоний</red>
 		<green>Зелений</green>
 		<blue>Синій</blue>
+		<not_connected>Сумісні контролери не підключені.
+Будь ласка, підключіть контролер, сумісний з SDL2.</not_connected>
 		<reset_controller_binding>Скинути налаштування елементів керування контролера</reset_controller_binding>
 	</controllers>
 
@@ -337,7 +336,7 @@
 		<toggle_gui_visibility_description>Перемикає видимість інтерфейсу у верхній частині екрану коли програма функціонує.</toggle_gui_visibility_description>
 		<miscellaneous>Інше</miscellaneous>
 		<toggle_texture_replacement>Перемикання заміни текстур</toggle_texture_replacement>
-		<take_a_screenshot>Зробити знімок екрану</take_a_screenshot>
+		<take_screenshot>Зробити знімок екрану</take_screenshot>
 		<error>Помилка</error>
 		<error_duplicate_key>Кнопка вже прив'язана або її неможливо прив'язати.</error_duplicate_key>
 	</controls>
@@ -778,7 +777,6 @@
 		</debug>
 		<save_reboot>Зберегти & Перезапустити</save_reboot>
 		<save_apply>Зберегти & Застосувати</save_apply>
-		<save>Зберегти</save>
 		<keep_changes>Натисніть 'Зберегти', аби зберегти зміни.</keep_changes>
 	</settings_dialog>
 

@@ -251,9 +251,9 @@
 	</content_manager>
 
 	<controllers name="Контроллеры">
-		<connected>Контроллеров подключено: {}</connected>
-		<name>Название</name>
+		<connected>{} Контроллеров подключено</connected>
 		<num>Количество</num>
+		<name>Название</name>
 		<not_connected>Не подключены совместимые контроллеры.
 Подключите контроллер, совместимый с SDL2.</not_connected>
 	</controllers>
@@ -540,7 +540,6 @@
 		</gui>
 		<network name="Сеть">
 		</network>
-		<save>Сохранить</save>
 	</settings_dialog>
 
 	<sys_apps_title>

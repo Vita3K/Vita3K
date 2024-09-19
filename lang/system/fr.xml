@@ -245,11 +245,10 @@ Code d'erreur: {}</an_error_occurred>
 
 	<controllers name="Contrôleurs">
 		<connected>{} contrôleurs connectés</connected>
-		<name>Nom</name>
 		<num>Num</num>
+		<name>Nom</name>
 		<not_connected>Aucun contrôleur compatible n'est connecté.
 Connecter un contrôleur compatible avec SDL2.</not_connected>
-		<motion_support>La manette de jeu prend en charge la détection de mouvements.</motion_support>
 	</controllers>
 
 	<controls name="Commandes">
@@ -437,7 +436,6 @@ Votre système Vita3K est prêt !</completed_setup>
 		</system>
 		<network name="Réseau">
 		</network>
-		<save>Sauvegarder</save>
 	</settings_dialog>
 
 	<sys_apps_title>

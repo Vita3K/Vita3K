@@ -209,8 +209,8 @@ Código del error: {}</an_error_occurred>
 
 	<controllers name="Controles">
 		<connected>{} controles conectado</connected>
-		<name>Nombre</name>
 		<num>Núm</num>
+		<name>Nombre</name>
 	</controllers>
 
 	<controls name="Controles">
@@ -347,7 +347,6 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		</system>
 		<network name="Red">
 		</network>
-		<save>Guardar</save>
 	</settings_dialog>
 
 	<sys_apps_title>

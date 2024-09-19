@@ -240,9 +240,9 @@ Código de erro: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controle">
-		<connected>Controles conectados</connected>
-		<name>Nome</name>
+		<connected>{} controles conectados</connected>
 		<num>Núm</num>
+		<name>Nome</name>
 		<not_connected>Nenhum controle compatível conectado.
 Conecte um controle que seja compatível com SDL2.</not_connected>
 	</controllers>
@@ -409,7 +409,6 @@ fundo</add_background>
 		</system>
 		<network name="Rede">
 		</network>
-		<save>Salvar</save>
 	</settings_dialog>
 
 	<sys_apps_title>
