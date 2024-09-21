@@ -616,7 +616,6 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 
         // use these features (because they are used by the vita GPU) if they are available
         vk::PhysicalDeviceFeatures enabled_features{
-            .depthClamp = physical_device_features.depthClamp,
             .fillModeNonSolid = physical_device_features.fillModeNonSolid,
             .wideLines = physical_device_features.wideLines,
             .samplerAnisotropy = physical_device_features.samplerAnisotropy,
