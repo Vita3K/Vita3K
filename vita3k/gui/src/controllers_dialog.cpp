@@ -173,6 +173,37 @@ static void add_bind_to_table(GuiState &gui, EmuEnvState &emuenv, const SDL_Game
     ImGui::PopID();
 }
 
+static void swap_controller_ports(CtrlState &state, int source_port, int dest_port) {
+    // Check if the ports are valid
+    if ((source_port < 0) || (source_port >= SCE_CTRL_MAX_WIRELESS_NUM) || (dest_port < 0) || (dest_port >= SCE_CTRL_MAX_WIRELESS_NUM)) {
+        LOG_ERROR("Ports are not valid.");
+        return;
+    }
+
+    // Find the controllers corresponding to the source and destination ports
+    auto source_controller_it = std::find_if(state.controllers.begin(), state.controllers.end(),
+        [&](const auto &pair) { return pair.second.port == (source_port + 1); });
+    auto dest_controller_it = std::find_if(state.controllers.begin(), state.controllers.end(),
+        [&](const auto &pair) { return pair.second.port == (dest_port + 1); });
+
+    // Check that both controllers exist
+    if ((source_controller_it == state.controllers.end()) || (dest_controller_it == state.controllers.end())) {
+        LOG_ERROR("Unable to find one or more controllers on the specified ports.");
+        return;
+    }
+
+    LOG_INFO("Controller on source port {} {} swapped with controller on destination port {} {}", source_port, state.controllers_name[source_port], dest_port, state.controllers_name[dest_port]);
+
+    // Swap controllers port and player index
+    SDL_GameControllerSetPlayerIndex(source_controller_it->second.controller.get(), dest_port);
+    SDL_GameControllerSetPlayerIndex(dest_controller_it->second.controller.get(), source_port);
+    std::swap(source_controller_it->second.port, dest_controller_it->second.port);
+
+    // Swap controller names and motion support
+    std::swap(state.controllers_name[source_port], state.controllers_name[dest_port]);
+    std::swap(state.controllers_has_motion_support[source_port], state.controllers_has_motion_support[dest_port]);
+}
+
 void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
     const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
@@ -185,8 +216,6 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto has_controllers = ctrl.controllers_num > 0;
 
-    if (has_controllers)
-        ImGui::SetNextWindowSize(ImVec2(VIEWPORT_SIZE.x / 2.5f, 0), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("##controllers", &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetWindowFontScale(RES_SCALE.x);
@@ -214,10 +243,16 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::TableSetColumnIndex(2);
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Motion Support");
+            const char *port_names[] = { "1", "2", "3", "4" };
             for (auto i = 0; i < ctrl.controllers_num; i++) {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text("%-8d", i);
+                int selected_port = i;
+                ImGui::PushID(i);
+                ImGui::SetNextItemWidth(50.f * emuenv.dpi_scale);
+                if (ImGui::Combo("##swap_port", &selected_port, port_names, ctrl.controllers_num))
+                    swap_controller_ports(ctrl, i, selected_port);
+                ImGui::PopID();
                 ImGui::TableSetColumnIndex(1);
                 if (ImGui::Button(ctrl.controllers_name[i]))
                     rebinds_is_open = true;
