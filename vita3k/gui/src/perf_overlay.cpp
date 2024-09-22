@@ -43,30 +43,28 @@ static ImVec2 get_perf_pos(ImVec2 window_size, EmuEnvState &emuenv) {
     return ImVec2(LEFT, TOP);
 }
 
-static float get_perf_height(EmuEnvState &emuenv) {
-    switch (emuenv.cfg.performance_overlay_detail) {
-    case MAXIMUM: return 138.f;
-    case MEDIUM: return 80.f;
-    case LOW:
-    case MINIMUM:
-    default: break;
-    }
-
-    return 57.f;
-}
-
 void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     auto lang = gui.lang.performance_overlay;
 
-    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
-    const auto MAIN_WINDOW_SIZE = ImVec2((emuenv.cfg.performance_overlay_detail == MINIMUM ? 95.5f : 152.f) * SCALE.x, get_perf_height(emuenv) * SCALE.y);
+    const auto SCALED_FONT_SIZE = ImGui::GetFontSize() * (0.7f * RES_SCALE.y);
+    const auto FONT_SCALE = SCALED_FONT_SIZE / ImGui::GetFontSize();
+
+    const auto FPS_TEXT = emuenv.cfg.performance_overlay_detail == MINIMUM ? fmt::format("FPS: {}", emuenv.fps) : fmt::format("FPS: {} {}: {}", emuenv.fps, lang["avg"], emuenv.avg_fps);
+    const auto MIN_MAX_FPS_TEXT = fmt::format("{}: {} {}: {}", lang["min"], emuenv.min_fps, lang["max"], emuenv.max_fps);
+
+    const ImVec2 TOTAL_WINDOW_PADDING(ImGui::GetStyle().WindowPadding.x * 2, ImGui::GetStyle().WindowPadding.y * 2);
+
+    const auto MAX_TEXT_WIDTH_SCALED = std::max(ImGui::CalcTextSize(FPS_TEXT.c_str()).x, ImGui::CalcTextSize(MIN_MAX_FPS_TEXT.c_str()).x) * FONT_SCALE;
+    const auto MAX_TEXT_HEIGHT_SCALED = SCALED_FONT_SIZE + (emuenv.cfg.performance_overlay_detail >= MEDIUM ? SCALED_FONT_SIZE + (ImGui::GetStyle().ItemSpacing.y * 2.f) : 0.f);
+
+    const ImVec2 WINDOW_SIZE(MAX_TEXT_WIDTH_SCALED + TOTAL_WINDOW_PADDING.x, MAX_TEXT_HEIGHT_SCALED + TOTAL_WINDOW_PADDING.y);
+    const ImVec2 MAIN_WINDOW_SIZE(WINDOW_SIZE.x + TOTAL_WINDOW_PADDING.x, WINDOW_SIZE.y + TOTAL_WINDOW_PADDING.y + (emuenv.cfg.performance_overlay_detail == MAXIMUM ? WINDOW_SIZE.y : 0.f));
 
     const auto WINDOW_POS = get_perf_pos(MAIN_WINDOW_SIZE, emuenv);
-    const auto WINDOW_SIZE = ImVec2((emuenv.cfg.performance_overlay_detail == MINIMUM ? 72.5f : 130.f) * SCALE.x, (emuenv.cfg.performance_overlay_detail <= LOW ? 35.f : 58.f) * SCALE.y);
-
     ImGui::SetNextWindowSize(MAIN_WINDOW_SIZE);
     ImGui::SetNextWindowPos(WINDOW_POS);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
@@ -74,22 +72,19 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleColor(ImGuiCol_ChildBg, PERF_OVERLAY_BG_COLOR);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.f * SCALE.x);
     ImGui::BeginChild("#perf_stats", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::PushFont(gui.vita_font);
-    ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
-    if (emuenv.cfg.performance_overlay_detail == PerformanceOverlayDetail::MINIMUM)
-        ImGui::Text("FPS: %d", emuenv.fps);
-    else
-        ImGui::Text("FPS: %d %s: %d", emuenv.fps, lang["avg"].c_str(), emuenv.avg_fps);
+
+    ImGui::SetWindowFontScale(0.7f * RES_SCALE.y);
+
+    ImGui::Text("%s", FPS_TEXT.c_str());
     if (emuenv.cfg.performance_overlay_detail >= PerformanceOverlayDetail::MEDIUM) {
         ImGui::Separator();
-        ImGui::Text("%s: %d %s: %d", lang["min"].c_str(), emuenv.min_fps, lang["max"].c_str(), emuenv.max_fps);
+        ImGui::Text("%s", MIN_MAX_FPS_TEXT.c_str());
     }
-    ImGui::PopFont();
     ImGui::EndChild();
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
     if (emuenv.cfg.performance_overlay_detail == PerformanceOverlayDetail::MAXIMUM) {
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (3.f * SCALE.y));
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetStyle().ItemSpacing.y);
         ImGui::PlotLines("##fps_graphic", emuenv.fps_values, IM_ARRAYSIZE(emuenv.fps_values), emuenv.current_fps_offset, nullptr, 0.f, float(emuenv.max_fps), WINDOW_SIZE);
     }
     ImGui::End();
