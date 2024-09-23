@@ -58,7 +58,7 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
 
     const ImVec2 TOTAL_WINDOW_PADDING(ImGui::GetStyle().WindowPadding.x * 2, ImGui::GetStyle().WindowPadding.y * 2);
 
-    const auto MAX_TEXT_WIDTH_SCALED = std::max(ImGui::CalcTextSize(FPS_TEXT.c_str()).x, ImGui::CalcTextSize(MIN_MAX_FPS_TEXT.c_str()).x) * FONT_SCALE;
+    const auto MAX_TEXT_WIDTH_SCALED = std::max(ImGui::CalcTextSize(FPS_TEXT.c_str()).x, emuenv.cfg.performance_overlay_detail == MINIMUM ? 0.f : ImGui::CalcTextSize(MIN_MAX_FPS_TEXT.c_str()).x) * FONT_SCALE;
     const auto MAX_TEXT_HEIGHT_SCALED = SCALED_FONT_SIZE + (emuenv.cfg.performance_overlay_detail >= MEDIUM ? SCALED_FONT_SIZE + (ImGui::GetStyle().ItemSpacing.y * 2.f) : 0.f);
 
     const ImVec2 WINDOW_SIZE(MAX_TEXT_WIDTH_SCALED + TOTAL_WINDOW_PADDING.x, MAX_TEXT_HEIGHT_SCALED + TOTAL_WINDOW_PADDING.y);
