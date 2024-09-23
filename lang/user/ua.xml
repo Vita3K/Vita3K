@@ -825,7 +825,8 @@
 	<vita3k_update name="Оновлення Vita3K">
  		<new_version_available>Доступна нова версія Vita3K.</new_version_available>
 		<back>Назад</back>
- 		<cancel_update>Ви хочете відмінити оновлення?</cancel_update>
+ 		<cancel_update_resume>Ви хочете відмінити оновлення?
+Якщо ви скасуєте, під час наступного оновлення Vita3K почне завантаження з цього моменту.</cancel_update_resume>
 		<downloading>Завантаження...
 Після завантаження, Vita3K автоматично перезапуститься та встановить нове оновлення.</downloading>
 		<not_complete_update>Не вдалося виконати оновлення.</not_complete_update>

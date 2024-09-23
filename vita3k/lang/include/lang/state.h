@@ -770,7 +770,7 @@ struct LangState {
         { "title", "Vita3K Update" },
         { "new_version_available", "A new version of Vita3K is available." },
         { "back", "Back" },
-        { "cancel_update", "Do you want to cancel the update?" },
+        { "cancel_update_resume", "Do you want to cancel the update?\nIf you cancel, the next time you update, Vita3K will start downloading from this point." },
         { "downloading", "Downloading...\nAfter the download is complete, Vita3K will restart automatically and then install the new update." },
         { "not_complete_update", "Could not complete the update." },
         { "minutes_left", "{} Minutes Left" },

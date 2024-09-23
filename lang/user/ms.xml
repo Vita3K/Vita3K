@@ -773,7 +773,8 @@ Adakah awak pasti mahu meneruskan?</user_delete_warn>
 	<vita3k_update name="Vita3K Kemas kini">
  		<new_version_available>Versi baharu Vita3K tersedia.</new_version_available>
 		<back>Belakang</back>
- 		<cancel_update>Adakah awak mahu membatalkan kemas kini?</cancel_update>
+ 		<cancel_update_resume>Adakah awak mahu membatalkan kemas kini?
+Jika anda membatalkan, pada kali anda mengemas kini, Vita3K akan mula memuat turun dari titik ini.</cancel_update_resume>
 		<downloading>Downloading...
 Selepas muat turun selesai, Vita3K akan dimulakan semula secara automatik dan kemudian memasang kemas kini baharu.</downloading>
 		<not_complete_update>Tidak dapat melengkapkan kemas kini.</not_complete_update>

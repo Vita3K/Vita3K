@@ -167,9 +167,38 @@ static void download_update(const fs::path &base_path) {
         const std::string archive_ext = ".zip";
 #endif
 
+        const auto vita3k_latest_ver_path = base_path / "vita3k-latest-ver";
         const auto vita3k_latest_path = base_path / ("vita3k-latest" + archive_ext);
 
-        const std::string version = std::to_string(git_version);
+        const std::string vita3k_version = std::to_string(git_version);
+
+        // check if vita3k_latest_path exist
+        if (fs::exists(vita3k_latest_path)) {
+            // read latest ver file if exist
+            if (fs::ifstream vita3k_latest_ver{ vita3k_latest_ver_path, std::ios::binary }) {
+                std::string vita3k_latest_version;
+                std::getline(vita3k_latest_ver, vita3k_latest_version);
+
+                // check if latest version of Vita3K is same with current git version for can resume download
+                if (vita3k_latest_version == vita3k_version)
+                    LOG_INFO("Resume download of version: {}", vita3k_latest_version);
+                else {
+                    fs::remove(vita3k_latest_ver_path);
+                    fs::remove(vita3k_latest_path);
+                    LOG_INFO("Start download of new version: {}", vita3k_version);
+                }
+            }
+        }
+
+        // check if latest_ver file exist
+        if (!fs::exists(vita3k_latest_ver_path)) {
+            // write latest_info file
+            if (fs::ofstream vita3k_latest_ver{ vita3k_latest_ver_path, std::ios::binary }) {
+                vita3k_latest_ver.write(vita3k_version.c_str(), vita3k_version.length());
+            } else {
+                LOG_ERROR("Failed to write latest_ver file at {}", vita3k_latest_ver_path.string());
+            }
+        }
 
         // Download latest Vita3K version
         LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
@@ -193,6 +222,10 @@ static void download_update(const fs::path &base_path) {
 #else
             const auto vita3K_batch = fmt::format("chmod +x \"{}/update-vita3k.sh\" && \"{}/update-vita3k.sh\"", base_path, base_path);
 #endif
+
+            // When success finish download, remove latest ver file
+            fs::remove(vita3k_latest_ver_path);
+
             std::system(vita3K_batch.c_str());
         } else {
             if (progress_state.download) {
@@ -371,9 +404,11 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginPopupModal("cancel_update_popup", &progress_state.pause, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration)) {
         const auto LARGE_BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
         auto &common = emuenv.common_dialog.lang.common;
-        const auto str_size = ImGui::CalcTextSize(lang["cancel_update"].c_str(), 0, false, POPUP_SIZE.x - (120.f * SCALE.x));
+        const auto str_size = ImGui::CalcTextSize(lang["cancel_update_resume"].c_str(), 0, false, POPUP_SIZE.x - (120.f * SCALE.y));
         ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, (ImGui::GetWindowHeight() / 2.f) - (str_size.y / 2.f)));
-        ImGui::TextWrapped("%s", lang["cancel_update"].c_str());
+        ImGui::PushTextWrapPos(POPUP_SIZE.x - (120.f * SCALE.x));
+        ImGui::Text("%s", lang["cancel_update_resume"].c_str());
+        ImGui::PopTextWrapPos();
         ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - LARGE_BUTTON_SIZE.x - (20.f * SCALE.x), POPUP_SIZE.y - LARGE_BUTTON_SIZE.y - (22.0f * SCALE.y)));
         if (ImGui::Button(common["no"].c_str(), LARGE_BUTTON_SIZE)) {
             std::unique_lock<std::mutex> lock(progress_state.mutex);
