@@ -238,7 +238,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         large_font_config.SizePixels = 116.f;
         gui.large_font = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(latin_fw_font_path).c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
     } else {
-        LOG_WARN("Could not find firmware font file at \"{}\", install firmware fonts package to fix this.", latin_fw_font_path);
+        LOG_WARN("Could not find firmware font file at {}, install firmware fonts package to fix this.", latin_fw_font_path);
         font_config.SizePixels = 22.f;
 
         // Set up default font path
@@ -260,7 +260,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
 
             LOG_INFO("Using default Vita3K font.");
         } else
-            LOG_WARN("Could not find default Vita3K font at \"{}\", using default ImGui font.", default_font_path);
+            LOG_WARN("Could not find default Vita3K font at {}, using default ImGui font.", default_font_path);
     }
 
     // Build font atlas loaded and upload to GPU
