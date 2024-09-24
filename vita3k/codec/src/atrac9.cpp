@@ -93,7 +93,7 @@ bool Atrac9DecoderState::send(const uint8_t *data, uint32_t size) {
 
     const int res = Atrac9Decode(decoder_handle, data, reinterpret_cast<short *>(result.data()), &decode_used);
     if (res != At9Status::ERR_SUCCESS) {
-        LOG_ERROR("Decode failure with code {}", res);
+        LOG_ERROR("Decode failure with code {}", log_hex(res));
         return false;
     }
 

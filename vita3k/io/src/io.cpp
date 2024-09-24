@@ -390,7 +390,7 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
     assert(size >= 0);
 
     if (fd < 0) {
-        LOG_WARN("Error writing fd: {}, size: {}", fd, size);
+        LOG_WARN("Error writing fd: {}, size: {}", log_hex(fd), size);
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
     }
 
