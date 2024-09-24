@@ -178,17 +178,17 @@ void init_notice_info(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     if (!notice_list.empty()) {
-        for (const auto &user : notice_list) {
+        for (auto &user : notice_list) {
             if ((user.first == "global") || (user.first == emuenv.io.user_id)) {
-                for (const auto &notice : user.second) {
-                    if (!set_notice_info(gui, emuenv, notice)) {
-                        const auto notice_index = std::find_if(notice_list[user.first].begin(), notice_list[user.first].end(), [&](const NoticeList &n) {
-                            return n.time == notice.time;
-                        });
-                        notice_list[user.first].erase(notice_index);
+                auto notice_it = user.second.begin();
+                while (notice_it != user.second.end()) {
+                    if (!set_notice_info(gui, emuenv, *notice_it)) {
+                        notice_it = user.second.erase(notice_it);
                         save_notice_list(emuenv);
-                    } else
-                        notice_info_new[notice.time] = notice_list_new[user.first][notice.time];
+                    } else {
+                        notice_info_new[notice_it->time] = notice_list_new[user.first][notice_it->time];
+                        ++notice_it;
+                    }
                 }
             }
         }
