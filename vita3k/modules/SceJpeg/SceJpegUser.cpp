@@ -37,18 +37,18 @@ struct SceJpegMJpegInitInfo {
     int option;
 };
 
-struct SceJpegPitch {
-    uint32_t x;
-    uint32_t y;
-};
+typedef MJpegPitch SceJpegPitch;
 
 enum SceJpegColorSpace : int {
     SCE_JPEG_COLORSPACE_UNKNOWN = 0x00000,
-    SCE_JPEG_COLORSPACE_GRAYSCALE = 0x10000,
+    SCE_JPEG_COLORSPACE_GRAYSCALE = 0x10101,
     SCE_JPEG_COLORSPACE_YUV = 0x20000,
     SCE_JPEG_COLORSPACE_YUV444 = 0x20101,
-    SCE_JPEG_COLORSPACE_YUV422 = 0x20102,
+    SCE_JPEG_COLORSPACE_YUV440 = 0x20102,
+    SCE_JPEG_COLORSPACE_YUV441 = 0x20104,
+    SCE_JPEG_COLORSPACE_YUV422 = 0x20201,
     SCE_JPEG_COLORSPACE_YUV420 = 0x20202,
+    SCE_JPEG_COLORSPACE_YUV411 = 0x20401,
 };
 
 enum SceJpegDHTMode : int {
@@ -93,10 +93,16 @@ SceJpegColorSpace convert_color_space_decoder_to_jpeg(DecoderColorSpace color_sp
         return SCE_JPEG_COLORSPACE_GRAYSCALE;
     case COLORSPACE_YUV444P:
         return SCE_JPEG_COLORSPACE_YUV444;
+    case COLORSPACE_YUV440P:
+        return SCE_JPEG_COLORSPACE_YUV440;
+    case COLORSPACE_YUV441P:
+        return SCE_JPEG_COLORSPACE_YUV441;
     case COLORSPACE_YUV422P:
         return SCE_JPEG_COLORSPACE_YUV422;
     case COLORSPACE_YUV420P:
         return SCE_JPEG_COLORSPACE_YUV420;
+    case COLORSPACE_YUV411P:
+        return SCE_JPEG_COLORSPACE_YUV411;
     default:
         return SCE_JPEG_COLORSPACE_UNKNOWN;
     }
@@ -108,13 +114,57 @@ DecoderColorSpace convert_color_space_jpeg_to_decoder(SceJpegColorSpace color_sp
         return COLORSPACE_GRAYSCALE;
     case SCE_JPEG_COLORSPACE_YUV444:
         return COLORSPACE_YUV444P;
+    case SCE_JPEG_COLORSPACE_YUV440:
+        return COLORSPACE_YUV440P;
+    case SCE_JPEG_COLORSPACE_YUV441:
+        return COLORSPACE_YUV441P;
     case SCE_JPEG_COLORSPACE_YUV422:
         return COLORSPACE_YUV422P;
     case SCE_JPEG_COLORSPACE_YUV420:
         return COLORSPACE_YUV420P;
+    case SCE_JPEG_COLORSPACE_YUV411:
+        return COLORSPACE_YUV411P;
     default:
         return COLORSPACE_UNKNOWN;
     }
+}
+
+// Helper functions
+SceJpegDHTMode get_DHT_mode(int decodeMode) {
+    return static_cast<SceJpegDHTMode>(decodeMode & 0b111);
+}
+
+SceJpegDownscaleMode get_downscale_mode(int decodeMode) {
+    return static_cast<SceJpegDownscaleMode>(decodeMode & (0b111 << 4));
+}
+
+int get_downscale_ratio(SceJpegDownscaleMode downscaleMode) {
+    return downscaleMode ? downscaleMode / 8 : 1;
+}
+
+bool is_standard_decoding(SceJpegDHTMode dhtMode) {
+    return dhtMode == SCE_JPEG_MJPEG_WITH_DHT || dhtMode == SCE_JPEG_MJPEG_WITHOUT_DHT;
+}
+
+static bool is_unsupported_image_size(uint32_t width, uint32_t height) {
+    /* Note: SCE_JPEG_ERROR_UNSUPPORT_IMAGE_SIZE is determined by the size of the decoded result,
+     * not the actual image dimensions. It checks the pitch width and height, not the image's width and height.
+     * If downscaling brings the image size within the supported range, this error won't occur.
+     * Conversely, if downscaling results in dimensions outside the supported range, this error will be triggered.
+     */
+    return width < 64 || height < 64 || width > 2032 || height > 1088;
+}
+
+// Common decoder configuration
+void configure_decoder(MJpegState *state, int decodeMode) {
+    SceJpegDHTMode dhtMode = get_DHT_mode(decodeMode);
+    SceJpegDownscaleMode downscaleMode = get_downscale_mode(decodeMode);
+
+    MJpegDecoderOptions options = {};
+    options.use_standard_decoder = is_standard_decoding(dhtMode);
+    options.downscale_ratio = get_downscale_ratio(downscaleMode);
+
+    state->decoder->configure(&options);
 }
 
 EXPORT(int, sceJpegCreateSplitDecoder) {
@@ -122,50 +172,81 @@ EXPORT(int, sceJpegCreateSplitDecoder) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceJpegCsc) {
+EXPORT(int, sceJpegCsc, uint8_t *pRGBA, const uint8_t *pYCbCr,
+    uint32_t xysize, int iFrameWidth, int colorOption, int sampling) {
     TRACY_FUNC(sceJpegCsc);
-    return UNIMPLEMENTED();
+
+    if (colorOption & SCE_JPEG_COLORSPACE_BT601) {
+        STUBBED("Unhandled BT601 color conversion");
+        colorOption &= ~SCE_JPEG_COLORSPACE_BT601;
+    }
+
+    if (colorOption != SCE_JPEG_PIXEL_RGBA8888)
+        // sceJpegCsc only supports RGBA8888
+        return RET_ERROR(SCE_JPEG_ERROR_INVALID_COLOR_FORMAT);
+
+    uint32_t width = xysize >> 16;
+    uint32_t height = xysize & 0xFFFF;
+
+    SceJpegColorSpace sceColorSpace = static_cast<SceJpegColorSpace>(SCE_JPEG_COLORSPACE_YUV | sampling);
+    if (sceColorSpace != SCE_JPEG_COLORSPACE_GRAYSCALE && sceColorSpace != SCE_JPEG_COLORSPACE_YUV444) {
+        // sceJpegCsc only supports YUV400 and YUV444
+        return RET_ERROR(SCE_JPEG_ERROR_INVALID_COLOR_FORMAT);
+    }
+
+    SceJpegPitch yuv_pitch[4];
+    auto colorSpace = convert_color_space_jpeg_to_decoder(static_cast<SceJpegColorSpace>(SCE_JPEG_COLORSPACE_YUV | sampling));
+
+    calculate_pitch_info(width, height, 0, colorSpace, false, yuv_pitch);
+    convert_yuv_to_rgb(pYCbCr, pRGBA, iFrameWidth, colorSpace, false, yuv_pitch);
+
+    return 0;
 }
 
 EXPORT(int, sceJpegDecodeMJpeg, const unsigned char *pJpeg, SceSize isize, uint8_t *pRGBA, SceSize osize,
     int decodeMode, void *pTempBuffer, SceSize tempBufferSize, void *pCoefBuffer, SceSize coefBufferSize) {
     TRACY_FUNC(sceJpegDecodeMJpeg, pJpeg, isize, pRGBA, osize, decodeMode, pTempBuffer, tempBufferSize, pCoefBuffer, coefBufferSize);
 
-    if (decodeMode & SCE_JPEG_MJPEG_DOWNSCALE_ANY)
-        return STUBBED("JPEG downscaling is not implemented");
-
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
-
-    DecoderSize size = {};
+    configure_decoder(state, decodeMode);
 
     // the yuv data will always be smaller than the rgba data, so osize is an upper bound
     std::vector<uint8_t> temporary(osize);
+    DecoderSize size = {};
 
     state->decoder->send(pJpeg, isize);
     state->decoder->receive(temporary.data(), &size);
 
-    convert_yuv_to_rgb(temporary.data(), pRGBA, size.pitch_width, size.pitch_height, state->decoder->get_color_space());
+    SceJpegPitch yuv_pitch[4];
+    state->decoder->get_pitch_info(yuv_pitch);
+
+    if (is_unsupported_image_size(yuv_pitch[0].x, yuv_pitch[0].y)) {
+        return RET_ERROR(SCE_JPEG_ERROR_UNSUPPORT_IMAGE_SIZE);
+    }
+
+    convert_yuv_to_rgb(temporary.data(), pRGBA, yuv_pitch[0].x, state->decoder->get_color_space(), false, yuv_pitch);
 
     // Top 16 bits = pitch_width, bottom 16 bits = pitch_height.
-    return (size.pitch_width << 16u) | size.pitch_height;
+    return (yuv_pitch[0].x << 16u) | yuv_pitch[0].y;
 }
 
 EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *pJpeg, SceSize isize,
     uint8_t *pYCbCr, SceSize osize, int decodeMode, void *pCoefBuffer, SceSize coefBufferSize) {
     TRACY_FUNC(sceJpegDecodeMJpegYCbCr, pJpeg, isize, pYCbCr, osize, decodeMode, pCoefBuffer, coefBufferSize);
 
-    if (decodeMode & SCE_JPEG_MJPEG_DOWNSCALE_ANY)
-        return STUBBED("JPEG downscaling is not implemented");
-
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
+    configure_decoder(state, decodeMode);
 
     DecoderSize size = {};
 
     state->decoder->send(pJpeg, isize);
     state->decoder->receive(pYCbCr, &size);
 
+    SceJpegPitch yuv_pitch[4];
+    state->decoder->get_pitch_info(yuv_pitch);
+
     // Top 16 bits = pitch_width, bottom 16 bits = pitch_height.
-    return (size.pitch_width << 16u) | size.pitch_height;
+    return (yuv_pitch[0].x << 16u) | yuv_pitch[0].y;
 }
 
 EXPORT(int, sceJpegDeleteSplitDecoder) {
@@ -182,70 +263,78 @@ EXPORT(int, sceJpegFinishMJpeg) {
 
 EXPORT(int, sceJpegGetOutputInfo, const uint8_t *pJpeg, SceSize isize,
     SceJpegFormat format, int decodeMode, SceJpegOutputInfo *output) {
+    /* Note: This implementation matches the basic functionality of PS Vita's sceJpegGetOutputInfo,
+     * but with the following limitations:
+     * 1. YUV441 is currently not supported due to FFmpeg limitations. While no games are known to use
+     *    YUV441, improvements may be necessary if such games are found.
+     * 2. JPEG files with non-standard MCUs will be processed without errors in Vita3K, whereas they
+     *    would cause decoding errors on the PS Vita.
+     * 3. The calculation of coefBufferSize is not supported.
+     */
     TRACY_FUNC(sceJpegGetOutputInfo, pJpeg, isize, format, decodeMode, output);
-    const auto state = emuenv.kernel.obj_store.get<MJpegState>();
 
     if (!pJpeg || !output || !isize)
         return RET_ERROR(SCE_JPEG_ERROR_INVALID_POINTER);
 
-    memset(output, 0, sizeof(SceJpegOutputInfo));
-
     if (format != SCE_JPEG_NO_CSC_OUTPUT && format != SCE_JPEG_PIXEL_RGBA8888 && format != SCE_JPEG_PIXEL_BGRA8888)
         return RET_ERROR(SCE_JPEG_ERROR_INVALID_COLOR_FORMAT);
 
-    if (format == SCE_JPEG_PIXEL_BGRA8888)
-        return STUBBED("SCE_JPEG_PIXEL_BGRA8888 is not implemented");
+    const auto state = emuenv.kernel.obj_store.get<MJpegState>();
+    configure_decoder(state, decodeMode);
 
     DecoderSize size = {};
 
     state->decoder->send(pJpeg, isize);
     state->decoder->receive(nullptr, &size);
 
+    memset(output, 0, sizeof(SceJpegOutputInfo));
+    output->color_space = convert_color_space_decoder_to_jpeg(state->decoder->get_color_space());
+
+    SceJpegDHTMode dhtMode = get_DHT_mode(decodeMode);
+    bool isStandardDecodingMode = is_standard_decoding(dhtMode);
+
+    // Check for unsupported color spaces in standard decoding
+    if (isStandardDecodingMode && output->color_space == SCE_JPEG_COLORSPACE_GRAYSCALE) {
+        return RET_ERROR(SCE_JPEG_ERROR_UNSUPPORT_COLORSPACE);
+    }
+
+    if (isStandardDecodingMode && (output->color_space != SCE_JPEG_COLORSPACE_YUV420 && output->color_space != SCE_JPEG_COLORSPACE_YUV422)) {
+        return RET_ERROR(SCE_JPEG_ERROR_UNSUPPORT_SAMPLING);
+    }
+
+    // Check for unsupported color conversion in extended decoding
+    if (!isStandardDecodingMode && format != SCE_JPEG_NO_CSC_OUTPUT) {
+        return RET_ERROR(SCE_JPEG_ERROR_UNSUPPORT_DOWNSCALE);
+    }
+
+    // Fill basic output information
     output->width = size.width;
     output->height = size.height;
-    output->color_space = convert_color_space_decoder_to_jpeg(state->decoder->get_color_space());
-    output->pitch[0] = {
-        .x = size.pitch_width,
-        .y = size.pitch_height
-    };
     // Should be 0 most of the time but I believe it causes more problems
     // for it to be 0 when it shouldn't than the opposite
     output->coef_buffer_size = 0x100;
-    if (format == SCE_JPEG_PIXEL_RGBA8888) {
-        output->output_size = size.pitch_width * size.pitch_height * 4;
-        // put something greater than 0
-        output->temp_buffer_size = 0x100;
-    } else {
-        switch (output->color_space) {
-        case SCE_JPEG_COLORSPACE_GRAYSCALE:
-            output->output_size = size.pitch_width * size.pitch_height;
-            break;
-        case SCE_JPEG_COLORSPACE_YUV444:
-            output->output_size = size.pitch_width * size.pitch_height * 3;
-            output->pitch[1] = output->pitch[0];
-            output->pitch[2] = output->pitch[0];
-            break;
-        case SCE_JPEG_COLORSPACE_YUV422:
-            output->output_size = size.pitch_width * size.pitch_height * 2;
-            output->pitch[1] = {
-                .x = size.pitch_width / 2,
-                .y = size.pitch_height
-            };
-            output->pitch[2] = output->pitch[1];
-            break;
-        case SCE_JPEG_COLORSPACE_YUV420:
-            output->output_size = size.pitch_width * size.pitch_height * 3 / 2;
-            output->pitch[1] = {
-                .x = size.pitch_width / 2,
-                .y = size.pitch_height / 2
-            };
-            output->pitch[2] = output->pitch[1];
-            break;
-        }
+
+    state->decoder->get_pitch_info(output->pitch);
+
+    int totalYuvSize = 0;
+
+    // Calculate total YUV buffer size
+    for (int i = 0; i < 4; i++) {
+        totalYuvSize += output->pitch[i].x * output->pitch[i].y;
     }
 
-    if (decodeMode & SCE_JPEG_MJPEG_DOWNSCALE_ANY)
-        return STUBBED("JPEG downscaling is not implemented");
+    // Adjust output information based on format
+    if (format != SCE_JPEG_NO_CSC_OUTPUT) {
+        // Adjust for RGBA or BGRA format
+        output->pitch[0].x *= 4;
+        output->pitch[1] = output->pitch[2] = output->pitch[3] = { 0, 0 };
+
+        output->temp_buffer_size = align(totalYuvSize, 256);
+        output->output_size = align(output->pitch[0].x * output->pitch[0].y, 256);
+    } else {
+        // No color space conversion
+        output->output_size = align(totalYuvSize, 256);
+    }
 
     return 0;
 }
@@ -279,16 +368,18 @@ EXPORT(int, sceJpegMJpegCsc, uint8_t *pRGBA, const uint8_t *pYCbCr,
     if (colorOption != SCE_JPEG_PIXEL_RGBA8888 && colorOption != SCE_JPEG_PIXEL_BGRA8888)
         return RET_ERROR(SCE_JPEG_ERROR_INVALID_COLOR_FORMAT);
 
-    if (colorOption == SCE_JPEG_PIXEL_BGRA8888)
-        return STUBBED("SCE_JPEG_PIXEL_BGRA8888 is not implemented");
-
     uint32_t width = xysize >> 16;
     uint32_t height = xysize & 0xFFFF;
 
-    if (width != iFrameWidth)
-        STUBBED("Mismatch between width and frameWidth, image will look corrupted");
+    if (is_unsupported_image_size(width, height)) {
+        return RET_ERROR(SCE_JPEG_ERROR_UNSUPPORT_IMAGE_SIZE);
+    }
 
-    convert_yuv_to_rgb(pYCbCr, pRGBA, width, height, convert_color_space_jpeg_to_decoder(static_cast<SceJpegColorSpace>(SCE_JPEG_COLORSPACE_YUV | sampling)));
+    SceJpegPitch yuv_pitch[4];
+    auto colorSpace = convert_color_space_jpeg_to_decoder(static_cast<SceJpegColorSpace>(SCE_JPEG_COLORSPACE_YUV | sampling));
+
+    calculate_pitch_info(width, height, 0, colorSpace, true, yuv_pitch);
+    convert_yuv_to_rgb(pYCbCr, pRGBA, iFrameWidth, colorSpace, colorOption == SCE_JPEG_PIXEL_BGRA8888, yuv_pitch);
 
     return 0;
 }
