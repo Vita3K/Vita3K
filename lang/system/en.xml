@@ -519,7 +519,7 @@ Check work.bin/rif file or zRIF key.</failed_install_license>
 	</live_area>
 
 	<message>
-		<load_app_failed>Failed to load "{}".
+		<load_app_failed>Failed to load {}.
 Check vita3k.log to see console output for details.
 1. Do you have installed firmware?
 2. Dump your own app(s)/game(s) and install it on Vita3K.
