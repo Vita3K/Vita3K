@@ -14,5 +14,6 @@ build
 .cache
 # CMake user presets
 CMakeUserPresets.json
+compile_commands.json
 # AppImage builder
 appimage/linuxdeploy.AppImage
