@@ -84,8 +84,8 @@ void replace(std::string &str, const std::string &in, const std::string &out) {
     }
 }
 
-std::basic_string<uint8_t> string_to_byte_array(const std::string &string) {
-    std::basic_string<uint8_t> hex_bytes;
+std::vector<uint8_t> string_to_byte_array(const std::string &string) {
+    std::vector<uint8_t> hex_bytes;
 
     for (size_t i = 0; i < string.length(); i += 2) {
         uint16_t byte;
