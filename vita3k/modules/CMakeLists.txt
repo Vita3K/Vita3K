@@ -192,6 +192,7 @@ set(SOURCE_LIST
 	SceTouch/SceTouch.cpp
 	SceTriggerUtil/SceTriggerUtil.cpp
 	SceUdcd/SceUdcd.cpp
+	SceUlobjDbg/SceUlobjDbg.cpp
 	SceUlobjMgr/SceUlobjMgr.cpp
 	SceUlt/SceUlt.cpp
 	SceUsbd/SceUsbdForUser.cpp

@@ -7186,6 +7186,10 @@ NID(sceUdcdGetDrvState, 0x99B3DA5D)
 NID(sceUdcdRegisterCallback, 0xA7070093)
 NID(sceUdcdUnregisterCallback, 0xC3FBA889)
 NID(sceUdcdWaitState, 0x59EFFAF1)
+// Module "SceUlobjDbg"
+// Library "SceUlobjDbg"
+NID(SceUlobjDbg_D7F0F610, 0xD7F0F610)
+NID(SceUlobjDbg_F9C0F5DA, 0xF9C0F5DA)
 // Module "SceUlobjMgr"
 // Library "SceUlobjMgr"
 NID(_sceUlobjMgrRegisterLibultProtocolRevision, 0x50F2F2AA)
