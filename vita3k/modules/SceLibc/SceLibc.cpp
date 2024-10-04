@@ -1836,3 +1836,156 @@ EXPORT(int, wscanf_s) {
     TRACY_FUNC(wscanf_s);
     return UNIMPLEMENTED();
 }
+
+VAR_EXPORT(_FDenorm) {
+    auto ptr = Ptr<SceFloat32>(alloc(emuenv.mem, 4, "_FDenorm"));
+    // Denormalized number
+    *ptr.get(emuenv.mem) = 0x00000001;
+    return ptr.address();
+}
+
+VAR_EXPORT(_FInf) {
+    auto ptr = Ptr<SceFloat32>(alloc(emuenv.mem, 4, "_FInf"));
+    // Positive infinity
+    *ptr.get(emuenv.mem) = 0x7F800000;
+    return ptr.address();
+}
+
+VAR_EXPORT(_FNan) {
+    auto ptr = Ptr<SceFloat32>(alloc(emuenv.mem, 4, "_FNan"));
+    // Quiet NaN
+    *ptr.get(emuenv.mem) = 0x7FC00000;
+    return ptr.address();
+}
+
+VAR_EXPORT(_FSnan) {
+    auto ptr = Ptr<SceFloat32>(alloc(emuenv.mem, 4, "_FSnan"));
+    // Signaling NaN
+    *ptr.get(emuenv.mem) = 0x7F800001;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Flt) {
+    auto ptr = Ptr<SceUID>(alloc(emuenv.mem, 4, "_Flt"));
+    // It means float? I don't know what this is
+    *ptr.get(emuenv.mem) = 0x00000006;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Denorm) {
+    auto ptr = Ptr<SceDouble64>(alloc(emuenv.mem, 8, "_Denorm"));
+    // Denormalized number
+    *ptr.get(emuenv.mem) = 0x0000000000000001;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Inf) {
+    auto ptr = Ptr<SceDouble64>(alloc(emuenv.mem, 8, "_Inf"));
+    // Positive infinity
+    *ptr.get(emuenv.mem) = 0x7FF0000000000000;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Nan) {
+    auto ptr = Ptr<SceDouble64>(alloc(emuenv.mem, 8, "_Nan"));
+    // Quiet NaN
+    *ptr.get(emuenv.mem) = 0x7FF8000000000000;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Snan) {
+    auto ptr = Ptr<SceDouble64>(alloc(emuenv.mem, 8, "_Snan"));
+    // Signaling NaN
+    *ptr.get(emuenv.mem) = 0x7FF0000000000001;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Dbl) {
+    auto ptr = Ptr<SceUID>(alloc(emuenv.mem, 4, "_Dbl"));
+    // It means double? I don't know what this is
+    *ptr.get(emuenv.mem) = 0x0000000f;
+    return ptr.address();
+}
+
+VAR_EXPORT(_LDenorm) {
+    // The same as _Denorm
+    auto ptr = Ptr<SceDouble64>(alloc(emuenv.mem, 8, "_LDenorm"));
+    *ptr.get(emuenv.mem) = 0x0000000000000001;
+    return ptr.address();
+}
+
+// Note: PS Vita's Long Double is identical to Double.
+VAR_EXPORT(_LInf) {
+    auto ptr = Ptr<SceDouble64>(alloc(emuenv.mem, 8, "_LInf"));
+    // Positive infinity
+    *ptr.get(emuenv.mem) = 0x7FF0000000000000;
+    return ptr.address();
+}
+
+VAR_EXPORT(_LNan) {
+    auto ptr = Ptr<SceDouble64>(alloc(emuenv.mem, 8, "_LNan"));
+    // Quiet NaN
+    *ptr.get(emuenv.mem) = 0x7FF8000000000000;
+    return ptr.address();
+}
+
+VAR_EXPORT(_LSnan) {
+    auto ptr = Ptr<SceDouble64>(alloc(emuenv.mem, 8, "_LSnan"));
+    // Signaling NaN
+    *ptr.get(emuenv.mem) = 0x7FF0000000000001;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Ldbl) {
+    auto ptr = Ptr<SceUID>(alloc(emuenv.mem, 4, "_Ldbl"));
+    // Probably it means long double. PS Vita's Long Double is identical to Double.
+    *ptr.get(emuenv.mem) = 0x0000000f;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Stderr) {
+    auto ptr = Ptr<SceUID>(alloc(emuenv.mem, 4, "_Stderr"));
+    *ptr.get(emuenv.mem) = 0x10402;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Stdin) {
+    auto ptr = Ptr<SceUID>(alloc(emuenv.mem, 4, "_Stdin"));
+    *ptr.get(emuenv.mem) = 0x20402;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Stdout) {
+    auto ptr = Ptr<SceUID>(alloc(emuenv.mem, 4, "_Stdout"));
+    *ptr.get(emuenv.mem) = 0x401;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Tolotab) {
+    // SceWChar16 to lower table
+
+    auto ptr = Ptr<SceWChar16>(alloc(emuenv.mem, 257 * sizeof(SceWChar16), "_Tolotab"));
+    for (int i = 0; i < 256; i++) {
+        ptr.get(emuenv.mem)[i] = static_cast<SceWChar16>(std::tolower(i));
+    }
+    ptr.get(emuenv.mem)[256] = 0;
+    return ptr.address();
+}
+
+VAR_EXPORT(_Touptab) {
+    // SceWChar16 to upper table
+    auto ptr = Ptr<SceWChar16>(alloc(emuenv.mem, 257 * sizeof(SceWChar16), "_Touptab"));
+    for (int i = 0; i < 256; i++) {
+        ptr.get(emuenv.mem)[i] = static_cast<SceWChar16>(std::toupper(i));
+    }
+    ptr.get(emuenv.mem)[256] = 0;
+    return ptr.address();
+}
+
+VAR_EXPORT(libc_heap_mspace) {
+    // From the name, it seems to be related to the heap space of mspace.
+    // However, including cases where mspace was used, the value was always 0 in my test scenarios.
+    auto ptr = Ptr<SceUID>(alloc(emuenv.mem, 4, "libc_heap_mspace"));
+    *ptr.get(emuenv.mem) = 0x00000000;
+    return ptr.address();
+}

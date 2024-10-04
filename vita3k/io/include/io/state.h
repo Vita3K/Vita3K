@@ -115,7 +115,14 @@ struct IOState {
 
     bool redirect_stdio;
 
-    SceUID next_fd = 0;
+    /* On PS Vita, user-level file descriptors presumably start from an arbitrary odd number
+     * greater than or equal to 0x40010001, incrementing by 2 each time.
+     * Some internal functions using file I/O appear to add 10000 to the fd value
+     * and reset the increment of lower digits.
+     * Strict implementation isn't necessary, but the starting value has been adjusted
+     * to avoid conflicts with stdio and other standard file descriptors.
+     */
+    SceUID next_fd = 0x40010001;
     TtyFiles tty_files;
     StdFiles std_files;
     DirEntries dir_entries;
