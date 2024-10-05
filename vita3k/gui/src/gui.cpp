@@ -684,14 +684,14 @@ std::map<DateTime, std::string> get_date_time(GuiState &gui, EmuEnvState &emuenv
     return date_time_str;
 }
 
-ImTextureID load_image(GuiState &gui, const uint8_t *data, const std::uint32_t size) {
+ImTextureID load_image(GuiState &gui, const uint8_t *data, const int size) {
     int width;
     int height;
 
     stbi_uc *img_data = stbi_load_from_memory(data, size, &width, &height,
         nullptr, STBI_rgb_alpha);
 
-    if (!data)
+    if (!img_data)
         return nullptr;
 
     const auto handle = ImGui_ImplSdl_CreateTexture(gui.imgui_state.get(), img_data, width, height);
