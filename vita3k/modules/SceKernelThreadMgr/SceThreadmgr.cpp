@@ -249,9 +249,16 @@ EXPORT(int, _sceKernelGetEventInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetEventPattern) {
-    TRACY_FUNC(_sceKernelGetEventPattern);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetEventPattern, SceUID event_id, SceUInt32 *get_pattern) {
+    TRACY_FUNC(_sceKernelGetEventPattern, event_id, get_pattern);
+    const SimpleEventPtr event = lock_and_find(event_id, emuenv.kernel.simple_events, emuenv.kernel.mutex);
+    if (!event)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    if (!get_pattern)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    *get_pattern = event->pattern;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelGetLwCondInfo) {

@@ -1317,9 +1317,9 @@ EXPORT(int, sceKernelGetEventInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetEventPattern) {
-    TRACY_FUNC(sceKernelGetEventPattern);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetEventPattern, SceUID event_id, SceUInt32 *get_pattern) {
+    TRACY_FUNC(sceKernelGetEventPattern, event_id, get_pattern);
+    return CALL_EXPORT(_sceKernelGetEventPattern, event_id, get_pattern);
 }
 
 EXPORT(int, sceKernelGetLwCondInfo) {
