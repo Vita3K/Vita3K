@@ -53,7 +53,7 @@ static void draw_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, NpTrophyUnl
             gui.trophy_window_pos = ImVec2(ImGui::GetIO().DisplaySize.x + TROPHY_WINDOW_MARGIN_PADDING, TROPHY_WINDOW_Y_POS);
 
             // Load icon
-            gui.trophy_window_icon = load_image(gui, callback_data.icon_buf.data(), static_cast<std::uint32_t>(callback_data.icon_buf.size()));
+            gui.trophy_window_icon = load_image(gui, callback_data.icon_buf.data(), static_cast<int>(callback_data.icon_buf.size()));
         } else if (gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN && gui.trophy_window_pos.x > target_window_pos.x) {
             gui.trophy_window_pos.x -= TROPHY_MOVE_DELTA;
         } else if (gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_OUT && gui.trophy_window_pos.x < target_window_pos.x) {
