@@ -125,6 +125,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType 
     // https://wiki.henkaku.xyz/vita/SceSysmem_Types#memtype_bit_value
     Address start_address;
     switch (type) {
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
         start_address = 0x70000000U;
         break;
