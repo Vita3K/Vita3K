@@ -1316,6 +1316,16 @@ EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return UNIMPLEMENTED();
 }
 
+static void update_viewport(renderer::State &state, SceGxmContext *context) {
+    if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
+        renderer::set_viewport_real(state, context->renderer.get(), context->state.viewport.offset.x,
+            context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x,
+            context->state.viewport.scale.y, context->state.viewport.scale.z);
+    } else {
+        renderer::set_viewport_flat(state, context->renderer.get());
+    }
+}
+
 EXPORT(void, sceGxmSetDefaultRegionClipAndViewport, SceGxmContext *context, uint32_t xMax, uint32_t yMax) {
     TRACY_FUNC(sceGxmSetDefaultRegionClipAndViewport, context, xMax, yMax);
     const std::uint32_t xMin = 0;
@@ -1339,13 +1349,7 @@ EXPORT(void, sceGxmSetDefaultRegionClipAndViewport, SceGxmContext *context, uint
         renderer::set_region_clip(*emuenv.renderer, context->renderer.get(), SCE_GXM_REGION_CLIP_OUTSIDE,
             xMin, xMax, yMin, yMax);
 
-        if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
-            renderer::set_viewport_real(*emuenv.renderer, context->renderer.get(), context->state.viewport.offset.x,
-                context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x,
-                context->state.viewport.scale.y, context->state.viewport.scale.z);
-        } else {
-            renderer::set_viewport_flat(*emuenv.renderer, context->renderer.get());
-        }
+        update_viewport(*emuenv.renderer, context);
     }
 }
 
@@ -1355,13 +1359,7 @@ static void gxmContextStateRestore(renderer::State &state, SceGxmContext *contex
             context->state.region_clip_min.x, context->state.region_clip_max.x, context->state.region_clip_min.y,
             context->state.region_clip_max.y);
 
-        if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
-            renderer::set_viewport_real(state, context->renderer.get(), context->state.viewport.offset.x,
-                context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x,
-                context->state.viewport.scale.y, context->state.viewport.scale.z);
-        } else {
-            renderer::set_viewport_flat(state, context->renderer.get());
-        }
+        update_viewport(state, context);
     }
 
     renderer::set_cull_mode(state, context->renderer.get(), context->state.cull_mode);
@@ -4174,14 +4172,13 @@ EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xSc
         context->state.viewport.scale.y = yScale;
         context->state.viewport.scale.z = zScale;
 
+        if (!context->state.active) {
+            LOG_WARN_ONCE("The call was made outside of the Scene. It will be ignored.");
+            return;
+        }
+
         if (context->alloc_space) {
-            if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
-                renderer::set_viewport_real(*emuenv.renderer, context->renderer.get(), context->state.viewport.offset.x,
-                    context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x, context->state.viewport.scale.y,
-                    context->state.viewport.scale.z);
-            } else {
-                renderer::set_viewport_flat(*emuenv.renderer, context->renderer.get());
-            }
+            update_viewport(*emuenv.renderer, context);
         }
     }
 }
@@ -4192,14 +4189,13 @@ EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode
     if (context->state.viewport.enable != enable) {
         context->state.viewport.enable = enable;
 
+        if (!context->state.active) {
+            LOG_WARN_ONCE("The call was made outside of the Scene. It will be applied when the next Scene is called.");
+            return;
+        }
+
         if (context->alloc_space) {
-            if (context->state.viewport.enable == SCE_GXM_VIEWPORT_DISABLED) {
-                renderer::set_viewport_flat(*emuenv.renderer, context->renderer.get());
-            } else {
-                renderer::set_viewport_real(*emuenv.renderer, context->renderer.get(), context->state.viewport.offset.x,
-                    context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x, context->state.viewport.scale.y,
-                    context->state.viewport.scale.z);
-            }
+            update_viewport(*emuenv.renderer, context);
         }
     }
 }
