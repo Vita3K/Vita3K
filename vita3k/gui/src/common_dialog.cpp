@@ -176,14 +176,32 @@ static int32_t first_visible_save_data_slot = -1, current_selected_save_data_slo
 static std::vector<uint32_t> save_data_slot_list, save_data_slot_list_visible;
 static int32_t current_save_data_dialog_button_id = 0;
 
+bool savedata_date_compare(const SceDateTime &dt1, const SceDateTime &dt2) {
+    if (dt1.year != dt2.year)
+        return dt1.year < dt2.year;
+    if (dt1.month != dt2.month)
+        return dt1.month < dt2.month;
+    if (dt1.day != dt2.day)
+        return dt1.day < dt2.day;
+    if (dt1.hour != dt2.hour)
+        return dt1.hour < dt2.hour;
+    if (dt1.minute != dt2.minute)
+        return dt1.minute < dt2.minute;
+    if (dt1.second != dt2.second)
+        return dt1.second < dt2.second;
+    return dt1.microsecond < dt2.microsecond;
+}
+
 void browse_save_data_dialog(GuiState &gui, EmuEnvState &emuenv, const uint32_t button) {
     // When user press a button, enable navigation by buttons
     if (!gui.is_nav_button) {
         gui.is_nav_button = true;
 
-        // When the current selected save data slot have not any selected, set it to the first visible
-        if (current_selected_save_data_slot < 0)
-            current_selected_save_data_slot = first_visible_save_data_slot;
+        // When the current selected save data slot have not any selected, set it to the most recent save
+        if (current_selected_save_data_slot < 0) {
+            auto result = std::max_element(emuenv.common_dialog.savedata.date.begin(), emuenv.common_dialog.savedata.date.end(), savedata_date_compare);
+            current_selected_save_data_slot = std::distance(emuenv.common_dialog.savedata.date.begin(), result);
+        }
 
         return;
     }
