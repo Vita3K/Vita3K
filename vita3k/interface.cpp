@@ -466,27 +466,28 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
         }
     }
     const auto module_app_path{ emuenv.pref_path / "ux0/app" / emuenv.io.app_path / "sce_module" };
-    const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);
+
     std::vector<std::string> lib_load_list = {};
     // todo: check if module is imported
     auto add_preload_module = [&](uint32_t code, SceSysmoduleModuleId module_id, const std::string &name, bool load_from_app) {
         if ((process_preload_disabled & code) == 0) {
             if (is_lle_module(name, emuenv)) {
-                if (load_from_app)
-                    lib_load_list.emplace_back(fmt::format("app0:sce_module/{}.suprx", name));
-                else
-                    lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}.suprx", name));
+                const auto module_name_file = fmt::format("{}.suprx", name);
+                if (load_from_app && fs::exists(module_app_path / module_name_file))
+                    lib_load_list.emplace_back(fmt::format("app0:sce_module/{}", module_name_file));
+                else if (fs::exists(emuenv.pref_path / "vs0/sys/external" / module_name_file))
+                    lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}", module_name_file));
             }
 
             if (module_id != SCE_SYSMODULE_INVALID)
                 emuenv.kernel.loaded_sysmodules[module_id] = {};
         }
     };
-    add_preload_module(0x00010000, SCE_SYSMODULE_INVALID, "libc", is_app);
+    add_preload_module(0x00010000, SCE_SYSMODULE_INVALID, "libc", true);
     add_preload_module(0x00020000, SCE_SYSMODULE_DBG, "libdbg", false);
     add_preload_module(0x00080000, SCE_SYSMODULE_INVALID, "libshellsvc", false);
     add_preload_module(0x00100000, SCE_SYSMODULE_INVALID, "libcdlg", false);
-    add_preload_module(0x00200000, SCE_SYSMODULE_FIOS2, "libfios2", is_app);
+    add_preload_module(0x00200000, SCE_SYSMODULE_FIOS2, "libfios2", true);
     add_preload_module(0x00400000, SCE_SYSMODULE_APPUTIL, "apputil", false);
     add_preload_module(0x00800000, SCE_SYSMODULE_INVALID, "libSceFt2", false);
     add_preload_module(0x01000000, SCE_SYSMODULE_INVALID, "libpvf", false);
