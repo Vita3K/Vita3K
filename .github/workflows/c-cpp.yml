@@ -31,7 +31,6 @@ jobs:
           - os: ubuntu-latest
             version: zip
             cache_path: ~/.ccache
-            extra_cmake_args: 
             cmake_preset: linux-ninja-clang15
           - os: windows-latest
             version: zip
@@ -181,9 +180,14 @@ jobs:
 
     outputs:
       BuildTag: ${{ env.build_variable }}
+      ShortSHA: ${{ env.git_short_sha }}
 
   create-release:
     needs: [build]
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: [master, store]
     runs-on: "ubuntu-20.04"
     if: |
       github.ref == 'refs/heads/master' &&
@@ -196,6 +200,9 @@ jobs:
 
       - name: Get Build Variable
         run: echo "Build_Variable=${{ needs.build.outputs.BuildTag }}" >> $GITHUB_ENV
+
+      - name: Get Git Short SHA
+        run: echo "Short_SHA=${{ needs.build.outputs.ShortSHA }}" >> $GITHUB_ENV
 
       - name: Get latest commit message
         run: echo "Latest_Commit_Message=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
@@ -237,11 +244,40 @@ jobs:
           wget -c https://github.com/tcnksm/ghr/releases/download/v0.16.2/ghr_v0.16.2_linux_amd64.tar.gz
           tar xfv ghr_v0.16.2_linux_amd64.tar.gz
           ghr_v0.16.2_linux_amd64/ghr -u Vita3K -r Vita3K -recreate -n 'Automatic CI builds' -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" continuous artifacts/
+        if: matrix.repo == 'master'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make release on store repository
+        shell: bash
         run: |
+          mkdir artifacts/
+          files=$(find . -name "*latest")
+          for f in $files; do
+            if [[ $f == *macos-latest ]]
+            then
+              cp $(basename $f)/$(basename $f).dmg artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_macos.dmg
+            else
+              if [[ $f == *ubuntu-latest ]]
+              then
+                if [[ $f == *appimage* ]]
+                then
+                  cp $(basename $f)/*.AppImage* artifacts/
+                else
+                  rm -f $(basename $f)/*.AppImage*
+                  echo "Compressing $f"
+                  7z a -mx=9 artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu.7z $(basename $f)
+                fi
+              else
+                echo "Compressing $f"
+                7z a -mx=9 artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_windows.7z $(basename $f)
+              fi
+            fi
+          done
+          ls -al artifacts/
+          wget -c https://github.com/tcnksm/ghr/releases/download/v0.16.2/ghr_v0.16.2_linux_amd64.tar.gz
+          tar xfv ghr_v0.16.2_linux_amd64.tar.gz
           ghr_v0.16.2_linux_amd64/ghr -u Vita3K -r Vita3K-builds  -n "Build: ${{ env.Build_Variable }}" -b "$(printf "Corresponding commit: [${{ env.Latest_Commit_Message }}](https://github.com/Vita3K/Vita3K/commit/${{ github.sha }}) (${{ env.Commiter_Name }})")" ${{ env.Build_Variable }} artifacts/
+        if: matrix.repo == 'store'
         env:
           GITHUB_TOKEN: ${{ secrets.STORE_TOKEN }}
