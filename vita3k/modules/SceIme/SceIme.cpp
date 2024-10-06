@@ -71,7 +71,7 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
 
     emuenv.ime.edit_text.str = emuenv.ime.param.inputTextBuffer;
     emuenv.ime.param.inputTextBuffer = Ptr<SceWChar16>(alloc(emuenv.mem, SCE_IME_MAX_PREEDIT_LENGTH + emuenv.ime.param.maxTextLength + 1, "ime_str"));
-    emuenv.ime.str = reinterpret_cast<char16_t *>(emuenv.ime.param.initialText.get(emuenv.mem));
+    emuenv.ime.str = emuenv.ime.param.initialText ? reinterpret_cast<char16_t *>(emuenv.ime.param.initialText.get(emuenv.mem)) : u"";
     if (!emuenv.ime.str.empty())
         emuenv.ime.caretIndex = emuenv.ime.edit_text.caretIndex = emuenv.ime.edit_text.preeditIndex = SceUInt32(emuenv.ime.str.length());
     else
