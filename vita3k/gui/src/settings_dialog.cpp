@@ -558,8 +558,13 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginTabItem("CPU")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
+#ifdef USE_UNICORN
         static const char *LIST_CPU_BACKEND[] = { "Dynarmic", "Unicorn" };
         const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic", lang.cpu["unicorn"].c_str() };
+#else
+        static const char *LIST_CPU_BACKEND[] = { "Dynarmic" };
+        static const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic" };
+#endif
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.cpu["cpu_backend"].c_str());
         if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND_DISPLAY, IM_ARRAYSIZE(LIST_CPU_BACKEND_DISPLAY)))
             config.cpu_backend = LIST_CPU_BACKEND[int(config_cpu_backend)];

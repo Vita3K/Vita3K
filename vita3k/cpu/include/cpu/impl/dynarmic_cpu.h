@@ -21,7 +21,10 @@
 #include <dynarmic/interface/exclusive_monitor.h>
 
 #include <cpu/functions.h>
+#include <cpu/impl/interface.h>
+#ifdef USE_UNICORN
 #include <cpu/impl/unicorn_cpu.h>
+#endif
 
 #include <memory>
 
