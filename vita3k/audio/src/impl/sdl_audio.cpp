@@ -42,9 +42,9 @@ SDLAudioAdapter::~SDLAudioAdapter() {
 bool SDLAudioAdapter::init() {
     SDL_AudioSpec desired = {};
     desired.freq = 48000;
-    desired.format = AUDIO_S16LSB;
+    desired.format = AUDIO_S16SYS;
     desired.channels = 2;
-    desired.samples = 512;
+    desired.samples = 1024;
     desired.callback = sdl_audio_callback;
     desired.userdata = this;
 
