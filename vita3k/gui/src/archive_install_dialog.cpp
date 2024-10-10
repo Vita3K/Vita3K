@@ -259,9 +259,10 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                             emuenv.app_info.app_content_id = content.content_id;
                             if (emuenv.app_info.app_category != "theme")
                                 update_notice_info(gui, emuenv, "content");
-                            if (content.category == "gd") {
+                            if ((content.category.find("gd") != std::string::npos) || (content.category.find("gp") != std::string::npos)) {
                                 init_user_app(gui, emuenv, content.title_id);
                                 save_apps_cache(gui, emuenv);
+                                select_app(gui, content.title_id);
                             }
                         }
                     }
