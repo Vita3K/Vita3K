@@ -421,7 +421,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
     ImGui::SetCursorPos(ImVec2(BUTTON_POS_X, key_row_pos[3] * SCALE.y));
     ImGui::PushStyleColor(ImGuiCol_Button, IME_BUTTON_BG);
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-    if (ImGui::Button("Backspace", BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_square)) && ime.edit_text.caretIndex) {
+    if ((ImGui::Button("Backspace", BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_square))) && ime.edit_text.caretIndex) {
         ime.str.erase(ime.edit_text.caretIndex - 1, 1);
         ime.edit_text.editIndex = ime.edit_text.caretIndex;
         --ime.edit_text.caretIndex;
