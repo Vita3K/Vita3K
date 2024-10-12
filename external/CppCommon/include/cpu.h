@@ -9,6 +9,7 @@
 #ifndef CPPCOMMON_SYSTEM_CPU_H
 #define CPPCOMMON_SYSTEM_CPU_H
 
+#include <cstdint>
 #include <string>
 
 namespace CppCommon {
