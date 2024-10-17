@@ -173,7 +173,7 @@ bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     auto &lang = gui.lang.compat_db;
 
     // Get current date of last compat database updated at
-    const auto updated_at = net_utils::get_web_regex_result(latest_link, std::regex(R"(Updated at: (\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}))"));
+    const auto updated_at = net_utils::get_web_regex_result(latest_link, std::regex(R"(Updated at: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z))"));
     if (updated_at.empty()) {
         gui.info_message.title = lang["error"];
         gui.info_message.level = spdlog::level::err;
