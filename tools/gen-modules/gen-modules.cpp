@@ -17,7 +17,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #else
@@ -148,7 +148,7 @@ static void gen_module_stubs(const Modules &modules) {
     for (const Module &module : modules) {
         const std::string module_path = "vita3k/modules/" + module.first;
 
-#ifdef WIN32
+#ifdef _WIN32
         CreateDirectoryA(module_path.c_str(), nullptr);
 #else
         const int mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;

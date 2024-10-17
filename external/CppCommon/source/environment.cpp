@@ -28,8 +28,7 @@ extern char **environ;
 #include <windows.h>
 #include <winternl.h>
 #define STATUS_SUCCESS 0x00000000
-#include <map>
-#include <vector>
+#include <locale>
 #endif
 
 namespace CppCommon {

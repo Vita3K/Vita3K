@@ -84,8 +84,8 @@ void replace(std::string &str, const std::string &in, const std::string &out) {
     }
 }
 
-std::basic_string<uint8_t> string_to_byte_array(const std::string &string) {
-    std::basic_string<uint8_t> hex_bytes;
+std::vector<uint8_t> string_to_byte_array(const std::string &string) {
+    std::vector<uint8_t> hex_bytes;
 
     for (size_t i = 0; i < string.length(); i += 2) {
         uint16_t byte;
@@ -96,7 +96,7 @@ std::basic_string<uint8_t> string_to_byte_array(const std::string &string) {
     return hex_bytes;
 }
 
-#ifdef WIN32
+#ifdef _MSC_VER
 std::string utf16_to_utf8(const std::u16string &str) {
     std::wstring_convert<std::codecvt_utf8_utf16<int16_t>, int16_t> myconv;
     auto p = reinterpret_cast<const int16_t *>(str.data());

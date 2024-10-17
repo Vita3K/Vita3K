@@ -44,7 +44,7 @@
 #include <app/discord.h>
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <combaseapi.h>
 #include <process.h>
 #endif
@@ -78,7 +78,7 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
         args[3] = nullptr;
 
         // Execute the emulator again with some arguments
-#ifdef WIN32
+#ifdef _WIN32
     FreeConsole();
     _execv(argv[0], args);
 #elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
 
     // Check admin privs before init starts to avoid creating of file as other user by accident
     bool adminPriv = false;
-#ifdef WIN32
+#ifdef _WIN32
     // https://stackoverflow.com/questions/8046097/how-to-check-if-a-process-has-the-administrative-rights
     HANDLE hToken = NULL;
     if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
         return InitConfigFailed;
     }
 
-#ifdef WIN32
+#ifdef _WIN32
     {
         auto res = CoInitializeEx(NULL, COINIT_MULTITHREADED);
         LOG_ERROR_IF(res == S_FALSE, "Failed to initialize COM Library");
@@ -460,7 +460,7 @@ int main(int argc, char *argv[]) {
         FrameMark; // Tracy - Frame end mark for game rendering loop
     }
 
-#ifdef WIN32
+#ifdef _WIN32
     CoUninitialize();
 #endif
 

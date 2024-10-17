@@ -23,6 +23,7 @@
 #include <SDL_haptic.h>
 #include <SDL_joystick.h>
 
+#include <cstring>
 #include <map>
 #include <memory>
 #include <mutex>

@@ -25,7 +25,7 @@ template <size_t MaxOutSize>
 std::string exec(const std::string &cmd) {
     std::array<char, MaxOutSize> buffer;
     std::string result;
-#ifdef WIN32
+#ifdef _WIN32
     std::unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(cmd.c_str(), "r"), _pclose);
 #else
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);

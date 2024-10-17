@@ -381,7 +381,7 @@ EXPORT(int, sceClibStrlcpyChk) {
 
 EXPORT(int, sceClibStrncasecmp, const char *s1, const char *s2, SceSize len) {
     TRACY_FUNC(sceClibStrncasecmp, s1, s2, len);
-#ifdef WIN32
+#ifdef _WIN32
     return _strnicmp(s1, s2, len);
 #else
     return strncasecmp(s1, s2, len);

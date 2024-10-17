@@ -19,7 +19,7 @@
 
 #include <ctime>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define SAFE_GMTIME(time, result) gmtime_s(result, time)
 #define SAFE_LOCALTIME(time, result) localtime_s(result, time)
 #else

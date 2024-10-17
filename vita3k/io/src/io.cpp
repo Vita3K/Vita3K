@@ -28,7 +28,7 @@
 #include <util/preprocessor.h>
 #include <util/string_utils.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #else
@@ -125,7 +125,7 @@ bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, con
 
     io.redirect_stdio = redirect_stdio;
 
-#ifndef WIN32
+#ifndef _WIN32
     io.case_isens_find_enabled = true;
 #endif
 
@@ -552,7 +552,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &p
     creation_time_ticks = (uint64_t)sb.st_ctime * VITA_CLOCKS_PER_SEC;
     last_modification_time_ticks = (uint64_t)sb.st_mtime * VITA_CLOCKS_PER_SEC;
 
-#ifndef WIN32
+#ifndef _WIN32
 #undef st_atime
 #undef st_mtime
 #undef st_ctime

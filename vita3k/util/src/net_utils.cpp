@@ -314,7 +314,7 @@ bool parseResponse(const std::string &res, SceRequestResponse &reqres) {
 }
 
 bool socketSetBlocking(int sockfd, bool blocking) {
-#ifdef WIN32
+#ifdef _WIN32
     u_long blocking_tmp = blocking;
     ioctlsocket(sockfd, FIONBIO, &blocking_tmp);
 #else

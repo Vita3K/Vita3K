@@ -21,7 +21,7 @@
 #include <filesystem>
 #include <http/state.h>
 
-#ifdef WIN32 // windows moment
+#ifdef _WIN32 // windows moment
 #include <io.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -567,11 +567,11 @@ EXPORT(SceInt, sceHttpDeleteConnection, SceInt connId) {
 
     if (connIt == emuenv.http.connections.end())
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
-#ifdef WIN32
+#ifdef _WIN32
     closesocket(connIt->second.sockfd);
 #else
     close(connIt->second.sockfd);
-#endif // WIN32
+#endif // _WIN32
 
     emuenv.http.connections.erase(connIt);
 
