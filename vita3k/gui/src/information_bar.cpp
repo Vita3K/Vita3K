@@ -37,30 +37,57 @@
 
 namespace gui {
 
-struct NoticeInfo {
-    std::string id;
-    std::string content_id;
-    std::string group;
-    std::string type;
-    time_t time;
-    std::string name;
-    std::string msg;
-};
-
 struct NoticeList {
     std::string id;
     std::string content_id;
     std::string group;
     std::string type;
     time_t time;
+    bool is_new;
+};
+
+struct NoticeInfo : NoticeList {
+    std::string name;
+    std::string msg;
 };
 
 static std::map<std::string, std::vector<NoticeList>> notice_list;
 static std::map<std::string, int> notice_list_count_new;
-static std::map<std::string, std::map<time_t, bool>> notice_list_new;
-static std::map<time_t, bool> notice_info_new;
 static int notice_info_count_new = 0;
 static std::vector<NoticeInfo> notice_info;
+
+void erase_app_notice(GuiState &gui, const std::string &title_id) {
+    auto &notice_global = notice_list["global"];
+
+    // Check if the notice list is empty
+    if (notice_global.empty()) {
+        LOG_WARN("Notice list is empty.");
+        return;
+    }
+
+    auto notice_list_it = notice_global.begin();
+    while (notice_list_it != notice_global.end()) {
+        if (notice_list_it->id != title_id) {
+            ++notice_list_it;
+            continue;
+        }
+
+        // Find and erase the corresponding entry in notice_info
+        const auto notice_info_it = std::find_if(notice_info.begin(), notice_info.end(), [&](const NoticeInfo &n) {
+            return n.time == notice_list_it->time;
+        });
+        if (notice_info_it != notice_info.end())
+            notice_info.erase(notice_info_it); // Erase the entry from notice_info
+
+        // Erase the entry from notice_info_icon
+        gui.notice_info_icon.erase(notice_list_it->time);
+
+        // Erase the item from notice_general and update the iterator
+        notice_list_it = notice_global.erase(notice_list_it);
+
+        LOG_INFO("Notice content with title id: {} has been erased.", title_id);
+    }
+}
 
 static bool init_notice_icon(GuiState &gui, EmuEnvState &emuenv, const fs::path &content_path, const NoticeList &info) {
     gui.notice_info_icon[info.time] = {};
@@ -162,31 +189,25 @@ static bool set_notice_info(GuiState &gui, EmuEnvState &emuenv, const NoticeList
             return false;
     }
 
-    notice_info.push_back({ info.id, info.content_id, info.group, info.type, info.time, name, msg });
+    notice_info.push_back({ info, name, msg });
 
     return true;
 }
 
 void init_notice_info(GuiState &gui, EmuEnvState &emuenv) {
-    if (!notice_info.empty()) {
-        notice_info.clear();
-        notice_info_count_new = 0;
-        for (auto &notice : gui.notice_info_icon)
-            notice.second = {};
-        gui.notice_info_icon.clear();
-        notice_info_new.clear();
-    }
+    notice_info.clear();
+    notice_info_count_new = 0;
+    gui.notice_info_icon.clear();
 
     if (!notice_list.empty()) {
-        for (auto &user : notice_list) {
-            if ((user.first == "global") || (user.first == emuenv.io.user_id)) {
-                auto notice_it = user.second.begin();
-                while (notice_it != user.second.end()) {
+        for (auto &[user, lists] : notice_list) {
+            if ((user == "global") || (user == emuenv.io.user_id)) {
+                auto notice_it = lists.begin();
+                while (notice_it != lists.end()) {
                     if (!set_notice_info(gui, emuenv, *notice_it)) {
-                        notice_it = user.second.erase(notice_it);
+                        notice_it = lists.erase(notice_it);
                         save_notice_list(emuenv);
                     } else {
-                        notice_info_new[notice_it->time] = notice_list_new[user.first][notice_it->time];
                         ++notice_it;
                     }
                 }
@@ -205,7 +226,6 @@ void init_notice_info(GuiState &gui, EmuEnvState &emuenv) {
 void get_notice_list(EmuEnvState &emuenv) {
     notice_list.clear();
     notice_list_count_new.clear();
-    notice_list_new.clear();
     const auto notice_path{ emuenv.pref_path / "ux0/user/notice.xml" };
 
     if (fs::exists(notice_path)) {
@@ -224,7 +244,7 @@ void get_notice_list(EmuEnvState &emuenv) {
                         noticeList.group = notice.attribute("group").as_string();
                         noticeList.type = notice.attribute("type").as_string();
                         noticeList.time = !notice.attribute("time").empty() ? notice.attribute("time").as_llong() : (notice.attribute("date").as_llong() * 1000); // Backward Compat
-                        notice_list_new[user_id][noticeList.time] = notice.attribute("new").as_bool();
+                        noticeList.is_new = notice.attribute("new").as_bool();
                         notice_list[user_id].push_back(noticeList);
                     }
                 }
@@ -261,7 +281,7 @@ void save_notice_list(EmuEnvState &emuenv) {
             info_child.append_attribute("group") = notice.group.c_str();
             info_child.append_attribute("type") = notice.type.c_str();
             info_child.append_attribute("time") = notice.time;
-            info_child.append_attribute("new") = notice_list_new[user.first][notice.time];
+            info_child.append_attribute("new") = notice.is_new;
         }
     }
 
@@ -286,12 +306,11 @@ void update_notice_info(GuiState &gui, EmuEnvState &emuenv, const std::string &t
     }
     info.type = type;
     info.time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    notice_info_new[info.time] = true;
-    notice_list_new[user_id][info.time] = true;
+    info.is_new = true;
     notice_list[user_id].push_back(info);
     if (set_notice_info(gui, emuenv, info)) {
-        ++notice_info_count_new;
         ++notice_list_count_new[user_id];
+        ++notice_info_count_new;
         std::sort(notice_info.begin(), notice_info.end(), [&](const NoticeInfo &na, const NoticeInfo &nb) {
             return na.time > nb.time;
         });
@@ -302,11 +321,16 @@ void update_notice_info(GuiState &gui, EmuEnvState &emuenv, const std::string &t
 
 static void clean_notice_info_new(const std::string &user_id) {
     notice_info_count_new = 0;
-    notice_info_new.clear();
     notice_list_count_new["global"] = 0;
     notice_list_count_new[user_id] = 0;
-    notice_list_new["global"].clear();
-    notice_list_new[user_id].clear();
+    for (auto &notice : notice_info)
+        notice.is_new = false;
+    for (auto &[user, lists] : notice_list) {
+        if ((user == "global") || (user == user_id)) {
+            for (auto &list : lists)
+                list.is_new = false;
+        }
+    }
 }
 
 static std::string get_notice_time(GuiState &gui, EmuEnvState &emuenv, const time_t &time) {
@@ -379,7 +403,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootWindow) && !ImGui::IsAnyItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-        if (notice_info_state) {
+        if (notice_info_state && (notice_info_count_new > 0)) {
             clean_notice_info_new(emuenv.io.user_id);
             save_notice_list(emuenv);
         }
@@ -395,6 +419,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushStyleColor(ImGuiCol_Border, GUI_COLOR_TEXT);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, notice_info.empty() ? 0.f : 8.0f * SCALE.x);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
         ImGui::SetNextWindowPos(POPUP_POS, ImGuiCond_Always);
         ImGui::BeginChild("##notice_info_child", POPUP_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoSavedSettings);
         auto &lang = gui.lang.indicator;
@@ -426,14 +451,14 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::PushStyleColor(ImGuiCol_Header, SELECT_COLOR);
                 ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECT_COLOR_HOVERED);
                 ImGui::PushStyleColor(ImGuiCol_HeaderActive, SELECT_COLOR_ACTIVE);
-                if (ImGui::Selectable("##icon", notice_info_new[notice.time], ImGuiSelectableFlags_SpanAllColumns, SELECT_SIZE)) {
+                if (ImGui::Selectable("##icon", notice.is_new, ImGuiSelectableFlags_SpanAllColumns, SELECT_SIZE)) {
                     clean_notice_info_new(emuenv.io.user_id);
                     save_notice_list(emuenv);
                     if (notice.type == "content") {
                         if (notice.group == "theme")
                             pre_load_app(gui, emuenv, false, "NPXS10015");
                         else
-                            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, notice.id);
+                            select_app(gui, notice.id);
                     } else {
                         pre_load_app(gui, emuenv, false, "NPXS10008");
                         open_trophy_unlocked(gui, emuenv, notice.id, notice.content_id);
@@ -459,7 +484,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::EndChild();
         ImGui::PopStyleColor(2);
-        ImGui::PopStyleVar(2);
+        ImGui::PopStyleVar(3);
 
         if (!notice_info.empty()) {
             const auto DELETE_POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
@@ -494,7 +519,6 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
                         gui.notice_info_icon.clear();
                         notice_list["global"].clear();
                         notice_list[emuenv.io.user_id].clear();
-                        clean_notice_info_new(emuenv.io.user_id);
                         save_notice_list(emuenv);
                         notice_info_state = false;
                         ImGui::CloseCurrentPopup();
