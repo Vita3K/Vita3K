@@ -36,6 +36,7 @@ struct DisplayCallback {
     Address data;
     Ptr<SceGxmSyncObject> old_sync;
     Ptr<SceGxmSyncObject> new_sync;
+    uint32_t old_sync_timestamp;
     uint32_t new_sync_timestamp;
     bool frame_predicted;
 };
@@ -52,7 +53,6 @@ struct GxmState {
     Queue<DisplayCallback> display_queue;
     SceUID display_queue_thread;
 
-    Ptr<SceGxmSyncObject> last_fbo_sync_object;
     // global timestamp used by sync objects
     std::atomic<uint32_t> global_timestamp{ 1 };
     // last display operation, as given by the global timestamp
