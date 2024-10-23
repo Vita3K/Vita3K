@@ -93,6 +93,7 @@ enum ScreenshotFormat {
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
+    code(int,  "bgm-volume", 100, bgm_volume) 													        \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(int, "sys-date-format", (int)SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY, sys_date_format)           \
@@ -100,7 +101,7 @@ enum ScreenshotFormat {
     code(int, "cpu-pool-size", 10, cpu_pool_size)                                                       \
     code(int, "modules-mode", static_cast<int>(ModulesMode::AUTOMATIC), modules_mode)                   \
     code(int, "delay-background", 4, delay_background)                                                  \
-    code(int, "delay-start", 10, delay_start)                                                           \
+    code(int, "delay-start", 30, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
     code(int, "log-level", 0 /*SPDLOG_LEVEL_TRACE*/, log_level)                                         \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \

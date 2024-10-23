@@ -131,6 +131,8 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 get_modules_list(gui, emuenv);
                 if (emuenv.cfg.initial_setup)
                     init_theme(gui, emuenv, gui.users[emuenv.cfg.user_id].theme_id);
+                else if (gui::init_bgm(emuenv, { "pd0", "data/systembgm/initialsetup.at9" }))
+                    gui::switch_bgm_state(false);
                 fw_version.clear();
                 pup_path = "";
                 gui.file_menu.firmware_install_dialog = false;
