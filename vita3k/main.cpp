@@ -306,6 +306,8 @@ int main(int argc, char *argv[]) {
     if (!cfg.console) {
         gui::pre_init(gui, emuenv);
         if (!emuenv.cfg.initial_setup) {
+            if (gui::init_bgm(emuenv, { "pd0", "data/systembgm/initialsetup.at9" }))
+                gui::switch_bgm_state(false);
             while (!emuenv.cfg.initial_setup) {
                 if (handle_events(emuenv, gui)) {
                     gui::draw_begin(gui, emuenv);
@@ -462,6 +464,7 @@ int main(int argc, char *argv[]) {
         gui.imgui_state->do_clear_screen = false;
     }
 
+    gui::switch_bgm_state(true);
     gui::init_app_background(gui, emuenv, emuenv.io.app_path);
     gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
 
