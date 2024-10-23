@@ -146,6 +146,7 @@ void pre_load_app(GuiState &gui, EmuEnvState &emuenv, bool live_area, const std:
 }
 
 void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    switch_bgm_state(true);
     const auto is_sys = app_path.starts_with("NPXS") && (app_path != "NPXS10007");
     if (!is_sys) {
         if (emuenv.io.app_path != app_path) {
@@ -215,6 +216,8 @@ void close_system_app(GuiState &gui, EmuEnvState &emuenv) {
             gui.vita_area.information_bar = true;
         gui.vita_area.home_screen = true;
     }
+
+    switch_bgm_state(false);
 }
 
 void close_and_run_new_app(EmuEnvState &emuenv, const std::string &app_path) {
@@ -559,6 +562,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                 gui.vita_area.home_screen = false;
                 gui.vita_area.information_bar = true;
                 gui.vita_area.start_screen = true;
+                switch_bgm_state(true);
             }
         }
     }
