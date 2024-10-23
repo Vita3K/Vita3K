@@ -97,6 +97,9 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     emuenv.io.user_id.clear();
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
+    // Stop the Background Music
+    stop_bgm();
+
     // Clean User apps list
     gui.app_selector.user_apps.clear();
 
@@ -423,6 +426,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
     if (update_viewport_en)
         app::update_viewport(emuenv);
 
+    set_bgm_volume(emuenv.cfg.bgm_volume);
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
 
@@ -948,6 +952,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.audio["enable_ngs_support"].c_str(), &config.ngs_enable);
         SetTooltipEx(lang.audio["ngs_description"].c_str());
         ImGui::Spacing();
+        ImGui::SliderInt("Bgm Volume", &emuenv.cfg.bgm_volume, 0, 100, "%d %%", ImGuiSliderFlags_AlwaysClamp);
+        SetTooltipEx("Adjusts the background music volume percentage of the theme");
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::EndTabItem();
@@ -1203,7 +1209,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.gui["select_delay_background"].c_str());
         }
         ImGui::Spacing();
-        ImGui::SliderInt(lang.gui["delay_start"].c_str(), &emuenv.cfg.delay_start, 10, 60);
+        ImGui::SliderInt(lang.gui["delay_start"].c_str(), &emuenv.cfg.delay_start, 30, 300);
         SetTooltipEx(lang.gui["select_delay_start"].c_str());
         ImGui::EndTabItem();
     } else
