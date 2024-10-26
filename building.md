@@ -106,15 +106,21 @@ If you aren't satisfied with the way the Visual Studio integrates CMake projects
 
 ## Linux
 
-### Ubuntu/Debian
-
-Note: The CMake preset `linux-ninja-clang` makes use of the LLD linker, which will need to be installed in your system along with Clang.
-
 - Install dependencies.
+
+### Ubuntu/Debian
 
   ```sh
   sudo apt install git cmake ninja-build libsdl2-dev pkg-config libgtk-3-dev clang lld xdg-desktop-portal openssl libssl-dev
   ```
+
+### Fedora
+
+  ```sh
+  sudo dnf install git cmake ninja-build SDL2-devel pkg-config gtk3-devel clang lld xdg-desktop-portal openssl openssl-devel libstdc++-static
+  ```
+
+Note: The CMake preset `linux-ninja-clang` makes use of the LLD linker, which will need to be installed in your system along with Clang.
 
 - Clone this repo.
 
