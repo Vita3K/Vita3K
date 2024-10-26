@@ -25,7 +25,7 @@
 #include <util/safe_time.h>
 #include <util/tracy.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock.h>
 #else
 #include <unistd.h>

@@ -45,7 +45,7 @@
 #include <SDL_video.h>
 #include <SDL_vulkan.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <SDL_syswm.h>
 #include <dwmapi.h>
 #endif
@@ -298,7 +298,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         state.display.fullscreen = true;
         window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
-#if defined(WIN32) || defined(__linux__)
+#if defined(_WIN32) || defined(__linux__)
     const auto isSteamDeck = []() {
 #ifdef __linux__
         std::ifstream file("/etc/os-release");
@@ -329,7 +329,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         return false;
     }
 
-#ifdef WIN32
+#ifdef _WIN32
     // Disable round corners for the game window
     SDL_SysWMinfo wm_info;
     SDL_VERSION(&wm_info.version);

@@ -28,7 +28,7 @@
 
 #include <SDL.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <combaseapi.h>
 #endif
 
@@ -153,7 +153,7 @@ static void download_update(const fs::path &base_path) {
     progress_state.pause = false;
     std::thread download([base_path]() {
         std::string download_continuous_link = "https://github.com/Vita3K/Vita3K/releases/download/continuous";
-#ifdef WIN32
+#ifdef _WIN32
         download_continuous_link += "/windows-latest.zip";
 #elif defined(__APPLE__)
         download_continuous_link += "/macos-latest.dmg";
@@ -214,7 +214,7 @@ static void download_update(const fs::path &base_path) {
             event.type = SDL_QUIT;
             SDL_PushEvent(&event);
 
-#ifdef WIN32
+#ifdef _WIN32
             const auto vita3K_batch = fmt::format("\"{}\\update-vita3k.bat\"", base_path);
             FreeConsole();
 #elif defined(__APPLE__)

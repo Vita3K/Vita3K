@@ -27,7 +27,7 @@
 #include <mutex>
 #include <utility>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #else
@@ -48,7 +48,7 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
 static Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force);
 static void delete_memory(uint8_t *memory);
 
-#ifdef WIN32
+#ifdef _WIN32
 static std::string get_error_msg() {
     return std::system_category().message(GetLastError());
 }
@@ -59,7 +59,7 @@ static std::string get_error_msg() {
 #endif
 
 bool init(MemState &state, const bool use_page_table) {
-#ifdef WIN32
+#ifdef _WIN32
     SYSTEM_INFO system_info = {};
     GetSystemInfo(&system_info);
     state.page_size = system_info.dwPageSize;
@@ -73,7 +73,7 @@ bool init(MemState &state, const bool use_page_table) {
 
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
 
-#ifdef WIN32
+#ifdef _WIN32
     state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(preferred_address, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
     if (!state.memory) {
         // fallback
@@ -111,7 +111,7 @@ bool init(MemState &state, const bool use_page_table) {
 
     const Address null_address = alloc_inner(state, 0, 1, "null", true);
     assert(null_address == 0);
-#ifdef WIN32
+#ifdef _WIN32
     DWORD old_protect = 0;
     const BOOL ret = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
@@ -132,7 +132,7 @@ bool init(MemState &state, const bool use_page_table) {
 
 static void delete_memory(uint8_t *memory) {
     if (memory != nullptr) {
-#ifdef WIN32
+#ifdef _WIN32
         const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
         assert(ret);
 #else
@@ -170,7 +170,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, int page_count,
     uint8_t *const memory = &state.memory[addr];
 
     // Make memory chunk available to access
-#ifdef WIN32
+#ifdef _WIN32
     const void *const ret = VirtualAlloc(memory, size, MEM_COMMIT, PAGE_READWRITE);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
 #else
@@ -227,7 +227,7 @@ void unprotect_inner(MemState &state, Address addr, uint32_t size) {
     }
     uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
 
-#ifdef WIN32
+#ifdef _WIN32
     DWORD old_protect = 0;
     const BOOL ret = VirtualProtect(&addr_ptr[addr], size - 1, PAGE_READWRITE, &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
@@ -240,7 +240,7 @@ void unprotect_inner(MemState &state, Address addr, uint32_t size) {
 void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm) {
     uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
 
-#ifdef WIN32
+#ifdef _WIN32
     DWORD old_protect = 0;
     const BOOL ret = VirtualProtect(&addr_ptr[addr], size - 1, (perm == MemPerm::None) ? PAGE_NOACCESS : ((perm == MemPerm::ReadOnly) ? PAGE_READONLY : PAGE_READWRITE), &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
@@ -543,7 +543,7 @@ void free(MemState &state, Address address) {
     assert(!state.use_page_table || state.page_table[address / KiB(4)] == state.memory.get());
     uint8_t *const memory = &state.memory[page_num * state.page_size];
 
-#ifdef WIN32
+#ifdef _WIN32
     const BOOL ret = VirtualFree(memory, page.size * state.page_size, MEM_DECOMMIT);
     LOG_CRITICAL_IF(!ret, "VirtualFree failed: {}", get_error_msg());
 #else
@@ -565,7 +565,7 @@ const char *mem_name(Address address, MemState &state) {
     return "";
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 
 static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {
     if (pExp->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT && IsDebuggerPresent()) {
