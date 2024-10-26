@@ -45,6 +45,7 @@ void close_and_run_new_app(GuiState &gui, EmuEnvState &emuenv, const std::string
 void close_live_area_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void close_system_app(GuiState &gui, EmuEnvState &emuenv);
 void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
+void erase_app_notice(GuiState &gui, const std::string &title_id);
 void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 size_t get_app_size(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 App *get_app_index(GuiState &gui, const std::string &app_path);
@@ -101,6 +102,7 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 void reset_controller_binding(EmuEnvState &emuenv);
 void save_apps_cache(GuiState &gui, EmuEnvState &emuenv);
 void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id);
+void select_app(GuiState &gui, const std::string &title_id);
 void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void set_shaders_compiled_display(GuiState &gui, EmuEnvState &emuenv);
 void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
