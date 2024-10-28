@@ -24,6 +24,7 @@
  */
 
 #include <openssl/evp.h>
+#include <packages/exfat.h>
 #include <packages/sce_types.h>
 #include <util/fs.h>
 
@@ -242,6 +243,7 @@ static void decrypt_pup_packages(const fs::path &src, const fs::path &dest, KeyS
     }
 
     join_files(dest, "os0-", dest / "os0.img");
+    join_files(dest, "pd0-", dest / "pd0.img");
     join_files(dest, "vs0-", dest / "vs0.img");
     join_files(dest, "sa0-", dest / "sa0.img");
 }
@@ -282,6 +284,8 @@ void install_pup(const fs::path &pref_path, const fs::path &pup_path, const std:
             }
         }
     }
+    if (fs::file_size(pup_dec / "pd0.img") > 0)
+        exfat::extract_exfat(pup_dec, "pd0.img", pref_path);
     if (fs::file_size(pup_dec / "sa0.img") > 0)
         extract_fat(pup_dec, "sa0.img", pref_path);
     if (fs::file_size(pup_dec / "vs0.img") > 0) {

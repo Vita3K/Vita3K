@@ -70,7 +70,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     const auto WINDOW_SIZE = ImVec2(756.f * SCALE.x, 418.f * SCALE.y);
     const auto SELECT_SIZE = 72.f * SCALE.y;
     const auto BUTTON_SIZE = ImVec2(154.f * SCALE.x, 52.f * SCALE.y);
-    const auto BIG_BUTTON_SIZE = ImVec2(324.f * SCALE.x, 48.f * SCALE.y);
+    const auto BIG_BUTTON_SIZE = ImVec2(344.f * SCALE.x, 48.f * SCALE.y);
     const auto BIG_BUTTON_POS = ImVec2((WINDOW_SIZE.x / 2.f) - (BIG_BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BIG_BUTTON_SIZE.y - (20.f * SCALE.y));
 
     auto &lang = gui.lang.initial_setup;
@@ -78,6 +78,8 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     const auto completed_setup = lang["completed_setup"].c_str();
 
     const auto is_default_path = emuenv.cfg.pref_path == emuenv.default_path;
+    const auto FW_PREINST_PATH{ emuenv.pref_path / "pd0" };
+    const auto FW_PREINST_INSTALLED = fs::exists(FW_PREINST_PATH) && !fs::is_empty(FW_PREINST_PATH);
     const auto FW_PATH{ emuenv.pref_path / "vs0" };
     const auto FW_INSTALLED = fs::exists(FW_PATH) && !fs::is_empty(FW_PATH);
     const auto FW_FONT_PATH{ emuenv.pref_path / "sa0" };
@@ -170,8 +172,13 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         break;
     case INSTALL_FIRMWARE:
         title_str = lang["install_firmware"];
-        ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["install_highly_recommended"].c_str()).x / 2.f), (WINDOW_SIZE.y / 2.f) - (ImGui::GetFontSize() * 2.f)));
+        ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["install_highly_recommended"].c_str()).x / 2.f), (WINDOW_SIZE.y / 2.f) - (ImGui::GetFontSize() * 3.5f)));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["install_highly_recommended"].c_str());
+        ImGui::Spacing();
+        if (ImGui::Button("Download Preinst Firmware", BIG_BUTTON_SIZE))
+            open_path("https://bit.ly/4hlePsX");
+        ImGui::SameLine(0, 20.f * SCALE.x);
+        ImGui::Text("%s %s", lang["installed"].c_str(), FW_PREINST_INSTALLED ? "V" : "X");
         ImGui::Spacing();
         if (ImGui::Button(lang["download_firmware"].c_str(), BIG_BUTTON_SIZE))
             get_firmware_file(emuenv);
@@ -179,18 +186,14 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Text("%s %s", lang["installed"].c_str(), FW_INSTALLED ? "V" : "X");
         ImGui::Spacing();
         if (ImGui::Button(lang["download_font_package"].c_str(), BIG_BUTTON_SIZE))
-            open_path("https://bit.ly/2P2rb0r");
+            open_path("https://bit.ly/48ouDaa");
         ImGui::SameLine(0, 20.f * SCALE.x);
         ImGui::Text("%s %s", lang["installed"].c_str(), FW_FONT_INSTALLED ? "V" : "X");
         ImGui::SetCursorPos(BIG_BUTTON_POS);
         if (ImGui::Button(lang["install_firmware_file"].c_str(), BIG_BUTTON_SIZE))
             gui.file_menu.firmware_install_dialog = true;
-        if (gui.file_menu.firmware_install_dialog) {
-            ImGui::PushFont(gui.vita_font);
-            ImGui::SetWindowFontScale(RES_SCALE.x);
+        if (gui.file_menu.firmware_install_dialog)
             draw_firmware_install_dialog(gui, emuenv);
-            ImGui::PopFont();
-        }
         break;
     case SELECT_INTERFACE_SETTINGS:
         title_str = lang["select_interface_settings"];
