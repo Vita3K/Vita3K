@@ -470,7 +470,7 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
 /**
  * \return Negative on failure
  */
-SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &log_path) {
+SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &log_path, const std::vector<Patch> &patches) {
     // TODO: use raw I/O from path when io becomes less bad
     const uint8_t *const self_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
@@ -631,6 +631,18 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                     assert(res == MZ_OK);
                 } else {
                     memcpy(seg_ptr.get(mem), seg_bytes, seg_header.p_filesz);
+                }
+
+                for (auto &patch : patches) {
+                  if (seg_index == patch.seg) {
+                    for (int i = 0; i < patch.values.size(); i++) {
+                      auto value = patch.values[i];
+
+                      LOG_INFO("Applying patch at offset 0x{:08X} with value 0x{:08X}", patch.offset + (sizeof(value) * i), patch.values[i]);
+
+                      *(uint8_t *)(seg_ptr.get(mem) + patch.offset + (sizeof(value) * i)) = patch.values[i];
+                    }
+                  }
                 }
 
                 segment_reloc_info[seg_index] = { segment_address, seg_header.p_vaddr, seg_header.p_memsz };

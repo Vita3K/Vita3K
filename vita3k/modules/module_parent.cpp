@@ -30,6 +30,7 @@
 #include <kernel/state.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
+#include <patch/patch.h>
 #include <util/arm.h>
 #include <util/find.h>
 #include <util/lock_and_find.h>
@@ -220,7 +221,10 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         LOG_ERROR("Failed to read module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
     }
-    SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_buffer.data(), module_path, emuenv.log_path);
+
+    const std::vector<Patch> patches = get_patches(emuenv.patch_path, emuenv.io.title_id);
+    SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_buffer.data(), module_path, emuenv.log_path, patches);
+
     if (module_id >= 0) {
         const auto module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
         LOG_INFO("Module {} (at \"{}\") loaded", module->info.module_name, module_path);

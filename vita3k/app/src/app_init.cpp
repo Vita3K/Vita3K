@@ -126,6 +126,7 @@ void init_paths(Root &root_paths) {
         root_paths.set_config_path(portable_path);
         root_paths.set_shared_path(portable_path);
         root_paths.set_cache_path(portable_path / "cache" / "");
+        root_paths.set_patch_path(portable_path / "patch" / "");
     } else {
         // SDL_GetPrefPath is deferred as it creates the directory.
         // When using a portable directory, it is not needed.
@@ -157,6 +158,7 @@ void init_paths(Root &root_paths) {
         root_paths.set_config_path(base_path);
         root_paths.set_shared_path(base_path);
         root_paths.set_cache_path(base_path / "cache" / "");
+        root_paths.set_patch_path(base_path / "patch" / "");
 
 #if defined(__linux__) && !defined(__ANDROID__) && !defined(__APPLE__)
         // XDG Data Dirs.
@@ -229,6 +231,7 @@ void init_paths(Root &root_paths) {
     fs::create_directories(root_paths.get_cache_path());
     fs::create_directories(root_paths.get_log_path() / "shaderlog");
     fs::create_directories(root_paths.get_log_path() / "texturelog");
+    fs::create_directories(root_paths.get_patch_path());
 }
 
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
@@ -241,6 +244,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     state.cache_path = root_paths.get_cache_path();
     state.shared_path = root_paths.get_shared_path();
     state.static_assets_path = root_paths.get_static_assets_path();
+    state.patch_path = root_paths.get_patch_path();
 
     // If configuration does not provide a preference path, use SDL's default
     if (state.cfg.pref_path == root_paths.get_pref_path() || state.cfg.pref_path.empty())
