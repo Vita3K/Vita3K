@@ -223,6 +223,9 @@ void init_paths(Root &root_paths) {
         } else if (XDG_DATA_HOME != NULL) {
             root_paths.set_shared_path(fs::path(XDG_DATA_HOME) / app_name / "");
         }
+
+        // patch path should be in shared path
+        root_paths.set_patch_path(root_paths.get_shared_path() / "patch" / "");
 #endif
     }
 
