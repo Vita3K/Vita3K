@@ -26,7 +26,11 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid) {
   LOG_INFO("Looking for patches for titleid {}", titleid);
 
   for (auto &entry : fs::directory_iterator(path)) {
-    if (entry.path().filename().string().find(titleid) != std::string::npos) {
+    auto filename = entry.path().filename().string();
+    // Just in case users decide to use lowercase filenames
+    auto upper_filename = std::transform(filename.begin(), filename.end(), filename.begin(), ::toupper);
+
+    if (filename.find(titleid) != std::string::npos && filename.ends_with(".VPATCH")) {
       // Read the file
       std::ifstream file(entry.path().c_str());
 
@@ -67,7 +71,6 @@ Patch parse_patch(const std::string &patch) {
   size_t pos = 0;
 
   while ((pos = values.find(' ')) != std::string::npos) {
-    LOG_INFO("Found additional value at position {}", pos);
     values_vec.push_back(strtoull(values.substr(0, pos).c_str(), nullptr, 16));
     values.erase(0, pos + 1);
   }
