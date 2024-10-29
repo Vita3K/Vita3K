@@ -17,15 +17,15 @@
 
 #pragma once
 
+#include <string>
 #include <util/fs.h>
 #include <util/types.h>
-#include <string>
 #include <vector>
 
 struct Patch {
-  uint8_t seg;
-  uint32_t offset;
-  std::vector<uint8_t> values;
+    uint8_t seg;
+    uint32_t offset;
+    std::vector<uint8_t> values;
 };
 
 std::vector<Patch> get_patches(fs::path &path, const std::string &titleid);

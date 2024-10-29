@@ -634,15 +634,15 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                 }
 
                 for (auto &patch : patches) {
-                  if (seg_index == patch.seg) {
-                    for (int i = 0; i < patch.values.size(); i++) {
-                      auto value = patch.values[i];
+                    if (seg_index == patch.seg) {
+                        for (int i = 0; i < patch.values.size(); i++) {
+                            auto value = patch.values[i];
 
-                      LOG_INFO("Applying patch at offset 0x{:08X} with value 0x{:08X}", patch.offset + (sizeof(value) * i), patch.values[i]);
+                            LOG_INFO("Applying patch at offset 0x{:08X} with value 0x{:08X}", patch.offset + (sizeof(value) * i), patch.values[i]);
 
-                      *(uint8_t *)(seg_ptr.get(mem) + patch.offset + (sizeof(value) * i)) = patch.values[i];
+                            *(uint8_t *)(seg_ptr.get(mem) + patch.offset + (sizeof(value) * i)) = patch.values[i];
+                        }
                     }
-                  }
                 }
 
                 segment_reloc_info[seg_index] = { segment_address, seg_header.p_vaddr, seg_header.p_memsz };
