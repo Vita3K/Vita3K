@@ -35,6 +35,7 @@
 #include <packages/license.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
+#include <patch_check/functions.h>
 #include <renderer/functions.h>
 #include <renderer/shaders.h>
 #include <renderer/state.h>
@@ -391,6 +392,18 @@ int main(int argc, char *argv[]) {
             emuenv.cfg.content_path.reset();
     }
 
+    const auto draw_app_background = [](GuiState &gui, EmuEnvState &emuenv) {
+        const auto pos_min = ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+        const auto pos_max = ImVec2(pos_min.x + emuenv.logical_viewport_size.x, pos_min.y + emuenv.logical_viewport_size.y);
+
+        if (gui.apps_background.contains(emuenv.io.app_path))
+            // Display application background
+            ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[emuenv.io.app_path], pos_min, pos_max);
+        // Application background not found
+        else
+            gui::draw_background(gui, emuenv);
+    };
+
     if (!cfg.console) {
 #if USE_DISCORD
         auto discord_rich_presence_old = emuenv.cfg.discord_rich_presence;
@@ -423,9 +436,51 @@ int main(int argc, char *argv[]) {
             }
 
             if (!emuenv.io.app_path.empty()) {
-                run_type = app::AppRunType::Extracted;
                 gui.vita_area.home_screen = false;
                 gui.vita_area.live_area_screen = false;
+                const auto id = fs::path(emuenv.io.app_path).stem().string();
+                auto &patch_check_state = patch_check::get_state();
+                auto update_install = patch_check_state.find_update_install(id);
+                if (update_install) {
+                    if (patch_check_state.has_update_install_state(id, patch_check::UpdateState::WAITING_INSTALL)) {
+                        gui::init_app_background(gui, emuenv, emuenv.io.app_path);
+                        gui::update_install(gui, emuenv, id);
+                        if (!patch_check_state.has_update_install_state(id, patch_check::UpdateState::INSTALLING))
+                            patch_check_state.set_update_install_state(id, patch_check::UpdateState::FAILED);
+                        while (patch_check_state.has_update_install_state(id, patch_check::UpdateState::INSTALLING)) {
+                            handle_events(emuenv, gui);
+                            gui::draw_begin(gui, emuenv);
+                            draw_app_background(gui, emuenv);
+                            ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
+                            gui::draw_pkg_install(gui, emuenv);
+                            ImGui::PopFont();
+                            gui::draw_end(gui);
+                            emuenv.renderer->swap_window(emuenv.window.get());
+                        }
+                        if (patch_check_state.has_update_install_state(id, patch_check::UpdateState::FAILED)) {
+                            if (gui.live_area_app_current_open < 0) {
+                                gui.vita_area.home_screen = true;
+                                if (emuenv.cfg.show_info_bar)
+                                    gui.vita_area.information_bar = true;
+                            } else {
+                                gui.vita_area.live_area_screen = true;
+                                gui.vita_area.information_bar = true;
+                                gui.gate_animation.start(GateAnimationState::ReturnApp);
+                            }
+                            bgm_player::switch_bgm_state(false);
+                            gui.info_message.function = "Install Update";
+                            gui.info_message.level = spdlog::level::err;
+                            gui.info_message.title = "Update Installation Failed";
+                            gui.info_message.msg = fmt::format("Failed to install update for {}.\nCheck logs for more details.", emuenv.io.app_path);
+                            patch_check_state.set_update_install_state(id, patch_check::UpdateState::WAITING_INSTALL);
+                            emuenv.io.app_path.clear();
+                            continue;
+                        }
+                        gui::refresh_live_area(gui, emuenv, emuenv.io.app_path);
+                    }
+                }
+
+                run_type = app::AppRunType::Extracted;
             }
         }
     }
@@ -479,18 +534,6 @@ int main(int argc, char *argv[]) {
         app::error_dialog("Failed to initialize Vita3K", emuenv.window.get());
         return 1;
     }
-
-    const auto draw_app_background = [](GuiState &gui, EmuEnvState &emuenv) {
-        const auto pos_min = ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
-        const auto pos_max = ImVec2(pos_min.x + emuenv.logical_viewport_size.x, pos_min.y + emuenv.logical_viewport_size.y);
-
-        if (gui.apps_background.contains(emuenv.io.app_path))
-            // Display application background
-            ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[emuenv.io.app_path], pos_min, pos_max);
-        // Application background not found
-        else
-            gui::draw_background(gui, emuenv);
-    };
 
     int32_t main_module_id;
     {

@@ -25,6 +25,9 @@
 #include <dialog/state.h>
 #include <display/state.h>
 #include <host/dialog/filesystem.h>
+
+#include <indicator/state.h>
+
 #include <io/state.h>
 #include <kernel/state.h>
 #include <lang/functions.h>
@@ -124,7 +127,7 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
 
     get_modules_list(gui, emuenv);
     get_sys_apps_title(gui, emuenv);
-    get_notice_list(emuenv);
+    indicator::get_state().get_notice_list(emuenv);
     get_time_apps(gui, emuenv);
     get_users_list(gui, emuenv);
     init_home(gui, emuenv);

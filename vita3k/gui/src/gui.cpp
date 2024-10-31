@@ -19,6 +19,8 @@
 
 #include <gui/functions.h>
 
+#include <indicator/state.h>
+
 #include <gui/imgui_impl_sdl.h>
 #include <gui/state.h>
 #include <renderer/state.h>
@@ -463,6 +465,29 @@ void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &
     stbi_image_free(data);
 }
 
+static void draw_please_wait(GuiState &gui, EmuEnvState &emuenv) {
+    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+    ImGui::SetNextWindowPos(VIEWPORT_POS);
+    ImGui::SetNextWindowSize(VIEWPORT_SIZE);
+    ImGui::Begin("please_wait", &gui.vita_area.please_wait, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
+    const ImVec2 WINDOW_SIZE(520.f * SCALE.x, 120.f * SCALE.y);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 15.f * SCALE.x);
+    ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + ((VIEWPORT_SIZE.x - WINDOW_SIZE.x) / 2.f), VIEWPORT_POS.y + ((VIEWPORT_SIZE.y - WINDOW_SIZE.y) / 2.f)));
+    ImGui::BeginChild("please_wait_child", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
+    const auto text = emuenv.common_dialog.lang.common["please_wait"];
+    ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x - ImGui::CalcTextSize(text.c_str()).x) / 2.f, (WINDOW_SIZE.y - ImGui::GetFontSize()) / 2.f));
+    ImGui::Text("%s", text.c_str());
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::End();
+    ImGui::PopStyleVar(2);
+}
+
 std::string get_sys_lang_name(uint32_t lang_id) {
     const auto current_sys_lang = std::find_if(LIST_SYS_LANG.begin(), LIST_SYS_LANG.end(), [&](const auto &l) {
         return l.first == lang_id;
@@ -862,7 +887,7 @@ void load_fonts(GuiState &gui, EmuEnvState &emuenv, bool reload) {
 
 void init(GuiState &gui, EmuEnvState &emuenv) {
     get_modules_list(gui, emuenv);
-    get_notice_list(emuenv);
+    indicator::get_state().get_notice_list(emuenv);
     get_users_list(gui, emuenv);
     get_time_apps(gui, emuenv);
 
@@ -923,6 +948,11 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
         draw_start_screen(gui, emuenv);
 
     ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
+    if (!gui.notifications.empty())
+        draw_notifications(gui, emuenv);
+
+    if ((emuenv.cfg.show_info_bar || !emuenv.display.imgui_render || !gui.vita_area.home_screen) && gui.vita_area.information_bar)
+        draw_information_bar(gui, emuenv);
 
     if (gui.vita_area.app_close)
         draw_app_close(gui, emuenv);
@@ -932,8 +962,18 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
 
     if (gui.vita_area.live_area_screen)
         draw_live_area_screen(gui, emuenv);
+
+    if ((gui.gate_animation.state != GateAnimationState::EnterApp) && (gui.vita_area.home_screen || gui.vita_area.live_area_screen))
+        draw_indicator(gui, emuenv);
+
     if (gui.vita_area.manual)
         draw_manual(gui, emuenv);
+
+    if (gui.vita_area.please_wait)
+        draw_please_wait(gui, emuenv);
+
+    if (gui.vita_area.pkg_install)
+        draw_pkg_install(gui, emuenv);
 
     // Draw install dialogs
     if (gui.file_menu.archive_install_dialog)
@@ -970,8 +1010,8 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.help_menu.vita3k_update)
         draw_vita3k_update(gui, emuenv);
 
-    if ((emuenv.cfg.show_info_bar || !emuenv.display.imgui_render || !gui.vita_area.home_screen) && gui.vita_area.information_bar)
-        draw_information_bar(gui, emuenv);
+    if (gui.vita_area.update_history_info)
+        draw_update_infos(gui, emuenv);
 
     // Info Message
     if (!gui.info_message.msg.empty())

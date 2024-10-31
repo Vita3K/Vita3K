@@ -123,7 +123,10 @@ struct VitaAreaState {
     bool settings = false;
     bool start_screen = false;
     bool trophy_collection = false;
+    bool update_history_info = false;
     bool user_management = false;
+    bool pkg_install = false;
+    bool please_wait = false;
 };
 
 struct FileMenuState {
@@ -205,6 +208,15 @@ struct InfoBarColor {
     ImU32 bar = 0xFF000000;
     ImU32 indicator = 0xFFFFFFFF;
     ImU32 notice_font = 0xFFFFFFFF;
+};
+
+struct Notification {
+    std::string app_id;
+    std::string title;
+    std::string message;
+
+    time_t start_time = 0;
+    bool active = false;
 };
 
 enum NoticeIcon {
@@ -316,6 +328,9 @@ struct GuiState {
 
     std::vector<std::string> live_area_current_open_apps_list;
     int32_t live_area_app_current_open = -1;
+
+    std::mutex notifications_mutex;
+    std::vector<Notification> notifications;
 
     std::map<std::string, std::vector<TimeApp>> time_apps;
 

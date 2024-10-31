@@ -26,19 +26,25 @@
 
 #include <kernel/state.h>
 
+#include <patch_check/functions.h>
+
 #include <packages/license.h>
+#include <packages/sce_types.h>
 
 #include <renderer/state.h>
 
 #include <io/VitaIoDevice.h>
 #include <io/vfs.h>
 
+#include <boost/algorithm/string/trim.hpp>
 #include <util/log.h>
 
-#include <pugixml.hpp>
-
 #include <chrono>
+#include <numbers>
+#include <regex>
+
 #include <imgui_internal.h>
+#include <pugixml.hpp>
 #include <stb_image.h>
 
 void GateAnimation::start(GateAnimationState anim_state) {
@@ -192,7 +198,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
         const auto fw_path{ emuenv.pref_path / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
         const auto APP_PATH{ emuenv.pref_path / app_device._to_string() / "app" / app_path };
-        const auto live_area_path{ fs::path("sce_sys") / ((emuenv.license.rif[TITLE_ID].sku_flag == 3) && fs::exists(APP_PATH / "sce_sys/retail/livearea") ? "retail/livearea" : "livearea") };
+        const auto live_area_path = fs::path("sce_sys") / fs::path(((emuenv.license.rif[TITLE_ID].sku_flag == 3) && fs::exists(APP_PATH / "sce_sys/retail/livearea")) ? "retail/livearea" : "livearea");
         auto template_xml{ APP_PATH / live_area_path / "contents/template.xml" };
 
         pugi::xml_document doc;
@@ -525,6 +531,9 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
             }
         }
     }
+
+    patch_check::get_state().sync_app_has_update_from_local(emuenv.pref_path, app_path, APP_INDEX->title_id, APP_INDEX->app_ver);
+
     if (type[app_path].empty() || !items_styles.contains(type[app_path])) {
         LOG_WARN("Type of style {} not found for: {}", type[app_path], app_path);
         type[app_path] = "a1";
@@ -543,17 +552,157 @@ void open_search(const std::string &title) {
     open_path(search_url);
 }
 
-void refresh_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    if (gui.live_area_contents.contains(app_path))
-        gui.live_area_contents.erase(app_path);
-    if (gui.live_items.contains(app_path))
-        gui.live_items.erase(app_path);
+std::mutex refresh_animation_mutex;
+struct RefreshAnimationInfo {
+    std::chrono::steady_clock::time_point start_time;
+    bool stop_requested = false;
+    float stop_after_turns = 0.f;
+};
 
-    init_user_app(gui, emuenv, app_path);
-    save_apps_cache(gui, emuenv);
+std::map<std::string, RefreshAnimationInfo> refresh_animation_states;
 
-    if (get_live_area_current_open_apps_list_index(gui, app_path) != gui.live_area_current_open_apps_list.end())
-        init_live_area(gui, emuenv, app_path);
+static float get_refresh_icon_angle(const std::string &app_path, bool &is_animating) {
+    std::lock_guard<std::mutex> lock(refresh_animation_mutex);
+    const auto refresh_it = refresh_animation_states.find(app_path);
+    if (refresh_it == refresh_animation_states.end()) {
+        is_animating = false;
+        return 0.f;
+    }
+
+    const float elapsed = std::chrono::duration<float>(std::chrono::steady_clock::now() - refresh_it->second.start_time).count();
+    if (refresh_it->second.stop_requested && (elapsed >= refresh_it->second.stop_after_turns)) {
+        refresh_animation_states.erase(refresh_it);
+        is_animating = false;
+        return 0.f;
+    }
+
+    is_animating = true;
+    return elapsed * (2.f * std::numbers::pi_v<float>);
+}
+
+static void draw_refresh_widget_icon(ImDrawList *draw_list, const ImVec2 &pos_min, const ImVec2 &size, float angle) {
+    const float icon_scale = std::min(size.x, size.y) / 70.f;
+    const float shadow_offset = 3.f * icon_scale;
+    const float rounding = 12.f * icon_scale;
+    const float border_thickness = std::max(1.5f, 2.f * icon_scale);
+    const ImVec2 bg_min = pos_min;
+    const ImVec2 bg_max(pos_min.x + size.x, pos_min.y + size.y);
+    const ImVec2 shadow_min(bg_min.x, bg_min.y + shadow_offset);
+    const ImVec2 shadow_max(bg_max.x, bg_max.y + shadow_offset);
+
+    const ImU32 BG_COLOR = IM_COL32(221, 221, 221, 255);
+    draw_list->AddRectFilled(shadow_min, shadow_max, IM_COL32(0, 0, 0, 55), rounding, ImDrawFlags_RoundCornersBottom);
+    draw_list->AddRectFilled(bg_min, bg_max, BG_COLOR, rounding, ImDrawFlags_RoundCornersBottom);
+    draw_list->AddRect(bg_min, bg_max, IM_COL32(224, 224, 224, 255), rounding, ImDrawFlags_RoundCornersBottom, border_thickness);
+
+    const ImVec2 center((bg_min.x + bg_max.x) / 2.f, (bg_min.y + bg_max.y) / 2.f);
+    const float radius = std::min(bg_max.x - bg_min.x, bg_max.y - bg_min.y) * 0.27f;
+    const float arc_thickness = std::max(5.6f * icon_scale, radius * 0.38f);
+    const float arrow_head_back_offset = 12.4f * icon_scale;
+    const float arrow_head_width = 12.0f * icon_scale;
+    const float arrow_tip_extension = 3.2f * icon_scale;
+    const float arrow_head_gap = 0.36f;
+    const ImU32 arrow_color = IM_COL32(27, 180, 245, 255);
+
+    const auto polar = [&](float current_angle) {
+        return ImVec2(center.x + (std::cos(current_angle) * radius), center.y + (std::sin(current_angle) * radius));
+    };
+
+    const auto draw_arc_arrow = [&](float start_angle, float end_angle, const ImVec2 &offset = ImVec2(0.f, 0.f)) {
+        std::vector<ImVec2> points;
+        constexpr int SEGMENT_COUNT = 20;
+        points.reserve(SEGMENT_COUNT + 1);
+        for (int i = 0; i <= SEGMENT_COUNT; ++i) {
+            const float t = static_cast<float>(i) / static_cast<float>(SEGMENT_COUNT);
+            const auto point = polar(start_angle + (((end_angle - arrow_head_gap) - start_angle) * t) + angle);
+            points.push_back(ImVec2(point.x + offset.x, point.y + offset.y));
+        }
+
+        draw_list->AddPolyline(points.data(), static_cast<int>(points.size()), arrow_color, false, arc_thickness);
+
+        const ImVec2 arc_end = points.back();
+        const ImVec2 raw_tip = polar(end_angle + angle);
+        const ImVec2 arc_tip(raw_tip.x + offset.x, raw_tip.y + offset.y);
+        ImVec2 tangent(arc_tip.x - arc_end.x, arc_tip.y - arc_end.y);
+        const float tangent_length = std::sqrt((tangent.x * tangent.x) + (tangent.y * tangent.y));
+        if (tangent_length > 0.f) {
+            tangent.x /= tangent_length;
+            tangent.y /= tangent_length;
+        }
+
+        ImVec2 radial(arc_tip.x - center.x, arc_tip.y - center.y);
+        const float radial_length = std::sqrt((radial.x * radial.x) + (radial.y * radial.y));
+        if (radial_length > 0.f) {
+            radial.x /= radial_length;
+            radial.y /= radial_length;
+        }
+
+        ImVec2 direction((radial.x * 0.22f) + (tangent.x * 0.78f), (radial.y * 0.22f) + (tangent.y * 0.78f));
+        const float direction_length = std::sqrt((direction.x * direction.x) + (direction.y * direction.y));
+        if (direction_length > 0.f) {
+            direction.x /= direction_length;
+            direction.y /= direction_length;
+        }
+
+        const ImVec2 normal(-direction.y, direction.x);
+        const ImVec2 head_center(arc_tip.x - (direction.x * (arrow_head_back_offset * 0.18f)), arc_tip.y - (direction.y * (arrow_head_back_offset * 0.18f)));
+        const ImVec2 tip(head_center.x + (direction.x * arrow_tip_extension), head_center.y + (direction.y * arrow_tip_extension));
+        const ImVec2 base(head_center.x - (direction.x * arrow_head_back_offset), head_center.y - (direction.y * arrow_head_back_offset));
+
+        draw_list->AddTriangleFilled(
+            tip,
+            ImVec2(base.x + (normal.x * arrow_head_width), base.y + (normal.y * arrow_head_width)),
+            ImVec2(base.x - (normal.x * arrow_head_width), base.y - (normal.y * arrow_head_width)),
+            arrow_color);
+    };
+
+    constexpr float LEFT_ARROW_START = 1.62f;
+    constexpr float LEFT_ARROW_END = 4.16f;
+    constexpr float RIGHT_ARROW_START = LEFT_ARROW_START + std::numbers::pi_v<float>;
+    constexpr float RIGHT_ARROW_END = LEFT_ARROW_END + std::numbers::pi_v<float>;
+    draw_arc_arrow(LEFT_ARROW_START, LEFT_ARROW_END, ImVec2(0.f, -3.f * icon_scale));
+    draw_arc_arrow(RIGHT_ARROW_START, RIGHT_ARROW_END, ImVec2(0.f, 3.f * icon_scale));
+}
+
+void refresh_and_check_patch(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    auto &patch_check_state = patch_check::get_state();
+    patch_check_state.erase_app_has_update(app_path);
+    {
+        std::lock_guard<std::mutex> lock(refresh_animation_mutex);
+        refresh_animation_states[app_path] = { std::chrono::steady_clock::now(), false, 0.f };
+    }
+
+    std::thread update_thread([&gui, &emuenv, app_path]() {
+        const auto stop_refresh_animation = [&]() {
+            std::lock_guard<std::mutex> lock(refresh_animation_mutex);
+            const auto refresh_it = refresh_animation_states.find(app_path);
+            if (refresh_it == refresh_animation_states.end())
+                return;
+
+            const float elapsed = std::chrono::duration<float>(std::chrono::steady_clock::now() - refresh_it->second.start_time).count();
+            refresh_it->second.stop_requested = true;
+            refresh_it->second.stop_after_turns = std::max(1.f, std::ceil(elapsed));
+        };
+
+        const auto &APP_INDEX = get_app_index(gui, app_path);
+        const auto TITLE_ID = APP_INDEX->title_id;
+        const auto TITLE = APP_INDEX->title;
+
+        const auto has_update = patch_check::refresh_app_update_state(emuenv.pref_path, app_path, TITLE_ID, APP_INDEX->app_ver);
+
+        {
+            std::lock_guard<std::mutex> lock(gui.notifications_mutex);
+            gui.notifications.insert(gui.notifications.begin(),
+                {
+                    fs::path(app_path).stem().string(),
+                    APP_INDEX->title,
+                    has_update ? gui.lang.patch_check["new_app_version_available"] : gui.lang.patch_check["latest_version_installed"],
+                });
+        }
+
+        stop_refresh_animation();
+    });
+    update_thread.detach();
 }
 
 void close_live_area_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
@@ -575,6 +724,7 @@ void close_live_area_app(GuiState &gui, EmuEnvState &emuenv, const std::string &
 
 enum LiveAreaType {
     GATE,
+    UPDATE,
     SEARCH,
     MANUAL,
     REFRESH
@@ -590,9 +740,20 @@ static constexpr ImU32 ARROW_COLOR = 0xFFFFFFFF; // White
 static LiveAreaType live_area_type_selected = GATE;
 
 void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t button) {
+    auto &patch_check_state = patch_check::get_state();
     const auto &APP_PATH = gui.live_area_current_open_apps_list[gui.live_area_app_current_open];
     const auto manual_path{ emuenv.pref_path / "ux0/app" / APP_PATH / "sce_sys/manual" };
     const auto manual_found = fs::exists(manual_path) && !fs::is_empty(manual_path);
+    const auto has_update = patch_check_state.has_app_update(APP_PATH);
+    const auto has_refresh = APP_PATH.find("PCS") != std::string::npos;
+    std::vector<LiveAreaType> nav_widgets;
+    if (has_update)
+        nav_widgets.push_back(UPDATE);
+    nav_widgets.push_back(SEARCH);
+    if (manual_found)
+        nav_widgets.push_back(MANUAL);
+    if (has_refresh)
+        nav_widgets.push_back(REFRESH);
 
     if (!gui.is_nav_button) {
         if ((live_area_type_selected == MANUAL) && !manual_found)
@@ -620,6 +781,12 @@ void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32
         case MANUAL:
             open_manual(gui, emuenv, APP_PATH);
             break;
+        case UPDATE:
+            process_app_update(gui, emuenv, APP_PATH);
+            break;
+        case REFRESH:
+            refresh_and_check_patch(gui, emuenv, APP_PATH);
+            break;
         default:
             break;
         }
@@ -636,20 +803,28 @@ void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32
         break;
     case SCE_CTRL_LEFT:
     case SCE_CTRL_L1:
-        if ((button & SCE_CTRL_LEFT) && live_area_type_selected == MANUAL)
-            live_area_type_selected = SEARCH;
-        else {
+        if (button & SCE_CTRL_LEFT) {
+            const auto current = std::find(nav_widgets.begin(), nav_widgets.end(), live_area_type_selected);
+            if ((current != nav_widgets.end()) && (current != nav_widgets.begin())) {
+                live_area_type_selected = *std::prev(current);
+                break;
+            }
+        }
+        {
             gui.live_area_app_current_open = std::max(gui.live_area_app_current_open - 1, -1);
-            gui.vita_area.live_area_screen = gui.live_area_app_current_open >= 0;
-            gui.vita_area.home_screen = !gui.vita_area.live_area_screen;
             live_area_type_selected = GATE;
         }
         break;
     case SCE_CTRL_RIGHT:
     case SCE_CTRL_R1:
-        if ((button & SCE_CTRL_RIGHT) && live_area_type_selected == SEARCH)
-            live_area_type_selected = MANUAL;
-        else if (gui.live_area_app_current_open < live_area_current_open_apps_list_size) {
+        if (button & SCE_CTRL_RIGHT) {
+            const auto current = std::find(nav_widgets.begin(), nav_widgets.end(), live_area_type_selected);
+            if ((current != nav_widgets.end()) && (std::next(current) != nav_widgets.end())) {
+                live_area_type_selected = *std::next(current);
+                break;
+            }
+        }
+        if (gui.live_area_app_current_open < live_area_current_open_apps_list_size) {
             ++gui.live_area_app_current_open;
             live_area_type_selected = GATE;
         }
@@ -671,7 +846,20 @@ void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32
     }
 }
 
+void refresh_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    auto &patch_check_state = patch_check::get_state();
+    const auto id = fs::path(app_path).stem().string();
+    if (gui.live_items.contains(app_path)) {
+        gui.live_area_contents.erase(app_path);
+        gui.live_items.erase(app_path);
+        init_live_area(gui, emuenv, app_path);
+    }
+    patch_check_state.erase_update_install(id);
+    patch_check_state.erase_app_has_update(app_path);
+}
+
 void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
+    auto &patch_check_state = patch_check::get_state();
     const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
@@ -681,6 +869,9 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const VitaIoDevice app_device = app_path.starts_with("NPXS") ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
 
     const auto INFO_BAR_HEIGHT = 32.f * SCALE.y;
+
+    if (patch_check_state.has_update_install_state(app_path, patch_check::UpdateState::SUCCESS))
+        refresh_live_area(gui, emuenv, app_path);
 
     const ImVec2 WINDOW_SIZE(VIEWPORT_SIZE.x, VIEWPORT_SIZE.y - INFO_BAR_HEIGHT);
     const ImVec2 WINDOW_POS(VIEWPORT_POS.x, VIEWPORT_POS.y + INFO_BAR_HEIGHT);
@@ -912,6 +1103,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             const ImVec2 background_pos_max(background_pos_min.x + bg_scal_size.x, background_pos_min.y + bg_scal_size.y);
             DRAW_LIST->AddImage(gui.live_items[app_path][frame.id]["background"][current_item[app_path][frame.id]], background_pos_min, background_pos_max);
         }
+
         if (gui.live_items[app_path][frame.id].contains("image")) {
             const auto image_pos_min = set_screen_pos(img_pos);
             img_scal_size = apply_zoom_size(img_scal_size);
@@ -1163,8 +1355,6 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto &GATE_DRAW_LIST = is_current_animated ? FG_DRAW_LIST : WINDOW_DRAW_LIST;
 
-    const auto BUTTON_SIZE = ImVec2(72.f * SCALE.x, 30.f * SCALE.y);
-
     // Draw the gate content
     if (is_current_app && gui.live_area_last_app_frame)
         GATE_DRAW_LIST->AddImage(gui.live_area_last_app_frame, gate_screen_pos_min, gate_screen_pos_max);
@@ -1247,11 +1437,15 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         const auto manual_exist = fs::exists(manual_path) && !fs::is_empty(manual_path);
 
         std::vector<ButtonEntry> buttons;
+        const auto has_update = patch_check::get_state().has_app_update(app_path);
+        if (has_update)
+            buttons.emplace_back("Update", UPDATE, [&]() { process_app_update(gui, emuenv, app_path); });
         buttons.emplace_back("Search", SEARCH, [&]() { open_search(APP_INDEX->title); });
         if (manual_exist)
             buttons.emplace_back("Manual", MANUAL, [&]() { open_manual(gui, emuenv, app_path); });
-        buttons.emplace_back("Refresh", REFRESH, [&]() { refresh_app(gui, emuenv, app_path); });
-
+        if (app_path.find("PCS") != std::string::npos) {
+            buttons.emplace_back("Refresh", REFRESH, [&]() { refresh_and_check_patch(gui, emuenv, app_path); });
+        }
         const auto BUTTONS_COUNT = static_cast<int>(buttons.size());
         const float spacing = 42.0f * SCALE.x;
         const ImVec2 BUTTONS_POS = ImVec2(
@@ -1262,19 +1456,34 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
 
             const auto TITLE = buttons[i].title;
             const auto TYPE = buttons[i].type;
-            const char *WIDGET_STR = TITLE.c_str();
-            const auto WIDGET_STR_SIZE = ImGui::CalcTextSize(WIDGET_STR);
-            const auto WIDGET_STR_SCALE_SIZE = ImVec2((WIDGET_STR_SIZE.x * scal_widget_font_size) * SCALE.x, (WIDGET_STR_SIZE.y * scal_widget_font_size) * SCALE.y);
             const ImVec2 WIDGET_POS_MIN = set_screen_pos(button_pos_scal);
-            const auto WIDGET_STR_POS = ImVec2(WIDGET_POS_MIN.x + ((widget_scal_size.x / 2.f) - (WIDGET_STR_SCALE_SIZE.x / 2.f)),
-                WIDGET_POS_MIN.y + ((widget_scal_size.y / 2.f) - (WIDGET_STR_SCALE_SIZE.y / 2.f)));
 
             auto WIDGET_COLOR = IM_COL32(10, 169, 246, 255);
-            if (TYPE == MANUAL)
+            if (TYPE == UPDATE)
+                WIDGET_COLOR = IM_COL32(249, 165, 4, 255);
+            else if (TYPE == MANUAL)
                 WIDGET_COLOR = IM_COL32(202, 0, 106, 255);
 
-            DRAW_LIST->AddRectFilled(WIDGET_POS_MIN, ImVec2(WIDGET_POS_MIN.x + widget_scal_size.x, WIDGET_POS_MIN.y + widget_scal_size.y), WIDGET_COLOR, 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
-            DRAW_LIST->AddText(gui.vita_font[emuenv.current_font_level], widget_font_size, WIDGET_STR_POS, IM_COL32(255, 255, 255, 255), WIDGET_STR);
+            const auto draw_widget = [&]() {
+                if (TYPE == REFRESH) {
+                    bool is_animating = false;
+                    const float angle = get_refresh_icon_angle(app_path, is_animating);
+                    draw_refresh_widget_icon(DRAW_LIST, WIDGET_POS_MIN, widget_scal_size, is_animating ? angle : 0.f);
+                    return;
+                }
+
+                const char *widget_str = TITLE.c_str();
+                const auto widget_str_size = ImGui::CalcTextSize(widget_str);
+                const auto widget_str_scale_size = ImVec2((widget_str_size.x * scal_widget_font_size) * SCALE.x, (widget_str_size.y * scal_widget_font_size) * SCALE.y);
+                const auto widget_str_pos = ImVec2(WIDGET_POS_MIN.x + ((widget_scal_size.x / 2.f) - (widget_str_scale_size.x / 2.f)),
+                    WIDGET_POS_MIN.y + ((widget_scal_size.y / 2.f) - (widget_str_scale_size.y / 2.f)));
+
+                DRAW_LIST->AddRectFilled(WIDGET_POS_MIN, ImVec2(WIDGET_POS_MIN.x + widget_scal_size.x, WIDGET_POS_MIN.y + widget_scal_size.y), WIDGET_COLOR, 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
+                DRAW_LIST->AddText(gui.vita_font[emuenv.current_font_level], widget_font_size, widget_str_pos, IM_COL32(255, 255, 255, 255), widget_str);
+            };
+
+            draw_widget();
+
             ImGui::SetCursorPos(button_pos_scal);
             if (!is_current_animated) {
                 if (ImGui::Selectable(("##" + TITLE).c_str(), gui.is_nav_button && (live_area_type_selected == TYPE), ImGuiSelectableFlags_None, widget_scal_size))
@@ -1295,13 +1504,25 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     auto &common = emuenv.common_dialog.lang.common;
 
     if (!gui.vita_area.content_manager && !gui.vita_area.manual) {
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * SCALE.x);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.f * SCALE.x);
+        const auto BUTTON_SIZE = ImVec2(62.f * SCALE.x, 62.f * SCALE.y);
         ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, 12.0f * SCALE.y));
-        if (ImGui::Button("Esc", BUTTON_SIZE))
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.5f * SCALE.x);
+        const ImVec4 close_button_color = ImVec4(0.8f, 0.8f, 0.8f, 0.3f);
+        const ImVec4 close_button_color_hover = ImVec4(0.96f, 0.96f, 0.96f, 0.9f);
+        const ImVec4 close_button_color_active = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+        ImGui::PushStyleColor(ImGuiCol_Button, close_button_color);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, close_button_color_hover);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, close_button_color_active);
+        ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(255, 255, 255, 255));
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
+        if (ImGui::Button("X", BUTTON_SIZE))
             close_live_area_app(gui, emuenv, app_path);
         ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, 12.0f * SCALE.y));
-        if (ImGui::Button("Help", BUTTON_SIZE))
+        if (ImGui::Button("?", BUTTON_SIZE))
             ImGui::OpenPopup("Live Area Help");
+        ImGui::PopStyleColor(5);
+        ImGui::PopStyleVar();
         ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x / 2.f, WINDOW_SIZE.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         if (ImGui::BeginPopupModal("Live Area Help", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
             TextColoredCentered(GUI_COLOR_TEXT_TITLE, gui.lang.main_menubar.help["title"].c_str());

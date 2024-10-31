@@ -31,6 +31,7 @@
 #include <display/state.h>
 #include <gui/functions.h>
 #include <gxm/state.h>
+#include <indicator/state.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
@@ -703,6 +704,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         switch (event.type) {
         case SDL_EVENT_QUIT:
             bgm_player::destroy_bgm_player();
+            indicator::get_state().destroy_download_manager();
             if (!emuenv.io.app_path.empty())
                 gui::update_time_app_used(gui, emuenv, emuenv.io.app_path);
             if (emuenv.audio.adapter)

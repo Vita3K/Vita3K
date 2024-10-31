@@ -19,6 +19,7 @@ set(GUI_SOURCES
 	src/imgui_impl_sdl_gl3.cpp
 	src/imgui_impl_sdl_vulkan.cpp
 	src/imgui_impl_sdl.cpp
+	src/indicator.cpp
 	src/information_bar.cpp
 	src/initial_setup.cpp
 	src/license_install_dialog.cpp
@@ -27,6 +28,7 @@ set(GUI_SOURCES
 	src/manual.cpp
 	src/mutexes_dialog.cpp
 	src/perf_overlay.cpp
+	src/patch_check.cpp
 	src/pkg_install_dialog.cpp
 	src/private.h
 	src/reinstall.cpp
@@ -59,7 +61,7 @@ endif()
 add_library(gui STATIC ${GUI_SOURCES})
 
 target_include_directories(gui PUBLIC include ${CMAKE_SOURCE_DIR}/vita3k)
-target_link_libraries(gui PUBLIC app bgm_player compat config dialog emuenv ime imgui lang regmgr np)
+target_link_libraries(gui PUBLIC app bgm_player compat config dialog emuenv ime imgui indicator lang patch_check regmgr np)
 target_link_libraries(gui PRIVATE audio camera cppcommon ctrl kernel miniz motion psvpfsparser pugixml::pugixml stb renderer packages SDL3::SDL3 touch vkutil host::dialog concurrentqueue)
 # Link macOS frameworks for Objective-C++ code
 if(APPLE)

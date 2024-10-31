@@ -1153,3 +1153,72 @@ void decrypt_selfs(const fs::path &input_path, const fs::path &cache_path, const
         }
     }
 }
+
+// Credit to Proxima for the HMAC key: https://wololo.net/talk/viewtopic.php?t=43765
+constexpr unsigned char HMACKey[] = {
+    0xE5, 0xE2, 0x78, 0xAA, 0x1E, 0xE3, 0x40, 0x82,
+    0xA0, 0x88, 0x27, 0x9C, 0x83, 0xF9, 0xBB, 0xC8,
+    0x06, 0x82, 0x1C, 0x52, 0xF2, 0xAB, 0x5D, 0x2B,
+    0x4A, 0xBD, 0x99, 0x54, 0x50, 0x35, 0x51, 0x14
+};
+
+// Credit to Proxima and https://github.com/VitaSmith for describing the update URL derivation algorithm.
+std::string resolve_ver_xml_url(const std::string &title_id) {
+    EVP_MAC *mac = EVP_MAC_fetch(NULL, "HMAC", NULL);
+    if (!mac) {
+        LOG_ERROR("Failed to fetch HMAC MAC");
+        return {};
+    }
+
+    // Create a new HMAC context
+    EVP_MAC_CTX *ctx = EVP_MAC_CTX_new(mac);
+    if (!ctx) {
+        EVP_MAC_free(mac);
+        LOG_ERROR("Failed to create HMAC context");
+        return {};
+    }
+
+    // Set the HMAC parameters (using SHA256 as the digest)
+    OSSL_PARAM params[2] = {
+        OSSL_PARAM_construct_utf8_string("digest", (char *)"SHA256", 0),
+        OSSL_PARAM_construct_end()
+    };
+
+    // Initialize the HMAC context with the key and parameters
+    if (EVP_MAC_init(ctx, HMACKey, sizeof(HMACKey), params) != 1) {
+        EVP_MAC_CTX_free(ctx);
+        EVP_MAC_free(mac);
+        LOG_ERROR("Failed to initialize HMAC context");
+        return {};
+    }
+
+    // Update the HMAC context with the title ID
+    const auto np_title_id = fmt::format("np_{}", title_id);
+    if (EVP_MAC_update(ctx, (const unsigned char *)np_title_id.c_str(), np_title_id.length()) != 1) {
+        EVP_MAC_CTX_free(ctx);
+        EVP_MAC_free(mac);
+        LOG_ERROR("Failed to update HMAC context");
+        return {};
+    }
+
+    unsigned char hash[EVP_MAX_MD_SIZE];
+    size_t outlen = 0;
+    if (EVP_MAC_final(ctx, hash, &outlen, sizeof(hash)) != 1) {
+        EVP_MAC_CTX_free(ctx);
+        EVP_MAC_free(mac);
+        LOG_ERROR("Failed to finalize HMAC context");
+        return {};
+    }
+
+    // Free the MAC context and the MAC object
+    EVP_MAC_CTX_free(ctx);
+    EVP_MAC_free(mac);
+
+    // Convert the hash to a hexadecimal string
+    std::string hashStr(outlen * 2, '\0');
+    for (size_t i = 0; i < outlen; i++)
+        fmt::format_to(&hashStr[i * 2], "{:02x}", hash[i]);
+
+    // Construct the URL using the title ID and the hash
+    return "http://gs-sec.ww.np.dl.playstation.net/pl/np/" + title_id + "/" + hashStr + "/" + title_id + "-ver.xml";
+}
