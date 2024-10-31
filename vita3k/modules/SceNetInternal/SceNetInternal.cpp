@@ -31,3 +31,11 @@ EXPORT(int, sceNetInternalIcmConnect, int sid, int flags) {
     // call sceNetSyscallIcmConnect(sid, flags)
     return UNIMPLEMENTED();
 }
+
+EXPORT(Ptr<const char>, SceNetInternal_F3917021, int unk) {
+    TRACY_FUNC(SceNetInternal_F3917021);
+    LOG_DEBUG("SceNetInternal_F3917021, {}", unk);
+    Ptr<char> rep = Ptr<char>(alloc(emuenv.mem, 0x10, "ip_field"));
+    strcpy(rep.get(emuenv.mem), "127.0.0.1");
+    return rep;
+}

@@ -96,7 +96,7 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
     // Clean User apps list
-    gui.app_selector.user_apps.clear();
+    gui.app_selector.vita_apps.clear();
 
     get_modules_list(gui, emuenv);
     get_sys_apps_title(gui, emuenv);
@@ -1015,7 +1015,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gui.users[emuenv.io.user_id].start_type = "default";
                 save_user(gui, emuenv, emuenv.io.user_id);
                 init_theme_start_background(gui, emuenv, "default");
-                init_apps_icon(gui, emuenv, gui.app_selector.sys_apps);
+                init_apps_icon(gui, emuenv, gui.app_selector.emu_apps);
             }
             ImGui::SameLine();
         }

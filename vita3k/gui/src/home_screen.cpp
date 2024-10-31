@@ -24,6 +24,7 @@
 #include <dialog/state.h>
 #include <display/state.h>
 #include <gui/functions.h>
+#include <io/device.h>
 #include <io/state.h>
 #include <kernel/state.h>
 
@@ -35,9 +36,9 @@ using namespace std::string_literals;
 
 namespace gui {
 
-void init_user_apps(GuiState &gui, EmuEnvState &emuenv) {
+void init_vita_apps(GuiState &gui, EmuEnvState &emuenv) {
     gui.apps_background.clear();
-    gui.app_selector.user_apps_icon.clear();
+    gui.app_selector.vita_apps_icon.clear();
     gui.live_area_app_current_open = -1;
     gui.live_area_current_open_apps_list.clear();
     gui.live_area_contents.clear();
@@ -46,30 +47,31 @@ void init_user_apps(GuiState &gui, EmuEnvState &emuenv) {
         gui.app_selector.icon_async_loader->quit = true;
 
     std::thread init_apps([&gui, &emuenv]() {
-        auto app_list_size = gui.app_selector.user_apps.size();
-        gui.app_selector.user_apps.clear();
+        auto apps_list_size = gui.app_selector.vita_apps["ux0"].size();
+        gui.app_selector.vita_apps.clear();
+
+        init_fw_apps(gui, emuenv);
         get_user_apps_title(gui, emuenv);
 
-        if (gui.app_selector.user_apps.empty())
+        if (gui.app_selector.vita_apps["ux0"].empty())
             return false;
 
         gui.app_selector.is_app_list_sorted = false;
         init_last_time_apps(gui, emuenv);
         load_and_update_compat_user_apps(gui, emuenv);
 
-        init_apps_icon(gui, emuenv, gui.app_selector.user_apps);
+        const auto new_apps_list_size = gui.app_selector.vita_apps["ux0"].size();
+        init_apps_icon(gui, emuenv, gui.app_selector.vita_apps["ux0"]);
 
-        if (app_list_size == gui.app_selector.user_apps.size())
+        if (apps_list_size == new_apps_list_size)
             return false;
 
         std::string change_app_list = "new application(s) added";
-        if (app_list_size > gui.app_selector.user_apps.size()) {
+        if (apps_list_size > new_apps_list_size) {
             change_app_list = "application(s) removed";
-            app_list_size -= gui.app_selector.user_apps.size();
+            apps_list_size -= new_apps_list_size;
         } else
-            app_list_size = gui.app_selector.user_apps.size() - app_list_size;
-
-        LOG_INFO("{} {}", app_list_size, change_app_list);
+            apps_list_size = new_apps_list_size - apps_list_size;
 
         return true;
     });
@@ -87,8 +89,9 @@ void init_last_time_apps(GuiState &gui, EmuEnvState &emuenv) {
         }
     };
 
-    last_time_apps(gui.app_selector.sys_apps);
-    last_time_apps(gui.app_selector.user_apps);
+    last_time_apps(gui.app_selector.emu_apps);
+    for (auto &[_, apps] : gui.app_selector.vita_apps)
+        last_time_apps(apps);
     gui.app_selector.is_app_list_sorted = false;
 }
 
@@ -132,10 +135,9 @@ void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
 }
 
 void pre_load_app(GuiState &gui, EmuEnvState &emuenv, bool live_area, const std::string &app_path) {
-    if (app_path == "NPXS10003") {
-        update_last_time_app_used(gui, emuenv, app_path);
+    if (app_path == "emu:app/NPXS10003")
         open_path("https://Vita3k.org");
-    } else {
+    else {
         if (live_area)
             open_live_area(gui, emuenv, app_path);
         else
@@ -145,8 +147,8 @@ void pre_load_app(GuiState &gui, EmuEnvState &emuenv, bool live_area, const std:
 
 void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     switch_bgm_state(true);
-    const auto is_sys = app_path.starts_with("NPXS") && (app_path != "NPXS10007");
-    if (!is_sys) {
+    const auto is_emu = app_path.starts_with("emu");
+    if (!is_emu || (app_path == "emu:vsh/shell")) {
         if (emuenv.io.app_path != app_path) {
             if (!emuenv.io.app_path.empty())
                 gui.vita_area.app_close = true;
@@ -162,16 +164,15 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         emuenv.app_path = app_path;
         gui.vita_area.home_screen = false;
         gui.vita_area.live_area_screen = false;
-        init_app_background(gui, emuenv, app_path);
-        update_last_time_app_used(gui, emuenv, app_path);
+        init_app_background(gui, emuenv, "vs0:app/" + fs::path(app_path).stem().string());
 
-        if (app_path == "NPXS10008") {
+        if (app_path == "emu:app/NPXS10008") {
             init_trophy_collection(gui, emuenv);
             gui.vita_area.trophy_collection = true;
-        } else if (app_path == "NPXS10015") {
+        } else if (app_path == "emu:app/NPXS10015") {
             if (gui.vita_area.content_manager) {
-                emuenv.app_path = "NPXS10026";
-                update_time_app_used(gui, emuenv, "NPXS10026");
+                emuenv.app_path = "emu:app/NPXS10026";
+                update_time_app_used(gui, emuenv, emuenv.app_path);
                 gui.vita_area.content_manager = false;
             }
 
@@ -184,10 +185,9 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 }
 
 void close_system_app(GuiState &gui, EmuEnvState &emuenv) {
-    if (gui.vita_area.content_manager) {
+    if (gui.vita_area.content_manager)
         gui.vita_area.content_manager = false;
-        update_time_app_used(gui, emuenv, "NPXS10026");
-    } else if (gui.vita_area.manual) {
+    else if (gui.vita_area.manual) {
         gui.vita_area.manual = false;
 
         // Free manual textures from memory when manual is closed
@@ -196,15 +196,12 @@ void close_system_app(GuiState &gui, EmuEnvState &emuenv) {
         gui.manuals.clear();
     } else if (gui.vita_area.settings) {
         gui.vita_area.settings = false;
-        update_time_app_used(gui, emuenv, "NPXS10015");
-        if (emuenv.app_path == "NPXS10026") {
-            pre_run_app(gui, emuenv, "NPXS10026");
+        if (emuenv.app_path == "emu:app/NPXS10026") {
+            pre_run_app(gui, emuenv, "emu:app/NPXS10026");
             return;
         }
-    } else {
+    } else
         gui.vita_area.trophy_collection = false;
-        update_time_app_used(gui, emuenv, "NPXS10008");
-    }
 
     if ((gui::get_live_area_current_open_apps_list_index(gui, emuenv.app_path) != gui.live_area_current_open_apps_list.end()) && (gui.live_area_current_open_apps_list[gui.live_area_app_current_open] == emuenv.app_path)) {
         gui.vita_area.live_area_screen = true;
@@ -218,9 +215,14 @@ void close_system_app(GuiState &gui, EmuEnvState &emuenv) {
     switch_bgm_state(false);
 }
 
-void close_and_run_new_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+void close_and_run_new_app(EmuEnvState &emuenv, const std::string &app_path) {
     emuenv.kernel.exit_delete_all_threads();
-    emuenv.load_app_path = app_path;
+    if (app_path == "emu:vsh/shell") {
+        emuenv.load_app_path = "vs0:vsh/shell";
+        emuenv.load_exec_path = "shell.self";
+    } else
+        emuenv.load_app_path = app_path;
+
     emuenv.load_exec = true;
 }
 
@@ -247,7 +249,7 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
     ImGui::SetCursorPos(ImVec2(50.f * SCALE.x, 108.f * SCALE.y));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.lang.game_data["app_close"].c_str());
-    if (gui.app_selector.user_apps_icon.contains(emuenv.io.app_path)) {
+    if (gui.app_selector.vita_apps_icon.contains(emuenv.io.app_path)) {
         const auto ICON_POS_SCALE = ImVec2(50.f * SCALE.x, (WINDOW_SIZE.y / 2.f) - (ICON_SIZE.y / 2.f) - (10.f * SCALE.y));
         ImGui::SetCursorPos(ICON_POS_SCALE);
         const auto POS_MIN = ImGui::GetCursorScreenPos();
@@ -261,7 +263,7 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SameLine(0, 20.f * SCALE.x);
     if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
         const auto &app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open] : emuenv.app_path;
-        close_and_run_new_app(gui, emuenv, app_path);
+        close_and_run_new_app(emuenv, app_path);
     }
     ImGui::PopStyleVar();
     ImGui::EndChild();
@@ -345,7 +347,7 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
         gui.app_selector.is_app_list_sorted = true;
     }
 
-    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [&](const App &lhs, const App &rhs) {
+    std::sort(gui.app_selector.vita_apps["ux0"].begin(), gui.app_selector.vita_apps["ux0"].end(), [&](const App &lhs, const App &rhs) {
         switch (type) {
         case APP_VER:
             switch (sorted) {
@@ -422,10 +424,9 @@ static std::string get_label_name(GuiState &gui, const SortType &type) {
     return label;
 }
 
-static constexpr int32_t INVALID_APP_INDEX = -5;
-static int32_t first_visible_app_index = INVALID_APP_INDEX, current_selected_app_index = INVALID_APP_INDEX;
+static std::string first_visible_app, current_selected_app;
 
-static std::vector<int32_t> apps_list_filtered;
+static std::vector<std::string> apps_list_filtered;
 void browse_home_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t button) {
     if (apps_list_filtered.empty())
         return;
@@ -435,8 +436,8 @@ void browse_home_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t bu
         gui.is_nav_button = true;
 
         // When the current selected app index have not any selected, set it to the first visible app index
-        if (current_selected_app_index <= INVALID_APP_INDEX)
-            current_selected_app_index = first_visible_app_index;
+        if (current_selected_app.empty())
+            current_selected_app = first_visible_app;
 
         return;
     }
@@ -444,9 +445,9 @@ void browse_home_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t bu
     const auto apps_list_filtered_size = static_cast<int32_t>(apps_list_filtered.size() - 1);
 
     // Find current selected app index in apps list filtered
-    const int32_t filtered_index = vector_utils::find_index(apps_list_filtered, current_selected_app_index);
+    const int32_t filtered_index = vector_utils::find_index(apps_list_filtered, current_selected_app);
     if (filtered_index == -1) {
-        current_selected_app_index = first_visible_app_index;
+        current_selected_app = first_visible_app;
         return;
     }
 
@@ -465,29 +466,29 @@ void browse_home_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t bu
     case SCE_CTRL_UP:
         if (emuenv.cfg.apps_list_grid) {
             if (filtered_index >= 4)
-                current_selected_app_index = apps_list_filtered[filtered_index - 4];
+                current_selected_app = apps_list_filtered[filtered_index - 4];
         } else
-            current_selected_app_index = prev_filtered_index;
+            current_selected_app = prev_filtered_index;
         break;
     case SCE_CTRL_RIGHT:
         if (emuenv.cfg.apps_list_grid) {
             if (((filtered_index + 1) % 4 == 0) || (filtered_index == apps_list_filtered_size))
                 switch_to_first_live_area_open_app();
             else
-                current_selected_app_index = next_filtered_index;
+                current_selected_app = next_filtered_index;
         } else
             switch_to_first_live_area_open_app();
         break;
     case SCE_CTRL_DOWN:
         if (emuenv.cfg.apps_list_grid) {
             if ((filtered_index + 4) <= apps_list_filtered_size)
-                current_selected_app_index = apps_list_filtered[filtered_index + 4];
+                current_selected_app = apps_list_filtered[filtered_index + 4];
         } else
-            current_selected_app_index = next_filtered_index;
+            current_selected_app = next_filtered_index;
         break;
     case SCE_CTRL_LEFT:
         if (emuenv.cfg.apps_list_grid && (filtered_index % 4 != 0))
-            current_selected_app_index = prev_filtered_index;
+            current_selected_app = prev_filtered_index;
         break;
     case SCE_CTRL_R1:
         gui.live_area_app_current_open = std::min(gui.live_area_app_current_open + 1, static_cast<int32_t>(gui.live_area_current_open_apps_list.size() - 1));
@@ -495,32 +496,28 @@ void browse_home_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t bu
         gui.vita_area.home_screen = !gui.vita_area.live_area_screen;
         break;
     case SCE_CTRL_CIRCLE:
-        if (emuenv.cfg.sys_button == 0) {
-            const auto &selected_app = current_selected_app_index < 0 ? gui.app_selector.sys_apps[current_selected_app_index + 4] : gui.app_selector.user_apps[current_selected_app_index];
-            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, selected_app.path);
-        }
+        if (emuenv.cfg.sys_button == 0)
+            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, current_selected_app);
         break;
     case SCE_CTRL_CROSS:
-        if (emuenv.cfg.sys_button == 1) {
-            const auto &selected_app = current_selected_app_index < 0 ? gui.app_selector.sys_apps[current_selected_app_index + 4] : gui.app_selector.user_apps[current_selected_app_index];
-            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, selected_app.path);
-        }
+        if (emuenv.cfg.sys_button == 1)
+            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, current_selected_app);
         break;
     default: break;
     }
 }
 
-static int selected_app_index = INVALID_APP_INDEX;
+static std::string selected_app;
 void select_app(GuiState &gui, const std::string &title_id) {
     // Find the app in the user apps list
-    auto app_it = std::find_if(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [&](const App &app) {
+    auto app_it = std::find_if(gui.app_selector.vita_apps["ux0"].begin(), gui.app_selector.vita_apps["ux0"].end(), [&](const App &app) {
         return app.title_id == title_id;
     });
 
     // Check if the app was found
-    if (app_it != gui.app_selector.user_apps.end()) {
-        // Set the selected app index
-        current_selected_app_index = selected_app_index = std::distance(gui.app_selector.user_apps.begin(), app_it);
+    if (app_it != gui.app_selector.vita_apps["ux0"].end()) {
+        // Set the selected app
+        current_selected_app = selected_app = "ux0:app/" + title_id;
         gui.is_nav_button = true;
     } else
         LOG_ERROR("App with title id {} not found", title_id);
@@ -723,7 +720,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto search_bar_size = 120.f * VIEWPORT_SCALE.x;
     ImGui::SameLine(ImGui::GetColumnWidth() - ImGui::CalcTextSize(lang["refresh"].c_str()).x - search_bar_size - (78 * VIEWPORT_SCALE.x));
     if (ImGui::Button(lang["refresh"].c_str()))
-        init_user_apps(gui, emuenv);
+        init_vita_apps(gui, emuenv);
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
@@ -775,13 +772,13 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetWindowFontScale(1.1f);
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
 
-    std::vector<int32_t> visible_apps{};
+    std::vector<std::string> visible_apps{};
 
     const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
         for (const auto &app : apps_list) {
-            const auto is_sys = app.path.starts_with("NPXS") && (app.path != "NPXS10007");
+            const auto is_emu_app = app.path.starts_with("emu");
 
-            if (!is_sys) {
+            if (!is_emu_app) {
                 // Filter app by region and type
                 if (app_filter(app.title_id))
                     continue;
@@ -805,15 +802,13 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SetCursorPosX(GRID_ICON_POS);
 
             // Get the current app index off the apps list.
-            const auto app_index = static_cast<int>(&app - apps_list.data());
-            const auto current_app_index = !is_sys ? app_index : app_index - 4;
-            apps_list_filtered.push_back(current_app_index);
+            apps_list_filtered.push_back(app.path);
 
             // Check if the current app is selected.
-            const auto is_current_app_selected = gui.is_nav_button && (current_selected_app_index == current_app_index);
+            const auto is_current_app_selected = gui.is_nav_button && (current_selected_app == app.path);
             const auto icon_flags = emuenv.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns;
-            if (ImGui::Selectable("##icon", is_current_app_selected || (selected_app_index == current_app_index), icon_flags, SELECTABLE_APP_SIZE)) {
-                selected_app_index = INVALID_APP_INDEX;
+            if (ImGui::Selectable("##icon", is_current_app_selected || (selected_app == app.path), icon_flags, SELECTABLE_APP_SIZE)) {
+                selected_app.clear();
                 pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.path);
             }
 
@@ -852,11 +847,11 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             // Draw the app icons and custom config button only when they are within the visible area.
             if (element_is_within_visible_area) {
                 // Add the current app index to the visible apps list.
-                visible_apps.push_back(current_app_index);
+                visible_apps.push_back(app.path);
 
                 // Set the current selected app index to the current app index when the app is hovered.
                 if (!gui.is_nav_button && ImGui::IsItemHovered())
-                    current_selected_app_index = current_app_index;
+                    current_selected_app = app.path;
 
                 // Draw the app icon
                 if (apps_icon.contains(app.path)) {
@@ -879,16 +874,16 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::Button("CC", ImVec2(40.f * VIEWPORT_SCALE.x, 0.f));
                     ImGui::PopStyleColor();
                 }
-            } else if (!gui.is_nav_button && (current_selected_app_index == current_app_index)) {
+            } else if (!gui.is_nav_button && (current_selected_app == app.path)) {
                 // When the app is selected but not visible, reset the current selected app index.
-                current_selected_app_index = INVALID_APP_INDEX;
+                current_selected_app.clear();
             }
 
             if (!emuenv.cfg.apps_list_grid)
                 ImGui::NextColumn();
 
             // Draw the compatibility badge for commercial apps when they are within the visible area.
-            if (element_is_within_visible_area && (app.title_id.starts_with("PCS") || (app.title_id == "NPXS10007"))) {
+            if (element_is_within_visible_area && (app.path.starts_with("pd0") || app.path.starts_with("vs0") || app.title_id.starts_with("PCS"))) {
                 const auto compat_state = (gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(app.title_id) : false) ? gui.compat.app_compat_db[app.title_id].state : compat::UNKNOWN;
                 const auto &compat_state_vec4 = gui.compat.compat_color[compat_state];
                 const ImU32 compat_state_color = IM_COL32((int)(compat_state_vec4.x * 255.0f), (int)(compat_state_vec4.y * 255.0f), (int)(compat_state_vec4.z * 255.0f), (int)(compat_state_vec4.w * 255.0f));
@@ -940,19 +935,21 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     // Draw System Applications
     if (emuenv.cfg.display_system_apps)
-        display_app(gui.app_selector.sys_apps, gui.app_selector.sys_apps_icon);
+        display_app(gui.app_selector.emu_apps, gui.app_selector.emu_apps_icon);
 
-    // Draw User Applications
-    display_app(gui.app_selector.user_apps, gui.app_selector.user_apps_icon);
+    // Draw Vita Applications
+    display_app(gui.app_selector.vita_apps["pd0"], gui.app_selector.vita_apps_icon);
+    display_app(gui.app_selector.vita_apps["vs0"], gui.app_selector.vita_apps_icon);
+    display_app(gui.app_selector.vita_apps["ux0"], gui.app_selector.vita_apps_icon);
 
     ImGui::PopStyleColor();
     ImGui::Columns(1);
     ImGui::SetWindowFontScale(1.f);
     ImGui::EndChild();
 
-    // When visible apps list is not empty, set first visible app index to 0
+    // When visible apps list is not empty, set first visible app
     if (!visible_apps.empty())
-        first_visible_app_index = visible_apps.front();
+        first_visible_app = visible_apps.front();
 
     const auto SELECTABLE_SIZE = ImVec2(50.f * VIEWPORT_SCALE.x, 60.f * VIEWPORT_SCALE.y);
 

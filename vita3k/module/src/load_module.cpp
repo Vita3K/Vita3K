@@ -130,6 +130,7 @@ static SysmoduleInternalPaths init_sysmodule_internal_paths() {
     p[SCE_SYSMODULE_INTERNAL_DB_RECOVERY_UTILITY] = { "dbrecovery_utility" };
     p[SCE_SYSMODULE_INTERNAL_DRM_PSM_KDC] = { "psmkdc" };
     p[SCE_SYSMODULE_INTERNAL_LOCATION_INTERNAL] = { "liblocation_internal" };
+    p[SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL] = { "libScePromoterUtil" };
 
     return p;
 }

@@ -222,11 +222,12 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         { "NPXS10003", {} },
         { "NPXS10008", {} },
         { "NPXS10015", {} },
-        { "NPXS10026", {} }
+        { "NPXS10026", {} },
+        { "NPXS19999", {} }
     };
 
     // Clear the current theme
-    gui.app_selector.sys_apps_icon.clear();
+    gui.app_selector.emu_apps_icon.clear();
     gui.current_theme_bg = 0;
     gui.information_bar_color = {};
     gui.theme_backgrounds.clear();
@@ -254,6 +255,8 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                     theme_icon_name["NPXS10015"] = home_property.child("m_settings").child("m_iconFilePath").text().as_string();
                 if (!home_property.child("m_hostCollabo").child("m_iconFilePath").text().empty())
                     theme_icon_name["NPXS10026"] = home_property.child("m_hostCollabo").child("m_iconFilePath").text().as_string();
+                if (!home_property.child("m_power").child("m_iconFilePath").text().empty())
+                    theme_icon_name["NPXS19999"] = home_property.child("m_power").child("m_iconFilePath").text().as_string();
 
                 // Bgm theme
                 if (!home_property.child("m_bgmFilePath").text().empty())
@@ -342,9 +345,11 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
 
         const auto &title_id = icon.first;
         const auto &name = icon.second;
-        if (name.empty())
-            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + title_id + "/sce_sys/icon0.png");
-        else
+        const auto is_shell = title_id == "NPXS19999";
+        if (name.empty()) {
+            const auto basic_icon_path = is_shell ? fs::path("data/internal/icon/power.png") : fs::path("app") / title_id / "sce_sys/icon0.png";
+            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, basic_icon_path);
+        } else
             vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_path / name);
 
         if (buffer.empty()) {
@@ -361,7 +366,8 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
             continue;
         }
 
-        gui.app_selector.sys_apps_icon[title_id].init(gui.imgui_state.get(), data, width, height);
+        const auto app_path = "emu:" + (is_shell ? "vsh/shell" : "app/" + title_id);
+        gui.app_selector.emu_apps_icon[app_path].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 
