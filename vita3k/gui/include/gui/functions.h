@@ -92,7 +92,9 @@ bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string 
 bool init_user_backgrounds(GuiState &gui, EmuEnvState &emuenv);
 void init_user_management(GuiState &gui, EmuEnvState &emuenv);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
+void init_v3kn_user_info(EmuEnvState &emuenv);
 void load_and_update_compat_user_apps(GuiState &gui, EmuEnvState &emuenv);
+void open_cloud_save(GuiState &gui, EmuEnvState &emuenv, const std::string &titleid);
 void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void open_path(const std::string &path);
