@@ -27,6 +27,7 @@
 #include <gui/state.h>
 #include <include/cpu.h>
 #include <include/environment.h>
+#include <io/device.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <modules/module_parent.h>
@@ -143,7 +144,6 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
 
     // Execute the emulator again with some arguments
 #ifdef _WIN32
-    FreeConsole();
     _execv(argv[0], args);
 #elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
     execv(argv[0], const_cast<char *const *>(args));
@@ -357,13 +357,34 @@ int main(int argc, char *argv[]) {
     }
 
     if (run_type == app::AppRunType::Extracted) {
-        emuenv.io.app_path = cfg.run_app_path ? *cfg.run_app_path : emuenv.app_info.app_title_id;
-        gui::init_user_app(gui, emuenv, emuenv.io.app_path);
+        emuenv.io.app_path = cfg.run_app_path ? *cfg.run_app_path : "ux0:app/" + emuenv.app_info.app_title_id;
+        gui::init_vita_app(gui, emuenv, emuenv.io.app_path);
         if (emuenv.cfg.run_app_path.has_value())
             emuenv.cfg.run_app_path.reset();
         else if (emuenv.cfg.content_path.has_value())
             emuenv.cfg.content_path.reset();
     }
+
+    const auto draw_app_background = [](GuiState &gui, EmuEnvState &emuenv) {
+        const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+        const auto pos_min = ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+        const auto pos_max = ImVec2(pos_min.x + emuenv.logical_viewport_size.x, pos_min.y + emuenv.logical_viewport_size.y);
+        ImGui::SetNextWindowPos(pos_min);
+        ImGui::SetNextWindowSize(VIEWPORT_SIZE);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::Begin("draw_background", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoSavedSettings);
+
+        if (gui.apps_background.contains(emuenv.io.app_path))
+            // Display application background
+            ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[emuenv.io.app_path], pos_min, pos_max);
+        // Application background not found
+        else
+            gui::draw_background(gui, emuenv);
+
+        ImGui::PopStyleVar();
+        ImGui::End();
+    };
+
 
     std::chrono::system_clock::time_point present = std::chrono::system_clock::now();
     std::chrono::system_clock::time_point later = std::chrono::system_clock::now();
@@ -416,9 +437,38 @@ int main(int argc, char *argv[]) {
             }
 
             if (!emuenv.io.app_path.empty()) {
-                run_type = app::AppRunType::Extracted;
                 gui.vita_area.home_screen = false;
-                gui.vita_area.live_area_screen = false;
+                const auto &id = fs::path(emuenv.io.app_path).stem().string();
+                if (gui.updates_install.contains(id)) {
+                    const auto &update_install = gui.updates_install[id];
+                    if (update_install.state == UpdateState::WAITING_INSTALL) {
+                        gui::init_app_background(gui, emuenv, emuenv.io.app_path);
+                        gui::update_install(gui, emuenv, id);
+                        while (update_install.state == UpdateState::INSTALLING) {
+                            handle_events(emuenv, gui);
+                            gui::draw_begin(gui, emuenv);
+                            draw_app_background(gui, emuenv);
+                            ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
+                            gui::draw_pkg_install(gui, emuenv);
+                            ImGui::PopFont();
+                            gui::draw_end(gui);
+                            emuenv.renderer->swap_window(emuenv.window.get());
+                        }
+                        if (update_install.state == UpdateState::FAILED) {
+                            gui.vita_area.home_screen = true;
+                            gui.gate_animation.start(GateAnimationState::ReturnApp);
+                            app::error_dialog(fmt::format("Failed to install update for {}.", emuenv.io.app_path), emuenv.window.get());
+                            emuenv.io.app_path.clear();
+                            continue;
+                        } else if (update_install.state == UpdateState::SUCCESS) {
+                            LOG_INFO("Update for {} installed successfully.", emuenv.current_app_title);
+                            gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
+                        }
+                        gui::refresh_live_area(gui, emuenv, emuenv.io.app_path);
+                    }
+                }
+
+                run_type = app::AppRunType::Extracted;
             }
         }
     }
@@ -436,7 +486,7 @@ int main(int argc, char *argv[]) {
         return Success;
     }
 
-    const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);
+    const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path.find("vsh") != std::string::npos ? "emu:vsh/shell" : emuenv.io.app_path);
     emuenv.app_info.app_version = APP_INDEX->app_ver;
     emuenv.app_info.app_category = APP_INDEX->category;
     emuenv.io.addcont = APP_INDEX->addcont;
@@ -465,25 +515,14 @@ int main(int argc, char *argv[]) {
     }
 
     gui::switch_bgm_state(true);
-    gui::init_app_background(gui, emuenv, emuenv.io.app_path);
+    if (emuenv.io.app_path.find("vsh") == std::string::npos)
+        gui::init_app_background(gui, emuenv, emuenv.io.app_path);
     gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
 
     if (!app::late_init(emuenv)) {
         app::error_dialog("Failed to initialize Vita3K", emuenv.window.get());
         return 1;
     }
-
-    const auto draw_app_background = [](GuiState &gui, EmuEnvState &emuenv) {
-        const auto pos_min = ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
-        const auto pos_max = ImVec2(pos_min.x + emuenv.logical_viewport_size.x, pos_min.y + emuenv.logical_viewport_size.y);
-
-        if (gui.apps_background.contains(emuenv.io.app_path))
-            // Display application background
-            ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[emuenv.io.app_path], pos_min, pos_max);
-        // Application background not found
-        else
-            gui::draw_background(gui, emuenv);
-    };
 
     int32_t main_module_id;
     {

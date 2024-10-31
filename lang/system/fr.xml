@@ -96,6 +96,7 @@ Code d'erreur: {}</an_error_occurred>
 		<select_all>Sélectionner tout</select_all>
 		<select>Sélectionner</select>
 		<yes>Oui</yes>
+		<download_failed>Le téléchargement a échoué.</download_failed>
 		<wday>
 			<day>dimanche</day>
 			<day>lundi</day>
@@ -310,12 +311,24 @@ Ne pas éteindre le système, ni fermer l'application.</warning_saving>
 
 	<indicator>
 		<app_added_home>L'application a été ajoutée à l'écran d'accueil.</app_added_home>
+		<cancel_download>Annuler le téléchargement ?</cancel_download>
+		<cancel_install>Annuler l'installation ?
+Si vous annulez, les fichiers téléchargés pour cette installation seront également supprimés.</cancel_install>
 		<delete_all>Supprimer tout</delete_all>
 		<notif_deleted>Les notifications vont être supprimées.</notif_deleted>
+		<waiting_download>En attente du téléchargement...</waiting_download>
 		<install_failed>L'installation a échoué.</install_failed>
+		<waiting_install>En attente de l'installation...</waiting_install>
 		<install_complete>Installation terminée.</install_complete>
 		<installing>Installation en cours...</installing>
+		<minutes_left>{} minutes restantes</minutes_left>
 		<no_notif>Aucune notification.</no_notif>
+		<pause_all>Tout en pause</pause_all>
+		<pause>Pause</pause>
+		<paused>En pause</paused>
+		<resume_all>Tout reprendre</resume_all>
+		<resume>Reprendre</resume>
+		<seconds_left>{} secondes restantes</seconds_left>
 		<trophy_earned>Vous avez obtenu un trophée !</trophy_earned>
 	</indicator>
 
@@ -353,6 +366,16 @@ Votre système Vita3K est prêt !</completed_setup>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
+
+	<patch_check>
+		<new_app_version_available>Une nouvelle version de l'application est disponible.</new_app_version_available>
+		<downloading_app_update>Téléchargement du fichier de mise à jour de l'application...
+Vous pouvez vérifier la progression du téléchargement dans la liste des notifications.</downloading_app_update>
+		<download>Télécharger</download>
+		<not_enough_space>Le téléchargement a échoué.
+Espace libre insuffisant sur la carte mémoire. Libérez au moins {} sur la carte mémoire, puis essayez de relancer le téléchargement.</not_enough_space>
+		<version>Version {}</version>
+	</patch_check>
 
 	<settings name="Paramètres">
 		<theme_background name="Thème et Arrière-plan">

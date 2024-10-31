@@ -125,7 +125,10 @@ EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
 
         motionState->acceleration = get_acceleration(emuenv.motion);
         motionState->angularVelocity = get_gyroscope(emuenv.motion);
-
+        LOG_DEBUG("Accel: x={} y={} z={}", motionState->acceleration.x, motionState->acceleration.y,
+            motionState->acceleration.z);
+        LOG_DEBUG("Gyro: x={} y={} z={}", motionState->angularVelocity.x, motionState->angularVelocity.y, 
+            motionState->angularVelocity.z);
         Util::Quaternion dev_quat = get_orientation(emuenv.motion);
         motionState->basicOrientation = get_basic_orientation(emuenv.motion);
 

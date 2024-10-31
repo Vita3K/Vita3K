@@ -424,8 +424,7 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
         const auto remaining_bytes = static_cast<double>(total_bytes - downloaded_bytes);
         const auto remaining_time = static_cast<uint64_t>((remaining_bytes / downloaded_bytes) * elapsed_time_ms) / 1000;
 
-        ProgressState *callback_result = data->second(progress_percent, remaining_time);
-
+        ProgressState *callback_result = data->second(progress_percent, remaining_time, total_bytes_downloaded);
         std::unique_lock<std::mutex> lock(callback_result->mutex);
 
         // Store the current pause state
@@ -474,13 +473,24 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
     curl_easy_setopt(curl_download, CURLOPT_WRITEDATA, fp);
     int res = curl_easy_perform(curl_download);
 
+    long http_code = 0;
+    curl_easy_getinfo(curl_download, CURLINFO_RESPONSE_CODE, &http_code);
+    if ((http_code != 200) && (http_code != 206)) {
+        LOG_WARN("Download failed with HTTP code: {}", http_code);
+        fclose(fp);
+        curl_easy_cleanup(curl_download);
+        if (fs::exists(output_file_path))
+            fs::remove(output_file_path);
+        return false;
+    }
+
     fclose(fp);
     curl_easy_cleanup(curl_download);
     if (progress_callback)
-        progress_callback(0, 0);
+        progress_callback(0, 0, 0);
 
     if (res == CURLE_ABORTED_BY_CALLBACK)
-        LOG_CRITICAL("Aborted update by user");
+        LOG_WARN("Aborted by user");
 
     return res == CURLE_OK;
 }

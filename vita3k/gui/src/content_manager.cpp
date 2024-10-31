@@ -47,7 +47,7 @@ auto get_recursive_directory_size(const T &path) {
 } // namespace
 
 void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    const auto APP_PATH{ emuenv.pref_path / "ux0/app" / app_path };
+    const auto APP_PATH{ emuenv.pref_path / convert_path(app_path) };
     gui.app_selector.app_info = {};
 
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
@@ -60,7 +60,7 @@ void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pat
 }
 
 size_t get_app_size(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    const auto APP_PATH{ emuenv.pref_path / "ux0/app" / app_path };
+    const auto APP_PATH{ emuenv.pref_path / convert_path(app_path) };
     boost::uintmax_t app_size = 0;
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
         app_size += get_recursive_directory_size(APP_PATH);
@@ -129,7 +129,7 @@ void init_content_manager(GuiState &gui, EmuEnvState &emuenv) {
     space["free"] = get_unit_size(free_size);
 
     const auto query_app = [&gui, &emuenv] {
-        const auto &directory_list = gui.app_selector.user_apps;
+        const auto &directory_list = gui.app_selector.vita_apps["ux0"];
         const auto pred = [&](const auto acc, const auto &app) {
             apps_size[app.path] = get_app_size(gui, emuenv, app.path);
             return acc + apps_size[app.path];
@@ -194,13 +194,14 @@ struct AddCont {
 static std::map<std::string, AddCont> addcont_info;
 
 static void get_content_info(GuiState &gui, EmuEnvState &emuenv) {
-    const auto APP_PATH{ emuenv.pref_path / "ux0/app" / app_selected };
+    const auto &APP = fs::path(app_selected).stem().string();
+    const auto APP_PATH{ emuenv.pref_path / "ux0/app" / APP };
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
         gui.app_selector.app_info.size = get_recursive_directory_size(APP_PATH);
     }
 
     addcont_info.clear();
-    const auto ADDCONT_PATH{ emuenv.pref_path / "ux0/addcont" / app_selected };
+    const auto ADDCONT_PATH{ emuenv.pref_path / "ux0/addcont" / APP };
     if (fs::exists(ADDCONT_PATH) && !fs::is_empty(ADDCONT_PATH)) {
         for (const auto &addcont : fs::directory_iterator(ADDCONT_PATH)) {
             const auto content_id = addcont.path().stem().string();
@@ -211,7 +212,7 @@ static void get_content_info(GuiState &gui, EmuEnvState &emuenv) {
             const auto addcont_size = get_recursive_directory_size(addcont);
             addcont_info[content_id].size = get_unit_size(addcont_size);
 
-            const auto content_path{ fs::path("addcont") / app_selected / content_id };
+            const auto content_path{ fs::path("addcont") / APP / content_id };
             vfs::FileBuffer params;
             if (vfs::read_file(VitaIoDevice::ux0, params, emuenv.pref_path, content_path / "sce_sys/param.sfo")) {
                 SfoFile sfo_handle;
@@ -249,7 +250,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
-    const auto has_background = gui.apps_background.contains("NPXS10026");
+    const auto BG_PATH = "vs0:app/NPXS10026";
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
@@ -262,8 +263,8 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto draw_list = ImGui::GetBackgroundDrawList();
     const ImVec2 VIEWPORT_POS_MAX(VIEWPORT_POS.x + VIEWPORT_SIZE.x, VIEWPORT_POS.y + VIEWPORT_SIZE.y);
-    if (has_background)
-        draw_list->AddImage(gui.apps_background["NPXS10026"], VIEWPORT_POS, VIEWPORT_POS_MAX);
+    if (gui.apps_background.contains(BG_PATH))
+        draw_list->AddImage(gui.apps_background[BG_PATH], VIEWPORT_POS, VIEWPORT_POS_MAX);
     else
         draw_list->AddRectFilled(VIEWPORT_POS, VIEWPORT_POS_MAX, IM_COL32(53.f, 54.f, 70.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
@@ -277,7 +278,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
     if (menu == "info") {
         ImGui::SetCursorPos(ImVec2(90.f * SCALE.x, 10.f * SCALE.y));
-        ImGui::Image(gui.app_selector.user_apps_icon[app_selected], SIZE_ICON_DETAIL);
+        ImGui::Image(gui.app_selector.vita_apps_icon[app_selected], SIZE_ICON_DETAIL);
         const auto CALC_NAME = ImGui::CalcTextSize(get_app_index(gui, app_selected)->title.c_str(), nullptr, false, SIZE_INFO.x - SIZE_ICON_DETAIL.x).y / 2.f;
         ImGui::SetCursorPos(ImVec2((110.f * SCALE.x) + SIZE_ICON_DETAIL.x, (SIZE_ICON_DETAIL.y / 2.f) - CALC_NAME + (10.f * SCALE.y)));
         ImGui::PushTextWrapPos(SIZE_INFO.x);
@@ -290,7 +291,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
         ImGui::PopTextWrapPos();
         if (!menu.empty()) {
-            if (((menu == "app") && !gui.app_selector.user_apps.empty()) || ((menu == "save") && !save_data_list.empty())) {
+            if (((menu == "app") && !gui.app_selector.vita_apps["ux0"].empty()) || ((menu == "save") && !save_data_list.empty())) {
                 // Search Bar
                 ImGui::SetCursorPos(ImVec2(VIEWPORT_POS.x + (10.f * SCALE.x), VIEWPORT_POS.y + (32.f * SCALE.y) - (ImGui::CalcTextSize(common["search"].c_str()).y / 2.f)));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", common["search"].c_str());
@@ -338,7 +339,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
         if (ImGui::Selectable(lang.main["theme"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
-            pre_run_app(gui, emuenv, "NPXS10015");
+            pre_run_app(gui, emuenv, "vs0:app/NPXS10015");
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
         ImGui::Selectable(space["themes"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT));
@@ -361,13 +362,14 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         if (content_delete) {
             for (const auto &content : contents_selected) {
                 if (content.second) {
+                    const auto &APP = fs::path(content.first).stem().string();
                     if (menu == "app") {
-                        fs::remove_all(emuenv.pref_path / "ux0/app" / content.first);
-                        fs::remove_all(emuenv.pref_path / "ux0/addcont" / content.first);
-                        gui.app_selector.user_apps.erase(gui.app_selector.user_apps.begin() + (get_app_index(gui, content.first) - &gui.app_selector.user_apps[0]));
-                        gui.app_selector.user_apps_icon.erase(content.first);
+                        fs::remove_all(emuenv.pref_path / "ux0/app" / APP);
+                        fs::remove_all(emuenv.pref_path / "ux0/addcont" / APP);
+                        gui.app_selector.vita_apps["ux0"].erase(gui.app_selector.vita_apps["ux0"].begin() + (get_app_index(gui, content.first) - gui.app_selector.vita_apps["ux0"].data()));
+                        gui.app_selector.vita_apps_icon.erase(content.first);
                     }
-                    const auto SAVE_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / content.first };
+                    const auto SAVE_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP };
                     fs::remove_all(SAVE_PATH);
                 }
             }
@@ -408,7 +410,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         // Apps Menu
         if (menu == "app") {
             title = application["title"];
-            if (gui.app_selector.user_apps.empty()) {
+            if (gui.app_selector.vita_apps["ux0"].empty()) {
                 ImGui::SetWindowFontScale(1.2f);
                 auto no_item_str = application["no_item"].c_str();
                 const auto calc_text = ImGui::CalcTextSize(no_item_str);
@@ -425,7 +427,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SetColumnWidth(0, 60 * SCALE.x);
                 ImGui::SetColumnWidth(1, 75 * SCALE.x);
                 ImGui::SetColumnWidth(2, 580.f * SCALE.x);
-                for (const auto &app : gui.app_selector.user_apps) {
+                for (const auto &app : gui.app_selector.vita_apps["ux0"]) {
                     if (!search_bar.PassFilter(app.title.c_str()) && !search_bar.PassFilter(app.stitle.c_str()) && !search_bar.PassFilter(app.title_id.c_str()))
                         continue;
                     ImGui::PushID(app.path.c_str());
@@ -434,7 +436,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::Checkbox("##selected", &contents_selected[app.path]);
                     ImGui::NextColumn();
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (8.f * SCALE.y));
-                    ImGui::Image(gui.app_selector.user_apps_icon[app.path], SIZE_ICON_LIST);
+                    ImGui::Image(gui.app_selector.vita_apps_icon[app.path], SIZE_ICON_LIST);
                     ImGui::NextColumn();
                     const auto Title_POS = ImGui::GetCursorPosY();
                     ImGui::SetWindowFontScale(1.1f);
@@ -483,7 +485,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::Checkbox("##selected", &contents_selected[save.title_id]);
                     ImGui::NextColumn();
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (8.f * SCALE.y));
-                    ImGui::Image(gui.app_selector.user_apps_icon[save.title_id], SIZE_ICON_LIST);
+                    ImGui::Image(gui.app_selector.vita_apps_icon[save.title_id], SIZE_ICON_LIST);
                     ImGui::NextColumn();
                     const auto Title_POS = ImGui::GetCursorPosY();
                     ImGui::SetWindowFontScale(1.1f);
@@ -562,7 +564,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
     ImGui::SetCursorPos(ImVec2(10.f * SCALE.x, WINDOW_SIZE.y - (56.f * SCALE.y)));
-    const auto is_empty = ((menu == "app") && gui.app_selector.user_apps.empty()) || ((menu == "save") && save_data_list.empty());
+    const auto is_empty = ((menu == "app") && gui.app_selector.vita_apps["ux0"].empty()) || ((menu == "save") && save_data_list.empty());
     if (menu.empty() || (menu == "info") || is_empty) {
         // Back
         if (ImGui::Button("<<", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
