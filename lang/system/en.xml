@@ -125,6 +125,8 @@ depending on its size and your hardware.</delete_app_description>
 		<an_error_occurred>An error occurred.
 Error code: {}</an_error_occurred>
 		<cancel>Cancel</cancel>
+		<connecting_please_wait>Connecting...
+Please wait.</connecting_please_wait>
 		<close>Close</close>
 		<could_not_load>Could not load the file.</could_not_load>
 		<could_not_save>Could not save the file.</could_not_save>
@@ -140,6 +142,10 @@ Error code: {}</an_error_occurred>
 		<select>Select</select>
 		<submit>Submit</submit>
 		<yes>Yes</yes>
+		<could_not_connect_server>Could not connect to the server.</could_not_connect_server>
+		<must_sign_in_vita3k_network>You must sign in to Vita3K Network to use this feature.</must_sign_in_vita3k_network>
+		<could_not_connect_internet>Could not connect to the Internet.</could_not_connect_internet>
+		<vita3k_network_connection_lost>The connection to Vita3K Network has been lost.</vita3k_network_connection_lost>
 		<wday>
 			<day>Sunday</day>
 			<day>Monday</day>
@@ -556,6 +562,27 @@ Check vita3k.log to see console output for details.
 2. Re-dump your own PS Vita app/game and install it on Vita3K.
 3. If you want to install or boot Vitamin, it is not supported.</load_app_failed>
 	</message>
+
+	<online_storage>
+		<save_data_auto_upload>Saved Data Auto-Upload</save_data_auto_upload>
+		<copying>Copying...</copying>
+		<download>Download</download>
+		<eligible>Eligible</eligible>
+		<ineligible>Ineligible</ineligible>
+		<location>Location</location>
+		<memory_card>Memory Card</memory_card>
+		<minutes_left>{} Minutes Left</minutes_left>
+		<online_storage>Online Storage</online_storage>
+		<overwrite_saved_data>Do you want to overwrite the saved data?</overwrite_saved_data>
+		<ps_vita_system>PS Vita System</ps_vita_system>
+		<ps_tv_system>PS TV System</ps_tv_system>
+		<seconds_left>{} Seconds Left</seconds_left>
+		<size>Size</size>
+		<trophy_earning>Trophy Earning</trophy_earning>
+		<updated>Updated</updated>
+		<upload>Upload</upload>
+		<uploaded>Uploaded</uploaded>
+	</online_storage>
 
 	<overlay name="Overlay">
 		<gamepad_overlay>Gamepad Overlay</gamepad_overlay>

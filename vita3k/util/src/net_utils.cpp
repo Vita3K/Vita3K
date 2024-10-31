@@ -334,10 +334,11 @@ bool socketSetBlocking(int sockfd, bool blocking) {
     return true;
 }
 
-std::string get_web_response(const std::string &url) {
+WebResponse get_web_response_ex(const std::string &url, const std::string &token, const std::string &post_data) {
+    WebResponse web_response{};
     auto curl = curl_easy_init();
     if (!curl)
-        return {};
+        return web_response;
 
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "Vita3K Emulator");
@@ -348,27 +349,57 @@ std::string get_web_response(const std::string &url) {
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 #endif
 
+    struct curl_slist *headers = nullptr;
+    if (!token.empty()) {
+        std::string auth_header = "Authorization: Bearer " + token;
+        headers = curl_slist_append(headers, auth_header.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    }
+
+    if (!post_data.empty()) {
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, post_data.length());
+    }
+
     std::string response_string;
     const auto writeFunc = +[](void *ptr, size_t size, size_t nmemb, std::string *data) {
         data->append((char *)ptr, size * nmemb);
         return size * nmemb;
     };
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFunc);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_string);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &web_response.body);
     long response_code;
-    curl_easy_perform(curl);
+    web_response.curl_res = curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+
+    if (!token.empty())
+        curl_slist_free_all(headers);
 
     curl_easy_cleanup(curl);
 
     if (response_code / 100 == 2)
-        return response_string;
+        return web_response;
 
-    return {};
+    web_response.body.clear();
+    return web_response;
+}
+
+std::string get_web_response(const std::string &url) {
+    const auto response = get_web_response_ex(url, "");
+    return response.body;
 }
 
 std::string get_web_regex_result(const std::string &url, const std::regex &regex) {
-    std::string result;
+    const auto result = get_web_regex_results(url, regex);
+    if (result.empty())
+        return {};
+
+    return result.back();
+}
+
+std::vector<std::string> get_web_regex_results(const std::string &url, const std::regex &regex) {
+    std::vector<std::string> results;
 
     // Get the response of the web
     const auto response = get_web_response(url);
@@ -378,16 +409,22 @@ std::string get_web_regex_result(const std::string &url, const std::regex &regex
         std::smatch match;
         // Check if the response matches the regex
         if (std::regex_search(response, match, regex)) {
-            result = match[1];
+            for (size_t i = 1; i < match.size(); ++i)
+                results.push_back(match[i].str());
         } else
             LOG_ERROR("No success found regex: {}", response);
     }
 
-    return result;
+    return results;
 }
 
 static uint64_t get_current_time_ms() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+}
+
+static size_t read_data(void *ptr, size_t size, size_t nmemb, void *stream) {
+    size_t readed = fread(ptr, size, nmemb, (FILE *)stream);
+    return readed;
 }
 
 static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream) {
@@ -395,68 +432,95 @@ static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream) {
     return written;
 }
 
-typedef int (*CurlDownloadCallback)(void *c, long t, long d);
+typedef int (*CurlCallback)(void *c, curl_off_t dt, curl_off_t dn, curl_off_t ut, curl_off_t un);
+static CurlCallback curl_callback(void *user_data, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
+    auto *data = (CallbackData *)user_data;
 
-bool download_file(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback) {
-    CURL *curl_download = curl_easy_init();
-    if (!curl_download)
-        return false;
+    // Detect mode (download/upload)
+    const bool is_download = (dltotal > 0);
+    const bool is_upload = (ultotal > 0);
 
-    CurlDownloadCallback curl_callback = +[](void *user_data, long total_bytes, long downloaded_bytes) {
-        const auto data = (CallbackData *)user_data;
-
-        if ((total_bytes == 0) || (downloaded_bytes == 0))
-            return 0; // Ignore if we dont have the total yet or if we haven't downloaded anything
-
-        if (!data->second)
-            return 0;
-
-        // Calculate progress percentage
-        const auto total_bytes_downloaded = static_cast<double>(downloaded_bytes + data->first.bytes_already_downloaded);
-        const auto file_size = total_bytes + data->first.bytes_already_downloaded;
-        const auto progress_percent = static_cast<float>(total_bytes_downloaded) / static_cast<float>(file_size) * 100.0f;
-
-        // Calculate elapsed time
-        const auto current_time = get_current_time_ms();
-        const auto elapsed_time_ms = std::difftime(current_time, data->first.time);
-
-        // Calculate remaining time in seconds
-        const auto remaining_bytes = static_cast<double>(total_bytes - downloaded_bytes);
-        const auto remaining_time = static_cast<uint64_t>((remaining_bytes / downloaded_bytes) * elapsed_time_ms) / 1000;
-
-        ProgressState *callback_result = data->second(progress_percent, remaining_time);
-
-        std::unique_lock<std::mutex> lock(callback_result->mutex);
-
-        // Store the current pause state
-        const auto pause = callback_result->pause;
-
-        // Wait until the pause state becomes false (unpaused)
-        callback_result->cv.wait(lock, [&]() {
-            return !callback_result->pause;
-        });
-
-        // When coming out of pause, add the time spent to the start time to keep the time consistent
-        if (pause)
-            data->first.time += std::difftime(get_current_time_ms(), current_time);
-
-        if (!callback_result->download) {
-            return 1; // Returning anything that's not 0 aborts the request
-        }
+    // Skip if curl doesn't have info yet
+    if (!is_download && !is_upload)
         return 0;
-    };
+
+    if (!data->second)
+        return 0;
+
+    float progress = 0.f;
+    double bytes_done = 0;
+    double bytes_total = 0;
+
+    if (is_download) {
+        bytes_done = static_cast<double>(dlnow);
+        bytes_total = static_cast<double>(dltotal);
+        const auto total_bytes_done = static_cast<double>(dlnow + data->first.bytes_already_downloaded);
+        const auto file_size = static_cast<double>(dltotal + data->first.bytes_already_downloaded);
+        progress = static_cast<float>(total_bytes_done) / (static_cast<float>(file_size));
+    } else if (is_upload) {
+        bytes_done = static_cast<double>(ulnow);
+        bytes_total = static_cast<double>(ultotal);
+        progress = static_cast<float>(bytes_done) / static_cast<float>(bytes_total);
+    }
+
+    if (bytes_done == 0)
+        return 0;
+
+    // Calculate elapsed time
+    const auto current_time = get_current_time_ms();
+    const auto elapsed_time_ms = std::difftime(current_time, data->first.time);
+
+    // Calculate remaining time in seconds
+    const auto remaining_bytes = static_cast<double>(bytes_total - bytes_done);
+    const uint64_t remaining_time = static_cast<uint64_t>((remaining_bytes / (double)bytes_done) * elapsed_time_ms) / 1000;
+
+    // Callback UI
+    ProgressState *callback_result = data->second(progress, remaining_time, bytes_done);
+
+    std::unique_lock<std::mutex> lock(callback_result->mutex);
+
+    const bool was_paused = callback_result->pause;
+
+    callback_result->cv.wait(lock, [&]() {
+        return !callback_result->pause;
+    });
+
+    if (was_paused)
+        data->first.time += std::difftime(get_current_time_ms(), current_time);
+
+    if (callback_result->canceled)
+        return reinterpret_cast<CurlCallback>(1);
+
+    return 0;
+}
+
+WebResponse download_file_ex(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback, const std::string &token) {
+    WebResponse web_response{};
+    CURL *curl_download = curl_easy_init();
+    if (!curl_download) {
+        web_response.curl_res = CURLE_FAILED_INIT;
+        return web_response;
+    }
 
     const auto start_time = get_current_time_ms();
     const uint64_t bytes_already_downloaded = fs::exists(output_file_path) ? fs::file_size(output_file_path) : 0;
     const auto callbackData = CallbackData({ start_time, bytes_already_downloaded }, progress_callback);
 
     curl_easy_setopt(curl_download, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl_download, CURLOPT_USERAGENT, "Vita3K Emulator");
     curl_easy_setopt(curl_download, CURLOPT_WRITEFUNCTION, write_data);
     curl_easy_setopt(curl_download, CURLOPT_NOPROGRESS, false); // Enable progress function
     curl_easy_setopt(curl_download, CURLOPT_RESUME_FROM_LARGE, bytes_already_downloaded);
     curl_easy_setopt(curl_download, CURLOPT_XFERINFODATA, &callbackData);
     curl_easy_setopt(curl_download, CURLOPT_XFERINFOFUNCTION, curl_callback);
     curl_easy_setopt(curl_download, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
+
+    struct curl_slist *headers = nullptr;
+    if (!token.empty()) {
+        std::string auth_header = "Authorization: Bearer " + token;
+        headers = curl_slist_append(headers, auth_header.c_str());
+        curl_easy_setopt(curl_download, CURLOPT_HTTPHEADER, headers);
+    }
 
 #ifdef __ANDROID__
     curl_easy_setopt(curl_download, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -468,21 +532,111 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
         curl_easy_cleanup(curl_download);
         if (fs::exists(output_file_path))
             fs::remove(output_file_path);
-        return false;
+        web_response.curl_res = CURLE_FAILED_INIT;
+        return web_response;
     }
 
     curl_easy_setopt(curl_download, CURLOPT_WRITEDATA, fp);
-    int res = curl_easy_perform(curl_download);
+    web_response.curl_res = curl_easy_perform(curl_download);
+
+    long http_code = 0;
+    curl_easy_getinfo(curl_download, CURLINFO_RESPONSE_CODE, &http_code);
+    if ((http_code != 200) && (http_code != 206)) {
+        LOG_WARN("Download failed with HTTP code: {}", http_code);
+        fclose(fp);
+        curl_easy_cleanup(curl_download);
+        if (fs::exists(output_file_path))
+            fs::remove(output_file_path);
+        web_response.curl_res = CURLE_HTTP_RETURNED_ERROR;
+        return web_response;
+    }
 
     fclose(fp);
+
+    if (!token.empty())
+        curl_slist_free_all(headers);
     curl_easy_cleanup(curl_download);
-    if (progress_callback)
-        progress_callback(0, 0);
 
-    if (res == CURLE_ABORTED_BY_CALLBACK)
-        LOG_CRITICAL("Aborted update by user");
+    if (web_response.curl_res == CURLE_ABORTED_BY_CALLBACK)
+        LOG_WARN("Aborted by user");
 
-    return res == CURLE_OK;
+    return web_response;
+}
+
+bool download_file(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback) {
+    return download_file_ex(url, output_file_path, progress_callback).curl_res == CURLE_OK;
+}
+
+static size_t write_string(void *ptr, size_t size, size_t nmemb, void *userdata) {
+    std::stringstream *ss = static_cast<std::stringstream *>(userdata);
+    ss->write(static_cast<char *>(ptr), size * nmemb);
+    return size * nmemb;
+}
+
+WebResponse upload_file(const std::string &url, const std::string &input_file_path, const std::string &token, const std::string &metadata, ProgressCallback progress_callback) {
+    WebResponse response{};
+    const auto fd = fopen(input_file_path.c_str(), "rb");
+    if (!fd) {
+        LOG_CRITICAL("Could not fopen file {}", input_file_path);
+        response.curl_res = CURLE_FAILED_INIT;
+        return response;
+    }
+
+    // get file size
+    const auto file_size = fs::file_size(input_file_path);
+    if (file_size == 0) {
+        LOG_CRITICAL("File {} has size 0, cannot upload", input_file_path);
+        fclose(fd);
+        response.curl_res = CURLE_FAILED_INIT;
+        return response;
+    }
+
+    CURL *curl_upload = curl_easy_init();
+    if (!curl_upload) {
+        response.curl_res = CURLE_FAILED_INIT;
+        return response;
+    }
+
+    const auto start_time = get_current_time_ms();
+    const auto callbackData = CallbackData({ start_time }, progress_callback);
+
+    curl_easy_setopt(curl_upload, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl_upload, CURLOPT_USERAGENT, "Vita3K Emulator");
+
+    curl_easy_setopt(curl_upload, CURLOPT_UPLOAD, 1L);
+    curl_easy_setopt(curl_upload, CURLOPT_READFUNCTION, read_data);
+    curl_easy_setopt(curl_upload, CURLOPT_READDATA, fd);
+    curl_easy_setopt(curl_upload, CURLOPT_INFILESIZE_LARGE, file_size);
+    curl_easy_setopt(curl_upload, CURLOPT_NOPROGRESS, false); // Enable progress function
+    curl_easy_setopt(curl_upload, CURLOPT_XFERINFODATA, &callbackData);
+    curl_easy_setopt(curl_upload, CURLOPT_XFERINFOFUNCTION, curl_callback);
+
+    std::stringstream response_stream;
+    curl_easy_setopt(curl_upload, CURLOPT_WRITEFUNCTION, write_string);
+    curl_easy_setopt(curl_upload, CURLOPT_WRITEDATA, &response_stream);
+
+#ifdef __ANDROID__
+    curl_easy_setopt(curl_upload, CURLOPT_SSL_VERIFYPEER, 0L);
+#endif
+
+    struct curl_slist *headers = nullptr;
+    const auto auth = fmt::format("Authorization: Bearer {}", token);
+    headers = curl_slist_append(headers, auth.c_str());
+    const auto metadata_header = fmt::format("Metadata: {}", metadata);
+    headers = curl_slist_append(headers, metadata_header.c_str());
+    curl_easy_setopt(curl_upload, CURLOPT_HTTPHEADER, headers);
+
+    response.curl_res = curl_easy_perform(curl_upload);
+    response.body = response_stream.str();
+
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl_upload);
+    fclose(fd);
+
+    if (response.curl_res == CURLE_ABORTED_BY_CALLBACK)
+        LOG_WARN("Aborted by user");
+
+    return response;
 }
 
 std::vector<AssignedAddr> get_all_assigned_addrs() {
