@@ -495,6 +495,8 @@ EXPORT(int, sceNetCheckDialogGetPS3ConnectInfo) {
 EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
     TRACY_FUNC(sceNetCheckDialogGetResult, result);
     result->result = emuenv.common_dialog.result;
+    result->psnModeSucceeded = 0;
+    LOG_DEBUG("sceNetCheckDialogGetResult: result = {}", log_hex(result->result));
 
     if (emuenv.common_dialog.netcheck.mode != SCE_NETCHECK_DIALOG_MODE_ADHOC_CONN)
         STUBBED("result->result = 0");
@@ -515,6 +517,11 @@ EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
 
 EXPORT(int, sceNetCheckDialogInit, const SceNetCheckDialogParam *param) {
     TRACY_FUNC(sceNetCheckDialogInit);
+    LOG_DEBUG("SceNetCheckDialogParam: mode: {},\n npCommunicationId.data: {},\n npCommunicationId.num: {},\n ps3ConnectParam: {},\n groupName: {},\n timeoutUs: {},\n defaultAgeRestriction: {},\n ageRestrictionCount: {},\n ageRestriction: {}",
+        (int)param->mode, param->npCommunicationId.data, param->npCommunicationId.num,
+        param->ps3ConnectParam, param->groupName, param->timeoutUs,
+        param->defaultAgeRestriction, param->ageRestrictionCount, param->ageRestriction);
+
     if (emuenv.common_dialog.type != NO_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
@@ -529,9 +536,15 @@ EXPORT(int, sceNetCheckDialogInit, const SceNetCheckDialogParam *param) {
         emuenv.netctl.adhocState = SCE_NET_CTL_STATE_CONNECTING;
         emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
         break;
-    default:
+    case SCE_NETCHECK_DIALOG_MODE_PSP_ADHOC_CONN:
         emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
         emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+        emuenv.netctl.adhocState = SCE_NET_CTL_STATE_IPOBTAINED;
+        emuenv.netctl.adhocEvent = SCE_NET_CTL_EVENT_TYPE_IPOBTAINED;
+        break;
+    default:
+        emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
         break;
     }
 
@@ -543,6 +556,7 @@ EXPORT(int, sceNetCheckDialogTerm) {
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     emuenv.common_dialog.type = NO_DIALOG;
     emuenv.common_dialog.netcheck.mode = SCE_NETCHECK_DIALOG_MODE_INVALID;
+    LOG_DEBUG("sceNetCheckDialogTerm");
     return UNIMPLEMENTED();
 }
 
@@ -834,6 +848,7 @@ EXPORT(int, sceSaveDataDialogAbort) {
 }
 
 static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const char *export_name) {
+    LOG_DEBUG("index: {}, sid: {}", index, emuenv.common_dialog.savedata.slot_id[index]);
     emuenv.common_dialog.savedata.title[index].clear();
     emuenv.common_dialog.savedata.subtitle[index].clear();
     emuenv.common_dialog.savedata.icon_texture[index] = {};
@@ -852,7 +867,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
             const auto iconBufSize = empty_param->iconBufSize;
             if (iconPath && (std::strlen(iconPath) > 0)) {
                 auto device = device::get_device(iconPath);
-                const auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
+                const auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io);
                 vfs::read_file(VitaIoDevice::ux0, icon_buf_tmp, emuenv.pref_path, thumbnail_path);
             } else if (iconBuf && (iconBufSize > 0)) {
                 icon_buf_tmp.insert(icon_buf_tmp.end(), iconBuf, iconBuf + iconBufSize);
@@ -870,7 +885,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
         emuenv.common_dialog.savedata.date[index] = slot_param.modifiedTime;
         emuenv.common_dialog.savedata.has_date[index] = true;
         auto device = device::get_device(slot_param.iconPath);
-        auto thumbnail_path = translate_path(slot_param.iconPath, device, emuenv.io.device_paths);
+        auto thumbnail_path = translate_path(slot_param.iconPath, device, emuenv.io);
         vfs::read_file(device, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
         icon_buf_tmp = thumbnail_buffer;
     }

@@ -624,8 +624,9 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
                     unsigned long dest_bytes = seg_header.p_filesz;
                     const uint8_t *const compressed_segment_bytes = self_bytes + seg_infos[seg_index].offset;
 
-                    int res = mz_uncompress(seg_ptr.get(mem), &dest_bytes, compressed_segment_bytes, static_cast<mz_ulong>(seg_infos[seg_index].length));
-                    assert(res == MZ_OK);
+                    int res = MZ_OK;
+                    if (seg_infos[seg_index].length > 0)
+                        res = mz_uncompress(seg_ptr.get(mem), &dest_bytes, compressed_segment_bytes, static_cast<mz_ulong>(seg_infos[seg_index].length));
                 } else {
                     memcpy(seg_ptr.get(mem), seg_bytes, seg_header.p_filesz);
                 }

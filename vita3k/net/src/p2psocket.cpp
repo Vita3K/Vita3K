@@ -17,7 +17,9 @@
 
 #include <net/socket.h>
 #include <util/bit_cast.h>
+#include <util/log.h>
 
+static const bool log_enabled = true;
 static SceNetSockaddr convertP2PToPosix(const SceNetSockaddr *addr) {
     if (!addr) {
         return SceNetSockaddr{};
@@ -75,44 +77,54 @@ SocketPtr P2PSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen, int &er
         return nullptr;
 
     *addr = convertPosixToP2P(addr);
+    LOG_DEBUG("After convert PosixToP2P, port: {}, vport: {}", ntohs(((SceNetSockaddrIn *)(addr))->sin_port), ntohs(((SceNetSockaddrIn *)(addr))->sin_vport));
+
     return std::make_shared<P2PSocket>(res->sock, res->sce_type);
 }
 
 int P2PSocket::connect(const SceNetSockaddr *addr, unsigned int addrlen) {
+    LOG_DEBUG("Before convert P2PToPosix, port: {}, vport: {}", ntohs(((SceNetSockaddrIn *)(addr))->sin_port), ntohs(((SceNetSockaddrIn *)(addr))->sin_vport));
     const auto p2p_addr = convertP2PToPosix(addr);
     return PosixSocket::connect(&p2p_addr, addrlen);
 }
 
 int P2PSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
     const auto res = PosixSocket::recv_packet(buf, len, flags, from, fromlen);
-    if ((res > 0) && from)
+    if ((res > 0) && from) {
         *from = convertPosixToP2P(from);
+        LOG_DEBUG_IF(log_enabled, "After convert PosixToP2P, port: {}, vport: {}", ntohs(((SceNetSockaddrIn *)(from))->sin_port), ntohs(((SceNetSockaddrIn *)(from))->sin_vport));
+    }
 
     return res;
 }
 
 int P2PSocket::send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {
+    if (to)
+        LOG_DEBUG_IF(log_enabled, "Send to, port: {}, vport: {}", ntohs(((SceNetSockaddrIn *)(to))->sin_port), ntohs(((SceNetSockaddrIn *)(to))->sin_vport));
     const auto p2p_to = convertP2PToPosix(to);
     return PosixSocket::send_packet(msg, len, flags, &p2p_to, tolen);
 }
 
 int P2PSocket::bind(const SceNetSockaddr *addr, unsigned int addrlen) {
+    LOG_DEBUG("Before convert P2PToPosix, port: {}, vport: {}", ntohs(((SceNetSockaddrIn *)(addr))->sin_port), ntohs(((SceNetSockaddrIn *)(addr))->sin_vport));
     const auto p2p_addr = convertP2PToPosix(addr);
     return PosixSocket::bind(&p2p_addr, addrlen);
 }
 
 int P2PSocket::get_peer_address(SceNetSockaddr *addr, unsigned int *addrlen) {
     const auto res = PosixSocket::get_peer_address(addr, addrlen);
-    if (res == 0)
+    if (res == 0) {
         *addr = convertPosixToP2P(addr);
-
+        LOG_DEBUG("After convert PosixToP2P, port: {}, vport: {}", ntohs(((SceNetSockaddrIn *)(addr))->sin_port), ntohs(((SceNetSockaddrIn *)(addr))->sin_vport));
+    }
     return res;
 }
 
 int P2PSocket::get_socket_address(SceNetSockaddr *addr, unsigned int *addrlen) {
     const auto res = PosixSocket::get_socket_address(addr, addrlen);
-    if (res == 0)
+    if (res == 0) {
         *addr = convertPosixToP2P(addr);
-
+        LOG_DEBUG("After convert PosixToP2P, port: {}, vport: {}", ntohs(((SceNetSockaddrIn *)(addr))->sin_port), ntohs(((SceNetSockaddrIn *)(addr))->sin_vport));
+    }
     return res;
 }

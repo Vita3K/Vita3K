@@ -179,7 +179,20 @@ EXPORT(int, sceNgsModuleGetNumPresets, ngs::System *system, const SceUInt32 modu
 
 EXPORT(int, sceNgsModuleGetPreset, ngs::System *system, const SceUInt32 module, const SceUInt32 preset_index, void *params_buffer) {
     TRACY_FUNC(sceNgsModuleGetPreset, system, module, preset_index, params_buffer);
-    return UNIMPLEMENTED();
+
+    if (!emuenv.cfg.current_config.ngs_enable)
+        return SCE_NGS_OK;
+
+    if (!params_buffer)
+        return SCE_NGS_ERROR_INVALID_ARG;
+
+    SceNgsVoicePreset *preset = reinterpret_cast<SceNgsVoicePreset *>(params_buffer);
+    memset(preset, 0, sizeof(SceNgsVoicePreset));
+
+    LOG_DEBUG("sceNgsModuleGetPreset: returning empty preset for module={} preset_index={}",
+        module, preset_index);
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsPatchCreateRouting, SceNgsPatchSetupInfo *patch_info, Ptr<ngs::Patch> *handle) {
@@ -404,9 +417,12 @@ EXPORT(SceInt32, sceNgsSystemRelease, ngs::System *system) {
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsSystemSetFlags) {
+EXPORT(int, sceNgsSystemSetFlags, ngs::System *system, const SceUInt32 system_flags) {
     TRACY_FUNC(sceNgsSystemSetFlags);
-    return UNIMPLEMENTED();
+    system->flags = system_flags;
+    LOG_DEBUG("sceNgsSystemSetFlags: flags={:#X}", system_flags);
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsSystemSetParamErrorCallback) {
@@ -424,7 +440,6 @@ EXPORT(SceUInt32, sceNgsSystemUpdate, ngs::System *system) {
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
-
     system->voice_scheduler.update(emuenv.kernel, emuenv.mem, thread_id);
 
     return SCE_NGS_OK;
@@ -811,7 +826,6 @@ EXPORT(SceInt32, sceNgsVoiceKeyOff, ngs::Voice *voice) {
     if (!emuenv.cfg.current_config.ngs_enable) {
         return SCE_NGS_OK;
     }
-
     if (!voice) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
@@ -819,11 +833,18 @@ EXPORT(SceInt32, sceNgsVoiceKeyOff, ngs::Voice *voice) {
     voice->is_keyed_off = true;
     voice->rack->system->voice_scheduler.off(emuenv.mem, voice);
 
-    // call the finish callback, I got no idea what the module id should be in this case
-    voice->invoke_callback(emuenv.kernel, emuenv.mem, thread_id, voice->finished_callback, voice->finished_callback_user_data, 0);
+    //for (auto &module : voice->rack->modules) {
+    //    if (module->module_id() == 0x5CE6) {
+            // call the finish callback, I got no idea what the module id should be in this case
+            voice->invoke_callback(emuenv.kernel, emuenv.mem, thread_id, voice->finished_callback, voice->finished_callback_user_data, 0);
 
-    voice->is_keyed_off = false;
-    voice->rack->system->voice_scheduler.stop(emuenv.mem, voice);
+            voice->is_keyed_off = false;
+            voice->rack->system->voice_scheduler.stop(emuenv.mem, voice);
+
+         // break;
+    // }
+   // }
+
     return SCE_NGS_OK;
 }
 
@@ -1022,6 +1043,9 @@ EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, ngs::Voice *voice, const SceNgsModul
         *pNumErrors = num_errors;
     }
 
+    if (voice->rack->system->flags & 0)
+        return SCE_NGS_OK;
+
     if (num_errors == 0)
         return SCE_NGS_OK;
     else
@@ -1056,6 +1080,11 @@ EXPORT(SceInt32, sceNgsVoiceUnlockParams, ngs::Voice *voice, const SceUInt32 mod
 
     if (!data) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    if (voice->rack->system->flags & 0) {
+        data->unlock_params(emuenv.mem);
+        return SCE_NGS_OK;
     }
 
     if (!data->unlock_params(emuenv.mem)) {

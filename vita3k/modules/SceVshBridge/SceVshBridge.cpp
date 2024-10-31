@@ -644,7 +644,8 @@ EXPORT(int, vshSblACMgrHasCapability) {
 }
 
 EXPORT(int, vshSblAimgrIsCEX) {
-    return UNIMPLEMENTED();
+    STUBBED("return true");
+    return SCE_TRUE;
 }
 
 EXPORT(int, vshSblAimgrIsDEX) {
@@ -652,7 +653,7 @@ EXPORT(int, vshSblAimgrIsDEX) {
 }
 
 EXPORT(int, vshSblAimgrIsDolce) {
-    return UNIMPLEMENTED();
+    return emuenv.cfg.current_config.pstv_mode ? 1 : 0;
 }
 
 EXPORT(int, vshSblAimgrIsGenuineDolce) {

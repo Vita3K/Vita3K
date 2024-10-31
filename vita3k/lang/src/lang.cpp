@@ -316,6 +316,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 // Overlay
                 set_lang_string(lang.overlay, lang_child.child("overlay"));
 
+                // Patch Check
+                set_lang_string(lang.patch_check, lang_child.child("patch_check"));
+
                 // Performance Overlay
                 set_lang_string(lang.performance_overlay, lang_child.child("performance_overlay"));
 

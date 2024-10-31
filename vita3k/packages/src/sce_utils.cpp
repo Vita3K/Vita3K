@@ -1082,3 +1082,54 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint
     // Return the decrypted self
     return decrypted_self;
 }
+
+const unsigned char HMACKey[] = {
+    0xE5, 0xE2, 0x78, 0xAA, 0x1E, 0xE3, 0x40, 0x82,
+    0xA0, 0x88, 0x27, 0x9C, 0x83, 0xF9, 0xBB, 0xC8,
+    0x06, 0x82, 0x1C, 0x52, 0xF2, 0xAB, 0x5D, 0x2B,
+    0x4A, 0xBD, 0x99, 0x54, 0x50, 0x35, 0x51, 0x14
+};
+
+std::string resolve_ver_xml_url(const std::string &title_id) {
+    EVP_MAC *mac = EVP_MAC_fetch(NULL, "HMAC", NULL);
+    if (!mac) {
+        LOG_ERROR("Failed to fetch HMAC MAC");
+        return {};
+    }
+
+    // Create a new HMAC context
+    EVP_MAC_CTX *ctx = EVP_MAC_CTX_new(mac);
+    if (!ctx) {
+        EVP_MAC_free(mac);
+        LOG_ERROR("Failed to create HMAC context");
+        return {};
+    }
+
+    OSSL_PARAM params[2] = {
+        OSSL_PARAM_construct_utf8_string("digest", (char *)"SHA256", 0),
+        OSSL_PARAM_construct_end()
+    };
+
+    EVP_MAC_init(ctx, HMACKey, sizeof(HMACKey), params);
+
+    const auto np_title_id = fmt::format("np_{}", title_id);
+    EVP_MAC_update(ctx, (const unsigned char *)np_title_id.c_str(), np_title_id.length());
+
+    unsigned char hash[EVP_MAX_MD_SIZE];
+    size_t outlen;
+    EVP_MAC_final(ctx, hash, &outlen, sizeof(hash));
+
+    // Free the MAC context and the MAC object
+    EVP_MAC_CTX_free(ctx);
+    EVP_MAC_free(mac);
+
+    std::string hashStr(outlen * 2, '\0');
+    for (size_t i = 0; i < outlen; i++)
+        fmt::format_to(&hashStr[i * 2], "{:02x}", hash[i]);
+
+    const auto updateXmlUrl = "http://gs-sec.ww.np.dl.playstation.net/pl/np/" + title_id + "/" + hashStr + "/" + title_id + "-ver.xml";
+
+    LOG_DEBUG("updateXmlUrl: {}", updateXmlUrl);
+
+    return updateXmlUrl;
+}

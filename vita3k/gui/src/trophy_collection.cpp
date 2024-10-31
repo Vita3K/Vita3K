@@ -433,7 +433,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto TROPHY_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy" };
 
-    const auto is_background = gui.apps_background.contains("NPXS10008");
+    const auto BG_PATH = "vs0:app/NPXS10008";
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
@@ -446,8 +446,8 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto draw_list = ImGui::GetBackgroundDrawList();
     const ImVec2 BG_POS_MAX(VIEWPORT_POS.x + VIEWPORT_SIZE.x, VIEWPORT_POS.y + VIEWPORT_SIZE.y);
-    if (is_background)
-        draw_list->AddImage(gui.apps_background["NPXS10008"], VIEWPORT_POS, BG_POS_MAX);
+    if (gui.apps_background.contains(BG_PATH))
+        draw_list->AddImage(gui.apps_background[BG_PATH], VIEWPORT_POS, BG_POS_MAX);
     else
         draw_list->AddRectFilled(VIEWPORT_POS, BG_POS_MAX, IM_COL32(31.f, 12.f, 0.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 

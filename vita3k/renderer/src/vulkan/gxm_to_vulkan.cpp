@@ -257,6 +257,7 @@ static constexpr vk::ComponentMapping swizzle_rrr0 = { Swizzle::eR, Swizzle::eR,
 static constexpr vk::ComponentMapping swizzle_rrr1 = { Swizzle::eR, Swizzle::eR, Swizzle::eR, Swizzle::eOne };
 static constexpr vk::ComponentMapping swizzle_000r = { Swizzle::eZero, Swizzle::eZero, Swizzle::eZero, Swizzle::eR };
 static constexpr vk::ComponentMapping swizzle_111r = { Swizzle::eOne, Swizzle::eOne, Swizzle::eOne, Swizzle::eR };
+static constexpr vk::ComponentMapping swizzle_000a = { Swizzle::eZero, Swizzle::eZero, Swizzle::eZero, Swizzle::eR };
 
 // SceGxmSwizzle2Mode
 static constexpr vk::ComponentMapping swizzle_rg01 = { Swizzle::eR, Swizzle::eG, Swizzle::eZero, Swizzle::eOne };
@@ -287,6 +288,8 @@ static vk::ComponentMapping translate_swizzle1(SceGxmColorSwizzle1Mode mode) {
     switch (mode) {
     case SCE_GXM_COLOR_SWIZZLE1_R:
         return swizzle_r001;
+    case SCE_GXM_COLOR_SWIZZLE1_A:
+        return swizzle_000a;
     default:
         LOG_ERROR("Unknown swizzle mode {}", log_hex(mode));
         return swizzle_identity;
