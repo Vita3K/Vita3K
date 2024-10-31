@@ -192,10 +192,15 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     delete_license_file = false;
                 }
                 if ((emuenv.app_info.app_category.find("gd") != std::string::npos) || (emuenv.app_info.app_category.find("gp") != std::string::npos)) {
-                    init_user_app(gui, emuenv, emuenv.app_info.app_title_id);
+                    init_vita_app(gui, emuenv, "ux0:app/" + emuenv.app_info.app_title_id);
                     save_apps_cache(gui, emuenv);
                     select_app(gui, emuenv.app_info.app_title_id);
-                }
+                } else if (emuenv.app_info.app_category.find("dl") != std::string::npos) {
+                    init_vita_app(gui, emuenv, "ux0:dlc/" + emuenv.app_info.app_title_id);
+                    save_apps_cache(gui, emuenv);
+                    select_app(gui, emuenv.app_info.app_title_id);
+                } else if (emuenv.app_info.app_category.find("theme") != std::string::npos)
+                    update_themes(gui, emuenv, emuenv.app_info.app_content_id);
                 update_notice_info(gui, emuenv, "content");
                 pkg_path = "";
                 license_path = "";

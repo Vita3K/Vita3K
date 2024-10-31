@@ -60,7 +60,7 @@ static SysmodulePaths init_sysmodule_paths() {
     p[SCE_SYSMODULE_NP_SCORE_RANKING] = { "np_ranking" };
     p[SCE_SYSMODULE_SQLITE] = { "libSceSqlite" };
     p[SCE_SYSMODULE_TRIGGER_UTIL] = { "trigger_util" };
-    p[SCE_SYSMODULE_RUDP] = { "librudp" };
+    p[SCE_SYSMODULE_RUDP] = { "librudp", "libhttp", "libssl" };
     p[SCE_SYSMODULE_CODECENGINE_PERF] = { "libcodecengine_perf" };
     p[SCE_SYSMODULE_LIVEAREA] = { "livearea_util" };
     p[SCE_SYSMODULE_NP_ACTIVITY] = { "np_activity_sdk" };
@@ -131,6 +131,7 @@ static SysmoduleInternalPaths init_sysmodule_internal_paths() {
     p[SCE_SYSMODULE_INTERNAL_DB_RECOVERY_UTILITY] = { "dbrecovery_utility" };
     p[SCE_SYSMODULE_INTERNAL_DRM_PSM_KDC] = { "psmkdc" };
     p[SCE_SYSMODULE_INTERNAL_LOCATION_INTERNAL] = { "liblocation_internal" };
+    p[SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL] = { "libScePromoterUtil" };
 
     return p;
 }

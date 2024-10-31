@@ -17,6 +17,7 @@
 
 #include <cstring>
 #include <net/socket.h>
+#include <util/log.h>
 
 // NOTE: This should be SCE_NET_##errname but it causes vitaQuake to softlock in online games
 #ifdef _WIN32
@@ -170,14 +171,29 @@ int PosixSocket::connect(const SceNetSockaddr *addr, unsigned int namelen) {
     return translate_return_value(res);
 }
 
+static std::string ip_to_string(uint32_t s_addr) {
+    in_addr addr;
+    addr.S_un.S_addr = s_addr;
+    char ip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &addr, ip_str, sizeof(ip_str));
+    return std::string(ip_str);
+}
+
 int PosixSocket::bind(const SceNetSockaddr *addr, unsigned int addrlen) {
     sockaddr addr2;
+    LOG_DEBUG("Bind, addr: {}, IP: {}, port: {}, vport: {}", ((SceNetSockaddrIn *)(addr))->sin_addr.s_addr, ip_to_string(((SceNetSockaddrIn *)(addr))->sin_addr.s_addr),
+        ntohs(((SceNetSockaddrIn *)(addr))->sin_port), ntohs(((SceNetSockaddrIn *)(addr))->sin_vport));
     convertSceSockaddrToPosix(addr, &addr2);
     return translate_return_value(::bind(sock, &addr2, sizeof(sockaddr_in)));
 }
 
 int PosixSocket::listen(int backlog) {
-    return translate_return_value(::listen(sock, backlog));
+    auto res = translate_return_value(::listen(sock, backlog));
+    if (res == 0)
+        is_listening = true;
+
+    LOG_DEBUG("Listen, backlog: {}, result: {}", backlog, res);
+    return res;
 }
 
 int PosixSocket::get_socket_address(SceNetSockaddr *name, unsigned int *namelen) {
@@ -233,6 +249,10 @@ SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen, int &
         return nullptr;
     }
     sockaddr addr2{};
+    if (!is_listening) {
+        err = SCE_NET_EOPNOTSUPP;
+        return nullptr;
+    }
     abs_socket new_socket = ::accept(sock, &addr2, (socklen_t *)addrlen);
     if (abort_pending(is_aborted)) {
         err = SCE_NET_ERROR_EINTR;
@@ -423,6 +443,43 @@ int PosixSocket::get_socket_options(int level, int optname, void *optval, unsign
     return SCE_NET_ERROR_EINVAL;
 }
 
+std::string log_ascii_hex(const uint8_t *data, size_t len) {
+    std::stringstream ss;
+    size_t i = 0;
+    ss << std::endl;
+    while (i < len) {
+        ss << std::setw(8) << std::setfill('0') << std::hex << i << "  ";
+
+        for (size_t j = 0; j < 16 && i + j < len; ++j) {
+            ss << std::setw(2) << std::setfill('0') << std::hex << (int)data[i + j] << " ";
+        }
+
+        for (size_t j = len - i; j < 16; ++j) {
+            ss << "   ";
+        }
+
+        ss << " |";
+
+        for (size_t j = 0; j < 16 && i + j < len; ++j) {
+            if (data[i + j] >= 32 && data[i + j] <= 126) {
+                ss << (char)data[i + j];
+            } else {
+                ss << '.';
+            }
+        }
+
+        for (size_t j = len - i; j < 16; ++j) {
+            ss << " ";
+        }
+
+        ss << "|\n";
+
+        i += 16;
+    }
+
+    return ss.str();
+}
+
 static int convertSceFlagsToPosix(int sce_flags) {
     int posix_flags = 0;
 
@@ -448,8 +505,11 @@ static int socket_is_ready(int sock, bool is_read = true) {
     int res = select(sock + 1, is_read ? &fds : nullptr, is_read ? nullptr : &fds, nullptr, &timeout);
     if (res == 0)
         return SCE_NET_ERROR_EWOULDBLOCK;
-    else if (res < 0)
-        return PosixSocket::translate_return_value(res);
+    else if (res < 0) {
+        res = PosixSocket::translate_return_value(res);
+        LOG_ERROR("recv: select returned error: {}", log_hex(res));
+        return res;
+    }
 
     return res;
 }
@@ -469,12 +529,21 @@ int PosixSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSocka
     const auto posix_flags = convertSceFlagsToPosix(flags);
     if (from == nullptr) {
         res = recv(sock, (char *)buf, len, posix_flags);
+        if (res > 0)
+            LOG_DEBUG("recv: from is null, flags: {}, len: {}, msg: {}", log_hex(flags), len, log_ascii_hex((const uint8_t *)buf, len));
     } else {
         sockaddr addr{};
         socklen_t addrlen = sizeof(addr);
         res = recvfrom(sock, (char *)buf, len, posix_flags, &addr, (fromlen && *fromlen <= sizeof(addr) ? (socklen_t *)fromlen : &addrlen));
-        if (res > 0)
+        if (res > 0) {
+            sockaddr_in *addr_in = (sockaddr_in *)&addr;
+            LOG_DEBUG("Recv addr: {}, IP: {}, port: {}", addr_in->sin_addr.S_un.S_addr, ip_to_string(addr_in->sin_addr.S_un.S_addr),
+                ntohs(addr_in->sin_port));
+            LOG_DEBUG("recv: flags: {}, len: {}, res: {}, msg: {}", log_hex(flags), len, res, log_ascii_hex((const uint8_t *)buf, res));
             convertPosixSockaddrToSce(&addr, from);
+        } else {
+            // LOG_DEBUG("recv: flags: {}, len: {}", log_hex(flags), len);
+        }
     }
 
     if (abort_pending(is_aborted))
@@ -497,11 +566,17 @@ int PosixSocket::send_packet(const void *msg, unsigned int len, int flags, const
 #endif
     const auto posix_flags = convertSceFlagsToPosix(flags);
     if (to == nullptr) {
+        LOG_DEBUG("send: to is null, flags: {}, len: {}, msg: {}", log_hex(flags), len, log_ascii_hex((const uint8_t *)msg, len));
         res = send(sock, (const char *)msg, len, posix_flags);
     } else {
+        LOG_WARN("Send addr: {}, IP: {}, port: {}, vport: {}", ((SceNetSockaddrIn *)(to))->sin_addr.s_addr, ip_to_string(((SceNetSockaddrIn *)(to))->sin_addr.s_addr),
+            ntohs(((SceNetSockaddrIn *)(to))->sin_port), ntohs(((SceNetSockaddrIn *)(to))->sin_vport));
+        LOG_WARN("Msg send: flag: {}, len: {}, tolen: {}, msg: {}", log_hex(flags), len, tolen, log_ascii_hex((const uint8_t *)msg, len));
         sockaddr addr{};
         convertSceSockaddrToPosix(to, &addr);
         res = sendto(sock, (const char *)msg, len, posix_flags, &addr, tolen);
+        sockaddr_in *addr_in = (sockaddr_in *)&addr;
+        LOG_WARN("After convert SceToPosix, port: {}", ntohs(addr_in->sin_port));
     }
 
     if (abort_pending(is_aborted))

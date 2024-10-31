@@ -47,6 +47,11 @@ typedef std::shared_ptr<Socket> SocketPtr;
 struct Socket {
     int sockopt_so_onesbcast = 0;
 
+    bool is_listening = false;
+
+    uint32_t bound_ctx_id = 0;
+    const char *name = nullptr;
+
     explicit Socket(int domain, int type, int protocol) {}
 
     virtual ~Socket() = default;

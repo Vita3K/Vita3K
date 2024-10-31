@@ -18,6 +18,7 @@
 #pragma once
 
 #include <mem/ptr.h>
+#include <util/types.h>
 
 #define SCE_NET_ADHOC_PORT 3658
 
@@ -26,6 +27,8 @@
 // Define our own htonll and ntohll because its not available in some systems/platforms
 #define HTONLL(x) ((((uint64_t)htonl((x)&0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32)))
 #define NTOHLL(x) ((((uint64_t)ntohl((x)&0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32)))
+
+typedef SceUInt32 SceNetSocklen_t;
 
 enum SceNetProtocol : uint32_t {
     SCE_NET_IPPROTO_IP = 0,
@@ -326,6 +329,21 @@ enum SceNetEpollEventType {
     SCE_NET_EPOLLIN = 1,
     SCE_NET_EPOLLOUT = 2,
     SCE_NET_EPOLLERR = 8
+};
+
+struct SceNetIovec {
+    void *iov_base;
+    SceSize iov_len;
+};
+
+struct SceNetMsghdr {
+    void *msg_name;
+    SceNetSocklen_t msg_namelen;
+    SceNetIovec *msg_iov;
+    int msg_iovlen;
+    void *msg_control;
+    SceNetSocklen_t msg_controllen;
+    int msg_flags;
 };
 
 struct SceNetEtherAddr {

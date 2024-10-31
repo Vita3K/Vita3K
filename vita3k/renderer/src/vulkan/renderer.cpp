@@ -796,6 +796,8 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     // the address should be 4K aligned
     assert((address.address() & 4095) == 0);
     constexpr vk::BufferUsageFlags mapped_memory_flags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eTransferDst;
+    
+   // LOG_DEBUG("Mapping memory at {} with size {}", address, size);
 
     if (mem.use_page_table) {
         // add 4 KiB because we can as an easy way to prevent crashes due to memory accesses right after the memory boundary
@@ -850,7 +852,6 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             LOG_CRITICAL_ONCE("No coherent memory available for memory mapping, this may be caused by an old driver!");
             mapped_memory_type = std::countr_zero(host_mem_props.memoryTypeBits);
         }
-
         vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryHostPointerInfoEXT, vk::MemoryAllocateFlagsInfo> alloc_info{
             vk::MemoryAllocateInfo{
                 .allocationSize = size,
@@ -858,11 +859,10 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             vk::ImportMemoryHostPointerInfoEXT{
                 .handleType = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
                 .pHostPointer = host_address },
-            vk::MemoryAllocateFlagsInfo{
+                vk::MemoryAllocateFlagsInfo {
                 .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
         };
         const vk::DeviceMemory device_memory = device.allocateMemory(alloc_info.get());
-
         vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
             vk::BufferCreateInfo{
                 .size = size,
@@ -909,8 +909,8 @@ void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
 std::tuple<vk::Buffer, uint32_t> VKState::get_matching_mapping(const Ptr<void> address) {
     auto mapped_memory = mapped_memories.lower_bound(address.address());
     if (mapped_memory == mapped_memories.end()
-        || mapped_memory->first + mapped_memory->second.size < address.address()) {
-        LOG_ERROR("Could not find matching mapped buffer for vertex stream");
+        || mapped_memory->first + mapped_memory->second.size < address.address()) {   
+        LOG_ERROR("Could not find matching mapped buffer for vertex stream: {}", address);
         return { nullptr, 0 };
     }
 

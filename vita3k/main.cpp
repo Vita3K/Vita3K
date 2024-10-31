@@ -27,6 +27,7 @@
 #include <gui/state.h>
 #include <include/cpu.h>
 #include <include/environment.h>
+#include <io/device.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <modules/module_parent.h>
@@ -81,7 +82,6 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
 
         // Execute the emulator again with some arguments
 #ifdef _WIN32
-    FreeConsole();
     _execv(argv[0], args);
 #elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
     execv(argv[0], const_cast<char *const *>(args));
@@ -272,8 +272,8 @@ int main(int argc, char *argv[]) {
     }
 
     if (run_type == app::AppRunType::Extracted) {
-        emuenv.io.app_path = cfg.run_app_path ? *cfg.run_app_path : emuenv.app_info.app_title_id;
-        gui::init_user_app(gui, emuenv, emuenv.io.app_path);
+        emuenv.io.app_path = cfg.run_app_path ? *cfg.run_app_path : "ux0:app/" + emuenv.app_info.app_title_id;
+        gui::init_vita_app(gui, emuenv, emuenv.io.app_path);
         if (emuenv.cfg.run_app_path.has_value())
             emuenv.cfg.run_app_path.reset();
         else if (emuenv.cfg.content_path.has_value())
@@ -323,7 +323,6 @@ int main(int argc, char *argv[]) {
             if (!emuenv.io.app_path.empty()) {
                 run_type = app::AppRunType::Extracted;
                 gui.vita_area.home_screen = false;
-                gui.vita_area.live_area_screen = false;
             }
         }
     }
@@ -337,7 +336,7 @@ int main(int argc, char *argv[]) {
 
     gui::set_config(gui, emuenv, emuenv.io.app_path);
 
-    const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);
+    const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path.find("vsh") != std::string::npos ? "emu:vsh/shell" : emuenv.io.app_path);
     emuenv.app_info.app_version = APP_INDEX->app_ver;
     emuenv.app_info.app_category = APP_INDEX->category;
     emuenv.io.addcont = APP_INDEX->addcont;
@@ -362,7 +361,8 @@ int main(int argc, char *argv[]) {
     }
 
     gui::switch_bgm_state(true);
-    gui::init_app_background(gui, emuenv, emuenv.io.app_path);
+    if (emuenv.io.app_path.find("vsh") == std::string::npos)
+        gui::init_app_background(gui, emuenv, emuenv.io.app_path);
     gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
 
     if (!app::late_init(emuenv)) {
@@ -371,8 +371,13 @@ int main(int argc, char *argv[]) {
     }
 
     const auto draw_app_background = [](GuiState &gui, EmuEnvState &emuenv) {
+        const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
         const auto pos_min = ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
         const auto pos_max = ImVec2(pos_min.x + emuenv.logical_viewport_size.x, pos_min.y + emuenv.logical_viewport_size.y);
+        ImGui::SetNextWindowPos(pos_min);
+        ImGui::SetNextWindowSize(VIEWPORT_SIZE);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::Begin("draw_background", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoSavedSettings);
 
         if (gui.apps_background.contains(emuenv.io.app_path))
             // Display application background
@@ -380,6 +385,9 @@ int main(int argc, char *argv[]) {
         // Application background not found
         else
             gui::draw_background(gui, emuenv);
+       
+        ImGui::PopStyleVar();
+        ImGui::End();
     };
 
     int32_t main_module_id;

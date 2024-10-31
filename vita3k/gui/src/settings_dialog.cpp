@@ -100,11 +100,12 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     stop_bgm();
 
     // Clean User apps list
-    gui.app_selector.user_apps.clear();
+    gui.app_selector.vita_apps.clear();
 
     get_modules_list(gui, emuenv);
     get_sys_apps_title(gui, emuenv);
     get_notice_list(emuenv);
+    get_time_apps(gui, emuenv);
     get_users_list(gui, emuenv);
     init_home(gui, emuenv);
 }
@@ -144,7 +145,7 @@ static CPUBackend config_cpu_backend;
  * but it's corrupted or invalid.
  */
 static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
+    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", fs::path(app_path).stem().string()) };
 
     if (fs::exists(CUSTOM_CONFIG_PATH)) {
         pugi::xml_document custom_config_xml;
@@ -302,9 +303,8 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 static void save_config(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.configuration_menu.custom_settings_dialog) {
         const auto CONFIG_PATH{ emuenv.config_path / "config" };
-        const auto CUSTOM_CONFIG_PATH{ CONFIG_PATH / fmt::format("config_{}.xml", emuenv.app_path) };
+        const auto CUSTOM_CONFIG_PATH{ CONFIG_PATH / fmt::format("config_{}.xml", fs::path(emuenv.app_path).stem().string()) };
         fs::create_directories(CONFIG_PATH);
-
         pugi::xml_document custom_config_xml;
         auto declarationUser = custom_config_xml.append_child(pugi::node_declaration);
         declarationUser.append_attribute("version") = "1.0";
@@ -1041,7 +1041,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gui.users[emuenv.io.user_id].start_type = "default";
                 save_user(gui, emuenv, emuenv.io.user_id);
                 init_theme_start_background(gui, emuenv, "default");
-                init_apps_icon(gui, emuenv, gui.app_selector.sys_apps);
+                init_apps_icon(gui, emuenv, gui.app_selector.emu_apps);
             }
             ImGui::SameLine();
         }
