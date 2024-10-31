@@ -51,7 +51,7 @@ struct AssignedAddr {
     std::string netMask; // Network mask
 };
 
-typedef const std::function<ProgressState *(float, uint64_t)> &ProgressCallback;
+typedef const std::function<ProgressState *(float, uint64_t, double)> &ProgressCallback;
 typedef std::pair<ProgressData, ProgressCallback> CallbackData;
 
 bool download_file(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback = nullptr);

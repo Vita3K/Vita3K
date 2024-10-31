@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <util/log.h>
 #include <util/vector_utils.h>
 
 namespace ngs {
@@ -130,6 +131,9 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
     }
 
     for (ngs::Voice *voice : queue_copy) {
+        if (!voice->rack)
+            continue;
+
         // Modify the state, in peace....
         std::unique_lock<std::mutex> voice_lock(*voice->voice_mutex);
         memset(voice->products, 0, sizeof(voice->products));
@@ -139,9 +143,10 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
 
         for (size_t i = 0; i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {
+                const auto module_id = voice->rack->modules[i]->module_id();
                 if (voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i], scheduler_lock, voice_lock)) {
                     finished = true;
-                    finished_module = voice->rack->modules[i]->module_id();
+                    finished_module = module_id;
                 }
             }
         }
@@ -160,11 +165,12 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
             stop(mem, voice);
         }
 
-        for (size_t i = 0; i < voice->rack->vdef->output_count; i++) {
-            if (voice->products[i].data)
-                deliver_data(mem, queue_copy, voice, static_cast<uint8_t>(i), voice->products[i]);
+        if (!voice->rack->is_released) {
+            for (size_t i = 0; i < voice->rack->vdef->output_count; i++) {
+                if (voice->products[i].data)
+                    deliver_data(mem, queue_copy, voice, static_cast<uint8_t>(i), voice->products[i]);
+            }
         }
-
         voice->frame_count++;
     }
 
@@ -174,8 +180,8 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         switch (op.type) {
         case PendingType::ReleaseRack:
             release_rack(*op.release_data.state, mem, op.system, op.release_data.rack);
-            // run callback (we know it is defined)
-            kern.get_thread(thread_id)->run_callback(op.release_data.callback, { Ptr<void>(op.release_data.rack, mem).address() });
+            if (op.release_data.callback)
+                kern.get_thread(thread_id)->run_callback(op.release_data.callback, { Ptr<void>(op.release_data.rack, mem).address() });
             break;
         }
 

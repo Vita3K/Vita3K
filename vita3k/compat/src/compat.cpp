@@ -168,8 +168,10 @@ bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     // Update compatibility status of all user apps
-    for (auto &app : gui.app_selector.user_apps)
-        app.compat = gui.compat.app_compat_db.contains(app.title_id) ? gui.compat.app_compat_db[app.title_id].state : CompatibilityState::UNKNOWN;
+    for (auto &apps : gui.app_selector.vita_apps) {
+        for (auto &app : apps.second)
+            app.compat = gui.compat.app_compat_db.contains(app.title_id) ? gui.compat.app_compat_db[app.title_id].state : CompatibilityState::UNKNOWN;
+    }
 
     return !gui.compat.app_compat_db.empty();
 }

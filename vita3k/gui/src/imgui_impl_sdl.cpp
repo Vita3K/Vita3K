@@ -543,6 +543,14 @@ void ImGui_Texture::init(ImGui_State *new_state, void *data, int width, int heig
     init(new_state, ImGui_ImplSdl_CreateTexture(new_state, data, width, height));
 }
 
+void ImGui_Texture::clear() {
+    if (texture_id) {
+        ImGui_ImplSdl_DeleteTexture(state, texture_id);
+        texture_id = nullptr;
+        state = nullptr;
+    }
+}
+
 ImGui_Texture::operator bool() const {
     return texture_id != nullptr;
 }
@@ -556,11 +564,13 @@ bool ImGui_Texture::operator==(const ImGui_Texture &texture) {
 }
 
 ImGui_Texture &ImGui_Texture::operator=(ImGui_Texture &&texture) noexcept {
-    this->state = texture.state;
-    this->texture_id = texture.texture_id;
+    if (this != &texture) {
+        this->state = texture.state;
+        this->texture_id = texture.texture_id;
 
-    texture.state = nullptr;
-    texture.texture_id = nullptr;
+        texture.state = nullptr;
+        texture.texture_id = nullptr;
+    }
 
     return *this;
 }

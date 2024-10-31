@@ -42,7 +42,7 @@ void draw_pre_compiling_shaders_progress(GuiState &gui, EmuEnvState &emuenv, con
     ImGui::SetWindowFontScale(1.1f * RES_SCALE.x);
 
     // Check if icon exist
-    if (gui.app_selector.user_apps_icon.contains(emuenv.io.app_path)) {
+    if (gui.app_selector.vita_apps_icon.contains(emuenv.io.app_path)) {
         ImGui::SetCursorPos(ImVec2(54.f * SCALE.x, 32.f * SCALE.y));
         ImGui::Image(get_app_icon(gui, emuenv.io.app_path)->second, ICON_SIZE_SCALE);
     }

@@ -656,3 +656,4 @@ std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, cons
 std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader &sce_hdr);
 std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, const uint8_t *klic = 0);
 std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint8_t *klic);
+std::string resolve_ver_xml_url(const std::string &title_id);
