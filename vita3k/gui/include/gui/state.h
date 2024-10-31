@@ -120,10 +120,13 @@ struct VitaAreaState {
     bool information_bar = false;
     bool live_area_screen = false;
     bool manual = false;
+    bool online_storage = false;
     bool settings = false;
     bool start_screen = false;
     bool trophy_collection = false;
     bool user_management = false;
+    bool connecting_please_wait = false;
+    bool please_wait = false;
 };
 
 struct FileMenuState {
@@ -150,6 +153,7 @@ struct DebugMenuState {
 struct ConfigurationMenuState {
     bool custom_settings_dialog = false;
     bool settings_dialog = false;
+    bool v3kn_dialog = false;
 };
 
 struct ControlMenuState {
@@ -179,6 +183,18 @@ enum DateTime {
     DATE_MINI,
     DAY_MOMENT,
     HOUR,
+};
+
+enum class AvatarSize : uint32_t {
+    SMALL = 34,
+    MEDIUM = 130,
+    LARGE = 160,
+    V3KN = 80
+};
+
+struct AvatarInfo {
+    ImVec2 pos;
+    ImVec2 size;
 };
 
 struct User {
@@ -287,6 +303,10 @@ struct GuiState {
 
     std::map<std::string, User> users;
     std::map<std::string, ImGui_Texture> users_avatar;
+    std::map<std::string, std::map<AvatarSize, AvatarInfo>> users_avatar_infos;
+
+    ImGui_Texture v3kn_avatar;
+    ImGui_Texture v3kn_panel;
 
     MemoryEditor memory_editor;
     MemoryEditor gxp_shader_editor;
