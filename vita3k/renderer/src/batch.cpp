@@ -59,7 +59,7 @@ bool wait_cmd(MemState &mem, CommandList &command_list) {
     // we assume here that the cmd starts with a WaitSyncObject
 
     SceGxmSyncObject *sync = reinterpret_cast<Ptr<SceGxmSyncObject> *>(&command_list.first->data[0])->get(mem);
-    const uint32_t timestamp = *reinterpret_cast<uint32_t *>(&command_list.first->data[sizeof(uint32_t) + 2 * sizeof(void *)]);
+    const uint32_t timestamp = *reinterpret_cast<uint32_t *>(&command_list.first->data[sizeof(uint32_t)]);
 
     // wait 500 micro seconds and then return in case should_display is set to true
     return renderer::wishlist(sync, timestamp, 500);
