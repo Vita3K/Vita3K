@@ -30,7 +30,7 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid) {
         // Just in case users decide to use lowercase filenames
         auto upper_filename = std::transform(filename.begin(), filename.end(), filename.begin(), ::toupper);
 
-        if (filename.find(titleid) != std::string::npos && filename.ends_with(".VPATCH")) {
+        if (filename.find(titleid) != std::string::npos && filename.ends_with(".TXT")) {
             // Read the file
             std::ifstream file(entry.path().c_str());
 
