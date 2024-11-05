@@ -445,9 +445,24 @@ EXPORT(int, _sceAppMgrLoopBackMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrMmsMount) {
-    TRACY_FUNC(_sceAppMgrMmsMount);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceAppMgrMmsMount, SceInt32 id, char *mount_point) {
+    TRACY_FUNC(_sceAppMgrMmsMount, id, mount_point);
+    switch (id) {
+    case 0x190:
+        strcpy(mount_point, "ux0:mms/photo");
+        break;
+    case 0x191:
+        strcpy(mount_point, "ux0:mms/music");
+        break;
+    case 0x192:
+        strcpy(mount_point, "ux0:mms/video");
+        break;
+    default:
+        LOG_ERROR("Unknown id: {}", log_hex(id));
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+    }
+
+    return STUBBED("using strcpy");
 }
 
 EXPORT(int, _sceAppMgrOverwriteLaunchParamForShell) {

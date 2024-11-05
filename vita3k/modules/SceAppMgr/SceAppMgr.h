@@ -20,6 +20,7 @@
 #include <module/module.h>
 
 enum SceAppMgrErrorCode : uint32_t {
+    SCE_APPMGR_ERROR_INVALID_PARAMETER = 0x80800001, //!< Invalid parameter
     SCE_APPMGR_ERROR_BUSY = 0x80802000, //!< Busy
     SCE_APPMGR_ERROR_STATE = 0x80802013, //!< Invalid state
     SCE_APPMGR_ERROR_NULL_POINTER = 0x80802016, //!< NULL pointer
@@ -55,6 +56,7 @@ typedef struct SceAppMgrLoadExecOptParam {
 DECL_EXPORT(SceInt32, __sceAppMgrGetAppState, SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion);
 DECL_EXPORT(SceInt32, _sceAppMgrAppParamGetString, int pid, int param, char *string, int length);
 DECL_EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[], const SceAppMgrLoadExecOptParam *optParam);
+DECL_EXPORT(SceInt32, _sceAppMgrMmsMount, SceInt32 id, char *mount_point);
 
 SceInt32 __sceAppMgrGetAppState(SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion);
 SceInt32 _sceAppMgrLoadExec(const char *appPath, char *const argv[], const SceAppMgrLoadExecOptParam *optParam);

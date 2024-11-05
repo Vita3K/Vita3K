@@ -477,9 +477,9 @@ EXPORT(int, sceAppMgrLoopBackMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrMmsMount) {
-    TRACY_FUNC(sceAppMgrMmsMount);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceAppMgrMmsMount, SceInt32 id, char *mount_point) {
+    TRACY_FUNC(sceAppMgrMmsMount, id, mount_point);
+    return CALL_EXPORT(_sceAppMgrMmsMount, id, mount_point);
 }
 
 EXPORT(int, sceAppMgrOverwriteLaunchParamForShell) {
