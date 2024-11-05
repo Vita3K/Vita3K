@@ -38,9 +38,9 @@ EXPORT(int, sceDisplayGetFrameBufInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceDisplayGetMaximumFrameBufResolution) {
-    TRACY_FUNC(sceDisplayGetMaximumFrameBufResolution);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceDisplayGetMaximumFrameBufResolution, SceInt32 *width, SceInt32 *height) {
+    TRACY_FUNC(sceDisplayGetMaximumFrameBufResolution, width, height);
+    return CALL_EXPORT(_sceDisplayGetMaximumFrameBufResolution, width, height);
 }
 
 EXPORT(int, sceDisplayGetResolutionInfoInternal) {
