@@ -16,7 +16,20 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <module/module.h>
+#include <modules/module_parent.h>
+
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(SceShellSvc)
 
 EXPORT(int, sceShellSvcGetSvcObj) {
-    return UNIMPLEMENTED();
+    TRACY_FUNC(sceShellSvcGetSvcObj);
+    static Ptr<Address> svc_client;
+    if (!svc_client) {
+        svc_client = Ptr<Address>(alloc(emuenv.mem, sizeof(int), "ShellSvc"));
+        *svc_client.get(emuenv.mem) = get_client_vtable(emuenv.mem).address();
+    }
+
+    STUBBED("STUBBED");
+    return svc_client.address();
 }
