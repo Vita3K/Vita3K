@@ -58,10 +58,10 @@ Patch parse_patch(const std::string &patch) {
     // Example, equivalent to `t1_mov(0, 1)`:
     // 0:0xA994 0x01 0x20
     // Keep in mind that we are in little endian
-    uint8_t seg = std::atoi(patch.substr(0, patch.find(':')).c_str());
+    uint8_t seg = std::stoi(patch.substr(0, patch.find(':')));
 
     // Everything after the first colon, and before the first space, is the offset
-    uint32_t offset = std::strtoull(patch.substr(patch.find(':') + 1, patch.find(' ') - patch.find(':') - 1).c_str(), nullptr, 16);
+    uint32_t offset = std::stoull(patch.substr(patch.find(':') + 1, patch.find(' ') - patch.find(':') - 1), nullptr, 16);
 
     // All following values (separated by spaces) are the values to be written
     std::string values = patch.substr(patch.find(' ') + 1);
@@ -71,11 +71,11 @@ Patch parse_patch(const std::string &patch) {
     size_t pos = 0;
 
     while ((pos = values.find(' ')) != std::string::npos) {
-        values_vec.push_back(std::strtoull(values.substr(0, pos).c_str(), nullptr, 16));
+        values_vec.push_back(std::stoull(values.substr(0, pos), nullptr, 16));
         values.erase(0, pos + 1);
     }
 
-    values_vec.push_back(std::strtoull(values.c_str(), nullptr, 16));
+    values_vec.push_back(std::stoull(values, nullptr, 16));
 
     return Patch{ seg, offset, values_vec };
 }
