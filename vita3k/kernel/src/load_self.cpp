@@ -337,8 +337,8 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         if (nid_it != kernel.export_nids.end()) {
             LOG_DEBUG("Found previously not found variable. nid:{}, new_entry_point:{}", log_hex(nid), log_hex(entry.address()));
             old_entry_address = kernel.export_nids[nid];
-            kernel.export_nids[nid] = entry.address();
         }
+        kernel.export_nids[nid] = entry.address();
 
         bool reloc_success = true;
         auto range = kernel.var_binding_infos.equal_range(nid);
