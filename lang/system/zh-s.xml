@@ -14,7 +14,7 @@
 		<emulation name="模拟">
 			<last_apps_used>最近使用的应用程序</last_apps_used>
 		</emulation>
-		<debug>
+		<debug name="调试">
 			<threads>线程</threads>
 			<semaphores>信号量</semaphores>
 			<mutexes>互斥锁</mutexes>
@@ -39,7 +39,7 @@
 	<about name="关于">
 		<vita3k>Vita3K：PS Vita/PS TV模拟器，是全球首个实用的PS Vita/PS TV模拟器。</vita3k>
 		<about_vita3k>Vita3K是使用C++编写的实验性开源PlayStation Vita/PlayStation TV模拟器，适用于Windows、Linux、macOS以及Android操作系统。</about_vita3k>
-		<special_credit>特别鸣谢：Vita3K图标设计由：</special_credit>
+		<special_credit>特别鸣谢：Vita3K图标设计者：</special_credit>
 		<github_website>如果您有兴趣参与贡献，请浏览我们的：</github_website>
 		<vita3k_website>更多信息请访问我们的网站：</vita3k_website>
 		<ko-fi_website>如果您想支持我们，您可以捐赠或者订阅我们的：</ko-fi_website>
@@ -86,7 +86,7 @@
 			<level>级别</level>
 			<name>名称</name>
 			<trophy_earning>获得奖杯</trophy_earning>
-			<parental_controls>视听者限制</parental_controls>
+			<parental_controls>家长监控</parental_controls>
 			<updated>升级日期</updated>
 			<size>大小</size>
 			<version>版本</version>
@@ -239,7 +239,7 @@
 		<states>
 			<state id = "-1">未知</state>
 			<state id = "0">无法启动</state>
-			<state id = "1">可引导</state>
+			<state id = "1">可以启动</state>
 			<state id = "2">有图像</state>
 			<state id = "3">可进入菜单</state>
 			<state id = "4">可进入游戏-</state>
@@ -531,7 +531,7 @@
 	</performance_overlay>
 
 	<settings name="设定">
-		<theme_background name="主题&背景">
+		<theme_background name="主题&amp;背景">
 			<default>原始</default>
 			<theme name="主题">
 				<find_a_psvita_custom_themes>寻找PSVita自制主题</find_a_psvita_custom_themes>
@@ -554,7 +554,7 @@
 				<add_background>添加背景</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
-		<date_time name="日期&时间">
+		<date_time name="日期&amp;时间">
 			<date_format name ="日期格式">
 				<yyyy_mm_dd>年/月/日</yyyy_mm_dd>
 				<dd_mm_yyyy>日/月/年</dd_mm_yyyy>
@@ -593,7 +593,7 @@
 	</settings>
 
 	<settings_dialog name="设置">
-		<core name="核心">
+		<core name="内核">
 			<modules_mode>模块模式</modules_mode>
 			<modules_list>模块列表</modules_list>
 			<select_modules>选择您所需的模块。</select_modules>
@@ -602,6 +602,12 @@
 			<no_modules>没有模块存在。
 请下载并安装最新的PS Vita固件。</no_modules>
 			<refresh_list>刷新列表</refresh_list>
+			<automatic>自动模式</automatic>
+			<automatic_description>选择自动模式会使用预设的模块列表。</automatic_description>
+			<auto_manual>自动兼手动模式</auto_manual>
+			<auto_manual_description>选择此模式会加载预设模块和从下方列表中选择的模块。</auto_manual_description>
+			<manual>手动模式</manual>
+			<manual_description>选择手动模式会加载从下方列表中选择的模块。</manual_description>
 		</core>
 		<cpu>
 			<unicorn>Unicorn（已弃用）</unicorn>
@@ -733,6 +739,8 @@
 您需要手动将旧文件夹移动到新位置。</reset_emu_path_description>
 			<custom_config_settings>自定义配置设置</custom_config_settings>
 			<clear_custom_config>清除自定义配置</clear_custom_config>
+			<screenshot_image_type>截屏图片类型</screenshot_image_type>
+			<screenshot_format>截屏保存格式</screenshot_format>
 		</emulator>
 		<gui name="图形用户界面">
 			<show_gui>图形用户界面可见</show_gui>
@@ -762,7 +770,7 @@
 			<firmware_font_package_description>一些应用程序需要固件字体包
 以及在图形用户界面中的亚洲区域字体支持。
 通常也强烈建议将其用于图形用户界面。</firmware_font_package_description>
-			<theme_background>主题&背景</theme_background>
+			<theme_background>主题&amp;背景</theme_background>
 			<current_theme_content_id>当前主题内容ID：</current_theme_content_id>
 			<reset_default_theme>重置原始主题</reset_default_theme>
 			<using_theme_background>使用主题背景</using_theme_background>
@@ -786,7 +794,7 @@
 			<timeout_attempts_description>当服务器没有响应时要执行多次尝试。
 如果您有非常不稳定或是非常慢的网络可能会很有用。</timeout_attempts_description>
 			<timeout_sleep>HTTP超时休眠</timeout_sleep>
-			<timeout_sleep_description>当服务器没有响应时尝试休眠时间。
+			<timeout_sleep_description>当服务器没有响应时尝试进入休眠时间。
 如果您有非常不稳定或是非常慢的网络可能会很有用。</timeout_sleep_description>
 			<read_end_attempts>HTTP读取终止尝试</read_end_attempts>
 			<read_end_attempts_description>当没有更多数据可读取时，尝试多次可以提升性能，
