@@ -36,6 +36,7 @@
 #include <boost/algorithm/string/replace.hpp>
 
 #include <pugixml.hpp>
+#include <regex>
 
 namespace gui {
 
@@ -48,48 +49,29 @@ static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::st
     std::string fname = fs::exists(change_info_path / fmt::format("changeinfo_{:0>2d}.xml", emuenv.cfg.sys_lang)) ? fmt::format("changeinfo_{:0>2d}.xml", emuenv.cfg.sys_lang) : "changeinfo.xml";
 
     pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load_file((change_info_path / fname).c_str());
+    if (!doc.load_file((change_info_path / fname).c_str()))
+        return false;
 
-    for (const auto &info : doc.child("changeinfo"))
-        update_history_infos[info.attribute("app_ver").as_double()] = info.text().as_string();
+    for (const auto &info : doc.child("changeinfo")) {
+        double app_ver = info.attribute("app_ver").as_double();
+        std::string text = info.text().as_string();
 
-    for (auto &update : update_history_infos) {
-        if (update.second.find_first_of('\n') != std::string::npos)
-            update.second.erase(update.second.begin() + update.second.find_first_of('\n'));
+        // Replace HTML tags and special character entities
+        text = std::regex_replace(text, std::regex(R"(<li>)"), reinterpret_cast<const char *>(u8"\u30FB"));
+        text = std::regex_replace(text, std::regex(R"(<br/>|<br>|</li>)"), "\n");
+        text = std::regex_replace(text, std::regex(R"(<[^>]+>)"), "");
+        text = std::regex_replace(text, std::regex(R"(&nbsp;)"), " ");
+        text = std::regex_replace(text, std::regex(R"(&reg;)"), reinterpret_cast<const char *>(u8"\u00AE"));
 
-        while (update.second.find("</li>") != std::string::npos)
-            if (update.second.find("</li>") != std::string::npos)
-                update.second.replace(update.second.find("</li>"), 5, "\n");
-        while (update.second.find("<br>") != std::string::npos)
-            if (update.second.find("<br>") != std::string::npos)
-                update.second.replace(update.second.find("<br>"), 4, "\n");
-        while (update.second.find("<br/>") != std::string::npos)
-            if (update.second.find("<br/>") != std::string::npos)
-                update.second.replace(update.second.find("<br/>"), 5, "\n");
-        while (update.second.find("<li>") != std::string::npos)
-            if (update.second.find("<li>") != std::string::npos)
-                update.second.replace(update.second.find("<li>"), 4, reinterpret_cast<const char *>(u8"\u30FB")); // 00B7 or 2022 or 30FB or FF65
-        while (update.second.find('<') != std::string::npos)
-            if (update.second.find('>') + 1 != std::string::npos)
-                update.second.erase(update.second.find('<'), update.second.find('>') + 1 - update.second.find('<'));
-        while (update.second.find("&nbsp;") != std::string::npos)
-            if (update.second.find("&nbsp;") != std::string::npos)
-                update.second.replace(update.second.find("&nbsp;"), 6, " ");
-        while (update.second.find("&reg;") != std::string::npos)
-            if (update.second.find("&reg;") != std::string::npos)
-                update.second.replace(update.second.find("&reg;"), 5, reinterpret_cast<const char *>(u8"\u00AE"));
-
-        bool found_space = false;
-        auto end{ std::remove_if(update.second.begin(), update.second.end(), [&found_space](unsigned ch) {
-            bool is_space = std::isspace(ch);
-            std::swap(found_space, is_space);
-            return found_space && is_space;
-        }) };
-
-        if (end != update.second.begin() && std::isspace(static_cast<unsigned>(end[-1])))
+        // Remove duplicate newlines and spaces
+        auto end = std::unique(text.begin(), text.end(), [](char a, char b) {
+            return std::isspace(a) && std::isspace(b);
+        });
+        if (end != text.begin() && std::isspace(static_cast<unsigned>(end[-1])))
             --end;
+        text.erase(end, text.end());
 
-        update.second.erase(end, update.second.end());
+        update_history_infos[app_ver] = text;
     }
 
     return !update_history_infos.empty();
@@ -190,7 +172,7 @@ static void save_time_apps(GuiState &gui, EmuEnvState &emuenv) {
     const auto time_path{ emuenv.pref_path / "ux0/user/time.xml" };
     const auto save_xml = time_xml.save_file(time_path.c_str());
     if (!save_xml)
-        LOG_ERROR("Fail save xml");
+        LOG_ERROR("Failed to save xml");
 }
 
 void update_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app) {
@@ -552,13 +534,14 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         if (context_dialog == "history") {
             ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + 20.f * SCALE.x, ImGui::GetWindowPos().y + BUTTON_SIZE.y));
             ImGui::BeginChild("##info_update_list", ImVec2(WINDOW_SIZE.x - (30.f * SCALE.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * SCALE.y)), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
-            for (const auto &update : update_history_infos) {
-                ImGui::SetWindowFontScale(1.4f);
-                const auto version_str = fmt::format(fmt::runtime(lang.main["history_version"]), update.first);
+            // Reverse iterator to show the latest update first
+            for (auto it = update_history_infos.rbegin(); it != update_history_infos.rend(); ++it) {
+                ImGui::SetWindowFontScale(1.3f);
+                const auto version_str = fmt::format(fmt::runtime(lang.main["history_version"]), it->first);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", version_str.c_str());
-                ImGui::SetWindowFontScale(1.f);
+                ImGui::SetWindowFontScale(0.9f);
                 ImGui::PushTextWrapPos(WINDOW_SIZE.x - (80.f * SCALE.x));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s\n", update.second.c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s\n", it->second.c_str());
                 ImGui::PopTextWrapPos();
                 ImGui::TextColored(GUI_COLOR_TEXT, "\n");
             }
