@@ -23,8 +23,11 @@ public:
     void SetGyroscope(const Util::Vec3f &gyroscope);
     void SetQuaternion(const Util::Quaternion<SceFloat> &quaternion);
     void SetGyroThreshold(SceFloat threshold);
+    void RotateYaw(SceFloat radians);
 
     void EnableGyroBias(bool enable);
+    void EnableTiltCorrection(bool enable);
+    void EnableDeadband(bool enable);
     void EnableReset(bool reset);
     void ResetRotations();
 
@@ -39,6 +42,8 @@ public:
     [[nodiscard]] bool IsMoving(SceFloat sensitivity) const;
     [[nodiscard]] bool IsCalibrated(SceFloat sensitivity) const;
     SceBool IsGyroBiasEnabled() const;
+    SceBool IsTiltCorrectionEnabled() const;
+    SceBool IsDeadbandEnabled() const;
 
 private:
     void ResetOrientation();
@@ -55,7 +60,7 @@ private:
     Util::Vec3f derivative_error;
 
     // Quaternion containing the device orientation
-    Util::Quaternion<SceFloat> quat{ { 0.0f, 0.0f, 1.0f }, 0.0f };
+    Util::Quaternion<SceFloat> quat{ { 0.0f, 0.0f, -1.0f }, 0.0f };
 
     // Number of full rotations in each axis
     Util::Vec3f rotations;
@@ -80,6 +85,10 @@ private:
 
     // If the provided gyro uses bias correction
     bool bias_enabled = true;
+
+    // Stubbed values
+    bool tilt_correction_enabled = true;
+    bool deadband_enabled = true;
 
     // Use accelerometer values to calculate position
     bool only_accelerometer = true;

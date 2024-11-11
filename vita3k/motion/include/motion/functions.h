@@ -25,5 +25,9 @@ SceFVector3 get_gyroscope(const MotionState &state);
 Util::Quaternion<SceFloat> get_orientation(const MotionState &state);
 SceBool get_gyro_bias_correction(const MotionState &state);
 void set_gyro_bias_correction(MotionState &state, SceBool setValue);
+SceBool get_tilt_correction(MotionState &state);
+void set_tilt_correction(MotionState &state, SceBool setValue);
+SceBool get_deadband(MotionState &state);
+void set_deadband(MotionState &state, SceBool setValue);
 
 void refresh_motion(MotionState &state, CtrlState &ctrl_state);

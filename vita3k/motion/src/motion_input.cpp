@@ -46,8 +46,25 @@ void MotionInput::SetGyroThreshold(SceFloat threshold) {
     gyro_threshold = threshold;
 }
 
+void MotionInput::RotateYaw(SceFloat radians) {
+    const Util::Quaternion<SceFloat> yaw_rotation = {
+        { 0.0f, 0.0f, -std::sin(radians / 2) },
+        std::cos(radians / 2),
+    };
+    quat = yaw_rotation * quat;
+    quat = quat.Normalized();
+}
+
 void MotionInput::EnableGyroBias(bool enable) {
     bias_enabled = enable;
+}
+
+void MotionInput::EnableTiltCorrection(bool enable) {
+    tilt_correction_enabled = enable;
+}
+
+void MotionInput::EnableDeadband(bool enable) {
+    deadband_enabled = enable;
 }
 
 void MotionInput::EnableReset(bool reset) {
@@ -68,6 +85,14 @@ bool MotionInput::IsCalibrated(SceFloat sensitivity) const {
 
 SceBool MotionInput::IsGyroBiasEnabled() const {
     return bias_enabled;
+}
+
+SceBool MotionInput::IsTiltCorrectionEnabled() const {
+    return tilt_correction_enabled;
+}
+
+SceBool MotionInput::IsDeadbandEnabled() const {
+    return deadband_enabled;
 }
 
 void MotionInput::UpdateRotation(SceULong64 elapsed_time) {
@@ -99,9 +124,9 @@ void MotionInput::UpdateOrientation(SceULong64 elapsed_time) {
     const auto normal_accel = accel.Normalized();
     auto rad_gyro = gyro * 3.1415926f * 2;
     const SceFloat swap = rad_gyro.x;
-    rad_gyro.x = rad_gyro.y;
-    rad_gyro.y = -swap;
-    rad_gyro.z = -rad_gyro.z;
+    rad_gyro.x = rad_gyro.z;
+    rad_gyro.z = -rad_gyro.y;
+    rad_gyro.y = swap;
 
     // Clear gyro values if there is no gyro present
     if (only_accelerometer) {
@@ -112,9 +137,9 @@ void MotionInput::UpdateOrientation(SceULong64 elapsed_time) {
 
     // Ignore drift correction if acceleration is not reliable
     if (accel.Length() >= 0.75f && accel.Length() <= 1.25f) {
-        const SceFloat ax = -normal_accel.x;
-        const SceFloat ay = normal_accel.y;
-        const SceFloat az = -normal_accel.z;
+        const SceFloat ax = normal_accel.x;
+        const SceFloat ay = normal_accel.z;
+        const SceFloat az = -normal_accel.y;
 
         // Estimated direction of gravity
         const SceFloat vx = 2.0f * (q2 * q4 - q1 * q3);
@@ -227,9 +252,9 @@ void MotionInput::SetOrientationFromAccelerometer() {
         SceFloat q4 = quat.xyz[2];
 
         Util::Vec3f rad_gyro;
-        const SceFloat ax = -normal_accel.x;
-        const SceFloat ay = normal_accel.y;
-        const SceFloat az = -normal_accel.z;
+        const SceFloat ax = normal_accel.x;
+        const SceFloat ay = normal_accel.z;
+        const SceFloat az = -normal_accel.y;
 
         // Estimated direction of gravity
         const SceFloat vx = 2.0f * (q2 * q4 - q1 * q3);

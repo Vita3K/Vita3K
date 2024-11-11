@@ -44,7 +44,7 @@ SceFVector3 get_gyroscope(const MotionState &state) {
 Util::Quaternion<SceFloat> get_orientation(const MotionState &state) {
     auto quat = state.motion_data.GetOrientation();
     return {
-        { quat.xyz[1], quat.xyz[0], -quat.w },
+        { -quat.xyz[1], -quat.w, quat.xyz[0] },
         -quat.xyz[2],
     };
 }
@@ -55,6 +55,22 @@ SceBool get_gyro_bias_correction(const MotionState &state) {
 
 void set_gyro_bias_correction(MotionState &state, SceBool setValue) {
     state.motion_data.EnableGyroBias(setValue);
+}
+
+SceBool get_tilt_correction(MotionState &state) {
+    return state.motion_data.IsTiltCorrectionEnabled();
+}
+
+void set_tilt_correction(MotionState &state, SceBool setValue) {
+    state.motion_data.EnableTiltCorrection(setValue);
+}
+
+SceBool get_deadband(MotionState &state) {
+    return state.motion_data.IsDeadbandEnabled();
+}
+
+void set_deadband(MotionState &state, SceBool setValue) {
+    state.motion_data.EnableDeadband(setValue);
 }
 
 void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
