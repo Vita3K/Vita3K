@@ -17,15 +17,16 @@
 
 #pragma once
 
-#include <patch/patch.h>
+#include <string>
 #include <util/fs.h>
 #include <util/types.h>
+#include <vector>
 
-#include <string>
+struct Patch {
+    uint8_t seg;
+    uint32_t offset;
+    std::vector<uint8_t> values;
+};
 
-struct KernelState;
-struct MemState;
-struct KernelModule;
-
-SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const fs::path &log_path, const std::vector<Patch> &patches);
-int unload_self(KernelState &kernel, MemState &mem, KernelModule &module);
+std::vector<Patch> get_patches(fs::path &path, const std::string &titleid);
+Patch parse_patch(const std::string &patch);

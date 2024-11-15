@@ -119,6 +119,7 @@ public:
     fs::path pref_path{};
     fs::path static_assets_path{};
     fs::path shared_path{};
+    fs::path patch_path{};
     bool load_exec{};
     std::string load_app_path{};
     std::string load_exec_argv{};
