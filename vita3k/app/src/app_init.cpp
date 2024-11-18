@@ -212,15 +212,7 @@ void init_paths(Root &root_paths) {
         if (env_home != NULL)
             root_paths.set_shared_path(fs::path(env_home) / ".local/share" / app_name / "");
 
-        if (XDG_DATA_DIRS != NULL) {
-            auto env_paths = string_utils::split_string(XDG_DATA_DIRS, ':');
-            for (auto &i : env_paths) {
-                if (fs::exists(fs::path(i) / app_name)) {
-                    root_paths.set_shared_path(fs::path(i) / app_name / "");
-                    break;
-                }
-            }
-        } else if (XDG_DATA_HOME != NULL) {
+        if (XDG_DATA_HOME != NULL) {
             root_paths.set_shared_path(fs::path(XDG_DATA_HOME) / app_name / "");
         }
 
