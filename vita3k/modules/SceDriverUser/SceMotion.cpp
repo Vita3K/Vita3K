@@ -24,9 +24,9 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceMotion);
 
-EXPORT(int, sceMotionGetAngleThreshold) {
+EXPORT(SceFloat, sceMotionGetAngleThreshold) {
     TRACY_FUNC(sceMotionGetAngleThreshold);
-    return UNIMPLEMENTED();
+    return get_angle_threshold(emuenv.motion);
 }
 
 EXPORT(int, sceMotionGetBasicOrientation, SceFVector3 *basicOrientation) {
@@ -211,9 +211,10 @@ EXPORT(int, sceMotionRotateYaw, const float radians) {
     return 0;
 }
 
-EXPORT(int, sceMotionSetAngleThreshold, const float angle) {
+EXPORT(int, sceMotionSetAngleThreshold, SceFloat angle) {
     TRACY_FUNC(sceMotionSetAngleThreshold, angle);
-    return UNIMPLEMENTED();
+    set_angle_threshold(emuenv.motion, angle);
+    return 0;
 }
 
 EXPORT(int, sceMotionSetDeadband, SceBool setValue) {

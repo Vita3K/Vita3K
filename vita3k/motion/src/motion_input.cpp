@@ -62,6 +62,10 @@ void MotionInput::SetDeadband(SceFloat threshold) {
     gyro_deadband = threshold;
 }
 
+void MotionInput::SetAngleThreshold(SceFloat threshold) {
+    angle_threshold = std::clamp(threshold, 0.0f, 45.0f);
+}
+
 void MotionInput::RotateYaw(SceFloat radians) {
     const Util::Quaternion<SceFloat> yaw_rotation = {
         { 0.0f, 0.0f, -std::sin(radians / 2) },
@@ -89,6 +93,10 @@ void MotionInput::EnableReset(bool reset) {
 
 void MotionInput::ResetRotations() {
     rotations = {};
+}
+
+SceFloat MotionInput::GetAngleThreshold() const {
+    return angle_threshold;
 }
 
 void MotionInput::ResetQuaternion() {

@@ -29,5 +29,7 @@ SceBool get_tilt_correction(MotionState &state);
 void set_tilt_correction(MotionState &state, SceBool setValue);
 SceBool get_deadband(MotionState &state);
 void set_deadband(MotionState &state, SceBool setValue);
+SceFloat get_angle_threshold(const MotionState &state);
+void set_angle_threshold(MotionState &state, SceFloat setValue);
 
 void refresh_motion(MotionState &state, CtrlState &ctrl_state);

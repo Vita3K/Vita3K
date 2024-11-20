@@ -26,6 +26,7 @@ public:
     void SetGyroscope(const Util::Vec3f &gyroscope);
     void SetQuaternion(const Util::Quaternion<SceFloat> &quaternion);
     void SetDeadband(SceFloat threshold);
+    void SetAngleThreshold(SceFloat threshold);
     void RotateYaw(SceFloat radians);
 
     void EnableGyroBias(bool enable);
@@ -42,6 +43,7 @@ public:
     [[nodiscard]] Util::Vec3f GetAcceleration() const;
     [[nodiscard]] Util::Vec3f GetGyroscope() const;
     [[nodiscard]] Util::Vec3f GetRotations() const;
+    [[nodiscard]] SceFloat GetAngleThreshold() const;
 
     [[nodiscard]] bool IsMoving(SceFloat sensitivity) const;
     [[nodiscard]] bool IsCalibrated(SceFloat sensitivity) const;
@@ -80,6 +82,9 @@ private:
 
     // Minimum gyro amplitude to detect if the device is moving
     SceFloat gyro_deadband = 0.0f;
+
+    // Minimum angle which basic motion orientation changes value
+    SceFloat angle_threshold = 0.0f;
 
     // Number of invalid sequential data
     SceFloat reset_counter = 0;

@@ -73,6 +73,14 @@ void set_deadband(MotionState &state, SceBool setValue) {
     state.motion_data.EnableDeadband(setValue);
 }
 
+SceFloat get_angle_threshold(const MotionState &state) {
+    return state.motion_data.GetAngleThreshold();
+}
+
+void set_angle_threshold(MotionState &state, SceFloat setValue) {
+    state.motion_data.SetAngleThreshold(setValue);
+}
+
 void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
     if (!state.is_sampling)
         return;
