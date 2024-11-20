@@ -2,11 +2,16 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included
 
+#include <algorithm>
+
 #include "motion/motion_input.h"
 
 MotionInput::MotionInput() {
     // Initialize PID constants with default values
     SetPID(0.3f, 0.005f, 0.0f);
+    SetDeadband(0.007f);
+    ResetQuaternion();
+    ResetRotations();
 }
 
 void MotionInput::SetPID(SceFloat new_kp, SceFloat new_ki, SceFloat new_kd) {
@@ -17,23 +22,34 @@ void MotionInput::SetPID(SceFloat new_kp, SceFloat new_ki, SceFloat new_kd) {
 
 void MotionInput::SetAcceleration(const Util::Vec3f &acceleration) {
     accel = acceleration;
+
+    accel.x = std::clamp(accel.x, -AccelMaxValue, AccelMaxValue);
+    accel.y = std::clamp(accel.y, -AccelMaxValue, AccelMaxValue);
+    accel.z = std::clamp(accel.z, -AccelMaxValue, AccelMaxValue);
 }
 
 void MotionInput::SetGyroscope(const Util::Vec3f &gyroscope) {
+    gyro = gyroscope;
+
     if (bias_enabled) {
-        gyro = gyroscope - gyro_bias;
-    } else {
-        gyro = gyroscope;
+        gyro -= gyro_bias;
     }
+
+    if (deadband_enabled && gyro.Length() < gyro_deadband) {
+        gyro = {};
+    }
+
+    gyro.x = std::clamp(gyro.x, -GyroMaxValue, GyroMaxValue);
+    gyro.y = std::clamp(gyro.y, -GyroMaxValue, GyroMaxValue);
+    gyro.z = std::clamp(gyro.z, -GyroMaxValue, GyroMaxValue);
 
     // Auto adjust drift to minimize drift
     if (!IsMoving(0.1f)) {
         gyro_bias = (gyro_bias * 0.9999f) + (gyroscope * 0.0001f);
     }
 
-    if (gyro.Length2() < gyro_threshold) {
-        gyro = {};
-    } else {
+    // Enable gyro compensation if gyro is active
+    if (gyro.Length() > gyro_deadband) {
         only_accelerometer = false;
     }
 }
@@ -42,8 +58,8 @@ void MotionInput::SetQuaternion(const Util::Quaternion<SceFloat> &quaternion) {
     quat = quaternion;
 }
 
-void MotionInput::SetGyroThreshold(SceFloat threshold) {
-    gyro_threshold = threshold;
+void MotionInput::SetDeadband(SceFloat threshold) {
+    gyro_deadband = threshold;
 }
 
 void MotionInput::RotateYaw(SceFloat radians) {
@@ -73,6 +89,10 @@ void MotionInput::EnableReset(bool reset) {
 
 void MotionInput::ResetRotations() {
     rotations = {};
+}
+
+void MotionInput::ResetQuaternion() {
+    quat = { { 0.0f, 0.0f, -1.0f }, 0.0f };
 }
 
 bool MotionInput::IsMoving(SceFloat sensitivity) const {
@@ -136,7 +156,7 @@ void MotionInput::UpdateOrientation(SceULong64 elapsed_time) {
     }
 
     // Ignore drift correction if acceleration is not reliable
-    if (accel.Length() >= 0.75f && accel.Length() <= 1.25f) {
+    if (tilt_correction_enabled && accel.Length() >= 0.75f && accel.Length() <= 1.25f) {
         const SceFloat ax = normal_accel.x;
         const SceFloat ay = normal_accel.z;
         const SceFloat az = -normal_accel.y;
