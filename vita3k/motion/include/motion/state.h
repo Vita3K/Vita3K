@@ -29,4 +29,5 @@ struct MotionState {
     uint64_t last_accel_timestamp = 0;
 
     bool is_sampling = false;
+    bool is_initialized = true;
 };
