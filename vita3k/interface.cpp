@@ -416,8 +416,9 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     LOG_INFO("Resolution multiplier: {}", emuenv.cfg.resolution_multiplier);
     if (emuenv.ctrl.controllers_num) {
         LOG_INFO("{} Controllers Connected", emuenv.ctrl.controllers_num);
-        for (auto i = 0; i < emuenv.ctrl.controllers_num; i++)
-            LOG_INFO("Controller {}: {}", i, emuenv.ctrl.controllers_name[i]);
+        for (auto controller_it = emuenv.ctrl.controllers.begin(); controller_it != emuenv.ctrl.controllers.end(); ++controller_it) {
+            LOG_INFO("Controller {}: {}", controller_it->second.port, controller_it->second.name);
+        }
         if (emuenv.ctrl.has_motion_support)
             LOG_INFO("Controller has motion support");
     }
