@@ -37,17 +37,7 @@ EXPORT(int, sceMotionGetBasicOrientation, SceFVector3 *basicOrientation) {
     std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
     SceFVector3 accelerometer = get_acceleration(emuenv.motion);
 
-    *basicOrientation = { 0.f, 0.f, 0.f };
-    // get the basic orientation, only one component is not zero and will be 1 or -1
-    // The basic orientation is determined by gravity, so it uses the Accelerometer value.
-    float max_val = std::max({ std::abs(accelerometer.x), std::abs(accelerometer.y), std::abs(accelerometer.z) });
-    if (max_val == std::abs(accelerometer.x)) {
-        basicOrientation->x = accelerometer.x > 0.0f ? -1.0f : 1.0f;
-    } else if (max_val == std::abs(accelerometer.y)) {
-        basicOrientation->y = accelerometer.y > 0.0f ? -1.0f : 1.0f;
-    } else {
-        basicOrientation->z = accelerometer.z > 0.0f ? -1.0f : 1.0f;
-    }
+    *basicOrientation = get_basic_orientation(emuenv.motion);
 
     return 0;
 }
@@ -123,6 +113,7 @@ EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
         motionState->angularVelocity = get_gyroscope(emuenv.motion);
 
         Util::Quaternion dev_quat = get_orientation(emuenv.motion);
+        motionState->basicOrientation = get_basic_orientation(emuenv.motion);
 
         static_assert(sizeof(motionState->deviceQuat) == sizeof(dev_quat));
         memcpy(&motionState->deviceQuat, &dev_quat, sizeof(motionState->deviceQuat));
@@ -152,8 +143,6 @@ EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
             reinterpret_cast<float *>(&motionState->nedMatrix.x.x)[i * 4 + i] = 1;
         }
     }
-
-    CALL_EXPORT(sceMotionGetBasicOrientation, &motionState->basicOrientation);
 
     return 0;
 }

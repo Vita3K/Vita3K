@@ -81,6 +81,10 @@ void set_angle_threshold(MotionState &state, SceFloat setValue) {
     state.motion_data.SetAngleThreshold(setValue);
 }
 
+SceFVector3 get_basic_orientation(const MotionState &state) {
+    return state.motion_data.GetBasicOrientation();
+}
+
 void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
     if (!state.is_sampling)
         return;
@@ -152,6 +156,7 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
 
     state.motion_data.UpdateRotation(gyro_timestamp - state.last_gyro_timestamp);
     state.motion_data.UpdateOrientation(accel_timestamp - state.last_accel_timestamp);
+    state.motion_data.UpdateBasicOrientation();
 
     state.last_gyro_timestamp = gyro_timestamp;
     state.last_accel_timestamp = accel_timestamp;

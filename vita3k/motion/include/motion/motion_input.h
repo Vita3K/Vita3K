@@ -38,11 +38,13 @@ public:
 
     void UpdateRotation(SceULong64 elapsed_time);
     void UpdateOrientation(SceULong64 elapsed_time);
+    void UpdateBasicOrientation();
 
     [[nodiscard]] Util::Quaternion<SceFloat> GetOrientation() const;
     [[nodiscard]] Util::Vec3f GetAcceleration() const;
     [[nodiscard]] Util::Vec3f GetGyroscope() const;
     [[nodiscard]] Util::Vec3f GetRotations() const;
+    [[nodiscard]] SceFVector3 GetBasicOrientation() const;
     [[nodiscard]] SceFloat GetAngleThreshold() const;
 
     [[nodiscard]] bool IsMoving(SceFloat sensitivity) const;
@@ -84,7 +86,13 @@ private:
     SceFloat gyro_deadband = 0.0f;
 
     // Minimum angle which basic motion orientation changes value
-    SceFloat angle_threshold = 0.0f;
+    SceFloat angle_threshold = 20.0f;
+
+    // Current basic orientation of the device
+    SceFVector3 basic_orientation = {};
+
+    // It seems that the basic orientation is determined by gravity
+    SceFVector3 basic_orientation_base = {};
 
     // Number of invalid sequential data
     SceFloat reset_counter = 0;

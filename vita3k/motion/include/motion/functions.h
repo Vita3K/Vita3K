@@ -31,5 +31,6 @@ SceBool get_deadband(MotionState &state);
 void set_deadband(MotionState &state, SceBool setValue);
 SceFloat get_angle_threshold(const MotionState &state);
 void set_angle_threshold(MotionState &state, SceFloat setValue);
+SceFVector3 get_basic_orientation(const MotionState &state);
 
 void refresh_motion(MotionState &state, CtrlState &ctrl_state);

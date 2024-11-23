@@ -230,6 +230,51 @@ void MotionInput::UpdateOrientation(SceULong64 elapsed_time) {
     quat = quat.Normalized();
 }
 
+void MotionInput::UpdateBasicOrientation() {
+    SceFloat angle = angle_threshold * 3.1415926f / 180.0f;
+    SceFloat max_angle_threshold_cos = std::cos(angle);
+    SceFloat max_angle_threshold_sin = std::sin(angle);
+
+    auto unit_accel = accel.Normalized();
+    Util::Vec3f unit_xy = { accel.x, accel.y, 0 };
+    unit_xy = unit_xy.Normalized();
+
+    if (std::abs(unit_accel.z) > max_angle_threshold_cos) {
+        basic_orientation.x = 0;
+        basic_orientation.y = 0;
+        basic_orientation.z = unit_accel.z > 0 ? -1.0f : 1.0f;
+        basic_orientation_base = basic_orientation;
+    } else if (std::abs(unit_accel.z) < max_angle_threshold_sin || !basic_orientation_base.z) {
+        if (basic_orientation.z && std::abs(unit_accel.x) >= std::abs(unit_accel.y) || std::abs(unit_xy.x) > max_angle_threshold_cos) {
+            basic_orientation.x = accel.x > 0 ? -1.0f : 1.0f;
+            basic_orientation.y = 0.0f;
+            basic_orientation.z = 0.0f;
+            basic_orientation_base = basic_orientation;
+        } else if (basic_orientation.z && std::abs(unit_accel.x) < std::abs(unit_accel.y) || std::abs(unit_xy.y) > max_angle_threshold_cos) {
+            basic_orientation.x = 0.0f;
+            basic_orientation.y = accel.y > 0 ? -1.0f : 1.0f;
+            basic_orientation.z = 0.0f;
+            basic_orientation_base = basic_orientation;
+        }
+    }
+    basic_orientation = basic_orientation_base;
+
+    if (basic_orientation.z && std::abs(unit_accel.z) < max_angle_threshold_cos) {
+        basic_orientation.y = -1;
+    } else {
+        if (basic_orientation.x && std::abs(unit_xy.y) > max_angle_threshold_sin) {
+            basic_orientation.y = -1;
+        }
+        if (basic_orientation.y && std::abs(unit_xy.x) > max_angle_threshold_sin) {
+            basic_orientation.y = -1;
+        }
+    }
+}
+
+SceFVector3 MotionInput::GetBasicOrientation() const {
+    return basic_orientation;
+}
+
 Util::Quaternion<float> MotionInput::GetOrientation() const {
     return quat;
 }
