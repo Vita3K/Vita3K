@@ -51,7 +51,7 @@ EXPORT(int, sceTouchDisableTouchForce, SceUInt32 port) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
     touch_set_force_mode(port, false);
-    return 0;
+    return SCE_TOUCH_OK;
 }
 
 EXPORT(int, sceTouchDisableTouchForceExt) {
@@ -70,7 +70,7 @@ EXPORT(int, sceTouchEnableTouchForce, SceUInt32 port) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
     touch_set_force_mode(port, true);
-    return 0;
+    return SCE_TOUCH_OK;
 }
 
 EXPORT(int, sceTouchEnableTouchForceExt) {
@@ -85,84 +85,81 @@ EXPORT(int, sceTouchGetDeviceInfo) {
 
 EXPORT(int, sceTouchGetPanelInfo, SceUInt32 port, SceTouchPanelInfo *pPanelInfo) {
     TRACY_FUNC(sceTouchGetPanelInfo, port, pPanelInfo);
-    switch (port) {
-    case SCE_TOUCH_PORT_FRONT:
-        // Active Area
-        pPanelInfo->minAaX = 0;
-        pPanelInfo->minAaY = 0;
-        pPanelInfo->maxAaX = 1919;
-        pPanelInfo->maxAaY = 1087;
-
-        // Display
-        pPanelInfo->minDispX = 0;
-        pPanelInfo->minDispY = 0;
-        pPanelInfo->maxDispX = 1919;
-        pPanelInfo->maxDispY = 1087;
-
-        // Force
-        pPanelInfo->minForce = 1;
-        pPanelInfo->maxForce = 128;
-
-        return 0;
-    case SCE_TOUCH_PORT_BACK:
-        // Active Area
-        pPanelInfo->minAaX = 0;
-        pPanelInfo->minAaY = 108;
-        pPanelInfo->maxAaX = 1919;
-        pPanelInfo->maxAaY = 889;
-
-        // Display
-        pPanelInfo->minDispX = 0;
-        pPanelInfo->minDispY = 0;
-        pPanelInfo->maxDispX = 1919;
-        pPanelInfo->maxDispY = 1087;
-
-        // Force
-        pPanelInfo->minForce = 1;
-        pPanelInfo->maxForce = 128;
-
-        return 0;
-    default:
-        return SCE_TOUCH_ERROR_INVALID_ARG;
+    if (port >= SCE_TOUCH_PORT_MAX_NUM) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
+    if (pPanelInfo == nullptr) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+
+    // Active Area
+    pPanelInfo->minAaX = 0;
+    pPanelInfo->minAaY = 0;
+    pPanelInfo->maxAaX = 1919;
+    pPanelInfo->maxAaY = 1087;
+
+    // Display
+    pPanelInfo->minDispX = 0;
+    pPanelInfo->minDispY = 0;
+    pPanelInfo->maxDispX = 1919;
+    pPanelInfo->maxDispY = 1087;
+
+    // Force
+    pPanelInfo->minForce = 1;
+    pPanelInfo->maxForce = 128;
+
+    if (port == SCE_TOUCH_PORT_BACK) {
+        pPanelInfo->minAaY = 108;
+        pPanelInfo->maxAaY = 889;
+    }
+
+    return SCE_TOUCH_OK;
 }
 
 EXPORT(int, sceTouchGetPixelDensity, float *p1, float *p2) {
     TRACY_FUNC(sceTouchGetPixelDensity, p1, p2);
-    if (!p1 || !p2)
-        return SCE_TOUCH_ERROR_INVALID_ARG;
-    STUBBED("Return constant values (22.0)");
-    /* In disasmed source this function can return one of two set of values depends of hardware info.
-     * I dont know how to get this info, so I just return one of them.
-     */
-    *p1 = 22.0;
-    *p2 = 22.0;
-    /*
-     *p1 = 17.54;
-     *p2 = 17.54;
-     */
-    return 0;
+    if (p1 == nullptr || p2 == nullptr) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+
+    // This function can return one of two set of values depending on the output of GetHardwareInfo NID 0xCBD6D8BC
+    // for now this value is hardcoded until the function is implemented
+    int hardware_info = 0x30;
+
+    if (hardware_info == 0x30 || hardware_info == 0x31) {
+        *p1 = 22.0f;
+        *p2 = 22.0f;
+    } else {
+        *p1 = 17.54f;
+        *p2 = 17.54f;
+    }
+
+    return SCE_TOUCH_OK;
 }
 
 EXPORT(int, sceTouchGetPixelDensity2, float *p1, float *p2, float *p3, float *p4) {
     TRACY_FUNC(sceTouchGetPixelDensity2, p1, p2, p3, p4);
-    if (!p1 || !p2 || !p3 || !p4)
+    if (p1 == nullptr || p2 == nullptr || p3 == nullptr || p4 == nullptr) {
         return SCE_TOUCH_ERROR_INVALID_ARG;
-    STUBBED("Return constant values (22.0)");
-    /* In disasmed source this function can return one of two set of values depends of hardware info.
-     * I dont know how to get this info, so I just return one of them.
-     */
-    *p1 = 22.0;
-    *p2 = 22.0;
-    *p3 = 22.0;
-    *p4 = 22.0;
-    /*
-     *p1 = 17.54;
-     *p2 = 17.54;
-     *p3 = 17.54;
-     *p4 = 17.54; or 24.23;
-     */
-    return 0;
+    }
+
+    // This function can return one of two set of values depending on the output of GetHardwareInfo NID 0xCBD6D8BC
+    // for now this value is hardcoded until the function is implemented
+    int hardware_info = 0x30;
+
+    if (hardware_info == 0x30 || hardware_info == 0x31) {
+        *p1 = 22.0f;
+        *p2 = 22.0f;
+        *p3 = 22.0f;
+        *p4 = 22.0f;
+    } else {
+        *p1 = 17.54f;
+        *p2 = 17.54f;
+        *p3 = 17.54f;
+        *p4 = 17.54f;
+    }
+
+    return SCE_TOUCH_OK;
 }
 
 EXPORT(int, sceTouchGetProcessInfo) {
@@ -179,7 +176,7 @@ EXPORT(int, sceTouchGetSamplingState, SceUInt32 port, SceTouchSamplingState *pSt
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
     *pState = emuenv.touch.touch_mode[port];
-    return 0;
+    return SCE_TOUCH_OK;
 }
 
 EXPORT(int, sceTouchGetSamplingStateExt) {
@@ -195,6 +192,9 @@ EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
     if (pData == nullptr) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
+    if (nBufs > MAX_TOUCH_BUFFER_SAVED) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
 
     return touch_get(thread_id, emuenv, port, pData, nBufs, true);
 }
@@ -207,12 +207,18 @@ EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
     if (pData == nullptr) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
+    if (nBufs > MAX_TOUCH_BUFFER_SAVED) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
 
     return touch_get(thread_id, emuenv, port, pData, nBufs, true);
 }
 
 EXPORT(int, sceTouchPeekRegion, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs, int region) {
     TRACY_FUNC(sceTouchPeekRegion, port, pData, nBufs, region);
+    if (region > 0xFF) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
     STUBBED("Ignore region");
     return CALL_EXPORT(sceTouchPeek, port, pData, nBufs);
 }
@@ -230,6 +236,10 @@ EXPORT(int, sceTouchRead, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
     if (pData == nullptr) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
+    if (nBufs > MAX_TOUCH_BUFFER_SAVED) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+
     return touch_get(thread_id, emuenv, port, pData, nBufs, false);
 }
 
@@ -239,6 +249,9 @@ EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
     if (pData == nullptr) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+    if (nBufs > MAX_TOUCH_BUFFER_SAVED) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
 
@@ -279,7 +292,7 @@ EXPORT(int, sceTouchSetSamplingState, SceUInt32 port, SceTouchSamplingState stat
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
     emuenv.touch.touch_mode[port] = state;
-    return 0;
+    return SCE_TOUCH_OK;
 }
 
 EXPORT(int, sceTouchSetSamplingStateExt) {
