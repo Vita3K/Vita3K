@@ -20,6 +20,7 @@
 #include <util/types.h>
 
 #define SCE_TOUCH_MAX_REPORT 8
+#define MAX_TOUCH_BUFFER_SAVED 64
 
 struct SDL_ControllerTouchpadEvent;
 struct SDL_TouchFingerEvent;
@@ -30,6 +31,7 @@ enum SceTouchSamplingState {
 };
 
 enum SceTouchErrorCode : uint32_t {
+    SCE_TOUCH_OK = 0x0,
     SCE_TOUCH_ERROR_INVALID_ARG = 0x80350001,
     SCE_TOUCH_ERROR_PRIV_REQUIRED = 0x80350002,
     SCE_TOUCH_ERROR_FATAL = 0x803500FF
@@ -49,6 +51,7 @@ struct SceTouchReport {
     SceUInt8 reserved[8];
     SceUInt16 info;
 };
+static_assert(sizeof(SceTouchReport) == 0x10, "SceTouchReport is an invalid size");
 
 struct SceTouchPanelInfo {
     SceInt16 minAaX;
@@ -63,6 +66,7 @@ struct SceTouchPanelInfo {
     SceUInt8 maxForce;
     SceUInt8 reserved[30];
 };
+static_assert(sizeof(SceTouchPanelInfo) == 0x30, "SceTouchPanelInfo is an invalid size");
 
 struct SceTouchData {
     SceUInt64 timeStamp;
@@ -70,3 +74,4 @@ struct SceTouchData {
     SceUInt32 reportNum;
     SceTouchReport report[SCE_TOUCH_MAX_REPORT];
 };
+static_assert(sizeof(SceTouchData) == 0x90, "SceTouchData is an invalid size");
