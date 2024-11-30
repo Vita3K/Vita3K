@@ -35,7 +35,7 @@ void MotionInput::SetGyroscope(const Util::Vec3f &gyroscope) {
         gyro -= gyro_bias;
     }
 
-    if (deadband_enabled && gyro.Length() < gyro_deadband) {
+    if (deadband_enabled && gyro.Length2() < gyro_deadband2) {
         gyro = {};
     }
 
@@ -49,7 +49,7 @@ void MotionInput::SetGyroscope(const Util::Vec3f &gyroscope) {
     }
 
     // Enable gyro compensation if gyro is active
-    if (gyro.Length() > gyro_deadband) {
+    if (gyro.Length2() > 0) {
         only_accelerometer = false;
     }
 }
@@ -60,6 +60,7 @@ void MotionInput::SetQuaternion(const Util::Quaternion<SceFloat> &quaternion) {
 
 void MotionInput::SetDeadband(SceFloat threshold) {
     gyro_deadband = threshold;
+    gyro_deadband2 = threshold * threshold;
 }
 
 void MotionInput::SetAngleThreshold(SceFloat threshold) {
@@ -237,7 +238,6 @@ void MotionInput::UpdateBasicOrientation() {
 
     auto unit_accel = accel.Normalized();
     Util::Vec3f unit_xy = { accel.x, accel.y, 0 };
-    unit_xy = unit_xy.Normalized();
 
     if (std::abs(unit_accel.z) > max_angle_threshold_cos) {
         basic_orientation.x = 0;
@@ -245,6 +245,7 @@ void MotionInput::UpdateBasicOrientation() {
         basic_orientation.z = unit_accel.z > 0 ? -1.0f : 1.0f;
         basic_orientation_base = basic_orientation;
     } else if (std::abs(unit_accel.z) < max_angle_threshold_sin || !basic_orientation_base.z) {
+        unit_xy = unit_xy.Normalized();
         if (basic_orientation.z && std::abs(unit_accel.x) >= std::abs(unit_accel.y) || std::abs(unit_xy.x) > max_angle_threshold_cos) {
             basic_orientation.x = accel.x > 0 ? -1.0f : 1.0f;
             basic_orientation.y = 0.0f;
@@ -262,6 +263,7 @@ void MotionInput::UpdateBasicOrientation() {
     if (basic_orientation.z && std::abs(unit_accel.z) < max_angle_threshold_cos) {
         basic_orientation.y = -1;
     } else {
+        unit_xy = unit_xy.Normalized();
         if (basic_orientation.x && std::abs(unit_xy.y) > max_angle_threshold_sin) {
             basic_orientation.y = -1;
         }

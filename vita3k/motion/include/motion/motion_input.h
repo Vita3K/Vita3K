@@ -84,6 +84,7 @@ private:
 
     // Minimum gyro amplitude to detect if the device is moving
     SceFloat gyro_deadband = 0.0f;
+    SceFloat gyro_deadband2 = 0.0f;
 
     // Minimum angle which basic motion orientation changes value
     SceFloat angle_threshold = 20.0f;
