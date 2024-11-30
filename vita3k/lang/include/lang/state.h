@@ -306,6 +306,8 @@ struct LangState {
         { "toggle_touch_description", "Toggles between back touch and screen touch." },
         { "toggle_gui_visibility", "Toggle GUI Visibility" },
         { "toggle_gui_visibility_description", "Toggles between showing and hiding the GUI at the top of the screen while the app is running." },
+        { "menu_key", "Focus Menu" },
+        { "menu_key_description", "Focuses on the menu key in the GUI" },
         { "miscellaneous", "Miscellaneous" },
         { "toggle_texture_replacement", "Toggle Texture Replacement" },
         { "take_a_screenshot", "Take A Screenshot" },

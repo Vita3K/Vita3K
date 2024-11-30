@@ -214,6 +214,16 @@ enum ThemePreviewType {
     LOCK,
 };
 
+enum MenuType {
+    MENUTYPE_NONE,
+    MENUTYPE_FILE,
+    MENUTYPE_EMULATION,
+    MENUTYPE_DEBUG,
+    MENUTYPE_CONFIG,
+    MENUTYPE_CONTROL,
+    MENUTYPE_HELP,
+};
+
 inline const std::vector<std::pair<SceSystemParamLang, std::string>> LIST_SYS_LANG = {
     { SCE_SYSTEM_PARAM_LANG_DANISH, "Dansk" },
     { SCE_SYSTEM_PARAM_LANG_GERMAN, "Deutsch" },
@@ -289,6 +299,8 @@ struct GuiState {
 
     bool is_nav_button = false;
     bool is_key_locked = false;
+    bool is_menu_opened = false;
+    MenuType focused_menu = MenuType::MENUTYPE_NONE;
 
     std::vector<std::string> live_area_current_open_apps_list;
     int32_t live_area_app_current_open = -1;

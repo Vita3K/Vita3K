@@ -585,6 +585,9 @@ void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32
         }
     };
 
+    if (gui.is_menu_opened) {
+        return;
+    }
     switch (button) {
     case SCE_CTRL_UP: {
         if (manual_found)

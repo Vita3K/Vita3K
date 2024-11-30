@@ -458,6 +458,10 @@ void browse_home_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t bu
         }
     };
 
+    if (gui.is_menu_opened) {
+        return;
+    }
+
     switch (button) {
     case SCE_CTRL_UP:
         if (emuenv.cfg.apps_list_grid) {

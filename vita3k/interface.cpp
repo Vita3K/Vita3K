@@ -568,6 +568,7 @@ static void take_screenshot(EmuEnvState &emuenv) {
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
     refresh_controllers(emuenv.ctrl, emuenv);
     const auto allow_switch_state = !emuenv.io.title_id.empty() && !gui.vita_area.app_close && !gui.vita_area.home_screen && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog && gui::get_sys_apps_state(gui);
+    auto &io = ImGui::GetIO();
 
     const auto ui_navigation = [&emuenv, &gui, allow_switch_state](const uint32_t sce_ctrl_btn) {
         if (gui.vita_area.app_close) {
@@ -647,6 +648,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         default: break;
         }
     };
+
+    for (int i = 0; i < IM_ARRAYSIZE(io.NavInputs); i++)
+        io.NavInputs[i] = 0.0f;
 
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -744,6 +748,38 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             for (const auto &binding : get_controller_bindings_ext(emuenv)) {
                 if (event.cbutton.button == binding.controller) {
                     ui_navigation(binding.button);
+
+                    switch (binding.button) {
+                    case SCE_CTRL_UP:
+                        io.NavInputs[ImGuiNavInput_DpadUp] = 1.0f;
+                        break;
+                    case SCE_CTRL_RIGHT:
+                        io.NavInputs[ImGuiNavInput_DpadRight] = 1.0f;
+                        break;
+                    case SCE_CTRL_DOWN:
+                        io.NavInputs[ImGuiNavInput_DpadDown] = 1.0f;
+                        break;
+                    case SCE_CTRL_LEFT:
+                        io.NavInputs[ImGuiNavInput_DpadLeft] = 1.0f;
+                        break;
+                    case SCE_CTRL_CIRCLE:
+                        if (emuenv.cfg.sys_button == 1)
+                            io.NavInputs[ImGuiNavInput_Cancel] = 1.0f;
+                        else
+                            io.NavInputs[ImGuiNavInput_Activate] = 1.0f;
+                        break;
+                    case SCE_CTRL_CROSS:
+                        if (emuenv.cfg.sys_button == 1)
+                            io.NavInputs[ImGuiNavInput_Activate] = 1.0f;
+                        else
+                            io.NavInputs[ImGuiNavInput_Cancel] = 1.0f;
+                        break;
+                    case SCE_CTRL_START:
+                        // The menu button only works in home_screen and live_area_screen.
+                        if (gui.vita_area.home_screen || gui.vita_area.live_area_screen)
+                            io.NavInputs[ImGuiNavInput_Menu] = 1.0f;
+                        break;
+                    }
 
                     break;
                 }
