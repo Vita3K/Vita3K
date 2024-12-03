@@ -213,14 +213,21 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
 
 bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_id) {
     std::vector<std::string> theme_bg_name;
+
+    // Set default values of bgm theme
+    std::pair<std::string, std::string> path_bgm = { "pd0", "data/systembgm/home.at9" };
+
+    // Create a map to associate specific system app title IDs with their corresponding theme icon names.
     std::map<std::string, std::string> theme_icon_name = {
         { "NPXS10003", {} },
         { "NPXS10008", {} },
         { "NPXS10015", {} },
-        { "NPXS10026", {} }
+        { "NPXS10026", {} },
+        { "NPXS19999", {} }
     };
 
-    gui.app_selector.sys_apps_icon.clear();
+    // Clear the current theme
+    gui.app_selector.emu_apps_icon.clear();
     gui.current_theme_bg = 0;
     gui.information_bar_color = {};
     gui.theme_backgrounds.clear();
@@ -248,6 +255,12 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                     theme_icon_name["NPXS10015"] = home_property.child("m_settings").child("m_iconFilePath").text().as_string();
                 if (!home_property.child("m_hostCollabo").child("m_iconFilePath").text().empty())
                     theme_icon_name["NPXS10026"] = home_property.child("m_hostCollabo").child("m_iconFilePath").text().as_string();
+                if (!home_property.child("m_power").child("m_iconFilePath").text().empty())
+                    theme_icon_name["NPXS19999"] = home_property.child("m_power").child("m_iconFilePath").text().as_string();
+
+                // Bgm theme
+                if (!home_property.child("m_bgmFilePath").text().empty())
+                    path_bgm = { "ux0", (fs::path("theme") / content_id / home_property.child("m_bgmFilePath").text().as_string()).string() };
 
                 // Home
                 for (const auto &param : home_property.child("m_bgParam")) {
@@ -308,6 +321,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         } else
             LOG_ERROR("theme.xml not found for Content ID: {}, in path: {}", content_id, THEME_XML_PATH);
     } else {
+        // Default theme background
         constexpr std::array<const char *, 5> app_id_bg_list = {
             "NPXS10002",
             "NPXS10006",
@@ -321,6 +335,9 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         }
     }
 
+    // Initialize the theme BGM with the path
+    init_bgm(emuenv, path_bgm);
+
     for (const auto &icon : theme_icon_name) {
         int32_t width = 0;
         int32_t height = 0;
@@ -328,9 +345,11 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
 
         const auto &title_id = icon.first;
         const auto &name = icon.second;
-        if (name.empty())
-            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + title_id + "/sce_sys/icon0.png");
-        else
+        const auto is_shell = title_id == "NPXS19999";
+        if (name.empty()) {
+            const auto basic_icon_path = is_shell ? fs::path("data/internal/icon/power.png") : fs::path("app") / title_id / "sce_sys/icon0.png";
+            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, basic_icon_path);
+        } else
             vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_path / name);
 
         if (buffer.empty()) {
@@ -347,7 +366,8 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
             continue;
         }
 
-        gui.app_selector.sys_apps_icon[title_id].init(gui.imgui_state.get(), data, width, height);
+        const auto app_path = "emu:" + (is_shell ? "vsh/shell" : "app/" + title_id);
+        gui.app_selector.emu_apps_icon[app_path].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 
@@ -504,6 +524,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     if ((ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0))) {
         gui.vita_area.start_screen = false;
+        switch_bgm_state(false);
         gui.vita_area.home_screen = true;
         if (emuenv.cfg.show_info_bar)
             gui.vita_area.information_bar = true;
