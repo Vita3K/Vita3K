@@ -576,7 +576,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             };
             const auto confirm = [&gui, &emuenv]() {
                 const auto app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open] : emuenv.app_path;
-                gui::close_and_run_new_app(gui, emuenv, app_path);
+                gui::close_and_run_new_app(emuenv, app_path);
             };
             switch (sce_ctrl_btn) {
             case SCE_CTRL_CIRCLE:
