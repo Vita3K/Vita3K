@@ -44,7 +44,7 @@ SceFVector3 get_gyroscope(const MotionState &state) {
 Util::Quaternion<SceFloat> get_orientation(const MotionState &state) {
     auto quat = state.motion_data.GetOrientation();
     return {
-        { quat.xyz[1], quat.xyz[0], -quat.w },
+        { -quat.xyz[1], -quat.w, quat.xyz[0] },
         -quat.xyz[2],
     };
 }
@@ -55,6 +55,34 @@ SceBool get_gyro_bias_correction(const MotionState &state) {
 
 void set_gyro_bias_correction(MotionState &state, SceBool setValue) {
     state.motion_data.EnableGyroBias(setValue);
+}
+
+SceBool get_tilt_correction(MotionState &state) {
+    return state.motion_data.IsTiltCorrectionEnabled();
+}
+
+void set_tilt_correction(MotionState &state, SceBool setValue) {
+    state.motion_data.EnableTiltCorrection(setValue);
+}
+
+SceBool get_deadband(MotionState &state) {
+    return state.motion_data.IsDeadbandEnabled();
+}
+
+void set_deadband(MotionState &state, SceBool setValue) {
+    state.motion_data.EnableDeadband(setValue);
+}
+
+SceFloat get_angle_threshold(const MotionState &state) {
+    return state.motion_data.GetAngleThreshold();
+}
+
+void set_angle_threshold(MotionState &state, SceFloat setValue) {
+    state.motion_data.SetAngleThreshold(setValue);
+}
+
+SceFVector3 get_basic_orientation(const MotionState &state) {
+    return state.motion_data.GetBasicOrientation();
 }
 
 void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
@@ -128,6 +156,7 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
 
     state.motion_data.UpdateRotation(gyro_timestamp - state.last_gyro_timestamp);
     state.motion_data.UpdateOrientation(accel_timestamp - state.last_accel_timestamp);
+    state.motion_data.UpdateBasicOrientation();
 
     state.last_gyro_timestamp = gyro_timestamp;
     state.last_accel_timestamp = accel_timestamp;
