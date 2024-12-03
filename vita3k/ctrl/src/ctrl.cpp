@@ -74,6 +74,10 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 const GameControllerPtr controller(SDL_GameControllerOpen(joystick_index), SDL_GameControllerClose);
                 new_controller.controller = controller;
                 new_controller.port = reserve_port(state);
+                if (!new_controller.port) { // Port not available
+                    return;
+                }
+                SDL_GameControllerSetPlayerIndex(controller.get(), new_controller.port - 1);
 
                 new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
                 if (new_controller.has_gyro)
@@ -93,10 +97,9 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
 
                 found_gyro |= new_controller.has_gyro;
                 found_accel |= new_controller.has_accel;
+                new_controller.name = SDL_GameControllerNameForIndex(joystick_index);
 
                 state.controllers.emplace(guid, new_controller);
-                state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
-                state.controllers_has_motion_support[joystick_index] = found_gyro && found_accel;
                 state.controllers_num++;
             }
         }
