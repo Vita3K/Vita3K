@@ -859,6 +859,8 @@ You can earn trophies by using an application that supports the trophy feature.<
 		<grade>Grade</grade>
 		<progress>Progress</progress>
 		<updated>Updated</updated>
+		<advance>Advance</advance>
+		<show_hidden>Show Hidden Trophies</show_hidden>
 	</trophy_collection>
 
 	<user_management>
