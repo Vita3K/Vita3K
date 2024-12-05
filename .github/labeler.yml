@@ -67,10 +67,6 @@ cpu:
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/cpu/**'
-crypto:
-  - changed-files:
-    - any-glob-to-any-file:
-      - 'vita3k/crypto/**'
 ctrl:
   - changed-files:
     - any-glob-to-any-file:
@@ -170,6 +166,10 @@ packages:
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/packages/**'
+patch:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/patch/**'
 regmgr:
   - changed-files:
     - any-glob-to-any-file:
