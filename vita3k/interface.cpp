@@ -203,7 +203,7 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &z
         }
     }
 
-    if (fs::exists(output_path / "sce_sys/package/")) {
+    if (fs::exists(output_path / "sce_sys/package/") && emuenv.app_info.app_title_id.starts_with("PCS")) {
         update_progress();
         if (is_nonpdrm(emuenv, output_path))
             decrypt_progress = 100.f;
