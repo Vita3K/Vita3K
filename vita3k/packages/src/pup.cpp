@@ -177,8 +177,7 @@ static void decrypt_segments(std::ifstream &infile, const fs::path &outdir, cons
     EVP_CIPHER_CTX *cipher_ctx = EVP_CIPHER_CTX_new();
     EVP_CIPHER *cipher = EVP_CIPHER_fetch(nullptr, "AES-128-CTR", nullptr);
     int dec_len = 0;
-
-    const auto scesegs = get_segments(infile, sce_hdr, SCE_KEYS, sysver, selftype);
+    const auto scesegs = get_segments(reinterpret_cast<uint8_t *>(sceheaderbuffer), sce_hdr, SCE_KEYS, sysver, selftype);
     for (const auto &sceseg : scesegs) {
         fs::ofstream outfile(outdir / fs_utils::path_concat(filename, ".seg02"), std::ios::binary);
         infile.seekg(sceseg.offset);
@@ -276,13 +275,6 @@ void install_pup(const fs::path &pref_path, const fs::path &pup_path, const std:
     progress_callback(70);
     if (fs::file_size(pup_dec / "os0.img") > 0) {
         extract_fat(pup_dec, "os0.img", pref_path);
-        for (const auto &file : fs::recursive_directory_iterator(pref_path / "os0")) {
-            if (fs::is_regular_file(file.path())) {
-                if (is_self(file.path())) {
-                    decrypt_fself(file.path(), SCE_KEYS, 0);
-                }
-            }
-        }
     }
     if (fs::file_size(pup_dec / "pd0.img") > 0)
         exfat::extract_exfat(pup_dec, "pd0.img", pref_path);
@@ -290,13 +282,6 @@ void install_pup(const fs::path &pref_path, const fs::path &pup_path, const std:
         extract_fat(pup_dec, "sa0.img", pref_path);
     if (fs::file_size(pup_dec / "vs0.img") > 0) {
         extract_fat(pup_dec, "vs0.img", pref_path);
-        for (const auto &file : fs::recursive_directory_iterator(pref_path / "vs0")) {
-            if (fs::is_regular_file(file.path())) {
-                if (is_self(file.path())) {
-                    decrypt_fself(file.path(), SCE_KEYS, nullptr);
-                }
-            }
-        }
     }
     progress_callback(100);
 }

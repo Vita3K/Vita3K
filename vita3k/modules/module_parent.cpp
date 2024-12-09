@@ -30,6 +30,8 @@
 #include <kernel/state.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
+#include <packages/sce_types.h>
+#include <packages/sfo.h>
 #include <patch/patch.h>
 #include <util/arm.h>
 #include <util/find.h>
@@ -242,6 +244,8 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         LOG_ERROR("Failed to read module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
     }
+
+    module_buffer = decrypt_fself(module_buffer, emuenv.pref_path / "ux0/license" / emuenv.io.title_id / (emuenv.app_info.app_content_id + ".rif"));
 
     // Only load patches for eboot.bin modules
     const std::vector<Patch> patches = module_path.find("eboot.bin") != std::string::npos ? get_patches(emuenv.patch_path, emuenv.io.title_id) : std::vector<Patch>();
