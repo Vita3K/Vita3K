@@ -96,7 +96,7 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
     // Clean User apps list
-    gui.app_selector.user_apps.clear();
+    gui.app_selector.vita_apps.clear();
 
     get_modules_list(gui, emuenv);
     get_sys_apps_title(gui, emuenv);
@@ -380,6 +380,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         app::update_viewport(emuenv);
     }
 
+    set_bgm_volume(emuenv.cfg.bgm_volume);
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
 
@@ -810,6 +811,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.audio["enable_ngs_support"].c_str(), &config.ngs_enable);
         SetTooltipEx(lang.audio["ngs_description"].c_str());
         ImGui::Spacing();
+        ImGui::SliderInt("Bgm Volume", &emuenv.cfg.bgm_volume, 0, 100, "%d %%", ImGuiSliderFlags_AlwaysClamp);
+        SetTooltipEx("Adjusts the background music volume percentage of the theme");
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::EndTabItem();
@@ -1012,7 +1015,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gui.users[emuenv.io.user_id].start_type = "default";
                 save_user(gui, emuenv, emuenv.io.user_id);
                 init_theme_start_background(gui, emuenv, "default");
-                init_apps_icon(gui, emuenv, gui.app_selector.sys_apps);
+                init_apps_icon(gui, emuenv, gui.app_selector.emu_apps);
             }
             ImGui::SameLine();
         }
@@ -1053,7 +1056,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.gui["select_delay_background"].c_str());
         }
         ImGui::Spacing();
-        ImGui::SliderInt(lang.gui["delay_start"].c_str(), &emuenv.cfg.delay_start, 10, 60);
+        ImGui::SliderInt(lang.gui["delay_start"].c_str(), &emuenv.cfg.delay_start, 30, 300);
         SetTooltipEx(lang.gui["select_delay_start"].c_str());
         ImGui::EndTabItem();
     } else

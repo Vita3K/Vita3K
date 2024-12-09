@@ -50,7 +50,7 @@ static void draw_ime_dialog(EmuEnvState &emuenv, DialogState &common_dialog, flo
     }
     ImGui::SameLine();
     auto &common = common_dialog.lang.common;
-    if (ImGui::Button(common["submit"].c_str()) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
+    if (ImGui::Button(common["submit"].c_str())) {
         common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_ENTER;
         common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
         common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
