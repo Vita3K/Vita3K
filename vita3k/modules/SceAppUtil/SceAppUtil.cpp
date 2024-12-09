@@ -18,6 +18,9 @@
 #include <module/module.h>
 
 #include <emuenv/app_util.h>
+
+#include <packages/sce_types.h>
+
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/io.h>
@@ -146,7 +149,7 @@ EXPORT(SceInt32, sceAppUtilAppParamGetInt, SceAppUtilAppParamId paramId, SceInt3
     if (!value)
         return RET_ERROR(SCE_APPUTIL_ERROR_NOT_INITIALIZED);
 
-    *value = emuenv.app_sku_flag;
+    *value = emuenv.app_license.sku_flag;
 
     return 0;
 }

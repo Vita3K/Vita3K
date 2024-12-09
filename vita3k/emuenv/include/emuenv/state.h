@@ -38,6 +38,7 @@ namespace ngs {
 struct State;
 };
 
+struct SceNpDrmLicense;
 struct Config;
 struct CPUProtocolBase;
 struct MemState;
@@ -82,6 +83,7 @@ struct EmuEnvState {
     // declare this first as the unique_ptr need to be initialized before the references
 private:
     std::unique_ptr<sfo::SfoAppInfo> _app_info;
+    std::unique_ptr<SceNpDrmLicense> _app_license;
     std::unique_ptr<Config> _cfg;
     std::unique_ptr<MemState> _mem;
     std::unique_ptr<CtrlState> _ctrl;
@@ -106,6 +108,7 @@ private:
 public:
     // App info contained in its `param.sfo` file
     sfo::SfoAppInfo &app_info;
+    SceNpDrmLicense &app_license;
     std::string app_path{};
     int32_t app_sku_flag{};
     std::string license_content_id{};
