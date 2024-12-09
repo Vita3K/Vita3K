@@ -33,6 +33,7 @@
 #include <kernel/state.h>
 #include <packages/functions.h>
 #include <packages/pkg.h>
+#include <packages/sce_types.h>
 #include <packages/sfo.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
