@@ -41,7 +41,7 @@ void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32
 void browse_pages_manual(GuiState &gui, EmuEnvState &emuenv, const uint32_t button);
 void browse_save_data_dialog(GuiState &gui, EmuEnvState &emuenv, const uint32_t button);
 void browse_users_management(GuiState &gui, EmuEnvState &emuenv, const uint32_t button);
-void close_and_run_new_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
+void close_and_run_new_app(EmuEnvState &emuenv, const std::string &app_path);
 void close_live_area_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void close_system_app(GuiState &gui, EmuEnvState &emuenv);
 void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
