@@ -23,7 +23,7 @@
 #include <gui/functions.h>
 #include <io/state.h>
 #include <kernel/state.h>
-#include <packages/functions.h>
+#include <packages/license.h>
 #include <renderer/state.h>
 
 #include <io/VitaIoDevice.h>
@@ -60,7 +60,6 @@ static std::map<std::string, std::map<std::string, std::map<std::string, ImVec2>
 static std::map<std::string, std::map<std::string, std::string>> target;
 static std::map<std::string, std::map<std::string, uint64_t>> current_item, last_time;
 static std::map<std::string, std::string> type;
-static std::map<std::string, int32_t> sku_flag;
 
 struct Items {
     ImVec2 gate_pos;
@@ -156,16 +155,16 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
     const auto is_ps_app = app_path.starts_with("PCS") || (app_path == "NPXS10007");
     const VitaIoDevice app_device = is_sys_app ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
     const auto APP_INDEX = get_app_index(gui, app_path);
+    const auto TITLE_ID = APP_INDEX->title_id;
 
-    if (is_ps_app && !sku_flag.contains(app_path))
-        sku_flag[app_path] = get_license_sku_flag(emuenv, APP_INDEX->content_id);
+    get_license(emuenv, APP_INDEX->title_id, APP_INDEX->content_id);
 
     if (!gui.live_area_contents.contains(app_path)) {
         auto default_contents = false;
         const auto fw_path{ emuenv.pref_path / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
         const auto APP_PATH{ emuenv.pref_path / app_device._to_string() / "app" / app_path };
-        const auto live_area_path{ fs::path("sce_sys") / ((sku_flag[app_path] == 3) && fs::exists(APP_PATH / "sce_sys/retail/livearea") ? "retail/livearea" : "livearea") };
+        const auto live_area_path{ fs::path("sce_sys") / ((emuenv.license.rif[TITLE_ID].sku_flag == 3) && fs::exists(APP_PATH / "sce_sys/retail/livearea") ? "retail/livearea" : "livearea") };
         auto template_xml{ APP_PATH / live_area_path / "contents/template.xml" };
 
         pugi::xml_document doc;

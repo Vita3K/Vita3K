@@ -685,7 +685,7 @@ std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, cons
         return "";
     }
 
-    const std::string compressed_data((char *)&decrypted_data[0], size);
+    const std::string compressed_data((char *)decrypted_data.data(), size);
     stream.next_in = (const Bytef *)compressed_data.data();
     stream.avail_in = compressed_data.size();
 
@@ -713,277 +713,9 @@ std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, cons
     return decompressed_data;
 }
 
-void self2elf(const fs::path &infile, const fs::path &outfile, KeyStore &SCE_KEYS, unsigned char *klictxt, uint64_t *authid) {
-    std::ifstream filein(infile.native().c_str(), std::ios::binary);
-    std::ofstream fileout(outfile.native().c_str(), std::ios::binary);
-
-    int npdrmtype = 0;
-
-    char sceheaderbuffer[SceHeader::Size];
-    char selfheaderbuffer[SelfHeader::Size];
-    char appinfobuffer[AppInfoHeader::Size];
-    // char verinfobuffer[SceVersionInfo::Size];
-    char controlinfobuffer[SceControlInfo::Size];
-
-    filein.read(sceheaderbuffer, SceHeader::Size);
-    filein.read(selfheaderbuffer, SelfHeader::Size);
-
-    const SceHeader sce_hdr = SceHeader(sceheaderbuffer);
-    const SelfHeader self_hdr = SelfHeader(selfheaderbuffer);
-
-    filein.seekg(self_hdr.appinfo_offset);
-    filein.read(appinfobuffer, AppInfoHeader::Size);
-
-    const AppInfoHeader appinfo_hdr = AppInfoHeader(appinfobuffer);
-    *authid = appinfo_hdr.auth_id;
-
-    // filein.seekg(self_hdr.sceversion_offset);
-    // filein.read(verinfobuffer, SceVersionInfo::Size);
-
-    // const SceVersionInfo verinfo_hdr = SceVersionInfo(verinfobuffer);
-
-    filein.seekg(self_hdr.controlinfo_offset);
-    filein.read(controlinfobuffer, SceControlInfo::Size);
-
-    SceControlInfo controlinfo_hdr = SceControlInfo(controlinfobuffer);
-    auto ci_off = SceControlInfo::Size;
-
-    if (controlinfo_hdr.type == ControlType::DIGEST_SHA256) {
-        // filein.seekg(self_hdr.controlinfo_offset + ci_off);
-        ci_off += SceControlInfoDigest256::Size;
-        // char controldigest256buffer[SceControlInfoDigest256::Size];
-        // filein.read(controldigest256buffer, SceControlInfoDigest256::Size);
-        // const SceControlInfoDigest256 controldigest256 = SceControlInfoDigest256(controldigest256buffer);
-    }
-    filein.seekg(self_hdr.controlinfo_offset + ci_off);
-    filein.read(controlinfobuffer, SceControlInfo::Size);
-    controlinfo_hdr = SceControlInfo(controlinfobuffer);
-    ci_off += SceControlInfo::Size;
-
-    if (controlinfo_hdr.type == ControlType::NPDRM_VITA) {
-        filein.seekg(self_hdr.controlinfo_offset + ci_off);
-        ci_off += SceControlInfoDRM::Size;
-        char controlnpdrmbuffer[SceControlInfoDRM::Size];
-        filein.read(controlnpdrmbuffer, SceControlInfoDRM::Size);
-        const SceControlInfoDRM controlnpdrm = SceControlInfoDRM(controlnpdrmbuffer);
-        npdrmtype = controlnpdrm.npdrm_type;
-    }
-
-    filein.seekg(self_hdr.elf_offset);
-    char dat[ElfHeader::Size];
-    filein.read(dat, ElfHeader::Size);
-    fileout.write(dat, ElfHeader::Size);
-
-    const ElfHeader elf_hdr = ElfHeader(dat);
-    std::vector<ElfPhdr> elf_phdrs;
-    std::vector<SegmentInfo> segment_infos;
-    bool encrypted = false;
-    uint64_t at = ElfHeader::Size;
-
-    for (uint16_t i = 0; i < elf_hdr.e_phnum; i++) {
-        filein.seekg(self_hdr.phdr_offset + i * ElfPhdr::Size);
-        char dat[ElfPhdr::Size];
-        filein.read(dat, ElfPhdr::Size);
-        const ElfPhdr phdr = ElfPhdr(dat);
-        elf_phdrs.push_back(phdr);
-        fileout.write(dat, ElfPhdr::Size);
-        at += ElfPhdr::Size;
-
-        filein.seekg(self_hdr.segment_info_offset + i * SegmentInfo::Size);
-        char segmentinfobuffer[SegmentInfo::Size];
-        filein.read(segmentinfobuffer, SegmentInfo::Size);
-        const SegmentInfo segment_info = SegmentInfo(segmentinfobuffer);
-        segment_infos.push_back(segment_info);
-
-        if (segment_info.plaintext == SecureBool::NO)
-            encrypted = true;
-    }
-
-    std::vector<SceSegment> scesegs;
-
-    if (encrypted) {
-        scesegs = get_segments(filein, sce_hdr, SCE_KEYS, appinfo_hdr.sys_version, appinfo_hdr.self_type, npdrmtype, klictxt);
-    }
-
-    EVP_CIPHER_CTX *cipher_ctx = EVP_CIPHER_CTX_new();
-    EVP_CIPHER *cipher = EVP_CIPHER_fetch(nullptr, "AES-128-CTR", nullptr);
-    int dec_len = 0;
-
-    for (uint16_t i = 0; i < elf_hdr.e_phnum; i++) {
-        int idx = 0;
-
-        if (!scesegs.empty())
-            idx = scesegs[i].idx;
-        else
-            idx = i;
-        if (elf_phdrs[idx].p_filesz == 0)
-            continue;
-
-        const int pad_len = elf_phdrs[idx].p_offset - at;
-        if (pad_len < 0)
-            LOG_ERROR("ELF p_offset Invalid");
-
-        std::vector<char> padding;
-        for (int i = 0; i < pad_len; i++) {
-            padding.push_back('\0');
-        }
-
-        fileout.write(padding.data(), pad_len);
-
-        at += pad_len;
-
-        filein.seekg(segment_infos[idx].offset);
-        std::vector<unsigned char> dat(segment_infos[idx].size);
-        filein.read((char *)&dat[0], segment_infos[idx].size);
-
-        std::vector<unsigned char> decrypted_data(segment_infos[idx].size);
-        if (segment_infos[idx].plaintext == SecureBool::NO) {
-            EVP_DecryptInit_ex(cipher_ctx, cipher, nullptr, reinterpret_cast<const unsigned char *>(scesegs[i].key.c_str()), reinterpret_cast<const unsigned char *>(scesegs[i].iv.c_str()));
-            EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
-            EVP_DecryptUpdate(cipher_ctx, decrypted_data.data(), &dec_len, dat.data(), segment_infos[idx].size);
-            EVP_DecryptFinal_ex(cipher_ctx, decrypted_data.data() + dec_len, &dec_len);
-        }
-
-        if (segment_infos[idx].compressed == SecureBool::YES) {
-            const std::string decompressed_data = decompress_segments(decrypted_data, segment_infos[idx].size);
-            segment_infos[idx].compressed = SecureBool::NO;
-            fileout.write(decompressed_data.c_str(), decompressed_data.length());
-            at += decompressed_data.length();
-        } else {
-            fileout.write((char *)&decrypted_data[0], segment_infos[idx].size);
-            at += segment_infos[idx].size;
-        }
-    }
-    filein.close();
-    fileout.close();
-
-    EVP_CIPHER_CTX_free(cipher_ctx);
-    EVP_CIPHER_free(cipher);
-}
-
-// Credits to the vitasdk team/contributors for vita-make-fself https://github.com/vitasdk/vita-toolchain/blob/master/src/vita-make-fself.c
-
-void make_fself(const fs::path &input_file, const fs::path &output_file, uint64_t authid) {
-    std::ifstream filein(input_file.native().c_str(), std::ios::binary);
-    std::ofstream fileout(output_file.native().c_str(), std::ios::binary);
-
-    uint64_t file_size = fs::file_size(input_file);
-
-    std::vector<char> input(file_size);
-    filein.read(&input[0], file_size);
-    filein.close();
-
-    ElfHeader ehdr = ElfHeader(&input[0]);
-
-    SCE_header hdr{};
-    hdr.magic = SCE_MAGIC;
-    hdr.version = 3;
-    hdr.sdk_type = 0xC0;
-    hdr.header_type = 1;
-    hdr.metadata_offset = 0x600;
-    hdr.header_len = HEADER_LENGTH;
-    hdr.elf_filesize = file_size;
-    hdr.self_offset = 4;
-    hdr.appinfo_offset = 0x80;
-    hdr.elf_offset = sizeof(SCE_header) + sizeof(SCE_appinfo);
-    hdr.phdr_offset = hdr.elf_offset + ElfHeader::Size;
-    hdr.phdr_offset = (hdr.phdr_offset + 0xf) & ~0xf; // align
-    hdr.section_info_offset = hdr.phdr_offset + ElfPhdr::Size * ehdr.e_phnum;
-    hdr.sceversion_offset = hdr.section_info_offset + sizeof(segment_info) * ehdr.e_phnum;
-    hdr.controlinfo_offset = hdr.sceversion_offset + sizeof(SCE_version);
-    hdr.controlinfo_size = sizeof(SCE_controlinfo_5) + sizeof(SCE_controlinfo_6) + sizeof(SCE_controlinfo_7);
-    hdr.self_filesize = 0;
-
-    uint32_t offset_to_real_elf = HEADER_LEN;
-
-    SCE_appinfo appinfo{};
-    appinfo.authid = authid;
-    appinfo.vendor_id = 0;
-    appinfo.self_type = 8;
-    appinfo.version = 0x1000000000000;
-    appinfo.padding = 0;
-
-    SCE_version ver{};
-    ver.unk1 = 1;
-    ver.unk2 = 0;
-    ver.unk3 = 16;
-    ver.unk4 = 0;
-
-    SCE_controlinfo_5 control_5{};
-    control_5.common.type = 5;
-    control_5.common.size = sizeof(control_5);
-    control_5.common.unk = 1;
-    SCE_controlinfo_6 control_6{};
-    control_6.common.type = 6;
-    control_6.common.size = sizeof(control_6);
-    control_6.common.unk = 1;
-    control_6.is_used = 1;
-    SCE_controlinfo_7 control_7{};
-    control_7.common.type = 7;
-    control_7.common.size = sizeof(control_7);
-
-    char empty_buffer[ElfHeader::Size]{};
-    ElfHeader myhdr = ElfHeader(empty_buffer);
-    memcpy(&myhdr.e_ident_1, "\177ELF\1\1\1", 8);
-    myhdr.e_type = ehdr.e_type;
-    myhdr.e_machine = 0x28;
-    myhdr.e_version = 1;
-    myhdr.e_entry = ehdr.e_entry;
-    myhdr.e_phoff = 0x34;
-    myhdr.e_flags = 0x05000000U;
-    myhdr.e_ehsize = 0x34;
-    myhdr.e_phentsize = 0x20;
-    myhdr.e_phnum = ehdr.e_phnum;
-
-    fileout.seekp(hdr.appinfo_offset, std::ios_base::beg);
-    fileout.write((char *)&appinfo, sizeof(appinfo));
-
-    fileout.seekp(hdr.elf_offset, std::ios_base::beg);
-    fileout.write((char *)&myhdr, ElfHeader::Size);
-
-    fileout.seekp(hdr.phdr_offset, std::ios_base::beg);
-    for (int i = 0; i < ehdr.e_phnum; ++i) {
-        ElfPhdr phdr = ElfPhdr(&input[0] + ehdr.e_phoff + ehdr.e_phentsize * i);
-        if (phdr.p_align > 0x1000)
-            phdr.p_align = 0x1000;
-        fileout.write((char *)&phdr, sizeof(phdr));
-    }
-
-    fileout.seekp(hdr.section_info_offset, std::ios_base::beg);
-    for (int i = 0; i < ehdr.e_phnum; ++i) {
-        ElfPhdr phdr = ElfPhdr(&input[0] + ehdr.e_phoff + ehdr.e_phentsize * i);
-        segment_info segment_info{};
-        segment_info.offset = offset_to_real_elf + phdr.p_offset;
-        segment_info.length = phdr.p_filesz;
-        segment_info.compression = 1;
-        segment_info.encryption = 2;
-        fileout.write((char *)&segment_info, sizeof(segment_info));
-    }
-
-    fileout.seekp(hdr.sceversion_offset, std::ios_base::beg);
-    fileout.write((char *)&ver, sizeof(ver));
-
-    fileout.seekp(hdr.controlinfo_offset, std::ios_base::beg);
-    fileout.write((char *)&control_5, sizeof(control_5));
-    fileout.write((char *)&control_6, sizeof(control_6));
-    fileout.write((char *)&control_7, sizeof(control_7));
-
-    fileout.seekp(HEADER_LEN, std::ios_base::beg);
-    fileout.write(&input[0], file_size);
-
-    fileout.seekp(0, std::ios_base::end);
-    hdr.self_filesize = fileout.tellp();
-    fileout.seekp(0, std::ios_base::beg);
-
-    fileout.write((char *)&hdr, sizeof(hdr));
-
-    fileout.close();
-}
-
-std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, const uint64_t sysver, const SelfType self_type, int keytype, unsigned char *klictxt) {
-    file.seekg(sce_hdr.metadata_offset + 48);
+std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, const uint64_t sysver, const SelfType self_type, int keytype, const uint8_t *klic) {
     std::vector<char> dat(sce_hdr.header_length - sce_hdr.metadata_offset - 48);
-    file.read(&dat[0], sce_hdr.header_length - sce_hdr.metadata_offset - 48);
+    memcpy(dat.data(), &input[sce_hdr.metadata_offset + 48], sce_hdr.header_length - sce_hdr.metadata_offset - 48);
 
     const std::string key = SCE_KEYS.get(KeyType::METADATA, sce_hdr.sce_type, sysver, sce_hdr.key_revision, self_type).key;
     const std::string iv = SCE_KEYS.get(KeyType::METADATA, sce_hdr.sce_type, sysver, sce_hdr.key_revision, self_type).iv;
@@ -1007,18 +739,18 @@ std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_h
 
         EVP_DecryptInit_ex(cipher_ctx, cipher128, nullptr, np_key_vec.data(), np_iv_vec.data());
         EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
-        EVP_DecryptUpdate(cipher_ctx, predec, &dec_len, klictxt, 16);
+        EVP_DecryptUpdate(cipher_ctx, predec, &dec_len, klic, 16);
         EVP_DecryptFinal_ex(cipher_ctx, predec + dec_len, &dec_len);
 
         unsigned char input_data[MetadataInfo::Size];
-        std::copy(&dat[0], &dat[64], input_data);
+        std::copy(dat.data(), &dat[MetadataInfo::Size], input_data);
         EVP_DecryptInit_ex(cipher_ctx, cipher128, nullptr, predec, np_iv_vec.data());
         EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
         EVP_DecryptUpdate(cipher_ctx, dec_in, &dec_len, input_data, MetadataInfo::Size);
         EVP_DecryptFinal_ex(cipher_ctx, predec + dec_len, &dec_len);
 
     } else {
-        std::copy(&dat[0], &dat[64], dec_in);
+        std::copy(dat.data(), &dat[MetadataInfo::Size], dec_in);
     }
     unsigned char dec[64];
 
@@ -1033,14 +765,14 @@ std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_h
 
     std::vector<unsigned char> dec1(sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
     std::vector<unsigned char> input_data(sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
-    memcpy(&input_data[0], &dat[64], sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
+    memcpy(input_data.data(), &dat[MetadataInfo::Size], sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
     EVP_DecryptInit_ex(cipher_ctx, cipher128, nullptr, metadata_info.key, metadata_info.iv);
     EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
     EVP_DecryptUpdate(cipher_ctx, dec1.data(), &dec_len, input_data.data(), sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
-    EVP_DecryptFinal_ex(cipher_ctx, dec1.data() + dec_len, &dec_len);
+    EVP_DecryptFinal_ex(cipher_ctx, &dec1[dec_len], &dec_len);
 
     unsigned char dec2[MetadataHeader::Size];
-    std::copy(&dec1[0], &dec1[MetadataHeader::Size], dec2);
+    std::copy(dec1.data(), &dec1[MetadataHeader::Size], dec2);
     MetadataHeader metadata_hdr = MetadataHeader((char *)dec2);
 
     std::vector<SceSegment> segs;
@@ -1048,14 +780,14 @@ std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_h
     std::vector<std::string> vault;
 
     for (uint32_t i = 0; i < metadata_hdr.key_count; i++) {
-        std::string key(&dec1[0] + (start + (16 * i)), &dec1[0] + (start + (16 * (i + 1))));
+        std::string key(&dec1[start + (16 * i)], &dec1[start + (16 * (i + 1))]);
         vault.push_back(key);
     }
 
     for (uint32_t i = 0; i < metadata_hdr.section_count; i++) {
         std::vector<unsigned char> dec3((MetadataHeader::Size + i * MetadataSection::Size + MetadataSection::Size) - (MetadataHeader::Size + i * MetadataSection::Size));
-        memcpy(&dec3[0], &dec1[0] + (MetadataHeader::Size + i * MetadataSection::Size), (MetadataHeader::Size + i * MetadataSection::Size + MetadataSection::Size) - (MetadataHeader::Size + i * MetadataSection::Size));
-        MetadataSection metsec = MetadataSection((char *)&dec3[0]);
+        memcpy(dec3.data(), &dec1[MetadataHeader::Size + i * MetadataSection::Size], (MetadataHeader::Size + i * MetadataSection::Size + MetadataSection::Size) - (MetadataHeader::Size + i * MetadataSection::Size));
+        MetadataSection metsec = MetadataSection((char *)dec3.data());
 
         if (metsec.encryption == EncryptionType::AES128CTR) {
             segs.push_back({ metsec.offset, metsec.seg_idx, metsec.size, metsec.compression == CompressionType::DEFLATE, vault[metsec.key_idx], vault[metsec.iv_idx] });
@@ -1101,20 +833,245 @@ std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader
     }
 }
 
-void decrypt_fself(const fs::path &file_path, KeyStore &SCE_KEYS, unsigned char *klictxt) {
-    auto np = file_path;
-    np.replace_extension(np.extension().string() + ".elf");
-    uint64_t authid = 0x2F00000000000001ULL;
-    self2elf(file_path, np, SCE_KEYS, klictxt, &authid);
-    fs::rename(np, file_path);
-    np = file_path;
-    np.replace_extension(np.extension().string() + ".fself");
-    make_fself(file_path, np, authid);
-    fs::rename(np, file_path);
-}
+std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8_t *klic) {
+    const SCE_header &self_header = *reinterpret_cast<const SCE_header *>(fself.data());
+    const segment_info *const seg_infos = reinterpret_cast<const segment_info *>(&fself[self_header.section_info_offset]);
+    const AppInfoHeader app_info_hdr = AppInfoHeader((char *)&fself[self_header.appinfo_offset]);
 
-bool is_self(const fs::path &file_path) {
-    const auto extension = file_path.filename().extension();
-    const auto is_self = ((extension == ".suprx") || (extension == ".skprx") || (extension == ".self"));
-    return (is_self || (file_path.filename() == "eboot.bin"));
+    // Check the encryption self type
+    if (seg_infos->encryption == 2)
+        return fself; // Self is not encrypted, return the original self
+
+    // Check if the self is an app and if a klic have all 0 inside it
+    const auto is_app = app_info_hdr.self_type == SelfType::APP;
+    if (is_app && std::all_of(klic, klic + 16, [](uint8_t i) { return i == 0; })) {
+        LOG_ERROR("No klic provided for encrypted App");
+        return {};
+    }
+
+    // Get the keyset for the self
+    KeyStore SCE_KEYS;
+    register_keys(SCE_KEYS, 1);
+    uint64_t authid = 0x2F00000000000001ULL;
+
+    // Extract the elf from the self
+    std::vector<uint8_t> elf;
+    int npdrmtype = 0;
+
+    const SceHeader sce_hdr = SceHeader((char *)fself.data());
+    const SelfHeader self_hdr = SelfHeader((char *)&fself[SceHeader::Size]);
+    authid = app_info_hdr.auth_id;
+
+    // Get the control info
+    SceControlInfo control_info = SceControlInfo((char *)&fself[self_hdr.controlinfo_offset]);
+    auto ci_off = SceControlInfo::Size;
+
+    // Check if the control info is a digest
+    if (control_info.type == ControlType::DIGEST_SHA256)
+        ci_off += SceControlInfoDigest256::Size;
+
+    control_info = SceControlInfo((char *)&fself[self_hdr.controlinfo_offset + ci_off]);
+
+    ci_off += SceControlInfo::Size;
+
+    // Check if the control info is a npdrm type
+    if (control_info.type == ControlType::NPDRM_VITA) {
+        const SceControlInfoDRM controlnpdrm = SceControlInfoDRM((char *)&fself[self_hdr.controlinfo_offset + ci_off]);
+        npdrmtype = controlnpdrm.npdrm_type;
+    }
+
+    // Extract the elf from the encrypted self
+    const ElfHeader elf_hdr = ElfHeader((char *)&fself[self_hdr.elf_offset]);
+    elf.insert(elf.end(), (uint8_t *)&elf_hdr, (uint8_t *)&elf_hdr + ElfHeader::Size);
+
+    // Extract the phdrs from the encrypted self
+    std::vector<ElfPhdr> elf_phdrs;
+    std::vector<SegmentInfo> segment_infos;
+    bool encrypted = false;
+    uint64_t at = ElfHeader::Size;
+
+    for (uint16_t i = 0; i < elf_hdr.e_phnum; i++) {
+        const ElfPhdr phdr = ElfPhdr((char *)&fself[self_hdr.phdr_offset + (i * ElfPhdr::Size)]);
+        elf_phdrs.push_back(phdr);
+        elf.insert(elf.end(), (uint8_t *)&phdr, (uint8_t *)&phdr + ElfPhdr::Size);
+        at += ElfPhdr::Size;
+
+        const SegmentInfo segment_info = SegmentInfo((char *)&fself[self_hdr.segment_info_offset + (i * SegmentInfo::Size)]);
+        segment_infos.push_back(segment_info);
+
+        if (segment_info.plaintext == SecureBool::NO)
+            encrypted = true;
+    }
+
+    std::vector<SceSegment> scesegs;
+
+    if (encrypted)
+        scesegs = get_segments(fself.data(), sce_hdr, SCE_KEYS, app_info_hdr.sys_version, app_info_hdr.self_type, npdrmtype, klic);
+
+    EVP_CIPHER_CTX *cipher_ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER *cipher = EVP_CIPHER_fetch(nullptr, "AES-128-CTR", nullptr);
+    int dec_len = 0;
+
+    for (uint16_t i = 0; i < elf_hdr.e_phnum; i++) {
+        int idx = 0;
+
+        if (!scesegs.empty())
+            idx = scesegs[i].idx;
+        else
+            idx = i;
+        if (elf_phdrs[idx].p_filesz == 0)
+            continue;
+
+        const int pad_len = elf_phdrs[idx].p_offset - at;
+        if (pad_len < 0)
+            LOG_ERROR("ELF p_offset Invalid");
+
+        elf.resize(elf.size() + pad_len);
+
+        at += pad_len;
+
+        std::vector<unsigned char> decrypted_data(segment_infos[idx].size);
+        if (segment_infos[idx].plaintext == SecureBool::NO) {
+            EVP_DecryptInit_ex(cipher_ctx, cipher, nullptr, reinterpret_cast<const unsigned char *>(scesegs[i].key.c_str()), reinterpret_cast<const unsigned char *>(scesegs[i].iv.c_str()));
+            EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
+            EVP_DecryptUpdate(cipher_ctx, decrypted_data.data(), &dec_len, &fself[segment_infos[idx].offset], segment_infos[idx].size);
+            EVP_DecryptFinal_ex(cipher_ctx, &decrypted_data[dec_len], &dec_len);
+        }
+
+        if (segment_infos[idx].compressed == SecureBool::YES) {
+            const std::string decompressed_data = decompress_segments(decrypted_data, segment_infos[idx].size);
+            segment_infos[idx].compressed = SecureBool::NO;
+            elf.insert(elf.end(), decompressed_data.begin(), decompressed_data.end());
+            at += decompressed_data.length();
+        } else {
+            elf.insert(elf.end(), decrypted_data.data(), &decrypted_data[segment_infos[idx].size]);
+            at += segment_infos[idx].size;
+        }
+    }
+
+    EVP_CIPHER_CTX_free(cipher_ctx);
+    EVP_CIPHER_free(cipher);
+
+    // Credits to the vitasdk team/contributors for vita-make-fself https://github.com/vitasdk/vita-toolchain/blob/master/src/vita-make-fself.c
+
+    // Create a new self with the extracted elf
+    std::vector<uint8_t> decrypted_self(HEADER_LEN + elf.size());
+    ElfHeader ehdr = ElfHeader((char *)elf.data());
+
+    // Create a new header
+    SCE_header hdr{
+        .magic = SCE_MAGIC,
+        .version = 3,
+        .sdk_type = 0xC0,
+        .header_type = 1,
+        .metadata_offset = 0x600,
+        .header_len = HEADER_LENGTH,
+        .elf_filesize = elf.size(),
+        .self_filesize = HEADER_LEN + elf.size(),
+        .self_offset = 4,
+        .appinfo_offset = 0x80,
+        .elf_offset = sizeof(SCE_header) + sizeof(SCE_appinfo),
+        .phdr_offset = (hdr.elf_offset + ElfHeader::Size + 0xf) & ~0xf,
+        .section_info_offset = (hdr.phdr_offset + ElfPhdr::Size) * ehdr.e_phnum,
+        .sceversion_offset = hdr.section_info_offset + sizeof(segment_info) * ehdr.e_phnum,
+        .controlinfo_offset = hdr.sceversion_offset + sizeof(SCE_version),
+        .controlinfo_size = sizeof(SCE_controlinfo_5) + sizeof(SCE_controlinfo_6) + sizeof(SCE_controlinfo_7),
+    };
+
+    // Copy the header to the new self
+    memcpy(decrypted_self.data(), &hdr, sizeof(hdr));
+
+    uint32_t offset_to_real_elf = HEADER_LEN;
+
+    // Create a new app info
+    SCE_appinfo appinfo{
+        .authid = authid,
+        .vendor_id = 0,
+        .self_type = 8,
+        .version = 0x1000000000000,
+        .padding = 0
+    };
+
+    // Create a new version info
+    SCE_version ver{
+        .unk1 = 1,
+        .unk2 = 0,
+        .unk3 = 16,
+        .unk4 = 0
+    };
+
+    // Create a new control info
+    SCE_controlinfo_5 control_5{
+        .common = {
+            .type = 5,
+            .size = sizeof(control_5),
+            .unk = 1 }
+    };
+    SCE_controlinfo_6 control_6{
+        .common = {
+            .type = 6,
+            .size = sizeof(control_6),
+            .unk = 1 },
+        .is_used = 1
+    };
+    SCE_controlinfo_7 control_7{
+        .common = {
+            .type = 7,
+            .size = sizeof(control_7) }
+    };
+
+    // Create a new elf header
+    char empty_buffer[ElfHeader::Size]{};
+    ElfHeader myhdr = ElfHeader(empty_buffer);
+    memcpy(&myhdr.e_ident_1, "\177ELF\1\1\1", 8);
+    myhdr.e_type = ehdr.e_type;
+    myhdr.e_machine = 0x28;
+    myhdr.e_version = 1;
+    myhdr.e_entry = ehdr.e_entry;
+    myhdr.e_phoff = 0x34;
+    myhdr.e_flags = 0x05000000U;
+    myhdr.e_ehsize = 0x34;
+    myhdr.e_phentsize = 0x20;
+    myhdr.e_phnum = ehdr.e_phnum;
+
+    // Copy the app info to the decrypted self
+    memcpy(&decrypted_self[hdr.appinfo_offset], &appinfo, sizeof(appinfo));
+
+    // Copy the elf header to the decrypted self
+    memcpy(&decrypted_self[hdr.elf_offset], &myhdr, ElfHeader::Size);
+
+    // Copy the phdrs to the decrypted self
+    for (int i = 0; i < ehdr.e_phnum; ++i) {
+        ElfPhdr phdr = ElfPhdr((char *)&elf[ehdr.e_phoff + (ehdr.e_phentsize * i)]);
+        if (phdr.p_align > 0x1000)
+            phdr.p_align = 0x1000;
+        memcpy(&decrypted_self[hdr.phdr_offset + (ElfPhdr::Size * i)], &phdr, ElfPhdr::Size);
+
+        // Copy the segment info to the decrypted self
+        segment_info segment_info{
+            .offset = offset_to_real_elf + phdr.p_offset,
+            .length = phdr.p_filesz,
+            .compression = 1,
+            .encryption = 2,
+        };
+        memcpy(&decrypted_self[hdr.section_info_offset + (SegmentInfo::Size * i)], &segment_info, SegmentInfo::Size);
+    }
+
+    auto current_offset = hdr.sceversion_offset;
+    const auto copy_data = [&current_offset, &decrypted_self](const void *data, const size_t size) {
+        memcpy(&decrypted_self[current_offset], data, size);
+        current_offset += size;
+    };
+
+    // Copy the version and control info to the decrypted self
+    copy_data(&ver, sizeof(ver));
+    copy_data(&control_5, sizeof(control_5));
+    copy_data(&control_6, sizeof(control_6));
+    copy_data(&control_7, sizeof(control_7));
+
+    // Copy the elf to the decrypted self
+    memcpy(&decrypted_self[HEADER_LEN], elf.data(), elf.size());
+
+    // Return the decrypted self
+    return decrypted_self;
 }

@@ -31,6 +31,7 @@
 #include <config/state.h>
 #include <emuenv/state.h>
 #include <packages/functions.h>
+#include <packages/license.h>
 #include <packages/pkg.h>
 #include <packages/sce_types.h>
 #include <packages/sfo.h>
@@ -70,17 +71,6 @@ bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, co
 
     fs::remove_all(title_id_src);
     fs::rename(title_id_dst, title_id_src);
-
-    KeyStore SCE_KEYS;
-    register_keys(SCE_KEYS, 1);
-    std::vector<uint8_t> temp_klicensee = get_temp_klicensee(zRIF);
-
-    for (const auto &file : fs::recursive_directory_iterator(title_id_src)) {
-        if (is_self(file.path())) {
-            decrypt_fself(file.path(), SCE_KEYS, temp_klicensee.data());
-            LOG_INFO("Decrypted {} with klicensee {}", file.path(), byte_array_to_string(temp_klicensee.data(), 16));
-        }
-    }
 
     return true;
 }
@@ -323,12 +313,6 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         fs::remove_all(title_id_src);
         fs::rename(title_id_dst, title_id_src);
 
-        for (const auto &file : fs::recursive_directory_iterator(title_id_src)) {
-            if (is_self(file.path())) {
-                decrypt_fself(file.path(), SCE_KEYS, temp_klicensee.data());
-                LOG_INFO("Decrypted {} with klicensee {}", file.path(), byte_array_to_string(temp_klicensee.data(), 16));
-            }
-        }
         break;
     case PkgType::PKG_TYPE_VITA_DLC:
 

@@ -106,6 +106,7 @@ struct IOState {
     } device_paths;
 
     std::string addcont;
+    std::string content_id;
     std::string savedata;
     std::string title_id;
     std::string app_path;

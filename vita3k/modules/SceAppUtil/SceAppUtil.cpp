@@ -22,6 +22,7 @@
 #include <io/functions.h>
 #include <io/io.h>
 #include <io/vfs.h>
+#include <packages/license.h>
 #include <util/safe_time.h>
 #include <util/tracy.h>
 
@@ -146,7 +147,7 @@ EXPORT(SceInt32, sceAppUtilAppParamGetInt, SceAppUtilAppParamId paramId, SceInt3
     if (!value)
         return RET_ERROR(SCE_APPUTIL_ERROR_NOT_INITIALIZED);
 
-    *value = emuenv.app_sku_flag;
+    *value = emuenv.license.rif[emuenv.io.title_id].sku_flag;
 
     return 0;
 }
