@@ -31,7 +31,3 @@
 #include <string>
 
 void install_pup(const fs::path &pref_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback = nullptr);
-
-bool create_license(EmuEnvState &emuenv, const std::string &zRIF);
-bool copy_license(EmuEnvState &emuenv, const fs::path &license_path);
-int32_t get_license_sku_flag(EmuEnvState &emuenv, const std::string &content_id);

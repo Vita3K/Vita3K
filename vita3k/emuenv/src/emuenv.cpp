@@ -32,6 +32,7 @@
 #include <ngs/state.h>
 #include <nids/types.h>
 #include <np/state.h>
+#include <packages/license.h>
 #include <packages/sfo.h>
 #include <regmgr/state.h>
 #include <renderer/state.h>
@@ -76,6 +77,8 @@ EmuEnvState::EmuEnvState()
     , common_dialog(*_common_dialog)
     , _ime(new Ime)
     , ime(*_ime)
+    , _license(new License)
+    , license(*_license)
     , _regmgr(new RegMgrState)
     , regmgr(*_regmgr)
     , _sfo_handle(new SfoFile)

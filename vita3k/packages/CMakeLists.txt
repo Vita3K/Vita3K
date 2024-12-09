@@ -6,6 +6,7 @@ add_library(packages STATIC
             src/sce_utils.cpp
             src/sfo.cpp
             include/packages/exfat.h
+            include/packages/license.h
             include/packages/functions.h
             include/packages/pkg.h
             include/packages/sce_types.h

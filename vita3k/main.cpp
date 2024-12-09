@@ -31,6 +31,7 @@
 #include <kernel/state.h>
 #include <modules/module_parent.h>
 #include <packages/functions.h>
+#include <packages/license.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
 #include <renderer/functions.h>
@@ -332,16 +333,15 @@ int main(int argc, char *argv[]) {
     const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);
     emuenv.app_info.app_version = APP_INDEX->app_ver;
     emuenv.app_info.app_category = APP_INDEX->category;
-    emuenv.app_info.app_content_id = APP_INDEX->content_id;
     emuenv.io.addcont = APP_INDEX->addcont;
+    emuenv.io.content_id = APP_INDEX->content_id;
     emuenv.io.savedata = APP_INDEX->savedata;
     emuenv.current_app_title = APP_INDEX->title;
     emuenv.app_info.app_short_title = APP_INDEX->stitle;
     emuenv.io.title_id = APP_INDEX->title_id;
 
     // Check license for PS App Only
-    if (emuenv.io.title_id.starts_with("PCS"))
-        emuenv.app_sku_flag = get_license_sku_flag(emuenv, emuenv.app_info.app_content_id);
+    get_license(emuenv, emuenv.io.title_id, emuenv.io.content_id);
 
     if (cfg.console) {
         auto main_thread = emuenv.kernel.get_thread(emuenv.main_thread_id);

@@ -54,6 +54,7 @@ struct NpState;
 struct DisplayState;
 struct DialogState;
 struct Ime;
+struct License;
 struct RegMgrState;
 struct SfoFile;
 struct GDBState;
@@ -98,6 +99,7 @@ private:
     std::unique_ptr<DisplayState> _display;
     std::unique_ptr<DialogState> _common_dialog;
     std::unique_ptr<Ime> _ime;
+    std::unique_ptr<License> _license;
     std::unique_ptr<RegMgrState> _regmgr;
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
@@ -107,7 +109,6 @@ public:
     // App info contained in its `param.sfo` file
     sfo::SfoAppInfo &app_info;
     std::string app_path{};
-    int32_t app_sku_flag{};
     std::string license_content_id{};
     std::string license_title_id{};
     std::string current_app_title{};
@@ -160,6 +161,7 @@ public:
     DisplayState &display;
     DialogState &common_dialog;
     Ime &ime;
+    License &license;
     RegMgrState &regmgr;
     SfoFile &sfo_handle;
     NIDSet missing_nids;
