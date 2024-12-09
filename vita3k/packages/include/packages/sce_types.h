@@ -29,6 +29,30 @@
 #define SCE_MAGIC 0x00454353
 #define HEADER_LENGTH 0x1000
 
+struct SceNpDrmLicense {
+    uint16_t version; // 0x00
+    uint16_t version_flag; // 0x02
+    uint16_t type; // 0x04
+    uint16_t flags; // 0x06
+    uint64_t aid; // 0x08
+    char content_id[0x30]; // 0x10
+    uint8_t key_table[0x10]; // 0x40
+    uint8_t key[0x10]; // 0x50
+    uint64_t start_time; // 0x60
+    uint64_t expiration_time; // 0x68
+    uint8_t ecdsa_signature[0x28]; // 0x70
+    uint64_t flags2; // 0x98
+    uint8_t key2[0x10]; // 0xA0
+    uint8_t unk_B0[0x10]; // 0xB0
+    uint8_t openpsid[0x10]; // 0xC0
+    uint8_t unk_D0[0x10]; // 0xD0
+    uint8_t cmd56_handshake[0x14]; // 0xE0
+    uint32_t unk_F4; // 0xF4
+    uint32_t unk_F8; // 0xF8
+    int32_t sku_flag; // 0xFC
+    uint8_t rsa_signature[0x100]; // 0x100
+};
+
 struct KeyEntry {
     uint64_t minver;
     uint64_t maxver;
@@ -654,6 +678,5 @@ void register_keys(KeyStore &SCE_KEYS, int type);
 void extract_fat(const fs::path &partition_path, const std::string &partition, const fs::path &pref_path);
 std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, const uint64_t &size);
 std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader &sce_hdr);
-std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, unsigned char *klictxt = 0);
-void decrypt_fself(const fs::path &file_path, KeyStore &SCE_KEYS, unsigned char *klictxt);
-bool is_self(const fs::path &file_path);
+std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, const uint8_t *klic = 0);
+std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8_t *klic);

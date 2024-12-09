@@ -32,6 +32,7 @@
 #include <ngs/state.h>
 #include <nids/types.h>
 #include <np/state.h>
+#include <packages/sce_types.h>
 #include <packages/sfo.h>
 #include <regmgr/state.h>
 #include <renderer/state.h>
@@ -44,6 +45,8 @@
 EmuEnvState::EmuEnvState()
     : _app_info(new sfo::SfoAppInfo)
     , app_info(*_app_info)
+    , _app_license(new SceNpDrmLicense)
+    , app_license(*_app_license)
     , _cfg(new Config)
     , cfg(*_cfg)
     , _mem(new MemState)
