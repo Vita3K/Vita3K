@@ -137,6 +137,14 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     int display_w, display_h;
     SDL_GetWindowSize(state->window, &w, &h);
     ImGui_ImplSdl_GetDrawableSize(state, display_w, display_h);
+#if __APPLE__
+    // On macOS, if HiDPI is enabled(SDL_WINDOW_ALLOW_HIGHDPI) SDL will create a window that size is 960x544 points.
+    // But it is actually 1920x1088 pixels. Since SDL_GetWindowSize returns 960x544 points, we need to multiply by 2.
+    int scale = display_w / w;
+    w *= scale;
+    h *= scale;
+#endif
+
     io.DisplaySize = ImVec2((float)w, (float)h);
     io.DisplayFramebufferScale = ImVec2(w > 0 ? ((float)display_w / w) : 0, h > 0 ? ((float)display_h / h) : 0);
 
@@ -149,6 +157,13 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     // Setup mouse inputs (we already got mouse wheel, keyboard keys & characters from our event handler)
     int mx, my;
     Uint32 mouse_buttons = SDL_GetMouseState(&mx, &my);
+#if __APPLE__
+    // Simillary on macOS, it's drawable size of window is 1920x1088, but mouse event coordinates are (0,0) ~ (958,543).
+    // So it is also needed to be multiplied by 2. But, because mouse coordinate is integer, its accuracy is lowered.
+    // To fix this, moving to SDL3 is required. (SDL3's SDL_GetMouseState is passing coordinate in float).
+    mx *= scale;
+    my *= scale;
+#endif
     io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
     io.MouseDown[0] = state->mouse_pressed[0] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0; // If a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame.
     io.MouseDown[1] = state->mouse_pressed[1] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0;
