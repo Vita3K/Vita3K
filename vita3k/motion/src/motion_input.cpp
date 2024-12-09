@@ -2,11 +2,16 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included
 
+#include <algorithm>
+
 #include "motion/motion_input.h"
 
 MotionInput::MotionInput() {
     // Initialize PID constants with default values
     SetPID(0.3f, 0.005f, 0.0f);
+    SetDeadband(0.007f);
+    ResetQuaternion();
+    ResetRotations();
 }
 
 void MotionInput::SetPID(SceFloat new_kp, SceFloat new_ki, SceFloat new_kd) {
@@ -17,23 +22,34 @@ void MotionInput::SetPID(SceFloat new_kp, SceFloat new_ki, SceFloat new_kd) {
 
 void MotionInput::SetAcceleration(const Util::Vec3f &acceleration) {
     accel = acceleration;
+
+    accel.x = std::clamp(accel.x, -AccelMaxValue, AccelMaxValue);
+    accel.y = std::clamp(accel.y, -AccelMaxValue, AccelMaxValue);
+    accel.z = std::clamp(accel.z, -AccelMaxValue, AccelMaxValue);
 }
 
 void MotionInput::SetGyroscope(const Util::Vec3f &gyroscope) {
+    gyro = gyroscope;
+
     if (bias_enabled) {
-        gyro = gyroscope - gyro_bias;
-    } else {
-        gyro = gyroscope;
+        gyro -= gyro_bias;
     }
+
+    if (deadband_enabled && gyro.Length2() < gyro_deadband2) {
+        gyro = {};
+    }
+
+    gyro.x = std::clamp(gyro.x, -GyroMaxValue, GyroMaxValue);
+    gyro.y = std::clamp(gyro.y, -GyroMaxValue, GyroMaxValue);
+    gyro.z = std::clamp(gyro.z, -GyroMaxValue, GyroMaxValue);
 
     // Auto adjust drift to minimize drift
     if (!IsMoving(0.1f)) {
         gyro_bias = (gyro_bias * 0.9999f) + (gyroscope * 0.0001f);
     }
 
-    if (gyro.Length2() < gyro_threshold) {
-        gyro = {};
-    } else {
+    // Enable gyro compensation if gyro is active
+    if (gyro.Length2() > 0) {
         only_accelerometer = false;
     }
 }
@@ -42,12 +58,34 @@ void MotionInput::SetQuaternion(const Util::Quaternion<SceFloat> &quaternion) {
     quat = quaternion;
 }
 
-void MotionInput::SetGyroThreshold(SceFloat threshold) {
-    gyro_threshold = threshold;
+void MotionInput::SetDeadband(SceFloat threshold) {
+    gyro_deadband = threshold;
+    gyro_deadband2 = threshold * threshold;
+}
+
+void MotionInput::SetAngleThreshold(SceFloat threshold) {
+    angle_threshold = std::clamp(threshold, 0.0f, 45.0f);
+}
+
+void MotionInput::RotateYaw(SceFloat radians) {
+    const Util::Quaternion<SceFloat> yaw_rotation = {
+        { 0.0f, 0.0f, -std::sin(radians / 2) },
+        std::cos(radians / 2),
+    };
+    quat = yaw_rotation * quat;
+    quat = quat.Normalized();
 }
 
 void MotionInput::EnableGyroBias(bool enable) {
     bias_enabled = enable;
+}
+
+void MotionInput::EnableTiltCorrection(bool enable) {
+    tilt_correction_enabled = enable;
+}
+
+void MotionInput::EnableDeadband(bool enable) {
+    deadband_enabled = enable;
 }
 
 void MotionInput::EnableReset(bool reset) {
@@ -56,6 +94,14 @@ void MotionInput::EnableReset(bool reset) {
 
 void MotionInput::ResetRotations() {
     rotations = {};
+}
+
+SceFloat MotionInput::GetAngleThreshold() const {
+    return angle_threshold;
+}
+
+void MotionInput::ResetQuaternion() {
+    quat = { { 0.0f, 0.0f, -1.0f }, 0.0f };
 }
 
 bool MotionInput::IsMoving(SceFloat sensitivity) const {
@@ -68,6 +114,14 @@ bool MotionInput::IsCalibrated(SceFloat sensitivity) const {
 
 SceBool MotionInput::IsGyroBiasEnabled() const {
     return bias_enabled;
+}
+
+SceBool MotionInput::IsTiltCorrectionEnabled() const {
+    return tilt_correction_enabled;
+}
+
+SceBool MotionInput::IsDeadbandEnabled() const {
+    return deadband_enabled;
 }
 
 void MotionInput::UpdateRotation(SceULong64 elapsed_time) {
@@ -99,9 +153,9 @@ void MotionInput::UpdateOrientation(SceULong64 elapsed_time) {
     const auto normal_accel = accel.Normalized();
     auto rad_gyro = gyro * 3.1415926f * 2;
     const SceFloat swap = rad_gyro.x;
-    rad_gyro.x = rad_gyro.y;
-    rad_gyro.y = -swap;
-    rad_gyro.z = -rad_gyro.z;
+    rad_gyro.x = rad_gyro.z;
+    rad_gyro.z = -rad_gyro.y;
+    rad_gyro.y = swap;
 
     // Clear gyro values if there is no gyro present
     if (only_accelerometer) {
@@ -111,10 +165,10 @@ void MotionInput::UpdateOrientation(SceULong64 elapsed_time) {
     }
 
     // Ignore drift correction if acceleration is not reliable
-    if (accel.Length() >= 0.75f && accel.Length() <= 1.25f) {
-        const SceFloat ax = -normal_accel.x;
-        const SceFloat ay = normal_accel.y;
-        const SceFloat az = -normal_accel.z;
+    if (tilt_correction_enabled && accel.Length() >= 0.75f && accel.Length() <= 1.25f) {
+        const SceFloat ax = normal_accel.x;
+        const SceFloat ay = normal_accel.z;
+        const SceFloat az = -normal_accel.y;
 
         // Estimated direction of gravity
         const SceFloat vx = 2.0f * (q2 * q4 - q1 * q3);
@@ -177,6 +231,52 @@ void MotionInput::UpdateOrientation(SceULong64 elapsed_time) {
     quat = quat.Normalized();
 }
 
+void MotionInput::UpdateBasicOrientation() {
+    SceFloat angle = angle_threshold * 3.1415926f / 180.0f;
+    SceFloat max_angle_threshold_cos = std::cos(angle);
+    SceFloat max_angle_threshold_sin = std::sin(angle);
+
+    auto unit_accel = accel.Normalized();
+    Util::Vec3f unit_xy = { accel.x, accel.y, 0 };
+
+    if (std::abs(unit_accel.z) > max_angle_threshold_cos) {
+        basic_orientation.x = 0;
+        basic_orientation.y = 0;
+        basic_orientation.z = unit_accel.z > 0 ? -1.0f : 1.0f;
+        basic_orientation_base = basic_orientation;
+    } else if (std::abs(unit_accel.z) < max_angle_threshold_sin || !basic_orientation_base.z) {
+        unit_xy = unit_xy.Normalized();
+        if (basic_orientation.z && std::abs(unit_accel.x) >= std::abs(unit_accel.y) || std::abs(unit_xy.x) > max_angle_threshold_cos) {
+            basic_orientation.x = accel.x > 0 ? -1.0f : 1.0f;
+            basic_orientation.y = 0.0f;
+            basic_orientation.z = 0.0f;
+            basic_orientation_base = basic_orientation;
+        } else if (basic_orientation.z && std::abs(unit_accel.x) < std::abs(unit_accel.y) || std::abs(unit_xy.y) > max_angle_threshold_cos) {
+            basic_orientation.x = 0.0f;
+            basic_orientation.y = accel.y > 0 ? -1.0f : 1.0f;
+            basic_orientation.z = 0.0f;
+            basic_orientation_base = basic_orientation;
+        }
+    }
+    basic_orientation = basic_orientation_base;
+
+    if (basic_orientation.z && std::abs(unit_accel.z) < max_angle_threshold_cos) {
+        basic_orientation.y = -1;
+    } else {
+        unit_xy = unit_xy.Normalized();
+        if (basic_orientation.x && std::abs(unit_xy.y) > max_angle_threshold_sin) {
+            basic_orientation.y = -1;
+        }
+        if (basic_orientation.y && std::abs(unit_xy.x) > max_angle_threshold_sin) {
+            basic_orientation.y = -1;
+        }
+    }
+}
+
+SceFVector3 MotionInput::GetBasicOrientation() const {
+    return basic_orientation;
+}
+
 Util::Quaternion<float> MotionInput::GetOrientation() const {
     return quat;
 }
@@ -227,9 +327,9 @@ void MotionInput::SetOrientationFromAccelerometer() {
         SceFloat q4 = quat.xyz[2];
 
         Util::Vec3f rad_gyro;
-        const SceFloat ax = -normal_accel.x;
-        const SceFloat ay = normal_accel.y;
-        const SceFloat az = -normal_accel.z;
+        const SceFloat ax = normal_accel.x;
+        const SceFloat ay = normal_accel.z;
+        const SceFloat az = -normal_accel.y;
 
         // Estimated direction of gravity
         const SceFloat vx = 2.0f * (q2 * q4 - q1 * q3);
