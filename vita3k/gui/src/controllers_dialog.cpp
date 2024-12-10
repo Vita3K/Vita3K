@@ -182,26 +182,31 @@ static void swap_controller_ports(CtrlState &state, int source_port, int dest_po
 
     // Find the controllers corresponding to the source and destination ports
     auto source_controller_it = std::find_if(state.controllers.begin(), state.controllers.end(),
-        [&](const auto &pair) { return pair.second.port == (source_port + 1); });
+        [&](const auto &pair) { return pair.second.port == source_port; });
     auto dest_controller_it = std::find_if(state.controllers.begin(), state.controllers.end(),
-        [&](const auto &pair) { return pair.second.port == (dest_port + 1); });
+        [&](const auto &pair) { return pair.second.port == dest_port; });
 
-    // Check that both controllers exist
-    if ((source_controller_it == state.controllers.end()) || (dest_controller_it == state.controllers.end())) {
-        LOG_ERROR("Unable to find one or more controllers on the specified ports.");
+    // Check that source controllers exist
+    if (source_controller_it == state.controllers.end()) {
+        LOG_ERROR("Unable to find controller on source port {}", source_port);
         return;
     }
 
-    LOG_INFO("Controller on source port {} {} swapped with controller on destination port {} {}", source_port, state.controllers_name[source_port], dest_port, state.controllers_name[dest_port]);
+    if (dest_controller_it == state.controllers.end()) {
+        LOG_INFO("Controller on source port {} {} assigned to destination port {}", source_port, source_controller_it->second.name, dest_port);
 
-    // Swap controllers port and player index
-    SDL_GameControllerSetPlayerIndex(source_controller_it->second.controller.get(), dest_port);
-    SDL_GameControllerSetPlayerIndex(dest_controller_it->second.controller.get(), source_port);
-    std::swap(source_controller_it->second.port, dest_controller_it->second.port);
+        // Assign controller to destination port
+        SDL_GameControllerSetPlayerIndex(source_controller_it->second.controller.get(), dest_port);
+        source_controller_it->second.port = dest_port;
+        std::swap(state.free_ports[source_port], state.free_ports[dest_port]);
+    } else {
+        LOG_INFO("Controller on source port {} {} swapped with controller on destination port {} {}", source_port, source_controller_it->second.name, dest_port, dest_controller_it->second.name);
 
-    // Swap controller names and motion support
-    std::swap(state.controllers_name[source_port], state.controllers_name[dest_port]);
-    std::swap(state.controllers_has_motion_support[source_port], state.controllers_has_motion_support[dest_port]);
+        // Swap controllers port and player index
+        SDL_GameControllerSetPlayerIndex(source_controller_it->second.controller.get(), dest_port);
+        SDL_GameControllerSetPlayerIndex(dest_controller_it->second.controller.get(), source_port);
+        std::swap(source_controller_it->second.port, dest_controller_it->second.port);
+    }
 }
 
 void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
@@ -242,17 +247,22 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::TableSetColumnIndex(2);
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Motion Support");
             const char *port_names[] = { "1", "2", "3", "4" };
-            for (auto i = 0; i < ctrl.controllers_num; i++) {
+            for (auto i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
+                auto controller_it = std::find_if(ctrl.controllers.begin(), ctrl.controllers.end(),
+                    [&](const auto &pair) { return pair.second.port == i; });
+                if (controller_it == ctrl.controllers.end()) {
+                    continue;
+                }
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
                 int selected_port = i;
                 ImGui::PushID(i);
                 ImGui::SetNextItemWidth(50.f * emuenv.dpi_scale);
-                if (ImGui::Combo("##swap_port", &selected_port, port_names, ctrl.controllers_num))
+                if (ImGui::Combo("##swap_port", &selected_port, port_names, SCE_CTRL_MAX_WIRELESS_NUM))
                     swap_controller_ports(ctrl, i, selected_port);
                 ImGui::PopID();
                 ImGui::TableSetColumnIndex(1);
-                if (ImGui::Button(ctrl.controllers_name[i]))
+                if (ImGui::Button(controller_it->second.name))
                     rebinds_is_open = true;
                 if (rebinds_is_open) {
                     const SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(i);
@@ -271,7 +281,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     auto &controls = gui.lang.controls;
 
                     const auto type = SDL_GameControllerTypeForIndex(i);
-                    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", ctrl.controllers_name[i]);
+                    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", controller_it->second.name);
                     ImGui::Separator();
                     if (ImGui::BeginTable("rebindControl", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV)) {
                         ImGui::TableSetupColumn("leftButtons");
@@ -403,7 +413,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::End();
                 }
                 ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%s", ctrl.controllers_has_motion_support[i] ? common["yes"].c_str() : common["no"].c_str());
+                ImGui::Text("%s", (controller_it->second.has_accel && controller_it->second.has_gyro) ? common["yes"].c_str() : common["no"].c_str());
             }
             ImGui::EndTable();
         }
