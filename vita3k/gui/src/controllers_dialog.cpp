@@ -182,9 +182,9 @@ static void swap_controller_ports(CtrlState &state, int source_port, int dest_po
 
     // Find the controllers corresponding to the source and destination ports
     auto source_controller_it = std::find_if(state.controllers.begin(), state.controllers.end(),
-        [&](const auto &pair) { return pair.second.port == (source_port + 1); });
+        [&](const auto &pair) { return pair.second.port == source_port; });
     auto dest_controller_it = std::find_if(state.controllers.begin(), state.controllers.end(),
-        [&](const auto &pair) { return pair.second.port == (dest_port + 1); });
+        [&](const auto &pair) { return pair.second.port == dest_port; });
 
     // Check that source controllers exist
     if (source_controller_it == state.controllers.end()) {
@@ -197,7 +197,7 @@ static void swap_controller_ports(CtrlState &state, int source_port, int dest_po
 
         // Assign controller to destination port
         SDL_GameControllerSetPlayerIndex(source_controller_it->second.controller.get(), dest_port);
-        source_controller_it->second.port = dest_port + 1;
+        source_controller_it->second.port = dest_port;
         std::swap(state.free_ports[source_port], state.free_ports[dest_port]);
     } else {
         LOG_INFO("Controller on source port {} {} swapped with controller on destination port {} {}", source_port, source_controller_it->second.name, dest_port, dest_controller_it->second.name);
@@ -249,7 +249,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
             const char *port_names[] = { "1", "2", "3", "4" };
             for (auto i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
                 auto controller_it = std::find_if(ctrl.controllers.begin(), ctrl.controllers.end(),
-                    [&](const auto &pair) { return pair.second.port == (i + 1); });
+                    [&](const auto &pair) { return pair.second.port == i; });
                 if (controller_it == ctrl.controllers.end()) {
                     continue;
                 }

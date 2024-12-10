@@ -35,7 +35,7 @@ typedef std::shared_ptr<_SDL_Haptic> HapticPtr;
 
 struct Controller {
     GameControllerPtr controller;
-    int port; // 1-based
+    int port; // SDL_GameController index
     bool has_accel;
     bool has_gyro;
     bool has_led;
@@ -65,5 +65,5 @@ struct CtrlState {
     SceCtrlPadInputMode input_mode_ext = SCE_CTRL_MODE_DIGITAL;
 
     // last vsync the data was read
-    uint64_t last_vcount[5] = {};
+    uint64_t last_vcount[5] = {}; // sceCtrl ports.
 };
