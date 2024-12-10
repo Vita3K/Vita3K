@@ -181,6 +181,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_gui_fullscreen, lang["full_screen"].c_str());
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_gui_toggle_touch, lang["toggle_touch"].c_str(), lang["toggle_touch_description"].c_str());
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_gui_toggle_gui, lang["toggle_gui_visibility"].c_str(), lang["toggle_gui_visibility_description"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_gui_menu_key, lang["menu_key"].c_str(), lang["menu_key_description"].c_str());
         ImGui::EndTable();
     }
 
