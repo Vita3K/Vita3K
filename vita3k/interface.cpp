@@ -220,7 +220,7 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const ZipPtr &z
     if (!gui->file_menu.archive_install_dialog && (emuenv.app_info.app_category != "theme")) {
         gui::update_notice_info(*gui, emuenv, "content");
         if ((emuenv.app_info.app_category.find("gd") != std::string::npos) || (emuenv.app_info.app_category.find("gp") != std::string::npos)) {
-            gui::init_user_app(*gui, emuenv, emuenv.app_info.app_title_id);
+            gui::init_user_app(*gui, emuenv, "ux0:app/" + emuenv.app_info.app_title_id);
             gui::save_apps_cache(*gui, emuenv);
         }
     }
@@ -363,7 +363,7 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
     LOG_INFO("{} [{}] installed successfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
 
     if ((emuenv.app_info.app_category.find("gd") != std::string::npos) || (emuenv.app_info.app_category.find("gp") != std::string::npos)) {
-        gui::init_user_app(*gui, emuenv, emuenv.app_info.app_title_id);
+        gui::init_user_app(*gui, emuenv, "ux0:app/" + emuenv.app_info.app_title_id);
         gui::save_apps_cache(*gui, emuenv);
     }
 
@@ -447,8 +447,11 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     }
 
     // Load main executable
-    emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
-    main_module_id = load_module(emuenv, "app0:" + emuenv.self_path);
+    if (emuenv.io.app_path.find("shell") != std::string::npos)
+        emuenv.self_path = "vs0:vsh/shell/shell.self";
+    else
+        emuenv.self_path = (fs::path(emuenv.io.app_path) / (!emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH)).string();
+    main_module_id = load_module(emuenv, emuenv.self_path);
     if (main_module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[main_module_id];
         LOG_INFO("Main executable {} ({}) loaded", module->info.module_name, emuenv.self_path);
@@ -466,7 +469,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
             process_preload_disabled = *preload_disabled_ptr.get(emuenv.mem);
         }
     }
-    const auto module_app_path{ emuenv.pref_path / "ux0/app" / emuenv.io.app_path / "sce_module" };
+    const auto module_app_path{ emuenv.pref_path / convert_path(emuenv.io.app_path) / "sce_module" };
 
     std::vector<std::string> lib_load_list = {};
     // todo: check if module is imported
@@ -475,7 +478,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
             if (is_lle_module(name, emuenv)) {
                 const auto module_name_file = fmt::format("{}.suprx", name);
                 if (load_from_app && fs::exists(module_app_path / module_name_file))
-                    lib_load_list.emplace_back(fmt::format("app0:sce_module/{}", module_name_file));
+                    lib_load_list.emplace_back(fmt::format("{}/sce_module/{}.suprx", emuenv.io.app_path, name));
                 else if (fs::exists(emuenv.pref_path / "vs0/sys/external" / module_name_file))
                     lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}", module_name_file));
             }
@@ -575,8 +578,8 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 gui.vita_area.app_close = false;
             };
             const auto confirm = [&gui, &emuenv]() {
-                const auto app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open] : emuenv.app_path;
-                gui::close_and_run_new_app(gui, emuenv, app_path);
+                const auto &app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open] : emuenv.app_path;
+                gui::close_and_run_new_app(emuenv, app_path);
             };
             switch (sce_ctrl_btn) {
             case SCE_CTRL_CIRCLE:
@@ -640,6 +643,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 }
 
                 app::switch_state(emuenv, !emuenv.kernel.is_threads_paused());
+                gui::switch_bgm_state(!emuenv.kernel.is_threads_paused());
 
             } else if (!gui::get_sys_apps_state(gui))
                 gui::close_system_app(gui, emuenv);
@@ -653,6 +657,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
         switch (event.type) {
         case SDL_QUIT:
+            gui::stop_bgm();
             if (!emuenv.io.app_path.empty())
                 gui::update_time_app_used(gui, emuenv, emuenv.io.app_path);
             emuenv.kernel.exit_delete_all_threads();
@@ -789,7 +794,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
 
 ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv) {
     if (load_app_impl(main_module_id, emuenv) != Success) {
-        std::string message = fmt::format(fmt::runtime(emuenv.common_dialog.lang.message["load_app_failed"]), emuenv.pref_path / "ux0/app" / emuenv.io.app_path / emuenv.self_path);
+        std::string message = fmt::format(fmt::runtime(emuenv.common_dialog.lang.message["load_app_failed"]), emuenv.pref_path / convert_path(emuenv.self_path));
         app::error_dialog(message, emuenv.window.get());
         return ModuleLoadFailed;
     }

@@ -99,13 +99,13 @@ struct IconAsyncLoader {
 };
 
 struct AppsSelector {
-    std::vector<App> sys_apps;
-    std::vector<App> user_apps;
+    std::vector<App> emu_apps;
+    std::map<std::string, std::vector<App>> vita_apps;
     uint32_t apps_cache_lang;
     AppInfo app_info;
     std::optional<IconAsyncLoader> icon_async_loader;
-    std::map<std::string, ImGui_Texture> sys_apps_icon;
-    std::map<std::string, ImGui_Texture> user_apps_icon;
+    std::map<std::string, ImGui_Texture> emu_apps_icon;
+    std::map<std::string, ImGui_Texture> vita_apps_icon;
     bool is_app_list_sorted{ false };
     std::map<SortType, SortState> app_list_sorted;
 };

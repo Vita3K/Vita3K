@@ -94,7 +94,7 @@ static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv) {
         }
         if (!emuenv.cfg.display_system_apps) {
             ImGui::Separator();
-            for (const auto &app : gui.app_selector.sys_apps)
+            for (const auto &app : gui.app_selector.emu_apps)
                 draw_app(app);
         }
         ImGui::EndMenu();
