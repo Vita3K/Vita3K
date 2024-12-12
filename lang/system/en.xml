@@ -335,6 +335,8 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<toggle_touch_description>Toggles between back touch and screen touch.</toggle_touch_description>
 		<toggle_gui_visibility>Toggle GUI Visibility</toggle_gui_visibility>
 		<toggle_gui_visibility_description>Toggles between showing and hiding the GUI at the top of the screen while the app is running.</toggle_gui_visibility_description>
+		<menu_key>Focus Menu</menu_key>
+		<menu_key_description>Focuses on the menu key in the GUI.</menu_key_description>
 		<miscellaneous>Miscellaneous</miscellaneous>
 		<toggle_texture_replacement>Toggle Texture Replacement</toggle_texture_replacement>
 		<take_a_screenshot>Take A Screenshot</take_a_screenshot>
