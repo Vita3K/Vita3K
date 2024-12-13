@@ -24,11 +24,11 @@ static const ImVec2 PERF_OVERLAY_PAD = ImVec2(12.f, 12.f);
 static const ImVec4 PERF_OVERLAY_BG_COLOR = ImVec4(0.282f, 0.239f, 0.545f, 0.8f);
 
 static ImVec2 get_perf_pos(ImVec2 window_size, EmuEnvState &emuenv) {
-    const auto TOP = emuenv.viewport_pos.y - PERF_OVERLAY_PAD.y;
-    const auto LEFT = emuenv.viewport_pos.x - PERF_OVERLAY_PAD.x;
-    const auto CENTER = emuenv.viewport_pos.x + (emuenv.viewport_size.x / 2.f) - (window_size.x / 2.f);
-    const auto RIGHT = emuenv.viewport_pos.x + emuenv.viewport_size.x - window_size.x + PERF_OVERLAY_PAD.x;
-    const auto BOTTOM = emuenv.viewport_pos.y + emuenv.viewport_size.y - window_size.y + PERF_OVERLAY_PAD.y;
+    const auto TOP = emuenv.logical_viewport_pos.y - PERF_OVERLAY_PAD.y;
+    const auto LEFT = emuenv.logical_viewport_pos.x - PERF_OVERLAY_PAD.x;
+    const auto CENTER = emuenv.logical_viewport_pos.x + (emuenv.logical_viewport_size.x / 2.f) - (window_size.x / 2.f);
+    const auto RIGHT = emuenv.logical_viewport_pos.x + emuenv.logical_viewport_size.x - window_size.x + PERF_OVERLAY_PAD.x;
+    const auto BOTTOM = emuenv.logical_viewport_pos.y + emuenv.logical_viewport_size.y - window_size.y + PERF_OVERLAY_PAD.y;
 
     switch (emuenv.cfg.performance_overlay_position) {
     case TOP_CENTER: return ImVec2(CENTER, TOP);
@@ -46,8 +46,8 @@ static ImVec2 get_perf_pos(ImVec2 window_size, EmuEnvState &emuenv) {
 void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     auto lang = gui.lang.performance_overlay;
 
-    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
+    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     const auto SCALED_FONT_SIZE = ImGui::GetFontSize() * (0.7f * RES_SCALE.y);
