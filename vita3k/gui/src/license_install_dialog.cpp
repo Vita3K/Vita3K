@@ -26,7 +26,7 @@ namespace gui {
 
 void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto BUTTON_SIZE = ImVec2(180.f * SCALE.x, 45.f * SCALE.y);
 

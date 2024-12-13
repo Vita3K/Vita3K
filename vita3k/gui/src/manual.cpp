@@ -45,7 +45,7 @@ static float scroll = 0.f, max_scroll = 0.f;
 static auto hidden_button = false;
 
 void browse_pages_manual(GuiState &gui, EmuEnvState &emuenv, const uint32_t button) {
-    const auto RES_HEIGHT_SCALE = emuenv.viewport_size.y / emuenv.res_height_dpi_scale;
+    const auto RES_HEIGHT_SCALE = emuenv.logical_viewport_size.y / emuenv.res_height_dpi_scale;
     const auto SCALE = RES_HEIGHT_SCALE * emuenv.dpi_scale;
 
     const auto manual_size = static_cast<int32_t>(gui.manuals.size() - 1);
@@ -136,10 +136,10 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Begin("##manual", &gui.vita_area.manual, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     // Set settings and begin child window for manual pages
-    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
-    const ImVec2 WINDOW_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+    const ImVec2 WINDOW_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
     ImGui::BeginChild("##manual_page", display_size, ImGuiChildFlags_None, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoSavedSettings);
 

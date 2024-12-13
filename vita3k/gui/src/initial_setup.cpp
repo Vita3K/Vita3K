@@ -65,7 +65,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     static std::string title_str;
 
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto WINDOW_SIZE = ImVec2(756.f * SCALE.x, 418.f * SCALE.y);
     const auto SELECT_SIZE = 72.f * SCALE.y;

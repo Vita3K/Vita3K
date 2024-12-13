@@ -366,8 +366,8 @@ int main(int argc, char *argv[]) {
     }
 
     const auto draw_app_background = [](GuiState &gui, EmuEnvState &emuenv) {
-        const auto pos_min = ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
-        const auto pos_max = ImVec2(pos_min.x + emuenv.viewport_size.x, pos_min.y + emuenv.viewport_size.y);
+        const auto pos_min = ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+        const auto pos_max = ImVec2(pos_min.x + emuenv.logical_viewport_size.x, pos_min.y + emuenv.logical_viewport_size.y);
 
         if (gui.apps_background.contains(emuenv.io.app_path))
             // Display application background
@@ -413,8 +413,8 @@ int main(int argc, char *argv[]) {
         // Driver acto!
         renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg);
 
-        const SceFVector2 viewport_pos = { emuenv.viewport_pos.x, emuenv.viewport_pos.y };
-        const SceFVector2 viewport_size = { emuenv.viewport_size.x, emuenv.viewport_size.y };
+        const SceFVector2 viewport_pos = { emuenv.drawable_viewport_pos.x, emuenv.drawable_viewport_pos.y };
+        const SceFVector2 viewport_size = { emuenv.drawable_viewport_size.x, emuenv.drawable_viewport_size.y };
         emuenv.renderer->render_frame(viewport_pos, viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
 
         gui::draw_begin(gui, emuenv);
@@ -431,8 +431,8 @@ int main(int argc, char *argv[]) {
         // Driver acto!
         renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg);
 
-        const SceFVector2 viewport_pos = { emuenv.viewport_pos.x, emuenv.viewport_pos.y };
-        const SceFVector2 viewport_size = { emuenv.viewport_size.x, emuenv.viewport_size.y };
+        const SceFVector2 viewport_pos = { emuenv.drawable_viewport_pos.x, emuenv.drawable_viewport_pos.y };
+        const SceFVector2 viewport_size = { emuenv.drawable_viewport_size.x, emuenv.drawable_viewport_size.y };
         emuenv.renderer->render_frame(viewport_pos, viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
         // Calculate FPS
         app::calculate_fps(emuenv);

@@ -50,8 +50,8 @@ static SceTouchData recover_touch_events(const EmuEnvState &emuenv) {
         touch_data.report[i].id = static_cast<uint8_t>(finger_buffer[i].touchId);
         touch_data.report[i].force = forceTouchEnabled[touchscreen_port] ? 128 : 0;
 
-        float x = (finger_buffer[i].x * emuenv.drawable_size.x - emuenv.viewport_pos.x) / emuenv.viewport_size.x;
-        float y = (finger_buffer[i].y * emuenv.drawable_size.y - emuenv.viewport_pos.y) / emuenv.viewport_size.y;
+        float x = (finger_buffer[i].x * emuenv.drawable_size.x - emuenv.drawable_viewport_pos.x) / emuenv.drawable_viewport_size.x;
+        float y = (finger_buffer[i].y * emuenv.drawable_size.y - emuenv.drawable_viewport_pos.y) / emuenv.drawable_viewport_size.y;
         touch_data.report[i].x = static_cast<uint16_t>(x * 1920);
 
         if (touchscreen_port == SCE_TOUCH_PORT_FRONT) {
@@ -138,8 +138,8 @@ void touch_vsync_update(const EmuEnvState &emuenv) {
                 };
 
                 const SceFVector2 touch_pos_viewport = {
-                    (touch_pos_drawable.x - emuenv.viewport_pos.x) / emuenv.viewport_size.x,
-                    (touch_pos_drawable.y - emuenv.viewport_pos.y) / emuenv.viewport_size.y
+                    (touch_pos_drawable.x - emuenv.drawable_viewport_pos.x) / emuenv.drawable_viewport_size.x,
+                    (touch_pos_drawable.y - emuenv.drawable_viewport_pos.y) / emuenv.drawable_viewport_size.y
                 };
 
                 if ((touch_pos_viewport.x >= 0) && (touch_pos_viewport.y >= 0) && (touch_pos_viewport.x < 1) && (touch_pos_viewport.y < 1)) {

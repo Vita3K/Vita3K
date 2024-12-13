@@ -48,17 +48,17 @@ namespace gui {
 
 void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
     if (emuenv.io.title_id.empty() && emuenv.cfg.display_info_message) {
-        const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
-        const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+        const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+        const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
         const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
         const ImVec2 WINDOW_SIZE(680.0f * SCALE.x, 320.0f * SCALE.y);
         const ImVec2 BUTTON_SIZE(160.f * SCALE.x, 46.f * SCALE.y);
 
-        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##information", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
-        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x + (display_size.x / 2) - (WINDOW_SIZE.x / 2.f), emuenv.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::BeginChild("##info", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
         const auto &title = gui.info_message.title;
@@ -756,13 +756,13 @@ void draw_touchpad_cursor(EmuEnvState &emuenv) {
     if (touchpad_fingers_pos.empty())
         return;
 
-    const ImVec2 RES_SCALE(emuenv.viewport_size.x / emuenv.res_width_dpi_scale, emuenv.viewport_size.y / emuenv.res_height_dpi_scale);
+    const ImVec2 RES_SCALE(emuenv.logical_viewport_size.x / emuenv.res_width_dpi_scale, emuenv.logical_viewport_size.y / emuenv.res_height_dpi_scale);
     const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     const auto color = (port == SCE_TOUCH_PORT_FRONT) ? IM_COL32(0.f, 102.f, 204.f, 255.f) : IM_COL32(255.f, 0.f, 0.f, 255.f);
     for (const auto &pos : touchpad_fingers_pos) {
-        auto x = emuenv.viewport_pos.x + (pos.x * emuenv.viewport_size.x);
-        auto y = emuenv.viewport_pos.y + (pos.y * emuenv.viewport_size.y);
+        auto x = emuenv.logical_viewport_pos.x + (pos.x * emuenv.logical_viewport_size.x);
+        auto y = emuenv.logical_viewport_pos.y + (pos.y * emuenv.logical_viewport_size.y);
         ImGui::GetForegroundDrawList()->AddCircle(ImVec2(x, y), 20.f * SCALE.x, color, 0, 4.f * SCALE.x);
     }
 }

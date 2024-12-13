@@ -29,7 +29,7 @@ static constexpr int TROPHY_WINDOW_STATIC_FRAME_COUNT = 250;
 
 static void draw_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, NpTrophyUnlockCallbackData &callback_data) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     const auto TROPHY_WINDOW_MARGIN_PADDING = 12.f * SCALE.x;

@@ -28,7 +28,7 @@ static int pos = 2;
 static auto time = std::time(nullptr);
 void draw_pre_compiling_shaders_progress(GuiState &gui, EmuEnvState &emuenv, const uint32_t &total) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto WINDOW_SIZE = ImVec2(616.f * SCALE.x, 236.f * SCALE.y);
     const auto ICON_SIZE_SCALE = ImVec2(96.f * SCALE.x, 96.f * SCALE.y);
@@ -85,7 +85,7 @@ void set_shaders_compiled_display(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void draw_shaders_count_compiled(GuiState &gui, EmuEnvState &emuenv) {
-    ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (2.f * emuenv.dpi_scale), emuenv.viewport_pos.y + emuenv.viewport_size.y - (42.f * emuenv.dpi_scale)));
+    ImGui::SetNextWindowPos(ImVec2(emuenv.drawable_viewport_pos.x + (2.f * emuenv.dpi_scale), emuenv.drawable_viewport_pos.y + emuenv.drawable_viewport_size.y - (42.f * emuenv.dpi_scale)));
     ImGui::SetNextWindowBgAlpha(0.6f);
     ImGui::Begin("##shaders_compiled", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     const char *gpu_objects_compiled_msg;

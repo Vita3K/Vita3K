@@ -460,15 +460,15 @@ static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float 
 
 static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_SCALE, ImVec2 SCALE) {
     const ImVec2 THUMBNAIL_SIZE = ImVec2(160.f * SCALE.x, 90.f * SCALE.y);
-    const ImVec2 VIEWPORT_SIZE = ImVec2(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const ImVec2 VIEWPORT_POS = ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+    const ImVec2 VIEWPORT_SIZE = ImVec2(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 VIEWPORT_POS = ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
 
     int existing_saves_count = 0;
     auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings;
     if (gui.is_nav_button)
         flags |= ImGuiWindowFlags_NoMouseInputs;
 
-    ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y), ImGuiCond_Always);
     ImGui::SetNextWindowSize(VIEWPORT_SIZE);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
@@ -637,7 +637,7 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
 
 void draw_common_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushFont(gui.vita_font);
-    const auto RES_SCALE = ImVec2(emuenv.viewport_size.x / emuenv.res_width_dpi_scale, emuenv.viewport_size.y / emuenv.res_height_dpi_scale);
+    const auto RES_SCALE = ImVec2(emuenv.logical_viewport_size.x / emuenv.res_width_dpi_scale, emuenv.logical_viewport_size.y / emuenv.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         switch (emuenv.common_dialog.type) {

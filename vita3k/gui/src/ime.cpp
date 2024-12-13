@@ -263,7 +263,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
     static float scroll_special_current;
     static float scroll_special_max;
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto WINDOW_POS = ImVec2(0.f, display_size.y - (248.f * SCALE.y));
     const auto BUTTON_HEIGHT_SIZE = 52.f * SCALE.y;
