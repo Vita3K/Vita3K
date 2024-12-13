@@ -55,6 +55,10 @@ void update_viewport(EmuEnvState &state) {
     int w = 0;
     int h = 0;
 
+    SDL_GetWindowSize(state.window.get(), &w, &h);
+    state.window_size.x = w;
+    state.window_size.y = h;
+
     switch (state.renderer->current_backend) {
     case renderer::Backend::OpenGL:
         SDL_GL_GetDrawableSize(state.window.get(), &w, &h);
@@ -71,6 +75,11 @@ void update_viewport(EmuEnvState &state) {
 
     state.drawable_size.x = w;
     state.drawable_size.y = h;
+
+    state.dpi_scale = static_cast<float>(state.drawable_size.x) / state.window_size.x;
+
+    state.res_width_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.dpi_scale);
+    state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
 
     if (h > 0) {
         const float window_aspect = static_cast<float>(w) / h;
@@ -297,31 +306,8 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         state.display.fullscreen = true;
         window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
-#if defined(_WIN32) || defined(__linux__)
-    const auto isSteamDeck = []() {
-#ifdef __linux__
-        std::ifstream file("/etc/os-release");
-        if (file.is_open()) {
-            std::string line;
-            while (std::getline(file, line)) {
-                if (line.find("VARIANT_ID=steamdeck") != std::string::npos)
-                    return true;
-            }
-        }
-#endif
-        return false;
-    };
 
-    if (!isSteamDeck()) {
-        float ddpi, hdpi, vdpi;
-        SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
-        window_type |= SDL_WINDOW_ALLOW_HIGHDPI;
-        state.dpi_scale = ddpi / 96;
-    }
-#endif
-    state.res_width_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_WIDTH * state.dpi_scale);
-    state.res_height_dpi_scale = static_cast<uint32_t>(DEFAULT_RES_HEIGHT * state.dpi_scale);
-    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
+    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, window_type | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
 
     if (!state.window) {
         LOG_ERROR("SDL failed to create window!");
