@@ -144,8 +144,10 @@ public:
     RendererPtr renderer{};
     IVector2 drawable_size = { 0, 0 };
     IVector2 window_size = { 0, 0 }; // Logical size of the window
-    FVector2 viewport_pos = { 0, 0 };
-    FVector2 viewport_size = { 0, 0 };
+    FVector2 logical_viewport_pos = { 0, 0 }; // Position of the logical viewport in the window. For ImGui
+    FVector2 logical_viewport_size = { 0, 0 }; // Size of the logical viewport in the window. For ImGui
+    FVector2 drawable_viewport_pos = { 0, 0 }; // Position of the drawable viewport in the window. For OpenGL/Vulkan
+    FVector2 drawable_viewport_size = { 0, 0 }; // Size of the drawable viewport in the window. For OpenGL/Vulkan
     MemState &mem;
     CtrlState &ctrl;
     TouchState &touch;
@@ -167,6 +169,7 @@ public:
     SfoFile &sfo_handle;
     NIDSet missing_nids;
     float dpi_scale = 1.f;
+    FVector2 gui_scale = { 1.f, 1.f };
     uint32_t res_width_dpi_scale = 0;
     uint32_t res_height_dpi_scale = 0;
     GDBState &gdb;

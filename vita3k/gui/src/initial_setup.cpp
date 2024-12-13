@@ -66,9 +66,9 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     static std::string title_str;
 
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
-    const ImVec2 WINDOW_SIZE(756.f * SCALE.x, 418.f * SCALE.y);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const auto WINDOW_SIZE = ImVec2(756.f * SCALE.x, 418.f * SCALE.y);
     const auto SELECT_SIZE = 72.f * SCALE.y;
     const ImVec2 BUTTON_SIZE(186.f * SCALE.x, 52.f * SCALE.y);
     const ImVec2 BUTTON_POS(8.f * SCALE.x, display_size.y - BUTTON_SIZE.y - (6.f * SCALE.y));

@@ -466,14 +466,14 @@ void browse_users_management(GuiState &gui, EmuEnvState &emuenv, const uint32_t 
 }
 
 void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 WINDOW_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const auto RES_SCALE = ImVec2(WINDOW_SIZE.x / emuenv.res_width_dpi_scale, WINDOW_SIZE.y / emuenv.res_height_dpi_scale);
+    const ImVec2 WINDOW_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     // Clear users list available
     users_list_available.clear();
 
-    const ImVec2 WINDOW_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+    const ImVec2 WINDOW_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
