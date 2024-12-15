@@ -771,7 +771,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         // get the first depth surface with an address lower or equal to address
         auto it = depth_address_lookup.upper_bound(address);
         if (it != depth_address_lookup.begin()) {
-            it--;
+            --it;
 
             // the texture must be contained entirely in the depth surface
             if (address + total_bytes <= it->first + it->second->total_bytes) {
@@ -784,7 +784,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         // get the first stencil surface with an address lower or equal to address
         auto it = stencil_address_lookup.upper_bound(address);
         if (it != stencil_address_lookup.begin()) {
-            it--;
+            --it;
 
             // note: we don't support sampling the stencil from a D24S8 depth-stencil
             // so we can assume any stencil uses only 1 byte per sample

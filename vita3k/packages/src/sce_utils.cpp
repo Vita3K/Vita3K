@@ -823,10 +823,7 @@ void self2elf(const fs::path &infile, const fs::path &outfile, KeyStore &SCE_KEY
         if (pad_len < 0)
             LOG_ERROR("ELF p_offset Invalid");
 
-        std::vector<char> padding;
-        for (int i = 0; i < pad_len; i++) {
-            padding.push_back('\0');
-        }
+        std::vector<char> padding(pad_len, '\0');
 
         fileout.write(padding.data(), pad_len);
 

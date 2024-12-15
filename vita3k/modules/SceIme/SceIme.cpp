@@ -30,7 +30,7 @@ EXPORT(void, SceImeEventHandler, Ptr<void> arg, const SceImeEvent *e) {
     TRACY_FUNC(SceImeEventHandler, arg, e);
     Ptr<SceImeEvent> e1 = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime2"));
     memcpy(e1.get(emuenv.mem), e, sizeof(SceImeEvent));
-    auto thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    auto thread = emuenv.kernel.get_thread(thread_id);
     thread->run_callback(emuenv.ime.param.handler.address(), { arg.address(), e1.address() });
     free(emuenv.mem, e1.address());
 }
