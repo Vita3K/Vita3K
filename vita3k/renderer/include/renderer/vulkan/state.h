@@ -120,6 +120,7 @@ struct VKState : public renderer::State {
     void set_screen_filter(const std::string_view &filter) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
+    int get_max_2d_texture_width() override;
     void set_async_compilation(bool enable) override;
 
     bool map_memory(MemState &mem, Ptr<void> address, uint32_t size) override;

@@ -173,6 +173,8 @@ public:
     FVector2 gui_scale = { 1.f, 1.f };
     GDBState &gdb;
     HTTPState &http;
+    int max_font_level = 0;
+    int current_font_level = 0;
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs
