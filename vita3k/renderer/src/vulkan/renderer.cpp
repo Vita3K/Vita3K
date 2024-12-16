@@ -939,6 +939,10 @@ void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
 }
 
+int VKState::get_max_2d_texture_width() {
+    return static_cast<int>(physical_device_properties.limits.maxImageDimension2D);
+}
+
 void VKState::set_async_compilation(bool enable) {
     pipeline_cache.set_async_compilation(enable);
 }

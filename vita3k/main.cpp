@@ -232,6 +232,7 @@ int main(int argc, char *argv[]) {
             run_execv(argv, emuenv);
         }
         gui::init(gui, emuenv);
+        app::update_viewport(emuenv);
     }
 
     if (cfg.content_path.has_value()) {
@@ -447,7 +448,7 @@ int main(int argc, char *argv[]) {
         gui::draw_vita_area(gui, emuenv);
 
         if (emuenv.cfg.performance_overlay && !emuenv.kernel.is_threads_paused() && (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING)) {
-            ImGui::PushFont(gui.vita_font);
+            ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
             gui::draw_perf_overlay(gui, emuenv);
             ImGui::PopFont();
         }

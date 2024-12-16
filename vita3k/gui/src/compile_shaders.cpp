@@ -33,7 +33,7 @@ void draw_pre_compiling_shaders_progress(GuiState &gui, EmuEnvState &emuenv, con
     const auto WINDOW_SIZE = ImVec2(616.f * SCALE.x, 236.f * SCALE.y);
     const auto ICON_SIZE_SCALE = ImVec2(96.f * SCALE.x, 96.f * SCALE.y);
 
-    ImGui::PushFont(gui.vita_font);
+    ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(WINDOW_SIZE);
     ImGui::SetNextWindowBgAlpha(0.9f);

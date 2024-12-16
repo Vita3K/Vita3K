@@ -84,7 +84,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     const auto FW_FONT_PATH{ emuenv.pref_path / "sa0" };
     const auto FW_FONT_INSTALLED = fs::exists(FW_FONT_PATH) && !fs::is_empty(FW_FONT_PATH);
 
-    ImGui::PushFont(gui.vita_font);
+    ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
     ImGui::Begin("##initial_setup", &emuenv.cfg.initial_setup, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
