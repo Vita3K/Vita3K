@@ -748,6 +748,12 @@ void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
 }
 
+int GLState::get_max_2d_texture_width() {
+    GLint max_texture_size;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+    return static_cast<int>(max_texture_size);
+}
+
 std::string_view GLState::get_gpu_name() {
     return reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
 }

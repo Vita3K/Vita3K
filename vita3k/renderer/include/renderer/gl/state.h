@@ -58,6 +58,7 @@ struct GLState : public renderer::State {
     void set_screen_filter(const std::string_view &filter) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
+    int get_max_2d_texture_width() override;
 
     std::string_view get_gpu_name() override;
 

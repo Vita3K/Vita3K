@@ -300,9 +300,9 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
             // Free Space
             const auto scal_font = 19.2f / ImGui::GetFontSize();
-            draw_list->AddText(gui.vita_font, 19.2f * SCALE.x, ImVec2((VIEWPORT_POS.x + VIEWPORT_SIZE.x - ((ImGui::CalcTextSize(lang.main["free_space"].c_str()).x * scal_font)) * SCALE.x) - (15.f * SCALE.x), VIEWPORT_POS.y + (42.f * SCALE.y)),
+            draw_list->AddText(gui.vita_font[emuenv.current_font_level], 19.2f * SCALE.x, ImVec2((VIEWPORT_POS.x + VIEWPORT_SIZE.x - ((ImGui::CalcTextSize(lang.main["free_space"].c_str()).x * scal_font)) * SCALE.x) - (15.f * SCALE.x), VIEWPORT_POS.y + (42.f * SCALE.y)),
                 IM_COL32_WHITE, lang.main["free_space"].c_str());
-            draw_list->AddText(gui.vita_font, 19.2f * SCALE.x, ImVec2((VIEWPORT_POS.x + VIEWPORT_SIZE.x - ((ImGui::CalcTextSize(space["free"].c_str()).x * scal_font)) * SCALE.x) - (15.f * SCALE.x), VIEWPORT_POS.y + (68.f * SCALE.y)),
+            draw_list->AddText(gui.vita_font[emuenv.current_font_level], 19.2f * SCALE.x, ImVec2((VIEWPORT_POS.x + VIEWPORT_SIZE.x - ((ImGui::CalcTextSize(space["free"].c_str()).x * scal_font)) * SCALE.x) - (15.f * SCALE.x), VIEWPORT_POS.y + (68.f * SCALE.y)),
                 IM_COL32_WHITE, space["free"].c_str());
         }
         ImGui::SetCursorPosY(64.0f * SCALE.y);
