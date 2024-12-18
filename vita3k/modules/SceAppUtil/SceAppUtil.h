@@ -19,12 +19,4 @@
 
 #include <module/module.h>
 
-#include <net/types.h>
-
-DECL_EXPORT(int, sceNetBind, int sid, const SceNetSockaddr *addr, unsigned int addrlen);
-DECL_EXPORT(int, sceNetInetPton, int af, const char *src, void *dst);
-DECL_EXPORT(int, sceNetSetsockopt, int sid, SceNetProtocol level, SceNetSocketOption optname, const void *optval, unsigned int optlen);
-DECL_EXPORT(int, sceNetShutdown, int sid, int how);
-DECL_EXPORT(int, sceNetSocket, const char *name, int domain, SceNetSocketType type, SceNetProtocol protocol);
-DECL_EXPORT(int, sceNetSocketAbort, int sid, int flags);
-DECL_EXPORT(int, sceNetSocketClose, int sid);
+DECL_EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf, SceSize bufSize);

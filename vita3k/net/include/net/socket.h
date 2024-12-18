@@ -45,18 +45,22 @@ struct Socket;
 typedef std::shared_ptr<Socket> SocketPtr;
 
 struct Socket {
+    int sockopt_so_onesbcast = 0;
+
     explicit Socket(int domain, int type, int protocol) {}
 
     virtual ~Socket() = default;
 
+    virtual int abort(int flags) = 0;
     virtual int close() = 0;
+    virtual int shutdown_socket(int how) = 0;
     virtual int bind(const SceNetSockaddr *addr, unsigned int addrlen) = 0;
     virtual int send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) = 0;
     virtual int recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) = 0;
     virtual int set_socket_options(int level, int optname, const void *optval, unsigned int optlen) = 0;
     virtual int get_socket_options(int level, int optname, void *optval, unsigned int *optlen) = 0;
     virtual int connect(const SceNetSockaddr *addr, unsigned int namelen) = 0;
-    virtual SocketPtr accept(SceNetSockaddr *addr, unsigned int *addrlen) = 0;
+    virtual SocketPtr accept(SceNetSockaddr *addr, unsigned int *addrlen, int &err) = 0;
     virtual int listen(int backlog) = 0;
     virtual int get_socket_address(SceNetSockaddr *name, unsigned int *namelen) = 0;
 };
@@ -66,7 +70,6 @@ struct PosixSocket : public Socket {
     abs_socket sock;
 
     int sockopt_so_reuseport = 0;
-    int sockopt_so_onesbcast = 0;
     int sockopt_so_usecrypto = 0;
     int sockopt_so_usesignature = 0;
     int sockopt_so_tppolicy = 0;
@@ -74,6 +77,9 @@ struct PosixSocket : public Socket {
     int sockopt_ip_ttlchk = 0;
     int sockopt_ip_maxttl = 0;
     int sockopt_tcp_mss_to_advertise = 0;
+
+    int abort_flags = 0;
+    bool is_aborted = false;
 
     explicit PosixSocket(int domain, int type, int protocol)
         : Socket(domain, type, protocol)
@@ -83,30 +89,29 @@ struct PosixSocket : public Socket {
         : Socket(0, 0, 0)
         , sock(sock) {}
 
+    static int translate_return_value(int retval);
+
+    int abort(int flags) override;
     int close() override;
+    int shutdown_socket(int how) override;
     int bind(const SceNetSockaddr *addr, unsigned int addrlen) override;
     int send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) override;
     int recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) override;
     int set_socket_options(int level, int optname, const void *optval, unsigned int optlen) override;
     int get_socket_options(int level, int optname, void *optval, unsigned int *optlen) override;
     int connect(const SceNetSockaddr *addr, unsigned int namelen) override;
-    SocketPtr accept(SceNetSockaddr *addr, unsigned int *addrlen) override;
+    SocketPtr accept(SceNetSockaddr *addr, unsigned int *addrlen, int &err) override;
     int listen(int backlog) override;
     int get_socket_address(SceNetSockaddr *name, unsigned int *namelen) override;
 };
 
-struct P2PSocket : public Socket {
-    explicit P2PSocket(int domain, int type, int protocol)
-        : Socket(domain, type, protocol) {}
+struct P2PSocket : public PosixSocket {
+    explicit P2PSocket(int domain, int type, int protocol);
 
-    int close() override;
     int bind(const SceNetSockaddr *addr, unsigned int addrlen) override;
     int send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) override;
     int recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) override;
-    int set_socket_options(int level, int optname, const void *optval, unsigned int optlen) override;
-    int get_socket_options(int level, int optname, void *optval, unsigned int *optlen) override;
     int connect(const SceNetSockaddr *addr, unsigned int namelen) override;
-    SocketPtr accept(SceNetSockaddr *addr, unsigned int *addrlen) override;
-    int listen(int backlog) override;
+    SocketPtr accept(SceNetSockaddr *addr, unsigned int *addrlen, int &err) override;
     int get_socket_address(SceNetSockaddr *name, unsigned int *namelen) override;
 };

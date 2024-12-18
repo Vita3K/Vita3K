@@ -18,6 +18,9 @@
 #pragma once
 
 #include <emuenv/app_util.h>
+
+#include <np/common.h>
+
 #include <mem/ptr.h>
 
 #define SCE_SAVEDATA_DIALOG_ERROR_PARAM 0x80100b01
@@ -324,6 +327,74 @@ struct SceMsgDialogParam {
     Ptr<SceMsgDialogProgressBarParam> progBarParam;
     SceInt32 flag;
     SceChar8 reserved[32];
+};
+
+enum SceNetCheckDialogMode : SceInt32 {
+    SCE_NETCHECK_DIALOG_MODE_INVALID = 0, // Invalid Mode
+    SCE_NETCHECK_DIALOG_MODE_ADHOC_CONN = 1, // Adhoc Mode
+    SCE_NETCHECK_DIALOG_MODE_PSN = 2, // PSN Mode
+    SCE_NETCHECK_DIALOG_MODE_PSN_ONLINE = 3, // PSN Online Mode
+    SCE_NETCHECK_DIALOG_MODE_PS3_CONNECT = 4, // PS3 Connect Mode
+    SCE_NETCHECK_DIALOG_MODE_PSP_ADHOC_CONN = 5, // PSP Adhoc Connect Mode
+    SCE_NETCHECK_DIALOG_MODE_PSP_ADHOC_CREATE = 6, // PSP Adhoc Create Mode
+    SCE_NETCHECK_DIALOG_MODE_PSP_ADHOC_JOIN = 7 // PSP Adhoc Join Mode
+};
+
+enum SceNetCheckDialogPS3ConnectAction : SceInt32 {
+    SCE_NETCHECK_DIALOG_PS3_CONNECT_ACTION_ENTER = 0, // Connect to PS3
+    SCE_NETCHECK_DIALOG_PS3_CONNECT_ACTION_LEAVE = 1 // Disconnect from PS3
+};
+
+#define SCE_NET_CTL_CNF_NAME_LEN (64 + 1)
+#define SCE_NET_CTL_SSID_LEN (32 + 1)
+#define SCE_NET_CTL_WIFI_SECURITY_KEY_LEN (64 + 1)
+#define SCE_NET_CTL_AUTH_NAME_LEN (127 + 1)
+#define SCE_NET_CTL_AUTH_KEY_LEN (127 + 1)
+#define SCE_NET_CTL_HOSTNAME_LEN (255 + 1)
+#define SCE_NET_CTL_IPV4_ADDR_STR_LEN 16
+
+struct SceNetCheckDialogPS3ConnectParam {
+    SceNetCheckDialogPS3ConnectAction action;
+    char ssid[SCE_NET_CTL_SSID_LEN];
+    char wpaKey[SCE_NET_CTL_WIFI_SECURITY_KEY_LEN];
+    char titleId[9 + 1];
+};
+
+#define SCE_NETCHECK_DIALOG_INITIAL_AGE_RESTRICTION (-1) // (initial) default age restriction
+#define SCE_NETCHECK_DIALOG_COUNTRY_CODE_LEN (2) // country code length
+#define SCE_NETCHECK_DIALOG_AGE_RESTRICTION_COUNT_MAX (200) // The maximum number of country-specific age restriction
+
+struct SceNetCheckDialogAgeRestriction {
+    char countryCode[SCE_NETCHECK_DIALOG_COUNTRY_CODE_LEN]; // country code
+    SceInt8 age; // age
+    SceInt8 padding; // Padding for alignment
+};
+
+#define SCE_NET_ADHOCCTL_GROUPNAME_LEN 8
+
+struct SceNetAdhocctlGroupName {
+    SceChar8 data[SCE_NET_ADHOCCTL_GROUPNAME_LEN];
+};
+
+struct SceNetCheckDialogParam {
+    SceUInt32 sdkVersion; // internal range
+    SceCommonDialogParam commonParam; // common dialog parameter
+    SceNetCheckDialogMode mode; // dialog mode
+    np::CommunicationID npCommunicationId; // Communication ID
+    Ptr<SceNetCheckDialogPS3ConnectParam> ps3ConnectParam; // PS3 connect mode parameter
+    Ptr<SceNetAdhocctlGroupName> groupName; // PSP Adhoc connect Group name parameter
+    SceUInt32 timeoutUs; // PSP Adhoc join timeout parameter
+    SceInt8 defaultAgeRestriction; // default age restriction parameter
+    SceInt8 padding[3]; // Padding for alignment
+    SceInt32 ageRestrictionCount; // Number of country-specific age restriction
+    Ptr<const SceNetCheckDialogAgeRestriction> ageRestriction; // country-specific age restriction list parameter
+    SceUInt8 reserved[104]; // reserved
+};
+
+struct SceNetCheckDialogResult {
+    SceInt32 result;
+    SceBool psnModeSucceeded;
+    SceUInt8 reserved[124];
 };
 
 struct SceSaveDataDialogFixedParam {
