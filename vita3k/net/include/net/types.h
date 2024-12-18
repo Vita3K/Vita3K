@@ -32,6 +32,15 @@ enum SceNetProtocol : uint32_t {
     SCE_NET_SOL_SOCKET = 0xFFFF
 };
 
+enum SceNetMsgFlag : uint32_t {
+    SCE_NET_MSG_PEEK = 0x00000002,
+    SCE_NET_MSG_WAITALL = 0x00000040,
+    SCE_NET_MSG_DONTWAIT = 0x00000080,
+    SCE_NET_MSG_USECRYPTO = 0x00000400,
+    SCE_NET_MSG_USESIGNATURE = 0x00000800,
+    SCE_NET_MSG_PEEKLEN = (0x00001000 | SCE_NET_MSG_PEEK)
+};
+
 enum SceNetSocketType : uint32_t {
     SCE_NET_SOCK_STREAM = 1,
     SCE_NET_SOCK_DGRAM = 2,
@@ -335,12 +344,14 @@ struct SceNetSockaddrIn {
     unsigned short int sin_vport;
     char sin_zero[6];
 };
+static_assert(sizeof(SceNetSockaddrIn) == 16, "SceNetSockaddrIn has incorrect size");
 
 struct SceNetSockaddr {
     unsigned char sa_len;
     unsigned char sa_family;
     char sa_data[14];
 };
+static_assert(sizeof(SceNetSockaddr) == 16, "SceNetSockaddr has incorrect size");
 
 struct SceNetInitParam {
     Ptr<void> memory;
