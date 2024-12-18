@@ -1,6 +1,25 @@
+// Vita3K emulator project
+// Copyright (C) 2025 Vita3K team
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 #include <net/epoll.h>
 
-int Epoll::add(int id, abs_socket sock, SceNetEpollEvent *ev) {
+#include <optional>
+
+int Epoll::add(int id, std::weak_ptr<Socket> sock, SceNetEpollEvent *ev) {
     if (!eventEntries.try_emplace(id, EpollSocket{ ev->events, ev->data, sock }).second) {
         return SCE_NET_ERROR_EEXIST;
     }
@@ -8,7 +27,7 @@ int Epoll::add(int id, abs_socket sock, SceNetEpollEvent *ev) {
     return 0;
 }
 
-int Epoll::del(int id, abs_socket sock, SceNetEpollEvent *ev) {
+int Epoll::del(int id) {
     if (eventEntries.erase(id) == 0) {
         return SCE_NET_ERROR_ENOENT;
     }
@@ -16,7 +35,7 @@ int Epoll::del(int id, abs_socket sock, SceNetEpollEvent *ev) {
     return 0;
 }
 
-int Epoll::mod(int id, abs_socket sock, SceNetEpollEvent *ev) {
+int Epoll::mod(int id, SceNetEpollEvent *ev) {
     auto it = eventEntries.find(id);
     if (it == eventEntries.end()) {
         return SCE_NET_ERROR_ENOENT;
@@ -29,11 +48,8 @@ int Epoll::mod(int id, abs_socket sock, SceNetEpollEvent *ev) {
 
 static void add_event_fd_set(fd_set *set, int *maxFd, abs_socket sock) {
     FD_SET(sock, set);
-#ifndef _WIN32
-    if (sock > *maxFd) {
+    if (sock > *maxFd)
         *maxFd = sock;
-    }
-#endif
 }
 
 int Epoll::wait(SceNetEpollEvent *events, int maxevents, int timeout_microseconds) {
@@ -43,45 +59,60 @@ int Epoll::wait(SceNetEpollEvent *events, int maxevents, int timeout_microsecond
     FD_ZERO(&exceptFds);
     int maxFd = 0;
 
-    for (auto &pair : eventEntries) {
-        if (pair.second.events & SCE_NET_EPOLLIN) {
-            add_event_fd_set(&readFds, &maxFd, pair.second.sock);
-        }
-        if (pair.second.events & SCE_NET_EPOLLOUT) {
-            add_event_fd_set(&writeFds, &maxFd, pair.second.sock);
-        }
-        if (pair.second.events & SCE_NET_EPOLLERR) {
-            add_event_fd_set(&exceptFds, &maxFd, pair.second.sock);
-        }
+    const auto get_valid_posix_socket = [](const std::weak_ptr<Socket> &weak_sock, int id) -> std::optional<abs_socket> {
+        const auto sock = weak_sock.lock();
+        if (!sock)
+            return std::nullopt;
+
+        const auto posixSocket = std::dynamic_pointer_cast<PosixSocket>(sock);
+        if (!posixSocket)
+            return std::nullopt;
+
+        return posixSocket->sock;
+    };
+
+    for (const auto &[id, entry] : eventEntries) {
+        const auto sock = get_valid_posix_socket(entry.sock, id);
+        if (!sock)
+            continue;
+
+        if (entry.events & SCE_NET_EPOLLIN)
+            add_event_fd_set(&readFds, &maxFd, *sock);
+        if (entry.events & SCE_NET_EPOLLOUT)
+            add_event_fd_set(&writeFds, &maxFd, *sock);
+        if (entry.events & SCE_NET_EPOLLERR)
+            add_event_fd_set(&exceptFds, &maxFd, *sock);
     }
+
+    if (maxFd == 0)
+        return 0;
 
     timeval timeout;
     timeout.tv_sec = timeout_microseconds / 1000000;
     timeout.tv_usec = timeout_microseconds % 1000000;
     auto ret = select(maxFd + 1, &readFds, &writeFds, &exceptFds, &timeout);
-    if (ret < 0) {
-        // TODO: translate error code
-        return -1;
-    }
+    if (ret < 0)
+        return PosixSocket::translate_return_value(ret);
 
     int eventCount = 0;
-    for (auto &pair : eventEntries) {
+    for (const auto &[id, entry] : eventEntries) {
         unsigned int eventTypes = 0;
-        if (FD_ISSET(pair.second.sock, &readFds)) {
+        const auto sock = get_valid_posix_socket(entry.sock, id);
+        if (!sock)
+            continue;
+
+        if (FD_ISSET(*sock, &readFds))
             eventTypes |= SCE_NET_EPOLLIN;
-        }
-        if (FD_ISSET(pair.second.sock, &writeFds)) {
+        if (FD_ISSET(*sock, &writeFds))
             eventTypes |= SCE_NET_EPOLLOUT;
-        }
-        if (FD_ISSET(pair.second.sock, &exceptFds)) {
+        if (FD_ISSET(*sock, &exceptFds))
             eventTypes |= SCE_NET_EPOLLERR;
-        }
 
         if (eventTypes != 0 && eventCount < maxevents) {
             auto i = eventCount++;
 
             events[i].events = eventTypes;
-            events[i].data = pair.second.data;
+            events[i].data = entry.data;
         }
     }
 
