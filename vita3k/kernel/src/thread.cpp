@@ -162,6 +162,39 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     return SCE_KERNEL_OK;
 }
 
+int ThreadState::startAdhoc(uint32_t id, uint32_t type, const Ptr<void> peer, SceSize optLen, const Ptr<void> opt, bool run_entry_callback) {
+    if (status == ThreadStatus::run || call_level > 0)
+        return SCE_KERNEL_ERROR_RUNNING;
+    std::unique_lock<std::mutex> thread_lock(mutex);
+
+    run_start_callback = run_entry_callback;
+    call_level = 1;
+    load_context(*cpu, init_cpu_ctx);
+    write_pc(*cpu, entry_point);
+    write_lr(*cpu, cpu->halt_instruction_pc);
+
+    Address sp = read_sp(*cpu);
+    write_reg(*cpu, 0, id);
+    write_reg(*cpu, 1, type);
+    write_reg(*cpu, 2, peer.address());
+    write_reg(*cpu, 3, optLen);
+
+    sp -= 4;
+    memcpy(Ptr<uint32_t>(sp).get(mem), &opt, 4);
+    write_sp(*cpu, sp);
+
+    if (kernel.debugger.wait_for_debugger) {
+        to_do = ThreadToDo::suspend;
+        status = ThreadStatus::suspend;
+        kernel.debugger.wait_for_debugger = false;
+    } else {
+        to_do = ThreadToDo::run;
+    }
+    something_to_do.notify_one();
+
+    return SCE_KERNEL_OK;
+}
+
 void ThreadState::exit(SceInt32 status) {
     std::lock_guard<std::mutex> guard(mutex);
     run_end_callback = true;
@@ -358,6 +391,26 @@ uint32_t ThreadState::run_guest_function(Address callback_address, SceSize args,
     entry_point = callback_address;
 
     start(args, argp);
+    {
+        // wait for the function to return
+        std::unique_lock<std::mutex> lock(mutex);
+        if (status != ThreadStatus::dormant || to_do == ThreadToDo::run) {
+            status_cond.wait(lock, [&]() {
+                return status == ThreadStatus::dormant && to_do != ThreadToDo::run;
+            });
+        }
+    }
+
+    entry_point = old_entry_point;
+    return returned_value;
+}
+
+uint32_t ThreadState::run_adhoc_callback(Address callback_address, uint32_t id, uint32_t type, const Ptr<void> peer, SceSize optLen, const Ptr<void> opt) {
+    // save the previous entry point, just in case
+    const auto old_entry_point = entry_point;
+    entry_point = callback_address;
+
+    startAdhoc(id, type, peer, optLen, opt);
     {
         // wait for the function to return
         std::unique_lock<std::mutex> lock(mutex);
