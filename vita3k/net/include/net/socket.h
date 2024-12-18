@@ -45,11 +45,14 @@ struct Socket;
 typedef std::shared_ptr<Socket> SocketPtr;
 
 struct Socket {
+    int broadcastAddr = 0;
+
     explicit Socket(int domain, int type, int protocol) {}
 
     virtual ~Socket() = default;
 
     virtual int close() = 0;
+    virtual int shutdown_socket(int how) = 0;
     virtual int bind(const SceNetSockaddr *addr, unsigned int addrlen) = 0;
     virtual int send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) = 0;
     virtual int recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) = 0;
@@ -84,6 +87,7 @@ struct PosixSocket : public Socket {
         , sock(sock) {}
 
     int close() override;
+    int shutdown_socket(int how) override;
     int bind(const SceNetSockaddr *addr, unsigned int addrlen) override;
     int send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) override;
     int recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) override;
@@ -100,6 +104,7 @@ struct P2PSocket : public Socket {
         : Socket(domain, type, protocol) {}
 
     int close() override;
+    int shutdown_socket(int how) override;
     int bind(const SceNetSockaddr *addr, unsigned int addrlen) override;
     int send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) override;
     int recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) override;
