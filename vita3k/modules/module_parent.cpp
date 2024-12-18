@@ -30,6 +30,7 @@
 #include <kernel/state.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
+#include <packages/sce_types.h>
 #include <patch/patch.h>
 #include <util/arm.h>
 #include <util/find.h>
@@ -240,6 +241,13 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         res = vfs::read_file(device, module_buffer, emuenv.pref_path, translated_module_path);
     if (!res) {
         LOG_ERROR("Failed to read module file {}", module_path);
+        return SCE_ERROR_ERRNO_ENOENT;
+    }
+
+    // Decrypt module file if necessary
+    module_buffer = decrypt_fself(module_buffer, emuenv.app_license.key);
+    if (module_buffer.empty()) {
+        LOG_ERROR("Failed to decrypt module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
     }
 
