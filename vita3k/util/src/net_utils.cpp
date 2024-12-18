@@ -15,14 +15,20 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "util/log.h"
 #include <util/net_utils.h>
 
 #include <curl/curl.h>
 
 #ifdef _WIN32
+#include <iphlpapi.h>
 #include <winsock2.h>
 #else
+#include <arpa/inet.h>
 #include <fcntl.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netinet/in.h>
 #endif
 
 #include <condition_variable>
@@ -470,6 +476,75 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
         LOG_CRITICAL("Aborted update by user");
 
     return res == CURLE_OK;
+}
+
+void getAllAssignedAddrs(std::vector<AssignedAddr> &outAddrs) {
+    outAddrs.clear();
+#ifdef _WIN32
+    PIP_ADAPTER_INFO pAdapterInfo;
+    DWORD dwRetVal = 0;
+    UINT i;
+    ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
+    pAdapterInfo = (IP_ADAPTER_INFO *)malloc(sizeof(IP_ADAPTER_INFO));
+    if (pAdapterInfo == NULL) {
+        LOG_CRITICAL("Error allocating memory needed to call GetAdaptersinfo");
+        return;
+    }
+    // Make an initial call to GetAdaptersInfo to get the necessary size into the ulOutBufLen variable
+    if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
+        free(pAdapterInfo);
+        pAdapterInfo = (IP_ADAPTER_INFO *)malloc(ulOutBufLen);
+        if (pAdapterInfo == NULL) {
+            LOG_CRITICAL("Error allocating memory needed to call GetAdaptersinfo");
+            return;
+        }
+    }
+    if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
+        PIP_ADAPTER_INFO pAdapter = pAdapterInfo;
+        const std::string noAddress = "0.0.0.0";
+        while (pAdapter) {
+            IP_ADDR_STRING *pIPAddr = &pAdapter->IpAddressList;
+            while (pIPAddr) {
+                if (noAddress.compare(pIPAddr->IpAddress.String) != 0)
+                    outAddrs.push_back({ pAdapter->Description, pIPAddr->IpAddress.String, pIPAddr->IpMask.String });
+                pIPAddr = pIPAddr->Next;
+            }
+            pAdapter = pAdapter->Next;
+        }
+    } else {
+        LOG_CRITICAL("GetAdaptersInfo failed with error: %d", dwRetVal);
+    }
+    if (outAddrs.size() == 0)
+        outAddrs.push_back({ "localhost", "127.0.0.1", "255.255.255.255" });
+#else
+    struct ifaddrs *ifAddrStruct = NULL;
+    struct ifaddrs *ifa = NULL;
+    void *tmpAddrPtr = NULL;
+
+    getifaddrs(&ifAddrStruct);
+
+    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr)
+            continue;
+        if ((ifa->ifa_flags & IFF_LOOPBACK) != 0)
+            continue;
+        if (ifa->ifa_flags)
+            if (ifa->ifa_addr->sa_family == AF_INET) { // check it is IP4
+                char netMaskAddrStr[INET_ADDRSTRLEN];
+                auto netMaskAddr = ((sockaddr_in *)ifa->ifa_netmask)->sin_addr;
+                inet_ntop(AF_INET, &netMaskAddr, netMaskAddrStr, INET_ADDRSTRLEN);
+                // is a valid IP4 Address
+                tmpAddrPtr = &((sockaddr_in *)ifa->ifa_addr)->sin_addr;
+                char addressBuffer[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
+                outAddrs.push_back({ ifa->ifa_name, addressBuffer, netMaskAddrStr });
+            }
+    }
+    if (ifAddrStruct != NULL)
+        freeifaddrs(ifAddrStruct);
+    if (outAddrs.size() == 0)
+        outAddrs.push_back({ "lo", "127.0.0.1", "255.255.255.255" });
+#endif
 }
 
 } // namespace net_utils
