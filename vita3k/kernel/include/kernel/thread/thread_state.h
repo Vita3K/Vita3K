@@ -98,6 +98,7 @@ struct ThreadState {
 
     int init(const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
     int start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback = false);
+    int startAdhoc(uint32_t id, uint32_t type, const Ptr<void> peer, SceSize optLen, const Ptr<void> opt, bool run_entry_callback = false);
     void exit(SceInt32 status);
     void exit_delete(bool exit = true);
 
@@ -114,6 +115,9 @@ struct ThreadState {
     // it is only used for module loading and gxm display queue right now
     // args and argp are passed to thread->start as is
     uint32_t run_guest_function(Address callback_address, SceSize args = 0, const Ptr<void> argp = Ptr<void>{});
+
+    // This function is called from another thread when a new adhoc matching notification is available
+    uint32_t run_adhoc_callback(Address callback_address, uint32_t id, uint32_t type, const Ptr<void> peer, SceSize optLen, const Ptr<void> opt);
 
     void suspend();
     void resume(bool step = false);

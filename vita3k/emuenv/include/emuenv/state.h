@@ -59,6 +59,7 @@ struct RegMgrState;
 struct SfoFile;
 struct GDBState;
 struct HTTPState;
+struct AdhocState;
 
 typedef int32_t SceInt;
 struct IVector2 {
@@ -104,6 +105,7 @@ private:
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
     std::unique_ptr<HTTPState> _http;
+    std::unique_ptr<AdhocState> _adhoc;
 
 public:
     // App info contained in its `param.sfo` file
@@ -176,6 +178,7 @@ public:
     HTTPState &http;
     int max_font_level = 0;
     int current_font_level = 0;
+    AdhocState &adhoc;
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs
