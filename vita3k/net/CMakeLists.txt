@@ -12,7 +12,7 @@ add_library(
 )
 
 target_include_directories(net PUBLIC include)
-target_link_libraries(net PUBLIC mem)
+target_link_libraries(net PUBLIC emuenv mem np)
 if (WIN32)
     target_link_libraries(net PRIVATE winsock)
 endif()

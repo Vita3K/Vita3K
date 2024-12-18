@@ -92,6 +92,10 @@ struct SavedataState {
     bool draw_info_window = false;
 };
 
+struct NetcheckState {
+    SceNetCheckDialogMode mode = SCE_NETCHECK_DIALOG_MODE_INVALID;
+};
+
 struct DialogState {
     DialogLangState lang;
     DialogType type = NO_DIALOG;
@@ -100,6 +104,7 @@ struct DialogState {
     SceCommonDialogResult result = SCE_COMMON_DIALOG_RESULT_OK;
     ImeState ime;
     MsgState msg;
+    NetcheckState netcheck;
     TrophyState trophy;
     SavedataState savedata;
 };
