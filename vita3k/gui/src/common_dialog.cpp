@@ -27,7 +27,7 @@
 #include <SDL.h>
 
 namespace gui {
-static void draw_ime_dialog(EmuEnvState &emuenv, DialogState &common_dialog, float FONT_SCALE) {
+static void draw_ime_dialog(DialogState &common_dialog, float FONT_SCALE) {
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin("##ime_dialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(FONT_SCALE);
@@ -50,7 +50,7 @@ static void draw_ime_dialog(EmuEnvState &emuenv, DialogState &common_dialog, flo
     }
     ImGui::SameLine();
     auto &common = common_dialog.lang.common;
-    if (ImGui::Button(common["submit"].c_str()) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
+    if (ImGui::Button(common["submit"].c_str())) {
         common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_ENTER;
         common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
         common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
@@ -59,7 +59,7 @@ static void draw_ime_dialog(EmuEnvState &emuenv, DialogState &common_dialog, flo
     }
     if (common_dialog.ime.cancelable) {
         ImGui::SameLine();
-        if (ImGui::Button(common["cancel"].c_str()) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+        if (ImGui::Button(common["cancel"].c_str())) {
             common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_CLOSE;
             common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
             common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
@@ -366,7 +366,7 @@ static void draw_save_info(GuiState &gui, EmuEnvState &emuenv, const ImVec2 WIND
 }
 
 static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float FONT_SCALE, ImVec2 SCALE, ImVec2 WINDOW_SIZE, ImVec2 THUMBNAIL_SIZE, int loop_index, int save_index) {
-    const ImVec2 save_pos = ImVec2((150.f * SCALE.x) + THUMBNAIL_SIZE.x + (20 * SCALE.x), (save_index * THUMBNAIL_SIZE.y) + (save_index * (1.f * SCALE.y)));
+    const ImVec2 save_pos = ImVec2((150.f * SCALE.x) + THUMBNAIL_SIZE.x + (20.f * SCALE.x), (save_index * THUMBNAIL_SIZE.y) + (save_index * (1.f * SCALE.y)));
     const auto SELECT_PADDING = 4.f * SCALE.x;
     const ImVec2 selectable_pos = ImVec2(30.f * SCALE.x, save_pos.y + (SELECT_PADDING / 2.f));
     const auto is_save_data_slot_selected = gui.is_nav_button && (save_data_list_type_selected == SLOT) && (current_selected_save_data_slot == loop_index);
@@ -443,7 +443,7 @@ static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float 
     }
     ImGui::SetCursorPos(ImVec2(THUMBNAIL_POS.x, THUMBNAIL_POS.y + THUMBNAIL_SIZE.y));
     ImGui::Separator();
-    if (emuenv.common_dialog.savedata.slot_info[loop_index].isExist == 1) {
+    if (is_save_exist) {
         const ImVec2 INFO_SIZE(46 * SCALE.x, 46 * SCALE.y);
         const auto INFO_POS = ImVec2(WINDOW_SIZE.x - (194.f * SCALE.x), save_pos.y + (THUMBNAIL_SIZE.y / 2.f) - (INFO_SIZE.y / 2.f));
         ImGui::SetCursorPos(INFO_POS);
@@ -496,8 +496,10 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
             ImGui::Selectable("##cancel", save_data_list_type_selected == CANCEL, 0, ImVec2(CANCEL_BUTTON_SIZE.x, CANCEL_BUTTON_SIZE.y - PADDING));
         }
         const auto WINDOW_POS = ImVec2(0.f, 96.f * SCALE.y);
+        const auto MARGIN = 150.f * SCALE.x;
         const auto TEXT_SIZE = ImGui::CalcTextSize(emuenv.common_dialog.savedata.list_title.c_str());
-        ImGui::SetCursorPos(ImVec2((VIEWPORT_SIZE.x / 2.f) - (TEXT_SIZE.x / 2.f), WINDOW_POS.y - TEXT_SIZE.y - (14.f * SCALE.y)));
+        const ImVec2 TEXT_POS(TEXT_SIZE.x > (VIEWPORT_SIZE.x - MARGIN) ? MARGIN : (VIEWPORT_SIZE.x / 2.f) - (TEXT_SIZE.x / 2.f), WINDOW_POS.y - TEXT_SIZE.y - (14.f * SCALE.y));
+        ImGui::SetCursorPos(TEXT_POS);
         ImGui::Text("%s", emuenv.common_dialog.savedata.list_title.c_str());
         ImGui::SetCursorPosY(95.f * SCALE.y);
         ImGui::Separator();
@@ -517,6 +519,12 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
                     save_data_slot_list.push_back(i);
                     break;
                 case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
+                    if (!emuenv.common_dialog.savedata.title[i].empty()) {
+                        draw_savedata_dialog_list(gui, emuenv, FONT_SCALE, SCALE, WINDOW_SIZE, THUMBNAIL_SIZE, i, existing_saves_count);
+                        existing_saves_count++;
+                        save_data_slot_list.push_back(i);
+                    }
+                    break;
                 case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
                     if (emuenv.common_dialog.savedata.slot_info[i].isExist == 1) {
                         draw_savedata_dialog_list(gui, emuenv, FONT_SCALE, SCALE, WINDOW_SIZE, THUMBNAIL_SIZE, i, existing_saves_count);
@@ -642,7 +650,7 @@ void draw_common_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         switch (emuenv.common_dialog.type) {
         case IME_DIALOG:
-            draw_ime_dialog(emuenv, emuenv.common_dialog, RES_SCALE.x);
+            draw_ime_dialog(emuenv.common_dialog, RES_SCALE.x);
             break;
         case MESSAGE_DIALOG:
             draw_message_dialog(emuenv.common_dialog, RES_SCALE.x, SCALE);
