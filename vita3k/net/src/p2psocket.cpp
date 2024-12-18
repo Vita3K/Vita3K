@@ -21,6 +21,10 @@ int P2PSocket::close() {
     return 0;
 }
 
+int P2PSocket::shutdown_socket(int how) {
+    return 0;
+}
+
 int P2PSocket::listen(int backlog) {
     return 0;
 }
