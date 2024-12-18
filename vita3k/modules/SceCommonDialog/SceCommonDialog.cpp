@@ -24,6 +24,7 @@
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
+#include <net/state.h>
 #include <packages/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -489,12 +490,6 @@ EXPORT(int, sceNetCheckDialogGetPS3ConnectInfo) {
     return UNIMPLEMENTED();
 }
 
-typedef struct SceNetCheckDialogResult {
-    SceInt32 result;
-    SceBool psnModeSucceeded;
-    SceUInt8 reserved[124];
-} SceNetCheckDialogResult;
-
 EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
     TRACY_FUNC(sceNetCheckDialogGetResult, result);
     result->result = 0;
@@ -506,14 +501,28 @@ EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
     if (emuenv.common_dialog.type != NETCHECK_DIALOG)
         return SCE_COMMON_DIALOG_STATUS_NONE;
 
-    STUBBED("SCE_COMMON_DIALOG_STATUS_FINISHED");
+    if (emuenv.common_dialog.netcheck.mode != SCE_NETCHECK_DIALOG_MODE_ADHOC_CONN)
+        STUBBED("SCE_COMMON_DIALOG_STATUS_FINISHED");
+
     return emuenv.common_dialog.status;
 }
 
-EXPORT(int, sceNetCheckDialogInit) {
+EXPORT(int, sceNetCheckDialogInit, const SceNetCheckDialogParam *param) {
     TRACY_FUNC(sceNetCheckDialogInit);
+    if (emuenv.common_dialog.type != NO_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
+
     emuenv.common_dialog.type = NETCHECK_DIALOG;
-    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    emuenv.common_dialog.netcheck.mode = param->mode;
+
+    if (param->mode == SCE_NETCHECK_DIALOG_MODE_ADHOC_CONN) {
+        LOG_INFO("Triggering adhoc thread");
+        emuenv.netctl.adhocCondVarReady = true;
+        emuenv.netctl.adhocCondVar.notify_all();
+        emuenv.netctl.adhocState = SCE_NETCTL_STATE_CONNECTING;
+        emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    } else
+        emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     return UNIMPLEMENTED();
 }
 
@@ -521,6 +530,7 @@ EXPORT(int, sceNetCheckDialogTerm) {
     TRACY_FUNC(sceNetCheckDialogTerm);
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     emuenv.common_dialog.type = NO_DIALOG;
+    emuenv.common_dialog.netcheck.mode = SCE_NETCHECK_DIALOG_MODE_INVALID;
     return UNIMPLEMENTED();
 }
 
