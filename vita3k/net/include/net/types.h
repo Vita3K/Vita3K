@@ -20,8 +20,8 @@
 #include <mem/ptr.h>
 
 // Define our own htonll and ntohll because its not available in some systems/platforms
-#define HTONLL(x) (((uint64_t)htonl((x)&0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32))
-#define NTOHLL(x) (((uint64_t)ntohl((x)&0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32))
+#define HTONLL(x) (((uint64_t)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32))
+#define NTOHLL(x) (((uint64_t)ntohl((x) & 0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32))
 
 enum SceNetProtocol : uint32_t {
     SCE_NET_IPPROTO_IP = 0,

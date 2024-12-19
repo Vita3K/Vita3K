@@ -512,10 +512,8 @@ void getAllAssignedAddrs(std::vector<AssignedAddr> &outAddrs) {
             pAdapter = pAdapter->Next;
         }
     } else {
-        LOG_CRITICAL("GetAdaptersInfo failed with error: %d", dwRetVal);
+        LOG_CRITICAL("GetAdaptersInfo failed with error: {}", dwRetVal);
     }
-    if (outAddrs.size() == 0)
-        outAddrs.push_back({ "localhost", "127.0.0.1", "255.255.255.255" });
 #else
     struct ifaddrs *ifAddrStruct = NULL;
     struct ifaddrs *ifa = NULL;
@@ -542,9 +540,9 @@ void getAllAssignedAddrs(std::vector<AssignedAddr> &outAddrs) {
     }
     if (ifAddrStruct != NULL)
         freeifaddrs(ifAddrStruct);
-    if (outAddrs.size() == 0)
-        outAddrs.push_back({ "lo", "127.0.0.1", "255.255.255.255" });
 #endif
+    if (outAddrs.empty())
+        outAddrs.push_back({ "localhost", "127.0.0.1", "255.255.255.255" });
 }
 
 } // namespace net_utils
