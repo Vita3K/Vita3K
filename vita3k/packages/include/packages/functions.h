@@ -24,6 +24,8 @@
 
 #include <emuenv/state.h>
 
+#include <packages/sce_types.h>
+
 // TODO: remove
 #include <util/fs.h>
 
@@ -34,4 +36,5 @@ void install_pup(const fs::path &pref_path, const fs::path &pup_path, const std:
 
 bool create_license(EmuEnvState &emuenv, const std::string &zRIF);
 bool copy_license(EmuEnvState &emuenv, const fs::path &license_path);
-int32_t get_license_sku_flag(EmuEnvState &emuenv, const std::string &content_id);
+SceNpDrmLicense get_license(EmuEnvState &emuenv, const std::string &title_id, const std::string &content_id);
+bool open_license(const fs::path &license_path, SceNpDrmLicense &license);

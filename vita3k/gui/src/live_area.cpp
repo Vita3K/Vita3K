@@ -158,7 +158,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
     const auto APP_INDEX = get_app_index(gui, app_path);
 
     if (is_ps_app && !sku_flag.contains(app_path))
-        sku_flag[app_path] = get_license_sku_flag(emuenv, APP_INDEX->content_id);
+        sku_flag[app_path] = get_license(emuenv, APP_INDEX->title_id, APP_INDEX->content_id).sku_flag;
 
     if (!gui.live_area_contents.contains(app_path)) {
         auto default_contents = false;
