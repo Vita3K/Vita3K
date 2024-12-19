@@ -29,7 +29,7 @@ jobs:
         # https://docs.github.com/en/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#overriding-automatic-language-detection
         os: [ubuntu-latest]
         config: [Release]
-        cmake_preset: [linux-ninja-clang15]
+        cmake_preset: [linux-ninja-clang]
 
     steps:
       - name: Set up build environment (ubuntu-latest)
