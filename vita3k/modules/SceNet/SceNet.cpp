@@ -22,7 +22,7 @@
 #include <net/state.h>
 #include <net/types.h>
 #include <util/lock_and_find.h>
-#include "util/net_utils.h"
+#include <util/net_utils.h>
 
 #include <chrono>
 #include <thread>
@@ -618,7 +618,6 @@ EXPORT(int, sceNetSocket, const char *name, int domain, SceNetSocketType type, S
 
 EXPORT(int, sceNetSocketAbort, int sid) {
     TRACY_FUNC(sceNetSocketAbort, sid);
-    LOG_INFO("sceNetSocketAbort");
     auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
     if (!sock) {
         return RET_ERROR(SCE_NET_EBADF);

@@ -513,7 +513,6 @@ void SceNetAdhocMatchingContext::processPacketFromTarget(EmuEnvState &emuenv, Sc
 int SceNetAdhocMatchingContext::processHelloPacket(SceNetAdhocMatchingTarget &target) {
     const SceSize targetCount = this->countTargetsWithStatusOrBetter(SCE_NET_ADHOC_MATCHING_TARGET_STATUS_INPROGRES);
 
-
     SceNetAdhocMatchingHelloMessage helloPacket;
     const auto rawPacket = target.getRawPacket();
     helloPacket.parse(rawPacket.data(), rawPacket.size());
@@ -822,7 +821,7 @@ void SceNetAdhocMatchingContext::handleEventRegistrationTimeout(EmuEnvState &emu
             return;
         }
         setTargetStatus(*target, SCE_NET_ADHOC_MATCHING_TARGET_STATUS_CANCELLED);
-        sendOptDataToTarget(emuenv, thread_id, *target, SCE_NET_ADHOC_MATCHING_PACKET_TYPE_CANCEL,{});
+        sendOptDataToTarget(emuenv, thread_id, *target, SCE_NET_ADHOC_MATCHING_PACKET_TYPE_CANCEL, {});
         notifyHandler(SCE_NET_ADHOC_MATCHING_HANDLER_EVENT_TIMEOUT, target->addr);
     }
 
