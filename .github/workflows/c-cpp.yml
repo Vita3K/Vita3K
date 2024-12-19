@@ -27,11 +27,11 @@ jobs:
             version: appimage
             cache_path: ~/.ccache
             extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-x86_64.AppImage
-            cmake_preset: linux-ninja-clang15-appimage
+            cmake_preset: linux-ninja-clang-appimage
           - os: ubuntu-latest
             version: zip
             cache_path: ~/.ccache
-            cmake_preset: linux-ninja-clang15
+            cmake_preset: linux-ninja-clang
           - os: windows-latest
             version: zip
             cache_path: |
