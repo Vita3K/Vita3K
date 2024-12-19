@@ -48,6 +48,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     // Remove disconnected controllers
     bool found_gyro = false;
     bool found_accel = false;
+    bool controllers_changed = false;
     for (ControllerList::iterator controller = state.controllers.begin(); controller != state.controllers.end();) {
         if (SDL_GameControllerGetAttached(controller->second.controller.get())) {
             found_accel |= controller->second.has_accel;
@@ -58,6 +59,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
             state.free_ports[controller->second.port - 1] = true;
             controller = state.controllers.erase(controller);
             state.controllers_num--;
+            controllers_changed = true;
         }
     }
 
@@ -98,11 +100,21 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
                 state.controllers_has_motion_support[joystick_index] = found_gyro && found_accel;
                 state.controllers_num++;
+                controllers_changed = true;
             }
         }
     }
 
     state.has_motion_support = found_gyro && found_accel;
+
+    if (controllers_changed) {
+        auto &io = ImGui::GetIO();
+        if (state.controllers_num == 0) {
+            io.BackendFlags &= ~ImGuiBackendFlags_HasGamepad;
+        } else {
+            io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
+        }
+    }
 }
 
 static float keys_to_axis(const uint8_t *keys, SDL_Scancode code1, SDL_Scancode code2) {
@@ -119,6 +131,10 @@ static float keys_to_axis(const uint8_t *keys, SDL_Scancode code1, SDL_Scancode 
 
 static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, EmuEnvState &emuenv) {
     const uint8_t *const keys = SDL_GetKeyboardState(nullptr);
+    ImGuiIO &io = ImGui::GetIO();
+    if (io.ConfigFlags & ImGuiConfigFlags_NavEnableKeyboard) {
+        return;
+    }
     if (ext) {
         if (keys[emuenv.cfg.keyboard_button_l1])
             *buttons |= SCE_CTRL_L1;
@@ -229,6 +245,11 @@ std::array<ControllerBinding, 15> get_controller_bindings_ext(EmuEnvState &emuen
 }
 
 static void apply_controller(EmuEnvState &emuenv, uint32_t *buttons, float axes[4], SDL_GameController *controller, bool ext) {
+    ImGuiIO &io = ImGui::GetIO();
+    if (io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) {
+        return;
+    }
+
     if (ext) {
         for (const auto &binding : get_controller_bindings_ext(emuenv)) {
             if (SDL_GameControllerGetButton(controller, binding.controller)) {
