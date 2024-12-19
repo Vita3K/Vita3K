@@ -38,39 +38,31 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 
     // Read the vertex/fragment shader code from files
-    std::string vs_code;
-    fs::ifstream vs_stream(vertex_file_path, std::ios::in);
-    if (vs_stream.is_open()) {
-        std::stringstream sstr;
-        sstr << vs_stream.rdbuf();
-        vs_code = sstr.str();
-        vs_stream.close();
-    } else {
+    std::vector<char> vs_code;
+    auto res = fs_utils::read_data(vertex_file_path, vs_code);
+    if (!res) {
         LOG_ERROR("Couldn't open shader: {}", vertex_file_path);
         return UniqueGLObject();
     }
+    vs_code.push_back('\0');
 
-    std::string fs_code;
-    fs::ifstream fs_stream(fragment_file_path, std::ios::in);
-    if (fs_stream.is_open()) {
-        std::stringstream sstr;
-        sstr << fs_stream.rdbuf();
-        fs_code = sstr.str();
-        fs_stream.close();
-    }
+    std::vector<char> fs_code;
+    if (!fs_utils::read_data(fragment_file_path, fs_code))
+        fs_code.clear();
+    fs_code.push_back('\0');
 
     GLint result = 0;
-    int info_log_length;
 
     // Compile vertex shader
-    char const *vs_source_pointer = vs_code.c_str();
+    char const *vs_source_pointer = vs_code.data();
     glShaderSource(vs, 1, &vs_source_pointer, NULL);
     glCompileShader(vs);
 
     // Check vertex shader
     glGetShaderiv(vs, GL_COMPILE_STATUS, &result);
-    glGetShaderiv(vs, GL_INFO_LOG_LENGTH, &info_log_length);
     if (!result) {
+        int info_log_length;
+        glGetShaderiv(vs, GL_INFO_LOG_LENGTH, &info_log_length);
         std::vector<char> vertex_shader_error_message(info_log_length + 1);
         glGetShaderInfoLog(vs, info_log_length, NULL, &vertex_shader_error_message[0]);
         LOG_ERROR("Error compiling vertex shader: {}\n", &vertex_shader_error_message[0]);
@@ -78,14 +70,15 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
     }
 
     // Compile fragment shader
-    char const *fs_source_pointer = fs_code.c_str();
+    char const *fs_source_pointer = fs_code.data();
     glShaderSource(fs, 1, &fs_source_pointer, NULL);
     glCompileShader(fs);
 
     // Check fragment shader
     glGetShaderiv(fs, GL_COMPILE_STATUS, &result);
-    glGetShaderiv(fs, GL_INFO_LOG_LENGTH, &info_log_length);
     if (!result) {
+        int info_log_length;
+        glGetShaderiv(fs, GL_INFO_LOG_LENGTH, &info_log_length);
         std::vector<char> fragment_shader_error_message(info_log_length + 1);
         glGetShaderInfoLog(fs, info_log_length, NULL, &fragment_shader_error_message[0]);
         LOG_ERROR("Error compiling fragment shader: {}\n", &fragment_shader_error_message[0]);
@@ -100,8 +93,9 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
 
     // Check the program
     glGetProgramiv(program, GL_LINK_STATUS, &result);
-    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &info_log_length);
     if (!result) {
+        int info_log_length;
+        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &info_log_length);
         std::vector<char> program_error_message(info_log_length + 1);
         glGetProgramInfoLog(program, info_log_length, NULL, &program_error_message[0]);
         LOG_ERROR("Error linking shader program: {}\n", &program_error_message[0]);

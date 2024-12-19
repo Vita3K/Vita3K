@@ -157,7 +157,7 @@ static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
         theme_preview_name["default"][LOCK] = "data/internal/theme/defaultTheme_startScreen.png";
 
         themes_info["default"].title = gui.lang.settings.theme_background.main["default"];
-        themes_list.push_back({ "default", {} });
+        themes_list.emplace_back("default", time_t{});
     } else
         LOG_WARN("Default theme not found, install firmware fix this!");
 

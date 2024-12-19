@@ -33,7 +33,7 @@
 int CorenumAllocator::new_corenum() {
     const std::lock_guard<std::mutex> guard(lock);
 
-    int size = 1;
+    uint32_t size = 1;
     return alloc.allocate_from(0, size);
 }
 
@@ -58,7 +58,7 @@ static int SDLCALL thread_function(void *data) {
     assert(data != nullptr);
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
     SDL_SemPost(params.host_may_destroy_params.get());
-    const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
+    const ThreadStatePtr thread = params.kernel->get_thread(params.thid);
 #ifdef TRACY_ENABLE
     if (!thread->name.empty()) {
         tracy::SetThreadName(thread->name.c_str());

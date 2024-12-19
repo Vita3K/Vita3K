@@ -38,7 +38,7 @@ struct NpTrophyUnlockCallbackData {
     std::string trophy_id;
     std::string trophy_name;
     std::string trophy_detail;
-    np::trophy::SceNpTrophyGrade trophy_kind;
+    np::trophy::SceNpTrophyGrade trophy_kind{};
     std::vector<std::uint8_t> icon_buf;
 };
 

@@ -177,7 +177,7 @@ EXPORT(int, sceNgsVoiceDefGetPauserBussInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoiceDefGetPitchshiftBussInternal) {
+EXPORT(int, sceNgsVoiceDefGetPitchShiftBussInternal) {
     return UNIMPLEMENTED();
 }
 

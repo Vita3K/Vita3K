@@ -199,7 +199,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
 
     // Draw browser page button
     if (!hidden_button) {
-        ImGui::SetCursorPos(ImVec2(display_size.x / 2.f - ((BUTTON_SIZE.x / 2.f)), display_size.y - (40.f * SCALE.y)));
+        ImGui::SetCursorPos(ImVec2(display_size.x / 2.f - (BUTTON_SIZE.x / 2.f), display_size.y - (40.f * SCALE.y)));
         const std::string slider = fmt::format("{:0>2d}/{:0>2d}", current_page + 1, (int32_t)gui.manuals.size());
         if (ImGui::Button(slider.c_str(), BUTTON_SIZE))
             ImGui::OpenPopup("Manual Slider");

@@ -279,11 +279,7 @@ vfs::FileBuffer init_default_icon(GuiState &gui, EmuEnvState &emuenv) {
 
     if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
         fs::path icon_path = fs::exists(default_fw_icon) ? default_fw_icon : default_icon;
-        fs::ifstream image_stream(icon_path, std::ios::binary | std::ios::ate);
-        const std::size_t fsize = image_stream.tellg();
-        buffer.resize(fsize);
-        image_stream.seekg(0, std::ios::beg);
-        image_stream.read(reinterpret_cast<char *>(buffer.data()), fsize);
+        fs_utils::read_data(icon_path, buffer);
     }
 
     return buffer;

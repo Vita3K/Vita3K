@@ -130,11 +130,11 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         }
 
         if (cache_probably_freed) {
-            for (auto ite = framebuffer_array.begin(); ite != framebuffer_array.end();) {
-                if ((ite->first & 0xFFFFFFFF) == key) {
-                    ite = framebuffer_array.erase(ite);
+            for (auto fbuf_ite = framebuffer_array.begin(); fbuf_ite != framebuffer_array.end();) {
+                if ((fbuf_ite->first & 0xFFFFFFFF) == key) {
+                    fbuf_ite = framebuffer_array.erase(fbuf_ite);
                 } else {
-                    ++ite;
+                    ++fbuf_ite;
                 }
             }
             // Clear out. We will recreate later
