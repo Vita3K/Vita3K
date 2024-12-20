@@ -722,8 +722,13 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_take_screenshot && !gui.is_key_capture_dropped)
                 take_screenshot(emuenv);
 
-            if (sce_ctrl_btn != 0)
+            if (sce_ctrl_btn != 0) {
+                if (last_buttons.find(sce_ctrl_btn) != last_buttons.end()) {
+                    continue;
+                }
+                last_buttons.insert(sce_ctrl_btn);
                 ui_navigation(sce_ctrl_btn);
+            }
 
             break;
         }
