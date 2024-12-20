@@ -168,10 +168,9 @@ public:
     RegMgrState &regmgr;
     SfoFile &sfo_handle;
     NIDSet missing_nids;
-    float dpi_scale = 1.f;
+    float system_dpi_scale = 1.f;
+    float manual_dpi_scale = 1.f;
     FVector2 gui_scale = { 1.f, 1.f };
-    uint32_t res_width_dpi_scale = 0;
-    uint32_t res_height_dpi_scale = 0;
     GDBState &gdb;
     HTTPState &http;
 

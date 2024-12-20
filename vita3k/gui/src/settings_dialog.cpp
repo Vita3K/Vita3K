@@ -476,7 +476,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
 void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     auto &lang = gui.lang.settings_dialog;
     auto &common = emuenv.common_dialog.lang.common;

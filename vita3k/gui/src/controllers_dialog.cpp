@@ -213,7 +213,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
     const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
+    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
 
     auto &ctrl = emuenv.ctrl;
     auto &lang = gui.lang.controllers;
@@ -257,7 +257,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::TableSetColumnIndex(0);
                 int selected_port = i;
                 ImGui::PushID(i);
-                ImGui::SetNextItemWidth(50.f * emuenv.dpi_scale);
+                ImGui::SetNextItemWidth(50.f * emuenv.manual_dpi_scale);
                 if (ImGui::Combo("##swap_port", &selected_port, port_names, SCE_CTRL_MAX_WIRELESS_NUM))
                     swap_controller_ports(ctrl, i, selected_port);
                 ImGui::PopID();

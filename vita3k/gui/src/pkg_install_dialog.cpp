@@ -90,7 +90,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
     const ImVec2 WINDOW_SIZE(616.f * SCALE.x, 264.f * SCALE.y);
     const ImVec2 BUTTON_SIZE(180.f * SCALE.x, 45.f * SCALE.y);
 

@@ -367,7 +367,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
     const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     const auto VIEWPORT_WIDTH_POS_MAX(VIEWPORT_POS.x + VIEWPORT_SIZE.x);
 
@@ -411,7 +411,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     if (notice_info_state) {
-        const auto POPUP_SIZE = notice_info.empty() ? ImVec2(412.f * SCALE.x, 86.f * SCALE.y) : ImVec2(782.f * SCALE.x, notice_info.size() < 5 ? 22.f * emuenv.dpi_scale + ((80.f * SCALE.y) * notice_info.size() + (10.f * (notice_info.size() - 1) * emuenv.dpi_scale)) : 464.f * SCALE.y);
+        const auto POPUP_SIZE = notice_info.empty() ? ImVec2(412.f * SCALE.x, 86.f * SCALE.y) : ImVec2(782.f * SCALE.x, notice_info.size() < 5 ? 22.f * emuenv.manual_dpi_scale + ((80.f * SCALE.y) * notice_info.size() + (10.f * (notice_info.size() - 1) * emuenv.manual_dpi_scale)) : 464.f * SCALE.y);
         const auto POPUP_POS = ImVec2(VIEWPORT_POS.x + (notice_info.empty() ? VIEWPORT_SIZE.x - (502.f * SCALE.y) : (VIEWPORT_SIZE.x / 2.f) - (POPUP_SIZE.x / 2.f)), VIEWPORT_POS.y + (56.f * SCALE.y));
         const auto POPUP_BG_COLOR = notice_info.empty() ? GUI_COLOR_TEXT : GUI_SMOOTH_GRAY;
 
@@ -543,7 +543,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
     const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     const ImVec2 INFO_BAR_SIZE(VIEWPORT_SIZE.x, 32.f * SCALE.y);
 
@@ -613,9 +613,9 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     constexpr auto PIX_FONT_SCALE = 19.2f / 24.f;
-    const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * emuenv.dpi_scale);
-    const auto CLOCK_DEFAULT_FONT_SCALE = (24.f * emuenv.dpi_scale) * DEFAULT_FONT_SCALE;
-    const auto DAY_MOMENT_DEFAULT_FONT_SCALE = (18.f * emuenv.dpi_scale) * DEFAULT_FONT_SCALE;
+    const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * emuenv.manual_dpi_scale);
+    const auto CLOCK_DEFAULT_FONT_SCALE = (24.f * emuenv.manual_dpi_scale) * DEFAULT_FONT_SCALE;
+    const auto DAY_MOMENT_DEFAULT_FONT_SCALE = (18.f * emuenv.manual_dpi_scale) * DEFAULT_FONT_SCALE;
     const auto CLOCK_FONT_SIZE_SCALE = CLOCK_DEFAULT_FONT_SCALE / ImGui::GetFontSize();
     const auto DAY_MOMENT_FONT_SIZE_SCALE = DAY_MOMENT_DEFAULT_FONT_SCALE / ImGui::GetFontSize();
 

@@ -27,7 +27,7 @@ namespace gui {
 void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
     const auto BUTTON_SIZE = ImVec2(180.f * SCALE.x, 45.f * SCALE.y);
 
     auto &lang = gui.lang.install_dialog.license_install;
@@ -103,7 +103,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        ImGui::SetCursorPos(ImVec2(POS_BUTTON - (BUTTON_SIZE.x / 2) - 10.f * emuenv.dpi_scale, ImGui::GetWindowSize().y / 2));
+        ImGui::SetCursorPos(ImVec2(POS_BUTTON - (BUTTON_SIZE.x / 2) - 10.f * emuenv.manual_dpi_scale, ImGui::GetWindowSize().y / 2));
         if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE)) {
             state = State::UNDEFINED;
             zRIF.clear();

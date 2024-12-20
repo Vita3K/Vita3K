@@ -225,7 +225,7 @@ void close_and_run_new_app(EmuEnvState &emuenv, const std::string &app_path) {
 void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     const auto WINDOW_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
     const auto BUTTON_SIZE = ImVec2(320.f * SCALE.x, 46.f * SCALE.y);
@@ -526,7 +526,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
     const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 VIEWPORT_RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    const ImVec2 VIEWPORT_SCALE(VIEWPORT_RES_SCALE.x * emuenv.dpi_scale, VIEWPORT_RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 VIEWPORT_SCALE(VIEWPORT_RES_SCALE.x * emuenv.manual_dpi_scale, VIEWPORT_RES_SCALE.y * emuenv.manual_dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * VIEWPORT_SCALE.y;
 
     // Clear apps list filtered
@@ -864,7 +864,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                 if (IS_CUSTOM_CONFIG) {
                     if (emuenv.cfg.apps_list_grid)
                         ImGui::SetCursorPosX(GRID_ICON_POS);
-                    ImGui::SetCursorPosY(POS_ICON.y + ICON_SIZE.y - ImGui::GetFontSize() - (7.8f * emuenv.dpi_scale));
+                    ImGui::SetCursorPosY(POS_ICON.y + ICON_SIZE.y - ImGui::GetFontSize() - (7.8f * emuenv.manual_dpi_scale));
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                     ImGui::Button("CC", ImVec2(40.f * VIEWPORT_SCALE.x, 0.f));
                     ImGui::PopStyleColor();

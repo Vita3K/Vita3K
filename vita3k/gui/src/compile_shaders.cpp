@@ -29,7 +29,7 @@ static auto time = std::time(nullptr);
 void draw_pre_compiling_shaders_progress(GuiState &gui, EmuEnvState &emuenv, const uint32_t &total) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
     const auto WINDOW_SIZE = ImVec2(616.f * SCALE.x, 236.f * SCALE.y);
     const auto ICON_SIZE_SCALE = ImVec2(96.f * SCALE.x, 96.f * SCALE.y);
 
@@ -57,14 +57,14 @@ void draw_pre_compiling_shaders_progress(GuiState &gui, EmuEnvState &emuenv, con
     ImGui::SetCursorPos(ImVec2((176.f * SCALE.x), ImGui::GetCursorPosY() + (30.f * SCALE.y)));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s%s", gui.lang.compile_shaders["compiling_shaders"].c_str(), points[pos].c_str());
     const float PROGRESS_BAR_WIDTH = 508.f * SCALE.x;
-    ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), ImGui::GetCursorPosY() + 30.f * emuenv.dpi_scale));
+    ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), ImGui::GetCursorPosY() + 30.f * emuenv.manual_dpi_scale));
     ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.f);
     const auto progress_programs = (emuenv.renderer->programs_count_pre_compiled * 100) / total;
-    ImGui::ProgressBar(progress_programs / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * emuenv.dpi_scale), "");
+    ImGui::ProgressBar(progress_programs / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * emuenv.manual_dpi_scale), "");
     ImGui::PopStyleColor();
     ImGui::PopStyleVar();
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * emuenv.dpi_scale));
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * emuenv.manual_dpi_scale));
     TextColoredCentered(GUI_COLOR_TEXT, fmt::format("{}/{}", emuenv.renderer->programs_count_pre_compiled, total).c_str());
     ImGui::End();
     ImGui::PopStyleVar();
@@ -85,7 +85,7 @@ void set_shaders_compiled_display(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void draw_shaders_count_compiled(GuiState &gui, EmuEnvState &emuenv) {
-    ImGui::SetNextWindowPos(ImVec2(emuenv.drawable_viewport_pos.x + (2.f * emuenv.dpi_scale), emuenv.drawable_viewport_pos.y + emuenv.drawable_viewport_size.y - (42.f * emuenv.dpi_scale)));
+    ImGui::SetNextWindowPos(ImVec2(emuenv.drawable_viewport_pos.x + (2.f * emuenv.manual_dpi_scale), emuenv.drawable_viewport_pos.y + emuenv.drawable_viewport_size.y - (42.f * emuenv.manual_dpi_scale)));
     ImGui::SetNextWindowBgAlpha(0.6f);
     ImGui::Begin("##shaders_compiled", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     const char *gpu_objects_compiled_msg;
