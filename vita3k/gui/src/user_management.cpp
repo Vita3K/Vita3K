@@ -468,7 +468,7 @@ void browse_users_management(GuiState &gui, EmuEnvState &emuenv, const uint32_t 
 void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 WINDOW_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     // Clear users list available
     users_list_available.clear();
