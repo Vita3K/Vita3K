@@ -17,6 +17,7 @@
 
 #include <emuenv/state.h>
 
+#include <adhoc/state.h>
 #include <audio/state.h>
 #include <config/state.h>
 #include <ctrl/state.h>
@@ -82,8 +83,9 @@ EmuEnvState::EmuEnvState()
     , sfo_handle(*_sfo_handle)
     , _gdb(new GDBState)
     , gdb(*_gdb)
-    , _http(new HTTPState)
-    , http(*_http) {
+    , http(*_http)
+    , _adhoc(new AdhocState)
+    , adhoc(*_adhoc) {
 }
 
 // this is necessary to forward declare unique_ptrs (so that they can call the appropriate destructor)
