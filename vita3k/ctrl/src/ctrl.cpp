@@ -72,6 +72,9 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
             if (!state.controllers.contains(guid)) {
                 Controller new_controller;
                 const GameControllerPtr controller(SDL_GameControllerOpen(joystick_index), SDL_GameControllerClose);
+                if (controller == nullptr) {
+                    continue;
+                }
                 new_controller.controller = controller;
                 new_controller.port = reserve_port(state);
                 if (new_controller.port == -1) { // Port not available
@@ -98,6 +101,10 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
                 found_gyro |= new_controller.has_gyro;
                 found_accel |= new_controller.has_accel;
                 new_controller.name = SDL_GameControllerNameForIndex(joystick_index);
+                if (new_controller.name == nullptr) {
+                    state.free_ports[new_controller.port] = true;
+                    continue;
+                }
 
                 state.controllers.emplace(guid, new_controller);
                 state.controllers_num++;
