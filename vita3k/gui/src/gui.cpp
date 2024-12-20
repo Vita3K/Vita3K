@@ -50,7 +50,7 @@ void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
     if (emuenv.io.title_id.empty() && emuenv.cfg.display_info_message) {
         const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
         const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
-        const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+        const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
         const ImVec2 WINDOW_SIZE(680.0f * SCALE.x, 320.0f * SCALE.y);
         const ImVec2 BUTTON_SIZE(160.f * SCALE.x, 46.f * SCALE.y);
@@ -102,7 +102,7 @@ static void init_style(EmuEnvState &emuenv) {
     style->GrabMinSize = 4.0f;
     style->GrabRounding = 2.5f;
 
-    style->ScaleAllSizes(emuenv.dpi_scale);
+    style->ScaleAllSizes(emuenv.manual_dpi_scale);
 
     style->Colors[ImGuiCol_Text] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
     style->Colors[ImGuiCol_TextDisabled] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
@@ -152,7 +152,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     ImGuiIO &io = ImGui::GetIO();
 
     ImFontConfig mono_font_config{};
-    mono_font_config.SizePixels = 13.f;
+    mono_font_config.SizePixels = 13.f * emuenv.manual_dpi_scale * emuenv.system_dpi_scale;
 
 #ifdef _WIN32
     constexpr auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
@@ -220,7 +220,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         // Add fw font to imgui
 
         gui.fw_font = true;
-        font_config.SizePixels = 19.2f;
+        font_config.SizePixels = 19.2f * emuenv.manual_dpi_scale * emuenv.system_dpi_scale;
 
         gui.vita_font = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(latin_fw_font_path).c_str(), font_config.SizePixels, &font_config, latin_range);
         font_config.MergeMode = true;
@@ -234,11 +234,11 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
             io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "cn0.pvf").c_str(), font_config.SizePixels, &font_config, chinese_range);
         font_config.MergeMode = false;
 
-        large_font_config.SizePixels = 116.f;
+        large_font_config.SizePixels = 116.f * emuenv.manual_dpi_scale * emuenv.system_dpi_scale;
         gui.large_font = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(latin_fw_font_path).c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
     } else {
         LOG_WARN("Could not find firmware font file at {}, install firmware fonts package to fix this.", latin_fw_font_path);
-        font_config.SizePixels = 22.f;
+        font_config.SizePixels = 22.f * emuenv.manual_dpi_scale * emuenv.system_dpi_scale;
 
         // Set up default font path
         fs::path default_font_path = emuenv.static_assets_path / "data/fonts";
@@ -254,7 +254,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
                 io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "SourceHanSansSC-Bold-Min.ttf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
             font_config.MergeMode = false;
 
-            large_font_config.SizePixels = 134.f;
+            large_font_config.SizePixels = 134.f * emuenv.manual_dpi_scale * emuenv.system_dpi_scale;
             gui.large_font = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
 
             LOG_INFO("Using default Vita3K font.");
@@ -264,10 +264,6 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
 
     // Build font atlas loaded and upload to GPU
     io.Fonts->Build();
-
-    // DPI scaling
-    io.FontGlobalScale = emuenv.dpi_scale;
-    io.DisplayFramebufferScale = { emuenv.dpi_scale, emuenv.dpi_scale };
 }
 
 vfs::FileBuffer init_default_icon(GuiState &gui, EmuEnvState &emuenv) {
@@ -756,8 +752,8 @@ void draw_touchpad_cursor(EmuEnvState &emuenv) {
     if (touchpad_fingers_pos.empty())
         return;
 
-    const ImVec2 RES_SCALE(emuenv.logical_viewport_size.x / emuenv.res_width_dpi_scale, emuenv.logical_viewport_size.y / emuenv.res_height_dpi_scale);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     const auto color = (port == SCE_TOUCH_PORT_FRONT) ? IM_COL32(0.f, 102.f, 204.f, 255.f) : IM_COL32(255.f, 0.f, 0.f, 255.f);
     for (const auto &pos : touchpad_fingers_pos) {
