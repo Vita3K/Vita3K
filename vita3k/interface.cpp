@@ -648,6 +648,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         }
     };
 
+    // A set to store the last pressed buttons to prevent duplicate inputs from the controller.
+    std::set<uint32_t> last_buttons;
+
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
@@ -719,8 +722,13 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_take_screenshot && !gui.is_key_capture_dropped)
                 take_screenshot(emuenv);
 
-            if (sce_ctrl_btn != 0)
+            if (sce_ctrl_btn != 0) {
+                if (last_buttons.find(sce_ctrl_btn) != last_buttons.end()) {
+                    continue;
+                }
+                last_buttons.insert(sce_ctrl_btn);
                 ui_navigation(sce_ctrl_btn);
+            }
 
             break;
         }
@@ -743,6 +751,10 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
 
             for (const auto &binding : get_controller_bindings_ext(emuenv)) {
                 if (event.cbutton.button == binding.controller) {
+                    if (last_buttons.find(binding.button) != last_buttons.end()) {
+                        continue;
+                    }
+                    last_buttons.insert(binding.button);
                     ui_navigation(binding.button);
 
                     break;
