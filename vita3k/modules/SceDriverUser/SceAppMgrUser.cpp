@@ -123,9 +123,10 @@ EXPORT(int, sceAppMgrAppParamGetInt) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
+EXPORT(SceInt32, sceAppMgrAppParamGetString, int pid, int param, char *string, SceSize length) {
     TRACY_FUNC(sceAppMgrAppParamGetString, pid, param, string, length);
-    return CALL_EXPORT(_sceAppMgrAppParamGetString, pid, param, string, length);
+    sceAppMgrAppParamGetStringOptParam opt{ length, 0, 0, 0 };
+    return CALL_EXPORT(_sceAppMgrAppParamGetString, pid, param, string, &opt);
 }
 
 EXPORT(int, sceAppMgrAppParamSetString) {
