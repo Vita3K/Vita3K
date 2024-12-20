@@ -17,3 +17,8 @@ target_link_libraries(app PRIVATE audio config display gdbstub gui io ngs render
 if(WIN32)
 	target_link_libraries(app PRIVATE dwmapi)
 endif()
+
+if (LINUX)
+    find_package(X11 REQUIRED)
+    target_link_libraries(app PRIVATE ${X11_LIBRARIES})
+endif()
