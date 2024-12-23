@@ -95,13 +95,14 @@ Patch parse_patch(const std::string &patch) {
         if (val.length() > 2 && val[0] == '0' && val[1] == 'x')
             val.erase(0, 2);
 
-        Instruction instruction = toInstruction(stripArgs(val));
         unsigned long long bytes;
         uint8_t byte_count = 0;
+        std::string inst = stripArgs(val);
+        Instruction instruction = toInstruction(inst);
 
         if (instruction != Instruction::INVALID) {
             auto args = getArgs(val);
-            bytes = translate(instruction, args);
+            bytes = translate(inst, args);
 
             LOG_INFO("Translated {} to 0x{:X}", val, bytes);
         } else {
@@ -117,13 +118,6 @@ Patch parse_patch(const std::string &patch) {
 
         values.erase(0, pos + 1);
     } while (pos != std::string::npos);
-
-    std::string dbg;
-
-    for (auto byte : values_vec) {
-        dbg += fmt::format("{:X}", byte);
-    }
-    LOG_INFO("Final patch: {}", dbg);
 
     return Patch{ seg, offset, values_vec };
 }

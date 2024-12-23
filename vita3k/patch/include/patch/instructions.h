@@ -17,8 +17,10 @@
 
 #pragma once
 
+#include <string>
 #include <util/types.h>
 #include <array>
+#include <map>
 #include <vector>
 
 using TranslateFn = uint32_t(*)(std::vector<uint32_t> &args);
@@ -29,6 +31,11 @@ enum class Instruction {
 
     // All-encompassing "this is not an instruction" value
     INVALID,
+};
+
+struct Op {
+    Instruction instruction;
+    TranslateFn translate;
 };
 
 /**
@@ -43,7 +50,7 @@ uint32_t nop(std::vector<uint32_t> &args);
  */
 uint32_t t1_mov(std::vector<uint32_t> &args);
 
-const std::array<TranslateFn, 2> instruction_funcs = {
-    nop,
-    t1_mov,
+static const std::map<std::string, Op> instruction_funcs = {
+    { "nop", { Instruction::NOP, nop } },
+    { "t1_mov", { Instruction::T1_MOV, t1_mov } },
 };

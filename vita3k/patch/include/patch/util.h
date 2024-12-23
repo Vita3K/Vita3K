@@ -33,4 +33,4 @@ bool isValidInstruction(std::string &inst);
 std::string stripArgs(std::string inst);
 std::vector<uint32_t> getArgs(std::string inst);
 
-uint32_t translate(Instruction &inst, std::vector<uint32_t> &args);
+uint32_t translate(std::string &inst, std::vector<uint32_t> &args);

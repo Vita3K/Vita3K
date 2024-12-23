@@ -18,6 +18,7 @@
 #include "patch/patch.h"
 #include "patch/util.h"
 
+#include <map>
 #include <util/log.h>
 
 // This function will return the binary name if a header is provided. Otherwise, it will return `eboot.bin`
@@ -32,7 +33,6 @@ std::string readBinFromHeader(const std::string &header) {
 
     return bin;
 }
-
 
 std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count) {
     std::vector<uint8_t> bytes;
@@ -73,12 +73,12 @@ void removeInstructionSpaces(std::string &patchline) {
 }
 
 Instruction toInstruction(const std::string &inst) {
-    if (inst == "nop")
-        return Instruction::NOP;
-    else if (inst == "t1_mov")
-        return Instruction::T1_MOV;
-    else
-        return Instruction::INVALID;
+    auto it = instruction_funcs.find(inst);
+
+    if (it != instruction_funcs.end())
+        return it->second.instruction;
+
+    return Instruction::INVALID;
 }
 
 bool isValidInstruction(std::string &inst) {
@@ -123,7 +123,11 @@ std::vector<uint32_t> getArgs(std::string inst) {
   return args;
 }
 
-uint32_t translate(Instruction &inst, std::vector<uint32_t> &args) {
-  TranslateFn f = instruction_funcs[static_cast<int>(inst)];
-  return f(args);
+uint32_t translate(std::string &inst, std::vector<uint32_t> &args) {
+    auto it = instruction_funcs.find(inst);
+    
+    if (it != instruction_funcs.end())
+        return it->second.translate(args);
+
+    return 0;
 }
