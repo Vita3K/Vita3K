@@ -24,6 +24,13 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceNpCommon);
 
+enum SceNpUtilErrorCode {
+    SCE_NP_UTIL_Ok = 0x0,
+    SCE_NP_UTIL_ERROR_INVALID_ARGUMENT = 0x80550601,
+    SCE_NP_UTIL_ERROR_INVALID_NP_ID = 0x80550605,
+    SCE_NP_UTIL_ERROR_NOT_MATCH = 0x80550609,
+};
+
 EXPORT(int, sceNpAuthAbortRequest) {
     TRACY_FUNC(sceNpAuthAbortRequest);
     return UNIMPLEMENTED();
@@ -92,11 +99,23 @@ EXPORT(int, sceNpAuthTerm) {
 
 EXPORT(int, sceNpCmpNpId, np::SceNpId *npid1, np::SceNpId *npid2) {
     TRACY_FUNC(sceNpCmpNpId, npid1, npid2);
-    STUBBED("assume single user");
-    if (std::string(npid1->handle.data) == emuenv.io.user_name && std::string(npid2->handle.data) == emuenv.io.user_name) {
-        return 0;
-    }
-    return 0x80550605; // INVALID NP ID
+
+    if (npid1 == nullptr || npid2 == nullptr)
+        return SCE_NP_UTIL_ERROR_INVALID_ARGUMENT;
+    if (!npid1->isIdValid || !npid2->isIdValid)
+        return SCE_NP_UTIL_ERROR_INVALID_NP_ID;
+    if (std::strncmp(npid1->handle.data, npid2->handle.data, SCE_NP_ONLINEID_MAX_LENGTH) != 0)
+        return SCE_NP_UTIL_ERROR_NOT_MATCH;
+
+    if (std::memcmp(npid1->opt.unknown, npid2->opt.unknown, 4) != 0)
+        return SCE_NP_UTIL_ERROR_NOT_MATCH;
+
+    if (npid1->opt.platformType[0] == 0 && npid2->opt.platformType[0] == 0)
+        return SCE_NP_UTIL_Ok;
+    if (std::memcmp(&npid1->opt.platformType, &npid2->opt.platformType, 4) != 0)
+        return SCE_NP_UTIL_ERROR_NOT_MATCH;
+
+    return SCE_NP_UTIL_Ok;
 }
 
 EXPORT(int, sceNpCmpNpIdInOrder) {
