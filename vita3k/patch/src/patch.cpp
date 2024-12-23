@@ -49,10 +49,15 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const
                 }
 
                 // Ignore comments and patches for other binaries
-                if (line[0] == '#' || bin.find(patch_bin) == std::string::npos)
+                if (line[0] == '#' || line[0] == '\n' || bin.find(patch_bin) == std::string::npos)
                     continue;
 
-                patches.push_back(parse_patch(line));
+                try {
+                    patches.push_back(parse_patch(line));
+                } catch (std::exception &e) {
+                    LOG_ERROR("Failed to parse patch line: {}", line);
+                    LOG_ERROR("Failed with: {}", e.what());
+                }
             }
         }
     }
