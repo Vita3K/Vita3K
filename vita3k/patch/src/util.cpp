@@ -129,5 +129,7 @@ uint32_t translate(std::string &inst, std::vector<uint32_t> &args) {
     if (it != instruction_funcs.end())
         return it->second.translate(args);
 
+    LOG_WARN("Instruction {} could not be translated! It will be replaced with NOP", inst);
+
     return 0;
 }
