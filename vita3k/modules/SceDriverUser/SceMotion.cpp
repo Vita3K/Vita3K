@@ -31,9 +31,6 @@ EXPORT(SceFloat, sceMotionGetAngleThreshold) {
 
 EXPORT(int, sceMotionGetBasicOrientation, SceFVector3 *basicOrientation) {
     TRACY_FUNC(sceMotionGetBasicOrientation, basicOrientation);
-    if (!emuenv.motion.is_initialized) {
-        return SCE_MOTION_ERROR_NON_INIT_ERR;
-    }
     if (!emuenv.motion.is_sampling) {
         return SCE_MOTION_ERROR_NOT_SAMPLING;
     }
@@ -76,9 +73,6 @@ EXPORT(SceBool, sceMotionGetMagnetometerState) {
 
 EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numRecords) {
     TRACY_FUNC(sceMotionGetSensorState, sensorState, numRecords);
-    if (!emuenv.motion.is_initialized) {
-        return SCE_MOTION_ERROR_NON_INIT_ERR;
-    }
     if (!emuenv.motion.is_sampling) {
         return SCE_MOTION_ERROR_NOT_SAMPLING;
     }
@@ -119,9 +113,6 @@ EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numR
 
 EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
     TRACY_FUNC(sceMotionGetState, motionState);
-    if (!emuenv.motion.is_initialized) {
-        return SCE_MOTION_ERROR_NON_INIT_ERR;
-    }
     if (!emuenv.motion.is_sampling) {
         return SCE_MOTION_ERROR_NOT_SAMPLING;
     }
@@ -222,10 +213,6 @@ EXPORT(int, sceMotionResetExt) {
 
 EXPORT(int, sceMotionRotateYaw, const float radians) {
     TRACY_FUNC(sceMotionRotateYaw, radians);
-    if (!emuenv.motion.is_initialized) {
-        return SCE_MOTION_ERROR_NON_INIT_ERR;
-    }
-
     emuenv.motion.motion_data.RotateYaw(radians);
     return SCE_MOTION_OK;
 }
@@ -273,9 +260,6 @@ EXPORT(int, sceMotionSetTiltCorrectionExt) {
 
 EXPORT(int, sceMotionStartSampling) {
     TRACY_FUNC(sceMotionStartSampling);
-    if (!emuenv.motion.is_initialized) {
-        return SCE_MOTION_ERROR_NON_INIT_ERR;
-    }
     if (emuenv.motion.is_sampling) {
         return SCE_MOTION_ERROR_ALREADY_SAMPLING;
     }
@@ -291,9 +275,6 @@ EXPORT(int, sceMotionStartSamplingExt) {
 
 EXPORT(int, sceMotionStopSampling) {
     TRACY_FUNC(sceMotionStopSampling);
-    if (!emuenv.motion.is_initialized) {
-        return SCE_MOTION_ERROR_NON_INIT_ERR;
-    }
     if (!emuenv.motion.is_sampling) {
         return SCE_MOTION_ERROR_NOT_SAMPLING;
     }
