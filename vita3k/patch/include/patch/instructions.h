@@ -17,13 +17,13 @@
 
 #pragma once
 
-#include <string>
-#include <util/types.h>
 #include <array>
 #include <map>
+#include <string>
+#include <util/types.h>
 #include <vector>
 
-using TranslateFn = uint32_t(*)(std::vector<uint32_t> &args);
+using TranslateFn = uint32_t (*)(std::vector<uint32_t> &args);
 
 enum class Instruction {
     NOP,
@@ -45,7 +45,7 @@ uint32_t nop(std::vector<uint32_t> &args);
 
 /**
  * MOV instructions
- * 
+ *
  * https://developer.arm.com/documentation/ddi0406/c/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/MOV--immediate-?lang=en
  */
 uint32_t t1_mov(std::vector<uint32_t> &args);
