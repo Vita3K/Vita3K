@@ -17,9 +17,9 @@
 
 #pragma once
 
+#include <array>
 #include <string>
 #include <util/types.h>
-#include <array>
 #include <vector>
 
 #include "instructions.h"
