@@ -20,6 +20,58 @@
 
 #include <util/log.h>
 
+// This function will return the binary name if a header is provided. Otherwise, it will return `eboot.bin`
+std::string readBinFromHeader(const std::string &header) {
+    std::string bin = "eboot.bin";
+    auto open = header.find('[');
+    auto close = header.find(']');
+
+    if (open != std::string::npos && close != std::string::npos) {
+        bin = header.substr(open + 1, close - open - 1);
+    }
+
+    return bin;
+}
+
+
+std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count) {
+    std::vector<uint8_t> bytes;
+
+    // If count is 0, go until we see a byte of all 0s
+    if (count == 0) {
+        while (value != 0) {
+            bytes.push_back(value & 0xFF);
+            value >>= 8;
+        }
+
+        return bytes;
+    }
+    
+    // Otherwise, just go as much as count tells us
+    for (uint8_t i = 0; i < count; i++) {
+        bytes.push_back((value >> ((count - 1 - i) * 8)) & 0xFF);
+    }
+
+    return bytes;
+}
+
+void removeInstructionSpaces(std::string &patchline) {
+    bool inBrackets = false;
+
+    for (size_t i = 0; i < patchline.size(); ++i) {
+        if (patchline[i] == '(') {
+            inBrackets = true;
+        } else if (patchline[i] == ')') {
+            inBrackets = false;
+        }
+
+        if (inBrackets && patchline[i] == ' ') {
+            patchline.erase(i, 1);
+            --i;
+        }
+    }
+}
+
 Instruction toInstruction(const std::string &inst) {
     if (inst == "nop")
         return Instruction::NOP;

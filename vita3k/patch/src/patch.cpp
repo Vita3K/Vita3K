@@ -21,7 +21,7 @@
 
 #include <util/log.h>
 
-std::vector<Patch> get_patches(fs::path &path, const std::string &titleid) {
+std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const std::string &bin) {
     // Find a file in the path with the titleid
     std::vector<Patch> patches;
 
@@ -35,14 +35,21 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid) {
         if (filename.find(titleid) != std::string::npos && filename.ends_with(".TXT")) {
             // Read the file
             std::ifstream file(entry.path().c_str());
+            std::string patch_bin = "eboot.bin";
 
             // Parse the file
             while (file.good()) {
                 std::string line;
                 std::getline(file, line);
 
-                // If line is a comment, skip it
-                if (line[0] == '#')
+                // If this is a header, remember the binary the next patches are for
+                if (line[0] == '[') {
+                    patch_bin = readBinFromHeader(line);
+                    continue;
+                }
+
+                // Ignore comments and patches for other binaries
+                if (line[0] == '#' || bin.find(patch_bin) == std::string::npos)
                     continue;
 
                 patches.push_back(parse_patch(line));
@@ -53,44 +60,6 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid) {
     LOG_INFO("Found {} patches for titleid {}", patches.size(), titleid);
 
     return patches;
-}
-
-std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count) {
-    std::vector<uint8_t> bytes;
-
-    // If count is 0, go until we see a byte of all 0s
-    if (count == 0) {
-        while (value != 0) {
-            bytes.push_back(value & 0xFF);
-            value >>= 8;
-        }
-
-        return bytes;
-    }
-    
-    // Otherwise, just go as much as count tells us
-    for (uint8_t i = 0; i < count; i++) {
-        bytes.push_back((value >> ((count - 1 - i) * 8)) & 0xFF);
-    }
-
-    return bytes;
-}
-
-void removeInstructionSpaces(std::string &patchline) {
-    bool inBrackets = false;
-
-    for (size_t i = 0; i < patchline.size(); ++i) {
-        if (patchline[i] == '(') {
-            inBrackets = true;
-        } else if (patchline[i] == ')') {
-            inBrackets = false;
-        }
-
-        if (inBrackets && patchline[i] == ' ') {
-            patchline.erase(i, 1);
-            --i;
-        }
-    }
 }
 
 Patch parse_patch(const std::string &patch) {
@@ -128,6 +97,7 @@ Patch parse_patch(const std::string &patch) {
 
         Instruction instruction = toInstruction(stripArgs(val));
         unsigned long long bytes;
+        uint8_t byte_count = 0;
 
         if (instruction != Instruction::INVALID) {
             auto args = getArgs(val);
@@ -136,10 +106,10 @@ Patch parse_patch(const std::string &patch) {
             LOG_INFO("Translated {} to 0x{:X}", val, bytes);
         } else {
             bytes = std::stoull(values.substr(0, pos), nullptr, 16);
+            // We need to count this, as patches may have bytes of zeros that we don't want to just ignore by passing 0 to toBytes
+            byte_count = val.length() % 2 == 0 ? val.length() / 2 : val.length() / 2 + 1;
         }
 
-        // if the length is odd (eg. 0x120), we need to pad it with a 0
-        uint8_t byte_count = val.length() % 2 == 0 ? val.length() / 2 : val.length() / 2 + 1;
         auto byte_vec = toBytes(bytes, byte_count);
 
         values_vec.reserve(values_vec.size() + byte_vec.size());
@@ -147,6 +117,13 @@ Patch parse_patch(const std::string &patch) {
 
         values.erase(0, pos + 1);
     } while (pos != std::string::npos);
+
+    std::string dbg;
+
+    for (auto byte : values_vec) {
+        dbg += fmt::format("{:X}", byte);
+    }
+    LOG_INFO("Final patch: {}", dbg);
 
     return Patch{ seg, offset, values_vec };
 }

@@ -24,6 +24,10 @@
 
 #include "instructions.h"
 
+std::string readBinFromHeader(const std::string &header);
+std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count);
+void removeInstructionSpaces(std::string &patchline);
+
 Instruction toInstruction(const std::string &inst);
 bool isValidInstruction(std::string &inst);
 std::string stripArgs(std::string inst);

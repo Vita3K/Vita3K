@@ -28,5 +28,5 @@ struct Patch {
     std::vector<uint8_t> values;
 };
 
-std::vector<Patch> get_patches(fs::path &path, const std::string &titleid);
+std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const std::string &bin);
 Patch parse_patch(const std::string &patch);

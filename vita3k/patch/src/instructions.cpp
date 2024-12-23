@@ -27,5 +27,5 @@ uint32_t t1_mov(std::vector<uint32_t> &args) {
   uint8_t b0 = args[1];
   uint8_t b1 = 0b00100000 | (args[0] << 8);
 
-  return (b0 << 8) | b1;
+  return (b1 << 8) | b0;
 }
