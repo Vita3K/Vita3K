@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <string>
 #include <util/types.h>
 #include <array>
 #include <vector>
@@ -32,21 +31,9 @@ enum class Instruction {
     INVALID,
 };
 
-constexpr Instruction toInstruction(const std::string &inst) {
-    if (inst == "nop")
-        return Instruction::NOP;
-    else if (inst == "t1_mov")
-        return Instruction::T1_MOV;
-    else
-        return Instruction::INVALID;
-}
-
-bool isValidInstruction(std::string &inst);
-std::string stripArgs(std::string inst);
-std::vector<uint32_t> getArgs(std::string inst);
-
-uint32_t translate(Instruction &inst, std::vector<uint32_t> &args);
-
+/**
+ * Special instructions
+ */
 uint32_t nop(std::vector<uint32_t> &args);
 
 /**

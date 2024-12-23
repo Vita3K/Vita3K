@@ -15,17 +15,18 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "patch/instructions.h"
+#pragma once
 
-#include <util/log.h>
+#include <string>
+#include <util/types.h>
+#include <array>
+#include <vector>
 
-uint32_t nop(std::vector<uint32_t> &args) {
-  return 0;
-}
+#include "instructions.h"
 
-uint32_t t1_mov(std::vector<uint32_t> &args) {
-  uint8_t b0 = args[1];
-  uint8_t b1 = 0b00100000 | (args[0] << 8);
+Instruction toInstruction(const std::string &inst);
+bool isValidInstruction(std::string &inst);
+std::string stripArgs(std::string inst);
+std::vector<uint32_t> getArgs(std::string inst);
 
-  return (b0 << 8) | b1;
-}
+uint32_t translate(Instruction &inst, std::vector<uint32_t> &args);

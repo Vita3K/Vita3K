@@ -17,6 +17,7 @@
 
 #include "patch/instructions.h"
 #include "patch/patch.h"
+#include "patch/util.h"
 
 #include <util/log.h>
 
