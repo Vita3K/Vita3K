@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "patch/instructions.h"
 #include "patch/patch.h"
 
 #include <util/log.h>
@@ -53,6 +54,44 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid) {
     return patches;
 }
 
+std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count) {
+    std::vector<uint8_t> bytes;
+
+    // If count is 0, go until we see a byte of all 0s
+    if (count == 0) {
+        while (value != 0) {
+            bytes.push_back(value & 0xFF);
+            value >>= 8;
+        }
+
+        return bytes;
+    }
+    
+    // Otherwise, just go as much as count tells us
+    for (uint8_t i = 0; i < count; i++) {
+        bytes.push_back((value >> ((count - 1 - i) * 8)) & 0xFF);
+    }
+
+    return bytes;
+}
+
+void removeInstructionSpaces(std::string &patchline) {
+    bool inBrackets = false;
+
+    for (size_t i = 0; i < patchline.size(); ++i) {
+        if (patchline[i] == '(') {
+            inBrackets = true;
+        } else if (patchline[i] == ')') {
+            inBrackets = false;
+        }
+
+        if (inBrackets && patchline[i] == ' ') {
+            patchline.erase(i, 1);
+            --i;
+        }
+    }
+}
+
 Patch parse_patch(const std::string &patch) {
     // FORMAT: <seg>:<offset> <values>
     // Example, equivalent to `t1_mov(0, 1)`:
@@ -70,12 +109,43 @@ Patch parse_patch(const std::string &patch) {
     // Get all additional values separated by spaces
     size_t pos = 0;
 
-    while ((pos = values.find(' ')) != std::string::npos) {
-        values_vec.push_back(std::stoull(values.substr(0, pos), nullptr, 16));
-        values.erase(0, pos + 1);
-    }
+    // Clean up potential instructions by removing spaces in between brackets
+    // Eg. t1_mov(0, 1) becomes t1_mov(0,1)
+    removeInstructionSpaces(values);
 
-    values_vec.push_back(std::stoull(values, nullptr, 16));
+    // If there is only one value, set pos to the end of the string
+    if ((pos = values.find(' ')) == std::string::npos)
+        pos = values.length() - 1;
+
+    do {
+        pos = values.find(' ');
+        std::string val = values.substr(0, pos);
+
+        // Strip 0x from the value if it exists
+        if (val.length() > 2 && val[0] == '0' && val[1] == 'x')
+            val.erase(0, 2);
+
+        Instruction instruction = toInstruction(stripArgs(val));
+        unsigned long long bytes;
+
+        if (instruction != Instruction::INVALID) {
+            auto args = getArgs(val);
+            bytes = translate(instruction, args);
+
+            LOG_INFO("Translated {} to 0x{:X}", val, bytes);
+        } else {
+            bytes = std::stoull(values.substr(0, pos), nullptr, 16);
+        }
+
+        // if the length is odd (eg. 0x120), we need to pad it with a 0
+        uint8_t byte_count = val.length() % 2 == 0 ? val.length() / 2 : val.length() / 2 + 1;
+        auto byte_vec = toBytes(bytes, byte_count);
+
+        values_vec.reserve(values_vec.size() + byte_vec.size());
+        values_vec.insert(values_vec.end(), byte_vec.begin(), byte_vec.end());
+
+        values.erase(0, pos + 1);
+    } while (pos != std::string::npos);
 
     return Patch{ seg, offset, values_vec };
 }
