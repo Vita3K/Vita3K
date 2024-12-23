@@ -15,8 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "patch/patch.h"
 #include "patch/util.h"
+#include "patch/patch.h"
 
 #include <map>
 #include <util/log.h>
@@ -46,7 +46,7 @@ std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count) {
 
         return bytes;
     }
-    
+
     // Otherwise, just go as much as count tells us
     for (uint8_t i = 0; i < count; i++) {
         bytes.push_back((value >> ((count - 1 - i) * 8)) & 0xFF);
@@ -82,50 +82,50 @@ Instruction toInstruction(const std::string &inst) {
 }
 
 bool isValidInstruction(std::string &inst) {
-  return toInstruction(stripArgs(inst)) != Instruction::INVALID;
+    return toInstruction(stripArgs(inst)) != Instruction::INVALID;
 }
 
 std::string stripArgs(std::string inst) {
-  auto open = inst.find('(');
-  auto close = inst.find(')');
+    auto open = inst.find('(');
+    auto close = inst.find(')');
 
-  if (open == std::string::npos || close == std::string::npos)
+    if (open == std::string::npos || close == std::string::npos)
+        return inst;
+
+    inst.erase(open, close - open + 1);
+
     return inst;
-
-  inst.erase(open, close - open + 1);
-
-  return inst;
 }
 
 std::vector<uint32_t> getArgs(std::string inst) {
-  auto open = inst.find('(');
-  auto close = inst.find(')');
-  std::vector<uint32_t> args;
-  size_t pos = 0;
+    auto open = inst.find('(');
+    auto close = inst.find(')');
+    std::vector<uint32_t> args;
+    size_t pos = 0;
 
-  if (open == std::string::npos || close == std::string::npos)
+    if (open == std::string::npos || close == std::string::npos)
+        return args;
+
+    inst = inst.substr(open + 1, close - open - 1);
+
+    // If there is only one value, set pos to the end of the string
+    if ((pos = inst.find(',')) == std::string::npos)
+        pos = inst.length() - 1;
+
+    do {
+        pos = inst.find(',');
+        std::string val = inst.substr(0, pos);
+
+        args.push_back(std::stoull(val, nullptr, 16));
+        inst.erase(0, pos + 1);
+    } while (pos != std::string::npos);
+
     return args;
-
-  inst = inst.substr(open + 1, close - open - 1);
-
-  // If there is only one value, set pos to the end of the string
-  if ((pos = inst.find(',')) == std::string::npos)
-    pos = inst.length() - 1;
-
-  do {
-    pos = inst.find(',');
-    std::string val = inst.substr(0, pos);
-
-    args.push_back(std::stoull(val, nullptr, 16));
-    inst.erase(0, pos + 1);
-  } while (pos != std::string::npos);
-
-  return args;
 }
 
 uint32_t translate(std::string &inst, std::vector<uint32_t> &args) {
     auto it = instruction_funcs.find(inst);
-    
+
     if (it != instruction_funcs.end())
         return it->second.translate(args);
 

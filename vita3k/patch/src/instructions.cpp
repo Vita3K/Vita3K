@@ -20,12 +20,12 @@
 #include <util/log.h>
 
 uint32_t nop(std::vector<uint32_t> &args) {
-  return 0;
+    return 0;
 }
 
 uint32_t t1_mov(std::vector<uint32_t> &args) {
-  uint8_t b0 = args[1];
-  uint8_t b1 = 0b00100000 | (args[0] << 8);
+    uint8_t b0 = args[1];
+    uint8_t b1 = 0b00100000 | (args[0] << 8);
 
-  return (b1 << 8) | b0;
+    return (b1 << 8) | b0;
 }
