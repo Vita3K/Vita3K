@@ -37,6 +37,15 @@ PatchHeader readHeader(std::string &header, bool isPatchlist) {
             patch_header.bin = args[1];
     } else {
         patch_header.titleid = "";
+
+        // If we have more than one argument, user probably made a mistake, so we can correct it
+        if (args.size() > 1) {
+            LOG_WARN("Found more than one argument in a title-specific patch file. You only need to specify the binary name because the TitleID is already known.");
+            patch_header.bin = args[1];
+
+            return patch_header;
+        }
+
         patch_header.bin = args[0];
     }
 
