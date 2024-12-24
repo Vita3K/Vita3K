@@ -16,22 +16,29 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "patch/util.h"
-#include "patch/patch.h"
 
 #include <map>
 #include <util/log.h>
 
-// This function will return the binary name if a header is provided. Otherwise, it will return `eboot.bin`
-std::string readBinFromHeader(const std::string &header) {
-    std::string bin = "eboot.bin";
-    auto open = header.find('[');
-    auto close = header.find(']');
+// This function will return a PatchHeader struct, which contains the titleid and the binary name (if provided)
+PatchHeader readHeader(std::string &header) {
+    PatchHeader patch_header;
 
-    if (open != std::string::npos && close != std::string::npos) {
-        bin = header.substr(open + 1, close - open - 1);
+    stripArgSpaces(header, '[', ']');
+
+    auto args = getArgs(header, '[', ']');
+
+    // Header should either be [bin] or [titleid, bin]
+    // (this is because some patches are seperated by titleid in filename, and don't need it provided in the header)
+    if (args.size() == 2) {
+        patch_header.titleid = args[0];
+        patch_header.bin = args[1];
+    } else {
+        patch_header.titleid = "";
+        patch_header.bin = args[0];
     }
 
-    return bin;
+    return patch_header;
 }
 
 std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count) {
@@ -55,21 +62,25 @@ std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count) {
     return bytes;
 }
 
-void removeInstructionSpaces(std::string &patchline) {
+void stripArgSpaces(std::string &line, char open, char close) {
     bool inBrackets = false;
 
-    for (size_t i = 0; i < patchline.size(); ++i) {
-        if (patchline[i] == '(') {
+    for (size_t i = 0; i < line.size(); ++i) {
+        if (line[i] == open) {
             inBrackets = true;
-        } else if (patchline[i] == ')') {
+        } else if (line[i] == close) {
             inBrackets = false;
         }
 
-        if (inBrackets && patchline[i] == ' ') {
-            patchline.erase(i, 1);
+        if (inBrackets && line[i] == ' ') {
+            line.erase(i, 1);
             --i;
         }
     }
+}
+
+void stripArgSpaces(std::string &line) {
+  return stripArgSpaces(line, '(', ')');
 }
 
 Instruction toInstruction(const std::string &inst) {

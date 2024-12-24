@@ -30,13 +30,17 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const
     for (auto &entry : fs::directory_iterator(path)) {
         auto filename = entry.path().filename().string();
         // Just in case users decide to use lowercase filenames
-        auto upper_filename = std::transform(filename.begin(), filename.end(), filename.begin(), ::toupper);
+        std::transform(filename.begin(), filename.end(), filename.begin(), ::toupper);
 
-        if (filename.find(titleid) != std::string::npos && filename.ends_with(".TXT")) {
+        bool isPatchlist = filename.find("PATCHLIST.TXT") != std::string::npos;
+
+        if ((filename.find(titleid) != std::string::npos && filename.ends_with(".TXT")) || isPatchlist) {
             // Read the file
             std::ifstream file(entry.path().c_str());
-            std::string patch_bin = "eboot.bin";
-            std::string patch_titleid = titleid;
+            PatchHeader patch_header = PatchHeader {
+              "",
+              "eboot.bin"
+            };
 
             // Parse the file
             while (file.good()) {
@@ -45,12 +49,13 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const
 
                 // If this is a header, remember the binary the next patches are for
                 if (line[0] == '[') {
-                    patch_bin = readBinFromHeader(line);
+                    patch_header = readHeader(line);
+                    LOG_DEBUG("titleid: {}, bin: {}", patch_header.titleid, patch_header.bin);
                     continue;
                 }
 
                 // Ignore comments and patches for other binaries
-                if (line[0] == '#' || line[0] == '\n' || bin.find(patch_bin) == std::string::npos)
+                if (line[0] == '#' || line[0] == '\n' || bin.find(patch_header.bin) == std::string::npos || (isPatchlist && patch_header.titleid != titleid))
                     continue;
 
                 try {
@@ -87,7 +92,7 @@ Patch parse_patch(const std::string &patch) {
 
     // Clean up potential instructions by removing spaces in between brackets
     // Eg. t1_mov(0, 1) becomes t1_mov(0,1)
-    removeInstructionSpaces(values);
+    stripArgSpaces(values);
 
     // If there is only one value, set pos to the end of the string
     if ((pos = values.find(' ')) == std::string::npos)

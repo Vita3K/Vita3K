@@ -22,15 +22,19 @@
 #include <util/types.h>
 #include <vector>
 
-#include "instructions.h"
+#include "patch/patch.h"
+#include "patch/instructions.h"
 
-std::string readBinFromHeader(const std::string &header);
+PatchHeader readHeader(std::string &header);
 std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count);
-void removeInstructionSpaces(std::string &patchline);
+
+void stripArgSpaces(std::string &line);
+void stripArgSpaces(std::string &line, char open, char close);
 
 Instruction toInstruction(const std::string &inst);
 bool isValidInstruction(std::string &inst);
 std::string stripArgs(std::string inst);
+
 std::vector<std::string> getArgs(std::string inst, char open, char close);
 std::vector<std::string> getArgs(std::string inst);
 
