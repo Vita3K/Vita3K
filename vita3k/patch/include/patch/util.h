@@ -22,8 +22,8 @@
 #include <util/types.h>
 #include <vector>
 
-#include "patch/patch.h"
 #include "patch/instructions.h"
+#include "patch/patch.h"
 
 PatchHeader readHeader(std::string &header);
 std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count);

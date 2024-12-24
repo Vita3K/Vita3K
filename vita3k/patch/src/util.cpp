@@ -80,7 +80,7 @@ void stripArgSpaces(std::string &line, char open, char close) {
 }
 
 void stripArgSpaces(std::string &line) {
-  return stripArgSpaces(line, '(', ')');
+    return stripArgSpaces(line, '(', ')');
 }
 
 Instruction toInstruction(const std::string &inst) {

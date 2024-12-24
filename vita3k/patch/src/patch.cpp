@@ -37,9 +37,9 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const
         if ((filename.find(titleid) != std::string::npos && filename.ends_with(".TXT")) || isPatchlist) {
             // Read the file
             std::ifstream file(entry.path().c_str());
-            PatchHeader patch_header = PatchHeader {
-              "",
-              "eboot.bin"
+            PatchHeader patch_header = PatchHeader{
+                "",
+                "eboot.bin"
             };
 
             // Parse the file
