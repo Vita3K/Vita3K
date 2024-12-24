@@ -36,6 +36,7 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const
             // Read the file
             std::ifstream file(entry.path().c_str());
             std::string patch_bin = "eboot.bin";
+            std::string patch_titleid = titleid;
 
             // Parse the file
             while (file.good()) {
@@ -107,7 +108,12 @@ Patch parse_patch(const std::string &patch) {
 
         if (instruction != Instruction::INVALID) {
             auto args = getArgs(val);
-            bytes = translate(inst, args);
+            std::vector<uint32_t> arg_conv;
+
+            arg_conv.reserve(args.size());
+            std::transform(args.begin(), args.end(), std::back_inserter(arg_conv), [](std::string &s) { return std::stoull(s, nullptr, 16); });
+
+            bytes = translate(inst, arg_conv);
 
             LOG_INFO("Translated {} to 0x{:X}", val, bytes);
         } else {

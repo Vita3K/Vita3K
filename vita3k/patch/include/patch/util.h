@@ -31,6 +31,7 @@ void removeInstructionSpaces(std::string &patchline);
 Instruction toInstruction(const std::string &inst);
 bool isValidInstruction(std::string &inst);
 std::string stripArgs(std::string inst);
-std::vector<uint32_t> getArgs(std::string inst);
+std::vector<std::string> getArgs(std::string inst, char open, char close);
+std::vector<std::string> getArgs(std::string inst);
 
 uint32_t translate(std::string &inst, std::vector<uint32_t> &args);

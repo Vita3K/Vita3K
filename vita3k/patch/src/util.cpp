@@ -97,30 +97,33 @@ std::string stripArgs(std::string inst) {
     return inst;
 }
 
-std::vector<uint32_t> getArgs(std::string inst) {
-    auto open = inst.find('(');
-    auto close = inst.find(')');
-    std::vector<uint32_t> args;
-    size_t pos = 0;
+std::vector<std::string> getArgs(std::string inst, char open, char close) {
+    auto open_pos = inst.find(open);
+    auto close_pos = inst.find(close);
+    std::vector<std::string> args;
 
-    if (open == std::string::npos || close == std::string::npos)
+    if (open_pos == std::string::npos || close_pos == std::string::npos)
         return args;
 
-    inst = inst.substr(open + 1, close - open - 1);
+    inst = inst.substr(open_pos + 1, close_pos - open_pos - 1);
 
     // If there is only one value, set pos to the end of the string
-    if ((pos = inst.find(',')) == std::string::npos)
-        pos = inst.length() - 1;
+    if ((open_pos = inst.find(',')) == std::string::npos)
+        open_pos = inst.length() - 1;
 
     do {
-        pos = inst.find(',');
-        std::string val = inst.substr(0, pos);
+        open_pos = inst.find(',');
+        std::string val = inst.substr(0, open_pos);
 
-        args.push_back(std::stoull(val, nullptr, 16));
-        inst.erase(0, pos + 1);
-    } while (pos != std::string::npos);
+        args.push_back(val);
+        inst.erase(0, open_pos + 1);
+    } while (open_pos != std::string::npos);
 
     return args;
+}
+
+std::vector<std::string> getArgs(std::string inst) {
+    return getArgs(inst, '(', ')');
 }
 
 uint32_t translate(std::string &inst, std::vector<uint32_t> &args) {
