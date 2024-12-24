@@ -21,18 +21,20 @@
 #include <util/log.h>
 
 // This function will return a PatchHeader struct, which contains the titleid and the binary name (if provided)
-PatchHeader readHeader(std::string &header) {
+PatchHeader readHeader(std::string &header, bool isPatchlist) {
     PatchHeader patch_header;
 
     stripArgSpaces(header, '[', ']');
 
     auto args = getArgs(header, '[', ']');
 
-    // Header should either be [bin] or [titleid, bin]
-    // (this is because some patches are seperated by titleid in filename, and don't need it provided in the header)
-    if (args.size() == 2) {
+    // When this is in a patchlist file, the possible values are [titleid, bin] and [titleid]
+    // When this is in a title-specific patch file, the possible values are just [bin] (because the titleid is already known)
+    if (isPatchlist) {
         patch_header.titleid = args[0];
-        patch_header.bin = args[1];
+
+        if (args.size() > 1)
+            patch_header.bin = args[1];
     } else {
         patch_header.titleid = "";
         patch_header.bin = args[0];

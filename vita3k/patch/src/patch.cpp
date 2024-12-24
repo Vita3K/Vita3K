@@ -49,8 +49,7 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const
 
                 // If this is a header, remember the binary the next patches are for
                 if (line[0] == '[') {
-                    patch_header = readHeader(line);
-                    LOG_DEBUG("titleid: {}, bin: {}", patch_header.titleid, patch_header.bin);
+                    patch_header = readHeader(line, isPatchlist);
                     continue;
                 }
 
