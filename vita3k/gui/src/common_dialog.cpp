@@ -411,8 +411,7 @@ static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float 
     ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
     ImGui::SetCursorPos(ImVec2(save_pos.x, save_pos.y + (is_save_exist ? 10.f * SCALE.y : (THUMBNAIL_SIZE.y / 2.f) - (ImGui::GetFontSize() / 2.f))));
     ImGui::BeginGroup();
-    if (!emuenv.common_dialog.savedata.title[loop_index].empty())
-        ImGui::Text("%s", emuenv.common_dialog.savedata.title[loop_index].c_str());
+    ImGui::Text("%s", emuenv.common_dialog.savedata.title[loop_index].c_str());
     ImGui::SetWindowFontScale(1.f * FONT_SCALE);
     const auto sys_date_format = (SceSystemParamDateFormat)emuenv.cfg.sys_date_format;
     switch (emuenv.common_dialog.savedata.list_style) {
@@ -513,25 +512,10 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
         else {
             for (std::uint32_t i = 0; i < emuenv.common_dialog.savedata.slot_list_size; i++) {
                 ImGui::PushID(i);
-                switch (emuenv.common_dialog.savedata.display_type) {
-                case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-                    draw_savedata_dialog_list(gui, emuenv, FONT_SCALE, SCALE, WINDOW_SIZE, THUMBNAIL_SIZE, i, i);
+                if (!emuenv.common_dialog.savedata.title[i].empty()) {
+                    draw_savedata_dialog_list(gui, emuenv, FONT_SCALE, SCALE, WINDOW_SIZE, THUMBNAIL_SIZE, i, existing_saves_count);
+                    existing_saves_count++;
                     save_data_slot_list.push_back(i);
-                    break;
-                case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-                    if (!emuenv.common_dialog.savedata.title[i].empty()) {
-                        draw_savedata_dialog_list(gui, emuenv, FONT_SCALE, SCALE, WINDOW_SIZE, THUMBNAIL_SIZE, i, existing_saves_count);
-                        existing_saves_count++;
-                        save_data_slot_list.push_back(i);
-                    }
-                    break;
-                case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-                    if (emuenv.common_dialog.savedata.slot_info[i].isExist == 1) {
-                        draw_savedata_dialog_list(gui, emuenv, FONT_SCALE, SCALE, WINDOW_SIZE, THUMBNAIL_SIZE, i, existing_saves_count);
-                        existing_saves_count++;
-                        save_data_slot_list.push_back(i);
-                    }
-                    break;
                 }
                 ImGui::PopID();
             }
@@ -540,13 +524,11 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
             if (!save_data_slot_list_visible.empty())
                 first_visible_save_data_slot = save_data_slot_list_visible.front();
 
-            if (emuenv.common_dialog.savedata.display_type != SCE_SAVEDATA_DIALOG_TYPE_SAVE) {
-                if (existing_saves_count == 0) {
-                    save_data_list_type_selected = CANCEL;
-                    ImGui::SetWindowFontScale(1.56f * FONT_SCALE);
-                    ImGui::SetCursorPosY(150.f * SCALE.y);
-                    TextCentered(emuenv.common_dialog.lang.save_data.load["no_saved_data"].c_str());
-                }
+            if (existing_saves_count == 0) {
+                save_data_list_type_selected = CANCEL;
+                ImGui::SetWindowFontScale(1.56f * FONT_SCALE);
+                ImGui::SetCursorPosY(150.f * SCALE.y);
+                TextCentered(emuenv.common_dialog.lang.save_data.load["no_saved_data"].c_str());
             }
         }
         ImGui::EndChild();
