@@ -201,12 +201,6 @@ bool USSETranslatorVisitor::smp(
     Imm7 src0_n,
     Imm7 src1_n,
     Imm7 src2_n) {
-    // LOD mode: none, bias, replace, gradient
-    if ((lod_mode != 0) && (lod_mode != 2) && (lod_mode != 3)) {
-        LOG_ERROR("Sampler LOD replace not implemented!");
-        return true;
-    }
-
     // Decode src0
     Instruction inst;
     inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, src0_ext, true, 8, m_second_program);
@@ -341,7 +335,12 @@ bool USSETranslatorVisitor::smp(
             inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, true, 8, m_second_program);
             inst.opr.src2.type = inst.opr.src0.type;
 
+            // LOD mode: none, bias, replace, gradient
             switch (lod_mode) {
+            case 1:
+                LOG_ERROR("Sampler LOD bias not implemented!");
+                break;
+
             case 2:
                 extra1 = load(inst.opr.src2, 0b1);
                 break;
