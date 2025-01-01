@@ -77,6 +77,7 @@ static std::vector<uint32_t> height_manual_pages;
 
 bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     // Reset manual variables
+    constexpr uint32_t MAX_MANUAL_PAGES = 999;
     current_page = 0;
     scroll = 0.f;
     height_manual_pages.clear();
@@ -89,39 +90,34 @@ bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     if (fs::exists(APP_PATH / manual_path / lang))
         manual_path /= lang;
 
-    if (fs::exists(APP_PATH / manual_path) && !fs::is_empty(APP_PATH / manual_path)) {
+    // Load manual images
+    for (uint32_t i = 0; i < MAX_MANUAL_PAGES; i++) {
+        // Get manual page path
+        const auto page_path = manual_path / fmt::format("{:0>3d}.png", i + 1);
+
+        // Read manual image from file buffer and check if it exists
+        vfs::FileBuffer buffer;
+        if (!vfs::read_app_file(buffer, emuenv.pref_path, app_path, page_path))
+            break;
+
+        // Load image data from memory buffer and check if it's valid
         int32_t width, height;
-        for (const auto &manual : fs::directory_iterator(APP_PATH / manual_path)) {
-            if (manual.path().extension() == ".png") {
-                const auto page_path = manual_path / manual.path().filename();
-
-                vfs::FileBuffer buffer;
-                vfs::read_app_file(buffer, emuenv.pref_path, app_path, page_path);
-
-                if (buffer.empty()) {
-                    LOG_WARN("Manual not found for title: {} [{}].", app_path, APP_INDEX->title);
-                    return false;
-                }
-
-                // Load image data from memory buffer and check if it's valid
-                stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-                if (!data) {
-                    LOG_ERROR("Invalid manual image for title: {} [{}] in path: {}.", app_path, APP_INDEX->title, page_path);
-                    return false;
-                }
-
-                // Add manual image to vector
-                gui.manuals.emplace_back(gui.imgui_state.get(), data, width, height);
-
-                // Calculate height of the page
-                const auto ratio = static_cast<float>(width) / static_cast<float>(height);
-                height = static_cast<int32_t>(960.f / ratio);
-                height_manual_pages.push_back(height);
-
-                // Free image data
-                stbi_image_free(data);
-            }
+        stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+        if (!data) {
+            LOG_ERROR("Invalid manual image for title: {} [{}] in path: {}.", app_path, APP_INDEX->title, page_path);
+            return false;
         }
+
+        // Add manual image to vector
+        gui.manuals.emplace_back(gui.imgui_state.get(), data, width, height);
+
+        // Calculate height of the page
+        const auto ratio = static_cast<float>(width) / static_cast<float>(height);
+        height = static_cast<int32_t>(960.f / ratio);
+        height_manual_pages.push_back(height);
+
+        // Free image data
+        stbi_image_free(data);
     }
 
     return !gui.manuals.empty();
