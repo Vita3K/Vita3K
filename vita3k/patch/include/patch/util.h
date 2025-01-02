@@ -17,21 +17,25 @@
 
 #pragma once
 
+#include <array>
 #include <string>
-#include <util/fs.h>
 #include <util/types.h>
 #include <vector>
 
-struct Patch {
-    uint8_t seg;
-    uint32_t offset;
-    std::vector<uint8_t> values;
-};
+#include "patch/instructions.h"
+#include "patch/patch.h"
 
-struct PatchHeader {
-    std::string titleid;
-    std::string bin;
-};
+PatchHeader readHeader(std::string &header, bool isPatchlist);
+std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count);
 
-std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const std::string &bin);
-Patch parse_patch(const std::string &patch);
+void stripArgSpaces(std::string &line);
+void stripArgSpaces(std::string &line, char open, char close);
+
+Instruction toInstruction(const std::string &inst);
+bool isValidInstruction(std::string &inst);
+std::string stripArgs(std::string inst);
+
+std::vector<std::string> getArgs(std::string inst, char open, char close);
+std::vector<std::string> getArgs(std::string inst);
+
+uint32_t translate(std::string &inst, std::vector<uint32_t> &args);

@@ -15,23 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include "patch/instructions.h"
 
-#include <string>
-#include <util/fs.h>
-#include <util/types.h>
-#include <vector>
+#include <util/log.h>
 
-struct Patch {
-    uint8_t seg;
-    uint32_t offset;
-    std::vector<uint8_t> values;
-};
+uint32_t nop(std::vector<uint32_t> &args) {
+    return 0;
+}
 
-struct PatchHeader {
-    std::string titleid;
-    std::string bin;
-};
+uint32_t t1_mov(std::vector<uint32_t> &args) {
+    uint8_t b0 = args[1];
+    uint8_t b1 = 0b00100000 | (args[0] << 8);
 
-std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const std::string &bin);
-Patch parse_patch(const std::string &patch);
+    return (b1 << 8) | b0;
+}

@@ -17,21 +17,40 @@
 
 #pragma once
 
+#include <array>
+#include <map>
 #include <string>
-#include <util/fs.h>
 #include <util/types.h>
 #include <vector>
 
-struct Patch {
-    uint8_t seg;
-    uint32_t offset;
-    std::vector<uint8_t> values;
+using TranslateFn = uint32_t (*)(std::vector<uint32_t> &args);
+
+enum class Instruction {
+    NOP,
+    T1_MOV,
+
+    // All-encompassing "this is not an instruction" value
+    INVALID,
 };
 
-struct PatchHeader {
-    std::string titleid;
-    std::string bin;
+struct Op {
+    Instruction instruction;
+    TranslateFn translate;
 };
 
-std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const std::string &bin);
-Patch parse_patch(const std::string &patch);
+/**
+ * Special instructions
+ */
+uint32_t nop(std::vector<uint32_t> &args);
+
+/**
+ * MOV instructions
+ *
+ * https://developer.arm.com/documentation/ddi0406/c/Application-Level-Architecture/Instruction-Details/Alphabetical-list-of-instructions/MOV--immediate-?lang=en
+ */
+uint32_t t1_mov(std::vector<uint32_t> &args);
+
+static const std::map<std::string, Op> instruction_funcs = {
+    { "nop", { Instruction::NOP, nop } },
+    { "t1_mov", { Instruction::T1_MOV, t1_mov } },
+};
