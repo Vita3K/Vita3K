@@ -83,17 +83,12 @@ EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numR
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
     }
 
-    if (emuenv.ctrl.has_motion_support && !emuenv.cfg.disable_motion) {
-        std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
-        sensorState->accelerometer = get_acceleration(emuenv.motion);
-        sensorState->gyro = get_gyroscope(emuenv.motion);
+    std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
+    uint32_t index = emuenv.motion.current_buffer_index;
 
-        sensorState->timestamp = emuenv.motion.last_accel_timestamp;
-        sensorState->counter = emuenv.motion.last_counter;
-        sensorState->hostTimestamp = sensorState->timestamp;
-        sensorState->dataInfo = 0;
-    } else {
-        // some default values
+    // If motion is disabled fill with default values
+    if (!emuenv.ctrl.has_motion_support || emuenv.cfg.disable_motion) {
+        MotionSample &motion_sample = emuenv.motion.ring_buffer_samples[index];
         memset(sensorState, 0, sizeof(*sensorState));
         sensorState->accelerometer.z = -1.0;
 
@@ -102,11 +97,38 @@ EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numR
         sensorState->timestamp = timestamp;
         sensorState->hostTimestamp = timestamp;
 
-        sensorState->counter = emuenv.motion.last_counter++;
+        motion_sample.counter++;
+        for (int i = 1; i < numRecords; i++) {
+            sensorState[i] = sensorState[0];
+        }
+        return SCE_MOTION_OK;
     }
 
-    for (int i = 1; i < numRecords; i++)
-        sensorState[i] = sensorState[0];
+    // Fill with unfiltered values
+    for (int i = 0; i < numRecords; i++) {
+        const MotionSample &motion_sample = emuenv.motion.ring_buffer_samples[index];
+        sensorState[i].accelerometer = {
+            motion_sample.accel.x,
+            motion_sample.accel.y,
+            motion_sample.accel.z,
+        };
+        sensorState[i].gyro = {
+            motion_sample.accel.x,
+            motion_sample.accel.y,
+            motion_sample.accel.z,
+        };
+        sensorState[i].timestamp = motion_sample.timestamp;
+        sensorState[i].counter = motion_sample.counter;
+        sensorState[i].hostTimestamp = motion_sample.hostTimestamp;
+        sensorState[i].dataInfo = 0;
+
+        // Move to previous index
+        if (index == 0) {
+            index = emuenv.motion.ring_buffer_size - 1;
+            continue;
+        }
+        index--;
+    }
 
     return SCE_MOTION_OK;
 }
@@ -120,28 +142,8 @@ EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
     }
 
-    if (emuenv.ctrl.has_motion_support && !emuenv.cfg.disable_motion) {
-        std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
-        motionState->timestamp = emuenv.motion.last_accel_timestamp;
-
-        motionState->acceleration = get_acceleration(emuenv.motion);
-        motionState->angularVelocity = get_gyroscope(emuenv.motion);
-
-        Util::Quaternion dev_quat = get_orientation(emuenv.motion);
-        motionState->basicOrientation = get_basic_orientation(emuenv.motion);
-
-        static_assert(sizeof(motionState->deviceQuat) == sizeof(dev_quat));
-        memcpy(&motionState->deviceQuat, &dev_quat, sizeof(motionState->deviceQuat));
-
-        *reinterpret_cast<decltype(dev_quat.ToMatrix()) *>(&motionState->rotationMatrix) = dev_quat.ToMatrix();
-        // not right, but we can't do better without a magnetometer
-        memcpy(&motionState->nedMatrix, &motionState->rotationMatrix, sizeof(motionState->nedMatrix));
-
-        motionState->hostTimestamp = motionState->timestamp;
-        // set it as unstable because we don't have one
-        motionState->magnFieldStability = SCE_MOTION_MAGNETIC_FIELD_UNSTABLE;
-        motionState->dataInfo = 0;
-    } else {
+    // If motion is disabled fill with default values
+    if (!emuenv.ctrl.has_motion_support || emuenv.cfg.disable_motion) {
         // put some default values
         memset(motionState, 0, sizeof(SceMotionState));
 
@@ -157,7 +159,34 @@ EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
             reinterpret_cast<float *>(&motionState->rotationMatrix.x.x)[i * 4 + i] = 1;
             reinterpret_cast<float *>(&motionState->nedMatrix.x.x)[i * 4 + i] = 1;
         }
+
+        CALL_EXPORT(sceMotionGetBasicOrientation, &motionState->basicOrientation);
+        return SCE_MOTION_OK;
     }
+
+    // Fill with filtered values
+    std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
+    const uint32_t index = emuenv.motion.current_buffer_index;
+    const MotionSample &motion_sample = emuenv.motion.ring_buffer_samples[index];
+
+    motionState->timestamp = motion_sample.timestamp;
+
+    motionState->acceleration = get_acceleration(emuenv.motion);
+    motionState->angularVelocity = get_gyroscope(emuenv.motion);
+
+    Util::Quaternion dev_quat = get_orientation(emuenv.motion);
+
+    static_assert(sizeof(motionState->deviceQuat) == sizeof(dev_quat));
+    memcpy(&motionState->deviceQuat, &dev_quat, sizeof(motionState->deviceQuat));
+
+    *reinterpret_cast<decltype(dev_quat.ToMatrix()) *>(&motionState->rotationMatrix) = dev_quat.ToMatrix();
+    // not right, but we can't do better without a magnetometer
+    memcpy(&motionState->nedMatrix, &motionState->rotationMatrix, sizeof(motionState->nedMatrix));
+
+    motionState->hostTimestamp = motion_sample.hostTimestamp;
+    // set it as unstable because we don't have one
+    motionState->magnFieldStability = SCE_MOTION_MAGNETIC_FIELD_UNSTABLE;
+    motionState->dataInfo = 0;
 
     CALL_EXPORT(sceMotionGetBasicOrientation, &motionState->basicOrientation);
     return SCE_MOTION_OK;
