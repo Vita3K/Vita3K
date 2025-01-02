@@ -502,7 +502,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     }
     ImGui::PopFont();
 
-    if ((ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0))) {
+    if (ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0)) {
         gui.vita_area.start_screen = false;
         gui.vita_area.home_screen = true;
         if (emuenv.cfg.show_info_bar)

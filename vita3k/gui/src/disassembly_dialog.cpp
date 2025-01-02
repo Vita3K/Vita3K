@@ -60,7 +60,7 @@ void reevaluate_code(GuiState &gui, EmuEnvState &emuenv) {
 
     uint32_t address = 0, count = 0;
     if (!address_string.empty())
-        address = static_cast<uint32_t>(std::stol(address_string, nullptr, 16));
+        address = static_cast<uint32_t>(std::stoll(address_string, nullptr, 16));
     if (!count_string.empty())
         count = static_cast<uint32_t>(std::stol(count_string));
     bool thumb = gui.disassembly_arch == "THUMB";
