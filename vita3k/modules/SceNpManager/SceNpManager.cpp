@@ -126,8 +126,13 @@ EXPORT(int, sceNpManagerGetNpId, np::SceNpId *id) {
         return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;
     }
     // Fill the unused stuffs to 0 (prevent some weird things happen)
-    memset(id, 0, sizeof(*id));
+    memset(id, 0, sizeof(np::SceNpId));
     strcpy(id->handle.data, emuenv.io.user_name.c_str());
+    id->isIdValid = true;
+    id->opt.platformType[0] = 'p';
+    id->opt.platformType[1] = 's';
+    id->opt.platformType[2] = 'p';
+    id->opt.platformType[3] = '2';
     return 0;
 }
 
