@@ -62,17 +62,9 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         if (result == host::dialog::filesystem::Result::SUCCESS) {
             std::thread installation([&emuenv]() {
-                install_pup(emuenv.pref_path, fs::path(pup_path.native()), progress_callback);
+                fw_version = install_pup(emuenv.pref_path, fs::path(pup_path.native()), progress_callback);
                 std::lock_guard<std::mutex> lock(install_mutex);
                 finished_installing = true;
-                // get firmware version
-                fs::ifstream versionFile(emuenv.pref_path / "PUP_DEC/PUP/version.txt");
-                if (versionFile.is_open()) {
-                    std::getline(versionFile, fw_version);
-                    versionFile.close();
-                } else
-                    LOG_WARN("Firmware Version file not found!");
-                fs::remove_all(emuenv.pref_path / "PUP_DEC");
             });
             installation.detach();
         } else if (result == host::dialog::filesystem::Result::CANCEL) {
