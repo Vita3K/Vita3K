@@ -25,17 +25,17 @@
 #include "patch/instructions.h"
 #include "patch/patch.h"
 
-PatchHeader readHeader(std::string &header, bool isPatchlist);
-std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count);
+PatchHeader read_header(std::string &header, bool isPatchlist);
+std::vector<uint8_t> to_bytes(unsigned long long value, uint8_t count);
 
-void stripArgSpaces(std::string &line);
-void stripArgSpaces(std::string &line, char open, char close);
+void strip_arg_spaces(std::string &line);
+void strip_arg_spaces(std::string &line, char open, char close);
 
-Instruction toInstruction(const std::string &inst);
-bool isValidInstruction(std::string &inst);
-std::string stripArgs(std::string inst);
+Instruction to_instruction(const std::string &inst);
+bool is_valid_instruction(std::string &inst);
+std::string strip_args(std::string inst);
 
-std::vector<std::string> getArgs(std::string inst, char open, char close);
-std::vector<std::string> getArgs(std::string inst);
+std::vector<std::string> get_args(std::string inst, char open, char close);
+std::vector<std::string> get_args(std::string inst);
 
 uint32_t translate(std::string &inst, std::vector<uint32_t> &args);

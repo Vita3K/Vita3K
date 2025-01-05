@@ -49,7 +49,7 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const
 
                 // If this is a header, remember the binary the next patches are for
                 if (line[0] == '[') {
-                    patch_header = readHeader(line, isPatchlist);
+                    patch_header = read_header(line, isPatchlist);
                     continue;
                 }
 
@@ -91,7 +91,7 @@ Patch parse_patch(const std::string &patch) {
 
     // Clean up potential instructions by removing spaces in between brackets
     // Eg. t1_mov(0, 1) becomes t1_mov(0,1)
-    stripArgSpaces(values);
+    strip_arg_spaces(values);
 
     // If there is only one value, set pos to the end of the string
     if ((pos = values.find(' ')) == std::string::npos)
@@ -107,11 +107,11 @@ Patch parse_patch(const std::string &patch) {
 
         unsigned long long bytes;
         uint8_t byte_count = 0;
-        std::string inst = stripArgs(val);
-        Instruction instruction = toInstruction(inst);
+        std::string inst = strip_args(val);
+        Instruction instruction = to_instruction(inst);
 
         if (instruction != Instruction::INVALID) {
-            auto args = getArgs(val);
+            auto args = get_args(val);
             std::vector<uint32_t> arg_conv;
 
             arg_conv.reserve(args.size());
@@ -126,7 +126,7 @@ Patch parse_patch(const std::string &patch) {
             byte_count = val.length() % 2 == 0 ? val.length() / 2 : val.length() / 2 + 1;
         }
 
-        auto byte_vec = toBytes(bytes, byte_count);
+        auto byte_vec = to_bytes(bytes, byte_count);
 
         values_vec.reserve(values_vec.size() + byte_vec.size());
         values_vec.insert(values_vec.end(), byte_vec.begin(), byte_vec.end());

@@ -21,16 +21,16 @@
 #include <util/log.h>
 
 // This function will return a PatchHeader struct, which contains the titleid and the binary name (if provided)
-PatchHeader readHeader(std::string &header, bool isPatchlist) {
+PatchHeader read_header(std::string &header, bool is_patchlist) {
     PatchHeader patch_header;
 
-    stripArgSpaces(header, '[', ']');
+    strip_arg_spaces(header, '[', ']');
 
-    auto args = getArgs(header, '[', ']');
+    auto args = get_args(header, '[', ']');
 
     // When this is in a patchlist file, the possible values are [titleid, bin] and [titleid]
     // When this is in a title-specific patch file, the possible values are just [bin] (because the titleid is already known)
-    if (isPatchlist) {
+    if (is_patchlist) {
         patch_header.titleid = args[0];
 
         if (args.size() > 1)
@@ -52,7 +52,7 @@ PatchHeader readHeader(std::string &header, bool isPatchlist) {
     return patch_header;
 }
 
-std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count) {
+std::vector<uint8_t> to_bytes(unsigned long long value, uint8_t count) {
     std::vector<uint8_t> bytes;
 
     // If count is 0, go until we see a byte of all 0s
@@ -73,28 +73,28 @@ std::vector<uint8_t> toBytes(unsigned long long value, uint8_t count) {
     return bytes;
 }
 
-void stripArgSpaces(std::string &line, char open, char close) {
-    bool inBrackets = false;
+void strip_arg_spaces(std::string &line, char open, char close) {
+    bool in_brackets = false;
 
     for (size_t i = 0; i < line.size(); ++i) {
         if (line[i] == open) {
-            inBrackets = true;
+            in_brackets = true;
         } else if (line[i] == close) {
-            inBrackets = false;
+            in_brackets = false;
         }
 
-        if (inBrackets && line[i] == ' ') {
+        if (in_brackets && line[i] == ' ') {
             line.erase(i, 1);
             --i;
         }
     }
 }
 
-void stripArgSpaces(std::string &line) {
-    return stripArgSpaces(line, '(', ')');
+void strip_arg_spaces(std::string &line) {
+    return strip_arg_spaces(line, '(', ')');
 }
 
-Instruction toInstruction(const std::string &inst) {
+Instruction to_instruction(const std::string &inst) {
     auto it = instruction_funcs.find(inst);
 
     if (it != instruction_funcs.end())
@@ -103,11 +103,11 @@ Instruction toInstruction(const std::string &inst) {
     return Instruction::INVALID;
 }
 
-bool isValidInstruction(std::string &inst) {
-    return toInstruction(stripArgs(inst)) != Instruction::INVALID;
+bool is_valid_instruction(std::string &inst) {
+    return to_instruction(strip_args(inst)) != Instruction::INVALID;
 }
 
-std::string stripArgs(std::string inst) {
+std::string strip_args(std::string inst) {
     auto open = inst.find('(');
     auto close = inst.find(')');
 
@@ -119,7 +119,7 @@ std::string stripArgs(std::string inst) {
     return inst;
 }
 
-std::vector<std::string> getArgs(std::string inst, char open, char close) {
+std::vector<std::string> get_args(std::string inst, char open, char close) {
     auto open_pos = inst.find(open);
     auto close_pos = inst.find(close);
     std::vector<std::string> args;
@@ -144,8 +144,8 @@ std::vector<std::string> getArgs(std::string inst, char open, char close) {
     return args;
 }
 
-std::vector<std::string> getArgs(std::string inst) {
-    return getArgs(inst, '(', ')');
+std::vector<std::string> get_args(std::string inst) {
+    return get_args(inst, '(', ')');
 }
 
 uint32_t translate(std::string &inst, std::vector<uint32_t> &args) {
