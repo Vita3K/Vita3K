@@ -696,7 +696,7 @@ constexpr bool cmp_less(T t, U u) noexcept {
 }
 
 static bool command_begins_with(PacketCommand &command, const std::string_view small_str) {
-    //If the command's content is shorter than small_str, it can't match
+    // If the command's content is shorter than small_str, it can't match
     if (static_cast<size_t>(command.content_length) < small_str.size())
         return false;
 
