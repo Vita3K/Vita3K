@@ -782,7 +782,15 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         case SDL_DROPFILE: {
             const auto drop_file = fs_utils::utf8_to_path(event.drop.file);
             const auto extension = string_utils::tolower(drop_file.extension().string());
-            if ((extension == ".vpk") || (extension == ".zip"))
+            if (extension == ".pup") {
+                const std::string fw_version = install_pup(emuenv.pref_path, drop_file);
+                if (!fw_version.empty()) {
+                    LOG_INFO("Firmware {} installed successfully!", fw_version);
+                    gui::get_modules_list(gui, emuenv);
+                    if (emuenv.cfg.initial_setup)
+                        gui::init_theme(gui, emuenv, gui.users[emuenv.cfg.user_id].theme_id);
+                }
+            } else if ((extension == ".vpk") || (extension == ".zip"))
                 install_archive(emuenv, &gui, drop_file);
             else if ((extension == ".rif") || (drop_file.filename() == "work.bin"))
                 copy_license(emuenv, drop_file);
