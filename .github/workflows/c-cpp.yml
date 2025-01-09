@@ -221,7 +221,7 @@ jobs:
         shell: bash
         run: |
           mkdir artifacts/
-          files=$(find . \( -name "*latest" -o -name "ubuntu-22.04" \))
+          files=$(find . \( -name "*latest" -o -name "*22.04" \))
           for f in $files; do
             if [[ $f == *macos-latest ]]
             then
@@ -255,7 +255,7 @@ jobs:
         shell: bash
         run: |
           mkdir artifacts/
-          files=$(find . \( -name "*latest" -o -name "ubuntu-22.04" \))
+          files=$(find . \( -name "*latest" -o -name "*22.04" \))
           for f in $files; do
             if [[ $f == *macos-latest ]]
             then
