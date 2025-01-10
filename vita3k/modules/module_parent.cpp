@@ -241,7 +241,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     }
 
     // Decrypt module file if necessary
-    module_buffer = decrypt_fself(std::move(module_buffer), emuenv.license.rif[emuenv.io.title_id].key);
+    module_buffer = decrypt_fself(module_buffer, emuenv.license.rif[emuenv.io.title_id].key);
     if (module_buffer.empty()) {
         LOG_ERROR("Failed to decrypt module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
