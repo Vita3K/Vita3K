@@ -45,6 +45,7 @@ const ImVec4 IME_NUMERIC_BG = RGBA_TO_FLOAT(59, 42, 61, 255);
 void draw_main_menu_bar(GuiState &gui, EmuEnvState &emuenv);
 void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_self_decrypt_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_threads_dialog(GuiState &gui, EmuEnvState &emuenv);

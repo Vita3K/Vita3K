@@ -44,6 +44,8 @@ static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::MenuItem(lang["install_zip"].c_str(), nullptr, &gui.file_menu.archive_install_dialog);
         ImGui::MenuItem(lang["install_license"].c_str(), nullptr, &gui.file_menu.license_install_dialog);
         ImGui::Separator();
+        ImGui::MenuItem("Decrypt a self", nullptr, &gui.file_menu.self_decrypt_dialog);
+        ImGui::Separator();
         if (ImGui::MenuItem(lang["exit"].c_str()))
             exit(0);
         ImGui::EndMenu();

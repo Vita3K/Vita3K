@@ -833,18 +833,25 @@ std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader
     }
 }
 
-std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8_t *klic) {
+bool is_fself_app(const std::vector<uint8_t> &fself) {
+    const SCE_header &self_header = *reinterpret_cast<const SCE_header *>(fself.data());
+    const AppInfoHeader app_info_hdr = AppInfoHeader((char *)&fself[self_header.appinfo_offset]);
+    return app_info_hdr.self_type == SelfType::APP;
+}
+
+bool is_fself_encrypted(const std::vector<uint8_t> &fself) {
     const SCE_header &self_header = *reinterpret_cast<const SCE_header *>(fself.data());
     const segment_info *const seg_infos = reinterpret_cast<const segment_info *>(&fself[self_header.section_info_offset]);
-    const AppInfoHeader app_info_hdr = AppInfoHeader((char *)&fself[self_header.appinfo_offset]);
+    return seg_infos->encryption != 2;
+}
 
+std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8_t *klic) {
     // Check the encryption self type
-    if (seg_infos->encryption == 2)
+    if (!is_fself_encrypted(fself))
         return fself; // Self is not encrypted, return the original self
 
     // Check if the self is an app and if a klic have all 0 inside it
-    const auto is_app = app_info_hdr.self_type == SelfType::APP;
-    if (is_app && std::all_of(klic, klic + 16, [](uint8_t i) { return i == 0; })) {
+    if (is_fself_app(fself) && std::all_of(klic, klic + 16, [](uint8_t i) { return i == 0; })) {
         LOG_ERROR("No klic provided for encrypted App");
         return {};
     }
@@ -857,6 +864,9 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8
     // Extract the elf from the self
     std::vector<uint8_t> elf;
     int npdrmtype = 0;
+
+    const SCE_header &self_header = *reinterpret_cast<const SCE_header *>(fself.data());
+    const AppInfoHeader app_info_hdr = AppInfoHeader((char *)&fself[self_header.appinfo_offset]);
 
     const SceHeader sce_hdr = SceHeader((char *)fself.data());
     const SelfHeader self_hdr = SelfHeader((char *)&fself[SceHeader::Size]);
