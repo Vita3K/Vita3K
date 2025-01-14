@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ BEGIN
             VALUE "FileDescription", "Vita3K PSVita Emulator"
             VALUE "FileVersion", FILE_VERSION_STR "\0"
             VALUE "InternalName", "Vita3K.exe"
-            VALUE "LegalCopyright", "Copyright (C) 2018-2024"
+            VALUE "LegalCopyright", "Copyright (C) 2018-2025"
             VALUE "OriginalFilename", "Vita3K.exe"
             VALUE "ProductName", "Vita3K"
             VALUE "ProductVersion", FILE_VERSION_STR "\0"
