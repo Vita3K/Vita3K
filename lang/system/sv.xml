@@ -31,7 +31,7 @@
 		<history_version>Version {}</history_version>
 		<information>Information</information>
 		<delete>
-			<app_delete>Det här programmet och alla tillhörande data, inklusive sparade data, kommer att raderas.</app_delete>
+			<app_delete>Den här applikationen och alla tillhörande data, inklusive sparade data, kommer att raderas.</app_delete>
 			<saved_data_delete>Vill du radera dessa sparade data?</saved_data_delete>
 		</delete>
 		<info>
@@ -39,7 +39,7 @@
 			<ineligible>Inte möjligt</ineligible>
 			<level>Nivå</level>
 			<name>Namn</name>
-			<trophy_earning>Vinna trofé</trophy_earning>
+			<trophy_earning>Vinna trophy</trophy_earning>
 			<parental_controls>Föräldrakontroll</parental_controls>
 			<updated>Uppdaterat</updated>
 			<size>Storlek</size>
@@ -165,7 +165,7 @@ Felkod: {}</an_error_occurred>
 			<days>30</days>
 			<days>31</days>
 		</small_mday>
-		<hidden_trophy>Dold trofé</hidden_trophy>
+		<hidden_trophy>Dold trophy</hidden_trophy>
 		<one_hour_ago>1 timme sedan</one_hour_ago>
 		<one_minute_ago>1 minut sedan</one_minute_ago>
 		<bronze>Brons</bronze>
@@ -182,8 +182,8 @@ Felkod: {}</an_error_occurred>
 	</compat_db>
 
 	<content_manager name="Innehållshanterare">
-		<application name="Program">
-			<delete>De markerade programmen och alla tillhörande data, inklusive sparade data, kommer att raderas.</delete>
+		<application name="Applikationer">
+			<delete>De markerade applikationerna och alla tillhörande data, inklusive sparade data, kommer att raderas.</delete>
 			<no_item>Det finns inga innehållsobjekt.</no_item>
 		</application>
 		<saved_data name="Sparade data">
@@ -206,7 +206,7 @@ Felkod: {}</an_error_occurred>
 
 	<dialog>
 		<trophy>
-			<preparing_start_app>Förbereder start av program...</preparing_start_app>
+			<preparing_start_app>Förbereder start av applikationen...</preparing_start_app>
 		</trophy>
 		<save_data>
 			<delete>
@@ -218,12 +218,12 @@ Felkod: {}</an_error_occurred>
 				<details>Detaljer</details>
 				<updated>Uppdaterat</updated>
 			</info>
-			<load name="Läs in">
-				<cancel_loading>Vill du avbryta inläsningen?</cancel_loading>
+			<load name="Ladda">
+				<cancel_loading>Vill du avbryta laddningen?</cancel_loading>
 				<no_saved_data>Det finns inga sparade data.</no_saved_data>
-				<load_complete>Inläsning slutförd.</load_complete>
-				<loading>Läser in...</loading>
-				<load_saved_data>Vill du läsa in dessa sparade data?</load_saved_data>
+				<load_complete>Laddning slutförd.</load_complete>
+				<loading>Laddar...</loading>
+				<load_saved_data>Vill du ladda in dessa sparade data?</load_saved_data>
 			</load>
 			<save name="Spara">
 				<cancel_saving>Vill du avbryta sparningen?</cancel_saving>
@@ -242,19 +242,19 @@ Stäng inte av systemet och stäng inte applikationen.</warning_saving>
 	</dialog>
 
 	<game_data>
-		<app_close>Följande program stängs.</app_close>
+		<app_close>Följande applikation stängs.</app_close>
 		<data_delete>Data att radera:</data_delete>
 	</game_data>
 
 	<indicator>
-		<app_added_home>Programmet har lagts till på hemskärmen.</app_added_home>
+		<app_added_home>Applikationen har lagts till på hemskärmen.</app_added_home>
 		<delete_all>Radera alla</delete_all>
 		<notif_deleted>Notiserna raderas.</notif_deleted>
 		<install_failed>Kunde inte installera.</install_failed>
 		<install_complete>Installation slutförd.</install_complete>
 		<installing>Installerar...</installing>
 		<no_notif>Det finns inga notiser.</no_notif>
-		<trophy_earned>Du har vunnit en trofé!</trophy_earned>
+		<trophy_earned>Du har vunnit en trophy!</trophy_earned>
 	</indicator>
 
 	<initial_setup>
@@ -337,8 +337,8 @@ Ditt Vita3K-system är redo!</completed_setup>
 	<sys_apps_title>
 		<browser>Webbläsare</browser>
 		<internet_browser>Webbläsare</internet_browser>
-		<trophies>Troféer</trophies>
-		<trophy_collection>Trofésamling</trophy_collection>
+		<trophies>Trophies</trophies>
+		<trophy_collection>Trophy-samling</trophy_collection>
 		<settings>Inställningar</settings>
 		<content_manager>Innehållshanterare</content_manager>
 	</sys_apps_title>
@@ -347,13 +347,13 @@ Ditt Vita3K-system är redo!</completed_setup>
 		<details>Detaljer</details>
 		<earned>Vunna</earned>
 		<name>Namn</name>
-		<no_trophies>Det finns inga troféer.
-Du kan få troféer om du använder ett program som har stöd för troféfunktionen.</no_trophies>
+		<no_trophies>Det finns inga trophies.
+Du kan få trophies om du använder en applikation som stöder trophy-funktionen.</no_trophies>
 		<not_earned>Ej vunnen</not_earned>
 		<original>Ursprunglig</original>
 		<sort>Sortera</sort>
-		<trophies>Troféer</trophies>
-		<grade>Nivå</grade>
+		<trophies>Trophies</trophies>
+		<grade>Grad</grade>
 		<progress>Framsteg</progress>
 		<updated>Uppdaterat</updated>
 	</trophy_collection>
@@ -376,12 +376,12 @@ Du kan få troféer om du använder ett program som har stöd för troféfunktio
 	</user_management>
 
 	<vita3k_update name="Vita3K-uppdatering">
- 		<new_version_available>En ny version av Vita3K finns tillgänglig.</new_version_available>
+ 		<new_version_available>En ny version av Vita3K är tillgänglig.</new_version_available>
 		<back>Tillbaka</back>
  		<cancel_update_resume>Vill du avbryta uppdateringen?
-Om du avbryter kommer Vita3K att börja hämta ner från den här punkten nästa gång du uppdaterar.</cancel_update_resume>
-		<downloading>Hämtar ner...
-När hämtningen är slutförd kommer Vita3K automatiskt att startas om och den nya uppdatera installeras.</downloading>
+Om du avbryter kommer Vita3K att börja ladda ned från den här punkten nästa gång du uppdaterar.</cancel_update_resume>
+		<downloading>Laddar ned...
+När nedladdningen är slutförd kommer Vita3K automatiskt att startas om och den nya uppdatera installeras.</downloading>
 		<not_complete_update>Kunde inte slutföra uppdateringen.</not_complete_update>
 		<minutes_left>{} minuter kvar</minutes_left>
 		<next>Nästa</next>
