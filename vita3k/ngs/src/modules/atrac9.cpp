@@ -185,7 +185,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         const uint32_t samples_left_after = (frame_bytes_gotten / superframe_size - 1) * samples_per_superframe;
         if (bufparam.samples_discard_end_off > samples_left_after) {
             // last chunk
-            decoded_size -= bufparam.samples_discard_end_off;
+            decoded_size -= std::min(decoded_size, bufparam.samples_discard_end_off - samples_left_after);
         }
     }
 
