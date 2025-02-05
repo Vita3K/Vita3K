@@ -247,7 +247,7 @@ static int decode_audio_frames(EmuEnvState &emuenv, const char *export_name, Sce
         ctrl->es_size_used += es_size_used;
         es_data += es_size_used;
 
-        uint32_t pcm_size_given = size.samples * decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t);
+        uint32_t pcm_size_given = std::min<uint32_t>(size.samples * decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t), ctrl->pcm_size_max);
         assert(pcm_size_given <= ctrl->pcm_size_max);
         ctrl->pcm_size_given += pcm_size_given;
         pcm_data += pcm_size_given;
