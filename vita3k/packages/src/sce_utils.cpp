@@ -769,7 +769,7 @@ std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_
     EVP_DecryptInit_ex(cipher_ctx, cipher128, nullptr, metadata_info.key, metadata_info.iv);
     EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
     EVP_DecryptUpdate(cipher_ctx, dec1.data(), &dec_len, input_data.data(), sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
-    EVP_DecryptFinal_ex(cipher_ctx, &dec1[dec_len], &dec_len);
+    EVP_DecryptFinal_ex(cipher_ctx, dec1.data() + dec_len, &dec_len);
 
     unsigned char dec2[MetadataHeader::Size];
     std::copy(dec1.data(), &dec1[MetadataHeader::Size], dec2);
@@ -935,7 +935,7 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8
             EVP_DecryptInit_ex(cipher_ctx, cipher, nullptr, reinterpret_cast<const unsigned char *>(scesegs[i].key.c_str()), reinterpret_cast<const unsigned char *>(scesegs[i].iv.c_str()));
             EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
             EVP_DecryptUpdate(cipher_ctx, decrypted_data.data(), &dec_len, &fself[segment_infos[idx].offset], segment_infos[idx].size);
-            EVP_DecryptFinal_ex(cipher_ctx, &decrypted_data[dec_len], &dec_len);
+            EVP_DecryptFinal_ex(cipher_ctx, decrypted_data.data() + dec_len, &dec_len);
         }
 
         if (segment_infos[idx].compressed == SecureBool::YES) {
