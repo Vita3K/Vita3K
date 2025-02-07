@@ -62,10 +62,7 @@
 	url = https://github.com/vitasdk/vita-toolchain.git
 [submodule "external/VulkanMemoryAllocator-Hpp"]
 	path = external/VulkanMemoryAllocator-Hpp
-	url = https://github.com/Macdu/VulkanMemoryAllocator-Hpp
-[submodule "external/Vulkan-Headers"]
-	path = external/Vulkan-Headers
-	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp
 [submodule "external/yaml-cpp"]
 	path = external/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp
