@@ -685,7 +685,7 @@ spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureStat
         return b.createFunctionCall(utils.unpack_fx10, { scalar });
     }
     default: {
-        LOG_ERROR("Unsupported unpack type: {}", log_hex(type));
+        LOG_ERROR("Unsupported unpack type: 0x{:0X}", fmt::underlying(type));
         break;
     }
     }
@@ -714,7 +714,7 @@ spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState 
     }
 
     default: {
-        LOG_ERROR("Unsupported pack type: {}", log_hex(fmt::underlying(source_type)));
+        LOG_ERROR("Unsupported pack type: 0x{:0X}", fmt::underlying(source_type));
         break;
     }
     }
