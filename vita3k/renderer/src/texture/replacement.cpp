@@ -203,7 +203,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
             apply_swizzle_4<uint16_t, 5, 5, 5, 1>(pixels, data_unswizzled.data(), nb_pixels, alpha_is_1, swap_rb);
             break;
         default:
-            LOG_ERROR("Unhandled swizzle for texture format {}, please report it to the developers.", log_hex(fmt::underlying(base_format)));
+            LOG_ERROR("Unhandled swizzle for texture format 0x{:0X}, please report it to the developers.", fmt::underlying(base_format));
             return;
         }
 
@@ -329,7 +329,7 @@ void TextureCache::export_texture_impl(SceGxmTextureBaseFormat base_format, uint
             break;
         }
         default:
-            LOG_ERROR("Unhandled format for png exportation {}, please report it to the developers.", log_hex(fmt::underlying(base_format)));
+            LOG_ERROR("Unhandled format for png exportation 0x{:0X}, please report it to the developers.", fmt::underlying(base_format));
             return;
         }
 

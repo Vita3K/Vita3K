@@ -89,6 +89,7 @@ ExitCode add_sink(const fs::path &log_path);
 
 /*
     returns: A string with the input number formatted in hexadecimal
+    FIXME: Make this available to uint8_t
     Examples:
         * `12` returns: `"0xC"`
         * `1337` returns: `"0x539"`
@@ -105,6 +106,7 @@ std::string log_hex(T val) {
 
 /*
     returns: A string with the input number formatted in hexadecimal with padding of the inputted type size
+    FIXME: Make this available to uint8_t
     Examples:
         * `uint8_t 5` returns: `"0x05"`
         * `uint8_t 15` returns: `"0x0F"`
@@ -113,7 +115,6 @@ std::string log_hex(T val) {
         * `uint16_t 15` returns: `"0x000F"`
         * `uint16_t 1337` returns: `"0x0539"`
         * `uint16_t 65535` returns: `"0xFFFF"`
-
 
         * `uint32_t 15` returns: `"0x0000000F"`
         * `uint32_t 1337` returns: `"0x00000539"`
