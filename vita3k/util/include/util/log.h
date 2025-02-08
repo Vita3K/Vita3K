@@ -99,7 +99,7 @@ std::string log_hex(T val) {
     using unsigned_type = typename std::make_unsigned<T>::type;
     std::stringstream ss;
     ss << "0x";
-    ss << std::hex << std::to_string(static_cast<unsigned_type>(val));
+    ss << std::hex << static_cast<unsigned_type>(val);
     return ss.str();
 }
 
@@ -124,7 +124,7 @@ template <typename T>
 std::string log_hex_full(T val) {
     std::stringstream ss;
     ss << "0x";
-    ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << std::to_string(val);
+    ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << val;
     return ss.str();
 }
 
