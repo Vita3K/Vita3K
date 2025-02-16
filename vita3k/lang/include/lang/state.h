@@ -516,7 +516,7 @@ struct LangState {
             { "save_reboot", "Save & Reboot" },
             { "save_apply", "Save & Apply" },
             { "save", "Save" },
-            { "keep_changes", "Click on Save to keep your changes." }
+            { "keep_changes", "Click on Save to keep your changes." }, { "save_close", "Save & Close" }
         };
         std::map<std::string, std::string> core = {
             { "title", "Core" },
