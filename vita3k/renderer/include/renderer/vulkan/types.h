@@ -279,9 +279,9 @@ struct VKContext : public renderer::Context {
     std::thread gpu_request_wait_thread;
     uint64_t last_frame_waited = 0;
 
-    explicit VKContext(VKState &state, MemState &mem);
+    VKContext(VKState &state, MemState &mem);
     // TODO: properly destroy the context
-    ~VKContext() override = default;
+    ~VKContext() override;
 
     void start_recording();
     void start_render_pass(bool create_descriptor_set = true);
