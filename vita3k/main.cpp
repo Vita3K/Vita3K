@@ -396,7 +396,7 @@ int main(int argc, char *argv[]) {
             draw_app_background(gui, emuenv);
 
             emuenv.renderer->precompile_shader(hash);
-            gui::draw_pre_compiling_shaders_progress(gui, emuenv, uint32_t(emuenv.renderer->shaders_cache_hashs.size()));
+            gui::draw_pre_compiling_shaders_progress(gui, emuenv, static_cast<uint32_t>(emuenv.renderer->shaders_cache_hashs.size()));
 
             gui::draw_end(gui);
             emuenv.renderer->swap_window(emuenv.window.get());

@@ -424,6 +424,7 @@ bool USSETranslatorVisitor::smp(
             // sb_mode = 1 or 3 : gather 4 (+ uv if sb_mode = 3)
             // first gather all components
             std::vector<spv::Id> g4_comps;
+            g4_comps.reserve(sampler.component_count);
             for (int comp = 0; comp < sampler.component_count; comp++) {
                 g4_comps.push_back(do_fetch_texture(image_sampler, sampler.index, dim, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1, extra2, comp));
             }

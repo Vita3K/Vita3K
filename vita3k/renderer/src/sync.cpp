@@ -24,7 +24,6 @@
 #include <display/state.h>
 #include <renderer/gl/functions.h>
 #include <renderer/vulkan/functions.h>
-#include <renderer/vulkan/types.h>
 
 #include <renderer/functions.h>
 #include <util/tracy.h>

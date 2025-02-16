@@ -37,42 +37,42 @@
 namespace ngs {
 
 template <typename... Args>
-std::enable_if_t<sizeof...(Args) == 0> push_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) {
+static std::enable_if_t<sizeof...(Args) == 0> push_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) {
     // Nothing to do.
 }
 
 template <typename Head, typename... Tail>
-void push_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) {
+static void push_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) {
     // Add the argument at the head of the list.
     mods.push_back(std::make_unique<Head>());
     push_modules<Tail...>(mods);
 }
 
 template <typename... Args>
-constexpr std::enable_if_t<sizeof...(Args) == 0, uint32_t> get_modules_size() {
+constexpr static std::enable_if_t<sizeof...(Args) == 0, uint32_t> get_modules_size() {
     return 0;
 }
 
 template <typename Head, typename... Tail>
-constexpr uint32_t get_modules_size() {
+constexpr static uint32_t get_modules_size() {
     // Add the argument at the head of the list.
     constexpr uint32_t param_size = Head::get_max_parameter_size();
     return param_size + get_modules_size<Tail...>();
 }
 
 template <typename... Args>
-void apply_definition_with_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) {
+static void apply_definition_with_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) {
     push_modules<Args...>(mods);
 }
 
 template <typename... Args>
-uint32_t apply_definition_with_modules(uint32_t) {
+static uint32_t apply_definition_with_modules(uint32_t) {
     constexpr uint32_t result = get_modules_size<Args...>();
     return result;
 }
 
 template <typename Arg, typename Ret>
-Ret apply_definition(BussType type, Arg &arg) {
+static Ret apply_definition(BussType type, Arg &arg) {
     switch (type) {
     case BussType::BUSS_MASTER:
         return apply_definition_with_modules<
