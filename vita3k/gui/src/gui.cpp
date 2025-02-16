@@ -149,6 +149,269 @@ static void init_style(EmuEnvState &emuenv) {
     style->Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(1.00f, 0.98f, 0.95f, 0.73f);
 }
 
+struct ImGuiBakedFontBase {
+    int TexWidth;
+    int TexHeight;
+    ImVec2 TexUvScale;
+    ImVec2 TexUvWhitePixel;
+    int FontCount;
+    int CustomRectCount;
+    ImVec4 TexUvLines[64];
+    int PackIdMouseCursors;
+    int PackIdLines;
+
+    int FontsCount;
+    int ConfigDataCount;
+    int CustomRectsCount;
+};
+
+struct ImGuiBakedFontImFont {
+    float FallbackAdvanceX;
+    float FontSize;
+    short ConfigDataCount;
+    ImWchar FallbackChar;
+    ImWchar EllipsisChar;
+    short EllipsisCharCount;
+    float EllipsisWidth;
+    float EllipsisCharStep;
+    bool DirtyLookupTables;
+    float Scale;
+    float Ascent, Descent;
+    int MetricsTotalSurface;
+    ImU8 Used4kPagesMap[2];
+
+    ImFontGlyph FallbackGlyphValue;
+
+    int IndexAdvanceXSize;
+    int IndexLookupSize;
+    int GlyphsSize;
+};
+
+struct ImGuiBakedFontCustomRect {
+    unsigned short Width, Height;
+    unsigned short X, Y;
+};
+
+const int current_font_version = 1;
+
+static std::string get_font_atlas_filename(const EmuEnvState &emuenv) {
+    std::string filename = "font_atlas_";
+    const auto fw_font_path{ emuenv.pref_path / "sa0/data/font/pvf" };
+    const auto latin_fw_font_path{ fw_font_path / "ltn0.pvf" };
+    filename += fs::exists(latin_fw_font_path) ? "1_" : "0_";
+    filename += emuenv.cfg.asia_font_support ? "asia_" : 
+        emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN ? "korean_" :
+        emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T ? "chinese_t_" :
+        emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S ? "chinese_s_" :
+        "latin_";
+    filename += std::to_string(emuenv.renderer->get_max_2d_texture_width()) + ".bin";
+    return filename;
+}
+
+static void save_font_atlas(const EmuEnvState &emuenv) {
+    /* File Structure
+    Version (Integer)
+    ImGuiBakedFontBase
+    TexPixelsAlpha8 (unsigned char[TexWidth * TexHeight])
+    == Repeat FontCount Begin ==
+    ImGuiBakedFontImFont
+    === Repeat IndexAdvanceXSize Begin ===
+    AdvanceX (Float)
+    === Repeat IndexAdvanceXSize End ===
+    === Repeat IndexLookupSize Begin ===
+    IndexLookup (ImWchar)
+    === Repeat IndexLookupSize End ===
+    === Repeat GlyphsSize Begin ===
+    ImFontGlyph
+    === Repeat GlyphsSize End ===
+    == Repeat FontCount End ==
+    == Repeat ConfigDataCount Begin ==
+    SizePixels (Float)
+    == Repeat ConfigDataCount End ==
+    == Repeat CustomRectsCount Begin ==
+    ImGuiBakedFontCustomRect
+    == Repeat CustomRectsCount End ==
+    */
+
+    ImGuiIO &io = ImGui::GetIO();
+    ImFontAtlas* atlas = io.Fonts;
+
+    ImGuiBakedFontBase font_info_base;
+    font_info_base.TexWidth = atlas->TexWidth;
+    font_info_base.TexHeight = atlas->TexHeight;
+    font_info_base.TexUvScale = atlas->TexUvScale;
+    font_info_base.TexUvWhitePixel = atlas->TexUvWhitePixel;
+    font_info_base.FontCount = atlas->Fonts.Size;
+    font_info_base.CustomRectCount = atlas->CustomRects.Size;
+    font_info_base.PackIdMouseCursors = atlas->PackIdMouseCursors;
+    font_info_base.PackIdLines = atlas->PackIdLines;
+    memcpy(font_info_base.TexUvLines, atlas->TexUvLines, sizeof(font_info_base.TexUvLines));
+
+    font_info_base.FontsCount = atlas->Fonts.Size;
+    font_info_base.ConfigDataCount = atlas->ConfigData.Size;
+    font_info_base.CustomRectsCount = atlas->CustomRects.Size;
+
+    // Write to file
+    std::string filename = get_font_atlas_filename(emuenv);
+    std::ofstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        spdlog::error("Failed to open font atlas file for writing");
+        return;
+    }
+
+    file.write(reinterpret_cast<const char*>(&current_font_version), sizeof(int));
+
+    file.write(reinterpret_cast<const char*>(&font_info_base), sizeof(ImGuiBakedFontBase));
+
+    file.write(reinterpret_cast<const char*>(atlas->TexPixelsAlpha8), atlas->TexWidth * atlas->TexHeight);
+
+    for (int i = 0; i < atlas->Fonts.Size; i++) {
+        ImFont* font = atlas->Fonts[i];
+        ImGuiBakedFontImFont font_info;
+        font_info.FallbackAdvanceX = font->FallbackAdvanceX;
+        font_info.FontSize = font->FontSize;
+        font_info.ConfigDataCount = font->ConfigDataCount;
+        font_info.FallbackChar = font->FallbackChar;
+        font_info.EllipsisChar = font->EllipsisChar;
+        font_info.EllipsisCharCount = font->EllipsisCharCount;
+        font_info.EllipsisWidth = font->EllipsisWidth;
+        font_info.EllipsisCharStep = font->EllipsisCharStep;
+        font_info.DirtyLookupTables = font->DirtyLookupTables;
+        font_info.Scale = font->Scale;
+        font_info.Ascent = font->Ascent;
+        font_info.Descent = font->Descent;
+        font_info.MetricsTotalSurface = font->MetricsTotalSurface;
+        memcpy(font_info.Used4kPagesMap, font->Used4kPagesMap, sizeof(font_info.Used4kPagesMap));
+        memcpy(&font_info.FallbackGlyphValue, font->FallbackGlyph, sizeof(ImFontGlyph));
+
+        font_info.IndexAdvanceXSize = font->IndexAdvanceX.Size;
+        font_info.IndexLookupSize = font->IndexLookup.Size;
+        font_info.GlyphsSize = font->Glyphs.Size;
+        file.write(reinterpret_cast<const char*>(&font_info), sizeof(ImGuiBakedFontImFont));
+
+        for (int j = 0; j < font->IndexAdvanceX.Size; j++) {
+            file.write(reinterpret_cast<const char*>(&font->IndexAdvanceX[j]), sizeof(float));
+        }
+        for (int j = 0; j < font->IndexLookup.Size; j++) {
+            file.write(reinterpret_cast<const char*>(&font->IndexLookup[j]), sizeof(ImWchar));
+        }
+        for (int j = 0; j < font->Glyphs.Size; j++) {
+            file.write(reinterpret_cast<const char*>(&font->Glyphs[j]), sizeof(ImFontGlyph));
+        }
+    }
+
+    for (int i = 0; i < atlas->ConfigData.Size; i++) {
+        float size_pixels = atlas->ConfigData[i].SizePixels;
+        file.write(reinterpret_cast<const char*>(&size_pixels), sizeof(float));
+    }
+
+    for (int i = 0; i < atlas->CustomRects.Size; i++) {
+        ImGuiBakedFontCustomRect custom_rect;
+        custom_rect.Width = atlas->CustomRects[i].Width;
+        custom_rect.Height = atlas->CustomRects[i].Height;
+        custom_rect.X = atlas->CustomRects[i].X;
+        custom_rect.Y = atlas->CustomRects[i].Y;
+
+        file.write(reinterpret_cast<const char*>(&custom_rect), sizeof(ImGuiBakedFontCustomRect));
+    }
+}
+
+static bool restore_font_atlas(EmuEnvState &emuenv) {
+    ImGuiIO &io = ImGui::GetIO();
+    ImFontAtlas* atlas = io.Fonts;
+
+    try {
+        // Read from file
+        std::string filename = get_font_atlas_filename(emuenv);
+        std::ifstream file(filename, std::ios::binary);
+        if (!file.is_open()) {
+            return false;
+        }
+
+        int version;
+        file.read(reinterpret_cast<char*>(&version), sizeof(int));
+        if (version != current_font_version) {
+            LOG_WARN("Font atlas version mismatch");
+            return false;
+        }
+
+        ImGuiBakedFontBase font_info_base;
+        file.read(reinterpret_cast<char*>(&font_info_base), sizeof(ImGuiBakedFontBase));
+        atlas->TexWidth = font_info_base.TexWidth;
+        atlas->TexHeight = font_info_base.TexHeight;
+        atlas->TexUvScale = font_info_base.TexUvScale;
+        atlas->TexUvWhitePixel = font_info_base.TexUvWhitePixel;
+        atlas->PackIdMouseCursors = font_info_base.PackIdMouseCursors;
+        atlas->PackIdLines = font_info_base.PackIdLines;
+        memcpy(atlas->TexUvLines, font_info_base.TexUvLines, sizeof(atlas->TexUvLines));
+
+        atlas->TexReady = true;
+        atlas->TexPixelsAlpha8 = (unsigned char*)malloc(font_info_base.TexWidth * font_info_base.TexHeight);
+        file.read(reinterpret_cast<char*>(atlas->TexPixelsAlpha8), font_info_base.TexWidth * font_info_base.TexHeight);
+
+        for (int i = 0; i < font_info_base.FontCount; i++) {
+            auto font = atlas->Fonts[i];
+            ImGuiBakedFontImFont font_info;
+            file.read(reinterpret_cast<char*>(&font_info), sizeof(ImGuiBakedFontImFont));
+
+            font->FallbackAdvanceX = font_info.FallbackAdvanceX;
+            font->FontSize = font_info.FontSize;
+            font->ConfigDataCount = font_info.ConfigDataCount;
+            font->FallbackChar = font_info.FallbackChar;
+            font->EllipsisChar = font_info.EllipsisChar;
+            font->EllipsisCharCount = font_info.EllipsisCharCount;
+            font->EllipsisWidth = font_info.EllipsisWidth;
+            font->EllipsisCharStep = font_info.EllipsisCharStep;
+            font->DirtyLookupTables = font_info.DirtyLookupTables;
+            font->Scale = font_info.Scale;
+            font->Ascent = font_info.Ascent;
+            font->Descent = font_info.Descent;
+            font->MetricsTotalSurface = font_info.MetricsTotalSurface;
+            memcpy(font->Used4kPagesMap, font_info.Used4kPagesMap, sizeof(font->Used4kPagesMap));
+            font->FallbackGlyph = (ImFontGlyph*)malloc(sizeof(ImFontGlyph));
+            memcpy((void *)font->FallbackGlyph, &font_info.FallbackGlyphValue, sizeof(ImFontGlyph));
+
+            font->ContainerAtlas = atlas;
+
+            font->IndexAdvanceX.resize(font_info.IndexAdvanceXSize);
+            for (int j = 0; j < font_info.IndexAdvanceXSize; j++) {
+                file.read(reinterpret_cast<char*>(&font->IndexAdvanceX[j]), sizeof(float));
+            }
+
+            font->IndexLookup.resize(font_info.IndexLookupSize);
+            for (int j = 0; j < font_info.IndexLookupSize; j++) {
+                file.read(reinterpret_cast<char*>(&font->IndexLookup[j]), sizeof(ImWchar));
+            }
+
+            font->Glyphs.resize(font_info.GlyphsSize);
+            for (int j = 0; j < font_info.GlyphsSize; j++) {
+                file.read(reinterpret_cast<char*>(&font->Glyphs[j]), sizeof(ImFontGlyph));
+            }
+        }
+
+        for (int i = 0; i < font_info_base.ConfigDataCount; i++) {
+            float size_pixels;
+            file.read(reinterpret_cast<char*>(&size_pixels), sizeof(float));
+            atlas->ConfigData[i].SizePixels = size_pixels;
+        }
+
+        for (int i = 0; i < font_info_base.CustomRectCount; i++) {
+            ImGuiBakedFontCustomRect custom_rect;
+            file.read(reinterpret_cast<char*>(&custom_rect), sizeof(ImGuiBakedFontCustomRect));
+            auto custom_rect_target = ImFontAtlasCustomRect();
+            custom_rect_target.Width = custom_rect.Width;
+            custom_rect_target.Height = custom_rect.Height;
+            custom_rect_target.X = custom_rect.X;
+            custom_rect_target.Y = custom_rect.Y;
+            atlas->CustomRects.push_back(custom_rect_target);
+        }
+    } catch (const std::exception &e) {
+        LOG_ERROR("Failed to restore font atlas: {}", e.what());
+        return false;
+    }
+    return true;
+}
+
 static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     ImGuiIO &io = ImGui::GetIO();
 
@@ -288,6 +551,10 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         }
 
         // Build font atlas loaded and upload to GPU
+        if (restore_font_atlas(emuenv)) {
+            LOG_INFO("Font atlas restored successfully.");
+            return;
+        }
         io.Fonts->Build();
         LOG_INFO("Maximum font scale set to x{}, Font atlas size: {}x{}", FontScaleCandidates[font_scale_count - 1], io.Fonts->TexWidth, io.Fonts->TexHeight);
         if (io.Fonts->TexWidth > max_texture_size || io.Fonts->TexHeight > max_texture_size) {
@@ -295,6 +562,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
             io.Fonts->Clear();
         } else {
             emuenv.max_font_level = font_scale_count - 1;
+            save_font_atlas(emuenv);
             return;
         }
     }
