@@ -32,6 +32,7 @@ add_library(
 	src/pkg_install_dialog.cpp
 	src/private.h
 	src/reinstall.cpp
+	src/self_decrypt_dialog.cpp
 	src/semaphores_dialog.cpp
 	src/settings.cpp
 	src/settings_dialog.cpp
