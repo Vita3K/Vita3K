@@ -19,14 +19,28 @@
 
 #include <motion/motion_input.h>
 
+#include <array>
 #include <mutex>
 
+struct MotionSample {
+    uint32_t counter = 0;
+    uint64_t timestamp = 0;
+    uint64_t hostTimestamp = 0;
+    Util::Vec3f gyro{};
+    Util::Vec3f accel{};
+};
+
 struct MotionState {
+    static constexpr std::size_t MAX_SAMPLES = 0x40;
+
     std::mutex mutex;
     MotionInput motion_data;
-    uint32_t last_counter = 0;
     uint64_t last_gyro_timestamp = 0;
     uint64_t last_accel_timestamp = 0;
+
+    uint32_t ring_buffer_size = 0;
+    uint32_t current_buffer_index = 0;
+    std::array<MotionSample, MAX_SAMPLES> ring_buffer_samples;
 
     bool is_sampling = false;
 };
