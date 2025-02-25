@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -105,11 +105,11 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
 }
 
 void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
+    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
 
-    float height = emuenv.viewport_size.y / emuenv.dpi_scale;
+    float height = emuenv.logical_viewport_size.y / emuenv.manual_dpi_scale;
     if (ImGui::BeginMainMenuBar()) {
         height = height - ImGui::GetWindowHeight() * 2;
         ImGui::EndMainMenuBar();

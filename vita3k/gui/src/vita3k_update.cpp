@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -246,10 +246,10 @@ static std::string get_remaining_str(LangState &lang, const uint64_t remaining) 
 }
 
 void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
-    const ImVec2 WINDOW_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
+    const ImVec2 WINDOW_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
 
     const auto BUTTON_SIZE = ImVec2(150.f * SCALE.x, 46.f * SCALE.y);
     const auto is_background = gui.apps_background.contains("NPXS10015");
@@ -354,7 +354,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), display_size.y - (186.f * SCALE.y)));
         ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
         ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 16.f * emuenv.dpi_scale);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 16.f * emuenv.manual_dpi_scale);
         TextColoredCentered(GUI_COLOR_TEXT, std::to_string(uint32_t(progress)).append("%").c_str());
         ImGui::PopStyleColor();
 

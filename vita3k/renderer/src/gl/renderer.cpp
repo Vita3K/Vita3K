@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -746,6 +746,12 @@ int GLState::get_max_anisotropic_filtering() {
 
 void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
+}
+
+int GLState::get_max_2d_texture_width() {
+    GLint max_texture_size;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+    return static_cast<int>(max_texture_size);
 }
 
 std::string_view GLState::get_gpu_name() {

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -395,6 +395,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
         break;
     case SCE_MSG_DIALOG_MODE_PROGRESS_BAR:
         pp = p->progBarParam.get(emuenv.mem);
+        emuenv.common_dialog.msg.bar_percent = 0;
         emuenv.common_dialog.msg.btn_num = 0;
         emuenv.common_dialog.msg.has_progress_bar = true;
         if (pp->msg.get(emuenv.mem) != nullptr) {
@@ -810,34 +811,31 @@ EXPORT(int, sceSaveDataDialogAbort) {
     return 0;
 }
 
-static void check_empty_param(EmuEnvState &emuenv, const SceAppUtilSaveDataSlotEmptyParam *empty_param, const uint32_t idx) {
-    emuenv.common_dialog.savedata.title[idx].clear();
-    emuenv.common_dialog.savedata.subtitle[idx].clear();
-    emuenv.common_dialog.savedata.icon_buffer[idx].clear();
-    emuenv.common_dialog.savedata.icon_texture[idx] = {};
-    emuenv.common_dialog.savedata.has_date[idx] = false;
-    emuenv.common_dialog.savedata.slot_info[idx].isExist = 0;
-    if (empty_param) {
-        emuenv.common_dialog.savedata.title[idx] = empty_param->title.get(emuenv.mem) ? empty_param->title.get(emuenv.mem) : emuenv.common_dialog.lang.save_data.save["new_saved_data"];
-        const auto iconPath = empty_param->iconPath.get(emuenv.mem);
-        SceUChar8 *iconBuf = empty_param->iconBuf.cast<SceUChar8>().get(emuenv.mem);
-        const auto iconBufSize = empty_param->iconBufSize;
-        auto &icon_buf_tmp = emuenv.common_dialog.savedata.icon_buffer[idx];
-        if (iconPath) {
-            auto device = device::get_device(iconPath);
-            const auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
-            vfs::read_file(VitaIoDevice::ux0, icon_buf_tmp, emuenv.pref_path, thumbnail_path);
-        } else if (iconBuf && (iconBufSize > 0)) {
-            icon_buf_tmp.insert(icon_buf_tmp.end(), iconBuf, iconBuf + iconBufSize);
-        }
-    }
-}
-
 static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const char *export_name) {
+    emuenv.common_dialog.savedata.title[index].clear();
+    emuenv.common_dialog.savedata.subtitle[index].clear();
+    emuenv.common_dialog.savedata.icon_texture[index] = {};
+    emuenv.common_dialog.savedata.has_date[index] = false;
+    emuenv.common_dialog.savedata.slot_info[index].isExist = 0;
+    auto &icon_buf_tmp = emuenv.common_dialog.savedata.icon_buffer[index];
+    icon_buf_tmp.clear();
+
     SceUID fd = open_file(emuenv.io, construct_slotparam_path(emuenv.common_dialog.savedata.slot_id[index]).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
     if (fd < 0) {
         auto empty_param = emuenv.common_dialog.savedata.list_empty_param[index];
-        check_empty_param(emuenv, empty_param, index);
+        if (empty_param) {
+            emuenv.common_dialog.savedata.title[index] = empty_param->title ? empty_param->title.get(emuenv.mem) : emuenv.common_dialog.lang.save_data.save["new_saved_data"];
+            const auto iconPath = empty_param->iconPath.get(emuenv.mem);
+            SceUChar8 *iconBuf = empty_param->iconBuf.cast<SceUChar8>().get(emuenv.mem);
+            const auto iconBufSize = empty_param->iconBufSize;
+            if (iconPath) {
+                auto device = device::get_device(iconPath);
+                const auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
+                vfs::read_file(VitaIoDevice::ux0, icon_buf_tmp, emuenv.pref_path, thumbnail_path);
+            } else if (iconBuf && (iconBufSize > 0)) {
+                icon_buf_tmp.insert(icon_buf_tmp.end(), iconBuf, iconBuf + iconBufSize);
+            }
+        }
     } else {
         vfs::FileBuffer thumbnail_buffer;
         SceAppUtilSaveDataSlotParam slot_param{};
@@ -852,8 +850,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
         auto device = device::get_device(slot_param.iconPath);
         auto thumbnail_path = translate_path(slot_param.iconPath, device, emuenv.io.device_paths);
         vfs::read_file(device, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
-        emuenv.common_dialog.savedata.icon_buffer[index] = thumbnail_buffer;
-        emuenv.common_dialog.savedata.icon_texture[index] = {};
+        icon_buf_tmp = thumbnail_buffer;
     }
 }
 
@@ -1109,9 +1106,10 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
     case SCE_SAVEDATA_DIALOG_MODE_LIST:
         emuenv.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_LIST;
         list_param = p->listParam.get(emuenv.mem);
-        emuenv.common_dialog.savedata.slot_list_size = list_param->slotListSize;
-        slot_list.resize(emuenv.common_dialog.savedata.slot_list_size);
-        for (std::uint32_t i = 0; i < emuenv.common_dialog.savedata.slot_list_size; i++) {
+        if (list_param->slotListSize > 0)
+            emuenv.common_dialog.savedata.slot_list_size = list_param->slotListSize;
+        slot_list.resize(list_param->slotListSize);
+        for (std::uint32_t i = 0; i < list_param->slotListSize; i++) {
             slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
             emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
             emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);

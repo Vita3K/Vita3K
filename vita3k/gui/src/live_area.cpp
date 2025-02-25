@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -631,10 +631,10 @@ void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32
 }
 
 void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
-    const auto RES_SCALE = ImVec2(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     const auto &app_path = gui.live_area_current_open_apps_list[gui.live_area_app_current_open];
     const VitaIoDevice app_device = app_path.starts_with("NPXS") ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
@@ -1044,7 +1044,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    const auto default_font_scale = (25.f * emuenv.dpi_scale) * (ImGui::GetFontSize() / (19.2f * emuenv.dpi_scale));
+    const auto default_font_scale = (25.f * emuenv.manual_dpi_scale) * (ImGui::GetFontSize() / (19.2f * emuenv.manual_dpi_scale));
     const auto font_size_scale = default_font_scale / ImGui::GetFontSize();
 
     const auto gate_pos = items_styles[app_type].gate_pos;
@@ -1087,7 +1087,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushID(app_path.c_str());
     const ImVec2 BUTTON_POS_MIN(WINDOW_POS.x + POS_BUTTON.x, WINDOW_POS.y + POS_BUTTON.y);
     window_draw_list->AddRectFilled(BUTTON_POS_MIN, ImVec2(BUTTON_POS_MIN.x + START_BUTTON_SIZE.x, BUTTON_POS_MIN.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
-    window_draw_list->AddText(gui.vita_font, default_font_scale, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
+    window_draw_list->AddText(gui.vita_font[emuenv.current_font_level], default_font_scale, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
     ImGui::SetCursorPos(SELECT_POS);
     if (ImGui::Selectable("##gate", gui.is_nav_button && (live_area_type_selected == GATE), ImGuiSelectableFlags_None, SELECT_SIZE))
         pre_run_app(gui, emuenv, app_path);
@@ -1108,7 +1108,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         const auto POS_STR_SEARCH = ImVec2(SEARCH_WIDGET_POS_MIN.x + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.x / 2.f)),
             SEARCH_WIDGET_POS_MIN.y + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.y / 2.f)));
         window_draw_list->AddRectFilled(SEARCH_WIDGET_POS_MIN, ImVec2(SEARCH_WIDGET_POS_MIN.x + widget_scal_size.x, SEARCH_WIDGET_POS_MIN.y + widget_scal_size.y), IM_COL32(10, 169, 246, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
-        window_draw_list->AddText(gui.vita_font, 23.0f * SCALE.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH_STR);
+        window_draw_list->AddText(gui.vita_font[emuenv.current_font_level], 23.0f * SCALE.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH_STR);
         ImGui::SetCursorPos(pos_scal_search);
         if (ImGui::Selectable("##Search", gui.is_nav_button && (live_area_type_selected == SEARCH), ImGuiSelectableFlags_None, widget_scal_size))
             open_search(get_app_index(gui, app_path)->title);
@@ -1123,7 +1123,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             const auto MANUAL_STR_POS = ImVec2(MANUAL_WIDGET_POS_MIN.x + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.x / 2.f)),
                 MANUAL_WIDGET_POS_MIN.y + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.y / 2.f)));
             window_draw_list->AddRectFilled(MANUAL_WIDGET_POS_MIN, ImVec2(MANUAL_WIDGET_POS_MIN.x + widget_scal_size.x, MANUAL_WIDGET_POS_MIN.y + widget_scal_size.y), IM_COL32(202, 0, 106, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
-            window_draw_list->AddText(gui.vita_font, 23.0f * SCALE.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR);
+            window_draw_list->AddText(gui.vita_font[emuenv.current_font_level], 23.0f * SCALE.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR);
             ImGui::SetCursorPos(pos_scal_manual);
             if (ImGui::Selectable("##manual", gui.is_nav_button && (live_area_type_selected == MANUAL), ImGuiSelectableFlags_None, widget_scal_size))
                 open_manual(gui, emuenv, app_path);
@@ -1138,7 +1138,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         const auto UPDATE_STR_POS = ImVec2(UPDATE_WIDGET_POS_MIN.x + ((widget_scal_size.x / 2.f) - (UPDATE_STR_SCAL_SIZE.x / 2.f)),
             UPDATE_WIDGET_POS_MIN.y + ((widget_scal_size.x / 2.f) - (UPDATE_STR_SCAL_SIZE.y / 2.f)));
         window_draw_list->AddRectFilled(UPDATE_WIDGET_POS_MIN, ImVec2(UPDATE_WIDGET_POS_MIN.x + widget_scal_size.x, UPDATE_WIDGET_POS_MIN.y + widget_scal_size.y), IM_COL32(3, 187, 250, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
-        window_draw_list->AddText(gui.vita_font, 23.0f * SCALE.x, UPDATE_STR_POS, IM_COL32(255, 255, 255, 255), UPDATE_STR);
+        window_draw_list->AddText(gui.vita_font[emuenv.current_font_level], 23.0f * SCALE.x, UPDATE_STR_POS, IM_COL32(255, 255, 255, 255), UPDATE_STR);
         ImGui::SetCursorPos(pos_scal_update);
         if (ImGui::Selectable("##update", ImGuiSelectableFlags_None, false, widget_scal_size))
             update_app(gui, emuenv, app_path);

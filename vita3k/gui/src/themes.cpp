@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -379,11 +379,11 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
 }
 
 void draw_background(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
-    const ImVec2 VIEWPORT_POS_MAX(emuenv.viewport_pos.x + emuenv.viewport_size.x, emuenv.viewport_pos.y + emuenv.viewport_size.y);
-    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+    const ImVec2 VIEWPORT_POS_MAX(emuenv.logical_viewport_pos.x + emuenv.logical_viewport_size.x, emuenv.logical_viewport_pos.y + emuenv.logical_viewport_size.y);
+    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     const auto INFO_BAR_HEIGHT = 32.f * SCALE.y;
     const auto HALF_INFO_BAR_HEIGHT = INFO_BAR_HEIGHT / 2.f;
@@ -422,10 +422,10 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
-    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     const auto INFO_BAR_HEIGHT = 32.f * SCALE.y;
 
@@ -459,7 +459,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     SAFE_LOCALTIME(&tt, &local);
 
-    ImGui::PushFont(gui.vita_font);
+    ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
     const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * SCALE.x);
     const auto SCAL_PIX_DATE_FONT = 34.f / 28.f;
     const auto DATE_FONT_SIZE = (34.f * SCALE.x) * DEFAULT_FONT_SCALE;
@@ -471,10 +471,10 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto DATE_INIT_SCALE = ImVec2(start_param.date_pos.x * SCALE.x, start_param.date_pos.y * SCALE.y);
     const auto DATE_SIZE = ImVec2(CALC_DATE_SIZE.x * SCAL_DATE_FONT_SIZE, CALC_DATE_SIZE.y * SCAL_DATE_FONT_SIZE * SCAL_PIX_DATE_FONT);
     const auto DATE_POS = ImVec2(WINDOW_POS_MAX.x - (start_param.date_layout == DateLayout::RIGHT_DOWN ? DATE_INIT_SCALE.x + (DATE_SIZE.x * RES_SCALE.x) : DATE_INIT_SCALE.x), WINDOW_POS_MAX.y - DATE_INIT_SCALE.y);
-    draw_list->AddText(gui.vita_font, DATE_FONT_SIZE * RES_SCALE.x, DATE_POS, start_param.date_color, DATE_STR.c_str());
+    draw_list->AddText(gui.vita_font[emuenv.current_font_level], DATE_FONT_SIZE * RES_SCALE.x, DATE_POS, start_param.date_color, DATE_STR.c_str());
     ImGui::PopFont();
 
-    ImGui::PushFont(gui.large_font);
+    ImGui::PushFont(gui.large_font[emuenv.current_font_level]);
     const auto DEFAULT_LARGE_FONT_SCALE = ImGui::GetFontSize() / (116.f * SCALE.y);
     const auto LARGE_FONT_SIZE = (116.f * SCALE.y) * DEFAULT_FONT_SCALE;
     const auto PIX_LARGE_FONT_SCALE = (96.f * SCALE.y) / ImGui::GetFontSize();
@@ -495,10 +495,10 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     else if (string_utils::stoi_def(DATE_TIME[DateTime::HOUR], 0, "hour") < 10)
         CLOCK_POS.x += ImGui::CalcTextSize("0").x * RES_SCALE.x;
 
-    draw_list->AddText(gui.large_font, LARGE_FONT_SIZE * RES_SCALE.y, CLOCK_POS, start_param.date_color, CLOCK_STR.c_str());
+    draw_list->AddText(gui.large_font[emuenv.current_font_level], LARGE_FONT_SIZE * RES_SCALE.y, CLOCK_POS, start_param.date_color, CLOCK_STR.c_str());
     if (is_12_hour_format) {
         const auto DAY_MOMENT_POS = ImVec2(CLOCK_POS.x + CLOCK_SIZE.x + (6.f * SCALE.x), CLOCK_POS.y + (CLOCK_SIZE.y - DAY_MOMENT_SIZE.y));
-        draw_list->AddText(gui.large_font, DAY_MOMENT_LARGE_FONT_SIZE * RES_SCALE.y, DAY_MOMENT_POS, start_param.date_color, DAY_MOMENT_STR.c_str());
+        draw_list->AddText(gui.large_font[emuenv.current_font_level], DAY_MOMENT_LARGE_FONT_SIZE * RES_SCALE.y, DAY_MOMENT_POS, start_param.date_color, DAY_MOMENT_STR.c_str());
     }
     ImGui::PopFont();
 

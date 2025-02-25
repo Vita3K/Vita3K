@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -237,10 +237,10 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
 
     static SettingsMenu settings_menu = SettingsMenu::SELECT;
 
-    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
-    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
-    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     const auto BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
@@ -930,7 +930,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                 title = language.input_language["title"];
                 ImGui::SetWindowFontScale(1.2f);
                 ImGui::Columns(2, nullptr, false);
-                ImGui::SetColumnWidth(0, 600.f * emuenv.dpi_scale);
+                ImGui::SetColumnWidth(0, 600.f * emuenv.manual_dpi_scale);
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
                 if (ImGui::Selectable(keyboards_str, false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
                     sub_menu = SubMenu::SELECT_KEYBOARDS;
@@ -947,8 +947,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                 if (selected.empty()) {
                     title = keyboards_str;
                     ImGui::Columns(3, nullptr, false);
-                    ImGui::SetColumnWidth(0, 40.f * emuenv.dpi_scale);
-                    ImGui::SetColumnWidth(1, 560.f * emuenv.dpi_scale);
+                    ImGui::SetColumnWidth(0, 40.f * emuenv.manual_dpi_scale);
+                    ImGui::SetColumnWidth(1, 560.f * emuenv.manual_dpi_scale);
                     for (const auto &lang : emuenv.ime.lang.ime_keyboards) {
                         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
                         ImGui::PushID(lang.first);

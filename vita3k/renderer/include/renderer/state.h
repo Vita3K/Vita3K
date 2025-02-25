@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -100,6 +100,7 @@ struct State {
     virtual void set_screen_filter(const std::string_view &filter) = 0;
     virtual int get_max_anisotropic_filtering() = 0;
     virtual void set_anisotropic_filtering(int anisotropic_filtering) = 0;
+    virtual int get_max_2d_texture_width() = 0;
     virtual void set_async_compilation(bool enable) {}
     void set_surface_sync_state(bool disable) {
         disable_surface_sync = disable;

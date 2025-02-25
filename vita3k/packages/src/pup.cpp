@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -253,21 +253,27 @@ static void decrypt_pup_packages(const fs::path &src, const fs::path &dest, KeyS
     join_files(dest, "sa0-", dest / "sa0.img");
 }
 
-void install_pup(const fs::path &pref_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback) {
+std::string install_pup(const fs::path &pref_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback) {
     fs::path pup_dec_root = pref_path / "PUP_DEC";
     if (fs::exists(pup_dec_root)) {
         LOG_WARN("Path already exists, deleting it and reinstalling");
         fs::remove_all(pup_dec_root);
     }
 
+    const auto update_progress = [&](const uint32_t progress) {
+        if (progress_callback)
+            progress_callback(progress);
+    };
+
     LOG_INFO("Extracting {} to {}", pup_path, pup_dec_root);
 
     fs::create_directory(pup_dec_root);
     const auto pup_dest = pup_dec_root / "PUP";
     fs::create_directory(pup_dest);
-    progress_callback(10);
+    update_progress(10);
 
     extract_pup_files(pup_path, pup_dest);
+    update_progress(20);
 
     const auto pup_dec = pup_dec_root / "PUP_dec";
     fs::create_directory(pup_dec);
@@ -275,19 +281,30 @@ void install_pup(const fs::path &pref_path, const fs::path &pup_path, const std:
     KeyStore SCE_KEYS;
     register_keys(SCE_KEYS, 0);
 
-    progress_callback(30);
+    update_progress(30);
     decrypt_pup_packages(pup_dest, pup_dec, SCE_KEYS);
 
-    progress_callback(70);
-    if (fs::file_size(pup_dec / "os0.img") > 0) {
+    update_progress(70);
+    if (fs::file_size(pup_dec / "os0.img") > 0)
         extract_fat(pup_dec, "os0.img", pref_path);
-    }
     if (fs::file_size(pup_dec / "pd0.img") > 0)
         exfat::extract_exfat(pup_dec, "pd0.img", pref_path);
     if (fs::file_size(pup_dec / "sa0.img") > 0)
         extract_fat(pup_dec, "sa0.img", pref_path);
-    if (fs::file_size(pup_dec / "vs0.img") > 0) {
+    if (fs::file_size(pup_dec / "vs0.img") > 0)
         extract_fat(pup_dec, "vs0.img", pref_path);
-    }
-    progress_callback(100);
+    update_progress(100);
+
+    // get firmware version
+    std::string fw_version;
+    fs::ifstream versionFile(pup_dest / "version.txt");
+    if (versionFile.is_open()) {
+        std::getline(versionFile, fw_version);
+        versionFile.close();
+    } else
+        LOG_WARN("Firmware Version file not found!");
+
+    fs::remove_all(pup_dec_root);
+
+    return fw_version;
 }

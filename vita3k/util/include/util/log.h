@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -99,7 +99,7 @@ std::string log_hex(T val) {
     using unsigned_type = typename std::make_unsigned<T>::type;
     std::stringstream ss;
     ss << "0x";
-    ss << std::hex << static_cast<unsigned_type>(val);
+    ss << std::hex << std::to_string(static_cast<unsigned_type>(val));
     return ss.str();
 }
 
@@ -124,6 +124,6 @@ template <typename T>
 std::string log_hex_full(T val) {
     std::stringstream ss;
     ss << "0x";
-    ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << val;
+    ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << std::to_string(val);
     return ss.str();
 }

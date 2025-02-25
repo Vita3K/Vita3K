@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -937,6 +937,10 @@ int VKState::get_max_anisotropic_filtering() {
 
 void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
+}
+
+int VKState::get_max_2d_texture_width() {
+    return static_cast<int>(physical_device_properties.limits.maxImageDimension2D);
 }
 
 void VKState::set_async_compilation(bool enable) {

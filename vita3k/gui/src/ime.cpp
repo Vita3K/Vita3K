@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -263,8 +263,8 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
     static float scroll_special_current;
     static float scroll_special_max;
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
     const auto WINDOW_POS = ImVec2(0.f, display_size.y - (248.f * SCALE.y));
     const auto BUTTON_HEIGHT_SIZE = 52.f * SCALE.y;
     const auto PUNCT_BUTTON_SIZE = ImVec2(56.f * SCALE.x, BUTTON_HEIGHT_SIZE);
@@ -286,7 +286,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(0.f, display_size.y - (248.f * SCALE.y)), ImGuiCond_Always, ImVec2(0.f, 0.f));
     ImGui::SetNextWindowSize(ImVec2(display_size.x, 248.f * SCALE.y));
     ImGui::Begin("##ime", &ime.state, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * emuenv.dpi_scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * emuenv.manual_dpi_scale);
     ImGui::PushStyleColor(ImGuiCol_Button, GUI_COLOR_TEXT);
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_BLACK);
     ImGui::SetWindowFontScale(RES_SCALE.x);

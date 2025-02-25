@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2025 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ void draw_reinstall_dialog(GenericDialogState *status, GuiState &gui, EmuEnvStat
     auto &info = gui.lang.app_context.info;
     auto &common = emuenv.common_dialog.lang.common;
 
-    ImGui::PushFont(gui.vita_font);
+    ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin(lang["reinstall_content"].c_str());
