@@ -841,7 +841,7 @@ static ddspp::DXGIFormat dxgi_apply_srgb(const ddspp::DXGIFormat format) {
     case BC1_UNORM:
         return BC1_UNORM_SRGB;
     case BC2_UNORM:
-        return BC1_UNORM_SRGB;
+        return BC2_UNORM_SRGB;
     case BC3_UNORM:
         return BC3_UNORM_SRGB;
     case BC7_UNORM:
