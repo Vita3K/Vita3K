@@ -53,10 +53,10 @@ void VKContext::wait_thread_function(const MemState &mem) {
             break;
 
         std::visit(overloaded{
-                       [&](FenceWaitRequest &request) {
+                       [&](const FenceWaitRequest &request) {
                            fences.push_back(request.fence);
                        },
-                       [&](NotificationRequest &request) {
+                       [&](const NotificationRequest &request) {
                            if (request.notifications[0].address || request.notifications[1].address) {
                                wait_for_fences();
 
@@ -73,7 +73,7 @@ void VKContext::wait_thread_function(const MemState &mem) {
                                state.notification_ready.notify_all();
                            }
                        },
-                       [&](FrameDoneRequest &request) {
+                       [&](const FrameDoneRequest &request) {
                            wait_for_fences();
 
                            // don't reset them, the reset will be done in the new_frame function
@@ -83,17 +83,17 @@ void VKContext::wait_thread_function(const MemState &mem) {
                            lock.unlock();
                            new_frame_condv.notify_one();
                        },
-                       [&](PostSurfaceSyncRequest &request) {
+                       [&](const PostSurfaceSyncRequest &request) {
                            wait_for_fences();
 
                            state.surface_cache.perform_post_surface_sync(mem, request.cache_info);
                        },
-                       [&](SyncSignalRequest &request) {
+                       [&](const SyncSignalRequest &request) {
                            wait_for_fences();
 
                            renderer::subject_done(request.sync, request.timestamp);
                        },
-                       [&](CallbackRequest &request) {
+                       [&](const CallbackRequest &request) {
                            if (request.callback) {
                                (*request.callback)();
                                delete request.callback;
