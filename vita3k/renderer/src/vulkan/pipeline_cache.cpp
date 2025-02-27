@@ -56,7 +56,7 @@ struct CompileRequest {
     // the content of the record useful for the pipeline creation
     alignas(8) uint8_t record_data[record_pipeline_len];
 
-    const GxmRecordState *get_record() {
+    const GxmRecordState *get_record() const {
         // note: this object is only half defined, but we are only looking at the part that's defined
         return reinterpret_cast<const GxmRecordState *>(record_data);
     }
@@ -342,7 +342,7 @@ void PipelineCache::save_pipeline_cache() {
     };
     write_integer(pipeline_cache_magic);
     write_integer(pipelines.size());
-    for (auto &[hash, _] : pipelines) {
+    for (const auto &[hash, _] : pipelines) {
         write_integer(hash);
     }
 
@@ -354,23 +354,23 @@ void PipelineCache::save_pipeline_cache() {
 
 // Vulkan structs used to specify a specialization constant
 // Also, booleans in SPIRV are 32bit wide
-static const vk::SpecializationMapEntry srgb_entry = {
+static constexpr vk::SpecializationMapEntry srgb_entry = {
     .constantID = shader::GAMMA_CORRECTION_SPECIALIZATION_ID,
     .offset = 0,
     .size = sizeof(uint32_t)
 };
 
-static const uint32_t srgb_entry_true = vk::True;
-static const uint32_t srgb_entry_false = vk::False;
+static constexpr uint32_t srgb_entry_true = vk::True;
+static constexpr uint32_t srgb_entry_false = vk::False;
 
-static const vk::SpecializationInfo srgb_info_true = {
+static constexpr vk::SpecializationInfo srgb_info_true = {
     .mapEntryCount = 1,
     .pMapEntries = &srgb_entry,
     .dataSize = sizeof(uint32_t),
     .pData = &srgb_entry_true
 };
 
-static const vk::SpecializationInfo srgb_info_false = {
+static constexpr vk::SpecializationInfo srgb_info_false = {
     .mapEntryCount = 1,
     .pMapEntries = &srgb_entry,
     .dataSize = sizeof(uint32_t),
@@ -582,7 +582,7 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
     return render_passes_map[format];
 }
 
-vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(const SceGxmVertexProgram &vertex_program, MemState &mem) {
+vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(const SceGxmVertexProgram &vertex_program, MemState &mem) const {
     // pointer to these objects are returned (so it needs to be static)
     // and each thread needs one (hence the thread_local)
     static thread_local std::vector<vk::VertexInputBindingDescription> binding_descr;
@@ -761,7 +761,7 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         .frontFace = vk::FrontFace::eCounterClockwise,
         .depthBiasEnable = VK_TRUE
     };
-    const vk::PipelineMultisampleStateCreateInfo multisampling{
+    constexpr vk::PipelineMultisampleStateCreateInfo multisampling{
         .rasterizationSamples = vk::SampleCountFlagBits::e1
     };
     // depth and stencil tests are always enabled on the ps vita as there is almost no cost in doing so
@@ -780,7 +780,7 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     const bool frag_has_no_output = static_cast<bool>(gxm_fragment_shader->program_flags & SCE_GXM_PROGRAM_FLAG_OUTPUT_UNDEFINED);
     if (is_fragment_disabled || frag_has_no_output || use_shader_interlock) {
         // The write mask must be empty as the lack of a fragment shader results in undefined values
-        static const vk::PipelineColorBlendAttachmentState blending = {
+        static constexpr vk::PipelineColorBlendAttachmentState blending = {
             .blendEnable = VK_FALSE,
             .colorWriteMask = vk::ColorComponentFlags()
         };
@@ -837,7 +837,7 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     return result.value;
 }
 
-vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiveType &type, bool consider_for_async, MemState &mem) {
+vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, const SceGxmPrimitiveType &type, bool consider_for_async, MemState &mem) {
     const GxmRecordState &record = context.record;
     // get the hash of the current context
     uint64_t key = XXH3_64bits(&record, record_pipeline_len);

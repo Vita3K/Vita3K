@@ -445,7 +445,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             support_global_priority = false;
         }
         // this is an emulator, tell the system it should have a high priority
-        const vk::DeviceQueueGlobalPriorityCreateInfoEXT queue_priority{
+        constexpr vk::DeviceQueueGlobalPriorityCreateInfoEXT queue_priority{
             .globalPriority = vk::QueueGlobalPriorityEXT::eHigh
         };
         if (support_global_priority) {
