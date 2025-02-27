@@ -1360,6 +1360,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
 
     elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset) >> 2) });
 
+    ops.reserve(2 + (insert_offset % 4) + 4);
     ops.emplace_back(true, b.createLoad(elem, spv::NoPrecision));
     ops.emplace_back(true, source);
 
@@ -1386,6 +1387,7 @@ void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFuncti
         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset + 3) >> 2) });
 
         // Do an access chain
+        ops.reserve(2 + total_elem_left + 4);
         ops.emplace_back(true, b.createLoad(elem, spv::NoPrecision));
         ops.emplace_back(true, source);
 

@@ -178,6 +178,7 @@ bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &tra
     if (!fs::exists(final_path))
         return false;
 
+    io.cachemap.reserve(std::distance(fs::directory_iterator{final_path}, fs::directory_iterator{}));
     for (const auto &file : fs::recursive_directory_iterator(final_path)) {
         io.cachemap.emplace(string_utils::tolower(file.path().string()), file.path().string());
     }

@@ -96,6 +96,7 @@ public:
 
             std::vector<spv::Id> consts;
 
+            consts.reserve((i + 1) - 1);
             for (std::uint8_t j = 1; j < i + 1; j++) {
                 consts.push_back(const_f32[0]);
             }
