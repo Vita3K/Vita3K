@@ -181,6 +181,7 @@ bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv) {
 
 std::vector<std::string> init_auto_lle_module_names() {
     std::vector<std::string> auto_lle_module_names = { "libc", "libSceFt2", "libpvf" };
+    auto_lle_module_names.reserve(auto_lle_modules.size());
     for (const auto module_id : auto_lle_modules) {
         for (const auto module : sysmodule_paths[module_id]) {
             auto_lle_module_names.emplace_back(module);

@@ -65,6 +65,7 @@ bool get_shaders_cache_hashs(State &renderer) {
     }
 
     // Read Hashs info value
+    renderer.shaders_cache_hashs.reserve(size);
     for (size_t a = 0; a < size; a++) {
         auto read = [&shaders_hashs]() {
             Sha256Hash hash;
