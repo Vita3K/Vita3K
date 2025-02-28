@@ -820,12 +820,12 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                 std::vector<ImVec4> str_color;
 
                 if (!str_tag.color.empty()) {
-                    unsigned int color = 0xFFFFFFFF;
+                    uint32_t color = 0xFF'FF'FF'FF;
 
                     if (frame.autoflip)
-                        sscanf(str[app_path][frame.id][current_item[app_path][frame.id]].color.c_str(), "#%x", &color);
+                        std::istringstream{ str[app_path][frame.id][current_item[app_path][frame.id]].color }.ignore(1, '#') >> std::hex >> color;
                     else
-                        sscanf(str_tag.color.c_str(), "#%x", &color);
+                        std::istringstream{ str_tag.color }.ignore(1, '#') >> std::hex >> color;
 
                     str_color.emplace_back(((color >> 16) & 0xFF) / 255.f, ((color >> 8) & 0xFF) / 255.f, ((color >> 0) & 0xFF) / 255.f, 1.f);
                 } else
