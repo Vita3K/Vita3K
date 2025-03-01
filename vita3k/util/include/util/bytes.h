@@ -17,32 +17,20 @@
 
 #pragma once
 
+#include <bit>
 #include <cstdint>
 
 template <typename T>
 T byte_swap(T val);
 
-enum EndianType {
-    LITTLE = 0x00000001,
-    BIG = 0x01000000
-};
-
-/**
- * \brief Get system endian type.
- *
- * Can be use at both compile-time and run-time. Only supports little and big endian.
- */
-constexpr EndianType get_system_endian_type() {
-    return ((0xFFFFFFFF & 0x1) == LITTLE) ? LITTLE : BIG;
-}
-
 template <typename T>
 T network_to_host_order(T val) {
-    if (get_system_endian_type() == EndianType::BIG) {
+    if constexpr (std::endian::native == std::endian::big) {
         return val;
+    } else {
+        // treat mixed endian as little endian
+        return byte_swap(val);
     }
-
-    return byte_swap(val);
 }
 
 void float_to_half(const float *src, std::uint16_t *dest, const int total);
