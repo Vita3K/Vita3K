@@ -690,9 +690,9 @@ constexpr bool cmp_less(T t, U u) noexcept {
     if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
         return t < u;
     else if constexpr (std::is_signed_v<T>)
-        return t < 0 ? true : UT(t) < u;
+        return t < 0 || UT(t) < u;
     else
-        return u < 0 ? false : t < UU(u);
+        return u > 0 && t < UU(u);
 }
 
 static bool command_begins_with(PacketCommand &command, const std::string_view small_str) {
