@@ -1768,8 +1768,7 @@ bool USSETranslatorVisitor::vdual(
                 op = decode_src12(op, unified_store_slot_num, unified_store_slot_bank, false,
                     code_info.vector_load, code_info.vector_load ? 8 : 7, m_second_program);
                 // gpi2_slot_num_bit_1 is also unified source ext
-                op.swizzle = decode_dual_swizzle(unified_store_swizz,
-                    op1_src_count >= 2 ? false : gpi2_slot_num_bit_1, comp_count_type);
+                op.swizzle = decode_dual_swizzle(unified_store_swizz, op1_src_count < 2 && gpi2_slot_num_bit_1, comp_count_type);
                 if (op1_src_count < 2 && gpi2_slot_num_bit_0_or_unified_store_abs)
                     op.flags |= RegisterFlags::Absolute;
                 if (unified_store_neg)
