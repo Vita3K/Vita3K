@@ -251,8 +251,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
     const vk::ImageCreateFlags image_create_flags = need_mutable ? vk::ImageCreateFlagBits::eMutableFormat : vk::ImageCreateFlags();
     const void *image_info_pNext = nullptr;
     if (support_image_format_specifier && need_mutable) {
-        static const vk::Format view_formats[] = { vk::Format::eR8G8B8A8Unorm, vk::Format::eR8G8B8A8Srgb };
-        static const vk::ImageFormatListCreateInfoKHR image_info_formats{
+        static constexpr vk::Format view_formats[] = { vk::Format::eR8G8B8A8Unorm, vk::Format::eR8G8B8A8Srgb };
+        static constexpr vk::ImageFormatListCreateInfoKHR image_info_formats{
             .viewFormatCount = 2,
             .pViewFormats = view_formats
         };

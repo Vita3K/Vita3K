@@ -314,7 +314,7 @@ struct VKRenderTarget : public renderer::RenderTarget {
     // the command buffer index we're at in a frame
     int cmd_buffer_idx = 0;
 
-    VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params);
+    VKRenderTarget(const VKState &state, const SceGxmRenderTargetParams &params);
     ~VKRenderTarget() override = default;
 };
 
