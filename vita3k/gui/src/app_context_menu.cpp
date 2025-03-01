@@ -307,7 +307,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
     const auto is_commercial_app = title_id.starts_with("PCS") || (title_id == "NPXS10007");
     const auto is_system_app = title_id.starts_with("NPXS") && (title_id != "NPXS10007");
-    const auto has_state_report = gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(title_id) : false;
+    const auto has_state_report = gui.compat.compat_db_loaded && gui.compat.app_compat_db.contains(title_id);
     const auto compat_state = has_state_report ? gui.compat.app_compat_db[title_id].state : compat::UNKNOWN;
     const auto &compat_state_color = gui.compat.compat_color[compat_state];
     const auto &compat_state_str = has_state_report ? lang_compat.states[compat_state] : lang_compat.states[compat::UNKNOWN];
