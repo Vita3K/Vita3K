@@ -72,13 +72,34 @@ EXPORT(int, _sceAppMgrAppParamGetInt) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, _sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
-    TRACY_FUNC(_sceAppMgrAppParamGetString, pid, param, string, length);
+EXPORT(SceInt32, _sceAppMgrAppParamGetString, int pid, int param, char *string, sceAppMgrAppParamGetStringOptParam *optParam) {
+    TRACY_FUNC(_sceAppMgrAppParamGetString, pid, param, string, optParam);
+    if (!string)
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
+
+    if (param == 100) {
+        param = 6;
+        STUBBED("Use global CONTENT_ID"); // Application can set this parameter via _sceAppMgrAppParamSetString
+    } else if (param == 0x65) {
+        param = 9;
+        STUBBED("Use global TITLE"); // Application can set this parameter via _sceAppMgrAppParamSetString
+    }
+
+    if ((param < 6) || (param > 0xe))
+        return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER2);
+
     std::string res;
     if (!sfo::get_data_by_id(res, emuenv.sfo_handle, param))
         return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
     else {
-        res.copy(string, length);
+        uint32_t size = optParam->size;
+        if (size > 400)
+            size = 400;
+
+        if (res.size() >= size)
+            return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER2);
+
+        res.copy(string, size);
         return 0;
     }
 }
