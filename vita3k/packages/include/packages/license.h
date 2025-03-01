@@ -60,3 +60,4 @@ struct License {
 bool copy_license(EmuEnvState &emuenv, const fs::path &license_path);
 bool create_license(EmuEnvState &emuenv, const std::string &zRIF);
 void get_license(EmuEnvState &emuenv, const std::string &title_id, const std::string &content_id);
+bool open_license(const fs::path &license_path, SceNpDrmLicense &license_buf);

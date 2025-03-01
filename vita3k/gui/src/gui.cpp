@@ -823,6 +823,8 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
         draw_license_install_dialog(gui, emuenv);
     if (gui.file_menu.pkg_install_dialog)
         draw_pkg_install_dialog(gui, emuenv);
+    if (gui.file_menu.self_decrypt_dialog)
+        draw_self_decrypt_dialog(gui, emuenv);
 
     if (gui.vita_area.user_management)
         draw_user_management(gui, emuenv);
