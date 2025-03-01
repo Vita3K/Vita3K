@@ -149,6 +149,11 @@ VKContext::VKContext(VKState &state, MemState &mem)
     }
 }
 
+VKContext::~VKContext() {
+    if (gpu_request_wait_thread.joinable())
+        gpu_request_wait_thread.join();
+}
+
 VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params)
     : color(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR8G8B8A8Unorm)
     , depthstencil(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eD32SfloatS8Uint) {
