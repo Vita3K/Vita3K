@@ -289,6 +289,7 @@ std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, con
     update_progress();
 
     std::vector<ContentInfo> content_installed{};
+    content_installed.reserve(content_path.size());
     for (auto &path : content_path) {
         current++;
         update_progress();
@@ -443,6 +444,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     init_savedata_app_path(emuenv.io, emuenv.pref_path);
 
     // todo: VAR_NID(__sce_libcparam, 0xDF084DFA) is loaded wrong
+    emuenv.kernel.export_nids.reserve(get_var_exports().size());
     for (const auto &var : get_var_exports()) {
         auto addr = var.factory(emuenv);
         emuenv.kernel.export_nids.emplace(var.nid, addr);
