@@ -56,11 +56,11 @@ enum class FiberStatus {
 };
 
 typedef struct SceFiber {
+    char name[32];
+    CPUContext *cpu;
     Ptr<SceFiberEntry> entry;
     Address addrContext;
     SceSize sizeContext;
-    char name[32];
-    CPUContext *cpu;
     SceUInt32 argOnInitialize;
     Ptr<uint32_t> argOnRun;
     FiberStatus status;
