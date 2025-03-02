@@ -82,7 +82,7 @@ struct ModuleData {
 
     template <typename T>
     T *get_state() {
-        if (voice_state_data.size() == 0) {
+        if (voice_state_data.empty()) {
             voice_state_data.resize(sizeof(T));
             new (&voice_state_data[0]) T();
         }
