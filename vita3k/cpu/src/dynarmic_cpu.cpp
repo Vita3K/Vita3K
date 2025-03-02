@@ -25,6 +25,7 @@
 
 #include <dynarmic/frontend/A32/a32_ir_emitter.h>
 #include <dynarmic/interface/A32/coprocessor.h>
+#include <dynarmic/interface/exclusive_monitor.h>
 
 #include <memory>
 #include <optional>

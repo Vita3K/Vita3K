@@ -220,13 +220,13 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
 
             shift_factor = 20 - shift_factor;
 
-            for (std::uint32_t i = 0; i < samples_per_frame; i++) {
+            for (std::uint32_t j = 0; j < samples_per_frame; j++) {
                 int32_t sample = 0;
 
                 if (flag < 0x07) { /* with flag 0x07 decoded sample must be 0 */
-                    uint8_t nibbles = frame[0x02 + i / 2];
+                    uint8_t nibbles = frame[0x02 + j / 2];
 
-                    sample = (i & 1 ? /* low nibble first */
+                    sample = (j & 1 ? /* low nibble first */
                                      nibble_lookup[nibbles >> 4]
                                     : nibble_lookup[nibbles & 0xF])
                         << shift_factor; /*scale*/
@@ -235,7 +235,7 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
                 }
 
                 // Multichannel interleaving
-                buffer[i * src_ch + ch] = static_cast<std::int16_t>(std::clamp(sample, -32768, 32767));
+                buffer[j * src_ch + ch] = static_cast<std::int16_t>(std::clamp(sample, -32768, 32767));
 
                 hist4 = hist3;
                 hist3 = hist2;

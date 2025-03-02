@@ -206,7 +206,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
 }
 
-void ImGui_ImplSdlGL3_CreateFontsTexture(ImGui_GLState &state) {
+static void ImGui_ImplSdlGL3_CreateFontsTexture(ImGui_GLState &state) {
     // Build texture atlas
     ImGuiIO &io = ImGui::GetIO();
     unsigned char *pixels;

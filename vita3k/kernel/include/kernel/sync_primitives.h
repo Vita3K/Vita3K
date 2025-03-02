@@ -77,14 +77,10 @@ typedef std::unique_ptr<ThreadDataQueue<WaitingThreadData>> WaitingThreadQueuePt
 // NOTE: uid is copied to sync primitives here for debugging,
 //       not really needed since they are put in std::map's
 struct SyncPrimitive {
-    SceUID uid;
-
-    uint32_t attr;
-
+    SceUID uid{};
+    uint32_t attr{};
     std::mutex mutex;
-
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
-
     virtual ~SyncPrimitive() = default;
 };
 
