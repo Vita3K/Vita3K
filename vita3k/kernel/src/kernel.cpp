@@ -33,7 +33,7 @@
 int CorenumAllocator::new_corenum() {
     const std::lock_guard<std::mutex> guard(lock);
 
-    int size = 1;
+    uint32_t size = 1;
     return alloc.allocate_from(0, size);
 }
 
@@ -58,7 +58,7 @@ static int SDLCALL thread_function(void *data) {
     assert(data != nullptr);
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
     SDL_SemPost(params.host_may_destroy_params.get());
-    const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
+    const ThreadStatePtr thread = params.kernel->get_thread(params.thid);
 #ifdef TRACY_ENABLE
     if (!thread->name.empty()) {
         tracy::SetThreadName(thread->name.c_str());
@@ -104,6 +104,9 @@ void KernelState::load_process_param(MemState &mem, Ptr<uint32_t> ptr) {
         return;
     }
     process_param = ptr.cast<SceProcessParam>();
+    // VAR_NID(__sce_libcparam, 0xDF084DFA)
+    // no memory leak because we don't allocate memory for this variable intially
+    export_nids[0xDF084DFA] = process_param.get(mem)->sce_libc_param.address();
 }
 
 void KernelState::set_memory_watch(bool enabled) {
@@ -164,14 +167,14 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
 
 void KernelState::exit_delete_all_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
-    for (auto [_, thread] : threads) {
+    for (auto &[_, thread] : threads) {
         thread->exit_delete();
     }
 }
 
 void KernelState::pause_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
-    for (auto [_, thread] : threads) {
+    for (auto &[_, thread] : threads) {
         paused_threads_status[thread->id] = thread->status;
         if (thread->status == ThreadStatus::run)
             thread->suspend();
@@ -180,7 +183,7 @@ void KernelState::pause_threads() {
 
 void KernelState::resume_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
-    for (auto [_, thread] : threads) {
+    for (auto &[_, thread] : threads) {
         if (paused_threads_status[thread->id] == ThreadStatus::run)
             thread->resume();
     }

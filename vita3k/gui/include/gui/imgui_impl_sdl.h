@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <imgui.h>
-
 #include <emuenv/window.h>
 #include <gui/imgui_impl_sdl_state.h>
 

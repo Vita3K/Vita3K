@@ -46,8 +46,7 @@ struct FileInfo {
     int access_mode;
 
     FileInfo()
-        : vita_loc()
-        , open_mode(SCE_O_RDONLY)
+        : open_mode(SCE_O_RDONLY)
         , file_mode(SCE_SO_IFREG | SCE_SO_IROTH)
         , access_mode(SCE_S_IRUSR) {}
 };
