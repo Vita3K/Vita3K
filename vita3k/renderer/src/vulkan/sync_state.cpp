@@ -99,25 +99,25 @@ void sync_stencil_func(VKContext &context, const bool is_back) {
     context.render_cmd.setStencilWriteMask(face, state->write_mask);
 }
 
-void sync_depth_bias(VKContext &context) {
+void sync_depth_bias(const VKContext &context) {
     if (!context.is_recording)
         return;
 
     context.render_cmd.setDepthBias(static_cast<float>(context.record.depth_bias_unit), 0.0, static_cast<float>(context.record.depth_bias_slope));
 }
 
-void sync_depth_data(VKContext &context) {
+void sync_depth_data(const VKContext &context) {
     if (context.record.depth_stencil_surface.force_load)
         return;
 
-    vk::ClearDepthStencilValue clear_value{
+    const vk::ClearDepthStencilValue clear_value{
         .depth = context.record.depth_stencil_surface.background_depth
     };
-    vk::ClearAttachment clear_attachment{
+    const vk::ClearAttachment clear_attachment{
         .aspectMask = vk::ImageAspectFlagBits::eDepth,
         .clearValue = { .depthStencil = clear_value }
     };
-    vk::ClearRect clear_rect{
+    const vk::ClearRect clear_rect{
         .rect = vk::Rect2D{
             .offset = { 0, 0 },
             .extent = { context.render_target->width, context.render_target->height } },
@@ -127,18 +127,18 @@ void sync_depth_data(VKContext &context) {
     context.render_cmd.clearAttachments(clear_attachment, clear_rect);
 }
 
-void sync_stencil_data(VKContext &context, const MemState &mem) {
+void sync_stencil_data(const VKContext &context, const MemState &mem) {
     if (context.record.depth_stencil_surface.force_load)
         return;
 
-    vk::ClearDepthStencilValue clear_value{
+    const vk::ClearDepthStencilValue clear_value{
         .stencil = context.record.depth_stencil_surface.stencil
     };
-    vk::ClearAttachment clear_attachment{
+    const vk::ClearAttachment clear_attachment{
         .aspectMask = vk::ImageAspectFlagBits::eStencil,
         .clearValue = { .depthStencil = clear_value }
     };
-    vk::ClearRect clear_rect{
+    const vk::ClearRect clear_rect{
         .rect = vk::Rect2D{
             .offset = { 0, 0 },
             .extent = { context.render_target->width, context.render_target->height } },
@@ -148,7 +148,7 @@ void sync_stencil_data(VKContext &context, const MemState &mem) {
     context.render_cmd.clearAttachments(clear_attachment, clear_rect);
 }
 
-void sync_point_line_width(VKContext &context, const bool is_front) {
+void sync_point_line_width(const VKContext &context, const bool is_front) {
     if (!context.is_recording)
         return;
 

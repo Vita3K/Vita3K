@@ -97,7 +97,7 @@ void save_shaders_cache_hashs(State &renderer, std::vector<ShadersHash> &shaders
         shaders_hashs.write((const char *)&size, sizeof(size));
 
         // Write version of cache
-        const uint32_t versionInFile = shader::CURRENT_VERSION;
+        constexpr uint32_t versionInFile = shader::CURRENT_VERSION;
         shaders_hashs.write((const char *)&versionInFile, sizeof(uint32_t));
         const uint32_t features_mask = renderer.get_features_mask();
         shaders_hashs.write((const char *)&features_mask, sizeof(uint32_t));

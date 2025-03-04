@@ -73,7 +73,7 @@ void mid_scene_flush(VKContext &context, const SceGxmNotification notification) 
     // maybe because I'm writing using buffer device addresses, not sure...
     // so for the time being always restart the render pass
     // const bool restart_render_pass = notification.address.address() != 0;
-    const bool restart_render_pass = true;
+    constexpr bool restart_render_pass = true;
 
     if (restart_render_pass && context.in_renderpass)
         context.stop_render_pass();
@@ -115,7 +115,7 @@ void restride_stream(const uint8_t *&stream, uint32_t &size, uint32_t stride) {
 // when needed, how many descriptor of the given size we allocate for each frame at once
 static constexpr uint32_t DESCRIPTOR_PACK_SIZE = 64;
 
-static vk::DescriptorSet retrieve_descriptor(VKContext &context, bool is_vertex, uint16_t textures_count) {
+static vk::DescriptorSet retrieve_descriptor(const VKContext &context, bool is_vertex, uint16_t textures_count) {
     if (textures_count == 0)
         return context.empty_set;
 
@@ -160,7 +160,7 @@ static vk::DescriptorSet retrieve_descriptor(VKContext &context, bool is_vertex,
     return frame_descriptor.sets[frame_descriptor.descriptors_idx++];
 }
 
-static void draw_bind_descriptors(VKContext &context, MemState &mem) {
+static void draw_bind_descriptors(VKContext &context, const MemState &mem) {
     VKState &state = context.state;
 
     std::array<vk::DescriptorSet, 4> descriptors;
@@ -244,7 +244,7 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
         descriptors.size(), descriptors.data(), dynamic_offset_count, dynamic_offsets);
 }
 
-static void bind_vertex_streams(VKContext &context, MemState &mem) {
+static void bind_vertex_streams(VKContext &context, const MemState &mem) {
     GxmRecordState &state = context.record;
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     VertexProgram *vkvert = vertex_program.renderer_data.get();
