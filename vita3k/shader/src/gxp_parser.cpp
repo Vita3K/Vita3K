@@ -208,6 +208,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
         }
     }
 
+    program_input.uniform_buffers.reserve(uniform_buffers.size());
     for (auto &[index, buffer] : uniform_buffers) {
         static constexpr std::uint32_t MAXIMUM_GXP_ARRAY_SIZE = 1024;
         if ((((investigated_ub & (1 << index)) == 0) && seems_symbols_stripped) || (buffer.size == MAXIMUM_GXP_ARRAY_SIZE)) {

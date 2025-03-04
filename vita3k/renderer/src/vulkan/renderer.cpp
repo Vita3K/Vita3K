@@ -105,6 +105,8 @@ static bool select_queues(VKState &vk_state,
 
     bool found_graphics = false, found_transfer = false;
 
+    queue_priorities.reserve(vk_state.physical_device_queue_families.size());
+    queue_infos.reserve(vk_state.physical_device_queue_families.size());
     for (uint32_t i = 0; i < vk_state.physical_device_queue_families.size(); i++) {
         const auto &queue_family = vk_state.physical_device_queue_families[i];
 
