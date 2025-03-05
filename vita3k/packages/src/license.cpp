@@ -29,7 +29,7 @@
 
 #include <zrif2rif.h>
 
-static bool open_license(const fs::path &license_path, SceNpDrmLicense &license_buf) {
+bool open_license(const fs::path &license_path, SceNpDrmLicense &license_buf) {
     memset(&license_buf, 0, sizeof(SceNpDrmLicense));
     fs::ifstream license(license_path, std::ios::in | std::ios::binary);
     if (license.is_open()) {
