@@ -1184,7 +1184,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 // Create selectable item using module name and get activation state
                 if (ImGui::Selectable(module.c_str(), activation_state)) {
                     // Change activation state if module is clicked/selected
-                    if (activation_state == true) {
+                    if (activation_state) {
                         // Deactivate module
                         tracy_module_utils::set_tracy_active(module, false);
                         // Update config data by deleting the name of the module from the vector
