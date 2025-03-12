@@ -253,8 +253,9 @@ static void decrypt_pup_packages(const fs::path &src, const fs::path &dest, KeyS
     join_files(dest, "sa0-", dest / "sa0.img");
 }
 
-std::string install_pup(const fs::path &pref_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback) {
+std::string install_pup(const fs::path &pref_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback, const bool is_dencrypt) {
     fs::path pup_dec_root = pref_path / "PUP_DEC";
+    std::string zkey;
     if (fs::exists(pup_dec_root)) {
         LOG_WARN("Path already exists, deleting it and reinstalling");
         fs::remove_all(pup_dec_root);
@@ -285,14 +286,32 @@ std::string install_pup(const fs::path &pref_path, const fs::path &pup_path, con
     decrypt_pup_packages(pup_dest, pup_dec, SCE_KEYS);
 
     update_progress(70);
-    if (fs::file_size(pup_dec / "os0.img") > 0)
+    if (fs::file_size(pup_dec / "os0.img") > 0){
         extract_fat(pup_dec, "os0.img", pref_path);
+        if(is_dencrypt){
+           progress_callback(95);
+           zkey = "pup";
+           for (const auto &file : fs::recursive_directory_iterator(pref_path / "os0")) {
+                if (is_self(file.path()))
+                    dencrypt_elf_files(pref_path, file.path(), zkey);
+           }
+        }
+    }
     if (fs::file_size(pup_dec / "pd0.img") > 0)
         exfat::extract_exfat(pup_dec, "pd0.img", pref_path);
     if (fs::file_size(pup_dec / "sa0.img") > 0)
         extract_fat(pup_dec, "sa0.img", pref_path);
-    if (fs::file_size(pup_dec / "vs0.img") > 0)
+    if (fs::file_size(pup_dec / "vs0.img") > 0){
         extract_fat(pup_dec, "vs0.img", pref_path);
+        if(is_dencrypt){
+           zkey = "pupfw";
+           progress_callback(95);
+           for (const auto &file : fs::recursive_directory_iterator(pref_path / "vs0")) {
+                if (is_self(file.path()))
+                    dencrypt_elf_files(pref_path, file.path(), zkey);
+           }
+        }
+    }
     update_progress(100);
 
     // get firmware version
