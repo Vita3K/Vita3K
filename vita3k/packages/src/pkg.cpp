@@ -72,6 +72,12 @@ bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, co
     fs::remove_all(title_id_src);
     fs::rename(title_id_dst, title_id_src);
 
+    if(emuenv.cfg.dencrypt_install){
+        for (const auto &file : fs::recursive_directory_iterator(title_id_src)) {
+            if (is_self(file.path()))
+                dencrypt_elf_files(emuenv.pref_path, file.path(), zRIF);
+        }
+    }
     return true;
 }
 
@@ -313,6 +319,12 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         fs::remove_all(title_id_src);
         fs::rename(title_id_dst, title_id_src);
 
+        if(emuenv.cfg.dencrypt_install){
+            for (const auto &file : fs::recursive_directory_iterator(title_id_src)) {
+                if (is_self(file.path()))
+                    dencrypt_elf_files(emuenv.pref_path, file.path(), zRIF);
+            }
+        }
         break;
     case PkgType::PKG_TYPE_VITA_DLC:
 
