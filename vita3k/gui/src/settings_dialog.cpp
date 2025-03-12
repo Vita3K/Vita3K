@@ -873,6 +873,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.emulator["check_for_updates"].c_str(), &emuenv.cfg.check_for_updates);
         SetTooltipEx(lang.emulator["check_for_updates_description"].c_str());
         ImGui::Separator();
+        ImGui::Checkbox(lang.emulator["dencrypt_install"].c_str(), &emuenv.cfg.dencrypt_install);
+        SetTooltipEx(lang.emulator["dencrypt_install_description"].c_str());
+        ImGui::Separator();
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["performance_overlay"].c_str());
         ImGui::Spacing();
         ImGui::Checkbox(lang.emulator["performance_overlay"].c_str(), &emuenv.cfg.performance_overlay);
