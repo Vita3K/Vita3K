@@ -26,6 +26,7 @@
 #include <packages/sce_types.h>
 #include <util/string_utils.h>
 
+#include <rif2zrif.h>
 #include <self.h>
 
 #include <fstream>
@@ -671,6 +672,49 @@ void extract_fat(const fs::path &partition_path, const std::string &partition, c
     traverse_directory(img, first, pref_path / partition.substr(0, 3));
 
     fclose(f);
+}
+
+void dencrypt_elf_files(const fs::path &pref_path, const fs::path &translated_module_path, std::string &zkey){
+    vfs::FileBuffer file_dec;
+
+    fs::ifstream f{ translated_module_path.c_str(), fs::ifstream::binary };
+    if (!f){
+        LOG_ERROR("Failed to open {}", translated_module_path);
+        return;
+    }
+    
+    f.unsetf(fs::ifstream::skipws);
+    file_dec.reserve(fs::file_size(translated_module_path));
+    file_dec.insert(file_dec.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
+    f.close();
+    
+    if (file_dec.empty()) {
+        LOG_ERROR("Failed to decrypt {}", translated_module_path.c_str());
+        return;
+    }else if (zkey == "pup"){
+        file_dec = decrypt_fself(std::move(file_dec), 0);
+    }else if (zkey == "pupfw"){
+        file_dec = decrypt_fself(std::move(file_dec), nullptr);
+    }else{
+        std::vector<uint8_t> temp_klicensee = get_temp_klicensee(zkey);
+        file_dec = decrypt_fself(std::move(file_dec), temp_klicensee.data());
+    }
+    
+    LOG_INFO("Decrypted {}", translated_module_path.c_str());
+    fs::ofstream d{ translated_module_path, fs::ofstream::binary };
+    if (!d){
+        LOG_ERROR("Failed to open output {}", translated_module_path);
+    }else{
+        std::string tmp(file_dec.begin(), file_dec.end());
+        d.write(tmp.c_str(), tmp.size());
+        d.close();
+    }
+}
+
+bool is_self(const fs::path &file_path) {
+    const auto extension = file_path.filename().extension();
+    const auto is_self = ((extension == ".suprx") || (extension == ".skprx") || (extension == ".self"));
+    return (is_self || (file_path.filename() == "eboot.bin"));
 }
 
 std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, const uint64_t &size) {
