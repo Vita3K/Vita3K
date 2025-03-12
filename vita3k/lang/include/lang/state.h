@@ -625,6 +625,8 @@ struct LangState {
             { "log_compat_warn_description", "Check the box to enable log compatibility warning of GitHub issue." },
             { "check_for_updates", "Check for updates" },
             { "check_for_updates_description", "Automatically check for updates at startup." },
+            { "dencrypt_install", "Dencrypt executable when install"},
+            { "dencrypt_install_description", "Dencrypt all files included eboot and libs for compability with older builds (otherwise all installed content will no longer work in older builds)" },
             { "performance_overlay", "Performance overlay" },
             { "performance_overlay_description", "Display performance information on the screen as an overlay." },
             { "minimum", "Minimum" },
