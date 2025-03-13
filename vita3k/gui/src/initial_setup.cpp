@@ -200,10 +200,8 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetWindowFontScale(RES_SCALE.x);
             draw_firmware_install_dialog(gui, emuenv);
         }
-        if(ImGui::Checkbox(emulator["dencrypt_install"].c_str(), &emuenv.cfg.dencrypt_install)){
-            set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
+        if(ImGui::Checkbox(emulator["dencrypt_install"].c_str(), &emuenv.cfg.dencrypt_install))
             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-        }
         SetTooltipEx(emulator["dencrypt_install_description"].c_str());
         break;
     case SELECT_INTERFACE_SETTINGS:
