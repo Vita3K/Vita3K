@@ -737,7 +737,7 @@ static SceGxmTextureBaseFormat dxgi_to_gxm(const ddspp::DXGIFormat format) {
     case B5G6R5_UNORM:
         return SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5;
     case B5G5R5A1_UNORM:
-        return SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5;
+        return SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5;
     case B4G4R4A4_UNORM:
         return SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4;
     default:
