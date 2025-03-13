@@ -703,7 +703,7 @@ void dencrypt_elf_files(const fs::path &pref_path, const fs::path &translated_mo
         file_dec = decrypt_fself(std::move(file_dec), temp_klicensee.data());
     }
     
-    LOG_INFO("Decrypted {}", translated_module_path.c_str());
+    LOG_INFO("Decrypted {}", translated_module_path);
     fs::ofstream d{ translated_module_path, fs::ofstream::binary };
     if (!d){
         LOG_ERROR("Failed to open output {}", translated_module_path);
