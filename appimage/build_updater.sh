@@ -6,7 +6,7 @@
 
 ARCH=$(uname -m)
 
-#detec arch
+# Detect the system architecture
 if [ "$ARCH" = "x86_64" ]; then
     UPDATE_INFO="gh-releases-zsync|Vita3K|Vita3K|latest|Vita3K-x86_64.AppImage.zsync"
 elif [ "$ARCH" = "aarch64" ]; then
