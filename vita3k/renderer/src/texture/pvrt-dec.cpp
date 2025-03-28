@@ -661,7 +661,7 @@ static bool isPowerOf2(uint32_t input) {
     uint32_t minus1;
 
     if (!input) {
-        return 0;
+        return false;
     }
 
     minus1 = input - 1;

@@ -97,7 +97,7 @@ public:
 
     AudioAdapter(AudioState &audio_state)
         : state(audio_state) {}
-    virtual ~AudioAdapter() {}
+    virtual ~AudioAdapter() = default;
 
     virtual bool init() = 0;
     virtual AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample) { return nullptr; }
