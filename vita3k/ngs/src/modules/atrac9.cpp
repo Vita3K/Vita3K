@@ -92,12 +92,13 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         state->current_loop_count++;
         state->current_byte_position_in_buffer = 0;
 
-        if (bufparam.loop_count != -1 && state->current_loop_count > bufparam.loop_count) {
+        if ((bufparam.loop_count != -1) && (state->current_loop_count > bufparam.loop_count)) {
             state->current_buffer = bufparam.next_buffer_index;
             state->current_loop_count = 0;
 
-            if (state->current_buffer == -1
-                || !params->buffer_params[state->current_buffer].buffer) {
+            if ((state->current_buffer == -1)
+                || !params->buffer_params[state->current_buffer].buffer
+                || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
                 data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_END_OF_DATA, 0, 0);
 
                 // we are done
