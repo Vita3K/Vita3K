@@ -109,10 +109,10 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
             // Ran out of data, supply new
             // Decode new data and deliver them
             // Let's open our context
-
-            if (state->current_buffer == -1
-                || !params->buffer_params[state->current_buffer].buffer) {
-                // If no buffer is found, stop processing
+            if ((state->current_buffer == -1)
+                || !params->buffer_params[state->current_buffer].buffer
+                || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
+                // Stop processing if no valid buffer is available or if the buffer is empty
                 finished = true;
                 break;
             }
@@ -131,8 +131,9 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                     state->current_buffer = params->buffer_params[state->current_buffer].next_buffer_index;
                     state->current_loop_count = 0;
 
-                    if (state->current_buffer == -1
-                        || !params->buffer_params[state->current_buffer].buffer) {
+                    if ((state->current_buffer == -1)
+                        || !params->buffer_params[state->current_buffer].buffer
+                        || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
                         data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_END_OF_DATA, 0, 0);
 
                         // we are done
