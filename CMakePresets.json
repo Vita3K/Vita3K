@@ -13,6 +13,9 @@
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "USE_DISCORD_RICH_PRESENCE": true
+      },
+      "environment": {
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
       }
     },
     {
