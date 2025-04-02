@@ -426,6 +426,7 @@
 		<install_firmware>安装固件。</install_firmware>
 		<install_highly_recommended>强烈建议同时安装这两个固件文件。</install_highly_recommended>
 		<installed>已安装：</installed>
+		<download_preinst_firmware>下载预装固件</download_preinst_firmware>
 		<download_firmware>下载固件</download_firmware>
 		<download_font_package>下载字体包</download_font_package>
 		<install_firmware_file>安装固件文件</install_firmware_file>

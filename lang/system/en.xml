@@ -427,6 +427,7 @@ Your Vita3K system is ready!</completed_setup>
 		<install_firmware>Install Firmware.</install_firmware>
 		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
 		<installed>Installed:</installed>
+		<download_preinst_firmware>Download Preinst Firmware</download_preinst_firmware>
 		<download_firmware>Download Firmware</download_firmware>
 		<download_font_package>Download Font Package</download_font_package>
 		<install_firmware_file>Install Firmware File</install_firmware_file>
