@@ -378,8 +378,7 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, co
         case SCE_APPUTIL_SAVEDATA_SLOT_SEARCH_TYPE_EXIST_SLOT:
             if (fd > 0) {
                 if (slotList) {
-                    SceAppUtilSaveDataSlotParam param;
-                    memset(&param, 0, sizeof(SceAppUtilSaveDataSlotParam));
+                    SceAppUtilSaveDataSlotParam param{};
                     read_file(&param, emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
                     slotList[result->hitNum].userParam = param.userParam;
                     slotList[result->hitNum].status = param.status;

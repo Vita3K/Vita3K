@@ -684,7 +684,7 @@ const static PacketFunctionBundle functions[] = {
 };
 
 template <class T, class U>
-constexpr bool cmp_less(T t, U u) noexcept {
+constexpr static bool cmp_less(T t, U u) noexcept {
     using UT = std::make_unsigned_t<T>;
     using UU = std::make_unsigned_t<U>;
     if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)

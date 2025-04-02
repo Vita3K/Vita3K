@@ -555,9 +555,9 @@ enum TlsItems {
     TLS_SP_TOP = 2,
     TLS_SP_BOTTOM = 3,
     TLS_VFP_EXCEPTION = 4,
-    TLS_RESERVED_5,
-    TLS_RESERVED_6, // libc reserved longjump addr
-    TLS_RESERVED_7, // libc reserved some memory address mask
+    TLS_RESERVED_5 = 5,
+    TLS_RESERVED_6 = 6, // libc reserved longjump addr
+    TLS_RESERVED_7 = 7, // libc reserved some memory address mask
     TLS_CURRENT_PRIORITY = 8,
     TLS_CPU_AFFINITY_MASK = 9,
     TLS_NET_ERRNO = 0x40,

@@ -52,7 +52,6 @@ static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
 
 static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv) {
     auto &lang = gui.lang.main_menubar.emulation;
-    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
     const ImVec2 ICON_SIZE(56.f * SCALE.x, 56.f * SCALE.y);
@@ -152,7 +151,6 @@ static void draw_help_menu(GuiState &gui) {
 
 void draw_main_menu_bar(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginMainMenuBar()) {
-        const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
         const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
 
         ImGui::SetWindowFontScale(RES_SCALE.x);

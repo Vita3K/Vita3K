@@ -19,7 +19,7 @@
 
 TRACY_MODULE_NAME(SceErrorUser);
 
-EXPORT(SceInt32, sceErrorGetExternalString, char *result, int err) {
+EXPORT(SceInt32, sceErrorGetExternalString, char *result, uint32_t err) {
     TRACY_FUNC(sceErrorGetExternalString, result, err);
     return CALL_EXPORT(_sceErrorGetExternalString, result, err);
 }

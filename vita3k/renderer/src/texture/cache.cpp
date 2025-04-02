@@ -705,8 +705,6 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     }
 
     importing_texture = false;
-    // to restore the state, in case for whatever reason we could not load the replacement texture
-    bool previous_configure = configure;
     if (upload && import_textures) {
         auto it = available_textures_hash.find(info->hash);
         if (it != available_textures_hash.end()) {

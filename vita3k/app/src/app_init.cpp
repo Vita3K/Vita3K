@@ -32,7 +32,6 @@
 
 #include <renderer/functions.h>
 #include <util/fs.h>
-#include <util/lock_and_find.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -481,7 +480,7 @@ bool late_init(EmuEnvState &state) {
         LOG_CRITICAL("Unicorn backend is not supported with a page table");
 
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
-        const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
+        const auto thread = state.kernel.get_thread(thread_id);
         const std::lock_guard<std::mutex> lock(thread->mutex);
         if (thread->status == ThreadStatus::wait) {
             thread->update_status(ThreadStatus::run);

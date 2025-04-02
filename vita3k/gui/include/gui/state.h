@@ -246,12 +246,11 @@ struct InfoMessage {
 
 // 2.f is enough for the current font size.
 const float FontScaleCandidates[] = { 1.f, 1.5f, 2.f };
-const int FontScaleCandidatesSize = sizeof(FontScaleCandidates) / sizeof(FontScaleCandidates[0]);
+const int FontScaleCandidatesSize = std::size(FontScaleCandidates);
 
 struct GuiState {
     std::unique_ptr<ImGui_State> imgui_state;
 
-    bool renderer_focused = true;
     gui::FileMenuState file_menu;
     gui::DebugMenuState debug_menu;
     gui::ConfigurationMenuState configuration_menu;
