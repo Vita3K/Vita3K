@@ -725,7 +725,7 @@ EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) 
     }
 
     std::this_thread::sleep_for(std::chrono::microseconds(1));
-    
+
     return res;
 }
 
