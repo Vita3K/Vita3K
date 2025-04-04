@@ -149,7 +149,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
     }
 }
 
-VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params)
+VKRenderTarget::VKRenderTarget(const VKState &state, const SceGxmRenderTargetParams &params)
     : color(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR8G8B8A8Unorm)
     , depthstencil(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eD32SfloatS8Uint) {
     width = static_cast<uint32_t>(params.width * state.res_multiplier);

@@ -279,7 +279,7 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
         };
         // compute viewport now
         const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
-        const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+        constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
         if (screen.state.stretch_the_display_area) {
             // Match the aspect ratio to the screen size.
             viewport.width = static_cast<float>(screen.extent.width);
@@ -511,7 +511,7 @@ void FSRScreenFilter::init() {
 void FSRScreenFilter::on_resize() {
     // compute the extent
     const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
-    const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+    constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
     if (screen.state.stretch_the_display_area) {
         // Match the aspect ratio to the screen size.
         output_size.width = static_cast<float>(screen.extent.width);

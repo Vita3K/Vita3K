@@ -81,7 +81,7 @@ private:
     unordered_map_stable<uint64_t, vk::Pipeline> pipelines;
 
     vk::PipelineShaderStageCreateInfo retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints, bool is_srgb = false);
-    vk::PipelineVertexInputStateCreateInfo get_vertex_input_state(const SceGxmVertexProgram &vertex_program, MemState &mem);
+    vk::PipelineVertexInputStateCreateInfo get_vertex_input_state(const SceGxmVertexProgram &vertex_program, MemState &mem) const;
 
     // queue containing request sent by the main thread to the compile threads
     PipelineCompileQueue pipeline_compile_queue;
@@ -117,7 +117,7 @@ public:
     void save_pipeline_cache();
 
     vk::RenderPass retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool no_color = false);
-    vk::Pipeline retrieve_pipeline(VKContext &context, SceGxmPrimitiveType &type, bool consider_for_async, MemState &mem);
+    vk::Pipeline retrieve_pipeline(VKContext &context, const SceGxmPrimitiveType &type, bool consider_for_async, MemState &mem);
 
     vk::ShaderModule precompile_shader(const Sha256Hash &hash, bool search_first = true);
 

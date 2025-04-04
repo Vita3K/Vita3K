@@ -55,19 +55,19 @@ struct Pixel32 {
 struct Pixel128S {
     int32_t red, green, blue, alpha;
 
-    Pixel128S operator+(const int32_t uiFactor) {
+    Pixel128S operator+(const int32_t uiFactor) const {
         return { red + uiFactor, green + uiFactor, blue + uiFactor, alpha + uiFactor };
     }
 
-    Pixel128S operator+(const Pixel128S &anotherPixel) {
+    Pixel128S operator+(const Pixel128S &anotherPixel) const {
         return { red + anotherPixel.red, green + anotherPixel.green, blue + anotherPixel.blue, alpha + anotherPixel.alpha };
     }
 
-    Pixel128S operator*(const int32_t uiFactor) {
+    Pixel128S operator*(const int32_t uiFactor) const {
         return { red * uiFactor, green * uiFactor, blue * uiFactor, alpha * uiFactor };
     }
 
-    Pixel128S operator/(const int32_t uiFactor) {
+    Pixel128S operator/(const int32_t uiFactor) const {
         return { red / uiFactor, green / uiFactor, blue / uiFactor, alpha / uiFactor };
     }
 };
@@ -387,7 +387,7 @@ static void unpackModulations(const PVRTCWord &word, const PVRTCWord &nwWord, in
 
 static int32_t getModulationValues(int32_t i32ModulationValues[16][8], int32_t i32ModulationModes[16][8], uint32_t xPos, uint32_t yPos, uint8_t ui8Bpp) {
     if (ui8Bpp == 2) {
-        const int RepVals0[4] = { 0, 3, 5, 8 };
+        constexpr int RepVals0[4] = { 0, 3, 5, 8 };
         const int modulationRealvalue = i32ModulationModes[xPos][yPos] % 10;
         const int modulationFlag = i32ModulationModes[xPos][yPos] - modulationRealvalue;
 
@@ -428,8 +428,8 @@ static void pvrtcGetUpscaledColors(const PVRTCWord &P, const PVRTCWord &Q, const
     interpolateColors(getColorB(P.u32ColorData, uiII), getColorB(Q.u32ColorData, uiII), getColorB(R.u32ColorData, uiII), getColorB(S.u32ColorData, uiII), upscaledColorB, ui8Bpp);
 }
 
-static void pvrtcBuildPalette(Pixel128S &colorAP, Pixel128S &colorBP, Pixel128S &colorAQ, Pixel128S &colorBQ,
-    Pixel128S &colorAR, Pixel128S &colorBR, Pixel128S &colorAS, Pixel128S &colorBS, Pixel128S pTargetPalette[][16]) {
+static void pvrtcBuildPalette(const Pixel128S &colorAP, const Pixel128S &colorBP, const Pixel128S &colorAQ, const Pixel128S &colorBQ,
+    const Pixel128S &colorAR, const Pixel128S &colorBR, const Pixel128S &colorAS, const Pixel128S &colorBS, Pixel128S pTargetPalette[][16]) {
     // First set palette
     pTargetPalette[0][0] = colorAP;
     pTargetPalette[1][0] = (colorAP * 5 + colorBP * 3) / 8;
