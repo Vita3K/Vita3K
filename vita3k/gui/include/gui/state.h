@@ -129,6 +129,7 @@ struct FileMenuState {
     bool pkg_install_dialog = false;
     bool archive_install_dialog = false;
     bool license_install_dialog = false;
+    bool self_decrypt_dialog = false;
 };
 
 struct DebugMenuState {
