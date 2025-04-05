@@ -201,7 +201,7 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
 
     emuenv.audio.audio_output(*thread, *prt, buf);
 
-    return 0;
+    return prt->len;
 }
 
 EXPORT(int, sceAudioOutGetRestSample, int port) {
