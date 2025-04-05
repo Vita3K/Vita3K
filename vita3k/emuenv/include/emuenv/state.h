@@ -148,6 +148,7 @@ public:
     FVector2 logical_viewport_size = { 0, 0 }; // Size of the logical viewport in the window. For ImGui
     FVector2 drawable_viewport_pos = { 0, 0 }; // Position of the drawable viewport in the window. For OpenGL/Vulkan
     FVector2 drawable_viewport_size = { 0, 0 }; // Size of the drawable viewport in the window. For OpenGL/Vulkan
+    bool drop_inputs{};
     MemState &mem;
     CtrlState &ctrl;
     TouchState &touch;
