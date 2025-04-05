@@ -356,6 +356,7 @@ struct LangState {
         { "install_firmware", "Install Firmware." },
         { "install_highly_recommended", "Installing both firmware files is highly recommended." },
         { "installed", "Installed:" },
+        { "download_preinst_firmware", "Download Preinst Firmware" },
         { "download_firmware", "Download Firmware" },
         { "download_font_package", "Download Font Package" },
         { "install_firmware_file", "Install Firmware File" },
