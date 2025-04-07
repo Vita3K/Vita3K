@@ -271,7 +271,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
                     io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
 
                     const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
-                    if (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S)
+                    if (!emuenv.cfg.initial_setup || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S))
                         io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "SourceHanSansSC-Bold-Min.ttf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
                     font_config.MergeMode = false;
 
