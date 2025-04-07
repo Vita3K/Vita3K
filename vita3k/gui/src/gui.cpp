@@ -240,12 +240,19 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
                 gui.vita_font[i] = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(latin_fw_font_path).c_str(), font_config.SizePixels, &font_config, latin_range);
                 font_config.MergeMode = true;
 
+                const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
+                const bool is_chinese = (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S);
+
+                // When the system language is Chinese, the Chinese fonts should be loaded before the Japanese fonts
+                // So that the CJK characters can be displayed in Chinese glyphs
+                if (is_chinese)
+                    io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "cn0.pvf").c_str(), font_config.SizePixels, &font_config, chinese_range);
+
                 io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "jpn0.pvf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
 
-                const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
                 if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN))
                     io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "kr0.pvf").c_str(), font_config.SizePixels, &font_config, korean_range);
-                if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S))
+                if (emuenv.cfg.asia_font_support && !is_chinese)
                     io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "cn0.pvf").c_str(), font_config.SizePixels, &font_config, chinese_range);
                 font_config.MergeMode = false;
 
