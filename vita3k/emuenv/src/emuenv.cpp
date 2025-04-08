@@ -40,8 +40,11 @@
 
 #include <gdbstub/state.h>
 
+#include <util/warning.h>
+
 // initialize the unique_ptr then the reference each time
 // this is VERY repetitive
+DISABLE_WARNING_BEGIN(5038, "-Wreorder-ctor")
 EmuEnvState::EmuEnvState()
     : _app_info(new sfo::SfoAppInfo)
     , app_info(*_app_info)
@@ -88,6 +91,7 @@ EmuEnvState::EmuEnvState()
     , _http(new HTTPState)
     , http(*_http) {
 }
+DISABLE_WARNING_END;
 
 // this is necessary to forward declare unique_ptrs (so that they can call the appropriate destructor)
 EmuEnvState::~EmuEnvState() = default;

@@ -129,7 +129,7 @@ enum class NpComIdSortType {
     PROGRESS
 };
 static NpComIdSortType np_com_id_sort;
-bool show_hidden_trophy = false;
+static bool show_hidden_trophy = false;
 
 void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     const auto TROPHY_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy" };

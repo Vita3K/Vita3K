@@ -29,36 +29,28 @@ namespace regmgr {
 constexpr std::array<unsigned char, 16> xorKey = { 0x89, 0xFA, 0x95, 0x48, 0xCB, 0x6D, 0x77, 0x9D, 0xA2, 0x25, 0x34, 0xFD, 0xA9, 0x35, 0x59, 0x6E };
 
 static std::string decryptRegistryFile(const fs::path &reg_path) {
-    fs::ifstream file(reg_path, std::ios::binary);
-    if (!file.is_open()) {
-        LOG_WARN("Error while opening file: {}, install firmware for solve this!", reg_path);
+    std::vector<char> encryptedData(0);
+    auto res = fs_utils::read_data(reg_path, encryptedData);
+    if (!res) {
+        LOG_WARN("Error while opening file: {}, install firmware to solve this!", reg_path);
         return {};
     }
 
-    // Read the data from the file encrypted
-    std::vector<uint8_t> encryptedData((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
-    // Check if file is empty
-    if (encryptedData.empty()) {
-        LOG_DEBUG("File is empty: {}", reg_path);
+    constexpr auto header_size = 138;
+    // Check if file is empty or too small
+    if (encryptedData.size() <= header_size) {
+        LOG_DEBUG("File is empty or too small: {}", reg_path);
         return {};
     }
-
-    // Remove the header of the file (138 bytes)
-    encryptedData.erase(encryptedData.begin(), encryptedData.begin() + 138);
 
     // Decrypt the data with the xor key
-    for (size_t i = 0; i < encryptedData.size(); i++) {
-        encryptedData[i] ^= xorKey[i & 0xF];
+    auto decryptedSize = encryptedData.size() - header_size;
+    std::string decryptedData;
+    decryptedData.resize(decryptedSize);
+    for (size_t i = 0; i < decryptedSize; ++i) {
+        decryptedData[i] = encryptedData[i + header_size] ^ xorKey[i & 0xF];
     }
-
-    // Convert the data to a string
-    std::string res;
-    for (const auto &byte : encryptedData) {
-        res += byte;
-    }
-
-    return res;
+    return decryptedData;
 }
 
 enum RegType {
@@ -77,7 +69,7 @@ struct RegValue {
 static std::vector<std::string> reg_category_template;
 static std::map<std::string, std::vector<RegValue>> reg_template;
 
-void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
+static void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
     reg_category_template.clear();
     reg_template.clear();
 

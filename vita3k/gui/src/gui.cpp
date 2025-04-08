@@ -203,7 +203,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     int max_texture_size = emuenv.renderer->get_max_2d_texture_width();
     io.Fonts->TexDesiredWidth = max_texture_size;
 
-    for (int font_scale_count = sizeof(FontScaleCandidates) / sizeof(FontScaleCandidates[0]); font_scale_count > 0; font_scale_count--) {
+    for (int font_scale_count = std::size(FontScaleCandidates); font_scale_count > 0; font_scale_count--) {
         for (int i = 0; i < font_scale_count; i++) {
             float scale = FontScaleCandidates[i];
 
@@ -316,11 +316,7 @@ vfs::FileBuffer init_default_icon(GuiState &gui, EmuEnvState &emuenv) {
 
     if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
         fs::path icon_path = fs::exists(default_fw_icon) ? default_fw_icon : default_icon;
-        fs::ifstream image_stream(icon_path, std::ios::binary | std::ios::ate);
-        const std::size_t fsize = image_stream.tellg();
-        buffer.resize(fsize);
-        image_stream.seekg(0, std::ios::beg);
-        image_stream.read(reinterpret_cast<char *>(buffer.data()), fsize);
+        fs_utils::read_data(icon_path, buffer);
     }
 
     return buffer;
@@ -519,22 +515,22 @@ void save_apps_cache(GuiState &gui, EmuEnvState &emuenv) {
     if (apps_cache.is_open()) {
         // Write Size of apps list
         const auto size = gui.app_selector.user_apps.size();
-        apps_cache.write((char *)&size, sizeof(size));
+        apps_cache.write(reinterpret_cast<const char *>(&size), sizeof(size));
 
         // Write version of cache
         const uint32_t versionInFile = 1;
-        apps_cache.write((const char *)&versionInFile, sizeof(uint32_t));
+        apps_cache.write(reinterpret_cast<const char *>(&versionInFile), sizeof(uint32_t));
 
         // Write language of cache
         gui.app_selector.apps_cache_lang = emuenv.cfg.sys_lang;
-        apps_cache.write((char *)&gui.app_selector.apps_cache_lang, sizeof(uint32_t));
+        apps_cache.write(reinterpret_cast<const char *>(&gui.app_selector.apps_cache_lang), sizeof(uint32_t));
 
         // Write Apps list
         for (const App &app : gui.app_selector.user_apps) {
             auto write = [&apps_cache](const std::string &i) {
-                const auto size = i.length();
+                const size_t size = i.length();
 
-                apps_cache.write((const char *)&size, sizeof(size));
+                apps_cache.write(reinterpret_cast<const char *>(&size), sizeof(size));
                 apps_cache.write(i.c_str(), size);
             };
 
@@ -633,8 +629,7 @@ void get_user_apps_title(GuiState &gui, EmuEnvState &emuenv) {
     for (const auto &app : fs::directory_iterator(app_path)) {
         if (!app.path().empty() && fs::is_directory(app.path())
             && !app.path().filename_is_dot() && !app.path().filename_is_dot_dot()) {
-            const auto app_path = app.path().stem().generic_string();
-            get_app_param(gui, emuenv, app_path);
+            get_app_param(gui, emuenv, app.path().stem().generic_string());
         }
     }
 
@@ -673,7 +668,7 @@ void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
             else
                 emuenv.app_info.app_short_title = emuenv.app_info.app_title = lang["content_manager"];
         }
-        gui.app_selector.sys_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, {}, {}, {}, {}, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, app.data() });
+        gui.app_selector.sys_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, {}, {}, {}, {}, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, std::string(app) });
     }
 
     std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {

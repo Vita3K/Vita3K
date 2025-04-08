@@ -128,7 +128,7 @@ void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::
             if (!theme.child("StartScreenProperty").child("m_dateColor").empty())
                 start_param.date_color = convert_hex_color(theme.child("StartScreenProperty").child("m_dateColor").text().as_string());
             if (!theme.child("StartScreenProperty").child("m_dateLayout").empty())
-                start_param.date_layout = DateLayout(theme.child("StartScreenProperty").child("m_dateLayout").text().as_int());
+                start_param.date_layout = static_cast<DateLayout>(theme.child("StartScreenProperty").child("m_dateLayout").text().as_int());
 
             // Theme Start
             if (!theme.child("StartScreenProperty").child("m_filePath").empty()) {
@@ -500,7 +500,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     }
     ImGui::PopFont();
 
-    if ((ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0))) {
+    if (ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0)) {
         gui.vita_area.start_screen = false;
         gui.vita_area.home_screen = true;
         if (emuenv.cfg.show_info_bar)

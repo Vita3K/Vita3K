@@ -387,8 +387,10 @@ static void ImGui_ImplSDL2_UpdateGamepads(ImGui_State *state) {
 // Update gamepad inputs
 #define IM_SATURATE(V) (V < 0.0f ? 0.0f : V > 1.0f ? 1.0f \
                                                    : V)
-#define MAP_BUTTON(KEY_NO, BUTTON_NO) \
-    { io.AddKeyEvent(KEY_NO, SDL_GameControllerGetButton(game_controller, BUTTON_NO) != 0); }
+#define MAP_BUTTON(KEY_NO, BUTTON_NO)                                                         \
+    {                                                                                         \
+        io.AddKeyEvent(KEY_NO, SDL_GameControllerGetButton(game_controller, BUTTON_NO) != 0); \
+    }
 #define MAP_ANALOG(KEY_NO, AXIS_NO, V0, V1)                                                              \
     {                                                                                                    \
         float vn = (float)(SDL_GameControllerGetAxis(game_controller, AXIS_NO) - V0) / (float)(V1 - V0); \

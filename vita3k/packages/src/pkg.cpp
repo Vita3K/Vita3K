@@ -49,7 +49,7 @@ static void ctr_init(uint8_t *counter, uint8_t *iv, uint64_t n) {
     }
 }
 
-int execute(std::string &zrif, fs::path &title_src, fs::path &title_dst, F00DEncryptorTypes type, std::string &f00d_arg) {
+static int execute(std::string &zrif, fs::path &title_src, fs::path &title_dst, F00DEncryptorTypes type, std::string &f00d_arg) {
     std::string title_src_str = title_src.string();
     std::string title_dst_str = title_dst.string();
     return execute(zrif, title_src_str, title_dst_str, type, f00d_arg);
@@ -190,7 +190,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     std::vector<uint8_t> sfo_buffer(sfo_size);
     SfoFile sfo_file;
     infile.seekg(sfo_offset);
-    infile.read((char *)&sfo_buffer[0], sfo_size);
+    infile.read((char *)sfo_buffer.data(), sfo_size);
     sfo::load(sfo_file, sfo_buffer);
     sfo::get_param_info(emuenv.app_info, sfo_buffer, emuenv.cfg.sys_lang);
 
@@ -339,6 +339,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         return false;
 
     create_license(emuenv, zRIF);
+
     progress_callback(100);
     return true;
 }
