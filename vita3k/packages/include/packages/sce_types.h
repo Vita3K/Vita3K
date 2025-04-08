@@ -652,6 +652,8 @@ public:
 
 void register_keys(KeyStore &SCE_KEYS, int type);
 void extract_fat(const fs::path &partition_path, const std::string &partition, const fs::path &pref_path);
+void dencrypt_elf_files(const fs::path &pref_path, const fs::path &translated_module_path, std::string &zkey);
+bool is_self(const fs::path &file_path);
 std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, const uint64_t &size);
 std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader &sce_hdr);
 std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, const uint8_t *klic = 0);
