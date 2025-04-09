@@ -19,11 +19,16 @@
 
 #include <config/state.h>
 #include <config/version.h>
+
 #include <dialog/state.h>
 #include <gui/functions.h>
+
 #include <include/cpu.h>
 #include <include/environment.h>
+
+#include <io/functions.h>
 #include <io/state.h>
+
 #include <renderer/state.h>
 
 #include <util/log.h>
@@ -79,7 +84,7 @@ static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::st
 
 std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, EmuEnvState &emuenv, const std::string &app) {
     const auto time_app_index = std::find_if(gui.time_apps[emuenv.io.user_id].begin(), gui.time_apps[emuenv.io.user_id].end(), [&](const TimeApp &t) {
-        return t.app == app;
+        return t.app == fs::path(app).stem().string();
     });
 
     return time_app_index;
@@ -187,7 +192,7 @@ void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::st
     if (time_app_index != gui.time_apps[emuenv.io.user_id].end())
         time_app_index->last_time_used = std::time(nullptr);
     else
-        gui.time_apps[emuenv.io.user_id].push_back({ app, std::time(nullptr), 0 });
+        gui.time_apps[emuenv.io.user_id].push_back({ fs::path(app).stem().string(), std::time(nullptr), 0 });
 
     get_app_index(gui, app)->last_time = std::time(nullptr);
     if (gui.users[emuenv.io.user_id].sort_apps_type == LAST_TIME)
@@ -198,11 +203,12 @@ void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::st
 
 void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
+    const auto &APP = fs::path(app_path).stem().string();
     const auto &title_id = APP_INDEX->title_id;
     try {
-        fs::remove_all(emuenv.pref_path / "ux0/app" / app_path);
+        fs::remove_all(emuenv.pref_path / "ux0/app" / APP);
 
-        const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
+        const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", APP) };
         if (fs::exists(CUSTOM_CONFIG_PATH))
             fs::remove_all(CUSTOM_CONFIG_PATH);
         const auto ADDCONT_PATH{ emuenv.pref_path / "ux0/addcont" / APP_INDEX->addcont };
@@ -233,9 +239,9 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         if (fs::exists(IMPORT_TEXTURES_PATH))
             fs::remove_all(IMPORT_TEXTURES_PATH);
 
-        if (gui.app_selector.user_apps_icon.contains(app_path)) {
-            gui.app_selector.user_apps_icon[app_path] = {};
-            gui.app_selector.user_apps_icon.erase(app_path);
+        if (gui.app_selector.vita_apps_icon.contains(app_path)) {
+            gui.app_selector.vita_apps_icon[app_path] = {};
+            gui.app_selector.vita_apps_icon.erase(app_path);
         }
 
         const auto time_app_index = get_time_app_index(gui, emuenv, app_path);
@@ -249,7 +255,7 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
 
         LOG_INFO("Application successfully deleted '{} [{}]'.", title_id, APP_INDEX->title);
 
-        gui.app_selector.user_apps.erase(gui.app_selector.user_apps.begin() + (APP_INDEX - &gui.app_selector.user_apps[0]));
+        gui.app_selector.vita_apps["ux0"].erase(gui.app_selector.vita_apps["ux0"].begin() + (APP_INDEX - gui.app_selector.vita_apps["ux0"].data()));
 
         save_apps_cache(gui, emuenv);
     } catch (std::exception &e) {
@@ -281,8 +287,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto APP_INDEX = get_app_index(gui, app_path);
     const auto &title_id = APP_INDEX->title_id;
 
-    const auto APP_PATH{ emuenv.pref_path / "ux0/app" / app_path };
-    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
+    const auto APP_PATH{ emuenv.pref_path / convert_path(app_path) };
+    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", fs::path(app_path).stem().string()) };
     const auto ADDCONT_PATH{ emuenv.pref_path / "ux0/addcont" / APP_INDEX->addcont };
     const auto LICENSE_PATH{ emuenv.pref_path / "ux0/license" / title_id };
     const auto MANUAL_PATH{ APP_PATH / "sce_sys/manual" };
@@ -307,7 +313,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
     const auto is_commercial_app = title_id.starts_with("PCS") || (title_id == "NPXS10007");
     const auto is_system_app = title_id.starts_with("NPXS") && (title_id != "NPXS10007");
-    const auto has_state_report = gui.compat.compat_db_loaded && gui.compat.app_compat_db.contains(title_id);
+    const auto is_emu_app = app_path.starts_with("emu");
+    const auto has_state_report = gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(title_id) : false;
     const auto compat_state = has_state_report ? gui.compat.app_compat_db[title_id].state : compat::UNKNOWN;
     const auto &compat_state_color = gui.compat.compat_color[compat_state];
     const auto &compat_state_str = has_state_report ? lang_compat.states[compat_state] : lang_compat.states[compat::UNKNOWN];
@@ -318,7 +325,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         const auto &START_STR = app_path == emuenv.io.app_path ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
         if (ImGui::MenuItem(START_STR.c_str()))
             pre_run_app(gui, emuenv, app_path);
-        if (!is_system_app) {
+        if (!is_emu_app) {
             if (ImGui::BeginMenu(lang_compat.name.c_str())) {
                 if (!is_commercial_app || !gui.compat.compat_db_loaded) {
                     if (ImGui::MenuItem(lang.main["check_app_state"].c_str())) {
@@ -551,11 +558,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         } else {
             // Delete Data
             const auto ICON_MARGIN = 24.f * SCALE.y;
-            if (gui.app_selector.user_apps_icon.contains(title_id)) {
+            if (gui.app_selector.vita_apps_icon.contains(title_id)) {
                 ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PUPOP_ICON_SIZE.x / 2.f), ICON_MARGIN));
                 const auto POS_MIN = ImGui::GetCursorScreenPos();
                 const ImVec2 POS_MAX(POS_MIN.x + PUPOP_ICON_SIZE.x, POS_MIN.y + PUPOP_ICON_SIZE.y);
-                ImGui::GetWindowDrawList()->AddImageRounded(gui.app_selector.user_apps_icon[title_id], POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, PUPOP_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
+                ImGui::GetWindowDrawList()->AddImageRounded(gui.app_selector.vita_apps_icon[title_id], POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, PUPOP_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
             }
             ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
             ImGui::SetCursorPosY(ICON_MARGIN + PUPOP_ICON_SIZE.y + (4.f * SCALE.y));

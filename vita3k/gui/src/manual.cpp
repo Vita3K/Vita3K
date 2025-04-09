@@ -22,6 +22,7 @@
 #include <gui/functions.h>
 
 #include <config/state.h>
+#include <io/functions.h>
 #include <io/vfs.h>
 
 #include <util/log.h>
@@ -83,8 +84,8 @@ bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     height_manual_pages.clear();
 
     const auto APP_INDEX = get_app_index(gui, app_path);
-    const auto APP_PATH{ emuenv.pref_path / "ux0/app" / app_path };
-    auto manual_path{ fs::path("sce_sys/manual/") };
+    const auto APP_PATH{ emuenv.pref_path / convert_path(app_path) };
+    auto manual_path{ fs::path("sce_sys/manual") };
 
     const auto lang = fmt::format("{:0>2d}", emuenv.cfg.sys_lang);
     if (fs::exists(APP_PATH / manual_path / lang))

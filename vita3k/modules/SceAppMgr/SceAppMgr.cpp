@@ -17,6 +17,7 @@
 
 #include "SceAppMgr.h"
 
+#include <io/device.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <packages/sfo.h>
@@ -410,17 +411,14 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
         return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
 
     // Create exec path
-    auto exec_path = static_cast<std::string>(appPath);
-    if (exec_path.find("app0:/") != std::string::npos)
-        exec_path.erase(0, 6);
-    else
-        exec_path.erase(0, 5);
+    const auto app_device = device::get_device(appPath);
+    auto exec_path = device::remove_device_from_path(appPath, app_device);
 
     LOG_INFO("sceAppMgrLoadExec run self: {}", appPath);
 
     // Load exec executable
     vfs::FileBuffer exec_buffer;
-    if (vfs::read_app_file(exec_buffer, emuenv.pref_path, emuenv.io.app_path, exec_path)) {
+    if (vfs::read_file(app_device, exec_buffer, emuenv.pref_path, exec_path)) {
         if (argv && argv->get(emuenv.mem)) {
             size_t args = 0;
             emuenv.load_exec_argv = "\"";
@@ -439,8 +437,8 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
 
         emuenv.kernel.exit_delete_all_threads();
 
-        emuenv.load_app_path = emuenv.io.app_path;
-        emuenv.load_exec_path = exec_path;
+        emuenv.load_app_path = fs::path(appPath).parent_path().string();
+        emuenv.load_exec_path = fs::path(appPath).filename().string();
         emuenv.load_exec = true;
         // make sure we are not stuck waiting for a gpu command
         emuenv.renderer->should_display = true;

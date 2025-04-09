@@ -27,6 +27,7 @@
 #include <gui/state.h>
 #include <include/cpu.h>
 #include <include/environment.h>
+#include <io/device.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <modules/module_parent.h>
@@ -80,7 +81,6 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
 
         // Execute the emulator again with some arguments
 #ifdef _WIN32
-    FreeConsole();
     _execv(argv[0], args);
 #elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
     execv(argv[0], const_cast<char *const *>(args));
@@ -220,6 +220,8 @@ int main(int argc, char *argv[]) {
     if (!cfg.console) {
         gui::pre_init(gui, emuenv);
         if (!emuenv.cfg.initial_setup) {
+            if (gui::init_bgm(emuenv, { "pd0", "data/systembgm/initialsetup.at9" }))
+                gui::switch_bgm_state(false);
             while (!emuenv.cfg.initial_setup) {
                 if (handle_events(emuenv, gui)) {
                     gui::draw_begin(gui, emuenv);
@@ -269,7 +271,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (run_type == app::AppRunType::Extracted) {
-        emuenv.io.app_path = cfg.run_app_path ? *cfg.run_app_path : emuenv.app_info.app_title_id;
+        emuenv.io.app_path = cfg.run_app_path ? *cfg.run_app_path : "ux0:app/" + emuenv.app_info.app_title_id;
         gui::init_user_app(gui, emuenv, emuenv.io.app_path);
         if (emuenv.cfg.run_app_path.has_value())
             emuenv.cfg.run_app_path.reset();
@@ -334,7 +336,7 @@ int main(int argc, char *argv[]) {
 
     gui::set_config(gui, emuenv, emuenv.io.app_path);
 
-    const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);
+    const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path.find("vsh") != std::string::npos ? "emu:vsh/shell" : emuenv.io.app_path);
     emuenv.app_info.app_version = APP_INDEX->app_ver;
     emuenv.app_info.app_category = APP_INDEX->category;
     emuenv.io.addcont = APP_INDEX->addcont;
@@ -358,7 +360,9 @@ int main(int argc, char *argv[]) {
         gui.imgui_state->do_clear_screen = false;
     }
 
-    gui::init_app_background(gui, emuenv, emuenv.io.app_path);
+    gui::switch_bgm_state(true);
+    if (emuenv.io.app_path.find("vsh") == std::string::npos)
+        gui::init_app_background(gui, emuenv, emuenv.io.app_path);
     gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
 
     if (!app::late_init(emuenv)) {
