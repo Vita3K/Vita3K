@@ -56,6 +56,7 @@ struct State {
     float res_multiplier;
     bool disable_surface_sync;
     bool stretch_the_display_area;
+    bool fullscreen = 0;
 
     Context *context;
 
@@ -107,6 +108,9 @@ struct State {
     }
     void set_stretch_display(bool enable) {
         stretch_the_display_area = enable;
+    }
+    void set_fullscreen(bool enable) {
+        fullscreen = enable;
     }
     virtual bool map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         return true;
