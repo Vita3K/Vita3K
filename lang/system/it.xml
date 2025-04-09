@@ -32,12 +32,11 @@
 		<update>Aggiornamento</update>
 		<update_history>Cronologia degli aggiornamenti</update_history>
 		<history_version>Versione {}</history_version>
-		<information>Informazioni</information>
 		<delete>
 			<app_delete>Questa applicazione e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</app_delete>
 			<saved_data_delete>Vuoi eliminare questi dati salvati?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Informazioni">
 			<eligible>Idoneo</eligible>
 			<ineligible>Non idoneo</ineligible>
 			<level>Livello</level>
@@ -59,6 +58,7 @@ Codice di errore: {}</an_error_occurred>
 		<cancel>Annulla</cancel>
 		<close>Chiudersi</close>
 		<delete>Elimina</delete>
+		<error>Errore</error>
 		<file_corrupted>Il file è danneggiato.</file_corrupted>
 		<microphone_disabled>Attiva il microfono.</microphone_disabled>
 		<please_wait>Attendi...</please_wait>
@@ -194,11 +194,6 @@ Codice di errore: {}</an_error_occurred>
 		</states>
 	</compatibility>
 
-	<compat_db>
-		<error>Errore</error>
-		<information>Informazioni</information>
-	</compat_db>
-
 	<content_manager name="Gestione contenuto">
 		<application name="Applicazioni">
 			<delete>Le applicazioni selezionate e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</delete>
@@ -214,13 +209,8 @@ Codice di errore: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<name>Nome</name>
 		<num>Num</num>
 	</controllers>
-
-	<controls name="Controlli">
-		<error>Errore</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -351,7 +341,6 @@ Il tuo sistema Vita3K è pronto per l'uso!</completed_setup>
 		</system>
 		<network name="Rete">
 		</network>
-		<save>Salva</save>
 	</settings_dialog>
 
 	<sys_apps_title>

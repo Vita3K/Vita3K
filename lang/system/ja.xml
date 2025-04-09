@@ -59,7 +59,6 @@
 		<update>アップデート</update>
 		<update_history>アップデート履歴</update_history>
 		<history_version>バージョン {}</history_version>
-		<information>情報</information>
 		<delete>
 			<app_delete>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</app_delete>
 			<app_delete_description>アプリの削除にはアプリのサイズと
@@ -68,7 +67,7 @@
 			<license_delete>このライセンスを削除しますか？</license_delete>
 			<saved_data_delete>このセーブデータを削除しますか？</saved_data_delete>
 		</delete>
-		<info>
+		<info name="情報">
 			<eligible>権利あり</eligible>
 			<ineligible>権利なし</ineligible>
 			<level>レベル</level>
@@ -98,6 +97,7 @@
 		<cancel>キャンセル</cancel>
 		<close>閉じる</close>
 		<delete>削除</delete>
+		<error>エラー</error>
 		<file_corrupted>ファイルが壊れています。</file_corrupted>
 		<microphone_disabled>マイクを有効にしてください。</microphone_disabled>
 		<no>いいえ</no>
@@ -237,8 +237,6 @@
 	</compatibility>
 
 	<compat_db>
-		<error>エラー</error>
-		<information>情報</information>
 		<get_failed>現在の互換性データベースを取得できませんでした。ファイアウォールやインターネットアクセスを確認し、後でもう一度試してください。</get_failed>
 		<download_failed>アプリケーションの互換性データベースのダウンロードに失敗しました。更新日時: {}。後でもう一度試してください。</download_failed>
 		<load_failed>ダウンロードされたアプリケーションの互換性データベースの読み込みに失敗しました。更新日時: {}。</load_failed>
@@ -266,11 +264,7 @@
 
 	<controllers name="コントローラー">
 		<connected>{}コントローラー接続済み</connected>
-		<name>名前</name>
 		<num>番号</num>
-		<not_connected>利用可能なコントローラーが接続されていません。
-SDL2に対応したコントローラーを接続してください。</not_connected>
-		<motion_support>コントローラーはモーションをサポートしています</motion_support>
 		<rebind_controls>ボタン割り当て</rebind_controls>
 		<led_color>LEDカラー</led_color>
 		<use_custom_color>カスタムカラーを使用</use_custom_color>
@@ -278,10 +272,12 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<red>赤</red>
 		<green>緑</green>
 		<blue>青</blue>
+		<not_connected>利用可能なコントローラーが接続されていません。
+SDL2に対応したコントローラーを接続してください。</not_connected>
 		<reset_controller_binding>ボタン割り当てをリセット</reset_controller_binding>
 	</controllers>
 
-	<controls name="入力">
+	<controls>
 		<button>ボタン</button>
 		<mapped_button>ボタン割り当て</mapped_button>
 		<left_stick_up>左スティック 上</left_stick_up>
@@ -310,7 +306,6 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<r2_button>R2 ボタン</r2_button>
 		<l3_button>L3 ボタン</l3_button>
 		<r3_button>R3 ボタン</r3_button>
-		<gui>GUI</gui>
 		<full_screen>フルスクリーン</full_screen>
 		<toggle_touch>タッチ操作の切り替え</toggle_touch>
 		<toggle_touch_description>画面タッチと背面タッチを切り替えます。</toggle_touch_description>
@@ -318,7 +313,6 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<toggle_gui_visibility_description>アプリの実行中に画面上部のGUIの表示の切り替えを行います。</toggle_gui_visibility_description>
 		<miscellaneous>その他</miscellaneous>
 		<toggle_texture_replacement>テクスチャ置換を切り替える</toggle_texture_replacement>
-		<error>エラー</error>
 		<error_duplicate_key>そのキーはすでに使用済みです</error_duplicate_key>
 	</controls>　
 
@@ -401,9 +395,7 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 Vita3Kをお楽しみください。</completed_setup>
 		<select_language>言語を選んでください。</select_language>
 		<install_firmware>ファームウェアをインストール。</install_firmware>
-		<install_highly_recommended>どちらのファームウェアもインストールすることを推奨します。</install_highly_recommended>
 		<installed>インストールされました：</installed>
-		<download_firmware>ファームウェアをダウンロード</download_firmware>
 		<download_font_package>フォントパッケージをダウンロード</download_font_package>
 		<install_firmware_file>ファームウェアファイルをインストール</install_firmware_file>
 		<completed>完了しました。</completed>
@@ -416,7 +408,6 @@ Vita3Kをお楽しみください。</completed_setup>
 			<successed_install_firmware>ファームウェアのインストールに成功しました。</successed_install_firmware>
 			<firmware_version>ファームウェアバージョン：</firmware_version>
 			<no_font_exist>ファームウェアフォントパッケージがありません，ダウンロードしてインストールしてください。</no_font_exist>
-			<download_firmware_font_package>ファームウェアフォントパッケージをダウンロード</download_firmware_font_package>
 			<firmware_font_package_description>ファームウェアフォントパッケージは、一部のアプリケーションや、
 GUIでのアジア地域のフォントサポートに必須です。
 また、一般的にGUIを正しく表示するために推奨されています。</firmware_font_package_description>
@@ -708,7 +699,6 @@ GUIでのアジア地域のフォントサポートに必須です。
 		</network>
 		<save_reboot>保存して再起動</save_reboot>
 		<save_apply>保存して適用</save_apply>
-		<save>セーブ</save>
 		<keep_changes>セーブをクリックして変更を保存します。</keep_changes>
 	</settings_dialog>
 
@@ -781,11 +771,10 @@ GUIでのアジア地域のフォントサポートに必須です。
 	</vita3k_update>
 
 	<welcome name="Welcome to Vita3K">
-		<vita3k>Vita3K PlayStation Vita Emulator</vita3k>
 		<about_vita3k>Vita3Kは、Windows、Linux、macOSとAndroid用にC++で書かれたオープンソースのPlayStation Vitaエミュレーターです。</about_vita3k>
 		<development_stage>エミュレーターは未だ開発段階にあるため、フィードバックやテストは大歓迎です。</development_stage>
-		<about_firmware>まずは、PS Vitaのファームウェアとフォントのパッケージをインストールしてください。</about_firmware>
 		<download_firmware>ファームウェアをダウンロード</download_firmware>
+		<download_firmware_font_package>ファームウェアフォントパッケージをダウンロード</download_firmware_font_package>
 		<vita3k_quickstart>Vita3Kのセットアップ方法については、以下のページで解説しています。</vita3k_quickstart>
 		<quickstart>クイックスタート</quickstart>
 		<page>ページ。</page>

@@ -35,6 +35,7 @@ struct DialogLangState {
         { "cancel", "Cancel" },
         { "close", "Close" },
         { "delete", "Delete" },
+        { "error", "Error" },
         { "file_corrupted", "The file is corrupt." },
         { "microphone_disabled", "Enable the microphone." },
         { "no", "No" },
@@ -46,7 +47,7 @@ struct DialogLangState {
         { "submit", "Submit" },
         { "yes", "Yes" }
     };
-    std::map<std::string, std::string> message = { { "load_app_failed", "Failed to load {}.\nCheck vita3k.log to see console output for details.\n1. Do you have installed firmware?\n2. Dump your own app(s)/game(s) and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported." } };
+    std::map<std::string, std::string> message = { { "load_app_failed", "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Have you installed the firmware?\n2. Re-dump your own PS Vita app/game and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported." } };
     std::map<std::string, std::string> trophy = { { "preparing_start_app", "Preparing to start the application..." } };
     struct SaveData {
         std::map<std::string, std::string> deleting = {
@@ -109,7 +110,8 @@ struct LangState {
         };
         std::map<std::string, std::string> emulation = {
             { "title", "Emulation" },
-            { "last_apps_used", "Last Apps used" }
+            { "last_apps_used", "Last Apps used" },
+            { "empty", "Empty" }
         };
         std::map<std::string, std::string> debug = {
             { "title", "Debug" },
@@ -172,8 +174,7 @@ struct LangState {
             { "manual", "Manual" },
             { "update", "Update" },
             { "update_history", "Update History" },
-            { "history_version", "Version {}" },
-            { "information", "Information" }
+            { "history_version", "Version {}" }
         };
         std::map<std::string, std::string> deleting = {
             { "app_delete", "This application and all related data, including saved data, will be deleted." },
@@ -183,6 +184,7 @@ struct LangState {
             { "saved_data_delete", "Do you want to delete this saved data?" }
         };
         std::map<std::string, std::string> info = {
+            { "title", "Information" },
             { "eligible", "Eligible" },
             { "ineligible", "Ineligible" },
             { "level", "Level" },
@@ -221,8 +223,6 @@ struct LangState {
     };
     Compatibility compatibility;
     std::map<std::string, std::string> compat_db = {
-        { "error", "Error" },
-        { "information", "Information" },
         { "get_failed", "Failed to get current compatibility database, check firewall/internet access, try again later." },
         { "download_failed", "Failed to download Applications compatibility database updated at: {}" },
         { "load_failed", "Failed to load Applications compatibility database downloaded updated at: {}" },
@@ -257,10 +257,8 @@ struct LangState {
     std::map<std::string, std::string> controllers = {
         { "title", "Controllers" },
         { "connected", "{} controllers connected" },
-        { "name", "Name" },
         { "num", "Num" },
-        { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." },
-        { "motion_support", "Gamepad has motion support" },
+        { "motion_support", "Motion Support" },
         { "rebind_controls", "Rebind Controls" },
         { "led_color", "LED Color" },
         { "use_custom_color", "Use Custom Color" },
@@ -268,10 +266,11 @@ struct LangState {
         { "red", "Red" },
         { "green", "Green" },
         { "blue", "Blue" },
+        { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." },
+        { "disable_motion", "Disable Motion" },
         { "reset_controller_binding", "Reset Controller Binding" }
     };
     std::map<std::string, std::string> controls = {
-        { "title", "Controls" },
         { "button", "Button" },
         { "mapped_button", "Mapped button" },
         { "left_stick_up", "Left stick up" },
@@ -308,8 +307,7 @@ struct LangState {
         { "toggle_gui_visibility_description", "Toggles between showing and hiding the GUI at the top of the screen while the app is running." },
         { "miscellaneous", "Miscellaneous" },
         { "toggle_texture_replacement", "Toggle Texture Replacement" },
-        { "take_a_screenshot", "Take A Screenshot" },
-        { "error", "Error" },
+        { "take_screenshot", "Take A Screenshot" },
         { "error_duplicate_key", "The key is used for other bindings or it is reserved." }
     };
     std::map<std::string, std::string> game_data = {
@@ -354,10 +352,8 @@ struct LangState {
         { "change_emu_path", "Change Emulator Path" },
         { "reset_emu_path", "Reset Emulator Path" },
         { "install_firmware", "Install Firmware." },
-        { "install_highly_recommended", "Installing both firmware files is highly recommended." },
+        { "install_highly_recommended", "Installing all firmware files is highly recommended." },
         { "installed", "Installed:" },
-        { "download_preinst_firmware", "Download Preinst Firmware" },
-        { "download_firmware", "Download Firmware" },
         { "download_font_package", "Download Font Package" },
         { "install_firmware_file", "Install Firmware File" },
         { "select_interface_settings", "Select interface settings." },
@@ -379,7 +375,6 @@ struct LangState {
             { "successed_install_firmware", "Firmware successfully installed." },
             { "firmware_version", "Firmware version:" },
             { "no_font_exist", "No firmware font package present, please download and install it." },
-            { "download_firmware_font_package", "Download Firmware Font Package" },
             { "firmware_font_package_description", "Firmware font package is needed for some applications\nand also for Asian regional font support. (Generally Recommended)" },
             { "delete_firmware", "Delete the firmware installation file?" }
         };
@@ -516,7 +511,6 @@ struct LangState {
             { "title", "Settings" },
             { "save_reboot", "Save & Reboot" },
             { "save_apply", "Save & Apply" },
-            { "save", "Save" },
             { "keep_changes", "Click on Save to keep your changes." }
         };
         std::map<std::string, std::string> core = {
@@ -587,7 +581,6 @@ struct LangState {
             { "audio_volume_description", "Adjusts the volume percentage of all audio outputs." },
             { "enable_ngs_support", "Enable NGS support" },
             { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." }
-
         };
         std::map<std::string, std::string> system = {
             { "title", "System" },
@@ -653,6 +646,7 @@ struct LangState {
             { "custom_config_settings", "Custom Config Settings" },
             { "clear_custom_config", "Clear Custom Config" },
             { "screenshot_image_type", "screenshot image type" },
+            { "null", "NULL" },
             { "screenshot_format", "Screenshot format" }
         };
         std::map<std::string, std::string> gui = {
@@ -802,8 +796,10 @@ struct LangState {
         { "vita3k", "Vita3K PlayStation Vita Emulator" },
         { "about_vita3k", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS and Android." },
         { "development_stage", "The emulator is still in its development stages so any feedback and testing is greatly appreciated." },
-        { "about_firmware", "To get started, please install the PS Vita firmware and font packages." },
+        { "about_firmware", "To get started, please install all PS Vita firmware files." },
+        { "download_preinst_firmware", "Download Preinst Firmware" },
         { "download_firmware", "Download Firmware" },
+        { "download_firmware_font_package", "Download Firmware Font Package" },
         { "vita3k_quickstart", "A comprehensive guide on how to set-up Vita3K can be found on the" },
         { "quickstart", "Quickstart" },
         { "page", "page." },

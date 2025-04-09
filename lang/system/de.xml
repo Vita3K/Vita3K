@@ -32,12 +32,11 @@
 		<update>Aktualisierung</update>
 		<update_history>Update-Verlauf</update_history>
 		<history_version>Version {}</history_version>
-		<information>Information</information>
 		<delete>
 			<app_delete>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</app_delete>
 			<saved_data_delete>Willst du die Nutzerdaten löschen?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Information">
 			<eligible>berechtigt</eligible>
 			<ineligible>nicht berechtigt</ineligible>
 			<level>Stufe</level>
@@ -59,6 +58,7 @@ Fehlercode: {}</an_error_occurred>
 		<cancel>Abbrechen</cancel>
 		<close>Schließen</close>
 		<delete>Löschen</delete>
+		<error>Fehler</error>
 		<file_corrupted>Die Datei ist beschädigt.</file_corrupted>
 		<microphone_disabled>Aktiviere das Mikrofon.</microphone_disabled>
 		<no>Nein</no>
@@ -182,11 +182,6 @@ Fehlercode: {}</an_error_occurred>
 		<minutes_ago>Vor {} Minuten</minutes_ago>
 	</common>
 
-	<compat_db>
-		<error>Fehler</error>
-		<information>Information</information>
-	</compat_db>
-
 	<content_manager name="Inhaltsmanager">
 		<application name="Anwendungen">
 			<delete>Die ausgewählten Anwendungen und alle dazugehörigen Daten, einschließlich gespeicherter Daten, werden gelöscht.</delete>
@@ -201,14 +196,9 @@ Fehlercode: {}</an_error_occurred>
 		<clear_all>Alle löschen</clear_all>
 	</content_manager>
 
-	<controllers name="Controller">
-		<name>Name</name>
+	<controllers name="Steuerungen">
 		<num>Num</num>
 	</controllers>
-
-	<controls name="Steuerung">
-		<error>Błąd</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -338,7 +328,6 @@ Dein Vita3K-System ist bereit!</completed_setup>
 	<settings_dialog name="Einstellungen">
 		<network name="Netzwerk">
 		</network>
-		<save>Speichern</save>
 	</settings_dialog>
 
 	<sys_apps_title>

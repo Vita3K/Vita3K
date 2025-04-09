@@ -29,12 +29,11 @@
 		<update>Opdater</update>
 		<update_history>Opdateringshistorik</update_history>
 		<history_version>Version {}</history_version>
-		<information>Information</information>
 		<delete>
 			<app_delete>Dette program og alle relaterede data, herunder gemte data, vil blive slettet.</app_delete>
 			<saved_data_delete>Ønsker du at disse gemte data?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Information">
 			<eligible>Kvalificeret</eligible>
 			<ineligible>Ikke kvalificeret</ineligible>
 			<level>Niveau</level>
@@ -53,6 +52,7 @@ Fejlkode: {}</an_error_occurred>
 		<cancel>Afbryd</cancel>
 		<close>Lukke</close>
 		<delete>Slet</delete>
+		<error>Fejl</error>
 		<file_corrupted>Filen er defekt.</file_corrupted>
 		<microphone_disabled>Aktivér mikrofonen.</microphone_disabled>
 		<no>Nej</no>
@@ -175,11 +175,6 @@ Fejlkode: {}</an_error_occurred>
 		<hours_ago>{} timer siden</hours_ago>
 		<minutes_ago>{} minutter siden</minutes_ago>
 	</common>
-
-	<compat_db>
-		<error>Fejl</error>
-		<information>Information</information>
-	</compat_db>
 	
 	<content_manager name="Indholdsadministrator">
 		<application name="Programmer">
@@ -196,13 +191,8 @@ Fejlkode: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<name>Navn</name>
 		<num>Num</num>
 	</controllers>
-
-	<controls name="Controls">
-		<error>Fejl</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -332,7 +322,6 @@ Dit Vita3K-system er klart!</completed_setup>
 		</system>
 		<network name="Netværk">
 		</network>
-		<save>Gem</save>
 	</settings_dialog>
 
 	<sys_apps_title>
