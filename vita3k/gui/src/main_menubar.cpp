@@ -89,7 +89,7 @@ static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv) {
                         draw_app(*app_index);
                 }
             } else
-                ImGui::MenuItem("Empty", nullptr, false, false);
+                ImGui::MenuItem(lang["empty"].c_str(), nullptr, false, false);
             ImGui::EndMenu();
         }
         if (!emuenv.cfg.display_system_apps) {

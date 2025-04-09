@@ -62,7 +62,6 @@
 		<update>Обновление</update>
 		<update_history>Хронология обновлений</update_history>
 		<history_version>Версия {}</history_version>
-		<information>Информация</information>
 		<delete>
 			<app_delete>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</app_delete>
 			<app_delete_description>Удаление приложения может занять некоторое время
@@ -71,7 +70,7 @@
 			<license_delete>Удалить лицензию?</license_delete>
 			<saved_data_delete>Удалить эти сохранённые данные?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Информация">
 			<eligible>Допущен</eligible>
 			<ineligible>Не допущен</ineligible>
 			<level>Уровень</level>
@@ -93,6 +92,7 @@
 		<cancel>Отмена</cancel>
 		<close>Закрыть</close>
 		<delete>Удалить</delete>
+		<error>Ошибка</error>
 		<file_corrupted>Файл поврежден.</file_corrupted>
 		<microphone_disabled>Включите микрофон.</microphone_disabled>
 		<no>Нет</no>
@@ -232,8 +232,6 @@
 	</compatibility>
 
 	<compat_db>
-		<error>Ошибка</error>
-		<information>Информация</information>
 		<get_failed>Не удалось получить текущую базу данных совместимости, проверьте брандмауэр/доступ к Интернету, повторите попытку позже.</get_failed>
 		<download_failed>Не удалось загрузить базу данных совместимости приложений, обновленную на: {}, повторите попытку позже.</download_failed>
 		<load_failed>Не удалось открыть базу данных совместимости приложений, обновленную на: {}.</load_failed>
@@ -267,11 +265,7 @@
 
 	<controllers name="Контроллеры">
 		<connected>Контроллеров подключено: {}</connected>
-		<name>Название</name>
 		<num>Количество</num>
-		<not_connected>Не подключены совместимые контроллеры.
-Подключите контроллер, совместимый с SDL2.</not_connected>
-		<motion_support>Геймпад поддерживает датчики ориентации и движения</motion_support>
 		<rebind_controls>Перепривязка элементов управления</rebind_controls>
 		<led_color>Цвет светодиода</led_color>
 		<use_custom_color>Использовать пользовательский цвет</use_custom_color>
@@ -279,10 +273,12 @@
 		<red>Красный</red>
 		<green>Зеленый</green>
 		<blue>Синий</blue>
+		<not_connected>Не подключены совместимые контроллеры.
+Подключите контроллер, совместимый с SDL2.</not_connected>
 		<reset_controller_binding>Сброс привязки элементов управления</reset_controller_binding>
 	</controllers>
 
-	<controls name="Управление">
+	<controls>
 		<button>Кнопка</button>
 		<mapped_button>Привязанная кнопка</mapped_button>
 		<left_stick_up>Левый cтик вверх</left_stick_up>
@@ -319,8 +315,7 @@
 		<toggle_gui_visibility_description>Переключает видимость интерфейса в верхней части экрана при работе приложения.</toggle_gui_visibility_description>
 		<miscellaneous>Разное</miscellaneous>
 		<toggle_texture_replacement>Перекл. подмены текстур</toggle_texture_replacement>
-		<take_a_screenshot>Сделать скриншот</take_a_screenshot>
-		<error>Ошибка</error>
+		<take_screenshot>Сделать скриншот</take_screenshot>
 		<error_duplicate_key>Данная кнопка уже назначена.</error_duplicate_key>
 	</controls>
 
@@ -407,9 +402,7 @@
 		<change_emu_path>Сменить путь к ФС эмулятора</change_emu_path>
 		<reset_emu_path>Сбросить путь к ФС эмулятора</reset_emu_path>
 		<install_firmware>Установить прошивку.</install_firmware>
-		<install_highly_recommended>Настоятельно рекомендуется установить прошивку и шрифты.</install_highly_recommended>
 		<installed>Установлено:</installed>
-		<download_firmware>Скачать прошивку</download_firmware>
 		<download_font_package>Скачать пакет шрифтов</download_font_package>
 		<install_firmware_file>Установить прошивку</install_firmware_file>
 		<select_interface_settings>Выбрать настройки интерфейса.</select_interface_settings>
@@ -434,7 +427,6 @@
 			<successed_install_firmware>Прошивка успешно установлена.</successed_install_firmware>
 			<firmware_version>Версия прошивки:</firmware_version>
 			<no_font_exist>Пакет шрифтов прошивки отсутствует, пожалуйста, скачайте и установите его.</no_font_exist>
-			<download_firmware_font_package>Скачать пакет шрифтов прошивки</download_firmware_font_package>
 			<firmware_font_package_description>Пакет шрифтов прошивки нужен для некоторых приложений,
 а также для поддержки шрифтов азиатского региона.
 (В целом рекомендуется)</firmware_font_package_description>
@@ -858,8 +850,8 @@
 		<vita3k>Vita3K, эмулятор PlayStation Vita</vita3k>
 		<about_vita3k>Vita3K - это эмулятор PlayStation Vita с открытым исходным кодом, написанный на C++ для Windows, Linux, macOS и Android.</about_vita3k>
 		<development_stage>Эмулятор до сих пор находится в разработке, мы очень ценим любые отзывы и тесты.</development_stage>
-		<about_firmware>Для начала, пожалуйста, установите прошивку PS Vita и пакет шрифтов.</about_firmware>
 		<download_firmware>Скачать прошивку</download_firmware>
+		<download_firmware_font_package>Скачать пакет шрифтов прошивки</download_firmware_font_package>
 		<vita3k_quickstart>Полное руководство для настройки Vita3K можно найти</vita3k_quickstart>
 		<quickstart>здесь</quickstart>
 		<page></page>

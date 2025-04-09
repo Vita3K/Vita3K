@@ -502,7 +502,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     LOG_WARN("Patch note Error for Title ID {} in path {}", title_id, app_path);
             }
         }
-        if (ImGui::MenuItem(lang.main["information"].c_str(), nullptr, &gui.vita_area.app_information)) {
+        if (ImGui::MenuItem(lang.info["title"].c_str(), nullptr, &gui.vita_area.app_information)) {
             if (!is_system_app) {
                 get_app_info(gui, emuenv, app_path);
                 const auto app_size = get_app_size(gui, emuenv, app_path);

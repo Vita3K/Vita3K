@@ -50,12 +50,11 @@
 		<update>업데이트</update>
 		<update_history>업데이트 이력</update_history>
 		<history_version>버전 {}</history_version>
-		<information>정보</information>
 		<delete>
 			<app_delete>이 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</app_delete>
 			<saved_data_delete>이 저장 데이터를 삭제하시겠습니까?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="정보">
 			<eligible>권리 있음</eligible>
 			<ineligible>권리 없음</ineligible>
 			<level>레벨</level>		
@@ -81,6 +80,7 @@
 		<cancel>취소</cancel>
 		<close>닫다</close>
 		<delete>삭제</delete>
+		<error>오류</error>
 		<file_corrupted>파일이 손상되어 있습니다.</file_corrupted>
 		<microphone_disabled>마이크를 활성화해 주십시오.</microphone_disabled>
 		<no>아니요</no>
@@ -205,22 +205,7 @@
 	</common>
 
 	<compatibility name="호환성">
-		<states>
-			<state id = "-1">Unknown</state>
-			<state id = "0">Nothing</state>
-			<state id = "1">Bootable</state>
-			<state id = "2">Intro</state>
-			<state id = "3">Menu</state>
-			<state id = "4">Ingame -</state>
-			<state id = "5">Ingame +</state>
-			<state id = "6">Playable</state>
-		</states>
 	</compatibility>
-
-	<compat_db>
-		<error>오류</error>
-		<information>정보</information>
-	</compat_db>
 
 	<content_manager name="콘텐츠 관리">
 		<application name="애플리케이션">
@@ -237,13 +222,8 @@
 	</content_manager>
 
 	<controllers name="컨트롤러">
-		<name>이름</name>
 		<num>번호</num>
 	</controllers>
-
-	<controls name="컨트롤">
-		<error>오류</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -365,7 +345,6 @@
 		</system>
 		<network name="네트워크">
 		</network>
-		<save>저장</save>
 	</settings_dialog>
 
 	<sys_apps_title>
