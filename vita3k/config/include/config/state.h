@@ -141,6 +141,7 @@ public:
         bool export_as_png = false;
         bool fps_hack = false;
         bool stretch_the_display_area = false;
+        bool fullscreen_hd_res_pixel_perfect = false;
         bool show_touchpad_cursor = true;
         bool psn_signed_in = false;
     };
