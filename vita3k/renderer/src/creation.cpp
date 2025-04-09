@@ -33,7 +33,7 @@
 
 namespace renderer {
 
-static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &sizes, UniformBufferSizes &offsets, std::size_t &total_hold) {
+static void layout_ssbo_offset_from_uniform_buffer_sizes(const UniformBufferSizes &sizes, UniformBufferSizes &offsets, std::size_t &total_hold) {
     std::uint32_t last_offset = 0;
 
     for (std::size_t i = 0; i < sizes.size(); i++) {

@@ -44,7 +44,7 @@ void complete_command(State &state, CommandHelper &helper, const int code) {
     state.command_finish_one.notify_all();
 }
 
-bool is_cmd_ready(MemState &mem, CommandList &command_list) {
+bool is_cmd_ready(const MemState &mem, const CommandList &command_list) {
     // we check if the cmd starts with a WaitSyncObject and if this is the case if it is ready
     if (!command_list.first || command_list.first->opcode != CommandOpcode::WaitSyncObject)
         return true;
@@ -55,7 +55,7 @@ bool is_cmd_ready(MemState &mem, CommandList &command_list) {
     return sync->timestamp_current >= timestamp;
 }
 
-bool wait_cmd(MemState &mem, CommandList &command_list) {
+bool wait_cmd(const MemState &mem, const CommandList &command_list) {
     // we assume here that the cmd starts with a WaitSyncObject
 
     SceGxmSyncObject *sync = reinterpret_cast<Ptr<SceGxmSyncObject> *>(&command_list.first->data[0])->get(mem);
@@ -65,7 +65,7 @@ bool wait_cmd(MemState &mem, CommandList &command_list) {
     return renderer::wishlist(sync, timestamp, 500);
 }
 
-void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list) {
+void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, const CommandList &command_list) {
     using CommandHandlerFunc = decltype(cmd_handle_set_context);
 
     const static std::map<CommandOpcode, CommandHandlerFunc *> handlers = {
