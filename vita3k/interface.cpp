@@ -507,6 +507,7 @@ static void handle_window_event(EmuEnvState &state, const SDL_WindowEvent &event
 
 static void switch_full_screen(EmuEnvState &emuenv) {
     emuenv.display.fullscreen = !emuenv.display.fullscreen;
+    emuenv.renderer->set_fullscreen(emuenv.display.fullscreen);
 
     SDL_SetWindowFullscreen(emuenv.window.get(), emuenv.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 
