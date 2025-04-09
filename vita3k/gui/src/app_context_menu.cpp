@@ -545,6 +545,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::PopTextWrapPos();
                 ImGui::TextColored(GUI_COLOR_TEXT, "\n");
             }
+            ImGui::ScrollWhenDragging();
             ImGui::EndChild();
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * SCALE.y)));
@@ -664,6 +665,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             } else
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.info["never"].c_str());
         }
+        ImGui::ScrollWhenDragging();
         ImGui::End();
     }
 }

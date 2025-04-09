@@ -226,6 +226,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
             ++current_page;
         }
     }
+    ImGui::ScrollWhenDragging();
     ImGui::EndChild();
     ImGui::EndChild();
     ImGui::End();

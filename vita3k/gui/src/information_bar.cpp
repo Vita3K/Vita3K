@@ -479,6 +479,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x - (34.f * SCALE.x) - notice_time_size.x, ImGui::GetCursorPosY() - (8.f * SCALE.y)));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", notice_time.c_str());
                 ImGui::NextColumn();
+                ImGui::ScrollWhenDragging();
             }
             ImGui::Columns(1);
         }

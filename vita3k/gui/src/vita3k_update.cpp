@@ -376,6 +376,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PopID();
             ImGui::Separator();
         }
+        ImGui::ScrollWhenDragging();
         ImGui::Columns(1);
         ImGui::EndChild();
         ImGui::PopStyleVar(3);
