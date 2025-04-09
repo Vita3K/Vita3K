@@ -199,6 +199,10 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
         if (mouse_button == -1)
             break;
 
+        if (event->type == SDL_MOUSEBUTTONUP && mouse_button == 0 && !(state->mouse_buttons_down & 1))
+            // handle the case when a long touch is turned into a right click
+            return true;
+
         io.AddMouseButtonEvent(mouse_button, (event->type == SDL_MOUSEBUTTONDOWN));
         state->mouse_buttons_down = (event->type == SDL_MOUSEBUTTONDOWN) ? (state->mouse_buttons_down | (1 << mouse_button)) : (state->mouse_buttons_down & ~(1 << mouse_button));
         return true;
@@ -422,6 +426,26 @@ static void ImGui_ImplSDL2_UpdateGamepads(ImGui_State *state) {
     MAP_ANALOG(ImGuiKey_GamepadRStickDown, SDL_CONTROLLER_AXIS_RIGHTY, +thumb_dead_zone, +32767);
 #undef MAP_BUTTON
 #undef MAP_ANALOG
+}
+
+static void ImGui_ImplSDL2_HandleTouch(ImGui_State *state) {
+    ImGuiIO &io = ImGui::GetIO();
+
+    if (state->mouse_buttons_down & 1) {
+        // considered left click
+        if (io.MouseDownDuration[0] >= 1.0f && !ImGui::IsMouseDragging(0)) {
+            // we left click without dragging for more than 1sec, turn into right click
+            io.MouseClickedTime[0] = 0;
+            io.MouseClicked[0] = false;
+            io.MouseDown[0] = false;
+            io.MouseReleased[0] = false;
+            io.MouseDownDuration[0] = -1.0f;
+            ImGui::SetActiveID(0, ImGui::GetCurrentContext()->CurrentWindow);
+            io.AddMouseButtonEvent(1, true);
+            io.AddMouseButtonEvent(1, false);
+            state->mouse_buttons_down &= ~1;
+        }
+    }
 }
 
 IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {

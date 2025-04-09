@@ -38,6 +38,8 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
+#include <imgui_internal.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -950,3 +952,17 @@ void TextCentered(const char *text, float wrap_width) {
 }
 
 } // namespace gui
+
+namespace ImGui {
+
+void ScrollWhenDragging() {
+    ImGuiContext &g = *ImGui::GetCurrentContext();
+    ImGuiIO &io = ImGui::GetIO();
+    ImGuiWindow *window = g.CurrentWindow;
+    if (g.HoveredWindow == window && ImGui::IsMouseDragging(0)) {
+        ImGui::SetScrollY(window, window->Scroll.y - io.MouseDelta.y);
+        ImGui::SetActiveID(0, window);
+    }
+}
+
+} // namespace ImGui

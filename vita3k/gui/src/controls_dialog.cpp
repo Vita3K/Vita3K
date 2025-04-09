@@ -217,6 +217,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
         gui.controls_menu.controls_dialog = false;
 
+    ImGui::ScrollWhenDragging();
     ImGui::End();
 }
 
