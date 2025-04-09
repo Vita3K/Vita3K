@@ -426,16 +426,17 @@
 		<install_firmware>安装固件。</install_firmware>
 		<install_highly_recommended>强烈建议同时安装这两个固件文件。</install_highly_recommended>
 		<installed>已安装：</installed>
+		<download_preinst_firmware>下载预装固件</download_preinst_firmware>
 		<download_firmware>下载固件</download_firmware>
 		<download_font_package>下载字体包</download_font_package>
 		<install_firmware_file>安装固件文件</install_firmware_file>
 		<select_interface_settings>请选择界面设定。</select_interface_settings>
-		<show_info_bar>信息栏可見</show_info_bar>
+		<show_info_bar>信息栏可见</show_info_bar>
 		<info_bar_description>勾选此项在应用程序选择页面内显示信息栏。
 信息栏是时间、电量以及信息中心。</info_bar_description>
 		<show_live_area_screen>Live Area应用程序屏幕</show_live_area_screen>
 		<live_area_screen_description>勾选此项在点击应用程序时默认打开Live Area页面。
-如果禁用，请右键应用程序将其打开。</live_area_screen_description>
+如果禁用，请右键点击应用程序将其打开。</live_area_screen_description>
 		<apps_list_grid>网格模式</apps_list_grid>
 		<apps_list_grid_description>勾选此项将应用程序列表设置为像PS Vita一样的网格模式。</apps_list_grid_description>
 		<icon_size>应用程序图标大小</icon_size>
@@ -699,15 +700,15 @@
 			<select_log_level>选择您喜欢的日志级别。</select_log_level>
 			<archive_log>档案日志</archive_log>
 			<archive_log_description>勾选此项启用档案日志。</archive_log_description>
-			<discord_rich_presence>启用Discord Rich Presence以显示您在Discord上运行的应用程序。</discord_rich_presence>
+			<discord_rich_presence>启用Discord Rich Presence以展示您在Discord上正在运行的应用程序。</discord_rich_presence>
 			<texture_cache>纹理缓存</texture_cache>
 			<texture_cache_description>取消勾选此项禁用纹理缓存。</texture_cache_description>
 			<show_compile_shaders>显示编译着色器</show_compile_shaders>
 			<compile_shaders_description>取消勾选此项禁用编译着色器对话框的显示。</compile_shaders_description>
 			<show_touchpad_cursor>显示触摸板光标</show_touchpad_cursor>
-			<touchpad_cursor_description>取消勾选此项禁用显示在屏幕上触摸板光标。</touchpad_cursor_description>
-			<log_compat_warn>日志兼容性警告</log_compat_warn>
-			<log_compat_warn_description>勾选此项启用GitHub问题的日志兼容性警告。</log_compat_warn_description>
+			<touchpad_cursor_description>取消勾选此项禁用屏幕上的触摸板光标的显示。</touchpad_cursor_description>
+			<log_compat_warn>记录兼容性警告</log_compat_warn>
+			<log_compat_warn_description>勾选此项启用对GitHub议题的兼容性警告的记录。</log_compat_warn_description>
 			<check_for_updates>检查更新</check_for_updates>
 			<check_for_updates_description>启动时自动检查更新。</check_for_updates_description>
 			<performance_overlay>性能图层</performance_overlay>
@@ -726,9 +727,9 @@
 			<bottom_right>右下</bottom_right>
 			<position>位置</position>
 			<select_position>选择您喜欢的性能图层位置。</select_position>
-			<case_insensitive>检查在区分大小写的文件系统上启用不区分大小写的路径查找。
+			<case_insensitive>勾选以在区分大小写的文件系统上启用不区分大小写的路径查找。
 重启时复位</case_insensitive>
-			<case_insensitive_description>允许模拟器尝试在非Windows平台上搜索无论大小写的文件。</case_insensitive_description>
+			<case_insensitive_description>允许模拟器尝试在非Windows平台上不区分大小写地搜索文件。</case_insensitive_description>
 			<emu_storage_folder>模拟系统存储文件夹</emu_storage_folder>
 			<current_emu_path>当前模拟器路径：</current_emu_path>
 			<change_emu_path>更改模拟器路径</change_emu_path>
@@ -789,7 +790,7 @@
 			<psn_signed_in>已登入PSN</psn_signed_in>
 			<psn_signed_in_description>如果勾选此项，游戏将认为用户已连接至PSN（但为离线）。</psn_signed_in_description>
 			<enable_http>启用HTTP</enable_http>
-			<enable_http_description>勾选此项启用游戏在网络上使用HTTP协议。</enable_http_description>
+			<enable_http_description>勾选此项为游戏启用在互联网上使用HTTP协议。</enable_http_description>
 			<timeout_attempts>HTTP超时尝试</timeout_attempts>
 			<timeout_attempts_description>当服务器没有响应时要执行多次尝试。
 如果您有非常不稳定或是非常慢的网络可能会很有用。</timeout_attempts_description>
@@ -809,7 +810,7 @@
 			<log_exports>导出记录</log_exports>
 			<log_exports_description>记录模块导出符号。</log_exports_description>
 			<log_active_shaders>着色器记录</log_active_shaders>
-			<log_active_shaders_description>记录着色器在每次绘制调用中使用。</log_active_shaders_description>
+			<log_active_shaders_description>记录在每次绘制调用中使用的着色器。</log_active_shaders_description>
 			<log_uniforms>统一记录</log_uniforms>
 			<log_uniforms_description>记录着色器统一名称和值。</log_uniforms_description>
 			<color_surface_debug>保存颜色表面</color_surface_debug>
@@ -856,6 +857,8 @@
 		<grade>Grade（等级）</grade>
 		<progress>达成率</progress>
 		<updated>升级日期</updated>
+		<advance>高级</advance>
+		<show_hidden>展示隐藏奖杯</show_hidden>
 	</trophy_collection>
 
 	<user_management>

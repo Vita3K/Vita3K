@@ -690,13 +690,14 @@ constexpr bool cmp_less(T t, U u) noexcept {
     if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
         return t < u;
     else if constexpr (std::is_signed_v<T>)
-        return t < 0 ? true : UT(t) < u;
+        return t < 0 || UT(t) < u;
     else
-        return u < 0 ? false : t < UU(u);
+        return u > 0 && t < UU(u);
 }
 
 static bool command_begins_with(PacketCommand &command, const std::string_view small_str) {
-    if (!cmp_less(small_str.size(), command.content_length))
+    // If the command's content is shorter than small_str, it can't match
+    if (static_cast<size_t>(command.content_length) < small_str.size())
         return false;
 
     return std::memcmp(command.content_start, small_str.data(), small_str.size()) == 0;
@@ -737,8 +738,10 @@ static int64_t server_next(EmuEnvState &state) {
 
             PacketCommand command = parse_command(buffer + a, length - a);
             if (command.is_valid) {
+                bool found_command = false;
                 for (const auto &function : functions) {
                     if (command_begins_with(command, function.name)) {
+                        found_command = true;
                         LOG_GDB("GDB Server Recognized Command as {}. {}", function.name,
                             std::string(command.content_start, command.content_length));
                         state.gdb.last_reply = function.function(state, command);
@@ -748,8 +751,11 @@ static int64_t server_next(EmuEnvState &state) {
                         break;
                     }
                 }
-                LOG_GDB("GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
-
+                if (!found_command) {
+                    LOG_GDB("GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
+                    state.gdb.last_reply = "";
+                    server_reply(state.gdb, state.gdb.last_reply.c_str());
+                }
                 a += command.content_length + 3;
 
             } else {

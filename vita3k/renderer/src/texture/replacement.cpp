@@ -604,7 +604,7 @@ void TextureCache::refresh_available_textures() {
                 continue;
 
             uint64_t hash;
-            if (sscanf(file.filename().string().c_str(), "%llX", &hash) != 1)
+            if (!(std::istringstream{ file.filename().string() } >> std::hex >> hash))
                 continue;
 
             if (file.extension() != ".png" && file.extension() != ".dds")

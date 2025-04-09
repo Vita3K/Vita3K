@@ -442,6 +442,11 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     init_device_paths(emuenv.io);
     init_savedata_app_path(emuenv.io, emuenv.pref_path);
 
+    // Load param.sfo
+    vfs::FileBuffer param_sfo;
+    if (vfs::read_app_file(param_sfo, emuenv.pref_path, emuenv.io.app_path, "sce_sys/param.sfo"))
+        sfo::load(emuenv.sfo_handle, param_sfo);
+
     // todo: VAR_NID(__sce_libcparam, 0xDF084DFA) is loaded wrong
     for (const auto &var : get_var_exports()) {
         auto addr = var.factory(emuenv);
@@ -650,6 +655,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         }
     };
 
+    // Check if any settings or controls dialog is open and drop inputs on this case
+    emuenv.drop_inputs = gui.configuration_menu.settings_dialog || gui.configuration_menu.custom_settings_dialog || gui.controls_menu.controllers_dialog || gui.controls_menu.controls_dialog;
+
     // A set to store the last pressed buttons to prevent duplicate inputs from the controller.
     std::set<uint32_t> last_buttons;
 
@@ -709,7 +717,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 gui.is_capturing_keys = false;
             }
 
-            if (ImGui::GetIO().WantTextInput || gui.is_key_locked)
+            if (ImGui::GetIO().WantTextInput || gui.is_key_locked || emuenv.drop_inputs)
                 continue;
 
             // toggle gui state
@@ -748,7 +756,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             if (!emuenv.kernel.is_threads_paused() && (event.cbutton.button == SDL_CONTROLLER_BUTTON_TOUCHPAD))
                 toggle_touchscreen();
 
-            if (ImGui::GetIO().WantTextInput)
+            if (ImGui::GetIO().WantTextInput || emuenv.drop_inputs)
                 continue;
 
             for (const auto &binding : get_controller_bindings_ext(emuenv)) {
