@@ -280,13 +280,14 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
         // compute viewport now
         const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
         constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-        if (screen.state.stretch_the_display_area) {
+        const bool fullscreen_hd_res_pixel_perfect_en = screen.state.fullscreen_hd_res_pixel_perfect & screen.state.fullscreen & !(screen.extent.width % DEFAULT_RES_WIDTH) & !(screen.extent.height % (DEFAULT_RES_HEIGHT - 4));
+        if (screen.state.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
             // Match the aspect ratio to the screen size.
             vk_viewport.width = static_cast<float>(screen.extent.width);
             vk_viewport.height = static_cast<float>(screen.extent.height);
             vk_viewport.x = 0.0f;
             vk_viewport.y = 0.0f;
-        } else if (window_aspect > vita_aspect) {
+        } else if ((window_aspect > vita_aspect) && !fullscreen_hd_res_pixel_perfect_en) {
             // Window is wide. Pin top and bottom.
             vk_viewport.width = screen.extent.height * vita_aspect;
             vk_viewport.height = static_cast<float>(screen.extent.height);
@@ -512,13 +513,14 @@ void FSRScreenFilter::on_resize() {
     // compute the extent
     const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
     const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-    if (screen.state.stretch_the_display_area) {
+    const bool fullscreen_hd_res_pixel_perfect_en = screen.state.fullscreen_hd_res_pixel_perfect & screen.state.fullscreen & !(screen.extent.width % DEFAULT_RES_WIDTH) & !(screen.extent.height % (DEFAULT_RES_HEIGHT - 4));
+    if (screen.state.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
         // Match the aspect ratio to the screen size.
         output_size.width = static_cast<float>(screen.extent.width);
         output_size.height = static_cast<float>(screen.extent.height);
         output_offset.width = 0.0f;
         output_offset.height = 0.0f;
-    } else if (window_aspect > vita_aspect) {
+    } else if ((window_aspect > vita_aspect) && !fullscreen_hd_res_pixel_perfect_en) {
         // Window is wide. Pin top and bottom.
         output_size.width = static_cast<uint32_t>(std::round(screen.extent.height * vita_aspect));
         output_size.height = screen.extent.height;

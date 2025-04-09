@@ -665,6 +665,8 @@ struct LangState {
             { "live_area_screen_description", "Check the box to open the Live Area by default when clicking on an application\nIf disabled, right click on an application to open it." },
             { "stretch_the_display_area", "Stretch The Display Area" },
             { "stretch_the_display_area_description", "Check the box to enlarge the display area to fit the screen size." },
+            { "fullscreen_hd_res_pixel_perfect", "Fullscreen HD res pixel perfect" },
+            { "fullscreen_hd_res_pixel_perfect_description", "Check the box to get a pixel perfect rendering with HD resolutions (1080p, 4K) in Fullscreen at the price of slight cropping at the top and the bottom of the screen." },
             { "apps_list_grid", "Grid Mode" },
             { "apps_list_grid_description", "Check the box to set the app list to grid mode." },
             { "icon_size", "App Icon Size" },
