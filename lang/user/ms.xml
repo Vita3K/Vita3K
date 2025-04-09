@@ -14,7 +14,7 @@
 		<emulation name="Emulator">
 			<last_apps_used>Apl Terakhir Digunakan</last_apps_used>
 		</emulation>
-		<debug>
+		<debug name="Debug">
 			<threads>Benang</threads>
 			<semaphores>Semaphore</semaphores>
 			<mutexes>Mutexes</mutexes>
@@ -68,7 +68,6 @@
 		<update>Kemas kini</update>
 		<update_history>Kemas kini Sejarah</update_history>
 		<history_version>Versi {}</history_version>
-		<information>Maklumat</information>
 		<delete>
 			<app_delete>Apl ini dan semua data berkaitan, termasuk data yang disimpan, akan dipadamkan.</app_delete>
 			<app_delete_description>Memadamkan Apl mungkin mengambil sedikit masa,
@@ -77,7 +76,7 @@ bergantung pada saiznya dan perkakasan awak.</app_delete_description>
 			<license_delete>Adakah awak mahu memadamkan lesen ini?</license_delete>
 			<saved_data_delete>Adakah awak mahu memadamkan data yang disimpan ini?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Maklumat">
 			<eligible>Layak</eligible>
 			<ineligible>Tak Layak</ineligible>
 			<level>Tahap</level>
@@ -107,9 +106,10 @@ Kod ralat: {}</an_error_occurred>
 		<cancel>Batal</cancel>
 		<close>Tutup</close>
 		<delete>Padam</delete>
+		<error>Ralat</error>
 		<file_corrupted>Fail itu rosak.</file_corrupted>
 		<microphone_disabled>Dayakan mikrofon.</microphone_disabled>
-		<no>Gak</no>
+		<no>Tak</no>
 		<please_wait>Sila tunggu...</please_wait>
 		<search>Cari</search>
 		<select_all>Pilih semua</select_all>
@@ -234,7 +234,7 @@ Kod ralat: {}</an_error_occurred>
 	<compatibility name="Keserasian">
 		<states>
 			<state id = "-1">Tak Diketahui</state>
-			<state id = "0">Nothing</state>
+			<state id = "0">Tiada kuat</state>
 			<state id = "1">Bootable</state>
 			<state id = "2">Intro</state>
 			<state id = "3">Menu</state>
@@ -245,8 +245,6 @@ Kod ralat: {}</an_error_occurred>
 	</compatibility>
 
 	<compat_db>
-		<error>Ralat</error>
-		<information>Maklumat</information>
 		<get_failed>Gagal mendapatkan pangkalan data keserasian semasa, semak akses firewall/internet, cuba lagi kemudian.</get_failed>
 		<download_failed>Gagal memuat turun pangkalan data keserasian Aplikasi yang dikemas kini di: {}, cuba sebentar lagi.</download_failed>
 		<load_failed>Gagal memuatkan pangkalan data keserasian Aplikasi yang dimuat turun dikemas kini di: {}.</load_failed>
@@ -280,11 +278,7 @@ Kod ralat: {}</an_error_occurred>
 
 	<controllers name="Kontroler">
 		<connected>{} Kontroler Bersambung</connected>
-		<name>Nama</name>
 		<num>Bil</num>
-		<not_connected>Tiada Kontroler serasi disambungkan.
-Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
-		<motion_support>Gamepad mempunyai sokongan gerakan</motion_support>
 		<rebind_controls>Kawalan Rebind</rebind_controls>
 		<led_color>Warna LED</led_color>
 		<use_custom_color>Gunakan Warna Tersuai</use_custom_color>
@@ -292,10 +286,12 @@ Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
 		<red>Merah</red>
 		<green>Hijau</green>
 		<blue>Biru</blue>
+		<not_connected>Tiada Kontroler serasi disambungkan.
+Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
 		<reset_controller_binding>Tetapkan Semula Pengikat Kontroler</reset_controller_binding>
 	</controllers>
 
-	<controls name="Kontroler">
+	<controls>
 		<button>Butang</button>
 		<mapped_button>Butang dipetakan</mapped_button>
 		<left_stick_up>Kiri analog atas</left_stick_up>
@@ -331,6 +327,7 @@ Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
 		<toggle_gui_visibility_description>Togol antara menunjukkan dan menyembunyikan GUI di bahagian atas skrin semasa apl sedang berjalan.</toggle_gui_visibility_description>
 		<miscellaneous>Macam-macam</miscellaneous>
 		<toggle_texture_replacement>Togol Penggantian Tekstur</toggle_texture_replacement>
+		<take_screenshot>Ambil Tangkapan Skrin</take_screenshot>
 		<error>Ralat</error>
 		<error_duplicate_key>Key digunakan untuk pengikatan lain atau ia dikhaskan.</error_duplicate_key>
 	</controls>
@@ -356,7 +353,7 @@ Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
 				<loading>Muatkan...</loading>
 				<load_saved_data>Adakah awak mahu memuatkan data yang disimpan ini?</load_saved_data>
 			</load>
-			<save name="Save">
+			<save name="Simpan">
 				<cancel_saving>Adakah awak mahu membatalkan simpanan?</cancel_saving>
 				<could_not_save>Tidak dapat menyimpan fail.
 Tiada ruang kosong yang mencukupi pada kad memori.</could_not_save>
@@ -474,6 +471,14 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 		</help>
 	</live_area>
 
+	<message>
+		<load_app_failed>Gagal memuatkan "{}".
+Semak vita3k.log untuk melihat output konsol untuk mendapatkan butiran.
+1. Adakah awak telah memasang perisian tegar?
+2. Buat PS Vita apl/gim awak sendiri dan pasang pada Vita3K.
+3. Jika anda ingin memasang atau boot Vitamin, ia tidak disokong.</load_app_failed>
+	</message>
+
 	<settings name="Tetapan">
 		<theme_background name="Tema & Background">
 			<default>Lalai</default>
@@ -490,7 +495,7 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 				<delete>Tema ini akan dipadamkan.</delete>
 			</theme>
 			<start_screen name="Skrin Mula">
-				<image>Gambar</image>
+				<image>Imej</image>
 				<add_image>Tambah Imej</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Background Skrin Utama">
@@ -548,6 +553,7 @@ Sila muat turun dan pasang PS Vita yang terakhir firmware.</no_modules>
 			<refresh_list>Muat Semula Senarai</refresh_list>
 		</core>
 		<cpu>
+			<unicorn>Unicorn (tidak digunakan lagi)</unicorn>
 			<cpu_backend>CPU Bahagian Belakang</cpu_backend>
 			<select_cpu_backend>Pilih bahagian belakang CPU pilihan awak.</select_cpu_backend>
 			<cpu_opt>Dayakan pengoptimuman</cpu_opt>
@@ -559,6 +565,7 @@ Sila muat turun dan pasang PS Vita yang terakhir firmware.</no_modules>
 			<select_backend_renderer>Backend renderer pilih pemapar backend pilihan awak.</select_backend_renderer>
 			<gpu>GPU (Reboot untuk memohon)</gpu>
 			<select_gpu>Pilih GPU Vita3K yang sepatutnya dijalankan.</select_gpu>
+			<high>tinggi</high>
 			<renderer_accuracy>Ketepatan Penyampai</renderer_accuracy>
 			<v_sync_description>Melumpuhkan V-Sync boleh membetulkan isu kelajuan dalam sesetengah permainan.
 Adalah disyorkan untuk memastikan ia didayakan untuk mengelakkan koyakan visual.</v_sync_description>
@@ -566,6 +573,9 @@ Adalah disyorkan untuk memastikan ia didayakan untuk mengelakkan koyakan visual.
 			<surface_sync_description>Penggodam kelajuan, tandai kotak untuk melumpuhkan penyegerakan permukaan antara CPU dan GPU.
 Penyegerakan permukaan diperlukan oleh sesetengah permainan.
 Memberi rangsangan prestasi yang besar jika dilumpuhkan (khususnya apabila peningkatan dihidupkan).</surface_sync_description>
+			<nearest>Terhampir</nearest>
+			<bilinear>Dwilinear</bilinear>
+			<bicubic>Bikubik</bicubic>
 			<screen_filter>Penapis Skrin</screen_filter>
 			<screen_filter_description>Tetapkan penapis pasca pemprosesan untuk digunakan.</screen_filter_description>
 			<internal_resolution_upscaling>Peningkatan Resolusi Dalaman</internal_resolution_upscaling>
@@ -587,12 +597,17 @@ Nyahtanda untuk melumpuhkan ciri ini.</shader_cache_description>
 			<spirv_shader_description>Hantarkan shader Spir-V yang dijana terus kepada pemandu.
 Ambil perhatian bahawa beberapa sambungan berfaedah akan dilumpuhkan,
 dan tidak semua GPU serasi dengan ini.</spirv_shader_description>
-			<clean_shaders>Bersihkan Cache dan Log Shader</clean_shaders>
+			<clean_shaders>Kemaskan Cache dan Log Shader</clean_shaders>
+			<fps_hack_description>Godam permainan yang membenarkan beberapa permainan berjalan pada 30 FPS berjalan pada 60 FPS pada emulator.
+Ambil perhatian bahawa ini adalah penggodaman dan hanya akan berfungsi pada beberapa permainan.
+Pada permainan lain, ia mungkin tidak memberi kesan atau membuatkannya berjalan dua kali lebih pantas.</fps_hack_description>
 		</gpu>
 		<audio name="Audio">
 			<audio_backend>Audio Bahagian Belakang</audio_backend>
 			<select_audio_backend>Pilih bahagian belakang audio pilihan awak.</select_audio_backend>
-			<enable_ngs_support>Dayakan NGS Audio</enable_ngs_support>
+			<audio_volume>Kelantangan Audio</audio_volume>
+			<audio_volume_description>Laraskan peratusan kelantangan semua output audio.</audio_volume_description>
+			<enable_ngs_support>Dayakan Audio NGS</enable_ngs_support>
 			<ngs_description>Nyahtanda kotak untuk melumpuhkan sokongan untuk perpustakaan audio lanjutan NGS.</ngs_description>
 		</audio>
 		<system name="System">
@@ -600,7 +615,7 @@ dan tidak semua GPU serasi dengan ini.</spirv_shader_description>
 Pilih butang 'Enter' awak.</select_enter_button>
 			<enter_button_description>Ini ialah butang yang digunakan sebagai 'Sahkan' dalam dialog aplikasi.
 Sesetengah aplikasi tidak menggunakan ini dan mendapatkan butang pengesahan lalai.</enter_button_description>
-			<circle>Bulatan</circle>
+			<circle>O</circle>
 			<cross>X</cross>
 			<pstv_mode_description>Tandai kotak untuk mendayakan mode PS TV Emulated.</pstv_mode_description>
 			<show_mode_description>Tandai kotak untuk mendayakan mode Show.</show_mode_description>
@@ -608,6 +623,11 @@ Sesetengah aplikasi tidak menggunakan ini dan mendapatkan butang pengesahan lala
 		</system>
 		<emulator name="Emulator">
 			<boot_apps_full_screen>Boot apl dalam skrin penuh</boot_apps_full_screen>
+			<trace>Jejak</trace>
+			<warning>Amaran</warning>
+			<error>ralat</error>
+			<critical>kritikal</critical>
+			<off>Dipadamkan</off>
 			<log_level>Log Tahap</log_level>
 			<select_log_level>Pilih tahap log pilihan awak.</select_log_level>
 			<archive_log>Log Arkib</archive_log>
@@ -625,8 +645,16 @@ Sesetengah aplikasi tidak menggunakan ini dan mendapatkan butang pengesahan lala
 			<check_for_updates_description>Semak kemas kini secara automatik semasa permulaan.</check_for_updates_description>
 			<performance_overlay>Tindanan prestasi</performance_overlay>
 			<performance_overlay_description>Paparkan maklumat prestasi pada skrin sebagai tindanan.</performance_overlay_description>
+			<low>Rendah</low>
+			<medium>Sederhana</medium>
 			<detail>Butiran</detail>
 			<select_detail>Pilih butiran tindanan prestasi pilihan awak.</select_detail>
+			<top_left>Diatas Kiri</top_left>
+			<top_center>Diatas Pusat</top_center>
+			<top_right>Dibawah Kanan</top_right>
+			<bottom_left>Dibawah Kiri</bottom_left>
+			<bottom_center>Dibawah Pusat</bottom_center>
+			<bottom_right>Dibawah Kanan</bottom_right>
 			<position>Kedudukan</position>
 			<select_position>Pilih kedudukan tindanan prestasi pilihan awak.</select_position>
 			<case_insensitive>Semak untuk mendayakan pencarian laluan tidak sensitif huruf besar-besaran pada sistem fail sensitif huruf besar-besaran.
@@ -727,7 +755,6 @@ lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak st
 		</debug>
 		<save_reboot>Simpan & Reboot</save_reboot>
 		<save_apply>Simpan & Apply</save_apply>
-		<save>Simpan</save>
 		<keep_changes>Klik pada simpan untuk menyimpan perubahan awak.</keep_changes>
 	</settings_dialog>
 
@@ -740,7 +767,7 @@ lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak st
 		<name>Nama</name>
 		<no_trophies>Tiada trofi.
 Awak boleh memperoleh trofi dengan menggunakan aplikasi yang menyokong ciri trofi.</no_trophies>
-		<not_earned>Gak Diperolehi</not_earned>
+		<not_earned>Tak Diperolehi</not_earned>
 		<original>Asal</original>
 		<sort>Isih</sort>
 		<trophies>Trofi</trophies>
@@ -795,7 +822,6 @@ Selepas muat turun selesai, Vita3K akan dimulakan semula secara automatik dan ke
 		<vita3k>Emulator Vita3K PlayStation Vita</vita3k>
 		<about_vita3k>Vita3K ialah emulator PlayStation Vita sumber terbuka yang ditulis dalam C++ untuk Windows, Linux, macOS dan Android.</about_vita3k>
 		<development_stage>Emulator masih dalam peringkat pembangunannya jadi sebarang maklum balas dan ujian amat dihargai.</development_stage>
-		<about_firmware>Untuk bermula, sila pasang Firmware PS Vita dan pakej fon.</about_firmware>
 		<vita3k_quickstart>Panduan komprehensif tentang cara menyediakan Vita3K boleh didapati di</vita3k_quickstart>
 		<quickstart>Permulaan pantas</quickstart>
 		<page>muka surat.</page>
