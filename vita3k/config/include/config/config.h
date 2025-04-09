@@ -159,6 +159,7 @@ enum ScreenshotFormat {
     code(int, "http-timeout-sleep-ms", 100, http_timeout_sleep_ms)                                      \
     code(int, "http-read-end-attempts", 10, http_read_end_attempts)                                     \
     code(int, "http-read-end-sleep-ms", 250, http_read_end_sleep_ms)                                    \
+    code(int, "adhoc-addr", 0, adhoc_addr)                                                              \
     code(bool, "tracy-primitive-impl", false, tracy_primitive_impl)
 
 // Vector members produced in the config file
