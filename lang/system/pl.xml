@@ -71,7 +71,6 @@
 		<update>Aktualizuj</update>
 		<update_history>Historia aktualizacji</update_history>
 		<history_version>Wersja {}</history_version>
-		<information>Informacje</information>
 		<delete>
 			<app_delete>Aplikacja i wszystkie powiązane dane, w tym zapisane dane, zostaną usunięte.</app_delete>
 			<app_delete_description>Usunięcie aplikacji może zająć trochę czasu,
@@ -80,7 +79,7 @@ jest to zależne od jej rozmiaru i twojego sprzętu.</app_delete_description>
 			<license_delete>Czy chcesz usunąć tę licencję?</license_delete>
 			<saved_data_delete>Czy chcesz usunąć te zapisane dane?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Informacje">
 			<eligible>Spełnia warunki</eligible>
 			<ineligible>Nie spełnia warunków</ineligible>
 			<level>Poziom</level>
@@ -110,6 +109,7 @@ Kod błędu: {}</an_error_occurred>
 		<cancel>Anuluj</cancel>
 		<close>Zamknij</close>
 		<delete>Usuń</delete>
+		<error>Błąd</error>
 		<file_corrupted>Plik jest uszkodzony.</file_corrupted>
 		<microphone_disabled>Włącz mikrofon.</microphone_disabled>
 		<no>Nie</no>
@@ -249,8 +249,6 @@ Kod błędu: {}</an_error_occurred>
 	</compatibility>
 
 	<compat_db>
-		<error>Błąd</error>
-		<information>Informacje</information>
 		<get_failed>Nie udało się znaleźć bazy kompatybilności, sprawdź zaporę sieciową/dostęp do internetu, spróbuj ponownie później.</get_failed>
 		<download_failed>Nie udało się pobrać bazy kompatybilności aplikacji zaktualizowanej {}, spróbuj ponownie później.</download_failed>
 		<load_failed>Nie udało się załadować bazy kompatybilności aplikacji zaktualizowanej {}.</load_failed>
@@ -284,11 +282,7 @@ Kod błędu: {}</an_error_occurred>
 
 	<controllers name="Kontroler">
 		<connected>{} kontrolerów podłączonych</connected>
-		<name>Nazwa</name>
 		<num>Num</num>
-		<not_connected>Niepodłączono żadnego ze wspieranych kontrolerów.
-Proszę, podłącz kontroler, który jest kompatybilny z SDL2.</not_connected>
-		<motion_support>Kontroler wspiera sterowanie ruchowe</motion_support>
 		<rebind_controls>Przypisz przyciski ponownie</rebind_controls>
 		<led_color>Kolor LED</led_color>
 		<use_custom_color>Użyj własnego koloru</use_custom_color>
@@ -296,10 +290,12 @@ Proszę, podłącz kontroler, który jest kompatybilny z SDL2.</not_connected>
 		<red>Czerwony</red>
 		<green>Zielony</green>
 		<blue>Niebieski</blue>
+		<not_connected>Niepodłączono żadnego ze wspieranych kontrolerów.
+Proszę, podłącz kontroler, który jest kompatybilny z SDL2.</not_connected>
 		<reset_controller_binding>Restuj przypisanie przycisków kontrollera</reset_controller_binding>
 	</controllers>
 
-	<controls name="Sterowanie">
+	<controls>
 		<button>Przycisk</button>
 		<mapped_button>Przypisany przycisk</mapped_button>
 		<left_stick_up>Lewy drążek góra</left_stick_up>
@@ -336,8 +332,7 @@ Proszę, podłącz kontroler, który jest kompatybilny z SDL2.</not_connected>
 		<toggle_gui_visibility_description>Pozwala na pokazywanie i ukrywanie interfejsu emulatora u góry ekranu podczas gdy aplikacja jest uruchomiona.</toggle_gui_visibility_description>
 		<miscellaneous>Rożne</miscellaneous>
 		<toggle_texture_replacement>Aktywuj zamianę tekstur</toggle_texture_replacement>
-		<take_a_screenshot>Zrób zrzut ekranu</take_a_screenshot>
-		<error>Błąd</error>
+		<take_screenshot>Zrób zrzut ekranu</take_screenshot>
 		<error_duplicate_key>Klawisz/przycisk jest już przypisany lub zarezerwowany.</error_duplicate_key>
 	</controls>
 
@@ -425,9 +420,7 @@ System Vita3K jest gotowy!</completed_setup>
 		<change_emu_path>Zmień ścieżka emulatora</change_emu_path>
 		<reset_emu_path>Resetuj ścieżka emulatora</reset_emu_path>
 		<install_firmware>Instaluj oprogramowanie.</install_firmware>
-		<install_highly_recommended>Instalacja obu plików oprogramowania jest zalecana.</install_highly_recommended>
 		<installed>Zainstalowana:</installed>
-		<download_firmware>Pobierz oprogramowanie systemu konsoli</download_firmware>
 		<download_font_package>Pobierz paczkę czcionek</download_font_package>
 		<install_firmware_file>Zainstaluj plik oprogramowania systemu konsoli</install_firmware_file>
 		<select_interface_settings>Konfiguracja interfejsu graficznego.</select_interface_settings>
@@ -451,7 +444,6 @@ Jeśli wyłaczone, wymaga prawego kliknięcia, aby uruchomić aplikacje.</live_a
 			<successed_install_firmware>Oprogramowanie systemu zostało zainstalowane pomyślnie.</successed_install_firmware>
 			<firmware_version>Wersja oprogramowania systemu:</firmware_version>
 			<no_font_exist>Paczka czcionek nie została znaleziona, proszę pobierz i zainstaluj ją.</no_font_exist>
-			<download_firmware_font_package>Pobierz paczkę czcionek</download_firmware_font_package>
 			<firmware_font_package_description>Paczka czcionek jest wymagana dla niektórych aplikacji,
 również dla wsparcia regionalnych azjatyckich czcionek (Zalecane)</firmware_font_package_description>
 			<delete_firmware>Usunąć plik oprogramowania systemu?</delete_firmware>
@@ -813,7 +805,6 @@ niższa wartość może poprawić wydajność, ale może sprawić, że gry będ�
 		</debug>
 		<save_reboot>Zapisz i uruchom ponownie</save_reboot>
 		<save_apply>Zapisz i zatwierdź</save_apply>
-		<save>Zapisz</save>
 		<keep_changes>Naciśnij 'Zapisz', aby zachować zmiany.</keep_changes>
 	</settings_dialog>
 
@@ -891,8 +882,8 @@ Po ukończeniu pobierania Vita3K zostanie automatycznie ponownie uruchomiony, a 
 		<vita3k>Vita3K, emulator systemu PlayStation Vita</vita3k>
 		<about_vita3k>Vita3K jest otwarto-źródłowym emulatorem PlayStation Vita pisanym w języku C++ dla systemu Windows, Linux, macOS oraz Android.</about_vita3k>
 		<development_stage>Emulator jest wciąż w fazie rozwojowej, więc każda informacja zwrotna w formie testów jest mile widziana.</development_stage>
-		<about_firmware>Aby rozpocząć, proszę zainstaluj najnowsze oprogramowanie systemu konsoli PS Vita oraz paczkę czcionek.</about_firmware>
-		<download_firmware>Pobierz oprogramowanie</download_firmware>
+		<download_firmware>Pobierz oprogramowanie systemu konsoli</download_firmware>
+		<download_firmware_font_package>Pobierz paczkę czcionek</download_firmware_font_package>
 		<vita3k_quickstart>Szczegółowy poradnik konfiguracji Vita3K jest dostępny na stronie</vita3k_quickstart>
 		<quickstart>'Quickstart'</quickstart>
 		<page>.</page>

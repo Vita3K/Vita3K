@@ -38,12 +38,11 @@
 		<update>Actualización</update>
 		<update_history>Historial de actualizaciones</update_history>
 		<history_version>Versión {}</history_version>
-		<information>Información</information>
 		<delete>
 			<app_delete>Se eliminarán la aplicación y todos los datos relacionados, incluidos los datos guardados.</app_delete>
 			<saved_data_delete>¿Quieres eliminar estos datos guardados?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Información">
 			<eligible>Elegible</eligible>
 			<ineligible>No elegible</ineligible>
 			<level>Nivel</level>
@@ -66,6 +65,7 @@ Código del error: {}</an_error_occurred>
 		<cancel>Cancelar</cancel>
 		<close>Cerrar</close>
 		<delete>Eliminar</delete>
+		<error>Error</error>
 		<file_corrupted>El archivo está dañado.</file_corrupted>
 		<microphone_disabled>Activa el micrófono.</microphone_disabled>
 		<please_wait>Espera un momento...</please_wait>
@@ -188,11 +188,6 @@ Código del error: {}</an_error_occurred>
 		<minutes_ago>Hace {} minutos</minutes_ago>
 	</common>
 
-	<compat_db>
-		<error>Error</error>
-		<information>Information</information>
-	</compat_db>
-
 	<content_manager name="Gestor de contenido">
 		<application name="Aplicaciones">
 			<delete>Se eliminarán las aplicaciones seleccionadas y todos los datos relacionados, incluidos los datos guardados.</delete>
@@ -209,13 +204,8 @@ Código del error: {}</an_error_occurred>
 
 	<controllers name="Controles">
 		<connected>{} controles conectado</connected>
-		<name>Nombre</name>
 		<num>Núm</num>
 	</controllers>
-
-	<controls name="Controles">
-		<error>Error</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -276,7 +266,6 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 ¡Tu sistema Vita3K está listo!</completed_setup>
 		<select_language>Selecciona un idioma.</select_language>
 		<install_firmware>Instalar Firmware.</install_firmware>
-		<download_firmware>Descargar Firmware</download_firmware>
 		<next>Siguiente</next>
 	</initial_setup>
 
@@ -347,7 +336,6 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		</system>
 		<network name="Red">
 		</network>
-		<save>Guardar</save>
 	</settings_dialog>
 
 	<sys_apps_title>
@@ -416,7 +404,6 @@ Cuando la descarga se haya completado, Vita3K se reiniciará automáticamente e 
 		<vita3k>Emulador de PlayStation Vita Vita3K</vita3k>
 		<about_vita3k>Vita3K es un emulador de PlayStation Vita de código abierto, escrito en C++ para Windows, Linux, macOS y Android.</about_vita3k>
 		<development_stage>El emulador todavía está en etapas tempranas del desarrollo, así que cualquier retroalimentación y pruebas serán sumamente apreciadas.</development_stage>
-		<about_firmware>Para empezar, por favor instala el firmware de la PS Vita y sus paquetes de fuentes.</about_firmware>
 		<download_firmware>Descargar Firmware</download_firmware>
 		<vita3k_quickstart>Una guía completa sobre cómo configurar Vita3K está disponible en la página de</vita3k_quickstart>
 		<quickstart>Inicio rápido</quickstart>

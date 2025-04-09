@@ -12,9 +12,9 @@
 			<exit>Keluar</exit>
 		</file>
 		<emulation name="Emulator">
-			<last_apps_used>Apl Terakhir Yang Digunakan</last_apps_used>
+			<last_apps_used>Apl Terakhir Yg Digunakan</last_apps_used>
 		</emulation>
-		<debug>
+		<debug name="Debug">
 			<threads>Thread</threads>
 			<semaphores>Semafor</semaphores>
 			<mutexes>Mutexe</mutexes>
@@ -66,7 +66,6 @@
 		<shaders_log>Catatan Shader</shaders_log>
 		<update_history>History Perbarui</update_history>
 		<history_version>Versi {}</history_version>
-		<information>Informasi</information>
 		<delete>
 			<app_delete>Aplikasi ini dan semua data terkait, termasuk data yang disimpan, akan dihapus.</app_delete>
 			<app_delete_description>Menghapus aplikasi mungkin memakan waktu cukup lama
@@ -75,7 +74,7 @@ tergantung pada ukuran dan perangkat keras Kamu.</app_delete_description>
 			<license_delete>Apakah kamu ingin menghapus lisensi ini?</license_delete>
 			<saved_data_delete>Apakah Kamu ingin menghapus data tersimpan ini?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Informasi">
 			<eligible>Memenuhi Syarat</eligible>
 			<ineligible>Gak Memenuhi Syarat</ineligible>
 			<level>Level</level>
@@ -105,6 +104,7 @@ Kode kesalahan: {}</an_error_occurred>
 		<cancel>Batal</cancel>
 		<close>Tutup</close>
 		<delete>Hapus</delete>
+		<error>Kekeliruan</error>
 		<file_corrupted>File ini udah corrupt.</file_corrupted>
 		<microphone_disabled>Nonaktifkan microphone.</microphone_disabled>
 		<no>Gak</no>
@@ -232,7 +232,7 @@ Kode kesalahan: {}</an_error_occurred>
 	<compatibility name="Compatibility">
 		<states>
 			<state id = "-1">Gak Diketahui</state>
-			<state id = "0">Nothing</state>
+			<state id = "0">Gak bisa</state>
 			<state id = "1">Bootable</state>
 			<state id = "2">Intro</state>
 			<state id = "3">Menu</state>
@@ -243,8 +243,6 @@ Kode kesalahan: {}</an_error_occurred>
 	</compatibility>
 
 	<compat_db>
-		<error>Kekeliruan</error>
-		<information>Informasi</information>
 		<get_failed>Gagal mendapatkan database kompatibilitas saat ini, periksa akses firewall/internet, coba lagi nanti.</get_failed>
 		<download_failed>Gagal mengunduh database kompatibilitas Aplikasi yang di-update di: {}, coba lagi nanti.</download_failed>
 		<load_failed>Gagal memuat database kompatibilitas Aplikasi yang diunduh diupdate di: {}.</load_failed>
@@ -272,19 +270,25 @@ Kode kesalahan: {}</an_error_occurred>
 			<no_saved_data>Disini gak ada save data.</no_saved_data>
 		</saved_data>
 		<theme>Tema</theme>
-		<free_space>Penyimpanan Yang Kosong</free_space>
+		<free_space>Penyimpanan Yg Kosong</free_space>
 		<clear_all>Selesaikan Semua</clear_all>
 	</content_manager>
 
 	<controllers name="Kontroler">
 		<connected>Kontroler Tersambung</connected>
-		<name>Nama</name>
 		<num>Bil</num>
+		<led_color>Warna LED</led_color>
+		<use_custom_color>Gunakan Warna Custom</use_custom_color>
+		<use_custom_color_description>Centang kotak ini untuk menggunakan warna custom untuk LED kontroller.</use_custom_color_description>
+		<red>Merah</red>
+		<green>Hijau</green>
+		<blue>Biru</blue>
 		<not_connected>Gak ada kontroler kompatibel yang tersambung.
 Sambungkan Kontroleryang kompatibel dengan SDL2.</not_connected>
+		<reset_controller_binding>Reset Ulang Pengikatan Kontroller</reset_controller_binding>
 	</controllers>
 
-	<controls name="kontrol">
+	<controls>
 		<button>Tombol</button>
 		<mapped_button>Mapped tombol</mapped_button>
 		<left_stick_up>Analog Kiri Atas</left_stick_up>
@@ -343,7 +347,7 @@ Sambungkan Kontroleryang kompatibel dengan SDL2.</not_connected>
 				<loading>Loading...</loading>
 				<load_saved_data>Kamu yakin untuk load di save data ini?</load_saved_data>
 			</load>
-			<save name="Save">
+			<save name="Simpan">
 				<cancel_saving>Kamu yakin untuk batalkan saving?</cancel_saving>
 				<could_not_save>Tidak dapat menyimpan file.
 Tidak ada cukup ruang kosong di kartu memori.</could_not_save>
@@ -463,6 +467,14 @@ Asia. (Umumnya Direkomendasikan)</firmware_font_package_note>
 		</help>
 	</live_area>
 
+	<message>
+		<load_app_failed>Gagal untuk memuat "{}".
+Periksa vita3k.log untuk melihat keluaran konsol untuk detailnya.
+1. Apakah Kamu sudah menginstal firmware?
+2. Buat PS Vita aplikasi/game Kamu sendiri dan instal di Vita3K.
+3. Jika Kamu ingin menginstal atau mem-boot Vitamin, tidak didukung.</load_app_failed>
+	</message>
+
 	<settings name="Pengaturan">
 		<theme_background name="Tema & Latar Belakang">
 			<default>Bawaan</default>
@@ -537,6 +549,7 @@ Silakan download dan install firmware PS Vita terakhir.</no_modules>
 			<refresh_list>Perbarui Daftar</refresh_list>
 		</core>
 		<cpu>
+			<unicorn>Unicorn (tidak digunakan lagi)</unicorn>
 			<cpu_backend>Bagian Belakang CPU</cpu_backend>
 			<select_cpu_backend>Pilih perender backend pilihan kamu.</select_cpu_backend>
 			<cpu_opt>Aktifkan Pengoptimalan</cpu_opt>
@@ -546,7 +559,8 @@ Silakan download dan install firmware PS Vita terakhir.</no_modules>
 			<backend_renderer>Bagian Belakang Perender</backend_renderer>
 			<select_backend_renderer>Pilih perender backend pilihan kamu.</select_backend_renderer>
 			<gpu>GPU (Harus ulang lagi aplikasinya)</gpu>
-			<select_gpu>Pilih GPU Vita3K yang harus dijalankan.</select_gpu>
+			<select_gpu>Pilih GPU Vita3K yg harus dijalankan.</select_gpu>
+			<high>Tinggi</high>
 			<renderer_accuracy>Perender Akurasi</renderer_accuracy>
 			<v_sync_description>Menonaktifkan V-Sync dapat memperbaiki masalah kecepatan di beberapa game.
 Disarankan untuk tetap mengaktifkannya untuk menghindari robekan visual.</v_sync_description>
@@ -554,6 +568,7 @@ Disarankan untuk tetap mengaktifkannya untuk menghindari robekan visual.</v_sync
 			<surface_sync_description>Speed hack, centang kotak untuk menonaktifkan sinkronisasi permukaan antara CPU dan GPU.
 Edit Sinkronisasi diperlukan oleh beberapa game.
 Memberikan peningkatan kinerja yang besar jika dinonaktifkan (khususnya saat peningkatan skala aktif).</surface_sync_description>
+			<nearest>Terdekat</nearest>
 			<screen_filter>Penyesuaian Layar</screen_filter>
 			<screen_filter_description>Setel filter pasca-pemrosesan untuk diterapkan.</screen_filter_description>
 			<internal_resolution_upscaling>Pilih Resolusi Internal</internal_resolution_upscaling>
@@ -567,7 +582,7 @@ Ini tidak memiliki kelemahan tetapi dapat mempengaruhi pada Performa.</anisotrop
 			<export_textures>Export Textur</export_textures>
 			<import_textures>Import Textur</import_textures>
 			<texture_exporting_format>Format Pengekspor Tekstur</texture_exporting_format>
-			<shaders>Shaders</shaders>
+			<shaders>Shader</shaders>
 			<shader_cache>Pake Shader Cache</shader_cache>
 			<shader_cache_description>Centang kotak untuk mengaktifkan cache shader untuk melakukan pra-kompilasi saat startup game.
 Hapus centang untuk menonaktifkan fitur ini.</shader_cache_description>
@@ -576,11 +591,16 @@ Hapus centang untuk menonaktifkan fitur ini.</shader_cache_description>
 Perhatikan bahwa beberapa ekstensi bermanfaat akan dinonaktifkan,
 dan tidak semua GPU kompatibel dengan ini.</spirv_shader_description>
 			<clean_shaders>Bersihkan Shader Cache dan Log</clean_shaders>
+			<fps_hack>Paksa FPS</fps_hack>
+			<fps_hack_description>Memaksa game yang memungkinkan beberapa game yang berjalan pada 30 FPS dijalankan pada 60 FPS di emulator.
+Perhatikan bahwa ini adalah peretasan dan hanya akan berfungsi pada beberapa game.
+Di game lain, ini mungkin tidak berpengaruh atau membuatnya berjalan dua kali lebih cepat.</fps_hack_description>
 		</gpu>
 		<audio name="Audio">
 			<audio_backend>Bagian Belakang Audio</audio_backend>
 			<select_audio_backend>Pilih backend audio pilihan Kamu.</select_audio_backend>
-			<enable_ngs_support>Aktifkan NGS Audio</enable_ngs_support>
+			<audio_volume_description>Menyesuaikan persentase volume semua output audio.</audio_volume_description>
+			<enable_ngs_support>Aktifkan Audio NGS</enable_ngs_support>
 			<ngs_description>Hapus centang pada kotak untuk menonaktifkan dukungan untuk NGS perpustakaan audio tingkat lanjut.</ngs_description>
 		</audio>
 		<system name="System">
@@ -588,7 +608,7 @@ dan tidak semua GPU kompatibel dengan ini.</spirv_shader_description>
 Pilih tombol 'Masuk' kamu.</select_enter_button>
 			<enter_button_description>Ini adalah tombol yang digunakan sebagai 'Konfirmasi' dalam dialog aplikasi.
 Beberapa aplikasi tidak menggunakan ini dan mendapatkan tombol konfirmasi default.</enter_button_description>
-			<circle>Lingkaran</circle>
+			<circle>O</circle>
 			<cross>X</cross>
 			<pstv_mode>Mode PS TV</pstv_mode>
 			<pstv_mode_description>Centang kotak untuk mengaktifkan mode Emulasi PS TV.</pstv_mode_description>
@@ -599,6 +619,11 @@ Beberapa aplikasi tidak menggunakan ini dan mendapatkan tombol konfirmasi defaul
 		</system>
 		<emulator name="Emulator">
 			<boot_apps_full_screen>Boot aplikasi dalam layar penuh</boot_apps_full_screen>
+			<trace>Jejak</trace>
+			<warning>Peringatan</warning>
+			<error>Kekeliruan<</error>
+			<critical>Kritis</critical>
+			<off>Mati</off>
 			<log_level>Tingkatan Log</log_level>
 			<select_log_level>Pilih tingkat log pilihan Kamu.</select_log_level>
 			<archive_log>Log Arsip</archive_log>
@@ -614,9 +639,16 @@ Beberapa aplikasi tidak menggunakan ini dan mendapatkan tombol konfirmasi defaul
 			<log_compat_warn_description>Centang kotak untuk mengaktifkan peringatan kompatibilitas log masalah GitHub.</log_compat_warn_description>
 			<check_for_updates>Periksa pembaruan</check_for_updates>
 			<check_for_updates_description>Secara otomatis memeriksa pembaruan saat startup.</check_for_updates_description>
-			<performance_overlay>Detail performa di layar</performance_overlay>
-			<performance_overlay_description>Menampilkan informasi performa di layar sebagai overlay.</performance_overlay_description>
+			<performance_overlay>Detail performa dilayar</performance_overlay>
+			<performance_overlay_description>Menampilkan informasi performa dilayar sebagai overlay.</performance_overlay_description>
+			<low>Rendah</low>
 			<select_detail>Pilih detail hamparan performa pilihan kamu.</select_detail>
+			<top_left>Diatas Kiri</top_left>
+			<top_center>Diatas Tengah</top_center>
+			<top_right>Diatas Kanan</top_right>
+			<bottom_left>Dibawah Kiri</bottom_left>
+			<bottom_center>Dibawah Tengah</bottom_center>
+			<bottom_right>Dibawah kanan</bottom_right>
 			<position>Posisi di layar</position>
 			<select_position>Pilih posisi hamparan performa pilihan kamu.</select_position>
 			<case_insensitive>Centang untuk mengaktifkan penemuan jalur peka huruf besar-kecil pada sistem file peka huruf besar-kecil.
@@ -624,12 +656,12 @@ RESET PADA RESTART</case_insensitive>
 			<case_insensitive_description>Mencari file apa pun kasusnya
 pada platform non-Windows.</case_insensitive_description>
 			<emu_storage_folder>Folder Penyimpanan Sistem Yang Ditiru</emu_storage_folder>
-			<current_emu_path>Jalur emulator saat ini:</current_emu_path>
-			<change_emu_path>Ubah Jalur Emulator</change_emu_path>
-			<change_emu_path_description>Ubah jalur folder emulator Vita3K.
+			<current_emu_path>Letak emulator saat ini:</current_emu_path>
+			<change_emu_path>Ubah Letak Emulator</change_emu_path>
+			<change_emu_path_description>Ubah letak folder emulator Vita3K.
 Anda perlu memindahkan folder lama ke lokasi baru secara manual.</change_emu_path_description>
-			<reset_emu_path>Reset Jalur Emulator</reset_emu_path>
-			<reset_emu_path_description>Reset jalur emulator Vita3K ke default.
+			<reset_emu_path>Reset Letak Emulator</reset_emu_path>
+			<reset_emu_path_description>Reset letak emulator Vita3K ke default.
 Kamu perlu memindahkan folder lama ke lokasi baru secara manual.</reset_emu_path_description>
 			<custom_config_settings>Pengaturan Konfigurasi Kustom</custom_config_settings>
 			<clear_custom_config>Bersihkan Konfigurasi Kustom</clear_custom_config>
@@ -651,14 +683,14 @@ Mereka hanya akan ditampilkan di bar menu utama.</display_system_apps_descriptio
 Jika dinonaktifkan, klik kanan pada aplikasi untuk membukanya.</live_area_screen_description>
 			<stretch_the_display_area>Penuhkan Layar</stretch_the_display_area>
 			<stretch_the_display_area_description>Centang kotak untuk memperbesar area layar agar sesuai dengan ukuran layar.</stretch_the_display_area_description>
-			<apps_list_grid>Mode Grid</apps_list_grid>
+			<apps_list_grid>Mode Jaringan</apps_list_grid>
 			<apps_list_grid_description>Centang kotak untuk mengatur daftar aplikasi ke mode grid.</apps_list_grid_description>
 			<icon_size>Ukuran Ikon Aplikasi</icon_size>
 			<select_icon_size>Pilih ukuran ikon pilihan Kamu.</select_icon_size>
 			<font_support>Dukungan font</font_support>
 			<asia_font_support>Region Asia</asia_font_support>
 			<asia_font_support_description>Centang kotak ini untuk mengaktifkan dukungan font untuk bahasa China dan Korea.
-Mengaktifkannya akan menggunakan lebih banyak memori dan mengharuskan Anda memulai ulang emulator.</asia_font_support_description>
+Mengaktifkannya akan menggunakan lebih banyak memori dan mengharuskan kami memulai ulang emulator.</asia_font_support_description>
 			<firmware_font_package_description>Paket font firmware diperlukan untuk beberapa aplikasi
 dan juga untuk dukungan font regional Asia di GUI.
 Umumnya juga direkomendasikan untuk GUI.</firmware_font_package_description>
@@ -684,10 +716,10 @@ Nilai minimumnya buram dan maksimumnya transparan.</select_background_alpha>
 			<enable_http_description>.Centang kotak ini untuk mengaktifkan game menggunakan protokol HTTP di internet</enable_http_description>
 			<timeout_attempts>Upaya Batas Waktu HTTP</timeout_attempts>
 			<timeout_attempts_description>Berapa banyak upaya yang harus dilakukan ketika server tidak merespons.
-Bisa bermanfaat jika Anda memiliki internet yang sangat tidak stabil atau SANGAT LAMBAT.</timeout_attempts_description>
+Bisa bermanfaat jika kamu memiliki internet yang sangat tidak stabil atau SANGAT LAMBAT.</timeout_attempts_description>
 			<timeout_sleep>HTTP Batas Waktu Tidur</timeout_sleep>
 			<timeout_sleep_description>Coba waktu tidur ketika server tidak menjawab.
-Bisa bermanfaat jika Anda memiliki internet yang sangat tidak stabil atau SANGAT LAMBAT.</timeout_sleep_description>
+Bisa bermanfaat jika kamu memiliki internet yang sangat tidak stabil atau SANGAT LAMBAT.</timeout_sleep_description>
 			<read_end_attempts>Upaya Akhir Baca HTTP</read_end_attempts>
 			<read_end_attempts_description>Berapa banyak upaya yang harus dilakukan ketika tidak ada lagi data untuk dibaca,
 lebih rendah dapat meningkatkan performa tetapi dapat membuat game tidak stabil jika internet kamu cukup buruk.</read_end_attempts_description>
@@ -718,7 +750,6 @@ lebih rendah dapat meningkatkan performa tetapi dapat membuat game tidak stabil 
 		</debug>
 		<save_reboot>Simpan & BuatUlang</save_reboot>
 		<save_apply>Simpan & Terapkan</save_apply>
-		<save>Simpan</save>
 		<keep_changes>Klik Simpan untuk menyimpan perubahan Kamu.</keep_changes>
 	</settings_dialog>
 
@@ -730,7 +761,7 @@ lebih rendah dapat meningkatkan performa tetapi dapat membuat game tidak stabil 
 		<earned>Diperoleh</earned>
 		<name>Nama</name>
 		<no_trophies>Tidak ada piala.
-Anda bisa mendapatkan trofi dengan menggunakan aplikasi yang mendukung fitur trofi.</no_trophies>
+Kamu bisa mendapatkan trofi dengan menggunakan aplikasi yang mendukung fitur trofi.</no_trophies>
 		<not_earned>Tidak Diperoleh</not_earned>
 		<original>Original</original>
 		<sort>Menyortir</sort>
@@ -780,7 +811,6 @@ Setelah pengunduhan selesai, Vita3K akan restart secara otomatis dan kemudian me
 		<vita3k>Emulator Vita3K PlayStation Vita</vita3k>
 		<about_vita3k>Vita3K adalah emulator PlayStation Vita sumber terbuka yang ditulis dalam C++ untuk Windows, Linux, macOS dan Android.</about_vita3k>
 		<development_stage>Emulator masih dalam tahap awal sehingga umpan balik dan pengujian apa pun sangat dihargai.</development_stage>
-		<about_firmware>Untuk memulai, silakan instal paket firmware dan font PS Vita.</about_firmware>
 		<vita3k_quickstart>Panduan lengkap tentang cara menyiapkan Vita3K dapat ditemukan di</vita3k_quickstart>
 		<quickstart>Mulai Cepat</quickstart>
 		<page>halaman.</page>

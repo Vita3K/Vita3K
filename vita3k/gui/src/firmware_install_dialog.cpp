@@ -113,7 +113,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             const auto fw_font_package{ emuenv.pref_path / "sa0" };
             if (!fs::exists(fw_font_package) || fs::is_empty(fw_font_package)) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["no_font_exist"].c_str());
-                if (ImGui::Button(lang["download_firmware_font_package"].c_str()))
+                if (ImGui::Button(gui.lang.welcome["download_firmware_font_package"].c_str()))
                     open_path("https://bit.ly/2P2rb0r");
                 SetTooltipEx(lang["firmware_font_package_description"].c_str());
                 ImGui::Spacing();

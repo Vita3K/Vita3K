@@ -32,12 +32,11 @@
 		<update>Güncelle</update>
 		<update_history>Güncelleme Geçmişi</update_history>
 		<history_version>Sürüm {}</history_version>
-		<information>Bilgi</information>
 		<delete>
 			<app_delete>Bu uygulama ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</app_delete>
 			<saved_data_delete>Bu kayıtlı verileri silmek istiyor musunuz?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Bilgi">
 			<eligible>Uygun</eligible> 
 			<ineligible>Uygun değil</ineligible>
 			<level>Seviye</level>
@@ -59,6 +58,7 @@ Hata Kodu: {}</an_error_occurred>
 		<cancel>İptal</cancel>
 		<close>Kapat</close>
 		<delete>Sil</delete>
+		<error>Hata</error>
 		<file_corrupted>Dosya bozuk.</file_corrupted>
 		<no>Hayır</no>
 		<ok>Tamam</ok>
@@ -182,11 +182,6 @@ Hata Kodu: {}</an_error_occurred>
 		<minutes_ago>{} Dakika Önce</minutes_ago>
 	</common>
 
-	<compat_db>
-		<error>Hata</error>
-		<information>Bilgi</information>
-	</compat_db>
-
 	<content_manager name="İçerik Yöneticisi">
 		<application name="Uygulamalar">
 			<delete>Seçilen uygulamalar ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</delete>
@@ -202,13 +197,8 @@ Hata Kodu: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Kontrol Cihazı">
-		<name>Ad</name>
 		<num>Num</num>
 	</controllers>
-
-	<controls name="Kontrol">
-		<error>Hata</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -339,7 +329,6 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 		</system>
 		<network name="Ağ">
 		</network>
-		<save>Kaydet</save>
 	</settings_dialog>
 
 	<sys_apps_title>

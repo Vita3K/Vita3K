@@ -13,8 +13,9 @@
 		</file>
 		<emulation name="模擬">
 			<last_apps_used>最近使用的應用程式</last_apps_used>
+			<empty>空</empty>
 		</emulation>
-		<debug>
+		<debug name="調試">
 			<threads>綫程</threads>
 			<semaphores>信號量</semaphores>
 			<mutexes>互斥鎖</mutexes>
@@ -71,7 +72,6 @@
 		<update>更新</update>
 		<update_history>更新履歷</update_history>
 		<history_version>{} 版本</history_version>
-		<information>資訊</information>
 		<delete>
 			<app_delete>刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
 			<app_delete_description>刪除應用程式可能需要一段時間，
@@ -80,7 +80,7 @@
 			<license_delete>確定要刪除此授權嗎？</license_delete>
 			<saved_data_delete>確定要刪除此保存資料嗎？</saved_data_delete>
 		</delete>
-		<info>
+		<info name="資訊">
 			<eligible>有權</eligible>
 			<ineligible>無權</ineligible>
 			<level>等級</level>
@@ -110,6 +110,7 @@
 		<cancel>取消</cancel>
 		<close>關閉</close>
 		<delete>刪除</delete>
+		<error>錯誤</error>
 		<file_corrupted>檔案已毀損。</file_corrupted>
 		<microphone_disabled>請啟用麥克風。</microphone_disabled>
 		<no>否</no>
@@ -249,8 +250,6 @@
 	</compatibility>
 
 	<compat_db>
-		<error>錯誤</error>
-		<information>資訊</information>
 		<get_failed>無法獲取當前相容性資料庫，請檢查防火墻/互聯網接入后再重試。</get_failed>
 		<download_failed>無法下載更新於{}的應用程式相容性資料庫，請稍後重試。</download_failed>
 		<load_failed>無法讀取已下載更新於{}的應用程式相容性資料庫。</load_failed>
@@ -284,11 +283,8 @@
 
 	<controllers name="控制器">
 		<connected>已接入{}個控制器</connected>
-		<name>名稱</name>
 		<num>編號</num>
-		<not_connected>未接入相容的控制器。
-請接入與SDL2相容的控制器。</not_connected>
-		<motion_support>手柄控制器有體感支持</motion_support>
+		<motion_support>體感支持</motion_support>
 		<rebind_controls>重新綁定控制</rebind_controls>
 		<led_color>LED顔色</led_color>
 		<use_custom_color>使用自訂顔色</use_custom_color>
@@ -296,10 +292,13 @@
 		<red>紅</red>
 		<green>綠</green>
 		<blue>藍</blue>
+		<not_connected>未接入相容的控制器。
+請接入與SDL2相容的控制器。</not_connected>
+		<disable_motion>禁用體感</disable_motion>
 		<reset_controller_binding>重設控制器綁定</reset_controller_binding>
 	</controllers>
 
-	<controls name="控制">
+	<controls>
 		<button>按鍵</button>
 		<mapped_button>按鍵對應</mapped_button>
 		<left_stick_up>左操作桿上</left_stick_up>
@@ -336,8 +335,7 @@
 		<toggle_gui_visibility_description>在應用程式運行时，在螢幕頂部顯示和隱藏圖形化使用者介面之間切換。</toggle_gui_visibility_description>
 		<miscellaneous>雜項</miscellaneous>
 		<toggle_texture_replacement>切換紋理替換</toggle_texture_replacement>
-		<take_a_screenshot>截圖</take_a_screenshot>
-		<error>錯誤</error>
+		<take_screenshot>截圖</take_screenshot>
 		<error_duplicate_key>此按鈕已繫結至其他按鈕或已被保留。</error_duplicate_key>
 	</controls>
 
@@ -424,9 +422,8 @@
 		<change_emu_path>更改模擬器路徑</change_emu_path>
 		<reset_emu_path>重置模擬器路徑</reset_emu_path>
 		<install_firmware>安裝韌體。</install_firmware>
-		<install_highly_recommended>强烈建議同時安裝這兩個韌體檔案。</install_highly_recommended>
+		<install_highly_recommended>强烈建議安裝全部韌體檔案。</install_highly_recommended>
 		<installed>已安裝：</installed>
-		<download_firmware>下載韌體</download_firmware>
 		<download_font_package>下載字型套件</download_font_package>
 		<install_firmware_file>安裝韌體檔案</install_firmware_file>
 		<select_interface_settings>請選擇界面設定。</select_interface_settings>
@@ -435,7 +432,7 @@
 信息欄是時鐘、電量以及資訊中心。</info_bar_description>
 		<show_live_area_screen>Live Area應用程式螢幕</show_live_area_screen>
 		<live_area_screen_description>勾選此項在按下應用程式時默認打開Live Area頁面。
-如果禁用，請右鍵應用程式將其打開。</live_area_screen_description>
+如果禁用，請按下右鍵應用程式將其打開。</live_area_screen_description>
 		<apps_list_grid>網格模式</apps_list_grid>
 		<apps_list_grid_description>勾選此項將應用程式列表設置為像PS Vita一樣的網格模式。</apps_list_grid_description>
 		<icon_size>應用程式圖標大小</icon_size>
@@ -451,7 +448,6 @@
 			<successed_install_firmware>韌體已成功安裝。</successed_install_firmware>
 			<firmware_version>韌體版本：</firmware_version>
 			<no_font_exist>不存在韌體字型套件，請下載並安裝。</no_font_exist>
-			<download_firmware_font_package>下載韌體字型套件</download_firmware_font_package>
 			<firmware_font_package_description>一些應用程式需要韌體字型套件，也需要亞洲區域字型支持。（强烈建議安裝）</firmware_font_package_description>
 			<delete_firmware>刪除韌體安裝檔案？</delete_firmware>
 		</firmware_install>
@@ -519,8 +515,8 @@
 	<message>
 		<load_app_failed>無法讀取“{}”，
 請檢查vita3k.log查閲控制臺輸出的詳細資訊。
-1、您是否已安裝了韌體？
-2、傾印您已擁有的应用程式/遊戲，並在Vita3K安裝。
+1、您是否安裝了韌體？
+2、重新傾印您已擁有的PS Vita应用程式/遊戲，並在Vita3K中安裝。
 3、如果您想要安裝/運行Vitamin是不支援的。</load_app_failed>
 	</message>
 
@@ -595,6 +591,12 @@
 	<settings_dialog name="設定">
 		<core name="核心">
 			<modules_mode>模塊模式</modules_mode>
+			<automatic>自動</automatic>
+			<automatic_description>選擇自動模式會使用預設的模塊列表。</automatic_description>
+			<auto_manual>自動&手動</auto_manual>
+			<auto_manual_description>選擇此模式會加載預設模塊以及從列表中所選定的模塊。</auto_manual_description>
+			<manual>手動</manual>
+			<manual_description>選擇手動模式會從列表中加載所選定的模塊。</manual_description>
 			<modules_list>模塊列表</modules_list>
 			<select_modules>選擇您所需的模塊。</select_modules>
 			<search_modules>搜索模塊</search_modules>
@@ -633,7 +635,7 @@
 			<bilinear>雙綫性</bilinear>
 			<bicubic>雙三次</bicubic>
 			<screen_filter>螢幕過濾</screen_filter>
-			<screen_filter_description>設置要應用的後處理過濾器（可理解為抗鋸齒）。</screen_filter_description>
+			<screen_filter_description>設置要應用的後處理過濾器。</screen_filter_description>
 			<internal_resolution_upscaling>內部分辨率提升</internal_resolution_upscaling>
 			<internal_resolution_upscaling_description>為Vita3K啟用提升效果。
 實驗性：不保證遊戲能超過1倍的正確渲染。</internal_resolution_upscaling_description>
@@ -672,8 +674,8 @@
 請選擇您的“確認”按鈕。</select_enter_button>
 			<enter_button_description>這是在應用程式對話框中用作“確認”的按鈕。
 某些應用程式不使用此功能並獲取默認確認按鈕。</enter_button_description>
-			<circle>圓形（ O ）</circle>
-			<cross>交叉（ X ）</cross>
+			<circle>〇</circle>
+			<cross>×</cross>
 			<pstv_mode>PS TV模式</pstv_mode>
 			<pstv_mode_description>勾選此項啟用PS TV模擬模式。</pstv_mode_description>
 			<show_mode>Show模式</show_mode>
@@ -693,15 +695,15 @@
 			<select_log_level>選擇您喜歡的記錄級別。</select_log_level>
 			<archive_log>檔案記錄</archive_log>
 			<archive_log_description>勾選此項啟用檔案記錄。</archive_log_description>
-			<discord_rich_presence>啟用Discord Rich Presence以顯示您在Discord上執行的應用程式。</discord_rich_presence>
+			<discord_rich_presence>啟用Discord Rich Presence以展示您在Discord上正在執行的應用程式。</discord_rich_presence>
 			<texture_cache>紋理緩存</texture_cache>
 			<texture_cache_description>取消勾選此項禁用紋理緩存。</texture_cache_description>
 			<show_compile_shaders>顯示編譯著色器</show_compile_shaders>
 			<compile_shaders_description>取消勾選此項禁用編譯著色器對話框的顯示。</compile_shaders_description>
 			<show_touchpad_cursor>顯示觸摸板光標</show_touchpad_cursor>
-			<touchpad_cursor_description>取消勾選此項禁用顯示在螢幕上觸摸板光標。</touchpad_cursor_description>
-			<log_compat_warn>日志相容性警告</log_compat_warn>
-			<log_compat_warn_description>勾選此項啟用GitHub問題的日志相容性警告。</log_compat_warn_description>
+			<touchpad_cursor_description>取消勾選此項禁用螢幕上觸摸板光標的顯示。</touchpad_cursor_description>
+			<log_compat_warn>記錄相容性警告</log_compat_warn>
+			<log_compat_warn_description>勾選此項啟用GitHub議題的相容性警告的記錄。</log_compat_warn_description>
 			<check_for_updates>檢查更新</check_for_updates>
 			<check_for_updates_description>啟動時自動檢查更新。</check_for_updates_description>
 			<performance_overlay>性能圖層</performance_overlay>
@@ -713,16 +715,16 @@
 			<detail>細節</detail>
 			<select_detail>選擇您喜歡的性能圖層細節。</select_detail>
 			<top_left>左上</top_left>
-			<top_center>中上</top_center>
+			<top_center>頂部中間</top_center>
 			<top_right>右上</top_right>
 			<bottom_left>左下</bottom_left>
-			<bottom_center>中下</bottom_center>
+			<bottom_center>底部中間</bottom_center>
 			<bottom_right>右下</bottom_right>
 			<position>位置</position>
 			<select_position>選擇您喜歡的性能圖層位置。</select_position>
-			<case_insensitive>檢查在區分大小寫的文件系統上啟用不區分大小寫的路徑查找。
+			<case_insensitive>勾選此項在區分大小寫的文件系統上啟用不區分大小寫的路徑查找。
 重啟時復位</case_insensitive>
-			<case_insensitive_description>允許模擬器嘗試在非Windows平臺上搜索無論大小寫的文件。</case_insensitive_description>
+			<case_insensitive_description>允許模擬器嘗試在非Windows平臺上不區分大小寫的文件搜索。</case_insensitive_description>
 			<emu_storage_folder>模擬系統存儲資料夾</emu_storage_folder>
 			<current_emu_path>當前模擬器路徑：</current_emu_path>
 			<change_emu_path>更改模擬器路徑</change_emu_path>
@@ -733,6 +735,9 @@
 您需要手動將舊資料夾移動到默認位置。</reset_emu_path_description>
 			<custom_config_settings>自訂組態設定</custom_config_settings>
 			<clear_custom_config>清除自訂組態</clear_custom_config>
+			<screenshot_image_type>截圖圖像類型</screenshot_image_type>
+			<null>無</null>
+			<screenshot_format>截圖格式</screenshot_format>
 		</emulator>
 		<gui name="圖形化使用者介面">
 			<show_gui>圖形化使用者介面可見</show_gui>
@@ -748,7 +753,7 @@
 它們將僅顯示在主選單欄中。</display_system_apps_description>
 			<show_live_area_screen>Live Area應用程式螢幕</show_live_area_screen>
 			<live_area_screen_description>勾選此項在按下應用程式時默認打開Live Area頁面。
-如果禁用，請右鍵應用程式將其打開。</live_area_screen_description>
+如果禁用，請按下右鍵應用程式將其打開。</live_area_screen_description>
 			<stretch_the_display_area>拉伸顯示區域</stretch_the_display_area>
 			<stretch_the_display_area_description>勾選此項擴大顯示區域以適應螢幕尺寸。</stretch_the_display_area_description>
 			<apps_list_grid>網格模式</apps_list_grid>
@@ -783,10 +788,10 @@
 			<enable_http>啟用HTTP</enable_http>
 			<enable_http_description>勾選此項啟用遊戲在互聯網上使用HTTP協議。</enable_http_description>
 			<timeout_attempts>HTTP超時嘗試</timeout_attempts>
-			<timeout_attempts_description>當伺服器沒有響應時，要進行多次嘗試。
+			<timeout_attempts_description>當伺服器沒有響應時要進行多次嘗試。
 如果您有非常不穩定或是極慢的網路可能是有用的。</timeout_attempts_description>
 			<timeout_sleep>HTTP超時休眠</timeout_sleep>
-			<timeout_sleep_description>當伺服器沒有響應時，嘗試休眠時間。
+			<timeout_sleep_description>當伺服器沒有響應時嘗試進入休眠時間。
 如果您有非常不穩定或是極慢的網路可能是有用的。</timeout_sleep_description>
 			<read_end_attempts>HTTP讀取終止嘗試</read_end_attempts>
 			<read_end_attempts_description>當沒有更多數據可讀取時，嘗試多次可以提升性能，
@@ -801,7 +806,7 @@
 			<log_exports>導出記錄</log_exports>
 			<log_exports_description>記錄模塊導入符號。</log_exports_description>
 			<log_active_shaders>著色器記錄</log_active_shaders>
-			<log_active_shaders_description>記錄著色器在每次繪制調用中使用。</log_active_shaders_description>
+			<log_active_shaders_description>記錄在每次繪制調用中使用的著色器。</log_active_shaders_description>
 			<log_uniforms>統一記錄</log_uniforms>
 			<log_uniforms_description>記錄著色器統一名稱和值。</log_uniforms_description>
 			<color_surface_debug>保存顔色表面</color_surface_debug>
@@ -819,7 +824,6 @@
 		</debug>
 		<save_reboot>保存並重啟</save_reboot>
 		<save_apply>保存並應用</save_apply>
-		<save>保存</save>
 		<keep_changes>按下保存保留您的更改。</keep_changes>
 	</settings_dialog>
 
@@ -848,6 +852,8 @@
 		<grade>Grade（階級）</grade>
 		<progress>達成率</progress>
 		<updated>更新日</updated>
+		<advance>高級</advance>
+		<show_hidden>展示隱藏獎盃</show_hidden>
 	</trophy_collection>
 
 	<user_management>
@@ -896,8 +902,10 @@
 		<vita3k>Vita3K PlayStation Vita模擬器</vita3k>
 		<about_vita3k>Vita3K是使用C++編寫的開源PlayStation Vita模擬器，適用於Windows、Linux、macOS以及Android。</about_vita3k>
 		<development_stage>目前模擬器仍處於開發階段，因此非常感謝任何回饋和測試。</development_stage>
-		<about_firmware>要開始使用，請安裝PS Vita韌體和字型套件。</about_firmware>
+		<about_firmware>要開始使用，請安裝全部PS Vita韌體檔案。</about_firmware>
+		<download_preinst_firmware>下載預裝韌體</download_preinst_firmware>
 		<download_firmware>下載韌體</download_firmware>
+		<download_firmware_font_package>下載韌體字型套件</download_firmware_font_package>
 		<vita3k_quickstart>有關如何設定Vita3K的全方位指南可在</vita3k_quickstart>
 		<quickstart>快速入門</quickstart>
 		<page>頁面中找到。</page>

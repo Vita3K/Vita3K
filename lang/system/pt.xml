@@ -29,12 +29,11 @@
 		<update>Atualização</update>
 		<update_history>Histórico de atualização</update_history>
 		<history_version>Versão {}</history_version>
-		<information>Informações</information>
 		<delete>
 			<app_delete>Esta aplicação e todos os dados relacionados, incluindo dados guardados, serão elminados.</app_delete>
 			<saved_data_delete>Pretende elminar estes dados guardados?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Informações">
 			<eligible>Elegível</eligible>
 			<ineligible>Inelegível</ineligible>
 			<level>Nível</level>
@@ -56,6 +55,7 @@ Código de erro: {}</an_error_occurred>
 		<cancel>Cancelar</cancel>
 		<close>Fechar</close>
 		<delete>Eliminar</delete>
+		<error>Erro</error>
 		<file_corrupted>O ficheiro está corrompido.</file_corrupted>
 		<microphone_disabled>Ative o microfone.</microphone_disabled>
 		<no>Não</no>
@@ -179,11 +179,6 @@ Código de erro: {}</an_error_occurred>
 		<minutes_ago>Há {} minutos</minutes_ago>
 	</common>
 
-	<compat_db>
-		<error>Erro</error>
-		<information>Informações</information>
-	</compat_db>
-
 	<content_manager name="Gestor de conteúdo">
 		<application name="Aplicações">
 			<delete>As aplicações selecionadas e todos os dados relacionados, incluindo dados guardados, serão eliminados.</delete>
@@ -199,13 +194,8 @@ Código de erro: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Comando">
-		<name>Nome</name>
 		<num>Núm</num>
 	</controllers>
-
-	<controls name="Controls">
-		<error>Erro</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -335,7 +325,6 @@ O seu sistema Vita3K está pronto!</completed_setup>
 		</system>
 		<network name="Rede">
 		</network>
-		<save>Guardar</save>
 	</settings_dialog>
 
 	<sys_apps_title>

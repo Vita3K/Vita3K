@@ -71,7 +71,6 @@
 		<update>Оновити</update>
 		<update_history>Оновити історію</update_history>
 		<history_version>Версія {}</history_version>
-		<information>Інформація</information>
 		<delete>
 			<app_delete>Ця програма та всі пов'язані дані, враховуючи збережені дані, будуть видалені.</app_delete>
 			<app_delete_description>Видалення програми може зайняти деякий час,
@@ -80,7 +79,7 @@
 			<license_delete>Ви хочете видалити цю ліцензію?</license_delete>
 			<saved_data_delete>Ви хочете видалити ці збережені дані?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Інформація">
 			<eligible>Допущено</eligible>
 			<ineligible>Не допущено</ineligible>
 			<level>Рівень</level>
@@ -110,6 +109,7 @@
 		<cancel>Відміна</cancel>
 		<close>Закрити</close>
 		<delete>Видалити</delete>
+		<error>Помилка</error>
 		<file_corrupted>Файл пошкоджено.</file_corrupted>
 		<microphone_disabled>Увімкніть мікрофон.</microphone_disabled>
 		<no>Ні</no>
@@ -250,8 +250,6 @@
 	</compatibility>
 
 	<compat_db>
-		<error>Помилка</error>
-		<information>Інформація</information>
 		<get_failed>Не вдалося під'єднатися до бази даних сумісностей, перевірте доступ до брендмауеру/Інтернету, та спробуйте ще раз пізніше.</get_failed>
 		<download_failed>Не вдалося завантажити базу даних сумісностей програм, що була оновлена у: {}, спробуйте ще раз пізніше.</download_failed>
 		<load_failed>Не вдалося завантажити базу даних сумісностей програм, що була завантажена та оновлена у: {}.</load_failed>
@@ -285,11 +283,7 @@
 
 	<controllers name="Контролери">
 		<connected>{} Контролерів під'єднано</connected>
-		<name>Назва</name>
 		<num>Кількість</num>
-		<not_connected>Сумісні контролери не підключені.
-Будь ласка, підключіть контролер, сумісний з SDL2.</not_connected>
-		<motion_support>Контролер має сенсори руху</motion_support>
 		<rebind_controls>Прив'язка елементів керування</rebind_controls>
 		<led_color>Колір світлодіоду</led_color>
 		<use_custom_color>Використати власний колір</use_custom_color>
@@ -297,10 +291,12 @@
 		<red>Червоний</red>
 		<green>Зелений</green>
 		<blue>Синій</blue>
+		<not_connected>Сумісні контролери не підключені.
+Будь ласка, підключіть контролер, сумісний з SDL2.</not_connected>
 		<reset_controller_binding>Скинути налаштування елементів керування контролера</reset_controller_binding>
 	</controllers>
 
-	<controls name="Керування">
+	<controls>
 		<button>Кнопка</button>
 		<mapped_button>Прив'язана кнопка</mapped_button>
 		<left_stick_up>Лівий стік догори</left_stick_up>
@@ -337,8 +333,7 @@
 		<toggle_gui_visibility_description>Перемикає видимість інтерфейсу у верхній частині екрану коли програма функціонує.</toggle_gui_visibility_description>
 		<miscellaneous>Інше</miscellaneous>
 		<toggle_texture_replacement>Перемикання заміни текстур</toggle_texture_replacement>
-		<take_a_screenshot>Зробити знімок екрану</take_a_screenshot>
-		<error>Помилка</error>
+		<take_screenshot>Зробити знімок екрану</take_screenshot>
 		<error_duplicate_key>Кнопка вже прив'язана або її неможливо прив'язати.</error_duplicate_key>
 	</controls>
 
@@ -422,7 +417,6 @@
 			<successed_install_firmware>Прошивку успішно завантажено.</successed_install_firmware>
 			<firmware_version>Версія прошивки:</firmware_version>
 			<no_font_exist>Пакет шрифтів прошивки відсутній, будь ласка, завантажте його.</no_font_exist>
-			<download_firmware_font_package>Завантажити пакет шрифтів прошивки</download_firmware_font_package>
 			<firmware_font_package_description>Пакет шрифтів прошивки потрібен для деяких програм,
 а також для підтримки шрифтів азійського регіону. (загалом рекомендовано)</firmware_font_package_description>
 			<delete_firmware>Видалити файл завантаження прошивки?</delete_firmware>
@@ -778,7 +772,6 @@
 		</debug>
 		<save_reboot>Зберегти & Перезапустити</save_reboot>
 		<save_apply>Зберегти & Застосувати</save_apply>
-		<save>Зберегти</save>
 		<keep_changes>Натисніть 'Зберегти', аби зберегти зміни.</keep_changes>
 	</settings_dialog>
 
@@ -847,8 +840,8 @@
 		<vita3k>Емулятор PlayStation Vita Vita3K</vita3k>
 		<about_vita3k>Vita3K - це емулятор PlayStation Vita з відкритим кодом, написаний на C++ для операційних систем Windows, Linux, macOS та Android.</about_vita3k>
 		<development_stage>Емулятор досі у розробці, тому ми були б дуже вдячні за відгуки та тестування.</development_stage>
-		<about_firmware>Аби розпочати, будь ласка, встановіть прошивку PS Vita та пакети шрифтів.</about_firmware>
 		<download_firmware>Встановити прошивку</download_firmware>
+		<download_firmware_font_package>Завантажити пакет шрифтів прошивки</download_firmware_font_package>
 		<vita3k_quickstart>Повне керівництво з налаштування Vita3K можна побачити</vita3k_quickstart>
 		<quickstart>Тут</quickstart>
 		<page>Сторінка.</page>

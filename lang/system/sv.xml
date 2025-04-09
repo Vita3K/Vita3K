@@ -29,12 +29,11 @@
 		<update>Uppdatera</update>
 		<update_history>Uppdateringshistorik</update_history>
 		<history_version>Version {}</history_version>
-		<information>Information</information>
 		<delete>
 			<app_delete>Den här applikationen och alla tillhörande data, inklusive sparade data, kommer att raderas.</app_delete>
 			<saved_data_delete>Vill du radera dessa sparade data?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Information">
 			<eligible>Möjligt</eligible>
 			<ineligible>Inte möjligt</ineligible>
 			<level>Nivå</level>
@@ -53,6 +52,7 @@ Felkod: {}</an_error_occurred>
 		<cancel>Avbryt</cancel>
 		<close>Stänga</close>
 		<delete>Radera</delete>
+		<error>Fel</error>
 		<file_corrupted>Filen är skadad.</file_corrupted>
 		<microphone_disabled>Aktivera mikrofonen.</microphone_disabled>
 		<no>Nej</no>
@@ -176,11 +176,6 @@ Felkod: {}</an_error_occurred>
 		<minutes_ago>{} minuter sedan</minutes_ago>
 	</common>
 
-	<compat_db>
-		<error>Fel</error>
-		<information>Information</information>
-	</compat_db>
-
 	<content_manager name="Innehållshanterare">
 		<application name="Applikationer">
 			<delete>De markerade applikationerna och alla tillhörande data, inklusive sparade data, kommer att raderas.</delete>
@@ -196,13 +191,8 @@ Felkod: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Handkontroller">
-		<name>Namn</name>
 		<num>Num</num>
 	</controllers>
-
-	<controls name="Handkontroller">
-		<error>Fel</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -331,7 +321,6 @@ Ditt Vita3K-system är redo!</completed_setup>
 	<settings_dialog name="Inställningar">
 		<network name="Nätverk">
 		</network>
-		<save>Spara</save>
 	</settings_dialog>
 
 	<sys_apps_title>

@@ -52,14 +52,13 @@
 		<update>Atualização</update>
 		<update_history>Histórico de atualizações</update_history>
 		<history_version>Versão {}</history_version>
-		<information>Informações</information>
 		<delete>
 			<app_delete>Esse aplicativo e todos os dados relacionados, inclusive dados salvos, serão excluídos.</app_delete>
 			<app_delete_description>Deletar um aplicativo pode demorar algum tempo
 dependendo de seu tamanho e hardware.</app_delete_description>
 			<saved_data_delete>Deseja excluir esses dados salvos?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Informações">
 			<eligible>Qualificado</eligible>
 			<ineligible>Não qualificado</ineligible>
 			<level>Nível</level>
@@ -82,6 +81,7 @@ Código de erro: {}</an_error_occurred>
 		<cancel>Cancelar</cancel>
 		<close>Fechar</close>
 		<delete>Excluir</delete>
+		<error>Erro</error>
 		<file_corrupted>O arquivo está corrompido.</file_corrupted>
 		<microphone_disabled>Ative o microfone.</microphone_disabled>
 		<no>Não</no>
@@ -220,11 +220,6 @@ Código de erro: {}</an_error_occurred>
 		</states>
 	</compatibility>
 
-	<compat_db>
-		<error>Erro</error>
-		<information>Informações</information>
-	</compat_db>
-
 	<content_manager name="Gerenciador de conteúdo">
 		<application name="Aplicativos">
 			<delete>Os aplicativos selecionados e todos os dados relacionados, inclusive dados salvos, serão excluídos.</delete>
@@ -240,16 +235,11 @@ Código de erro: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controle">
-		<connected>Controles conectados</connected>
-		<name>Nome</name>
+		<connected>{} controles conectados</connected>
 		<num>Núm</num>
 		<not_connected>Nenhum controle compatível conectado.
 Conecte um controle que seja compatível com SDL2.</not_connected>
 	</controllers>
-
-	<controls name="Controles">
-		<error>Erro</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -310,10 +300,7 @@ Não desligue o sistema nem feche o aplicativo.</warning_saving>
 O seu sistema Vita3K está pronto!</completed_setup>
 		<select_language>Selecione um idioma.</select_language>
 		<install_firmware>Instalar firmware.</install_firmware>
-		<install_highly_recommended>Instalar ambos os arquivos de
-firmware é altamente recomendado.</install_highly_recommended>
 		<installed>Instalado:</installed>
-		<download_firmware>Baixar Firmware</download_firmware>
 		<download_font_package>Baixar Pacote de Fonte</download_font_package>
 		<install_firmware_file>Instalar Arquivo de Firmware</install_firmware_file>
 		<completed>Completo.</completed>
@@ -409,7 +396,6 @@ fundo</add_background>
 		</system>
 		<network name="Rede">
 		</network>
-		<save>Salvar</save>
 	</settings_dialog>
 
 	<sys_apps_title>
@@ -477,4 +463,8 @@ Quando o download terminar, Vita3K será reiniciado automaticamente e o novo atu
 		<update>Atualizar</update>
 		<version>Versão {}</version>
 	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<download_firmware>Baixar Firmware</download_firmware>
+	</welcome>
 </lang>

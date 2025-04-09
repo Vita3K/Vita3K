@@ -1021,7 +1021,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     // Back
     ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
     ImGui::SetCursorPos(ImVec2(6.f * SCALE.x, WINDOW_SIZE.y - (52.f * SCALE.y)));
-    if (ImGui::Button("Back", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+    if (ImGui::Button("<<", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
         if (settings_menu != SettingsMenu::SELECT) {
             if (menu != Menu::UNDEFINED) {
                 if (!selected.empty()) {

@@ -29,12 +29,11 @@
 		<update>Oppdater</update>
 		<update_history>Oppdater historikk</update_history>
 		<history_version>Versjon {}</history_version>
-		<information>Informasjon</information>
 		<delete>
 			<app_delete>Dette programmet og all relatert data, inkludert lagreda data, vil bli slettet.</app_delete>
 			<saved_data_delete>Vil du slette disse lagrede dataene?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Informasjon">
 			<eligible>Valgbar</eligible>
 			<ineligible>Ikke valgbar</ineligible>
 			<level>Nivå</level>
@@ -53,6 +52,7 @@ Feilkode: {}</an_error_occurred>
 		<cancel>Avbryt</cancel>
 		<close>Lukke</close>
 		<delete>Slett</delete>
+		<error>Feil</error>
 		<file_corrupted>Filen er korrupt.</file_corrupted>
 		<microphone_disabled>Aktiver mikrofonen.</microphone_disabled>
 		<no>Nei</no>
@@ -176,11 +176,6 @@ Feilkode: {}</an_error_occurred>
 		<minutes_ago>{} minutter sidan</minutes_ago>
 	</common>
 
-	<compat_db>
-		<error>Feil</error>
-		<information>Informasjon</information>
-	</compat_db>
-
 	<content_manager name="Innholdsadministrator">
 		<application name="Programmer">
 			<delete>De valgte programmene og alle de tilknyttede dataene, inkludert lagreda data, vil bli slettet.</delete>
@@ -196,13 +191,8 @@ Feilkode: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Kontroller">
-		<name>Navn</name>
 		<num>Num</num>
 	</controllers>
-
-	<controls name="Controls">
-		<error>Feil</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -332,7 +322,6 @@ Vita3K-systemet ditt er klart!</completed_setup>
 		</system>
 		<network name="Nettverk">
 		</network>
-		<save>Lagre</save>
 	</settings_dialog>
 
 	<sys_apps_title>
