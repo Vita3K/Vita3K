@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.vita3k.vita3k</id>
+  <name>Vita3K</name>
+  <developer id="org.vita3k.vita3k-contributors">
+    <name>Vita3k Contributors</name>
+    <url>https://github.com/vita3k/vita3k/graphs/contributors</url>
+  </developer>
+  <summary>Experimental PlayStation Vita emulator</summary>
+  <branding>
+    <color type="primary" scheme_preference="light">#f05f40</color>
+    <color type="primary" scheme_preference="dark">#181818</color>
+  </branding>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0</project_license>
+  <launchable type="desktop-id">org.vita3k.vita3k.desktop</launchable>
+  <url type="homepage">https://vita3k.org/</url>
+  <url type="vcs-browser">https://github.com/vita3k/Vita3K</url>
+  <url type="bugtracker">https://github.com/vita3k/Vita3K/issues</url>
+  <url type="contact">https://vita3k.org/#community</url>
+  <url type="contribute">https://vita3k.org/#contribute</url>
+  <url type="donation">https://vita3k.org/#donate</url>
+  <url type="faq">https://vita3k.org/faq.html</url>
+  <url type="help">https://vita3k.org/quickstart.html</url>
+  <description>
+    <p>Vita3K is the world's first functional experimental open-source PlayStation Vita emulator for Windows, Linux, macOS and Android.</p>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <image type="source">https://vita3k.org/img/portfolio/fullsize/1.webp</image>
+      <caption>Persona 4 Golden</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://vita3k.org/img/portfolio/fullsize/2.webp</image>
+      <caption>Freedom Wars</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://vita3k.org/img/portfolio/fullsize/3.webp</image>
+      <caption>Hatsune Miku: Project Diva X</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://vita3k.org/img/portfolio/fullsize/4.webp</image>
+      <caption>Muramasa Rebirth</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://vita3k.org/img/portfolio/fullsize/5.webp</image>
+      <caption>Borderlands 2</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://vita3k.org/img/portfolio/fullsize/6.webp</image>
+      <caption>Soul Sacrifice Delta</caption>
+    </screenshot>
+  </screenshots>
+  <categories>
+    <category>Game</category>
+    <category>Emulator</category>
+  </categories>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+  <recommends>
+    <control>gamepad</control>
+  </recommends>
+  <provides>
+    <binary>Vita3K</binary>
+  </provides>
+  <keywords>
+    <keyword>emulator</keyword>
+    <keyword>retro</keyword>
+  </keywords>
+  <releases>
+    <release version="3737" date="2025-02-15" />
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>
