@@ -54,6 +54,7 @@ static const std::map<int, std::vector<std::u16string>> pad_numeric_key = {
 };
 
 enum CapsLevel {
+    FIRST_WORD = -1,
     NO = 0,
     YES = 1,
     LOCK = 2
@@ -73,7 +74,7 @@ static void update_str(Ime &ime, const std::u16string &key) {
         ime.str.insert(ime.edit_text.caretIndex, key);
         ime.edit_text.caretIndex++;
     }
-    if (ime.caps_level == YES)
+    if (ime.caps_level != LOCK)
         ime.caps_level = NO;
     ime.event_id = SCE_IME_EVENT_UPDATE_TEXT;
 }
@@ -362,10 +363,10 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
         ImGui::PushStyleColor(ImGuiCol_Button, IME_BUTTON_BG);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         if (ImGui::Button("Shift", BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_l2))) {
-            if (ime.edit_text.caretIndex == 0)
-                ime.caps_level = ime.caps_level == YES ? NO : ++ime.caps_level;
+            if (ime.caps_level < LOCK)
+                ++ime.caps_level;
             else
-                ime.caps_level = ime.caps_level == LOCK ? NO : ++ime.caps_level;
+                ime.caps_level = NO;
         }
         ImGui::PopStyleColor(2);
         ImGui::SetCursorPos(ImVec2(SPACE_BUTTON_POS.x - (PUNCT_BUTTON_SIZE.x * 2.f) - (SPACE * 2.f), SPACE_BUTTON_POS.y));
@@ -380,6 +381,8 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
         ImGui::PushStyleColor(ImGuiCol_Button, IME_BUTTON_BG);
         if (ImGui::Button("<", PUNCT_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_l1))) {
             ime.edit_text.editIndex = ime.edit_text.caretIndex;
+            if ((ime.caps_level != LOCK) && (ime.edit_text.caretIndex || ime.edit_text.preeditLength))
+                ime.caps_level = (ime.edit_text.caretIndex > 1) ? NO : FIRST_WORD;
             if (ime.edit_text.caretIndex)
                 --ime.edit_text.caretIndex;
             if (ime.edit_text.editIndex == ime.edit_text.preeditIndex)
@@ -388,22 +391,20 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
                 --ime.caretIndex;
                 ime.event_id = SCE_IME_EVENT_UPDATE_CARET;
             }
-            if ((ime.edit_text.caretIndex == 0) && (ime.caps_level == NO))
-                ime.caps_level = YES;
         }
         ImGui::SameLine(0, SPACE_BUTTON_SIZE.x + (SPACE * 2.f));
         if (ImGui::Button(">", PUNCT_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_r1))) {
             ime.edit_text.editIndex = ime.edit_text.caretIndex;
+            if ((ime.caps_level != LOCK) && ((ime.edit_text.caretIndex < ime.str.length()) || ime.edit_text.preeditLength))
+                ime.caps_level = NO;
             if (ime.edit_text.caretIndex < ime.str.length())
                 ++ime.edit_text.caretIndex;
             if (ime.edit_text.editIndex == (ime.edit_text.preeditIndex + ime.edit_text.preeditLength))
                 reset_preedit(ime);
             else if (ime.caretIndex < ime.str.length()) {
-                ime.caretIndex++;
+                ++ime.caretIndex;
                 ime.event_id = SCE_IME_EVENT_UPDATE_CARET;
             }
-            if (ime.edit_text.caretIndex && ime.caps_level != LOCK)
-                ime.caps_level = NO;
         }
         ImGui::PopStyleColor(2);
         ImGui::SameLine(0, SPACE);
@@ -443,8 +444,8 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
         if (ime.edit_text.preeditLength)
             --ime.edit_text.preeditLength;
         ime.event_id = SCE_IME_EVENT_UPDATE_TEXT;
-        if (ime.str.empty() && (ime.caps_level == NO))
-            ime.caps_level = YES;
+        if (ime.caps_level != LOCK)
+            ime.caps_level = ime.edit_text.caretIndex ? NO : FIRST_WORD;
     }
     ImGui::PopStyleColor(2);
     ImGui::PushStyleColor(ImGuiCol_Button, GUI_COLOR_TEXT_BLACK);
