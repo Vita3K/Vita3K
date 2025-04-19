@@ -88,6 +88,9 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
 
 EXPORT(SceInt32, sceImeSetCaret, const SceImeCaret *caret) {
     TRACY_FUNC(sceImeSetCaret, caret);
+    if (!emuenv.ime.state)
+        return RET_ERROR(SCE_IME_ERROR_NOT_OPENED);
+
     Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
     SceImeEvent *e = event.get(emuenv.mem);
     e->param.caretIndex = caret->index;
@@ -98,6 +101,9 @@ EXPORT(SceInt32, sceImeSetCaret, const SceImeCaret *caret) {
 
 EXPORT(SceInt32, sceImeSetPreeditGeometry, const SceImePreeditGeometry *preedit) {
     TRACY_FUNC(sceImeSetPreeditGeometry, preedit);
+    if (!emuenv.ime.state)
+        return RET_ERROR(SCE_IME_ERROR_NOT_OPENED);
+
     Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
     SceImeEvent *e = event.get(emuenv.mem);
     e->param.rect.height = preedit->height;
