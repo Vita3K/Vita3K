@@ -158,7 +158,7 @@ static spv::Id get_type_basic(spv::Builder &b, const Input &input) {
 
     // clang-format on
     default: {
-        LOG_ERROR("Unsupported parameter type {} used in shader.", log_hex(fmt::underlying(input.type)));
+        LOG_ERROR("Unsupported parameter type 0x{:0X} used in shader.", fmt::underlying(input.type));
         return get_type_fallback(b);
     }
     }

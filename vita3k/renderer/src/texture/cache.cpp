@@ -330,7 +330,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
 
     if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422) {
-        LOG_ERROR_ONCE("Unimplemented YUV format {}, please report it to the developers.", log_hex(fmt::underlying(base_format)));
+        LOG_ERROR_ONCE("Unimplemented YUV format 0x{:0X}, please report it to the developers.", fmt::underlying(base_format));
         return;
     }
 
