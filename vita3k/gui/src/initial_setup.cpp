@@ -144,6 +144,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(3);
         ImGui::Columns(1);
+        ImGui::ScrollWhenDragging();
         ImGui::EndChild();
         break;
     case SELECT_PREF_PATH:
