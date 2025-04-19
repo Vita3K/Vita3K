@@ -55,18 +55,18 @@ static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
 struct EmuEnvState;
 
-static ImportFn resolve_import(uint32_t nid) {
+static const ImportFn *resolve_import(uint32_t nid) {
     switch (nid) {
 #define VAR_NID(name, nid)
 #define NID(name, nid) \
     case nid:          \
-        return import_##name;
+        return &import_##name;
 #include <nids/nids.inc>
 #undef NID
 #undef VAR_NID
+    default:
+        return nullptr;
     }
-
-    return {};
 }
 
 struct VarExport {
@@ -151,9 +151,9 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
             auto lr = read_lr(cpu);
             log_import_call('H', nid, thread_id, hle_nid_blacklist, lr);
         }
-        const ImportFn fn = resolve_import(nid);
+        const ImportFn *fn = resolve_import(nid);
         if (fn) {
-            fn(emuenv, cpu, thread_id);
+            (*fn)(emuenv, cpu, thread_id);
         } else {
             const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
             // make the function return 0
