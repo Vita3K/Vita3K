@@ -301,12 +301,20 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
         return;
     }
 
-    if (port == 1) {
+    if (emuenv.cfg.current_config.pstv_mode) {
+        if (port == 1) {
+            apply_keyboard(&buttons, axes.data(), is_v2, emuenv);
+        }
+        for (const auto &[_, controller] : state.controllers) {
+            if (controller.port + 1 == port) {
+                // sceCtrl ports are 1-based and SDL_GameController index is 0-based. Need to convert.
+                apply_controller(emuenv, &buttons, axes.data(), controller.controller.get(), is_v2);
+            }
+        }
+    } else if (port == 1) {
+        // If not in PSTV mode, every controller input is considered as a port 1 input
         apply_keyboard(&buttons, axes.data(), is_v2, emuenv);
-    }
-    for (const auto &[_, controller] : state.controllers) {
-        if (controller.port + 1 == port) {
-            // sceCtrl ports are 1-based and SDL_GameController index is 0-based. Need to convert.
+        for (const auto &[_, controller] : state.controllers) {
             apply_controller(emuenv, &buttons, axes.data(), controller.controller.get(), is_v2);
         }
     }
