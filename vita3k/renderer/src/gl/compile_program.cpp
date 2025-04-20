@@ -26,6 +26,7 @@
 
 #include <shader/spirv_recompiler.h>
 
+#include <iomanip>
 #include <vector>
 
 namespace renderer::gl {

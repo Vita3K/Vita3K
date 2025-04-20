@@ -25,11 +25,6 @@
 
 #include <type_traits>
 
-#include <iomanip>
-#include <iostream>
-#include <sstream>
-#include <vector>
-
 #define LOG_TRACE SPDLOG_TRACE
 #define LOG_DEBUG SPDLOG_DEBUG
 #define LOG_INFO SPDLOG_INFO
@@ -85,11 +80,8 @@ ExitCode add_sink(const fs::path &log_path);
         return static_cast<int>(error);                                             \
     })()
 
-// Using stringstream as its 2x faster than fmt::format
-
 /*
     returns: A string with the input number formatted in hexadecimal
-    FIXME: Make this available to uint8_t
     Examples:
         * `12` returns: `"0xC"`
         * `1337` returns: `"0x539"`
@@ -97,16 +89,11 @@ ExitCode add_sink(const fs::path &log_path);
 */
 template <typename T>
 std::string log_hex(T val) {
-    using unsigned_type = typename std::make_unsigned<T>::type;
-    std::stringstream ss;
-    ss << "0x";
-    ss << std::hex << static_cast<unsigned_type>(val);
-    return ss.str();
+    return fmt::format("0x{:X}", static_cast<std::make_unsigned_t<T>>(val));
 }
 
 /*
     returns: A string with the input number formatted in hexadecimal with padding of the inputted type size
-    FIXME: Make this available to uint8_t
     Examples:
         * `uint8_t 5` returns: `"0x05"`
         * `uint8_t 15` returns: `"0x0F"`
@@ -123,10 +110,7 @@ std::string log_hex(T val) {
 */
 template <typename T>
 std::string log_hex_full(T val) {
-    std::stringstream ss;
-    ss << "0x";
-    ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << val;
-    return ss.str();
+    return fmt::format("0x{:0{}X}", static_cast<std::make_unsigned_t<T>>(val), sizeof(T) * 2);
 }
 
 template <class T>
