@@ -26,6 +26,9 @@
 #include <spdlog/sinks/msvc_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
+#include <iostream>
+#include <vector>
+
 namespace logging {
 
 static const fs::path &LOG_FILE_NAME = "vita3k.log";
