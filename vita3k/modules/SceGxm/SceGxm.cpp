@@ -2594,20 +2594,33 @@ EXPORT(uint32_t, sceGxmGetPrecomputedDrawSize, const SceGxmVertexProgram *vertex
     return static_cast<uint32_t>((max_stream_index + 1) * sizeof(StreamData));
 }
 
-EXPORT(uint32_t, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
+// Fallback value returned when computed size is zero.
+static constexpr SceUInt32 SCE_GXM_PRECOMPUTED_OVERHEAD = 8u;
+
+// Precomputed state size is the sum of the sizes of all uniform buffers and textures.
+static SceUInt32 get_precomputed_state_size(const uint16_t buffer_count, const uint16_t texture_count) {
+    const SceUInt32 state_size = static_cast<SceUInt32>((buffer_count * sizeof(UniformBuffer)) + (texture_count * sizeof(SceGxmTexture)));
+
+    // Some games expect sceGxmGetPrecomputed*StateSize to return non-zero,
+    // even when buffer and texture counts are both zero.
+    // This fallback avoids crashes or undefined behavior.
+    return state_size > 0 ? state_size : SCE_GXM_PRECOMPUTED_OVERHEAD;
+}
+
+EXPORT(SceUInt32, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
     TRACY_FUNC(sceGxmGetPrecomputedFragmentStateSize, fragmentProgram);
     assert(fragmentProgram);
 
     auto &renderer_data = fragmentProgram->renderer_data;
-    return renderer_data->texture_count * sizeof(TextureData) + renderer_data->buffer_count * sizeof(UniformBuffer);
+    return get_precomputed_state_size(renderer_data->buffer_count, renderer_data->texture_count);
 }
 
-EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
+EXPORT(SceUInt32, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
     TRACY_FUNC(sceGxmGetPrecomputedVertexStateSize, vertexProgram);
     assert(vertexProgram);
 
     auto &renderer_data = vertexProgram->renderer_data;
-    return renderer_data->texture_count * sizeof(TextureData) + renderer_data->buffer_count * sizeof(UniformBuffer);
+    return get_precomputed_state_size(renderer_data->buffer_count, renderer_data->texture_count);
 }
 
 EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
