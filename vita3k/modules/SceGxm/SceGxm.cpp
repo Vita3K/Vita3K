@@ -2696,13 +2696,19 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
+    if ((base.address() % KiB(4) != 0) || (size % KiB(4) != 0))
+        LOG_WARN_ONCE("Mapping unaligned GPU memory");
+
+    // Make sure the base address and size are 4KiB-aligned
+    Address aligned_base = align_down(base.address(), KiB(4));
+    size = align(base.address() + size, KiB(4)) - aligned_base;
+
     // Check if it has already been mapped
     // Some games intentionally overlapping mapped region. Nothing we can do. Allow it, bear your own consequences.
     GxmState &gxm = emuenv.gxm;
-
-    auto ite = gxm.memory_mapped_regions.lower_bound(base.address());
-    if (ite == gxm.memory_mapped_regions.end() || ite->first != base.address()) {
-        if (ite != gxm.memory_mapped_regions.end() && base.address() + size > ite->first) {
+    auto ite = gxm.memory_mapped_regions.lower_bound(aligned_base);
+    if ((ite == gxm.memory_mapped_regions.end()) || (ite->first != aligned_base)) {
+        if ((ite != gxm.memory_mapped_regions.end()) && ((aligned_base + size) > ite->first)) {
             LOG_ERROR("Overlapping mapped memory detected");
 
             if (emuenv.renderer->features.support_memory_mapping) {
@@ -2710,11 +2716,11 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
                 return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
             }
         }
-        gxm.memory_mapped_regions.emplace(base.address(), MemoryMapInfo{ base.address(), size, attribs });
+        gxm.memory_mapped_regions.emplace(aligned_base, MemoryMapInfo{ aligned_base, size, attribs });
 
         // little big planet maps regions of size 0
         if (emuenv.renderer->features.support_memory_mapping && size > 0)
-            renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryMap, true, base, size);
+            renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryMap, true, aligned_base, size);
 
         return 0;
     }
@@ -5444,13 +5450,19 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    auto ite = emuenv.gxm.memory_mapped_regions.find(base.address());
+    if (base.address() % KiB(4) != 0)
+        LOG_WARN_ONCE("Unmapping unaligned GPU memory");
+
+    // Make sure the base address are 4KiB-aligned
+    Address aligned_base = align_down(base.address(), KiB(4));
+
+    auto ite = emuenv.gxm.memory_mapped_regions.find(aligned_base);
     if (ite == emuenv.gxm.memory_mapped_regions.end()) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
     if (emuenv.renderer->features.support_memory_mapping && ite->second.size > 0)
-        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryUnmap, true, base);
+        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryUnmap, true, aligned_base);
 
     emuenv.gxm.memory_mapped_regions.erase(ite);
     return 0;
