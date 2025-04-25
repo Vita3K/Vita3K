@@ -1008,6 +1008,7 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
 
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
     emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    emuenv.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
     emuenv.common_dialog.savedata.has_progress_bar = false;
 
     SceSaveDataDialogListParam *list_param;
