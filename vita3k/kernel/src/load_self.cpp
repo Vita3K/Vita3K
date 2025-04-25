@@ -244,7 +244,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
     return true;
 }
 
-static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel) {
+static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem) {
     const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
@@ -265,6 +265,16 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
         }
 
         kernel.export_nids.emplace(nid, entry.address());
+        // substitute supervisor calls to direct function calls in loaded modules
+        auto range = kernel.func_binding_infos.equal_range(nid);
+        for (auto it = range.first; it != range.second; ++it) {
+            auto address = it->second;
+            uint32_t *const stub = Ptr<uint32_t>(address).get(mem);
+            stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)entry.address(), 12);
+            stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(entry.address() >> 16), 12);
+            stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
+            kernel.invalidate_jit_cache(address, 3 * sizeof(uint32_t));
+        }
 
         if (kernel.debugger.log_exports) {
             const char *const name = import_name(nid);
@@ -439,7 +449,7 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
 
         const uint32_t *const nids = Ptr<const uint32_t>(exports->nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(exports->entry_table).get(mem);
-        if (!is_unload && !load_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, kernel))
+        if (!is_unload && !load_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, kernel, mem))
             return false;
         if (is_unload && !unload_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, kernel, mem))
             return false;

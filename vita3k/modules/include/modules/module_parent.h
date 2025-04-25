@@ -26,6 +26,7 @@ struct EmuEnvState;
 struct KernelState;
 
 void init_libraries(EmuEnvState &emuenv);
+void init_exported_vars(EmuEnvState &emuenv);
 void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id);
 
 /**
@@ -50,7 +51,4 @@ bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
 int unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
 bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int *retcode);
 
-Address resolve_export(KernelState &kernel, uint32_t nid);
-uint32_t resolve_nid(KernelState &kernel, Address addr);
 Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem);
-void init_exported_vars(EmuEnvState &emuenv);
