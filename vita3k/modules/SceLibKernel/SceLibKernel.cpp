@@ -627,6 +627,10 @@ EXPORT(SceUID, sceIoOpen, const char *file, const int flags, const SceMode mode)
     if (file == nullptr) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
+
+    if (emuenv.cfg.current_config.file_loading_delay > 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.current_config.file_loading_delay));
+
     LOG_INFO("Opening file: {}", file);
     return open_file(emuenv.io, file, flags, emuenv.pref_path, export_name);
 }

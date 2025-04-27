@@ -195,6 +195,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             if (!config_child.child("emulator").empty()) {
                 const auto emulator_child = config_child.child("emulator");
                 config.show_touchpad_cursor = emulator_child.attribute("show-touchpad-cursor").as_bool();
+                config.file_loading_delay = emulator_child.attribute("file-loading-delay").as_int();
             }
 
             // Load Network Config
@@ -251,6 +252,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.ngs_enable = emuenv.cfg.ngs_enable;
         config.pstv_mode = emuenv.cfg.pstv_mode;
         config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
+        config.file_loading_delay = emuenv.cfg.file_loading_delay;
         config.psn_signed_in = emuenv.cfg.psn_signed_in;
     }
 
@@ -344,6 +346,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         // Emulator
         auto emulator_child = config_child.append_child("emulator");
         emulator_child.append_attribute("show-touchpad-cursor") = config.show_touchpad_cursor;
+        emulator_child.append_attribute("file-loading-delay") = config.file_loading_delay;
 
         // Network
         auto network_child = config_child.append_child("network");
@@ -372,6 +375,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.ngs_enable = config.ngs_enable;
         emuenv.cfg.pstv_mode = config.pstv_mode;
         emuenv.cfg.show_touchpad_cursor = config.show_touchpad_cursor;
+        emuenv.cfg.file_loading_delay = config.file_loading_delay;
         emuenv.cfg.psn_signed_in = config.psn_signed_in;
     }
 
@@ -447,6 +451,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
         emuenv.cfg.current_config.pstv_mode = emuenv.cfg.pstv_mode;
         emuenv.cfg.current_config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
+        emuenv.cfg.current_config.file_loading_delay = emuenv.cfg.file_loading_delay;
         emuenv.cfg.current_config.psn_signed_in = emuenv.cfg.psn_signed_in;
     }
 
@@ -883,6 +888,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox(lang.emulator["check_for_updates"].c_str(), &emuenv.cfg.check_for_updates);
         SetTooltipEx(lang.emulator["check_for_updates_description"].c_str());
+        ImGui::Spacing();
+        ImGui::SliderInt("File Loading Delay", &config.file_loading_delay, 0, 30, "%d ms", ImGuiSliderFlags_AlwaysClamp);
+        SetTooltipEx("File loading delay in milliseconds.\nThis is required for some games to load files too quickly compared to real hardware (e.g., Silent Hill).\nDefault is 0 ms.");
         ImGui::Separator();
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["performance_overlay"].c_str());
         ImGui::Spacing();
