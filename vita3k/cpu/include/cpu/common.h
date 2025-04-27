@@ -90,18 +90,19 @@ struct CPUContext {
     }
 
     std::string description() {
-        std::stringstream ss;
         uint32_t pc = get_pc();
         uint32_t sp = get_sp();
         uint32_t lr = get_lr();
 
-        ss << fmt::format("PC: 0x{:0>8x},   SP: 0x{:0>8x},   LR: 0x{:0>8x}\n", pc, sp, lr);
+        std::string str;
+        auto back_it = std::back_inserter(str);
+        fmt::format_to(back_it, "PC: 0x{:0>8x},   SP: 0x{:0>8x},   LR: 0x{:0>8x}\n", pc, sp, lr);
         for (int a = 0; a < 6; a++) {
-            ss << fmt::format("r{: <2}: 0x{:0>8x}   r{: <2}: 0x{:0>8x}\n", a, cpu_registers[a], a + 6, cpu_registers[a + 6]);
+            fmt::format_to(back_it, "r{: <2}: 0x{:0>8x}   r{: <2}: 0x{:0>8x}\n", a, cpu_registers[a], a + 6, cpu_registers[a + 6]);
         }
-        ss << fmt::format("r12: 0x{:0>8x}\n", cpu_registers[12]);
-        ss << fmt::format("Thumb: {}\n", thumb());
-        return ss.str();
+        fmt::format_to(back_it, "r12: 0x{:0>8x}\n", cpu_registers[12]);
+        fmt::format_to(back_it, "Thumb: {}\n", thumb());
+        return str;
     }
 };
 

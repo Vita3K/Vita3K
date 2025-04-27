@@ -63,7 +63,7 @@ std::string disassemble(DisasmState &state, const uint8_t *code, size_t size, ui
         out << " (" << cs_strerror(err) << ")";
     }
 
-    return out.str();
+    return std::move(out).str();
 }
 
 bool is_returning(DisasmState &state) {

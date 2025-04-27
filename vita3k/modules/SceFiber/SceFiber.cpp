@@ -100,22 +100,18 @@ static CPUContext get_thread_context(FiberState &state, const SceUID &tid) {
 }
 
 static std::string describe_fiber(FiberState &state, const ThreadStatePtr &thread, SceFiber *fiber) {
-    std::stringstream ss;
-    ss << fmt::format("Fiber (name: {})\n", fiber->name);
-    ss << fmt::format("entry: {}\n", log_hex(fiber->cpu->get_pc()), log_hex(fiber->entry.address()));
-    ss << "CPU Context:\n";
-    ss << fiber->cpu->description();
-    ss << "Referenced from " << thread->id << "\n";
-    ss << "CPU Context:\n";
-    auto ctx = get_thread_context(state, thread->id);
-    ss << ctx.description();
-    return ss.str();
+    std::string str;
+    auto back_it = std::back_inserter(str);
+    fmt::format_to(back_it, "Fiber (name: {})\n", fiber->name);
+    fmt::format_to(back_it, "entry: 0x{:X}\n", fiber->entry.address());
+    fmt::format_to(back_it, "CPU Context:\n{}", fiber->cpu->description());
+    fmt::format_to(back_it, "Referenced from {}\n", thread->id);
+    fmt::format_to(back_it, "CPU Context:\n{}", get_thread_context(state, thread->id).description());
+    return str;
 }
 
 static void log_fiber(FiberState &state, const ThreadStatePtr &thread, SceFiber *fiber, const std::string &function_name) {
-    std::string log_msg = function_name + "\n";
-    log_msg += describe_fiber(state, thread, fiber);
-    LOG_INFO("{}", log_msg);
+    LOG_INFO("{}\n{}", function_name, describe_fiber(state, thread, fiber));
 }
 
 static void setup_fiber_to_run(EmuEnvState &emuenv, const ThreadStatePtr &thread, SceFiber *fiber, uint32_t thread_sp, const uint32_t &argOnRunTo) {
