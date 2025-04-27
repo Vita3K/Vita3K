@@ -149,6 +149,7 @@ enum ScreenshotFormat {
     code(bool, "display-info-message", false, display_info_message)                                     \
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "check-for-updates", true, check_for_updates)                                            \
+    code(int, "file-loading-delay", 0, file_loading_delay)                                              \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
