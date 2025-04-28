@@ -23,6 +23,7 @@
 #include <emuenv/state.h>
 #include <gui/functions.h>
 #include <interface.h>
+#include <util/vector_utils.h>
 
 namespace gui {
 

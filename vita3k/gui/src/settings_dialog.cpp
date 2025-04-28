@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <pugixml.hpp>
+#include <util/vector_utils.h>
 
 #undef ERROR
 

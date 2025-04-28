@@ -43,6 +43,7 @@
 #include <touch/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
+#include <util/vector_utils.h>
 
 #include <gui/imgui_impl_sdl.h>
 
@@ -401,7 +402,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
         logging::set_level(static_cast<spdlog::level::level_enum>(emuenv.cfg.log_level));
     }
 
-    LOG_INFO("{}: {}", emuenv.cfg[e_cpu_backend], emuenv.cfg.current_config.cpu_backend);
+    LOG_INFO("cpu-backend: {}", emuenv.cfg.current_config.cpu_backend);
     LOG_INFO_IF(emuenv.kernel.cpu_backend == CPUBackend::Dynarmic, "CPU Optimisation state: {}", emuenv.cfg.current_config.cpu_opt);
     LOG_INFO("ngs state: {}", emuenv.cfg.current_config.ngs_enable);
     LOG_INFO("Resolution multiplier: {}", emuenv.cfg.resolution_multiplier);

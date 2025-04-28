@@ -27,6 +27,7 @@
 #include <gxm/types.h>
 #include <util/align.h>
 #include <util/log.h>
+#include <util/vector_utils.h>
 
 #include <shader/spirv_recompiler.h>
 

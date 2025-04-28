@@ -24,6 +24,7 @@
 #include <display/functions.h>
 #include <display/state.h>
 #include <kernel/state.h>
+#include <util/log.h>
 
 #include <SDL_keyboard.h>
 

@@ -29,6 +29,7 @@
 
 #include <util/log.h>
 #include <util/string_utils.h>
+#include <util/vector_utils.h>
 
 #include <pugixml.hpp>
 #include <stb_image.h>
