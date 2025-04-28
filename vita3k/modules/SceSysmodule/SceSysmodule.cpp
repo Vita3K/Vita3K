@@ -21,6 +21,7 @@
 #include <module/load_module.h>
 #include <modules/module_parent.h>
 #include <util/tracy.h>
+#include <util/vector_utils.h>
 
 TRACY_MODULE_NAME(SceSysmodule);
 

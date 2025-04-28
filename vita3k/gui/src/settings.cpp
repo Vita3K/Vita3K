@@ -32,6 +32,7 @@
 
 #include <pugixml.hpp>
 #include <stb_image.h>
+#include <util/vector_utils.h>
 
 #undef ERROR
 
