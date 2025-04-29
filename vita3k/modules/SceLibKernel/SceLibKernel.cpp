@@ -343,7 +343,7 @@ EXPORT(int, sceClibStrcatChk) {
 
 EXPORT(Ptr<char>, sceClibStrchr, const char *str, int c) {
     TRACY_FUNC(sceClibStrchr, str, c);
-    const char *res = strchr(str, c);
+    char *res = const_cast<char *>(strchr(str, c));
     return Ptr<char>(res, emuenv.mem);
 }
 
@@ -359,7 +359,7 @@ EXPORT(int, sceClibStrcpyChk) {
 
 EXPORT(Ptr<char>, sceClibStrlcat, char *dst, const char *src, SceSize len) {
     TRACY_FUNC(sceClibStrlcat, dst, src, len);
-    const char *res = strncat(dst, src, len);
+    char *res = strncat(dst, src, len);
     return Ptr<char>(res, emuenv.mem);
 }
 
@@ -370,7 +370,7 @@ EXPORT(int, sceClibStrlcatChk) {
 
 EXPORT(Ptr<char>, sceClibStrlcpy, char *dst, const char *src, SceSize len) {
     TRACY_FUNC(sceClibStrlcpy, dst, src, len);
-    const char *res = strncpy(dst, src, len);
+    char *res = strncpy(dst, src, len);
     return Ptr<char>(res, emuenv.mem);
 }
 
@@ -390,7 +390,7 @@ EXPORT(int, sceClibStrncasecmp, const char *s1, const char *s2, SceSize len) {
 
 EXPORT(Ptr<char>, sceClibStrncat, char *dst, const char *src, SceSize len) {
     TRACY_FUNC(sceClibStrncat, dst, src, len);
-    const char *res = strncat(dst, src, len);
+    char *res = strncat(dst, src, len);
     return Ptr<char>(res, emuenv.mem);
 }
 
@@ -406,7 +406,7 @@ EXPORT(int, sceClibStrncmp, const char *s1, const char *s2, SceSize len) {
 
 EXPORT(Ptr<char>, sceClibStrncpy, char *dst, const char *src, SceSize len) {
     TRACY_FUNC(sceClibStrncpy, dst, src, len);
-    const char *res = strncpy(dst, src, len);
+    char *res = strncpy(dst, src, len);
     return Ptr<char>(res, emuenv.mem);
 }
 
@@ -422,13 +422,13 @@ EXPORT(uint32_t, sceClibStrnlen, const char *s1, SceSize maxlen) {
 
 EXPORT(Ptr<char>, sceClibStrrchr, const char *src, int ch) {
     TRACY_FUNC(sceClibStrrchr, src, ch);
-    const char *res = strrchr(src, ch);
+    char *res = const_cast<char *>(strrchr(src, ch));
     return Ptr<char>(res, emuenv.mem);
 }
 
 EXPORT(Ptr<char>, sceClibStrstr, const char *s1, const char *s2) {
     TRACY_FUNC(sceClibStrstr, s1, s2);
-    const char *res = strstr(s1, s2);
+    char *res = const_cast<char *>(strstr(s1, s2));
     return Ptr<char>(res, emuenv.mem);
 }
 
