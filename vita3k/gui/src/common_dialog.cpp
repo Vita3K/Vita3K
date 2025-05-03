@@ -23,6 +23,7 @@
 #include <config/state.h>
 #include <dialog/state.h>
 #include <util/string_utils.h>
+#include <util/vector_utils.h>
 
 #include <SDL.h>
 

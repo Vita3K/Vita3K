@@ -5,7 +5,6 @@ add_library(
 	include/config/functions.h
 	include/config/state.h
 	include/config/version.h
-	include/config/yaml.h
 	src/config.cpp
 	version.cpp
 )
@@ -13,6 +12,6 @@ add_library(
 configure_file(src/version.cpp.in version.cpp)
 
 target_include_directories(config PUBLIC include)
-target_link_libraries(config PUBLIC util yaml-cpp)
-target_link_libraries(config PRIVATE CLI11)
+target_link_libraries(config PUBLIC util)
+target_link_libraries(config PRIVATE CLI11 yaml-cpp)
 target_link_libraries(config PRIVATE tracy)

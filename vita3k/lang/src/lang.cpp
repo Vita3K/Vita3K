@@ -23,6 +23,7 @@
 #include <gui/state.h>
 #include <ime/state.h>
 #include <util/fs.h>
+#include <util/vector_utils.h>
 
 #include <pugixml.hpp>
 

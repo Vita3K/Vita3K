@@ -21,6 +21,7 @@
 #include <config/config.h>
 #include <lang/state.h>
 #include <np/state.h>
+#include <util/log.h>
 
 #include <imgui.h>
 #include <imgui_memory_editor.h>

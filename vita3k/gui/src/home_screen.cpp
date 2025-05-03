@@ -30,6 +30,7 @@
 #include <util/log.h>
 #include <util/safe_time.h>
 #include <util/string_utils.h>
+#include <util/vector_utils.h>
 
 using namespace std::string_literals;
 

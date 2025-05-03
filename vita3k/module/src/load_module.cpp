@@ -20,6 +20,7 @@
 #include <config/state.h>
 #include <emuenv/state.h>
 #include <kernel/state.h>
+#include <util/vector_utils.h>
 
 static SysmodulePaths init_sysmodule_paths() {
     SysmodulePaths p;
