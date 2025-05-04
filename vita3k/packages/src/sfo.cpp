@@ -111,29 +111,54 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
 
     sfile.entries[sfile.header.tables_entries].entry.key_offset = sfile.header.data_table_start - sfile.header.key_table_start;
 
+    // Parse each SFO entry and extract its associated key
     for (uint32_t i = 0; i < sfile.header.tables_entries; i++) {
+        // Calculate the size of the key for the current entry by subtracting the offsets
         uint32_t keySize = sfile.entries[i + 1].entry.key_offset - sfile.entries[i].entry.key_offset;
 
+        // Resize the 'key' data to hold the correct amount of characters for the key
         sfile.entries[i].data.first.resize(keySize);
 
-        memcpy(sfile.entries[i].data.first.data(), &content[sfile.header.key_table_start + sfile.entries[i].entry.key_offset], keySize);
+        // Calculate the starting address of the key data in the content buffer
+        const auto key_begin = content.begin() + sfile.header.key_table_start + sfile.entries[i].entry.key_offset;
 
-        // Quick hack to remove garbage null terminator caused by reading directly
-        // to buffer
-        sfile.entries[i].data.first = sfile.entries[i].data.first.c_str();
+        // Extract the key data from the content buffer and assign it to 'key' as a string
+        // Subtract 1 from keySize to avoid including the null terminator
+        sfile.entries[i].data.first = std::string(key_begin, key_begin + keySize - 1);
     }
 
+    // Parse each SFO entry and extract its associated data
     for (uint32_t i = 0; i < sfile.header.tables_entries; i++) {
-        uint32_t dataSize = sfile.entries[i].entry.data_len;
+        const uint32_t dataSize = sfile.entries[i].entry.data_len;
 
+        // Resize the destination string to match the data size
         sfile.entries[i].data.second.resize(dataSize);
 
-        // The last of data is a terminator
-        memcpy(sfile.entries[i].data.second.data(), &content[sfile.header.data_table_start + sfile.entries[i].entry.data_offset], dataSize - 1);
+        // Compute the data's starting position in the content buffer
+        const auto data_begin = content.begin() + sfile.header.data_table_start + sfile.entries[i].entry.data_offset;
 
-        // Quick hack to remove garbage null terminator caused by reading directly
-        // to buffer
-        sfile.entries[i].data.second = sfile.entries[i].data.second.c_str();
+        // Copy the raw data into a temporary buffer
+        std::vector<char> data(data_begin, data_begin + dataSize);
+
+        // Interpret and convert the raw data based on its format
+        switch (sfile.entries[i].entry.data_fmt) {
+        case SfoDataFormat::UINT32_T:
+            // Convert the first 4 bytes to a uint32_t and store as string
+            sfile.entries[i].data.second = std::to_string(*reinterpret_cast<const uint32_t *>(data.data()));
+            break;
+        case SfoDataFormat::ASCII:
+        case SfoDataFormat::UTF8:
+            // Interpret the data as a raw string (may not be null-terminated)
+            sfile.entries[i].data.second = std::string(data.begin(), data.end());
+            break;
+        case SfoDataFormat::UTF8_NULL:
+            // Interpret the data as a null-terminated UTF-8 string (exclude the null byte)
+            sfile.entries[i].data.second = std::string(data.begin(), data.end() - 1);
+            break;
+        default:
+            // Unknown or unsupported data format
+            return false;
+        }
     }
 
     return true;
