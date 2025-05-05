@@ -47,7 +47,7 @@
 		<vita3k_staff>Vita3K人员名单</vita3k_staff>
 		<developers>开发人员</developers>
 		<contributors>贡献者</contributors>
-		<supporters>支持者</supporters>
+		<supporters>赞助者</supporters>
 	</about>
 
 	<app_context>
@@ -610,7 +610,7 @@
 			<cpu_backend>CPU后端</cpu_backend>
 			<select_cpu_backend>选择您喜欢的CPU后端。</select_cpu_backend>
 			<cpu_opt>启用优化</cpu_opt>
-			<cpu_opt_description>勾选此项启用额外CPU的JIT优化。</cpu_opt_description>
+			<cpu_opt_description>勾选此项启用额外的CPU JIT优化。</cpu_opt_description>
 		</cpu>
 		<gpu>
 			<reset>重置</reset>
@@ -630,7 +630,7 @@
 如果禁用（特别是在提升时），则可大幅提升性能。</surface_sync_description>
 			<async_pipeline_compilation>异步管线编译</async_pipeline_compilation>
 			<async_pipeline_compilation_description>允许在多个并发线程上同时编译管线。
-这可以减少管线编译卡顿，但代价是会出现暂时的图形故障。</async_pipeline_compilation_description>
+这可以减少管线编译卡顿，但代价是会出现短暂的图形故障。</async_pipeline_compilation_description>
 			<nearest>最邻近</nearest>
 			<bilinear>双线性</bilinear>
 			<bicubic>双三次</bicubic>
@@ -756,6 +756,9 @@
 如果禁用，请右键点击应用程序将其打开。</live_area_screen_description>
 			<stretch_the_display_area>拉伸显示区域</stretch_the_display_area>
 			<stretch_the_display_area_description>勾选此项扩大显示区域以适应屏幕尺寸。</stretch_the_display_area_description>
+			<fullscreen_hd_res_pixel_perfect>全屏高清精准渲染</fullscreen_hd_res_pixel_perfect>
+			<fullscreen_hd_res_pixel_perfect_description>对于屏幕比例为16:9的高清显示器，勾选此项可在全屏模式下获得像素级精准渲染，
+但代价是屏幕顶部和底部会有轻微裁剪。</fullscreen_hd_res_pixel_perfect_description>
 			<apps_list_grid>网格模式</apps_list_grid>
 			<apps_list_grid_description>勾选此项将应用程序列表设置为网格模式。</apps_list_grid_description>
 			<icon_size>应用程序图标大小</icon_size>
@@ -824,6 +827,7 @@
 		</debug>
 		<save_reboot>保存并重启</save_reboot>
 		<save_apply>保存并应用</save_apply>
+		<save_close>保存并关闭</save_close>
 		<keep_changes>点击保存保留您的更改。</keep_changes>
 	</settings_dialog>
 
