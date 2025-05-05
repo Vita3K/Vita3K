@@ -53,14 +53,14 @@ void PlayerModule::on_param_change(const MemState &mem, ModuleData &data) {
 
     // check for invalid playback values
     const auto is_invalid_playback_value = [](const float playback_value, const float max_value) {
-        return isnan(playback_value) || (playback_value < 0.f) || (playback_value > max_value);
+        return isnan(playback_value) || (playback_value <= 0.f) || (playback_value > max_value);
     };
 
     if (is_invalid_playback_value(new_params->playback_scalar, 10.f)) {
         new_params->playback_scalar = old_params->playback_scalar;
         LOG_ERROR_ONCE("Invalid playback rate scaling.");
         if (is_invalid_playback_value(new_params->playback_scalar, 10.f)) {
-            new_params->playback_scalar = 1.0;
+            new_params->playback_scalar = 1.f;
         }
     }
 
