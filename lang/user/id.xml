@@ -621,7 +621,7 @@ Beberapa aplikasi tidak menggunakan ini dan mendapatkan tombol konfirmasi defaul
 			<boot_apps_full_screen>Boot aplikasi dalam layar penuh</boot_apps_full_screen>
 			<trace>Jejak</trace>
 			<warning>Peringatan</warning>
-			<error>Kekeliruan<</error>
+			<error>Kekeliruan</error>
 			<critical>Kritis</critical>
 			<off>Mati</off>
 			<log_level>Tingkatan Log</log_level>

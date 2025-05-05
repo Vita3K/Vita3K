@@ -759,6 +759,9 @@ They will be shown in the main menu bar only.</display_system_apps_description>
 If disabled, right click on an application to open it.</live_area_screen_description>
 			<stretch_the_display_area>Stretch The Display Area</stretch_the_display_area>
 			<stretch_the_display_area_description>Check the box to enlarge the display area to fit the screen size.</stretch_the_display_area_description>
+			<fullscreen_hd_res_pixel_perfect>Fullscreen HD res pixel perfect</fullscreen_hd_res_pixel_perfect>
+			<fullscreen_hd_res_pixel_perfect_description>Check the box to get a pixel perfect rendering with HD resolutions (1080p, 4K) in fullscreen
+at the price of slight cropping at the top and the bottom of the screen.</fullscreen_hd_res_pixel_perfect_description>
 			<apps_list_grid>Grid Mode</apps_list_grid>
 			<apps_list_grid_description>Check the box to set the app list to grid mode.</apps_list_grid_description>
 			<icon_size>App Icon Size</icon_size>
@@ -827,6 +830,7 @@ lower can improve performance but can make games unstable if you have bad enough
 		</debug>
 		<save_reboot>Save & Reboot</save_reboot>
 		<save_apply>Save & Apply</save_apply>
+		<save_close>Save & Close</save_close>
 		<keep_changes>Click on Save to keep your changes.</keep_changes>
 	</settings_dialog>
 

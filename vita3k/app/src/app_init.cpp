@@ -87,7 +87,7 @@ void update_viewport(EmuEnvState &state) {
     if (h > 0) {
         const float window_aspect = static_cast<float>(w) / h;
         const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-        const bool fullscreen_hd_res_pixel_perfect_en = state.cfg.fullscreen_hd_res_pixel_perfect & state.display.fullscreen & !(w % DEFAULT_RES_WIDTH) & !(h % (DEFAULT_RES_HEIGHT - 4));
+        const bool fullscreen_hd_res_pixel_perfect_en = state.cfg.fullscreen_hd_res_pixel_perfect && state.display.fullscreen && !(w % DEFAULT_RES_WIDTH) && !(h % (DEFAULT_RES_HEIGHT - 4));
         if (state.cfg.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
             // Match the aspect ratio to the screen size.
             state.logical_viewport_size.x = static_cast<SceFloat>(state.window_size.x);
