@@ -147,18 +147,33 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
     gyro /= static_cast<float>(2.0 * M_PI);
     std::swap(gyro.y, gyro.z);
     gyro.y *= -1;
-    state.motion_data.SetGyroscope(gyro);
 
     accel /= -SDL_STANDARD_GRAVITY;
     std::swap(accel.y, accel.z);
     accel.y *= -1;
-    state.motion_data.SetAcceleration(accel);
 
+    const MotionSample &current_motion_sample = state.ring_buffer_samples[state.current_buffer_index];
+    if (state.ring_buffer_size < MotionState::MAX_SAMPLES) {
+        state.ring_buffer_size++;
+    }
+    state.current_buffer_index++;
+    if (state.current_buffer_index >= state.ring_buffer_size) {
+        state.ring_buffer_size = 0;
+    }
+
+    MotionSample &next_motion_sample = state.ring_buffer_samples[state.current_buffer_index];
+    next_motion_sample = {
+        .counter = current_motion_sample.counter + 1,
+        .timestamp = gyro_timestamp,
+        .hostTimestamp = accel_timestamp,
+        .gyro = gyro,
+        .accel = accel,
+    };
+    state.motion_data.SetGyroscope(gyro);
+    state.motion_data.SetAcceleration(accel);
     state.motion_data.UpdateRotation(gyro_timestamp - state.last_gyro_timestamp);
     state.motion_data.UpdateOrientation(accel_timestamp - state.last_accel_timestamp);
-    state.motion_data.UpdateBasicOrientation();
 
     state.last_gyro_timestamp = gyro_timestamp;
     state.last_accel_timestamp = accel_timestamp;
-    state.last_counter++;
 }
