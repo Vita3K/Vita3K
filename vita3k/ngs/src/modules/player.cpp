@@ -210,8 +210,8 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                 decoder->receive(nullptr, &samples_count);
 
                 // Playback rate scaling
-                float src_sample_rate = std::ceil(params->playback_frequency);
-                if ((params->playback_scalar != 1.f) || (static_cast<int>(src_sample_rate) != sample_rate)) {
+                float src_sample_rate = params->playback_frequency;
+                if ((src_sample_rate >= 1.f) && ((params->playback_scalar != 1.f) || (static_cast<int>(src_sample_rate) != sample_rate))) {
                     LOG_INFO_ONCE("The currently running game requests playback rate scaling when decoding audio. Audio might crackle.");
 
                     // Received decoded samples from decoder
