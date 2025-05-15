@@ -20,7 +20,7 @@
 #include <util/tracy.h>
 #include <util/types.h>
 
-#include <SDL_power.h>
+#include <SDL3/SDL_power.h>
 
 #include <climits>
 

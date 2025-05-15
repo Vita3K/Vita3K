@@ -196,8 +196,8 @@ EXPORT(int, sceCtrlSetActuator, int port, const SceCtrlActuator *pState) {
     CtrlState &state = emuenv.ctrl;
     for (const auto &controller : state.controllers) {
         if (controller.second.port + 1 == port) {
-            // sceCtrl ports are 1-based and SDL_GameController index is 0-based. Need to convert.
-            SDL_GameControllerRumble(controller.second.controller.get(), pState->small * 655.35f, pState->large * 655.35f, SDL_HAPTIC_INFINITY);
+            // sceCtrl ports are 1-based and SDL_Gamepad index is 0-based. Need to convert.
+            SDL_RumbleGamepad(controller.second.controller.get(), pState->small * 655.35f, pState->large * 655.35f, SDL_HAPTIC_INFINITY);
 
             return 0;
         }
