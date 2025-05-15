@@ -34,8 +34,7 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
-#include <SDL.h>
-#include <SDL_video.h>
+#include <SDL3/SDL_video.h>
 
 #include <array>
 #include <mutex>
@@ -192,7 +191,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
 
     for (int minor_version : accept_gl_minor_versions) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor_version);
-        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
+        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), [](SDL_GLContext context) { SDL_GL_DestroyContext(context); });
         if (gl_state.context) {
             break;
         }

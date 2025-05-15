@@ -24,7 +24,8 @@
 #include <io/state.h>
 #include <util/log.h>
 
-#include <SDL.h>
+#include <SDL3/SDL_messagebox.h>
+#include <SDL3/SDL_timer.h>
 
 namespace app {
 

@@ -41,12 +41,10 @@
 
 #include <gdbstub/functions.h>
 
-#include <SDL.h>
-#include <SDL_video.h>
-#include <SDL_vulkan.h>
+#include <SDL3/SDL_filesystem.h>
+#include <SDL3/SDL_video.h>
 
 #ifdef _WIN32
-#include <SDL_syswm.h>
 #include <dwmapi.h>
 #endif
 
@@ -64,20 +62,7 @@ void update_viewport(EmuEnvState &state) {
     state.window_size.x = w;
     state.window_size.y = h;
 
-    switch (state.renderer->current_backend) {
-    case renderer::Backend::OpenGL:
-        SDL_GL_GetDrawableSize(state.window.get(), &w, &h);
-        break;
-
-    case renderer::Backend::Vulkan:
-        SDL_Vulkan_GetDrawableSize(state.window.get(), &w, &h);
-        break;
-
-    default:
-        LOG_ERROR("Unimplemented backend renderer: {}.", static_cast<int>(state.renderer->current_backend));
-        break;
-    }
-
+    SDL_GetWindowSizeInPixels(state.window.get(), &w, &h);
     state.drawable_size.x = w;
     state.drawable_size.y = h;
 
@@ -155,7 +140,6 @@ void update_viewport(EmuEnvState &state) {
 void init_paths(Root &root_paths) {
     auto sdl_base_path = SDL_GetBasePath();
     auto base_path = fs_utils::utf8_to_path(sdl_base_path);
-    SDL_free(sdl_base_path);
 
     root_paths.set_base_path(base_path);
     root_paths.set_static_assets_path(base_path);
@@ -402,7 +386,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 
     if (state.cfg.fullscreen) {
         state.display.fullscreen = true;
-        window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+        window_type |= SDL_WINDOW_FULLSCREEN;
     }
 
 #ifdef __LINUX__
@@ -415,7 +399,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     }
 #endif
 
-    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH * state.manual_dpi_scale, DEFAULT_RES_HEIGHT * state.manual_dpi_scale, window_type | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
+    state.window = WindowPtr(SDL_CreateWindow(window_title, DEFAULT_RES_WIDTH * state.manual_dpi_scale, DEFAULT_RES_HEIGHT * state.manual_dpi_scale, window_type | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY), SDL_DestroyWindow);
 
     if (!state.window) {
         LOG_ERROR("SDL failed to create window!");
@@ -424,11 +408,10 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 
 #ifdef _WIN32
     // Disable round corners for the game window
-    SDL_SysWMinfo wm_info;
-    SDL_VERSION(&wm_info.version);
-    SDL_GetWindowWMInfo(state.window.get(), &wm_info);
     const auto window_preference = DWMWCP_DONOTROUND;
-    DwmSetWindowAttribute(wm_info.info.win.window, DWMWA_WINDOW_CORNER_PREFERENCE, &window_preference, sizeof(window_preference));
+    HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(state.window.get()), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
+    if (hwnd)
+        DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &window_preference, sizeof(window_preference));
 #endif
 
     // initialize the renderer first because we need to know if we need a page table

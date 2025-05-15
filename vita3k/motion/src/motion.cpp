@@ -20,8 +20,8 @@
 
 #include <ctrl/state.h>
 
-#include <SDL.h>
-#include <SDL_gamecontroller.h>
+#include <SDL3/SDL_gamepad.h>
+#include <numbers>
 
 SceFVector3 get_acceleration(const MotionState &state) {
     Util::Vec3f accelerometer = state.motion_data.GetAcceleration();
@@ -33,7 +33,7 @@ SceFVector3 get_acceleration(const MotionState &state) {
 }
 
 SceFVector3 get_gyroscope(const MotionState &state) {
-    Util::Vec3f gyroscope = state.motion_data.GetGyroscope() * static_cast<float>(2.f * M_PI);
+    Util::Vec3f gyroscope = state.motion_data.GetGyroscope() * 2.f * std::numbers::pi_v<float>;
     return {
         gyroscope.x,
         gyroscope.y,
@@ -96,55 +96,36 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
     bool found_gyro = false;
     bool found_accel = false;
     Util::Vec3f gyro;
-    uint64_t gyro_timestamp = 0;
     Util::Vec3f accel;
-    uint64_t accel_timestamp = 0;
 
-#if SDL_VERSION_ATLEAST(2, 26, 0)
     {
-        // SDL_GameControllerGetSensorDataWithTimestamp is only supported on 2.26+
-        // we need to check it because we are linking dynamically with SDL
-        // TODO: put this in an init function
-        SDL_version sdl_version;
-        SDL_GetVersion(&sdl_version);
-        const bool can_use_timestamp_fn = sdl_version.minor >= 26;
-
         std::lock_guard<std::mutex> guard(ctrl_state.mutex);
         for (const auto &controller : ctrl_state.controllers) {
             if (!found_gyro && controller.second.has_gyro) {
-                if (can_use_timestamp_fn && SDL_GameControllerGetSensorDataWithTimestamp(controller.second.controller.get(), SDL_SENSOR_GYRO, &gyro_timestamp, reinterpret_cast<float *>(&gyro), 3) == 0)
-                    found_gyro = true;
-                else if (!can_use_timestamp_fn && SDL_GameControllerGetSensorData(controller.second.controller.get(), SDL_SENSOR_GYRO, reinterpret_cast<float *>(&gyro), 3) == 0)
+                if (SDL_GetGamepadSensorData(controller.second.controller.get(), SDL_SENSOR_GYRO, reinterpret_cast<float *>(&gyro), 3) == 0)
                     found_gyro = true;
             }
 
             if (!found_accel && controller.second.has_accel) {
-                if (can_use_timestamp_fn && SDL_GameControllerGetSensorDataWithTimestamp(controller.second.controller.get(), SDL_SENSOR_ACCEL, &accel_timestamp, reinterpret_cast<float *>(&accel), 3) == 0)
-                    found_accel = true;
-                else if (!can_use_timestamp_fn && SDL_GameControllerGetSensorData(controller.second.controller.get(), SDL_SENSOR_ACCEL, reinterpret_cast<float *>(&accel), 3) == 0)
+                if (SDL_GetGamepadSensorData(controller.second.controller.get(), SDL_SENSOR_ACCEL, reinterpret_cast<float *>(&accel), 3) == 0)
                     found_accel = true;
             }
         }
     }
-#endif
 
     if (!found_accel && !found_gyro)
         return;
 
     // if timestamp is not available, use the current time instead
-    if (gyro_timestamp == 0 || accel_timestamp == 0) {
-        std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
-        uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
+    std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
+    uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
 
-        if (gyro_timestamp == 0)
-            gyro_timestamp = timestamp;
-        if (accel_timestamp == 0)
-            accel_timestamp = timestamp;
-    }
+    uint64_t gyro_timestamp = timestamp;
+    uint64_t accel_timestamp = timestamp;
 
     std::lock_guard<std::mutex> guard(state.mutex);
 
-    gyro /= static_cast<float>(2.0 * M_PI);
+    gyro /= 2.f * std::numbers::pi_v<float>;
     std::swap(gyro.y, gyro.z);
     gyro.y *= -1;
     state.motion_data.SetGyroscope(gyro);

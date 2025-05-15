@@ -39,7 +39,7 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <SDL.h>
+#include <SDL3/SDL_video.h>
 
 #include <algorithm>
 #include <pugixml.hpp>
