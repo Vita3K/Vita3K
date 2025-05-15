@@ -22,7 +22,7 @@
 #define SCE_TOUCH_MAX_REPORT 8
 #define MAX_TOUCH_BUFFER_SAVED 64
 
-struct SDL_ControllerTouchpadEvent;
+struct SDL_GamepadTouchpadEvent;
 struct SDL_TouchFingerEvent;
 
 enum SceTouchSamplingState {

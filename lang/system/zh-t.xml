@@ -293,7 +293,7 @@
 		<green>綠</green>
 		<blue>藍</blue>
 		<not_connected>未接入相容的控制器。
-請接入與SDL2相容的控制器。</not_connected>
+請接入與SDL3相容的控制器。</not_connected>
 		<disable_motion>停用體感</disable_motion>
 		<reset_controller_binding>重設控制器繫結</reset_controller_binding>
 	</controllers>

@@ -287,7 +287,7 @@ Kod ralat: {}</an_error_occurred>
 		<green>Hijau</green>
 		<blue>Biru</blue>
 		<not_connected>Tiada Kontroler serasi disambungkan.
-Sila sambungkan Kontroler yang serasi dengan SDL2.</not_connected>
+Sila sambungkan Kontroler yang serasi dengan SDL3.</not_connected>
 		<reset_controller_binding>Tetapkan Semula Pengikat Kontroler</reset_controller_binding>
 	</controllers>
 

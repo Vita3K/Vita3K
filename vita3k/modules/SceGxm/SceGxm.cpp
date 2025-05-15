@@ -36,7 +36,6 @@
 #include <kernel/state.h>
 #include <mem/state.h>
 
-#include <SDL.h>
 #include <io/state.h>
 #include <mem/mempool.h>
 #include <renderer/functions.h>

@@ -17,8 +17,6 @@
 
 #include "audio/impl/cubeb_audio.h"
 
-#include <tracy/Tracy.hpp>
-
 #include "kernel/thread/thread_state.h"
 
 #include "util/log.h"
@@ -71,9 +69,7 @@ CubebAudioOutPort::~CubebAudioOutPort() {
 }
 
 CubebAudioAdapter::CubebAudioAdapter(AudioState &audio_state)
-    : AudioAdapter(audio_state) {
-    this->single_stream = false;
-}
+    : AudioAdapter(audio_state) {}
 
 CubebAudioAdapter::~CubebAudioAdapter() {
     if (cubeb_ctx)

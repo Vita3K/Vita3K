@@ -210,11 +210,17 @@ EXPORT(int, sceAudioOutGetRestSample, int port) {
     if (!prt) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
-
-    const int bytes_available = SDL_AudioStreamAvailable(prt->stream.get());
-
-    // we have the number of bytes left, we can convert it back to the number of samples left
-    return bytes_available / (2 * sizeof(int16_t));
+    int samples_available = emuenv.audio.get_rest_sample(*prt);
+    if (prt->type == SCE_AUDIO_OUT_PORT_TYPE_MAIN) {
+        samples_available = std::clamp(samples_available, 0, prt->len);
+    } else {
+        // for other port types only the granularity value set for the len argument or 0 can be returned.
+        if (samples_available < prt->len / 2)
+            samples_available = 0;
+        else
+            samples_available = prt->len;
+    }
+    return samples_available;
 }
 
 EXPORT(int, sceAudioOutOpenExtPort) {

@@ -29,7 +29,7 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <SDL.h>
+#include <SDL3/SDL_cpuinfo.h>
 
 // don't use the dispatch version, because we always hash a small amount
 // with a known size
@@ -210,7 +210,7 @@ void PipelineCache::init() {
         state.features.support_rgb_attributes = unsupported_rgb_vertex_attribute_formats.empty();
     }
 
-    const int nb_logical_threads = SDL_GetCPUCount();
+    const int nb_logical_threads = SDL_GetNumLogicalCPUCores();
     // took this from RPCS3 (slightly modified)
     if (nb_logical_threads > 12)
         nb_worker_threads = 6;

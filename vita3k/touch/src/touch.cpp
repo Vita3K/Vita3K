@@ -23,7 +23,7 @@
 #include <touch/state.h>
 #include <touch/touch.h>
 
-#include <SDL_events.h>
+#include <SDL3/SDL_events.h>
 
 #include <cstring>
 
@@ -31,7 +31,7 @@ static SceTouchData touch_buffers[MAX_TOUCH_BUFFER_SAVED][2];
 static int touch_buffer_idx = 0;
 static bool is_touchpad = false;
 static SDL_TouchFingerEvent finger_buffer[8];
-static SDL_ControllerTouchpadEvent touchpad_buffer[8];
+static SDL_GamepadTouchpadEvent touchpad_buffer[8];
 static uint8_t finger_count = 0;
 static SceTouchPortType touchscreen_port = SCE_TOUCH_PORT_FRONT;
 static bool is_touched[2] = { false, false };
@@ -47,7 +47,7 @@ static SceTouchData recover_touch_events(const EmuEnvState &emuenv) {
     touch_data.status = 0;
 
     for (uint8_t i = 0; i < finger_count; i++) {
-        touch_data.report[i].id = static_cast<uint8_t>(finger_buffer[i].touchId);
+        touch_data.report[i].id = static_cast<uint8_t>(finger_buffer[i].touchID);
         touch_data.report[i].force = forceTouchEnabled[touchscreen_port] ? 128 : 0;
 
         float x = (finger_buffer[i].x * emuenv.drawable_size.x - emuenv.drawable_viewport_pos.x) / emuenv.drawable_viewport_size.x;
@@ -104,7 +104,7 @@ void touch_vsync_update(const EmuEnvState &emuenv) {
         buffers[touchscreen_port] = touch_data;
 
     } else {
-        SceIVector2 touch_pos_window = { 0, 0 };
+        SceFVector2 touch_pos_window = { 0, 0 };
         const uint32_t buttons = SDL_GetMouseState(&touch_pos_window.x, &touch_pos_window.y);
 
         for (int port = 0; port < 2; port++) {
@@ -168,21 +168,21 @@ void touch_vsync_update(const EmuEnvState &emuenv) {
 
 int handle_touch_event(SDL_TouchFingerEvent &finger) {
     switch (finger.type) {
-    case SDL_FINGERDOWN: {
+    case SDL_EVENT_FINGER_DOWN: {
         if (finger_count >= 8)
             // best we can do is clean everything
             finger_count = 0;
 
         finger_buffer[finger_count] = finger;
-        finger_buffer[finger_count].touchId = next_touch_id;
+        finger_buffer[finger_count].touchID = next_touch_id;
         next_touch_id = (next_touch_id + 1) % 128;
         finger_count++;
         break;
     }
-    case SDL_FINGERUP: {
+    case SDL_EVENT_FINGER_UP: {
         int finger_index = -1;
         for (int i = 0; i < finger_count; i++) {
-            if (finger.fingerId == finger_buffer[i].fingerId) {
+            if (finger.fingerID == finger_buffer[i].fingerID) {
                 finger_index = i;
             }
             if (finger_index != -1) {
@@ -194,12 +194,12 @@ int handle_touch_event(SDL_TouchFingerEvent &finger) {
         break;
     }
 
-    case SDL_FINGERMOTION: {
+    case SDL_EVENT_FINGER_MOTION: {
         for (int i = 0; i < finger_count; i++) {
-            if (finger.fingerId == finger_buffer[i].fingerId) {
-                SDL_TouchID touch_id = finger_buffer[i].touchId;
+            if (finger.fingerID == finger_buffer[i].fingerID) {
+                SDL_TouchID touch_id = finger_buffer[i].touchID;
                 finger_buffer[i] = finger;
-                finger_buffer[i].touchId = touch_id;
+                finger_buffer[i].touchID = touch_id;
             }
         }
         break;
@@ -209,9 +209,9 @@ int handle_touch_event(SDL_TouchFingerEvent &finger) {
     return 0;
 }
 
-int handle_touchpad_event(SDL_ControllerTouchpadEvent &touchpad) {
+int handle_touchpad_event(SDL_GamepadTouchpadEvent &touchpad) {
     switch (touchpad.type) {
-    case SDL_CONTROLLERTOUCHPADDOWN:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
         if (finger_count >= 8) // best we can do is clean everything
             finger_count = 0;
 
@@ -220,7 +220,7 @@ int handle_touchpad_event(SDL_ControllerTouchpadEvent &touchpad) {
         next_touch_id = (next_touch_id + 1) % 128;
         finger_count++;
         break;
-    case SDL_CONTROLLERTOUCHPADUP:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
         for (uint32_t i = 0; i < finger_count; i++) {
             if (touchpad.finger == touchpad_buffer[i].finger) {
                 if (i < (finger_count - 1))
@@ -230,7 +230,7 @@ int handle_touchpad_event(SDL_ControllerTouchpadEvent &touchpad) {
         if (finger_count > 0)
             finger_count--;
         break;
-    case SDL_CONTROLLERTOUCHPADMOTION:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
         for (int i = 0; i < finger_count; i++) {
             if (touchpad.finger == touchpad_buffer[i].finger) {
                 const auto touch_id = touchpad_buffer[i].which;

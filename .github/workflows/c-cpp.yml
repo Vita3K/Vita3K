@@ -88,24 +88,6 @@ jobs:
           choco install ccache
         if: matrix.os == 'windows-latest'
 
-      - name: Set up SDL 2.30.11 (ubuntu-22.04)
-        run: |
-          SDL2VER=2.30.11
-          if [[ ! -e ~/.ccache ]]; then
-            mkdir ~/.ccache
-          fi  
-          cd ~/.ccache
-          if [[ ! -e SDL2-${SDL2VER} ]]; then
-            curl -sLO https://libsdl.org/release/SDL2-${SDL2VER}.tar.gz
-            tar -xzf SDL2-${SDL2VER}.tar.gz
-            cd SDL2-${SDL2VER}
-            ./configure --prefix=/usr/local
-            make && cd ../
-            rm SDL2-${SDL2VER}.tar.gz
-          fi
-          sudo make -C SDL2-${SDL2VER} install
-        if: matrix.os == 'ubuntu-22.04'
-
       - name: Set up linuxdeploy (ubuntu-22.04, appimage)
         run: |
           if [[ ! -e linuxdeploy-x86_64.AppImage ]]; then

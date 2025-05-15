@@ -274,7 +274,7 @@
 		<green>Зеленый</green>
 		<blue>Синий</blue>
 		<not_connected>Не подключены совместимые контроллеры.
-Подключите контроллер, совместимый с SDL2.</not_connected>
+Подключите контроллер, совместимый с SDL3.</not_connected>
 		<reset_controller_binding>Сброс привязки элементов управления</reset_controller_binding>
 	</controllers>
 

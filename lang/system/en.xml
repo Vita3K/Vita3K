@@ -294,7 +294,7 @@ Error code: {}</an_error_occurred>
 		<green>Green</green>
 		<blue>Blue</blue>
 		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
+Connect a controller that is compatible with SDL3.</not_connected>
 		<disable_motion>Disable Motion</disable_motion>
 		<reset_controller_binding>Reset Controller Binding</reset_controller_binding>
 	</controllers>

@@ -284,7 +284,7 @@ Kode kesalahan: {}</an_error_occurred>
 		<green>Hijau</green>
 		<blue>Biru</blue>
 		<not_connected>Gak ada kontroler kompatibel yang tersambung.
-Sambungkan Kontroleryang kompatibel dengan SDL2.</not_connected>
+Sambungkan Kontroleryang kompatibel dengan SDL3.</not_connected>
 		<reset_controller_binding>Reset Ulang Pengikatan Kontroller</reset_controller_binding>
 	</controllers>
 
