@@ -291,7 +291,7 @@ Kod błędu: {}</an_error_occurred>
 		<green>Zielony</green>
 		<blue>Niebieski</blue>
 		<not_connected>Niepodłączono żadnego ze wspieranych kontrolerów.
-Proszę, podłącz kontroler, który jest kompatybilny z SDL2.</not_connected>
+Proszę, podłącz kontroler, który jest kompatybilny z SDL3.</not_connected>
 		<reset_controller_binding>Restuj przypisanie przycisków kontrollera</reset_controller_binding>
 	</controllers>
 

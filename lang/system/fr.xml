@@ -242,7 +242,7 @@ Code d'erreur: {}</an_error_occurred>
 		<connected>{} contrôleurs connectés</connected>
 		<num>Num</num>
 		<not_connected>Aucun contrôleur compatible n'est connecté.
-Connecter un contrôleur compatible avec SDL2.</not_connected>
+Connecter un contrôleur compatible avec SDL3.</not_connected>
 	</controllers>
 
 	<dialog>

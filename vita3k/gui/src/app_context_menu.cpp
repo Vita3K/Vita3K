@@ -29,8 +29,8 @@
 #include <util/log.h>
 #include <util/safe_time.h>
 
-#include <SDL.h>
-#include <SDL_misc.h>
+#include <SDL3/SDL_cpuinfo.h>
+#include <SDL3/SDL_misc.h>
 #undef main
 
 #include <boost/algorithm/string/replace.hpp>

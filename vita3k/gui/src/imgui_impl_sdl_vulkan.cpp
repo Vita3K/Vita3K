@@ -69,8 +69,6 @@
 
 #include <util/log.h>
 
-#include <SDL_vulkan.h>
-
 // Visual Studio warnings
 #ifdef _MSC_VER
 #pragma warning(disable : 4127) // condition expression is constant

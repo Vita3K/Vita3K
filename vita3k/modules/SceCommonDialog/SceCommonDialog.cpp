@@ -28,7 +28,7 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <SDL_timer.h>
+#include <SDL3/SDL_timer.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceCommonDialog);

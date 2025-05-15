@@ -238,7 +238,7 @@ Código de erro: {}</an_error_occurred>
 		<connected>{} controles conectados</connected>
 		<num>Núm</num>
 		<not_connected>Nenhum controle compatível conectado.
-Conecte um controle que seja compatível com SDL2.</not_connected>
+Conecte um controle que seja compatível com SDL3.</not_connected>
 	</controllers>
 
 	<dialog>
