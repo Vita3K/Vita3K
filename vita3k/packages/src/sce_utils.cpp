@@ -835,6 +835,13 @@ std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader
 
 std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint8_t *klic) {
     const SCE_header &self_header = *reinterpret_cast<const SCE_header *>(fself.data());
+
+    // Check if a valid SELF or is still in encrypted layer
+    if (self_header.magic != SCE_MAGIC) {
+        LOG_ERROR("Invalid SELF: file is either not a SELF or is still encrypted (unsupported).");
+        return {};
+    }
+
     const segment_info *const seg_infos = reinterpret_cast<const segment_info *>(&fself[self_header.section_info_offset]);
     const AppInfoHeader app_info_hdr = AppInfoHeader(reinterpret_cast<const char *>(&fself[self_header.appinfo_offset]));
 

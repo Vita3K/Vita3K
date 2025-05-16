@@ -478,11 +478,6 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
     // assumes little endian host
-    if (self_header.magic != 0x00454353) {
-        LOG_CRITICAL("SELF {} is corrupt or encrypted. Decryption is not yet supported.", self_path);
-        return -1;
-    }
-
     if (self_header.version != 3) {
         LOG_CRITICAL("SELF {} version {} is not supported.", self_path, self_header.version);
         return -1;
