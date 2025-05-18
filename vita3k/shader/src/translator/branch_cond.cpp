@@ -279,7 +279,7 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
 
     const char *used_comp_str = tb_comp_str[compare_include_equal][sign_test];
 
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     if (is_sub_opcode(inst.opcode)) {
         if (mask) {
