@@ -549,6 +549,54 @@ void save_apps_cache(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
+bool set_scroll_animation(float &scroll, float target_scroll, const std::string &target_id, std::function<void(float)> set_scroll) {
+    // Persistent state for animation tracking (keeps values between frames)
+    static float start_time = 0.f;
+    static float initial_target_scroll = 0.f;
+    static float initial_scroll = 0.f;
+    static ImGuiID initial_target_id = 0;
+
+    constexpr float duration = 0.25f; // Duration of the animation in seconds
+
+    // Generate a unique ID for the current target based on its string identifier
+    const auto CURRENT_TARGET_ID = ImGui::GetID(target_id.c_str());
+
+    // Compute animation progress [0.0, 1.0]
+    float elapsed = ImGui::GetTime() - start_time;
+    float t = std::min(elapsed / duration, 1.0f);
+
+    // Determine if a new animation target has been set (position or ID changed)
+    const bool is_new_target = std::abs(target_scroll - initial_target_scroll) > 1.f || CURRENT_TARGET_ID != initial_target_id;
+
+    if (is_new_target) {
+        // Start a new animation
+        start_time = ImGui::GetTime();
+        initial_scroll = scroll;
+        initial_target_scroll = target_scroll;
+        initial_target_id = CURRENT_TARGET_ID;
+
+        // Only reset t if the previous animation has finished
+        if (t >= 1.f)
+            t = 0.f;
+    }
+
+    // Apply smoothstep easing function: easeInOutCubic
+    float eased_t = t * t * (3.0f - 2.0f * t);
+
+    // Interpolate between the initial and target scroll values
+    scroll = std::lerp(initial_scroll, initial_target_scroll, eased_t);
+
+    // Ensure we exactly hit the target value at the end
+    if (t >= 1.f)
+        scroll = target_scroll;
+
+    // Apply the updated scroll value via the provided callback
+    set_scroll(scroll);
+
+    // Return true if the animation is still running
+    return t < 1.f;
+}
+
 void init_home(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.app_selector.user_apps.empty() && (emuenv.cfg.load_app_list || !emuenv.cfg.run_app_path)) {
         if (!get_user_apps(gui, emuenv))
