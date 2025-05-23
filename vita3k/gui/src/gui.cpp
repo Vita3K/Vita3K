@@ -549,6 +549,36 @@ void save_apps_cache(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
+bool set_scroll_animation(float &scroll, float target_scroll, std::function<void(float)> set_scroll) {
+    static float t = 0.0f;
+    static float last_target_scroll = target_scroll;
+
+    const float scroll_speed = 2.f * ImGui::GetIO().DeltaTime;
+
+    // If the target scroll changes, reset t
+    if (target_scroll != last_target_scroll) {
+        t = 0.0f;
+        last_target_scroll = target_scroll;
+    }
+
+    // Increase t over time
+    t = std::min(t + scroll_speed, 1.0f);
+
+    // Apply cubic ease-in-out interpolation
+    float eased_t = t * t * (3.0f - 2.0f * t);
+    scroll = std::lerp(scroll, target_scroll, eased_t);
+
+    const bool still_animating = std::fabs(scroll - target_scroll) >= 1.0f;
+
+    if (!still_animating) {
+        scroll = target_scroll;
+        t = 0.0f;
+    }
+
+    set_scroll(scroll);
+    return still_animating;
+}
+
 void init_home(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.app_selector.user_apps.empty() && (emuenv.cfg.load_app_list || !emuenv.cfg.run_app_path)) {
         if (!get_user_apps(gui, emuenv))
