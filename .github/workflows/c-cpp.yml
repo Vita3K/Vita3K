@@ -190,7 +190,7 @@ jobs:
         repo: [master, store]
     runs-on: ubuntu-22.04
     concurrency:
-      group: create-release
+      group: create-release-${{ matrix.repo }}
       cancel-in-progress: false
     if: |
       github.ref == 'refs/heads/master' &&
