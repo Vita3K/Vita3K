@@ -210,6 +210,74 @@ static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunc
     return fx10_unpack_func;
 }
 
+static spv::Function *make_fx10_pack_func(spv::Builder &b, const SpirvUtilFunctions &utils, const FeatureState &features) {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *fx10_pack_func_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+
+    // Basic types
+    spv::Id type_i32 = b.makeIntType(32);
+    spv::Id type_u32 = b.makeUintType(32);
+    spv::Id type_f32 = b.makeFloatType(32);
+
+    // Vector types of 4 components
+    spv::Id vec4_u32 = b.makeVectorType(type_u32, 4);
+    spv::Id vec4_i32 = b.makeVectorType(type_i32, 4);
+    spv::Id vec4_f32 = b.makeVectorType(type_f32, 4);
+
+    // Create function entry: float pack4xFX10(vec4 to_pack)
+    spv::Function *fx10_pack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32, "pack4xFX10", spv::LinkageTypeMax, { vec4_f32 },
+        decorations, &fx10_pack_func_block);
+    b.setupFunctionDebugInfo(fx10_pack_func, "pack4xFX10", { type_f32 }, { "to_pack" });
+
+    // Get function parameter id (input vector)
+    spv::Id extracted = fx10_pack_func->getParamId(0);
+
+    // Clamp input float vector to range [-2.0, 2.0]
+    // This ensures values fit in signed 10-bit FX10 format range
+    spv::Id min_val = create_constant_vector_or_scalar(b, b.makeFloatConstant(-2.f), 4);
+    spv::Id max_val = create_constant_vector_or_scalar(b, b.makeFloatConstant(2.f), 4);
+    spv::Id clamped = b.createBuiltinCall(vec4_f32, utils.std_builtins, GLSLstd450FClamp, { extracted, min_val, max_val });
+
+    // Convert clamped float vector to signed 10-bit integer vector (normalized)
+    spv::Id int_vec = convert_to_int(b, utils, clamped, DataType::C10, true);
+
+    // Bitcast int vector to unsigned vector for safe bitwise operations
+    spv::Id int_vec_u = b.createUnaryOp(spv::OpBitcast, vec4_u32, int_vec);
+
+    // Create 10-bit mask (0x3FF) for each vector component
+    spv::Id mask_10bits = b.makeCompositeConstant(vec4_u32,
+        { b.makeUintConstant(0x3FF), b.makeUintConstant(0x3FF), b.makeUintConstant(0x3FF), b.makeUintConstant(0x3FF) });
+
+    // Mask out only the lowest 10 bits for each component
+    int_vec_u = b.createBinOp(spv::OpBitwiseAnd, vec4_u32, int_vec_u, mask_10bits);
+
+    // Shift each component by (0, 10, 20, 30) bits to pack into a single 32-bit uint
+    spv::Id shifts = b.makeCompositeConstant(vec4_u32,
+        { b.makeUintConstant(0), b.makeUintConstant(10), b.makeUintConstant(20), b.makeUintConstant(30) });
+    int_vec_u = b.createBinOp(spv::OpShiftLeftLogical, vec4_u32, int_vec_u, shifts);
+
+    // Combine all 4 components into a single uint using bitwise OR
+    spv::Id packed = b.createCompositeExtract(int_vec_u, type_u32, 0);
+    for (int i = 1; i < 4; ++i) {
+        spv::Id comp = b.createCompositeExtract(int_vec_u, type_u32, i);
+        packed = b.createBinOp(spv::OpBitwiseOr, type_u32, packed, comp);
+    }
+
+    // Bitcast the packed uint into a float (bitwise equivalent)
+    packed = b.createUnaryOp(spv::OpBitcast, type_f32, packed);
+
+    // Return the packed float
+    b.makeReturn(false, packed);
+
+    // Restore previous build point
+    b.setBuildPoint(last_build_point);
+
+    return fx10_pack_func;
+}
+
 static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &features, DataType source_type) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
@@ -721,6 +789,12 @@ spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState 
             iter = utils.pack_funcs.emplace(source_type, make_pack_func(b, features, source_type)).first;
         }
         return b.createFunctionCall(iter->second, { vec });
+    }
+    case DataType::C10: {
+        if (!utils.pack_fx10) {
+            utils.pack_fx10 = make_fx10_pack_func(b, utils, features);
+        }
+        return b.createFunctionCall(utils.pack_fx10, { vec });
     }
     case DataType::F16: {
         auto iter = utils.pack_funcs.find(source_type);
@@ -1461,7 +1535,7 @@ static float get_int_normalize_range_constants(DataType type) {
     }
 }
 
-static spv::Id create_constant_vector_or_scalar(spv::Builder &b, spv::Id constant, int comp_count) {
+spv::Id create_constant_vector_or_scalar(spv::Builder &b, spv::Id constant, int comp_count) {
     if (comp_count == 1) {
         return constant;
     }
