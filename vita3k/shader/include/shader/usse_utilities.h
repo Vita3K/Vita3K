@@ -31,6 +31,7 @@ struct SpirvUtilFunctions {
     std::map<DataType, spv::Function *> pack_funcs;
     spv::Function *fetch_memory{ nullptr };
     spv::Function *unpack_fx10{ nullptr };
+    spv::Function *pack_fx10{ nullptr };
 
     // buffer_address_vec[i][1] contains the buffer pointer with an array of vec_i and stride 16 bytes
     // 0 in the last index is for the read buffer, 1 is for the write buffer
