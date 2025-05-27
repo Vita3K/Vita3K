@@ -41,13 +41,13 @@ static void SDLCALL thread_wakeup_callback(void *userdata, SDL_AudioStream *stre
     assert(userdata != nullptr);
     assert(stream != nullptr);
     SDLAudioOutPort *port = static_cast<SDLAudioOutPort *>(userdata);
-    const int bytes_available = SDL_GetAudioStreamQueued(port->stream.get());
-    assert(bytes_available >= 0);
-    // Running out of data?
-    // The (len * 3) is according to the value in sceAudioOutOutput
-    if (bytes_available < port->len_bytes * cached_buffers) {
-        // Is there a thread waiting for playback to finish?
-        if (port->thread >= 0) {
+    // Is there a thread waiting for playback to finish?
+    if (port->thread >= 0) {
+        const int bytes_available = SDL_GetAudioStreamQueued(port->stream.get());
+        assert(bytes_available >= 0);
+        // Running out of data?
+        // The (len * 3) is according to the value in sceAudioOutOutput
+        if (bytes_available < port->len_bytes * cached_buffers) {
             // Wake the thread up.
             port->adapter.state.resume_thread(port->thread);
             port->thread = -1;

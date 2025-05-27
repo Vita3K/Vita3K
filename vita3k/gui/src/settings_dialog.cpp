@@ -408,7 +408,7 @@ std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::strin
 static void set_vsync_state(const bool &state) {
     if (state) {
         // Try adaptive vsync first, falling back to regular vsync.
-        if (SDL_GL_SetSwapInterval(-1) < 0) {
+        if (!SDL_GL_SetSwapInterval(-1)) {
             SDL_GL_SetSwapInterval(1);
         }
     } else

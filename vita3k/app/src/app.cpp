@@ -30,7 +30,7 @@
 namespace app {
 
 void error_dialog(const std::string &message, SDL_Window *window) {
-    if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window) < 0) {
+    if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window)) {
         LOG_ERROR("SDL Error: {}", message);
     }
 }

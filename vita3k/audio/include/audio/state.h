@@ -76,11 +76,9 @@ struct AudioState;
 
 // abstract class that need to be overloaded with an audio implementation
 class AudioAdapter {
-protected:
 public:
     AudioState &state;
 
-public:
     AudioAdapter(AudioState &audio_state)
         : state(audio_state) {}
     virtual ~AudioAdapter() = default;

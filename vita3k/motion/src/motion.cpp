@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <motion/event_handler.h>
 #include <motion/functions.h>
 #include <motion/state.h>
 
@@ -85,6 +86,43 @@ SceFVector3 get_basic_orientation(const MotionState &state) {
     return state.motion_data.GetBasicOrientation();
 }
 
+void handle_motion_event(EmuEnvState &emuenv, const SDL_GamepadSensorEvent &sensor) {
+    if (!emuenv.motion.is_sampling)
+        return;
+
+    if (!emuenv.ctrl.has_motion_support)
+        return;
+
+    if (sensor.sensor == SDL_SENSOR_ACCEL) {
+        Util::Vec3f accel{
+            sensor.data[0],
+            sensor.data[1],
+            sensor.data[2],
+        };
+        accel /= -SDL_STANDARD_GRAVITY;
+        std::swap(accel.y, accel.z);
+        accel.y *= -1;
+        emuenv.motion.motion_data.SetAcceleration(accel);
+        emuenv.motion.motion_data.UpdateOrientation(sensor.sensor_timestamp - emuenv.motion.last_accel_timestamp);
+        emuenv.motion.motion_data.UpdateBasicOrientation();
+        emuenv.motion.last_accel_timestamp = sensor.sensor_timestamp;
+        emuenv.motion.last_counter++;
+    } else if (sensor.sensor == SDL_SENSOR_GYRO) {
+        Util::Vec3f gyro{
+            sensor.data[0],
+            sensor.data[1],
+            sensor.data[2],
+        };
+        gyro /= 2.f * std::numbers::pi_v<float>;
+        std::swap(gyro.y, gyro.z);
+        gyro.y *= -1;
+        emuenv.motion.motion_data.SetGyroscope(gyro);
+        emuenv.motion.motion_data.UpdateRotation(sensor.sensor_timestamp - emuenv.motion.last_gyro_timestamp);
+        emuenv.motion.last_gyro_timestamp = sensor.sensor_timestamp;
+        emuenv.motion.last_counter++;
+    }
+}
+
 void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
     if (!state.is_sampling)
         return;
@@ -92,54 +130,5 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
     if (!ctrl_state.has_motion_support)
         return;
 
-    // make sure to use the data from only one accelerometer and gyroscope
-    bool found_gyro = false;
-    bool found_accel = false;
-    Util::Vec3f gyro;
-    Util::Vec3f accel;
-
-    {
-        std::lock_guard<std::mutex> guard(ctrl_state.mutex);
-        for (const auto &controller : ctrl_state.controllers) {
-            if (!found_gyro && controller.second.has_gyro) {
-                if (SDL_GetGamepadSensorData(controller.second.controller.get(), SDL_SENSOR_GYRO, reinterpret_cast<float *>(&gyro), 3) == 0)
-                    found_gyro = true;
-            }
-
-            if (!found_accel && controller.second.has_accel) {
-                if (SDL_GetGamepadSensorData(controller.second.controller.get(), SDL_SENSOR_ACCEL, reinterpret_cast<float *>(&accel), 3) == 0)
-                    found_accel = true;
-            }
-        }
-    }
-
-    if (!found_accel && !found_gyro)
-        return;
-
-    // if timestamp is not available, use the current time instead
-    std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
-    uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
-
-    uint64_t gyro_timestamp = timestamp;
-    uint64_t accel_timestamp = timestamp;
-
-    std::lock_guard<std::mutex> guard(state.mutex);
-
-    gyro /= 2.f * std::numbers::pi_v<float>;
-    std::swap(gyro.y, gyro.z);
-    gyro.y *= -1;
-    state.motion_data.SetGyroscope(gyro);
-
-    accel /= -SDL_STANDARD_GRAVITY;
-    std::swap(accel.y, accel.z);
-    accel.y *= -1;
-    state.motion_data.SetAcceleration(accel);
-
-    state.motion_data.UpdateRotation(gyro_timestamp - state.last_gyro_timestamp);
-    state.motion_data.UpdateOrientation(accel_timestamp - state.last_accel_timestamp);
-    state.motion_data.UpdateBasicOrientation();
-
-    state.last_gyro_timestamp = gyro_timestamp;
-    state.last_accel_timestamp = accel_timestamp;
     state.last_counter++;
 }

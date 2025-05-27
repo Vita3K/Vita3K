@@ -21,7 +21,6 @@
 
 #include <SDL3/SDL_gamepad.h>
 #include <SDL3/SDL_haptic.h>
-#include <SDL3/SDL_joystick.h>
 
 #include <cstring>
 #include <map>

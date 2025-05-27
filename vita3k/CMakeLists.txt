@@ -137,7 +137,7 @@ if(WIN32)
 	target_sources(vita3k PRIVATE util/src/vc_runtime_checker.cpp)
 endif()
 
-target_link_libraries(vita3k PRIVATE app config cppcommon ctrl display gdbstub gui gxm io miniz modules packages patch renderer SDL3::SDL3 shader touch util)
+target_link_libraries(vita3k PRIVATE app config cppcommon ctrl display gdbstub gui gxm io miniz modules motion packages patch renderer SDL3::SDL3 shader touch util)
 if(USE_DISCORD_RICH_PRESENCE)
 	target_link_libraries(vita3k PRIVATE discord-rpc)
 endif()

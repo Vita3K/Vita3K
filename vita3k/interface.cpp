@@ -39,6 +39,7 @@
 #include <renderer/texture_cache.h>
 
 #include <modules/module_parent.h>
+#include <motion/event_handler.h>
 #include <string>
 #include <touch/functions.h>
 #include <util/log.h>
@@ -756,6 +757,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
         case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
             handle_touchpad_event(event.gtouchpad);
+            break;
+        case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
+            handle_motion_event(emuenv, event.gsensor);
             break;
 
         case SDL_EVENT_WINDOW_RESIZED:
