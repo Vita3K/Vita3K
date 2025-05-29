@@ -198,6 +198,11 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
 
     LOG_INFO("Loading module ID: {}", to_debug_str(emuenv.mem, module_id));
+    {
+        std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
+        if (emuenv.kernel.loaded_sysmodules.contains(module_id))
+            return SCE_SYSMODULE_LOADED;
+    }
     if (is_module_enabled(emuenv, module_id)) {
         if (load_sys_module(emuenv, module_id))
             return SCE_SYSMODULE_LOADED;
