@@ -161,7 +161,7 @@ struct Voice {
 
     VoiceInputManager inputs;
 
-    std::unique_ptr<std::mutex> voice_mutex;
+    std::mutex voice_mutex;
     VoiceProduct products[MAX_VOICE_OUTPUT];
 
     Ptr<void> finished_callback;

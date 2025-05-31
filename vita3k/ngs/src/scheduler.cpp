@@ -131,7 +131,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
 
     for (ngs::Voice *voice : queue_copy) {
         // Modify the state, in peace....
-        std::unique_lock<std::mutex> voice_lock(*voice->voice_mutex);
+        std::unique_lock<std::mutex> voice_lock(voice->voice_mutex);
         memset(voice->products, 0, sizeof(voice->products));
 
         bool finished = false;

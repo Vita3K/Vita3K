@@ -35,7 +35,7 @@ bool deliver_data(const MemState &mem, const std::vector<Voice *> &voice_queue, 
         if (!vector_utils::contains(voice_queue, patch->dest))
             continue;
 
-        const std::lock_guard<std::mutex> guard(*patch->dest->voice_mutex);
+        const std::lock_guard<std::mutex> guard(patch->dest->voice_mutex);
         patch->dest->inputs.receive(patch, data_to_deliver);
     }
 
