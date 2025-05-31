@@ -35,9 +35,6 @@
 #define XXH_INLINE_ALL
 #include <xxhash.h>
 #endif
-#ifdef _WIN32
-#include <execution>
-#endif
 
 namespace renderer {
 namespace texture {

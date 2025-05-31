@@ -48,6 +48,7 @@
 #ifdef _WIN32
 #include <combaseapi.h>
 #include <process.h>
+#define SDL_MAIN_HANDLED
 #endif
 
 #include <SDL.h>
