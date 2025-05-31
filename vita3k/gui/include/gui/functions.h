@@ -133,3 +133,9 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv);
 ImTextureID load_image(GuiState &gui, const uint8_t *data, const int size);
 
 } // namespace gui
+
+// Extensions to ImGui
+namespace ImGui {
+
+void ScrollWhenDragging();
+} // namespace ImGui
