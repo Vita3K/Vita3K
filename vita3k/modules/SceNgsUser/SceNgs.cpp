@@ -657,7 +657,7 @@ EXPORT(SceInt32, sceNgsVoiceGetInfo, ngs::Voice *voice, SceNgsVoiceInfo *info) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    const std::lock_guard<std::mutex> guard(*voice->voice_mutex);
+    const std::lock_guard<std::mutex> guard(voice->voice_mutex);
 
     info->voice_state = ngsVoiceStateFromHLEState(voice);
     info->num_modules = static_cast<SceUInt32>(voice->datas.size());
@@ -768,7 +768,7 @@ EXPORT(SceInt32, sceNgsVoiceInit, ngs::Voice *voice, const SceNgsVoicePreset *pr
     if (voice->state == ngs::VoiceState::VOICE_STATE_ACTIVE)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_STATE);
 
-    std::lock_guard<std::mutex> guard(*voice->voice_mutex);
+    std::lock_guard<std::mutex> guard(voice->voice_mutex);
 
     if (init_flags == SCE_NGS_VOICE_INIT_BASE || init_flags == SCE_NGS_VOICE_INIT_ALL) {
         voice->state = ngs::VoiceState::VOICE_STATE_AVAILABLE;
@@ -1011,7 +1011,7 @@ EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, ngs::Voice *voice, const SceNgsModul
     if (!voice)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
-    const std::lock_guard<std::mutex> guard(*voice->voice_mutex);
+    const std::lock_guard<std::mutex> guard(voice->voice_mutex);
 
     const SceInt32 num_errors = voice->parse_params_block(emuenv.mem, header, size);
     if (pNumErrors != nullptr) {
@@ -1032,7 +1032,7 @@ EXPORT(SceInt32, sceNgsVoiceSetPreset, ngs::Voice *voice, const SceNgsVoicePrese
     if (!voice || !preset)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
-    const std::lock_guard<std::mutex> guard(*voice->voice_mutex);
+    const std::lock_guard<std::mutex> guard(voice->voice_mutex);
     if (!voice->set_preset(emuenv.mem, preset))
         return RET_ERROR(SCE_NGS_ERROR);
 
