@@ -106,8 +106,7 @@ static ImU32 convert_hex_color(const std::string &src_color) {
     std::string result = src_color.substr(src_color.length() - 6, 6);
     result.insert(0, "ff");
 
-    unsigned int color;
-    sscanf(result.c_str(), "%x", &color);
+    uint32_t color = std::strtoul(result.c_str(), nullptr, 16);
     return (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
 }
 
@@ -129,7 +128,7 @@ void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::
             if (!theme.child("StartScreenProperty").child("m_dateColor").empty())
                 start_param.date_color = convert_hex_color(theme.child("StartScreenProperty").child("m_dateColor").text().as_string());
             if (!theme.child("StartScreenProperty").child("m_dateLayout").empty())
-                start_param.date_layout = DateLayout(theme.child("StartScreenProperty").child("m_dateLayout").text().as_int());
+                start_param.date_layout = static_cast<DateLayout>(theme.child("StartScreenProperty").child("m_dateLayout").text().as_int());
 
             // Theme Start
             if (!theme.child("StartScreenProperty").child("m_filePath").empty()) {
@@ -257,8 +256,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
 
                     // Font Color
                     if (!param.child("m_fontColor").text().empty()) {
-                        unsigned int color;
-                        sscanf(param.child("m_fontColor").text().as_string(), "%x", &color);
+                        uint32_t color = std::strtoul(param.child("m_fontColor").text().as_string(), nullptr, 16);
                         gui.theme_backgrounds_font_color.emplace_back((float((color >> 16) & 0xFF)) / 255.f, (float((color >> 8) & 0xFF)) / 255.f, (float((color >> 0) & 0xFF)) / 255.f, 1.f);
                     }
                 }
@@ -502,7 +500,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     }
     ImGui::PopFont();
 
-    if ((ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0))) {
+    if (ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0)) {
         gui.vita_area.start_screen = false;
         gui.vita_area.home_screen = true;
         if (emuenv.cfg.show_info_bar)

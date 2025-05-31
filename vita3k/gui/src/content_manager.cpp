@@ -564,7 +564,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
     const auto is_empty = ((menu == "app") && gui.app_selector.user_apps.empty()) || ((menu == "save") && save_data_list.empty());
     if (menu.empty() || (menu == "info") || is_empty) {
         // Back
-        if (ImGui::Button("Back", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+        if (ImGui::Button("<<", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
             if (!menu.empty()) {
                 if (menu == "info") {
                     menu = "app";

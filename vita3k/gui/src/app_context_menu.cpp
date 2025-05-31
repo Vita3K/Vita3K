@@ -134,6 +134,7 @@ void get_time_apps(GuiState &gui, EmuEnvState &emuenv) {
                 for (const auto &user : time_child) {
                     auto user_id = user.attribute("id").as_string();
                     for (const auto &app : user)
+                        // Can't use emplace_back due to Clang 15 for macos
                         gui.time_apps[user_id].push_back({ app.text().as_string(), app.attribute("last-time-used").as_llong(), app.attribute("time-used").as_llong() });
                 }
             }
@@ -186,7 +187,7 @@ void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::st
     const auto &time_app_index = get_time_app_index(gui, emuenv, app);
     if (time_app_index != gui.time_apps[emuenv.io.user_id].end())
         time_app_index->last_time_used = std::time(nullptr);
-    else
+    else // Can't use emplace_back due to Clang 15 for macos
         gui.time_apps[emuenv.io.user_id].push_back({ app, std::time(nullptr), 0 });
 
     get_app_index(gui, app)->last_time = std::time(nullptr);
@@ -275,9 +276,9 @@ void open_path(const std::string &path) {
     }
 }
 
-static std::string context_dialog;
-
 void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    static std::string context_dialog;
+
     const auto APP_INDEX = get_app_index(gui, app_path);
     const auto &title_id = APP_INDEX->title_id;
 
@@ -307,7 +308,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
     const auto is_commercial_app = title_id.starts_with("PCS") || (title_id == "NPXS10007");
     const auto is_system_app = title_id.starts_with("NPXS") && (title_id != "NPXS10007");
-    const auto has_state_report = gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(title_id) : false;
+    const auto has_state_report = gui.compat.compat_db_loaded && gui.compat.app_compat_db.contains(title_id);
     const auto compat_state = has_state_report ? gui.compat.app_compat_db[title_id].state : compat::UNKNOWN;
     const auto &compat_state_color = gui.compat.compat_color[compat_state];
     const auto &compat_state_str = has_state_report ? lang_compat.states[compat_state] : lang_compat.states[compat::UNKNOWN];
@@ -502,7 +503,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     LOG_WARN("Patch note Error for Title ID {} in path {}", title_id, app_path);
             }
         }
-        if (ImGui::MenuItem(lang.main["information"].c_str(), nullptr, &gui.vita_area.app_information)) {
+        if (ImGui::MenuItem(lang.info["title"].c_str(), nullptr, &gui.vita_area.app_information)) {
             if (!is_system_app) {
                 get_app_info(gui, emuenv, app_path);
                 const auto app_size = get_app_size(gui, emuenv, app_path);
@@ -623,7 +624,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SameLine();
             ImGui::TextColored(GUI_COLOR_TEXT, "%d", *reinterpret_cast<const uint16_t *>(APP_INDEX->parental_level.c_str()));
             ImGui::Spacing();
-            ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["updated"] + "  ").c_str()).x));
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["updated"] + "  ").c_str()).x);
             auto DATE_TIME = get_date_time(gui, emuenv, gui.app_selector.app_info.updated);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s %s", lang.info["updated"].c_str(), DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
             if (is_12_hour_format) {

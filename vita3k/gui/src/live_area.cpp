@@ -456,7 +456,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
                                 continue;
                             }
 
-                            items_size[app_path][item.first]["background"] = ImVec2(float(width), float(height));
+                            items_size[app_path][item.first]["background"] = ImVec2(static_cast<float>(width), static_cast<float>(height));
                             gui.live_items[app_path][item.first]["background"].emplace_back(gui.imgui_state.get(), data, width, height);
                             stbi_image_free(data);
                         }
@@ -488,7 +488,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
                                 continue;
                             }
 
-                            items_size[app_path][item.first]["image"] = ImVec2(float(width), float(height));
+                            items_size[app_path][item.first]["image"] = ImVec2(static_cast<float>(width), static_cast<float>(height));
                             gui.live_items[app_path][item.first]["image"].emplace_back(gui.imgui_state.get(), data, width, height);
                             stbi_image_free(data);
                         }
@@ -501,7 +501,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
         type[app_path] = "a1";
 }
 
-inline uint64_t current_time() {
+inline static uint64_t current_time() {
     return std::chrono::duration_cast<std::chrono::seconds>(
         std::chrono::high_resolution_clock::now().time_since_epoch())
         .count();
@@ -679,12 +679,12 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                 last_time[app_path][frame.id] += frame.autoflip;
 
                 if (gui.live_items[app_path][frame.id].contains("background")) {
-                    if (current_item[app_path][frame.id] != int(gui.live_items[app_path][frame.id]["background"].size()) - 1)
+                    if (current_item[app_path][frame.id] != gui.live_items[app_path][frame.id]["background"].size() - 1)
                         ++current_item[app_path][frame.id];
                     else
                         current_item[app_path][frame.id] = 0;
                 } else if (gui.live_items[app_path][frame.id].contains("image")) {
-                    if (current_item[app_path][frame.id] != int(gui.live_items[app_path][frame.id]["image"].size()) - 1)
+                    if (current_item[app_path][frame.id] != gui.live_items[app_path][frame.id]["image"].size() - 1)
                         ++current_item[app_path][frame.id];
                     else
                         current_item[app_path][frame.id] = 0;
@@ -820,12 +820,12 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                 std::vector<ImVec4> str_color;
 
                 if (!str_tag.color.empty()) {
-                    unsigned int color = 0xFFFFFFFF;
+                    uint32_t color = 0xFF'FF'FF'FF;
 
                     if (frame.autoflip)
-                        sscanf(str[app_path][frame.id][current_item[app_path][frame.id]].color.c_str(), "#%x", &color);
+                        std::istringstream{ str[app_path][frame.id][current_item[app_path][frame.id]].color }.ignore(1, '#') >> std::hex >> color;
                     else
-                        sscanf(str_tag.color.c_str(), "#%x", &color);
+                        std::istringstream{ str_tag.color }.ignore(1, '#') >> std::hex >> color;
 
                     str_color.emplace_back(((color >> 16) & 0xFF) / 255.f, ((color >> 8) & 0xFF) / 255.f, ((color >> 0) & 0xFF) / 255.f, 1.f);
                 } else
@@ -858,15 +858,15 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
 
                 if (liveitem[app_path][frame.id]["text"]["width"].first > 0) {
                     if (liveitem[app_path][frame.id]["text"]["word-wrap"].second != "off")
-                        str_wrap = float(liveitem[app_path][frame.id]["text"]["width"].first) * SCALE.x;
-                    text_pos.x += (str_size.x - (float(liveitem[app_path][frame.id]["text"]["width"].first) * SCALE.x)) / 2.f;
-                    str_size.x = float(liveitem[app_path][frame.id]["text"]["width"].first) * SCALE.x;
+                        str_wrap = static_cast<float>(liveitem[app_path][frame.id]["text"]["width"].first) * SCALE.x;
+                    text_pos.x += (str_size.x - (static_cast<float>(liveitem[app_path][frame.id]["text"]["width"].first) * SCALE.x)) / 2.f;
+                    str_size.x = static_cast<float>(liveitem[app_path][frame.id]["text"]["width"].first) * SCALE.x;
                 }
 
                 if ((liveitem[app_path][frame.id]["text"]["height"].first > 0)
-                    && ((liveitem[app_path][frame.id]["text"]["word-scroll"].second == "on" || liveitem[app_path][frame.id]["text"]["height"].first <= FRAME_SIZE.y))) {
-                    text_pos.y += (str_size.y - (float(liveitem[app_path][frame.id]["text"]["height"].first) * SCALE.y)) / 2.f;
-                    str_size.y = float(liveitem[app_path][frame.id]["text"]["height"].first) * SCALE.y;
+                    && (liveitem[app_path][frame.id]["text"]["word-scroll"].second == "on" || liveitem[app_path][frame.id]["text"]["height"].first <= FRAME_SIZE.y)) {
+                    text_pos.y += (str_size.y - (static_cast<float>(liveitem[app_path][frame.id]["text"]["height"].first) * SCALE.y)) / 2.f;
+                    str_size.y = static_cast<float>(liveitem[app_path][frame.id]["text"]["height"].first) * SCALE.y;
                 }
 
                 const auto size_text_scale = str_tag.size != 0 ? str_tag.size / 19.2f : 1.f;

@@ -26,7 +26,7 @@ struct VCRuntimeCheckObject {
 
         const HANDLE heap = GetProcessHeap();
         DWORD filename_length = MAX_PATH;
-        LPWSTR filename = static_cast<LPWSTR>(HeapAlloc(heap, 0, filename_length));
+        LPWSTR filename = static_cast<LPWSTR>(HeapAlloc(heap, 0, filename_length * sizeof(*filename)));
         if (!filename)
             return;
 
@@ -36,7 +36,7 @@ struct VCRuntimeCheckObject {
                 filename_length *= 2;
                 if (filename_length >= 4 * 1024)
                     return;
-                LPWSTR new_filename = static_cast<LPWSTR>(HeapReAlloc(heap, 0, filename, filename_length));
+                LPWSTR new_filename = static_cast<LPWSTR>(HeapReAlloc(heap, 0, filename, filename_length * sizeof(*filename)));
                 if (!new_filename) {
                     HeapFree(heap, 0, filename);
                     return;

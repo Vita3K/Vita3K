@@ -207,11 +207,11 @@ if(USE_DISCORD_RICH_PRESENCE)
 endif()
 
 option(BUILD_EXTERNAL "Build external dependencies in /External" OFF)
-option(SKIP_GLSLANG_INSTALL "Skip installation" ON)
 option(ENABLE_SPVREMAPPER "Enables building of SPVRemapper" OFF)
 option(ENABLE_GLSLANG_BINARIES "Builds glslang and spirv-remap" OFF)
 option(ENABLE_HLSL "Enables HLSL input support" OFF)
-option(ENABLE_CTEST "Enables testing" OFF)
+option(GLSLANG_TESTS "Enable glslang testing" OFF)
+option(ENABLE_OPT "Enables spirv-opt capability if present" OFF)
 add_subdirectory(glslang)
 
 option(SPIRV_CROSS_CLI "Build the CLI binary. Requires SPIRV_CROSS_STATIC." OFF)
@@ -236,7 +236,7 @@ add_library(CLI11 INTERFACE)
 target_include_directories(CLI11 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/cli11")
 
 add_library(vulkan INTERFACE)
-target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Vulkan-Headers/include")
+target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/VulkanMemoryAllocator-Hpp/Vulkan-Headers/include")
 if(APPLE)
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar")
 		message(STATUS "Downloading MoltenVK...")
@@ -281,7 +281,7 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.zip")
 			message(STATUS "Downloading openssl...")
-			file(DOWNLOAD https://firedaemon.com/download-firedaemon-openssl-3-4-zip
+			file(DOWNLOAD https://firedaemon.com/download-firedaemon-openssl-3-5-zip
 				"${CMAKE_BINARY_DIR}/external/openssl.zip" SHOW_PROGRESS)
 		endif()
 

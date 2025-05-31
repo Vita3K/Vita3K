@@ -32,7 +32,6 @@
 
 #include <renderer/functions.h>
 #include <util/fs.h>
-#include <util/lock_and_find.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -88,7 +87,8 @@ void update_viewport(EmuEnvState &state) {
     if (h > 0) {
         const float window_aspect = static_cast<float>(w) / h;
         const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-        if (state.cfg.stretch_the_display_area) {
+        const bool fullscreen_hd_res_pixel_perfect_en = state.cfg.fullscreen_hd_res_pixel_perfect && state.display.fullscreen && !(w % DEFAULT_RES_WIDTH) && !(h % (DEFAULT_RES_HEIGHT - 4));
+        if (state.cfg.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
             // Match the aspect ratio to the screen size.
             state.logical_viewport_size.x = static_cast<SceFloat>(state.window_size.x);
             state.logical_viewport_size.y = static_cast<SceFloat>(state.window_size.y);
@@ -99,7 +99,7 @@ void update_viewport(EmuEnvState &state) {
             state.drawable_viewport_size.y = static_cast<SceFloat>(state.drawable_size.y);
             state.drawable_viewport_pos.x = 0;
             state.drawable_viewport_pos.y = 0;
-        } else if (window_aspect > vita_aspect) {
+        } else if ((window_aspect > vita_aspect) && !fullscreen_hd_res_pixel_perfect_en) {
             // Window is wide. Pin top and bottom.
             state.logical_viewport_size.x = state.window_size.y * vita_aspect;
             state.logical_viewport_size.y = static_cast<SceFloat>(state.window_size.y);
@@ -481,7 +481,7 @@ bool late_init(EmuEnvState &state) {
         LOG_CRITICAL("Unicorn backend is not supported with a page table");
 
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
-        const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
+        const auto thread = state.kernel.get_thread(thread_id);
         const std::lock_guard<std::mutex> lock(thread->mutex);
         if (thread->status == ThreadStatus::wait) {
             thread->update_status(ThreadStatus::run);

@@ -46,7 +46,6 @@ static ImVec2 get_perf_pos(ImVec2 window_size, EmuEnvState &emuenv) {
 void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     auto lang = gui.lang.performance_overlay;
 
-    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
@@ -85,7 +84,7 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PopStyleColor();
     if (emuenv.cfg.performance_overlay_detail == PerformanceOverlayDetail::MAXIMUM) {
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetStyle().ItemSpacing.y);
-        ImGui::PlotLines("##fps_graphic", emuenv.fps_values, IM_ARRAYSIZE(emuenv.fps_values), emuenv.current_fps_offset, nullptr, 0.f, float(emuenv.max_fps), WINDOW_SIZE);
+        ImGui::PlotLines("##fps_graphic", emuenv.fps_values, IM_ARRAYSIZE(emuenv.fps_values), emuenv.current_fps_offset, nullptr, 0.f, static_cast<float>(emuenv.max_fps), WINDOW_SIZE);
     }
     ImGui::End();
     ImGui::PopStyleVar();

@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <util/log.h>
 #include <util/system.h>
 
 enum ModulesMode {
@@ -68,6 +67,7 @@ enum ScreenshotFormat {
     code(bool, "apps-list-grid", false, apps_list_grid)                                                 \
     code(bool, "display-system-apps", true, display_system_apps)                                        \
     code(bool, "stretch_the_display_area", false, stretch_the_display_area)                             \
+    code(bool, "fullscreen_hd_res_pixel_perfect", false, fullscreen_hd_res_pixel_perfect)               \
     code(bool, "show-live-area-screen", true, show_live_area_screen)                                    \
     code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \
@@ -99,7 +99,7 @@ enum ScreenshotFormat {
     code(int, "delay-background", 4, delay_background)                                                  \
     code(int, "delay-start", 10, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
-    code(int, "log-level", static_cast<int>(spdlog::level::trace), log_level)                           \
+    code(int, "log-level", 0 /*SPDLOG_LEVEL_TRACE*/, log_level)                                         \
     code(std::string, "cpu-backend", "Dynarmic", cpu_backend)                                           \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
     code(std::string, "pref-path", std::string{}, pref_path)                                            \
@@ -108,8 +108,8 @@ enum ScreenshotFormat {
     code(bool, "color-surface-debug", false, color_surface_debug)                                       \
     code(bool, "show-touchpad-cursor", true, show_touchpad_cursor)                                      \
     code(bool, "performance-overlay", false, performance_overlay)                                       \
-    code(int, "performance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)       \
-    code(int, "performance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position)  \
+    code(int, "performance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)      \
+    code(int, "performance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position) \
     code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
     code(bool, "disable-motion", false, disable_motion)                                                 \
     code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
@@ -148,6 +148,7 @@ enum ScreenshotFormat {
     code(bool, "display-info-message", false, display_info_message)                                     \
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "check-for-updates", true, check_for_updates)                                            \
+    code(int, "file-loading-delay", 0, file_loading_delay)                                              \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \

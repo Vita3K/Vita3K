@@ -32,12 +32,11 @@
 		<update>Update</update>
 		<update_history>Updategeschiedenis</update_history>
 		<history_version>Versie {}</history_version>
-		<information>Informatie</information>
 		<delete>
 			<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
 			<saved_data_delete>Wil je deze opgeslagen data verwijderen?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Informatie">
 			<eligible>Geschikt</eligible>
 			<ineligible>Niet geschikt</ineligible>
 			<level>Niveau</level>
@@ -59,6 +58,7 @@ Foutcode: {}</an_error_occurred>
 		<cancel>Annuleren</cancel>
 		<close>Sluiten</close>
 		<delete>Verwijderen</delete>
+		<error>Fout</error>
 		<file_corrupted>Het bestand is beschadigd.</file_corrupted>
 		<microphone_disabled>Schakel de microfoon in.</microphone_disabled>
 		<no>Nee</no>
@@ -195,11 +195,6 @@ Foutcode: {}</an_error_occurred>
 		</states>
 	</compatibility>
 
-	<compat_db>
-		<error>Fout</error>
-		<information>Informatie</information>
-	</compat_db>
-
 	<content_manager name="Content manager">
 		<application name="Applicaties">
 			<delete>De geselecteerde applicaties en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</delete>
@@ -215,13 +210,8 @@ Foutcode: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<name>Naam</name>
 		<num>Num</num>
 	</controllers>
-
-	<controls name="Besturing">
-		<error>Fout</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -352,7 +342,6 @@ Je Vita3K-systeem is gereed!</completed_setup>
 		</system>
 		<network name="Netwerk">
 		</network>
-		<save>Opslaan</save>
 	</settings_dialog>
 
 	<sys_apps_title>

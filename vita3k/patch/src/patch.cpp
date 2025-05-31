@@ -19,6 +19,7 @@
 #include "patch/instructions.h"
 #include "patch/util.h"
 
+#include <util/fs.h>
 #include <util/log.h>
 
 std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const std::string &bin) {
@@ -28,7 +29,7 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const
     LOG_INFO("Looking for patches for titleid {}", titleid);
 
     for (auto &entry : fs::directory_iterator(path)) {
-        auto filename = entry.path().filename().string();
+        auto filename = fs_utils::path_to_utf8(entry.path().filename());
         // Just in case users decide to use lowercase filenames
         std::transform(filename.begin(), filename.end(), filename.begin(), ::toupper);
 

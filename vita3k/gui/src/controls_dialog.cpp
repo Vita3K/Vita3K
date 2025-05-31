@@ -23,6 +23,7 @@
 #include <emuenv/state.h>
 #include <gui/functions.h>
 #include <interface.h>
+#include <util/vector_utils.h>
 
 namespace gui {
 
@@ -51,7 +52,7 @@ static constexpr short total_key_entries = 0 CONFIG_INDIVIDUAL(CALC_KEYBOARD_MEM
 #undef CALC_KEYBOARD_MEMBERS
 
 template <typename T>
-int int_or_zero(T value) {
+static int int_or_zero(T value) {
     static_assert(std::is_same_v<T, int>);
     if constexpr (std::is_same_v<T, int>)
         return value;
@@ -105,7 +106,6 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
 }
 
 void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
 
@@ -122,7 +122,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("##controls", &gui.controls_menu.controls_dialog, ImGuiWindowFlags_NoTitleBar);
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, gui.lang.main_menubar.controls["title"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
 
@@ -172,6 +172,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r3, lang["r3_button"].c_str());
         ImGui::EndTable();
     }
+
     ImGui::Separator();
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["gui"].c_str());
@@ -191,16 +192,16 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TableSetupColumn("button");
         ImGui::TableSetupColumn("mapped_button");
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_toggle_texture_replacement, lang["toggle_texture_replacement"].c_str());
-        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_take_screenshot, lang["take_a_screenshot"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_take_screenshot, lang["take_screenshot"].c_str());
         ImGui::EndTable();
     }
 
     if (need_open_error_duplicate_key_popup) {
-        ImGui::OpenPopup(gui.lang.controls["error"].c_str());
+        ImGui::OpenPopup(common["error"].c_str());
         need_open_error_duplicate_key_popup = false;
     }
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    if (ImGui::BeginPopupModal(lang["error"].c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (ImGui::BeginPopupModal(common["error"].c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("%s", lang["error_duplicate_key"].c_str());
         ImGui::Spacing();
         ImGui::Separator();

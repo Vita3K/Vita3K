@@ -101,11 +101,7 @@ static std::string to_hex(SceUID value) {
 }
 
 static uint32_t parse_hex(const std::string &hex) {
-    std::stringstream stream;
-    uint32_t value;
-    stream << std::hex << hex;
-    stream >> value;
-    return value;
+    return static_cast<uint32_t>(std::strtoul(hex.c_str(), nullptr, 16));
 }
 
 static uint8_t make_checksum(const char *data, int64_t length) {
@@ -278,12 +274,14 @@ static std::string cmd_read_registers(EmuEnvState &state, PacketCommand &command
 
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
-    std::stringstream stream;
-    for (uint32_t a = 0; a <= 15; a++) {
-        stream << be_hex(fetch_reg(cpu, a));
+    std::string str;
+    str.reserve(16 * 8);
+
+    for (uint32_t a = 0; a < 16; a++) {
+        str += be_hex(fetch_reg(cpu, a));
     }
 
-    return stream.str();
+    return str;
 }
 
 static std::string cmd_write_registers(EmuEnvState &state, PacketCommand &command) {
@@ -363,13 +361,14 @@ static std::string cmd_read_memory(EmuEnvState &state, PacketCommand &command) {
     if (!check_memory_region(address, length, state.mem))
         return "EAA";
 
-    std::stringstream stream;
+    std::string str;
+    str.reserve(length * 2);
 
     for (uint32_t a = 0; a < length; a++) {
-        stream << fmt::format("{:0>2x}", *Ptr<uint8_t>(address + a).get(state.mem));
+        fmt::format_to(std::back_inserter(str), "{:02x}", *Ptr<uint8_t>(address + a).get(state.mem));
     }
 
-    return stream.str();
+    return str;
 }
 
 static std::string cmd_write_memory(EmuEnvState &state, PacketCommand &command) {
@@ -552,32 +551,27 @@ static std::string cmd_reason(EmuEnvState &state, PacketCommand &command) { retu
 
 static std::string cmd_get_first_thread(EmuEnvState &state, PacketCommand &command) {
     const auto guard = std::lock_guard(state.kernel.mutex);
-    std::stringstream stream;
-
-    stream << "m";
-    stream << to_hex(state.kernel.threads.begin()->first);
-
     state.gdb.thread_info_index = 0;
 
-    return stream.str();
+    return 'm' + to_hex(state.kernel.threads.begin()->first);
 }
 
 static std::string cmd_get_next_thread(EmuEnvState &state, PacketCommand &command) {
     const auto guard = std::lock_guard(state.kernel.mutex);
-    std::stringstream stream;
+    std::string str;
 
     ++state.gdb.thread_info_index;
     if (state.gdb.thread_info_index == state.kernel.threads.size()) {
-        stream << "l";
+        str += 'l';
     } else {
         auto iter = state.kernel.threads.begin();
         std::advance(iter, state.gdb.thread_info_index);
 
-        stream << "m";
-        stream << to_hex(iter->first);
+        str += 'm';
+        str += to_hex(iter->first);
     }
 
-    return stream.str();
+    return str;
 }
 
 static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command) {
@@ -683,20 +677,9 @@ const static PacketFunctionBundle functions[] = {
     { "S", cmd_deprecated },
 };
 
-template <class T, class U>
-constexpr bool cmp_less(T t, U u) noexcept {
-    using UT = std::make_unsigned_t<T>;
-    using UU = std::make_unsigned_t<U>;
-    if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
-        return t < u;
-    else if constexpr (std::is_signed_v<T>)
-        return t < 0 ? true : UT(t) < u;
-    else
-        return u < 0 ? false : t < UU(u);
-}
-
 static bool command_begins_with(PacketCommand &command, const std::string_view small_str) {
-    if (!cmp_less(small_str.size(), command.content_length))
+    // If the command's content is shorter than small_str, it can't match
+    if (static_cast<size_t>(command.content_length) < small_str.size())
         return false;
 
     return std::memcmp(command.content_start, small_str.data(), small_str.size()) == 0;
@@ -737,8 +720,10 @@ static int64_t server_next(EmuEnvState &state) {
 
             PacketCommand command = parse_command(buffer + a, length - a);
             if (command.is_valid) {
+                bool found_command = false;
                 for (const auto &function : functions) {
                     if (command_begins_with(command, function.name)) {
+                        found_command = true;
                         LOG_GDB("GDB Server Recognized Command as {}. {}", function.name,
                             std::string(command.content_start, command.content_length));
                         state.gdb.last_reply = function.function(state, command);
@@ -748,8 +733,11 @@ static int64_t server_next(EmuEnvState &state) {
                         break;
                     }
                 }
-                LOG_GDB("GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
-
+                if (!found_command) {
+                    LOG_GDB("GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
+                    state.gdb.last_reply = "";
+                    server_reply(state.gdb, state.gdb.last_reply.c_str());
+                }
                 a += command.content_length + 3;
 
             } else {

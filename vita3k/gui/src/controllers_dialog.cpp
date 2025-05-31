@@ -242,10 +242,10 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::TableSetColumnIndex(0);
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["num"].c_str());
             ImGui::TableSetColumnIndex(1);
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["name"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", gui.lang.app_context.info["name"].c_str());
             ImGui::Spacing();
             ImGui::TableSetColumnIndex(2);
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", "Motion Support");
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["motion_support"].c_str());
             const char *port_names[] = { "1", "2", "3", "4" };
             for (auto i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
                 auto controller_it = std::find_if(ctrl.controllers.begin(), ctrl.controllers.end(),
@@ -422,7 +422,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     if (emuenv.ctrl.has_motion_support) {
         ImGui::Spacing();
-        if (ImGui::Checkbox("Disable Motion", &emuenv.cfg.disable_motion))
+        if (ImGui::Checkbox(lang["disable_motion"].c_str(), &emuenv.cfg.disable_motion))
             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
         ImGui::PushTextWrapPos(ImGui::GetWindowWidth() - (ImGui::GetStyle().WindowPadding.x * 2.f));
         ImGui::PopTextWrapPos();

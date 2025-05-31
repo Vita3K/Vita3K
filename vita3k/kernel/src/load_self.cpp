@@ -26,7 +26,6 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <spdlog/fmt/fmt.h>
 #include <util/elf.h>
 // clang-format off
 #define SCE_ELF_DEFS_TARGET
@@ -66,7 +65,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
 
         if (kernel.debugger.log_imports) {
             const char *const name = import_name(nid);
-            LOG_DEBUG("\tNID {} ({}). entry: {}, *entry: {}", log_hex(nid), name, log_hex(entry.address()), log_hex(*entry.get(mem)));
+            LOG_DEBUG("\tNID {} ({}). entry: {}, *entry: {}", log_hex(nid), name, entry, log_hex(*entry.get(mem)));
         }
 
         VarImportsHeader *const var_reloc_header = reinterpret_cast<VarImportsHeader *>(entry.get(mem));
@@ -115,7 +114,7 @@ static bool unload_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entrie
         // remove the binding info from the map
         VarBindingInfo binding_info{ var_reloc_entries, reloc_size, module_id };
         auto range = kernel.var_binding_infos.equal_range(nid);
-        for (auto it = range.first; it != range.second; it++) {
+        for (auto it = range.first; it != range.second; ++it) {
             if (memcmp(&it->second, &binding_info, sizeof(VarBindingInfo)) == 0) {
                 kernel.var_binding_infos.erase(it);
                 break;
@@ -173,7 +172,7 @@ static bool unload_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entri
 
         // remove the stub from the table
         auto range = kernel.func_binding_infos.equal_range(nid);
-        for (auto it = range.first; it != range.second; it++) {
+        for (auto it = range.first; it != range.second; ++it) {
             if (it->second == entry.address()) {
                 kernel.func_binding_infos.erase(it);
                 break;
@@ -245,7 +244,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
     return true;
 }
 
-static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel) {
+static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem) {
     const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
@@ -266,6 +265,16 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
         }
 
         kernel.export_nids.emplace(nid, entry.address());
+        // substitute supervisor calls to direct function calls in loaded modules
+        auto range = kernel.func_binding_infos.equal_range(nid);
+        for (auto it = range.first; it != range.second; ++it) {
+            auto address = it->second;
+            uint32_t *const stub = Ptr<uint32_t>(address).get(mem);
+            stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)entry.address(), 12);
+            stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(entry.address() >> 16), 12);
+            stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
+            kernel.invalidate_jit_cache(address, 3 * sizeof(uint32_t));
+        }
 
         if (kernel.debugger.log_exports) {
             const char *const name = import_name(nid);
@@ -281,7 +290,6 @@ static bool unload_func_exports(SceKernelModuleInfo *kernel_module_info, const u
     const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
-        const Ptr<uint32_t> entry = entries[i];
 
         if (nid == NID_MODULE_START || nid == NID_MODULE_STOP || nid == NID_MODULE_EXIT)
             continue;
@@ -289,7 +297,7 @@ static bool unload_func_exports(SceKernelModuleInfo *kernel_module_info, const u
         kernel.export_nids.erase(nid);
         // invalidate all lle nid calls
         auto range = kernel.func_binding_infos.equal_range(nid);
-        for (auto it = range.first; it != range.second; it++) {
+        for (auto it = range.first; it != range.second; ++it) {
             Address entry = it->second;
             uint32_t *stub = Ptr<uint32_t>(entry).get(mem);
 
@@ -340,23 +348,21 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         }
         kernel.export_nids[nid] = entry.address();
 
-        bool reloc_success = true;
         auto range = kernel.var_binding_infos.equal_range(nid);
-        for (auto i = range.first; i != range.second; ++i) {
-            auto &var_binding_info = i->second;
+        for (auto j = range.first; j != range.second; ++j) {
+            auto &var_binding_info = j->second;
             if (var_binding_info.size == 0)
                 continue;
 
             SegmentInfosForReloc seg;
             const auto &module_info = kernel.loaded_modules[kernel.module_uid_by_nid[var_binding_info.module_nid]];
             if (!module_info) {
-                reloc_success = false;
                 LOG_ERROR("Module not found by nid: {} uid: {}", log_hex(var_binding_info.module_nid), kernel.module_uid_by_nid[var_binding_info.module_nid]);
             } else {
-                for (int i = 0; i < MODULE_INFO_NUM_SEGMENTS; i++) {
-                    const auto &segment = module_info->info.segments[i];
+                for (int k = 0; k < MODULE_INFO_NUM_SEGMENTS; k++) {
+                    const auto &segment = module_info->info.segments[k];
                     if (segment.size > 0) {
-                        seg[i] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
+                        seg[k] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
                     }
                 }
             }
@@ -371,7 +377,6 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
 
             if (!seg.empty()) {
                 if (!relocate(var_binding_info.entries, var_binding_info.size, seg, mem, true, entry.address())) {
-                    reloc_success = false;
                     LOG_ERROR("Failed to relocate late binding info");
                 }
             }
@@ -402,9 +407,8 @@ static bool unload_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entrie
         // Use same stub for other var imports
         kernel.export_nids[nid] = entry.address();
 
-        bool reloc_success = true;
         auto range = kernel.var_binding_infos.equal_range(nid);
-        for (auto it = range.first; it != range.second; it++) {
+        for (auto it = range.first; it != range.second; ++it) {
             auto &var_binding_info = it->second;
             if (var_binding_info.size == 0)
                 continue;
@@ -412,20 +416,18 @@ static bool unload_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entrie
             SegmentInfosForReloc seg;
             const auto &module_info = kernel.loaded_modules[kernel.module_uid_by_nid[var_binding_info.module_nid]];
             if (!module_info) {
-                reloc_success = false;
                 LOG_ERROR("Module not found by nid: {} uid: {}", log_hex(var_binding_info.module_nid), kernel.module_uid_by_nid[var_binding_info.module_nid]);
             } else {
-                for (int i = 0; i < MODULE_INFO_NUM_SEGMENTS; i++) {
-                    const auto &segment = module_info->info.segments[i];
+                for (int k = 0; k < MODULE_INFO_NUM_SEGMENTS; k++) {
+                    const auto &segment = module_info->info.segments[k];
                     if (segment.size > 0) {
-                        seg[i] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
+                        seg[k] = { segment.vaddr.address(), 0, segment.memsz }; // p_vaddr is not used in variable relocations
                     }
                 }
             }
 
             if (!seg.empty()) {
                 if (!relocate(var_binding_info.entries, var_binding_info.size, seg, mem, true, entry.address())) {
-                    reloc_success = false;
                     LOG_ERROR("Failed to relocate late binding info");
                 }
             }
@@ -447,7 +449,7 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
 
         const uint32_t *const nids = Ptr<const uint32_t>(exports->nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(exports->entry_table).get(mem);
-        if (!is_unload && !load_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, kernel))
+        if (!is_unload && !load_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, kernel, mem))
             return false;
         if (is_unload && !unload_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, kernel, mem))
             return false;
@@ -476,11 +478,6 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
     // assumes little endian host
-    if (self_header.magic != 0x00454353) {
-        LOG_CRITICAL("SELF {} is corrupt or encrypted. Decryption is not yet supported.", self_path);
-        return -1;
-    }
-
     if (self_header.version != 3) {
         LOG_CRITICAL("SELF {} version {} is not supported.", self_path, self_header.version);
         return -1;
@@ -686,9 +683,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         const auto end = dump_segments[last_index].p_vaddr + dump_segments[last_index].p_filesz;
         const auto elf_name = fs::path(self_path).filename().stem().string();
         const auto filename = dump_dir / fmt::format("{}-{}_{}.elf", log_hex_full(start), log_hex_full(end), elf_name);
-        fs::ofstream out(filename, std::ios::out | std::ios::binary);
-        out.write(reinterpret_cast<char *>(dump_elf.data()), dump_elf.size());
-        out.close();
+        fs_utils::dump_data(filename, dump_elf.data(), dump_elf.size());
     }
 
     const unsigned int module_info_segment_index = elf.e_entry >> 30;
@@ -721,7 +716,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     sceKernelModuleInfo->extab_top = Ptr<const void>(module_info->extab_top);
     sceKernelModuleInfo->extab_btm = Ptr<const void>(module_info->extab_end);
 
-    sceKernelModuleInfo->tlsInit = Ptr<const void>((!module_info->tls_start ? 0 : (module_info_segment_address.address() + module_info->tls_start)));
+    sceKernelModuleInfo->tlsInit = Ptr<const void>(!module_info->tls_start ? 0 : (module_info_segment_address.address() + module_info->tls_start));
     sceKernelModuleInfo->tlsInitSize = module_info->tls_filesz;
     sceKernelModuleInfo->tlsAreaSize = module_info->tls_memsz;
 

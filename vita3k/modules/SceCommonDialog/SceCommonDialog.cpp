@@ -992,9 +992,9 @@ static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message,
     }
 }
 
-EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) {
-    TRACY_FUNC(sceSaveDataDialogContinue, param);
-    if (param.get(emuenv.mem) == nullptr) {
+EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
+    TRACY_FUNC(sceSaveDataDialogContinue, p);
+    if (p == nullptr) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
 
@@ -1008,15 +1008,14 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
 
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
     emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    emuenv.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
     emuenv.common_dialog.savedata.has_progress_bar = false;
 
-    const SceSaveDataDialogParam *p = param.get(emuenv.mem);
     SceSaveDataDialogListParam *list_param;
     SceSaveDataDialogUserMessageParam *user_message;
     SceSaveDataDialogSystemMessageParam *sys_message;
     SceSaveDataDialogErrorCodeParam *error_code;
     SceSaveDataDialogProgressBarParam *progress_bar;
-    SceAppUtilSaveDataSlotEmptyParam *empty_param;
     std::vector<SceAppUtilSaveDataSlot> slot_list;
     vfs::FileBuffer thumbnail_buffer;
 
@@ -1072,8 +1071,8 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
             emuenv.common_dialog.savedata.slot_id[emuenv.common_dialog.savedata.selected_save] = progress_bar->targetSlot.id;
             emuenv.common_dialog.savedata.has_progress_bar = true;
             emuenv.common_dialog.savedata.list_empty_param[emuenv.common_dialog.savedata.selected_save] = progress_bar->targetSlot.emptyParam.get(emuenv.mem);
-            if (progress_bar->msg.get(emuenv.mem) != nullptr) {
-                emuenv.common_dialog.savedata.msg = reinterpret_cast<const char *>(progress_bar->msg.get(emuenv.mem));
+            if (progress_bar->msg) {
+                emuenv.common_dialog.savedata.msg = progress_bar->msg.cast<char>().get(emuenv.mem);
             } else {
                 auto &lang = emuenv.common_dialog.lang;
                 auto &save_data = lang.save_data;
@@ -1120,7 +1119,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
     return 0;
 }
 
-EXPORT(int, sceSaveDataDialogFinish, Ptr<const SceSaveDataDialogFinishParam> finishParam) {
+EXPORT(int, sceSaveDataDialogFinish, const SceSaveDataDialogFinishParam *finishParam) {
     TRACY_FUNC(sceSaveDataDialogFinish, finishParam);
     if (!finishParam) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
@@ -1204,9 +1203,9 @@ static void initialize_savedata_vectors(EmuEnvState &emuenv, unsigned int size) 
     emuenv.common_dialog.savedata.list_empty_param.resize(size);
 }
 
-EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
-    TRACY_FUNC(sceSaveDataDialogInit, param);
-    if (param.get(emuenv.mem) == nullptr) {
+EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
+    TRACY_FUNC(sceSaveDataDialogInit, p);
+    if (p == nullptr) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
 
@@ -1217,7 +1216,6 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
     emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
 
-    const SceSaveDataDialogParam *p = param.get(emuenv.mem);
     SceSaveDataDialogFixedParam *fixed_param;
     SceSaveDataDialogListParam *list_param;
     SceSaveDataDialogUserMessageParam *user_message;
@@ -1249,8 +1247,8 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
         slot_list.resize(list_param->slotListSize);
         initialize_savedata_vectors(emuenv, list_param->slotListSize);
 
-        if (list_param->listTitle.get(emuenv.mem)) {
-            emuenv.common_dialog.savedata.list_title = reinterpret_cast<const char *>(list_param->listTitle.get(emuenv.mem));
+        if (list_param->listTitle) {
+            emuenv.common_dialog.savedata.list_title = list_param->listTitle.cast<char>().get(emuenv.mem);
         } else {
             auto &lang = emuenv.common_dialog.lang;
             auto &save_data = lang.save_data;

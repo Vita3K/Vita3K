@@ -30,6 +30,7 @@
 
 using ImportFn = std::function<void(EmuEnvState &emuenv, CPUState &cpu, SceUID thread_id)>;
 using ImportVarFactory = std::function<Address(EmuEnvState &emuenv)>;
+using LibraryInitFn = std::function<void(EmuEnvState &emuenv)>;
 
 // Function returns a value that is written to CPU registers.
 template <typename Ret, typename... Args, size_t... indices>

@@ -24,9 +24,7 @@
 template <class T>
 class Ptr {
 public:
-    Ptr()
-        : addr(0) {
-    }
+    Ptr() = default;
 
     explicit Ptr(Address address)
         : addr(address) {
@@ -38,8 +36,7 @@ public:
         static_assert(std::is_convertible_v<U *, T *>, "Ptr is not convertible.");
     }
 
-    template <class U>
-    Ptr(U *pointer, const MemState &mem) {
+    Ptr(T *pointer, const MemState &mem) {
         const uint8_t *const pointer_bytes = reinterpret_cast<const uint8_t *>(pointer);
         if (pointer_bytes == 0) {
             addr = 0;
@@ -99,7 +96,7 @@ public:
     }
 
 private:
-    Address addr;
+    Address addr{};
 };
 
 static_assert(sizeof(Ptr<const void>) == 4, "Size of Ptr isn't 4 bytes.");

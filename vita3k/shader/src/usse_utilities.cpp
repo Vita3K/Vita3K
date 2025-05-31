@@ -177,8 +177,9 @@ static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunc
     spv::Id type_f32_v3 = b.makeVectorType(type_f32, 3);
 
     spv::Function *fx10_unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32_v3, "unpack3xFX10", { type_f32 }, { "to_unpack" },
+        spv::NoPrecision, type_f32_v3, "unpack3xFX10", spv::LinkageTypeMax, { type_f32 },
         decorations, &fx10_unpack_func_block);
+    b.setupFunctionDebugInfo(fx10_unpack_func, "unpack3xFX10", { type_f32 }, { "to_unpack" });
 
     spv::Id extracted = fx10_unpack_func->getParamId(0);
 
@@ -258,8 +259,9 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     }
 
     spv::Function *unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, output_type, func_name.c_str(), { type_f32 }, { "to_unpack" },
+        spv::NoPrecision, output_type, func_name.c_str(), spv::LinkageTypeMax, { type_f32 },
         decorations, &unpack_func_block);
+    b.setupFunctionDebugInfo(unpack_func, func_name.c_str(), { type_f32 }, { "to_unpack" });
     spv::Id extracted = unpack_func->getParamId(0);
 
     const spv::Id result_type = is_signed ? type_i32 : type_ui32;
@@ -334,8 +336,9 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     }
 
     spv::Function *pack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32, func_name.c_str(), { input_type }, { "to_pack" },
+        spv::NoPrecision, type_f32, func_name.c_str(), spv::LinkageTypeMax, { input_type },
         decorations, &pack_func_block);
+    b.setupFunctionDebugInfo(pack_func, func_name.c_str(), { input_type }, { "to_pack" });
 
     spv::Id extracted = pack_func->getParamId(0);
     const int comp_bits = 32 / comp_count;
@@ -367,8 +370,9 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunct
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
     spv::Function *f16_unpack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 }, { "to_unpack" },
+        spv::NoPrecision, type_f32_v2, "unpack2xF16", spv::LinkageTypeMax, { type_f32 },
         decorations, &f16_unpack_func_block);
+    b.setupFunctionDebugInfo(f16_unpack_func, "unpack2xF16", { type_f32 }, { "to_unpack" });
 
     spv::Id extracted = f16_unpack_func->getParamId(0);
 
@@ -392,8 +396,9 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const SpirvUtilFunctio
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
     spv::Function *f16_pack_func = b.makeFunctionEntry(
-        spv::NoPrecision, type_f32, "pack2xF16", { type_f32_v2 }, { "to_pack" },
+        spv::NoPrecision, type_f32, "pack2xF16", spv::LinkageTypeMax, { type_f32_v2 },
         decorations, &f16_pack_func_block);
+    b.setupFunctionDebugInfo(f16_pack_func, "pack2xF16", { type_f32_v2 }, { "to_pack" });
 
     spv::Id extracted = f16_pack_func->getParamId(0);
 
@@ -423,8 +428,9 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
 
     const std::string func_name = fmt::format("fetchMemoryForBuffer{}Base{}", buffer_index, info.base);
 
-    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { type_i32 }, { "addr" },
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), spv::LinkageTypeMax, { type_i32 },
         {}, &func_block);
+    b.setupFunctionDebugInfo(fetch_func, func_name.c_str(), { type_i32 }, { "addr" });
 
     spv::Id sixteen_cst = b.makeIntConstant(16);
     spv::Id eight_cst = b.makeIntConstant(8);
@@ -479,8 +485,10 @@ static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderP
     spv::Block *func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", { type_i32 }, { "addr" },
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", spv::LinkageTypeMax, { type_i32 },
         {}, &func_block);
+    b.setupFunctionDebugInfo(fetch_func, "fetchMemory", { type_i32 }, { "addr" });
+
     spv::Id addr = fetch_func->getParamId(0);
 
     std::stack<std::unique_ptr<spv::Builder::If>> fetch_stacks;
@@ -685,7 +693,7 @@ spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureStat
         return b.createFunctionCall(utils.unpack_fx10, { scalar });
     }
     default: {
-        LOG_ERROR("Unsupported unpack type: {}", log_hex(type));
+        LOG_ERROR("Unsupported unpack type: 0x{:0X}", fmt::underlying(type));
         break;
     }
     }
@@ -714,7 +722,7 @@ spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState 
     }
 
     default: {
-        LOG_ERROR("Unsupported pack type: {}", log_hex(fmt::underlying(source_type)));
+        LOG_ERROR("Unsupported pack type: 0x{:0X}", fmt::underlying(source_type));
         break;
     }
     }
@@ -1448,10 +1456,7 @@ static spv::Id create_constant_vector_or_scalar(spv::Builder &b, spv::Id constan
     if (comp_count == 1) {
         return constant;
     }
-    std::vector<spv::Id> oprs;
-    for (int i = 0; i < comp_count; ++i) {
-        oprs.push_back(constant);
-    }
+    std::vector<spv::Id> oprs(comp_count, constant);
     return b.createCompositeConstruct(b.makeVectorType(b.getTypeId(constant), comp_count), oprs);
 }
 

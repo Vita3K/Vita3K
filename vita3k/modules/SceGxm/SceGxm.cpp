@@ -43,7 +43,6 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 #include <util/bytes.h>
-#include <util/lock_and_find.h>
 #include <util/log.h>
 
 #include <util/tracy.h>
@@ -939,7 +938,7 @@ static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemStat
     const std::uint32_t size, const SceUID thread_id) {
     const std::lock_guard<std::mutex> guard(global_lock);
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
     const Address final_size_addr = stack_alloc(*thread->cpu, 4);
 
     Ptr<void> result(thread->run_callback(callback.address(), { userdata.address(), size, final_size_addr }));
@@ -1238,7 +1237,7 @@ static constexpr std::uint32_t DEFAULT_RING_SIZE = 4096;
 
 static VertexCacheHash hash_data(const void *data, size_t size) {
     auto hash = XXH3_64bits(data, size);
-    return VertexCacheHash(hash);
+    return static_cast<VertexCacheHash>(hash);
 }
 
 static bool operator<(const SceGxmRegisteredProgram &a, const SceGxmRegisteredProgram &b) {
@@ -2026,6 +2025,8 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
 
     if (!renderTarget)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    if (!renderTarget.valid(mem))
+        return RET_ERROR(SCE_GXM_ERROR_DRIVER);
 
     renderer::destroy_render_target(*emuenv.renderer, renderTarget.get(mem)->renderer);
 
@@ -2595,20 +2596,33 @@ EXPORT(uint32_t, sceGxmGetPrecomputedDrawSize, const SceGxmVertexProgram *vertex
     return static_cast<uint32_t>((max_stream_index + 1) * sizeof(StreamData));
 }
 
-EXPORT(uint32_t, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
+// Fallback value returned when computed size is zero.
+static constexpr SceUInt32 SCE_GXM_PRECOMPUTED_OVERHEAD = 8u;
+
+// Precomputed state size is the sum of the sizes of all uniform buffers and textures.
+static SceUInt32 get_precomputed_state_size(const uint16_t buffer_count, const uint16_t texture_count) {
+    const SceUInt32 state_size = static_cast<SceUInt32>((buffer_count * sizeof(UniformBuffer)) + (texture_count * sizeof(SceGxmTexture)));
+
+    // Some games expect sceGxmGetPrecomputed*StateSize to return non-zero,
+    // even when buffer and texture counts are both zero.
+    // This fallback avoids crashes or undefined behavior.
+    return state_size > 0 ? state_size : SCE_GXM_PRECOMPUTED_OVERHEAD;
+}
+
+EXPORT(SceUInt32, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
     TRACY_FUNC(sceGxmGetPrecomputedFragmentStateSize, fragmentProgram);
     assert(fragmentProgram);
 
     auto &renderer_data = fragmentProgram->renderer_data;
-    return renderer_data->texture_count * sizeof(TextureData) + renderer_data->buffer_count * sizeof(UniformBuffer);
+    return get_precomputed_state_size(renderer_data->buffer_count, renderer_data->texture_count);
 }
 
-EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
+EXPORT(SceUInt32, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
     TRACY_FUNC(sceGxmGetPrecomputedVertexStateSize, vertexProgram);
     assert(vertexProgram);
 
     auto &renderer_data = vertexProgram->renderer_data;
-    return renderer_data->texture_count * sizeof(TextureData) + renderer_data->buffer_count * sizeof(UniformBuffer);
+    return get_precomputed_state_size(renderer_data->buffer_count, renderer_data->texture_count);
 }
 
 EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
@@ -2682,13 +2696,19 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
+    if ((base.address() % KiB(4) != 0) || (size % KiB(4) != 0))
+        LOG_WARN_ONCE("Mapping unaligned GPU memory");
+
+    // Make sure the base address and size are 4KiB-aligned
+    Address aligned_base = align_down(base.address(), KiB(4));
+    size = align(base.address() + size, KiB(4)) - aligned_base;
+
     // Check if it has already been mapped
     // Some games intentionally overlapping mapped region. Nothing we can do. Allow it, bear your own consequences.
     GxmState &gxm = emuenv.gxm;
-
-    auto ite = gxm.memory_mapped_regions.lower_bound(base.address());
-    if (ite == gxm.memory_mapped_regions.end() || ite->first != base.address()) {
-        if (ite != gxm.memory_mapped_regions.end() && base.address() + size > ite->first) {
+    auto ite = gxm.memory_mapped_regions.lower_bound(aligned_base);
+    if ((ite == gxm.memory_mapped_regions.end()) || (ite->first != aligned_base)) {
+        if ((ite != gxm.memory_mapped_regions.end()) && ((aligned_base + size) > ite->first)) {
             LOG_ERROR("Overlapping mapped memory detected");
 
             if (emuenv.renderer->features.support_memory_mapping) {
@@ -2696,11 +2716,11 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
                 return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
             }
         }
-        gxm.memory_mapped_regions.emplace(base.address(), MemoryMapInfo{ base.address(), size, attribs });
+        gxm.memory_mapped_regions.emplace(aligned_base, MemoryMapInfo{ aligned_base, size, attribs });
 
         // little big planet maps regions of size 0
         if (emuenv.renderer->features.support_memory_mapping && size > 0)
-            renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryMap, true, base, size);
+            renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryMap, true, aligned_base, size);
 
         return 0;
     }
@@ -4224,7 +4244,7 @@ EXPORT(int, sceGxmSetYuvProfile) {
     return UNIMPLEMENTED();
 }
 
-Address alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShaderPatcherParams &shaderPatcherParams, unsigned int size) {
+static Address alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShaderPatcherParams &shaderPatcherParams, unsigned int size) {
     if (!shaderPatcherParams.hostAllocCallback) {
         LOG_ERROR("Empty hostAllocCallback");
     }
@@ -4234,7 +4254,7 @@ Address alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShad
 }
 
 template <typename T>
-Ptr<T> alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShaderPatcherParams &shaderPatcherParams) {
+static Ptr<T> alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShaderPatcherParams &shaderPatcherParams) {
     const Address address = alloc_callbacked(emuenv, thread_id, shaderPatcherParams, sizeof(T));
     const Ptr<T> ptr(address);
     if (!ptr) {
@@ -4246,11 +4266,11 @@ Ptr<T> alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShade
 }
 
 template <typename T>
-Ptr<T> alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher) {
+static Ptr<T> alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher) {
     return alloc_callbacked<T>(emuenv, thread_id, shaderPatcher->params);
 }
 
-void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher, Address data) {
+static void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher, Address data) {
     if (!shaderPatcher->params.hostFreeCallback) {
         LOG_ERROR("Empty hostFreeCallback");
     }
@@ -4259,7 +4279,7 @@ void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher 
 }
 
 template <typename T>
-void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher, Ptr<T> data) {
+static void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher *shaderPatcher, Ptr<T> data) {
     free_callbacked(emuenv, thread_id, shaderPatcher, data.address());
 }
 
@@ -5430,13 +5450,19 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    auto ite = emuenv.gxm.memory_mapped_regions.find(base.address());
+    if (base.address() % KiB(4) != 0)
+        LOG_WARN_ONCE("Unmapping unaligned GPU memory");
+
+    // Make sure the base address are 4KiB-aligned
+    Address aligned_base = align_down(base.address(), KiB(4));
+
+    auto ite = emuenv.gxm.memory_mapped_regions.find(aligned_base);
     if (ite == emuenv.gxm.memory_mapped_regions.end()) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
     if (emuenv.renderer->features.support_memory_mapping && ite->second.size > 0)
-        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryUnmap, true, base);
+        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryUnmap, true, aligned_base);
 
     emuenv.gxm.memory_mapped_regions.erase(ite);
     return 0;

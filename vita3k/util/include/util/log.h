@@ -25,11 +25,6 @@
 
 #include <type_traits>
 
-#include <iomanip>
-#include <iostream>
-#include <sstream>
-#include <vector>
-
 #define LOG_TRACE SPDLOG_TRACE
 #define LOG_DEBUG SPDLOG_DEBUG
 #define LOG_INFO SPDLOG_INFO
@@ -85,8 +80,6 @@ ExitCode add_sink(const fs::path &log_path);
         return static_cast<int>(error);                                             \
     })()
 
-// Using stringstream as its 2x faster than fmt::format
-
 /*
     returns: A string with the input number formatted in hexadecimal
     Examples:
@@ -96,11 +89,7 @@ ExitCode add_sink(const fs::path &log_path);
 */
 template <typename T>
 std::string log_hex(T val) {
-    using unsigned_type = typename std::make_unsigned<T>::type;
-    std::stringstream ss;
-    ss << "0x";
-    ss << std::hex << std::to_string(static_cast<unsigned_type>(val));
-    return ss.str();
+    return fmt::format("0x{:X}", static_cast<std::make_unsigned_t<T>>(val));
 }
 
 /*
@@ -114,7 +103,6 @@ std::string log_hex(T val) {
         * `uint16_t 1337` returns: `"0x0539"`
         * `uint16_t 65535` returns: `"0xFFFF"`
 
-
         * `uint32_t 15` returns: `"0x0000000F"`
         * `uint32_t 1337` returns: `"0x00000539"`
         * `uint32_t 65535` returns: `"0x0000FFFF"`
@@ -122,8 +110,19 @@ std::string log_hex(T val) {
 */
 template <typename T>
 std::string log_hex_full(T val) {
-    std::stringstream ss;
-    ss << "0x";
-    ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << std::to_string(val);
-    return ss.str();
+    return fmt::format("0x{:0{}X}", static_cast<std::make_unsigned_t<T>>(val), sizeof(T) * 2);
 }
+
+template <class T>
+class Ptr;
+FMT_BEGIN_NAMESPACE
+template <typename T, typename Char>
+struct formatter<Ptr<T>, Char> : formatter<string_view, Char> {
+public:
+    template <typename FormatContext>
+    auto format(const Ptr<T> p, FormatContext &ctx) const {
+        return detail::write(ctx.out(),
+            basic_string_view<Char>(log_hex_full(p.address())));
+    }
+};
+FMT_END_NAMESPACE

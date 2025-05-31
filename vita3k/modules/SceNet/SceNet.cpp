@@ -344,17 +344,17 @@ EXPORT(int, sceNetGetsockopt, int sid, int level, int optname, void *optval, uns
     return sock->get_socket_options(level, optname, optval, optlen);
 }
 
-EXPORT(unsigned int, sceNetHtonl, unsigned int n) {
+EXPORT(SceUInt32, sceNetHtonl, SceUInt32 n) {
     TRACY_FUNC(sceNetHtonl, n);
     return htonl(n);
 }
 
-EXPORT(int, sceNetHtonll, SceUInt64 n) {
+EXPORT(SceUInt64, sceNetHtonll, SceUInt64 n) {
     TRACY_FUNC(sceNetHtonll, n);
     return HTONLL(n);
 }
 
-EXPORT(unsigned short int, sceNetHtons, unsigned short int n) {
+EXPORT(SceUInt16, sceNetHtons, SceUInt16 n) {
     TRACY_FUNC(sceNetHtons, n);
     return htons(n);
 }
@@ -415,17 +415,17 @@ EXPORT(int, sceNetListen, int sid, int backlog) {
     return sock->listen(backlog);
 }
 
-EXPORT(unsigned int, sceNetNtohl, unsigned int n) {
+EXPORT(SceUInt32, sceNetNtohl, SceUInt32 n) {
     TRACY_FUNC(sceNetNtohl, n);
     return ntohl(n);
 }
 
-EXPORT(int, sceNetNtohll, SceUInt64 n) {
+EXPORT(SceUInt64, sceNetNtohll, SceUInt64 n) {
     TRACY_FUNC(sceNetNtohll, n);
     return NTOHLL(n);
 }
 
-EXPORT(unsigned short int, sceNetNtohs, unsigned short int n) {
+EXPORT(SceUInt16, sceNetNtohs, SceUInt16 n) {
     TRACY_FUNC(sceNetNtohs, n);
     return ntohs(n);
 }

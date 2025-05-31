@@ -29,6 +29,7 @@
 
 #include <util/log.h>
 #include <util/string_utils.h>
+#include <util/vector_utils.h>
 
 #include <pugixml.hpp>
 #include <stb_image.h>
@@ -98,7 +99,7 @@ void get_users_list(GuiState &gui, EmuEnvState &emuenv) {
     if (fs::exists(user_path) && !fs::is_empty(user_path)) {
         for (const auto &path : fs::directory_iterator(user_path)) {
             pugi::xml_document user_xml;
-            if (fs::is_directory(path) && user_xml.load_file(((path / "user.xml").c_str()))) {
+            if (fs::is_directory(path) && user_xml.load_file((path / "user.xml").c_str())) {
                 const auto user_child = user_xml.child("user");
 
                 // Load user id

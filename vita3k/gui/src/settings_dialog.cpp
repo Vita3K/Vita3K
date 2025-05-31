@@ -15,7 +15,6 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "imgui.h"
 #include "private.h"
 
 #include <app/functions.h>
@@ -44,6 +43,7 @@
 
 #include <algorithm>
 #include <pugixml.hpp>
+#include <util/vector_utils.h>
 
 #undef ERROR
 
@@ -196,6 +196,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             if (!config_child.child("emulator").empty()) {
                 const auto emulator_child = config_child.child("emulator");
                 config.show_touchpad_cursor = emulator_child.attribute("show-touchpad-cursor").as_bool();
+                config.file_loading_delay = emulator_child.attribute("file-loading-delay").as_int();
             }
 
             // Load Network Config
@@ -252,6 +253,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.ngs_enable = emuenv.cfg.ngs_enable;
         config.pstv_mode = emuenv.cfg.pstv_mode;
         config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
+        config.file_loading_delay = emuenv.cfg.file_loading_delay;
         config.psn_signed_in = emuenv.cfg.psn_signed_in;
     }
 
@@ -273,6 +275,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 
     get_modules_list(gui, emuenv);
     config.stretch_the_display_area = emuenv.cfg.stretch_the_display_area;
+    config.fullscreen_hd_res_pixel_perfect = emuenv.cfg.fullscreen_hd_res_pixel_perfect;
     config_cpu_backend = set_cpu_backend(config.cpu_backend);
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
     max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
@@ -344,6 +347,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         // Emulator
         auto emulator_child = config_child.append_child("emulator");
         emulator_child.append_attribute("show-touchpad-cursor") = config.show_touchpad_cursor;
+        emulator_child.append_attribute("file-loading-delay") = config.file_loading_delay;
 
         // Network
         auto network_child = config_child.append_child("network");
@@ -372,13 +376,24 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.ngs_enable = config.ngs_enable;
         emuenv.cfg.pstv_mode = config.pstv_mode;
         emuenv.cfg.show_touchpad_cursor = config.show_touchpad_cursor;
+        emuenv.cfg.file_loading_delay = config.file_loading_delay;
         emuenv.cfg.psn_signed_in = config.psn_signed_in;
+    }
+
+    bool update_viewport_en = false;
+
+    if (emuenv.cfg.fullscreen_hd_res_pixel_perfect != config.fullscreen_hd_res_pixel_perfect) {
+        emuenv.cfg.fullscreen_hd_res_pixel_perfect = config.fullscreen_hd_res_pixel_perfect;
+        update_viewport_en = true;
     }
 
     if (emuenv.cfg.stretch_the_display_area != config.stretch_the_display_area) {
         emuenv.cfg.stretch_the_display_area = config.stretch_the_display_area;
-        app::update_viewport(emuenv);
+        update_viewport_en = true;
     }
+
+    if (update_viewport_en)
+        app::update_viewport(emuenv);
 
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
@@ -437,6 +452,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
         emuenv.cfg.current_config.pstv_mode = emuenv.cfg.pstv_mode;
         emuenv.cfg.current_config.show_touchpad_cursor = emuenv.cfg.show_touchpad_cursor;
+        emuenv.cfg.current_config.file_loading_delay = emuenv.cfg.file_loading_delay;
         emuenv.cfg.current_config.psn_signed_in = emuenv.cfg.psn_signed_in;
     }
 
@@ -459,6 +475,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
     emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
     emuenv.renderer->set_stretch_display(emuenv.cfg.stretch_the_display_area);
+    emuenv.renderer->stretch_hd_pixel_perfect(emuenv.cfg.fullscreen_hd_res_pixel_perfect);
     emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
     emuenv.renderer->set_async_compilation(emuenv.cfg.current_config.async_pipeline_compilation);
     emuenv.display.fps_hack = emuenv.cfg.current_config.fps_hack;
@@ -479,7 +496,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
     auto &lang = gui.lang.settings_dialog;
-    auto &common = emuenv.common_dialog.lang.common;
+    auto &common = emuenv.common_dialog.lang;
     auto &firmware_font = gui.lang.install_dialog.firmware_install;
 
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
@@ -563,7 +580,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic", lang.cpu["unicorn"].c_str() };
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.cpu["cpu_backend"].c_str());
         if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND_DISPLAY, IM_ARRAYSIZE(LIST_CPU_BACKEND_DISPLAY)))
-            config.cpu_backend = LIST_CPU_BACKEND[int(config_cpu_backend)];
+            config.cpu_backend = LIST_CPU_BACKEND[static_cast<int>(config_cpu_backend)];
         SetTooltipEx(lang.cpu["select_cpu_backend"].c_str());
         if (config_cpu_backend == CPUBackend::Dynarmic) {
             ImGui::Spacing();
@@ -585,7 +602,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 #endif
         static const char *LIST_BACKEND_RENDERER[] = { "OpenGL", "Vulkan" };
         if (ImGui::Combo(lang.gpu["backend_renderer"].c_str(), reinterpret_cast<int *>(&emuenv.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
-            emuenv.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(emuenv.backend_renderer)];
+            emuenv.cfg.backend_renderer = LIST_BACKEND_RENDERER[static_cast<int>(emuenv.backend_renderer)];
         SetTooltipEx(lang.gpu["select_backend_renderer"].c_str());
 #ifdef __APPLE__
         ImGui::EndDisabled();
@@ -872,6 +889,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox(lang.emulator["check_for_updates"].c_str(), &emuenv.cfg.check_for_updates);
         SetTooltipEx(lang.emulator["check_for_updates_description"].c_str());
+        ImGui::Spacing();
+        ImGui::SliderInt("File Loading Delay", &config.file_loading_delay, 0, 30, "%d ms", ImGuiSliderFlags_AlwaysClamp);
+        SetTooltipEx("File loading delay in milliseconds.\nThis is required for some games to load files too quickly compared to real hardware (e.g., Silent Hill).\nDefault is 0 ms.");
         ImGui::Separator();
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["performance_overlay"].c_str());
         ImGui::Spacing();
@@ -926,7 +946,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Separator();
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["screenshot_image_type"].c_str());
         ImGui::Spacing();
-        const char *LIST_IMG_FORMAT[] = { "NULL", "JPEG", "PNG" };
+        const char *LIST_IMG_FORMAT[] = { lang.emulator["null"].c_str(), "JPEG", "PNG" };
         ImGui::Combo(lang.emulator["screenshot_format"].c_str(), &emuenv.cfg.screenshot_format, LIST_IMG_FORMAT, IM_ARRAYSIZE(LIST_IMG_FORMAT));
         ImGui::EndTabItem();
     } else
@@ -976,6 +996,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox(lang.gui["apps_list_grid"].c_str(), &emuenv.cfg.apps_list_grid);
         SetTooltipEx(lang.gui["apps_list_grid_description"].c_str());
+        ImGui::SameLine();
+        ImGui::Checkbox(lang.gui["fullscreen_hd_res_pixel_perfect"].c_str(), &config.fullscreen_hd_res_pixel_perfect);
+        SetTooltipEx(lang.gui["fullscreen_hd_res_pixel_perfect_description"].c_str());
         if (!emuenv.cfg.apps_list_grid) {
             ImGui::Spacing();
             ImGui::SliderInt(lang.gui["icon_size"].c_str(), &emuenv.cfg.icon_size, 64, 128);
@@ -991,7 +1014,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.gui["asia_font_support_description"].c_str());
         } else {
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", firmware_font["no_font_exist"].c_str());
-            if (ImGui::Button(firmware_font["download_firmware_font_package"].c_str()))
+            if (ImGui::Button(gui.lang.welcome["download_firmware_font_package"].c_str()))
                 open_path("https://bit.ly/2P2rb0r");
             SetTooltipEx(lang.gui["firmware_font_package_description"].c_str());
         }
@@ -1184,7 +1207,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 // Create selectable item using module name and get activation state
                 if (ImGui::Selectable(module.c_str(), activation_state)) {
                     // Change activation state if module is clicked/selected
-                    if (activation_state == true) {
+                    if (activation_state) {
                         // Deactivate module
                         tracy_module_utils::set_tracy_active(module, false);
                         // Update config data by deleting the name of the module from the vector
@@ -1212,15 +1235,16 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * SCALE.x));
-    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
+    if (ImGui::Button(common.common["close"].c_str(), BUTTON_SIZE))
         show_settings_dialog = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));
     const auto is_reboot = (emuenv.renderer->current_backend != emuenv.backend_renderer) || (config.resolution_multiplier != emuenv.cfg.current_config.resolution_multiplier);
-    if (ImGui::Button(is_apply ? (is_reboot ? lang.main_window["save_reboot"].c_str() : lang.main_window["save_apply"].c_str()) : lang.main_window["save"].c_str(), BUTTON_SIZE)) {
+    if (ImGui::Button(is_apply ? (is_reboot ? lang.main_window["save_reboot"].c_str() : lang.main_window["save_apply"].c_str()) : lang.main_window["save_close"].c_str(), BUTTON_SIZE)) {
         save_config(gui, emuenv);
         if (is_apply)
             set_config(gui, emuenv, emuenv.io.app_path);
+        show_settings_dialog = false;
     }
     SetTooltipEx(lang.main_window["keep_changes"].c_str());
 

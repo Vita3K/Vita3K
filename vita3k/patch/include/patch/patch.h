@@ -19,7 +19,6 @@
 
 #include <string>
 #include <util/fs.h>
-#include <util/types.h>
 #include <vector>
 
 struct Patch {

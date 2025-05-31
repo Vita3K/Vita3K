@@ -35,9 +35,6 @@
 #define XXH_INLINE_ALL
 #include <xxhash.h>
 #endif
-#ifdef _WIN32
-#include <execution>
-#endif
 
 namespace renderer {
 namespace texture {
@@ -330,7 +327,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
 
     if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422) {
-        LOG_ERROR_ONCE("Unimplemented YUV format {}, please report it to the developers.", log_hex(fmt::underlying(base_format)));
+        LOG_ERROR_ONCE("Unimplemented YUV format 0x{:0X}, please report it to the developers.", fmt::underlying(base_format));
         return;
     }
 
@@ -705,8 +702,6 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     }
 
     importing_texture = false;
-    // to restore the state, in case for whatever reason we could not load the replacement texture
-    bool previous_configure = configure;
     if (upload && import_textures) {
         auto it = available_textures_hash.find(info->hash);
         if (it != available_textures_hash.end()) {

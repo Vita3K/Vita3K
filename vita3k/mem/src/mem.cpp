@@ -45,7 +45,7 @@ constexpr bool PAGE_NAME_TRACKING = false;
 static AccessViolationHandler access_violation_handler;
 static void register_access_violation_handler(const AccessViolationHandler &handler);
 
-static Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force);
+static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force);
 static void delete_memory(uint8_t *memory);
 
 #ifdef _WIN32
@@ -152,7 +152,7 @@ bool is_valid_addr_range(const MemState &state, Address start, Address end) {
     return state.allocator.free_slot_count(start_page, end_page) == 0;
 }
 
-static Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force) {
+static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force) {
     int page_num;
     if (force) {
         if (state.allocator.allocate_at(start_page, page_count) < 0) {
@@ -165,7 +165,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, int page_count,
             return 0;
     }
 
-    const int size = page_count * state.page_size;
+    const uint32_t size = page_count * state.page_size;
     const Address addr = page_num * state.page_size;
     uint8_t *const memory = &state.memory[addr];
 

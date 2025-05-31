@@ -37,7 +37,7 @@ public:
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(destroy_time - init_time).count();
 
         LOG_TRACE("{} took {} ns | {} μs | {} ms", _name, nanos, micros, millis);
-    };
+    }
 
     inline TimeLogger(std::string name) {
         _name = name;

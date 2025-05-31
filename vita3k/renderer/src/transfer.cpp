@@ -143,13 +143,13 @@ COMMAND(handle_transfer_copy) {
     SceGxmTransferType dst_type = helper.pop<SceGxmTransferType>();
 
     if (src_fmt != dst_fmt) {
-        LOG_ERROR_ONCE("Unhandled format conversion from {} to {}", log_hex(fmt::underlying(src_fmt)), log_hex(fmt::underlying(dst_fmt)));
+        LOG_ERROR_ONCE("Unhandled format conversion from 0x{:0X} to 0x{:0X}", fmt::underlying(src_fmt), fmt::underlying(dst_fmt));
         delete[] images;
         return;
     }
 
     if (colorKeyMode != SCE_GXM_TRANSFER_COLORKEY_NONE && src_fmt != SCE_GXM_TRANSFER_FORMAT_U8U8U8U8_ABGR) {
-        LOG_ERROR_ONCE("Transfer copy with non-zero key mask not handled for format {}", log_hex(fmt::underlying(src_fmt)));
+        LOG_ERROR_ONCE("Transfer copy with non-zero key mask not handled for format 0x{:0X}", fmt::underlying(src_fmt));
     }
 
     vulkan::CallbackRequestFunction copy_operation = [=, &mem]() {
@@ -199,7 +199,7 @@ COMMAND(handle_transfer_downscale) {
     SceGxmTransferImage *dst = helper.pop<SceGxmTransferImage *>();
 
     if (src->format != dst->format) {
-        LOG_ERROR_ONCE("Unhandled format conversion from {} to {}", log_hex(fmt::underlying(src->format)), log_hex(fmt::underlying(dst->format)));
+        LOG_ERROR_ONCE("Unhandled format conversion from 0x{:0X} to 0x{:0X}", fmt::underlying(src->format), fmt::underlying(dst->format));
         return;
     }
 
@@ -211,7 +211,6 @@ COMMAND(handle_transfer_downscale) {
     // only rgb formats are supported by the PS Vita for downscaling
     vulkan::CallbackRequestFunction downscale_operation = [&mem, src, dst]() {
         AVPixelFormat pixel_fmt = AV_PIX_FMT_NONE;
-        bool use_ffmpeg = true;
         switch (src->format) {
         case SCE_GXM_TRANSFER_FORMAT_U5U6U5_BGR:
             pixel_fmt = AV_PIX_FMT_RGB565LE;
@@ -233,7 +232,7 @@ COMMAND(handle_transfer_downscale) {
             // use ffmpeg with the avg filter
             SwsContext *ctx = sws_getContext(src->width, src->height, pixel_fmt, dst->width, dst->height, pixel_fmt, SWS_AREA, nullptr, nullptr, nullptr);
             if (ctx == nullptr) {
-                LOG_ERROR("Failed to get ffmpeg context for format {}", log_hex(fmt::underlying(src->format)));
+                LOG_ERROR("Failed to get ffmpeg context for format 0x{:0X}", fmt::underlying(src->format));
             } else {
                 sws_scale(ctx, &src_ptr, &src->stride, 0, src->height, &dst_ptr, &dst->stride);
                 sws_freeContext(ctx);
@@ -244,12 +243,12 @@ COMMAND(handle_transfer_downscale) {
             // slow and not entirely accurate (nearest instead of average) fallback
 
             auto perform_downscale = [&]<typename T>(T type) {
-                for (int y = 0; y < dst->height; y++) {
+                for (size_t y = 0; y < dst->height; y++) {
                     // stride is in bytes
-                    T *src_line = reinterpret_cast<T *>(src_ptr + src->stride * y * 2);
-                    T *dst_line = reinterpret_cast<T *>(dst_ptr + dst->stride);
-                    for (int x = 0; x < dst->width; x++) {
-                        dst_ptr[x] = src_ptr[2 * x];
+                    T *src_line = reinterpret_cast<T *>(src_ptr + (size_t)src->stride * y * 2);
+                    T *dst_line = reinterpret_cast<T *>(dst_ptr + (size_t)dst->stride * y);
+                    for (size_t x = 0; x < dst->width; x++) {
+                        dst_line[x] = src_line[2 * x];
                     }
                 }
             };
@@ -268,7 +267,7 @@ COMMAND(handle_transfer_downscale) {
                 break;
             default:
                 // should not happen
-                LOG_ERROR("Unhandled format {}", log_hex(fmt::underlying(src->format)));
+                LOG_ERROR("Unhandled format 0x{:0X}", fmt::underlying(src->format));
                 break;
             }
         }

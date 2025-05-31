@@ -47,6 +47,16 @@ bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::int32_t &br_of
     return br_inst_is;
 }
 
+static bool is_return(std::uint64_t inst) {
+    const std::uint32_t high = (inst >> 32);
+    const std::uint32_t op_shift = (high & ~0x07FFFFFFU) >> 27;
+    const std::uint32_t op_mask = (high & ~0xFFCFFFFFU) >> 20;
+    const bool link_bit_clear = !(high & 0x00400000);
+    const std::uint32_t op_check = (high & ~0xFFFFFE3FU) >> 6;
+
+    return (op_shift == 0b11111) && (op_mask == 0) && link_bit_clear && (op_check == 2);
+}
+
 bool does_write_to_predicate(const std::uint64_t inst, std::uint8_t &pred) {
     if ((((inst >> 59) & 0b11111) == 0b01001) || (((inst >> 59) & 0b11111) == 0b01111)) {
         pred = static_cast<std::uint8_t>((inst & ~0xFFFFFFF3FFFFFFFF) >> 34);
@@ -319,14 +329,17 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, const AnalyzeReadFuncti
     std::multimap<std::uint32_t, BranchInfo> branches_to_back;
     std::map<std::uint32_t, BranchInfo> branches_from;
 
-    std::queue<BlockInvestigateRequest> investigate_queue;
-    investigate_queue.push({ 0, end_offset, &root });
+    // The return offset is often used to find the end of the function
+    std::uint32_t return_offset = 0;
+
+    // The call stack is used to track the function calls
+    std::vector<std::uint32_t> calls_stack;
 
     // First off query all branches first
     // This is for easy tracing of loops and branches later, without complicating the algorithm
     // For example, loop might be in a loop :(
-    for (usse::USSEOffset baddr = 0; baddr <= end_offset; baddr += 1) {
-        auto inst = read_func(baddr);
+    for (usse::USSEOffset baddr = 0; baddr <= end_offset; baddr++) {
+        const auto inst = read_func(baddr);
 
         std::uint8_t pred = 0;
         std::int32_t br_off = 0;
@@ -335,12 +348,28 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, const AnalyzeReadFuncti
             const std::uint32_t dest = baddr + br_off;
             BranchInfo info = { baddr, dest, pred };
 
+            if ((dest == 0) && (return_offset > 0))
+                calls_stack.push_back(baddr);
+
             if (br_off < 0)
                 branches_to_back.emplace(dest, info);
 
             branches_from.emplace(baddr, info);
         }
+
+        if (is_return(inst))
+            return_offset = baddr;
     }
+
+    std::uint32_t start_offset = return_offset;
+    std::queue<BlockInvestigateRequest> investigate_queue;
+    for (const auto call : calls_stack) {
+        investigate_queue.push({ start_offset, call - 1, &root });
+        investigate_queue.push({ 0, return_offset, &root });
+        start_offset = call + 1;
+    }
+
+    investigate_queue.push({ start_offset, end_offset, &root });
 
     while (!investigate_queue.empty()) {
         BlockInvestigateRequest request = std::move(investigate_queue.front());

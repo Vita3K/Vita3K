@@ -17,8 +17,6 @@
 
 #include "SceAudiodecUser.h"
 
-#include <modules/module_parent.h>
-
 #include <audio/state.h>
 #include <codec/state.h>
 #include <kernel/state.h>

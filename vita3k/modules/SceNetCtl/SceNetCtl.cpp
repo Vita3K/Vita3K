@@ -256,7 +256,7 @@ EXPORT(int, sceNetCtlCheckCallback) {
 
     emuenv.net.state = 1;
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
     // TODO: Limit the number of callbacks called to 5
     // TODO: Check in which order the callbacks are executed

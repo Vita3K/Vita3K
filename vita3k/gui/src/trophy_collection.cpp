@@ -129,7 +129,7 @@ enum class NpComIdSortType {
     PROGRESS
 };
 static NpComIdSortType np_com_id_sort;
-bool show_hidden_trophy = false;
+static bool show_hidden_trophy = false;
 
 void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     const auto TROPHY_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy" };
@@ -769,7 +769,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
 
     // Back
     ImGui::SetCursorPos(ImVec2(8.f * SCALE.x, WINDOW_SIZE.y - (52.f * SCALE.y)));
-    if (ImGui::Button("Back", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+    if (ImGui::Button("<<", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
         if (!np_com_id_selected.empty()) {
             if (detail_np_com_id) {
                 detail_np_com_id = false;

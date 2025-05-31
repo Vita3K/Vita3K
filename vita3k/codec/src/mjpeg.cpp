@@ -31,25 +31,17 @@ extern "C" {
 
 void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t frame_width, const DecoderColorSpace color_space, const bool is_bgra, MJpegPitch pitch[4]) {
     AVPixelFormat format = AV_PIX_FMT_YUVJ444P;
-    int strides_divisor = 1;
-    int slice_position = 8;
     int width = pitch[0].x, height = pitch[0].y;
 
     switch (color_space) {
     case COLORSPACE_YUV444P:
         format = AV_PIX_FMT_YUV444P;
-        strides_divisor = 1;
-        slice_position = 8; // 2
         break;
     case COLORSPACE_YUV422P:
         format = AV_PIX_FMT_YUV422P;
-        strides_divisor = 2;
-        slice_position = 6; // 1.5
         break;
     case COLORSPACE_YUV420P:
         format = AV_PIX_FMT_YUV420P;
-        strides_divisor = 2;
-        slice_position = 5; // 1.25
         break;
     default:
         LOG_WARN("An attempt was made to use an unsupported color space.");
@@ -139,7 +131,7 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
     assert(error == height);
 }
 
-AVPixelFormat colorspace_to_av_pixel_format(DecoderColorSpace color_space) {
+static AVPixelFormat colorspace_to_av_pixel_format(DecoderColorSpace color_space) {
     switch (color_space) {
     case COLORSPACE_YUV444P:
         return AV_PIX_FMT_YUVJ444P;
@@ -162,7 +154,7 @@ AVPixelFormat colorspace_to_av_pixel_format(DecoderColorSpace color_space) {
     }
 }
 
-DecoderColorSpace av_pixel_format_to_colorspace(AVPixelFormat format) {
+static DecoderColorSpace av_pixel_format_to_colorspace(AVPixelFormat format) {
     switch (format) {
     case AV_PIX_FMT_YUVJ444P:
         return COLORSPACE_YUV444P;

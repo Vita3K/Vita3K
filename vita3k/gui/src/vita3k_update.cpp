@@ -56,77 +56,121 @@ struct GitCommitDesc {
 
 static int git_version;
 static std::vector<GitCommitDesc> git_commit_desc_list;
+static std::atomic<bool> cancel_thread{ false };
+static std::atomic<bool> thread_running{ false };
+static std::mutex commit_desc_list_mutex;
 bool init_vita3k_update(GuiState &gui) {
+    // Reset all variables
     state = NO_UPDATE;
     git_commit_desc_list.clear();
     git_version = 0;
     vita_area_state = {};
-    constexpr auto latest_link = "https://api.github.com/repos/Vita3K/Vita3K/releases/latest";
 
     // Get Build number of latest release
-    const auto version = net_utils::get_web_regex_result(latest_link, std::regex("Vita3K Build: (\\d+)"));
-    if (!version.empty() && std::all_of(version.begin(), version.end(), ::isdigit))
-        git_version = string_utils::stoi_def(version, 0, "git version");
-    else {
+    const auto version = net_utils::get_web_regex_result("https://api.github.com/repos/Vita3K/Vita3K/releases/latest", std::regex("Vita3K Build: (\\d+)"));
+
+    // Check if version is empty or not all digit
+    if (version.empty() || !std::all_of(version.begin(), version.end(), ::isdigit)) {
         LOG_WARN("Failed to get current git version, try again later\n{}", version);
         gui.help_menu.vita3k_update = false;
         return false;
     }
 
-    const auto dif_from_current = git_version - app_number;
+    // Set latest git version number
+    git_version = string_utils::stoi_def(version, 0, "git version");
+
+    // Get difference between current app number and git version
+    const auto dif_from_current = static_cast<uint32_t>(std::max(git_version - app_number, 0));
     const auto has_update = dif_from_current > 0;
     if (has_update) {
         std::thread get_commit_desc([dif_from_current]() {
-            // Calculate Page and Per Page Get
-            std::vector<std::pair<uint32_t, uint32_t>> page_count;
-            for (int32_t i = 0; i < dif_from_current; i += 100) {
-                const auto page = i / 100 + 1;
-                const auto per_page = std::min<int32_t>(dif_from_current - i, 100);
-                page_count.emplace_back(page, per_page);
-            }
+            // Reset cancel and thread running variable
+            cancel_thread = false;
+            thread_running = true;
 
-            // Browse all page
-            for (const auto &page : page_count) {
-                const auto continuous_link = fmt::format(R"(https://api.github.com/repos/Vita3K/Vita3K/commits?sha=continuous&page={}&per_page={})", page.first, dif_from_current < 100 ? dif_from_current : 100);
+            // Lambda function for get commits from github api
+            const auto get_commits = [dif_from_current]() {
+                // Set constant for get commits from github api
+                static const uint32_t max_per_page = 100;
+                static const std::regex commit_regex(R"lit("sha":"([a-f0-9]{40})".*?"author":\{"name":"([^"]+)".*?"message":"([^"]+)")lit");
+                static const std::regex end_commit(R"(\s*"parents":\[\{"sha":"[a-f0-9]{40}","url":"[^"]+","html_url":"[^"]+"\}\]\})");
 
-                // Get response from github api
-                auto commits = net_utils::get_web_response(continuous_link);
+                // Reserve memory for commit description list
+                git_commit_desc_list.reserve(dif_from_current);
 
-                // Check if response is not empty
-                if (!commits.empty()) {
-                    std::string author, msg, sha;
-                    std::smatch match;
+                // Calculate Page and Last Per Page Get
+                const uint32_t page_count = static_cast<uint32_t>(std::ceil(static_cast<double>(dif_from_current) / max_per_page));
+                const uint32_t last_per_page = dif_from_current % max_per_page;
+
+                // Browse all page
+                for (auto p = 0; p < page_count; p++) {
+                    // Check if thread is requested to stop
+                    if (cancel_thread)
+                        return;
+
+                    // Create link for get commits
+                    const auto continuous_link = fmt::format(R"(https://api.github.com/repos/Vita3K/Vita3K/commits?sha=continuous&page={}&per_page={})", p + 1, std::min(dif_from_current, max_per_page));
+
+                    // Get response from github api
+                    auto commits = net_utils::get_web_response(continuous_link);
+
+                    // Check if response is empty
+                    if (commits.empty()) {
+                        LOG_WARN("Failed to get commits from page: {}", p + 1);
+                        return;
+                    }
 
                     // Replace \" to &quot; for help regex search message
                     boost::replace_all(commits, "\\\"", "&quot;");
 
-                    // Using regex to get sha, author and message from commits
-                    const std::regex commit_regex(R"lit("sha":"([a-f0-9]{40})".*?"author":\{"name":"([^"]+)".*?"message":"([^"]+)")lit");
-                    while (std::regex_search(commits, match, commit_regex)) {
-                        // Get sha and message from regex match result
-                        sha = match[1];
-                        author = match[2];
-                        msg = match[3];
+                    const uint32_t commit_count = std::min(dif_from_current - (p * max_per_page), max_per_page);
+                    for (uint32_t c = 0; c < commit_count; c++) {
+                        // Check if thread is requested to stop
+                        if (cancel_thread)
+                            return;
 
-                        if (!sha.empty() && !author.empty() && !msg.empty()) {
-                            // Replace &quot; to \" for get back original message
-                            boost::replace_all(msg, "&quot;", "\"");
+                        std::smatch match;
 
-                            // Replace \r and \n to new line
-                            boost::replace_all(msg, "\\r\\n", "\n");
-                            boost::replace_all(msg, "\\n", "\n");
+                        // Using regex to get sha, author and message from commits
+                        if (!std::regex_search(commits, match, commit_regex) || (match.size() != 4)) {
+                            LOG_WARN("Failed to find commit: {}, on page: {}", c + 1, p + 1);
+                            return;
+                        }
 
-                            // Add commit to list
+                        // Get sha, Author and message from regex match result
+                        const std::string sha = match[1].str();
+                        const std::string author = match[2].str();
+                        std::string msg = match[3].str();
+
+                        // Replace &quot; to \" for get back original message
+                        boost::replace_all(msg, "&quot;", "\"");
+
+                        // Replace \r and \n to new line
+                        boost::replace_all(msg, "\\r\\n", "\n");
+                        boost::replace_all(msg, "\\n", "\n");
+
+                        {
+                            // Add commit description to list with lock mutex for thread safe
+                            std::lock_guard<std::mutex> lock(commit_desc_list_mutex);
                             git_commit_desc_list.push_back({ author, sha, msg });
                         }
 
+                        // Find end of commit
+                        if (!std::regex_search(commits, match, end_commit)) {
+                            LOG_WARN("Failed to find end of commit: {}, on page: {}", c + 1, p + 1);
+                            return;
+                        }
+
                         // Remove current commit for next search
-                        const std::regex end_commit(R"(\s*"parents":\[\{"sha":"[a-f0-9]{40}","url":"[^"]+","html_url":"[^"]+"\}\]\})");
-                        if (std::regex_search(commits, match, end_commit))
-                            commits = match.suffix();
+                        commits = match.suffix();
                     }
                 }
-            }
+            };
+
+            // Get commits descriptions from github api
+            get_commits();
+
+            thread_running = false;
         });
         get_commit_desc.detach();
 
@@ -310,6 +354,9 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["comments"].c_str());
         ImGui::Separator();
         ImGui::NextColumn();
+
+        // Draw commit description list with lock mutex for thread safe
+        std::lock_guard<std::mutex> lock(commit_desc_list_mutex);
         for (const auto &desc : git_commit_desc_list) {
             const auto pos = ImGui::GetCursorPosY();
             const auto author_height = ImGui::CalcTextSize(desc.author.c_str(), nullptr, false, ImGui::GetColumnWidth(0) - space_margin).y;
@@ -355,7 +402,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
         ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 16.f * emuenv.manual_dpi_scale);
-        TextColoredCentered(GUI_COLOR_TEXT, std::to_string(uint32_t(progress)).append("%").c_str());
+        TextColoredCentered(GUI_COLOR_TEXT, std::to_string(static_cast<uint32_t>(progress)).append("%").c_str());
         ImGui::PopStyleColor();
 
         break;
@@ -370,6 +417,8 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetCursorPos(ImVec2(WINDOW_POS.x + (10.f * SCALE.x), (display_size.y - BUTTON_SIZE.y - (12.f * SCALE.y))));
     if (ImGui::Button((state < DESCRIPTION) || (state == DOWNLOAD) ? common["cancel"].c_str() : lang["back"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
         if (state < DESCRIPTION) {
+            if (thread_running)
+                cancel_thread = true;
             gui.vita_area = vita_area_state;
             gui.help_menu.vita3k_update = false;
         } else if (state == DOWNLOAD) {
@@ -395,7 +444,6 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f * SCALE.x);
     if (ImGui::BeginPopupModal("cancel_update_popup", &progress_state.pause, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration)) {
         const auto LARGE_BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
-        auto &common = emuenv.common_dialog.lang.common;
         const auto str_size = ImGui::CalcTextSize(lang["cancel_update_resume"].c_str(), 0, false, POPUP_SIZE.x - (120.f * SCALE.y));
         ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, (ImGui::GetWindowHeight() / 2.f) - (str_size.y / 2.f)));
         ImGui::PushTextWrapPos(POPUP_SIZE.x - (120.f * SCALE.x));

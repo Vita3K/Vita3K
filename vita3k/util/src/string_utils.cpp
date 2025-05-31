@@ -27,7 +27,7 @@
 namespace string_utils {
 
 std::vector<std::string> split_string(const std::string &str, char delimiter) {
-    std::stringstream str_stream(str);
+    std::istringstream str_stream(str);
     std::string segment;
     std::vector<std::string> seglist;
 
@@ -86,12 +86,14 @@ void replace(std::string &str, const std::string &in, const std::string &out) {
 
 std::vector<uint8_t> string_to_byte_array(const std::string &string) {
     std::vector<uint8_t> hex_bytes;
+    hex_bytes.reserve(string.length() / 2);
+
+    if (string.length() % 2 != 0)
+        LOG_WARN("Hex string length ({}) is not even", string.length());
 
     for (size_t i = 0; i < string.length(); i += 2) {
-        uint16_t byte;
-        std::string nextbyte = string.substr(i, 2);
-        std::istringstream(nextbyte) >> std::hex >> byte;
-        hex_bytes.push_back(static_cast<uint8_t>(byte));
+        std::string byte = string.substr(i, 2);
+        hex_bytes.push_back(static_cast<uint8_t>(std::strtoul(byte.c_str(), nullptr, 16)));
     }
     return hex_bytes;
 }
@@ -141,9 +143,9 @@ std::string tolower(const std::string &s) {
 int stoi_def(const std::string &str, int default_value, const char *name) {
     try {
         return std::stoi(str);
-    } catch (std::invalid_argument &e) {
+    } catch (std::invalid_argument &_) {
         LOG_ERROR("Invalid {}: \"{}\"", name, str);
-    } catch (std::out_of_range &e) {
+    } catch (std::out_of_range &_) {
         LOG_ERROR("Out of range {}: \"{}\"", name, str);
     }
     return default_value;

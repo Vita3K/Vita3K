@@ -290,7 +290,7 @@ bool USSETranslatorVisitor::smp(
     LOG_DISASM("{:016x}: {}SMP{}d.{}.{}{} {} {} {} {}", m_instr, disasm::e_predicate_str(pred), dim, disasm::data_type_str(inst.opr.dest.type), disasm::data_type_str(inst.opr.src0.type), additional_info,
         disasm::operand_to_str(inst.opr.dest, 0b0001), disasm::operand_to_str(inst.opr.src0, coord_mask), disasm::operand_to_str(inst.opr.src1, 0b0000), (lod_mode == 0) ? "" : disasm::operand_to_str(inst.opr.src2, 0b0001));
 
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     // Generate simple stuff
     // Load the coord
@@ -413,7 +413,7 @@ bool USSETranslatorVisitor::smp(
                 const Imm4 dest_mask = (1U << smp->component_count) - 1;
                 store(inst.opr.dest, result, dest_mask);
 
-                m_b.addSwitchBreak();
+                m_b.addSwitchBreak(true);
             }
             m_b.endSwitch(segment_blocks);
         } else if (sb_mode == 0) {
@@ -424,6 +424,7 @@ bool USSETranslatorVisitor::smp(
             // sb_mode = 1 or 3 : gather 4 (+ uv if sb_mode = 3)
             // first gather all components
             std::vector<spv::Id> g4_comps;
+            g4_comps.reserve(sampler.component_count);
             for (int comp = 0; comp < sampler.component_count; comp++) {
                 g4_comps.push_back(do_fetch_texture(image_sampler, sampler.index, dim, { coords, static_cast<int>(DataType::F32) }, inst.opr.dest.type, lod_mode, extra1, extra2, comp));
             }

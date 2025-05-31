@@ -30,7 +30,7 @@ EXPORT(void, SceImeEventHandler, Ptr<void> arg, const SceImeEvent *e) {
     TRACY_FUNC(SceImeEventHandler, arg, e);
     Ptr<SceImeEvent> e1 = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime2"));
     memcpy(e1.get(emuenv.mem), e, sizeof(SceImeEvent));
-    auto thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    auto thread = emuenv.kernel.get_thread(thread_id);
     thread->run_callback(emuenv.ime.param.handler.address(), { arg.address(), e1.address() });
     free(emuenv.mem, e1.address());
 }
@@ -73,7 +73,7 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
     emuenv.ime.param.inputTextBuffer = Ptr<SceWChar16>(alloc(emuenv.mem, SCE_IME_MAX_PREEDIT_LENGTH + emuenv.ime.param.maxTextLength + 1, "ime_str"));
     emuenv.ime.str = emuenv.ime.param.initialText ? reinterpret_cast<char16_t *>(emuenv.ime.param.initialText.get(emuenv.mem)) : u"";
     if (!emuenv.ime.str.empty())
-        emuenv.ime.caretIndex = emuenv.ime.edit_text.caretIndex = emuenv.ime.edit_text.preeditIndex = SceUInt32(emuenv.ime.str.length());
+        emuenv.ime.caretIndex = emuenv.ime.edit_text.caretIndex = emuenv.ime.edit_text.preeditIndex = static_cast<SceUInt32>(emuenv.ime.str.length());
     else
         emuenv.ime.caps_level = 1;
 
@@ -88,6 +88,9 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
 
 EXPORT(SceInt32, sceImeSetCaret, const SceImeCaret *caret) {
     TRACY_FUNC(sceImeSetCaret, caret);
+    if (!emuenv.ime.state)
+        return RET_ERROR(SCE_IME_ERROR_NOT_OPENED);
+
     Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
     SceImeEvent *e = event.get(emuenv.mem);
     e->param.caretIndex = caret->index;
@@ -98,6 +101,9 @@ EXPORT(SceInt32, sceImeSetCaret, const SceImeCaret *caret) {
 
 EXPORT(SceInt32, sceImeSetPreeditGeometry, const SceImePreeditGeometry *preedit) {
     TRACY_FUNC(sceImeSetPreeditGeometry, preedit);
+    if (!emuenv.ime.state)
+        return RET_ERROR(SCE_IME_ERROR_NOT_OPENED);
+
     Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
     SceImeEvent *e = event.get(emuenv.mem);
     e->param.rect.height = preedit->height;

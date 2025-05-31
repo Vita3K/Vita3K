@@ -58,8 +58,7 @@ void Atrac9Module::on_param_change(const MemState &mem, ModuleData &data) {
 }
 
 bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, const SceNgsAT9Params *params, SceNgsAT9States *state, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
-    int current_buffer = state->current_buffer;
-    const SceNgsAT9BufferParams &bufparam = params->buffer_params[current_buffer];
+    const SceNgsAT9BufferParams &bufparam = params->buffer_params[state->current_buffer];
 
     if (!data.extra_storage.empty()) {
         data.extra_storage.erase(data.extra_storage.begin(), data.extra_storage.begin() + state->decoded_passed * sizeof(float) * 2);
@@ -92,12 +91,13 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         state->current_loop_count++;
         state->current_byte_position_in_buffer = 0;
 
-        if (bufparam.loop_count != -1 && state->current_loop_count > bufparam.loop_count) {
+        if ((bufparam.loop_count != -1) && (state->current_loop_count > bufparam.loop_count)) {
             state->current_buffer = bufparam.next_buffer_index;
             state->current_loop_count = 0;
 
-            if (state->current_buffer == -1
-                || !params->buffer_params[state->current_buffer].buffer) {
+            if ((state->current_buffer == -1)
+                || !params->buffer_params[state->current_buffer].buffer
+                || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
                 data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_END_OF_DATA, 0, 0);
 
                 // we are done
@@ -115,8 +115,6 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
 
         scheduler_lock.lock();
         voice_lock.lock();
-
-        current_buffer = state->current_buffer;
 
         // re-call this function
         return true;
@@ -139,7 +137,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
             return true;
         }
         // make the byte position negative, will be positive at the end
-        state->current_byte_position_in_buffer = -old_size;
+        state->current_byte_position_in_buffer = -(int32_t)old_size;
         input = temp_buffer.data();
     }
 
@@ -166,7 +164,6 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         }
 
         state->current_byte_position_in_buffer += 2 * sizeof(uint32_t);
-        input += 2 * sizeof(uint32_t);
         return true;
     }
 

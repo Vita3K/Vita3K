@@ -29,12 +29,11 @@
 		<update>Päivitys</update>
 		<update_history>Päivityshistoria</update_history>
 		<history_version>Versio {}</history_version>
-		<information>Info</information>
 		<delete>
 			<app_delete>Tämä sovellus ja kaikki siihen liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</app_delete>
 			<saved_data_delete>Haluatko poistaa nämä tallennentut tiedot?</saved_data_delete>
 		</delete>
-		<info>
+		<info name="Info">
 			<eligible>Kelpo</eligible>
 			<ineligible>Epäkelpo</ineligible>
 			<level>Taso</level>
@@ -53,6 +52,7 @@ Virhekoodi: {}</an_error_occurred>
 		<cancel>Peruuta</cancel>
 		<close>Sulkea</close>
 		<delete>Poista</delete>
+		<error>Virhe</error>
 		<file_corrupted>Tiedosto on vioittunt.</file_corrupted>
 		<microphone_disabled>Ota mikrofoni käyttöön.</microphone_disabled>
 		<no>Ei</no>
@@ -176,11 +176,6 @@ Virhekoodi: {}</an_error_occurred>
 		<minutes_ago>{} minuuttia sitten</minutes_ago>
 	</common>
 
-	<compat_db>
-		<error>Virhe</error>
-		<information>Info</information>
-	</compat_db>
-
 	<content_manager name="Sisällönhallinta">
 		<application name="Sovellukset">
 			<delete>Valitut sovellukset ja kaikki siihin liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</delete>
@@ -196,13 +191,8 @@ Virhekoodi: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Ohjaimen">
-		<name>Nimi</name>
 		<num>Num</num>
 	</controllers>
-
-	<controls name="Controls">
-		<error>Virhe</error>
-	</controls>
 
 	<dialog>
 		<trophy>
@@ -333,7 +323,6 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		</system>
 		<network name="Verkko">
 		</network>
-		<save>Tallenna</save>
 	</settings_dialog>
 
 	<sys_apps_title>

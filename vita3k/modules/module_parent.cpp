@@ -33,7 +33,6 @@
 #include <packages/license.h>
 #include <packages/sce_types.h>
 #include <patch/patch.h>
-#include <util/arm.h>
 #include <util/find.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
@@ -55,50 +54,42 @@ static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
 struct EmuEnvState;
 
-static ImportFn resolve_import(uint32_t nid) {
+static const ImportFn *resolve_import(uint32_t nid) {
     switch (nid) {
 #define VAR_NID(name, nid)
 #define NID(name, nid) \
     case nid:          \
-        return import_##name;
+        return &import_##name;
 #include <nids/nids.inc>
 #undef NID
 #undef VAR_NID
+    default:
+        return nullptr;
     }
-
-    return ImportFn();
 }
 
-const std::array<VarExport, var_exports_size> &get_var_exports() {
-    static std::array<VarExport, var_exports_size> var_exports = { {
+struct VarExport {
+    uint32_t nid;
+    ImportVarFactory factory;
+};
+
+void init_exported_vars(EmuEnvState &emuenv) {
+    const auto var_exports = std::to_array<VarExport>({
 #define NID(name, nid)
 #define VAR_NID(name, nid) \
     {                      \
         nid,               \
-        import_##name,     \
-        #name              \
+        import_##name      \
     },
 #include <nids/nids.inc>
 #undef VAR_NID
 #undef NID
-    } };
-    return var_exports;
-}
+    });
 
-/**
- * \brief Resolves a function imported from a loaded module.
- * \param kernel Kernel state struct
- * \param nid NID to resolve
- * \return Resolved address, 0 if not found
- */
-Address resolve_export(KernelState &kernel, uint32_t nid) {
-    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
-    const ExportNids::iterator export_address = kernel.export_nids.find(nid);
-    if (export_address == kernel.export_nids.end()) {
-        return 0;
+    for (const auto &var : var_exports) {
+        auto addr = var.factory(emuenv);
+        emuenv.kernel.export_nids.emplace(var.nid, addr);
     }
-
-    return export_address->second;
 }
 
 Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem) {
@@ -130,66 +121,29 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
 }
 
 void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id) {
-    Address export_pc = resolve_export(emuenv.kernel, nid);
-
-    if (!export_pc) {
-        // HLE - call our C++ function
-        if (emuenv.kernel.debugger.watch_import_calls) {
-            const std::unordered_set<uint32_t> hle_nid_blacklist = {
-                0xB295EB61, // sceKernelGetTLSAddr
-                0x46E7BE7B, // sceKernelLockLwMutex
-                0x91FA6614, // sceKernelUnlockLwMutex
-            };
-            auto lr = read_lr(cpu);
-            log_import_call('H', nid, thread_id, hle_nid_blacklist, lr);
-        }
-        const ImportFn fn = resolve_import(nid);
-        if (fn) {
-            fn(emuenv, cpu, thread_id);
-        } else {
-            const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-            // make the function return 0
-            write_reg(*thread->cpu, 0, 0);
-
-            if (!emuenv.missing_nids.contains(nid) || LOG_UNK_NIDS_ALWAYS) {
-                LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
-
-                if (!LOG_UNK_NIDS_ALWAYS)
-                    emuenv.missing_nids.insert(nid);
-            }
-        }
+    // HLE - call our C++ function
+    if (emuenv.kernel.debugger.watch_import_calls) {
+        const std::unordered_set<uint32_t> hle_nid_blacklist = {
+            0xB295EB61, // sceKernelGetTLSAddr
+            0x46E7BE7B, // sceKernelLockLwMutex
+            0x91FA6614, // sceKernelUnlockLwMutex
+        };
+        auto lr = read_lr(cpu);
+        log_import_call('H', nid, thread_id, hle_nid_blacklist, lr);
+    }
+    const ImportFn *fn = resolve_import(nid);
+    if (fn) {
+        (*fn)(emuenv, cpu, thread_id);
     } else {
-        // Note: the following code is absolutely not thread safe, invalidating the memory
-        // on other processes won't change anything about it
-        // If two threads recompile the nid call instruction at the same time, the second one
-        // will possibly read a random nid
-        // A way to mitigate that would be save the nid in the recompiled code instead of reading
-        // it when a svc is found
+        const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+        // make the function return 0
+        write_reg(*thread->cpu, 0, 0);
 
-        auto pc = read_pc(cpu);
-
-        assert((pc & 1) == 0);
-
-        pc -= 4; // Move back to SVC (SuperVisor Call) instruction
-
-        uint32_t *const stub = Ptr<uint32_t>(pc).get(emuenv.mem);
-
-        stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)export_pc, 12);
-        stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(export_pc >> 16), 12);
-        stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
-
-        // LLE - directly run ARM code imported from some loaded module
-        // TODO: resurrect this
-        /*if (is_returning(cpu)) {
-            LOG_TRACE("[LLE] TID: {:<3} FUNC: {} returned {}", thread_id, import_name(nid), log_hex(read_reg(cpu, 0)));
-            return;
-        }*/
-
-        const std::unordered_set<uint32_t> lle_nid_blacklist = {};
-        log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
-        write_pc(cpu, export_pc);
-        // invalidate this small region (without it, this code will be called again)
-        invalidate_jit_cache(cpu, pc, 3 * sizeof(uint32_t));
+        if (!emuenv.missing_nids.contains(nid) || LOG_UNK_NIDS_ALWAYS) {
+            LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
+            if (!LOG_UNK_NIDS_ALWAYS)
+                emuenv.missing_nids.insert(nid);
+        }
     }
 }
 

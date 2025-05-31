@@ -51,19 +51,24 @@ void PlayerModule::on_param_change(const MemState &mem, ModuleData &data) {
     const SceNgsPlayerParams *old_params = reinterpret_cast<SceNgsPlayerParams *>(data.last_info.data());
     SceNgsPlayerParams *new_params = static_cast<SceNgsPlayerParams *>(data.info.data.get(mem));
 
-    if (isnan(new_params->playback_scalar) || new_params->playback_scalar <= 0) {
+    // check for invalid playback values
+    const auto is_invalid_playback_value = [](const float playback_value, const float max_value) {
+        return isnan(playback_value) || (playback_value < 0.f) || (playback_value > max_value);
+    };
+
+    if (is_invalid_playback_value(new_params->playback_scalar, 10.f)) {
         new_params->playback_scalar = old_params->playback_scalar;
         LOG_ERROR_ONCE("Invalid playback rate scaling.");
-        if (isnan(new_params->playback_scalar) || new_params->playback_scalar <= 0) {
+        if (is_invalid_playback_value(new_params->playback_scalar, 10.f)) {
             new_params->playback_scalar = 1.0;
         }
     }
 
-    if (isnan(new_params->playback_frequency) || new_params->playback_frequency <= 0) {
+    if (is_invalid_playback_value(new_params->playback_frequency, 192000.f)) {
         new_params->playback_frequency = old_params->playback_frequency;
         LOG_ERROR_ONCE("Invalid playback frequency.");
-        if (isnan(new_params->playback_frequency) || new_params->playback_frequency <= 0) {
-            new_params->playback_frequency = 48000.0;
+        if (is_invalid_playback_value(new_params->playback_frequency, 192000.f)) {
+            new_params->playback_frequency = 48000.f;
         }
     }
 
@@ -91,7 +96,7 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
     // If decoder hasn't been initialized
     if (!decoder) {
         // Create decoder specifying the desired destination sample rate
-        decoder = std::make_unique<PCMDecoderState>(sample_rate);
+        decoder = std::make_unique<PCMDecoderState>(static_cast<float>(sample_rate));
     }
 
     // If the amount of samples already processed and pending to be passed is smaller than the amount of samples of the audio buffer
@@ -109,10 +114,10 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
             // Ran out of data, supply new
             // Decode new data and deliver them
             // Let's open our context
-
-            if (state->current_buffer == -1
-                || !params->buffer_params[state->current_buffer].buffer) {
-                // If no buffer is found, stop processing
+            if ((state->current_buffer == -1)
+                || !params->buffer_params[state->current_buffer].buffer
+                || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
+                // Stop processing if no valid buffer is available or if the buffer is empty
                 finished = true;
                 break;
             }
@@ -131,8 +136,9 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                     state->current_buffer = params->buffer_params[state->current_buffer].next_buffer_index;
                     state->current_loop_count = 0;
 
-                    if (state->current_buffer == -1
-                        || !params->buffer_params[state->current_buffer].buffer) {
+                    if ((state->current_buffer == -1)
+                        || !params->buffer_params[state->current_buffer].buffer
+                        || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
                         data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_END_OF_DATA, 0, 0);
 
                         // we are done
@@ -202,8 +208,10 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
 
                 // Get the amount of samples about to be received from the decoder and dump the value in samples_count
                 decoder->receive(nullptr, &samples_count);
+
                 // Playback rate scaling
-                if (params->playback_scalar != 1 || static_cast<int>(round(params->playback_frequency)) != sample_rate) {
+                float src_sample_rate = params->playback_frequency;
+                if ((src_sample_rate >= 1.f) && ((params->playback_scalar != 1.f) || (static_cast<int>(src_sample_rate) != sample_rate))) {
                     LOG_INFO_ONCE("The currently running game requests playback rate scaling when decoding audio. Audio might crackle.");
 
                     // Received decoded samples from decoder
@@ -213,9 +221,8 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                     decoder->receive(decoded_data.data(), nullptr);
 
                     // resample the audio
-                    int src_sample_rate = static_cast<int>(params->playback_frequency);
                     if (params->playback_scalar != 1.0f)
-                        src_sample_rate = static_cast<int>(src_sample_rate * params->playback_scalar);
+                        src_sample_rate *= params->playback_scalar;
 
                     if (!state->swr || state->reset_swr) {
                         if (state->swr)
@@ -224,7 +231,7 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                         AVChannelLayout layout_stereo = AV_CHANNEL_LAYOUT_STEREO;
                         int ret = swr_alloc_set_opts2(&state->swr,
                             &layout_stereo, AV_SAMPLE_FMT_FLT, sample_rate,
-                            &layout_stereo, AV_SAMPLE_FMT_FLT, src_sample_rate,
+                            &layout_stereo, AV_SAMPLE_FMT_FLT, static_cast<int>(src_sample_rate),
                             0, nullptr);
                         assert(ret == 0);
 

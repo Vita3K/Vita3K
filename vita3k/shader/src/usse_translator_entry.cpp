@@ -994,12 +994,12 @@ void USSERecompiler::compile_conditional_node(const usse::USSEConditionalNode &c
 void USSERecompiler::compile_loop_node(const usse::USSELoopNode &loop) {
     spv::Builder::LoopBlocks loops = b.makeNewLoop();
 
-    b.createBranch(&loops.head);
+    b.createBranch(true, &loops.head);
     b.setBuildPoint(&loops.head);
 
     // In the head we only want to branch to body. We always do while do anyway
     b.createLoopMerge(&loops.merge, &loops.continue_target, 0, {});
-    b.createBranch(&loops.body);
+    b.createBranch(true, &loops.body);
 
     // Emit body content
     b.setBuildPoint(&loops.body);
@@ -1008,11 +1008,11 @@ void USSERecompiler::compile_loop_node(const usse::USSELoopNode &loop) {
     const usse::USSEBlockNode &content_block = *(loop.content_block());
     compile_block(content_block);
 
-    b.createBranch(&loops.continue_target);
+    b.createBranch(true, &loops.continue_target);
 
     // Emit continue target
     b.setBuildPoint(&loops.continue_target);
-    b.createBranch(&loops.head);
+    b.createBranch(true, &loops.head);
 
     // Merge point
     b.setBuildPoint(&loops.merge);

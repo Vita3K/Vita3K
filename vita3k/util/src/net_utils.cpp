@@ -50,8 +50,7 @@ SceHttpErrorCode parse_url(const std::string &url, parsedUrl &out) {
     }
 
     auto end_scheme_pos = url.find(':');
-    auto path_pos = url.find('/', end_scheme_pos + 3);
-    auto has_path = path_pos != std::string::npos;
+    auto has_path = url.find('/', end_scheme_pos + 3) != std::string::npos;
 
     auto full_wo_scheme = url.substr(end_scheme_pos + 3);
 
@@ -59,7 +58,7 @@ SceHttpErrorCode parse_url(const std::string &url, parsedUrl &out) {
         // username:password@lttstore.com:727/wysi/cookie.php?pog=gers#extremeexploit
 
         {
-            path_pos = std::string(full_wo_scheme).find('/');
+            auto path_pos = std::string(full_wo_scheme).find('/');
             auto full_no_scheme_path = full_wo_scheme.substr(0, path_pos);
             // full_no_scheme_path = username:password@lttstore.com:727
             auto c = full_no_scheme_path.find('@');
@@ -281,14 +280,14 @@ bool parseHeaders(std::string &headersRaw, HeadersMapType &headersOut) {
 
         auto name = line.substr(0, line.find(':'));
         int valueStart = name.length() + 1;
-        if (line.find(": "))
+        if (line.find(": ") != std::string_view::npos)
             // Theres a space between semicolon and value, trim it
             valueStart++;
 
         auto value = line.substr(valueStart);
 
-        headersOut.insert({ std::string(name), std::string(value) });
-        ptr = strtok(NULL, "\r\n");
+        headersOut.emplace(std::string(name), std::string(value));
+        ptr = strtok(nullptr, "\r\n");
     }
     return true;
 }
@@ -377,7 +376,7 @@ std::string get_web_regex_result(const std::string &url, const std::regex &regex
     return result;
 }
 
-uint64_t get_current_time_ms() {
+static uint64_t get_current_time_ms() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 }
 

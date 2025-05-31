@@ -19,7 +19,7 @@
 
 #include <util/log.h>
 
-std::uint64_t rtc_ticks_since_epoch() {
+static std::uint64_t rtc_ticks_since_epoch() {
     const auto now = std::chrono::high_resolution_clock::now();
     const auto now_timepoint = std::chrono::time_point_cast<VitaClocks>(now);
     return now_timepoint.time_since_epoch().count();
@@ -57,7 +57,7 @@ void __RtcTicksToPspTime(SceDateTime *t, std::uint64_t ticks) {
         t->hour = 0;
         t->minute = 0;
         t->second = 0;
-        t->microsecond = ticks % VITA_CLOCKS_PER_SEC;
+        t->microsecond = ticks;
         return;
     } else if (ticks < RTC_OFFSET) {
         // Need to get a year past 1970 for gmtime
