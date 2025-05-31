@@ -19,8 +19,6 @@
 
 #include <util/types.h>
 
-#include <SDL_audio.h>
-
 #include <functional>
 #include <map>
 #include <memory>
@@ -30,7 +28,6 @@
 #define SCE_AUDIO_OUT_MAX_VOL 32768 //!< Maximum output port volume
 #define SCE_AUDIO_VOLUME_0DB SCE_AUDIO_OUT_MAX_VOL //!< Maximum output port volume
 
-typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
 typedef std::function<void(SceUID)> ResumeAudioThread;
 
 struct AudioOutPort {
@@ -53,8 +50,6 @@ struct AudioOutPort {
     int mode = 0;
 
     std::mutex mutex;
-    // stream to get the data
-    AudioStreamPtr stream;
     // thread currently waiting for the audio to be processed
     SceUID thread = -1;
 };
@@ -63,7 +58,7 @@ typedef std::shared_ptr<AudioOutPort> AudioOutPortPtr;
 typedef std::map<int, AudioOutPortPtr> AudioOutPortPtrs;
 
 struct AudioInPort {
-    SDL_AudioDeviceID id;
+    void *id;
     bool running = false;
     int len_bytes = 0;
 };
@@ -81,19 +76,8 @@ struct AudioState;
 
 // abstract class that need to be overloaded with an audio implementation
 class AudioAdapter {
-private:
-    // buffer used to mix audio
-    std::vector<uint8_t> temp_buffer;
-
-protected:
-    AudioState &state;
-    // are we using a single stream and mixing everything inside or multiple streams?
-    bool single_stream = true;
-
 public:
-    // called by subclasses once they get called by their implementation callback
-    // stream points to the location where we need to write state.ro.len_bytes bytes
-    void audio_callback(uint8_t *stream, int len_bytes);
+    AudioState &state;
 
     AudioAdapter(AudioState &audio_state)
         : state(audio_state) {}
@@ -104,7 +88,7 @@ public:
     virtual void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) {}
     virtual void set_volume(AudioOutPort &out_port, float volume) {}
     virtual void switch_state(const bool pause) {}
-
+    virtual int get_rest_sample(AudioOutPort &out_port) { return 0; };
     friend struct AudioState;
 };
 
@@ -127,4 +111,5 @@ struct AudioState {
     void set_volume(AudioOutPort &out_port, float volume);
     void set_global_volume(float volume);
     void switch_state(const bool pause);
+    int get_rest_sample(AudioOutPort &out_port);
 };

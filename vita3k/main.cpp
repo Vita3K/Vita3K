@@ -51,7 +51,9 @@
 #define SDL_MAIN_HANDLED
 #endif
 
-#include <SDL.h>
+#include <SDL3/SDL_cpuinfo.h>
+#include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_init.h>
 #include <chrono>
 #include <cstdlib>
 #include <thread>
@@ -180,18 +182,13 @@ int main(int argc, char *argv[]) {
         std::atexit(SDL_Quit);
 
         // Enable HIDAPI rumble for DS4/DS
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
-        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_ENHANCED_REPORTS, "1");
 
         // Enable Switch controller
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
 
-        // Enable High DPI support
-#ifdef _WIN32
-        SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
-#endif
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0) {
+        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC)) {
             app::error_dialog("SDL initialisation failed.");
             return SDLInitFailed;
         }
