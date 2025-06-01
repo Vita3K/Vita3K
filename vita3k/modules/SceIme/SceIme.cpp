@@ -75,7 +75,7 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
     if (!emuenv.ime.str.empty())
         emuenv.ime.caretIndex = emuenv.ime.edit_text.caretIndex = emuenv.ime.edit_text.preeditIndex = static_cast<SceUInt32>(emuenv.ime.str.length());
     else
-        emuenv.ime.caps_level = 1;
+        emuenv.ime.caps_level = -1;
 
     emuenv.ime.event_id = SCE_IME_EVENT_OPEN;
     emuenv.ime.state = true;
