@@ -546,6 +546,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                         else
                             config.lle_modules.push_back(m.first);
                     }
+                    ImGui::ScrollWhenDragging();
                 }
                 ImGui::EndListBox();
             }
@@ -1248,6 +1249,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     }
     SetTooltipEx(lang.main_window["keep_changes"].c_str());
 
+    ImGui::ScrollWhenDragging();
     ImGui::End();
 }
 
