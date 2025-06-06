@@ -521,25 +521,53 @@ static void toggle_texture_replacement(EmuEnvState &emuenv) {
     emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
 }
 
+static std::vector<uint32_t> get_current_app_frame(EmuEnvState &emuenv, uint32_t &width, uint32_t &height) {
+    // Dump the current frame from the emulator display
+    std::vector<uint32_t> frame = emuenv.renderer->dump_frame(emuenv.display, width, height);
+    if (frame.empty() || (frame.size() != (width * height))) {
+        return {};
+    }
+
+    // Force alpha channel to 255 (fully opaque) for every pixel
+    for (uint32_t &pixel : frame) {
+        pixel |= 0xFF000000;
+    }
+
+    return frame;
+}
+
+static void update_live_area_last_app_frame(EmuEnvState &emuenv, GuiState &gui) {
+    uint32_t width, height;
+
+    // Capture the current frame of the app
+    auto frame = get_current_app_frame(emuenv, width, height);
+    if (frame.empty()) {
+        LOG_ERROR("Failed to dump current app frame for live area");
+        return;
+    }
+
+    // Reset previous texture safely before reinitializing
+    gui.live_area_last_app_frame = {};
+
+    // Create and assign a new texture with the captured frame
+    gui.live_area_last_app_frame.init(gui.imgui_state.get(), frame.data(), width, height);
+}
+
 static void take_screenshot(EmuEnvState &emuenv) {
     if (emuenv.cfg.screenshot_format == None)
         return;
 
     if (emuenv.io.title_id.empty()) {
         LOG_ERROR("Trying to take a screenshot while not ingame");
-    }
-
-    uint32_t width, height;
-    std::vector<uint32_t> frame = emuenv.renderer->dump_frame(emuenv.display, width, height);
-
-    if (frame.empty() || frame.size() != width * height) {
-        LOG_ERROR("Failed to take screenshot");
         return;
     }
 
-    // set the alpha to 1
-    for (int i = 0; i < width * height; i++)
-        frame[i] |= 0xFF000000;
+    uint32_t width, height;
+    auto frame = get_current_app_frame(emuenv, width, height);
+    if (frame.empty()) {
+        LOG_ERROR("Failed to take screenshot");
+        return;
+    }
 
     const fs::path save_folder = emuenv.shared_path / "screenshots" / fmt::format("{}", string_utils::remove_special_chars(emuenv.current_app_title));
     fs::create_directories(save_folder);
@@ -633,6 +661,10 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     gui.vita_area.information_bar = !gui.vita_area.information_bar;
                     gui.vita_area.live_area_screen = !gui.vita_area.live_area_screen;
                 }
+
+                // Update the last app frame for live area
+                if (gui.vita_area.live_area_screen)
+                    update_live_area_last_app_frame(emuenv, gui);
 
                 app::switch_state(emuenv, !emuenv.kernel.is_threads_paused());
 
