@@ -184,7 +184,7 @@ static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
                     continue;
                 }
 
-                gui.themes_preview[content_id][preview_type].init(gui.imgui_state.get(), data, width, height);
+                gui.themes_preview[content_id][preview_type] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
                 stbi_image_free(data);
             }
         }
