@@ -24,8 +24,6 @@
 
 #include "types.h"
 
-#include <SDL.h>
-
 #include <string_view>
 #include <vector>
 
