@@ -427,7 +427,31 @@ static void ImGui_ImplSDL3_UpdateGamepads(ImGui_State *state) {
 #undef MAP_ANALOG
 }
 
+static void ImGui_ImplSdl_FreeTextures(ImGui_State *state) {
+    std::lock_guard<std::mutex> lock(state->textures_to_free_mutex);
+    switch (state->renderer->current_backend) {
+    case renderer::Backend::OpenGL: {
+        for (auto texture : state->textures_to_free) {
+            ImGui_ImplSdlGL3_DeleteTexture(texture);
+        }
+        break;
+    }
+    case renderer::Backend::Vulkan: {
+        for (auto texture : state->textures_to_free) {
+            ImGui_ImplSdlVulkan_DeleteTexture(dynamic_cast<ImGui_VulkanState &>(*state), texture);
+        }
+        break;
+    }
+
+    default:
+        LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
+    }
+    state->textures_to_free.clear();
+}
+
 IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
+    // Free textures, marked as deleted on previous frame.
+    ImGui_ImplSdl_FreeTextures(state);
     ImGuiIO &io = ImGui::GetIO();
 
     // Setup display size (every frame to accommodate for window resizing)
@@ -493,16 +517,8 @@ IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(ImGui_State *state, void *data
 }
 
 IMGUI_API void ImGui_ImplSdl_DeleteTexture(ImGui_State *state, ImTextureID texture) {
-    switch (state->renderer->current_backend) {
-    case renderer::Backend::OpenGL:
-        return ImGui_ImplSdlGL3_DeleteTexture(texture);
-
-    case renderer::Backend::Vulkan:
-        return ImGui_ImplSdlVulkan_DeleteTexture(dynamic_cast<ImGui_VulkanState &>(*state), texture);
-
-    default:
-        LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
-    }
+    std::lock_guard<std::mutex> lock(state->textures_to_free_mutex);
+    state->textures_to_free.push_back(texture);
 }
 
 // Use if you want to reset your rendering device without losing ImGui state.
@@ -532,17 +548,10 @@ IMGUI_API bool ImGui_ImplSdl_CreateDeviceObjects(ImGui_State *state) {
     }
 }
 
-void ImGui_Texture::init(ImGui_State *new_state, ImTextureID texture) {
-    assert(!texture_id);
-
+ImGui_Texture::ImGui_Texture(ImGui_State *new_state, void *data, int width, int height) {
     state = new_state;
-    texture_id = texture;
+    texture_id = ImGui_ImplSdl_CreateTexture(new_state, data, width, height);
 }
-
-void ImGui_Texture::init(ImGui_State *new_state, void *data, int width, int height) {
-    init(new_state, ImGui_ImplSdl_CreateTexture(new_state, data, width, height));
-}
-
 ImGui_Texture::operator bool() const {
     return texture_id != nullptr;
 }
@@ -551,29 +560,19 @@ ImGui_Texture::operator ImTextureID() const {
     return texture_id;
 }
 
-bool ImGui_Texture::operator==(const ImGui_Texture &texture) {
+bool ImGui_Texture::operator==(const ImGui_Texture &texture) const {
     return texture_id == texture.texture_id;
 }
 
+ImGui_Texture::ImGui_Texture(ImGui_Texture &&texture) noexcept {
+    std::swap(state, texture.state);
+    std::swap(texture_id, texture.texture_id);
+}
+
 ImGui_Texture &ImGui_Texture::operator=(ImGui_Texture &&texture) noexcept {
-    this->state = texture.state;
-    this->texture_id = texture.texture_id;
-
-    texture.state = nullptr;
-    texture.texture_id = nullptr;
-
+    std::swap(state, texture.state);
+    std::swap(texture_id, texture.texture_id);
     return *this;
-}
-
-ImGui_Texture::ImGui_Texture(ImGui_State *new_state, void *data, int width, int height) {
-    init(new_state, data, width, height);
-}
-
-ImGui_Texture::ImGui_Texture(ImGui_Texture &&texture) noexcept
-    : state(texture.state)
-    , texture_id(texture.texture_id) {
-    texture.state = nullptr;
-    texture.texture_id = nullptr;
 }
 
 ImGui_Texture::~ImGui_Texture() {
