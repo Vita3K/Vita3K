@@ -469,12 +469,26 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
 
 IMGUI_API void ImGui_ImplSdl_RenderDrawData(ImGui_State *state) {
     switch (state->renderer->current_backend) {
-    case renderer::Backend::OpenGL:
-        return ImGui_ImplSdlGL3_RenderDrawData(dynamic_cast<ImGui_GLState &>(*state));
-
-    case renderer::Backend::Vulkan:
-        return ImGui_ImplSdlVulkan_RenderDrawData(dynamic_cast<ImGui_VulkanState &>(*state));
+    case renderer::Backend::OpenGL: {
+        ImGui_ImplSdlGL3_RenderDrawData(dynamic_cast<ImGui_GLState &>(*state));
+        for (auto texture : state->textures_to_free) {
+            ImGui_ImplSdlGL3_DeleteTexture(texture);
+        }
+        break;
     }
+    case renderer::Backend::Vulkan: {
+        ImGui_ImplSdlVulkan_RenderDrawData(dynamic_cast<ImGui_VulkanState &>(*state));
+        for (auto texture : state->textures_to_free) {
+            ImGui_ImplSdlVulkan_DeleteTexture(dynamic_cast<ImGui_VulkanState &>(*state), texture);
+        }
+        break;
+    }
+
+    default:
+        LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
+    }
+
+    state->textures_to_free.clear();
 }
 
 IMGUI_API void ImGui_ImplSdl_GetDrawableSize(ImGui_State *state, int &width, int &height) {
@@ -508,16 +522,7 @@ IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(ImGui_State *state, void *data
 }
 
 IMGUI_API void ImGui_ImplSdl_DeleteTexture(ImGui_State *state, ImTextureID texture) {
-    switch (state->renderer->current_backend) {
-    case renderer::Backend::OpenGL:
-        return ImGui_ImplSdlGL3_DeleteTexture(texture);
-
-    case renderer::Backend::Vulkan:
-        return ImGui_ImplSdlVulkan_DeleteTexture(dynamic_cast<ImGui_VulkanState &>(*state), texture);
-
-    default:
-        LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
-    }
+    state->textures_to_free.push_back(texture);
 }
 
 // Use if you want to reset your rendering device without losing ImGui state.
@@ -548,8 +553,9 @@ IMGUI_API bool ImGui_ImplSdl_CreateDeviceObjects(ImGui_State *state) {
 }
 
 void ImGui_Texture::init(ImGui_State *new_state, ImTextureID texture) {
-    assert(!texture_id);
-
+    if (texture_id) {
+        ImGui_ImplSdl_DeleteTexture(state, texture_id);
+    }
     state = new_state;
     texture_id = texture;
 }
