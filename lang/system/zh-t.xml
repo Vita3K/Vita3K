@@ -15,16 +15,16 @@
 			<last_apps_used>最近使用的應用程式</last_apps_used>
 			<empty>空</empty>
 		</emulation>
-		<debug name="調試">
-			<threads>綫程</threads>
-			<semaphores>信號量</semaphores>
+		<debug name="偵錯">
+			<threads>執行緒</threads>
+			<semaphores>號誌</semaphores>
 			<mutexes>互斥鎖</mutexes>
 			<lightweight_mutexes>輕量互斥鎖</lightweight_mutexes>
-			<condition_variables>條件變量</condition_variables>
-			<lightweight_condition_variables>輕量條件變量</lightweight_condition_variables>
-			<event_flags>事件標志</event_flags>
-			<memory_allocations>內存分配</memory_allocations>
-			<disassembly>反匯編</disassembly>
+			<condition_variables>條件變數</condition_variables>
+			<lightweight_condition_variables>輕量條件變數</lightweight_condition_variables>
+			<event_flags>事件旗標</event_flags>
+			<memory_allocations>記憶體分配</memory_allocations>
+			<disassembly>反組譯</disassembly>
 		</debug>
 		<configuration name="組態">
 			<user_management>使用者管理</user_management>
@@ -40,18 +40,18 @@
 	<about name="關於">
 		<vita3k>Vita3K：PS Vita/PS TV模擬器，是全球首個實用的PS Vita/PS TV模擬器。</vita3k>
 		<about_vita3k>Vita3K是使用C++編寫的實驗性開源PlayStation Vita/PlayStation TV模擬器，適用於Windows、Linux、macOS以及Android作業系統。</about_vita3k>
-		<special_credit>特別鳴謝：Vita3K圖標設計由：</special_credit>
+		<special_credit>特別鳴謝：Vita3K圖標設計者：</special_credit>
 		<github_website>如果您有興趣參與貢獻，請瀏覽我們的：</github_website>
 		<vita3k_website>更多資訊請造訪我們的網站：</vita3k_website>
-		<ko-fi_website>如果您想支持我們，您可以捐贈或者訂閱我們的：</ko-fi_website>
+		<ko-fi_website>如果您想支援我們，您可以捐贈或者訂閱我們的：</ko-fi_website>
 		<vita3k_staff>Vita3K人員名單</vita3k_staff>
 		<developers>開發者</developers>
 		<contributors>參與者</contributors>
-		<supporters>支持者</supporters>
+		<supporters>贊助者</supporters>
 	</about>
 
 	<app_context>
-		<check_app_state>檢查應用程式狀況</check_app_state>
+		<check_app_state>檢查應用程式狀態</check_app_state>
 		<copy_vita3k_summary>複製Vita3K摘要</copy_vita3k_summary>
 		<open_state_report>開啟狀態匯報</open_state_report>
 		<create_state_report>建立狀態匯報</create_state_report>
@@ -75,7 +75,7 @@
 		<delete>
 			<app_delete>刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
 			<app_delete_description>刪除應用程式可能需要一段時間，
-取決於它的大小和您的硬件。</app_delete_description>
+取決於它的大小和您的硬體。</app_delete_description>
 			<addcont_delete>確定要刪除此追加內容嗎？</addcont_delete>
 			<license_delete>確定要刪除此授權嗎？</license_delete>
 			<saved_data_delete>確定要刪除此保存資料嗎？</saved_data_delete>
@@ -100,7 +100,7 @@
 			<time_used_minutes>{}分鐘{}秒</time_used_minutes>
 			<time_used_hours>{}小時{}分鐘{}秒</time_used_hours>
 			<time_used_days>{}天{}小時{}分鐘{}秒</time_used_days>
-			<time_used_weeks>{}周{}天{}小時{}分鐘{}秒</time_used_weeks>
+			<time_used_weeks>{}週{}天{}小時{}分鐘{}秒</time_used_weeks>
 		</time_used>
 	</app_context>
 
@@ -239,7 +239,7 @@
 	<compatibility name="相容性">
 		<states>
 			<state id = "-1">未知</state>
-			<state id = "0">无法啟動</state>
+			<state id = "0">無法啟動</state>
 			<state id = "1">可以啟動</state>
 			<state id = "2">有圖像</state>
 			<state id = "3">可進入選單</state>
@@ -250,20 +250,20 @@
 	</compatibility>
 
 	<compat_db>
-		<get_failed>無法獲取當前相容性資料庫，請檢查防火墻/互聯網接入后再重試。</get_failed>
+		<get_failed>無法獲取當前相容性資料庫，請檢查防火墻/網際網路接入後再重試。</get_failed>
 		<download_failed>無法下載更新於{}的應用程式相容性資料庫，請稍後重試。</download_failed>
 		<load_failed>無法讀取已下載更新於{}的應用程式相容性資料庫。</load_failed>
 		<new_app_listed>相容性資料庫已成功從{}更新至{}。&#xA;
-已列出{}个新的應用程式，使總數達到{}个！</new_app_listed>
+已列出{}個新的應用程式，使總數達到{}個！</new_app_listed>
 		<app_listed>相容性資料庫已成功從{}更新至{}。&#xA;
-已列出{}个應用程式！</app_listed>
-		<download_app_listed>已成功下載並加載{}更新的相容性資料庫。&#xA;
-已列出{}个應用程式！</download_app_listed>
+已列出{}個應用程式！</app_listed>
+		<download_app_listed>已成功下載並載入{}更新的相容性資料庫。&#xA;
+已列出{}個應用程式！</download_app_listed>
 	</compat_db>
 
 	<compile_shaders>
 		<compiling_shaders>正在編譯著色器</compiling_shaders>
-		<pipelines_compiled>已編譯{}個管綫</pipelines_compiled>
+		<pipelines_compiled>已編譯{}個管線</pipelines_compiled>
 		<shaders_compiled>已編譯{}個著色器</shaders_compiled>
 	</compile_shaders>
 
@@ -284,8 +284,8 @@
 	<controllers name="控制器">
 		<connected>已接入{}個控制器</connected>
 		<num>編號</num>
-		<motion_support>體感支持</motion_support>
-		<rebind_controls>重新綁定控制</rebind_controls>
+		<motion_support>體感支援</motion_support>
+		<rebind_controls>重新繫結控制</rebind_controls>
 		<led_color>LED顔色</led_color>
 		<use_custom_color>使用自訂顔色</use_custom_color>
 		<use_custom_color_description>勾選此項可為控制器的LED使用自訂顔色。</use_custom_color_description>
@@ -294,12 +294,12 @@
 		<blue>藍</blue>
 		<not_connected>未接入相容的控制器。
 請接入與SDL2相容的控制器。</not_connected>
-		<disable_motion>禁用體感</disable_motion>
-		<reset_controller_binding>重設控制器綁定</reset_controller_binding>
+		<disable_motion>停用體感</disable_motion>
+		<reset_controller_binding>重設控制器繫結</reset_controller_binding>
 	</controllers>
 
 	<controls>
-		<button>按鍵</button>
+		<button>按鈕</button>
 		<mapped_button>按鍵對應</mapped_button>
 		<left_stick_up>左操作桿上</left_stick_up>
 		<left_stick_down>左操作桿下</left_stick_down>
@@ -327,16 +327,16 @@
 		<r2_button>R2按鈕</r2_button>
 		<l3_button>L3按鈕</l3_button>
 		<r3_button>R3按鈕</r3_button>
-		<gui>圖形化使用者介面</gui>
+		<gui>圖形使用者介面</gui>
 		<full_screen>全螢幕</full_screen>
-		<toggle_touch>切換觸摸</toggle_touch>
+		<toggle_touch>切換觸控</toggle_touch>
 		<toggle_touch_description>在背觸和前觸之間切換。</toggle_touch_description>
-		<toggle_gui_visibility>切換圖形化使用者介面可見性</toggle_gui_visibility>
-		<toggle_gui_visibility_description>在應用程式運行时，在螢幕頂部顯示和隱藏圖形化使用者介面之間切換。</toggle_gui_visibility_description>
+		<toggle_gui_visibility>切換圖形使用者介面可見性</toggle_gui_visibility>
+		<toggle_gui_visibility_description>在應用程式執行時，在螢幕頂部顯示和隱藏圖形使用者介面之間切換。</toggle_gui_visibility_description>
 		<miscellaneous>雜項</miscellaneous>
 		<toggle_texture_replacement>切換紋理替換</toggle_texture_replacement>
 		<take_screenshot>截圖</take_screenshot>
-		<error_duplicate_key>此按鈕已繫結至其他按鈕或已被保留。</error_duplicate_key>
+		<error_duplicate_key>此按鈕已繫結至其他鍵或已被保留。</error_duplicate_key>
 	</controls>
 
 	<dialog>
@@ -422,19 +422,19 @@
 		<change_emu_path>更改模擬器路徑</change_emu_path>
 		<reset_emu_path>重置模擬器路徑</reset_emu_path>
 		<install_firmware>安裝韌體。</install_firmware>
-		<install_highly_recommended>强烈建議安裝全部韌體檔案。</install_highly_recommended>
+		<install_highly_recommended>強烈建議安裝全部韌體檔案。</install_highly_recommended>
 		<installed>已安裝：</installed>
 		<download_font_package>下載字型套件</download_font_package>
 		<install_firmware_file>安裝韌體檔案</install_firmware_file>
-		<select_interface_settings>請選擇界面設定。</select_interface_settings>
-		<show_info_bar>信息欄可見</show_info_bar>
-		<info_bar_description>勾選此項在應用程式選擇頁面顯示信息欄。
-信息欄是時鐘、電量以及資訊中心。</info_bar_description>
+		<select_interface_settings>請選擇介面設定。</select_interface_settings>
+		<show_info_bar>資訊欄可見</show_info_bar>
+		<info_bar_description>勾選此項在應用程式選擇頁面顯示資訊欄。
+資訊欄是時鐘、電量以及資訊中心。</info_bar_description>
 		<show_live_area_screen>Live Area應用程式螢幕</show_live_area_screen>
-		<live_area_screen_description>勾選此項在按下應用程式時默認打開Live Area頁面。
-如果禁用，請按下右鍵應用程式將其打開。</live_area_screen_description>
+		<live_area_screen_description>勾選此項在按下應用程式時預設開啟Live Area頁面。
+如果停用，請右鍵點選應用程式將其開啟。</live_area_screen_description>
 		<apps_list_grid>網格模式</apps_list_grid>
-		<apps_list_grid_description>勾選此項將應用程式列表設置為像PS Vita一樣的網格模式。</apps_list_grid_description>
+		<apps_list_grid_description>勾選此項將應用程式列表設定為像PS Vita一樣的網格模式。</apps_list_grid_description>
 		<icon_size>應用程式圖標大小</icon_size>
 		<select_icon_size>選擇您喜歡的圖標大小。</select_icon_size>
 		<completed>已完成。</completed>
@@ -448,7 +448,7 @@
 			<successed_install_firmware>韌體已成功安裝。</successed_install_firmware>
 			<firmware_version>韌體版本：</firmware_version>
 			<no_font_exist>不存在韌體字型套件，請下載並安裝。</no_font_exist>
-			<firmware_font_package_description>一些應用程式需要韌體字型套件，也需要亞洲區域字型支持。（强烈建議安裝）</firmware_font_package_description>
+			<firmware_font_package_description>一些應用程式需要韌體字型套件，也需要亞洲區域字型支援。（強烈建議安裝）</firmware_font_package_description>
 			<delete_firmware>刪除韌體安裝檔案？</delete_firmware>
 		</firmware_install>
 		<pkg_install>
@@ -482,7 +482,7 @@
 		<reinstall>
 			<reinstall_content>重新安裝此內容？</reinstall_content>
 			<already_installed>已安裝過此內容。</already_installed>
-			<reinstall_overwrite>您想要重新安裝並覆寫現有的資料吗？</reinstall_overwrite>
+			<reinstall_overwrite>您想要重新安裝並覆寫現有的資料嗎？</reinstall_overwrite>
 		</reinstall>
 	</install_dialog>
 
@@ -491,7 +491,7 @@
 		<continue>繼續</continue>
 		<help>
 			<control_setting>在控制設定中使用鍵盤組態集</control_setting>
-			<firmware_not_detected>未檢測到韌體，强烈建議安裝</firmware_not_detected>
+			<firmware_not_detected>未檢測到韌體，強烈建議安裝</firmware_not_detected>
 			<firmware_font_not_detected>未檢測到韌體字型，建議在“Live Area”中安裝字型套件</firmware_font_not_detected>
 			<live_area_help>Live Area說明</live_area_help>
 			<browse_app>瀏覽應用程式清單</browse_app>
@@ -516,8 +516,8 @@
 		<load_app_failed>無法讀取“{}”，
 請檢查vita3k.log查閲控制臺輸出的詳細資訊。
 1、您是否安裝了韌體？
-2、重新傾印您已擁有的PS Vita应用程式/遊戲，並在Vita3K中安裝。
-3、如果您想要安裝/運行Vitamin是不支援的。</load_app_failed>
+2、重新傾印您已擁有的PS Vita應用程式/遊戲，並在Vita3K中安裝。
+3、如果您想要安裝/執行Vitamin是不支援的。</load_app_failed>
 	</message>
 
 	<performance_overlay>
@@ -590,90 +590,90 @@
 
 	<settings_dialog name="設定">
 		<core name="核心">
-			<modules_mode>模塊模式</modules_mode>
+			<modules_mode>模組模式</modules_mode>
 			<automatic>自動</automatic>
-			<automatic_description>選擇自動模式會使用預設的模塊列表。</automatic_description>
+			<automatic_description>選擇自動模式會使用預設的模組列表。</automatic_description>
 			<auto_manual>自動&手動</auto_manual>
-			<auto_manual_description>選擇此模式會加載預設模塊以及從列表中所選定的模塊。</auto_manual_description>
+			<auto_manual_description>選擇此模式會載入預設模組以及從列表中所選定的模組。</auto_manual_description>
 			<manual>手動</manual>
-			<manual_description>選擇手動模式會從列表中加載所選定的模塊。</manual_description>
-			<modules_list>模塊列表</modules_list>
-			<select_modules>選擇您所需的模塊。</select_modules>
-			<search_modules>搜索模塊</search_modules>
+			<manual_description>選擇手動模式會從列表中載入所選定的模組。</manual_description>
+			<modules_list>模組列表</modules_list>
+			<select_modules>選擇您所需的模組。</select_modules>
+			<search_modules>搜尋模組</search_modules>
 			<clear_list>清除列表</clear_list>
-			<no_modules>沒有模塊存在。
+			<no_modules>沒有模組存在。
 請下載並安裝最新的PS Vita韌體。</no_modules>
-			<refresh_list>刷新列表</refresh_list>
+			<refresh_list>更新列表</refresh_list>
 		</core>
 		<cpu>
 			<unicorn>Unicorn（已棄用）</unicorn>
 			<cpu_backend>CPU後端</cpu_backend>
 			<select_cpu_backend>選擇您喜歡的CPU後端。</select_cpu_backend>
-			<cpu_opt>啟用優化</cpu_opt>
-			<cpu_opt_description>勾選此項啟用額外CPU的JIT優化。</cpu_opt_description>
+			<cpu_opt>啟用最佳化</cpu_opt>
+			<cpu_opt_description>勾選此項啟用額外的CPU JIT最佳化。</cpu_opt_description>
 		</cpu>
 		<gpu>
 			<reset>重設</reset>
 			<backend_renderer>後端渲染器</backend_renderer>
 			<select_backend_renderer>選擇您喜歡的後端渲染器。</select_backend_renderer>
-			<gpu>GPU（重啟后應用）</gpu>
-			<select_gpu>選擇在Vita3K應運行的GPU。</select_gpu>
+			<gpu>GPU（重啟後應用）</gpu>
+			<select_gpu>選擇Vita3K應使用的GPU。</select_gpu>
 			<standard>標準</standard>
 			<high>高</high>
 			<renderer_accuracy>渲染精度</renderer_accuracy>
 			<v_sync>垂直同步</v_sync>
-			<v_sync_description>禁用垂直同步可以解決某些遊戲的速度問題。
+			<v_sync_description>停用垂直同步可以解決某些遊戲的速度問題。
 建議保留啟用它以避免畫面撕裂。</v_sync_description>
-			<disable_surface_sync>禁用表面同步</disable_surface_sync>
-			<surface_sync_description>提升速度，勾選此項禁用處理器與顯卡之間的表面同步。
+			<disable_surface_sync>停用表面同步</disable_surface_sync>
+			<surface_sync_description>提升速度，勾選此項停用處理器與顯示卡之間的表面同步。
 某些遊戲需要表面同步。
-如果禁用（特別是在提升時），則可大幅提升性能。</surface_sync_description>
-			<async_pipeline_compilation>異步管綫編譯</async_pipeline_compilation>
-			<async_pipeline_compilation_description>允許在多個並發綫程上同時編譯管綫。
-這可以減少管綫編譯卡頓，但代價是會出現暫時的圖形故障。</async_pipeline_compilation_description>
+如果停用（特別是在放大時），則可大幅提升效能。</surface_sync_description>
+			<async_pipeline_compilation>非同步管線編譯</async_pipeline_compilation>
+			<async_pipeline_compilation_description>允許在多個並行執行緒上同時編譯管線。
+這可以減少管線編譯卡頓，但代價是會出現短暫的圖形故障。</async_pipeline_compilation_description>
 			<nearest>最鄰近</nearest>
-			<bilinear>雙綫性</bilinear>
+			<bilinear>雙線性</bilinear>
 			<bicubic>雙三次</bicubic>
 			<screen_filter>螢幕過濾</screen_filter>
-			<screen_filter_description>設置要應用的後處理過濾器。</screen_filter_description>
-			<internal_resolution_upscaling>內部分辨率提升</internal_resolution_upscaling>
-			<internal_resolution_upscaling_description>為Vita3K啟用提升效果。
-實驗性：不保證遊戲能超過1倍的正確渲染。</internal_resolution_upscaling_description>
+			<screen_filter_description>設定要應用的後處理過濾器。</screen_filter_description>
+			<internal_resolution_upscaling>內部解析度放大</internal_resolution_upscaling>
+			<internal_resolution_upscaling_description>為Vita3K啟用放大效果。
+實驗性：不保證遊戲能在超過1倍時正確渲染。</internal_resolution_upscaling_description>
 			<anisotropic_filtering>各向異性過濾</anisotropic_filtering>
 			<anisotropic_filtering_description>各向異性過濾是一種提高表面圖像質量的技術，
 它們相對於觀察者是傾斜的，
-它沒有缺點，但會影響性能。</anisotropic_filtering_description>
+它沒有缺點，但會影響效能。</anisotropic_filtering_description>
 			<texture_replacement>紋理替換</texture_replacement>
 			<export_textures>導出紋理</export_textures>
 			<import_textures>導入紋理</import_textures>
 			<texture_exporting_format>紋理導出格式</texture_exporting_format>
-			<shaders>着色器</shaders>
+			<shaders>著色器</shaders>
 			<shader_cache>使用著色器快取</shader_cache>
 			<shader_cache_description>勾選此項啟用著色器快取以在遊戲啟動時對其進行預編譯。
-取消勾選則禁用該功能。</shader_cache_description>
+取消勾選則停用該功能。</shader_cache_description>
 			<spirv_shader>使用Spir-V著色器（已棄用）</spirv_shader>
 			<spirv_shader_description>將生成的Spir-V著色器直接傳遞給驅動程式。
-請注意，一些有益的擴展功能將被禁用，
-並非所有顯卡都與此兼容。</spirv_shader_description>
+請注意，一些有益的擴充功能將被停用，
+並非所有顯示卡都與此相容。</spirv_shader_description>
 			<clean_shaders>清除著色器快取以及記錄</clean_shaders>
 			<fps_hack>FPS修改</fps_hack>
-			<fps_hack_description>遊戲修改允許一些以30FPS運行的遊戲在模擬器上以60FPS的速度運行。
+			<fps_hack_description>遊戲修改允許一些以30FPS執行的遊戲在模擬器上以60FPS的速度執行。
 請注意這只是一個修改，僅適用於某些遊戲。
 在其他遊戲中，它可能沒有效果或使其出現兩倍速。</fps_hack_description>
 		</gpu>
-		<audio name="音频">
-			<audio_backend>音頻後端</audio_backend>
-			<select_audio_backend>選擇您喜歡的音頻後端。</select_audio_backend>
-			<audio_volume>音頻音量</audio_volume>
-			<audio_volume_description>調整全局音頻輸出的音量百分比。</audio_volume_description>
-			<enable_ngs_support>啟用NGS支持</enable_ngs_support>
-			<ngs_description>取消勾選此項禁用對高級音頻庫NGS的支持。</ngs_description>
+		<audio name="音訊">
+			<audio_backend>音訊後端</audio_backend>
+			<select_audio_backend>選擇您喜歡的音訊後端。</select_audio_backend>
+			<audio_volume>音訊音量</audio_volume>
+			<audio_volume_description>調整全域音訊輸出的音量百分比。</audio_volume_description>
+			<enable_ngs_support>啟用NGS支援</enable_ngs_support>
+			<ngs_description>取消勾選此項停用對高階音訊庫NGS的支援。</ngs_description>
 		</audio>
 		<system name="系統">
 			<select_enter_button>確認按鈕分配
 請選擇您的“確認”按鈕。</select_enter_button>
-			<enter_button_description>這是在應用程式對話框中用作“確認”的按鈕。
-某些應用程式不使用此功能並獲取默認確認按鈕。</enter_button_description>
+			<enter_button_description>這是在應用程式對話方塊中用作“確認”的按鈕。
+某些應用程式不使用此功能並獲取預設確認按鈕。</enter_button_description>
 			<circle>〇</circle>
 			<cross>×</cross>
 			<pstv_mode>PS TV模式</pstv_mode>
@@ -689,31 +689,31 @@
 			<info>資訊</info>
 			<warning>警告</warning>
 			<error>錯誤</error>
-			<critical>關鍵</critical>
+			<critical>嚴重</critical>
 			<off>關閉</off>
 			<log_level>記錄級別</log_level>
 			<select_log_level>選擇您喜歡的記錄級別。</select_log_level>
-			<archive_log>檔案記錄</archive_log>
-			<archive_log_description>勾選此項啟用檔案記錄。</archive_log_description>
+			<archive_log>封存記錄</archive_log>
+			<archive_log_description>勾選此項啟用封存記錄。</archive_log_description>
 			<discord_rich_presence>啟用Discord Rich Presence以展示您在Discord上正在執行的應用程式。</discord_rich_presence>
-			<texture_cache>紋理緩存</texture_cache>
-			<texture_cache_description>取消勾選此項禁用紋理緩存。</texture_cache_description>
+			<texture_cache>紋理快取</texture_cache>
+			<texture_cache_description>取消勾選此項停用紋理快取。</texture_cache_description>
 			<show_compile_shaders>顯示編譯著色器</show_compile_shaders>
-			<compile_shaders_description>取消勾選此項禁用編譯著色器對話框的顯示。</compile_shaders_description>
-			<show_touchpad_cursor>顯示觸摸板光標</show_touchpad_cursor>
-			<touchpad_cursor_description>取消勾選此項禁用螢幕上觸摸板光標的顯示。</touchpad_cursor_description>
+			<compile_shaders_description>取消勾選此項停用編譯著色器對話方塊的顯示。</compile_shaders_description>
+			<show_touchpad_cursor>顯示觸控板游標</show_touchpad_cursor>
+			<touchpad_cursor_description>取消勾選此項停用螢幕上觸控板游標的顯示。</touchpad_cursor_description>
 			<log_compat_warn>記錄相容性警告</log_compat_warn>
 			<log_compat_warn_description>勾選此項啟用GitHub議題的相容性警告的記錄。</log_compat_warn_description>
 			<check_for_updates>檢查更新</check_for_updates>
 			<check_for_updates_description>啟動時自動檢查更新。</check_for_updates_description>
-			<performance_overlay>性能圖層</performance_overlay>
-			<performance_overlay_description>在螢幕上以圖層的形式顯示性能信息。</performance_overlay_description>
+			<performance_overlay>效能圖層</performance_overlay>
+			<performance_overlay_description>在螢幕上以圖層的形式顯示效能資訊。</performance_overlay_description>
 			<minimum>最少</minimum>
 			<low>少</low>
 			<medium>中等</medium>
 			<maximum>最多</maximum>
 			<detail>細節</detail>
-			<select_detail>選擇您喜歡的性能圖層細節。</select_detail>
+			<select_detail>選擇您喜歡的效能圖層細節。</select_detail>
 			<top_left>左上</top_left>
 			<top_center>頂部中間</top_center>
 			<top_right>右上</top_right>
@@ -721,109 +721,113 @@
 			<bottom_center>底部中間</bottom_center>
 			<bottom_right>右下</bottom_right>
 			<position>位置</position>
-			<select_position>選擇您喜歡的性能圖層位置。</select_position>
-			<case_insensitive>勾選此項在區分大小寫的文件系統上啟用不區分大小寫的路徑查找。
+			<select_position>選擇您喜歡的效能圖層位置。</select_position>
+			<case_insensitive>勾選此項在區分大小寫的檔案系統上啟用不區分大小寫的路徑查詢。
 重啟時復位</case_insensitive>
-			<case_insensitive_description>允許模擬器嘗試在非Windows平臺上不區分大小寫的文件搜索。</case_insensitive_description>
+			<case_insensitive_description>允許模擬器嘗試在非Windows平臺上不區分大小寫的檔案搜尋。</case_insensitive_description>
 			<emu_storage_folder>模擬系統存儲資料夾</emu_storage_folder>
 			<current_emu_path>當前模擬器路徑：</current_emu_path>
 			<change_emu_path>更改模擬器路徑</change_emu_path>
 			<change_emu_path_description>更改Vita3K模擬器資料夾路徑。
 您需要手動將舊資料夾移動到新位置。</change_emu_path_description>
 			<reset_emu_path>重置模擬器路徑</reset_emu_path>
-			<reset_emu_path_description>重置Vita3K模擬器為默認路徑。
-您需要手動將舊資料夾移動到默認位置。</reset_emu_path_description>
+			<reset_emu_path_description>重置Vita3K模擬器為預設路徑。
+您需要手動將舊資料夾移動到預設位置。</reset_emu_path_description>
 			<custom_config_settings>自訂組態設定</custom_config_settings>
 			<clear_custom_config>清除自訂組態</clear_custom_config>
 			<screenshot_image_type>截圖圖像類型</screenshot_image_type>
 			<null>無</null>
 			<screenshot_format>截圖格式</screenshot_format>
 		</emulator>
-		<gui name="圖形化使用者介面">
-			<show_gui>圖形化使用者介面可見</show_gui>
-			<gui_description>勾選此項在啟動應用程式後顯示圖形化使用者介面。</gui_description>
-			<show_info_bar>信息欄可見</show_info_bar>
-			<info_bar_description>勾選此項在應用程式選擇頁面顯示信息欄。</info_bar_description>
-			<user_lang>圖形化使用者介面語言</user_lang>
+		<gui name="圖形使用者介面">
+			<show_gui>圖形使用者介面可見</show_gui>
+			<gui_description>勾選此項在啟動應用程式後顯示圖形使用者介面。</gui_description>
+			<show_info_bar>資訊欄可見</show_info_bar>
+			<info_bar_description>勾選此項在應用程式選擇頁面顯示資訊欄。</info_bar_description>
+			<user_lang>圖形使用者介面語言</user_lang>
 			<select_user_lang>選擇您的使用者語言。</select_user_lang>
-			<display_info_message>顯示資訊消息</display_info_message>
-			<display_info_message_description>取消勾選此項只在日志中顯示資訊消息。</display_info_message_description>
+			<display_info_message>顯示資訊訊息</display_info_message>
+			<display_info_message_description>取消勾選此項只在記錄中顯示資訊訊息。</display_info_message_description>
 			<display_system_apps>顯示系統應用程式</display_system_apps>
-			<display_system_apps_description>取消勾選此項禁用從主頁畫面中顯示的系統應用程式。
+			<display_system_apps_description>取消勾選此項停用從主頁畫面中顯示的系統應用程式。
 它們將僅顯示在主選單欄中。</display_system_apps_description>
 			<show_live_area_screen>Live Area應用程式螢幕</show_live_area_screen>
-			<live_area_screen_description>勾選此項在按下應用程式時默認打開Live Area頁面。
-如果禁用，請按下右鍵應用程式將其打開。</live_area_screen_description>
+			<live_area_screen_description>勾選此項在按下應用程式時預設開啟Live Area頁面。
+如果停用，請右鍵點選應用程式將其開啟。</live_area_screen_description>
 			<stretch_the_display_area>拉伸顯示區域</stretch_the_display_area>
 			<stretch_the_display_area_description>勾選此項擴大顯示區域以適應螢幕尺寸。</stretch_the_display_area_description>
+			<fullscreen_hd_res_pixel_perfect>全屏高畫質精準渲染</fullscreen_hd_res_pixel_perfect>
+			<fullscreen_hd_res_pixel_perfect_description>對於螢幕比例為16:9的高畫質顯示器，勾選此項可在全屏模式下獲得畫素級精準渲染，
+但代價是螢幕頂部和底部會有輕微裁剪。</fullscreen_hd_res_pixel_perfect_description>
 			<apps_list_grid>網格模式</apps_list_grid>
-			<apps_list_grid_description>勾選此項將應用程式列表設置為網格模式。</apps_list_grid_description>
+			<apps_list_grid_description>勾選此項將應用程式列表設定為網格模式。</apps_list_grid_description>
 			<icon_size>應用程式圖標大小</icon_size>
 			<select_icon_size>選擇您喜歡的圖標大小。</select_icon_size>
-			<font_support>字體支持</font_support>
+			<font_support>字型支援</font_support>
 			<asia_font_support>亞洲區域</asia_font_support>
-			<asia_font_support_description>勾選此項啟用對中文以及韓文的字體支持。
-啟用此功能將占用更多內存，並且需要您重啟模擬器才能生效。</asia_font_support_description>
+			<asia_font_support_description>勾選此項啟用對中文以及韓文的字型支援。
+啟用此功能將佔用更多記憶體，並且需要您重啟模擬器才能生效。</asia_font_support_description>
 			<firmware_font_package_description>一些應用程式需要韌體字型套件
-以及在圖形化使用者介面中的亞洲區域字型支持。
-通常也強烈建議將其用於圖形化使用者介面。</firmware_font_package_description>
+以及在圖形使用者介面中的亞洲區域字型支援。
+通常也強烈建議將其用於圖形使用者介面。</firmware_font_package_description>
 			<theme_background>主題&背景</theme_background>
 			<current_theme_content_id>當前主題內容ID：</current_theme_content_id>
 			<reset_default_theme>重置原音主題</reset_default_theme>
 			<using_theme_background>使用主題背景</using_theme_background>
-			<clean_user_backgrounds>清除用戶背景</clean_user_backgrounds>
+			<clean_user_backgrounds>清除使用者背景</clean_user_backgrounds>
 			<current_start_background>當前主頁畫面的背景：</current_start_background>
 			<reset_start_background>重置主頁畫面的背景</reset_start_background>
 			<background_alpha>背景透明度</background_alpha>
 			<select_background_alpha>選擇您喜歡的透明背景效果。
 滑到最小不透明以及最大為透明。</select_background_alpha>
-			<delay_background>延遲背景</delay_background>
+			<delay_background>背景延遲</delay_background>
 			<select_delay_background>選擇更改背景前的延遲秒數。</select_delay_background>
-			<delay_start>延遲開始畫面</delay_start>
+			<delay_start>開始畫面延遲</delay_start>
 			<select_delay_start>選擇返回開始畫面前的延遲秒數。</select_delay_start>
 		</gui>
 		<network name="網路">
 			<psn_signed_in>已登入PSN</psn_signed_in>
-			<psn_signed_in_description>如果勾選此項，遊戲將認爲使用者已接入至PSN（但爲離綫）。</psn_signed_in_description>
+			<psn_signed_in_description>如果勾選此項，遊戲將認為使用者已接入至PSN（但為離線）。</psn_signed_in_description>
 			<enable_http>啟用HTTP</enable_http>
-			<enable_http_description>勾選此項啟用遊戲在互聯網上使用HTTP協議。</enable_http_description>
+			<enable_http_description>勾選此項啟用遊戲在網際網路上使用HTTP協議。</enable_http_description>
 			<timeout_attempts>HTTP超時嘗試</timeout_attempts>
 			<timeout_attempts_description>當伺服器沒有響應時要進行多次嘗試。
-如果您有非常不穩定或是極慢的網路可能是有用的。</timeout_attempts_description>
+如果您有非常不穩定或是非常慢的網路可能會很有用。</timeout_attempts_description>
 			<timeout_sleep>HTTP超時休眠</timeout_sleep>
 			<timeout_sleep_description>當伺服器沒有響應時嘗試進入休眠時間。
-如果您有非常不穩定或是極慢的網路可能是有用的。</timeout_sleep_description>
+如果您有非常不穩定或是非常慢的網路可能會很有用。</timeout_sleep_description>
 			<read_end_attempts>HTTP讀取終止嘗試</read_end_attempts>
-			<read_end_attempts_description>當沒有更多數據可讀取時，嘗試多次可以提升性能，
+			<read_end_attempts_description>當沒有更多資料可讀取時，嘗試多次可以提升效能，
 但如果您的網路很糟糕，則會導致遊戲不穩定。</read_end_attempts_description>
 			<read_end_sleep>HTTP讀取終止休眠</read_end_sleep>
-			<read_end_sleep_description>嘗試在沒有更多數據可讀取時進入休眠時間，這可以提升性能，
+			<read_end_sleep_description>嘗試在沒有更多資料可讀取時進入休眠時間，這可以提升效能，
 但如果您的網路很糟糕，則會導致遊戲不穩定。</read_end_sleep_description>
 		</network>
 		<debug>
 			<log_imports>導入記錄</log_imports>
-			<log_imports_description>記錄模塊導入符號。</log_imports_description>
+			<log_imports_description>記錄模組導入符號。</log_imports_description>
 			<log_exports>導出記錄</log_exports>
-			<log_exports_description>記錄模塊導入符號。</log_exports_description>
+			<log_exports_description>記錄模組導出符號。</log_exports_description>
 			<log_active_shaders>著色器記錄</log_active_shaders>
-			<log_active_shaders_description>記錄在每次繪制調用中使用的著色器。</log_active_shaders_description>
-			<log_uniforms>統一記錄</log_uniforms>
-			<log_uniforms_description>記錄著色器統一名稱和值。</log_uniforms_description>
+			<log_active_shaders_description>記錄在每次繪制呼叫中使用的著色器。</log_active_shaders_description>
+			<log_uniforms>Uniform記錄</log_uniforms>
+			<log_uniforms_description>記錄著色器uniform的名稱和值。</log_uniforms_description>
 			<color_surface_debug>保存顔色表面</color_surface_debug>
 			<color_surface_debug_description>保存顔色表面到檔案。</color_surface_debug_description>
 			<dump_elfs>ELF提取</dump_elfs>
-			<dump_elfs_description>將加載的代碼提取為ELF。</dump_elfs_description>
+			<dump_elfs_description>將載入的程式碼提取為ELF。</dump_elfs_description>
 			<validation_layer>驗證層（要求重啟）</validation_layer>
 			<validation_layer_description>啟用Vulkan驗證層。</validation_layer_description>
-			<unwatch_code>取消監視代码</unwatch_code>
-			<watch_code>監視代码</watch_code>
-			<unwatch_memory>取消監視內存</unwatch_memory>
-			<watch_memory>監視內存</watch_memory>
-			<unwatch_import_calls>取消監視導入調用</unwatch_import_calls>
-			<watch_import_calls>監視導入調用</watch_import_calls>
+			<unwatch_code>取消監視程式碼</unwatch_code>
+			<watch_code>監視程式碼</watch_code>
+			<unwatch_memory>取消監視記憶體</unwatch_memory>
+			<watch_memory>監視記憶體</watch_memory>
+			<unwatch_import_calls>取消監視導入呼叫</unwatch_import_calls>
+			<watch_import_calls>監視導入呼叫</watch_import_calls>
 		</debug>
 		<save_reboot>保存並重啟</save_reboot>
 		<save_apply>保存並應用</save_apply>
+		<save_close>保存並關閉</save_close>
 		<keep_changes>按下保存保留您的更改。</keep_changes>
 	</settings_dialog>
 
@@ -883,17 +887,17 @@
  		<cancel_update_resume>確定要取消更新嗎？
 選擇取消後，下次會從中斷處開始下載。</cancel_update_resume>
 		<downloading>下載中…
-下載完成后，Vita3K會自動重新啟動，並安裝新的更新。</downloading>
+下載完成後，Vita3K會自動重新啟動，並安裝新的更新。</downloading>
 		<not_complete_update>無法更新。</not_complete_update>
 		<minutes_left>剩下 {}分鐘</minutes_left>
 		<next>繼續</next>
 		<seconds_left>剩下 {}秒</seconds_left>
-		<update_vita3k>確定要更新Vita3K吗？</update_vita3k>
+		<update_vita3k>確定要更新Vita3K嗎？</update_vita3k>
 		<later_version_already_installed>已安裝新版的Vita3K。</later_version_already_installed>
 		<latest_version_already_installed>已安裝最新版本的Vita3K。</latest_version_already_installed>
 		<new_features>{} 版本的追加機能</new_features>
 		<authors>作者</authors>
-		<comments>注釋</comments>
+		<comments>註解</comments>
 		<update>更新</update>
 		<version>{} 版本</version>
 	</vita3k_update>
