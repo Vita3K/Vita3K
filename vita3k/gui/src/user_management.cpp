@@ -756,6 +756,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Separator();
                 ImGui::NextColumn();
                 ImGui::PopStyleVar();
+                ImGui::ScrollWhenDragging();
             }
             ImGui::Columns(1);
             ImGui::EndChild();
