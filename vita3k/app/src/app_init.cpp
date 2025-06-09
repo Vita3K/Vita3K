@@ -336,9 +336,7 @@ static float fetch_x11_display_dpi() {
 }
 #endif
 
-bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
-    state.cfg = std::move(cfg);
-
+bool init(EmuEnvState &state, const Root &root_paths) {
     state.base_path = root_paths.get_base_path();
     state.default_path = root_paths.get_pref_path();
     state.log_path = root_paths.get_log_path();
@@ -376,7 +374,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 
     state.backend_renderer = renderer::Backend::Vulkan;
 
-    if (string_utils::toupper(state.cfg.backend_renderer) == "OPENGL") {
+    if (string_utils::toupper(state.cfg.current_config.backend_renderer) == "OPENGL") {
 #ifndef __APPLE__
         state.backend_renderer = renderer::Backend::OpenGL;
 #else
