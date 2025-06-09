@@ -63,57 +63,56 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     }
 
     // Add new controllers
-    int num_joysticks = 0;
-    SDL_GetJoysticks(&num_joysticks);
-    for (int joystick_index = 0; joystick_index < num_joysticks; ++joystick_index) {
+    int num_gamepads = 0;
+    const auto gamepads = SDL_GetGamepads(&num_gamepads);
+    for (int gamepad_index = 0; gamepad_index < num_gamepads; ++gamepad_index) {
+        const auto gamepad_id = gamepads[gamepad_index];
         if (state.controllers_num >= SCE_CTRL_MAX_WIRELESS_NUM) {
-            return;
+            break;
         }
-        if (SDL_IsGamepad(joystick_index)) {
-            const SDL_GUID guid = SDL_GetJoystickGUIDForID(joystick_index);
-            if (!state.controllers.contains(guid)) {
-                Controller new_controller;
-                const GamepadPtr controller(SDL_OpenGamepad(joystick_index), SDL_CloseGamepad);
-                if (controller == nullptr) {
-                    continue;
-                }
-                new_controller.controller = controller;
-                new_controller.port = reserve_port(state);
-                if (new_controller.port == -1) { // Port not available
-                    return;
-                }
-                SDL_SetGamepadPlayerIndex(controller.get(), new_controller.port);
-
-                new_controller.has_gyro = SDL_GamepadHasSensor(controller.get(), SDL_SENSOR_GYRO);
-                if (new_controller.has_gyro)
-                    SDL_SetGamepadSensorEnabled(controller.get(), SDL_SENSOR_GYRO, true);
-                new_controller.has_accel = SDL_GamepadHasSensor(controller.get(), SDL_SENSOR_ACCEL);
-                if (new_controller.has_accel)
-                    SDL_SetGamepadSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, true);
-
-                new_controller.has_led = SDL_GetBooleanProperty(SDL_GetGamepadProperties(controller.get()), SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN, false);
-                if (new_controller.has_led) {
-                    auto &color = emuenv.cfg.controller_led_color;
-                    if (!color.empty()) {
-                        color.resize(3);
-                        SDL_SetGamepadLED(controller.get(), color[0], color[1], color[2]);
-                    }
-                }
-
-                found_gyro |= new_controller.has_gyro;
-                found_accel |= new_controller.has_accel;
-                new_controller.name = SDL_GetGamepadNameForID(joystick_index);
-                if (new_controller.name == nullptr) {
-                    state.free_ports[new_controller.port] = true;
-                    continue;
-                }
-
-                state.controllers.emplace(guid, new_controller);
-                state.controllers_num++;
+        const SDL_GUID guid = SDL_GetJoystickGUIDForID(gamepad_id);
+        if (!state.controllers.contains(guid)) {
+            Controller new_controller;
+            const GamepadPtr controller(SDL_OpenGamepad(gamepad_id), SDL_CloseGamepad);
+            if (controller == nullptr) {
+                continue;
             }
+            new_controller.controller = controller;
+            new_controller.port = reserve_port(state);
+            if (new_controller.port == -1) { // Port not available
+                break;
+            }
+            SDL_SetGamepadPlayerIndex(controller.get(), new_controller.port);
+
+            new_controller.has_gyro = SDL_GamepadHasSensor(controller.get(), SDL_SENSOR_GYRO);
+            if (new_controller.has_gyro)
+                SDL_SetGamepadSensorEnabled(controller.get(), SDL_SENSOR_GYRO, true);
+            new_controller.has_accel = SDL_GamepadHasSensor(controller.get(), SDL_SENSOR_ACCEL);
+            if (new_controller.has_accel)
+                SDL_SetGamepadSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, true);
+
+            new_controller.has_led = SDL_GetBooleanProperty(SDL_GetGamepadProperties(controller.get()), SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN, false);
+            if (new_controller.has_led) {
+                auto &color = emuenv.cfg.controller_led_color;
+                if (!color.empty()) {
+                    color.resize(3);
+                    SDL_SetGamepadLED(controller.get(), color[0], color[1], color[2]);
+                }
+            }
+
+            found_gyro |= new_controller.has_gyro;
+            found_accel |= new_controller.has_accel;
+            new_controller.name = SDL_GetGamepadNameForID(gamepad_id);
+            if (new_controller.name == nullptr) {
+                state.free_ports[new_controller.port] = true;
+                continue;
+            }
+
+            state.controllers.emplace(guid, new_controller);
+            state.controllers_num++;
         }
     }
-
+    SDL_free(gamepads);
     state.has_motion_support = found_gyro && found_accel;
 }
 

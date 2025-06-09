@@ -266,7 +266,7 @@ struct LangState {
         { "red", "Red" },
         { "green", "Green" },
         { "blue", "Blue" },
-        { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." },
+        { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL3." },
         { "disable_motion", "Disable Motion" },
         { "reset_controller_binding", "Reset Controller Binding" }
     };
