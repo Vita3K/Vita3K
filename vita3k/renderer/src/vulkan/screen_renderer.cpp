@@ -17,7 +17,7 @@
 
 #include "renderer/vulkan/screen_renderer.h"
 
-#include <SDL_vulkan.h>
+#include <SDL3/SDL_vulkan.h>
 
 #include "renderer/vulkan/state.h"
 #include "util/log.h"
@@ -31,7 +31,7 @@ ScreenRenderer::ScreenRenderer(VKState &state)
 
 bool ScreenRenderer::create(SDL_Window *window) {
     VkSurfaceKHR surface = VK_NULL_HANDLE;
-    bool surface_error = SDL_Vulkan_CreateSurface(window, state.instance, &surface);
+    bool surface_error = SDL_Vulkan_CreateSurface(window, state.instance, nullptr, &surface);
     if (!surface_error) {
         const char *error = SDL_GetError();
         LOG_ERROR("Failed to create vulkan surface. SDL Error: {}.", error);
@@ -104,7 +104,7 @@ void ScreenRenderer::create_swapchain() {
         extent = surface_capabilities.currentExtent;
     } else {
         int width, height;
-        SDL_Vulkan_GetDrawableSize(window, &width, &height);
+        SDL_GetWindowSizeInPixels(window, &width, &height);
         extent.width = std::clamp<uint32_t>(width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
         extent.height = std::clamp<uint32_t>(height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
     }
@@ -230,7 +230,7 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
             state.device.waitIdle();
             destroy_swapchain();
             int width, height;
-            SDL_Vulkan_GetDrawableSize(window, &width, &height);
+            SDL_GetWindowSizeInPixels(window, &width, &height);
             // don't render anything when the window is minimized
             if (width == 0 || height == 0)
                 return false;
@@ -348,7 +348,7 @@ void ScreenRenderer::swap_window() {
         destroy_swapchain();
 
         int width, height;
-        SDL_Vulkan_GetDrawableSize(window, &width, &height);
+        SDL_GetWindowSizeInPixels(window, &width, &height);
         if (width > 0 && height > 0) {
             create_swapchain();
             if (swapchain)

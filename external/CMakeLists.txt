@@ -91,19 +91,7 @@ target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
 target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniz")
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/sdl2-cmake-scripts")
-
-if(APPLE)
-	set(SDL2_PATH "${CMAKE_CURRENT_SOURCE_DIR}/sdl/macos" CACHE PATH "Where SDL2 is located" FORCE)
-elseif(WIN32)
-	set(SDL2_PATH "${CMAKE_CURRENT_SOURCE_DIR}/sdl/windows" CACHE PATH "Where SDL2 is located" FORCE)
-	set(SDL2_INCLUDE_DIR "${SDL2_PATH}/include" CACHE PATH "Where the SDL2 include files can be found" FORCE)
-endif()
-
-find_package(SDL2 REQUIRED)
-add_library(sdl2 INTERFACE)
-target_include_directories(sdl2 INTERFACE "${SDL2_INCLUDE_DIR}")
-target_link_libraries(sdl2 INTERFACE "${SDL2_LIBRARY}")
+add_subdirectory(sdl)
 
 # Cubeb setup, from https://github.com/RPCS3/rpcs3/blob/master/3rdparty/cubeb/CMakeLists.txt
 set(BUILD_SHARED_LIBS FALSE CACHE BOOL "Don't build shared libs")

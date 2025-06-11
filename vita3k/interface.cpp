@@ -39,6 +39,7 @@
 #include <renderer/texture_cache.h>
 
 #include <modules/module_parent.h>
+#include <motion/event_handler.h>
 #include <string>
 #include <touch/functions.h>
 #include <util/log.h>
@@ -49,7 +50,9 @@
 
 #include <regex>
 
-#include <SDL.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_video.h>
+
 #include <fmt/chrono.h>
 #include <stb_image_write.h>
 
@@ -496,21 +499,11 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
     return Success;
 }
 
-static void handle_window_event(EmuEnvState &state, const SDL_WindowEvent &event) {
-    switch (static_cast<SDL_WindowEventID>(event.event)) {
-    case SDL_WINDOWEVENT_SIZE_CHANGED:
-        app::update_viewport(state);
-        break;
-    default:
-        break;
-    }
-}
-
 static void switch_full_screen(EmuEnvState &emuenv) {
     emuenv.display.fullscreen = !emuenv.display.fullscreen;
     emuenv.renderer->set_fullscreen(emuenv.display.fullscreen);
 
-    SDL_SetWindowFullscreen(emuenv.window.get(), emuenv.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+    SDL_SetWindowFullscreen(emuenv.window.get(), emuenv.display.fullscreen.load());
 
     // Refresh Viewport Size
     app::update_viewport(emuenv);
@@ -653,7 +646,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
         switch (event.type) {
-        case SDL_QUIT:
+        case SDL_EVENT_QUIT:
             if (!emuenv.io.app_path.empty())
                 gui::update_time_app_used(gui, emuenv, emuenv.io.app_path);
             emuenv.kernel.exit_delete_all_threads();
@@ -664,7 +657,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             }
             return false;
 
-        case SDL_KEYDOWN: {
+        case SDL_EVENT_KEY_DOWN: {
             const auto get_sce_ctrl_btn_from_scancode = [&emuenv](const SDL_Scancode scancode) {
                 if (scancode == emuenv.cfg.keyboard_button_up)
                     return SCE_CTRL_UP;
@@ -691,16 +684,16 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             };
 
             // Get Sce Ctrl button from key
-            const auto sce_ctrl_btn = get_sce_ctrl_btn_from_scancode(event.key.keysym.scancode);
+            const auto sce_ctrl_btn = get_sce_ctrl_btn_from_scancode(event.key.scancode);
 
-            if (gui.is_capturing_keys && event.key.keysym.scancode) {
+            if (gui.is_capturing_keys && event.key.scancode) {
                 gui.is_key_capture_dropped = false;
-                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                if (event.key.scancode == SDL_SCANCODE_ESCAPE) {
                     LOG_ERROR("Key is reserved!");
                     gui.captured_key = gui.old_captured_key;
                     gui.is_key_capture_dropped = true;
                 } else {
-                    gui.captured_key = static_cast<int>(event.key.keysym.scancode);
+                    gui.captured_key = static_cast<int>(event.key.scancode);
                 }
                 gui.is_capturing_keys = false;
             }
@@ -709,15 +702,15 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 continue;
 
             // toggle gui state
-            if (allow_switch_state && (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_gui))
+            if (allow_switch_state && (event.key.scancode == emuenv.cfg.keyboard_gui_toggle_gui))
                 emuenv.display.imgui_render = !emuenv.display.imgui_render;
-            if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_touch && !gui.is_key_capture_dropped)
+            if (event.key.scancode == emuenv.cfg.keyboard_gui_toggle_touch && !gui.is_key_capture_dropped)
                 toggle_touchscreen();
-            if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped)
+            if (event.key.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped)
                 switch_full_screen(emuenv);
-            if (event.key.keysym.scancode == emuenv.cfg.keyboard_toggle_texture_replacement && !gui.is_key_capture_dropped)
+            if (event.key.scancode == emuenv.cfg.keyboard_toggle_texture_replacement && !gui.is_key_capture_dropped)
                 toggle_texture_replacement(emuenv);
-            if (event.key.keysym.scancode == emuenv.cfg.keyboard_take_screenshot && !gui.is_key_capture_dropped)
+            if (event.key.scancode == emuenv.cfg.keyboard_take_screenshot && !gui.is_key_capture_dropped)
                 take_screenshot(emuenv);
 
             if (sce_ctrl_btn != 0) {
@@ -730,25 +723,25 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
 
             break;
         }
-        case SDL_KEYUP:
+        case SDL_EVENT_KEY_UP:
             gui.is_key_locked = false;
             break;
 
-        case SDL_MOUSEMOTION:
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEWHEEL:
+        case SDL_EVENT_MOUSE_MOTION:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_WHEEL:
             gui.is_nav_button = false;
             break;
 
-        case SDL_CONTROLLERBUTTONDOWN:
-            if (!emuenv.kernel.is_threads_paused() && (event.cbutton.button == SDL_CONTROLLER_BUTTON_TOUCHPAD))
+        case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+            if (!emuenv.kernel.is_threads_paused() && (event.gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD))
                 toggle_touchscreen();
 
             if (ImGui::GetIO().WantTextInput || emuenv.drop_inputs)
                 continue;
 
             for (const auto &binding : get_controller_bindings_ext(emuenv)) {
-                if (event.cbutton.button == binding.controller) {
+                if (event.gbutton.button == binding.controller) {
                     if (last_buttons.contains(binding.button)) {
                         continue;
                     }
@@ -760,23 +753,26 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             }
             break;
 
-        case SDL_CONTROLLERTOUCHPADDOWN:
-        case SDL_CONTROLLERTOUCHPADMOTION:
-        case SDL_CONTROLLERTOUCHPADUP:
-            handle_touchpad_event(event.ctouchpad);
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+            handle_touchpad_event(event.gtouchpad);
+            break;
+        case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
+            handle_motion_event(emuenv, event.gsensor);
             break;
 
-        case SDL_WINDOWEVENT:
-            handle_window_event(emuenv, event.window);
+        case SDL_EVENT_WINDOW_RESIZED:
+            app::update_viewport(emuenv);
             break;
 
-        case SDL_FINGERDOWN:
-        case SDL_FINGERMOTION:
-        case SDL_FINGERUP:
+        case SDL_EVENT_FINGER_DOWN:
+        case SDL_EVENT_FINGER_MOTION:
+        case SDL_EVENT_FINGER_UP:
             handle_touch_event(event.tfinger);
             break;
-        case SDL_DROPFILE: {
-            const auto drop_file = fs_utils::utf8_to_path(event.drop.file);
+        case SDL_EVENT_DROP_FILE: {
+            const auto drop_file = fs_utils::utf8_to_path(event.drop.data);
             const auto extension = string_utils::tolower(drop_file.extension().string());
             if (extension == ".pup") {
                 const std::string fw_version = install_pup(emuenv.pref_path, drop_file);
@@ -796,7 +792,6 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 install_content(emuenv, &gui, drop_file.parent_path());
             else
                 LOG_ERROR("File dropped: [{}] is not supported.", drop_file.filename());
-            SDL_free(event.drop.file);
             break;
         }
         }
