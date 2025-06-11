@@ -24,21 +24,22 @@
 typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
 
 struct SDLAudioOutPort : public AudioOutPort {
-    std::mutex mutex;
-    //  thread currently waiting for the audio to be processed
+    //   thread currently waiting for the audio to be processed
     SceUID thread = -1;
     int channels = 2;
     AudioStreamPtr stream;
     AudioAdapter &adapter;
-    SDLAudioOutPort(AudioStreamPtr stream, AudioAdapter *adapter)
+    SDLAudioOutPort(AudioStreamPtr stream, AudioAdapter &adapter)
         : stream(std::move(stream))
-        , adapter(*adapter) {}
+        , adapter(adapter) {}
 };
 
 class SDLAudioAdapter : public AudioAdapter {
 private:
     SDL_AudioDeviceID device_id = 0;
-    int device_buffer_size = 0;
+    int device_buffer_samples = 0;
+    SDL_AudioSpec dst_spec;
+    static void SDLCALL thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount);
 
 public:
     SDLAudioAdapter(AudioState &audio_state);
