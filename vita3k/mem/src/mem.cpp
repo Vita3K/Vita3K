@@ -259,7 +259,7 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     if (fault_addr < memory_addr || fault_addr >= memory_addr + TOTAL_MEM_SIZE) {
         if (state.use_page_table) {
             // this may come from an external mapping
-            uint64_t addr_val = std::bit_cast<uint64_t>(addr);
+            uintptr_t addr_val = std::bit_cast<uintptr_t>(addr);
             auto it = state.external_mapping.lower_bound(addr_val);
             if (it != state.external_mapping.end() && addr_val < it->first + it->second.size) {
                 vaddr = static_cast<Address>(addr_val - it->first + it->second.address);
@@ -427,7 +427,7 @@ void close_access_parent_protect_segment(MemState &state, Address addr) {
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {
     assert((size & 4095) == 0);
 
-    uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+    uintptr_t addr_value = std::bit_cast<uintptr_t>(addr_ptr);
     uint8_t *page_table_entry = addr_ptr - addr;
     uint8_t *original_address = &mem.memory[addr];
     for (int block = 0; block < size / KiB(4); block++) {
@@ -446,7 +446,7 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
 }
 
 void remove_external_mapping(MemState &mem, uint8_t *addr_ptr) {
-    uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+    uintptr_t addr_value = std::bit_cast<uintptr_t>(addr_ptr);
     MemExternalMapping mapping;
     {
         const std::unique_lock<std::mutex> lock(mem.protect_mutex);
@@ -596,7 +596,14 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
 static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
 
-#ifdef __aarch64__
+#ifdef __arm__
+    // TODO: handle ARM exceptions
+    const bool is_executing = false;
+    const bool is_writing = false;
+    LOG_CRITICAL("Unhandled ARM access violation at {}", log_hex(*reinterpret_cast<uintptr_t *>(&info->si_addr)));
+    raise(SIGTRAP);
+    return;
+#elif __aarch64__
 #ifdef __APPLE__
     const uint32_t esr = context->uc_mcontext->__es.__esr;
 #else
@@ -634,7 +641,7 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
         }
     }
 
-    LOG_CRITICAL("Unhandled access to {}", log_hex(*reinterpret_cast<uint64_t *>(&info->si_addr)));
+    LOG_CRITICAL("Unhandled access to {}", log_hex(*reinterpret_cast<uintptr_t *>(&info->si_addr)));
     raise(SIGTRAP);
     return;
 }

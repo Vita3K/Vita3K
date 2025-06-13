@@ -814,14 +814,14 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
-        const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
-        const uint64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+        const uintptr_t buffer_ptr_val = std::bit_cast<uintptr_t>(buffer.mapped_data);
+        const intptr_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
         buffer.mapped_data = std::bit_cast<void *>(buffer_ptr_val + buffer_offset);
 
         vk::BufferDeviceAddressInfoKHR address_info{
             .buffer = buffer.buffer
         };
-        const uint64_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
+        const uintptr_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
         const vk::Buffer mapped_buffer = buffer.buffer;
 
         add_external_mapping(mem, address.address(), size, static_cast<uint8_t *>(buffer.mapped_data));
