@@ -47,6 +47,8 @@ typedef std::shared_ptr<Socket> SocketPtr;
 struct Socket {
     int broadcastAddr = 0;
 
+    uint32_t bound_ctx_id = 0;
+
     explicit Socket(int domain, int type, int protocol) {}
 
     virtual ~Socket() = default;
