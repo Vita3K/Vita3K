@@ -20,6 +20,7 @@
 #include <imgui.h>
 
 #include <cstdint>
+#include <vector>
 
 struct SDL_Window;
 struct SDL_Cursor;
@@ -41,6 +42,8 @@ struct ImGui_State {
     bool init = false;
     bool is_typing = false;
     bool do_clear_screen = true;
+
+    std::vector<ImTextureID> textures_to_free;
 
     ImGui_State() = default;
 
