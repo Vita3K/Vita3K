@@ -26,7 +26,7 @@ we can have 2 cases
 
 #include <cstdint>
 
-#if defined(__aarch64__)
+#if defined(__arm__) || defined(__aarch64__)
 #include <arm_neon.h>
 void float_to_half(const float *src, uint16_t *dest, const int total) {
     // use the native type __fp16

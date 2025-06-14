@@ -17,7 +17,7 @@
 // Header files for non-vector intrinsic functions including _BitScanReverse(int), __cpuid(int[4],int), _xgetbv(int)
 #if defined(_MSC_VER) // Microsoft compiler or compatible Intel compiler
 #include <intrin.h>
-#elif !defined(__aarch64__)
+#elif !defined(__arm__) && !defined(__aarch64__)
 #include <x86intrin.h> // Gcc or Clang compiler
 #endif
 
