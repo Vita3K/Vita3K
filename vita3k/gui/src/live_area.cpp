@@ -268,7 +268,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
                     continue;
                 }
 
-                gui.live_area_contents[app_path][contents.first].init(gui.imgui_state.get(), data, width, height);
+                gui.live_area_contents[app_path][contents.first] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
                 stbi_image_free(data);
             }
 

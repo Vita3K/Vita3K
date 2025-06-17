@@ -258,7 +258,7 @@ void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                         continue;
                     }
 
-                    gui.trophy_np_com_id_list_icons[np_com_id][group.first].init(gui.imgui_state.get(), data, width, height);
+                    gui.trophy_np_com_id_list_icons[np_com_id][group.first] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
                     stbi_image_free(data);
                 }
             }
@@ -346,7 +346,7 @@ static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::strin
             continue;
         }
 
-        gui.trophy_list[trophy_id].init(gui.imgui_state.get(), data, width, height);
+        gui.trophy_list[trophy_id] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
 
         auto &common = gui.lang.common.main;

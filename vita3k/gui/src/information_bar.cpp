@@ -114,7 +114,7 @@ static bool init_notice_icon(GuiState &gui, EmuEnvState &emuenv, const fs::path 
         LOG_ERROR("Invalid icon for notice id: {} in path {}.", info.id, content_path);
         return false;
     }
-    gui.notice_info_icon[info.time].init(gui.imgui_state.get(), data, width, height);
+    gui.notice_info_icon[info.time] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 
     return gui.notice_info_icon.contains(info.time);
