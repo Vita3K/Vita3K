@@ -45,9 +45,6 @@
 #include <renderer/gl/state.h>
 #include <renderer/types.h>
 
-// SDL,GL3W
-#include <SDL.h>
-#include <SDL_syswm.h>
 #include <renderer/state.h>
 
 // This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
