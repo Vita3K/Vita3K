@@ -17,7 +17,9 @@
 
 #include <cpu/disasm/functions.h>
 #include <cpu/functions.h>
+#if DYNARMIC_ENABLED
 #include <cpu/impl/dynarmic_cpu.h>
+#endif
 #include <cpu/impl/interface.h>
 #include <cpu/impl/unicorn_cpu.h>
 #include <cpu/state.h>
@@ -58,11 +60,13 @@ CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::si
     }
 
     switch (backend) {
+#if DYNARMIC_ENABLED
     case CPUBackend::Dynarmic: {
         Dynarmic::ExclusiveMonitor *monitor = static_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exclusive_monitor());
         state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt);
         break;
     }
+#endif
     case CPUBackend::Unicorn: {
         state->cpu = std::make_unique<UnicornCPU>(state.get());
         break;
