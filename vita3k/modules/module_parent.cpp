@@ -206,8 +206,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         return SCE_ERROR_ERRNO_ENOENT;
     }
 
-    // Only load patches for eboot.bin modules
-    const std::vector<Patch> patches = module_path.find("eboot.bin") != std::string::npos ? get_patches(emuenv.patch_path, emuenv.io.title_id) : std::vector<Patch>();
+    const std::vector<Patch> patches = get_patches(emuenv.patch_path, emuenv.io.title_id, module_path);
 
     SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_buffer.data(), module_path, emuenv.log_path, patches);
 
