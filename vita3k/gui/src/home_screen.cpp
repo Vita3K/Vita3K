@@ -939,6 +939,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PopStyleColor();
     ImGui::Columns(1);
     ImGui::SetWindowFontScale(1.f);
+    ImGui::ScrollWhenDragging();
     ImGui::EndChild();
 
     // When visible apps list is not empty, set first visible app
