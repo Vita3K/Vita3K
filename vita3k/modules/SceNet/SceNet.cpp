@@ -22,6 +22,7 @@
 #include <net/state.h>
 #include <net/types.h>
 #include <util/lock_and_find.h>
+#include <util/net_utils.h>
 
 #include <chrono>
 #include <thread>
@@ -113,15 +114,16 @@ std::string to_debug_str<SceNetSocketOption>(const MemState &mem, SceNetSocketOp
 EXPORT(int, sceNetAccept, int sid, SceNetSockaddr *addr, unsigned int *addrlen) {
     TRACY_FUNC(sceNetAccept, sid, addr, addrlen);
     auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
-    if (!sock) {
+    if (!sock)
         return RET_ERROR(SCE_NET_EBADF);
-    }
-    auto newsock = sock->accept(addr, addrlen);
-    if (!newsock) {
-        return RET_ERROR(-1);
-    }
+
+    int err = 0;
+    auto newsock = sock->accept(addr, addrlen, err);
+    if (!newsock)
+        return RET_ERROR(err);
+
     auto id = ++emuenv.net.next_id;
-    emuenv.net.socks.emplace(id, sock);
+    emuenv.net.socks.emplace(id, newsock);
     return id;
 }
 
@@ -512,7 +514,13 @@ EXPORT(int, sceNetSendto, int sid, const void *msg, unsigned int len, int flags,
     if (!sock) {
         return RET_ERROR(SCE_NET_EBADF);
     }
-    return sock->send_packet(msg, len, flags, to, tolen);
+
+    SceNetSockaddrIn to_in;
+    std::memcpy(&to_in, to, sizeof(SceNetSockaddrIn));
+    if (to_in.sin_addr.s_addr == INADDR_BROADCAST)
+        to_in.sin_addr.s_addr = sock->broadcastAddr;
+
+    return sock->send_packet(msg, len, flags, (SceNetSockaddr *)&to_in, tolen);
 }
 
 EXPORT(int, sceNetSetDnsInfo) {
@@ -520,8 +528,8 @@ EXPORT(int, sceNetSetDnsInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetSetsockopt, int sid, SceNetProtocol level, SceNetSocketOption optname, const int *optval, unsigned int optlen) {
-    TRACY_FUNC(sceNetSetsockopt, sid, level, optname, *optval, optlen);
+EXPORT(int, sceNetSetsockopt, int sid, SceNetProtocol level, SceNetSocketOption optname, const void *optval, unsigned int optlen) {
+    TRACY_FUNC(sceNetSetsockopt, sid, level, optname, optval, optlen);
     auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
     if (!sock) {
         return RET_ERROR(SCE_NET_EBADF);
@@ -551,27 +559,60 @@ EXPORT(int, sceNetShowRoute) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetShutdown) {
-    TRACY_FUNC(sceNetShutdown);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetShutdown, int sid, int how) {
+    TRACY_FUNC(sceNetShutdown, sid, how);
+    auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
+    if (!sock) {
+        return RET_ERROR(SCE_NET_EBADF);
+    }
+    return sock->shutdown_socket(how);
 }
 
 EXPORT(int, sceNetSocket, const char *name, int domain, SceNetSocketType type, SceNetProtocol protocol) {
     TRACY_FUNC(sceNetSocket, name, domain, type, protocol);
-    SocketPtr sock;
-    if (type < SCE_NET_SOCK_STREAM || type > SCE_NET_SOCK_RAW) {
-        sock = std::make_shared<P2PSocket>(domain, type, protocol);
-    } else {
-        sock = std::make_shared<PosixSocket>(domain, type, protocol);
+    int hostSockType = 0;
+    switch (type) {
+    case SCE_NET_SOCK_STREAM:
+        hostSockType = SOCK_STREAM;
+        break;
+    case SCE_NET_SOCK_DGRAM:
+        hostSockType = SOCK_DGRAM;
+        break;
+    case SCE_NET_SOCK_RAW:
+        hostSockType = SOCK_RAW;
+        break;
+        // The cases below are the biggest stub in history
+    case SCE_NET_SOCK_DGRAM_P2P:
+        hostSockType = SOCK_DGRAM;
+        break;
+    case SCE_NET_SOCK_STREAM_P2P:
+        hostSockType = SOCK_STREAM;
+        break;
     }
+
+    SocketPtr sock = std::make_shared<PosixSocket>(domain, hostSockType, protocol);
+
+    const auto addr = net_utils::get_selected_assigned_addr(emuenv.cfg.adhoc_addr);
+    int netAddr, netMask;
+    inet_pton(AF_INET, addr.addr.c_str(), &netAddr);
+    inet_pton(AF_INET, addr.netMask.c_str(), &netMask);
+    sock->broadcastAddr = netAddr | ~netMask;
+
     auto id = ++emuenv.net.next_id;
     emuenv.net.socks.emplace(id, sock);
     return id;
 }
 
-EXPORT(int, sceNetSocketAbort) {
-    TRACY_FUNC(sceNetSocketAbort);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetSocketAbort, int sid, int flags) {
+    TRACY_FUNC(sceNetSocketAbort, sid);
+    if ((sid < 0) || (flags < 0) || (flags > (SCE_NET_SOCKET_ABORT_FLAG_RCV_PRESERVATION | SCE_NET_SOCKET_ABORT_FLAG_SND_PRESERVATION)))
+        return RET_ERROR(SCE_NET_EINVAL);
+
+    auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
+    if (!sock)
+        return RET_ERROR(SCE_NET_EBADF);
+
+    return sock->abort(flags);
 }
 
 EXPORT(int, sceNetSocketClose, int sid) {

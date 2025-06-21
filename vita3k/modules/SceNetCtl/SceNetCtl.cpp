@@ -22,6 +22,7 @@
 #include <net/types.h>
 #include <rtc/rtc.h>
 #include <util/lock_and_find.h>
+#include <util/net_utils.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceNetCtl);
@@ -157,7 +158,11 @@ EXPORT(int, sceNetCtlAdhocGetInAddr, SceNetInAddr *inaddr) {
         return RET_ERROR(SCE_NET_CTL_ERROR_INVALID_ADDR);
     }
 
-    return UNIMPLEMENTED();
+    const auto addr = net_utils::get_selected_assigned_addr(emuenv.cfg.adhoc_addr).addr;
+
+    inet_pton(AF_INET, addr.c_str(), &inaddr->s_addr);
+
+    return 0;
 }
 
 EXPORT(int, sceNetCtlAdhocGetPeerList, SceSize *peerInfoNum, SceNetCtlAdhocPeerInfo *peerInfo) {
@@ -269,7 +274,7 @@ EXPORT(int, sceNetCtlCheckCallback) {
 
     for (auto &callback : emuenv.netctl.adhocCallbacks) {
         if (callback.pc != 0) {
-            thread->run_callback(callback.pc, { SCE_NET_CTL_EVENT_TYPE_DISCONNECTED, callback.arg });
+            thread->run_callback(callback.pc, { SCE_NET_CTL_EVENT_TYPE_IPOBTAINED, callback.arg });
         }
     }
 
@@ -330,23 +335,9 @@ EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
         return RET_ERROR(SCE_NET_CTL_ERROR_INVALID_ADDR);
     }
 
+    const auto addr = net_utils::get_selected_assigned_addr(emuenv.cfg.adhoc_addr);
+
     switch (code) {
-    case SCE_NETCTL_INFO_GET_IP_ADDRESS: {
-        strcpy(info->ip_address, "127.0.0.1"); // placeholder in case gethostbyname can't find another ip
-        char devname[80];
-        gethostname(devname, 80);
-        struct hostent *resolved = gethostbyname(devname);
-        for (int i = 0; resolved->h_addr_list[i] != nullptr; ++i) {
-            struct in_addr addrIn;
-            memcpy(&addrIn, resolved->h_addr_list[i], sizeof(uint32_t));
-            char *addr = inet_ntoa(addrIn);
-            if (strcmp(addr, "127.0.0.1") != 0) {
-                strcpy(info->ip_address, addr);
-                break;
-            }
-        }
-        break;
-    }
     case SCE_NETCTL_INFO_GET_DEVICE:
         info->device = 0; /*SCE_NET_CTL_DEVICE_WIRELESS*/
         // STUBBED("SCE_NETCTL_INFO_GET_DEVICE return SCE_NET_CTL_DEVICE_WIRELESS");
@@ -354,6 +345,12 @@ EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
     case SCE_NETCTL_INFO_GET_RSSI_PERCENTAGE:
         info->rssi_percentage = 100;
         // STUBBED("code SCE_NETCTL_INFO_GET_RSSI_PERCENTAGE return 100%");
+        break;
+    case SCE_NETCTL_INFO_GET_IP_ADDRESS:
+        inet_pton(AF_INET, addr.addr.c_str(), &info->ip_address);
+        break;
+    case SCE_NETCTL_INFO_GET_NETMASK:
+        inet_pton(AF_INET, addr.netMask.c_str(), &info->netmask);
         break;
     default:
         switch (code) {
@@ -392,9 +389,6 @@ EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
             break;
         case SCE_NETCTL_INFO_GET_PPPOE_AUTH_NAME:
             STUBBED("code SCE_NETCTL_INFO_GET_PPPOE_AUTH_NAME not implemented");
-            break;
-        case SCE_NETCTL_INFO_GET_NETMASK:
-            STUBBED("code SCE_NETCTL_INFO_GET_NETMASK not implemented");
             break;
         case SCE_NETCTL_INFO_GET_DEFAULT_ROUTE:
             STUBBED("code SCE_NETCTL_INFO_GET_DEFAULT_ROUTE not implemented");

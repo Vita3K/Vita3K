@@ -123,29 +123,66 @@ static int translate_return_value(int retval) {
 static void convertSceSockaddrToPosix(const SceNetSockaddr *src, sockaddr *dst) {
     if (src == nullptr || dst == nullptr)
         return;
-    memset(dst, 0, sizeof(sockaddr));
+    memset(dst, 0, sizeof(sockaddr_in));
     const SceNetSockaddrIn *src_in = (const SceNetSockaddrIn *)src;
     sockaddr_in *dst_in = (sockaddr_in *)dst;
     dst_in->sin_family = src_in->sin_family;
-    dst_in->sin_port = src_in->sin_port;
+
+    // Convert ports from network to host order
+    uint16_t port = ntohs(src_in->sin_port);
+    uint16_t vport = ntohs(src_in->sin_vport);
+
+    // Combine the two ports in host order, then convert back to network order
+    dst_in->sin_port = htons(port + vport);
     memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
 }
 
 static void convertPosixSockaddrToSce(sockaddr *src, SceNetSockaddr *dst) {
     if (src == nullptr || dst == nullptr)
         return;
-    memset(dst, 0, sizeof(SceNetSockaddr));
     SceNetSockaddrIn *dst_in = (SceNetSockaddrIn *)dst;
+    memset(dst_in, 0, sizeof(*dst_in));
     sockaddr_in *src_in = (sockaddr_in *)src;
     dst_in->sin_family = static_cast<unsigned char>(src_in->sin_family);
-    dst_in->sin_port = src_in->sin_port;
-    memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
+
+    // Attempt to recover original port and virtual port if port was previously combined
+    const uint16_t port = ntohs(src_in->sin_port);
+    if (port > SCE_NET_ADHOC_PORT) {
+        const uint16_t vport = port - SCE_NET_ADHOC_PORT;
+        dst_in->sin_port = htons(SCE_NET_ADHOC_PORT);
+        dst_in->sin_vport = htons(vport);
+    } else {
+        dst_in->sin_port = htons(port);
+        dst_in->sin_vport = 0;
+    }
+    memcpy(&dst_in->sin_addr, &src_in->sin_addr, sizeof(in_addr));
+}
+
+static bool abort_pending(bool &is_aborded) {
+    if (is_aborded) {
+        is_aborded = false; // Reset the flag for the next operation
+        return true;
+    }
+
+    return false;
+}
+
+static bool should_abort(int abort_flags, int flags) {
+    return (abort_flags & flags) != 0;
 }
 
 int PosixSocket::connect(const SceNetSockaddr *addr, unsigned int namelen) {
-    sockaddr addr2;
+    if (should_abort(abort_flags, SCE_NET_SOCKET_ABORT_FLAG_SND_PRESERVATION))
+        return SCE_NET_ERROR_EINTR;
+
+    sockaddr addr2{};
     convertSceSockaddrToPosix(addr, &addr2);
-    return translate_return_value(::connect(sock, &addr2, sizeof(sockaddr_in)));
+    const auto res = ::connect(sock, &addr2, sizeof(sockaddr_in));
+
+    if (abort_pending(is_aborted))
+        return SCE_NET_ERROR_EINTR;
+
+    return translate_return_value(res);
 }
 
 int PosixSocket::bind(const SceNetSockaddr *addr, unsigned int addrlen) {
@@ -172,6 +209,26 @@ int PosixSocket::get_socket_address(SceNetSockaddr *name, unsigned int *namelen)
     return res;
 }
 
+int PosixSocket::abort(int flags) {
+    abort_flags |= flags;
+    is_aborted = true;
+
+#ifdef _WIN32
+    auto res = CancelIoEx((HANDLE)sock, nullptr);
+    if (res == 0) {
+        DWORD err = WSAGetLastError();
+        if (err == ERROR_NOT_FOUND)
+            return SCE_NET_ERROR_ENOTBLK;
+        else
+            return SCE_NET_ERROR_EINTERNAL;
+    }
+
+    return 0;
+#else
+    return translate_return_value(shutdown(sock, SHUT_RDWR));
+#endif
+}
+
 int PosixSocket::close() {
 #ifdef _WIN32
     auto out = closesocket(sock);
@@ -181,9 +238,21 @@ int PosixSocket::close() {
     return translate_return_value(out);
 }
 
-SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen) {
-    sockaddr addr2;
+int PosixSocket::shutdown_socket(int how) {
+    return translate_return_value(shutdown(sock, how));
+}
+
+SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen, int &err) {
+    if (should_abort(abort_flags, SCE_NET_SOCKET_ABORT_FLAG_RCV_PRESERVATION)) {
+        err = SCE_NET_ERROR_EINTR;
+        return nullptr;
+    }
+    sockaddr addr2{};
     abs_socket new_socket = ::accept(sock, &addr2, (socklen_t *)addrlen);
+    if (abort_pending(is_aborted)) {
+        err = SCE_NET_ERROR_EINTR;
+        return nullptr;
+    }
 #ifdef _WIN32
     if (new_socket != INVALID_SOCKET) {
 #else
@@ -193,6 +262,7 @@ SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen) {
         *addrlen = sizeof(SceNetSockaddrIn);
         return std::make_shared<PosixSocket>(new_socket);
     }
+    err = translate_return_value(new_socket);
     return nullptr;
 }
 
@@ -343,25 +413,59 @@ int PosixSocket::get_socket_options(int level, int optname, void *optval, unsign
     return SCE_NET_ERROR_EINVAL;
 }
 
-int PosixSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
-    if (from != nullptr) {
-        sockaddr addr;
-        int res = recvfrom(sock, (char *)buf, len, flags, &addr, (socklen_t *)fromlen);
-        convertPosixSockaddrToSce(&addr, from);
-        *fromlen = sizeof(SceNetSockaddrIn);
+static int convertSceFlagsToPosix(int sce_flags) {
+    int posix_flags = 0;
 
-        return translate_return_value(res);
+    if (sce_flags & SCE_NET_MSG_PEEK)
+        posix_flags |= MSG_PEEK;
+#ifndef _WIN32
+    if (sce_flags & SCE_NET_MSG_DONTWAIT)
+        posix_flags |= MSG_DONTWAIT;
+#endif
+    if (sce_flags & SCE_NET_MSG_WAITALL)
+        posix_flags |= MSG_WAITALL;
+
+    return posix_flags;
+}
+
+int PosixSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
+    if (should_abort(abort_flags, SCE_NET_SOCKET_ABORT_FLAG_RCV_PRESERVATION))
+        return SCE_NET_ERROR_EINTR;
+
+    int res = 0;
+    const auto posix_flags = convertSceFlagsToPosix(flags);
+    if (from == nullptr) {
+        res = recv(sock, (char *)buf, len, posix_flags);
     } else {
-        return translate_return_value(recv(sock, (char *)buf, len, flags));
+        sockaddr addr{};
+        socklen_t addrlen = sizeof(addr);
+        res = recvfrom(sock, (char *)buf, len, posix_flags, &addr, (fromlen && *fromlen <= sizeof(addr) ? (socklen_t *)fromlen : &addrlen));
+        if (res > 0)
+            convertPosixSockaddrToSce(&addr, from);
     }
+
+    if (abort_pending(is_aborted))
+        return SCE_NET_ERROR_EINTR;
+
+    return translate_return_value(res);
 }
 
 int PosixSocket::send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {
-    if (to != nullptr) {
-        sockaddr addr;
-        convertSceSockaddrToPosix(to, &addr);
-        return translate_return_value(sendto(sock, (const char *)msg, len, flags, &addr, sizeof(sockaddr_in)));
+    if (should_abort(abort_flags, SCE_NET_SOCKET_ABORT_FLAG_SND_PRESERVATION))
+        return SCE_NET_ERROR_EINTR;
+
+    const auto posix_flags = convertSceFlagsToPosix(flags);
+    int res = 0;
+    if (to == nullptr) {
+        res = send(sock, (const char *)msg, len, posix_flags);
     } else {
-        return translate_return_value(send(sock, (const char *)msg, len, flags));
+        sockaddr addr{};
+        convertSceSockaddrToPosix(to, &addr);
+        res = sendto(sock, (const char *)msg, len, posix_flags, &addr, sizeof(sockaddr_in));
     }
+
+    if (abort_pending(is_aborted))
+        return SCE_NET_ERROR_EINTR;
+
+    return translate_return_value(res);
 }
