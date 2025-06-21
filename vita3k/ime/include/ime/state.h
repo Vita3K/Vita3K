@@ -27,7 +27,7 @@ struct Ime {
     SceImeParam param;
     std::string enter_label;
     std::u16string str;
-    uint32_t caps_level = 0;
+    int32_t caps_level = 0;
     uint32_t caretIndex = 0;
     uint32_t event_id = SCE_IME_EVENT_OPEN;
 };
