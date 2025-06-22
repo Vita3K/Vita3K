@@ -336,7 +336,7 @@
 		<miscellaneous>杂项</miscellaneous>
 		<toggle_texture_replacement>切换纹理替换</toggle_texture_replacement>
 		<take_screenshot>截图</take_screenshot>
-		<error_duplicate_key>该键已被使用并绑定其他键或被预留。</error_duplicate_key>
+		<error_duplicate_key>该按键已被使用并绑定其他键或被预留。</error_duplicate_key>
 	</controls>
 
 	<dialog>
@@ -448,7 +448,7 @@
 			<successed_install_firmware>固件已成功安装。</successed_install_firmware>
 			<firmware_version>固件版本：</firmware_version>
 			<no_font_exist>不存在固件字体包，请下载并安装。</no_font_exist>
-			<firmware_font_package_description>一些应用程序需要固件字体包，也需要亚洲区域字体支持。（强烈建议安裝）</firmware_font_package_description>
+			<firmware_font_package_description>一些应用程序需要固件字体包，也需要亚洲区域字体支持。（强烈建议安装）</firmware_font_package_description>
 			<delete_firmware>删除固件安装文件？</delete_firmware>
 		</firmware_install>
 		<pkg_install>
@@ -495,7 +495,7 @@
 			<firmware_font_not_detected>未检测到固件字体，建议在“Live Area”中安装字体固件</firmware_font_not_detected>
 			<live_area_help>Live Area帮助</live_area_help>
 			<browse_app>浏览应用程序列表</browse_app>
-			<browse_app_control>方向键、左摇杆、滚轮上/下或使用滑动条</browse_app_control>
+			<browse_app_control>方向键、左摇杆、滚轮上/下或使用滚动条</browse_app_control>
 			<start_app>开启应用</start_app>
 			<start_app_control>点击开始或按交叉键</start_app_control>
 			<show_hide>应用程序运行时显示/隐藏</show_hide>
@@ -504,7 +504,7 @@
 			<exit_livearea_control>点击Esc或按圆形键</exit_livearea_control>
 			<manual_help>说明书帮助</manual_help>
 			<browse_page>浏览页面</browse_page>
-			<browse_page_control>方向键、左摇杆、滚轮上/下或使用滑动条、点击&lt;/&gt;</browse_page_control>
+			<browse_page_control>方向键、左摇杆、滚轮上/下或使用滚动条、点击&lt;/&gt;</browse_page_control>
 			<hide_show>隐藏/显示按钮</hide_show>
 			<hide_show_control>点击左键或按三角键</hide_show_control>
 			<exit_manual>退出说明书</exit_manual>
@@ -617,7 +617,7 @@
 			<backend_renderer>后端渲染器</backend_renderer>
 			<select_backend_renderer>选择您喜欢的后端渲染器。</select_backend_renderer>
 			<gpu>GPU（重启后应用）</gpu>
-			<select_gpu>选择在Vita3K应运行的GPU。</select_gpu>
+			<select_gpu>选择Vita3K应使用的GPU。</select_gpu>
 			<standard>标准</standard>
 			<high>高</high>
 			<renderer_accuracy>渲染精度</renderer_accuracy>
@@ -627,7 +627,7 @@
 			<disable_surface_sync>禁用表面同步</disable_surface_sync>
 			<surface_sync_description>提升速度，勾选此项禁用处理器与显卡之间的表面同步。
 某些游戏需要表面同步，
-如果禁用（特别是在提升时），则可大幅提升性能。</surface_sync_description>
+如果禁用（特别是在放大时），则可大幅提升性能。</surface_sync_description>
 			<async_pipeline_compilation>异步管线编译</async_pipeline_compilation>
 			<async_pipeline_compilation_description>允许在多个并发线程上同时编译管线。
 这可以减少管线编译卡顿，但代价是会出现短暂的图形故障。</async_pipeline_compilation_description>
@@ -636,9 +636,9 @@
 			<bicubic>双三次</bicubic>
 			<screen_filter>屏幕过滤</screen_filter>
 			<screen_filter_description>设置要应用的后处理过滤器。</screen_filter_description>
-			<internal_resolution_upscaling>内部分辨率提升</internal_resolution_upscaling>
-			<internal_resolution_upscaling_description>为Vita3K启用提升效果。
-实验性：不保证游戏能超过1倍的正确渲染。</internal_resolution_upscaling_description>
+			<internal_resolution_upscaling>内部分辨率放大</internal_resolution_upscaling>
+			<internal_resolution_upscaling_description>为Vita3K启用放大效果。
+实验性：不保证游戏能在超过1倍时正确渲染。</internal_resolution_upscaling_description>
 			<anisotropic_filtering>各向异性过滤</anisotropic_filtering>
 			<anisotropic_filtering_description>各向异性过滤是一种提高表面图像质量的技术，
 它们相对于观察者是倾斜的，
@@ -689,12 +689,12 @@
 			<info>信息</info>
 			<warning>警告</warning>
 			<error>错误</error>
-			<critical>关键</critical>
+			<critical>严重</critical>
 			<off>关闭</off>
 			<log_level>日志级别</log_level>
 			<select_log_level>选择您喜欢的日志级别。</select_log_level>
-			<archive_log>档案日志</archive_log>
-			<archive_log_description>勾选此项启用档案日志。</archive_log_description>
+			<archive_log>归档日志</archive_log>
+			<archive_log_description>勾选此项启用归档日志。</archive_log_description>
 			<discord_rich_presence>启用Discord Rich Presence以展示您在Discord上正在运行的应用程序。</discord_rich_presence>
 			<texture_cache>纹理缓存</texture_cache>
 			<texture_cache_description>取消勾选此项禁用纹理缓存。</texture_cache_description>
@@ -780,10 +780,10 @@
 			<background_alpha>背景透明度</background_alpha>
 			<select_background_alpha>选择您喜欢的背景透明度。
 最小值不透明，最大值透明。</select_background_alpha>
-			<delay_background>延迟背景</delay_background>
-			<select_delay_background>选择更改背景前的延迟（以每秒为单位）。</select_delay_background>
-			<delay_start>延迟开始画面</delay_start>
-			<select_delay_start>选择返回开始画面前的延迟（以每秒为单位）。</select_delay_start>
+			<delay_background>背景延迟</delay_background>
+			<select_delay_background>选择更改背景前的延迟（以秒为单位）。</select_delay_background>
+			<delay_start>开始画面延迟</delay_start>
+			<select_delay_start>选择返回开始画面前的延迟（以秒为单位）。</select_delay_start>
 		</gui>
 		<network name="网络">
 			<psn_signed_in>已登入PSN</psn_signed_in>
@@ -810,8 +810,8 @@
 			<log_exports_description>记录模块导出符号。</log_exports_description>
 			<log_active_shaders>着色器记录</log_active_shaders>
 			<log_active_shaders_description>记录在每次绘制调用中使用的着色器。</log_active_shaders_description>
-			<log_uniforms>统一记录</log_uniforms>
-			<log_uniforms_description>记录着色器统一名称和值。</log_uniforms_description>
+			<log_uniforms>统一变量记录</log_uniforms>
+			<log_uniforms_description>记录着色器统一变量的名称和值。</log_uniforms_description>
 			<color_surface_debug>保存颜色表面</color_surface_debug>
 			<color_surface_debug_description>保存颜色表面到文件。</color_surface_debug_description>
 			<dump_elfs>ELF提取</dump_elfs>
