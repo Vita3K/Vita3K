@@ -100,13 +100,13 @@ struct IconAsyncLoader {
 };
 
 struct AppsSelector {
-    std::vector<App> sys_apps;
-    std::vector<App> user_apps;
+    std::vector<App> emu_apps;
+    std::map<std::string, std::vector<App>> vita_apps;
     uint32_t apps_cache_lang;
     AppInfo app_info;
     std::optional<IconAsyncLoader> icon_async_loader;
-    std::map<std::string, ImGui_Texture> sys_apps_icon;
-    std::map<std::string, ImGui_Texture> user_apps_icon;
+    std::map<std::string, ImGui_Texture> emu_apps_icon;
+    std::map<std::string, ImGui_Texture> vita_apps_icon;
     bool is_app_list_sorted{ false };
     std::map<SortType, SortState> app_list_sorted;
 };
@@ -117,7 +117,6 @@ struct VitaAreaState {
     bool content_manager = false;
     bool home_screen = false;
     bool information_bar = false;
-    bool live_area_screen = false;
     bool manual = false;
     bool settings = false;
     bool start_screen = false;
@@ -209,8 +208,12 @@ enum NoticeIcon {
     NEW
 };
 
+enum PageIndicator {
+    BASE,
+    CUR,
+};
+
 enum ThemePreviewType {
-    PACKAGE,
     HOME,
     LOCK,
 };
@@ -243,6 +246,39 @@ struct InfoMessage {
     std::string title;
     spdlog::level::level_enum level;
     std::string msg;
+};
+
+enum class GateAnimationState {
+    None,
+    EnterApp,
+    PreRunApp,
+    ReturnApp
+};
+
+struct GateAnimation {
+    GateAnimationState state = GateAnimationState::None;
+    const float duration = 0.32f;
+    float progress = 0.f;
+    std::chrono::steady_clock::time_point start_time;
+
+    void start(GateAnimationState anim_state) {
+        state = anim_state;
+        progress = 0.f;
+        start_time = std::chrono::steady_clock::now();
+    }
+
+    void update() {
+        if (state == GateAnimationState::None)
+            return;
+        float elapsed = std::chrono::duration<float>(std::chrono::steady_clock::now() - start_time).count();
+        progress = std::min(elapsed / duration, 1.0f);
+        if (progress >= 1.0f) {
+            if (state == GateAnimationState::EnterApp)
+                state = GateAnimationState::PreRunApp; // Transition to next stage
+            else
+                state = GateAnimationState::None; // Reset animation after completion
+        }
+    }
 };
 
 // 2.f is enough for the current font size.
@@ -299,11 +335,16 @@ struct GuiState {
 
     std::map<std::string, std::vector<TimeApp>> time_apps;
 
+    float bg_transition_alpha = 1.0f;
     std::uint64_t current_theme_bg = 0;
-    std::map<std::string, std::map<ThemePreviewType, ImGui_Texture>> themes_preview;
+    std::map<std::string, ImGui_Texture> themes_list;
+    std::vector<std::string> themes_package_async;
+
+    std::map<ThemePreviewType, ImGui_Texture> theme_preview;
     std::vector<ImGui_Texture> theme_backgrounds;
     std::vector<ImVec4> theme_backgrounds_font_color;
     std::map<NoticeIcon, ImGui_Texture> theme_information_bar_notice;
+    std::map<PageIndicator, ImGui_Texture> theme_page_indicator;
 
     std::map<time_t, ImGui_Texture> notice_info_icon;
 
@@ -327,6 +368,8 @@ struct GuiState {
 
     InfoBarColor information_bar_color;
 
+    GateAnimation gate_animation{};
+    ImGui_Texture live_area_last_app_frame;
     std::map<std::string, std::map<std::string, ImGui_Texture>> live_area_contents;
     std::map<std::string, std::map<std::string, std::map<std::string, std::vector<ImGui_Texture>>>> live_items;
 

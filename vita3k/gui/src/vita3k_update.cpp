@@ -180,7 +180,6 @@ bool init_vita3k_update(GuiState &gui) {
     if (has_update || gui.help_menu.vita3k_update) {
         vita_area_state = gui.vita_area;
         gui.vita_area.home_screen = false;
-        gui.vita_area.live_area_screen = false;
         gui.vita_area.start_screen = false;
         gui.vita_area.information_bar = true;
     }

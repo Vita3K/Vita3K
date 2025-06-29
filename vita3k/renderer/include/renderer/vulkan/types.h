@@ -115,11 +115,11 @@ struct MappedMemoryBuffer {
 };
 
 struct MappedMemory {
-    Address address;
+    Address address = 0;
     std::variant<vk::DeviceMemory, vkutil::Buffer> buffer_impl;
     vk::Buffer buffer;
-    uint32_t size;
-    uint64_t buffer_address;
+    uint32_t size = 0;
+    uint64_t buffer_address = 0;
 };
 
 struct ColorSurfaceCacheInfo;

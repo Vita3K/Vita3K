@@ -18,10 +18,17 @@
 #pragma once
 
 #include <mem/ptr.h>
+#include <util/types.h>
+
+#define SCE_NET_ADHOC_PORT 3658
+
+#define SCE_NET_AF_INET 2
 
 // Define our own htonll and ntohll because its not available in some systems/platforms
 #define HTONLL(x) ((((uint64_t)htonl((x)&0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32)))
 #define NTOHLL(x) ((((uint64_t)ntohl((x)&0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32)))
+
+typedef SceUInt32 SceNetSocklen_t;
 
 enum SceNetProtocol : uint32_t {
     SCE_NET_IPPROTO_IP = 0,
@@ -30,6 +37,20 @@ enum SceNetProtocol : uint32_t {
     SCE_NET_IPPROTO_TCP = 6,
     SCE_NET_IPPROTO_UDP = 17,
     SCE_NET_SOL_SOCKET = 0xFFFF
+};
+
+enum SceNetMsgFlag : uint32_t {
+    SCE_NET_MSG_PEEK = 0x00000002,
+    SCE_NET_MSG_WAITALL = 0x00000040,
+    SCE_NET_MSG_DONTWAIT = 0x00000080,
+    SCE_NET_MSG_USECRYPTO = 0x00000400,
+    SCE_NET_MSG_USESIGNATURE = 0x00000800,
+    SCE_NET_MSG_PEEKLEN = (0x00001000 | SCE_NET_MSG_PEEK)
+};
+
+enum SceNetSocketAbortFlag : uint32_t {
+    SCE_NET_SOCKET_ABORT_FLAG_RCV_PRESERVATION = 0x00000001,
+    SCE_NET_SOCKET_ABORT_FLAG_SND_PRESERVATION = 0x00000002
 };
 
 enum SceNetSocketType : uint32_t {
@@ -310,6 +331,21 @@ enum SceNetEpollEventType {
     SCE_NET_EPOLLERR = 8
 };
 
+struct SceNetIovec {
+    void *iov_base;
+    SceSize iov_len;
+};
+
+struct SceNetMsghdr {
+    void *msg_name;
+    SceNetSocklen_t msg_namelen;
+    SceNetIovec *msg_iov;
+    int msg_iovlen;
+    void *msg_control;
+    SceNetSocklen_t msg_controllen;
+    int msg_flags;
+};
+
 struct SceNetEtherAddr {
     unsigned char data[6];
 };
@@ -335,12 +371,14 @@ struct SceNetSockaddrIn {
     unsigned short int sin_vport;
     char sin_zero[6];
 };
+static_assert(sizeof(SceNetSockaddrIn) == 16, "SceNetSockaddrIn has incorrect size");
 
 struct SceNetSockaddr {
     unsigned char sa_len;
     unsigned char sa_family;
     char sa_data[14];
 };
+static_assert(sizeof(SceNetSockaddr) == 16, "SceNetSockaddr has incorrect size");
 
 struct SceNetInitParam {
     Ptr<void> memory;
@@ -363,4 +401,11 @@ enum SceNetCtlEventType {
     SCE_NET_CTL_EVENT_TYPE_DISCONNECTED = 1,
     SCE_NET_CTL_EVENT_TYPE_DISCONNECT_REQ_FINISHED = 2,
     SCE_NET_CTL_EVENT_TYPE_IPOBTAINED = 3,
+};
+
+enum SceNetCtlState {
+    SCE_NETCTL_STATE_DISCONNECTED,
+    SCE_NETCTL_STATE_CONNECTING,
+    SCE_NETCTL_STATE_FINALIZING,
+    SCE_NETCTL_STATE_CONNECTED
 };

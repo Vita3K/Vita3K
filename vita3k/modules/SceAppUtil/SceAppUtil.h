@@ -17,34 +17,6 @@
 
 #pragma once
 
-#include <enum.h>
+#include <module/module.h>
 
-BETTER_ENUM(VitaIoDevice, int,
-    addcont0 = 0,
-    app0,
-    cache0,
-    host0,
-    grw0,
-    imc0,
-    music0,
-    os0,
-    pd0,
-    photo0,
-    sa0,
-    savedata0,
-    savedata1,
-    sd0,
-    tm0,
-    tty0,
-    tty1,
-    tty2,
-    tty3,
-    ud0,
-    uma0,
-    ur0,
-    ux0,
-    vd0,
-    video0,
-    vs0,
-    xmc0,
-    _INVALID = -1)
+DECL_EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf, SceSize bufSize);
