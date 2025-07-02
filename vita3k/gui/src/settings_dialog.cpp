@@ -38,6 +38,7 @@
 #include <string>
 #include <util/fs.h>
 #include <util/log.h>
+#include <util/net_utils.h>
 
 #include <SDL.h>
 
@@ -1093,6 +1094,39 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox(lang.network["psn_signed_in"].c_str(), &config.psn_signed_in);
         SetTooltipEx(lang.network["psn_signed_in_description"].c_str());
+
+        // Adhoc
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, "Adhoc");
+        ImGui::Spacing();
+
+        std::vector<std::string> addrsStrings;
+        std::vector<const char *> addrsSelect;
+        std::vector<const char *> nMaskSelect;
+        const auto addrs = net_utils::get_all_assigned_addrs();
+
+        for (const auto &addr : addrs) {
+            addrsStrings.emplace_back(fmt::format("{} ({})", addr.addr, addr.name).c_str());
+            addrsSelect.emplace_back(addrsStrings.back().c_str());
+            nMaskSelect.emplace_back(addr.netMask.c_str());
+        }
+
+        if (emuenv.cfg.adhoc_addr >= addrs.size()) {
+            emuenv.cfg.adhoc_addr = 0;
+            LOG_WARN("Invalid adhoc address index {}, resetting to 0", emuenv.cfg.adhoc_addr);
+            save_config(gui, emuenv);
+        }
+
+        ImGui::PushItemWidth(ImGui::CalcTextSize(addrsStrings[emuenv.cfg.adhoc_addr].c_str()).x + (30.f * SCALE.x));
+        ImGui::Combo("Network Address", &emuenv.cfg.adhoc_addr, addrsSelect.data(), static_cast<int>(addrsSelect.size()));
+        SetTooltipEx("Select which Address to use in adhoc.");
+
+        ImGui::BeginDisabled();
+        ImGui::Combo("Network Mask", &emuenv.cfg.adhoc_addr, nMaskSelect.data(), static_cast<int>(nMaskSelect.size()));
+        ImGui::EndDisabled();
+        ImGui::PopItemWidth();
 
         // HTTP
         ImGui::Spacing();
