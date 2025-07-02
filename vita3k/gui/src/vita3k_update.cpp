@@ -26,7 +26,7 @@
 #include <util/net_utils.h>
 #include <util/string_utils.h>
 
-#include <SDL.h>
+#include <SDL3/SDL_events.h>
 
 #ifdef _WIN32
 #include <combaseapi.h>
@@ -255,7 +255,7 @@ static void download_update(const fs::path &base_path) {
 
         if (net_utils::download_file(download_continuous_link, fs_utils::path_to_utf8(vita3k_latest_path), progress_callback)) {
             SDL_Event event;
-            event.type = SDL_QUIT;
+            event.type = SDL_EVENT_QUIT;
             SDL_PushEvent(&event);
 
 #ifdef _WIN32

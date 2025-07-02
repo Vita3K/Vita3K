@@ -32,7 +32,7 @@
 
 #include <pugixml.hpp>
 
-#include <SDL_power.h>
+#include <SDL3/SDL_power.h>
 #include <stb_image.h>
 
 namespace gui {

@@ -29,7 +29,6 @@ IMGUI_API void ImGui_ImplSdl_Shutdown(ImGui_State *state);
 IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state);
 IMGUI_API void ImGui_ImplSdl_RenderDrawData(ImGui_State *state);
 IMGUI_API bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event);
-IMGUI_API void ImGui_ImplSdl_GetDrawableSize(ImGui_State *state, int &width, int &height);
 
 IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(ImGui_State *state, void *data, int width, int height);
 IMGUI_API void ImGui_ImplSdl_DeleteTexture(ImGui_State *state, ImTextureID texture);

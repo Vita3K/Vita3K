@@ -19,9 +19,27 @@
 
 #include "../state.h"
 
+#include <SDL3/SDL_audio.h>
+
+typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
+
+struct SDLAudioOutPort : public AudioOutPort {
+    //   thread currently waiting for the audio to be processed
+    SceUID thread = -1;
+    int channels = 2;
+    AudioStreamPtr stream;
+    AudioAdapter &adapter;
+    SDLAudioOutPort(AudioStreamPtr stream, AudioAdapter &adapter)
+        : stream(std::move(stream))
+        , adapter(adapter) {}
+};
+
 class SDLAudioAdapter : public AudioAdapter {
+private:
     SDL_AudioDeviceID device_id = 0;
-    SDL_AudioSpec spec{};
+    int device_buffer_samples = 0;
+    SDL_AudioSpec dst_spec;
+    static void SDLCALL thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount);
 
 public:
     SDLAudioAdapter(AudioState &audio_state);
@@ -29,4 +47,8 @@ public:
 
     bool init() override;
     void switch_state(const bool pause) override;
+    AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample) override;
+    void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) override;
+    void set_volume(AudioOutPort &out_port, float volume) override;
+    int get_rest_sample(AudioOutPort &out_port) override;
 };
