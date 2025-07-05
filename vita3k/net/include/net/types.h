@@ -335,12 +335,14 @@ struct SceNetSockaddrIn {
     unsigned short int sin_vport;
     char sin_zero[6];
 };
+static_assert(sizeof(SceNetSockaddrIn) == 16, "SceNetSockaddrIn has incorrect size");
 
 struct SceNetSockaddr {
     unsigned char sa_len;
     unsigned char sa_family;
     char sa_data[14];
 };
+static_assert(sizeof(SceNetSockaddr) == 16, "SceNetSockaddr has incorrect size");
 
 struct SceNetInitParam {
     Ptr<void> memory;
