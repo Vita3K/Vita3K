@@ -547,7 +547,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::TextColored(GUI_COLOR_TEXT, "\n");
             }
             ImGui::EndChild();
-            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.4f);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * SCALE.y)));
         } else {
             // Delete Data
@@ -558,23 +558,23 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 const ImVec2 POS_MAX(POS_MIN.x + PUPOP_ICON_SIZE.x, POS_MIN.y + PUPOP_ICON_SIZE.y);
                 ImGui::GetWindowDrawList()->AddImageRounded(gui.app_selector.user_apps_icon[title_id], POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, PUPOP_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
             }
-            ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.6f);
             ImGui::SetCursorPosY(ICON_MARGIN + PUPOP_ICON_SIZE.y + (4.f * SCALE.y));
             TextColoredCentered(GUI_COLOR_TEXT, APP_INDEX->stitle.c_str());
-            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.4f);
             ImGui::SetCursorPosY((WINDOW_SIZE.y / 2) + 10);
             TextColoredCentered(GUI_COLOR_TEXT, context_dialog.c_str(), 54.f * SCALE.x);
             if (context_dialog == lang.deleting["app_delete"])
                 SetTooltipEx(lang.deleting["app_delete_description"].c_str());
-            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.4f);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
-            if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+            if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_circle))) {
                 context_dialog.clear();
             }
             ImGui::SameLine();
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * SCALE.x));
         }
-        if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
+        if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_cross))) {
             if (context_dialog == lang.deleting["app_delete"])
                 delete_app(gui, emuenv, app_path);
             if (context_dialog == lang.deleting["addcont_delete"])
@@ -596,9 +596,9 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##information", &gui.vita_area.app_information, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-        ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
+        ImGui::SetWindowFontScale(1.5f);
         ImGui::SetCursorPos(ImVec2(10.0f * SCALE.x, 10.0f * SCALE.y));
-        if (ImGui::Button("X", ImVec2(40.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+        if (ImGui::Button("X", ImVec2(40.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_circle))) {
             gui.vita_area.app_information = false;
             gui.vita_area.information_bar = true;
         }

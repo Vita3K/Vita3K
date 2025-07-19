@@ -59,6 +59,15 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
         return;
     draw_data->ScaleClipRects(io.DisplayFramebufferScale);
 
+    // Catch up with texture updates. Most of the times, the list will have 1 element with an OK status, aka nothing to do.
+    // (This almost always points to ImGui::GetPlatformIO().Textures[] but is part of ImDrawData to allow overriding or disabling texture updates).
+    if (draw_data->Textures != nullptr) {
+        for (ImTextureData *tex : *draw_data->Textures) {
+            if (tex->Status != ImTextureStatus_OK)
+                ImGui_ImplSdlGL3_UpdateTexture(state, tex);
+        }
+    }
+
     // Backup GL state
     GLint last_framebuffer;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &last_framebuffer);
@@ -159,7 +168,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
             if (pcmd->UserCallback) {
                 pcmd->UserCallback(cmd_list, pcmd);
             } else {
-                glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
+                glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->GetTexID());
                 glScissor((int)pcmd->ClipRect.x, (int)(fb_height - pcmd->ClipRect.w), (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y));
                 // fix the offset issues as per instructed in release notes of imgui v1.86
                 glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset + pcmd->IdxOffset);
@@ -201,29 +210,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
 }
 
-static void ImGui_ImplSdlGL3_CreateFontsTexture(ImGui_GLState &state) {
-    // Build texture atlas
-    ImGuiIO &io = ImGui::GetIO();
-    unsigned char *pixels;
-    int width, height;
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height); // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
-
-    // Upload texture to graphics system
-    GLint last_texture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-    glGenTextures(1, &state.font_texture);
-    glBindTexture(GL_TEXTURE_2D, state.font_texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-
-    // Store our identifier
-    io.Fonts->TexID = (ImTextureID)(intptr_t)state.font_texture;
-
-    // Restore state
-    glBindTexture(GL_TEXTURE_2D, last_texture);
-}
+// Note: Font texture creation is now handled by ImGui's dynamic texture system via UpdateTexture
 
 bool ImGui_ImplSdlGL3_CreateDeviceObjects(ImGui_GLState &state) {
     // Backup GL state
@@ -277,7 +264,7 @@ bool ImGui_ImplSdlGL3_CreateDeviceObjects(ImGui_GLState &state) {
     glGenBuffers(1, &state.vbo);
     glGenBuffers(1, &state.elements);
 
-    ImGui_ImplSdlGL3_CreateFontsTexture(state);
+    // Note: Font texture creation is now handled by ImGui's dynamic texture system
 
     // Restore modified GL state
     glBindTexture(GL_TEXTURE_2D, last_texture);
@@ -314,8 +301,17 @@ void ImGui_ImplSdlGL3_InvalidateDeviceObjects(ImGui_GLState &state) {
 
     if (state.font_texture) {
         glDeleteTextures(1, &state.font_texture);
-        ImGui::GetIO().Fonts->TexID = 0;
         state.font_texture = 0;
+    }
+
+    // Destroy all textures
+    for (ImTextureData *tex : ImGui::GetPlatformIO().Textures) {
+        if (tex->RefCount == 1 && tex->TexID != ImTextureID_Invalid) {
+            GLuint gl_tex_id = (GLuint)(intptr_t)tex->TexID;
+            glDeleteTextures(1, &gl_tex_id);
+            tex->SetTexID(ImTextureID_Invalid);
+            tex->SetStatus(ImTextureStatus_Destroyed);
+        }
     }
 }
 
@@ -331,12 +327,27 @@ IMGUI_API ImGui_GLState *ImGui_ImplSdlGL3_Init(renderer::State *renderer, SDL_Wi
     strcpy(state->glsl_version, glsl_version);
     strcat(state->glsl_version, "\n");
 
+    // Setup backend capabilities flags
+    ImGuiIO &io = ImGui::GetIO();
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures; // We can honor ImGuiPlatformIO::Textures[] requests during render.
+
+    // Query and store the max texture size
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &state->max_texture_size);
+
+    // Set texture max size in platform IO
+    ImGuiPlatformIO &platform_io = ImGui::GetPlatformIO();
+    platform_io.Renderer_TextureMaxWidth = platform_io.Renderer_TextureMaxHeight = state->max_texture_size;
+
     return state;
 }
 
 void ImGui_ImplSdlGL3_Shutdown(ImGui_GLState &state) {
     // Destroy OpenGL objects
     ImGui_ImplSdlGL3_InvalidateDeviceObjects(state);
+
+    // Clear backend flags
+    ImGuiIO &io = ImGui::GetIO();
+    io.BackendFlags &= ~ImGuiBackendFlags_RendererHasTextures;
 }
 
 IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(void *data, int width, int height) {
@@ -351,10 +362,79 @@ IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(void *data, int width, int 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    return reinterpret_cast<ImTextureID>(static_cast<uintptr_t>(texture));
+    return static_cast<ImTextureID>(texture);
 }
 
 IMGUI_API void ImGui_ImplSdlGL3_DeleteTexture(ImTextureID texture) {
-    auto texture_name = static_cast<GLuint>(reinterpret_cast<uintptr_t>(texture));
+    auto texture_name = static_cast<GLuint>(texture);
     glDeleteTextures(1, &texture_name);
+}
+
+static void ImGui_ImplSdlGL3_DestroyTexture(ImTextureData *tex) {
+    GLuint gl_tex_id = (GLuint)(intptr_t)tex->TexID;
+    glDeleteTextures(1, &gl_tex_id);
+
+    // Clear identifiers and mark as destroyed (in order to allow e.g. calling InvalidateDeviceObjects while running)
+    tex->SetTexID(ImTextureID_Invalid);
+    tex->SetStatus(ImTextureStatus_Destroyed);
+}
+
+IMGUI_API void ImGui_ImplSdlGL3_UpdateTexture(ImGui_GLState &state, ImTextureData *tex) {
+    if (tex->Status == ImTextureStatus_WantCreate) {
+        // Create and upload new texture to graphics system
+        IM_ASSERT(tex->TexID == 0 && tex->BackendUserData == nullptr);
+        IM_ASSERT(tex->Format == ImTextureFormat_RGBA32);
+        const void *pixels = tex->GetPixels();
+        GLuint gl_texture_id = 0;
+
+        // Upload texture to graphics system
+        // (Bilinear sampling is required by default. Set 'io.Fonts->Flags |= ImFontAtlasFlags_NoBakedLines' or 'style.AntiAliasedLinesUseTex = false' to allow point/nearest sampling)
+        GLint last_texture;
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+        glGenTextures(1, &gl_texture_id);
+        glBindTexture(GL_TEXTURE_2D, gl_texture_id);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+#ifdef GL_UNPACK_ROW_LENGTH // Not on WebGL/ES
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex->Width, tex->Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+        // Store identifiers
+        tex->SetTexID((ImTextureID)(intptr_t)gl_texture_id);
+        tex->SetStatus(ImTextureStatus_OK);
+
+        // Restore state
+        glBindTexture(GL_TEXTURE_2D, last_texture);
+    } else if (tex->Status == ImTextureStatus_WantUpdates) {
+        // Update selected blocks. We only ever write to textures regions which have never been used before!
+        // This backend choose to use tex->Updates[] but you can use tex->UpdateRect to upload a single region.
+        GLint last_texture;
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+
+        GLuint gl_tex_id = (GLuint)(intptr_t)tex->TexID;
+        glBindTexture(GL_TEXTURE_2D, gl_tex_id);
+#if 0 // GL_UNPACK_ROW_LENGTH // Not on WebGL/ES
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->Width);
+        for (ImTextureRect &r : tex->Updates)
+            glTexSubImage2D(GL_TEXTURE_2D, 0, r.x, r.y, r.w, r.h, GL_RGBA, GL_UNSIGNED_BYTE, tex->GetPixelsAt(r.x, r.y));
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#else
+        // GL ES doesn't have GL_UNPACK_ROW_LENGTH, so we need to (A) copy to a contiguous buffer or (B) upload line by line.
+        for (ImTextureRect &r : tex->Updates) {
+            const int src_pitch = r.w * tex->BytesPerPixel;
+            state.temp_buffer.resize(r.h * src_pitch);
+            char *out_p = state.temp_buffer.Data;
+            for (int y = 0; y < r.h; y++, out_p += src_pitch)
+                memcpy(out_p, tex->GetPixelsAt(r.x, r.y + y), src_pitch);
+            IM_ASSERT(out_p == state.temp_buffer.end());
+            glTexSubImage2D(GL_TEXTURE_2D, 0, r.x, r.y, r.w, r.h, GL_RGBA, GL_UNSIGNED_BYTE, state.temp_buffer.Data);
+        }
+#endif
+        tex->SetStatus(ImTextureStatus_OK);
+        glBindTexture(GL_TEXTURE_2D, last_texture); // Restore state
+    } else if (tex->Status == ImTextureStatus_WantDestroy && tex->UnusedFrames > 0)
+        ImGui_ImplSdlGL3_DestroyTexture(tex);
 }

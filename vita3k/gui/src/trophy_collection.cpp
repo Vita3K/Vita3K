@@ -456,7 +456,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     const auto hidden_trophy_str = gui.lang.common.main["hidden_trophy"].c_str();
 
     if (group_id_selected.empty()) {
-        ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+        ImGui::SetWindowFontScale(1.4f);
         if (!np_com_id_list.empty() && np_com_id_selected.empty()) {
             ImGui::SetCursorPos(ImVec2(VIEWPORT_POS.x + (10.f * SCALE.x), VIEWPORT_POS.y + (27.f * SCALE.y) - (ImGui::CalcTextSize(common["search"].c_str()).y / 2.f)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", common["search"].c_str());
@@ -474,7 +474,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
 
     // Trophy Collection
     if (np_com_id_list.empty()) {
-        ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
+        ImGui::SetWindowFontScale(1.6f);
         ImGui::SetCursorPosY(140.f * SCALE.y);
         ImGui::TextWrapped("%s", lang["no_trophies"].c_str());
     } else {
@@ -501,23 +501,23 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::Image(gui.trophy_np_com_id_list_icons[delete_np_com_id]["000"], SIZE_ICON_LIST);
                 }
                 const auto PADDING = (20.f * SCALE.x);
-                ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
+                ImGui::SetWindowFontScale(1.5f);
                 const auto CALC_TITLE = ImGui::CalcTextSize(np_com_id_info[delete_np_com_id].name["000"].c_str(), nullptr, false, POPUP_SIZE.x - SIZE_ICON_LIST.x - ICON_POS.x - PADDING).y / 2.f;
                 ImGui::SetCursorPos(ImVec2(ICON_POS.x + SIZE_ICON_LIST.x + PADDING, ICON_POS.y + (SIZE_ICON_LIST.y / 2.f) - CALC_TITLE));
                 ImGui::PushTextWrapPos(POPUP_SIZE.x - PADDING);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", np_com_id_info[delete_np_com_id].name["000"].c_str());
                 ImGui::PopTextWrapPos();
-                ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
+                ImGui::SetWindowFontScale(1.2f);
                 const auto delete_str = lang["trophy_deleted"].c_str();
                 ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - ImGui::CalcTextSize(delete_str, 0, false, POPUP_SIZE.x - (108.f * SCALE.x)).x / 2, (POPUP_SIZE.y / 2) + 10));
                 ImGui::PushTextWrapPos(POPUP_SIZE.x - (54.f * SCALE.x));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", delete_str);
                 ImGui::PopTextWrapPos();
                 ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCALE.y)));
-                if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle)))
+                if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_circle)))
                     delete_np_com_id.clear();
                 ImGui::SameLine(0, 20.f * SCALE.x);
-                if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
+                if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_cross))) {
                     fs::remove_all(TROPHY_PATH / "conf" / delete_np_com_id);
                     fs::remove_all(TROPHY_PATH / "data" / delete_np_com_id);
                     const auto np_com_id_index = std::find_if(np_com_id_list.begin(), np_com_id_list.end(), [&](const NPComIdSort &np_com) {
@@ -546,7 +546,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 if (gui.trophy_np_com_id_list_icons[np_com.id].contains("000"))
                     ImGui::Image(gui.trophy_np_com_id_list_icons[np_com.id]["000"], SIZE_ICON_LIST);
                 ImGui::NextColumn();
-                ImGui::SetWindowFontScale(1.3f * RES_SCALE.x);
+                ImGui::SetWindowFontScale(1.3f);
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.2f));
                 const auto Title_POS = ImGui::GetCursorPosY();
                 if (ImGui::Selectable(np_com.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y))) {
@@ -568,7 +568,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 }
 
                 ImGui::SetCursorPosY(Title_POS + (50.f * SCALE.y));
-                ImGui::SetWindowFontScale(1.f * RES_SCALE.x);
+                ImGui::SetWindowFontScale(1.f);
                 ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
                 ImGui::ProgressBar(np_com.progress / 100.f, ImVec2(200 * SCALE.x, 15.f * SCALE.y), "");
                 ImGui::PopStyleColor();
@@ -576,7 +576,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (6.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", std::to_string(np_com.progress).append("%").c_str());
                 ImGui::NextColumn();
-                ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+                ImGui::SetWindowFontScale(1.4f);
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
                 ImGui::Selectable(np_com_id_info[np_com.id].unlocked_type_count["global"]["general"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
                 ImGui::PopID();
@@ -590,7 +590,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 if (gui.trophy_np_com_id_list_icons[np_com_id_selected].contains("000"))
                     ImGui::Image(gui.trophy_np_com_id_list_icons[np_com_id_selected]["000"], SIZE_ICON_LIST);
                 ImGui::SameLine();
-                ImGui::SetWindowFontScale(1.3f * RES_SCALE.x);
+                ImGui::SetWindowFontScale(1.3f);
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
                 if (ImGui::Selectable(np_com_id_info[np_com_id_selected].name["000"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_ICON_LIST.y))) {
                     group_id_selected = "global";
@@ -620,7 +620,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::PopID();
                     ImGui::PopStyleVar();
                     ImGui::SetCursorPosY(Title_POS + (50.f * SCALE.y));
-                    ImGui::SetWindowFontScale(1.f * RES_SCALE.x);
+                    ImGui::SetWindowFontScale(1.f);
                     ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
                     ImGui::ProgressBar(np_com_id_info[np_com_id_selected].progress[group_id] / 100.f, ImVec2(200 * SCALE.x, 15.f * SCALE.y), "");
                     ImGui::PopStyleColor();
@@ -629,7 +629,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", std::to_string(np_com_id_info[np_com_id_selected].progress[group_id]).append("%").c_str());
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-                    ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+                    ImGui::SetWindowFontScale(1.4f);
                     ImGui::Selectable(np_com_id_info[np_com_id_selected].unlocked_type_count[group_id]["general"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
                     ImGui::SameLine(0.f, 25.f * SCALE.x);
                     ImGui::Selectable(">", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
@@ -638,7 +638,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 }
                 // Detail of Np Com ID
             } else if (detail_np_com_id) {
-                ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
+                ImGui::SetWindowFontScale(1.5f);
                 if (gui.trophy_np_com_id_list_icons[np_com_id_selected].contains(group_id_selected == "global" ? "000" : group_id_selected))
                     ImGui::Image(gui.trophy_np_com_id_list_icons[np_com_id_selected][group_id_selected == "global" ? "000" : group_id_selected], SIZE_ICON_LIST);
                 const auto CALC_NAME = ImGui::CalcTextSize(np_com_id_info[np_com_id_selected].name[group_id_selected == "global" ? "000" : group_id_selected].c_str(), nullptr, false, SIZE_INFO.x - SIZE_ICON_LIST.x - 48.f).y / 2.f;
@@ -679,7 +679,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 if (gui.trophy_np_com_id_list_icons[np_com_id_selected].contains(group_id_selected))
                     ImGui::Image(gui.trophy_np_com_id_list_icons[np_com_id_selected][group_id_selected], SIZE_ICON_LIST);
                 ImGui::SameLine();
-                ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
+                ImGui::SetWindowFontScale(1.6f);
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
                 if (ImGui::Selectable(np_com_id_info[np_com_id_selected].name[group_id_selected].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_ICON_LIST.y)))
                     detail_np_com_id = true;
@@ -690,7 +690,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SetColumnWidth(2, 40.f * SCALE.x);
                 for (const auto &trophy : trophy_list) {
                     ImGui::NextColumn();
-                    ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
+                    ImGui::SetWindowFontScale(1.2f);
                     if (trophy_info[trophy.id].earned)
                         ImGui::Image(gui.trophy_list[trophy.id], SIZE_TROPHY_LIST);
                     else {
@@ -715,7 +715,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::PopStyleVar();
                     if (!hidden_trophy || show_hidden_trophy) {
                         ImGui::SetCursorPosY(name_pos + (40.f * SCALE.y));
-                        ImGui::SetWindowFontScale(1.0f * RES_SCALE.x);
+                        ImGui::SetWindowFontScale(1.0f);
                         ImGui::Text("%s", trophy_info[trophy.id].detail.c_str());
                     }
                     ImGui::NextColumn();
@@ -723,7 +723,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Columns(1);
             } else {
                 // Detail Trophy
-                ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
+                ImGui::SetWindowFontScale(1.5f);
                 if (trophy_info[trophy_id_selected].earned)
                     ImGui::Image(gui.trophy_list[trophy_id_selected], SIZE_TROPHY_LIST);
                 else {
@@ -765,11 +765,11 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::EndChild();
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
-    ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
+    ImGui::SetWindowFontScale(1.2f);
 
     // Back
     ImGui::SetCursorPos(ImVec2(8.f * SCALE.x, WINDOW_SIZE.y - (52.f * SCALE.y)));
-    if (ImGui::Button("<<", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+    if (ImGui::Button("<<", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_circle))) {
         if (!np_com_id_selected.empty()) {
             if (detail_np_com_id) {
                 detail_np_com_id = false;
@@ -799,7 +799,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     // Sort
     if (trophy_id_selected.empty() && !detail_np_com_id && (np_com_id_selected.empty() || !group_id_selected.empty())) {
         ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (70.f * SCALE.x), WINDOW_SIZE.y - (52.f * SCALE.y)));
-        if (ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_triangle)))
+        if (ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_triangle)))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["sort"].c_str());

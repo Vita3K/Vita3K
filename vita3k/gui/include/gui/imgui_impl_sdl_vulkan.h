@@ -86,6 +86,10 @@ struct ImGui_VulkanState : public ImGui_State {
 
     // Render buffers
     ImGui_ImplVulkanH_WindowRenderBuffers MainWindowRenderBuffers;
+
+    // Texture management
+    vk::CommandPool TexCommandPool{};
+    vk::CommandBuffer TexCommandBuffer{};
 };
 
 IMGUI_API ImGui_VulkanState *ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *window);
@@ -95,6 +99,9 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(ImGui_VulkanState &state);
 // if is_alpha is set to true, the texture only has one alpha component, the other channels map to 1
 IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(ImGui_VulkanState &state, void *pixels, int width, int height, bool is_alpha = false);
 IMGUI_API void ImGui_ImplSdlVulkan_DeleteTexture(ImGui_VulkanState &state, ImTextureID texture);
+
+// (Advanced) Use e.g. if you need to precisely control the timing of texture updates (e.g. for staged rendering), by setting ImDrawData::Textures = NULL to handle this manually.
+IMGUI_API void ImGui_ImplSdlVulkan_UpdateTexture(ImGui_VulkanState &state, ImTextureData *tex);
 
 // Use if you want to reset your rendering device without losing ImGui state.
 IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(ImGui_VulkanState &state);

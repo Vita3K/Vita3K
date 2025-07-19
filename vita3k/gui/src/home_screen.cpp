@@ -243,7 +243,7 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto ICON_SIZE = ImVec2(64.f * SCALE.x, 64.f * SCALE.y);
 
-    ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+    ImGui::SetWindowFontScale(1.4f);
     ImGui::SetCursorPos(ImVec2(50.f * SCALE.x, 108.f * SCALE.y));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.lang.game_data["app_close"].c_str());
     if (gui.app_selector.user_apps_icon.contains(emuenv.io.app_path)) {
@@ -594,7 +594,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     auto &lang = gui.lang.home_screen;
 
-    ImGui::SetWindowFontScale(0.9f * VIEWPORT_RES_SCALE.x);
+    ImGui::SetWindowFontScale(0.9f);
 
     // Sort Apps list when is not sorted
     if (!gui.app_selector.is_app_list_sorted)
@@ -675,7 +675,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             app_compat_state = ALL_COMPAT_STATE;
         }
         if (ImGui::BeginMenu(lang["by_region"].c_str())) {
-            ImGui::SetWindowFontScale(1.1f * VIEWPORT_RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.1f);
             if (ImGui::MenuItem(lang["usa"].c_str(), nullptr, app_region == USA))
                 app_region = USA;
             if (ImGui::MenuItem(lang["europe"].c_str(), nullptr, app_region == EURO))
@@ -687,7 +687,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu(lang["by_type"].c_str())) {
-            ImGui::SetWindowFontScale(1.1f * VIEWPORT_RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.1f);
             if (ImGui::MenuItem(lang["commercial"].c_str(), nullptr, app_region == COMMERCIAL))
                 app_region = COMMERCIAL;
             if (ImGui::MenuItem(lang["homebrew"].c_str(), nullptr, app_region == HOMEBREW))
@@ -695,7 +695,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu(lang["by_compatibility_state"].c_str())) {
-            ImGui::SetWindowFontScale(1.1f * VIEWPORT_RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.1f);
             if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_compat_state == ALL_COMPAT_STATE))
                 app_compat_state = ALL_COMPAT_STATE;
             auto &lang_compat = gui.lang.compatibility.states;
@@ -964,7 +964,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImVec2(ARROW_UP_CENTER.x + (20.f * VIEWPORT_SCALE.x), ARROW_UP_CENTER.y + (16.f * VIEWPORT_SCALE.y)), ARROW_COLOR);
         ImGui::SetCursorPos(ImVec2(ARROW_SELECT_WIDTH_POS, ARROW_UP_HEIGHT_POS - SELECTABLE_SIZE.y));
         if (ImGui::Selectable("##upp", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)
-            || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_leftstick_up)))) {
+            || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_leftstick_up)))) {
             gui.is_nav_button = false;
             scroll_type = 1;
         }
@@ -979,7 +979,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImVec2(ARROW_CENTER.x + (16.f * VIEWPORT_SCALE.x), ARROW_CENTER.y),
             ImVec2(ARROW_CENTER.x - (16.f * VIEWPORT_SCALE.x), ARROW_CENTER.y + (20.f * VIEWPORT_SCALE.y)), ARROW_COLOR);
         ImGui::SetCursorPos(ImVec2(ARROW_SELECT_WIDTH_POS, ARROW_CENTER_HEIGHT_POS - SELECTABLE_SIZE.y));
-        if (!gui.vita_area.app_close && (ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE) || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyReleased(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_r1))))) {
+        if (!gui.vita_area.app_close && (ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE) || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyReleased(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_r1))))) {
             last_time["start"] = 0;
             ++gui.live_area_app_current_open;
             gui.vita_area.home_screen = false;
@@ -997,7 +997,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImVec2(ARROW_DOWN_CENTER.x - (20.f * VIEWPORT_SCALE.x), ARROW_DOWN_CENTER.y - (16.f * VIEWPORT_SCALE.y)), ARROW_COLOR);
         ImGui::SetCursorPos(ImVec2(ARROW_SELECT_WIDTH_POS, ARROW_DOWN_HEIGHT_POS - SELECTABLE_SIZE.y));
         if (ImGui::Selectable("##down", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)
-            || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_leftstick_down)))) {
+            || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_leftstick_down)))) {
             gui.is_nav_button = false;
             scroll_type = -1;
         }

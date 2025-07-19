@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gui/imgui_impl_sdl.h>
 #include <gui/state.h>
 
 #include <emuenv/state.h>

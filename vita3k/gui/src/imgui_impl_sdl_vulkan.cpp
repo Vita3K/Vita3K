@@ -292,6 +292,12 @@ IMGUI_API ImGui_VulkanState *ImGui_ImplSdlVulkan_Init(renderer::State *renderer,
     };
     state->ShaderModuleFrag = vk_state.device.createShaderModule(frag_info);
 
+    // Set backend capabilities
+    ImGuiIO &io = ImGui::GetIO();
+    io.BackendRendererName = "imgui_impl_sdl_vulkan";
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset; // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures; // We can honor ImGuiPlatformIO::Textures[] requests during render.
+
     return state;
 }
 
@@ -300,6 +306,11 @@ IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(ImGui_VulkanState &state) {
 
     get_renderer(state).device.destroy(state.ShaderModuleVert);
     get_renderer(state).device.destroy(state.ShaderModuleFrag);
+
+    // Remove backend capability flags
+    ImGuiIO &io = ImGui::GetIO();
+    io.BackendFlags &= ~ImGuiBackendFlags_RendererHasVtxOffset;
+    io.BackendFlags &= ~ImGuiBackendFlags_RendererHasTextures;
 }
 
 static void ImGui_ImplSdlVulkan_DeletePipeline(ImGui_VulkanState &state) {
@@ -455,6 +466,15 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(ImGui_VulkanState &state) {
     if (fb_width <= 0 || fb_height <= 0)
         return;
 
+    // Catch up with texture updates. Most of the times, the list will have 1 element with an OK status, aka nothing to do.
+    // (This almost always points to ImGui::GetPlatformIO().Textures[] but is part of ImDrawData to allow overriding or disabling texture updates).
+    if (draw_data->Textures != nullptr) {
+        for (ImTextureData *tex : *draw_data->Textures) {
+            if (tex->Status != ImTextureStatus_OK)
+                ImGui_ImplSdlVulkan_UpdateTexture(state, tex);
+        }
+    }
+
     // Allocate array to store enough vertex/index buffers
     ImGui_ImplVulkanH_WindowRenderBuffers *wrb = &state.MainWindowRenderBuffers;
     if (wrb->FrameRenderBuffers == NULL) {
@@ -547,8 +567,8 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(ImGui_VulkanState &state) {
 
                 // Bind DescriptorSet with font or user texture
                 TextureState *texture;
-                if (pcmd->TextureId)
-                    texture = static_cast<TextureState *>(pcmd->TextureId);
+                if (pcmd->GetTexID())
+                    texture = reinterpret_cast<TextureState *>(static_cast<intptr_t>(pcmd->GetTexID()));
                 else
                     texture = state.Font;
 
@@ -694,11 +714,11 @@ IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(ImGui_VulkanState &state
 
     texture->image_view = vk_state.device.createImageView(font_view_info);
 
-    return texture;
+    return reinterpret_cast<ImTextureID>(texture);
 }
 
 IMGUI_API void ImGui_ImplSdlVulkan_DeleteTexture(ImGui_VulkanState &state, ImTextureID texture) {
-    auto texture_ptr = static_cast<TextureState *>(texture);
+    auto texture_ptr = reinterpret_cast<TextureState *>(static_cast<intptr_t>(texture));
     auto &vk_state = get_renderer(state);
 
     vk_state.device.waitIdle();
@@ -708,11 +728,232 @@ IMGUI_API void ImGui_ImplSdlVulkan_DeleteTexture(ImGui_VulkanState &state, ImTex
     delete texture_ptr;
 }
 
+static void ImGui_ImplSdlVulkan_DestroyTexture(ImGui_VulkanState &state, ImTextureData *tex) {
+    ImTextureID tex_id = tex->GetTexID();
+    if (tex_id == ImTextureID_Invalid)
+        return;
+
+    ImGui_ImplSdlVulkan_DeleteTexture(state, tex_id);
+
+    // Clear identifiers and mark as destroyed (in order to allow e.g. calling InvalidateDeviceObjects while running)
+    tex->SetTexID(ImTextureID_Invalid);
+    tex->BackendUserData = nullptr;
+    tex->SetStatus(ImTextureStatus_Destroyed);
+}
+
+IMGUI_API void ImGui_ImplSdlVulkan_UpdateTexture(ImGui_VulkanState &state, ImTextureData *tex) {
+    if (tex->Status == ImTextureStatus_OK)
+        return;
+
+    auto &vk_state = get_renderer(state);
+
+    if (tex->Status == ImTextureStatus_WantCreate) {
+        // Create and upload new texture to graphics system
+        // IMGUI_DEBUG_LOG("UpdateTexture #%03d: WantCreate %dx%d\n", tex->UniqueID, tex->Width, tex->Height);
+        IM_ASSERT(tex->GetTexID() == ImTextureID_Invalid && tex->BackendUserData == nullptr);
+        IM_ASSERT(tex->Format == ImTextureFormat_RGBA32);
+        auto *backend_tex = new TextureState;
+
+        // Create the Image:
+        {
+            vk::ImageCreateInfo info{
+                .imageType = vk::ImageType::e2D,
+                .format = vk::Format::eR8G8B8A8Unorm,
+                .extent = vk::Extent3D{ static_cast<uint32_t>(tex->Width), static_cast<uint32_t>(tex->Height), 1 },
+                .mipLevels = 1,
+                .arrayLayers = 1,
+                .samples = vk::SampleCountFlagBits::e1,
+                .tiling = vk::ImageTiling::eOptimal,
+                .usage = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
+                .sharingMode = vk::SharingMode::eExclusive,
+                .initialLayout = vk::ImageLayout::eUndefined
+            };
+            std::tie(backend_tex->image, backend_tex->allocation) = vk_state.allocator.createImage(info, vkutil::vma_auto_alloc);
+        }
+
+        // Create the Image View:
+        {
+            vk::ImageViewCreateInfo info{
+                .image = backend_tex->image,
+                .viewType = vk::ImageViewType::e2D,
+                .format = vk::Format::eR8G8B8A8Unorm,
+                .subresourceRange = vkutil::color_subresource_range
+            };
+            backend_tex->image_view = vk_state.device.createImageView(info);
+        }
+
+        // Create the Descriptor Set
+        if (state.DescriptorIdx >= state.DescriptorSets.size()) {
+            LOG_ERROR("Vulkan: All descriptor sets are currently in use");
+            vk_state.device.destroy(backend_tex->image_view);
+            vk_state.allocator.destroyImage(backend_tex->image, backend_tex->allocation);
+            delete backend_tex;
+            return;
+        }
+        backend_tex->descriptor_set = state.DescriptorSets[state.DescriptorIdx];
+        state.DescriptorIdx++;
+
+        vk::DescriptorImageInfo desc_image{
+            .sampler = state.FontSampler,
+            .imageView = backend_tex->image_view,
+            .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal
+        };
+
+        vk::WriteDescriptorSet write_desc{
+            .dstSet = backend_tex->descriptor_set,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+            .pImageInfo = &desc_image
+        };
+
+        vk_state.device.updateDescriptorSets(write_desc, nullptr);
+
+        // Store identifiers
+        tex->SetTexID(reinterpret_cast<ImTextureID>(backend_tex));
+        tex->BackendUserData = backend_tex;
+    }
+
+    if (tex->Status == ImTextureStatus_WantCreate || tex->Status == ImTextureStatus_WantUpdates) {
+        auto *backend_tex = reinterpret_cast<TextureState *>(tex->BackendUserData);
+
+        // Update full texture or selected blocks. We only ever write to textures regions which have never been used before!
+        // This backend choose to use tex->UpdateRect but you can use tex->Updates[] to upload individual regions.
+        // We could use the smaller rect on _WantCreate but using the full rect allows us to clear the texture.
+        const int upload_x = (tex->Status == ImTextureStatus_WantCreate) ? 0 : tex->UpdateRect.x;
+        const int upload_y = (tex->Status == ImTextureStatus_WantCreate) ? 0 : tex->UpdateRect.y;
+        const int upload_w = (tex->Status == ImTextureStatus_WantCreate) ? tex->Width : tex->UpdateRect.w;
+        const int upload_h = (tex->Status == ImTextureStatus_WantCreate) ? tex->Height : tex->UpdateRect.h;
+
+        // Create the Upload Buffer:
+        vk::DeviceSize upload_pitch = static_cast<vk::DeviceSize>(upload_w) * tex->BytesPerPixel;
+        vk::DeviceSize upload_size = upload_h * upload_pitch;
+
+        vk::BufferCreateInfo buffer_info{
+            .size = upload_size,
+            .usage = vk::BufferUsageFlagBits::eTransferSrc,
+            .sharingMode = vk::SharingMode::eExclusive,
+        };
+
+        vma::AllocationInfo alloc_info;
+        auto [upload_buffer, upload_allocation] = vk_state.allocator.createBuffer(buffer_info, vkutil::vma_mapped_alloc, alloc_info);
+
+        // Upload to Buffer:
+        {
+            vk_state.allocator.invalidateAllocation(upload_allocation, 0, upload_size);
+            char *map = static_cast<char *>(alloc_info.pMappedData);
+            for (int y = 0; y < upload_h; y++)
+                memcpy(map + upload_pitch * y, tex->GetPixelsAt(upload_x, upload_y + y), (size_t)upload_pitch);
+            vk_state.allocator.flushAllocation(upload_allocation, 0, upload_size);
+        }
+
+        // Start command buffer
+        {
+            if (!state.TexCommandPool) {
+                vk::CommandPoolCreateInfo pool_info{
+                    .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+                    .queueFamilyIndex = vk_state.transfer_family_index
+                };
+                state.TexCommandPool = vk_state.device.createCommandPool(pool_info);
+
+                vk::CommandBufferAllocateInfo alloc_info{
+                    .commandPool = state.TexCommandPool,
+                    .level = vk::CommandBufferLevel::ePrimary,
+                    .commandBufferCount = 1
+                };
+                state.TexCommandBuffer = vk_state.device.allocateCommandBuffers(alloc_info)[0];
+            }
+
+            vk_state.device.resetCommandPool(state.TexCommandPool);
+            vk::CommandBufferBeginInfo begin_info{
+                .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+            };
+            state.TexCommandBuffer.begin(begin_info);
+        }
+
+        // Copy to Image:
+        {
+            vk::ImageMemoryBarrier copy_barrier{
+                .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+                .oldLayout = vk::ImageLayout::eUndefined,
+                .newLayout = vk::ImageLayout::eTransferDstOptimal,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = backend_tex->image,
+                .subresourceRange = vkutil::color_subresource_range
+            };
+            state.TexCommandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eHost, vk::PipelineStageFlagBits::eTransfer,
+                vk::DependencyFlags(),
+                0, nullptr,
+                0, nullptr,
+                1, &copy_barrier);
+
+            vk::BufferImageCopy region{
+                .bufferOffset = 0,
+                .bufferRowLength = 0,
+                .bufferImageHeight = 0,
+                .imageSubresource = {
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1 },
+                .imageOffset = vk::Offset3D{ upload_x, upload_y, 0 },
+                .imageExtent = vk::Extent3D{ static_cast<uint32_t>(upload_w), static_cast<uint32_t>(upload_h), 1 }
+            };
+            state.TexCommandBuffer.copyBufferToImage(
+                upload_buffer,
+                backend_tex->image,
+                vk::ImageLayout::eTransferDstOptimal,
+                1, &region);
+
+            vk::ImageMemoryBarrier use_barrier{
+                .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+                .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+                .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+                .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = backend_tex->image,
+                .subresourceRange = vkutil::color_subresource_range
+            };
+            state.TexCommandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader,
+                vk::DependencyFlags(),
+                0, nullptr,
+                0, nullptr,
+                1, &use_barrier);
+        }
+
+        // End command buffer
+        {
+            state.TexCommandBuffer.end();
+            vk::SubmitInfo end_info{
+                .commandBufferCount = 1,
+                .pCommandBuffers = &state.TexCommandBuffer
+            };
+            vk_state.transfer_queue.submit(end_info);
+        }
+
+        vk_state.transfer_queue.waitIdle(); // FIXME-OPT: Suboptimal!
+        vk_state.device.destroy(upload_buffer);
+        vk_state.allocator.freeMemory(upload_allocation);
+
+        tex->SetStatus(ImTextureStatus_OK);
+    }
+
+    if (tex->Status == ImTextureStatus_WantDestroy && tex->UnusedFrames >= (int)vk_state.screen_renderer.swapchain_size)
+        ImGui_ImplSdlVulkan_DestroyTexture(state, tex);
+}
+
 // Use if you want to reset your rendering device without losing ImGui state.
 IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(ImGui_VulkanState &state) {
     auto &vk_state = get_renderer(state);
 
-    ImGui_ImplSdlVulkan_DeleteTexture(state, state.Font);
+    // Destroy all textures
+    for (ImTextureData *tex : ImGui::GetPlatformIO().Textures)
+        if (tex->RefCount == 1)
+            ImGui_ImplSdlVulkan_DestroyTexture(state, tex);
+
     ImGui_ImplSdlVulkan_DeletePipeline(state);
 
     vk_state.device.destroy(state.PipelineLayout);
@@ -721,6 +962,12 @@ IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(ImGui_VulkanState &st
     vk_state.device.destroy(state.FontSampler);
 
     vk_state.device.destroy(state.DescriptorPool);
+
+    if (state.TexCommandPool) {
+        vk_state.device.destroy(state.TexCommandPool);
+        state.TexCommandPool = vk::CommandPool{};
+        state.TexCommandBuffer = vk::CommandBuffer{};
+    }
 }
 
 IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(ImGui_VulkanState &state) {
@@ -787,34 +1034,20 @@ IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(ImGui_VulkanState &state)
         state.DescriptorSets = vk_state.device.allocateDescriptorSets(descr_set_info);
     }
 
-    // Create ImGui Texture
-    {
-        ImGuiIO &io = ImGui::GetIO();
-
-        uint8_t *pixels;
-        int width, height;
-        io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
-
-        io.Fonts->TexID = ImGui_ImplSdlVulkan_CreateTexture(state, pixels, width, height, true);
-        state.Font = static_cast<TextureState *>(io.Fonts->TexID);
-
-        // reserve and remove the last descriptor set for the font
-        state.Font->descriptor_set = state.DescriptorSets[TextureState::nb_descriptor_sets];
-        state.DescriptorSets.resize(TextureState::nb_descriptor_sets);
-
-        // update this descriptor setonce and for all
-        vk::DescriptorImageInfo descr_image_info{
-            .imageView = state.Font->image_view,
-            .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+    // Create command pool/buffer for texture operations
+    if (!state.TexCommandPool) {
+        vk::CommandPoolCreateInfo pool_info{
+            .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+            .queueFamilyIndex = vk_state.transfer_family_index
         };
-        vk::WriteDescriptorSet write_descr{
-            .dstSet = state.Font->descriptor_set,
-            .dstBinding = 0,
-            .dstArrayElement = 0,
-            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+        state.TexCommandPool = vk_state.device.createCommandPool(pool_info);
+
+        vk::CommandBufferAllocateInfo alloc_info{
+            .commandPool = state.TexCommandPool,
+            .level = vk::CommandBufferLevel::ePrimary,
+            .commandBufferCount = 1
         };
-        write_descr.setImageInfo(descr_image_info);
-        get_renderer(state).device.updateDescriptorSets(write_descr, {});
+        state.TexCommandBuffer = vk_state.device.allocateCommandBuffers(alloc_info)[0];
     }
 
     state.init = true;

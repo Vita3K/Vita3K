@@ -310,13 +310,13 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(WINDOW_POS, display_size, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
-    ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
+    ImGui::SetWindowFontScale(1.6f);
     ImGui::SetCursorPosY(44.f * SCALE.y);
     TextCentered(lang["title"].c_str());
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * SCALE.y));
     ImGui::Separator();
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
-    ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+    ImGui::SetWindowFontScale(1.4f);
     switch (state) {
     case NOT_COMPLETE_UPDATE:
         ImGui::SetCursorPosY((display_size.y / 2.f) - ImGui::GetFontSize());
@@ -336,7 +336,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     }
     case DESCRIPTION: {
         ImGui::Spacing();
-        ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+        ImGui::SetWindowFontScale(1.4f);
         TextCentered(fmt::format(fmt::runtime(lang["new_features"]), git_version).c_str());
         ImGui::Spacing();
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, 136.0f * SCALE.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
@@ -388,12 +388,12 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
 
         break;
     case DOWNLOAD: {
-        ImGui::SetWindowFontScale(1.25f * RES_SCALE.x);
+        ImGui::SetWindowFontScale(1.25f);
         ImGui::SetCursorPos(ImVec2(102.f * SCALE.x, ImGui::GetCursorPosY() + (44 * SCALE.y)));
         ImGui::PushTextWrapPos(WINDOW_POS.x + (858.f * SCALE.x));
         ImGui::Text("%s", lang["downloading"].c_str());
         ImGui::PopTextWrapPos();
-        ImGui::SetWindowFontScale(1.04f * RES_SCALE.x);
+        ImGui::SetWindowFontScale(1.04f);
         const auto remaining_str = get_remaining_str(gui.lang, remaining);
         ImGui::SetCursorPos(ImVec2(display_size.x - (90 * SCALE.x) - (ImGui::CalcTextSize(remaining_str.c_str()).x), display_size.y - (196.f * SCALE.y) - ImGui::GetFontSize()));
         ImGui::Text("%s", remaining_str.c_str());
@@ -411,11 +411,11 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         break;
     }
 
-    ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
+    ImGui::SetWindowFontScale(1.2f);
     ImGui::SetCursorPosY(display_size.y - BUTTON_SIZE.y - (20.f * SCALE.y));
     ImGui::Separator();
     ImGui::SetCursorPos(ImVec2(WINDOW_POS.x + (10.f * SCALE.x), (display_size.y - BUTTON_SIZE.y - (12.f * SCALE.y))));
-    if (ImGui::Button((state < DESCRIPTION) || (state == DOWNLOAD) ? common["cancel"].c_str() : lang["back"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
+    if (ImGui::Button((state < DESCRIPTION) || (state == DOWNLOAD) ? common["cancel"].c_str() : lang["back"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_cross))) {
         if (state < DESCRIPTION) {
             if (thread_running)
                 cancel_thread = true;
@@ -430,7 +430,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
 
     if (state > NO_UPDATE && state < DOWNLOAD) {
         ImGui::SetCursorPos(ImVec2(display_size.x - WINDOW_POS.x - BUTTON_SIZE.x - (10.f * SCALE.x), (display_size.y - BUTTON_SIZE.y - (12.f * SCALE.y))));
-        if (ImGui::Button(state < UPDATE_VITA3K ? lang["next"].c_str() : lang["update"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+        if (ImGui::Button(state < UPDATE_VITA3K ? lang["next"].c_str() : lang["update"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_circle))) {
             state = (Vita3kUpdate)(state + 1);
             if (state == DOWNLOAD)
                 download_update(emuenv.base_path.string());

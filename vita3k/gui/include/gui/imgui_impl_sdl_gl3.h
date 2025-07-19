@@ -4,6 +4,7 @@
 
 // Implemented features:
 //  [X] User texture binding. Cast 'GLuint' OpenGL texture identifier as void*/ImTextureID. Read the FAQ about ImTextureID in imgui.cpp.
+//  [X] Renderer: Texture updates support for dynamic font atlas (ImGuiBackendFlags_RendererHasTextures).
 // Missing features:
 //  [ ] SDL2 handling of IME under Windows appears to be broken and it explicitly disable the regular Windows IME. You can restore Windows IME by compiling SDL with SDL_DISABLE_WINDOWS_IME.
 
@@ -27,6 +28,8 @@ struct ImGui_GLState : public ImGui_State {
     uint32_t attribute_location_tex = 0, attribute_projection_mat = 0;
     uint32_t attribute_position_location = 0, attribute_uv_location = 0, attribute_color_location = 0;
     uint32_t vbo = 0, elements = 0;
+    int32_t max_texture_size = 0;
+    ImVector<char> temp_buffer;
 
     // GL actually never needs the renderer. Putting it here just in case it is needed in the future.
     inline renderer::gl::GLState &get_renderer() {
@@ -40,6 +43,9 @@ IMGUI_API void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state);
 
 IMGUI_API ImTextureID ImGui_ImplSdlGL3_CreateTexture(void *data, int width, int height);
 IMGUI_API void ImGui_ImplSdlGL3_DeleteTexture(ImTextureID texture);
+
+// (Advanced) Use e.g. if you need to precisely control the timing of texture updates (e.g. for staged rendering), by setting ImDrawData::Textures = NULL to handle this manually.
+IMGUI_API void ImGui_ImplSdlGL3_UpdateTexture(ImGui_GLState &state, ImTextureData *tex);
 
 // Use if you want to reset your rendering device without losing ImGui state.
 IMGUI_API void ImGui_ImplSdlGL3_InvalidateDeviceObjects(ImGui_GLState &state);
