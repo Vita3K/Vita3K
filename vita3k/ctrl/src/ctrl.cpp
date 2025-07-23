@@ -49,6 +49,7 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     // Remove disconnected controllers
     bool found_gyro = false;
     bool found_accel = false;
+    const std::lock_guard lock(state.mutex);
     for (ControllerList::iterator controller = state.controllers.begin(); controller != state.controllers.end();) {
         if (SDL_GamepadConnected(controller->second.controller.get())) {
             found_accel |= controller->second.has_accel;
@@ -274,7 +275,6 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
         port++;
     }
     CtrlState &state = emuenv.ctrl;
-    refresh_controllers(state, emuenv);
 
     std::array<float, 4> axes;
     axes.fill(0);
