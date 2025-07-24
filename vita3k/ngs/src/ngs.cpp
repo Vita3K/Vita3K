@@ -435,6 +435,7 @@ bool init_rack(State &ngs, const MemState &mem, System *system, SceNgsBufferInfo
         }
     }
 
+    rack->initial_blocks_count = rack->allocator.blocks.size() + 1;
     system->racks.push_back(rack);
 
     return true;
@@ -456,7 +457,11 @@ void release_rack(State &ngs, const MemState &mem, System *system, Rack *rack) {
     vector_utils::erase_first(system->racks, rack);
 
     // free pointer memory
-    rack->~Rack();
+    // sanity check: if block count differs from initial allocation,
+    // assume rack was already released (e.g. by game-side memory reuse).
+    // prevents double-destruction when no callback is used.
+    if (rack->initial_blocks_count == rack->allocator.blocks.size())
+        rack->~Rack();
 }
 
 Ptr<VoiceDefinition> get_voice_definition(State &ngs, MemState &mem, ngs::BussType type) {

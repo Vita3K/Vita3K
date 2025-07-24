@@ -323,14 +323,6 @@ EXPORT(SceInt32, sceNgsRackRelease, ngs::Rack *rack, Ptr<void> callback) {
     std::unique_lock<std::recursive_mutex> lock(rack->system->voice_scheduler.mutex);
     if (!rack->system->voice_scheduler.is_updating) {
         ngs::release_rack(emuenv.ngs, emuenv.mem, rack->system, rack);
-    } else if (!callback) {
-        // wait for the update to finish
-        // if this is called in an interrupt handler it will softlock ngs
-        // but I don't think this is allowed (and if it is I don't know how to prevent this)
-        LOG_WARN_ONCE("sceNgsRackRelease called in a synchronous way during a ngs update, contact devs if your game softlocks now.");
-
-        rack->system->voice_scheduler.condvar.wait(lock);
-        ngs::release_rack(emuenv.ngs, emuenv.mem, rack->system, rack);
     } else {
         // destroy rack asynchronously
         ngs::OperationPending op;
@@ -338,7 +330,7 @@ EXPORT(SceInt32, sceNgsRackRelease, ngs::Rack *rack, Ptr<void> callback) {
         op.system = rack->system;
         op.release_data.state = &emuenv.ngs;
         op.release_data.rack = rack;
-        op.release_data.callback = callback.address();
+        op.release_data.callback = callback ? callback.address() : 0;
         rack->system->voice_scheduler.operations_pending.push(op);
     }
 
