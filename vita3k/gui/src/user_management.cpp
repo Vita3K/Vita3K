@@ -502,7 +502,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     const auto LARGE_AVATAR_SIZE = get_avatar_size(LARGE, SCALE);
     const auto USER_NAME_BG_SIZE = ImVec2(MED_AVATAR_SIZE.x, 60.f * SCALE.y);
 
-    ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+    ImGui::SetWindowFontScale(1.4f);
     const auto calc_title = ImGui::CalcTextSize(title.c_str()).y / 2.f;
     ImGui::SetCursorPos(ImVec2(54.f * SCALE.x, (32.f * SCALE.y) - calc_title));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
@@ -795,7 +795,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             if (gui.is_nav_button)
                 delete_flags |= ImGuiWindowFlags_NoMouseInputs;
             ImGui::BeginChild("##delete_user_child", CHILD_DELETE_USER_SIZE, ImGuiChildFlags_None, delete_flags);
-            ImGui::SetWindowFontScale(RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.f);
             ImGui::Columns(2, nullptr, false);
             ImGui::SetColumnWidth(0, SMALL_AVATAR_SIZE.x + (10.f * SCALE.x));
             ImGui::Separator();
@@ -867,7 +867,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::SetCursorPosY(WINDOW_SIZE.y - POS_SEPARATOR);
     ImGui::Separator();
-    ImGui::SetWindowFontScale(RES_SCALE.x);
+    ImGui::SetWindowFontScale(1.f);
     const auto USER_ALREADY_INIT = !gui.users.empty() && !emuenv.io.user_id.empty() && (emuenv.cfg.user_id == emuenv.io.user_id);
     if ((menu == SELECT && USER_ALREADY_INIT) || ((menu != SELECT) && (menu != CONFIRM) && del_menu.empty())) {
         ImGui::SetCursorPos(ImVec2(54.f * SCALE.x, ImGui::GetCursorPosY() + (10.f * SCALE.y)));

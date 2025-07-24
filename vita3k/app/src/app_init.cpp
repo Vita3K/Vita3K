@@ -63,7 +63,6 @@ void update_viewport(EmuEnvState &state) {
 
     state.system_dpi_scale = SDL_GetWindowPixelDensity(state.window.get());
     state.manual_dpi_scale = SDL_GetDisplayContentScale(SDL_GetDisplayForWindow(state.window.get()));
-    ImGui::GetIO().FontGlobalScale = 1.f * state.manual_dpi_scale;
 
     if (h > 0) {
         const float window_aspect = static_cast<float>(w) / h;
@@ -106,6 +105,9 @@ void update_viewport(EmuEnvState &state) {
 
         state.gui_scale.x = state.logical_viewport_size.x / static_cast<float>(DEFAULT_RES_WIDTH) / state.manual_dpi_scale;
         state.gui_scale.y = state.logical_viewport_size.y / static_cast<float>(DEFAULT_RES_HEIGHT) / state.manual_dpi_scale;
+
+        // Update font scale to include both manual_dpi_scale and gui_scale
+        ImGui::GetStyle().FontScaleMain = state.manual_dpi_scale * state.gui_scale.x;
     } else {
         state.logical_viewport_pos.x = 0;
         state.logical_viewport_pos.y = 0;
@@ -116,20 +118,6 @@ void update_viewport(EmuEnvState &state) {
         state.drawable_viewport_pos.y = 0;
         state.drawable_viewport_size.x = 0;
         state.drawable_viewport_size.y = 0;
-    }
-
-    // Update nearest font level
-    float scale = state.gui_scale.y * state.system_dpi_scale * state.manual_dpi_scale;
-    state.current_font_level = 0;
-    for (int i = 0; i <= state.max_font_level; i++) {
-        if (i == state.max_font_level || scale <= FontScaleCandidates[i]) {
-            state.current_font_level = i;
-            break;
-        }
-        if (FontScaleCandidates[i] / scale > scale / FontScaleCandidates[i + 1]) {
-            state.current_font_level = i;
-            break;
-        }
     }
 }
 

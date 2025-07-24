@@ -505,7 +505,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     // Reference here is intentional
     auto &show_settings_dialog = is_custom_config ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     ImGui::Begin("##settings", &show_settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
+    ImGui::SetWindowFontScale(0.7f);
     const auto settings_str = lang.main_window["title"];
     TextColoredCentered(GUI_COLOR_TEXT_TITLE, (is_custom_config ? fmt::format("{}: {} [{}]", settings_str, get_app_index(gui, emuenv.app_path)->title, emuenv.app_path) : settings_str).c_str());
     ImGui::Spacing();
