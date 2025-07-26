@@ -16,7 +16,7 @@
 	url = https://github.com/Vita3K/dlmalloc
 [submodule "external/ffmpeg"]
 	path = external/ffmpeg
-	url = https://github.com/Vita3K/ffmpeg-core.git
+	url = https://github.com/xerpi/ffmpeg-core.git
 [submodule "external/glslang"]
 	path = external/glslang
 	url = https://github.com/KhronosGroup/glslang
