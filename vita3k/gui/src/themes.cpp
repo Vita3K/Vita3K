@@ -56,8 +56,7 @@ bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string 
         return false;
     }
 
-    gui.user_backgrounds[background_path] = {};
-    gui.user_backgrounds[background_path].init(gui.imgui_state.get(), data, width, height);
+    gui.user_backgrounds[background_path] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
     fclose(f);
 
@@ -178,7 +177,7 @@ void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::
         return;
     }
 
-    gui.start_background.init(gui.imgui_state.get(), data, width, height);
+    gui.start_background = ImGui_Texture(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 }
 
@@ -203,7 +202,7 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
         return false;
     }
 
-    gui.start_background.init(gui.imgui_state.get(), data, width, height);
+    gui.start_background = ImGui_Texture(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
     fclose(f);
 
@@ -299,7 +298,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                         LOG_ERROR("Invalid notice icon for content id: {}.", content_id);
                         continue;
                     }
-                    gui.theme_information_bar_notice[type].init(gui.imgui_state.get(), data, width, height);
+                    gui.theme_information_bar_notice[type] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
                     stbi_image_free(data);
                 }
             }
@@ -345,7 +344,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
             continue;
         }
 
-        gui.app_selector.sys_apps_icon[title_id].init(gui.imgui_state.get(), data, width, height);
+        gui.app_selector.sys_apps_icon[title_id] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 
