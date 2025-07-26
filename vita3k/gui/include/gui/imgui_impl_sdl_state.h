@@ -58,6 +58,7 @@ public:
 
     void init(ImGui_State *new_state, ImTextureID texture);
     void init(ImGui_State *new_state, void *data, int width, int height);
+    void clear();
 
     operator bool() const;
     operator ImTextureID() const;
