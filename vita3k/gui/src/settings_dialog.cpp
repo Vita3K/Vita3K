@@ -123,8 +123,6 @@ static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
-static CPUBackend config_cpu_backend;
-
 /**
  * @brief Set up `config` with the values contained in the custom config file of a certain PlayStation Vita application
  *
@@ -160,7 +158,6 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             // Load CPU Config
             if (!config_child.child("cpu").empty()) {
                 const auto cpu_child = config_child.child("cpu");
-                config.cpu_backend = cpu_child.attribute("cpu-backend").as_string();
                 config.cpu_opt = cpu_child.attribute("cpu-opt").as_bool();
             }
 
@@ -216,10 +213,6 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
     return false;
 }
 
-static CPUBackend set_cpu_backend(std::string &cpu_backend) {
-    return cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
-}
-
 static int current_aniso_filter_log, max_aniso_filter_log, audio_backend_idx, current_user_lang;
 static std::vector<std::string> list_user_lang;
 
@@ -234,7 +227,6 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     // If no app-specific config file is being used for the initialized application,
     // set up `config` with the values set in the global emulator configuration
     if (!get_custom_config(gui, emuenv, app_path)) {
-        config.cpu_backend = emuenv.cfg.cpu_backend;
         config.cpu_opt = emuenv.cfg.cpu_opt;
         config.modules_mode = emuenv.cfg.modules_mode;
         config.lle_modules = emuenv.cfg.lle_modules;
@@ -276,7 +268,6 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     get_modules_list(gui, emuenv);
     config.stretch_the_display_area = emuenv.cfg.stretch_the_display_area;
     config.fullscreen_hd_res_pixel_perfect = emuenv.cfg.fullscreen_hd_res_pixel_perfect;
-    config_cpu_backend = set_cpu_backend(config.cpu_backend);
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
     max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
     audio_backend_idx = (emuenv.cfg.audio_backend == "SDL") ? 0 : 1;
@@ -318,7 +309,6 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         // CPU
         auto cpu_child = config_child.append_child("cpu");
-        cpu_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
         cpu_child.append_attribute("cpu-opt") = config.cpu_opt;
 
         // GPU
@@ -357,7 +347,6 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         if (!save_xml)
             LOG_ERROR("Failed to save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH);
     } else {
-        emuenv.cfg.cpu_backend = config.cpu_backend;
         emuenv.cfg.cpu_opt = config.cpu_opt;
         emuenv.cfg.modules_mode = config.modules_mode;
         emuenv.cfg.lle_modules = config.lle_modules;
@@ -398,13 +387,6 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
 
-std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    if (!get_custom_config(gui, emuenv, app_path))
-        return emuenv.cfg.cpu_backend;
-
-    return config.cpu_backend;
-}
-
 static void set_vsync_state(const bool &state) {
     if (state) {
         // Try adaptive vsync first, falling back to regular vsync.
@@ -433,7 +415,6 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config = config;
     else {
         // Else inherit the values from the global emulator config
-        emuenv.cfg.current_config.cpu_backend = emuenv.cfg.cpu_backend;
         emuenv.cfg.current_config.cpu_opt = emuenv.cfg.cpu_opt;
         emuenv.cfg.current_config.modules_mode = emuenv.cfg.modules_mode;
         emuenv.cfg.current_config.lle_modules = emuenv.cfg.lle_modules;
@@ -482,7 +463,6 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
 
     // No change it if app already running
     if (emuenv.io.title_id.empty()) {
-        emuenv.kernel.cpu_backend = set_cpu_backend(emuenv.cfg.current_config.cpu_backend);
         emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
         emuenv.audio.set_backend(emuenv.cfg.audio_backend);
     }
@@ -576,17 +556,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginTabItem("CPU")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        static const char *LIST_CPU_BACKEND[] = { "Dynarmic", "Unicorn" };
-        const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic", lang.cpu["unicorn"].c_str() };
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.cpu["cpu_backend"].c_str());
-        if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND_DISPLAY, IM_ARRAYSIZE(LIST_CPU_BACKEND_DISPLAY)))
-            config.cpu_backend = LIST_CPU_BACKEND[static_cast<int>(config_cpu_backend)];
-        SetTooltipEx(lang.cpu["select_cpu_backend"].c_str());
-        if (config_cpu_backend == CPUBackend::Dynarmic) {
-            ImGui::Spacing();
-            ImGui::Checkbox(lang.cpu["cpu_opt"].c_str(), &config.cpu_opt);
-            SetTooltipEx(lang.cpu["cpu_opt_description"].c_str());
-        }
+        ImGui::Checkbox(lang.cpu["cpu_opt"].c_str(), &config.cpu_opt);
+        SetTooltipEx(lang.cpu["cpu_opt_description"].c_str());
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();

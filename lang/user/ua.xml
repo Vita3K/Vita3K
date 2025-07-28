@@ -556,9 +556,6 @@
 			<refresh_list>Оновити список</refresh_list>
 		</core>
 		<cpu>
-			<unicorn>Unicorn (застарілий)</unicorn>
-			<cpu_backend>Бекенд центрального процесора</cpu_backend>
-			<select_cpu_backend>Оберіть бажаний бекенд центрального процесора.</select_cpu_backend>
 			<cpu_opt>Дозволити оптимізації</cpu_opt>
 			<cpu_opt_description>Оберіть цей пункт, аби дозволити додаткові JIT-оптимізації процесора.</cpu_opt_description>
 		</cpu>

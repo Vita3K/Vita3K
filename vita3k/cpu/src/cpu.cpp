@@ -19,7 +19,6 @@
 #include <cpu/functions.h>
 #include <cpu/impl/dynarmic_cpu.h>
 #include <cpu/impl/interface.h>
-#include <cpu/impl/unicorn_cpu.h>
 #include <cpu/state.h>
 #include <mem/ptr.h>
 #include <util/types.h>
@@ -39,7 +38,7 @@ SceUID get_thread_id(CPUState &state) {
     return state.thread_id;
 }
 
-CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol) {
+CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
     state->protocol = protocol;
@@ -57,19 +56,8 @@ CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::si
         return CPUStatePtr();
     }
 
-    switch (backend) {
-    case CPUBackend::Dynarmic: {
-        Dynarmic::ExclusiveMonitor *monitor = static_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exclusive_monitor());
-        state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt);
-        break;
-    }
-    case CPUBackend::Unicorn: {
-        state->cpu = std::make_unique<UnicornCPU>(state.get());
-        break;
-    }
-    default:
-        return nullptr;
-    }
+    Dynarmic::ExclusiveMonitor *monitor = static_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exclusive_monitor());
+    state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt);
 
     return state;
 }

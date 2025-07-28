@@ -549,9 +549,6 @@ Silakan download dan install firmware PS Vita terakhir.</no_modules>
 			<refresh_list>Perbarui Daftar</refresh_list>
 		</core>
 		<cpu>
-			<unicorn>Unicorn (tidak digunakan lagi)</unicorn>
-			<cpu_backend>Bagian Belakang CPU</cpu_backend>
-			<select_cpu_backend>Pilih perender backend pilihan kamu.</select_cpu_backend>
 			<cpu_opt>Aktifkan Pengoptimalan</cpu_opt>
 			<cpu_opt_description>Centang kotak untuk mengaktifkan optimasi CPU JIT tambahan.</cpu_opt_description>
 		</cpu>

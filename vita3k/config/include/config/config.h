@@ -100,7 +100,6 @@ enum ScreenshotFormat {
     code(int, "delay-start", 10, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
     code(int, "log-level", 0 /*SPDLOG_LEVEL_TRACE*/, log_level)                                         \
-    code(std::string, "cpu-backend", "Dynarmic", cpu_backend)                                           \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
     code(std::string, "pref-path", std::string{}, pref_path)                                            \
     code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \

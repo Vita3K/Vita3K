@@ -106,11 +106,6 @@ struct CPUContext {
     }
 };
 
-enum class CPUBackend {
-    Dynarmic,
-    Unicorn,
-};
-
 union DoubleReg {
     double d;
     float f[2];
