@@ -131,7 +131,6 @@ struct KernelState {
     ModuleUidByNid module_uid_by_nid;
 
     bool cpu_opt;
-    CPUBackend cpu_backend;
     CorenumAllocator corenum_allocator;
     CPUProtocolPtr cpu_protocol;
     ExclusiveMonitorPtr exclusive_monitor;
@@ -148,7 +147,7 @@ struct KernelState {
         return next_uid++;
     }
 
-    bool init(MemState &mem, const CallImportFunc &call_import, CPUBackend cpu_backend, bool cpu_opt);
+    bool init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt);
     void load_process_param(MemState &mem, Ptr<uint32_t> ptr);
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point = Ptr<const void>(0));
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);

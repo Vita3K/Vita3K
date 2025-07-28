@@ -589,9 +589,6 @@ Proszę pobrać i zainstalować najnowsze oprogramowanie systemu PS Vita.</no_mo
 			<refresh_list>Odśwież listę</refresh_list>
 		</core>
 		<cpu name="Procesor">
-			<unicorn>Unicorn (porzucone)</unicorn>
-			<cpu_backend>Backend procesora</cpu_backend>
-			<select_cpu_backend>Wybierz preferowany backend procesora.</select_cpu_backend>
 			<cpu_opt>Włącz optymalizacje</cpu_opt>
 			<cpu_opt_description>Zaznacz, aby włączyć dodatkowe optymalizacje CPU JIT.</cpu_opt_description>
 		</cpu>

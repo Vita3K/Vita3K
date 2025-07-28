@@ -553,9 +553,6 @@ Sila muat turun dan pasang PS Vita yang terakhir firmware.</no_modules>
 			<refresh_list>Muat Semula Senarai</refresh_list>
 		</core>
 		<cpu>
-			<unicorn>Unicorn (tidak digunakan lagi)</unicorn>
-			<cpu_backend>CPU Bahagian Belakang</cpu_backend>
-			<select_cpu_backend>Pilih bahagian belakang CPU pilihan awak.</select_cpu_backend>
 			<cpu_opt>Dayakan pengoptimuman</cpu_opt>
 			<cpu_opt_description>Tandai kotak untuk mendayakan pengoptimuman CPU JIT tambahan.</cpu_opt_description>
 		</cpu>
