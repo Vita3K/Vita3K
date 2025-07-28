@@ -608,9 +608,6 @@ Please download and install the last PS Vita firmware.</no_modules>
 			<manual_description>Select Manual mode to load selected modules from the list below.</manual_description>
 		</core>
 		<cpu>
-			<unicorn>Unicorn (deprecated)</unicorn>
-			<cpu_backend>CPU Backend</cpu_backend>
-			<select_cpu_backend>Select your preferred CPU backend.</select_cpu_backend>
 			<cpu_opt>Enable optimizations</cpu_opt>
 			<cpu_opt_description>Check the box to enable additional CPU JIT optimizations.</cpu_opt_description>
 		</cpu>

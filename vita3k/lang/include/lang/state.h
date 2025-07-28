@@ -531,9 +531,6 @@ struct LangState {
             { "manual_description", "Select Manual mode to load selected modules from the list below." }
         };
         std::map<std::string, std::string> cpu = {
-            { "unicorn", "Unicorn (deprecated)" },
-            { "cpu_backend", "CPU Backend" },
-            { "select_cpu_backend", "Select your preferred CPU backend." },
             { "cpu_opt", "Enable optimizations" },
             { "cpu_opt_description", "Check the box to enable additional CPU JIT optimizations." }
         };

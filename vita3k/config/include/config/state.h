@@ -58,7 +58,6 @@ struct Config {
      * All the settings that appear in this struct can be adjusted using app-specific custom config files.
      */
     struct CurrentConfig {
-        std::string cpu_backend;
         bool cpu_opt = true;
         int modules_mode = ModulesMode::AUTOMATIC;
         std::vector<std::string> lle_modules = {};
