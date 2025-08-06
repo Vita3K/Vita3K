@@ -695,7 +695,7 @@
 			<select_log_level>選擇您喜歡的記錄級別。</select_log_level>
 			<archive_log>封存記錄</archive_log>
 			<archive_log_description>勾選此項啟用封存記錄。</archive_log_description>
-			<discord_rich_presence>啟用Discord Rich Presence以展示您在Discord上正在執行的應用程式。</discord_rich_presence>
+			<discord_rich_presence>啟用Discord Rich Presence以在Discord上展示您正在執行的應用程式。</discord_rich_presence>
 			<texture_cache>紋理快取</texture_cache>
 			<texture_cache_description>取消勾選此項停用紋理快取。</texture_cache_description>
 			<show_compile_shaders>顯示編譯著色器</show_compile_shaders>

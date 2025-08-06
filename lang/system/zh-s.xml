@@ -695,7 +695,7 @@
 			<select_log_level>选择您喜欢的日志级别。</select_log_level>
 			<archive_log>归档日志</archive_log>
 			<archive_log_description>勾选此项启用归档日志。</archive_log_description>
-			<discord_rich_presence>启用Discord Rich Presence以展示您在Discord上正在运行的应用程序。</discord_rich_presence>
+			<discord_rich_presence>启用Discord Rich Presence以在Discord上展示您正在运行的应用程序。</discord_rich_presence>
 			<texture_cache>纹理缓存</texture_cache>
 			<texture_cache_description>取消勾选此项禁用纹理缓存。</texture_cache_description>
 			<show_compile_shaders>显示编译着色器</show_compile_shaders>
