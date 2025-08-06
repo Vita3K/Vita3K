@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17.2)
+cmake_minimum_required(VERSION 3.20.0)
 project(Vita3K)
 
 # Detects the amount of processors of the host machine and forwards the result to CPU_COUNT
@@ -8,7 +8,7 @@ ProcessorCount(CPU_COUNT)
 # Define the Architecture variable, right now it should only contain "x86_64" or "arm64"
 include("external/dynarmic/CMakeModules/DetectArchitecture.cmake")
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 11.0)
