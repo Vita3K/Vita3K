@@ -28,6 +28,7 @@ typedef std::shared_ptr<MjpegDecoderState> DecoderPtr;
 
 struct MJpegState {
     bool initialized = false;
+    std::mutex decoderMutex;
     DecoderPtr decoder;
 };
 
@@ -208,6 +209,7 @@ EXPORT(int, sceJpegDecodeMJpeg, const unsigned char *pJpeg, SceSize isize, uint8
     TRACY_FUNC(sceJpegDecodeMJpeg, pJpeg, isize, pRGBA, osize, decodeMode, pTempBuffer, tempBufferSize, pCoefBuffer, coefBufferSize);
 
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
+    std::lock_guard<std::mutex> guard(state->decoderMutex);
     configure_decoder(state, decodeMode);
 
     // the yuv data will always be smaller than the rgba data, so osize is an upper bound
@@ -235,6 +237,7 @@ EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *pJpeg, SceSize isize,
     TRACY_FUNC(sceJpegDecodeMJpegYCbCr, pJpeg, isize, pYCbCr, osize, decodeMode, pCoefBuffer, coefBufferSize);
 
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
+    std::lock_guard<std::mutex> guard(state->decoderMutex);
     configure_decoder(state, decodeMode);
 
     DecoderSize size = {};
@@ -280,6 +283,7 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *pJpeg, SceSize isize,
         return RET_ERROR(SCE_JPEG_ERROR_INVALID_COLOR_FORMAT);
 
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
+    std::lock_guard<std::mutex> guard(state->decoderMutex);
     configure_decoder(state, decodeMode);
 
     DecoderSize size = {};
