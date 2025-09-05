@@ -204,7 +204,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * SCALE.y)));
             ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * SCALE.y));
-            TextColoredCentered(GUI_COLOR_TEXT, std::to_string(progress).append("%").c_str());
+            TextColoredCentered(GUI_COLOR_TEXT, std::to_string(static_cast<uint32_t>(progress)).append("%").c_str());
             ImGui::PopStyleColor();
             break;
         }
