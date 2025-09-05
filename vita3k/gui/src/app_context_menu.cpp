@@ -622,7 +622,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["parental_controls"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["parental_controls"].c_str(), lang.info["level"].c_str());
             ImGui::SameLine();
-            ImGui::TextColored(GUI_COLOR_TEXT, "%d", *reinterpret_cast<const uint16_t *>(APP_INDEX->parental_level.c_str()));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->parental_level.c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["updated"] + "  ").c_str()).x);
             auto DATE_TIME = get_date_time(gui, emuenv, gui.app_selector.app_info.updated);
