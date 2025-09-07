@@ -18,11 +18,15 @@
 #include <module/module.h>
 
 #include <emuenv/app_util.h>
+
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/io.h>
 #include <io/vfs.h>
+
 #include <packages/license.h>
+#include <packages/sfo.h>
+
 #include <util/safe_time.h>
 #include <util/tracy.h>
 
@@ -317,8 +321,29 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
 
 EXPORT(int, sceAppUtilSaveDataGetQuota, SceSize *quotaSizeKiB, SceSize *usedSizeKiB, const SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataGetQuota, quotaSizeKiB, usedSizeKiB, mountPoint);
-    *quotaSizeKiB = vfs::get_space_info(VitaIoDevice::ux0, emuenv.io.device_paths.savedata0, emuenv.pref_path).max_capacity / KiB(1);
-    *usedSizeKiB = vfs::get_space_info(VitaIoDevice::ux0, emuenv.io.device_paths.savedata0, emuenv.pref_path).used / KiB(1);
+
+    if (!quotaSizeKiB && !usedSizeKiB)
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
+
+    // Quota from SFO
+    if (quotaSizeKiB) {
+        std::string savedata_max_size;
+
+        if (!sfo::get_data_by_key(savedata_max_size, emuenv.sfo_handle, "SAVEDATA_MAX_SIZE"))
+            savedata_max_size = "0";
+
+        *quotaSizeKiB = static_cast<SceSize>(std::strtoul(savedata_max_size.c_str(), nullptr, 10));
+    }
+
+    // Used size from VFS
+    if (usedSizeKiB) {
+        *usedSizeKiB = vfs::get_directory_used_size(VitaIoDevice::ux0, emuenv.io.device_paths.savedata0, emuenv.pref_path) / KiB(1);
+
+        // Clamp used size to quota
+        if (quotaSizeKiB && (*quotaSizeKiB > 0) && (*usedSizeKiB > *quotaSizeKiB))
+            *usedSizeKiB = *quotaSizeKiB;
+    }
+
     return 0;
 }
 
