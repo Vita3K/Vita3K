@@ -33,12 +33,22 @@ EXPORT(int, sceNpTssGetDataNoLimitAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpTssGetSmallStorage) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTssGetSmallStorage, SceInt32 requestId, char *pBuffer, SceSize bSize, SceSize *contentLength, void *optionPtr) {
+    strcpy(pBuffer, "");
+    *contentLength = 0;
+
+    // TSS files come from PSN and are unavailable unless dumped
+    LOG_WARN_ONCE("Stubbed {} import called. ({})", export_name, "Returning empty string for TSS Content");
+    return 0;
 }
 
-EXPORT(int, sceNpTssGetSmallStorageAsync) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTssGetSmallStorageAsync, SceInt32 requestId, char *pBuffer, SceSize bSize, SceSize *contentLength, void *optionPtr) {
+    strcpy(pBuffer, "");
+    *contentLength = 0;
+
+    // TSS files come from PSN and are unavailable unless dumped
+    LOG_WARN_ONCE("Stubbed {} import called. ({})", export_name, "Returning empty string for TSS Content");
+    return 0;
 }
 
 EXPORT(int, sceNpTssGetStorage) {
