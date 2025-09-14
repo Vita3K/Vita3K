@@ -606,9 +606,6 @@
 			<refresh_list>刷新列表</refresh_list>
 		</core>
 		<cpu>
-			<unicorn>Unicorn（已弃用）</unicorn>
-			<cpu_backend>CPU后端</cpu_backend>
-			<select_cpu_backend>选择您喜欢的CPU后端。</select_cpu_backend>
 			<cpu_opt>启用优化</cpu_opt>
 			<cpu_opt_description>勾选此项启用额外的CPU JIT优化。</cpu_opt_description>
 		</cpu>

@@ -24,6 +24,7 @@
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
+#include <net/state.h>
 #include <packages/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -489,16 +490,16 @@ EXPORT(int, sceNetCheckDialogGetPS3ConnectInfo) {
     return UNIMPLEMENTED();
 }
 
-typedef struct SceNetCheckDialogResult {
-    SceInt32 result;
-    SceBool psnModeSucceeded;
-    SceUInt8 reserved[124];
-} SceNetCheckDialogResult;
-
 EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
     TRACY_FUNC(sceNetCheckDialogGetResult, result);
-    result->result = 0;
-    return STUBBED("result->result = 0");
+    result->result = emuenv.common_dialog.result;
+    result->psnModeSucceeded = 0;
+    LOG_DEBUG("sceNetCheckDialogGetResult: result = {}", log_hex(result->result));
+
+    if (emuenv.common_dialog.netcheck.mode != SCE_NETCHECK_DIALOG_MODE_ADHOC_CONN)
+        STUBBED("result->result = 0");
+
+    return 0;
 }
 
 EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
@@ -506,14 +507,39 @@ EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
     if (emuenv.common_dialog.type != NETCHECK_DIALOG)
         return SCE_COMMON_DIALOG_STATUS_NONE;
 
-    STUBBED("SCE_COMMON_DIALOG_STATUS_FINISHED");
+    if (emuenv.common_dialog.netcheck.mode != SCE_NETCHECK_DIALOG_MODE_ADHOC_CONN)
+        STUBBED("SCE_COMMON_DIALOG_STATUS_FINISHED");
+
     return emuenv.common_dialog.status;
 }
 
-EXPORT(int, sceNetCheckDialogInit) {
+EXPORT(int, sceNetCheckDialogInit, const SceNetCheckDialogParam *param) {
     TRACY_FUNC(sceNetCheckDialogInit);
+    LOG_DEBUG("SceNetCheckDialogParam: mode: {},\n npCommunicationId.data: {},\n npCommunicationId.num: {},\n ps3ConnectParam: {},\n groupName: {},\n timeoutUs: {},\n defaultAgeRestriction: {},\n ageRestrictionCount: {},\n ageRestriction: {}",
+        (int)param->mode, param->npCommunicationId.data, param->npCommunicationId.num,
+        param->ps3ConnectParam, param->groupName, param->timeoutUs,
+        param->defaultAgeRestriction, param->ageRestrictionCount, param->ageRestriction);
+
+    if (emuenv.common_dialog.type != NO_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
+
     emuenv.common_dialog.type = NETCHECK_DIALOG;
-    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    emuenv.common_dialog.netcheck.mode = param->mode;
+
+    switch (param->mode) {
+    case SCE_NETCHECK_DIALOG_MODE_ADHOC_CONN:
+        LOG_INFO("Triggering adhoc thread");
+        emuenv.netctl.adhocCondVarReady = true;
+        emuenv.netctl.adhocCondVar.notify_all();
+        emuenv.netctl.adhocState = SCE_NET_CTL_STATE_CONNECTING;
+        emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+        break;
+    default:
+        emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+        break;
+    }
+
     return UNIMPLEMENTED();
 }
 
@@ -521,6 +547,8 @@ EXPORT(int, sceNetCheckDialogTerm) {
     TRACY_FUNC(sceNetCheckDialogTerm);
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     emuenv.common_dialog.type = NO_DIALOG;
+    emuenv.common_dialog.netcheck.mode = SCE_NETCHECK_DIALOG_MODE_INVALID;
+    LOG_DEBUG("sceNetCheckDialogTerm");
     return UNIMPLEMENTED();
 }
 
@@ -830,7 +858,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
             const auto iconBufSize = empty_param->iconBufSize;
             if (iconPath) {
                 auto device = device::get_device(iconPath);
-                const auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
+                const auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io);
                 vfs::read_file(VitaIoDevice::ux0, icon_buf_tmp, emuenv.pref_path, thumbnail_path);
             } else if (iconBuf && (iconBufSize > 0)) {
                 icon_buf_tmp.insert(icon_buf_tmp.end(), iconBuf, iconBuf + iconBufSize);
@@ -848,7 +876,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
         emuenv.common_dialog.savedata.date[index] = slot_param.modifiedTime;
         emuenv.common_dialog.savedata.has_date[index] = true;
         auto device = device::get_device(slot_param.iconPath);
-        auto thumbnail_path = translate_path(slot_param.iconPath, device, emuenv.io.device_paths);
+        auto thumbnail_path = translate_path(slot_param.iconPath, device, emuenv.io);
         vfs::read_file(device, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
         icon_buf_tmp = thumbnail_buffer;
     }

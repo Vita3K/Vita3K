@@ -90,6 +90,7 @@ enum ScreenshotFormat {
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
+    code(int,  "bgm-volume", 100, bgm_volume) 													        \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(int, "sys-date-format", (int)SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY, sys_date_format)           \
@@ -97,10 +98,9 @@ enum ScreenshotFormat {
     code(int, "cpu-pool-size", 10, cpu_pool_size)                                                       \
     code(int, "modules-mode", static_cast<int>(ModulesMode::AUTOMATIC), modules_mode)                   \
     code(int, "delay-background", 4, delay_background)                                                  \
-    code(int, "delay-start", 10, delay_start)                                                           \
+    code(int, "delay-start", 30, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
     code(int, "log-level", 0 /*SPDLOG_LEVEL_TRACE*/, log_level)                                         \
-    code(std::string, "cpu-backend", "Dynarmic", cpu_backend)                                           \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
     code(std::string, "pref-path", std::string{}, pref_path)                                            \
     code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
@@ -160,6 +160,7 @@ enum ScreenshotFormat {
     code(int, "http-timeout-sleep-ms", 100, http_timeout_sleep_ms)                                      \
     code(int, "http-read-end-attempts", 10, http_read_end_attempts)                                     \
     code(int, "http-read-end-sleep-ms", 250, http_read_end_sleep_ms)                                    \
+    code(int, "adhoc-addr", 0, adhoc_addr)                                                              \
     code(bool, "tracy-primitive-impl", false, tracy_primitive_impl)
 
 // Vector members produced in the config file

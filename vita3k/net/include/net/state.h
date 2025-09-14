@@ -36,11 +36,22 @@ struct NetState {
     NetEpolls epolls;
     int state = -1;
     int resolver_id = 0;
+    int current_addr_index = 0;
+    uint32_t broadcastAddr = 0xFFFFFFFF;
+    uint32_t netAddr = 0xFFFFFFFF;
 };
 
 struct NetCtlState {
     std::array<SceNetCtlCallback, 8> adhocCallbacks;
     std::array<SceNetCtlCallback, 8> callbacks;
+    std::vector<SceNetCtlAdhocPeerInfo> adhocPeers;
     bool inited = false;
+    std::thread adhocThread;
+    std::atomic<bool> adhocCondVarReady = false;
+    std::condition_variable adhocCondVar;
+    SceNetCtlState adhocState = SCE_NET_CTL_STATE_DISCONNECTED;
+    SceNetCtlEventType adhocEvent = SCE_NET_CTL_EVENT_TYPE_NONE;
+    SceNetCtlEventType lastNotifiedAdhocEvent = SCE_NET_CTL_EVENT_TYPE_NONE;
+    std::atomic<bool> adhocThreadRun = false;
     std::mutex mutex;
 };

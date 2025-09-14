@@ -17,6 +17,8 @@
 
 #include <module/module.h>
 
+#include <np/common.h>
+
 EXPORT(int, sceNpTssGetData) {
     return UNIMPLEMENTED();
 }
@@ -77,8 +79,19 @@ EXPORT(int, sceNpTusCreateRequest) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpTusCreateTitleCtx) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTusCreateTitleCtx, const np::CommunicationID *communicationId,
+    const np::SceNpCommunicationPassphrase *passphrase, const np::SceNpId *selfNpId) {
+    LOG_INFO("sceNpTusCreateTitleCtx");
+    if (communicationId)
+        LOG_DEBUG("sceNpTusCreateTitleCtx(communicationId: {}, num: {})",
+            communicationId->data, communicationId->num);
+    if (passphrase)
+        LOG_DEBUG("sceNpTusCreateTitleCtx, passphrase: {}", passphrase->data);
+
+    if (selfNpId)
+        LOG_DEBUG("sceNpTusCreateTitleCtx, selfNpId: handle: {}, isIdValid: {}", selfNpId->handle.data, selfNpId->isIdValid);
+
+    return 1;
 }
 
 EXPORT(int, sceNpTusDeleteMultiSlotData) {

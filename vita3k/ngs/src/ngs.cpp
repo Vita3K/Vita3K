@@ -22,6 +22,7 @@
 #include <ngs/system.h>
 #include <util/lock_and_find.h>
 
+#include <util/log.h>
 #include <util/vector_utils.h>
 
 namespace ngs {
@@ -442,14 +443,18 @@ bool init_rack(State &ngs, const MemState &mem, System *system, SceNgsBufferInfo
 
 void release_rack(State &ngs, const MemState &mem, System *system, Rack *rack) {
     // this function should only be called outside of ngs update and with the scheduler mutex acquired (except when releasing the system)
-    if (!rack)
+    if (!rack) {
+        LOG_WARN("Trying to release a rack that is already released or null.");
         return;
+    }
 
     // remove all queued voices
     for (const auto &voice : rack->voices) {
-        system->voice_scheduler.deque_voice(voice.get(mem));
-        voice.get(mem)->~Voice();
-        // no need to free the voice from the rack
+        Voice *v = voice.get(mem);
+        if (v) {
+            system->voice_scheduler.deque_voice(v);
+            v->~Voice();
+        }
     }
 
     // remove from system

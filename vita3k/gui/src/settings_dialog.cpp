@@ -38,6 +38,7 @@
 #include <string>
 #include <util/fs.h>
 #include <util/log.h>
+#include <util/net_utils.h>
 
 #include <SDL3/SDL_video.h>
 
@@ -95,12 +96,16 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     emuenv.io.user_id.clear();
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
+    // Stop the Background Music
+    stop_bgm();
+
     // Clean User apps list
-    gui.app_selector.user_apps.clear();
+    gui.app_selector.vita_apps.clear();
 
     get_modules_list(gui, emuenv);
     get_sys_apps_title(gui, emuenv);
     get_notice_list(emuenv);
+    get_time_apps(gui, emuenv);
     get_users_list(gui, emuenv);
     init_home(gui, emuenv);
 }
@@ -123,8 +128,6 @@ static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
-static CPUBackend config_cpu_backend;
-
 /**
  * @brief Set up `config` with the values contained in the custom config file of a certain PlayStation Vita application
  *
@@ -140,7 +143,7 @@ static CPUBackend config_cpu_backend;
  * but it's corrupted or invalid.
  */
 static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
+    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", fs::path(app_path).stem().string()) };
 
     if (fs::exists(CUSTOM_CONFIG_PATH)) {
         pugi::xml_document custom_config_xml;
@@ -160,7 +163,6 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             // Load CPU Config
             if (!config_child.child("cpu").empty()) {
                 const auto cpu_child = config_child.child("cpu");
-                config.cpu_backend = cpu_child.attribute("cpu-backend").as_string();
                 config.cpu_opt = cpu_child.attribute("cpu-opt").as_bool();
             }
 
@@ -216,10 +218,6 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
     return false;
 }
 
-static CPUBackend set_cpu_backend(std::string &cpu_backend) {
-    return cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
-}
-
 static int current_aniso_filter_log, max_aniso_filter_log, audio_backend_idx, current_user_lang;
 static std::vector<std::string> list_user_lang;
 
@@ -234,7 +232,6 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     // If no app-specific config file is being used for the initialized application,
     // set up `config` with the values set in the global emulator configuration
     if (!get_custom_config(gui, emuenv, app_path)) {
-        config.cpu_backend = emuenv.cfg.cpu_backend;
         config.cpu_opt = emuenv.cfg.cpu_opt;
         config.modules_mode = emuenv.cfg.modules_mode;
         config.lle_modules = emuenv.cfg.lle_modules;
@@ -276,7 +273,6 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     get_modules_list(gui, emuenv);
     config.stretch_the_display_area = emuenv.cfg.stretch_the_display_area;
     config.fullscreen_hd_res_pixel_perfect = emuenv.cfg.fullscreen_hd_res_pixel_perfect;
-    config_cpu_backend = set_cpu_backend(config.cpu_backend);
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
     max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
     audio_backend_idx = (emuenv.cfg.audio_backend == "SDL") ? 0 : 1;
@@ -298,9 +294,8 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 static void save_config(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.configuration_menu.custom_settings_dialog) {
         const auto CONFIG_PATH{ emuenv.config_path / "config" };
-        const auto CUSTOM_CONFIG_PATH{ CONFIG_PATH / fmt::format("config_{}.xml", emuenv.app_path) };
+        const auto CUSTOM_CONFIG_PATH{ CONFIG_PATH / fmt::format("config_{}.xml", fs::path(emuenv.app_path).stem().string()) };
         fs::create_directories(CONFIG_PATH);
-
         pugi::xml_document custom_config_xml;
         auto declarationUser = custom_config_xml.append_child(pugi::node_declaration);
         declarationUser.append_attribute("version") = "1.0";
@@ -318,7 +313,6 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         // CPU
         auto cpu_child = config_child.append_child("cpu");
-        cpu_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
         cpu_child.append_attribute("cpu-opt") = config.cpu_opt;
 
         // GPU
@@ -357,7 +351,6 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         if (!save_xml)
             LOG_ERROR("Failed to save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH);
     } else {
-        emuenv.cfg.cpu_backend = config.cpu_backend;
         emuenv.cfg.cpu_opt = config.cpu_opt;
         emuenv.cfg.modules_mode = config.modules_mode;
         emuenv.cfg.lle_modules = config.lle_modules;
@@ -395,14 +388,8 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
     if (update_viewport_en)
         app::update_viewport(emuenv);
 
+    set_bgm_volume(emuenv.cfg.bgm_volume);
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-}
-
-std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    if (!get_custom_config(gui, emuenv, app_path))
-        return emuenv.cfg.cpu_backend;
-
-    return config.cpu_backend;
 }
 
 static void set_vsync_state(const bool &state) {
@@ -433,7 +420,6 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config = config;
     else {
         // Else inherit the values from the global emulator config
-        emuenv.cfg.current_config.cpu_backend = emuenv.cfg.cpu_backend;
         emuenv.cfg.current_config.cpu_opt = emuenv.cfg.cpu_opt;
         emuenv.cfg.current_config.modules_mode = emuenv.cfg.modules_mode;
         emuenv.cfg.current_config.lle_modules = emuenv.cfg.lle_modules;
@@ -482,7 +468,6 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
 
     // No change it if app already running
     if (emuenv.io.title_id.empty()) {
-        emuenv.kernel.cpu_backend = set_cpu_backend(emuenv.cfg.current_config.cpu_backend);
         emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
         emuenv.audio.set_backend(emuenv.cfg.audio_backend);
     }
@@ -576,17 +561,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginTabItem("CPU")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        static const char *LIST_CPU_BACKEND[] = { "Dynarmic", "Unicorn" };
-        const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic", lang.cpu["unicorn"].c_str() };
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.cpu["cpu_backend"].c_str());
-        if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND_DISPLAY, IM_ARRAYSIZE(LIST_CPU_BACKEND_DISPLAY)))
-            config.cpu_backend = LIST_CPU_BACKEND[static_cast<int>(config_cpu_backend)];
-        SetTooltipEx(lang.cpu["select_cpu_backend"].c_str());
-        if (config_cpu_backend == CPUBackend::Dynarmic) {
-            ImGui::Spacing();
-            ImGui::Checkbox(lang.cpu["cpu_opt"].c_str(), &config.cpu_opt);
-            SetTooltipEx(lang.cpu["cpu_opt_description"].c_str());
-        }
+        ImGui::Checkbox(lang.cpu["cpu_opt"].c_str(), &config.cpu_opt);
+        SetTooltipEx(lang.cpu["cpu_opt_description"].c_str());
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
@@ -827,6 +803,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.audio["enable_ngs_support"].c_str(), &config.ngs_enable);
         SetTooltipEx(lang.audio["ngs_description"].c_str());
         ImGui::Spacing();
+        ImGui::SliderInt("Bgm Volume", &emuenv.cfg.bgm_volume, 0, 100, "%d %%", ImGuiSliderFlags_AlwaysClamp);
+        SetTooltipEx("Adjusts the background music volume percentage of the theme");
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::EndTabItem();
@@ -1035,7 +1013,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gui.users[emuenv.io.user_id].start_type = "default";
                 save_user(gui, emuenv, emuenv.io.user_id);
                 init_theme_start_background(gui, emuenv, "default");
-                init_apps_icon(gui, emuenv, gui.app_selector.sys_apps);
+                init_apps_icon(gui, emuenv, gui.app_selector.emu_apps);
             }
             ImGui::SameLine();
         }
@@ -1076,7 +1054,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.gui["select_delay_background"].c_str());
         }
         ImGui::Spacing();
-        ImGui::SliderInt(lang.gui["delay_start"].c_str(), &emuenv.cfg.delay_start, 10, 60);
+        ImGui::SliderInt(lang.gui["delay_start"].c_str(), &emuenv.cfg.delay_start, 30, 300);
         SetTooltipEx(lang.gui["select_delay_start"].c_str());
         ImGui::EndTabItem();
     } else
@@ -1093,6 +1071,39 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox(lang.network["psn_signed_in"].c_str(), &config.psn_signed_in);
         SetTooltipEx(lang.network["psn_signed_in_description"].c_str());
+
+        // Adhoc
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, "Adhoc");
+        ImGui::Spacing();
+
+        std::vector<std::string> addrsStrings;
+        std::vector<const char *> addrsSelect;
+        std::vector<const char *> nMaskSelect;
+        const auto addrs = net_utils::get_all_assigned_addrs();
+
+        for (const auto &addr : addrs) {
+            addrsStrings.emplace_back(fmt::format("{} ({})", addr.addr, addr.name).c_str());
+            addrsSelect.emplace_back(addrsStrings.back().c_str());
+            nMaskSelect.emplace_back(addr.netMask.c_str());
+        }
+
+        if (emuenv.cfg.adhoc_addr >= addrs.size()) {
+            emuenv.cfg.adhoc_addr = 0;
+            LOG_WARN("Invalid adhoc address index {}, resetting to 0", emuenv.cfg.adhoc_addr);
+            save_config(gui, emuenv);
+        }
+
+        ImGui::PushItemWidth(ImGui::CalcTextSize(addrsStrings[emuenv.cfg.adhoc_addr].c_str()).x + (30.f * SCALE.x));
+        ImGui::Combo("Network Address", &emuenv.cfg.adhoc_addr, addrsSelect.data(), static_cast<int>(addrsSelect.size()));
+        SetTooltipEx("Select which Address to use in adhoc.");
+
+        ImGui::BeginDisabled();
+        ImGui::Combo("Network Mask", &emuenv.cfg.adhoc_addr, nMaskSelect.data(), static_cast<int>(nMaskSelect.size()));
+        ImGui::EndDisabled();
+        ImGui::PopItemWidth();
 
         // HTTP
         ImGui::Spacing();

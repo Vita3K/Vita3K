@@ -37,6 +37,7 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
  */
 SceUID load_module(EmuEnvState &emuenv, const std::string &module_path);
 int unload_module(EmuEnvState &emuenv, SceUID module_id);
+SceUID load_app_by_path(EmuEnvState &emuenv, const std::string &self_path, const char *titleid, const char *app_param);
 
 uint32_t start_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
 uint32_t stop_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
