@@ -217,7 +217,14 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
 }
 
 static CPUBackend set_cpu_backend(std::string &cpu_backend) {
-    return cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
+#if DYNARMIC_ENABLED
+    if (cpu_backend == "Dynarmic") {
+        return CPUBackend::Dynarmic;
+    } else
+#endif
+    {
+        return CPUBackend::Unicorn;
+    }
 }
 
 static int current_aniso_filter_log, max_aniso_filter_log, audio_backend_idx, current_user_lang;
@@ -576,8 +583,18 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginTabItem("CPU")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        static const char *LIST_CPU_BACKEND[] = { "Dynarmic", "Unicorn" };
-        const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic", lang.cpu["unicorn"].c_str() };
+        static const char *LIST_CPU_BACKEND[] = {
+#if DYNARMIC_ENABLED
+            "Dynarmic",
+#endif
+            "Unicorn"
+        };
+        const char *LIST_CPU_BACKEND_DISPLAY[] = {
+#if DYNARMIC_ENABLED
+            "Dynarmic",
+#endif
+            lang.cpu["unicorn"].c_str()
+        };
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.cpu["cpu_backend"].c_str());
         if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND_DISPLAY, IM_ARRAYSIZE(LIST_CPU_BACKEND_DISPLAY)))
             config.cpu_backend = LIST_CPU_BACKEND[static_cast<int>(config_cpu_backend)];
