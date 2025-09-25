@@ -112,6 +112,7 @@ enum ScreenshotFormat {
     code(int, "performance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position) \
     code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
     code(bool, "disable-motion", false, disable_motion)                                                 \
+    code(float, "controller-analog-multiplier", 1.0f, controller_analog_multiplier)                     \
     code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
     code(int, "keyboard-button-start", 40, keyboard_button_start)                                       \
     code(int, "keyboard-button-up", 82, keyboard_button_up)                                             \
