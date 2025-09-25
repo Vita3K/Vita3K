@@ -49,7 +49,7 @@ struct ImGui_State {
 
 class ImGui_Texture {
     ImGui_State *state = nullptr;
-    ImTextureID texture_id = nullptr;
+    ImTextureID texture_id = 0;
 
 public:
     ImGui_Texture() = default;
@@ -65,6 +65,8 @@ public:
 
     ImGui_Texture &operator=(ImGui_Texture &&texture) noexcept;
     ImGui_Texture &operator=(const ImGui_Texture &texture) = delete;
+
+    operator ImTextureRef() const;
 
     ~ImGui_Texture();
 };

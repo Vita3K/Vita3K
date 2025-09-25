@@ -78,7 +78,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (!finished_installing) {
         ImGui::OpenPopup("firmware_installation");
         if (ImGui::BeginPopupModal("firmware_installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
-            ImGui::SetWindowFontScale(RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.f);
             TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["firmware_installation"].c_str());
             ImGui::Spacing();
             ImGui::Separator();
@@ -97,7 +97,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     } else {
         ImGui::OpenPopup("firmware_installation");
         if (ImGui::BeginPopupModal("firmware_installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
-            ImGui::SetWindowFontScale(RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.f);
             const auto POS_BUTTON = (WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f) + (10.f * SCALE.x);
             TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["successed_install_firmware"].c_str());
             ImGui::Spacing();
