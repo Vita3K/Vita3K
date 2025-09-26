@@ -323,7 +323,7 @@ Connect a controller that is compatible with SDL3.</not_connected>
 		<ps_button>PS button</ps_button>
 		<l1_button>L1 button</l1_button>
 		<r1_button>R1 button</r1_button>
-		<ps_tv_mode>Only in PS TV mode.</ps_tv_mode>
+		<ps_tv_mode>Only in PS TV mode</ps_tv_mode>
 		<l2_button>L2 button</l2_button>
 		<r2_button>R2 button</r2_button>
 		<l3_button>L3 button</l3_button>

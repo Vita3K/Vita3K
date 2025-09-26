@@ -334,7 +334,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
                     ImGui::Separator();
                     ImGui::Spacing();
-                    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", controls["ps_tv_mode"].c_str());
+                    TextColoredCentered(GUI_COLOR_TEXT_TITLE, controls["ps_tv_mode"].c_str());
                     if (ImGui::BeginTable("rebindExt", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV)) {
                         ImGui::TableSetupColumn("leftButtons");
                         ImGui::TableSetupColumn("rightButtons");
@@ -355,7 +355,18 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
                         }
                         ImGui::EndTable();
                     }
-
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
+                    TextColoredCentered(GUI_COLOR_TEXT_TITLE, "Analog Stick Multiplier");
+                    ImGui::Spacing();
+                    auto &mult = emuenv.cfg.controller_analog_multiplier;
+                    if (ImGui::SliderFloat("##analog_multiplier", &mult, 0.1f, 2.f, "%.1fx", ImGuiSliderFlags_AlwaysClamp))
+                        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+                    SetTooltipEx("Analog multipiler can be used to change the sensitivity of your stick movements.");
+                    ImGui::Spacing();
+                    ImGui::Separator();
+                    ImGui::Spacing();
                     if (ctrl.controllers[guid].has_led) {
                         const auto set_led_color = [&](const std::vector<int> &led) {
                             SDL_SetGamepadLED(ctrl.controllers[guid].controller.get(), led[0], led[1], led[2]);
