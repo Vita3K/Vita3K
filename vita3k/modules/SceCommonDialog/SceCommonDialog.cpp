@@ -1105,14 +1105,15 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
     case SCE_SAVEDATA_DIALOG_MODE_LIST:
         emuenv.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_LIST;
         list_param = p->listParam.get(emuenv.mem);
-        if (list_param->slotListSize > 0)
-            emuenv.common_dialog.savedata.slot_list_size = list_param->slotListSize;
-        slot_list.resize(list_param->slotListSize);
-        for (std::uint32_t i = 0; i < list_param->slotListSize; i++) {
-            slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
-            emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
-            emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);
-            check_save_file(i, emuenv, export_name);
+        if (list_param->slotListSize > 0) {
+            emuenv.common_dialog.savedata.slot_list_size = std::min(list_param->slotListSize, emuenv.common_dialog.savedata.slot_list_size);
+            slot_list.resize(emuenv.common_dialog.savedata.slot_list_size);
+            for (std::uint32_t i = 0; i < emuenv.common_dialog.savedata.slot_list_size; i++) {
+                slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
+                emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
+                emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);
+                check_save_file(i, emuenv, export_name);
+            }
         }
         break;
     }
@@ -1241,7 +1242,7 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
         break;
     case SCE_SAVEDATA_DIALOG_MODE_LIST:
         list_param = p->listParam.get(emuenv.mem);
-        emuenv.common_dialog.savedata.slot_list_size = list_param->slotListSize;
+        emuenv.common_dialog.savedata.slot_list_size = std::min(list_param->slotListSize, (uint32_t)SCE_SAVEDATA_DIALOG_SLOTLIST_MAXSIZE);
         emuenv.common_dialog.savedata.list_style = list_param->itemStyle;
 
         slot_list.resize(list_param->slotListSize);
