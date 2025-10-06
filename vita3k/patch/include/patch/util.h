@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2024 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,20 +17,25 @@
 
 #pragma once
 
+#include <array>
 #include <string>
-#include <util/fs.h>
+#include <util/types.h>
 #include <vector>
 
-struct Patch {
-    uint8_t seg;
-    uint32_t offset;
-    std::vector<uint8_t> values;
-};
+#include "patch/instructions.h"
+#include "patch/patch.h"
 
-struct PatchHeader {
-    std::string titleid;
-    std::string bin;
-};
+PatchHeader read_header(std::string &header, bool isPatchlist);
+std::vector<uint8_t> to_bytes(unsigned long long value, uint8_t count);
 
-std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const std::string &bin);
-Patch parse_patch(const std::string &patch);
+void strip_arg_spaces(std::string &line);
+void strip_arg_spaces(std::string &line, char open, char close);
+
+Instruction to_instruction(const std::string &inst);
+bool is_valid_instruction(std::string &inst);
+std::string strip_args(std::string inst);
+
+std::vector<std::string> get_args(std::string inst, char open, char close);
+std::vector<std::string> get_args(std::string inst);
+
+uint32_t translate(std::string &inst, std::vector<uint32_t> &args);
