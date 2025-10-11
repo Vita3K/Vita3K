@@ -128,7 +128,7 @@ option(VITA3K_FORCE_CUSTOM_BOOST "Force Vita3K build process to use the Boost ve
 option(VITA3K_FORCE_SYSTEM_BOOST "Force Vita3K build process to use the Boost version in the system and CMake's default paths and ignore the Boost version included with Vita3K" OFF)
 
 # Boost modules to be found by CMake
-set(BOOST_MODULES_TO_FIND filesystem system)
+set(BOOST_MODULES_TO_FIND filesystem)
 
 # If build process isn't set to forcefully use system Boost
 macro(get_boost)
