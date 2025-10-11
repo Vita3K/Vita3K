@@ -30,6 +30,14 @@
       }
     },
     {
+      "name": "windows-vs2026",
+      "inherits": "windows",
+      "displayName": "Windows with Visual Studio 2026",
+      "description": "Windows native build using Visual Studio 2026 generator and default toolchain/compiler",
+      "generator": "Visual Studio 18 2026",
+      "architecture": "x64"
+    },
+    {
       "name": "windows-vs2022",
       "inherits": "windows",
       "displayName": "Windows with Visual Studio 2022",
@@ -142,6 +150,27 @@
     }
   ],
   "buildPresets": [
+      {
+      "name": "windows-vs2026-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information and no compiler optimizations",
+      "configuration": "Debug",
+      "configurePreset": "windows-vs2026"
+    },
+    {
+      "name": "windows-vs2026-relwithdebinfo",
+      "displayName": "Release with debugging information",
+      "description": "Build with compiler optimizations enabled and limited debugging information",
+      "configuration": "RelWithDebInfo",
+      "configurePreset": "windows-vs2026"
+    },
+    {
+      "name": "windows-vs2026-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information",
+      "configuration": "Release",
+      "configurePreset": "windows-vs2026"
+    },
     {
       "name": "windows-vs2022-debug",
       "displayName": "Debug",
