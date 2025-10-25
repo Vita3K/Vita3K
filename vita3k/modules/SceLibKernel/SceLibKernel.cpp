@@ -1796,6 +1796,9 @@ EXPORT(int, sceKernelUnloadModule, SceUID uid, SceUInt32 flags, const void *pOpt
 
 EXPORT(int, sceKernelUnlockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int unlock_count) {
     TRACY_FUNC(sceKernelUnlockLwMutex, workarea, unlock_count);
+    if (!workarea)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+
     const auto lwmutexid = workarea.get(emuenv.mem)->uid;
     return mutex_unlock(emuenv.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
 }
