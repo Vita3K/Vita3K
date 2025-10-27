@@ -294,7 +294,7 @@ struct LangState {
         { "ps_button", "PS button" },
         { "l1_button", "L1 button" },
         { "r1_button", "R1 button" },
-        { "ps_tv_mode", "Only in PS TV mode." },
+        { "ps_tv_mode", "Only in PS TV mode" },
         { "l2_button", "L2 button" },
         { "r2_button", "R2 button" },
         { "l3_button", "L3 button" },
