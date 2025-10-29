@@ -44,9 +44,10 @@ void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gui.memory_editor_start = generation_num * KiB(4);
                 gui.memory_editor_count = page.size * KiB(4);
                 gui.debug_menu.memory_editor_dialog = true;
+                gui.memory_editor.Open = true;
             }
             if (ImGui::Selectable("View Disassembly")) {
-                snprintf(gui.disassembly_address, sizeof(gui.disassembly_address), "%08zx", page.size * KiB(4));
+                snprintf(gui.disassembly_address, sizeof(gui.disassembly_address), "%08zx", (generation_num)*KiB(4));
                 reevaluate_code(gui, emuenv);
                 gui.debug_menu.disassembly_dialog = true;
             }
