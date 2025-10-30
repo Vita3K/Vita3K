@@ -36,7 +36,7 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     ImGui::Begin("##welcome", &gui.help_menu.welcome_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::SetWindowFontScale(RES_SCALE.x);
+    ImGui::SetWindowFontScale(1.f);
     TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
