@@ -20,6 +20,8 @@
 #include <imgui.h>
 
 #include <cstdint>
+#include <mutex>
+#include <vector>
 
 struct SDL_Window;
 struct SDL_Cursor;
@@ -42,6 +44,9 @@ struct ImGui_State {
     bool is_typing = false;
     bool do_clear_screen = true;
 
+    std::mutex textures_to_free_mutex;
+    std::vector<ImTextureID> textures_to_free;
+
     ImGui_State() = default;
 
     virtual ~ImGui_State() = default;
@@ -55,13 +60,11 @@ public:
     ImGui_Texture() = default;
     ImGui_Texture(ImGui_State *new_state, void *data, int width, int height);
     ImGui_Texture(ImGui_Texture &&texture) noexcept;
-
-    void init(ImGui_State *new_state, ImTextureID texture);
-    void init(ImGui_State *new_state, void *data, int width, int height);
+    ImGui_Texture(const ImGui_Texture &) = delete;
 
     operator bool() const;
     operator ImTextureID() const;
-    bool operator==(const ImGui_Texture &texture);
+    bool operator==(const ImGui_Texture &texture) const;
 
     ImGui_Texture &operator=(ImGui_Texture &&texture) noexcept;
     ImGui_Texture &operator=(const ImGui_Texture &texture) = delete;

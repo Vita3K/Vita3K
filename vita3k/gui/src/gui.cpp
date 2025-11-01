@@ -352,7 +352,7 @@ static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::str
 void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     IconData data = load_app_icon(gui, emuenv, app_path);
     if (data.data) {
-        gui.app_selector.user_apps_icon[app_path].init(gui.imgui_state.get(), data.data.get(), data.width, data.height);
+        gui.app_selector.user_apps_icon[app_path] = ImGui_Texture(gui.imgui_state.get(), data.data.get(), data.width, data.height);
     }
 }
 
@@ -364,7 +364,7 @@ void IconAsyncLoader::commit(GuiState &gui) {
 
     for (const auto &pair : icon_data) {
         if (pair.second.data) {
-            gui.app_selector.user_apps_icon[pair.first].init(gui.imgui_state.get(), pair.second.data.get(), pair.second.width, pair.second.height);
+            gui.app_selector.user_apps_icon[pair.first] = ImGui_Texture(gui.imgui_state.get(), pair.second.data.get(), pair.second.width, pair.second.height);
         }
     }
 
@@ -435,7 +435,7 @@ void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &
         LOG_ERROR("Invalid background for application {} [{}].", title, app_path);
         return;
     }
-    gui.apps_background[app_path].init(gui.imgui_state.get(), data, width, height);
+    gui.apps_background[app_path] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 }
 
