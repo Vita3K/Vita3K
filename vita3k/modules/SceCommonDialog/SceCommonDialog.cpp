@@ -186,8 +186,10 @@ EXPORT(int, sceImeDialogInit, const Ptr<SceImeDialogParam> param) {
 
     SceImeDialogParam *p = param.get(emuenv.mem);
 
-    std::u16string title = p->title.cast<char16_t>().get(emuenv.mem);
-    std::u16string text = p->initialText.cast<char16_t>().get(emuenv.mem);
+    const auto title_data = p->title.cast<char16_t>().get(emuenv.mem);
+    std::u16string title = title_data ? title_data : u"";
+    const auto text_data = p->initialText.cast<char16_t>().get(emuenv.mem);
+    std::u16string text = text_data ? text_data : u"";
 
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
     emuenv.common_dialog.type = IME_DIALOG;
