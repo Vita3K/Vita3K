@@ -42,10 +42,11 @@
 		<copy_vita3k_summary>Copier le résumé de Vita3K</copy_vita3k_summary>
 		<open_state_report>Ouvrir le rapport d'état</open_state_report>
 		<create_state_report>Créer le rapport d'état</create_state_report>
-		<update_database>Mettre à jour la base de donnée</update_database>
+		<update_database>Mettre à jour la base de données</update_database>
 		<copy_app_info>Copier l'info de l'App</copy_app_info>
 		<name_and_id>Nom et ID du Titre</name_and_id>
-		<app_summary>App Summary</app_summary>
+		<app_summary>Résumé de l'App</app_summary>
+		<create_shortcut>Créer un raccourci</create_shortcut>
 		<custom_config>Config personnalisée</custom_config>
 		<create>Créer</create>
 		<edit>Editer</edit>

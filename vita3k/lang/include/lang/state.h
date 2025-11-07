@@ -162,6 +162,7 @@ struct LangState {
             { "copy_app_info", "Copy App info" },
             { "name_and_id", "Name and Title ID" },
             { "app_summary", "App Summary" },
+            { "create_shortcut", "Create Shortcut" },
             { "custom_config", "Custom Config" },
             { "create", "Create" },
             { "edit", "Edit" },
