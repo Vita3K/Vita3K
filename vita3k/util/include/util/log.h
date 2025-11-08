@@ -32,31 +32,26 @@
 #define LOG_ERROR SPDLOG_ERROR
 #define LOG_CRITICAL SPDLOG_CRITICAL
 
-#define LOG_TRACE_IF(flag, ...) \
-    if (flag)                   \
-    LOG_TRACE(__VA_ARGS__)
-#define LOG_DEBUG_IF(flag, ...) \
-    if (flag)                   \
-    LOG_DEBUG(__VA_ARGS__)
-#define LOG_INFO_IF(flag, ...) \
-    if (flag)                  \
-    LOG_INFO(__VA_ARGS__)
-#define LOG_WARN_IF(flag, ...) \
-    if (flag)                  \
-    LOG_WARN(__VA_ARGS__)
-#define LOG_ERROR_IF(flag, ...) \
-    if (flag)                   \
-    LOG_ERROR(__VA_ARGS__)
-#define LOG_CRITICAL_IF(flag, ...) \
-    if (flag)                      \
-    LOG_CRITICAL(__VA_ARGS__)
+#define LOG_IF(log_function, flag, ...) \
+    do {                                \
+        if (flag)                       \
+            log_function(__VA_ARGS__);  \
+    } while (0)
 
-#define LOG_ONCE(log_function, ...)    \
-    do {                               \
-        static bool LOG_DONE = false;  \
-        if (!LOG_DONE)                 \
-            log_function(__VA_ARGS__); \
-        LOG_DONE = true;               \
+#define LOG_TRACE_IF(flag, ...) LOG_IF(LOG_TRACE, flag, __VA_ARGS__)
+#define LOG_DEBUG_IF(flag, ...) LOG_IF(LOG_DEBUG, flag, __VA_ARGS__)
+#define LOG_INFO_IF(flag, ...) LOG_IF(LOG_INFO, flag, __VA_ARGS__)
+#define LOG_WARN_IF(flag, ...) LOG_IF(LOG_WARN, flag, __VA_ARGS__)
+#define LOG_ERROR_IF(flag, ...) LOG_IF(LOG_ERROR, flag, __VA_ARGS__)
+#define LOG_CRITICAL_IF(flag, ...) LOG_IF(LOG_CRITICAL, flag, __VA_ARGS__)
+
+#define LOG_ONCE(log_function, ...)     \
+    do {                                \
+        static bool has_logged = false; \
+        if (!has_logged) {              \
+            has_logged = true;          \
+            log_function(__VA_ARGS__);  \
+        }                               \
     } while (0)
 
 #define LOG_TRACE_ONCE(...) LOG_ONCE(LOG_TRACE, __VA_ARGS__)
