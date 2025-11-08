@@ -23,6 +23,7 @@
 #include <util/exit_code.h>
 #include <util/fs.h>
 
+#include <atomic>
 #include <type_traits>
 
 #define LOG_TRACE SPDLOG_TRACE
@@ -45,13 +46,11 @@
 #define LOG_ERROR_IF(flag, ...) LOG_IF(LOG_ERROR, flag, __VA_ARGS__)
 #define LOG_CRITICAL_IF(flag, ...) LOG_IF(LOG_CRITICAL, flag, __VA_ARGS__)
 
-#define LOG_ONCE(log_function, ...)     \
-    do {                                \
-        static bool has_logged = false; \
-        if (!has_logged) {              \
-            has_logged = true;          \
-            log_function(__VA_ARGS__);  \
-        }                               \
+#define LOG_ONCE(log_function, ...)         \
+    do {                                    \
+        static std::atomic_flag has_logged; \
+        if (!has_logged.test_and_set())     \
+            log_function(__VA_ARGS__);      \
     } while (0)
 
 #define LOG_TRACE_ONCE(...) LOG_ONCE(LOG_TRACE, __VA_ARGS__)
