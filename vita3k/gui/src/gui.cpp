@@ -63,7 +63,7 @@ void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::BeginChild("##info", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
         const auto &title = gui.info_message.title;
-        ImGui::SetWindowFontScale(RES_SCALE.x);
+        ImGui::SetWindowFontScale(1.f);
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, title.c_str());
         ImGui::Spacing();
         ImGui::Separator();
@@ -74,7 +74,7 @@ void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosY(WINDOW_SIZE.y - BUTTON_SIZE.y - (42.0f * SCALE.y));
         ImGui::Separator();
         ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
-        if (ImGui::Button(emuenv.common_dialog.lang.common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross)))
+        if (ImGui::Button(emuenv.common_dialog.lang.common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_cross)))
             gui.info_message = {};
         ImGui::EndChild();
 
@@ -200,110 +200,101 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     builder.BuildRanges(&japanese_and_extra_ranges);
 
     // Set max texture size
-    int max_texture_size = emuenv.renderer->get_max_2d_texture_width();
-    io.Fonts->TexDesiredWidth = max_texture_size;
+    // int max_texture_size = emuenv.renderer->get_max_2d_texture_width();
+    int max_texture_size = std::min(emuenv.renderer->get_max_2d_texture_width(), 8192);
+    io.Fonts->TexMaxWidth = max_texture_size;
+    io.Fonts->TexMaxHeight = max_texture_size;
 
-    for (int font_scale_count = std::size(FontScaleCandidates); font_scale_count > 0; font_scale_count--) {
-        for (int i = 0; i < font_scale_count; i++) {
-            float scale = FontScaleCandidates[i];
-
-            ImFontConfig mono_font_config{};
-            mono_font_config.SizePixels = 13.f;
-            mono_font_config.OversampleH = 2;
-            mono_font_config.OversampleV = 2;
-            mono_font_config.RasterizerDensity = scale;
+    ImFontConfig mono_font_config{};
+    mono_font_config.SizePixels = 13.f;
+    mono_font_config.OversampleH = 2;
+    mono_font_config.OversampleV = 2;
+    mono_font_config.RasterizerDensity = 1;
 
 #ifdef _WIN32
-            constexpr auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
-            gui.monospaced_font[i] = io.Fonts->AddFontFromFileTTF(monospaced_font_path, mono_font_config.SizePixels, &mono_font_config, io.Fonts->GetGlyphRangesJapanese());
+    constexpr auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
+    gui.monospaced_font = io.Fonts->AddFontFromFileTTF(monospaced_font_path, mono_font_config.SizePixels, &mono_font_config, io.Fonts->GetGlyphRangesJapanese());
 #else
-            gui.monospaced_font[i] = io.Fonts->AddFontDefault(&mono_font_config);
+    gui.monospaced_font = io.Fonts->AddFontDefault(&mono_font_config);
 #endif
 
-            // Set Fw font paths
-            const auto fw_font_path{ emuenv.pref_path / "sa0/data/font/pvf" };
-            const auto latin_fw_font_path{ fw_font_path / "ltn0.pvf" };
+    // Set Fw font paths
+    const auto fw_font_path{ emuenv.pref_path / "sa0/data/font/pvf" };
+    const auto latin_fw_font_path{ fw_font_path / "ltn0.pvf" };
 
-            ImFontConfig font_config{};
-            ImFontConfig large_font_config{};
+    ImFontConfig font_config{};
+    ImFontConfig large_font_config{};
 
-            // Check existence of fw font file
-            if (fs::exists(latin_fw_font_path)) {
-                // Add fw font to imgui
+    // Check existence of fw font file
+    if (fs::exists(latin_fw_font_path)) {
+        // Add fw font to imgui
 
-                gui.fw_font = true;
-                font_config.SizePixels = 19.2f;
-                font_config.OversampleH = 2;
-                font_config.OversampleV = 2;
-                font_config.RasterizerDensity = scale;
+        gui.fw_font = true;
+        font_config.SizePixels = 19.2f;
+        font_config.OversampleH = 2;
+        font_config.OversampleV = 2;
+        font_config.RasterizerDensity = 1;
 
-                gui.vita_font[i] = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(latin_fw_font_path).c_str(), font_config.SizePixels, &font_config, latin_range);
-                font_config.MergeMode = true;
+        gui.vita_font = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(latin_fw_font_path).c_str(), font_config.SizePixels, &font_config, latin_range);
+        font_config.MergeMode = true;
 
-                const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
-                const bool is_chinese = (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T);
+        const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
+        const bool is_chinese = (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T);
 
-                // When the system language is Chinese, the Chinese fonts should be loaded before the Japanese fonts
-                // So that the CJK characters can be displayed in Chinese glyphs
-                if (is_chinese)
-                    io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "cn0.pvf").c_str(), font_config.SizePixels, &font_config, chinese_range);
+        // When the system language is Chinese, the Chinese fonts should be loaded before the Japanese fonts
+        // So that the CJK characters can be displayed in Chinese glyphs
+        if (is_chinese)
+            io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "cn0.pvf").c_str(), font_config.SizePixels, &font_config, chinese_range);
 
-                io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "jpn0.pvf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
+        io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "jpn0.pvf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
 
-                if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN))
-                    io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "kr0.pvf").c_str(), font_config.SizePixels, &font_config, korean_range);
-                if (emuenv.cfg.asia_font_support && !is_chinese)
-                    io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "cn0.pvf").c_str(), font_config.SizePixels, &font_config, chinese_range);
-                font_config.MergeMode = false;
+        if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN))
+            io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "kr0.pvf").c_str(), font_config.SizePixels, &font_config, korean_range);
+        if (emuenv.cfg.asia_font_support && !is_chinese)
+            io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(fw_font_path / "cn0.pvf").c_str(), font_config.SizePixels, &font_config, chinese_range);
+        font_config.MergeMode = false;
 
-                large_font_config.SizePixels = 116.f;
-                large_font_config.OversampleH = 2;
-                large_font_config.OversampleV = 2;
-                large_font_config.RasterizerDensity = scale;
-                gui.large_font[i] = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(latin_fw_font_path).c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
-            } else {
-                LOG_WARN("Could not find firmware font file at {}, install firmware fonts package to fix this.", latin_fw_font_path);
-                font_config.SizePixels = 22.f;
-                font_config.OversampleH = 2;
-                font_config.OversampleV = 2;
-                font_config.RasterizerDensity = scale;
+        large_font_config.SizePixels = 116.f;
+        large_font_config.OversampleH = 2;
+        large_font_config.OversampleV = 2;
+        large_font_config.RasterizerDensity = 1;
+        gui.large_font = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(latin_fw_font_path).c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
+    } else {
+        LOG_WARN("Could not find firmware font file at {}, install firmware fonts package to fix this.", latin_fw_font_path);
+        font_config.SizePixels = 22.f;
+        font_config.OversampleH = 2;
+        font_config.OversampleV = 2;
+        font_config.RasterizerDensity = 1;
 
-                // Set up default font path
-                fs::path default_font_path = emuenv.static_assets_path / "data/fonts";
+        // Set up default font path
+        fs::path default_font_path = emuenv.static_assets_path / "data/fonts";
 
-                // Check existence of default font file
-                if (fs::exists(default_font_path)) {
-                    gui.vita_font[i] = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), font_config.SizePixels, &font_config, latin_range);
-                    font_config.MergeMode = true;
-                    io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
+        // Check existence of default font file
+        if (fs::exists(default_font_path)) {
+            gui.vita_font = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), font_config.SizePixels, &font_config, latin_range);
+            font_config.MergeMode = true;
+            io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
 
-                    const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
-                    if (!emuenv.cfg.initial_setup || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T))
-                        io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "SourceHanSansSC-Bold-Min.ttf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
-                    font_config.MergeMode = false;
+            const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
+            if (!emuenv.cfg.initial_setup || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T))
+                io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "SourceHanSansSC-Bold-Min.ttf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
+            font_config.MergeMode = false;
 
-                    large_font_config.SizePixels = 134.f;
-                    large_font_config.OversampleH = 2;
-                    large_font_config.OversampleV = 2;
-                    large_font_config.RasterizerDensity = scale;
-                    gui.large_font[i] = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
+            large_font_config.SizePixels = 134.f;
+            large_font_config.OversampleH = 2;
+            large_font_config.OversampleV = 2;
+            large_font_config.RasterizerDensity = 1;
+            gui.large_font = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
 
-                    LOG_INFO("Using default Vita3K font.");
-                } else
-                    LOG_WARN("Could not find default Vita3K font at {}, using default ImGui font.", default_font_path);
-            }
-        }
-
-        // Build font atlas loaded and upload to GPU
-        io.Fonts->Build();
-        LOG_INFO("Maximum font scale set to x{}, Font atlas size: {}x{}", FontScaleCandidates[font_scale_count - 1], io.Fonts->TexWidth, io.Fonts->TexHeight);
-        if (io.Fonts->TexWidth > max_texture_size || io.Fonts->TexHeight > max_texture_size) {
-            LOG_WARN("Font atlas size exceeds maximum texture size, retrying with smaller font size.\n");
-            io.Fonts->Clear();
+            LOG_INFO("Using default Vita3K font.");
         } else {
-            emuenv.max_font_level = font_scale_count - 1;
-            return;
+            LOG_WARN("Could not find default Vita3K font at {}, using default ImGui font.", default_font_path);
         }
+    }
+
+    // Build font atlas loaded and upload to GPU
+    if (!(io.BackendFlags & ImGuiBackendFlags_RendererHasTextures)) {
+        io.Fonts->Build();
     }
 }
 
@@ -771,7 +762,7 @@ ImTextureID load_image(GuiState &gui, const uint8_t *data, const int size) {
         nullptr, STBI_rgb_alpha);
 
     if (!img_data)
-        return nullptr;
+        return 0;
 
     const auto handle = ImGui_ImplSdl_CreateTexture(gui.imgui_state.get(), img_data, width, height);
     stbi_image_free(img_data);
@@ -851,7 +842,7 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.vita_area.start_screen)
         draw_start_screen(gui, emuenv);
 
-    ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
+    ImGui::PushFont(gui.vita_font);
 
     if (gui.vita_area.app_close)
         draw_app_close(gui, emuenv);
@@ -910,7 +901,7 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
-    ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
+    ImGui::PushFont(gui.vita_font);
     if ((gui.vita_area.home_screen || !emuenv.io.app_path.empty()) && get_sys_apps_state(gui) && !gui.vita_area.live_area_screen && !gui.vita_area.user_management && (!emuenv.cfg.show_info_bar || !gui.vita_area.information_bar))
         draw_main_menu_bar(gui, emuenv);
 
@@ -929,7 +920,7 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::PopFont();
 
-    ImGui::PushFont(gui.monospaced_font[emuenv.current_font_level]);
+    ImGui::PushFont(gui.monospaced_font);
 
     if (gui.debug_menu.threads_dialog)
         draw_threads_dialog(gui, emuenv);

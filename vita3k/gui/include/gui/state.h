@@ -245,10 +245,6 @@ struct InfoMessage {
     std::string msg;
 };
 
-// 2.f is enough for the current font size.
-const float FontScaleCandidates[] = { 1.f, 1.5f, 2.f };
-const int FontScaleCandidatesSize = std::size(FontScaleCandidates);
-
 struct GuiState {
     std::unique_ptr<ImGui_State> imgui_state;
 
@@ -347,8 +343,8 @@ struct GuiState {
     ImVec2 trophy_window_pos;
 
     // imgui
-    ImFont *monospaced_font[FontScaleCandidatesSize]{};
-    ImFont *vita_font[FontScaleCandidatesSize]{};
-    ImFont *large_font[FontScaleCandidatesSize]{};
+    ImFont *monospaced_font;
+    ImFont *vita_font;
+    ImFont *large_font;
     bool fw_font = false;
 };

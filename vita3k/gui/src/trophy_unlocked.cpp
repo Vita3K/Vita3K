@@ -107,10 +107,10 @@ static void draw_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, NpTrophyUnl
         break;
     }
 
-    ImGui::SetWindowFontScale(1.f * RES_SCALE.x);
+    ImGui::SetWindowFontScale(1.f);
     ImGui::SetCursorPosY(TROPHY_WINDOW_MARGIN_PADDING);
     ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "(%s) %s", trophy_kind_s.c_str(), callback_data.trophy_name.c_str());
-    ImGui::SetWindowFontScale(0.8f * RES_SCALE.x);
+    ImGui::SetWindowFontScale(0.8f);
     ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "%s", gui.lang.indicator["trophy_earned"].c_str());
     ImGui::End();
     ImGui::PopStyleColor();

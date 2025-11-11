@@ -72,7 +72,7 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.f * SCALE.x);
     ImGui::BeginChild("#perf_stats", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
-    ImGui::SetWindowFontScale(0.7f * RES_SCALE.y);
+    ImGui::SetWindowFontScale(0.7f);
 
     ImGui::Text("%s", FPS_TEXT.c_str());
     if (emuenv.cfg.performance_overlay_detail >= PerformanceOverlayDetail::MEDIUM) {

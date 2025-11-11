@@ -205,9 +205,9 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
 
         // Set scroll with mouse wheel or keyboard up/down keys
         const auto wheel_counter = ImGui::GetIO().MouseWheel;
-        if ((wheel_counter == 1.f) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_leftstick_up)))
+        if ((wheel_counter == 1.f) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_leftstick_up)))
             scroll -= std::min(40.f * SCALE.y, scroll);
-        else if ((wheel_counter == -1.f) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_leftstick_down)))
+        else if ((wheel_counter == -1.f) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_leftstick_down)))
             scroll += std::min(40.f * SCALE.y, max_scroll.at(current_page) - scroll);
 
         // Set scroll y position
@@ -231,7 +231,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     // Set window font scale for buttons
-    ImGui::SetWindowFontScale(RES_SCALE.x);
+    ImGui::SetWindowFontScale(1.f);
 
     // Hide button when right click is pressed on mouse
     if (!ImGui::IsAnyItemHovered() && ImGui::IsMouseClicked(0))
@@ -239,7 +239,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
 
     // Draw esc button
     ImGui::SetCursorPos(ImVec2(5.0f * SCALE.x, 10.0f * SCALE.y));
-    if ((!hidden_button && ImGui::Button("Esc", BUTTON_SIZE)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_psbutton)))
+    if ((!hidden_button && ImGui::Button("Esc", BUTTON_SIZE)) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_button_psbutton)))
         gui::close_system_app(gui, emuenv);
 
     const auto BUTTON_POS = ImVec2(10.f * SCALE.x, display_size.y - (10.f * SCALE.y) - BUTTON_SIZE.y);
@@ -247,7 +247,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
     // Draw left button
     if (current_page > 0) {
         ImGui::SetCursorPos(BUTTON_POS);
-        if ((!hidden_button && ImGui::Button("<", BUTTON_SIZE)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_leftstick_left)))
+        if ((!hidden_button && ImGui::Button("<", BUTTON_SIZE)) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_leftstick_left)))
             change_page(emuenv, current_page - 1);
     }
 
@@ -280,13 +280,13 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     ImGui::SetCursorPos(ImVec2(display_size.x - BUTTON_POS.x - (BUTTON_SIZE.x * 2.f) - (36.f * SCALE.x), BUTTON_POS.y));
-    if ((!hidden_button && ImGui::Button("Book", BUTTON_SIZE)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_leftstick_right)))
+    if ((!hidden_button && ImGui::Button("Book", BUTTON_SIZE)) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_leftstick_right)))
         is_book_mode = !is_book_mode;
 
     // Draw right button
     if (current_page < max_pages_index) {
         ImGui::SetCursorPos(ImVec2(display_size.x - BUTTON_POS.x - BUTTON_SIZE.x, BUTTON_POS.y));
-        if ((!hidden_button && ImGui::Button(">", BUTTON_SIZE)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_leftstick_right)))
+        if ((!hidden_button && ImGui::Button(">", BUTTON_SIZE)) || ImGui::IsKeyPressed(ImGui_ImplSdl_ScancodeToImGuiKey(emuenv.cfg.keyboard_leftstick_right)))
             change_page(emuenv, current_page + 1);
     }
     ImGui::EndChild();
