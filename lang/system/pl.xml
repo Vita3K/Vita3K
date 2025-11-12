@@ -13,12 +13,13 @@
 		</file>
 		<emulation name="Emulacja">
 			<last_apps_used>Ostatnio używane aplikacje</last_apps_used>
+			<empty>Pusto</empty>
 		</emulation>
-		<debug>
+		<debug name="Debugowanie">
 			<threads>Wątki</threads>
 			<semaphores>Semafory</semaphores>
 			<mutexes>Mutexy</mutexes>
-			<lightweight_mutexes>Lekkie Mutexy</lightweight_mutexes>
+			<lightweight_mutexes>Lekkie mutexy</lightweight_mutexes>
 			<condition_variables>Zmienne stanu</condition_variables>
 			<lightweight_condition_variables>Lekkie zmienne stanu</lightweight_condition_variables>
 			<event_flags>Flagi zdarzeń</event_flags>
@@ -113,6 +114,7 @@ Kod błędu: {}</an_error_occurred>
 		<file_corrupted>Plik jest uszkodzony.</file_corrupted>
 		<microphone_disabled>Włącz mikrofon.</microphone_disabled>
 		<no>Nie</no>
+		<ok>OK</ok>
 		<please_wait>Czekaj...</please_wait>
 		<search>Wyszukaj</search>
 		<select_all>Zaznacz wszystko</select_all>
@@ -283,6 +285,7 @@ Kod błędu: {}</an_error_occurred>
 	<controllers name="Kontroler">
 		<connected>{} kontrolerów podłączonych</connected>
 		<num>Num</num>
+		<motion_support>Wsparcie dla ruchu</motion_support>
 		<rebind_controls>Przypisz przyciski ponownie</rebind_controls>
 		<led_color>Kolor LED</led_color>
 		<use_custom_color>Użyj własnego koloru</use_custom_color>
@@ -292,6 +295,7 @@ Kod błędu: {}</an_error_occurred>
 		<blue>Niebieski</blue>
 		<not_connected>Niepodłączono żadnego ze wspieranych kontrolerów.
 Proszę, podłącz kontroler, który jest kompatybilny z SDL3.</not_connected>
+		<disable_motion>Wyłącz wsparcie dla ruchu</disable_motion>
 		<reset_controller_binding>Restuj przypisanie przycisków kontrollera</reset_controller_binding>
 	</controllers>
 
@@ -303,7 +307,7 @@ Proszę, podłącz kontroler, który jest kompatybilny z SDL3.</not_connected>
 		<left_stick_right>Lewy drążek prawo</left_stick_right>
 		<left_stick_left>Lewy drążek lewo</left_stick_left>
 		<right_stick_up>Prawy drążek góra</right_stick_up>
-		<right_stick_down>Prawy drążek doł</right_stick_down>
+		<right_stick_down>Prawy drążek dół</right_stick_down>
 		<right_stick_right>Prawy drążek prawo</right_stick_right>
 		<right_stick_left>Prawy drążek lewo</right_stick_left>
 		<d_pad_up>Krzyżak (D-Pad) góra</d_pad_up>
@@ -420,6 +424,7 @@ System Vita3K jest gotowy!</completed_setup>
 		<change_emu_path>Zmień ścieżka emulatora</change_emu_path>
 		<reset_emu_path>Resetuj ścieżka emulatora</reset_emu_path>
 		<install_firmware>Instaluj oprogramowanie.</install_firmware>
+		<install_highly_recommended>Instalacja wszystkich plików oprogramowania jest wysoce zalecana.</install_highly_recommended>
 		<installed>Zainstalowana:</installed>
 		<download_font_package>Pobierz paczkę czcionek</download_font_package>
 		<install_firmware_file>Zainstaluj plik oprogramowania systemu konsoli</install_firmware_file>
@@ -508,6 +513,14 @@ Upewnij się, że pliki work.bin/rif lub klucz zRIF.</failed_install_license>
 			<exit_manual_control>Naciśnij Esc lub wciśnij PS na kontrolerze</exit_manual_control>
 		</help>
 	</live_area>
+	
+	<message>
+		<load_app_failed>Nie udało się wczytać "{}".
+Sprawdź plik vita3k.log, aby zobaczyć szczegóły na konsoli.
+1. Czy zainstalowałeś oprogramowanie (firmware)?
+2. Zrób ponowny zrzut swojej aplikacji/gry PS Vita i zainstaluj ją na Vita3K.
+3. Instalacja lub uruchamianie Vitamin nie jest wspierane.</load_app_failed>
+	</message>
 
 	<performance_overlay>
 		<avg>Śred</avg>
@@ -578,7 +591,7 @@ Upewnij się, że pliki work.bin/rif lub klucz zRIF.</failed_install_license>
 	</settings>
 
 	<settings_dialog name="Ustawienia">
-		<core name="Rdzeń">
+		<core name="Główne">
 			<modules_mode>Tryb modułów</modules_mode>
 			<modules_list>Lista modułów</modules_list>
 			<select_modules>Wybierz pożądane moduły.</select_modules>
@@ -587,6 +600,12 @@ Upewnij się, że pliki work.bin/rif lub klucz zRIF.</failed_install_license>
 			<no_modules>Brak dostępnych modułów.
 Proszę pobrać i zainstalować najnowsze oprogramowanie systemu PS Vita.</no_modules>
 			<refresh_list>Odśwież listę</refresh_list>
+			<automatic>Automatyczny</automatic>
+			<automatic_description>Wybierz tryb Automatyczny, aby użyć domyślnej listy modułów.</automatic_description>
+			<auto_manual>Automatyczny i Ręczny</auto_manual>
+			<auto_manual_description>Wybierz ten tryb, aby wczytać moduły Automatyczne oraz te wybrane z listy poniżej.</auto_manual_description>
+			<manual>Ręczny</manual>
+			<manual_description>Wybierz tryb Ręczny, aby wczytać tylko moduły wybrane z listy poniżej.</manual_description>
 		</core>
 		<cpu name="Procesor">
 			<cpu_opt>Włącz optymalizacje</cpu_opt>
@@ -594,8 +613,9 @@ Proszę pobrać i zainstalować najnowsze oprogramowanie systemu PS Vita.</no_mo
 		</cpu>
 		<gpu name="Karta graficzna">
 			<reset>Resetuj</reset>
-			<backend_renderer>Backend Renderowania</backend_renderer>
-			<select_backend_renderer>Wybierz preferowany backend renderowania.</select_backend_renderer>
+			<backend_renderer>Sterownik renderowania</backend_renderer>
+			<automatic>Automatyczny</automatic>
+			<select_backend_renderer>Wybierz preferowany sterownik renderowania.</select_backend_renderer>
 			<gpu>GPU (Wymaga restartu)</gpu>
 			<select_gpu>Wybierz kartę graficzną, jaką Vita3K powinno używać.</select_gpu>
 			<standard>Standardowa</standard>
@@ -635,15 +655,15 @@ Odznacz, aby wyłączyć tą funkcje.</shader_cache_description>
 			<spirv_shader_description>Przekaż wygenerowany moduł cieniujący Spir-V bezpośrednio do sterownika.
 Pamiętaj, że niektóre przydatne rozszerzenia zostaną wyłączone,
 i nie wszystkie procesory graficzne są z tym kompatybilne.</spirv_shader_description>
-			<clean_shaders>Wyczyść pamięć podręczną cieni</clean_shaders>
+			<clean_shaders>Wyczyść pamięć podręczną i dziennik cieni</clean_shaders>
 			<fps_hack>FPS Hack</fps_hack>
 			<fps_hack_description>Hack do gry, który pozwala niektórym grom działającym z szybkością 30 FPS działać w 60 FPS na emulatorze.
 Pamiętaj, że jest to hack i będzie działać tylko w niektórych grach.
 W innych grach może to nie mieć żadnego efektu lub spowodować, że będą działać dwa razy szybciej.</fps_hack_description>
 		</gpu>
 		<audio name="Dźwięk">
-			<audio_backend>Audio Backend</audio_backend>
-			<select_audio_backend>Wybierz preferowany audio backend.</select_audio_backend>
+			<audio_backend>Sterownik dźwięku</audio_backend>
+			<select_audio_backend>Wybierz preferowany sterownik dźwięku.</select_audio_backend>
 			<audio_volume>Głośność dźwięku</audio_volume>
 			<audio_volume_description>Dostosowywuje poziom głośności dla wszystkich dostępnych urządzeń dźwiękowych.</audio_volume_description>
 			<enable_ngs_support>Włącz wsparcie dla NGS</enable_ngs_support>
@@ -716,6 +736,9 @@ Wymaga ręcznego przeniesienia folderu do nowej lokalizacji.</change_emu_path_de
 Wymaga ręcznego przeniesienia folderu do nowej lokalizacji.</reset_emu_path_description>
 			<custom_config_settings>Ustawienia niestandardowej konfiguracji</custom_config_settings>
 			<clear_custom_config>Wyczyść niestandardową konfigurację</clear_custom_config>
+			<screenshot_image_type>Zrzuty ekranu</screenshot_image_type>
+			<null>Brak</null>
+			<screenshot_format>Format zrzutu ekranu</screenshot_format>
 		</emulator>
 		<gui name="Interfejs graficzny">
 			<show_gui>Włącz interfejs graficzny</show_gui>
@@ -734,6 +757,9 @@ Będą dalej widoczne w menu głównym.</display_system_apps_description>
 Jeśli jest wyłączona, kliknij aplikację prawym przyciskiem myszy, aby ją otworzyć.</live_area_screen_description>
 			<stretch_the_display_area>Rozciągnij obraz do obszaru wyświetlania</stretch_the_display_area>
 			<stretch_the_display_area_description>Zaznacz, aby powiększyć obszar wyświetlania w celu dopasowania go do rozmiaru ekranu.</stretch_the_display_area_description>
+			<fullscreen_hd_res_pixel_perfect>Pełny ekran w rozdzielczości HD (idealne piksele)</fullscreen_hd_res_pixel_perfect>
+			<fullscreen_hd_res_pixel_perfect_description>Zaznacz, aby uzyskać idealne renderowanie pikseli w rozdzielczościach HD (1080p, 4K) na pełnym ekranie
+kosztem niewielkiego przycięcia u góry i u dołu ekranu.</fullscreen_hd_res_pixel_perfect_description>
 			<apps_list_grid>Tryb siatki</apps_list_grid>
 			<apps_list_grid_description>Zaznacz aby wyświetlać listę aplikacji w trybie siatki.</apps_list_grid_description>
 			<icon_size>Rozmiar ikony aplikacji</icon_size>
@@ -802,6 +828,7 @@ niższa wartość może poprawić wydajność, ale może sprawić, że gry będ�
 		</debug>
 		<save_reboot>Zapisz i uruchom ponownie</save_reboot>
 		<save_apply>Zapisz i zatwierdź</save_apply>
+		<save_close>Zapisz i zamknij</save_close>
 		<keep_changes>Naciśnij 'Zapisz', aby zachować zmiany.</keep_changes>
 	</settings_dialog>
 
@@ -830,6 +857,8 @@ Trofea można zdobywać, korzystając z aplikacji obsługującej funkcję trofe�
 		<grade>Stopień</grade>
 		<progress>Postęp</progress>
 		<updated>Zaktualizowano</updated>
+		<advance>Dalej</advance>
+		<show_hidden>Pokaż ukryte trofea</show_hidden>
 	</trophy_collection>
 
 	<user_management>
@@ -879,6 +908,8 @@ Po ukończeniu pobierania Vita3K zostanie automatycznie ponownie uruchomiony, a 
 		<vita3k>Vita3K, emulator systemu PlayStation Vita</vita3k>
 		<about_vita3k>Vita3K jest otwarto-źródłowym emulatorem PlayStation Vita pisanym w języku C++ dla systemu Windows, Linux, macOS oraz Android.</about_vita3k>
 		<development_stage>Emulator jest wciąż w fazie rozwojowej, więc każda informacja zwrotna w formie testów jest mile widziana.</development_stage>
+		<about_firmware>Aby rozpocząć, zainstaluj wszystkie pliki oprogramowania PS Vita.</about_firmware>
+		<download_preinst_firmware>Pobierz oprogramowanie Preinst</download_preinst_firmware>
 		<download_firmware>Pobierz oprogramowanie systemu konsoli</download_firmware>
 		<download_firmware_font_package>Pobierz paczkę czcionek</download_firmware_font_package>
 		<vita3k_quickstart>Szczegółowy poradnik konfiguracji Vita3K jest dostępny na stronie</vita3k_quickstart>
