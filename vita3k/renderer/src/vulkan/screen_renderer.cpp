@@ -221,23 +221,21 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
     if (current_frame == swapchain_size)
         current_frame = 0;
 
+    if (!surface_matches_window_size()) {
+        auto rebuilt = rebuild_swapchain_if_visible();
+        if (!rebuilt)
+            return false;
+    }
+
     if (swapchain)
         acquire_result = state.device.acquireNextImageKHR(swapchain,
             next_image_timeout, image_acquired_semaphores[current_frame], vk::Fence(), &swapchain_image_idx);
 
     if (acquire_result != vk::Result::eSuccess) {
         if (acquire_result == vk::Result::eErrorOutOfDateKHR || acquire_result == vk::Result::eSuboptimalKHR) {
-            state.device.waitIdle();
-            destroy_swapchain();
-            int width, height;
-            SDL_GetWindowSizeInPixels(window, &width, &height);
-            // don't render anything when the window is minimized
-            if (width == 0 || height == 0)
+            auto rebuilt = rebuild_swapchain_if_visible();
+            if (!rebuilt)
                 return false;
-
-            create_swapchain();
-            if (swapchain)
-                need_rebuild = true;
         } else {
             LOG_WARN("Failed to get next image. Error: {}", vk::to_string(acquire_result));
         }
@@ -344,16 +342,7 @@ void ScreenRenderer::swap_window() {
             return;
         }
     } catch (vk::OutOfDateKHRError &) {
-        state.device.waitIdle();
-        destroy_swapchain();
-
-        int width, height;
-        SDL_GetWindowSizeInPixels(window, &width, &height);
-        if (width > 0 && height > 0) {
-            create_swapchain();
-            if (swapchain)
-                need_rebuild = true;
-        }
+        rebuild_swapchain_if_visible();
     }
 
     swapchain_image_idx = ~0;
@@ -457,6 +446,32 @@ void ScreenRenderer::create_surface_image() {
         .sharingMode = vk::SharingMode::eExclusive
     };
     std::tie(vita_surface_staging, vita_surface_staging_alloc) = state.allocator.createBuffer(buffer_info, vkutil::vma_mapped_alloc, vita_surface_staging_info);
+}
+
+bool ScreenRenderer::rebuild_swapchain_if_visible() {
+    state.device.waitIdle();
+    destroy_swapchain();
+    int width, height;
+    SDL_GetWindowSizeInPixels(window, &width, &height);
+    // don't render anything when the window is minimized
+    if (width == 0 || height == 0)
+        return false;
+
+    create_swapchain();
+    if (swapchain)
+        need_rebuild = true;
+
+    return true;
+}
+
+bool ScreenRenderer::surface_matches_window_size() {
+    int width, height;
+    SDL_GetWindowSizeInPixels(window, &width, &height);
+    // if we're minimized, assume the current size is OK
+    if (width == 0 || height == 0)
+        return true;
+
+    return extent.width == width && extent.height == height;
 }
 
 } // namespace renderer::vulkan
