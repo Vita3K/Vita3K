@@ -45,31 +45,13 @@ jobs:
           restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
-      - name: Set up SDL 2.30.11 (ubuntu-latest)
-        run: |
-          SDL2VER=2.30.11
-          if [[ ! -e ~/.ccache ]]; then
-            mkdir ~/.ccache
-          fi  
-          cd ~/.ccache
-          if [[ ! -e SDL2-${SDL2VER} ]]; then
-            curl -sLO https://libsdl.org/release/SDL2-${SDL2VER}.tar.gz
-            tar -xzf SDL2-${SDL2VER}.tar.gz
-            cd SDL2-${SDL2VER}
-            ./configure --prefix=/usr/local
-            make && cd ../
-            rm SDL2-${SDL2VER}.tar.gz
-          fi
-          sudo make -C SDL2-${SDL2VER} install
-        if: matrix.os == 'ubuntu-latest'
-
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           # If you wish to specify custom queries, you can do so here or in a config file.
@@ -83,4 +65,4 @@ jobs:
          cmake --build build/${{ matrix.cmake_preset }} --config ${{ matrix.config }}
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4

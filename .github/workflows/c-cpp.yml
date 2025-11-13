@@ -4,10 +4,10 @@ on: [push, pull_request]
 
 jobs:
   format-check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Format check
         run: .github/format-check.sh
@@ -52,7 +52,7 @@ jobs:
             version: appimage
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           submodules: recursive
@@ -154,7 +154,7 @@ jobs:
           rm -f ../*AppImage*
         if: matrix.os == 'ubuntu-22.04' && matrix.version == 'appimage'
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: vita3k-${{ env.git_short_sha }}-${{ matrix.version }}-${{ matrix.os }}
           # path is set up to be <binary_dir>/bin/<config_type> since that's how multi-config
@@ -171,7 +171,7 @@ jobs:
       fail-fast: false
       matrix:
         repo: [master, store]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     concurrency:
       group: create-release-${{ matrix.repo }}
       cancel-in-progress: false
@@ -179,10 +179,10 @@ jobs:
       github.ref == 'refs/heads/master' &&
       github.repository == 'Vita3K/Vita3K'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
 
       - name: Get Build Variable
         run: echo "Build_Variable=${{ needs.build.outputs.BuildTag }}" >> $GITHUB_ENV
