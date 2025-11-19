@@ -577,10 +577,12 @@ EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
         // STUBBED("code SCE_NETCTL_INFO_GET_RSSI_PERCENTAGE return 100%");
         break;
     case SCE_NETCTL_INFO_GET_IP_ADDRESS:
-        inet_pton(AF_INET, addr.addr.c_str(), &info->ip_address);
+        std::strncpy(info->ip_address, addr.addr.c_str(), sizeof(info->ip_address) - 1);
+        info->ip_address[sizeof(info->ip_address) - 1] = '\0';
         break;
     case SCE_NETCTL_INFO_GET_NETMASK:
-        inet_pton(AF_INET, addr.netMask.c_str(), &info->netmask);
+        std::strncpy(info->netmask, addr.netMask.c_str(), sizeof(info->netmask) - 1);
+        info->netmask[sizeof(info->netmask) - 1] = '\0';
         break;
     default:
         switch (code) {
