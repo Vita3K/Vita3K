@@ -322,16 +322,17 @@ EXPORT(int, sceNetGetStatisticsInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetGetpeername) {
-    TRACY_FUNC(sceNetGetpeername);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetGetpeername, int sid, SceNetSockaddr *addr, unsigned int *addrlen) {
+    TRACY_FUNC(sceNetGetpeername, sid, addr, addrlen);
+    auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
+    RET_NET_ERRNO(sock ? sock->get_peer_address(addr, addrlen) : SCE_NET_ERROR_EBADF);
 }
 
-EXPORT(int, sceNetGetsockname, int sid, SceNetSockaddr *name, unsigned int *namelen) {
-    TRACY_FUNC(sceNetGetsockname, sid, name, namelen);
+EXPORT(int, sceNetGetsockname, int sid, SceNetSockaddr *addr, unsigned int *addrlen) {
+    TRACY_FUNC(sceNetGetsockname, sid, addr, addrlen);
     auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
 
-    RET_NET_ERRNO(sock ? sock->get_socket_address(name, namelen) : SCE_NET_ERROR_EBADF);
+    RET_NET_ERRNO(sock ? sock->get_socket_address(addr, addrlen) : SCE_NET_ERROR_EBADF);
 }
 
 EXPORT(int, sceNetGetsockopt, int sid, int level, int optname, void *optval, unsigned int *optlen) {
