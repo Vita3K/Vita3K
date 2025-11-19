@@ -67,17 +67,20 @@ static int p2pSocketTypeToPosixSocketType(int type) {
 }
 
 P2PSocket::P2PSocket(int domain, int type, int protocol)
-    : PosixSocket(domain, p2pSocketTypeToPosixSocketType(type), protocol){};
+    : PosixSocket(domain, p2pSocketTypeToPosixSocketType(type), protocol) { sce_type = type; }
 
 SocketPtr P2PSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen, int &err) {
-    const auto res = PosixSocket::accept(addr, addrlen, err);
+    const auto res = std::dynamic_pointer_cast<PosixSocket>(PosixSocket::accept(addr, addrlen, err));
+    if (!res)
+        return nullptr;
+
     *addr = convertPosixToP2P(addr);
-    return res;
+    return std::make_shared<P2PSocket>(res->sock, res->sce_type);
 }
 
-int P2PSocket::connect(const SceNetSockaddr *addr, unsigned int namelen) {
+int P2PSocket::connect(const SceNetSockaddr *addr, unsigned int addrlen) {
     const auto p2p_addr = convertP2PToPosix(addr);
-    return PosixSocket::connect(&p2p_addr, namelen);
+    return PosixSocket::connect(&p2p_addr, addrlen);
 }
 
 int P2PSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
@@ -98,8 +101,18 @@ int P2PSocket::bind(const SceNetSockaddr *addr, unsigned int addrlen) {
     return PosixSocket::bind(&p2p_addr, addrlen);
 }
 
-int P2PSocket::get_socket_address(SceNetSockaddr *name, unsigned int *namelen) {
-    const auto res = PosixSocket::get_socket_address(name, namelen);
-    *name = convertPosixToP2P(name);
+int P2PSocket::get_peer_address(SceNetSockaddr *addr, unsigned int *addrlen) {
+    const auto res = PosixSocket::get_peer_address(addr, addrlen);
+    if (res == 0)
+        *addr = convertPosixToP2P(addr);
+
+    return res;
+}
+
+int P2PSocket::get_socket_address(SceNetSockaddr *addr, unsigned int *addrlen) {
+    const auto res = PosixSocket::get_socket_address(addr, addrlen);
+    if (res == 0)
+        *addr = convertPosixToP2P(addr);
+
     return res;
 }

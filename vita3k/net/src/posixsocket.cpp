@@ -156,7 +156,7 @@ static bool should_abort(int abort_flags, int flags) {
     return (abort_flags & flags) != 0;
 }
 
-int PosixSocket::connect(const SceNetSockaddr *addr, unsigned int namelen) {
+int PosixSocket::connect(const SceNetSockaddr *addr, unsigned int addrlen) {
     if (should_abort(abort_flags, SCE_NET_SOCKET_ABORT_FLAG_SND_PRESERVATION))
         return SCE_NET_ERROR_EINTR;
 
@@ -180,18 +180,31 @@ int PosixSocket::listen(int backlog) {
     return translate_return_value(::listen(sock, backlog));
 }
 
-int PosixSocket::get_socket_address(SceNetSockaddr *name, unsigned int *namelen) {
-    sockaddr addr;
-    convertSceSockaddrToPosix(name, &addr);
-    if (name != nullptr) {
-        *namelen = sizeof(sockaddr_in);
-    }
-    int res = getsockname(sock, &addr, (socklen_t *)namelen);
+int PosixSocket::get_peer_address(SceNetSockaddr *addr, unsigned int *addrlen) {
+    if (!addr || !addrlen)
+        return SCE_NET_EINVAL;
+
+    sockaddr addr2{};
+    const auto res = ::getpeername(sock, &addr2, (socklen_t *)addrlen);
     if (res >= 0) {
-        convertPosixSockaddrToSce(&addr, name);
-        *namelen = sizeof(SceNetSockaddrIn);
+        convertPosixSockaddrToSce(&addr2, addr);
+        *addrlen = sizeof(SceNetSockaddrIn);
     }
-    return res;
+
+    return translate_return_value(res);
+}
+
+int PosixSocket::get_socket_address(SceNetSockaddr *addr, unsigned int *addrlen) {
+    if (!addr || !addrlen)
+        return SCE_NET_EINVAL;
+
+    sockaddr addr2{};
+    const auto res = ::getsockname(sock, &addr2, (socklen_t *)addrlen);
+    if (res >= 0) {
+        convertPosixSockaddrToSce(&addr2, addr);
+        *addrlen = sizeof(SceNetSockaddrIn);
+    }
+    return translate_return_value(res);
 }
 
 int PosixSocket::abort(int flags) {
@@ -233,7 +246,7 @@ SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen, int &
         return nullptr;
     }
     sockaddr addr2{};
-    abs_socket new_socket = ::accept(sock, &addr2, (socklen_t *)addrlen);
+    const abs_socket new_socket = ::accept(sock, &addr2, (socklen_t *)addrlen);
     if (abort_pending(is_aborted)) {
         err = SCE_NET_ERROR_EINTR;
         return nullptr;
@@ -245,7 +258,7 @@ SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen, int &
 #endif
         convertPosixSockaddrToSce(&addr2, addr);
         *addrlen = sizeof(SceNetSockaddrIn);
-        return std::make_shared<PosixSocket>(new_socket);
+        return std::make_shared<PosixSocket>(new_socket, sce_type);
     }
     err = translate_return_value(new_socket);
     return nullptr;
@@ -423,7 +436,7 @@ int PosixSocket::get_socket_options(int level, int optname, void *optval, unsign
     return SCE_NET_ERROR_EINVAL;
 }
 
-static int convertSceFlagsToPosix(int sce_flags) {
+static int convertSceFlagsToPosix(int sock_type, int sce_flags) {
     int posix_flags = 0;
 
     if (sce_flags & SCE_NET_MSG_PEEK)
@@ -432,7 +445,8 @@ static int convertSceFlagsToPosix(int sce_flags) {
     if (sce_flags & SCE_NET_MSG_DONTWAIT)
         posix_flags |= MSG_DONTWAIT;
 #endif
-    if (sce_flags & SCE_NET_MSG_WAITALL)
+    // MSG_WAITALL is only valid for stream sockets
+    if ((sce_flags & SCE_NET_MSG_WAITALL) && ((sock_type == SCE_NET_SOCK_STREAM) || (sock_type == SCE_NET_SOCK_STREAM_P2P)))
         posix_flags |= MSG_WAITALL;
 
     return posix_flags;
@@ -466,7 +480,7 @@ int PosixSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSocka
             return res;
     }
 #endif
-    const auto posix_flags = convertSceFlagsToPosix(flags);
+    const auto posix_flags = convertSceFlagsToPosix(sce_type, flags);
     if (from == nullptr) {
         res = recv(sock, (char *)buf, len, posix_flags);
     } else {
@@ -495,7 +509,7 @@ int PosixSocket::send_packet(const void *msg, unsigned int len, int flags, const
             return res;
     }
 #endif
-    const auto posix_flags = convertSceFlagsToPosix(flags);
+    const auto posix_flags = convertSceFlagsToPosix(sce_type, flags);
     if (to == nullptr) {
         res = send(sock, (const char *)msg, len, posix_flags);
     } else {
