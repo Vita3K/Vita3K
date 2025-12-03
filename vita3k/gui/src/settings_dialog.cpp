@@ -1091,11 +1091,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
 
         ImGui::PushItemWidth(ImGui::CalcTextSize(addrsStrings[emuenv.cfg.adhoc_addr].c_str()).x + (30.f * SCALE.x));
-        ImGui::Combo("Network Address", &emuenv.cfg.adhoc_addr, addrsSelect.data(), static_cast<int>(addrsSelect.size()));
-        SetTooltipEx("Select which Address to use in adhoc.");
+        ImGui::Combo(lang.network["ip_address"].c_str(), &emuenv.cfg.adhoc_addr, addrsSelect.data(), static_cast<int>(addrsSelect.size()));
+        SetTooltipEx(lang.network["ip_address_description"].c_str());
 
         ImGui::BeginDisabled();
-        ImGui::Combo("Network Mask", &emuenv.cfg.adhoc_addr, nMaskSelect.data(), static_cast<int>(nMaskSelect.size()));
+        ImGui::Combo(lang.network["subnet_mask"].c_str(), &emuenv.cfg.adhoc_addr, nMaskSelect.data(), static_cast<int>(nMaskSelect.size()));
         ImGui::EndDisabled();
         ImGui::PopItemWidth();
 

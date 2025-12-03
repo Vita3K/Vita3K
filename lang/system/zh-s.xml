@@ -785,6 +785,9 @@
 		<network name="网络">
 			<psn_signed_in>已登入PSN</psn_signed_in>
 			<psn_signed_in_description>如果勾选此项，游戏将认为用户已连接至PSN（但为离线）。</psn_signed_in_description>
+			<ip_address>IP地址</ip_address>
+			<ip_address_description>选择在adhoc中使用的IP地址。</ip_address_description>
+			<subnet_mask>子网掩码</subnet_mask>
 			<enable_http>启用HTTP</enable_http>
 			<enable_http_description>勾选此项启用游戏在互联网上使用HTTP协议。</enable_http_description>
 			<timeout_attempts>HTTP超时尝试</timeout_attempts>
