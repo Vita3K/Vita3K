@@ -788,6 +788,9 @@ The minimum is opaque and the maximum is transparent.</select_background_alpha>
 		<network name="Network">
 			<psn_signed_in>Signed in PSN</psn_signed_in>
 			<psn_signed_in_description>If checked, games will consider the user is connected to the PSN network (but offline).</psn_signed_in_description>
+			<ip_address>IP Address</ip_address>
+			<ip_address_description>Select the IP address to be used in adhoc.</ip_address_description>
+			<subnet_mask>Subnet Mask</subnet_mask>
 			<enable_http>Enable HTTP</enable_http>
 			<enable_http_description>Check this box to enable games to use the HTTP protocol on the internet.</enable_http_description>
 			<timeout_attempts>HTTP Timeout Attempts</timeout_attempts>
