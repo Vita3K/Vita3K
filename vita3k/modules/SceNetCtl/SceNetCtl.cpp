@@ -194,14 +194,15 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
         }
 
         constexpr uint32_t timeout = 100000;
-        if (CALL_EXPORT(sceNetSetsockopt, recv_id, SCE_NET_SOL_SOCKET, SCE_NET_SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
-            LOG_ERROR("Failed to set recv timeout on adhoc socket: {}", log_hex(errno));
+        int32_t res;
+        if ((res = CALL_EXPORT(sceNetSetsockopt, recv_id, SCE_NET_SOL_SOCKET, SCE_NET_SO_RCVTIMEO, &timeout, sizeof(timeout))) < 0) {
+            LOG_ERROR("Failed to set recv timeout on adhoc socket: {}", log_hex(res));
             handle_error_and_disconnect(recv_id);
             continue;
         }
 
-        if (CALL_EXPORT(sceNetBind, recv_id, (SceNetSockaddr *)&recvBind, sizeof(recvBind)) < 0) {
-            LOG_ERROR("Failed to bind adhoc recv socket: {}", log_hex(errno));
+        if ((res = CALL_EXPORT(sceNetBind, recv_id, (SceNetSockaddr *)&recvBind, sizeof(recvBind))) < 0) {
+            LOG_ERROR("Failed to bind adhoc recv socket: {}", log_hex(res));
             handle_error_and_disconnect(recv_id);
             continue;
         }
@@ -214,8 +215,8 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
         }
 
         const auto val = 1;
-        if (CALL_EXPORT(sceNetSetsockopt, send_id, SCE_NET_SOL_SOCKET, SCE_NET_SO_BROADCAST, &val, sizeof(val)) < 0) {
-            LOG_ERROR("Failed to set send timeout on adhoc socket: {}", log_hex(errno));
+        if ((res = CALL_EXPORT(sceNetSetsockopt, send_id, SCE_NET_SOL_SOCKET, SCE_NET_SO_BROADCAST, &val, sizeof(val))) < 0) {
+            LOG_ERROR("Failed to set broadcast option on adhoc send socket: {}", log_hex(res));
             handle_error_and_disconnect(recv_id, send_id);
             continue;
         }
@@ -228,8 +229,8 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
             .sin_vport = htons(AUTH_SEND_VPORT),
         };
 
-        if (CALL_EXPORT(sceNetBind, send_id, (SceNetSockaddr *)&sendBind, sizeof(sendBind)) < 0) {
-            LOG_ERROR("Failed to bind adhoc send socket: {}", log_hex(errno));
+        if ((res = CALL_EXPORT(sceNetBind, send_id, (SceNetSockaddr *)&sendBind, sizeof(sendBind))) < 0) {
+            LOG_ERROR("Failed to bind adhoc send socket: {}", log_hex(res));
             handle_error_and_disconnect(recv_id, send_id);
             continue;
         }
