@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Format check
         run: .github/format-check.sh
@@ -52,7 +52,7 @@ jobs:
             version: appimage
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           submodules: recursive
@@ -179,10 +179,10 @@ jobs:
       github.ref == 'refs/heads/master' &&
       github.repository == 'Vita3K/Vita3K'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
 
       - name: Get Build Variable
         run: echo "Build_Variable=${{ needs.build.outputs.BuildTag }}" >> $GITHUB_ENV
