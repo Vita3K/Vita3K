@@ -25,10 +25,10 @@ T byte_swap(T val);
 
 template <typename T>
 T network_to_host_order(T val) {
+    static_assert(((std::endian::native == std::endian::big) || (std::endian::native == std::endian::little)), "Mixed endian is unsupported");
     if constexpr (std::endian::native == std::endian::big) {
         return val;
     } else {
-        // treat mixed endian as little endian
         return byte_swap(val);
     }
 }
