@@ -637,6 +637,15 @@ struct LangState {
             { "bgm_volume", "Bgm Volume" },
             { "bgm_volume_description", "Adjusts the background music volume percentage of the theme." }
         };
+        std::map<std::string, std::string> camera = {
+            { "title", "Camera" },
+            { "front_camera", "Front Camera" },
+            { "back_camera", "Back Camera" },
+            { "image_not_set", "Image not set" },
+            { "set_image", "Set image" },
+            { "solid_color", "Solid Color" },
+            { "static_image", "Static Image" }
+        };
         std::map<std::string, std::string> system = {
             { "title", "System" },
             { "select_enter_button", "Enter button assignment\nSelect your 'Enter' button." },

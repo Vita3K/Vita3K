@@ -172,6 +172,14 @@ enum ScreenshotFormat {
     code(int, "http-read-end-attempts", 10, http_read_end_attempts)                                     \
     code(int, "http-read-end-sleep-ms", 250, http_read_end_sleep_ms)                                    \
     code(int, "adhoc-addr", 0, adhoc_addr)                                                              \
+    code(int, "front-camera-type", 2, front_camera_type)                                                \
+    code(std::string, "front-camera-id", std::string{}, front_camera_id)                                \
+    code(std::string, "front-camera-image", std::string{}, front_camera_image)                          \
+    code(uint32_t, "front-camera-color", 0, front_camera_color)                                         \
+    code(int, "back-camera-type", 2, back_camera_type)                                                  \
+    code(std::string, "back-camera-id", std::string{}, back_camera_id)                                  \
+    code(std::string, "back-camera-image", std::string{}, back_camera_image)                            \
+    code(uint32_t, "back-camera-color", 0, back_camera_color)                                           \
     code(bool, "tracy-primitive-impl", false, tracy_primitive_impl)
 
 // Vector members produced in the config file
