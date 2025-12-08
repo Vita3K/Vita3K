@@ -730,6 +730,14 @@ and not all GPUs are compatible with this.</spirv_shader_description>
 			<bgm_volume>Bgm Volume</bgm_volume>
 			<bgm_volume_description>Adjusts the background music volume percentage of the theme.</bgm_volume_description>
 		</audio>
+		<camera name="Camera">
+			<front_camera>Front Camera</front_camera>
+			<back_camera>Back Camera</back_camera>
+			<image_not_set>Image not set</image_not_set>
+			<set_image>Set image</set_image>
+			<solid_color>Solid Color</solid_color>
+			<static_image>Static Image</static_image>
+		</camera>
 		<system name="System">
 			<select_enter_button>Enter button assignment
 Select your 'Enter' button.</select_enter_button>

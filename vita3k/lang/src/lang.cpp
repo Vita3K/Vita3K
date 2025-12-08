@@ -408,6 +408,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     // Audio
                     set_lang_string(lang.settings_dialog.audio, settings_dialog.child("audio"));
 
+                    // Camera
+                    set_lang_string(lang.settings_dialog.camera, settings_dialog.child("camera"));
+
                     // System
                     set_lang_string(lang.settings_dialog.system, settings_dialog.child("system"));
 

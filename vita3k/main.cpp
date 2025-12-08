@@ -276,7 +276,7 @@ int main(int argc, char *argv[]) {
         SDL_SetHint(SDL_HINT_AUDIO_DRIVER, "openslES");
 #endif
 
-        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR)) {
+        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR | SDL_INIT_CAMERA)) {
             app::error_dialog("SDL initialisation failed.");
             return SDLInitFailed;
         }

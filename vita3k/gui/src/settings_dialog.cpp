@@ -43,7 +43,9 @@
 
 #include <SDL3/SDL_video.h>
 
+#include <SDL3/SDL_camera.h>
 #include <algorithm>
+#include <camera/state.h>
 #include <pugixml.hpp>
 #include <util/vector_utils.h>
 
@@ -529,6 +531,44 @@ void set_config(EmuEnvState &emuenv) {
     emuenv.audio.set_global_volume(emuenv.cfg.current_config.audio_volume / 100.f);
 }
 
+static std::vector<const char *> cameras_list(2);
+static const std::vector<const char *> *get_cameras_list(LangState::SettingsDialog &lang) {
+    // set on every frame in case of lang changes
+    cameras_list[0] = lang.camera["solid_color"].c_str();
+    cameras_list[1] = lang.camera["static_image"].c_str();
+    static bool camera_list_initialised = false;
+    if (!camera_list_initialised) {
+        int cameras_count = 0;
+        auto sdl_cameras = SDL_GetCameras(&cameras_count);
+        for (int i = 0; i < cameras_count; i++) {
+            cameras_list.push_back(SDL_GetCameraName(sdl_cameras[i]));
+        }
+        SDL_free(sdl_cameras);
+        camera_list_initialised = true;
+    }
+    return &cameras_list;
+}
+
+static int get_camera_index_by_name(const char *camera_name) {
+    for (size_t i = 2; i < cameras_list.size(); ++i) {
+        if (strcmp(cameras_list[i], camera_name) == 0) {
+            return static_cast<int>(i - 2);
+        }
+    }
+    return -1;
+}
+
+static int get_camera_combobox_index(int camera_type, const std::string &camera_id) {
+    if (camera_type >= 2) {
+        int camera_index = get_camera_index_by_name(camera_id.c_str());
+        if (camera_index >= 0) {
+            camera_type = camera_index + 2;
+        } else {
+            camera_type = 0; // Default to solid color if camera not found
+        }
+    }
+    return camera_type;
+}
 void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
@@ -956,6 +996,102 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         SetTooltipEx(lang.audio["bgm_volume_description"].c_str());
         ImGui::Separator();
         ImGui::Spacing();
+        ImGui::EndTabItem();
+    } else
+        ImGui::PopStyleColor();
+
+    // Camera
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
+    if (ImGui::BeginTabItem(lang.camera["title"].c_str())) {
+        ImGui::PopStyleColor();
+        ImGui::Spacing();
+        TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.camera["front_camera"].c_str());
+        // Combo box for camera selection
+        static int front_camera = -1;
+        auto &cameras = *get_cameras_list(lang);
+        if (front_camera == -1) {
+            init_default_cameras(emuenv.cfg);
+            front_camera = get_camera_combobox_index(emuenv.cfg.front_camera_type, emuenv.cfg.front_camera_id);
+        }
+        ImGui::Combo("##Front_camera", &front_camera, cameras.data(), cameras.size());
+        auto old_front_camera_id = emuenv.cfg.front_camera_id;
+        auto old_front_camera_type = emuenv.cfg.front_camera_type;
+        auto old_front_camera_color = emuenv.cfg.front_camera_color;
+        auto old_front_camera_image = emuenv.cfg.front_camera_image;
+        emuenv.cfg.front_camera_type = front_camera;
+        if (front_camera >= 2) {
+            // Save selected camera name
+            emuenv.cfg.front_camera_id = cameras[front_camera];
+            emuenv.cfg.front_camera_type = 2;
+        } else if (front_camera == 0) {
+            // Color input field
+            static ImVec4 color = ImGui::ColorConvertU32ToFloat4(emuenv.cfg.front_camera_color);
+            ImGui::ColorEdit3("##front_color", (float *)&color);
+            emuenv.cfg.front_camera_color = ImGui::ColorConvertFloat4ToU32(color);
+        } else if (front_camera == 1) {
+            ImGui::Spacing();
+            if (emuenv.cfg.front_camera_image.empty()) {
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.camera["image_not_set"].c_str());
+            } else {
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.cfg.front_camera_image.c_str());
+            }
+            ImGui::Spacing();
+            if (ImGui::Button((lang.camera["set_image"] + "##front_camera").c_str())) {
+                fs::path camera_image_path = fs_utils::utf8_to_path(emuenv.cfg.front_camera_image);
+                host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(camera_image_path);
+                if (result == host::dialog::filesystem::SUCCESS && camera_image_path != fs_utils::utf8_to_path(emuenv.cfg.front_camera_image)) {
+                    emuenv.cfg.front_camera_image = fs_utils::path_to_utf8(camera_image_path);
+                }
+                if (result == host::dialog::filesystem::ERROR) {
+                    LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
+                }
+            }
+        }
+        if (old_front_camera_type != emuenv.cfg.front_camera_type || old_front_camera_id != emuenv.cfg.front_camera_id || old_front_camera_color != emuenv.cfg.front_camera_color || old_front_camera_image != emuenv.cfg.front_camera_image) {
+            emuenv.camera.front()->update_config(emuenv.cfg.front_camera_type, emuenv.cfg.front_camera_id, emuenv.cfg.front_camera_image, emuenv.cfg.front_camera_color);
+        }
+        TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.camera["back_camera"].c_str());
+        static int back_camera = -1;
+        if (back_camera == -1) {
+            back_camera = get_camera_combobox_index(emuenv.cfg.back_camera_type, emuenv.cfg.back_camera_id);
+        }
+        ImGui::Combo("##Back_camera", &back_camera, cameras.data(), cameras.size());
+        auto old_back_camera_id = emuenv.cfg.back_camera_id;
+        auto old_back_camera_type = emuenv.cfg.back_camera_type;
+        auto old_back_camera_color = emuenv.cfg.back_camera_color;
+        auto old_back_camera_image = emuenv.cfg.back_camera_image;
+        emuenv.cfg.back_camera_type = back_camera;
+        if (back_camera >= 2) {
+            // Save selected camera name
+            emuenv.cfg.back_camera_id = cameras[back_camera];
+            emuenv.cfg.back_camera_type = 2;
+        } else if (back_camera == 0) {
+            // Color input field
+            static ImVec4 color = ImGui::ColorConvertU32ToFloat4(emuenv.cfg.back_camera_color);
+            ImGui::ColorEdit3("##back_color", (float *)&color);
+            emuenv.cfg.back_camera_color = ImGui::ColorConvertFloat4ToU32(color);
+        } else if (back_camera == 1) {
+            ImGui::Spacing();
+            if (emuenv.cfg.back_camera_image.empty()) {
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.camera["image_not_set"].c_str());
+            } else {
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.cfg.back_camera_image.c_str());
+            }
+            ImGui::Spacing();
+            if (ImGui::Button((lang.camera["set_image"] + "##back_camera").c_str())) {
+                fs::path camera_image_path = fs_utils::utf8_to_path(emuenv.cfg.back_camera_image);
+                host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(camera_image_path);
+                if (result == host::dialog::filesystem::SUCCESS && camera_image_path != fs_utils::utf8_to_path(emuenv.cfg.back_camera_image)) {
+                    emuenv.cfg.back_camera_image = fs_utils::path_to_utf8(camera_image_path);
+                }
+                if (result == host::dialog::filesystem::ERROR) {
+                    LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
+                }
+            }
+        }
+        if (old_back_camera_type != emuenv.cfg.back_camera_type || old_back_camera_id != emuenv.cfg.back_camera_id || old_back_camera_color != emuenv.cfg.back_camera_color || old_back_camera_image != emuenv.cfg.back_camera_image) {
+            emuenv.camera.back()->update_config(emuenv.cfg.back_camera_type, emuenv.cfg.back_camera_id, emuenv.cfg.back_camera_image, emuenv.cfg.back_camera_color);
+        }
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
