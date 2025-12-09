@@ -473,34 +473,29 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     emuenv.audio.set_global_volume(emuenv.cfg.current_config.audio_volume / 100.f);
 }
 
-static const std::vector<const char *> *get_cameras_list(EmuEnvState &emuenv) {
-    static std::vector<const char *> back_cameras = { "Solid color", "Static image" };
+static const std::vector<const char *> *get_cameras_list() {
+    static std::vector<const char *> cameras_list = { "Solid color", "Static image" };
     static bool camera_list_initialised = false;
     if (!camera_list_initialised) {
         int cameras_count = 0;
-        auto cameras = SDL_GetCameras(&cameras_count);
+        auto sdl_cameras = SDL_GetCameras(&cameras_count);
         for (int i = 0; i < cameras_count; i++) {
-            back_cameras.push_back(SDL_GetCameraName(cameras[i]));
+            cameras_list.push_back(SDL_GetCameraName(sdl_cameras[i]));
         }
-        SDL_free(cameras);
+        SDL_free(sdl_cameras);
         camera_list_initialised = true;
     }
-    return &back_cameras;
+    return &cameras_list;
 }
 
 static int get_camera_index_by_name(const char *camera_name) {
-    int result = -1;
-    int cameras_count = 0;
-    auto cameras = SDL_GetCameras(&cameras_count);
-    for (int i = 0; i < cameras_count; i++) {
-        auto cur_name = SDL_GetCameraName(cameras[i]);
-        if (cur_name && strcmp(camera_name, cur_name) == 0) {
-            result = i;
-            break;
+    auto cameras = get_cameras_list();
+    for (size_t i = 2; i < cameras->size(); ++i) {
+        if (strcmp((*cameras)[i], camera_name) == 0) {
+            return static_cast<int>(i - 2);
         }
     }
-    SDL_free(cameras);
-    return result;
+    return -1;
 }
 
 static int get_camera_combobox_index(int camera_type, const std::string &camera_id) {
@@ -856,7 +851,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, "Front Camera");
         // Combo box for camera selection
         static int front_camera = -1;
-        auto &cameras = *get_cameras_list(emuenv);
+        auto &cameras = *get_cameras_list();
         if (front_camera == -1) {
             front_camera = get_camera_combobox_index(emuenv.cfg.front_camera_type, emuenv.cfg.front_camera_id);
         }

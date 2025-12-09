@@ -59,23 +59,6 @@ Camera::Camera()
     : pImpl(std::make_unique<CameraImpl>()) {}
 Camera::~Camera() = default;
 
-struct framerate_rec {
-    SceCameraFrameRate framerate;
-    uint16_t framerate_numerator;
-    uint16_t framerate_denominator;
-};
-static constexpr std::array<framerate_rec, 9> framerates = { {
-    { SCE_CAMERA_FRAMERATE_3_FPS, 375, 100 },
-    { SCE_CAMERA_FRAMERATE_5_FPS, 5, 1 },
-    { SCE_CAMERA_FRAMERATE_7_FPS, 75, 10 },
-    { SCE_CAMERA_FRAMERATE_10_FPS, 10, 1 },
-    { SCE_CAMERA_FRAMERATE_15_FPS, 15, 1 },
-    { SCE_CAMERA_FRAMERATE_20_FPS, 20, 1 },
-    { SCE_CAMERA_FRAMERATE_30_FPS, 30, 1 },
-    { SCE_CAMERA_FRAMERATE_60_FPS, 60, 1 },
-    { SCE_CAMERA_FRAMERATE_120_FPS, 120, 1 },
-} };
-
 #define SDL_CHECK_EXT(condition, ret)                   \
     do {                                                \
         if (!(condition)) {                             \
@@ -108,22 +91,23 @@ static bool init_web_camera(Camera *self) {
         LOG_ERROR("Web camera with id '{}' not found.", self->id);
         return false;
     }
+    uint16_t framerate_numerator = static_cast<uint16_t>(self->info.framerate);
+    uint16_t framerate_denominator = 1;
+    if (self->info.framerate == SCE_CAMERA_FRAMERATE_3_FPS) {
+        framerate_numerator = 375;
+        framerate_denominator = 100;
+    } else if (self->info.framerate == SCE_CAMERA_FRAMERATE_7_FPS) {
+        framerate_numerator = 75;
+        framerate_denominator = 10;
+    }
     SDL_CameraSpec camera_spec{
         .format = self->pImpl->format, /**< Frame format */
         .colorspace = self->pImpl->colorspace, /**< Frame colorspace */
         .width = self->info.width, /**< Frame width */
         .height = self->info.height, /**< Frame height */
-        .framerate_numerator = self->info.framerate, /**< Frame rate numerator ((num / denom) == FPS, (denom / num) == duration in seconds) */
-        .framerate_denominator = 1 /**< Frame rate demoninator ((num / denom) == FPS, (denom / num) == duration in seconds) */
+        .framerate_numerator = framerate_numerator, /**< Frame rate numerator ((num / denom) == FPS, (denom / num) == duration in seconds) */
+        .framerate_denominator = framerate_denominator /**< Frame rate demoninator ((num / denom) == FPS, (denom / num) == duration in seconds) */
     };
-    // Intentionally not const auto& because of small size
-    for (auto i : framerates) {
-        if (i.framerate == self->info.framerate) {
-            camera_spec.framerate_numerator = i.framerate_numerator;
-            camera_spec.framerate_denominator = i.framerate_denominator;
-            break;
-        }
-    }
     self->pImpl->sdl_camera.reset(SDL_OpenCamera(self->pImpl->device_id, &camera_spec));
     if (!self->pImpl->sdl_camera) {
         LOG_ERROR("Failed to open camera: {}", SDL_GetError());

@@ -298,23 +298,6 @@ static std::string to_debug_str(const MemState &mem, T type) {
     return std::string(name);
 }
 
-struct res_rec {
-    SceCameraResolution res;
-    uint16_t width;
-    uint16_t height;
-};
-
-const std::array<res_rec, 8> resolutions = { {
-    { SCE_CAMERA_RESOLUTION_0_0, 0, 0 },
-    { SCE_CAMERA_RESOLUTION_640_480, 640, 480 },
-    { SCE_CAMERA_RESOLUTION_320_240, 320, 240 },
-    { SCE_CAMERA_RESOLUTION_160_120, 160, 120 },
-    { SCE_CAMERA_RESOLUTION_352_288, 352, 288 },
-    { SCE_CAMERA_RESOLUTION_176_144, 176, 144 },
-    { SCE_CAMERA_RESOLUTION_480_272, 480, 272 },
-    { SCE_CAMERA_RESOLUTION_640_360, 640, 360 },
-} };
-
 EXPORT(int, sceCameraOpen, SceCameraDevice devnum, SceCameraInfo *pInfo) {
     TRACY_FUNC(sceCameraOpen, devnum, pInfo);
     if (emuenv.cfg.pstv_mode)
@@ -327,13 +310,37 @@ EXPORT(int, sceCameraOpen, SceCameraDevice devnum, SceCameraInfo *pInfo) {
     if (camera.is_opened) {
         return RET_ERROR(SCE_CAMERA_ERROR_ALREADY_OPEN);
     }
-    // Intentionally not const auto& because of small size
-    for (auto res : resolutions) {
-        if (res.res == pInfo->resolution) {
-            pInfo->width = res.width;
-            pInfo->height = res.height;
-            break;
-        }
+    switch (pInfo->resolution) {
+    case SCE_CAMERA_RESOLUTION_640_480:
+        pInfo->width = 640;
+        pInfo->height = 480;
+        break;
+    case SCE_CAMERA_RESOLUTION_320_240:
+        pInfo->width = 320;
+        pInfo->height = 240;
+        break;
+    case SCE_CAMERA_RESOLUTION_160_120:
+        pInfo->width = 160;
+        pInfo->height = 120;
+        break;
+    case SCE_CAMERA_RESOLUTION_352_288:
+        pInfo->width = 352;
+        pInfo->height = 288;
+        break;
+    case SCE_CAMERA_RESOLUTION_176_144:
+        pInfo->width = 176;
+        pInfo->height = 144;
+        break;
+    case SCE_CAMERA_RESOLUTION_480_272:
+        pInfo->width = 480;
+        pInfo->height = 272;
+        break;
+    case SCE_CAMERA_RESOLUTION_640_360:
+        pInfo->width = 640;
+        pInfo->height = 360;
+        break;
+    default:
+return RET_ERROR(SCE_CAMERA_ERROR_PARAM);        break;
     }
     camera.base_ticks = emuenv.kernel.base_tick.tick;
     if (devnum == SCE_CAMERA_DEVICE_FRONT)
