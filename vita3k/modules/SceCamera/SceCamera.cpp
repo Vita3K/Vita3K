@@ -306,10 +306,6 @@ EXPORT(int, sceCameraOpen, SceCameraDevice devnum, SceCameraInfo *pInfo) {
         return RET_ERROR(SCE_CAMERA_ERROR_PARAM);
     if (!pInfo)
         return RET_ERROR(SCE_CAMERA_ERROR_PARAM);
-    auto &camera = emuenv.camera.cameras[devnum];
-    if (camera.is_opened) {
-        return RET_ERROR(SCE_CAMERA_ERROR_ALREADY_OPEN);
-    }
     switch (pInfo->resolution) {
     case SCE_CAMERA_RESOLUTION_640_480:
         pInfo->width = 640;
@@ -340,14 +336,18 @@ EXPORT(int, sceCameraOpen, SceCameraDevice devnum, SceCameraInfo *pInfo) {
         pInfo->height = 360;
         break;
     default:
-return RET_ERROR(SCE_CAMERA_ERROR_PARAM);        break;
+        return RET_ERROR(SCE_CAMERA_ERROR_PARAM);
+        break;
     }
-    camera.base_ticks = emuenv.kernel.base_tick.tick;
+    auto &camera = emuenv.camera.cameras[devnum];
+    if (camera.is_opened) {
+        return RET_ERROR(SCE_CAMERA_ERROR_ALREADY_OPEN);
+    }
     if (devnum == SCE_CAMERA_DEVICE_FRONT)
         camera.update_config(emuenv.cfg.front_camera_type, emuenv.cfg.front_camera_id, emuenv.cfg.front_camera_image, emuenv.cfg.front_camera_color);
     else
         camera.update_config(emuenv.cfg.back_camera_type, emuenv.cfg.back_camera_id, emuenv.cfg.back_camera_image, emuenv.cfg.back_camera_color);
-    auto res = camera.open(pInfo);
+    auto res = camera.open(pInfo, emuenv.kernel.base_tick.tick, emuenv.kernel.start_tick);
 
     return res;
 }

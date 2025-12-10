@@ -24,6 +24,7 @@
 #include <util/log.h>
 
 #include <SDL3/SDL_camera.h>
+#include <SDL3/SDL_timer.h>
 
 struct stbi_deleter {
     void operator()(stbi_uc *d) const { stbi_image_free(d); }
@@ -100,6 +101,7 @@ static bool init_web_camera(Camera *self) {
         framerate_numerator = 75;
         framerate_denominator = 10;
     }
+    self->frame_interval = SDL_NS_PER_SECOND * framerate_denominator / framerate_numerator;
     SDL_CameraSpec camera_spec{
         .format = self->pImpl->format, /**< Frame format */
         .colorspace = self->pImpl->colorspace, /**< Frame colorspace */
@@ -234,7 +236,8 @@ int Camera::set_attribute(CameraAttributes attribute, int value) {
     return 0;
 }
 
-int Camera::open(SceCameraInfo *info) {
+int Camera::open(SceCameraInfo *info, uint64_t base_tick, uint64_t start_tick) {
+    tick_diff = rtc_get_ticks(base_tick) - start_tick - SDL_GetTicks();
     this->is_opened = true;
     this->info = *info;
     switch (this->info.format) {
@@ -278,18 +281,51 @@ int Camera::start() {
 }
 
 int Camera::read(EmuEnvState &emuenv, SceCameraRead *read, void *pIBase, void *pUBase, void *pVBase, SceSize sizeIBase, SceSize sizeUBase, SceSize sizeVBase) {
+    constexpr uint64_t minimal_wait_interval = 100; // just random number
+    uint64_t sdl_current_time = SDL_GetTicksNS();
+    if (next_frame_timestamp == 0) {
+        next_frame_timestamp = sdl_current_time;
+    } else {
+        uint64_t wait_time = (sdl_current_time < next_frame_timestamp) ? (next_frame_timestamp - sdl_current_time) : 0;
+        if (wait_time > minimal_wait_interval) {
+            if (read->mode == SCE_CAMERA_READ_MODE_WAIT_NEXTFRAME_ON) {
+                SDL_DelayNS(static_cast<Uint32>(wait_time));
+            } else {
+                read->frame = frame_idx;
+                read->timestamp = last_frame_timestamp;
+                read->status = SCE_CAMERA_STATUS_IS_ALREADY_READ;
+                return 0;
+            }
+        }
+    }
+    // next frame
+    last_frame_timestamp = next_frame_timestamp;
+    next_frame_timestamp = next_frame_timestamp + frame_interval;
     const std::lock_guard lock(pImpl->frame_mutex);
-    read->frame = frame_idx++;
-    read->status = SCE_CAMERA_STATUS_IS_ACTIVE;
-    read->timestamp = rtc_get_ticks(this->base_ticks);
     if (type == CameraType::WebCamera) {
-        Uint64 timestampNS;
+        Uint64 timestampNS = 0;
         auto surface = SDL_AcquireCameraFrame(pImpl->sdl_camera.get(), &timestampNS);
+        Uint64 next_timestampNS;
+        auto next_surface = SDL_AcquireCameraFrame(pImpl->sdl_camera.get(), &next_timestampNS);
+        int i = 10; // sdl buffer is 8 surfaces, so if we read much more than 8 times, something go really wrong
+        while (next_surface && i > 0) {
+            SDL_ReleaseCameraFrame(pImpl->sdl_camera.get(), surface);
+            surface = next_surface;
+            timestampNS = next_timestampNS;
+            next_surface = SDL_AcquireCameraFrame(pImpl->sdl_camera.get(), &next_timestampNS);
+            i--;
+        }
+        if (next_surface)
+            SDL_ReleaseCameraFrame(pImpl->sdl_camera.get(), next_surface);
         if (surface) {
             pImpl->frame.reset(SDL_DuplicateSurface(surface));
             SDL_ReleaseCameraFrame(pImpl->sdl_camera.get(), surface);
+            last_frame_timestamp = timestampNS;
         }
     }
+    read->frame = frame_idx++;
+    read->status = SCE_CAMERA_STATUS_IS_ACTIVE;
+    read->timestamp = last_frame_timestamp + tick_diff;
     if (pImpl->frame) {
         if (this->info.format == SCE_CAMERA_FORMAT_YUV420_PLANE) {
             sizeIBase = std::min(sizeIBase, (SceSize)(pImpl->frame->pitch * pImpl->frame->h));
