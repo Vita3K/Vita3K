@@ -317,11 +317,13 @@ public:
     bool is_opened{};
     bool is_started{};
     uint64_t frame_idx{};
-    uint64_t base_ticks{}; // emuenv.kernel.base_tick.tick for timestamp
-    //
+    uint64_t last_frame_timestamp_us = 0; // timestamp of last acquired frame in microseconds
+    uint64_t next_frame_timestamp_us = 0; // time, when read should acquire and return next frame. in microseconds
+    uint64_t frame_interval_us = 0; // Time interval between frames in microseconds
+    uint64_t tick_diff_us = 0; // Difference between emuenv ticks and SDL ticks in microseconds
     int get_attribute(CameraAttributes attribute);
     int set_attribute(CameraAttributes attribute, int value);
-    int open(SceCameraInfo *info);
+    int open(SceCameraInfo *info, uint64_t base_tick, uint64_t start_tick);
     int close();
     int start();
     int stop();
