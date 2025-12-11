@@ -45,7 +45,7 @@ jobs:
           restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
