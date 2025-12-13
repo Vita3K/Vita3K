@@ -142,6 +142,9 @@ enum ScreenshotFormat {
     code(int, "keyboard-gui-toggle-touch", 23, keyboard_gui_toggle_touch)                               \
     code(int, "keyboard-toggle-texture-replacement", 0, keyboard_toggle_texture_replacement)            \
     code(int, "keyboard-take-screenshot", 0, keyboard_take_screenshot)                                  \
+    code(int, "pinch-modifier", 0, pinch_modifier)                                                      \
+    code(int, "alternate-pinch-in", 0, alternate_pinch_in)                                              \
+    code(int, "alternate-pinch-out", 0, alternate_pinch_out)                                            \
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
     code(std::string, "user-lang", std::string{}, user_lang)                                            \

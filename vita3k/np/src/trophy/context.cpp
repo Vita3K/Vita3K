@@ -39,7 +39,7 @@ Context::Context(const CommunicationID &comm_id, IOState *io, const SceUID troph
     };
 }
 
-#define SET_TROPHY_BIT(arr, bit) arr[(bit) >> 5] |= (1 << ((bit)&31))
+#define SET_TROPHY_BIT(arr, bit) arr[(bit) >> 5] |= (1 << ((bit) & 31))
 
 static bool read_trophy_entry_to_buffer(TRPFile &trophy_file, const char *fname, std::string &buffer) {
     // Read the trophy config
