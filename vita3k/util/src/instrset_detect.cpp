@@ -34,9 +34,9 @@ static inline void cpuid(int output[4], int functionnumber, int ecxleaf) {
 #elif defined(__GNUC__) || defined(__clang__) // use inline assembly, Gnu/AT&T syntax
     int a, b, c, d;
     __asm("cpuid"
-          : "=a"(a), "=b"(b), "=c"(c), "=d"(d)
-          : "a"(functionnumber), "c"(ecxleaf)
-          :);
+        : "=a"(a), "=b"(b), "=c"(c), "=d"(d)
+        : "a"(functionnumber), "c"(ecxleaf)
+        :);
     output[0] = a;
     output[1] = b;
     output[2] = c;
@@ -72,9 +72,9 @@ static inline uint64_t xgetbv(int ctr) {
 
     uint32_t a, d;
     __asm("xgetbv"
-          : "=a"(a), "=d"(d)
-          : "c"(ctr)
-          :);
+        : "=a"(a), "=d"(d)
+        : "c"(ctr)
+        :);
     return a | (uint64_t(d) << 32);
 
 #else // #elif defined (_WIN32)                      // other compiler. try inline assembly with masm/intel/MS syntax
