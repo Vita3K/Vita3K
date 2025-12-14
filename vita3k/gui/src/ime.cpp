@@ -449,7 +449,7 @@ void draw_ime(Ime &ime, EmuEnvState &emuenv) {
     ImGui::PopStyleColor(2);
     ImGui::PushStyleColor(ImGuiCol_Button, GUI_COLOR_TEXT_BLACK);
     ImGui::SetCursorPos(ImVec2(MARGE_BORDER, LAST_ROW_KEY_POS));
-    if (ImGui::Button("V", ImVec2(44.f * SCALE.x, KEY_BUTTON_SIZE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle)))
+    if (ImGui::Button("V##close", ImVec2(44.f * SCALE.x, KEY_BUTTON_SIZE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle)))
         ime.event_id = SCE_IME_EVENT_PRESS_CLOSE;
     ImGui::PopStyleColor();
     ImGui::SameLine(0, 18.f);
