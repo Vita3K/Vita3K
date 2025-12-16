@@ -19,6 +19,9 @@
 
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
+#include <boost/core/demangle.hpp>
+#include <boost/describe/enum.hpp>
+#include <boost/describe/enum_to_string.hpp>
 #include <spdlog/spdlog.h>
 #include <util/exit_code.h>
 #include <util/fs.h>
@@ -117,6 +120,22 @@ public:
     auto format(const Ptr<T> p, FormatContext &ctx) const {
         return detail::write(ctx.out(),
             basic_string_view<Char>(log_hex_full(p.address())));
+    }
+};
+template <typename T, typename Char>
+    requires(boost::describe::has_describe_enumerators<T>::value)
+struct formatter<T, Char> : formatter<string_view, Char> {
+public:
+    template <typename FormatContext>
+    auto format(const T e, FormatContext &ctx) const {
+        auto name = boost::describe::enum_to_string(e, "");
+        if (name && *name != '\0') {
+            return detail::write(ctx.out(), name);
+        } else {
+            auto enum_as_uint = static_cast<std::make_unsigned_t<T>>(e);
+            auto enum_as_string = fmt::format("{}(0x{:0{}X})", boost::core::demangle(typeid(T).name()), enum_as_uint, sizeof(enum_as_uint) * 2);
+            return detail::write(ctx.out(), basic_string_view<Char>(enum_as_string));
+        }
     }
 };
 FMT_END_NAMESPACE
