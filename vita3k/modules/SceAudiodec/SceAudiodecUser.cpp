@@ -25,6 +25,8 @@
 
 TRACY_MODULE_NAME(SceAudiodecUser);
 
+BOOST_DESCRIBE_ENUM(SceAudiodecCodec, SCE_AUDIODEC_TYPE_AT9, SCE_AUDIODEC_TYPE_MP3, SCE_AUDIODEC_TYPE_AAC, SCE_AUDIODEC_TYPE_CELP)
+
 enum {
     SCE_AUDIODEC_ERROR_API_FAIL = 0x807F0000,
     SCE_AUDIODEC_ERROR_NOT_INITIALIZED = 0x807F0005,
@@ -194,12 +196,12 @@ static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiode
             ctrl->pcm_size_max = info.channels * SCE_AUDIODEC_MP3_V2_MAX_PCM_SIZE;
             return 0;
         default:
-            LOG_ERROR("Invalid MPEG version {}.", to_debug_str(emuenv.mem, info.version));
+            LOG_ERROR("Invalid MPEG version {}.", info.version);
             return SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION;
         }
     }
     default: {
-        LOG_ERROR("Unimplemented audio decoder {}.", to_debug_str(emuenv.mem, codec));
+        LOG_ERROR("Unimplemented audio decoder {}.", codec);
         return -1;
     }
     }
