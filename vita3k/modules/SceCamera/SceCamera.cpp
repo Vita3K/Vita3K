@@ -25,278 +25,27 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceCamera);
 
-template <typename T>
-std::string_view enum_name(T value);
-
-template <>
-std::string_view enum_name<SceCameraDevice>(SceCameraDevice value) {
-    switch (value) {
-    case SCE_CAMERA_DEVICE_FRONT: return "SCE_CAMERA_DEVICE_FRONT";
-    case SCE_CAMERA_DEVICE_BACK: return "SCE_CAMERA_DEVICE_BACK";
-    case SCE_CAMERA_DEVICE_UNKNOWN: return "SCE_CAMERA_DEVICE_UNKNOWN";
-    }
-    return {};
-}
-template <>
-std::string_view enum_name<SceCameraPriority>(SceCameraPriority value) {
-    switch (value) {
-    case SCE_CAMERA_PRIORITY_SHARE: return "SCE_CAMERA_PRIORITY_SHARE";
-    case SCE_CAMERA_PRIORITY_EXCLUSIVE: return "SCE_CAMERA_PRIORITY_EXCLUSIVE";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraFormat>(SceCameraFormat value) {
-    switch (value) {
-    case SCE_CAMERA_FORMAT_INVALID: return "SCE_CAMERA_FORMAT_INVALID";
-    case SCE_CAMERA_FORMAT_YUV422_PLANE: return "SCE_CAMERA_FORMAT_YUV422_PLANE";
-    case SCE_CAMERA_FORMAT_YUV422_PACKED: return "SCE_CAMERA_FORMAT_YUV422_PACKED";
-    case SCE_CAMERA_FORMAT_YUV420_PLANE: return "SCE_CAMERA_FORMAT_YUV420_PLANE";
-    case SCE_CAMERA_FORMAT_ARGB: return "SCE_CAMERA_FORMAT_ARGB";
-    case SCE_CAMERA_FORMAT_ABGR: return "SCE_CAMERA_FORMAT_ABGR";
-    case SCE_CAMERA_FORMAT_RAW8: return "SCE_CAMERA_FORMAT_RAW8";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraResolution>(SceCameraResolution value) {
-    switch (value) {
-    case SCE_CAMERA_RESOLUTION_0_0: return "SCE_CAMERA_RESOLUTION_0_0";
-    case SCE_CAMERA_RESOLUTION_640_480: return "SCE_CAMERA_RESOLUTION_640_480";
-    case SCE_CAMERA_RESOLUTION_320_240: return "SCE_CAMERA_RESOLUTION_320_240";
-    case SCE_CAMERA_RESOLUTION_160_120: return "SCE_CAMERA_RESOLUTION_160_120";
-    case SCE_CAMERA_RESOLUTION_352_288: return "SCE_CAMERA_RESOLUTION_352_288";
-    case SCE_CAMERA_RESOLUTION_176_144: return "SCE_CAMERA_RESOLUTION_176_144";
-    case SCE_CAMERA_RESOLUTION_480_272: return "SCE_CAMERA_RESOLUTION_480_272";
-    case SCE_CAMERA_RESOLUTION_640_360: return "SCE_CAMERA_RESOLUTION_640_360";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraFrameRate>(SceCameraFrameRate value) {
-    switch (value) {
-    case SCE_CAMERA_FRAMERATE_3_FPS: return "SCE_CAMERA_FRAMERATE_3_FPS";
-    case SCE_CAMERA_FRAMERATE_5_FPS: return "SCE_CAMERA_FRAMERATE_5_FPS";
-    case SCE_CAMERA_FRAMERATE_7_FPS: return "SCE_CAMERA_FRAMERATE_7_FPS";
-    case SCE_CAMERA_FRAMERATE_10_FPS: return "SCE_CAMERA_FRAMERATE_10_FPS";
-    case SCE_CAMERA_FRAMERATE_15_FPS: return "SCE_CAMERA_FRAMERATE_15_FPS";
-    case SCE_CAMERA_FRAMERATE_20_FPS: return "SCE_CAMERA_FRAMERATE_20_FPS";
-    case SCE_CAMERA_FRAMERATE_30_FPS: return "SCE_CAMERA_FRAMERATE_30_FPS";
-    case SCE_CAMERA_FRAMERATE_60_FPS: return "SCE_CAMERA_FRAMERATE_60_FPS";
-    case SCE_CAMERA_FRAMERATE_120_FPS: return "SCE_CAMERA_FRAMERATE_120_FPS";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraExposureCompensation>(SceCameraExposureCompensation value) {
-    switch (value) {
-    case SCE_CAMERA_EV_NEGATIVE_20: return "SCE_CAMERA_EV_NEGATIVE_20";
-    case SCE_CAMERA_EV_NEGATIVE_17: return "SCE_CAMERA_EV_NEGATIVE_17";
-    case SCE_CAMERA_EV_NEGATIVE_15: return "SCE_CAMERA_EV_NEGATIVE_15";
-    case SCE_CAMERA_EV_NEGATIVE_13: return "SCE_CAMERA_EV_NEGATIVE_13";
-    case SCE_CAMERA_EV_NEGATIVE_10: return "SCE_CAMERA_EV_NEGATIVE_10";
-    case SCE_CAMERA_EV_NEGATIVE_7: return "SCE_CAMERA_EV_NEGATIVE_7";
-    case SCE_CAMERA_EV_NEGATIVE_5: return "SCE_CAMERA_EV_NEGATIVE_5";
-    case SCE_CAMERA_EV_NEGATIVE_3: return "SCE_CAMERA_EV_NEGATIVE_3";
-    case SCE_CAMERA_EV_POSITIVE_0: return "SCE_CAMERA_EV_POSITIVE_0";
-    case SCE_CAMERA_EV_POSITIVE_3: return "SCE_CAMERA_EV_POSITIVE_3";
-    case SCE_CAMERA_EV_POSITIVE_5: return "SCE_CAMERA_EV_POSITIVE_5";
-    case SCE_CAMERA_EV_POSITIVE_7: return "SCE_CAMERA_EV_POSITIVE_7";
-    case SCE_CAMERA_EV_POSITIVE_10: return "SCE_CAMERA_EV_POSITIVE_10";
-    case SCE_CAMERA_EV_POSITIVE_13: return "SCE_CAMERA_EV_POSITIVE_13";
-    case SCE_CAMERA_EV_POSITIVE_15: return "SCE_CAMERA_EV_POSITIVE_15";
-    case SCE_CAMERA_EV_POSITIVE_17: return "SCE_CAMERA_EV_POSITIVE_17";
-    case SCE_CAMERA_EV_POSITIVE_20: return "SCE_CAMERA_EV_POSITIVE_20";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraEffect>(SceCameraEffect value) {
-    switch (value) {
-    case SCE_CAMERA_EFFECT_NORMAL: return "SCE_CAMERA_EFFECT_NORMAL";
-    case SCE_CAMERA_EFFECT_NEGATIVE: return "SCE_CAMERA_EFFECT_NEGATIVE";
-    case SCE_CAMERA_EFFECT_BLACKWHITE: return "SCE_CAMERA_EFFECT_BLACKWHITE";
-    case SCE_CAMERA_EFFECT_SEPIA: return "SCE_CAMERA_EFFECT_SEPIA";
-    case SCE_CAMERA_EFFECT_BLUE: return "SCE_CAMERA_EFFECT_BLUE";
-    case SCE_CAMERA_EFFECT_RED: return "SCE_CAMERA_EFFECT_RED";
-    case SCE_CAMERA_EFFECT_GREEN: return "SCE_CAMERA_EFFECT_GREEN";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraReverse>(SceCameraReverse value) {
-    switch (value) {
-    case SCE_CAMERA_REVERSE_OFF: return "SCE_CAMERA_REVERSE_OFF";
-    case SCE_CAMERA_REVERSE_MIRROR: return "SCE_CAMERA_REVERSE_MIRROR";
-    case SCE_CAMERA_REVERSE_FLIP: return "SCE_CAMERA_REVERSE_FLIP";
-    case SCE_CAMERA_REVERSE_MIRROR_FLIP: return "SCE_CAMERA_REVERSE_MIRROR_FLIP";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraSaturation>(SceCameraSaturation value) {
-    switch (value) {
-    case SCE_CAMERA_SATURATION_0: return "SCE_CAMERA_SATURATION_0";
-    case SCE_CAMERA_SATURATION_5: return "SCE_CAMERA_SATURATION_5";
-    case SCE_CAMERA_SATURATION_10: return "SCE_CAMERA_SATURATION_10";
-    case SCE_CAMERA_SATURATION_20: return "SCE_CAMERA_SATURATION_20";
-    case SCE_CAMERA_SATURATION_30: return "SCE_CAMERA_SATURATION_30";
-    case SCE_CAMERA_SATURATION_40: return "SCE_CAMERA_SATURATION_40";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraSharpness>(SceCameraSharpness value) {
-    switch (value) {
-    case SCE_CAMERA_SHARPNESS_100: return "SCE_CAMERA_SHARPNESS_100";
-    case SCE_CAMERA_SHARPNESS_200: return "SCE_CAMERA_SHARPNESS_200";
-    case SCE_CAMERA_SHARPNESS_300: return "SCE_CAMERA_SHARPNESS_300";
-    case SCE_CAMERA_SHARPNESS_400: return "SCE_CAMERA_SHARPNESS_400";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraAntiFlicker>(SceCameraAntiFlicker value) {
-    switch (value) {
-    case SCE_CAMERA_ANTIFLICKER_AUTO: return "SCE_CAMERA_ANTIFLICKER_AUTO";
-    case SCE_CAMERA_ANTIFLICKER_50HZ: return "SCE_CAMERA_ANTIFLICKER_50HZ";
-    case SCE_CAMERA_ANTIFLICKER_60HZ: return "SCE_CAMERA_ANTIFLICKER_60HZ";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraISO>(SceCameraISO value) {
-    switch (value) {
-    case SCE_CAMERA_ISO_AUTO: return "SCE_CAMERA_ISO_AUTO";
-    case SCE_CAMERA_ISO_100: return "SCE_CAMERA_ISO_100";
-    case SCE_CAMERA_ISO_200: return "SCE_CAMERA_ISO_200";
-    case SCE_CAMERA_ISO_400: return "SCE_CAMERA_ISO_400";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraGain>(SceCameraGain value) {
-    switch (value) {
-    case SCE_CAMERA_GAIN_AUTO: return "SCE_CAMERA_GAIN_AUTO";
-    case SCE_CAMERA_GAIN_1: return "SCE_CAMERA_GAIN_1";
-    case SCE_CAMERA_GAIN_2: return "SCE_CAMERA_GAIN_2";
-    case SCE_CAMERA_GAIN_3: return "SCE_CAMERA_GAIN_3";
-    case SCE_CAMERA_GAIN_4: return "SCE_CAMERA_GAIN_4";
-    case SCE_CAMERA_GAIN_5: return "SCE_CAMERA_GAIN_5";
-    case SCE_CAMERA_GAIN_6: return "SCE_CAMERA_GAIN_6";
-    case SCE_CAMERA_GAIN_7: return "SCE_CAMERA_GAIN_7";
-    case SCE_CAMERA_GAIN_8: return "SCE_CAMERA_GAIN_8";
-    case SCE_CAMERA_GAIN_9: return "SCE_CAMERA_GAIN_9";
-    case SCE_CAMERA_GAIN_10: return "SCE_CAMERA_GAIN_10";
-    case SCE_CAMERA_GAIN_11: return "SCE_CAMERA_GAIN_11";
-    case SCE_CAMERA_GAIN_12: return "SCE_CAMERA_GAIN_12";
-    case SCE_CAMERA_GAIN_13: return "SCE_CAMERA_GAIN_13";
-    case SCE_CAMERA_GAIN_14: return "SCE_CAMERA_GAIN_14";
-    case SCE_CAMERA_GAIN_15: return "SCE_CAMERA_GAIN_15";
-    case SCE_CAMERA_GAIN_16: return "SCE_CAMERA_GAIN_16";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraWhiteBalance>(SceCameraWhiteBalance value) {
-    switch (value) {
-    case SCE_CAMERA_WB_AUTO: return "SCE_CAMERA_WB_AUTO";
-    case SCE_CAMERA_WB_DAY: return "SCE_CAMERA_WB_DAY";
-    case SCE_CAMERA_WB_CWF: return "SCE_CAMERA_WB_CWF";
-    case SCE_CAMERA_WB_SLSA: return "SCE_CAMERA_WB_SLSA";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraBacklight>(SceCameraBacklight value) {
-    switch (value) {
-    case SCE_CAMERA_BACKLIGHT_OFF: return "SCE_CAMERA_BACKLIGHT_OFF";
-    case SCE_CAMERA_BACKLIGHT_ON: return "SCE_CAMERA_BACKLIGHT_ON";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraNightmode>(SceCameraNightmode value) {
-    switch (value) {
-    case SCE_CAMERA_NIGHTMODE_OFF: return "SCE_CAMERA_NIGHTMODE_OFF";
-    case SCE_CAMERA_NIGHTMODE_LESS10: return "SCE_CAMERA_NIGHTMODE_LESS10";
-    case SCE_CAMERA_NIGHTMODE_LESS100: return "SCE_CAMERA_NIGHTMODE_LESS100";
-    case SCE_CAMERA_NIGHTMODE_OVER100: return "SCE_CAMERA_NIGHTMODE_OVER100";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraBuffer>(SceCameraBuffer value) {
-    switch (value) {
-    case SceCameraBuffer::SCE_CAMERA_BUFFER_SETBYOPEN: return "SCE_CAMERA_BUFFER_SETBYOPEN";
-    case SceCameraBuffer::SCE_CAMERA_BUFFER_SETBYREAD: return "SCE_CAMERA_BUFFER_SETBYREAD";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraReadMode>(SceCameraReadMode value) {
-    switch (value) {
-    case SCE_CAMERA_READ_MODE_WAIT_NEXTFRAME_ON: return "SCE_CAMERA_READ_MODE_WAIT_NEXTFRAME_ON";
-    case SCE_CAMERA_READ_MODE_WAIT_NEXTFRAME_OFF: return "SCE_CAMERA_READ_MODE_WAIT_NEXTFRAME_OFF";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraReadGetExposureTime>(SceCameraReadGetExposureTime value) {
-    switch (value) {
-    case SCE_CAMERA_READ_GET_EXPOSURE_TIME_OFF: return "SCE_CAMERA_READ_GET_EXPOSURE_TIME_OFF";
-    case SCE_CAMERA_READ_GET_EXPOSURE_TIME_ON: return "SCE_CAMERA_READ_GET_EXPOSURE_TIME_ON";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraStatus>(SceCameraStatus value) {
-    switch (value) {
-    case SCE_CAMERA_STATUS_IS_ACTIVE: return "SCE_CAMERA_STATUS_IS_ACTIVE";
-    case SCE_CAMERA_STATUS_IS_NOT_ACTIVE: return "SCE_CAMERA_STATUS_IS_NOT_ACTIVE";
-    case SCE_CAMERA_STATUS_IS_FORCED_STOP: return "SCE_CAMERA_STATUS_IS_FORCED_STOP";
-    case SCE_CAMERA_STATUS_IS_FORCED_STOP_POWER_CONFIG_CHANGE: return "SCE_CAMERA_STATUS_IS_FORCED_STOP_POWER_CONFIG_CHANGE";
-    case SCE_CAMERA_STATUS_IS_ALREADY_READ: return "SCE_CAMERA_STATUS_IS_ALREADY_READ";
-    case SCE_CAMERA_STATUS_IS_NOT_STABLE: return "SCE_CAMERA_STATUS_IS_NOT_STABLE";
-    }
-    return {};
-}
-
-template <>
-std::string_view enum_name<SceCameraDataRange>(SceCameraDataRange value) {
-    switch (value) {
-    case SCE_CAMERA_DATA_RANGE_FULL: return "SCE_CAMERA_DATA_RANGE_FULL";
-    case SCE_CAMERA_DATA_RANGE_BT601: return "SCE_CAMERA_DATA_RANGE_BT601";
-    }
-    return {};
-}
-
-template <typename T>
-    requires std::is_enum_v<T>
-static std::string to_debug_str(const MemState &mem, T type) {
-    auto name = enum_name(type);
-    if (name.empty())
-        return std::to_string(static_cast<std::underlying_type_t<T>>(type));
-    return std::string(name);
-}
+BOOST_DESCRIBE_ENUM(SceCameraDevice, SCE_CAMERA_DEVICE_FRONT, SCE_CAMERA_DEVICE_BACK, SCE_CAMERA_DEVICE_UNKNOWN)
+BOOST_DESCRIBE_ENUM(SceCameraPriority, SCE_CAMERA_PRIORITY_SHARE, SCE_CAMERA_PRIORITY_EXCLUSIVE)
+BOOST_DESCRIBE_ENUM(SceCameraFormat, SCE_CAMERA_FORMAT_INVALID, SCE_CAMERA_FORMAT_YUV422_PLANE, SCE_CAMERA_FORMAT_YUV422_PACKED, SCE_CAMERA_FORMAT_YUV420_PLANE, SCE_CAMERA_FORMAT_ARGB, SCE_CAMERA_FORMAT_ABGR, SCE_CAMERA_FORMAT_RAW8)
+BOOST_DESCRIBE_ENUM(SceCameraResolution, SCE_CAMERA_RESOLUTION_0_0, SCE_CAMERA_RESOLUTION_640_480, SCE_CAMERA_RESOLUTION_320_240, SCE_CAMERA_RESOLUTION_160_120, SCE_CAMERA_RESOLUTION_352_288, SCE_CAMERA_RESOLUTION_176_144, SCE_CAMERA_RESOLUTION_480_272, SCE_CAMERA_RESOLUTION_640_360)
+BOOST_DESCRIBE_ENUM(SceCameraFrameRate, SCE_CAMERA_FRAMERATE_3_FPS, SCE_CAMERA_FRAMERATE_5_FPS, SCE_CAMERA_FRAMERATE_7_FPS, SCE_CAMERA_FRAMERATE_10_FPS, SCE_CAMERA_FRAMERATE_15_FPS, SCE_CAMERA_FRAMERATE_20_FPS, SCE_CAMERA_FRAMERATE_30_FPS, SCE_CAMERA_FRAMERATE_60_FPS, SCE_CAMERA_FRAMERATE_120_FPS)
+BOOST_DESCRIBE_ENUM(SceCameraExposureCompensation, SCE_CAMERA_EV_NEGATIVE_20, SCE_CAMERA_EV_NEGATIVE_17, SCE_CAMERA_EV_NEGATIVE_15, SCE_CAMERA_EV_NEGATIVE_13, SCE_CAMERA_EV_NEGATIVE_10, SCE_CAMERA_EV_NEGATIVE_7, SCE_CAMERA_EV_NEGATIVE_5, SCE_CAMERA_EV_NEGATIVE_3, SCE_CAMERA_EV_POSITIVE_0, SCE_CAMERA_EV_POSITIVE_3, SCE_CAMERA_EV_POSITIVE_5, SCE_CAMERA_EV_POSITIVE_7, SCE_CAMERA_EV_POSITIVE_10, SCE_CAMERA_EV_POSITIVE_13, SCE_CAMERA_EV_POSITIVE_15, SCE_CAMERA_EV_POSITIVE_17, SCE_CAMERA_EV_POSITIVE_20)
+BOOST_DESCRIBE_ENUM(SceCameraEffect, SCE_CAMERA_EFFECT_NORMAL, SCE_CAMERA_EFFECT_NEGATIVE, SCE_CAMERA_EFFECT_BLACKWHITE, SCE_CAMERA_EFFECT_SEPIA, SCE_CAMERA_EFFECT_BLUE, SCE_CAMERA_EFFECT_RED, SCE_CAMERA_EFFECT_GREEN)
+BOOST_DESCRIBE_ENUM(SceCameraReverse, SCE_CAMERA_REVERSE_OFF, SCE_CAMERA_REVERSE_MIRROR, SCE_CAMERA_REVERSE_FLIP, SCE_CAMERA_REVERSE_MIRROR_FLIP)
+BOOST_DESCRIBE_ENUM(SceCameraSaturation, SCE_CAMERA_SATURATION_0, SCE_CAMERA_SATURATION_5, SCE_CAMERA_SATURATION_10, SCE_CAMERA_SATURATION_20, SCE_CAMERA_SATURATION_30, SCE_CAMERA_SATURATION_40)
+BOOST_DESCRIBE_ENUM(SceCameraSharpness, SCE_CAMERA_SHARPNESS_100, SCE_CAMERA_SHARPNESS_200, SCE_CAMERA_SHARPNESS_300, SCE_CAMERA_SHARPNESS_400)
+BOOST_DESCRIBE_ENUM(SceCameraAntiFlicker, SCE_CAMERA_ANTIFLICKER_AUTO, SCE_CAMERA_ANTIFLICKER_50HZ, SCE_CAMERA_ANTIFLICKER_60HZ)
+BOOST_DESCRIBE_ENUM(SceCameraISO, SCE_CAMERA_ISO_AUTO, SCE_CAMERA_ISO_100, SCE_CAMERA_ISO_200, SCE_CAMERA_ISO_400)
+BOOST_DESCRIBE_ENUM(SceCameraGain, SCE_CAMERA_GAIN_AUTO, SCE_CAMERA_GAIN_1, SCE_CAMERA_GAIN_2, SCE_CAMERA_GAIN_3, SCE_CAMERA_GAIN_4, SCE_CAMERA_GAIN_5, SCE_CAMERA_GAIN_6, SCE_CAMERA_GAIN_7, SCE_CAMERA_GAIN_8, SCE_CAMERA_GAIN_9, SCE_CAMERA_GAIN_10, SCE_CAMERA_GAIN_11, SCE_CAMERA_GAIN_12, SCE_CAMERA_GAIN_13, SCE_CAMERA_GAIN_14, SCE_CAMERA_GAIN_15, SCE_CAMERA_GAIN_16)
+BOOST_DESCRIBE_ENUM(SceCameraWhiteBalance, SCE_CAMERA_WB_AUTO, SCE_CAMERA_WB_DAY, SCE_CAMERA_WB_CWF, SCE_CAMERA_WB_SLSA)
+BOOST_DESCRIBE_ENUM(SceCameraBacklight, SCE_CAMERA_BACKLIGHT_OFF, SCE_CAMERA_BACKLIGHT_ON)
+BOOST_DESCRIBE_ENUM(SceCameraNightmode, SCE_CAMERA_NIGHTMODE_OFF, SCE_CAMERA_NIGHTMODE_LESS10, SCE_CAMERA_NIGHTMODE_LESS100, SCE_CAMERA_NIGHTMODE_OVER100)
+BOOST_DESCRIBE_ENUM(SceCameraBuffer, SCE_CAMERA_BUFFER_SETBYOPEN, SCE_CAMERA_BUFFER_SETBYREAD)
+BOOST_DESCRIBE_ENUM(SceCameraReadMode, SCE_CAMERA_READ_MODE_WAIT_NEXTFRAME_ON, SCE_CAMERA_READ_MODE_WAIT_NEXTFRAME_OFF)
+BOOST_DESCRIBE_ENUM(SceCameraReadGetExposureTime, SCE_CAMERA_READ_GET_EXPOSURE_TIME_OFF, SCE_CAMERA_READ_GET_EXPOSURE_TIME_ON)
+BOOST_DESCRIBE_ENUM(SceCameraStatus, SCE_CAMERA_STATUS_IS_ACTIVE, SCE_CAMERA_STATUS_IS_NOT_ACTIVE, SCE_CAMERA_STATUS_IS_FORCED_STOP, SCE_CAMERA_STATUS_IS_FORCED_STOP_POWER_CONFIG_CHANGE, SCE_CAMERA_STATUS_IS_ALREADY_READ, SCE_CAMERA_STATUS_IS_NOT_STABLE)
+BOOST_DESCRIBE_ENUM(SceCameraDataRange, SCE_CAMERA_DATA_RANGE_FULL, SCE_CAMERA_DATA_RANGE_BT601)
 
 EXPORT(int, sceCameraOpen, SceCameraDevice devnum, SceCameraInfo *pInfo) {
     TRACY_FUNC(sceCameraOpen, devnum, pInfo);
@@ -399,6 +148,7 @@ EXPORT(int, sceCameraStop, SceCameraDevice devnum) {
 
 EXPORT(int, sceCameraRead, SceCameraDevice devnum, SceCameraRead *pRead) {
     TRACY_FUNC(sceCameraRead, devnum, pRead);
+
     if (emuenv.cfg.pstv_mode)
         return RET_ERROR(SCE_CAMERA_ERROR_NOT_MOUNTED);
     if (devnum != SCE_CAMERA_DEVICE_BACK && devnum != SCE_CAMERA_DEVICE_FRONT)
