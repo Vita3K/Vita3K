@@ -64,6 +64,10 @@ struct Config {
         int audio_volume = 100;
         bool ngs_enable = true;
         bool pstv_mode = false;
+#ifdef __ANDROID__
+        std::string custom_driver_name{};
+#endif
+        std::string backend_renderer = "Vulkan";
         bool high_accuracy = false;
         float resolution_multiplier = 1.0f;
         bool disable_surface_sync = false;

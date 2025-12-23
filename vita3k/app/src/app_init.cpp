@@ -23,6 +23,7 @@
 #include <config/version.h>
 #include <display/state.h>
 #include <emuenv/state.h>
+#include <gui/functions.h>
 #include <gui/imgui_impl_sdl.h>
 #include <gui/state.h>
 #include <io/functions.h>
@@ -281,6 +282,10 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         state.pref_path = state.cfg.get_pref_path();
     }
 
+    // Set initall current config for current backend renderer and custom driver with run app path if provided
+    gui::set_current_config(state, state.cfg.run_app_path.has_value() ? *state.cfg.run_app_path : "");
+    LOG_INFO("backend-renderer: {}", state.cfg.current_config.backend_renderer);
+
     LOG_INFO("Base path: {}", state.base_path);
 #if defined(__linux__) && !defined(__ANDROID__) && !defined(__APPLE__)
     LOG_INFO("Static assets path: {}", state.static_assets_path);
@@ -296,17 +301,6 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     }
     ImGuiIO &io = ImGui::GetIO();
     io.IniFilename = NULL;
-
-    state.backend_renderer = renderer::Backend::Vulkan;
-
-    if (string_utils::toupper(state.cfg.backend_renderer) == "OPENGL") {
-#ifndef __APPLE__
-        state.backend_renderer = renderer::Backend::OpenGL;
-#else
-        state.cfg.backend_renderer = "Vulkan";
-        config::serialize_config(state.cfg, state.cfg.config_path);
-#endif
-    }
 
     int window_type = 0;
     switch (state.backend_renderer) {

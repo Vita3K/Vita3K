@@ -78,10 +78,11 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
                 args[7] = nullptr;
         } else
             args[5] = nullptr;
-    } else
+    } else {
         args[3] = nullptr;
+    }
 
-        // Execute the emulator again with some arguments
+    // Execute the emulator again with some arguments
 #ifdef _WIN32
     FreeConsole();
     _execv(argv[0], args);
@@ -323,14 +324,18 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    gui::set_config(emuenv);
+
     // When backend render is changed before boot app, reboot emu in new backend render and run app
-    if (emuenv.renderer->current_backend != emuenv.backend_renderer) {
+    if ((emuenv.renderer->current_backend != emuenv.backend_renderer)
+#ifdef __ANDROID__
+        || (emuenv.renderer->current_custom_driver != emuenv.cfg.current_config.custom_driver_name)
+#endif
+    ) {
         emuenv.load_app_path = emuenv.io.app_path;
         run_execv(argv, emuenv);
         return Success;
     }
-
-    gui::set_config(gui, emuenv, emuenv.io.app_path);
 
     const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);
     emuenv.app_info.app_version = APP_INDEX->app_ver;
