@@ -28,5 +28,10 @@ struct MotionState {
     uint64_t last_gyro_timestamp = 0;
     uint64_t last_accel_timestamp = 0;
 
+    bool has_device_motion_support = false;
     bool is_sampling = false;
+
+    void init();
+    void stop_sensor_sampling();
+    void start_sensor_sampling();
 };
