@@ -71,7 +71,8 @@ enum ScreenshotFormat {
     code(bool, "show-live-area-screen", true, show_live_area_screen)                                    \
     code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \
-    code(std::string, "backend-renderer", "OpenGL", backend_renderer)                                   \
+    code(std::string, "backend-renderer", "Vulkan", backend_renderer)                                   \
+    code(std::string, "custom-driver-name", "", custom_driver_name)                                     \
     code(int, "gpu-idx", 0, gpu_idx)                                                                    \
     code(bool, "high-accuracy", true, high_accuracy)                                                    \
     code(float, "resolution-multiplier", 1.0f, resolution_multiplier)                                   \
