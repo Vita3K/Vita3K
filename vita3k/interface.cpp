@@ -795,7 +795,10 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             handle_touchpad_event(event.gtouchpad);
             break;
         case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
-            handle_motion_event(emuenv, event.gsensor);
+            handle_motion_event(emuenv, event.gsensor.sensor, event.gsensor);
+            break;
+        case SDL_EVENT_SENSOR_UPDATE:
+            handle_motion_event(emuenv, SDL_GetSensorTypeForID(event.sensor.which), event.sensor);
             break;
         case SDL_EVENT_GAMEPAD_ADDED:
         case SDL_EVENT_GAMEPAD_REMOVED:
