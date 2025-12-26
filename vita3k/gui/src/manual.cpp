@@ -268,7 +268,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 50.f * SCALE.y);
             ImGui::SetCursorPos(ImVec2((display_size.x / 2) - (SLIDER_WIDTH / 2.f), (POPUP_HEIGHT / 2) - (15.f * SCALE.x)));
             const auto previous_page = current_page;
-            ImGui::SliderInt("##slider_current_manual", &current_page, 0, total_pages, slider.c_str());
+            ImGui::SliderInt("##slider_current_manual", &current_page, 0, max_pages_index, slider.c_str());
             if (current_page != previous_page)
                 change_page(emuenv, current_page);
             ImGui::PopStyleVar(2);
