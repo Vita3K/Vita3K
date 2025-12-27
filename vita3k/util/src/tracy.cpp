@@ -27,7 +27,7 @@
 
 namespace tracy_module_utils {
 
-constexpr int max_modules = 64; // If not enough increase to 64*n
+constexpr int max_modules = 128; // If not enough increase to 64*n
 typedef std::bitset<max_modules> tracy_module_flags;
 typedef std::vector<std::string> tracy_module_names;
 
