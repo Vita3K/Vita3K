@@ -18,6 +18,7 @@
 #include <emuenv/state.h>
 
 #include <audio/state.h>
+#include <camera/state.h>
 #include <config/state.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
@@ -89,7 +90,9 @@ EmuEnvState::EmuEnvState()
     , _gdb(new GDBState)
     , gdb(*_gdb)
     , _http(new HTTPState)
-    , http(*_http) {
+    , http(*_http)
+    , _camera(new CameraState)
+    , camera(*_camera) {
 }
 DISABLE_WARNING_END;
 
