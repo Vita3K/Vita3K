@@ -82,7 +82,7 @@ EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numR
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
     }
 
-    if (emuenv.ctrl.has_motion_support && !emuenv.cfg.disable_motion) {
+    if ((emuenv.ctrl.has_motion_support || emuenv.motion.has_device_motion_support) && !emuenv.cfg.disable_motion) {
         std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
         sensorState->accelerometer = get_acceleration(emuenv.motion);
         sensorState->gyro = get_gyroscope(emuenv.motion);
@@ -119,7 +119,7 @@ EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
     }
 
-    if (emuenv.ctrl.has_motion_support && !emuenv.cfg.disable_motion) {
+    if ((emuenv.ctrl.has_motion_support || emuenv.motion.has_device_motion_support) && !emuenv.cfg.disable_motion) {
         std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
         motionState->timestamp = emuenv.motion.last_accel_timestamp;
 
@@ -263,7 +263,7 @@ EXPORT(int, sceMotionStartSampling) {
         return SCE_MOTION_ERROR_ALREADY_SAMPLING;
     }
 
-    emuenv.motion.is_sampling = true;
+    emuenv.motion.start_sensor_sampling();
     return SCE_MOTION_OK;
 }
 
@@ -278,7 +278,7 @@ EXPORT(int, sceMotionStopSampling) {
         return SCE_MOTION_ERROR_NOT_SAMPLING;
     }
 
-    emuenv.motion.is_sampling = false;
+    emuenv.motion.stop_sensor_sampling();
     return SCE_MOTION_OK;
 }
 
