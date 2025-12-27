@@ -25,8 +25,7 @@
 #elif defined(_MSC_VER)
 #define DISABLE_WARNING_PUSH __pragma(warning(push))
 #define DISABLE_WARNING_POP __pragma(warning(pop))
-#define DISABLE_WARNING_NO_PUSH(warningNumber, warningName) __pragma(warning(disable \
-                                                                             : warningNumber))
+#define DISABLE_WARNING_NO_PUSH(warningNumber, warningName) __pragma(warning(disable : warningNumber))
 #else
 #define DISABLE_WARNING_PUSH
 #define DISABLE_WARNING_POP
