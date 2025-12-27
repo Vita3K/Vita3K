@@ -19,6 +19,8 @@
 
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
+#include <boost/describe/enum.hpp>
+#include <boost/describe/enum_to_string.hpp>
 #include <spdlog/spdlog.h>
 #include <util/exit_code.h>
 #include <util/fs.h>
@@ -109,6 +111,8 @@ std::string log_hex_full(T val) {
 
 template <class T>
 class Ptr;
+template <typename U>
+concept has_enum_to_string = requires(U u) { enum_to_string(u); };
 FMT_BEGIN_NAMESPACE
 template <typename T, typename Char>
 struct formatter<Ptr<T>, Char> : formatter<string_view, Char> {
@@ -117,6 +121,21 @@ public:
     auto format(const Ptr<T> p, FormatContext &ctx) const {
         return detail::write(ctx.out(),
             basic_string_view<Char>(log_hex_full(p.address())));
+    }
+};
+template <typename T, typename Char>
+    requires(std::is_enum_v<T> && has_enum_to_string<T>)
+struct formatter<T, Char> : formatter<string_view, Char> {
+public:
+    template <typename FormatContext>
+    auto format(const T e, FormatContext &ctx) const {
+        auto name = enum_to_string(e);
+        if (name && *name != '\0') {
+            return detail::write(ctx.out(), name);
+        } else {
+            auto hex = log_hex_full(static_cast<std::underlying_type_t<T>>(e));
+            return detail::write(ctx.out(), basic_string_view<Char>(hex.data(), hex.size()));
+        }
     }
 };
 FMT_END_NAMESPACE
