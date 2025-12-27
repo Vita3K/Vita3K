@@ -19,11 +19,16 @@
 
 #include <config/state.h>
 #include <config/version.h>
+
 #include <dialog/state.h>
 #include <gui/functions.h>
+
 #include <include/cpu.h>
 #include <include/environment.h>
+
+#include <io/functions.h>
 #include <io/state.h>
+
 #include <renderer/state.h>
 
 #include <util/log.h>
@@ -40,11 +45,8 @@
 
 namespace gui {
 
-static std::map<double, std::string> update_history_infos;
-
-static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    update_history_infos.clear();
-    const auto change_info_path{ emuenv.pref_path / "ux0/app" / app_path / "sce_sys/changeinfo/" };
+static bool get_local_update_history(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    const auto change_info_path{ emuenv.pref_path / convert_path(app_path) / "sce_sys/changeinfo/" };
 
     std::string fname = fs::exists(change_info_path / fmt::format("changeinfo_{:0>2d}.xml", emuenv.cfg.sys_lang)) ? fmt::format("changeinfo_{:0>2d}.xml", emuenv.cfg.sys_lang) : "changeinfo.xml";
 
@@ -52,29 +54,10 @@ static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::st
     if (!doc.load_file((change_info_path / fname).c_str()))
         return false;
 
-    for (const auto &info : doc.child("changeinfo")) {
-        double app_ver = info.attribute("app_ver").as_double();
-        std::string text = info.text().as_string();
+    std::ostringstream oss;
+    doc.save(oss);
 
-        // Replace HTML tags and special character entities
-        text = std::regex_replace(text, std::regex(R"(<li>)"), reinterpret_cast<const char *>(u8"\u30FB"));
-        text = std::regex_replace(text, std::regex(R"(<br/>|<br>|</li>)"), "\n");
-        text = std::regex_replace(text, std::regex(R"(<[^>]+>)"), "");
-        text = std::regex_replace(text, std::regex(R"(&nbsp;)"), " ");
-        text = std::regex_replace(text, std::regex(R"(&reg;)"), reinterpret_cast<const char *>(u8"\u00AE"));
-
-        // Remove duplicate newlines and spaces
-        auto end = std::unique(text.begin(), text.end(), [](char a, char b) {
-            return std::isspace(a) && std::isspace(b);
-        });
-        if (end != text.begin() && std::isspace(static_cast<unsigned>(end[-1])))
-            --end;
-        text.erase(end, text.end());
-
-        update_history_infos[app_ver] = text;
-    }
-
-    return !update_history_infos.empty();
+    return get_update_history_infos(oss.str());
 }
 
 std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, EmuEnvState &emuenv, const std::string &app) {
@@ -130,13 +113,20 @@ void get_time_apps(GuiState &gui, EmuEnvState &emuenv) {
     if (fs::exists(time_path)) {
         if (time_xml.load_file(time_path.c_str())) {
             const auto time_child = time_xml.child("time");
-            if (!time_child.child("user").empty()) {
-                for (const auto &user : time_child) {
-                    auto user_id = user.attribute("id").as_string();
-                    for (const auto &app : user)
-                        // Can't use emplace_back due to Clang 15 for macos
-                        gui.time_apps[user_id].push_back({ app.text().as_string(), app.attribute("last-time-used").as_llong(), app.attribute("time-used").as_llong() });
+            const std::string version = time_child.attribute("version").as_string();
+            if (version != "1.0") {
+                LOG_WARN("Time XML version is not 1.0 on path: {}, {}", time_path, version);
+                fs::remove(time_path);
+            }
+            for (const auto &user : time_child) {
+                const std::string user_id = user.attribute("id").as_string();
+                if (user_id.empty()) {
+                    LOG_ERROR("User ID is empty on path: {}", time_path);
+                    continue;
                 }
+                for (const auto &app : user)
+                    // Can't use emplace_back due to Clang 15 for macos
+                    gui.time_apps[user_id].push_back({ app.text().as_string(), app.attribute("last-time-used").as_llong(), app.attribute("time-used").as_llong() });
             }
         } else {
             LOG_ERROR("Time XML found is corrupted on path: {}", time_path);
@@ -150,19 +140,17 @@ static void save_time_apps(GuiState &gui, EmuEnvState &emuenv) {
     auto declarationUser = time_xml.append_child(pugi::node_declaration);
     declarationUser.append_attribute("version") = "1.0";
     declarationUser.append_attribute("encoding") = "utf-8";
-
     auto time_child = time_xml.append_child("time");
-
-    for (const auto &user : gui.time_apps) {
+    time_child.append_attribute("version") = "1.0";
+    for (const auto &[user_id, apps] : gui.time_apps) {
         // Sort by last time used
-        std::sort(gui.time_apps[user.first].begin(), gui.time_apps[user.first].end(), [&](const TimeApp &ta, const TimeApp &tb) {
+        std::sort(gui.time_apps[user_id].begin(), gui.time_apps[user_id].end(), [&](const TimeApp &ta, const TimeApp &tb) {
             return ta.last_time_used > tb.last_time_used;
         });
 
         auto user_child = time_child.append_child("user");
-        user_child.append_attribute("id") = user.first.c_str();
-
-        for (const auto &app : user.second) {
+        user_child.append_attribute("id") = user_id.c_str();
+        for (const auto &app : apps) {
             auto app_child = user_child.append_child("app");
             app_child.append_attribute("last-time-used") = app.last_time_used;
             app_child.append_attribute("time-used") = app.time_used;
@@ -199,11 +187,12 @@ void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::st
 
 void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
+    const auto &APP = fs::path(app_path).stem().string();
     const auto &title_id = APP_INDEX->title_id;
     try {
-        fs::remove_all(emuenv.pref_path / "ux0/app" / app_path);
+        fs::remove_all(emuenv.pref_path / "ux0/app" / APP);
 
-        const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
+        const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", APP) };
         if (fs::exists(CUSTOM_CONFIG_PATH))
             fs::remove_all(CUSTOM_CONFIG_PATH);
         const auto ADDCONT_PATH{ emuenv.pref_path / "ux0/addcont" / APP_INDEX->addcont };
@@ -234,9 +223,9 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         if (fs::exists(IMPORT_TEXTURES_PATH))
             fs::remove_all(IMPORT_TEXTURES_PATH);
 
-        if (gui.app_selector.user_apps_icon.contains(app_path)) {
-            gui.app_selector.user_apps_icon[app_path] = {};
-            gui.app_selector.user_apps_icon.erase(app_path);
+        if (gui.app_selector.vita_apps_icon.contains(app_path)) {
+            gui.app_selector.vita_apps_icon[app_path] = {};
+            gui.app_selector.vita_apps_icon.erase(app_path);
         }
 
         const auto time_app_index = get_time_app_index(gui, emuenv, app_path);
@@ -250,7 +239,9 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
 
         LOG_INFO("Application successfully deleted '{} [{}]'.", title_id, APP_INDEX->title);
 
-        gui.app_selector.user_apps.erase(gui.app_selector.user_apps.begin() + (APP_INDEX - &gui.app_selector.user_apps[0]));
+        gui.app_selector.vita_apps["ux0"].erase(gui.app_selector.vita_apps["ux0"].begin() + (APP_INDEX - gui.app_selector.vita_apps["ux0"].data()));
+
+        gui.updates_install.erase(title_id);
 
         save_apps_cache(gui, emuenv);
     } catch (std::exception &e) {
@@ -282,8 +273,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto APP_INDEX = get_app_index(gui, app_path);
     const auto &title_id = APP_INDEX->title_id;
 
-    const auto APP_PATH{ emuenv.pref_path / "ux0/app" / app_path };
-    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
+    const auto APP_PATH{ emuenv.pref_path / convert_path(app_path) };
+    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", fs::path(app_path).stem().string()) };
     const auto ADDCONT_PATH{ emuenv.pref_path / "ux0/addcont" / APP_INDEX->addcont };
     const auto LICENSE_PATH{ emuenv.pref_path / "ux0/license" / title_id };
     const auto MANUAL_PATH{ APP_PATH / "sce_sys/manual" };
@@ -307,8 +298,9 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto &textures = gui.lang.settings_dialog.gpu;
 
     const auto is_commercial_app = title_id.starts_with("PCS") || (title_id == "NPXS10007");
-    const auto is_system_app = title_id.starts_with("NPXS") && (title_id != "NPXS10007");
-    const auto has_state_report = gui.compat.compat_db_loaded && gui.compat.app_compat_db.contains(title_id);
+    const auto is_fw_app = app_path.starts_with("vs0") || app_path.starts_with("pd0");
+    const auto is_emu_app = app_path.starts_with("emu");
+    const auto has_state_report = gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(title_id) : false;
     const auto compat_state = has_state_report ? gui.compat.app_compat_db[title_id].state : compat::UNKNOWN;
     const auto &compat_state_color = gui.compat.compat_color[compat_state];
     const auto &compat_state_str = has_state_report ? lang_compat.states[compat_state] : lang_compat.states[compat::UNKNOWN];
@@ -319,7 +311,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         const auto &START_STR = app_path == emuenv.io.app_path ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
         if (ImGui::MenuItem(START_STR.c_str()))
             pre_run_app(gui, emuenv, app_path);
-        if (!is_system_app) {
+        if (!is_emu_app) {
             if (ImGui::BeginMenu(lang_compat.name.c_str())) {
                 if (!is_commercial_app || !gui.compat.compat_db_loaded) {
                     if (ImGui::MenuItem(lang.main["check_app_state"].c_str())) {
@@ -467,7 +459,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::EndMenu();
             }
             if (!emuenv.cfg.show_live_area_screen && ImGui::BeginMenu("Live Area")) {
-                if (ImGui::MenuItem("Live Area", nullptr, &gui.vita_area.live_area_screen))
+                bool is_live_area = gui.live_area_app_current_open >= 0;
+                if (ImGui::MenuItem("Live Area", nullptr, &is_live_area))
                     open_live_area(gui, emuenv, app_path);
                 if (ImGui::MenuItem(common["search"].c_str(), nullptr))
                     open_search(APP_INDEX->title);
@@ -478,14 +471,16 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu(common["delete"].c_str())) {
-                if (ImGui::MenuItem(app_str["title"].c_str()))
-                    context_dialog = lang.deleting["app_delete"];
-                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.main["addcont"].c_str()))
-                    context_dialog = lang.deleting["addcont_delete"];
-                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang.main["license"].c_str()))
-                    context_dialog = lang.deleting["license_delete"];
-                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
-                    context_dialog = lang.deleting["saved_data_delete"];
+                if (!is_fw_app) {
+                    if (ImGui::MenuItem(app_str["title"].c_str()))
+                        context_dialog = lang.deleting["app_delete"];
+                    if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.main["addcont"].c_str()))
+                        context_dialog = lang.deleting["addcont_delete"];
+                    if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang.main["license"].c_str()))
+                        context_dialog = lang.deleting["license_delete"];
+                    if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
+                        context_dialog = lang.deleting["saved_data_delete"];
+                }
                 if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang.main["shaders_cache"].c_str()))
                     fs::remove_all(SHADER_CACHE_PATH);
                 if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.main["shaders_log"].c_str()))
@@ -497,14 +492,14 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::EndMenu();
             }
             if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(lang.main["update_history"].c_str())) {
-                if (get_update_history(gui, emuenv, app_path))
-                    context_dialog = "history";
+                if (get_local_update_history(gui, emuenv, app_path))
+                    gui.vita_area.update_history_info = true;
                 else
                     LOG_WARN("Patch note Error for Title ID {} in path {}", title_id, app_path);
             }
         }
         if (ImGui::MenuItem(lang.info["title"].c_str(), nullptr, &gui.vita_area.app_information)) {
-            if (!is_system_app) {
+            if (!is_fw_app) {
                 get_app_info(gui, emuenv, app_path);
                 const auto app_size = get_app_size(gui, emuenv, app_path);
                 gui.app_selector.app_info.size = app_size;
@@ -531,49 +526,29 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
-        // Update History
-        if (context_dialog == "history") {
-            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + 20.f * SCALE.x, ImGui::GetWindowPos().y + BUTTON_SIZE.y));
-            ImGui::BeginChild("##info_update_list", ImVec2(WINDOW_SIZE.x - (30.f * SCALE.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * SCALE.y)), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
-            // Reverse iterator to show the latest update first
-            for (auto it = update_history_infos.rbegin(); it != update_history_infos.rend(); ++it) {
-                ImGui::SetWindowFontScale(1.3f);
-                const auto version_str = fmt::format(fmt::runtime(lang.main["history_version"]), it->first);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", version_str.c_str());
-                ImGui::SetWindowFontScale(0.9f);
-                ImGui::PushTextWrapPos(WINDOW_SIZE.x - (80.f * SCALE.x));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s\n", it->second.c_str());
-                ImGui::PopTextWrapPos();
-                ImGui::TextColored(GUI_COLOR_TEXT, "\n");
-            }
-            ImGui::EndChild();
-            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * SCALE.y)));
-        } else {
-            // Delete Data
-            const auto ICON_MARGIN = 24.f * SCALE.y;
-            if (gui.app_selector.user_apps_icon.contains(title_id)) {
-                ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PUPOP_ICON_SIZE.x / 2.f), ICON_MARGIN));
-                const auto POS_MIN = ImGui::GetCursorScreenPos();
-                const ImVec2 POS_MAX(POS_MIN.x + PUPOP_ICON_SIZE.x, POS_MIN.y + PUPOP_ICON_SIZE.y);
-                ImGui::GetWindowDrawList()->AddImageRounded(gui.app_selector.user_apps_icon[title_id], POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, PUPOP_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
-            }
-            ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
-            ImGui::SetCursorPosY(ICON_MARGIN + PUPOP_ICON_SIZE.y + (4.f * SCALE.y));
-            TextColoredCentered(GUI_COLOR_TEXT, APP_INDEX->stitle.c_str());
-            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-            ImGui::SetCursorPosY((WINDOW_SIZE.y / 2) + 10);
-            TextColoredCentered(GUI_COLOR_TEXT, context_dialog.c_str(), 54.f * SCALE.x);
-            if (context_dialog == lang.deleting["app_delete"])
-                SetTooltipEx(lang.deleting["app_delete_description"].c_str());
-            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
-            if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
-                context_dialog.clear();
-            }
-            ImGui::SameLine();
-            ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * SCALE.x));
+        // Delete Data
+        const auto ICON_MARGIN = 24.f * SCALE.y;
+        if (gui.app_selector.vita_apps_icon.contains(app_path)) {
+            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PUPOP_ICON_SIZE.x / 2.f), ICON_MARGIN));
+            const auto POS_MIN = ImGui::GetCursorScreenPos();
+            const ImVec2 POS_MAX(POS_MIN.x + PUPOP_ICON_SIZE.x, POS_MIN.y + PUPOP_ICON_SIZE.y);
+            ImGui::GetWindowDrawList()->AddImageRounded(gui.app_selector.vita_apps_icon[app_path], POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, PUPOP_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
         }
+        ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
+        ImGui::SetCursorPosY(ICON_MARGIN + PUPOP_ICON_SIZE.y + (4.f * SCALE.y));
+        TextColoredCentered(GUI_COLOR_TEXT, APP_INDEX->stitle.c_str());
+        ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+        ImGui::SetCursorPosY((WINDOW_SIZE.y / 2) + 10);
+        TextColoredCentered(GUI_COLOR_TEXT, context_dialog.c_str(), 54.f * SCALE.x);
+        if (context_dialog == lang.deleting["app_delete"])
+            SetTooltipEx(lang.deleting["app_delete_description"].c_str());
+        ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+        ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
+        if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+            context_dialog.clear();
+        }
+        ImGui::SameLine();
+        ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * SCALE.x));
         if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
             if (context_dialog == lang.deleting["app_delete"])
                 delete_app(gui, emuenv, app_path);
@@ -602,11 +577,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             gui.vita_area.app_information = false;
             gui.vita_area.information_bar = true;
         }
-        if (get_app_icon(gui, title_id)->first == title_id) {
+        if (get_app_icon(gui, app_path)->first == app_path) {
             ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * SCALE.x));
             const auto POS_MIN = ImGui::GetCursorScreenPos();
             const ImVec2 POS_MAX(POS_MIN.x + INFO_ICON_SIZE.x, POS_MIN.y + INFO_ICON_SIZE.y);
-            ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, title_id)->second, POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, INFO_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
+            ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, app_path)->second, POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, INFO_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
         }
         ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["name"] + "  ").c_str()).x, INFO_ICON_SIZE.y + (50.f * SCALE.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s ", lang.info["name"].c_str());
@@ -614,7 +589,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         ImGui::PushTextWrapPos(display_size.x - (85.f * SCALE.x));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->title.c_str());
         ImGui::PopTextWrapPos();
-        if (!is_system_app && (title_id != "NPXS10007")) {
+        if (!is_fw_app && (title_id != "NPXS10007")) {
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["trophy_earning"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["trophy_earning"].c_str(), gui.app_selector.app_info.trophy.c_str());

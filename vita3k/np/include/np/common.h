@@ -56,6 +56,11 @@ struct CommunicationID {
     char dummy;
 };
 
+#define SCE_NP_COMMUNICATION_PASSPHRASE_SIZE (128)
+struct SceNpCommunicationPassphrase {
+    SceUChar8 data[SCE_NP_COMMUNICATION_PASSPHRASE_SIZE];
+};
+
 inline bool operator==(const CommunicationID &lhs, const CommunicationID &rhs) {
     return (strncmp(lhs.data, rhs.data, 9) == 0) && (lhs.num == rhs.num);
 }

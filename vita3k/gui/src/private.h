@@ -68,7 +68,7 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv);
 void draw_content_manager(GuiState &gui, EmuEnvState &emuenv);
 void draw_home_screen(GuiState &gui, EmuEnvState &emuenv);
 void draw_information_bar(GuiState &gui, EmuEnvState &emuenv);
-void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv);
+void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv, const uint32_t app_index);
 void draw_manual(GuiState &gui, EmuEnvState &emuenv);
 void draw_settings(GuiState &gui, EmuEnvState &emuenv);
 void draw_start_screen(GuiState &gui, EmuEnvState &emuenv);

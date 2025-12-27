@@ -56,7 +56,8 @@ bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string 
         return false;
     }
 
-    gui.user_backgrounds[background_path] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
+    gui.user_backgrounds[background_path] = {};
+    gui.user_backgrounds[background_path].init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
     fclose(f);
 
@@ -177,7 +178,7 @@ void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::
         return;
     }
 
-    gui.start_background = ImGui_Texture(gui.imgui_state.get(), data, width, height);
+    gui.start_background.init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 }
 
@@ -202,7 +203,7 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
         return false;
     }
 
-    gui.start_background = ImGui_Texture(gui.imgui_state.get(), data, width, height);
+    gui.start_background.init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
     fclose(f);
 
@@ -211,19 +212,27 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
 
 bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_id) {
     std::vector<std::string> theme_bg_name;
+
+    // Set default values of bgm theme
+    std::pair<std::string, std::string> path_bgm = { "pd0", "data/systembgm/home.at9" };
+
+    // Create a map to associate specific system app title IDs with their corresponding theme icon names.
     std::map<std::string, std::string> theme_icon_name = {
         { "NPXS10003", {} },
         { "NPXS10008", {} },
         { "NPXS10015", {} },
-        { "NPXS10026", {} }
+        { "NPXS10026", {} },
+        { "NPXS19999", {} }
     };
 
-    gui.app_selector.sys_apps_icon.clear();
+    // Clear the current theme
+    gui.app_selector.emu_apps_icon.clear();
     gui.current_theme_bg = 0;
     gui.information_bar_color = {};
     gui.theme_backgrounds.clear();
     gui.theme_backgrounds_font_color.clear();
     gui.theme_information_bar_notice.clear();
+    gui.theme_page_indicator.clear();
 
     const auto content_id_path = fs_utils::utf8_to_path(content_id);
 
@@ -246,6 +255,37 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                     theme_icon_name["NPXS10015"] = home_property.child("m_settings").child("m_iconFilePath").text().as_string();
                 if (!home_property.child("m_hostCollabo").child("m_iconFilePath").text().empty())
                     theme_icon_name["NPXS10026"] = home_property.child("m_hostCollabo").child("m_iconFilePath").text().as_string();
+                if (!home_property.child("m_power").child("m_iconFilePath").text().empty())
+                    theme_icon_name["NPXS19999"] = home_property.child("m_power").child("m_iconFilePath").text().as_string();
+
+                // Bgm theme
+                if (!home_property.child("m_bgmFilePath").text().empty())
+                    path_bgm = { "ux0", fmt::format("theme/{}/{}", content_id, home_property.child("m_bgmFilePath").text().as_string()) };
+
+                // Page indicator
+                std::map<PageIndicator, std::string> page_name;
+                if (!home_property.child("m_basePageFilePath").text().empty())
+                    page_name[PageIndicator::BASE] = home_property.child("m_basePageFilePath").text().as_string();
+                if (!home_property.child("m_curPageFilePath").text().empty())
+                    page_name[PageIndicator::CUR] = home_property.child("m_curPageFilePath").text().as_string();
+
+                for (const auto &[type, name] : page_name) {
+                    int32_t width = 0;
+                    int32_t height = 0;
+                    vfs::FileBuffer buffer;
+                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_path / name);
+                    if (buffer.empty()) {
+                        LOG_WARN("Page icon, Name: '{}', Not found for content id: {}.", name, content_id);
+                        continue;
+                    }
+                    stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+                    if (!data) {
+                        LOG_ERROR("Invalid page icon for content id: {}.", content_id);
+                        continue;
+                    }
+                    gui.theme_page_indicator[type].init(gui.imgui_state.get(), data, width, height);
+                    stbi_image_free(data);
+                }
 
                 // Home
                 for (const auto &param : home_property.child("m_bgParam")) {
@@ -293,18 +333,19 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                         LOG_WARN("Notice icon, Name: '{}', Not found for content id: {}.", name, content_id);
                         continue;
                     }
-                    stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+                    stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                     if (!data) {
                         LOG_ERROR("Invalid notice icon for content id: {}.", content_id);
                         continue;
                     }
-                    gui.theme_information_bar_notice[type] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
+                    gui.theme_information_bar_notice[type].init(gui.imgui_state.get(), data, width, height);
                     stbi_image_free(data);
                 }
             }
         } else
             LOG_ERROR("theme.xml not found for Content ID: {}, in path: {}", content_id, THEME_XML_PATH);
     } else {
+        // Default theme background
         constexpr std::array<const char *, 5> app_id_bg_list = {
             "NPXS10002",
             "NPXS10006",
@@ -318,6 +359,9 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         }
     }
 
+    // Initialize the theme BGM with the path
+    init_bgm(emuenv, path_bgm);
+
     for (const auto &icon : theme_icon_name) {
         int32_t width = 0;
         int32_t height = 0;
@@ -325,9 +369,11 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
 
         const auto &title_id = icon.first;
         const auto &name = icon.second;
-        if (name.empty())
-            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + title_id + "/sce_sys/icon0.png");
-        else
+        const auto is_shell = title_id == "NPXS19999";
+        if (name.empty()) {
+            const auto basic_icon_path = is_shell ? fs::path("data/internal/icon/power.png") : fs::path("app") / title_id / "sce_sys/icon0.png";
+            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, basic_icon_path);
+        } else
             vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_path / name);
 
         if (buffer.empty()) {
@@ -344,7 +390,8 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
             continue;
         }
 
-        gui.app_selector.sys_apps_icon[title_id] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
+        const auto app_path = "emu:" + (is_shell ? "vsh/shell" : "app/" + title_id);
+        gui.app_selector.emu_apps_icon[app_path].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 
@@ -375,10 +422,11 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
     return !gui.theme_backgrounds.empty();
 }
 
-void draw_background(GuiState &gui, EmuEnvState &emuenv) {
+void draw_background(GuiState &gui, EmuEnvState &emuenv, const bool is_image_background) {
     const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
-    const ImVec2 VIEWPORT_POS_MAX(emuenv.logical_viewport_pos.x + emuenv.logical_viewport_size.x, emuenv.logical_viewport_pos.y + emuenv.logical_viewport_size.y);
+    const auto SCREEN_POS = ImGui::GetCursorScreenPos();
+    const ImVec2 VIEWPORT_POS_MAX(VIEWPORT_POS.x + VIEWPORT_SIZE.x, VIEWPORT_POS.y + VIEWPORT_SIZE.y);
     const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
@@ -388,20 +436,21 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
     const auto is_user_background = !gui.user_backgrounds.empty() && !gui.users[emuenv.io.user_id].use_theme_bg;
     const auto is_theme_background = !gui.theme_backgrounds.empty() && gui.users[emuenv.io.user_id].use_theme_bg;
 
-    auto draw_list = ImGui::GetBackgroundDrawList();
+    const auto &draw_list = ImGui::GetBackgroundDrawList();
+    const auto display_size = ImGui::GetIO().DisplaySize;
 
     // Draw black background for full screens
-    draw_list->AddRectFilled(ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize, IM_COL32(0.f, 0.f, 0.f, 255.f));
+    draw_list->AddRectFilled(ImVec2(0.f, 0.f), display_size, IM_COL32(0.f, 0.f, 0.f, 255.f));
 
     // Draw blue background for home screen and live area screen only
-    if (gui.vita_area.home_screen || gui.vita_area.live_area_screen)
+    if (gui.vita_area.home_screen)
         draw_list->AddRectFilled(VIEWPORT_POS, VIEWPORT_POS_MAX, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawFlags_RoundCornersAll);
 
     // Draw background image for home screen and app loading screen only
-    if (!gui.vita_area.live_area_screen && (is_theme_background || is_user_background)) {
-        const auto MARGIN_HEIGHT = gui.vita_area.home_screen ? INFO_BAR_HEIGHT : HALF_INFO_BAR_HEIGHT;
-        ImVec2 background_pos_min(VIEWPORT_POS.x, VIEWPORT_POS.y + MARGIN_HEIGHT);
-        ImVec2 background_pos_max(background_pos_min.x + VIEWPORT_SIZE.x, background_pos_min.y + VIEWPORT_SIZE.y - MARGIN_HEIGHT);
+    if (is_image_background && (is_theme_background || is_user_background)) {
+        const auto MARGIN_HEIGT = gui.vita_area.home_screen ? INFO_BAR_HEIGHT : HALF_INFO_BAR_HEIGHT;
+        ImVec2 background_pos_min(SCREEN_POS.x, VIEWPORT_POS.y + MARGIN_HEIGT);
+        ImVec2 background_pos_max(background_pos_min.x + VIEWPORT_SIZE.x, background_pos_min.y + VIEWPORT_SIZE.y - INFO_BAR_HEIGHT);
 
         // Draw background image
         std::string user_bg_path;
@@ -412,9 +461,18 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
             background_pos_max = ImVec2(background_pos_min.x + (user_background_infos.size.x * SCALE.x), background_pos_min.y + (user_background_infos.size.y * SCALE.y));
         }
 
-        const auto &background = is_user_background ? gui.user_backgrounds[user_bg_path] : gui.theme_backgrounds[gui.current_theme_bg];
+        ImTextureID bg_to_draw = nullptr;
 
-        draw_list->AddImage(background, background_pos_min, background_pos_max);
+        if (is_user_background)
+            bg_to_draw = gui.user_backgrounds[user_bg_path];
+        else if (is_theme_background)
+            bg_to_draw = gui.theme_backgrounds[gui.current_theme_bg];
+
+        if (bg_to_draw) {
+            const ImU32 color = IM_COL32(255, 255, 255, int(255.0f * gui.bg_transition_alpha));
+            draw_list->AddImage(bg_to_draw, background_pos_min, background_pos_max, ImVec2(0, 0), ImVec2(1, 1), color);
+            draw_list->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(VIEWPORT_POS.x, display_size.y), IM_COL32(0.f, 0.f, 0.f, 255.f));
+        }
     }
 }
 
@@ -501,6 +559,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     if (ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0)) {
         gui.vita_area.start_screen = false;
+        switch_bgm_state(false);
         gui.vita_area.home_screen = true;
         if (emuenv.cfg.show_info_bar)
             gui.vita_area.information_bar = true;

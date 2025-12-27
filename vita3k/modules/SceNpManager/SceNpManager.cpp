@@ -21,7 +21,6 @@
 
 #include <io/state.h>
 #include <kernel/state.h>
-#include <np/state.h>
 #include <util/log.h>
 
 #include <np/functions.h>
@@ -122,6 +121,8 @@ EXPORT(int, sceNpManagerGetContentRatingFlag, SceInt *isRestricted, SceInt *age)
     *age = 21; // Assume user is 21 years old
     return STUBBED("isRestricted = 0; age = 21; return 0;");
 }
+
+#define SCE_NP_MANAGER_ERROR_NEED_CALL_NETCHECK_DIALOG 0x8055050b
 
 EXPORT(int, sceNpManagerGetNpId, np::SceNpId *id) {
     TRACY_FUNC(sceNpManagerGetNpId, id);

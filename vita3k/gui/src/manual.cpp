@@ -22,6 +22,7 @@
 #include <gui/functions.h>
 
 #include <config/state.h>
+#include <io/functions.h>
 #include <io/vfs.h>
 
 #include <util/log.h>
@@ -31,11 +32,11 @@
 namespace gui {
 
 void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    init_app_background(gui, emuenv, "vs0:app/NPXS10027");
     if (init_manual(gui, emuenv, app_path)) {
         emuenv.app_path = app_path;
         gui.vita_area.information_bar = false;
         gui.vita_area.home_screen = false;
-        gui.vita_area.live_area_screen = false;
         gui.vita_area.manual = true;
     } else
         LOG_ERROR("Error opening Manual");
@@ -96,7 +97,7 @@ bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     manual_pages_size.clear();
 
     const auto APP_INDEX = get_app_index(gui, app_path);
-    const auto APP_PATH{ emuenv.pref_path / "ux0/app" / app_path };
+    const auto APP_PATH{ emuenv.pref_path / convert_path(app_path) };
     auto manual_path{ fs::path("sce_sys/manual") };
 
     const auto lang = fmt::format("{:0>2d}", emuenv.cfg.sys_lang);
