@@ -181,19 +181,19 @@ public:
 
 class SceHeader {
 private:
+    uint64_t data_length;
     uint32_t magic;
     uint32_t version;
-    uint8_t _platform;
     uint16_t _sce_type;
-    uint64_t data_length;
+    uint8_t _platform;
 
 public:
-    static const int Size = 32;
+    uint8_t key_revision;
     SceType sce_type;
     SelfPlatform platform;
-    uint64_t header_length;
     uint32_t metadata_offset;
-    uint8_t key_revision;
+    uint64_t header_length;
+    static constexpr int32_t Size = 32;
 
     explicit SceHeader(const char *data) {
         memcpy(&magic, &data[0], 4);
@@ -225,7 +225,7 @@ private:
     uint64_t controlinfo_length;
 
 public:
-    static const int Size = 88;
+    static constexpr int32_t Size = 88;
     uint64_t appinfo_offset;
     uint64_t elf_offset;
     uint64_t phdr_offset;
@@ -254,7 +254,7 @@ struct AppInfoHeader {
     uint32_t _self_type;
     uint64_t field_18;
 
-    static const int Size = 32;
+    static constexpr int32_t Size = 32;
     uint64_t sys_version;
     SelfType self_type;
 
@@ -271,7 +271,7 @@ struct AppInfoHeader {
 
 class ElfHeader {
 public:
-    static const int Size = 52;
+    static constexpr int32_t Size = 52;
     unsigned char e_ident_1[8];
     unsigned char e_ident_2[8];
     uint16_t e_type;
@@ -309,7 +309,7 @@ public:
 
 class ElfPhdr {
 public:
-    static const int Size = 32;
+    static constexpr int32_t Size = 32;
     uint32_t p_type;
     uint32_t p_offset;
     uint32_t p_vaddr;
@@ -339,7 +339,7 @@ private:
     uint32_t field_1C;
 
 public:
-    static const int Size = 32;
+    static constexpr int32_t Size = 32;
     uint64_t offset;
     uint64_t size;
     SecureBool compressed;
@@ -366,7 +366,7 @@ private:
     uint64_t pad3;
 
 public:
-    static const int Size = 64;
+    static constexpr int32_t Size = 64;
     unsigned char key[16];
     unsigned char iv[16];
 
@@ -393,7 +393,7 @@ private:
     uint32_t field_1C;
 
 public:
-    static const int Size = 32;
+    static constexpr int32_t Size = 32;
     uint32_t section_count;
     uint32_t key_count;
 
@@ -417,7 +417,7 @@ private:
     uint32_t _compression;
 
 public:
-    static const int Size = 48;
+    static constexpr int32_t Size = 48;
     HashType hash;
     EncryptionType encryption;
     CompressionType compression;
@@ -455,7 +455,7 @@ private:
     uint32_t field_1C;
 
 public:
-    static const int Size = 32;
+    static constexpr int32_t Size = 32;
     uint64_t sys_version;
 
     explicit SrvkHeader(const char *data) {
@@ -492,7 +492,7 @@ private:
     uint64_t field_78;
 
 public:
-    static const int Size = 128;
+    static constexpr int32_t Size = 128;
     SpkgType type;
     uint64_t update_version;
 
@@ -524,7 +524,7 @@ public:
 
 class SceVersionInfo {
 public:
-    static const int Size = 16;
+    static constexpr int32_t Size = 16;
     uint32_t subtype;
     uint32_t is_present;
     uint64_t size;
@@ -542,7 +542,7 @@ private:
     uint64_t more;
 
 public:
-    static const int Size = 16;
+    static constexpr int32_t Size = 16;
     ControlType type;
     uint32_t size;
 
@@ -564,7 +564,7 @@ private:
     uint32_t sdk_version;
 
 public:
-    static const int Size = 64;
+    static constexpr int32_t Size = 64;
 
     explicit SceControlInfoDigest256(const char *data) {
         memcpy(&sce_hash, &data[0], 20);
@@ -592,7 +592,7 @@ private:
     uint32_t field_C;
 
 public:
-    static const int Size = 0x100;
+    static constexpr int32_t Size = 0x100;
     uint32_t npdrm_type;
 
     explicit SceControlInfoDRM(const char *data) {
@@ -630,7 +630,7 @@ private:
     uint64_t cid;
 
 public:
-    static const int Size = 0x98;
+    static constexpr int32_t Size = 0x98;
     unsigned char klicense[0x10];
 
     explicit SceRIF(const char *data) {
