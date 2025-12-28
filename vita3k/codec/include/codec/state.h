@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
 #include <queue>
 #include <string>
 
@@ -69,6 +70,8 @@ enum class DecoderQuery {
 
 struct DecoderState {
     AVCodecContext *context{};
+
+    std::mutex codec_mutex;
 
     virtual uint32_t get(DecoderQuery query);
 
