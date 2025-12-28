@@ -1748,7 +1748,7 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
                 msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
                 thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::run; });
                 if (msgpipe->beingDeleted) { // if beingDeleted then message pipe is locked, so we can't lock again
-                    std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
+                    std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                     return SCE_KERNEL_ERROR_WAIT_DELETE;
                 }
                 msgpipe_lock.lock(); // Lock message pipe again
@@ -1760,7 +1760,7 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
             msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
             auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::run; });
             if (msgpipe->beingDeleted) {
-                std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
+                std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                 return SCE_KERNEL_ERROR_WAIT_DELETE;
             }
 
@@ -1851,7 +1851,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
                 msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
                 thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::run; });
                 if (msgpipe->beingDeleted) { // if beingDeleted then message pipe is locked, so we can't lock again
-                    std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
+                    std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                     return SCE_KERNEL_ERROR_WAIT_DELETE;
                 }
                 msgpipe_lock.lock(); // Lock message pipe before read from data_buffer
@@ -1864,7 +1864,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
             msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
             auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::run; });
             if (msgpipe->beingDeleted) {
-                std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
+                std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                 return SCE_KERNEL_ERROR_WAIT_DELETE;
             }
 

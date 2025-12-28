@@ -500,6 +500,9 @@ EXPORT(int, fscanf_s) {
     return UNIMPLEMENTED();
 }
 
+#ifdef fseek
+#undef fseek
+#endif
 EXPORT(int, fseek) {
     TRACY_FUNC(fseek);
     return UNIMPLEMENTED();
@@ -510,6 +513,9 @@ EXPORT(int, fsetpos) {
     return UNIMPLEMENTED();
 }
 
+#ifdef ftell
+#undef ftell
+#endif
 EXPORT(int, ftell) {
     TRACY_FUNC(ftell);
     return UNIMPLEMENTED();

@@ -546,6 +546,16 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             pixels = texture_pixels_lineared.data();
         }
 
+        if (!support_dxt && gxm::is_bcn_format(base_format)) {
+            // decompress the texture
+            const int num_comp = gxm::get_num_components(base_format);
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * num_comp);
+            decompress_compressed_texture(base_format, texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
+            pixels = texture_data_decompressed.data();
+            bpp = num_comp * 8;
+            upload_format = get_matching_decompressed_format(base_format);
+        }
+
         upload_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
         if (export_textures)
             export_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
@@ -687,6 +697,8 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
             upload = previous_hash != info->hash;
         } else {
+            range_protect_begin = align(gxm_texture.data_addr << 2, mem.page_size);
+            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.page_size);
             upload = info->dirty;
         }
     }
@@ -742,8 +754,8 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
         if (!info->use_hash) {
             info->dirty = false;
-            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MemPerm::ReadOnly, [info, gxm_texture](Address, bool) {
-                if (memcmp(&info->texture, &gxm_texture, sizeof(SceGxmTexture)) == 0) {
+            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MemPerm::ReadOnly, [info, texture_repr](Address, bool) {
+                if (memcmp(&info->texture, &texture_repr, sizeof(SceGxmTexture)) == 0) {
                     info->dirty = true;
                 }
 
@@ -767,7 +779,7 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         cache_and_bind_sampler(gxm_texture);
 }
 
-int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture) {
+int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth) {
     uint32_t compact_repr = 0;
     if (gxm_texture.texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         compact_repr = 0b01
@@ -787,6 +799,10 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture) {
             | (gxm_texture.mag_filter << 8);
     }
 
+    // the depth part only matters if we can't apply linear filtering to it
+    is_depth &= !support_depth_linear_filtering;
+    compact_repr |= (static_cast<uint32_t>(is_depth) << 23);
+
     auto it = sampler_lookup.find(compact_repr);
     if (it != sampler_lookup.end()) {
         sampler_queue.set_as_mru(it->second);
@@ -805,7 +821,7 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture) {
     sampler_lookup[compact_repr] = info;
 
     info->value = compact_repr;
-    configure_sampler(info->index, gxm_texture);
+    configure_sampler(info->index, gxm_texture, is_depth);
     last_bound_sampler_index = info->index;
     return last_bound_sampler_index;
 }

@@ -145,7 +145,8 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
                 }
             }
         }
-        if (finished) {
+        if (finished || voice->is_keyed_off) {
+            finished_module = voice->is_keyed_off ? 0 : finished_module;
             voice->is_keyed_off = true;
             voice->transition(mem, VOICE_STATE_FINALIZING);
             if (voice->finished_callback) {

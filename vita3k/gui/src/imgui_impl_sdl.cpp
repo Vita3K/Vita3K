@@ -197,6 +197,14 @@ bool ImGui_ImplSdl_ProcessEvent(ImGui_State *state, SDL_Event *event) {
         case SDL_BUTTON_X2: mouse_button = 4; break;
         default: return false;
         }
+
+#ifdef __ANDROID__
+        if ((event->type == SDL_EVENT_MOUSE_BUTTON_UP) && (mouse_button == 0) && !(state->mouse_buttons_down & 1)) {
+            // handle the case when a long touch is turned into a right click
+            return true;
+        }
+#endif
+
         io.AddMouseButtonEvent(mouse_button, (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN));
         state->mouse_buttons_down = (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN) ? (state->mouse_buttons_down | (1 << mouse_button)) : (state->mouse_buttons_down & ~(1 << mouse_button));
         return true;
@@ -449,6 +457,35 @@ static void ImGui_ImplSdl_FreeTextures(ImGui_State *state) {
     state->textures_to_free.clear();
 }
 
+#ifdef __ANDROID__
+static void ImGui_ImplSDL3_HandleTouch(ImGui_State *state) {
+    ImGuiIO &io = ImGui::GetIO();
+
+    // Check if left mouse button is currently pressed
+    if (state->mouse_buttons_down & 1) {
+        // If left button held for more than 1 second without dragging, turn it into a right click
+        if (io.MouseDownDuration[0] >= 1.0f && !ImGui::IsMouseDragging(0)) {
+            // Reset left click states
+            io.MouseClickedTime[0] = 0.0f;
+            io.MouseClicked[0] = false;
+            io.MouseDown[0] = false;
+            io.MouseReleased[0] = false;
+            io.MouseDownDuration[0] = -1.0f;
+
+            // Set active ID to avoid phantom interactions
+            ImGui::SetActiveID(0, ImGui::GetCurrentContext()->CurrentWindow);
+
+            // Simulate right click press and release
+            io.AddMouseButtonEvent(1, true); // right button down
+            io.AddMouseButtonEvent(1, false); // right button up
+
+            // Mark left button as released in the state
+            state->mouse_buttons_down &= ~1;
+        }
+    }
+}
+#endif
+
 IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     // Free textures, marked as deleted on previous frame.
     ImGui_ImplSdl_FreeTextures(state);
@@ -478,6 +515,10 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
 
     // Update game controllers (if enabled and available)
     ImGui_ImplSDL3_UpdateGamepads(state);
+
+#ifdef __ANDROID__
+    ImGui_ImplSDL3_HandleTouch(state);
+#endif
 
     // Start the frame. This call will update the io.WantCaptureMouse, io.WantCaptureKeyboard flag that you can use to dispatch inputs (or not) to your application.
     ImGui::NewFrame();

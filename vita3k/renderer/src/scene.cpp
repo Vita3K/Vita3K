@@ -87,7 +87,7 @@ COMMAND(handle_sync_surface_data) {
     const SceGxmNotification fragment_notification = helper.pop<SceGxmNotification>();
     // with memory mapping, notifications are signaled another way
     // also don't try to signal if there are no notifications
-    bool were_notifications_signaled = renderer.features.support_memory_mapping
+    bool were_notifications_signaled = renderer.features.enable_memory_mapping
         || (!vertex_notification.address && !fragment_notification.address);
 
     auto signal_notifications = [&]() {
@@ -141,6 +141,8 @@ COMMAND(handle_sync_surface_data) {
         return;
     }
 
+#ifndef __ANDROID__
+
     const size_t width = surface->width;
     const size_t height = surface->height;
     const size_t stride_in_pixels = surface->strideInPixels;
@@ -150,9 +152,6 @@ COMMAND(handle_sync_surface_data) {
     // We protect the data to track syncing. If this is called then the data is definitely protected somehow.
     // We just unprotect and reprotect again :D
     const std::size_t total_size = height * gxm::get_stride_in_bytes(surface->colorFormat, stride_in_pixels);
-
-    open_access_parent_protect_segment(mem, data);
-    unprotect_inner(mem, data, total_size);
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
@@ -183,14 +182,7 @@ COMMAND(handle_sync_surface_data) {
         }
     }
 #endif
-
-    // Need to reprotect. In the case of explicit get, 100% chance it will be unlock later anyway.
-    // No need to bother. Assumption of course.
-    if (!helper.cmd->status && is_protecting(mem, data)) {
-        protect_inner(mem, data, total_size, MemPerm::None);
-    }
-
-    close_access_parent_protect_segment(mem, data);
+#endif
 
     if (helper.cmd->status) {
         complete_command(renderer, helper, 0);
@@ -202,7 +194,7 @@ COMMAND(handle_sync_surface_data) {
 COMMAND(handle_mid_scene_flush) {
     TRACY_FUNC_COMMANDS(handle_mid_scene_flush);
 
-    if (!renderer.features.support_memory_mapping) {
+    if (!renderer.features.enable_memory_mapping) {
         // handle it like a simple notification
         cmd_handle_notification(renderer, mem, config, helper, features, render_context);
         return;

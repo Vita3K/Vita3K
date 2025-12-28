@@ -46,7 +46,6 @@ struct ProtectBlockInfo {
 struct ProtectSegmentInfo {
     std::multimap<Address, ProtectBlockInfo> blocks;
     uint32_t size = 0;
-    int32_t ref_count = 0; // When reference count is active, we don't interfere protection.
     MemPerm perm = MemPerm::None;
 
     explicit ProtectSegmentInfo() = default;

@@ -71,9 +71,11 @@ enum ScreenshotFormat {
     code(bool, "show-live-area-screen", true, show_live_area_screen)                                    \
     code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \
-    code(std::string, "backend-renderer", "OpenGL", backend_renderer)                                   \
+    code(std::string, "backend-renderer", "Vulkan", backend_renderer)                                   \
+    code(std::string, "custom-driver-name", "", custom_driver_name)                                     \
+    code(bool, "turbo-mode", false, turbo_mode)                                                         \
     code(int, "gpu-idx", 0, gpu_idx)                                                                    \
-    code(bool, "high-accuracy", true, high_accuracy)                                                    \
+    code(bool, "high-accuracy", false, high_accuracy)                                                   \
     code(float, "resolution-multiplier", 1.0f, resolution_multiplier)                                   \
     code(bool, "disable-surface-sync", true, disable_surface_sync)                                      \
     code(std::string, "screen-filter", "Bilinear", screen_filter)                                       \
@@ -86,10 +88,12 @@ enum ScreenshotFormat {
     code(bool, "import-textures", false, import_textures)                                               \
     code(bool, "export-textures", false, export_textures)                                               \
     code(bool, "export-as-png", true, export_as_png)                                                    \
+    code(std::string, "memory-mapping", "double-buffer", memory_mapping)                                \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
+    code(int,  "bgm-volume", 100, bgm_volume) 													        \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(int, "sys-date-format", (int)SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY, sys_date_format)           \
@@ -97,7 +101,7 @@ enum ScreenshotFormat {
     code(int, "cpu-pool-size", 10, cpu_pool_size)                                                       \
     code(int, "modules-mode", static_cast<int>(ModulesMode::AUTOMATIC), modules_mode)                   \
     code(int, "delay-background", 4, delay_background)                                                  \
-    code(int, "delay-start", 10, delay_start)                                                           \
+    code(int, "delay-start", 30, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
     code(int, "log-level", 0 /*SPDLOG_LEVEL_TRACE*/, log_level)                                         \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
@@ -109,6 +113,10 @@ enum ScreenshotFormat {
     code(bool, "performance-overlay", false, performance_overlay)                                       \
     code(int, "performance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)      \
     code(int, "performance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position) \
+    code(bool, "enable-gamepad-overlay", true, enable_gamepad_overlay)                                  \
+    code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
+    code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
+    code(int, "overlay-opacity", 100, overlay_opacity)                                                  \
     code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
     code(bool, "disable-motion", false, disable_motion)                                                 \
     code(float, "controller-analog-multiplier", 1.0f, controller_analog_multiplier)                     \

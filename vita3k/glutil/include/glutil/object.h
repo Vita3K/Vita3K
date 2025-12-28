@@ -33,6 +33,7 @@ public:
 
     bool init(GLuint name, const AggregateDeleter &aggregate_deleter);
     bool init(GLuint name, const SingularDeleter &singular_deleter);
+    GLuint get_name() const { return name; }
     GLuint get() const;
     operator GLuint() const;
     operator bool() const;

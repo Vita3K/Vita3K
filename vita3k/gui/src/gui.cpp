@@ -38,6 +38,8 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
+#include <imgui_internal.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -802,6 +804,7 @@ void pre_init(GuiState &gui, EmuEnvState &emuenv) {
 
     init_style(emuenv);
     init_font(gui, emuenv);
+    gui::init_bgm_player(emuenv.cfg.bgm_volume);
     lang::init_lang(gui.lang, emuenv);
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
@@ -826,6 +829,12 @@ void init(GuiState &gui, EmuEnvState &emuenv) {
         const std::lock_guard<std::mutex> guard(gui.trophy_unlock_display_requests_access_mutex);
         gui.trophy_unlock_display_requests.insert(gui.trophy_unlock_display_requests.begin(), callback_data);
     };
+
+#ifdef __ANDROID__
+    // must be called once for the java side to get the scale
+    set_controller_overlay_scale(emuenv.cfg.overlay_scale);
+    set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
+#endif
 }
 
 void draw_begin(GuiState &gui, EmuEnvState &emuenv) {
@@ -1006,3 +1015,17 @@ void TextCentered(const char *text, float wrap_width) {
 }
 
 } // namespace gui
+
+namespace ImGui {
+
+void ScrollWhenDragging() {
+    ImGuiContext &g = *ImGui::GetCurrentContext();
+    ImGuiIO &io = ImGui::GetIO();
+    ImGuiWindow *window = g.CurrentWindow;
+    if (g.HoveredWindow == window && ImGui::IsMouseDragging(0)) {
+        ImGui::SetScrollY(window, window->Scroll.y - io.MouseDelta.y);
+        ImGui::SetActiveID(0, window);
+    }
+}
+
+} // namespace ImGui

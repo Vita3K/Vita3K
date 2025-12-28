@@ -77,8 +77,10 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_element_array_buffer);
     GLint last_vertex_array;
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
+#ifndef __ANDROID__
     GLint last_polygon_mode[2];
     glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
+#endif
     GLint last_viewport[4];
     glGetIntegerv(GL_VIEWPORT, last_viewport);
     GLint last_scissor_box[4];
@@ -111,7 +113,9 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_SCISSOR_TEST);
+#ifndef __ANDROID__
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
     if (state.do_clear_screen)
@@ -195,9 +199,11 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
         glEnable(GL_SCISSOR_TEST);
     else
         glDisable(GL_SCISSOR_TEST);
+#ifndef __ANDROID__
     glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
-    glViewport(last_viewport[0], last_viewport[1], last_viewport[2], last_viewport[3]);
-    glScissor(last_scissor_box[0], last_scissor_box[1], last_scissor_box[2], last_scissor_box[3]);
+#endif
+    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
+    glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
     glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
 }
 
@@ -206,7 +212,7 @@ static void ImGui_ImplSdlGL3_CreateFontsTexture(ImGui_GLState &state) {
     ImGuiIO &io = ImGui::GetIO();
     unsigned char *pixels;
     int width, height;
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height); // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
+    io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
 
     // Upload texture to graphics system
     GLint last_texture;
@@ -216,7 +222,16 @@ static void ImGui_ImplSdlGL3_CreateFontsTexture(ImGui_GLState &state) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, pixels);
+
+    const GLint swizzle[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+#ifdef ANDROID
+    for (int i = 0; i < 4; i++) {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
+    }
+#else
+    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+#endif
 
     // Store our identifier
     io.Fonts->TexID = (ImTextureID)(intptr_t)state.font_texture;
@@ -320,13 +335,17 @@ void ImGui_ImplSdlGL3_InvalidateDeviceObjects(ImGui_GLState &state) {
 }
 
 IMGUI_API ImGui_GLState *ImGui_ImplSdlGL3_Init(renderer::State *renderer, SDL_Window *window, const char *glsl_version) {
-    auto *state = new ImGui_GLState;
+    auto *state = new ImGui_GLState();
     state->renderer = renderer;
     state->window = window;
 
     // Store GL version string so we can refer to it later in case we recreate shaders.
     if (glsl_version == NULL)
+#ifdef __ANDROID__
+        glsl_version = "#version 300 es\nprecision highp float;";
+#else
         glsl_version = "#version 150";
+#endif
     IM_ASSERT((int)strlen(glsl_version) + 2 < IM_ARRAYSIZE(state->glsl_version));
     strcpy(state->glsl_version, glsl_version);
     strcat(state->glsl_version, "\n");

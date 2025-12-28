@@ -30,6 +30,18 @@ SceOff FileStats::read(void *input_data, const int element_size, const SceSize e
     if (!wrapped_file)
         return -1;
 
+    if (element_size == 0 || element_count == 0)
+        return 0;
+
+    // we are filling this buffer this data, why would we have to set some parts to 0 before ?
+    // that's because host io does not work well with memory trapping and read-only buffer
+    // so set 1 byte to 0 in all pages to trigger all possible pagefaults in this range
+    // todo: call a mem function to check this instead
+    volatile uint8_t *input_addr = reinterpret_cast<volatile uint8_t *>(input_data);
+    for (int i = 0; i < element_size * element_count; i += 0x1000)
+        input_addr[i] = 0;
+    input_addr[element_size * element_count - 1] = 0;
+
     return fread(input_data, element_size, element_count, wrapped_file.get());
 }
 

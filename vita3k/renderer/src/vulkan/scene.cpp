@@ -27,13 +27,19 @@
 
 namespace renderer::vulkan {
 
-void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, Ptr<uint8_t> data) {
+void set_uniform_buffer(VKContext &context, MemState &mem, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, Ptr<uint8_t> data) {
     auto offset = program->uniform_buffer_data_offsets.at(block_num);
     if (offset == static_cast<std::uint32_t>(-1)) {
         return;
     }
 
-    if (context.state.features.support_memory_mapping) {
+    const uint32_t data_size_upload = std::min<uint32_t>(size, program->uniform_buffer_sizes.at(block_num) * 4);
+    if (context.state.features.enable_memory_mapping) {
+        if (context.state.mapping_method == MappingMethod::DoubleBuffer) {
+            // we must always cover everything as some small part of the buffer may get changed only
+            context.state.buffer_trapping.access_buffer(data.address(), data_size_upload, mem, false, true);
+        }
+
         const uint64_t buffer_address = context.state.get_matching_device_address(data.address());
         if (vertex_shader) {
             context.curr_vert_ublock.set_buffer_address(block_num, buffer_address);
@@ -41,7 +47,6 @@ void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderPro
             context.curr_frag_ublock.set_buffer_address(block_num, buffer_address);
         }
     } else {
-        const uint32_t data_size_upload = std::min<uint32_t>(size, program->uniform_buffer_sizes.at(block_num) * 4);
         const uint32_t offset_start_upload = offset * 4;
 
         if (vertex_shader) {
@@ -228,7 +233,7 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
         state.device.updateDescriptorSets(fragment_texture_count, write_descrs.data(), 0, nullptr);
     }
 
-    const uint32_t dynamic_offset_count = state.features.support_memory_mapping ? 2U : 4U;
+    const uint32_t dynamic_offset_count = state.features.enable_memory_mapping ? 2U : 4U;
     const uint32_t dynamic_offsets[] = {
         // GXMRenderVertUniformBlock
         context.vertex_info_uniform_buffer.data_offset,
@@ -244,7 +249,8 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
         descriptors.size(), descriptors.data(), dynamic_offset_count, dynamic_offsets);
 }
 
-static void bind_vertex_streams(VKContext &context, MemState &mem) {
+// vertex count is only used with double buffer mapping
+static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t instance_count, uint32_t max_index) {
     GxmRecordState &state = context.record;
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     VertexProgram *vkvert = vertex_program.renderer_data.get();
@@ -258,12 +264,34 @@ static void bind_vertex_streams(VKContext &context, MemState &mem) {
     }
     max_stream_idx++;
 
+    if (context.state.mapping_method == MappingMethod::DoubleBuffer) {
+        for (int i = 0; i < max_stream_idx; i++)
+            state.vertex_streams[i].size = 0;
+
+        // same as in SceGxm.cpp
+        for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
+            const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
+            const size_t attribute_size = gxm::attribute_format_size(attribute_format) * attribute.componentCount;
+            const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
+            const SceGxmIndexSource index_source = static_cast<SceGxmIndexSource>(stream.indexSource);
+            const size_t data_passed_length = gxm::is_stream_instancing(index_source) ? ((instance_count - 1) * stream.stride) : (max_index * stream.stride);
+            const size_t data_length = attribute.offset + data_passed_length + attribute_size;
+            state.vertex_streams[attribute.streamIndex].size = std::max<size_t>(state.vertex_streams[attribute.streamIndex].size, data_length);
+        }
+
+        for (int i = 0; i < max_stream_idx; i++) {
+            if (state.vertex_streams[i].data)
+                // on the PS Vita, shader stores are used most of the time to write to a vertex buffer
+                context.state.buffer_trapping.access_buffer(state.vertex_streams[i].data.address(), static_cast<uint32_t>(state.vertex_streams[i].size), mem, context.state.has_shader_store);
+        }
+    }
+
     if (max_stream_idx == 0)
         return;
 
     for (int i = 0; i < max_stream_idx; i++) {
         if (state.vertex_streams[i].data) {
-            if (context.state.features.support_memory_mapping) {
+            if (context.state.features.enable_memory_mapping) {
                 auto [buffer, offset] = context.state.get_matching_mapping(state.vertex_streams[i].data.cast<void>());
 
                 context.vertex_stream_offsets[i] = offset;
@@ -309,7 +337,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     // we need to always load the depth-stencil after the first draw
     if (context.is_first_scene_draw && (context.state.features.support_shader_interlock || context.ignore_macroblock)) {
         // update the render pass to load and store the depth and stencil
-        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_format, true, true);
+        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_format, true, true, !context.record.color_surface.data);
         context.is_first_scene_draw = false;
     }
 
@@ -391,7 +419,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         LOG_DEBUG("Fragment default uniform buffer: {}\n", spdlog::to_hex(context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER], 16));
     }
 
-    const bool use_memory_mapping = context.state.features.support_memory_mapping;
+    const bool use_memory_mapping = context.state.features.enable_memory_mapping;
 
     // update uniforms if needed
     // first update the buffer and texture count
@@ -442,22 +470,37 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
     // create, update and bind descriptors (uniforms and textures)
     draw_bind_descriptors(context, mem);
-    // bind the vertex streams
-    bind_vertex_streams(context, mem);
 
     // Upload index data.
     vk::IndexType index_type = (format == SCE_GXM_INDEX_FORMAT_U16) ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
     const size_t index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
 
+    uint32_t max_index = 0;
     if (use_memory_mapping) {
         auto [buffer, offset] = context.state.get_matching_mapping(indices);
+        if (context.state.mapping_method == MappingMethod::DoubleBuffer) {
+            TrappedBuffer *trapped_buffer = context.state.buffer_trapping.access_buffer(indices.address(), count * index_size, mem);
+            if (trapped_buffer->extra == ~0) {
+                // store the max element in extra
+                if (format == SCE_GXM_INDEX_FORMAT_U16) {
+                    uint16_t *data = indices.cast<uint16_t>().get(mem);
+                    trapped_buffer->extra = *std::max_element(&data[0], &data[count]);
+                } else {
+                    uint32_t *data = indices.cast<uint32_t>().get(mem);
+                    trapped_buffer->extra = *std::max_element(&data[0], &data[count]);
+                }
+            }
+            max_index = trapped_buffer->extra;
+        }
         context.render_cmd.bindIndexBuffer(buffer, offset, index_type);
     } else {
         const size_t index_buffer_size = index_size * count;
-
         context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
         context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
     }
+
+    // bind the vertex streams
+    bind_vertex_streams(context, mem, instance_count, max_index);
 
     context.render_cmd.drawIndexed(count, instance_count, 0, 0, 0);
 

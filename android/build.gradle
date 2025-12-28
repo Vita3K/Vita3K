@@ -1,0 +1,111 @@
+apply plugin: 'com.android.application'
+
+android {
+	namespace "org.vita3k.emulator"
+	compileSdk 35
+	ndkVersion "27.0.12077973"
+	buildFeatures {
+		buildConfig true
+	}
+
+	defaultConfig {
+		applicationId "org.vita3k.emulator"
+		minSdk 28
+		targetSdk 35
+		versionCode 21
+		versionName "0.2.1"
+
+		externalNativeBuild {
+			cmake {
+				abiFilters.addAll( 'arm64-v8a' )
+			}
+		}
+	}
+
+	signingConfigs {
+		ci {
+			storeFile file(System.getenv("SIGNING_STORE_PATH") ?: "${System.getenv("user.home")}/keystore.jks")
+			storePassword System.getenv("SIGNING_STORE_PASSWORD")
+			keyAlias System.getenv("SIGNING_KEY_ALIAS")
+			keyPassword System.getenv("SIGNING_KEY_PASSWORD")
+		}
+	}
+
+	buildTypes {
+		debug {
+			debuggable true
+			jniDebuggable true
+			applicationIdSuffix '.debug'
+		}
+
+		reldebug {
+			debuggable true
+			jniDebuggable true
+			externalNativeBuild {
+				cmake {
+					arguments "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+				}
+			}
+			minifyEnabled false
+			shrinkResources false
+			applicationIdSuffix '.debug'
+			signingConfig = signingConfigs.debug
+		}
+
+		release {
+			debuggable false
+			jniDebuggable false
+			externalNativeBuild {
+				cmake {
+					arguments "-DCMAKE_BUILD_TYPE=Release"
+				}
+			}
+			minifyEnabled true
+			shrinkResources true
+			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+			signingConfig = signingConfigs.ci
+		}
+	}
+
+	sourceSets {
+		main {
+			jniLibs.srcDirs = ['prebuilt']
+			assets {
+				srcDirs 'assets'
+			}
+			java {
+				srcDirs += ['../external/sdl/android-project/app/src/main/java']
+			}
+		}
+	}
+
+	externalNativeBuild {
+		cmake {
+			path '../CMakeLists.txt'
+			version '3.22.1+'
+		} 
+	}
+
+    buildFeatures {
+		viewBinding true
+	}
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+}
+
+dependencies {
+	implementation 'androidx.appcompat:appcompat:1.6.1'
+	implementation "androidx.core:core:1.12.0"
+	implementation 'androidx.core:core-google-shortcuts:1.1.0'
+	implementation 'com.google.android.material:material:1.11.0'
+	implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+	implementation 'com.getkeepsafe.relinker:relinker:1.4.5'
+	implementation 'com.jakewharton:process-phoenix:2.1.2'
+}

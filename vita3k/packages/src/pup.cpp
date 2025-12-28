@@ -23,6 +23,7 @@
  * contain firmware updates
  */
 
+#include <host/dialog/filesystem.h>
 #include <openssl/evp.h>
 #include <packages/exfat.h>
 #include <packages/sce_types.h>
@@ -107,12 +108,13 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype) {
 static void extract_pup_files(const fs::path &pup, const fs::path &output) {
     constexpr int SCEUF_HEADER_SIZE = 0x80;
     constexpr int SCEUF_FILEREC_SIZE = 0x20;
-    fs::ifstream infile(pup, std::ios::binary);
+    FILE *infile = host::dialog::filesystem::resolve_host_handle(pup);
     char header[SCEUF_HEADER_SIZE];
-    infile.read(header, SCEUF_HEADER_SIZE);
+    fread(header, SCEUF_HEADER_SIZE, 1, infile);
 
     if (strncmp(header, "SCEUF", 5) != 0) {
         LOG_ERROR("Invalid PUP");
+        fclose(infile);
         return;
     }
 
@@ -131,9 +133,9 @@ static void extract_pup_files(const fs::path &pup, const fs::path &output) {
     LOG_INFO("Number Of Files: {}", cnt);
 
     for (uint32_t x = 0; x < cnt; x++) {
-        infile.seekg(SCEUF_HEADER_SIZE + x * SCEUF_FILEREC_SIZE);
+        fseek(infile, SCEUF_HEADER_SIZE + x * SCEUF_FILEREC_SIZE, SEEK_SET);
         char rec[SCEUF_FILEREC_SIZE];
-        infile.read(rec, SCEUF_FILEREC_SIZE);
+        fread(rec, SCEUF_FILEREC_SIZE, 1, infile);
 
         uint64_t filetype = 0;
         uint64_t offset = 0;
@@ -149,21 +151,21 @@ static void extract_pup_files(const fs::path &pup, const fs::path &output) {
         if (PUP_TYPES.contains(filetype)) {
             filename = PUP_TYPES.at(filetype);
         } else {
-            infile.seekg(offset);
+            fseek(infile, offset, SEEK_SET);
             char hdr[HEADER_LENGTH];
-            infile.read(hdr, HEADER_LENGTH);
+            fread(hdr, HEADER_LENGTH, 1, infile);
             filename = make_filename((unsigned char *)hdr, filetype);
         }
 
         fs::ofstream outfile(output / filename, std::ios::binary);
-        infile.seekg(offset);
+        fseek(infile, offset, SEEK_SET);
         std::vector<char> buffer(length);
-        infile.read(&buffer[0], length);
+        fread(buffer.data(), length, 1, infile);
         outfile.write(&buffer[0], length);
 
         outfile.close();
     }
-    infile.close();
+    fclose(infile);
 }
 
 static void decrypt_segments(std::ifstream &infile, const fs::path &outdir, const fs::path &filename, KeyStore &SCE_KEYS) {
