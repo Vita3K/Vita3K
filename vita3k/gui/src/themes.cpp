@@ -211,6 +211,11 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
 
 bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_id) {
     std::vector<std::string> theme_bg_name;
+
+    // Set default values of bgm theme
+    std::pair<std::string, std::string> path_bgm = { "pd0", "data/systembgm/home.at9" };
+
+    // Create a map to associate specific system app title IDs with their corresponding theme icon names.
     std::map<std::string, std::string> theme_icon_name = {
         { "NPXS10003", {} },
         { "NPXS10008", {} },
@@ -218,6 +223,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         { "NPXS10026", {} }
     };
 
+    // Clear the current theme
     gui.app_selector.sys_apps_icon.clear();
     gui.current_theme_bg = 0;
     gui.information_bar_color = {};
@@ -246,6 +252,10 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                     theme_icon_name["NPXS10015"] = home_property.child("m_settings").child("m_iconFilePath").text().as_string();
                 if (!home_property.child("m_hostCollabo").child("m_iconFilePath").text().empty())
                     theme_icon_name["NPXS10026"] = home_property.child("m_hostCollabo").child("m_iconFilePath").text().as_string();
+
+                // Bgm theme
+                if (!home_property.child("m_bgmFilePath").text().empty())
+                    path_bgm = { "ux0", fmt::format("theme/{}/{}", content_id, home_property.child("m_bgmFilePath").text().as_string()) };
 
                 // Home
                 for (const auto &param : home_property.child("m_bgParam")) {
@@ -305,6 +315,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         } else
             LOG_ERROR("theme.xml not found for Content ID: {}, in path: {}", content_id, THEME_XML_PATH);
     } else {
+        // Default theme background
         constexpr std::array<const char *, 5> app_id_bg_list = {
             "NPXS10002",
             "NPXS10006",
@@ -317,6 +328,9 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                 theme_bg_name.push_back(bg);
         }
     }
+
+    // Initialize the theme BGM with the path
+    init_bgm(emuenv, path_bgm);
 
     for (const auto &icon : theme_icon_name) {
         int32_t width = 0;
@@ -501,6 +515,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     if (ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0)) {
         gui.vita_area.start_screen = false;
+        switch_bgm_state(false);
         gui.vita_area.home_screen = true;
         if (emuenv.cfg.show_info_bar)
             gui.vita_area.information_bar = true;
