@@ -44,7 +44,7 @@ void SDLCALL SDLAudioAdapter::thread_wakeup_callback(void *userdata, SDL_AudioSt
         const int samples_available = port->adapter.get_rest_sample(*port);
         assert(samples_available >= 0);
         // Running out of data?
-        if (samples_available < 2 * port->adapter.device_buffer_samples + port->len) {
+        if (samples_available < (4 * port->adapter.device_buffer_samples) + port->len) {
             // Wake the thread up.
             port->adapter.state.resume_thread(port->thread);
             port->thread = -1;
@@ -99,7 +99,7 @@ void SDLAudioAdapter::audio_output(ThreadState &thread, AudioOutPort &out_port, 
     const int samples_available = get_rest_sample(port);
     // If there's lots of audio left to play, stop this thread.
     // The audio callback will wake it up later when it's running out of data.
-    if (samples_available >= 2 * device_buffer_samples + port.len) {
+    if (samples_available >= (4 * device_buffer_samples) + port.len) {
         port.thread = thread.id;
         std::unique_lock<std::mutex> mlock(thread.mutex);
         thread.update_status(ThreadStatus::wait);
