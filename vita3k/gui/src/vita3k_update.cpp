@@ -30,6 +30,10 @@
 
 #ifdef _WIN32
 #include <combaseapi.h>
+#elif defined(__ANDROID__)
+#include <SDL3/SDL_log.h>
+#include <SDL3/SDL_system.h>
+#include <jni.h>
 #endif
 
 #include <regex>
@@ -196,17 +200,21 @@ static void download_update(const fs::path &base_path) {
     progress_state.download = true;
     progress_state.pause = false;
     std::thread download([base_path]() {
-        std::string download_continuous_link = "https://github.com/Vita3K/Vita3K/releases/download/continuous";
+        std::string download_continuous_link = "https://github.com/Vita3K/Vita3K/releases/download/continuous/";
 #ifdef _WIN32
-        download_continuous_link += "/windows-latest.zip";
+        download_continuous_link += "windows-latest.zip";
 #elif defined(__APPLE__)
-        download_continuous_link += "/macos-latest.dmg";
+        download_continuous_link += "macos-latest.dmg";
+#elif defined(__ANDROID__)
+        download_continuous_link += "android-latest.apk";
 #else
-        download_continuous_link += "/ubuntu-latest.zip";
+        download_continuous_link += "ubuntu-latest.zip";
 #endif
 
 #ifdef __APPLE__
         const std::string archive_ext = ".dmg";
+#elif defined(__ANDROID__)
+        const std::string archive_ext = ".apk";
 #else
         const std::string archive_ext = ".zip";
 #endif
@@ -231,6 +239,10 @@ static void download_update(const fs::path &base_path) {
                     fs::remove(vita3k_latest_path);
                     LOG_INFO("Start download of new version: {}", vita3k_version);
                 }
+            } else {
+                // Cannot read the latest ver file, delete the existing file to avoid issues
+                LOG_WARN("Failed to read latest_ver file, deleting existing file to start fresh.");
+                fs::remove(vita3k_latest_path);
             }
         }
 
@@ -256,21 +268,46 @@ static void download_update(const fs::path &base_path) {
         if (net_utils::download_file(download_continuous_link, fs_utils::path_to_utf8(vita3k_latest_path), progress_callback)) {
             SDL_Event event;
             event.type = SDL_EVENT_QUIT;
-            SDL_PushEvent(&event);
 
 #ifdef _WIN32
             const auto vita3K_batch = fmt::format("\"{}\\update-vita3k.bat\"", base_path);
             FreeConsole();
 #elif defined(__APPLE__)
             const auto vita3K_batch = fmt::format("sh \"{}/update-vita3k.sh\"", base_path);
+#elif defined(__ANDROID__)
+            if (SDL_GetAndroidSDKVersion() < 26) {
+                auto callback = [](void *userdata, const char *permission, bool granted) {
+                    SDL_Log("Permission %s was %s", permission, granted ? "granted" : "denied");
+                };
+
+                SDL_RequestAndroidPermission("android.permission.REQUEST_INSTALL_PACKAGES", callback, nullptr);
+            }
+
+            // retrieve the JNI environment.
+            JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
+
+            // retrieve the Java instance of the SDLActivity
+            jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
+
+            // find the Java class of the activity. It should be SDLActivity or a subclass of it.
+            jclass clazz(env->GetObjectClass(activity));
+
+            // find the identifier of the method to call
+            jmethodID method_id = env->GetMethodID(clazz, "requestInstallUpdate", "()V");
+            env->CallVoidMethod(activity, method_id);
+
+            env->DeleteLocalRef(clazz);
+            env->DeleteLocalRef(activity);
 #else
             const auto vita3K_batch = fmt::format("chmod +x \"{}/update-vita3k.sh\" && \"{}/update-vita3k.sh\"", base_path, base_path);
 #endif
-
             // When success finish download, remove latest ver file
             fs::remove(vita3k_latest_ver_path);
 
+            SDL_PushEvent(&event);
+#ifndef __ANDROID__
             std::system(vita3K_batch.c_str());
+#endif
         } else {
             if (progress_state.download) {
                 LOG_WARN("Download failed, please try again later.");
@@ -305,10 +342,11 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
     ImGui::Begin("##vita3k_update", &gui.help_menu.vita3k_update, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
+    const ImVec2 BG_MAX_POS = ImVec2(WINDOW_POS.x + display_size.x, WINDOW_POS.y + display_size.y);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], WINDOW_POS, display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], WINDOW_POS, BG_MAX_POS);
     else
-        ImGui::GetBackgroundDrawList()->AddRectFilled(WINDOW_POS, display_size, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(WINDOW_POS, BG_MAX_POS, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
     ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
     ImGui::SetCursorPosY(44.f * SCALE.y);
@@ -339,12 +377,13 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
         TextCentered(fmt::format(fmt::runtime(lang["new_features"]), git_version).c_str());
         ImGui::Spacing();
-        ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, 136.0f * SCALE.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
+        const ImVec2 DESC_WINDOW_SIZE(860 * SCALE.x, 334.f * SCALE.y);
+        ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (display_size.x / 2.f) - (DESC_WINDOW_SIZE.x / 2.f), WINDOW_POS.y + (136.f * SCALE.y)), ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 4.f * SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 15.f * SCALE.x);
         ImGui::SetNextWindowBgAlpha(0.f);
-        ImGui::BeginChild("##description_child", ImVec2(860 * SCALE.x, 334.f * SCALE.y), ImGuiChildFlags_Borders, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::BeginChild("##description_child", DESC_WINDOW_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(0.8f);
         ImGui::Columns(2, "commit_columns", true);
         ImGui::SetColumnWidth(0, 200 * SCALE.x);
@@ -375,6 +414,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
             }
             ImGui::PopID();
             ImGui::Separator();
+            ImGui::ScrollWhenDragging();
         }
         ImGui::Columns(1);
         ImGui::EndChild();

@@ -294,6 +294,35 @@ public class Emulator extends SDLActivity
     }
 
     @Keep
+    public void requestInstallUpdate() {
+        runOnUiThread(() -> {
+            File apkFile = new File(getExternalFilesDir(null), "vita3k-latest.apk");
+
+            if (!apkFile.exists()) {
+                Toast.makeText(this, "APK file not found.", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            try {
+                Uri apkUri = FileProvider.getUriForFile(
+                    this,
+                    BuildConfig.APPLICATION_ID + ".fileprovider",
+                    apkFile
+                    );
+
+                Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                intent.setData(apkUri);
+                intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                startActivity(intent);
+             } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Failed to launch installer.", Toast.LENGTH_LONG).show();
+             }
+        });
+    }
+
+    @Keep
     public int getNativeDisplayRotation() {
         // Returns the device's default display rotation (0, 90, 180, or 270 degrees)
         return getWindowManager().getDefaultDisplay().getRotation();
