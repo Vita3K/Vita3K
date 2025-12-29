@@ -31,6 +31,7 @@ typedef int socklen_t;
 #else
 #include <arpa/inet.h>
 #include <cerrno>
+#include <net/if.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
