@@ -44,14 +44,14 @@ jobs:
           sudo apt update
           sudo apt -y install ccache libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev libsdl2-dev ninja-build
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ~/.ccache
           key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
