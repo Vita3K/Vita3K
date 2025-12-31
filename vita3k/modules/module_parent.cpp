@@ -204,10 +204,9 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
 
     LOG_INFO("Loading module \"{}\"", module_path);
     vfs::FileBuffer module_buffer;
-    bool res;
     VitaIoDevice device = device::get_device(module_path);
     auto device_for_icase = device;
-    fs::path translated_module_path = translate_path(module_path.c_str(), device, emuenv.io.device_paths);
+    fs::path translated_module_path = translate_path(module_path.c_str(), device, emuenv.io);
     auto system_path = device::construct_emulated_path(device, translated_module_path, emuenv.pref_path, emuenv.io.redirect_stdio);
 
     if (emuenv.io.case_isens_find_enabled && !fs::exists(system_path)) {
@@ -231,11 +230,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         }
     }
 
-    if (device == VitaIoDevice::app0)
-        res = vfs::read_app_file(module_buffer, emuenv.pref_path, emuenv.io.app_path, translated_module_path);
-    else
-        res = vfs::read_file(device, module_buffer, emuenv.pref_path, translated_module_path);
-    if (!res) {
+    if (!vfs::read_file(device, module_buffer, emuenv.pref_path, translated_module_path)) {
         LOG_ERROR("Failed to read module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
     }
@@ -245,6 +240,12 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     if (module_buffer.empty()) {
         LOG_ERROR("Failed to decrypt module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
+    } else {
+        /*auto output_path = fmt::format("cache/{}/{}.elf", emuenv.io.title_id, fs::path(module_path).filename().string());
+        fs::create_directories("cache/" + emuenv.io.title_id);
+        std::ofstream out(output_path, std::ios::binary);
+        out.write(reinterpret_cast<const char *>(module_buffer.data()), module_buffer.size());
+        out.close();*/
     }
 
     // Only load patches for eboot.bin modules

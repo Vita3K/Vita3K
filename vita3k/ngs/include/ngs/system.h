@@ -194,6 +194,8 @@ struct Rack : public MempoolObject {
     int32_t max_patches_per_input;
     int32_t patches_per_output;
 
+    bool is_released = false;
+
     std::vector<Ptr<Voice>> voices;
     std::vector<std::unique_ptr<Module>> modules;
 

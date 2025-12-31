@@ -71,7 +71,7 @@ static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
         if (ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, ICON_SIZE.y)))
-            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.title_id);
+            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.path);
         ImGui::PopStyleVar();
         ImGui::PopID();
         ImGui::PopStyleColor();
@@ -95,7 +95,9 @@ static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv) {
         }
         if (!emuenv.cfg.display_system_apps) {
             ImGui::Separator();
-            for (const auto &app : gui.app_selector.sys_apps)
+            for (const auto &app : gui.app_selector.emu_apps)
+                draw_app(app);
+            for (const auto &app : gui.app_selector.vita_apps["vs0"])
                 draw_app(app);
         }
         ImGui::EndMenu();
@@ -120,7 +122,7 @@ static void draw_debug_menu(GuiState &gui, DebugMenuState &state) {
 
 static void draw_config_menu(GuiState &gui, EmuEnvState &emuenv) {
     auto &lang = gui.lang.main_menubar.configuration;
-    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", emuenv.io.app_path) };
+    const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", fs::path(emuenv.io.app_path).stem().string()) };
     auto &settings_dialog = !emuenv.io.app_path.empty() && fs::exists(CUSTOM_CONFIG_PATH) ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
         if (ImGui::MenuItem(gui.lang.settings_dialog.main_window["title"].c_str(), nullptr, &settings_dialog))

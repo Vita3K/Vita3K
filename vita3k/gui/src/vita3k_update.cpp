@@ -184,7 +184,6 @@ bool init_vita3k_update(GuiState &gui) {
     if (has_update || gui.help_menu.vita3k_update) {
         vita_area_state = gui.vita_area;
         gui.vita_area.home_screen = false;
-        gui.vita_area.live_area_screen = false;
         gui.vita_area.start_screen = false;
         gui.vita_area.information_bar = true;
     }
@@ -194,6 +193,7 @@ bool init_vita3k_update(GuiState &gui) {
 
 static std::atomic<float> progress(0);
 static std::atomic<uint64_t> remaining(0);
+static std::atomic<double> downloaded(0);
 static net_utils::ProgressState progress_state{};
 
 static void download_update(const fs::path &base_path) {
@@ -259,9 +259,10 @@ static void download_update(const fs::path &base_path) {
         // Download latest Vita3K version
         LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
 
-        static const auto progress_callback = [](float updated_progress, uint64_t updated_remaining) {
+        static const auto progress_callback = [](float updated_progress, uint64_t updated_remaining, double updated_downloaded) {
             progress = updated_progress;
             remaining = updated_remaining;
+            downloaded = updated_downloaded;
             return &progress_state;
         };
 

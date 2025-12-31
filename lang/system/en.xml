@@ -122,6 +122,7 @@ Error code: {}</an_error_occurred>
 		<select>Select</select>
 		<submit>Submit</submit>
 		<yes>Yes</yes>
+		<download_failed>Could not download.</download_failed>
 		<wday>
 			<day>Sunday</day>
 			<day>Monday</day>
@@ -405,12 +406,24 @@ Do not power off the system or close the application.</warning_saving>
 
 	<indicator>
 		<app_added_home>The application has been added to the home screen.</app_added_home>
+		<cancel_download>Do you want to cancel this download?</cancel_download>
+		<cancel_install>Do you want to cancel this installation?
+If you cancel, the files downloaded for this installation will also be deleted.</cancel_install>
 		<delete_all>Delete All</delete_all>
 		<notif_deleted>The notifications will be deleted.</notif_deleted>
+		<waiting_download>Waiting to download...</waiting_download>
 		<install_failed>Could not install.</install_failed>
+		<waiting_install>Waiting to install...</waiting_install>
 		<install_complete>Installation complete.</install_complete>
 		<installing>Installing...</installing>
+		<minutes_left>{} Minutes Left</minutes_left>
 		<no_notif>There are no notifications.</no_notif>
+		<pause_all>Pause All</pause_all>
+		<pause>Pause</pause>
+		<paused>Paused</paused>
+		<resume_all>Resume All</resume_all>
+		<resume>Resume</resume>
+		<seconds_left>{} Seconds Left</seconds_left>
 		<trophy_earned>You have earned a trophy!</trophy_earned>
 	</indicator>
 
@@ -522,6 +535,16 @@ Check vita3k.log to see console output for details.
 2. Re-dump your own PS Vita app/game and install it on Vita3K.
 3. If you want to install or boot Vitamin, it is not supported.</load_app_failed>
 	</message>
+
+	<patch_check>
+		<new_app_version_available>A new version of the application is available.</new_app_version_available>
+		<downloading_app_update>Downloading the application update file...
+You can check the progress of the download in the notification list.</downloading_app_update>
+		<download>Download</download>
+		<not_enough_space>Could not download.
+There is not enough free space on the memory card.Create at least {} free space on the memory card, and then try to download again.</not_enough_space>
+		<version>Version {}</version>
+	</patch_check>
 
 	<performance_overlay>
 		<avg>Avg</avg>

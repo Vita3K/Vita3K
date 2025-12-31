@@ -295,6 +295,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 // Message
                 set_lang_string(emuenv.common_dialog.lang.message, lang_child.child("message"));
 
+                // Patch Check
+                set_lang_string(lang.patch_check, lang_child.child("patch_check"));
+
                 // Performance Overlay
                 set_lang_string(lang.performance_overlay, lang_child.child("performance_overlay"));
 

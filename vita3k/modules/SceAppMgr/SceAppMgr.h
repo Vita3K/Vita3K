@@ -31,6 +31,20 @@ enum SceAppMgrErrorCode : uint32_t {
     SCE_APPMGR_ERROR_BGM_PORT_BUSY = 0x80803000 //!< BGM port was occupied and could not be secured
 };
 
+enum SceAppMgrEventType {
+    SCE_APPMGR_EVENT_ON_ACTIVATE = 0x10000001, //!< Application activated
+    SCE_APPMGR_EVENT_ON_DEACTIVATE = 0x10000002, //!< Application deactivated
+    SCE_APPMGR_EVENT_ON_RESUME = 0x10000003, //!< Application resumed
+    SCE_APPMGR_EVENT_REQUEST_QUIT = 0x20000001, //!< Application quit request
+    SCE_APPMGR_EVENT_PARAM_NOTIFY = 0x20000004, //!< Application parameter notification
+    SCE_APPMGR_EVENT_RECOMMENDED_ORIENTATION_CHANGED = 0x20000010 //!< Recommended orientation changed
+};
+
+typedef struct SceAppMgrEvent {
+    SceInt32 mgrEvent; //!< event ID
+    SceUInt8 reserved[60]; //!< Reserved data
+} SceAppMgrEvent;
+
 enum SceAppMgrSystemEventType {
     SCE_APPMGR_SYSTEMEVENT_ON_RESUME = 0x10000003, //!< Application resumed
     SCE_APPMGR_SYSTEMEVENT_ON_STORE_PURCHASE = 0x10000004, //!< Store checkout event arrived

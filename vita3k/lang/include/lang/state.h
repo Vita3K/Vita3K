@@ -1,3 +1,4 @@
+
 // Vita3K emulator project
 // Copyright (C) 2025 Vita3K team
 //
@@ -33,6 +34,7 @@ struct DialogLangState {
     std::map<std::string, std::string> common = {
         { "an_error_occurred", "An error occurred.\nError code: {}" },
         { "cancel", "Cancel" },
+        { "download", "Download" },
         { "close", "Close" },
         { "delete", "Delete" },
         { "error", "Error" },
@@ -45,7 +47,8 @@ struct DialogLangState {
         { "select_all", "Select All" },
         { "select", "Select" },
         { "submit", "Submit" },
-        { "yes", "Yes" }
+        { "yes", "Yes" },
+        { "download_failed", "Could not download." }
     };
     std::map<std::string, std::string> message = { { "load_app_failed", "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Have you installed the firmware?\n2. Re-dump your own PS Vita app/game and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported." } };
     std::map<std::string, std::string> trophy = { { "preparing_start_app", "Preparing to start the application..." } };
@@ -313,7 +316,7 @@ struct LangState {
     };
     std::map<std::string, std::string> game_data = {
         { "app_close", "The following application will close." },
-        { "data_delete", "Data to be Deleted:" }
+        { "data_delete", "Data to be Deleted:" },
     };
     std::map<std::string, std::string> home_screen = {
         { "filter", "Filter" },
@@ -336,12 +339,23 @@ struct LangState {
     };
     std::map<std::string, std::string> indicator = {
         { "app_added_home", "The application has been added to the home screen." },
+        { "cancel_download", "Do you want to cancel this download ?" },
+        { "cancel_install", "Do you want to cancel this installation?\nIf you cancel, the files downloaded for this installation will also be deleted." },
         { "delete_all", "Delete All" },
         { "notif_deleted", "The notifications will be deleted." },
+        { "waiting_download", "Waiting to download..." },
         { "install_failed", "Could not install." },
+        { "waiting_install", "Waiting to install..." },
         { "install_complete", "Installation complete." },
         { "installing", "Installing..." },
+        { "minutes_left", "{} Minutes Left" },
         { "no_notif", "There are no notifications." },
+        { "pause_all", "Pause All" },
+        { "pause", "Pause" },
+        { "paused", "Paused" },
+        { "resume_all", "Resume All" },
+        { "resume", "Resume" },
+        { "seconds_left", "{} Seconds Left" },
         { "trophy_earned", "You have earned a trophy!" }
     };
     std::map<std::string, std::string> initial_setup = {
@@ -444,6 +458,13 @@ struct LangState {
         { "avg", "Avg" },
         { "min", "Min" },
         { "max", "Max" }
+    };
+    std::map<std::string, std::string> patch_check = {
+        { "new_app_version_available", "A new version of the application is available." },
+        { "downloading_app_update", "Downloading the application update file...\nYou can check the progress of the download in the notification list." },
+        { "download", "Download" },
+        { "not_enough_space", "Could not download.\nThere is not enough free space on the memory card.Create at least {} free space on the memory card, and then try to download again." },
+        { "version", "Version {}" }
     };
     struct Settings {
         std::map<std::string, std::string> main = { { "title", "Settings" } };
