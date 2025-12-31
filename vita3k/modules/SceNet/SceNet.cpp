@@ -300,8 +300,7 @@ EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
         RET_NET_ERRNO(SCE_NET_ERROR_EINVAL);
     else
         memcpy(addr->data, AdapterInfo[0].Address, 6);
-#else
-#ifdef __linux__
+#elif defined(__unix__)
     struct ifreq ifr;
     struct ifconf ifc;
     bool success = false;
@@ -363,7 +362,9 @@ EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
         };
         memcpy(addr->data, magicMac, 6);
     }
-#endif
+#else
+    // TODO: Implement the function for macOS
+    return UNIMPLEMENTED();
 #endif
     return 0;
 }
