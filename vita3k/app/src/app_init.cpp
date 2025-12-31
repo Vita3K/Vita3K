@@ -214,7 +214,7 @@ void init_paths(Root &root_paths) {
         root_paths.set_cache_path(base_path / "cache" / "");
         root_paths.set_patch_path(base_path / "patch" / "");
 
-#if defined(__linux__) && !defined(__APPLE__)
+#if defined(__linux__)
         // XDG Data Dirs.
         auto env_home = getenv("HOME");
         auto XDG_DATA_DIRS = getenv("XDG_DATA_DIRS");
@@ -311,7 +311,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     LOG_INFO("backend-renderer: {}", state.cfg.current_config.backend_renderer);
 
     LOG_INFO("Base path: {}", state.base_path);
-#if defined(__linux__) && !defined(__ANDROID__) && !defined(__APPLE__)
+#if defined(__linux__) && !defined(__ANDROID__)
     LOG_INFO("Static assets path: {}", state.static_assets_path);
     LOG_INFO("Shared path: {}", state.shared_path);
     LOG_INFO("Log path: {}", state.log_path);
