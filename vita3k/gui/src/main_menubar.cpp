@@ -80,8 +80,8 @@ static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginMenu(lang["title"].c_str())) {
         const auto app_list_is_empty = gui.time_apps[emuenv.io.user_id].empty();
         ImGui::SetNextWindowSize(ImVec2(!app_list_is_empty ? 480.f * SCALE.x : 0.f, 0.f));
-        ImGui::SetWindowFontScale(RES_SCALE.x);
         if (ImGui::BeginMenu(lang["last_apps_used"].c_str())) {
+            ImGui::SetWindowFontScale(RES_SCALE.x);
             if (!app_list_is_empty) {
                 for (size_t i = 0; i < std::min<size_t>(8, gui.time_apps[emuenv.io.user_id].size()); i++) {
                     const auto &time_app = gui.time_apps[emuenv.io.user_id][i];
