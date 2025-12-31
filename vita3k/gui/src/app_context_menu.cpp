@@ -40,8 +40,10 @@
 #include <regex>
 
 #ifdef _WIN32
+#include <comdef.h>
 #include <shlobj.h>
 #include <shobjidl.h>
+#include <wrl/client.h>
 
 #include <stb_image.h>
 
@@ -249,20 +251,24 @@ static void create_shortcut(EmuEnvState &emuenv, const std::string &app_path, co
     const fs::path exe_path = get_exe_path();
     fs::path icon_path = emuenv.cache_path / "icons" / fs::path(app_path).stem();
 #ifdef _WIN32
+    bool initialized = false;
     // Initialize COM library
     HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-    if (FAILED(hr) && hr != S_FALSE && hr != RPC_E_CHANGED_MODE) {
-        LOG_ERROR("COM initialization failed: {:#X}", hr);
-        return;
+    if (FAILED(hr)) {
+        LOG_ERROR("COM initialization failed: {}", _com_error(hr).ErrorMessage());
+        if (hr != RPC_E_CHANGED_MODE)
+            return;
+    } else {
+        initialized = true;
     }
 
     // Create IShellLink instance
-    IShellLinkW *psl = nullptr;
+    Microsoft::WRL::ComPtr<IShellLinkW> psl;
     hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
-        IID_IShellLinkW, (void **)&psl);
-    if (FAILED(hr) || !psl) {
+        IID_PPV_ARGS(&psl));
+    if (FAILED(hr)) {
         LOG_ERROR("Failed to create IShellLink instance: {:#X}", hr);
-        if (hr != S_FALSE)
+        if (initialized)
             CoUninitialize();
         return;
     }
@@ -285,20 +291,18 @@ static void create_shortcut(EmuEnvState &emuenv, const std::string &app_path, co
     hr = SHGetFolderPathW(NULL, CSIDL_DESKTOPDIRECTORY, NULL, 0, desktop);
     if (FAILED(hr)) {
         LOG_ERROR("Failed to get desktop path: {:#X}", hr);
-        psl->Release();
-        if (hr != S_FALSE)
+        if (initialized)
             CoUninitialize();
         return;
     }
     const fs::path shortcut = fs::path(desktop) / (app_name + ".lnk");
 
     // Get IPersistFile interface to save shortcut
-    IPersistFile *ppf = nullptr;
-    hr = psl->QueryInterface(IID_IPersistFile, (void **)&ppf);
-    if (FAILED(hr) || !ppf) {
+    Microsoft::WRL::ComPtr<IPersistFile> ppf;
+    hr = psl.As(&ppf);
+    if (FAILED(hr)) {
         LOG_ERROR("QueryInterface for IPersistFile failed: {:#X}", hr);
-        psl->Release();
-        if (hr != S_FALSE)
+        if (initialized)
             CoUninitialize();
         return;
     }
@@ -311,9 +315,7 @@ static void create_shortcut(EmuEnvState &emuenv, const std::string &app_path, co
         LOG_INFO("Shortcut created successfully at '{}'", shortcut.string());
 
     // Release interfaces and uninitialize COM if needed
-    ppf->Release();
-    psl->Release();
-    if (hr != S_FALSE)
+    if (initialized)
         CoUninitialize();
 #elif defined(__ANDROID__)
     // retrieve the JNI environment.
