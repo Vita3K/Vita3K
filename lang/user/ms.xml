@@ -58,6 +58,7 @@
 		<copy_app_info>Salin maklumat Apl</copy_app_info>
 		<name_and_id>Nama dan ID Tajuk</name_and_id>
 		<app_summary>Ringkasan Apl</app_summary>
+		<create_shortcut>Buat Shortcut</create_shortcut>
 		<custom_config>Konfigurasi Tersuai</custom_config>
 		<create>Cipta</create>
 		<remove>Alih keluar</remove>
@@ -288,6 +289,7 @@ Kod ralat: {}</an_error_occurred>
 		<blue>Biru</blue>
 		<not_connected>Tiada Kontroler serasi disambungkan.
 Sila sambungkan Kontroler yang serasi dengan SDL3.</not_connected>
+		<motion_sensors>Gunakan builtin device motion sensor</motion_sensors>
 		<reset_controller_binding>Tetapkan Semula Pengikat Kontroler</reset_controller_binding>
 	</controllers>
 
@@ -479,6 +481,18 @@ Semak vita3k.log untuk melihat output konsol untuk mendapatkan butiran.
 3. Jika anda ingin memasang atau boot Vitamin, ia tidak disokong.</load_app_failed>
 	</message>
 
+	<overlay name="Tindanan">
+		<gamepad_overlay>Tindanan Gamepad</gamepad_overlay>
+		<enable_gamepad_overlay>Tampilkan Tindanan gamepad digim</enable_gamepad_overlay>
+		<hide_gamepad_overlay>HideSembunyikan Tindanan Gamepad</hide_gamepad_overlay>
+		<modify_gamepad_overlay>Ubah suai Tindanan Gamepad</modify_gamepad_overlay>
+		<overlay_scale>Skala Tindanan</overlay_scale>
+		<overlay_opacity>Tingkatan Kegelapan</overlay_opacity>
+		<reset_gamepad>Tetapkan semula Gamepad</reset_gamepad>
+		<overlay_show_touch_switch>ShowTampilkan front/back suis skrin sentuh hadapan/belakang.</overlay_show_touch_switch>
+		<l2_r2_triggers>Pencetus L2/R2 akan dipaparkan hanya jika mode PSTV didayakan,</l2_r2_triggers>
+	</overlay>
+
 	<settings name="Tetapan">
 		<theme_background name="Tema & Background">
 			<default>Lalai</default>
@@ -562,6 +576,8 @@ Sila muat turun dan pasang PS Vita yang terakhir firmware.</no_modules>
 			<select_backend_renderer>Backend renderer pilih pemapar backend pilihan awak.</select_backend_renderer>
 			<gpu>GPU (Reboot untuk memohon)</gpu>
 			<select_gpu>Pilih GPU Vita3K yang sepatutnya dijalankan.</select_gpu>
+			<add_custom_driver>Tambah custom driver</add_custom_driver>
+			<remove_custom_driver>Alih keluar custom driver</remove_custom_driver>
 			<high>tinggi</high>
 			<renderer_accuracy>Ketepatan Penyampai</renderer_accuracy>
 			<v_sync_description>Melumpuhkan V-Sync boleh membetulkan isu kelajuan dalam sesetengah permainan.
@@ -586,6 +602,19 @@ Ia tidak mempunyai kelemahan tetapi boleh menjejaskan prestasi.</anisotropic_fil
 			<export_textures>Eksport Tekstur</export_textures>
 			<import_textures>Import Tekstur</import_textures>
 			<texture_exporting_format>Format Pengeksportan Tekstur</texture_exporting_format>
+			<fps_hack_description>Godam permainan yang membenarkan beberapa permainan berjalan pada 30 FPS berjalan pada 60 FPS pada emulator.
+Ambil perhatian bahawa ini adalah penggodaman dan hanya akan berfungsi pada beberapa permainan.
+Pada permainan lain, ia mungkin tidak memberi kesan atau membuatkannya berjalan dua kali lebih pantas.</fps_hack_description>
+			<disabled>Dilumpuhkan</disabled>
+			<double_buffer>Penampan berganda</double_buffer>
+			<external_host>Hos luaran</external_host>
+			<page_table>Tabel halaman</page_table>
+			<mapping_method>Pemetaan memory</mapping_method>
+			<mapping_method_description>Pemetaan memori boleh meningkatkan prestasi. 
+mengurangkan penggunaan memori dan kebanyakannya membetulkan pepijat grafik.
+Selain itu, banyak peranti tidak begitu stabil pada CPU.</mapping_method_description>
+			<turbo_mode>Dayakan Mode Turbo</turbo_mode>
+			<turbo_mode_description>Menyediakan cara untuk memaksa GPU berjalan pada jam maksimum yang mungkin (kekangan terma masih akan digunakan).</turbo_mode_description>
 			<shaders>Shader</shaders>
 			<shader_cache>Gunakan Shader Cache</shader_cache>
 			<shader_cache_description>Tandai kotak untuk mendayakan cache shader untuk menyusunnya terlebih dahulu pada permulaan permainan.
@@ -595,9 +624,6 @@ Nyahtanda untuk melumpuhkan ciri ini.</shader_cache_description>
 Ambil perhatian bahawa beberapa sambungan berfaedah akan dilumpuhkan,
 dan tidak semua GPU serasi dengan ini.</spirv_shader_description>
 			<clean_shaders>Kemaskan Cache dan Log Shader</clean_shaders>
-			<fps_hack_description>Godam permainan yang membenarkan beberapa permainan berjalan pada 30 FPS berjalan pada 60 FPS pada emulator.
-Ambil perhatian bahawa ini adalah penggodaman dan hanya akan berfungsi pada beberapa permainan.
-Pada permainan lain, ia mungkin tidak memberi kesan atau membuatkannya berjalan dua kali lebih pantas.</fps_hack_description>
 		</gpu>
 		<audio name="Audio">
 			<audio_backend>Audio Bahagian Belakang</audio_backend>
@@ -666,6 +692,7 @@ Anda perlu mengalihkan folder lama anda ke lokasi baharu secara manual.</change_
 			<reset_emu_path>Tetapkan Semula Laluan Emulator</reset_emu_path>
 			<reset_emu_path_description>Tetapkan semula laluan emulator Vita3K kepada lalai.
 Awak perlu mengalihkan folder lama awak ke lokasi baharu secara manual.</reset_emu_path_description>
+			<storage_folder_permissions>Menggunakan laluan yang berbeza memerlukan kebenaran tambahan</storage_folder_permissions>
 			<custom_config_settings>Tetapan Konfigurasi Tersuai</custom_config_settings>
 			<clear_custom_config>Bersihkan Konfigurasi Tersuai</clear_custom_config>
 		</emulator>

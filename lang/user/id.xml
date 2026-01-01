@@ -57,6 +57,7 @@
 		<copy_app_info>Salin info Apl</copy_app_info>
 		<name_and_id>Nama dan Judul ID</name_and_id>
 		<app_summary>Ringkasan Apl</app_summary>
+		<create_shortcut>Buat Pintasan</create_shortcut>
 		<custom_config>Kastom Config</custom_config>
 		<create>Bikin</create>
 		<remove>Hapus</remove>
@@ -285,6 +286,7 @@ Kode kesalahan: {}</an_error_occurred>
 		<blue>Biru</blue>
 		<not_connected>Gak ada kontroler kompatibel yang tersambung.
 Sambungkan Kontroleryang kompatibel dengan SDL3.</not_connected>
+		<motion_sensors>Gunakan builtin device motion sensor</motion_sensors>
 		<reset_controller_binding>Reset Ulang Pengikatan Kontroller</reset_controller_binding>
 	</controllers>
 
@@ -475,6 +477,17 @@ Periksa vita3k.log untuk melihat keluaran konsol untuk detailnya.
 3. Jika Kamu ingin menginstal atau mem-boot Vitamin, tidak didukung.</load_app_failed>
 	</message>
 
+	<overlay name="Overlay">
+		<enable_gamepad_overlay>Tampilkan Overlay gamepad digame</enable_gamepad_overlay>
+		<hide_gamepad_overlay>Sembunyikan Overlay Gamepad</hide_gamepad_overlay>
+		<modify_gamepad_overlay>Modif Overlay Gamepad</modify_gamepad_overlay>
+		<overlay_scale>Skala Overlay</overlay_scale>
+		<overlay_opacity>Tingkatan Kegelapan</overlay_opacity>
+		<reset_gamepad>Reset Ulang Gamepad</reset_gamepad>
+		<overlay_show_touch_switch>Tampilkan tombol sakelar layar sentuh depan/belakang</overlay_show_touch_switch>
+		<l2_r2_triggers>Trigger L2/R2 hanya akan ditampilkan jika mode PSTV diaktifkan.</l2_r2_triggers>
+	</overlay>
+
 	<settings name="Pengaturan">
 		<theme_background name="Tema & Latar Belakang">
 			<default>Bawaan</default>
@@ -557,6 +570,8 @@ Silakan download dan install firmware PS Vita terakhir.</no_modules>
 			<select_backend_renderer>Pilih perender backend pilihan kamu.</select_backend_renderer>
 			<gpu>GPU (Harus ulang lagi aplikasinya)</gpu>
 			<select_gpu>Pilih GPU Vita3K yg harus dijalankan.</select_gpu>
+			<add_custom_driver>Pasang custom driver</add_custom_driver>
+			<remove_custom_driver>Hapus custom driver</remove_custom_driver>
 			<high>Tinggi</high>
 			<renderer_accuracy>Perender Akurasi</renderer_accuracy>
 			<v_sync_description>Menonaktifkan V-Sync dapat memperbaiki masalah kecepatan di beberapa game.
@@ -579,6 +594,17 @@ Ini tidak memiliki kelemahan tetapi dapat mempengaruhi pada Performa.</anisotrop
 			<export_textures>Export Textur</export_textures>
 			<import_textures>Import Textur</import_textures>
 			<texture_exporting_format>Format Pengekspor Tekstur</texture_exporting_format>
+			<fps_hack>Paksa FPS</fps_hack>
+			<fps_hack_description>Memaksa game yang memungkinkan beberapa game yang berjalan pada 30 FPS dijalankan pada 60 FPS di emulator.
+Perhatikan bahwa ini adalah peretasan dan hanya akan berfungsi pada beberapa game.
+Di game lain, ini mungkin tidak berpengaruh atau membuatnya berjalan dua kali lebih cepat.</fps_hack_description>
+			<disabled>Dinonaktifkan</disabled>
+			<double_buffer>Ganda buffer</double_buffer>
+			<page_table>Tabel halaman</page_table>
+			<mapping_method>Pemetaan memory</mapping_method>
+			<mapping_method_description>Pemetaan memory itu bisa naikkan performanya. 
+kurangi pemakaian memory dan kebanyakan fix di bug grafis nya 
+selain itu banyak perangkat gak sama stabilnya di bahkan sesama cpu.</mapping_method_description>
 			<shaders>Shader</shaders>
 			<shader_cache>Pake Shader Cache</shader_cache>
 			<shader_cache_description>Centang kotak untuk mengaktifkan cache shader untuk melakukan pra-kompilasi saat startup game.
@@ -588,10 +614,6 @@ Hapus centang untuk menonaktifkan fitur ini.</shader_cache_description>
 Perhatikan bahwa beberapa ekstensi bermanfaat akan dinonaktifkan,
 dan tidak semua GPU kompatibel dengan ini.</spirv_shader_description>
 			<clean_shaders>Bersihkan Shader Cache dan Log</clean_shaders>
-			<fps_hack>Paksa FPS</fps_hack>
-			<fps_hack_description>Memaksa game yang memungkinkan beberapa game yang berjalan pada 30 FPS dijalankan pada 60 FPS di emulator.
-Perhatikan bahwa ini adalah peretasan dan hanya akan berfungsi pada beberapa game.
-Di game lain, ini mungkin tidak berpengaruh atau membuatnya berjalan dua kali lebih cepat.</fps_hack_description>
 		</gpu>
 		<audio name="Audio">
 			<audio_backend>Bagian Belakang Audio</audio_backend>
@@ -660,6 +682,7 @@ Anda perlu memindahkan folder lama ke lokasi baru secara manual.</change_emu_pat
 			<reset_emu_path>Reset Letak Emulator</reset_emu_path>
 			<reset_emu_path_description>Reset letak emulator Vita3K ke default.
 Kamu perlu memindahkan folder lama ke lokasi baru secara manual.</reset_emu_path_description>
+			<storage_folder_permissions>Menggunakan Letak yang berbeda memerlukan izin tambahan</storage_folder_permissions>
 			<custom_config_settings>Pengaturan Konfigurasi Kustom</custom_config_settings>
 			<clear_custom_config>Bersihkan Konfigurasi Kustom</clear_custom_config>
 		</emulator>
