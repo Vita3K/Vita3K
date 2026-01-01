@@ -97,5 +97,7 @@ private:
     void copy_to_vao(const void *data);
     void create_surface_image();
     void destroy_swapchain();
+    bool rebuild_swapchain_if_visible();
+    bool surface_matches_window_size();
 };
 } // namespace renderer::vulkan
