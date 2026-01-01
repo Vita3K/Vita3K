@@ -49,14 +49,14 @@ struct SceNgsPlayerStates {
     SceInt32 samples_generated_total = 0;
     SceInt32 total_bytes_consumed = 0;
 
+    // used if the input must be resampled
+    SwrContext *swr = nullptr;
     // INTERNAL
     int8_t current_loop_count = 0;
     uint32_t decoded_samples_pending = 0;
     uint32_t decoded_samples_passed = 0;
     // needed for he_adpcm because a same decoder can be used for many voices
     ADPCMHistory adpcm_history[SCE_NGS_PLAYER_MAX_PCM_CHANNELS] = {};
-    // used if the input must be resampled
-    SwrContext *swr = nullptr;
     // if we need at some point to reset the resampler params
     bool reset_swr = false;
 };
