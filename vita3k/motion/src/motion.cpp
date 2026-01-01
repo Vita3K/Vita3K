@@ -278,7 +278,6 @@ static void handle_motion_event(EmuEnvState &emuenv, int32_t sensor_type, const 
         sensor_data /= -SDL_STANDARD_GRAVITY;
         emuenv.motion.motion_data.SetAcceleration(sensor_data);
         last_updated_accel_timestamp = sensor_timestamp;
-        emuenv.motion.last_counter++;
     } else if (sensor_type == SDL_SENSOR_GYRO) {
         sensor_data /= 2.f * std::numbers::pi_v<float>;
         emuenv.motion.motion_data.SetGyroscope(sensor_data);
