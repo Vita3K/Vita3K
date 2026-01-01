@@ -804,6 +804,7 @@ void pre_init(GuiState &gui, EmuEnvState &emuenv) {
 
     init_style(emuenv);
     init_font(gui, emuenv);
+    gui::init_bgm_player(emuenv.cfg.bgm_volume);
     lang::init_lang(gui.lang, emuenv);
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());

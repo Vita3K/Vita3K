@@ -676,6 +676,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     update_live_area_last_app_frame(emuenv, gui);
 
                 app::switch_state(emuenv, !emuenv.kernel.is_threads_paused());
+                gui::switch_bgm_state(!emuenv.kernel.is_threads_paused());
 
             } else if (!gui::get_sys_apps_state(gui))
                 gui::close_system_app(gui, emuenv);
@@ -695,6 +696,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
         switch (event.type) {
         case SDL_EVENT_QUIT:
+            gui::destroy_bgm_player();
             if (!emuenv.io.app_path.empty())
                 gui::update_time_app_used(gui, emuenv, emuenv.io.app_path);
             emuenv.kernel.exit_delete_all_threads();
