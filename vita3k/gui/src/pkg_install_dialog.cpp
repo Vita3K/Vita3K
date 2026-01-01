@@ -59,21 +59,27 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         result = host::dialog::filesystem::open_file(pkg_path, { { "PlayStation Store Downloaded Package", { "pkg" } } });
         draw_file_dialog = false;
         if (result == host::dialog::filesystem::Result::SUCCESS) {
-            FILE *infile = host::dialog::filesystem::resolve_host_handle(pkg_path);
-            PkgHeader pkg_header{};
-            fread(&pkg_header, sizeof(PkgHeader), 1, infile);
-            fclose(infile);
-            std::string title_id_str(pkg_header.content_id);
-            std::string title_id = title_id_str.substr(7, 9);
-            const auto work_path{ emuenv.pref_path / fmt::format("ux0/license/{}/{}.rif", title_id, pkg_header.content_id) };
-            if (fs::exists(work_path)) {
-                LOG_INFO("Found license file: {}", work_path);
-                fs::ifstream binfile(work_path, std::ios::in | std::ios::binary | std::ios::ate);
-                zRIF = rif2zrif(binfile);
-                ImGui::OpenPopup("install");
-                state = State::INSTALL;
+            FILE *infile = FOPEN(pkg_path.c_str(), "rb");
+            if (infile) {
+                PkgHeader pkg_header{};
+                fread(&pkg_header, sizeof(PkgHeader), 1, infile);
+                fclose(infile);
+                std::string title_id_str(pkg_header.content_id);
+                std::string title_id = title_id_str.substr(7, 9);
+                const auto work_path{ emuenv.pref_path / fmt::format("ux0/license/{}/{}.rif", title_id, pkg_header.content_id) };
+                if (fs::exists(work_path)) {
+                    LOG_INFO("Found license file: {}", work_path);
+                    fs::ifstream binfile(work_path, std::ios::in | std::ios::binary | std::ios::ate);
+                    zRIF = rif2zrif(binfile);
+                    ImGui::OpenPopup("install");
+                    state = State::INSTALL;
+                } else {
+                    ImGui::OpenPopup("install");
+                }
             } else {
-                ImGui::OpenPopup("install");
+                LOG_CRITICAL("Failed to load pkg file in path: {}", fs_utils::path_to_utf8(pkg_path));
+                gui.file_menu.pkg_install_dialog = false;
+                draw_file_dialog = true;
             }
         } else if (result == host::dialog::filesystem::Result::CANCEL) {
             gui.file_menu.pkg_install_dialog = false;
