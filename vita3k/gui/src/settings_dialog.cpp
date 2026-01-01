@@ -581,6 +581,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                         else
                             config.lle_modules.push_back(m.first);
                     }
+                    ImGui::ScrollWhenDragging();
                 }
                 ImGui::EndListBox();
             }
@@ -653,7 +654,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 if (emuenv.cfg.gpu_idx == 0)
                     config.custom_driver_name = "";
 
-                if (ImGui::Button("Add custom driver")) {
+                if (ImGui::Button(lang.gpu["add_custom_driver"].c_str())) {
                     app::add_custom_driver(emuenv);
                     // also set it to stock after
                     emuenv.cfg.gpu_idx = 0;
@@ -664,7 +665,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     config.custom_driver_name = gpu_list_str[emuenv.cfg.gpu_idx];
 
                     ImGui::SameLine();
-                    if (ImGui::Button("Remove custom driver")) {
+                    if (ImGui::Button(lang.gpu["remove_custom_driver"].c_str())) {
                         app::remove_custom_driver(emuenv, config.custom_driver_name);
                         // set back to stock
                         emuenv.cfg.gpu_idx = 0;
@@ -854,11 +855,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::BeginDisabled();
 
             std::vector<const char *> mapping_methods_strings = {
-                "Disabled",
-                "Double buffer",
-                "External host",
-                "Page table",
-                "Native buffer"
+                lang.gpu["disabled"].c_str(),
+                lang.gpu["double_buffer"].c_str(),
+                lang.gpu["external_host"].c_str(),
+                lang.gpu["page_table"].c_str(),
+                lang.gpu["native_buffer"].c_str()
             };
             std::vector<std::string_view> mapping_methods_indexes = {
                 "disabled",
@@ -883,9 +884,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::Combo(lang.gpu["mapping_method"].c_str(), &current_mapping, mapping_methods_strings.data(), mapping_methods_strings.size())) {
                 config.memory_mapping = mapping_methods_indexes[current_mapping];
             }
-            if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("%s", lang.gpu["mapping_method_description"].c_str());
-            }
+            SetTooltipEx(lang.gpu["mapping_method_description"].c_str());
 
             if (is_ingame)
                 ImGui::EndDisabled();
@@ -894,11 +893,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 #ifdef __ANDROID__
         if (emuenv.renderer->support_custom_drivers()) {
             ImGui::Spacing();
-            ImGui::Checkbox("Enable Turbo Mode", &emuenv.cfg.turbo_mode);
-
-            if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied)");
-            }
+            ImGui::Checkbox(lang.gpu["turbo_mode"].c_str(), &emuenv.cfg.turbo_mode);
+            SetTooltipEx(lang.gpu["turbo_mode_description"].c_str());
         }
 #endif
 
@@ -1013,8 +1009,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.emulator["check_for_updates"].c_str(), &emuenv.cfg.check_for_updates);
         SetTooltipEx(lang.emulator["check_for_updates_description"].c_str());
         ImGui::Spacing();
-        ImGui::SliderInt("File Loading Delay", &config.file_loading_delay, 0, 30, "%d ms", ImGuiSliderFlags_AlwaysClamp);
-        SetTooltipEx("File loading delay in milliseconds.\nThis is required for some games to load files too quickly compared to real hardware (e.g., Silent Hill).\nDefault is 0 ms.");
+        ImGui::SliderInt(lang.emulator["file_loading_delay"].c_str(), &config.file_loading_delay, 0, 30, "%d ms", ImGuiSliderFlags_AlwaysClamp);
+        SetTooltipEx(lang.emulator["file_loading_delay_description"].c_str());
         ImGui::Separator();
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["performance_overlay"].c_str());
         ImGui::Spacing();
@@ -1058,7 +1054,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::Spacing();
 #ifdef __ANDROID__
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", "Using a different path requires additional permissions");
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.emulator["storage_folder_permissions"].c_str());
         ImGui::Spacing();
 #endif
         ImGui::Separator();

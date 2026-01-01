@@ -155,7 +155,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["current_emu_path"].c_str());
         ImGui::Spacing();
 #ifdef __ANDROID__
-        TextColoredCentered(ImVec4(0.98f, 0.01f, 0.20f, 1.0f), "Using a different path requires additional permissions");
+        TextColoredCentered(ImVec4(0.98f, 0.01f, 0.20f, 1.0f), gui.lang.settings_dialog.emulator["storage_folder_permissions"].c_str());
         ImGui::Spacing();
 #endif
         TextCentered(emuenv.cfg.pref_path.c_str(), 0);

@@ -289,6 +289,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
         if ((!hidden_button && ImGui::Button(">", BUTTON_SIZE)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_leftstick_right)))
             change_page(emuenv, current_page + 1);
     }
+    ImGui::ScrollWhenDragging();
     ImGui::EndChild();
     ImGui::End();
     ImGui::PopStyleVar(2);

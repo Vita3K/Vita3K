@@ -297,6 +297,7 @@ Error code: {}</an_error_occurred>
 		<not_connected>No compatible controllers connected.
 Connect a controller that is compatible with SDL3.</not_connected>
 		<disable_motion>Disable Motion</disable_motion>
+		<motion_sensors>Using builtin device motion sensors</motion_sensors>
 		<reset_controller_binding>Reset Controller Binding</reset_controller_binding>
 	</controllers>
 
@@ -523,6 +524,18 @@ Check vita3k.log to see console output for details.
 3. If you want to install or boot Vitamin, it is not supported.</load_app_failed>
 	</message>
 
+	<overlay name="Overlay">
+		<gamepad_overlay>Gamepad Overlay</gamepad_overlay>
+		<enable_gamepad_overlay>Show gamepad overlay ingame</enable_gamepad_overlay>
+		<hide_gamepad_overlay>Hide Gamepad Overlay</hide_gamepad_overlay>
+		<modify_gamepad_overlay>Modify Gamepad Overlay</modify_gamepad_overlay>
+		<overlay_scale>Overlay Scale</overlay_scale>
+		<overlay_opacity>Overlay Opacity</overlay_opacity>
+		<reset_gamepad>Reset Gamepad</reset_gamepad>
+		<overlay_show_touch_switch>Show front/back touchscreen switch button.</overlay_show_touch_switch>
+		<l2_r2_triggers>L2/R2 triggers will be displayed only if PSTV mode is enabled.</l2_r2_triggers>
+	</overlay>
+
 	<performance_overlay>
 		<avg>Avg</avg>
 		<min>Min</min>
@@ -618,6 +631,8 @@ Please download and install the last PS Vita firmware.</no_modules>
 			<select_backend_renderer>Select your preferred backend renderer.</select_backend_renderer>
 			<gpu>GPU (Reboot to apply)</gpu>
 			<select_gpu>Select the GPU Vita3K should run on.</select_gpu>
+			<add_custom_driver>Add custom driver</add_custom_driver>
+			<remove_custom_driver>Remove custom driver</remove_custom_driver>
 			<standard>Standard</standard>
 			<high>High</high>
 			<renderer_accuracy>Renderer Accuracy</renderer_accuracy>
@@ -647,6 +662,20 @@ It has no drawback but can impact performance.</anisotropic_filtering_descriptio
 			<export_textures>Export Textures</export_textures>
 			<import_textures>Import Textures</import_textures>
 			<texture_exporting_format>Texture Exporting Format</texture_exporting_format>
+			<fps_hack>FPS Hack</fps_hack>
+			<fps_hack_description>Game hack which allows some games running at 30 FPS to run at 60 FPS on the emulator.
+Note that this is a hack and will only work on some games.
+On other games, it may have no effect or make them run twice as fast.</fps_hack_description>
+			<disabled>Disabled</disabled>
+			<double_buffer>Double buffer</double_buffer>
+			<external_host>External host</external_host>
+			<page_table>Page table</page_table>
+			<native_buffer>Native buffer</native_buffer>
+			<mapping_method>Memory mapping method</mapping_method>
+			<mapping_method_description>Memory mapping improved performances, reduces memory usage and fixes many graphical issues.
+However, it may be unstable on some GPUs.</mapping_method_description>
+			<turbo_mode>Enable Turbo Mode</turbo_mode>
+			<turbo_mode_description>Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied).</turbo_mode_description>
 			<shaders>Shaders</shaders>
 			<shader_cache>Use Shader Cache</shader_cache>
 			<shader_cache_description>Check the box to enable shader cache to pre-compile it at game startup.
@@ -656,10 +685,6 @@ Uncheck to disable this feature.</shader_cache_description>
 Note that some beneficial extensions will be disabled,
 and not all GPUs are compatible with this.</spirv_shader_description>
 			<clean_shaders>Clean Shaders Cache and Log</clean_shaders>
-			<fps_hack>FPS Hack</fps_hack>
-			<fps_hack_description>Game hack which allows some games running at 30 FPS to run at 60 FPS on the emulator.
-Note that this is a hack and will only work on some games.
-On other games, it may have no effect or make them run twice as fast.</fps_hack_description>
 		</gpu>
 		<audio name="Audio">
 			<audio_backend>Audio Backend</audio_backend>
@@ -704,9 +729,13 @@ Some applications don't use this and get default confirmation button.</enter_but
 			<touchpad_cursor_description>Uncheck the box to disable showing the touchpad cursor on-screen.</touchpad_cursor_description>
 			<log_compat_warn>Log Compatibility Warning</log_compat_warn>
 			<log_compat_warn_description>Check the box to enable log compatibility warning of GitHub issue.</log_compat_warn_description>
-			<check_for_updates>Check for updates</check_for_updates>
+			<check_for_updates>Check For Updates</check_for_updates>
 			<check_for_updates_description>Automatically check for updates at startup.</check_for_updates_description>
-			<performance_overlay>Performance overlay</performance_overlay>
+			<file_loading_delay>File Loading Delay</file_loading_delay>
+			<file_loading_delay_description>File loading delay in milliseconds.
+This is required for some games to load files too quickly compared to real hardware (e.g., Silent Hill).
+Default is 0 ms.</file_loading_delay_description>
+			<performance_overlay>Performance Overlay</performance_overlay>
 			<performance_overlay_description>Display performance information on the screen as an overlay.</performance_overlay_description>
 			<minimum>Minimum</minimum>
 			<low>Low</low>
@@ -734,11 +763,12 @@ You will need to move your old folder to the new location manually.</change_emu_
 			<reset_emu_path>Reset Emulator Path</reset_emu_path>
 			<reset_emu_path_description>Reset Vita3K emulator path to the default.
 You will need to move your old folder to the new location manually.</reset_emu_path_description>
+			<storage_folder_permissions>Using a different path requires additional permissions</storage_folder_permissions>
 			<custom_config_settings>Custom Config Settings</custom_config_settings>
 			<clear_custom_config>Clear Custom Config</clear_custom_config>
-			<screenshot_image_type>screenshot image type</screenshot_image_type>
+			<screenshot_image_type>Screenshot Image Type</screenshot_image_type>
 			<null>NULL</null>
-			<screenshot_format>Screenshot format</screenshot_format>
+			<screenshot_format>Screenshot Format</screenshot_format>
 		</emulator>
 		<gui name="GUI">
 			<show_gui>GUI Visible</show_gui>
@@ -757,6 +787,9 @@ They will be shown in the main menu bar only.</display_system_apps_description>
 If disabled, right click on an application to open it.</live_area_screen_description>
 			<stretch_the_display_area>Stretch The Display Area</stretch_the_display_area>
 			<stretch_the_display_area_description>Check the box to enlarge the display area to fit the screen size.</stretch_the_display_area_description>
+			<fullscreen_hd_res_pixel_perfect>Fullscreen HD res pixel perfect</fullscreen_hd_res_pixel_perfect>
+			<fullscreen_hd_res_pixel_perfect_description>Check the box to get a pixel perfect rendering with HD resolutions (1080p, 4K) in fullscreen
+at the price of slight cropping at the top and the bottom of the screen.</fullscreen_hd_res_pixel_perfect_description>
 			<apps_list_grid>Grid Mode</apps_list_grid>
 			<apps_list_grid_description>Check the box to set the app list to grid mode.</apps_list_grid_description>
 			<icon_size>App Icon Size</icon_size>
@@ -786,6 +819,9 @@ The minimum is opaque and the maximum is transparent.</select_background_alpha>
 		<network name="Network">
 			<psn_signed_in>Signed in PSN</psn_signed_in>
 			<psn_signed_in_description>If checked, games will consider the user is connected to the PSN network (but offline).</psn_signed_in_description>
+			<ip_address>IP Address</ip_address>
+			<ip_address_description>Select the IP address to be used in adhoc.</ip_address_description>
+			<subnet_mask>Subnet Mask</subnet_mask>
 			<enable_http>Enable HTTP</enable_http>
 			<enable_http_description>Check this box to enable games to use the HTTP protocol on the internet.</enable_http_description>
 			<timeout_attempts>HTTP Timeout Attempts</timeout_attempts>
@@ -825,6 +861,7 @@ lower can improve performance but can make games unstable if you have bad enough
 		</debug>
 		<save_reboot>Save & Reboot</save_reboot>
 		<save_apply>Save & Apply</save_apply>
+		<save_close>Save & Close</save_close>
 		<keep_changes>Click on Save to keep your changes.</keep_changes>
 	</settings_dialog>
 

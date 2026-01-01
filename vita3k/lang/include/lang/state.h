@@ -269,6 +269,7 @@ struct LangState {
         { "blue", "Blue" },
         { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL3." },
         { "disable_motion", "Disable Motion" },
+        { "motion_sensors", "Using builtin device motion sensors" },
         { "reset_controller_binding", "Reset Controller Binding" }
     };
     std::map<std::string, std::string> controls = {
@@ -440,6 +441,18 @@ struct LangState {
         };
     };
     LiveArea live_area;
+    std::map<std::string, std::string> overlay = {
+        { "title", "Overlay" },
+        { "gamepad_overlay", "Gamepad Overlay" },
+        { "enable_gamepad_overlay", "Show gamepad overlay ingame" },
+        { "hide_gamepad_overlay", "Hide Gamepad Overlay" },
+        { "modify_gamepad_overlay", "Modify Gamepad Overlay" },
+        { "overlay_scale", "Overlay Scale" },
+        { "overlay_opacity", "Overlay Opacity" },
+        { "reset_gamepad", "Reset Gamepad" },
+        { "overlay_show_touch_switch", "Show front/back touchscreen switch button." },
+        { "l2_r2_triggers", "L2/R2 triggers will be displayed only if PSTV mode is enabled." }
+    };
     std::map<std::string, std::string> performance_overlay = {
         { "avg", "Avg" },
         { "min", "Min" },
@@ -541,6 +554,8 @@ struct LangState {
             { "select_backend_renderer", "Select your preferred backend renderer." },
             { "gpu", "GPU (Reboot to apply)" },
             { "select_gpu", "Select the GPU Vita3K should run on." },
+            { "add_custom_driver", "Add custom driver" },
+            { "remove_custom_driver", "Remove custom driver" },
             { "standard", "Standard" },
             { "high", "High" },
             { "renderer_accuracy", "Renderer Accuracy" },
@@ -563,6 +578,17 @@ struct LangState {
             { "export_textures", "Export Textures" },
             { "import_textures", "Import Textures" },
             { "texture_exporting_format", "Texture Exporting Format" },
+            { "fps_hack", "FPS Hack" },
+            { "fps_hack_description", "Game hack which allows some games running at 30 FPS to run at 60 FPS on the emulator.\nNote that this is a hack and will only work on some games.\nOn other games, it may have no effect or make them run twice as fast." },
+            { "disabled", "Disabled" },
+            { "double_buffer", "Double buffer" },
+            { "external_host", "External host" },
+            { "page_table", "Page table" },
+            { "native_buffer", "Native buffer" },
+            { "mapping_method", "Memory mapping method" },
+            { "mapping_method_description", "Memory mapping improved performances, reduces memory usage and fixes many graphical issues.\nHowever, it may be unstable on some GPUs." },
+            { "turbo_mode", "Enable Turbo Mode" },
+            { "turbo_mode_description", "Provides a way to force the GPU to run at the maximum possible clocks (thermal constraints will still be applied)." },
             { "shaders", "Shaders" },
             { "shader_cache", "Use Shader Cache" },
             { "shader_cache_description", "Check the box to enable shader cache to pre-compile it at game startup.\nUncheck to disable this feature." },
@@ -570,9 +596,7 @@ struct LangState {
             { "mapping_method_description", "Memory mapping improved performances, reduces memory usage and fixes many graphical issues.\nHowever, it may be unstable on some GPUs" },
             { "spirv_shader", "Use Spir-V Shader (deprecated)" },
             { "spirv_shader_description", "Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled,\nand not all GPUs are compatible with this." },
-            { "clean_shaders", "Clean Shaders Cache and Log" },
-            { "fps_hack", "FPS Hack" },
-            { "fps_hack_description", "Game hack which allows some games running at 30 FPS to run at 60 FPS on the emulator.\nNote that this is a hack and will only work on some games.\nOn other games, it may have no effect or make them run twice as fast." }
+            { "clean_shaders", "Clean Shaders Cache and Log" }
         };
         std::map<std::string, std::string> audio = {
             { "title", "Audio" },
@@ -618,9 +642,11 @@ struct LangState {
             { "touchpad_cursor_description", "Uncheck the box to disable showing the touchpad cursor on-screen." },
             { "log_compat_warn", "Log Compatibility Warning" },
             { "log_compat_warn_description", "Check the box to enable log compatibility warning of GitHub issue." },
-            { "check_for_updates", "Check for updates" },
+            { "check_for_updates", "Check For Updates" },
             { "check_for_updates_description", "Automatically check for updates at startup." },
-            { "performance_overlay", "Performance overlay" },
+            { "file_loading_delay", "File Loading Delay" },
+            { "file_loading_delay_description", "File loading delay in milliseconds.\nThis is required for some games to load files too quickly compared to real hardware(e.g., Silent Hill).\nDefault is 0 ms." },
+            { "performance_overlay", "Performance Overlay" },
             { "performance_overlay_description", "Display performance information on the screen as an overlay." },
             { "minimum", "Minimum" },
             { "low", "Low" },
@@ -644,11 +670,12 @@ struct LangState {
             { "change_emu_path_description", "Change Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually." },
             { "reset_emu_path", "Reset Emulator Path" },
             { "reset_emu_path_description", "Reset Vita3K emulator path to the default.\nYou will need to move your old folder to the new location manually." },
+            { "storage_folder_permissions", "Using a different path requires additional permissions" },
             { "custom_config_settings", "Custom Config Settings" },
             { "clear_custom_config", "Clear Custom Config" },
-            { "screenshot_image_type", "screenshot image type" },
+            { "screenshot_image_type", "screenshot Image Type" },
             { "null", "NULL" },
-            { "screenshot_format", "Screenshot format" }
+            { "screenshot_format", "Screenshot Format" }
         };
         std::map<std::string, std::string> gui = {
             { "title", "GUI" },
