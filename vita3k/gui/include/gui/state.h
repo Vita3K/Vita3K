@@ -152,6 +152,7 @@ struct ConfigurationMenuState {
 };
 
 struct ControlMenuState {
+    bool overlay_dialog = false;
     bool controls_dialog = false;
     bool controllers_dialog = false;
 };

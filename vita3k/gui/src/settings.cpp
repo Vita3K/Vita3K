@@ -494,6 +494,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::PopTextWrapPos();
                 ImGui::NextColumn();
                 ImGui::Columns(1);
+                ImGui::ScrollWhenDragging();
             } else {
                 // Theme Select
                 title = themes_info[selected].title;
@@ -624,6 +625,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::SameLine();
                     ImGui::SetCursorPosX(INFO_POS.x);
                     ImGui::TextWrapped("%s", selected.c_str());
+                    ImGui::ScrollWhenDragging();
                     break;
                 }
                 }
@@ -998,6 +1000,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::Selectable(sys_lang.second.c_str(), false, ImGuiSelectableFlags_None, ImVec2(SYS_LANG_SIZE, SIZE_PUPUP_SELECT));
                     ImGui::PopID();
                     ImGui::NextColumn();
+                    ImGui::ScrollWhenDragging();
                 }
                 ImGui::Columns(1);
                 ImGui::PopStyleVar();
@@ -1053,6 +1056,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::NextColumn();
                     }
                     ImGui::Columns(1);
+                    ImGui::ScrollWhenDragging();
                 } else {
                     SceImeLanguage lang_select = static_cast<SceImeLanguage>(string_utils::stoi_def(selected, 0, "language"));
                     title = get_ime_lang_index(emuenv.ime, lang_select)->second;

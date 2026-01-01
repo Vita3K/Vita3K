@@ -358,7 +358,7 @@ static void draw_save_info(GuiState &gui, EmuEnvState &emuenv, const ImVec2 WIND
     const ImVec2 BUTTON_POS = ImVec2(6.f * SCALE.x, WINDOW_SIZE.y - (BUTTON_SIZE.y + 14 * SCALE.y));
     ImGui::SetWindowFontScale(1.f * FONT_SCALE);
     ImGui::SetCursorPos(BUTTON_POS);
-    if (ImGui::Button("Back", BUTTON_SIZE))
+    if (ImGui::Button("<<", BUTTON_SIZE))
         emuenv.common_dialog.savedata.draw_info_window = false;
     if (gui.is_nav_button) {
         ImGui::SetCursorPos(BUTTON_POS);

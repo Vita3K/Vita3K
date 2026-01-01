@@ -59,6 +59,7 @@
 		<copy_app_info>複製應用程式資訊</copy_app_info>
 		<name_and_id>名稱和標題ID</name_and_id>
 		<app_summary>應用程式摘要</app_summary>
+		<create_shortcut>建立快取方式</create_shortcut>
 		<custom_config>自訂組態</custom_config>
 		<create>建立</create>
 		<edit>編輯</edit>
@@ -295,6 +296,7 @@
 		<not_connected>未接入相容的控制器。
 請接入與SDL3相容的控制器。</not_connected>
 		<disable_motion>停用體感</disable_motion>
+		<motion_sensors>使用內置設備傳感器</motion_sensors>
 		<reset_controller_binding>重設控制器繫結</reset_controller_binding>
 	</controllers>
 
@@ -520,6 +522,18 @@
 3、如果您想要安裝/執行Vitamin是不支援的。</load_app_failed>
 	</message>
 
+	<overlay name="虛擬按鈕">
+		<gamepad_overlay>手把虛擬按鈕</gamepad_overlay>
+		<enable_gamepad_overlay>在遊戲中顯示手把虛擬按鈕</enable_gamepad_overlay>
+		<hide_gamepad_overlay>隱藏手把虛擬按鈕</hide_gamepad_overlay>
+		<modify_gamepad_overlay>修改手把虛擬按鈕</modify_gamepad_overlay>
+		<overlay_scale>虛擬按鈕縮放</overlay_scale>
+		<overlay_opacity>虛擬按鈕不透明度</overlay_opacity>
+		<reset_gamepad>重設手把佈局</reset_gamepad>
+		<overlay_show_touch_switch>顯示前/後觸屏切換按鈕。</overlay_show_touch_switch>
+		<l2_r2_triggers>僅當啟用PSTV模式時，才會顯示L2/R2按鈕。</l2_r2_triggers>
+	</overlay>
+
 	<performance_overlay>
 		<avg>平均</avg>
 		<min>最低</min>
@@ -615,6 +629,8 @@
 			<select_backend_renderer>選擇您喜歡的後端渲染器。</select_backend_renderer>
 			<gpu>GPU（重啟後應用）</gpu>
 			<select_gpu>選擇Vita3K應使用的GPU。</select_gpu>
+			<add_custom_driver>添加自訂驅動</add_custom_driver>
+			<remove_custom_driver>移除自訂驅動</remove_custom_driver>
 			<standard>標準</standard>
 			<high>高</high>
 			<renderer_accuracy>渲染精度</renderer_accuracy>
@@ -644,6 +660,20 @@
 			<export_textures>導出紋理</export_textures>
 			<import_textures>導入紋理</import_textures>
 			<texture_exporting_format>紋理導出格式</texture_exporting_format>
+			<fps_hack>FPS修改</fps_hack>
+			<fps_hack_description>遊戲修改允許一些以30FPS執行的遊戲在模擬器上以60FPS的速度執行。
+請注意這只是一個修改，僅適用於某些遊戲。
+在其他遊戲中，它可能沒有效果或使其出現兩倍速。</fps_hack_description>
+			<disabled>禁用</disabled>
+			<double_buffer>雙重緩衝區</double_buffer>
+			<external_host>外部主機</external_host>
+			<page_table>頁表</page_table>
+			<native_buffer>本地緩衝區</native_buffer>
+			<mapping_method>內存映射方式</mapping_method>
+			<mapping_method_description>內存映射提高了性能，減少內存使用量，並修復了許多圖形問題。
+但是它在某些GPU上可能不穩定。</mapping_method_description>
+			<turbo_mode>啟用睿頻模式</turbo_mode>
+			<turbo_mode_description>提供了一種方法提來强制GPU運行在最大合理的頻率（溫控仍然適用）。</turbo_mode_description>
 			<shaders>著色器</shaders>
 			<shader_cache>使用著色器快取</shader_cache>
 			<shader_cache_description>勾選此項啟用著色器快取以在遊戲啟動時對其進行預編譯。
@@ -653,10 +683,6 @@
 請注意，一些有益的擴充功能將被停用，
 並非所有顯示卡都與此相容。</spirv_shader_description>
 			<clean_shaders>清除著色器快取以及記錄</clean_shaders>
-			<fps_hack>FPS修改</fps_hack>
-			<fps_hack_description>遊戲修改允許一些以30FPS執行的遊戲在模擬器上以60FPS的速度執行。
-請注意這只是一個修改，僅適用於某些遊戲。
-在其他遊戲中，它可能沒有效果或使其出現兩倍速。</fps_hack_description>
 		</gpu>
 		<audio name="音訊">
 			<audio_backend>音訊後端</audio_backend>
@@ -703,6 +729,10 @@
 			<log_compat_warn_description>勾選此項啟用GitHub議題的相容性警告的記錄。</log_compat_warn_description>
 			<check_for_updates>檢查更新</check_for_updates>
 			<check_for_updates_description>啟動時自動檢查更新。</check_for_updates_description>
+			<file_loading_delay>文件加载延迟</file_loading_delay>
+			<file_loading_delay_description>文件加載延遲（毫秒）。
+某些遊戲需要設置此項，以防止文件加載速度過快，與實際硬體不符（例如：寂靜嶺）。
+預設值為0毫秒。</file_loading_delay_description>
 			<performance_overlay>效能圖層</performance_overlay>
 			<performance_overlay_description>在螢幕上以圖層的形式顯示效能資訊。</performance_overlay_description>
 			<minimum>最少</minimum>
@@ -730,6 +760,7 @@
 			<reset_emu_path>重置模擬器路徑</reset_emu_path>
 			<reset_emu_path_description>重置Vita3K模擬器為預設路徑。
 您需要手動將舊資料夾移動到預設位置。</reset_emu_path_description>
+			<storage_folder_permissions>使用不同路徑需要額外權限</storage_folder_permissions>
 			<custom_config_settings>自訂組態設定</custom_config_settings>
 			<clear_custom_config>清除自訂組態</clear_custom_config>
 			<screenshot_image_type>截圖圖像類型</screenshot_image_type>
@@ -785,6 +816,9 @@
 		<network name="網路">
 			<psn_signed_in>已登入PSN</psn_signed_in>
 			<psn_signed_in_description>如果勾選此項，遊戲將認為使用者已接入至PSN（但為離線）。</psn_signed_in_description>
+			<ip_address>IP位址</ip_address>
+			<ip_address_description>選擇在adhoc中使用的IP位址。</ip_address_description>
+			<subnet_mask>子網掩碼</subnet_mask>
 			<enable_http>啟用HTTP</enable_http>
 			<enable_http_description>勾選此項啟用遊戲在網際網路上使用HTTP協議。</enable_http_description>
 			<timeout_attempts>HTTP超時嘗試</timeout_attempts>

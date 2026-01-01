@@ -59,6 +59,7 @@
 		<copy_app_info>复制应用程序信息</copy_app_info>
 		<name_and_id>名称和标题ID</name_and_id>
 		<app_summary>应用程序摘要</app_summary>
+		<create_shortcut>创建快捷方式</create_shortcut>
 		<custom_config>自定义配置</custom_config>
 		<create>创建</create>
 		<edit>编辑</edit>
@@ -295,6 +296,7 @@
 		<not_connected>未连接兼容的控制器。
 请连接与SDL3兼容的控制器。</not_connected>
 		<disable_motion>禁用体感</disable_motion>
+		<motion_sensors>使用内置设备传感器</motion_sensors>
 		<reset_controller_binding>重置控制器绑定</reset_controller_binding>
 	</controllers>
 
@@ -520,6 +522,18 @@
 3、如果您想要安装/运行Vitamin是不支持的。</load_app_failed>
 	</message>
 
+	<overlay name="虚拟按键">
+		<gamepad_overlay>手柄虚拟按键</gamepad_overlay>
+		<enable_gamepad_overlay>在游戏中显示手柄虚拟按键</enable_gamepad_overlay>
+		<hide_gamepad_overlay>隐藏手柄虚拟按键</hide_gamepad_overlay>
+		<modify_gamepad_overlay>修改手柄虚拟按键</modify_gamepad_overlay>
+		<overlay_scale>虚拟按键缩放</overlay_scale>
+		<overlay_opacity>虚拟按键不透明度</overlay_opacity>
+		<reset_gamepad>重置手柄布局</reset_gamepad>
+		<overlay_show_touch_switch>显示前/后触屏切换按键。</overlay_show_touch_switch>
+		<l2_r2_triggers>仅当启用PSTV模式时，才会显示L2/R2键。</l2_r2_triggers>
+	</overlay>
+
 	<performance_overlay>
 		<avg>平均</avg>
 		<min>最低</min>
@@ -615,6 +629,8 @@
 			<select_backend_renderer>选择您喜欢的后端渲染器。</select_backend_renderer>
 			<gpu>GPU（重启后应用）</gpu>
 			<select_gpu>选择Vita3K应使用的GPU。</select_gpu>
+			<add_custom_driver>添加自定义驱动</add_custom_driver>
+			<remove_custom_driver>移除自定义驱动</remove_custom_driver>
 			<standard>标准</standard>
 			<high>高</high>
 			<renderer_accuracy>渲染精度</renderer_accuracy>
@@ -644,6 +660,20 @@
 			<export_textures>导出纹理</export_textures>
 			<import_textures>导入纹理</import_textures>
 			<texture_exporting_format>纹理导出格式</texture_exporting_format>
+			<fps_hack>FPS修改</fps_hack>
+			<fps_hack_description>游戏修改允许一些以30FPS运行的游戏在模拟器上以60FPS的速度运行。
+请注意这只是一个修改，仅适用于某些游戏。
+在其他游戏中，它可能没有效果或使其出现两倍速。</fps_hack_description>
+			<disabled>禁用</disabled>
+			<double_buffer>双重缓冲区</double_buffer>
+			<external_host>外部主机</external_host>
+			<page_table>页表</page_table>
+			<native_buffer>本地缓冲区</native_buffer>
+			<mapping_method>内存映射方式</mapping_method>
+			<mapping_method_description>内存映射提高了性能，减少了内存使用量，并修复了许多图形问题。
+但是它在某些GPU上可能不稳定。</mapping_method_description>
+			<turbo_mode>启用睿频模式</turbo_mode>
+			<turbo_mode_description>提供了一种方法来强制GPU运行在最大合理的频率（温控仍然适用）。</turbo_mode_description>
 			<shaders>着色器</shaders>
 			<shader_cache>使用着色器缓存</shader_cache>
 			<shader_cache_description>勾选此项以启用着色器缓存以在游戏启动时对其进行预编译。
@@ -653,10 +683,6 @@
 请注意，一些有益的扩展功能将被禁用，
 并非所有显卡都与此兼容。</spirv_shader_description>
 			<clean_shaders>清除着色器缓存以及日志</clean_shaders>
-			<fps_hack>FPS修改</fps_hack>
-			<fps_hack_description>游戏修改允许一些以30FPS运行的游戏在模拟器上以60FPS的速度运行。
-请注意这只是一个修改，仅适用于某些游戏。
-在其他游戏中，它可能没有效果或使其出现两倍速。</fps_hack_description>
 		</gpu>
 		<audio name="音频">
 			<audio_backend>音频后端</audio_backend>
@@ -703,6 +729,10 @@
 			<log_compat_warn_description>勾选此项启用对GitHub议题的兼容性警告的记录。</log_compat_warn_description>
 			<check_for_updates>检查更新</check_for_updates>
 			<check_for_updates_description>启动时自动检查更新。</check_for_updates_description>
+			<file_loading_delay>文件加载延迟</file_loading_delay>
+			<file_loading_delay_description>文件加载延迟（毫秒）。
+某些游戏需要设置此项，以防加载速度比真实硬件快得多（例如：寂静岭）。
+默认为0毫秒。</file_loading_delay_description>
 			<performance_overlay>性能图层</performance_overlay>
 			<performance_overlay_description>在屏幕上以图层的形式显示性能信息。</performance_overlay_description>
 			<minimum>最少</minimum>
@@ -730,6 +760,7 @@
 			<reset_emu_path>重置模拟器路径</reset_emu_path>
 			<reset_emu_path_description>重置Vita3K模拟器为默认路径。
 您需要手动将旧文件夹移动到新位置。</reset_emu_path_description>
+			<storage_folder_permissions>使用不同路径需要额外权限</storage_folder_permissions>
 			<custom_config_settings>自定义配置设置</custom_config_settings>
 			<clear_custom_config>清除自定义配置</clear_custom_config>
 			<screenshot_image_type>截图图像类型</screenshot_image_type>

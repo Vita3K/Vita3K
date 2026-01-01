@@ -308,6 +308,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         }
     }
+    ImGui::ScrollWhenDragging();
     ImGui::EndChild();
     ImGui::PopStyleVar();
     ImGui::End();
