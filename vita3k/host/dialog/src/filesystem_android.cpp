@@ -28,8 +28,6 @@
 
 #include <host/dialog/filesystem.h>
 
-#include <map>
-
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_system.h>
 #include <SDL3/SDL_timer.h>
@@ -39,18 +37,13 @@
 static std::atomic<bool> file_dialog_running = false;
 
 // the result from the dialog, this is an UTF-8 string
-static fs::path dialog_result_path = "";
-// the resulting file descriptor from the dialog
-static int dialog_result_fd = -1;
-
-static std::map<fs::path, int> path_mapping;
+static fs::path dialog_result_path{};
 
 extern "C" JNIEXPORT void JNICALL
-Java_org_vita3k_emulator_Emulator_filedialogReturn(JNIEnv *env, jobject thiz, jstring result_path, jint result_fd) {
+Java_org_vita3k_emulator_Emulator_filedialogReturn(JNIEnv *env, jobject thiz, jstring result_path) {
     const char *result_ptr = env->GetStringUTFChars(result_path, nullptr);
     dialog_result_path = fs::path(result_ptr);
     env->ReleaseStringUTFChars(result_path, result_ptr);
-    dialog_result_fd = result_fd;
 
     file_dialog_running.store(false, std::memory_order_release);
 }
@@ -128,9 +121,6 @@ Result open_file(fs::path &resulting_path, const std::vector<FileFilter> &file_f
     if (dialog_result_path.empty())
         return Result::CANCEL;
 
-    if (dialog_result_fd > 0)
-        path_mapping[dialog_result_path] = dialog_result_fd;
-
     resulting_path = std::move(dialog_result_path);
 
     return Result::SUCCESS;
@@ -148,32 +138,7 @@ Result pick_folder(fs::path &resulting_path, const fs::path &default_path) {
 };
 
 std::string get_error() {
-    std::string error = "";
-
-#ifndef __ANDROID__
-    // Retrieve error char array from nativefiledialog and turn it into a C++ string
-    error.assign(NFD::GetError());
-#endif
-
-    return error;
+    return "";
 };
-
-FILE *resolve_host_handle(const fs::path &path) {
-    auto it = path_mapping.find(path);
-    if (it != path_mapping.end()) {
-        int new_fd = dup(it->second);
-        if (new_fd == -1)
-            return fopen(path.c_str(), "rb");
-
-        FILE *file = fdopen(new_fd, "rb");
-        if (!file) {
-            close(new_fd);
-            return fopen(path.c_str(), "rb");
-        }
-
-        return file;
-    } else
-        return fopen(path.c_str(), "rb");
-}
 
 } // namespace host::dialog::filesystem

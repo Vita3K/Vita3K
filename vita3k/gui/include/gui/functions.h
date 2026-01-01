@@ -45,9 +45,6 @@ void browse_users_management(GuiState &gui, EmuEnvState &emuenv, const uint32_t 
 void close_and_run_new_app(EmuEnvState &emuenv, const std::string &app_path);
 void close_live_area_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void close_system_app(GuiState &gui, EmuEnvState &emuenv);
-#ifdef __ANDROID__
-bool copy_file_from_host(const fs::path &src, const fs::path &dst);
-#endif
 void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void erase_app_notice(GuiState &gui, const std::string &title_id);
 void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);

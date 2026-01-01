@@ -30,7 +30,7 @@
 
 #include <config/state.h>
 #include <emuenv/state.h>
-#include <host/dialog/filesystem.h>
+
 #include <packages/functions.h>
 #include <packages/license.h>
 #include <packages/pkg.h>
@@ -77,9 +77,9 @@ bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, co
 }
 
 bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback) {
-    FILE *infile = host::dialog::filesystem::resolve_host_handle(pkg_path);
+    FILE *infile = FOPEN(pkg_path.c_str(), "rb");
     if (!infile) {
-        LOG_CRITICAL("Failed to load pkg file in path: {}", pkg_path.generic_path().string());
+        LOG_CRITICAL("Failed to load pkg file in path: {}", fs_utils::path_to_utf8(pkg_path));
         return false;
     }
 

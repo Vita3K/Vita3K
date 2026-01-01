@@ -129,114 +129,100 @@ public class Emulator extends SDLActivity
         ProcessPhoenix.triggerRebirth(getContext(), restart_intent);
     }
 
-    static final int FILE_DIALOG_CODE = 545;
-    static final int FOLDER_DIALOG_CODE = 546;
-    static final int STORAGE_MANAGER_DIALOG_CODE = 547;
+    static final int PICKER_DIALOG_CODE = 545;
+    static final int STORAGE_MANAGER_FILE_DIALOG_CODE = 546;
+    static final int STORAGE_MANAGER_FOLDER_DIALOG_CODE = 547;
+
+    private boolean ensureStoragePermission(int requestCode) {
+        // If running Android 10-, SDL should have already asked for read and write permissions
+        if (!isStorageManagerEnabled()) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                    .setData(Uri.parse("package:" + BuildConfig.APPLICATION_ID));
+            startActivityForResult(intent, requestCode);
+            return false;
+        }
+        return true;
+    }
 
     @Keep
     public void showFileDialog() {
+        if (!ensureStoragePermission(STORAGE_MANAGER_FILE_DIALOG_CODE))
+            return;
+
         Intent intent = new Intent()
                 .setType("*/*")
                 .setAction(Intent.ACTION_GET_CONTENT)
                 .putExtra(Intent.EXTRA_LOCAL_ONLY, true);
 
         intent = Intent.createChooser(intent, "Choose a file");
-        startActivityForResult(intent, FILE_DIALOG_CODE);
+        startActivityForResult(intent, PICKER_DIALOG_CODE);
     }
 
     private boolean isStorageManagerEnabled(){
-        return (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) && Environment.isExternalStorageManager();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
+            return true;
+
+        return Environment.isExternalStorageManager();
     }
 
     @Keep
     public void showFolderDialog() {
-        // If running Android 10-, SDL should have already asked for read and write permissions
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || isStorageManagerEnabled()) {
-            Intent intent = new Intent()
-                    .setAction(Intent.ACTION_OPEN_DOCUMENT_TREE)
-                    .putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+        if (!ensureStoragePermission(STORAGE_MANAGER_FOLDER_DIALOG_CODE))
+            return;
 
-            intent = Intent.createChooser(intent, "Choose a folder");
-            startActivityForResult(intent, FOLDER_DIALOG_CODE);
-        } else {
-            Intent intent = new Intent()
-                    .setAction(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                    .setData(Uri.parse("package:" + BuildConfig.APPLICATION_ID));
+        Intent intent = new Intent()
+                .setAction(Intent.ACTION_OPEN_DOCUMENT_TREE)
+                .putExtra(Intent.EXTRA_LOCAL_ONLY, true);
 
-            startActivityForResult(intent, STORAGE_MANAGER_DIALOG_CODE);
-        }
+        intent = Intent.createChooser(intent, "Choose a folder");
+        startActivityForResult(intent, PICKER_DIALOG_CODE);
     }
 
-    private File getFileFromUri(Uri uri){
-        try {
-            InputStream inputStream = getContentResolver().openInputStream(uri);
-            File tempFile = File.createTempFile("vita3ktemp", ".bin");
-            tempFile.deleteOnExit();
+    private String resolveUriToPath(Intent data) {
+        String result_path = "";
+        int result_fd = -1;
+        Uri result_uri = data.getData();
 
-            FileOutputStream outStream = new FileOutputStream(tempFile);
-            byte[] buffer = new byte[1024 * 1024];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                outStream.write(buffer, 0, bytesRead);
+        try (ParcelFileDescriptor file_descr = getContentResolver().openFileDescriptor(result_uri, "r")) {
+            result_fd = file_descr.detachFd();
+            result_path = Os.readlink("/proc/self/fd/" + result_fd);
+
+            // replace /mnt/user/{id} with /storage
+            if (result_path.startsWith("/mnt/user/")) {
+                result_path = result_path.substring("/mnt/user/".length());
+                result_path = "/storage" + result_path.substring(result_path.indexOf('/'));
             }
-            outStream.close();
-            inputStream.close();
 
-            return tempFile;
         } catch (Exception e) {
-            return null;
         }
+
+        return result_path;
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if(requestCode == FILE_DIALOG_CODE){
-            String result_path = "";
-            int result_fd = -1;
-            if(resultCode == RESULT_OK){
-                Uri result_uri = data.getData();
-                try (AssetFileDescriptor asset_fd = getContentResolver().openAssetFileDescriptor(result_uri, "r")){
-                    // if the file is less than 4 KB, make a temporary copy
-                    if(asset_fd.getLength() >= 4*1024) {
-                        try (ParcelFileDescriptor file_descr = getContentResolver().openFileDescriptor(result_uri, "r")) {
-                            result_fd = file_descr.detachFd();
-                            // in case the last call returns a ErrnoException
-                            result_path = result_uri.toString();
-                            result_path = Os.readlink("/proc/self/fd/" + result_fd);
-                        }
-                    } else {
-                        File f = getFileFromUri(result_uri);
-                        result_path = f.getAbsolutePath();
-                    }
-                } catch (ErrnoException | IOException e) {
+        switch (requestCode) {
+            // --- STORAGE MANAGER ---
+            case STORAGE_MANAGER_FILE_DIALOG_CODE:
+            case STORAGE_MANAGER_FOLDER_DIALOG_CODE:
+                if (isStorageManagerEnabled()) {
+                    if (requestCode == STORAGE_MANAGER_FILE_DIALOG_CODE)
+                        showFileDialog();
+                    else
+                        showFolderDialog();
+                } else
+                    filedialogReturn("");
+                break;
+            // --- PICKER ---
+            case PICKER_DIALOG_CODE: {
+                if (resultCode == RESULT_OK) {
+                    String res = resolveUriToPath(data);
+                    if (res != null)
+                        filedialogReturn(res);
                 }
-            }
-            filedialogReturn(result_path, result_fd);
-        } else if(requestCode == FOLDER_DIALOG_CODE){
-            String result_path = "";
-            if(resultCode == RESULT_OK){
-                Uri result_uri = data.getData();
-                DocumentFile tree = DocumentFile.fromTreeUri(getApplicationContext(), result_uri);
-                try(ParcelFileDescriptor file_descr = getContentResolver().openFileDescriptor(tree.getUri(), "r")) {
-                    int result_fd = file_descr.getFd();
-
-                    result_path = Os.readlink("/proc/self/fd/" + result_fd);
-                    // replace /mnt/user/{id} with /storage
-                    if(result_path.startsWith("/mnt/user/")){
-                        result_path = result_path.substring("/mnt/user/".length());
-                        result_path = "/storage" + result_path.substring(result_path.indexOf('/'));
-                    }
-                } catch (ErrnoException | IOException e) {
-                }
-            }
-            filedialogReturn(result_path, 0);
-        } else if (requestCode == STORAGE_MANAGER_DIALOG_CODE) {
-            if (isStorageManagerEnabled()) {
-                showFolderDialog();
-            } else {
-                filedialogReturn("", -1);
+                break;
             }
         }
     }
@@ -328,5 +314,5 @@ public class Emulator extends SDLActivity
         return getWindowManager().getDefaultDisplay().getRotation();
     }
 
-    public native void filedialogReturn(String result_path, int result_fd);
+    public native void filedialogReturn(String result_path);
 }

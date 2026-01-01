@@ -203,14 +203,4 @@ std::string get_error() {
     return error;
 }
 
-FILE *resolve_host_handle(const fs::path &path) {
-    FILE *result;
-#ifdef _WIN32
-    _wfopen_s(&result, path.c_str(), L"rb");
-#else
-    result = fopen(path.c_str(), "rb");
-#endif
-    return result;
-}
-
 } // namespace host::dialog::filesystem

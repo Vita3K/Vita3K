@@ -23,7 +23,6 @@
  * contain firmware updates
  */
 
-#include <host/dialog/filesystem.h>
 #include <openssl/evp.h>
 #include <packages/exfat.h>
 #include <packages/sce_types.h>
@@ -108,7 +107,12 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype) {
 static void extract_pup_files(const fs::path &pup, const fs::path &output) {
     constexpr int SCEUF_HEADER_SIZE = 0x80;
     constexpr int SCEUF_FILEREC_SIZE = 0x20;
-    FILE *infile = host::dialog::filesystem::resolve_host_handle(pup);
+    FILE *infile = FOPEN(pup.c_str(), "rb");
+    if (!infile) {
+        LOG_CRITICAL("Failed to load pup file in path: {}", fs_utils::path_to_utf8(pup));
+        return;
+    }
+
     char header[SCEUF_HEADER_SIZE];
     fread(header, SCEUF_HEADER_SIZE, 1, infile);
 
