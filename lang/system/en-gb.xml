@@ -788,7 +788,7 @@ If disabled, right click on an application to open it.</live_area_screen_descrip
 			<stretch_the_display_area>Stretch The Display Area</stretch_the_display_area>
 			<stretch_the_display_area_description>Check the box to enlarge the display area to fit the screen size.</stretch_the_display_area_description>
 			<fullscreen_hd_res_pixel_perfect>Fullscreen HD res pixel perfect</fullscreen_hd_res_pixel_perfect>
-			<fullscreen_hd_res_pixel_perfect_description>Check the box to get a pixel perfect rendering with HD resolutions (1080p, 4K) in fullscreen
+			<fullscreen_hd_res_pixel_perfect_description>Check the box to get a pixel perfect rendering with HD resolutions (1080p, 4K) in fullscreen on a 16:9 aspect ratio monitor
 at the price of slight cropping at the top and the bottom of the screen.</fullscreen_hd_res_pixel_perfect_description>
 			<apps_list_grid>Grid Mode</apps_list_grid>
 			<apps_list_grid_description>Check the box to set the app list to grid mode.</apps_list_grid_description>

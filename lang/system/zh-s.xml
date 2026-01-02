@@ -665,15 +665,15 @@
 请注意这只是一个修改，仅适用于某些游戏。
 在其他游戏中，它可能没有效果或使其出现两倍速。</fps_hack_description>
 			<disabled>禁用</disabled>
-			<double_buffer>双重缓冲区</double_buffer>
+			<double_buffer>双重缓冲</double_buffer>
 			<external_host>外部主机</external_host>
 			<page_table>页表</page_table>
-			<native_buffer>本地缓冲区</native_buffer>
+			<native_buffer>原生缓冲</native_buffer>
 			<mapping_method>内存映射方式</mapping_method>
 			<mapping_method_description>内存映射提高了性能，减少了内存使用量，并修复了许多图形问题。
 但是它在某些GPU上可能不稳定。</mapping_method_description>
 			<turbo_mode>启用睿频模式</turbo_mode>
-			<turbo_mode_description>提供了一种方法来强制GPU运行在最大合理的频率（温控仍然适用）。</turbo_mode_description>
+			<turbo_mode_description>提供了一种方法来强制GPU以允许的最高时钟频率运行（温控仍然适用）。</turbo_mode_description>
 			<shaders>着色器</shaders>
 			<shader_cache>使用着色器缓存</shader_cache>
 			<shader_cache_description>勾选此项以启用着色器缓存以在游戏启动时对其进行预编译。
