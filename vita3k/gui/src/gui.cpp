@@ -38,6 +38,8 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
+#include <imgui_internal.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -272,21 +274,36 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
                 fs::path default_font_path = emuenv.static_assets_path / "data/fonts";
 
                 // Check existence of default font file
-                if (fs::exists(default_font_path)) {
-                    gui.vita_font[i] = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), font_config.SizePixels, &font_config, latin_range);
+                std::vector<uint8_t> font_mplus{};
+                if (fs_utils::read_data(default_font_path / "mplus-1mn-bold.ttf", font_mplus)) {
+                    // when calling AddFontFromMemoryTTF, we tranfer ownership to imgui and it is up to it to free the data
+                    void *font_data = IM_ALLOC(font_mplus.size());
+                    memcpy(font_data, font_mplus.data(), font_mplus.size());
+                    gui.vita_font[i] = io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), font_config.SizePixels, &font_config, latin_range);
                     font_config.MergeMode = true;
-                    io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
+
+                    font_data = IM_ALLOC(font_mplus.size());
+                    memcpy(font_data, font_mplus.data(), font_mplus.size());
+                    io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
 
                     const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
-                    if (!emuenv.cfg.initial_setup || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T))
-                        io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "SourceHanSansSC-Bold-Min.ttf").c_str(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
+                    if (!emuenv.cfg.initial_setup || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T)) {
+                        std::vector<uint8_t> font_source{};
+                        if (fs_utils::read_data(default_font_path / "SourceHanSansSC-Bold-Min.ttf", font_source)) {
+                            font_data = IM_ALLOC(font_source.size());
+                            memcpy(font_data, font_source.data(), font_source.size());
+                            io.Fonts->AddFontFromMemoryTTF(font_data, font_source.size(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
+                        }
+                    }
                     font_config.MergeMode = false;
 
                     large_font_config.SizePixels = 134.f;
                     large_font_config.OversampleH = 2;
                     large_font_config.OversampleV = 2;
                     large_font_config.RasterizerDensity = scale;
-                    gui.large_font[i] = io.Fonts->AddFontFromFileTTF(fs_utils::path_to_utf8(default_font_path / "mplus-1mn-bold.ttf").c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
+                    font_data = IM_ALLOC(font_mplus.size());
+                    memcpy(font_data, font_mplus.data(), font_mplus.size());
+                    gui.large_font[i] = io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), large_font_config.SizePixels, &large_font_config, large_font_chars);
 
                     LOG_INFO("Using default Vita3K font.");
                 } else
@@ -312,12 +329,10 @@ vfs::FileBuffer init_default_icon(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto default_fw_icon{ emuenv.pref_path / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
 
-    fs::path default_icon = emuenv.static_assets_path / "data/image/icon.png";
+    const fs::path default_icon{ emuenv.static_assets_path / "data/image/icon.png" };
 
-    if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
-        fs::path icon_path = fs::exists(default_fw_icon) ? default_fw_icon : default_icon;
-        fs_utils::read_data(icon_path, buffer);
-    }
+    const fs::path icon_path = fs::exists(default_fw_icon) ? default_fw_icon : default_icon;
+    fs_utils::read_data(icon_path, buffer);
 
     return buffer;
 }
@@ -352,7 +367,7 @@ static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::str
 void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     IconData data = load_app_icon(gui, emuenv, app_path);
     if (data.data) {
-        gui.app_selector.user_apps_icon[app_path].init(gui.imgui_state.get(), data.data.get(), data.width, data.height);
+        gui.app_selector.user_apps_icon[app_path] = ImGui_Texture(gui.imgui_state.get(), data.data.get(), data.width, data.height);
     }
 }
 
@@ -364,7 +379,7 @@ void IconAsyncLoader::commit(GuiState &gui) {
 
     for (const auto &pair : icon_data) {
         if (pair.second.data) {
-            gui.app_selector.user_apps_icon[pair.first].init(gui.imgui_state.get(), pair.second.data.get(), pair.second.width, pair.second.height);
+            gui.app_selector.user_apps_icon[pair.first] = ImGui_Texture(gui.imgui_state.get(), pair.second.data.get(), pair.second.width, pair.second.height);
         }
     }
 
@@ -435,7 +450,7 @@ void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &
         LOG_ERROR("Invalid background for application {} [{}].", title, app_path);
         return;
     }
-    gui.apps_background[app_path].init(gui.imgui_state.get(), data, width, height);
+    gui.apps_background[app_path] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 }
 
@@ -813,6 +828,12 @@ void init(GuiState &gui, EmuEnvState &emuenv) {
         const std::lock_guard<std::mutex> guard(gui.trophy_unlock_display_requests_access_mutex);
         gui.trophy_unlock_display_requests.insert(gui.trophy_unlock_display_requests.begin(), callback_data);
     };
+
+#ifdef __ANDROID__
+    // must be called once for the java side to get the scale
+    set_controller_overlay_scale(emuenv.cfg.overlay_scale);
+    set_controller_overlay_opacity(emuenv.cfg.overlay_opacity);
+#endif
 }
 
 void draw_begin(GuiState &gui, EmuEnvState &emuenv) {
@@ -917,6 +938,10 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog)
         draw_settings_dialog(gui, emuenv);
 
+#ifdef __ANDROID__
+    if (gui.controls_menu.overlay_dialog)
+        draw_overlay_dialog(gui, emuenv);
+#endif
     if (gui.controls_menu.controls_dialog)
         draw_controls_dialog(gui, emuenv);
     if (gui.controls_menu.controllers_dialog)
@@ -993,3 +1018,17 @@ void TextCentered(const char *text, float wrap_width) {
 }
 
 } // namespace gui
+
+namespace ImGui {
+
+void ScrollWhenDragging() {
+    ImGuiContext &g = *ImGui::GetCurrentContext();
+    ImGuiIO &io = ImGui::GetIO();
+    ImGuiWindow *window = g.CurrentWindow;
+    if (g.HoveredWindow == window && ImGui::IsMouseDragging(0)) {
+        ImGui::SetScrollY(window, window->Scroll.y - io.MouseDelta.y);
+        ImGui::SetActiveID(0, window);
+    }
+}
+
+} // namespace ImGui

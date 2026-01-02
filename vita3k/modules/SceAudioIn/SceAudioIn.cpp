@@ -17,6 +17,7 @@
 
 #include <module/module.h>
 
+#include <SDL3/SDL_audio.h>
 #include <audio/state.h>
 #include <util/tracy.h>
 
@@ -114,8 +115,16 @@ EXPORT(int, sceAudioInInput, int port, void *destPtr) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_INVALID_PORT_PARAM);
     }
 
-    while (SDL_DequeueAudio(emuenv.audio.in_port.id, destPtr, emuenv.audio.in_port.len_bytes) > 0) {
-    }
+    auto to_read = emuenv.audio.in_port.len_bytes;
+    do {
+        auto readed = SDL_GetAudioStreamData(static_cast<SDL_AudioStream *>(emuenv.audio.in_port.id), destPtr, to_read);
+        if (readed < 0) {
+            LOG_ERROR("AudioIn: Error while reading audio stream: {}", SDL_GetError());
+            return RET_ERROR(SCE_AUDIO_IN_ERROR_FATAL);
+        }
+        to_read -= readed;
+        destPtr = (char *)destPtr + readed;
+    } while (to_read > 0);
     return 0;
 }
 
@@ -152,21 +161,17 @@ EXPORT(int, sceAudioInOpenPort, SceAudioInPortType portType, int grain, int freq
         }
     }
 
-    SDL_AudioSpec desired = {};
-    SDL_AudioSpec received = {};
-    desired.freq = freq;
-    desired.format = AUDIO_S16LSB;
-    desired.channels = 1;
-    desired.samples = grain;
-    desired.callback = nullptr;
-    desired.userdata = nullptr;
-
-    emuenv.audio.in_port.id = SDL_OpenAudioDevice(nullptr, true, &desired, &received, 0);
-    if (emuenv.audio.in_port.id == 0) {
+    SDL_AudioSpec desired = {
+        .format = SDL_AUDIO_S16LE,
+        .channels = 1,
+        .freq = freq
+    };
+    emuenv.audio.in_port.id = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &desired, nullptr, nullptr);
+    if (!emuenv.audio.in_port.id) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_FATAL);
     }
 
-    SDL_PauseAudioDevice(emuenv.audio.in_port.id, 0);
+    SDL_ResumeAudioStreamDevice(static_cast<SDL_AudioStream *>(emuenv.audio.in_port.id));
 
     emuenv.audio.in_port.len_bytes = grain * 2;
     emuenv.audio.in_port.running = true;
@@ -187,8 +192,7 @@ EXPORT(int, sceAudioInReleasePort, int port) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_NOT_OPENED);
     }
     emuenv.audio.in_port.running = false;
-    SDL_PauseAudioDevice(emuenv.audio.in_port.id, 1);
-    SDL_CloseAudioDevice(emuenv.audio.in_port.id);
+    SDL_DestroyAudioStream(static_cast<SDL_AudioStream *>(emuenv.audio.in_port.id));
     return 0;
 }
 

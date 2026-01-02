@@ -152,6 +152,7 @@ struct ConfigurationMenuState {
 };
 
 struct ControlMenuState {
+    bool overlay_dialog = false;
     bool controls_dialog = false;
     bool controllers_dialog = false;
 };
@@ -327,6 +328,7 @@ struct GuiState {
 
     InfoBarColor information_bar_color;
 
+    ImGui_Texture live_area_last_app_frame;
     std::map<std::string, std::map<std::string, ImGui_Texture>> live_area_contents;
     std::map<std::string, std::map<std::string, std::map<std::string, std::vector<ImGui_Texture>>>> live_items;
 

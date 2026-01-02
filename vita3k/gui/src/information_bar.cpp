@@ -32,7 +32,7 @@
 
 #include <pugixml.hpp>
 
-#include <SDL_power.h>
+#include <SDL3/SDL_power.h>
 #include <stb_image.h>
 
 namespace gui {
@@ -114,7 +114,7 @@ static bool init_notice_icon(GuiState &gui, EmuEnvState &emuenv, const fs::path 
         LOG_ERROR("Invalid icon for notice id: {} in path {}.", info.id, content_path);
         return false;
     }
-    gui.notice_info_icon[info.time].init(gui.imgui_state.get(), data, width, height);
+    gui.notice_info_icon[info.time] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 
     return gui.notice_info_icon.contains(info.time);
@@ -478,6 +478,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
                 const auto notice_time_size = ImGui::CalcTextSize(notice_time.c_str());
                 ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x - (34.f * SCALE.x) - notice_time_size.x, ImGui::GetCursorPosY() - (8.f * SCALE.y)));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", notice_time.c_str());
+                ImGui::ScrollWhenDragging();
                 ImGui::NextColumn();
             }
             ImGui::Columns(1);

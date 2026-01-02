@@ -28,9 +28,10 @@
 
 #include <util/log.h>
 #include <util/safe_time.h>
+#include <util/string_utils.h>
 
-#include <SDL.h>
-#include <SDL_misc.h>
+#include <SDL3/SDL_cpuinfo.h>
+#include <SDL3/SDL_misc.h>
 #undef main
 
 #include <boost/algorithm/string/replace.hpp>
@@ -38,7 +39,380 @@
 #include <pugixml.hpp>
 #include <regex>
 
+#ifdef _WIN32
+#include <comdef.h>
+#include <shlobj.h>
+#include <shobjidl.h>
+#include <wrl/client.h>
+
+#include <stb_image.h>
+
+static bool png_to_ico(const fs::path &png, const fs::path &ico) {
+    int w, h, n;
+    unsigned char *data = stbi_load(png.string().c_str(), &w, &h, &n, 4);
+    if (!data) {
+        LOG_ERROR("Failed to load PNG '{}'", png.string());
+        return false;
+    }
+
+    fs::ofstream i(ico, std::ios::binary);
+    if (!i.good()) {
+        stbi_image_free(data);
+        return false;
+    }
+
+    const uint16_t reserved = 0, type = 1, count = 1;
+    const uint8_t width = (w >= 256) ? 0 : w;
+    const uint8_t height = (h >= 256) ? 0 : h;
+    const uint8_t colors = 0, reserved2 = 0;
+    const uint16_t planes = 1, bpp = 32;
+    const uint32_t imageOffset = 6 + 16;
+    const uint32_t imageSize = 40 + (w * h * 4) + (((w + 31) / 32) * 4 * h);
+
+    // ICO header
+    i.write((char *)&reserved, 2);
+    i.write((char *)&type, 2);
+    i.write((char *)&count, 2);
+    i.put(width);
+    i.put(height);
+    i.put(colors);
+    i.put(reserved2);
+    i.write((char *)&planes, 2);
+    i.write((char *)&bpp, 2);
+    i.write((char *)&imageSize, 4);
+    i.write((char *)&imageOffset, 4);
+
+    // BITMAPINFOHEADER
+    const uint32_t headerSize = 40;
+    const int32_t w32 = w, h32 = h * 2;
+    const uint16_t planes2 = 1, bitcount = 32;
+    const uint32_t compression = 0, imgSize = w * h * 4;
+    const uint32_t zero = 0;
+
+    i.write((char *)&headerSize, 4);
+    i.write((char *)&w32, 4);
+    i.write((char *)&h32, 4);
+    i.write((char *)&planes2, 2);
+    i.write((char *)&bitcount, 2);
+    i.write((char *)&compression, 4);
+    i.write((char *)&imgSize, 4);
+    i.write((char *)&zero, 4);
+    i.write((char *)&zero, 4);
+    i.write((char *)&zero, 4);
+    i.write((char *)&zero, 4);
+
+    // Pixel data (bottom-up, BGRA)
+    for (int y = h - 1; y >= 0; --y) {
+        for (int x = 0; x < w; ++x) {
+            const uint8_t *px = &data[(y * w + x) * 4];
+            const uint8_t bgra[4] = { px[2], px[1], px[0], px[3] };
+            i.write((char *)bgra, 4);
+        }
+    }
+
+    // AND mask
+    const size_t andSize = (static_cast<size_t>(w + 31) / 32) * 4 * static_cast<size_t>(h);
+    const std::vector<uint8_t> zeros(andSize, 0);
+    i.write((char *)zeros.data(), zeros.size());
+
+    stbi_image_free(data);
+    return true;
+}
+#elif defined(__ANDROID__)
+#include <SDL3/SDL_system.h>
+#include <jni.h>
+#elif defined(__linux__)
+static fs::path get_desktop_path() {
+    static fs::path desktop_path = []() -> fs::path {
+        // get XDG_DESKTOP_DIR variable environment
+        const char *xdg = std::getenv("XDG_DESKTOP_DIR");
+        if (xdg && fs::exists(xdg))
+            return fs::path(xdg);
+
+        // Try fallback ~/Desktop
+        const char *home = std::getenv("HOME");
+        if (home) {
+            fs::path d = fs::path(home) / "Desktop";
+            if (fs::exists(d))
+                return d;
+        }
+
+        return {};
+    }();
+
+    return desktop_path;
+}
+#elif defined(__APPLE__)
+#include <gui/macos_helper.h>
+#include <mach-o/dyld.h>
+#endif
+
+static fs::path get_exe_path() {
+    static fs::path cached;
+    if (!cached.empty())
+        return cached;
+
+#ifdef _WIN32
+    wchar_t exe_path[MAX_PATH];
+    if (GetModuleFileNameW(NULL, exe_path, MAX_PATH))
+        cached = exe_path;
+    else {
+        LOG_ERROR("Failed to get executable path");
+        return fs::path();
+    }
+#elif defined(__APPLE__)
+    char exe_path[PATH_MAX];
+    uint32_t size = sizeof(exe_path);
+
+    if (_NSGetExecutablePath(exe_path, &size) != 0) {
+        LOG_ERROR("Failed to get executable path");
+        return fs::path();
+    }
+
+    // Resolving the path (important)
+    char resolved[PATH_MAX];
+    if (realpath(exe_path, resolved) != nullptr)
+        cached = resolved;
+    else
+        cached = exe_path; // fallback
+#else // Linux / Others
+    char exe_path[PATH_MAX];
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (len != -1) {
+        exe_path[len] = '\0';
+        cached = exe_path;
+    } else {
+        LOG_ERROR("Failed to get executable path");
+        return fs::path();
+    }
+#endif
+
+    return cached;
+}
+
 namespace gui {
+
+static void create_app_icon(EmuEnvState &emuenv, const fs::path &app_path) {
+    // Get title ID and icon path
+    const std::string title_id = app_path.stem().string();
+    const fs::path png_path = emuenv.pref_path / "ux0/app" / app_path / "sce_sys" / "icon0.png";
+
+    if (!fs::exists(png_path))
+        return; // skip, will use exe icon
+
+    // Create icons directory if not exist
+    const fs::path icon_dir = emuenv.cache_path / "icons";
+    fs::create_directories(icon_dir);
+
+    // Create icon in appropriate format
+    fs::path icon_path = icon_dir / title_id;
+#ifdef _WIN32
+    icon_path += ".ico";
+    if (!png_to_ico(png_path, icon_path))
+#elif defined(__linux__)
+    icon_path += ".png";
+    if (!fs::copy_file(png_path, icon_path, fs::copy_options::overwrite_existing))
+#elif defined(__APPLE__)
+    icon_path += ".icns";
+    if (!png_to_icns(png_path, icon_path))
+#endif
+        LOG_ERROR("Failed to create icon for app '{}", title_id);
+}
+
+static bool has_shortcut_support() {
+#if defined(__linux__) && !defined(__ANDROID__)
+    static bool is_supported = []() -> bool {
+        // Not supported if running in an AppImage
+        if (std::getenv("APPIMAGE") != nullptr)
+            return false;
+
+        // Get the desktop path
+        const fs::path desktop = get_desktop_path();
+
+        // Desktop should not be empty
+        if (desktop.empty())
+            return false;
+
+        // Desktop should not be empty or equal to home directory
+        const char *home_cstr = std::getenv("HOME");
+        if ((home_cstr != nullptr) && (desktop == fs::path(home_cstr)))
+            return false;
+
+        return true;
+    }();
+
+    return is_supported;
+#else
+    return true;
+#endif
+}
+
+static void create_shortcut(EmuEnvState &emuenv, const std::string &app_path, const std::string &app_name) {
+    const fs::path exe_path = get_exe_path();
+    fs::path icon_path = emuenv.cache_path / "icons" / fs::path(app_path).stem();
+#ifdef _WIN32
+    bool initialized = false;
+    // Initialize COM library
+    HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    if (FAILED(hr)) {
+        LOG_ERROR("COM initialization failed: {}", _com_error(hr).ErrorMessage());
+        if (hr != RPC_E_CHANGED_MODE)
+            return;
+    } else {
+        initialized = true;
+    }
+
+    // Create IShellLink instance
+    Microsoft::WRL::ComPtr<IShellLinkW> psl;
+    hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
+        IID_PPV_ARGS(&psl));
+    if (FAILED(hr)) {
+        LOG_ERROR("Failed to create IShellLink instance: {:#X}", hr);
+        if (initialized)
+            CoUninitialize();
+        return;
+    }
+
+    // Set executable path, arguments and working directory
+    psl->SetPath(exe_path.wstring().c_str());
+    const std::wstring args = L"-r " + std::wstring(app_path.begin(), app_path.end());
+    psl->SetArguments(args.c_str());
+    psl->SetWorkingDirectory(exe_path.parent_path().wstring().c_str());
+
+    // Set icon location
+    icon_path += ".ico";
+    if (fs::exists(icon_path))
+        psl->SetIconLocation(icon_path.wstring().c_str(), 0);
+    else
+        psl->SetIconLocation(exe_path.wstring().c_str(), 0);
+
+    // Get desktop folder path
+    wchar_t desktop[MAX_PATH];
+    hr = SHGetFolderPathW(NULL, CSIDL_DESKTOPDIRECTORY, NULL, 0, desktop);
+    if (FAILED(hr)) {
+        LOG_ERROR("Failed to get desktop path: {:#X}", hr);
+        if (initialized)
+            CoUninitialize();
+        return;
+    }
+    const fs::path shortcut = fs::path(desktop) / (app_name + ".lnk");
+
+    // Get IPersistFile interface to save shortcut
+    Microsoft::WRL::ComPtr<IPersistFile> ppf;
+    hr = psl.As(&ppf);
+    if (FAILED(hr)) {
+        LOG_ERROR("QueryInterface for IPersistFile failed: {:#X}", hr);
+        if (initialized)
+            CoUninitialize();
+        return;
+    }
+
+    // Save the shortcut file
+    hr = ppf->Save(shortcut.wstring().c_str(), TRUE);
+    if (FAILED(hr))
+        LOG_ERROR("Failed to save shortcut '{}': {:#X}", shortcut.string(), hr);
+    else
+        LOG_INFO("Shortcut created successfully at '{}'", shortcut.string());
+
+    // Release interfaces and uninitialize COM if needed
+    if (initialized)
+        CoUninitialize();
+#elif defined(__ANDROID__)
+    // retrieve the JNI environment.
+    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
+
+    // retrieve the Java instance of the SDLActivity
+    jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
+
+    // find the Java class of the activity. It should be SDLActivity or a subclass of it.
+    jclass clazz(env->GetObjectClass(activity));
+
+    // find the identifier of the method to call
+    jmethodID method_id = env->GetMethodID(clazz, "createShortcut", "(Ljava/lang/String;Ljava/lang/String;)Z");
+    jstring j_app_path = env->NewStringUTF(app_path.data());
+    jstring j_app_name = env->NewStringUTF(app_name.data());
+
+    jboolean result = env->CallBooleanMethod(activity, method_id, j_app_path, j_app_name);
+
+    // clean up the local references.
+    env->DeleteLocalRef(j_app_name);
+    env->DeleteLocalRef(j_app_path);
+    env->DeleteLocalRef(activity);
+    env->DeleteLocalRef(clazz);
+
+    if (result)
+        SDL_ShowAndroidToast("Shortcut successfully created!", 0, -1, 0, 0);
+    else
+        SDL_ShowAndroidToast("Failed to create shortcut.", 1, -1, 0, 0);
+#elif defined(__linux__)
+    // Linux: create a .desktop file on desktop
+    const fs::path desktop_path = get_desktop_path();
+    const fs::path shortcut = desktop_path / (app_name + ".desktop");
+    fs::ofstream f(shortcut);
+    if (!f.is_open()) {
+        LOG_ERROR("Failed to create shortcut '{}'", shortcut.string());
+        return;
+    }
+
+    icon_path += ".png";
+    f << "[Desktop Entry]\n"
+         "Type=Application\n"
+         "Name="
+      << app_name << "\n"
+                     "Exec="
+      << exe_path.string() << " -r " << app_path << "\n"
+                                                    "Icon="
+      << (fs::exists(icon_path) ? icon_path.string() : exe_path.string()) << "\n"
+                                                                             "Categories=Game;Emulator;X-None;\n";
+
+    f.close();
+    fs::permissions(shortcut, fs::perms::owner_exe | fs::perms::owner_read | fs::perms::owner_write);
+    LOG_INFO("Linux shortcut created successfully at '{}'", shortcut.string());
+#elif defined(__APPLE__)
+    const auto desktop = get_desktop_path();
+
+    if (desktop.empty()) {
+        LOG_ERROR("Failed to retrieve desktop path");
+        return;
+    }
+
+    const fs::path app_bundle = desktop / (app_name + ".app");
+    const fs::path contents_dir = app_bundle / "Contents";
+    const fs::path macos_dir = contents_dir / "MacOS";
+    const fs::path resources_dir = contents_dir / "Resources";
+
+    // Check whether shortcut is already exist and remove existing one
+    if (fs::exists(app_bundle))
+        fs::remove_all(app_bundle);
+
+    // Create necessary directories
+    fs::create_directories(macos_dir);
+    fs::create_directories(resources_dir);
+
+    // Create launcher script
+    if (!create_launcher(get_exe_path(), macos_dir, app_path)) {
+        LOG_ERROR("Failed to create launcher script");
+        fs::remove_all(app_bundle);
+        return;
+    }
+
+    // Create info.plist
+    if (!create_info_plist(contents_dir, app_name, app_path)) {
+        LOG_ERROR("Failed to create info.plist");
+        fs::remove_all(app_bundle);
+        return;
+    }
+
+    // Copy icns
+    icon_path += ".icns";
+    if (fs::exists(icon_path))
+        fs::copy_file(icon_path, resources_dir / "icon.icns", fs::copy_options::overwrite_existing);
+    else
+        fs::copy_file(emuenv.base_path / "Vita3K.icns", resources_dir / "icon.icns", fs::copy_options::overwrite_existing);
+
+    LOG_INFO("macOS app bundle shortcut created successfully at '{}'", app_bundle.string());
+#endif
+}
 
 static std::map<double, std::string> update_history_infos;
 
@@ -343,8 +717,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     if (has_state_report) {
                         const auto copy_vita3k_summary = [&]() {
                             const auto vita3k_summary = fmt::format(
-                                "# Vita3K summary\n- Version: {}\n- Build number: {}\n- Commit hash: https://github.com/vita3k/vita3k/commit/{}\n- CPU backend: {}\n- GPU backend: {}",
-                                app_version, app_number, app_hash, get_cpu_backend(gui, emuenv, app_path), emuenv.cfg.backend_renderer);
+                                "# Vita3K summary\n- Version: {}\n- Build number: {}\n- Commit hash: https://github.com/vita3k/vita3k/commit/{}\n- GPU backend: {}",
+                                app_version, app_number, app_hash, emuenv.cfg.backend_renderer);
                             ImGui::LogToClipboard();
                             ImGui::LogText("%s", vita3k_summary.c_str());
                             ImGui::LogFinish();
@@ -385,8 +759,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
                             // Create Vita3K summary
                             const auto vita3k_summary = fmt::format(
-                                "%23 Vita3K summary%0A- Version: {}%0A- Build number: {}%0A- Commit hash: https://github.com/vita3k/vita3k/commit/{}%0A- CPU backend: {}%0A- GPU backend: {}",
-                                app_version, app_number, app_hash, get_cpu_backend(gui, emuenv, app_path), emuenv.cfg.backend_renderer);
+                                "%23 Vita3K summary%0A- Version: {}%0A- Build number: {}%0A- Commit hash: https://github.com/vita3k/vita3k/commit/{}%0A- GPU backend: {}",
+                                app_version, app_number, app_hash, emuenv.cfg.backend_renderer);
 
 #ifdef _WIN32
                             const auto user = std::getenv("USERNAME");
@@ -435,6 +809,10 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 }
                 ImGui::EndMenu();
             }
+            if (has_shortcut_support() && ImGui::MenuItem(lang.main["create_shortcut"].c_str())) {
+                create_app_icon(emuenv, app_path);
+                create_shortcut(emuenv, app_path, string_utils::remove_special_chars(APP_INDEX->title));
+            }
             if (ImGui::BeginMenu(lang.main["custom_config"].c_str())) {
                 if (!fs::exists(CUSTOM_CONFIG_PATH)) {
                     if (ImGui::MenuItem(lang.main["create"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
@@ -447,6 +825,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 }
                 ImGui::EndMenu();
             }
+
+#ifndef ANDROID
             if (ImGui::BeginMenu(lang.main["open_folder"].c_str())) {
                 if (ImGui::MenuItem(app_str["title"].c_str()))
                     open_path(APP_PATH.string());
@@ -466,6 +846,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_path(IMPORT_TEXTURES_PATH.string());
                 ImGui::EndMenu();
             }
+#endif
+
             if (!emuenv.cfg.show_live_area_screen && ImGui::BeginMenu("Live Area")) {
                 if (ImGui::MenuItem("Live Area", nullptr, &gui.vita_area.live_area_screen))
                     open_live_area(gui, emuenv, app_path);
@@ -546,6 +928,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::PopTextWrapPos();
                 ImGui::TextColored(GUI_COLOR_TEXT, "\n");
             }
+            ImGui::ScrollWhenDragging();
             ImGui::EndChild();
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * SCALE.y)));
@@ -622,7 +1005,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["parental_controls"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["parental_controls"].c_str(), lang.info["level"].c_str());
             ImGui::SameLine();
-            ImGui::TextColored(GUI_COLOR_TEXT, "%d", *reinterpret_cast<const uint16_t *>(APP_INDEX->parental_level.c_str()));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->parental_level.c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["updated"] + "  ").c_str()).x);
             auto DATE_TIME = get_date_time(gui, emuenv, gui.app_selector.app_info.updated);
@@ -665,6 +1048,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             } else
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.info["never"].c_str());
         }
+        ImGui::ScrollWhenDragging();
         ImGui::End();
     }
 }

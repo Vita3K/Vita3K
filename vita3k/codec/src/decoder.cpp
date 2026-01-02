@@ -32,7 +32,9 @@ uint32_t DecoderState::get_es_size() {
 }
 
 void DecoderState::flush() {
-    avcodec_flush_buffers(context);
+    std::lock_guard<std::mutex> lock(codec_mutex);
+    if (context)
+        avcodec_flush_buffers(context);
 }
 
 DecoderState::~DecoderState() {

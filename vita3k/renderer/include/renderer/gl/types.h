@@ -30,9 +30,9 @@
 #include <memory>
 #include <vector>
 
-typedef void *SDL_GLContext;
+typedef struct SDL_GLContextState *SDL_GLContext;
 
-typedef std::unique_ptr<void, std::function<void(SDL_GLContext)>> GLContextPtr;
+typedef std::unique_ptr<SDL_GLContextState, std::function<void(SDL_GLContext)>> GLContextPtr;
 
 struct SceGxmProgramParameter;
 

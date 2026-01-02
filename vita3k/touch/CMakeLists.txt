@@ -9,4 +9,7 @@ add_library(
 
 target_include_directories(touch PUBLIC include)
 target_link_libraries(touch PUBLIC emuenv)
-target_link_libraries(touch PRIVATE display sdl2)
+target_link_libraries(touch PRIVATE display SDL3::SDL3)
+if(ANDROID)
+	target_link_libraries(touch PRIVATE android)
+endif()

@@ -19,23 +19,20 @@
 
 #include <ctrl/ctrl.h>
 
-#include <SDL_gamecontroller.h>
-#include <SDL_haptic.h>
-#include <SDL_joystick.h>
+#include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_haptic.h>
 
 #include <cstring>
 #include <map>
 #include <memory>
 #include <mutex>
 
-struct _SDL_GameController;
-
-typedef std::shared_ptr<_SDL_GameController> GameControllerPtr;
-typedef std::shared_ptr<_SDL_Haptic> HapticPtr;
+typedef std::shared_ptr<SDL_Gamepad> GamepadPtr;
+typedef std::shared_ptr<SDL_Haptic> HapticPtr;
 
 struct Controller {
-    GameControllerPtr controller;
-    int port; // SDL_GameController index
+    GamepadPtr controller;
+    int port; // SDL_Gamepad index
     bool has_accel;
     bool has_gyro;
     bool has_led;
@@ -43,22 +40,23 @@ struct Controller {
 };
 
 struct ControllerBinding {
-    SDL_GameControllerButton controller;
+    SDL_GamepadButton controller;
     uint32_t button;
 };
 
-struct SDL_JoystickGUIDComparator {
-    bool operator()(const SDL_JoystickGUID &a, const SDL_JoystickGUID &b) const {
+struct SDL_GUIDComparator {
+    bool operator()(const SDL_GUID &a, const SDL_GUID &b) const {
         return memcmp(&a, &b, sizeof(a)) < 0;
     }
 };
 
-typedef std::map<SDL_JoystickGUID, Controller, SDL_JoystickGUIDComparator> ControllerList;
+typedef std::map<SDL_GUID, Controller, SDL_GUIDComparator> ControllerList;
 
 struct CtrlState {
     std::mutex mutex;
     ControllerList controllers;
     int controllers_num = 0;
+    float analog_multiplier = 1.0f;
     bool has_motion_support = false;
     bool free_ports[SCE_CTRL_MAX_WIRELESS_NUM] = { true, true, true, true };
     SceCtrlPadInputMode input_mode = SCE_CTRL_MODE_DIGITAL;

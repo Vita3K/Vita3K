@@ -21,7 +21,7 @@ struct SDL_Window;
 union SDL_Event;
 
 struct ImGui_GLState : public ImGui_State {
-    char glsl_version[32] = "#version 150";
+    char glsl_version[64] = "";
     uint32_t font_texture = 0;
     uint32_t shader_handle = 0, vertex_handle = 0, fragment_handle = 0;
     uint32_t attribute_location_tex = 0, attribute_projection_mat = 0;

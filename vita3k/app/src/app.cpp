@@ -24,12 +24,19 @@
 #include <io/state.h>
 #include <util/log.h>
 
-#include <SDL.h>
+#include <SDL3/SDL_messagebox.h>
+#include <SDL3/SDL_timer.h>
+
+#ifdef __ANDROID__
+#include <SDL3/SDL_system.h>
+#include <host/dialog/filesystem.h>
+#include <miniz.h>
+#endif
 
 namespace app {
 
 void error_dialog(const std::string &message, SDL_Window *window) {
-    if (SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window) < 0) {
+    if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", message.c_str(), window)) {
         LOG_ERROR("SDL Error: {}", message);
     }
 }
@@ -68,11 +75,97 @@ void set_window_title(EmuEnvState &emuenv) {
     const std::string title_to_set = fmt::format("{} | {} ({}) | {} | {} FPS ({} ms) | {}x{}{} | {}",
         window_title,
         emuenv.current_app_title, emuenv.io.title_id,
-        emuenv.cfg.backend_renderer,
+        emuenv.cfg.current_config.backend_renderer,
         emuenv.fps, emuenv.ms_per_frame,
         x, y, af, emuenv.cfg.current_config.screen_filter);
 
     SDL_SetWindowTitle(emuenv.window.get(), title_to_set.c_str());
 }
+
+#ifdef __ANDROID__
+void add_custom_driver(EmuEnvState &emuenv) {
+    fs::path file_path{};
+    host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(file_path);
+
+    if (result != host::dialog::filesystem::SUCCESS)
+        return;
+
+    // remove the .zip extension
+    std::string driver = file_path.filename().stem().string();
+
+    fs::path driver_path = fs::path(SDL_GetAndroidInternalStoragePath()) / "driver" / driver;
+
+    if (fs::exists(driver_path) && !fs::is_empty(driver_path)) {
+        LOG_ERROR("Driver {} already exists", driver);
+        return;
+    }
+
+    fs::create_directories(driver_path);
+
+    std::unique_ptr<FILE, int (*)(FILE *)> zip_file(host::dialog::filesystem::resolve_host_handle(file_path), fclose);
+    std::string driver_so = "";
+
+    mz_zip_archive zip;
+    memset(&zip, 0, sizeof(mz_zip_archive));
+    if (!mz_zip_reader_init_cfile(&zip, zip_file.get(), 0, 0)) {
+        LOG_CRITICAL("miniz error reading archive: {}", mz_zip_get_error_string(mz_zip_get_last_error(&zip)));
+        return;
+    }
+    const int num_files = mz_zip_reader_get_num_files(&zip);
+    for (int i = 0; i < num_files; i++) {
+        mz_zip_archive_file_stat file_stat;
+        if (!mz_zip_reader_file_stat(&zip, i, &file_stat)) {
+            continue;
+        }
+        const std::string_view m_filename = file_stat.m_filename;
+        if (m_filename.ends_with("/")) {
+            // directory
+            continue;
+        }
+
+        // assume only the driver would contain vulkan in its name
+        if (m_filename.find("vulkan") != std::string_view::npos) {
+            if (!driver_so.empty())
+                LOG_WARN("Two possible files can be used as the main vulkan driver : {} {}", driver_so, m_filename);
+
+            driver_so = m_filename;
+        }
+
+        LOG_INFO("Extracting {}", m_filename);
+        const fs::path file_output = driver_path / m_filename;
+        if (!fs::exists(file_output.parent_path()))
+            fs::create_directories(file_output.parent_path());
+
+        mz_zip_reader_extract_to_file(&zip, i, file_output.c_str(), 0);
+    }
+
+    mz_zip_reader_end(&zip);
+
+    if (driver_so.empty()) {
+        LOG_ERROR("Could not locate main driver file!");
+        fs::remove_all(driver_path);
+        return;
+    }
+
+    // last thing to do: create a driver_name.txt file with the name of the main so
+    fs::ofstream driver_name_file(driver_path / "driver_name.txt", std::ios_base::out);
+    driver_name_file << driver_so << '\n';
+    driver_name_file.close();
+
+    LOG_INFO("Successfully installed driver {}!", driver);
+}
+
+void remove_custom_driver(EmuEnvState &emuenv, const std::string &driver) {
+    fs::path driver_path = fs::path(SDL_GetAndroidInternalStoragePath()) / "driver" / driver;
+
+    if (!fs::exists(driver_path)) {
+        LOG_ERROR("Path {} does not exist", driver_path.c_str());
+        return;
+    }
+
+    fs::remove_all(driver_path);
+    LOG_INFO("Driver {} was successfully removed!", driver);
+}
+#endif
 
 } // namespace app

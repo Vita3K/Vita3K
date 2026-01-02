@@ -24,11 +24,12 @@
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
+#include <net/state.h>
 #include <packages/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <SDL_timer.h>
+#include <SDL3/SDL_timer.h>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceCommonDialog);
@@ -186,8 +187,10 @@ EXPORT(int, sceImeDialogInit, const Ptr<SceImeDialogParam> param) {
 
     SceImeDialogParam *p = param.get(emuenv.mem);
 
-    std::u16string title = p->title.cast<char16_t>().get(emuenv.mem);
-    std::u16string text = p->initialText.cast<char16_t>().get(emuenv.mem);
+    const auto title_data = p->title.cast<char16_t>().get(emuenv.mem);
+    std::u16string title = title_data ? title_data : u"";
+    const auto text_data = p->initialText.cast<char16_t>().get(emuenv.mem);
+    std::u16string text = text_data ? text_data : u"";
 
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
     emuenv.common_dialog.type = IME_DIALOG;
@@ -489,16 +492,14 @@ EXPORT(int, sceNetCheckDialogGetPS3ConnectInfo) {
     return UNIMPLEMENTED();
 }
 
-typedef struct SceNetCheckDialogResult {
-    SceInt32 result;
-    SceBool psnModeSucceeded;
-    SceUInt8 reserved[124];
-} SceNetCheckDialogResult;
-
 EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
     TRACY_FUNC(sceNetCheckDialogGetResult, result);
-    result->result = 0;
-    return STUBBED("result->result = 0");
+    result->result = emuenv.common_dialog.result;
+
+    if (emuenv.common_dialog.netcheck.mode != SCE_NETCHECK_DIALOG_MODE_ADHOC_CONN)
+        STUBBED("result->result = 0");
+
+    return 0;
 }
 
 EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
@@ -506,14 +507,34 @@ EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
     if (emuenv.common_dialog.type != NETCHECK_DIALOG)
         return SCE_COMMON_DIALOG_STATUS_NONE;
 
-    STUBBED("SCE_COMMON_DIALOG_STATUS_FINISHED");
+    if (emuenv.common_dialog.netcheck.mode != SCE_NETCHECK_DIALOG_MODE_ADHOC_CONN)
+        STUBBED("SCE_COMMON_DIALOG_STATUS_FINISHED");
+
     return emuenv.common_dialog.status;
 }
 
-EXPORT(int, sceNetCheckDialogInit) {
+EXPORT(int, sceNetCheckDialogInit, const SceNetCheckDialogParam *param) {
     TRACY_FUNC(sceNetCheckDialogInit);
+    if (emuenv.common_dialog.type != NO_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
+
     emuenv.common_dialog.type = NETCHECK_DIALOG;
-    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    emuenv.common_dialog.netcheck.mode = param->mode;
+
+    switch (param->mode) {
+    case SCE_NETCHECK_DIALOG_MODE_ADHOC_CONN:
+        LOG_INFO("Triggering adhoc thread");
+        emuenv.netctl.adhocCondVarReady = true;
+        emuenv.netctl.adhocCondVar.notify_all();
+        emuenv.netctl.adhocState = SCE_NET_CTL_STATE_CONNECTING;
+        emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+        break;
+    default:
+        emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+        break;
+    }
+
     return UNIMPLEMENTED();
 }
 
@@ -521,6 +542,7 @@ EXPORT(int, sceNetCheckDialogTerm) {
     TRACY_FUNC(sceNetCheckDialogTerm);
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     emuenv.common_dialog.type = NO_DIALOG;
+    emuenv.common_dialog.netcheck.mode = SCE_NETCHECK_DIALOG_MODE_INVALID;
     return UNIMPLEMENTED();
 }
 
@@ -825,10 +847,10 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
         auto empty_param = emuenv.common_dialog.savedata.list_empty_param[index];
         if (empty_param) {
             emuenv.common_dialog.savedata.title[index] = empty_param->title ? empty_param->title.get(emuenv.mem) : emuenv.common_dialog.lang.save_data.save["new_saved_data"];
-            const auto iconPath = empty_param->iconPath.get(emuenv.mem);
+            const char *iconPath = empty_param->iconPath.get(emuenv.mem);
             SceUChar8 *iconBuf = empty_param->iconBuf.cast<SceUChar8>().get(emuenv.mem);
             const auto iconBufSize = empty_param->iconBufSize;
-            if (iconPath) {
+            if (iconPath && (std::strlen(iconPath) > 0)) {
                 auto device = device::get_device(iconPath);
                 const auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
                 vfs::read_file(VitaIoDevice::ux0, icon_buf_tmp, emuenv.pref_path, thumbnail_path);
@@ -1105,14 +1127,15 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
     case SCE_SAVEDATA_DIALOG_MODE_LIST:
         emuenv.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_LIST;
         list_param = p->listParam.get(emuenv.mem);
-        if (list_param->slotListSize > 0)
-            emuenv.common_dialog.savedata.slot_list_size = list_param->slotListSize;
-        slot_list.resize(list_param->slotListSize);
-        for (std::uint32_t i = 0; i < list_param->slotListSize; i++) {
-            slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
-            emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
-            emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);
-            check_save_file(i, emuenv, export_name);
+        if (list_param->slotListSize > 0) {
+            emuenv.common_dialog.savedata.slot_list_size = std::min(list_param->slotListSize, emuenv.common_dialog.savedata.slot_list_size);
+            slot_list.resize(emuenv.common_dialog.savedata.slot_list_size);
+            for (std::uint32_t i = 0; i < emuenv.common_dialog.savedata.slot_list_size; i++) {
+                slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
+                emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
+                emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);
+                check_save_file(i, emuenv, export_name);
+            }
         }
         break;
     }
@@ -1241,7 +1264,7 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
         break;
     case SCE_SAVEDATA_DIALOG_MODE_LIST:
         list_param = p->listParam.get(emuenv.mem);
-        emuenv.common_dialog.savedata.slot_list_size = list_param->slotListSize;
+        emuenv.common_dialog.savedata.slot_list_size = std::min(list_param->slotListSize, (uint32_t)SCE_SAVEDATA_DIALOG_SLOTLIST_MAXSIZE);
         emuenv.common_dialog.savedata.list_style = list_param->itemStyle;
 
         slot_list.resize(list_param->slotListSize);

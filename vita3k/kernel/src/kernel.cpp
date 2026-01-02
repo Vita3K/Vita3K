@@ -28,7 +28,7 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
-#include <SDL_thread.h>
+#include <SDL3/SDL_mutex.h>
 
 int CorenumAllocator::new_corenum() {
     const std::lock_guard<std::mutex> guard(lock);
@@ -51,13 +51,13 @@ void CorenumAllocator::set_max_core_count(const std::size_t max) {
 struct ThreadParams {
     KernelState *kernel = nullptr;
     SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
-    std::shared_ptr<SDL_semaphore> host_may_destroy_params = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(0), SDL_DestroySemaphore);
+    SDL_Semaphore *host_may_destroy_params = nullptr;
 };
 
 static int SDLCALL thread_function(void *data) {
     assert(data != nullptr);
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
-    SDL_SemPost(params.host_may_destroy_params.get());
+    SDL_SignalSemaphore(params.host_may_destroy_params);
     const ThreadStatePtr thread = params.kernel->get_thread(params.thid);
 #ifdef TRACY_ENABLE
     if (!thread->name.empty()) {
@@ -82,7 +82,7 @@ KernelState::KernelState()
     : debugger(*this) {
 }
 
-bool KernelState::init(MemState &mem, const CallImportFunc &call_import, CPUBackend cpu_backend, bool cpu_opt) {
+bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt) {
     constexpr std::size_t MAX_CORE_COUNT = 150;
 
     corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
@@ -90,7 +90,6 @@ bool KernelState::init(MemState &mem, const CallImportFunc &call_import, CPUBack
     start_tick = rtc_get_ticks(rtc_base_ticks());
     base_tick = { rtc_base_ticks() };
     cpu_protocol = std::make_unique<CPUProtocol>(*this, mem, call_import);
-    this->cpu_backend = cpu_backend;
     this->cpu_opt = cpu_opt;
 
     return true;
@@ -148,8 +147,10 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     params.kernel = this;
     params.thid = thread->id;
 
+    params.host_may_destroy_params = SDL_CreateSemaphore(0);
     SDL_CreateThread(&thread_function, thread->name.c_str(), &params);
-    SDL_SemWait(params.host_may_destroy_params.get());
+    SDL_WaitSemaphore(params.host_may_destroy_params);
+    SDL_DestroySemaphore(params.host_may_destroy_params);
     return thread;
 }
 

@@ -1,6 +1,4 @@
-add_library(
-	gui
-	STATIC
+set(GUI_SOURCES
 	include/gui/functions.h
 	include/gui/imgui_impl_sdl_gl3.h
 	include/gui/imgui_impl_sdl_state.h
@@ -39,6 +37,7 @@ add_library(
 	src/threads_dialog.cpp
 	src/trophy_collection.cpp
 	src/user_management.cpp
+	src/overlay_dialog.cpp
 	src/controls_dialog.cpp
 	src/controllers_dialog.cpp
 	src/allocations_dialog.cpp
@@ -49,7 +48,29 @@ add_library(
 	src/welcome_dialog.cpp
 )
 
+# Add macOS-specific Objective-C++ files
+if(APPLE)
+	list(APPEND GUI_SOURCES
+		include/gui/macos_helper.h
+		src/macos_helper.mm
+	)
+endif()
+
+add_library(gui STATIC ${GUI_SOURCES})
+
 target_include_directories(gui PUBLIC include ${CMAKE_SOURCE_DIR}/vita3k)
 target_link_libraries(gui PUBLIC app compat config dialog emuenv ime imgui lang regmgr np)
-target_link_libraries(gui PRIVATE audio cppcommon ctrl kernel miniz psvpfsparser pugixml::pugixml stb renderer packages sdl2 touch vkutil host::dialog concurrentqueue)
-target_link_libraries(gui PUBLIC tracy)
+target_link_libraries(gui PRIVATE audio cppcommon ctrl kernel miniz motion psvpfsparser pugixml::pugixml stb renderer packages SDL3::SDL3 touch vkutil host::dialog concurrentqueue)
+# Link macOS frameworks for Objective-C++ code
+if(APPLE)
+	target_link_libraries(gui PRIVATE
+		"-framework Foundation"
+		"-framework ImageIO"
+		"-framework UniformTypeIdentifiers"
+	)
+elseif(ANDROID)
+	target_link_libraries(gui PRIVATE android)
+endif()
+if(TRACY_ENABLE_ON_CORE_COMPONENTS)
+	target_link_libraries(gui PUBLIC tracy)
+endif()

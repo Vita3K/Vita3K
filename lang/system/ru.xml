@@ -274,7 +274,7 @@
 		<green>Зеленый</green>
 		<blue>Синий</blue>
 		<not_connected>Не подключены совместимые контроллеры.
-Подключите контроллер, совместимый с SDL2.</not_connected>
+Подключите контроллер, совместимый с SDL3.</not_connected>
 		<reset_controller_binding>Сброс привязки элементов управления</reset_controller_binding>
 	</controllers>
 
@@ -590,9 +590,6 @@
 			<manual_description>Выберите Ручной режим для загрузки только выбранных модулей из списка ниже.</manual_description>
 		</core>
 		<cpu>
-			<unicorn>Unicorn (устарел)</unicorn>
-			<cpu_backend>CPU бэкенд</cpu_backend>
-			<select_cpu_backend>Выберите бэкенд процессора.</select_cpu_backend>
 			<cpu_opt>Включить оптимизацию</cpu_opt>
 			<cpu_opt_description>Установите флажок, чтобы включить дополнительные JIT-оптимизации процессора.</cpu_opt_description>
 		</cpu>

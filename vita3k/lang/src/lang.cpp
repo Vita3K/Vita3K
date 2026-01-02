@@ -90,8 +90,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
     // Load lang xml
     pugi::xml_document lang_xml;
     const auto lang_xml_path{ (emuenv.cfg.user_lang.empty() ? system_lang_path / lang.user_lang[GUI] : (is_user_lang_static ? user_lang_static_path : user_lang_shared_path) / emuenv.cfg.user_lang).replace_extension("xml") };
-    if (fs::exists(lang_xml_path)) {
-        auto load_xml_res = lang_xml.load_file(lang_xml_path.c_str());
+    std::vector<uint8_t> lang_content{};
+    if (fs_utils::read_data(lang_xml_path, lang_content)) {
+        const auto load_xml_res = lang_xml.load_buffer(lang_content.data(), lang_content.size(), pugi::encoding_utf8);
         if (load_xml_res) {
             // Lang
             const auto lang_child = lang_xml.child("lang");
@@ -294,6 +295,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 // Message
                 set_lang_string(emuenv.common_dialog.lang.message, lang_child.child("message"));
 
+                // Overlay
+                set_lang_string(lang.overlay, lang_child.child("overlay"));
+
                 // Performance Overlay
                 set_lang_string(lang.performance_overlay, lang_child.child("performance_overlay"));
 
@@ -418,22 +422,19 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 set_lang_string(lang.welcome, lang_child.child("welcome"));
             }
         } else {
-            LOG_ERROR("Error open lang file xml: {}", lang_xml_path);
+            LOG_ERROR("Error parsing lang file xml: {}", lang_xml_path);
             LOG_DEBUG("error: {} position: {}", load_xml_res.description(), load_xml_res.offset);
             constexpr ptrdiff_t context_window = 20;
-            fs::ifstream file(lang_xml_path, std::ios::binary);
-            if (file.is_open()) {
-                const ptrdiff_t error_in_context = load_xml_res.offset < context_window ? load_xml_res.offset : context_window;
-                file.seekg(load_xml_res.offset - error_in_context, std::ios::beg);
-                if (!file.eof()) {
-                    std::string error_context;
-                    error_context.resize(context_window * 2);
-                    file.read(error_context.data(), context_window * 2);
-                    if (file.gcount() < context_window * 2)
-                        error_context.resize(file.gcount());
-                    LOG_DEBUG("Error preview: {}|{}", error_context.substr(0, error_in_context), error_context.substr(error_in_context));
-                }
-                file.close();
+            ptrdiff_t offset = static_cast<ptrdiff_t>(load_xml_res.offset);
+            if (offset >= 0 && offset < static_cast<ptrdiff_t>(lang_content.size())) {
+                ptrdiff_t start = std::max<ptrdiff_t>(0, offset - context_window);
+                ptrdiff_t end = std::min<ptrdiff_t>(lang_content.size(), offset + context_window);
+
+                ptrdiff_t error_in_context = offset - start;
+
+                std::string error_context(reinterpret_cast<const char *>(lang_content.data() + start), end - start);
+
+                LOG_DEBUG("Error preview: {}|{}", error_context.substr(0, error_in_context), error_context.substr(error_in_context));
             }
         }
     } else

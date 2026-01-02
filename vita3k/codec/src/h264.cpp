@@ -67,6 +67,8 @@ uint32_t H264DecoderState::get(DecoderQuery query) {
 }
 
 bool H264DecoderState::send(const uint8_t *data, uint32_t size) {
+    std::lock_guard<std::mutex> lock(codec_mutex);
+
     int error = 0;
 
     std::vector<uint8_t> au_frame(size + AV_INPUT_BUFFER_PADDING_SIZE);

@@ -58,17 +58,21 @@ struct Config {
      * All the settings that appear in this struct can be adjusted using app-specific custom config files.
      */
     struct CurrentConfig {
-        std::string cpu_backend;
         bool cpu_opt = true;
         int modules_mode = ModulesMode::AUTOMATIC;
         std::vector<std::string> lle_modules = {};
         int audio_volume = 100;
         bool ngs_enable = true;
         bool pstv_mode = false;
+#ifdef __ANDROID__
+        std::string custom_driver_name{};
+#endif
+        std::string backend_renderer = "Vulkan";
         bool high_accuracy = false;
         float resolution_multiplier = 1.0f;
         bool disable_surface_sync = false;
         std::string screen_filter = "Bilinear";
+        std::string memory_mapping = "double-buffer";
         bool v_sync = true;
         int anisotropic_filtering = 1;
         bool async_pipeline_compilation = true;

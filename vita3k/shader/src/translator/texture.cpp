@@ -63,7 +63,7 @@ static spv::Id get_uv_coeffs(spv::Builder &b, const spv::Id std_builtins, spv::I
     coords = b.createBinOp(spv::OpFSub, v2f32, coords, v2half);
 
     // the uv coefficients are the fractional values
-    return b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Fract, { coords });
+    return b.setPrecision(b.createBuiltinCall(v2f32, std_builtins, GLSLstd450Fract, { coords }), spv::DecorationRelaxedPrecision);
 }
 
 spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, int texture_index, const int dim, const Coord &coord, const DataType dest_type, const int lod_mode, const spv::Id extra1, const spv::Id extra2, const int gather4_comp) {
@@ -150,6 +150,9 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     }
 
     image_sample = m_b.createOp(op, type_f32_v[4], params);
+
+    if (get_data_type_size(dest_type) < 4 && dest_type != DataType::UINT16 && dest_type != DataType::INT16)
+        m_b.setPrecision(image_sample, spv::DecorationRelaxedPrecision);
 
     if (is_integer_data_type(dest_type))
         image_sample = utils::convert_to_int(m_b, m_util_funcs, image_sample, dest_type, true);
@@ -323,7 +326,9 @@ bool USSETranslatorVisitor::smp(
         spv::Id uv = get_uv_coeffs(m_b, std_builtins, image_sampler, coords, lod);
         // z is the trilinear fraction, w the LOD
         spv::Id tri_frac = m_b.createBuiltinCall(type_f32, std_builtins, GLSLstd450Fract, { lod });
+        m_b.setPrecision(tri_frac, spv::DecorationRelaxedPrecision);
         const spv::Id lod_level = m_b.createUnaryOp(spv::OpConvertFToU, type_ui32, lod);
+        m_b.setPrecision(lod_level, spv::DecorationRelaxedPrecision);
 
         // the result is stored as a vector of uint8, we must convert it
         uv = utils::convert_to_int(m_b, m_util_funcs, uv, DataType::UINT8, true);
@@ -469,14 +474,18 @@ bool USSETranslatorVisitor::smp(
                 const spv::Id v = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, uv, m_b.makeIntConstant(1));
 
                 const spv::Id onemu = m_b.createBinOp(spv::OpFSub, type_f32, one, u);
+                m_b.setPrecision(onemu, spv::DecorationRelaxedPrecision);
                 const spv::Id onemv = m_b.createBinOp(spv::OpFSub, type_f32, one, v);
+                m_b.setPrecision(onemv, spv::DecorationRelaxedPrecision);
 
                 // (1-u) u
                 const spv::Id x_coeffs = m_b.createCompositeConstruct(type_f32_v[2], { onemu, u });
                 // (1-u)v uv
                 const spv::Id comp1 = m_b.createBinOp(spv::OpVectorTimesScalar, type_f32_v[2], x_coeffs, v);
+                m_b.setPrecision(comp1, spv::DecorationRelaxedPrecision);
                 // (1-u)(1-v) u(1-v)
                 const spv::Id comp2 = m_b.createBinOp(spv::OpVectorTimesScalar, type_f32_v[2], x_coeffs, onemv);
+                m_b.setPrecision(comp2, spv::DecorationRelaxedPrecision);
                 // (1-u)v uv u(1-v) (1-u)(1-v) in reversed order
                 const spv::Id coeffs = m_b.createOp(spv::OpVectorShuffle, type_f32_v[4], { { true, comp1 }, { true, comp2 }, { false, 2 }, { false, 3 }, { false, 1 }, { false, 0 } });
 

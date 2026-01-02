@@ -189,16 +189,16 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
         const ImVec2 MANUAL_PAGE_SIZE(manual_pages_size.at(p).x * SCALE.x, manual_pages_size.at(p).y * SCALE.y);
         const ImVec2 CHILD_SIZE(is_book_mode ? display_size.x / 2.f : display_size.x, display_size.y);
         const auto ratio = is_book_mode ? std::min(CHILD_SIZE.x / MANUAL_PAGE_SIZE.x, CHILD_SIZE.y / MANUAL_PAGE_SIZE.y) : CHILD_SIZE.x / MANUAL_PAGE_SIZE.x;
-        const ImVec2 PAGE_SIZE(MANUAL_PAGE_SIZE.x * ratio, MANUAL_PAGE_SIZE.y * ratio);
-        const ImVec2 PAGE_POS(std::max((CHILD_SIZE.x - PAGE_SIZE.x) / 2.f, 0.f), std::max((CHILD_SIZE.y - PAGE_SIZE.y) / 2.f, 0.f));
+        const ImVec2 SIZE_PAGE(MANUAL_PAGE_SIZE.x * ratio, MANUAL_PAGE_SIZE.y * ratio);
+        const ImVec2 PAGE_POS(std::max((CHILD_SIZE.x - SIZE_PAGE.x) / 2.f, 0.f), std::max((CHILD_SIZE.y - SIZE_PAGE.y) / 2.f, 0.f));
         const ImVec2 CHILD_POS(SCREEN_POS.x + (p * CHILD_SIZE.x), SCREEN_POS.y);
 
         //  Set settings and begin child window for manual pages
         ImGui::SetNextWindowPos(CHILD_POS, ImGuiCond_Always);
-        ImGui::SetNextWindowContentSize(PAGE_SIZE);
+        ImGui::SetNextWindowContentSize(SIZE_PAGE);
         ImGui::BeginChild(fmt::format("##manual_page_{}", p + 1).c_str(), CHILD_SIZE, ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetCursorPos(PAGE_POS);
-        ImGui::Image(gui.manuals[p], PAGE_SIZE);
+        ImGui::Image(gui.manuals[p], SIZE_PAGE);
 
         // Set max scroll for each page
         max_scroll[p] = ImGui::GetScrollMaxY();
@@ -268,7 +268,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PushStyleVar(ImGuiStyleVar_GrabRounding, 50.f * SCALE.y);
             ImGui::SetCursorPos(ImVec2((display_size.x / 2) - (SLIDER_WIDTH / 2.f), (POPUP_HEIGHT / 2) - (15.f * SCALE.x)));
             const auto previous_page = current_page;
-            ImGui::SliderInt("##slider_current_manual", &current_page, 0, total_pages, slider.c_str());
+            ImGui::SliderInt("##slider_current_manual", &current_page, 0, max_pages_index, slider.c_str());
             if (current_page != previous_page)
                 change_page(emuenv, current_page);
             ImGui::PopStyleVar(2);
@@ -289,6 +289,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
         if ((!hidden_button && ImGui::Button(">", BUTTON_SIZE)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_leftstick_right)))
             change_page(emuenv, current_page + 1);
     }
+    ImGui::ScrollWhenDragging();
     ImGui::EndChild();
     ImGui::End();
     ImGui::PopStyleVar(2);

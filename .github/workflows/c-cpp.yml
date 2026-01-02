@@ -1,27 +1,33 @@
 name: C/C++ CI
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
 
 jobs:
   format-check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Format check
         run: .github/format-check.sh
 
   build:
     needs: [format-check]
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs_on || matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-latest, macos-latest]
+        os: [ubuntu-22.04, windows-latest, macos-latest, android]
         config: [Release]
-        version: [zip, appimage]
+        version: [zip, appimage, apk]
         include:
           - os: ubuntu-22.04
             version: appimage
@@ -45,21 +51,35 @@ jobs:
             cache_path: ~/Library/Caches/ccache
             extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="x86_64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
             cmake_preset: macos-ninja
+          - os: android
+            version: apk
+            runs_on: ubuntu-latest
         exclude:
           - os: macos-latest
             version: appimage
           - os: windows-latest
             version: appimage
+          - os: android
+            version: appimage
+          - os: android
+            version: zip
+          - os: windows-latest
+            version: apk
+          - os: macos-latest
+            version: apk
+          - os: ubuntu-22.04
+            version: apk
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Set up build environment (macos-latest)
         run: |
-          brew install ccache ninja create-dmg
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          brew install ccache create-dmg
           echo "$(brew --prefix ccache)/libexec" >> $GITHUB_PATH
           ccache --set-config=compiler_check=content
         if: matrix.os == 'macos-latest'
@@ -72,39 +92,51 @@ jobs:
           sudo apt -y install ccache libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev libsdl2-dev ninja-build libfuse2
         if: matrix.os == 'ubuntu-22.04'
 
+      - uses: hendrikmuhs/ccache-action@v1.2
+        if: matrix.os == 'android'
+
+      - name: Restore Gradle Cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/
+            /usr/local/share/vcpkg/installed
+            /usr/local/share/vcpkg/packages
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('android/**/*.xml') }}-${{ hashFiles('android/**.java') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('android/**/*.xml') }}-
+            ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-
+            ${{ runner.os }}-gradle-
+        if: matrix.os == 'android'
+
+      - name: Set up build environment (Android)
+        run: |
+          sudo apt-get install -y ninja-build
+          vcpkg install boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
+        if: matrix.os == 'android'
+
+      - name: Decode Android keystore
+        env:
+          KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
+        run: echo "$KEYSTORE_ENCODED" | base64 --decode > /home/runner/keystore.jks
+        if: matrix.os == 'android'
+
       - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows-latest'
  
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ${{ matrix.cache_path }}
           key: cache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
           restore-keys: |
             cache-${{ matrix.os }}-${{ matrix.config }}-
+        if: matrix.os != 'android'
 
       - name: Set up build environment (windows-latest)
         run: |
           vcpkg install zlib:x64-windows-static-md boost-system:x64-windows-static-md boost-filesystem:x64-windows-static-md boost-program-options:x64-windows-static-md boost-icl:x64-windows-static-md boost-variant:x64-windows-static-md curl:x64-windows-static-md openssl:x64-windows-static-md
           choco install ccache
         if: matrix.os == 'windows-latest'
-
-      - name: Set up SDL 2.30.11 (ubuntu-22.04)
-        run: |
-          SDL2VER=2.30.11
-          if [[ ! -e ~/.ccache ]]; then
-            mkdir ~/.ccache
-          fi  
-          cd ~/.ccache
-          if [[ ! -e SDL2-${SDL2VER} ]]; then
-            curl -sLO https://libsdl.org/release/SDL2-${SDL2VER}.tar.gz
-            tar -xzf SDL2-${SDL2VER}.tar.gz
-            cd SDL2-${SDL2VER}
-            ./configure --prefix=/usr/local
-            make && cd ../
-            rm SDL2-${SDL2VER}.tar.gz
-          fi
-          sudo make -C SDL2-${SDL2VER} install
-        if: matrix.os == 'ubuntu-22.04'
 
       - name: Set up linuxdeploy (ubuntu-22.04, appimage)
         run: |
@@ -117,15 +149,41 @@ jobs:
 
       - name: Ccache setup
         run: ccache -z
+        if: matrix.os != 'android'
 
       - name: CMake
         run: |
           cmake ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
           cmake --build build/${{ matrix.cmake_preset }} --config ${{ matrix.config }}
+        if: matrix.os != 'android'
+
+      - name: Gradle build
+        env:
+          SIGNING_STORE_PATH: "/home/runner/keystore.jks"
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          JVM_OPTS: -Xmx6G
+          VCPKG_ROOT: /usr/local/share/vcpkg
+        run: |
+          cp -r data android/assets
+          cp -r lang android/assets
+          cp -r vita3k/shaders-builtin android/assets
+          export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
+          if [ -n "${{ secrets.KEYSTORE }}" ];
+          then
+            BUILD_TYPE=Release
+          else
+            BUILD_TYPE=Reldebug
+          fi
+          ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assemble${BUILD_TYPE}
+          echo "APK_PATH=android/build/outputs/apk/${BUILD_TYPE,,}/android-${BUILD_TYPE,,}.apk" >> $GITHUB_ENV
+        if: matrix.os == 'android'
 
       - name: CTest
         working-directory: build/${{ matrix.cmake_preset }}
         run: ctest --build-config ${{ matrix.config }} --output-on-failure
+        if: matrix.os != 'android'
 
       - name: Compute git short sha
         shell: bash
@@ -146,6 +204,7 @@ jobs:
 
       - name: Ccache statistics
         run: ccache -s  
+        if: matrix.os != 'android'
         
       - name: Create DMG (macos-latest)
         run: |
@@ -171,12 +230,13 @@ jobs:
           rm -f ../*AppImage*
         if: matrix.os == 'ubuntu-22.04' && matrix.version == 'appimage'
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: vita3k-${{ env.git_short_sha }}-${{ matrix.version }}-${{ matrix.os }}
-          # path is set up to be <binary_dir>/bin/<config_type> since that's how multi-config
-          # generators work on CMake
-          path: build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
+          # Upload path differs depending on the OS:
+          # - Android: path to APK
+          # - PC/Mac/Linux: path to <binary_dir>/bin/<config_type> as used by multi-config CMake
+          path: ${{ matrix.os == 'android' && env.APK_PATH || format('build/{0}/bin/{1}', matrix.cmake_preset, matrix.config) }}
 
     outputs:
       BuildTag: ${{ env.build_variable }}
@@ -188,7 +248,7 @@ jobs:
       fail-fast: false
       matrix:
         repo: [master, store]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     concurrency:
       group: create-release-${{ matrix.repo }}
       cancel-in-progress: false
@@ -196,10 +256,10 @@ jobs:
       github.ref == 'refs/heads/master' &&
       github.repository == 'Vita3K/Vita3K'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
 
       - name: Get Build Variable
         run: echo "Build_Variable=${{ needs.build.outputs.BuildTag }}" >> $GITHUB_ENV
@@ -221,10 +281,14 @@ jobs:
         shell: bash
         run: |
           mkdir artifacts/
-          files=$(find . \( -name "*latest" -o -name "*22.04" \))
+          files=$(find . \( -name "*latest" -o -name "*22.04" -o -name "*apk-android" \))
           for f in $files; do
-            if [[ $f == *macos-latest ]]
-            then
+          if [[ $f == *apk-android ]]
+          then
+            echo "Copying $f"
+            cp $(basename $f)/*.apk artifacts/android-latest.apk
+          elif [[ $f == *macos-latest ]]
+          then
               cp $(basename $f)/$(basename $f).dmg artifacts/macos-latest.dmg
             else
               if [[ $f == *ubuntu-22.04 ]]
@@ -255,9 +319,13 @@ jobs:
         shell: bash
         run: |
           mkdir artifacts/
-          files=$(find . \( -name "*latest" -o -name "*22.04" \))
+          files=$(find . \( -name "*latest" -o -name "*22.04" -o -name "*apk-android" \))
           for f in $files; do
-            if [[ $f == *macos-latest ]]
+            if [[ $f == *apk-android ]]
+            then
+              echo "Copying $f"
+              cp $(basename $f)/*.apk artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_android.apk
+            elif [[ $f == *macos-latest ]]
             then
               cp $(basename $f)/$(basename $f).dmg artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_macos.dmg
             else

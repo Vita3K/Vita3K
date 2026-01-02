@@ -273,7 +273,7 @@
 		<green>緑</green>
 		<blue>青</blue>
 		<not_connected>利用可能なコントローラーが接続されていません。
-SDL2に対応したコントローラーを接続してください。</not_connected>
+SDL3に対応したコントローラーを接続してください。</not_connected>
 		<reset_controller_binding>ボタン割り当てをリセット</reset_controller_binding>
 	</controllers>
 

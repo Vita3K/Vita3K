@@ -57,7 +57,8 @@ static std::map<std::string, std::map<AvatarSize, AvatarInfo>> users_avatar_info
 static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string &avatar_path) {
     const auto avatar_path_path = avatar_path == "default" ? emuenv.static_assets_path / "data/image/icon.png" : fs_utils::utf8_to_path(avatar_path);
 
-    if (!fs::exists(avatar_path_path)) {
+    std::vector<uint8_t> avatar_data{};
+    if (!fs_utils::read_data(avatar_path_path, avatar_data)) {
         LOG_WARN("Avatar image doesn't exist: {}.", avatar_path_path);
         return false;
     }
@@ -65,19 +66,15 @@ static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &u
     int32_t width = 0;
     int32_t height = 0;
 
-    FILE *f = FOPEN(avatar_path_path.c_str(), "rb");
-
-    stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
+    stbi_uc *data = stbi_load_from_memory(avatar_data.data(), avatar_data.size(), &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!data) {
         LOG_ERROR("Invalid or corrupted image: {}.", avatar_path_path);
         return false;
     }
 
-    gui.users_avatar[user_id] = {};
-    gui.users_avatar[user_id].init(gui.imgui_state.get(), data, width, height);
+    gui.users_avatar[user_id] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
-    fclose(f);
 
     // Calculate avatar size and position based of aspect ratio
     // Resize for all size of avatar
@@ -288,6 +285,11 @@ static void create_temp_user(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 static void clear_user_temp(GuiState &gui) {
+#ifdef __ANDROID__
+    // Remove only avatar if is from cache
+    if (temp.avatar.find("cache/temp_avatar") != std::string::npos)
+        fs::remove(fs_utils::utf8_to_path(temp.avatar));
+#endif
     temp = {};
     gui.users_avatar["temp"] = {};
     gui.users_avatar.erase("temp");
@@ -295,11 +297,37 @@ static void clear_user_temp(GuiState &gui) {
 }
 
 static void create_and_save_user(GuiState &gui, EmuEnvState &emuenv) {
-    gui.users_avatar[user_id_selected] = std::move(gui.users_avatar["temp"]);
+    // Backup current avatar string
+    const auto old_avatar = menu == EDIT ? gui.users[user_id_selected].avatar : "";
+
+    // Assign temp user data
     gui.users[user_id_selected] = temp;
+
+#ifdef __ANDROID__
+    // Backup current avatar path only if user already exists
+    const fs::path old_avatar_path = !old_avatar.empty() && (old_avatar != "default") ? fs_utils::utf8_to_path(old_avatar) : fs::path{};
+
+    // Determine if avatar changed
+    const auto avatar_changed = old_avatar != temp.avatar;
+
+    // Copy new avatar if needed
+    if (avatar_changed && (temp.avatar != "default")) {
+        const auto dst_avatar_path = emuenv.pref_path / "ux0/user" / user_id_selected / "avatar" / fs::path(temp.avatar).filename();
+        fs::create_directories(dst_avatar_path.parent_path());
+        fs::copy_file(fs_utils::utf8_to_path(temp.avatar), dst_avatar_path, fs::copy_options::overwrite_existing);
+        gui.users[user_id_selected].avatar = fs_utils::path_to_utf8(dst_avatar_path);
+    }
+
+    // Remove old avatar only in EDIT and only if it really changed
+    if (avatar_changed && !old_avatar_path.empty())
+        fs::remove(old_avatar_path);
+#endif
+    // Move avatar texture + infos
+    gui.users_avatar[user_id_selected] = std::move(gui.users_avatar["temp"]);
     users_avatar_infos[user_id_selected] = users_avatar_infos["temp"];
     current_user_id_selected = string_utils::stoi_def(user_id_selected, 0, "selected user id");
     save_user(gui, emuenv, user_id_selected);
+
     if (menu == CREATE)
         menu = CONFIRM;
     else {
@@ -598,7 +626,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto trigger_scroll_to_item = [&](bool should_scroll) {
         if (should_scroll) {
-            const auto user_item_rect_half = (ImGui::GetItemRectMin().x + ImGui::GetItemRectMax().x) / 2.f;
+            const auto user_item_rect_half = ((ImGui::GetItemRectMin().x + ImGui::GetItemRectMax().x) / 2.f) - WINDOW_POS.x;
             if (std::abs(user_item_rect_half - HALF_SIZE_USER) > 1.0f) {
                 target_scroll_x = ImGui::GetScrollX() + (user_item_rect_half - HALF_SIZE_USER);
                 is_scroll_animating = true;
@@ -677,11 +705,13 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             if ((menu_selected == SELECT) && is_current_user_id_selected)
                 draw_frame(USER_POS, SELECTABLE_USER_SIZE);
             ImGui::PopStyleColor();
+#ifndef __ANDROID__
             if (ImGui::BeginPopupContextItem("##user_context_menu")) {
                 if (ImGui::MenuItem(lang["open_user_folder"].c_str()))
                     open_path((user_path / user.first).string());
                 ImGui::EndPopup();
             }
+#endif
             ImGui::SetCursorPos(ImVec2(USER_POS.x + USER_NAME_PADDING, USER_POS.y + MED_AVATAR_SIZE.y + (5.f * SCALE.y)));
             ImGui::PushTextWrapPos(USER_POS.x + MED_AVATAR_SIZE.x - USER_NAME_PADDING);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", user.second.name.c_str());
@@ -727,13 +757,18 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         const ImVec2 CHANGE_AVATAR_BTN_SIZE(LARGE_AVATAR_SIZE.x, 36.f * SCALE.y);
         ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + (LARGE_AVATAR_SIZE.x / 2.f) - (CHANGE_AVATAR_BTN_SIZE.x / 2.f), AVATAR_POS.y + LARGE_AVATAR_SIZE.y + (5.f * SCALE.y)));
         if (ImGui::Button(lang["choose_avatar"].c_str(), CHANGE_AVATAR_BTN_SIZE)) {
-            std::filesystem::path avatar_path = "";
-            host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(avatar_path, { { "Image file", { "bmp", "gif", "jpg", "png", "tif" } } });
-
-            if ((result == host::dialog::filesystem::Result::SUCCESS) && init_avatar(gui, emuenv, "temp", avatar_path.string()))
-                temp.avatar = avatar_path.string();
-
-            if (result == host::dialog::filesystem::Result::ERROR)
+            fs::path avatar_path{};
+            host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(avatar_path, { { "Image file", { "bmp", "gif", "jpg", "jpeg", "png", "tif" } } });
+            if (result == host::dialog::filesystem::Result::SUCCESS) {
+#ifdef __ANDROID__
+                // On Android, copy the picked file to a temporary path (content URI)
+                const auto temp_avatar_path = emuenv.cache_path / "temp_avatar" / avatar_path.filename();
+                if (copy_file_from_host(avatar_path, temp_avatar_path))
+                    avatar_path = temp_avatar_path;
+#endif
+                if (fs::exists(avatar_path) && init_avatar(gui, emuenv, "temp", avatar_path.string()))
+                    temp.avatar = avatar_path.string();
+            } else if (result == host::dialog::filesystem::Result::ERROR)
                 LOG_CRITICAL("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
         }
         ImGui::SetWindowFontScale(0.8f);
@@ -815,6 +850,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Separator();
                 ImGui::NextColumn();
                 ImGui::PopStyleVar();
+                ImGui::ScrollWhenDragging();
             }
             ImGui::Columns(1);
             ImGui::EndChild();

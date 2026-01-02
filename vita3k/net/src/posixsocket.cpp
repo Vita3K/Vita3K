@@ -29,7 +29,7 @@
         return SCE_NET_ERROR_##errname;
 #endif
 
-static int translate_return_value(int retval) {
+int PosixSocket::translate_return_value(int retval) {
     if (retval < 0) {
 #ifdef _WIN32
         switch (WSAGetLastError()) {
@@ -123,29 +123,51 @@ static int translate_return_value(int retval) {
 static void convertSceSockaddrToPosix(const SceNetSockaddr *src, sockaddr *dst) {
     if (src == nullptr || dst == nullptr)
         return;
-    memset(dst, 0, sizeof(sockaddr));
-    const SceNetSockaddrIn *src_in = (const SceNetSockaddrIn *)src;
-    sockaddr_in *dst_in = (sockaddr_in *)dst;
+    const SceNetSockaddrIn *src_in = reinterpret_cast<const SceNetSockaddrIn *>(src);
+    sockaddr_in *dst_in = reinterpret_cast<sockaddr_in *>(dst);
+    memset(dst_in, 0, sizeof(*dst_in));
     dst_in->sin_family = src_in->sin_family;
     dst_in->sin_port = src_in->sin_port;
-    memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
+    memcpy(&dst_in->sin_addr, &src_in->sin_addr, sizeof(dst_in->sin_addr));
 }
 
 static void convertPosixSockaddrToSce(sockaddr *src, SceNetSockaddr *dst) {
     if (src == nullptr || dst == nullptr)
         return;
-    memset(dst, 0, sizeof(SceNetSockaddr));
-    SceNetSockaddrIn *dst_in = (SceNetSockaddrIn *)dst;
-    sockaddr_in *src_in = (sockaddr_in *)src;
+    SceNetSockaddrIn *dst_in = reinterpret_cast<SceNetSockaddrIn *>(dst);
+    memset(dst_in, 0, sizeof(*dst_in));
+    dst_in->sin_len = sizeof(*dst_in);
+    sockaddr_in *src_in = reinterpret_cast<sockaddr_in *>(src);
     dst_in->sin_family = static_cast<unsigned char>(src_in->sin_family);
     dst_in->sin_port = src_in->sin_port;
-    memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
+    memcpy(&dst_in->sin_addr, &src_in->sin_addr, sizeof(dst_in->sin_addr));
 }
 
-int PosixSocket::connect(const SceNetSockaddr *addr, unsigned int namelen) {
-    sockaddr addr2;
+static bool abort_pending(bool &is_aborded) {
+    if (is_aborded) {
+        is_aborded = false; // Reset the flag for the next operation
+        return true;
+    }
+
+    return false;
+}
+
+static bool should_abort(int abort_flags, int flags) {
+    return (abort_flags & flags) != 0;
+}
+
+int PosixSocket::connect(const SceNetSockaddr *addr, unsigned int addrlen) {
+    if (should_abort(abort_flags, SCE_NET_SOCKET_ABORT_FLAG_SND_PRESERVATION))
+        return SCE_NET_ERROR_EINTR;
+
+    sockaddr addr2{};
     convertSceSockaddrToPosix(addr, &addr2);
-    return translate_return_value(::connect(sock, &addr2, sizeof(sockaddr_in)));
+    const auto res = ::connect(sock, &addr2, sizeof(sockaddr_in));
+
+    if (abort_pending(is_aborted))
+        return SCE_NET_ERROR_EINTR;
+
+    return translate_return_value(res);
 }
 
 int PosixSocket::bind(const SceNetSockaddr *addr, unsigned int addrlen) {
@@ -158,18 +180,51 @@ int PosixSocket::listen(int backlog) {
     return translate_return_value(::listen(sock, backlog));
 }
 
-int PosixSocket::get_socket_address(SceNetSockaddr *name, unsigned int *namelen) {
-    sockaddr addr;
-    convertSceSockaddrToPosix(name, &addr);
-    if (name != nullptr) {
-        *namelen = sizeof(sockaddr_in);
-    }
-    int res = getsockname(sock, &addr, (socklen_t *)namelen);
+int PosixSocket::get_peer_address(SceNetSockaddr *addr, unsigned int *addrlen) {
+    if (!addr || !addrlen)
+        return SCE_NET_EINVAL;
+
+    sockaddr addr2{};
+    const auto res = ::getpeername(sock, &addr2, (socklen_t *)addrlen);
     if (res >= 0) {
-        convertPosixSockaddrToSce(&addr, name);
-        *namelen = sizeof(SceNetSockaddrIn);
+        convertPosixSockaddrToSce(&addr2, addr);
+        *addrlen = sizeof(SceNetSockaddrIn);
     }
-    return res;
+
+    return translate_return_value(res);
+}
+
+int PosixSocket::get_socket_address(SceNetSockaddr *addr, unsigned int *addrlen) {
+    if (!addr || !addrlen)
+        return SCE_NET_EINVAL;
+
+    sockaddr addr2{};
+    const auto res = ::getsockname(sock, &addr2, (socklen_t *)addrlen);
+    if (res >= 0) {
+        convertPosixSockaddrToSce(&addr2, addr);
+        *addrlen = sizeof(SceNetSockaddrIn);
+    }
+    return translate_return_value(res);
+}
+
+int PosixSocket::abort(int flags) {
+    abort_flags |= flags;
+    is_aborted = true;
+
+#ifdef _WIN32
+    auto res = CancelIoEx((HANDLE)sock, nullptr);
+    if (res == 0) {
+        DWORD err = WSAGetLastError();
+        if (err == ERROR_NOT_FOUND)
+            return SCE_NET_ERROR_ENOTBLK;
+        else
+            return SCE_NET_ERROR_EINTERNAL;
+    }
+
+    return 0;
+#else
+    return translate_return_value(shutdown(sock, SHUT_RDWR));
+#endif
 }
 
 int PosixSocket::close() {
@@ -181,9 +236,21 @@ int PosixSocket::close() {
     return translate_return_value(out);
 }
 
-SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen) {
-    sockaddr addr2;
-    abs_socket new_socket = ::accept(sock, &addr2, (socklen_t *)addrlen);
+int PosixSocket::shutdown_socket(int how) {
+    return translate_return_value(shutdown(sock, how));
+}
+
+SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen, int &err) {
+    if (should_abort(abort_flags, SCE_NET_SOCKET_ABORT_FLAG_RCV_PRESERVATION)) {
+        err = SCE_NET_ERROR_EINTR;
+        return nullptr;
+    }
+    sockaddr addr2{};
+    const abs_socket new_socket = ::accept(sock, &addr2, (socklen_t *)addrlen);
+    if (abort_pending(is_aborted)) {
+        err = SCE_NET_ERROR_EINTR;
+        return nullptr;
+    }
 #ifdef _WIN32
     if (new_socket != INVALID_SOCKET) {
 #else
@@ -191,8 +258,9 @@ SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen) {
 #endif
         convertPosixSockaddrToSce(&addr2, addr);
         *addrlen = sizeof(SceNetSockaddrIn);
-        return std::make_shared<PosixSocket>(new_socket);
+        return std::make_shared<PosixSocket>(new_socket, sce_type);
     }
+    err = translate_return_value(new_socket);
     return nullptr;
 }
 
@@ -230,21 +298,46 @@ int PosixSocket::set_socket_options(int level, int optname, const void *optval, 
             CASE_SETSOCKOPT(SO_RCVBUF);
             CASE_SETSOCKOPT(SO_SNDLOWAT);
             CASE_SETSOCKOPT(SO_RCVLOWAT);
-            CASE_SETSOCKOPT(SO_SNDTIMEO);
-            CASE_SETSOCKOPT(SO_RCVTIMEO);
             CASE_SETSOCKOPT(SO_ERROR);
             CASE_SETSOCKOPT(SO_TYPE);
             CASE_SETSOCKOPT_VALUE(SCE_NET_SO_REUSEPORT, &sockopt_so_reuseport);
-            CASE_SETSOCKOPT_VALUE(SCE_NET_SO_ONESBCAST, &sockopt_so_onesbcast);
             CASE_SETSOCKOPT_VALUE(SCE_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
             CASE_SETSOCKOPT_VALUE(SCE_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
             CASE_SETSOCKOPT_VALUE(SCE_NET_SO_TPPOLICY, &sockopt_so_tppolicy);
+        case SCE_NET_SO_ONESBCAST:
+            if (optlen != sizeof(sockopt_so_onesbcast))
+                return SCE_NET_ERROR_EFAULT;
+            memcpy(&sockopt_so_onesbcast, optval, optlen);
+
+            // Sets the option to allow sending broadcast packets on a socket
+            return translate_return_value(setsockopt(sock, level, SO_BROADCAST, (const char *)optval, optlen));
+        case SCE_NET_SO_SNDTIMEO:
+        case SCE_NET_SO_RCVTIMEO: {
+            if (optlen != sizeof(int))
+                return SCE_NET_ERROR_EFAULT;
+
+            std::vector<char> val;
+            const auto optname_nat = (optname == SCE_NET_SO_SNDTIMEO) ? SO_SNDTIMEO : SO_RCVTIMEO;
+            int timeout_us = *(const int *)optval;
+#ifdef _WIN32
+            DWORD timeout = timeout_us / 1000;
+            val.insert(val.end(), (char *)&timeout, (char *)&timeout + sizeof(timeout));
+            optlen = sizeof(timeout);
+#else
+            timeval timeout{
+                .tv_sec = timeout_us / 1000000,
+                .tv_usec = timeout_us % 1000000
+            };
+            val.insert(val.end(), (char *)&timeout, (char *)&timeout + sizeof(timeout));
+            optlen = sizeof(timeout);
+#endif
+            return translate_return_value(setsockopt(sock, level, optname_nat, val.data(), optlen));
+        }
         case SCE_NET_SO_NAME:
             return SCE_NET_ERROR_EINVAL; // don't support set for name
         case SCE_NET_SO_NBIO: {
-            if (optlen != sizeof(sockopt_so_nbio)) {
+            if (optlen != sizeof(sockopt_so_nbio))
                 return SCE_NET_ERROR_EFAULT;
-            }
             memcpy(&sockopt_so_nbio, optval, optlen);
 #ifdef _WIN32
             static_assert(sizeof(u_long) == sizeof(sockopt_so_nbio), "type used for ioctlsocket value does not have the expected size");
@@ -343,25 +436,90 @@ int PosixSocket::get_socket_options(int level, int optname, void *optval, unsign
     return SCE_NET_ERROR_EINVAL;
 }
 
-int PosixSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
-    if (from != nullptr) {
-        sockaddr addr;
-        int res = recvfrom(sock, (char *)buf, len, flags, &addr, (socklen_t *)fromlen);
-        convertPosixSockaddrToSce(&addr, from);
-        *fromlen = sizeof(SceNetSockaddrIn);
+static int convertSceFlagsToPosix(int sock_type, int sce_flags) {
+    int posix_flags = 0;
 
-        return translate_return_value(res);
-    } else {
-        return translate_return_value(recv(sock, (char *)buf, len, flags));
+    if (sce_flags & SCE_NET_MSG_PEEK)
+        posix_flags |= MSG_PEEK;
+#ifndef _WIN32
+    if (sce_flags & SCE_NET_MSG_DONTWAIT)
+        posix_flags |= MSG_DONTWAIT;
+#endif
+    // MSG_WAITALL is only valid for stream sockets
+    if ((sce_flags & SCE_NET_MSG_WAITALL) && ((sock_type == SCE_NET_SOCK_STREAM) || (sock_type == SCE_NET_SOCK_STREAM_P2P)))
+        posix_flags |= MSG_WAITALL;
+
+    return posix_flags;
+}
+
+// On Windows, MSG_DONTWAIT is not handled natively by recv/send.
+// This function uses select() with zero timeout to simulate non-blocking behavior.
+static int socket_is_ready(int sock, bool is_read = true) {
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(sock, &fds);
+    timeval timeout{ 0, 0 };
+    int res = select(sock + 1, is_read ? &fds : nullptr, is_read ? nullptr : &fds, nullptr, &timeout);
+    if (res == 0)
+        return SCE_NET_ERROR_EWOULDBLOCK;
+    else if (res < 0)
+        return PosixSocket::translate_return_value(res);
+
+    return res;
+}
+
+int PosixSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
+    if (should_abort(abort_flags, SCE_NET_SOCKET_ABORT_FLAG_RCV_PRESERVATION))
+        return SCE_NET_ERROR_EINTR;
+
+    int res = 0;
+#ifdef _WIN32
+    if (flags & SCE_NET_MSG_DONTWAIT) {
+        res = socket_is_ready(sock);
+        if (res <= 0)
+            return res;
     }
+#endif
+    const auto posix_flags = convertSceFlagsToPosix(sce_type, flags);
+    if (from == nullptr) {
+        res = recv(sock, (char *)buf, len, posix_flags);
+    } else {
+        sockaddr addr{};
+        socklen_t addrlen = sizeof(addr);
+        res = recvfrom(sock, (char *)buf, len, posix_flags, &addr, (fromlen && *fromlen <= sizeof(addr) ? (socklen_t *)fromlen : &addrlen));
+        if (res > 0)
+            convertPosixSockaddrToSce(&addr, from);
+    }
+
+    if (abort_pending(is_aborted))
+        return SCE_NET_ERROR_EINTR;
+
+    return translate_return_value(res);
 }
 
 int PosixSocket::send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {
-    if (to != nullptr) {
-        sockaddr addr;
-        convertSceSockaddrToPosix(to, &addr);
-        return translate_return_value(sendto(sock, (const char *)msg, len, flags, &addr, sizeof(sockaddr_in)));
-    } else {
-        return translate_return_value(send(sock, (const char *)msg, len, flags));
+    if (should_abort(abort_flags, SCE_NET_SOCKET_ABORT_FLAG_SND_PRESERVATION))
+        return SCE_NET_ERROR_EINTR;
+
+    int res = 0;
+#ifdef _WIN32
+    if (flags & SCE_NET_MSG_DONTWAIT) {
+        res = socket_is_ready(sock, false);
+        if (res <= 0)
+            return res;
     }
+#endif
+    const auto posix_flags = convertSceFlagsToPosix(sce_type, flags);
+    if (to == nullptr) {
+        res = send(sock, (const char *)msg, len, posix_flags);
+    } else {
+        sockaddr addr{};
+        convertSceSockaddrToPosix(to, &addr);
+        res = sendto(sock, (const char *)msg, len, posix_flags, &addr, tolen);
+    }
+
+    if (abort_pending(is_aborted))
+        return SCE_NET_ERROR_EINTR;
+
+    return translate_return_value(res);
 }

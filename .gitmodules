@@ -40,10 +40,7 @@
 	url = https://github.com/zeux/pugixml
 [submodule "external/sdl"]
 	path = external/sdl
-	url = https://github.com/Vita3K/sdl
-[submodule "external/sdl2-cmake-scripts"]
-	path = external/sdl2-cmake-scripts
-	url = https://github.com/tcbrindle/sdl2-cmake-scripts
+	url = https://github.com/libsdl-org/SDL.git
 [submodule "external/spdlog"]
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog
@@ -54,9 +51,6 @@
 [submodule "external/stb"]
 	path = external/stb
 	url = https://github.com/nothings/stb
-[submodule "external/unicorn"]
-	path = external/unicorn
-	url = https://github.com/Vita3K/unicorn.git
 [submodule "external/vita-toolchain"]
 	path = external/vita-toolchain
 	url = https://github.com/vitasdk/vita-toolchain.git
@@ -93,3 +87,6 @@
 [submodule "external/concurrentqueue"]
 	path = external/concurrentqueue
 	url = https://github.com/cameron314/concurrentqueue.git
+[submodule "external/libadrenotools"]
+	path = external/libadrenotools
+	url = https://github.com/bylaws/libadrenotools

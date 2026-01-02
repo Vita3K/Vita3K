@@ -2,7 +2,7 @@ set(VITA3K_ORG_NAME "Vita3K")
 set(VITA3K_APP_NAME "Vita3K")
 set(VITA3K_APP_VER_HI 0)
 set(VITA3K_APP_VER_MID 2)
-set(VITA3K_APP_VER_LO 0)
+set(VITA3K_APP_VER_LO 1)
 set(VITA3K_APP_VERSION "v${VITA3K_APP_VER_HI}.${VITA3K_APP_VER_MID}.${VITA3K_APP_VER_LO}")
 
 execute_process(
@@ -130,14 +130,48 @@ add_subdirectory(gdbstub)
 add_subdirectory(packages)
 add_subdirectory(vkutil)
 
-add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
+if(ANDROID)
+	add_library(vita3k SHARED main.cpp interface.cpp performance.cpp)
+	target_link_libraries(vita3k PRIVATE SDL3::SDL3 android)
+
+	if(CMAKE_BUILD_TYPE STREQUAL "Release")
+		# we need to exclude all symbols except SDL
+		set(LIBS_TO_EXCLUDE
+			"libboost_atomic.a"
+			"libboost_container.a"
+			"libboost_date_time.a"
+			"libboost_exception.a"
+			"libboost_filesystem.a"
+			"libboost_program_options.a"
+			"libboost_regex.a"
+			"libboost_system.a"
+			"libssl.a"
+			"libfmt.a"
+			"libcrypto.a"
+			"libavcodec.a"
+			"libavdevice.a"
+			"libavfilter.a"
+			"libavformat.a"
+			"libavutil.a"
+			"libswresample.a"
+			"libswscale.a"
+			)
+		set(LIBS_TO_EXCLUDE_FLAG "")
+		foreach(lib IN LISTS LIBS_TO_EXCLUDE)
+			string(APPEND LIBS_TO_EXCLUDE_FLAG " -Wl,--exclude-libs,${lib}")
+		endforeach()
+		set_target_properties(vita3k PROPERTIES LINK_FLAGS "${LIBS_TO_EXCLUDE_FLAG}")
+	endif()
+else()
+	add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
+endif()
 
 if(WIN32)
 	# This file is a bit special, it is run before anything else and must be added here
 	target_sources(vita3k PRIVATE util/src/vc_runtime_checker.cpp)
 endif()
 
-target_link_libraries(vita3k PRIVATE app config cppcommon ctrl display gdbstub gui gxm io miniz modules packages patch renderer shader touch util)
+target_link_libraries(vita3k PRIVATE app config cppcommon ctrl display gdbstub gui gxm host_dialog io miniz modules motion packages patch renderer shader touch util)
 if(USE_DISCORD_RICH_PRESENCE)
 	target_link_libraries(vita3k PRIVATE discord-rpc)
 endif()
@@ -175,14 +209,14 @@ if(APPLE)
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/../Resources/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../lang" "$<TARGET_FILE_DIR:vita3k>/../Resources/lang"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:vita3k>/../Resources/shaders-builtin"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/external/sdl/macos/SDL2.framework" "$<TARGET_FILE_DIR:vita3k>/../Frameworks/SDL2.framework")
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:vita3k>/../Resources/shaders-builtin")
 	if(USE_VITA3K_UPDATE)
 		add_custom_command(
 		TARGET vita3k
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/script/update-macos.sh" "$<TARGET_FILE_DIR:vita3k>/../Resources/update-vita3k.sh")
 	endif()
+
 	if(USE_DISCORD_RICH_PRESENCE)
 		add_custom_command(
 		TARGET vita3k
@@ -257,8 +291,7 @@ elseif(WIN32)
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../lang" "$<TARGET_FILE_DIR:vita3k>/lang"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/external/sdl/windows/lib/x64/SDL2.dll" "$<TARGET_FILE_DIR:vita3k>")
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin")
 	if(USE_VITA3K_UPDATE)
 		add_custom_command(
 		TARGET vita3k
@@ -278,7 +311,17 @@ elseif(WIN32)
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libssl-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libcrypto-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>")
 	endif()
+elseif(ANDROID)
+	add_custom_command(
+		TARGET vita3k
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "${CMAKE_CURRENT_SOURCE_DIR}/../android/assets/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../lang" "${CMAKE_CURRENT_SOURCE_DIR}/../android/assets/lang"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${CMAKE_CURRENT_SOURCE_DIR}/../android/assets/shaders-builtin"
+	)
 endif()
 
-# Enable Tracy profiling on the main compilation target
-target_link_libraries(vita3k PRIVATE tracy)
+if(TRACY_ENABLE_ON_CORE_COMPONENTS)
+	# Enable Tracy profiling on the main compilation target
+	target_link_libraries(vita3k PRIVATE tracy)
+endif()

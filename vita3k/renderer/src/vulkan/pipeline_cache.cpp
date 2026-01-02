@@ -29,7 +29,7 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <SDL.h>
+#include <SDL3/SDL_cpuinfo.h>
 
 // don't use the dispatch version, because we always hash a small amount
 // with a known size
@@ -67,7 +67,7 @@ PipelineCache::PipelineCache(VKState &state)
     , pipeline_compile_queue_token(pipeline_compile_queue) {
 }
 
-void PipelineCache::init() {
+void PipelineCache::init(bool support_rasterized_order_access) {
     vk::PipelineCacheCreateInfo pipeline_info{};
     pipeline_cache = state.device.createPipelineCache(pipeline_info);
 
@@ -104,7 +104,7 @@ void PipelineCache::init() {
         };
 
         vk::DescriptorSetLayoutCreateInfo descriptor_info{
-            .bindingCount = state.features.support_memory_mapping ? 2U : 4U,
+            .bindingCount = state.features.enable_memory_mapping ? 2U : 4U,
             .pBindings = layout_bindings.data()
         };
         uniforms_layout = state.device.createDescriptorSetLayout(descriptor_info);
@@ -207,15 +207,32 @@ void PipelineCache::init() {
                 unsupported_rgb_vertex_attribute_formats.emplace(fmt);
             }
         }
+
+        // same for scaled formats
+        const vk::FormatProperties scaled_property = state.physical_device.getFormatProperties(vk::Format::eR8G8B8A8Uscaled);
+        support_scaled_vertex_attribute = static_cast<bool>(scaled_property.bufferFeatures & vk::FormatFeatureFlagBits::eVertexBuffer);
+        state.features.support_scaled_attribute_formats = support_scaled_vertex_attribute;
+
+        // handle interactions between these 2 properties, the scaled support will be applied before the 3-component support
+        if (!support_scaled_vertex_attribute) {
+            vk::Format scaled_fmt[] = { vk::Format::eR16G16B16Uscaled, vk::Format::eR16G16B16Sscaled, vk::Format::eR8G8B8Uscaled, vk::Format::eR8G8B8Sscaled };
+            for (auto fmt : scaled_fmt)
+                unsupported_rgb_vertex_attribute_formats.erase(fmt);
+        }
+
         state.features.support_rgb_attributes = unsupported_rgb_vertex_attribute_formats.empty();
     }
 
-    const int nb_logical_threads = SDL_GetCPUCount();
+    support_coherent_framebuffer_fetch = support_rasterized_order_access;
+
+    const int nb_logical_threads = SDL_GetNumLogicalCPUCores();
     // took this from RPCS3 (slightly modified)
     if (nb_logical_threads > 12)
         nb_worker_threads = 6;
     else if (nb_logical_threads > 8)
         nb_worker_threads = 4;
+    else if (nb_logical_threads >= 8)
+        nb_worker_threads = 3;
     else if (nb_logical_threads >= 6)
         nb_worker_threads = 2;
     else
@@ -458,8 +475,8 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
     return shader_stage_info;
 }
 
-vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool no_color) {
-    auto &render_passes_map = no_color ? shader_interlock_pass : render_passes[force_load][force_store];
+vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool is_color_transient, bool no_color) {
+    auto &render_passes_map = no_color ? shader_interlock_pass : render_passes[is_color_transient][force_load][force_store];
 
     auto it = render_passes_map.find(format);
 
@@ -479,8 +496,12 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
     vk::SubpassDescription subpass{
         .pipelineBindPoint = vk::PipelineBindPoint::eGraphics
     };
+
     subpass.setPDepthStencilAttachment(&ds_ref);
     if (!no_color) {
+        if (support_coherent_framebuffer_fetch)
+            subpass.flags = vk::SubpassDescriptionFlagBits::eRasterizationOrderAttachmentColorAccessEXT;
+
         subpass.setColorAttachments(color_ref);
         subpass.setInputAttachments(color_ref);
     }
@@ -488,9 +509,9 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
     vk::AttachmentDescription color_attachment{
         .format = format,
         .samples = vk::SampleCountFlagBits::e1,
-        .loadOp = vk::AttachmentLoadOp::eLoad,
-        .storeOp = vk::AttachmentStoreOp::eStore,
-        .initialLayout = vk::ImageLayout::eGeneral,
+        .loadOp = is_color_transient ? vk::AttachmentLoadOp::eDontCare : vk::AttachmentLoadOp::eLoad,
+        .storeOp = is_color_transient ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore,
+        .initialLayout = is_color_transient ? vk::ImageLayout::eUndefined : vk::ImageLayout::eGeneral,
         .finalLayout = vk::ImageLayout::eGeneral
     };
 
@@ -649,6 +670,10 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(con
                 format = translate_attribute_format(attribute_format, component_count, true, false);
             }
         } else {
+            // some Android GPUs do not support scaled attributes, do the conversion in the GPU instead
+            if (!support_scaled_vertex_attribute)
+                info.is_integer = true;
+
             // some AMD GPUs do not support rgb vertex attributes, so just put it as rgba
             // the 4th component will contain garbage but this is not an issue because the input
             // in the shader will be vec3 (or ivec3) and the 4th component will be discarded
@@ -759,7 +784,8 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         .cullMode = translate_cull_mode(record.cull_mode),
         // front face is always counter clockwise
         .frontFace = vk::FrontFace::eCounterClockwise,
-        .depthBiasEnable = VK_TRUE
+        .depthBiasEnable = VK_TRUE,
+        .lineWidth = 1.0f
     };
     const vk::PipelineMultisampleStateCreateInfo multisampling{
         .rasterizationSamples = vk::SampleCountFlagBits::e1
@@ -777,6 +803,9 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     };
 
     vk::PipelineColorBlendStateCreateInfo color_blending{};
+    if (support_coherent_framebuffer_fetch && gxm_fragment_shader->is_frag_color_used())
+        color_blending.flags = vk::PipelineColorBlendStateCreateFlagBits::eRasterizationOrderAttachmentAccessEXT;
+
     const bool frag_has_no_output = static_cast<bool>(gxm_fragment_shader->program_flags & SCE_GXM_PROGRAM_FLAG_OUTPUT_UNDEFINED);
     if (is_fragment_disabled || frag_has_no_output || use_shader_interlock) {
         // The write mask must be empty as the lack of a fragment shader results in undefined values
@@ -794,17 +823,19 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
 
     // all of these can be changed at any time using the vita graphics api (like opengl)
     // Because each one can take a lot of different values, it's better to set them as dynamic
-    static vk::DynamicState dynamic_states[] = {
+    const std::array dynamic_states = {
         vk::DynamicState::eViewport,
         vk::DynamicState::eScissor,
-        vk::DynamicState::eLineWidth,
         vk::DynamicState::eStencilCompareMask,
         vk::DynamicState::eStencilReference,
         vk::DynamicState::eStencilWriteMask,
-        vk::DynamicState::eDepthBias
+        vk::DynamicState::eDepthBias,
+        vk::DynamicState::eLineWidth,
     };
     vk::PipelineDynamicStateCreateInfo dynamic_info{};
     dynamic_info.setDynamicStates(dynamic_states);
+    if (!state.physical_device_features.wideLines)
+        dynamic_info.dynamicStateCount--;
 
     // we still need to specify the viewport and scissor count even though they are dynamic
     vk::PipelineViewportStateCreateInfo viewport{

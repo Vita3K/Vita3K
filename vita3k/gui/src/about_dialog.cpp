@@ -56,14 +56,18 @@ static constexpr std::array supporters_list = {
 
 void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 WINDOW_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
     const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
-    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
+    static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
 
     auto &lang = gui.lang.about;
     auto &common = emuenv.common_dialog.lang.common;
 
-    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
+    ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::Begin("##about", &gui.help_menu.about_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(RES_SCALE.x);
     TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
@@ -123,7 +127,7 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto STAFF_LIST_SIZE = ImVec2(630.f * SCALE.x, 160.f * SCALE.y);
     static constexpr int STAFF_COLUMN_COUNT(3);
     const float STAFF_COLUMN_SIZE(STAFF_LIST_SIZE.x / STAFF_COLUMN_COUNT);
-    const float STAFF_COLUMN_POS(ImGui::GetWindowWidth() / 2.f - (STAFF_LIST_SIZE.x / 2.f));
+    const float STAFF_COLUMN_POS((display_size.x / 2.f) - (STAFF_LIST_SIZE.x / 2.f));
 
     ImGui::SetCursorPosX(STAFF_COLUMN_POS);
     if (ImGui::BeginTable("##vita3k_staff_table", STAFF_COLUMN_COUNT, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersV | ImGuiTableFlags_NoSavedSettings, STAFF_LIST_SIZE)) {
@@ -154,16 +158,20 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
         // Supporters list
         for (const auto supporter : supporters_list)
             ImGui::Text("%s", supporter);
+
+        ImGui::ScrollWhenDragging();
         ImGui::EndTable();
     }
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+    ImGui::SetCursorPosX((display_size.x / 2.f) - (BUTTON_SIZE.x / 2.f));
     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
         gui.help_menu.about_dialog = false;
 
+    ImGui::ScrollWhenDragging();
     ImGui::End();
+    ImGui::PopStyleVar(2);
 }
 
 } // namespace gui

@@ -47,7 +47,16 @@ add_library(
 
 target_include_directories(renderer PUBLIC include)
 target_link_libraries(renderer PUBLIC display mem stb shader glutil threads config util vkutil)
-target_link_libraries(renderer PRIVATE ddspp sdl2 stb ffmpeg xxHash::xxhash concurrentqueue)
+target_link_libraries(renderer PRIVATE ddspp SDL3::SDL3 stb ffmpeg xxHash::xxhash concurrentqueue)
+
+if(ANDROID)
+	target_link_libraries(renderer PRIVATE android adrenotools)
+endif()
+
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+	# silence all vma warnings
+	target_compile_options(renderer PRIVATE "-Wno-nullability-completeness")
+endif()
 
 # Marshmallow Tracy linking
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)

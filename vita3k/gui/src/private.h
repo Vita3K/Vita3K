@@ -58,6 +58,7 @@ void draw_event_flags_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_disassembly_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv);

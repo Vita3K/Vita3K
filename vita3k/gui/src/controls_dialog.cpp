@@ -109,16 +109,18 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
 
+    auto &lang = gui.lang.controls;
+    auto &common = emuenv.common_dialog.lang.common;
+
+#ifndef __ANDROID__
     float height = emuenv.logical_viewport_size.y / emuenv.manual_dpi_scale;
     if (ImGui::BeginMainMenuBar()) {
         height = height - ImGui::GetWindowHeight() * 2;
         ImGui::EndMainMenuBar();
     }
 
-    auto &lang = gui.lang.controls;
-    auto &common = emuenv.common_dialog.lang.common;
-
     ImGui::SetNextWindowSize(ImVec2(0, height));
+#endif
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("##controls", &gui.controls_menu.controls_dialog, ImGuiWindowFlags_NoTitleBar);
     ImGui::SetWindowFontScale(RES_SCALE.x);
@@ -173,6 +175,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::EndTable();
     }
 
+#ifndef __ANDROID__
     ImGui::Separator();
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["gui"].c_str());
@@ -195,6 +198,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_take_screenshot, lang["take_screenshot"].c_str());
         ImGui::EndTable();
     }
+#endif
 
     if (need_open_error_duplicate_key_popup) {
         ImGui::OpenPopup(common["error"].c_str());
@@ -218,6 +222,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
         gui.controls_menu.controls_dialog = false;
 
+    ImGui::ScrollWhenDragging();
     ImGui::End();
 }
 
