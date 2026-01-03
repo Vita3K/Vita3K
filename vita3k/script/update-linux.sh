@@ -42,6 +42,5 @@ if [ $boot -eq 1 ]; then
     echo Starting Vita3K...
     ./Vita3K
 else
-    echo
     read -p "Press [Enter] key to continue..."
 fi
