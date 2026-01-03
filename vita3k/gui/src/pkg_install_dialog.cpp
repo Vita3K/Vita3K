@@ -59,7 +59,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         result = host::dialog::filesystem::open_file(pkg_path, { { "PlayStation Store Downloaded Package", { "pkg" } } });
         draw_file_dialog = false;
         if (result == host::dialog::filesystem::Result::SUCCESS) {
-            FILE *infile = host::dialog::filesystem::resolve_host_handle(pkg_path);
+            FILE *infile = fs_utils::open_file_handle_from_path(pkg_path);
             PkgHeader pkg_header{};
             fread(&pkg_header, sizeof(PkgHeader), 1, infile);
             fclose(infile);

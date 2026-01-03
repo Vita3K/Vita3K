@@ -29,7 +29,6 @@
 #include <display/state.h>
 #include <gui/functions.h>
 #include <gxm/state.h>
-#include <host/dialog/filesystem.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
@@ -269,7 +268,7 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
 }
 
 std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, const fs::path &archive_path, const std::function<void(ArchiveContents)> &progress_callback) {
-    FILE *vpk_fp = host::dialog::filesystem::resolve_host_handle(archive_path);
+    FILE *vpk_fp = fs_utils::open_file_handle_from_path(archive_path);
 
     if (!vpk_fp) {
         LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path().string());

@@ -77,6 +77,8 @@ fs::path path_concat(const fs::path &path1, const fs::path &path2);
  */
 void dump_data(const fs::path &path, const void *data, const std::streamsize size);
 
+FILE *open_file_handle_from_path(const fs::path &path);
+
 bool read_data(const fs::path &path, std::vector<uint8_t> &data);
 bool read_data(const fs::path &path, std::vector<int8_t> &data);
 bool read_data(const fs::path &path, std::vector<char> &data);

@@ -57,6 +57,17 @@ void dump_data(const fs::path &path, const void *data, const std::streamsize siz
         of.close();
     }
 }
+
+FILE *open_file_handle_from_path(const fs::path &path) {
+    FILE *result;
+#ifdef _WIN32
+    _wfopen_s(&result, path.c_str(), L"rb");
+#else
+    result = fopen(path.c_str(), "rb");
+#endif
+    return result;
+}
+
 template <typename T>
 static bool read_data(const fs::path &path, std::vector<T> &data) {
     data.clear();

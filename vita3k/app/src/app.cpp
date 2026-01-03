@@ -102,7 +102,7 @@ void add_custom_driver(EmuEnvState &emuenv) {
 
     fs::create_directories(driver_path);
 
-    std::unique_ptr<FILE, int (*)(FILE *)> zip_file(host::dialog::filesystem::resolve_host_handle(file_path), fclose);
+    std::unique_ptr<FILE, int (*)(FILE *)> zip_file(fs_utils::open_file_handle_from_path(file_path), fclose);
     std::string driver_so = "";
 
     mz_zip_archive zip;
