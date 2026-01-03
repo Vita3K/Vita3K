@@ -208,11 +208,11 @@ static void download_update(const fs::path &base_path) {
 #elif defined(__ANDROID__)
         download_continuous_link += "android-latest.apk";
 #elif defined(__linux__)
-    #if defined(__x86_64__)
+#if defined(__x86_64__)
         download_continuous_link += "/ubuntu-latest.zip";
-    #elif defined(__aarch64__)
+#elif defined(__aarch64__)
         download_continuous_link += "/ubuntu-aarch64-latest.zip";
-    #endif
+#endif
 #endif
 
 #ifdef __APPLE__
