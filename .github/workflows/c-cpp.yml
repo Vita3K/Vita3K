@@ -25,11 +25,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-latest, macos-latest, android]
+        os: [ubuntu-22.04, ubuntu-22.04-arm, windows-latest, macos-latest, android]
         config: [Release]
         version: [zip, appimage, apk]
         include:
           - os: ubuntu-22.04
+            arch: x86_64
             version: appimage
             cache_path: ~/.ccache
             extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-x86_64.AppImage
@@ -38,6 +39,16 @@ jobs:
             version: zip
             cache_path: ~/.ccache
             cmake_preset: linux-ninja-clang
+          - os: ubuntu-22.04-arm
+            version: zip
+            cache_path: ~/.ccache
+            cmake_preset: linux-ninja-clang
+          - os: ubuntu-22.04-arm
+            arch: aarch64
+            version: appimage
+            cache_path: ~/.ccache
+            extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-aarch64.AppImage
+            cmake_preset: linux-ninja-clang-appimage
           - os: windows-latest
             version: zip
             cache_path: |
@@ -69,6 +80,8 @@ jobs:
             version: apk
           - os: ubuntu-22.04
             version: apk
+          - os: ubuntu-22.04-arm
+            version: apk
 
     steps:
       - uses: actions/checkout@v6
@@ -85,12 +98,26 @@ jobs:
         if: matrix.os == 'macos-latest'
 
       - name: Set up build environment (ubuntu-22.04)
+        if: startsWith(matrix.os, 'ubuntu-22.04')
         run: |
+          #boost repo        
           sudo add-apt-repository -y ppa:mhier/libboost-latest
           sudo add-apt-repository universe
           sudo apt update
           sudo apt -y install ccache libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev libsdl2-dev ninja-build libfuse2
-        if: matrix.os == 'ubuntu-22.04'
+          
+          if [[ "${{ matrix.os }}" == "ubuntu-22.04-arm" ]]; then
+             # easy update clang linux os from external repo for specific clang version
+            wget https://apt.llvm.org/llvm.sh
+            chmod +x ./llvm.sh
+            sudo ./llvm.sh 15
+            sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 100
+            sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-15 100
+            sudo update-alternatives --set clang /usr/bin/clang-15
+            sudo update-alternatives --set clang++ /usr/bin/clang++-15
+          fi
+          
+          
 
       - uses: hendrikmuhs/ccache-action@v1.2
         if: matrix.os == 'android'
@@ -138,14 +165,14 @@ jobs:
           choco install ccache
         if: matrix.os == 'windows-latest'
 
-      - name: Set up linuxdeploy (ubuntu-22.04, appimage)
+      - name: Set up linuxdeploy AppImage
         run: |
-          if [[ ! -e linuxdeploy-x86_64.AppImage ]]; then
-            curl -sLO https://github.com/linuxdeploy/linuxdeploy/releases/latest/download/linuxdeploy-x86_64.AppImage
+          if [[ ! -e linuxdeploy-${{ matrix.arch }}.AppImage ]]; then
+            curl -sLO https://github.com/linuxdeploy/linuxdeploy/releases/latest/download/linuxdeploy-${{ matrix.arch }}.AppImage
           fi
-          sudo cp -f linuxdeploy-x86_64.AppImage /usr/local/bin/
-          sudo chmod +x /usr/local/bin/linuxdeploy-x86_64.AppImage
-        if: matrix.os == 'ubuntu-22.04' && matrix.version == 'appimage'
+          sudo cp -f linuxdeploy-${{ matrix.arch }}.AppImage /usr/local/bin/
+          sudo chmod +x /usr/local/bin/linuxdeploy-${{ matrix.arch }}.AppImage
+        if: startsWith(matrix.os, 'ubuntu-22.04') && matrix.version == 'appimage'
 
       - name: Ccache setup
         run: ccache -z
@@ -192,15 +219,20 @@ jobs:
       - name: Set Build Variable
         shell: bash
         run: echo "build_variable=$(git rev-list HEAD --count)" >> $GITHUB_ENV
-        if: matrix.os == 'ubuntu-22.04'
+        if: startsWith(matrix.os, 'ubuntu-22.04')
 
       - name: Bundle Shared Objects
         id: bundle_shared_objects
         run: |
             cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
-            cp /usr/lib/x86_64-linux-gnu/libssl.so.3 ./libssl.so.3
-            cp /usr/lib/x86_64-linux-gnu/libcrypto.so.3 ./libcrypto.so.3
-        if: matrix.os == 'ubuntu-22.04'
+            if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
+              cp /usr/lib/x86_64-linux-gnu/libssl.so.3 ./libssl.so.3
+              cp /usr/lib/x86_64-linux-gnu/libcrypto.so.3 ./libcrypto.so.3
+            elif [[ "${{ matrix.os }}" == "ubuntu-22.04-arm" ]]; then
+              cp /usr/lib/aarch64-linux-gnu/libssl.so.3 ./libssl.so.3
+              cp /usr/lib/aarch64-linux-gnu/libcrypto.so.3 ./libcrypto.so.3
+            fi
+        if: startsWith(matrix.os, 'ubuntu-22.04')
 
       - name: Ccache statistics
         run: ccache -s  
@@ -226,9 +258,9 @@ jobs:
           cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
           cp -f *AppImage* ../
           rm -rf ./*
-          cp -f ../*AppImage* ./
+          cp -f ../*AppImage* ./ 
           rm -f ../*AppImage*
-        if: matrix.os == 'ubuntu-22.04' && matrix.version == 'appimage'
+        if: startsWith(matrix.os, 'ubuntu-22.04') && matrix.version == 'appimage'
 
       - uses: actions/upload-artifact@v6
         with:
@@ -281,29 +313,33 @@ jobs:
         shell: bash
         run: |
           mkdir artifacts/
-          files=$(find . \( -name "*latest" -o -name "*22.04" -o -name "*apk-android" \))
+          files=$(find . \( -name "*latest" -o -name "*22.04" -o -name "*22.04-arm" -o -name "*apk-android" \))
           for f in $files; do
-          if [[ $f == *apk-android ]]
-          then
-            echo "Copying $f"
-            cp $(basename $f)/*.apk artifacts/android-latest.apk
-          elif [[ $f == *macos-latest ]]
-          then
+            if [[ $f == *apk-android ]]; then
+             echo "Copying $f"
+              cp $(basename $f)/*.apk artifacts/android-latest.apk
+            elif [[ $f == *macos-latest ]]; then
               cp $(basename $f)/$(basename $f).dmg artifacts/macos-latest.dmg
             else
-              if [[ $f == *ubuntu-22.04 ]]
-              then
-                if [[ $f == *appimage* ]]
-                then
+              if [[ $f == *ubuntu-22.04 ]]; then
+                if [[ $f == *appimage* ]]; then
                   cp $(basename $f)/*.AppImage* artifacts/
                 else
                   rm -f $(basename $f)/*.AppImage*
-                  echo "Compressing $f"
-                  (cd $(basename $f) && zip -r ../artifacts/$(basename $f  | cut -d "-" -f 4)-latest.zip *)
+                  echo "Compressing $f (x86-64)"
+                  (cd $(basename $f) && zip -r ../artifacts/ubuntu-latest.zip *)
+                fi
+              elif [[ $f == *ubuntu-22.04-arm ]]; then
+                if [[ $f == *appimage* ]]; then
+                  cp $(basename $f)/*.AppImage* artifacts/
+                else
+                  rm -f $(basename $f)/*.AppImage*
+                  echo "Compressing $f (ARM64)"
+                  (cd $(basename $f) && zip -r ../artifacts/ubuntu-aarch64-latest.zip *)
                 fi
               else
                 echo "Compressing $f"
-                (cd $(basename $f) && zip -r ../artifacts/$(basename $f  | cut -d "-" -f 4)-latest.zip *)
+                (cd $(basename $f) && zip -r ../artifacts/$(basename $f | cut -d "-" -f 4)-latest.zip *)
               fi
             fi
           done
@@ -319,25 +355,29 @@ jobs:
         shell: bash
         run: |
           mkdir artifacts/
-          files=$(find . \( -name "*latest" -o -name "*22.04" -o -name "*apk-android" \))
+          files=$(find . \( -name "*latest" -o -name "*22.04" -o -name "*22.04-arm" -o -name "*apk-android" \))
           for f in $files; do
-            if [[ $f == *apk-android ]]
-            then
+            if [[ $f == *apk-android ]]; then
               echo "Copying $f"
               cp $(basename $f)/*.apk artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_android.apk
-            elif [[ $f == *macos-latest ]]
-            then
+            elif [[ $f == *macos-latest ]]; then
               cp $(basename $f)/$(basename $f).dmg artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_macos.dmg
             else
-              if [[ $f == *ubuntu-22.04 ]]
-              then
-                if [[ $f == *appimage* ]]
-                then
+              if [[ $f == *ubuntu-22.04 ]]; then
+                if [[ $f == *appimage* ]]; then
                   cp $(basename $f)/*.AppImage* artifacts/
                 else
                   rm -f $(basename $f)/*.AppImage*
-                  echo "Compressing $f"
-                  7z a -mx=9 artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu.7z $(basename $f)
+                  echo "Compressing $f (x86_64)"
+                  7z a -mx=9 artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu-x86_64.7z $(basename $f)
+                fi
+              elif [[ $f == *ubuntu-22.04-arm ]]; then
+                if [[ $f == *appimage* ]]; then
+                  cp $(basename $f)/*.AppImage* artifacts/
+                else
+                  rm -f $(basename $f)/*.AppImage*
+                  echo "Compressing $f (ARM64)"
+                  7z a -mx=9 artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu-aarch64.7z $(basename $f)
                 fi
               else
                 echo "Compressing $f"
@@ -348,7 +388,7 @@ jobs:
           ls -al artifacts/
           wget -c https://github.com/tcnksm/ghr/releases/download/v0.17.0/ghr_v0.17.0_linux_amd64.tar.gz
           tar xfv ghr_v0.17.0_linux_amd64.tar.gz
-          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K-builds  -n "Build: ${{ env.Build_Variable }}" -b "$(printf "Corresponding commit: [${{ env.Latest_Commit_Message }}](https://github.com/Vita3K/Vita3K/commit/${{ github.sha }}) (${{ env.Commiter_Name }})")" ${{ env.Build_Variable }} artifacts/
+          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K-builds -n "Build: ${{ env.Build_Variable }}" -b "$(printf "Corresponding commit: [${{ env.Latest_Commit_Message }}](https://github.com/Vita3K/Vita3K/commit/${{ github.sha }}) (${{ env.Commiter_Name }})")" ${{ env.Build_Variable }} artifacts/
         if: matrix.repo == 'store'
         env:
           GITHUB_TOKEN: ${{ secrets.STORE_TOKEN }}
