@@ -20,7 +20,7 @@ esac
 if [ ! -e "$zip_name" ]; then
     echo Checking for Vita3K updates...
     echo Attempting to download and extract the latest Vita3K version in progress...
-    curl -L "https://github.com/mrcmunir/Vita3K/releases/download/continuous/$zip_name" -o "./$zip_name"
+    curl -L "https://github.com/Vita3K/Vita3K/releases/download/continuous/$zip_name" -o "./$zip_name"
 else
     boot=1
 fi
