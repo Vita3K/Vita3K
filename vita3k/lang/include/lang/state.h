@@ -175,7 +175,8 @@ struct LangState {
             { "manual", "Manual" },
             { "update", "Update" },
             { "update_history", "Update History" },
-            { "history_version", "Version {}" }
+            { "history_version", "Version {}" },
+            { "other", "Other" },
         };
         std::map<std::string, std::string> deleting = {
             { "app_delete", "This application and all related data, including saved data, will be deleted." },
@@ -206,6 +207,9 @@ struct LangState {
             { "time_used_hours", "{}h:{}m:{}s" },
             { "time_used_days", "{}d:{}h:{}m:{}s" },
             { "time_used_weeks", "{}w:{}d:{}h:{}m:{}s" }
+        };
+        std::map<std::string, std::string> other = {
+            { "reset_last_time_played", "Reset Last Time Played" }
         };
     };
     AppContext app_context;

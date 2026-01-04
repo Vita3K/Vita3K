@@ -557,18 +557,26 @@ void update_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string 
     save_time_apps(gui, emuenv);
 }
 
-void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app) {
+static void update_last_time_app_used_helper(GuiState &gui, EmuEnvState &emuenv, const std::string &app, time_t last_time) {
     const auto &time_app_index = get_time_app_index(gui, emuenv, app);
     if (time_app_index != gui.time_apps[emuenv.io.user_id].end())
-        time_app_index->last_time_used = std::time(nullptr);
+        time_app_index->last_time_used = last_time;
     else // Can't use emplace_back due to Clang 15 for macos
-        gui.time_apps[emuenv.io.user_id].push_back({ app, std::time(nullptr), 0 });
+        gui.time_apps[emuenv.io.user_id].push_back({ app, last_time, 0 });
 
-    get_app_index(gui, app)->last_time = std::time(nullptr);
+    get_app_index(gui, app)->last_time = last_time;
     if (gui.users[emuenv.io.user_id].sort_apps_type == LAST_TIME)
         gui.app_selector.is_app_list_sorted = false;
 
     save_time_apps(gui, emuenv);
+}
+
+void reset_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app) {
+    update_last_time_app_used_helper(gui, emuenv, app, (time_t)0);
+}
+
+void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app) {
+    update_last_time_app_used_helper(gui, emuenv, app, std::time(nullptr));
 }
 
 void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
@@ -878,6 +886,14 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     fs::remove_all(IMPORT_TEXTURES_PATH);
                 ImGui::EndMenu();
             }
+
+            if (ImGui::BeginMenu(lang.main["other"].c_str())) {
+                if (ImGui::MenuItem(lang.other["reset_last_time_played"].c_str())) {
+                    reset_last_time_app_used(gui, emuenv, app_path);
+                }
+                ImGui::EndMenu();
+            }
+
             if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(lang.main["update_history"].c_str())) {
                 if (get_update_history(gui, emuenv, app_path))
                     context_dialog = "history";

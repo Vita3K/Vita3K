@@ -18,6 +18,7 @@
 #include <array>
 #include <regex>
 #include <regmgr/functions.h>
+#include <sstream>
 
 #include <util/bytes.h>
 #include <util/log.h>
