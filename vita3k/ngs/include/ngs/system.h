@@ -113,6 +113,7 @@ class Module {
 public:
     virtual ~Module() = default;
 
+    virtual void set_default_preset(const MemState &mem, ModuleData &data) {}
     virtual bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) = 0;
     virtual uint32_t module_id() const { return 0; }
     virtual uint32_t get_buffer_parameter_size() const = 0;

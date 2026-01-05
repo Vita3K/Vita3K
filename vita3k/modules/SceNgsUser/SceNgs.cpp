@@ -788,6 +788,10 @@ EXPORT(SceInt32, sceNgsVoiceInit, ngs::Voice *voice, const SceNgsVoicePreset *pr
     if (init_flags & SCE_NGS_VOICE_INIT_PRESET) {
         if (!preset) {
             STUBBED("Default preset not implemented");
+            for (size_t i = 0; i < voice->rack->modules.size(); i++) {
+                if (voice->rack->modules[i])
+                    voice->rack->modules[i]->set_default_preset(emuenv.mem, voice->datas[i]);
+            }
         } else if (!voice->set_preset(emuenv.mem, preset)) {
             return RET_ERROR(SCE_NGS_ERROR);
         }
