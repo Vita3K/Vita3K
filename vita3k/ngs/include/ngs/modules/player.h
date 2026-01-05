@@ -49,6 +49,8 @@ struct SceNgsPlayerStates {
     SceInt32 samples_generated_total = 0;
     SceInt32 total_bytes_consumed = 0;
 
+    std::vector<uint8_t> adpcm_buffer;
+
     // INTERNAL
     int8_t current_loop_count = 0;
     uint32_t decoded_samples_pending = 0;
@@ -89,6 +91,7 @@ private:
     std::unique_ptr<PCMDecoderState> decoder;
 
 public:
+    void set_default_preset(const MemState &mem, ModuleData &data) override;
     bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) override;
     uint32_t module_id() const override { return 0x5CE6; }
     void on_state_change(const MemState &mem, ModuleData &v, const VoiceState previous) override;
