@@ -210,8 +210,19 @@ set(SOURCE_LIST
 	SceWlanBt/SceWlan.cpp
 )
 
+if(APPLE)
+    list(APPEND SOURCE_LIST
+        SceNet/macos_net_helper.h
+        SceNet/macos_net_helper.cpp
+    )
+endif()
+
 add_library(modules STATIC ${SOURCE_LIST})
 target_include_directories(modules PUBLIC include)
 target_link_libraries(modules PRIVATE audio codec ctrl dialog display dlmalloc gui gxm kernel mem motion net ngs np ssl packages patch printf renderer rtc SDL3::SDL3 touch xxHash::xxhash)
 target_link_libraries(modules PUBLIC module)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})
+
+if(APPLE)
+    target_link_libraries(modules PUBLIC "-framework SystemConfiguration")
+endif()

@@ -28,6 +28,11 @@
 #include <cstdio>
 #include <thread>
 
+#ifdef __APPLE__
+#include "macos_net_helper.h"
+#include <net/if.h>
+#endif
+
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceNet);
 
@@ -362,8 +367,22 @@ EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
         };
         memcpy(addr->data, magicMac, 6);
     }
+#elif defined(__APPLE__)
+    char hint[IFNAMSIZ] = {};
+    get_primary_interface_name(hint, sizeof(hint));
+
+    if (!get_mac_address(hint, addr->data)) {
+        uint8_t magicMac[6] = {
+            0x02, // LAA
+            0x41, // 'A'
+            0x50, // 'P'
+            0x50, // 'P'
+            0x4C, // 'L'
+            0x45, // 'E'
+        };
+        memcpy(addr->data, magicMac, 6);
+    }
 #else
-    // TODO: Implement the function for macOS
     return UNIMPLEMENTED();
 #endif
     return 0;
