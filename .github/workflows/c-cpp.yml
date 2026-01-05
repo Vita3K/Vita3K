@@ -8,6 +8,9 @@ on:
     paths-ignore:
       - '**/*.md'
 
+env:
+  BUILD_CONFIG: Release
+
 jobs:
   format-check:
     runs-on: ubuntu-latest
@@ -19,38 +22,25 @@ jobs:
         run: .github/format-check.sh
 
   build:
+    name: Build (${{ matrix.os }})
     needs: [format-check]
     runs-on: ${{ matrix.runs_on || matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, ubuntu-22.04-arm, windows-latest, macos-latest, android]
-        config: [Release]
-        version: [zip, appimage, apk]
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            version: appimage
             cache_path: ~/.ccache
             extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-x86_64.AppImage
             cmake_preset: linux-ninja-clang-appimage
-          - os: ubuntu-22.04
-            version: zip
-            cache_path: ~/.ccache
-            cmake_preset: linux-ninja-clang
-          - os: ubuntu-22.04-arm
-            version: zip
-            cache_path: ~/.ccache
-            cmake_preset: linux-ninja-clang
           - os: ubuntu-22.04-arm
             arch: aarch64
-            version: appimage
             cache_path: ~/.ccache
             extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-aarch64.AppImage
             cmake_preset: linux-ninja-clang-appimage
           - os: windows-latest
-            version: zip
             cache_path: |
                 C:\vcpkg\installed
                 C:\vcpkg\packages
@@ -58,30 +48,11 @@ jobs:
             extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
             cmake_preset: windows-ninja
           - os: macos-latest
-            version: zip
             cache_path: ~/Library/Caches/ccache
             extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="x86_64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
             cmake_preset: macos-ninja
           - os: android
-            version: apk
             runs_on: ubuntu-latest
-        exclude:
-          - os: macos-latest
-            version: appimage
-          - os: windows-latest
-            version: appimage
-          - os: android
-            version: appimage
-          - os: android
-            version: zip
-          - os: windows-latest
-            version: apk
-          - os: macos-latest
-            version: apk
-          - os: ubuntu-22.04
-            version: apk
-          - os: ubuntu-22.04-arm
-            version: apk
 
     steps:
       - uses: actions/checkout@v6
@@ -98,16 +69,14 @@ jobs:
         if: matrix.os == 'macos-latest'
 
       - name: Set up build environment (ubuntu-22.04)
-        if: startsWith(matrix.os, 'ubuntu-22.04')
         run: |
-          #boost repo        
-          sudo add-apt-repository -y ppa:mhier/libboost-latest
+          sudo add-apt-repository -y ppa:mhier/libboost-latest # boost repo
           sudo add-apt-repository universe
           sudo apt update
           sudo apt -y install ccache libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev libsdl2-dev ninja-build libfuse2
-          
+
           if [[ "${{ matrix.os }}" == "ubuntu-22.04-arm" ]]; then
-             # easy update clang linux os from external repo for specific clang version
+            # easy update clang linux os from external repo for specific clang version
             wget https://apt.llvm.org/llvm.sh
             chmod +x ./llvm.sh
             sudo ./llvm.sh 15
@@ -116,8 +85,27 @@ jobs:
             sudo update-alternatives --set clang /usr/bin/clang-15
             sudo update-alternatives --set clang++ /usr/bin/clang++-15
           fi
-          
-          
+
+          # Set up linuxdeploy for AppImage
+          curl -sLO https://github.com/linuxdeploy/linuxdeploy/releases/latest/download/linuxdeploy-${{ matrix.arch }}.AppImage
+          sudo cp -f linuxdeploy-${{ matrix.arch }}.AppImage /usr/local/bin/
+          sudo chmod +x /usr/local/bin/linuxdeploy-${{ matrix.arch }}.AppImage
+        if: startsWith(matrix.os, 'ubuntu-22.04')
+
+      - name: Set up build environment (windows-latest)
+        run: |
+          vcpkg install zlib:x64-windows-static-md boost-system:x64-windows-static-md boost-filesystem:x64-windows-static-md boost-program-options:x64-windows-static-md boost-icl:x64-windows-static-md boost-variant:x64-windows-static-md curl:x64-windows-static-md openssl:x64-windows-static-md
+          choco install ccache
+        if: matrix.os == 'windows-latest'
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: matrix.os == 'windows-latest'
+
+      - name: Set up build environment (android)
+        run: |
+          sudo apt-get install -y ninja-build
+          vcpkg install boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
+        if: matrix.os == 'android'
 
       - uses: hendrikmuhs/ccache-action@v1.2
         if: matrix.os == 'android'
@@ -136,55 +124,35 @@ jobs:
             ${{ runner.os }}-gradle-
         if: matrix.os == 'android'
 
-      - name: Set up build environment (Android)
-        run: |
-          sudo apt-get install -y ninja-build
-          vcpkg install boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
-        if: matrix.os == 'android'
-
       - name: Decode Android keystore
         env:
           KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
         run: echo "$KEYSTORE_ENCODED" | base64 --decode > /home/runner/keystore.jks
         if: matrix.os == 'android'
 
-      - uses: ilammy/msvc-dev-cmd@v1
-        if: matrix.os == 'windows-latest'
- 
       - uses: actions/cache@v5
         with:
           path: ${{ matrix.cache_path }}
-          key: cache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
+          key: cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-${{ github.sha }}
           restore-keys: |
-            cache-${{ matrix.os }}-${{ matrix.config }}-
+            cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-
         if: matrix.os != 'android'
 
-      - name: Set up build environment (windows-latest)
-        run: |
-          vcpkg install zlib:x64-windows-static-md boost-system:x64-windows-static-md boost-filesystem:x64-windows-static-md boost-program-options:x64-windows-static-md boost-icl:x64-windows-static-md boost-variant:x64-windows-static-md curl:x64-windows-static-md openssl:x64-windows-static-md
-          choco install ccache
-        if: matrix.os == 'windows-latest'
-
-      - name: Set up linuxdeploy AppImage
-        run: |
-          if [[ ! -e linuxdeploy-${{ matrix.arch }}.AppImage ]]; then
-            curl -sLO https://github.com/linuxdeploy/linuxdeploy/releases/latest/download/linuxdeploy-${{ matrix.arch }}.AppImage
-          fi
-          sudo cp -f linuxdeploy-${{ matrix.arch }}.AppImage /usr/local/bin/
-          sudo chmod +x /usr/local/bin/linuxdeploy-${{ matrix.arch }}.AppImage
-        if: startsWith(matrix.os, 'ubuntu-22.04') && matrix.version == 'appimage'
-
-      - name: Ccache setup
+      - name: Reset ccache statistics
         run: ccache -z
         if: matrix.os != 'android'
 
-      - name: CMake
+      - name: Build Vita3K
         run: |
           cmake ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
-          cmake --build build/${{ matrix.cmake_preset }} --config ${{ matrix.config }}
+          cmake --build build/${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
         if: matrix.os != 'android'
 
-      - name: Gradle build
+      - name: Print ccache statistics
+        run: ccache -s
+        if: matrix.os != 'android'
+
+      - name: Build Vita3K (android)
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
@@ -207,9 +175,9 @@ jobs:
           echo "APK_PATH=android/build/outputs/apk/${BUILD_TYPE,,}/android-${BUILD_TYPE,,}.apk" >> $GITHUB_ENV
         if: matrix.os == 'android'
 
-      - name: CTest
+      - name: Run tests
         working-directory: build/${{ matrix.cmake_preset }}
-        run: ctest --build-config ${{ matrix.config }} --output-on-failure
+        run: ctest --build-config ${{ env.BUILD_CONFIG }} --output-on-failure
         if: matrix.os != 'android'
 
       - name: Compute git short sha
@@ -221,10 +189,25 @@ jobs:
         run: echo "build_variable=$(git rev-list HEAD --count)" >> $GITHUB_ENV
         if: startsWith(matrix.os, 'ubuntu-22.04')
 
+      - name: Create DMG (macos-latest)
+        run: |
+          cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
+          create-dmg \
+            --volname "Vita3K Installer" \
+            --volicon Vita3K.app/Contents/Resources/Vita3K.icns \
+            --window-size 500 300 \
+            --icon-size 100 \
+            --icon Vita3K.app 120 115 \
+            --app-drop-link 360 115 \
+            vita3k-${{ env.git_short_sha }}-${{ matrix.os }}.dmg \
+            Vita3K.app
+          rm -rf Vita3K.app
+        if: matrix.os == 'macos-latest'
+
       - name: Bundle Shared Objects
         id: bundle_shared_objects
         run: |
-            cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
+            cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
             if [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
               cp /usr/lib/x86_64-linux-gnu/libssl.so.3 ./libssl.so.3
               cp /usr/lib/x86_64-linux-gnu/libcrypto.so.3 ./libcrypto.so.3
@@ -234,41 +217,33 @@ jobs:
             fi
         if: startsWith(matrix.os, 'ubuntu-22.04')
 
-      - name: Ccache statistics
-        run: ccache -s  
-        if: matrix.os != 'android'
-        
-      - name: Create DMG (macos-latest)
+      - name: Prepare Linux AppImage artifact
         run: |
-          cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
-          create-dmg \
-            --volname "Vita3K Installer" \
-            --volicon Vita3K.app/Contents/Resources/Vita3K.icns \
-            --window-size 500 300 \
-            --icon-size 100 \
-            --icon Vita3K.app 120 115 \
-            --app-drop-link 360 115 \
-            vita3k-${{ env.git_short_sha }}-${{ matrix.version }}-${{ matrix.os }}.dmg \
-            Vita3K.app
-          rm -rf Vita3K.app
-        if: matrix.os == 'macos-latest'
+          cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
+          mkdir -p ../appimage
+          mv -f *AppImage* ../appimage/
+        if: startsWith(matrix.os, 'ubuntu-22.04')
 
-      - name: Clean appimage build (ubuntu-22.04, appimage)
-        run: |
-          cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
-          cp -f *AppImage* ../
-          rm -rf ./*
-          cp -f ../*AppImage* ./ 
-          rm -f ../*AppImage*
-        if: startsWith(matrix.os, 'ubuntu-22.04') && matrix.version == 'appimage'
-
-      - uses: actions/upload-artifact@v6
+      - name: Upload artifact (linux AppImage)
+        uses: actions/upload-artifact@v6
         with:
-          name: vita3k-${{ env.git_short_sha }}-${{ matrix.version }}-${{ matrix.os }}
-          # Upload path differs depending on the OS:
-          # - Android: path to APK
-          # - PC/Mac/Linux: path to <binary_dir>/bin/<config_type> as used by multi-config CMake
-          path: ${{ matrix.os == 'android' && env.APK_PATH || format('build/{0}/bin/{1}', matrix.cmake_preset, matrix.config) }}
+          name: vita3k-${{ env.git_short_sha }}-${{ matrix.os }}-appimage
+          path: build/${{ matrix.cmake_preset }}/bin/appimage
+        if: startsWith(matrix.os, 'ubuntu-22.04')
+
+      - name: Upload artifact (android apk)
+        uses: actions/upload-artifact@v6
+        with:
+          name: vita3k-${{ env.git_short_sha }}-android
+          path: ${{ env.APK_PATH }}
+        if: matrix.os == 'android'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: vita3k-${{ env.git_short_sha }}-${{ matrix.os }}
+          path: build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
+        if: matrix.os != 'android'
 
     outputs:
       BuildTag: ${{ env.build_variable }}
@@ -276,13 +251,9 @@ jobs:
 
   create-release:
     needs: [build]
-    strategy:
-      fail-fast: false
-      matrix:
-        repo: [master, store]
     runs-on: ubuntu-latest
     concurrency:
-      group: create-release-${{ matrix.repo }}
+      group: create-release
       cancel-in-progress: false
     if: |
       github.ref == 'refs/heads/master' &&
@@ -309,86 +280,66 @@ jobs:
           | jq -r '.commit.author.name')
           echo "Commiter_Name=$COMMITTER_NAME" >> $GITHUB_ENV
 
-      - name: Upload
-        shell: bash
+      - name: Download ghr
         run: |
-          mkdir artifacts/
-          files=$(find . \( -name "*latest" -o -name "*22.04" -o -name "*22.04-arm" -o -name "*apk-android" \))
-          for f in $files; do
-            if [[ $f == *apk-android ]]; then
-             echo "Copying $f"
-              cp $(basename $f)/*.apk artifacts/android-latest.apk
-            elif [[ $f == *macos-latest ]]; then
-              cp $(basename $f)/$(basename $f).dmg artifacts/macos-latest.dmg
-            else
-              if [[ $f == *ubuntu-22.04 ]]; then
-                if [[ $f == *appimage* ]]; then
-                  cp $(basename $f)/*.AppImage* artifacts/
-                else
-                  rm -f $(basename $f)/*.AppImage*
-                  echo "Compressing $f (x86-64)"
-                  (cd $(basename $f) && zip -r ../artifacts/ubuntu-latest.zip *)
-                fi
-              elif [[ $f == *ubuntu-22.04-arm ]]; then
-                if [[ $f == *appimage* ]]; then
-                  cp $(basename $f)/*.AppImage* artifacts/
-                else
-                  rm -f $(basename $f)/*.AppImage*
-                  echo "Compressing $f (ARM64)"
-                  (cd $(basename $f) && zip -r ../artifacts/ubuntu-aarch64-latest.zip *)
-                fi
-              else
-                echo "Compressing $f"
-                (cd $(basename $f) && zip -r ../artifacts/$(basename $f | cut -d "-" -f 4)-latest.zip *)
-              fi
-            fi
-          done
-          ls -al artifacts/
           wget -c https://github.com/tcnksm/ghr/releases/download/v0.17.0/ghr_v0.17.0_linux_amd64.tar.gz
           tar xfv ghr_v0.17.0_linux_amd64.tar.gz
-          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate -n 'Automatic CI builds' -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" continuous artifacts/
-        if: matrix.repo == 'master'
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts-master artifacts-store
+          files=$(find . -maxdepth 1 -type d -name "vita3k-*")
+          for f in $files; do
+            dir=$(basename $f)
+            if [[ $dir == *-android ]]; then
+              echo "Processing $dir (Android)"
+              cp $dir/*.apk artifacts-master/android-latest.apk
+              cp $dir/*.apk artifacts-store/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_android.apk
+            elif [[ $dir == *-macos-latest ]]; then
+              echo "Processing $dir (macOS)"
+              cp $dir/*.dmg artifacts-master/macos-latest.dmg
+              cp $dir/*.dmg artifacts-store/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_macos.dmg
+            elif [[ $dir == *-ubuntu-22.04-appimage ]]; then
+              echo "Processing $dir (x86_64 AppImage)"
+              cp $dir/*.AppImage* artifacts-master/
+              cp $dir/*.AppImage* artifacts-store/
+            elif [[ $dir == *-ubuntu-22.04-arm-appimage ]]; then
+              echo "Processing $dir (ARM64 AppImage)"
+              cp $dir/*.AppImage* artifacts-master/
+              cp $dir/*.AppImage* artifacts-store/
+            elif [[ $dir == *-ubuntu-22.04 ]]; then
+              echo "Processing $dir (Ubuntu x86_64)"
+              (cd $dir && zip -r ../artifacts-master/ubuntu-latest.zip *)
+              7z a -mx=9 artifacts-store/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu-x86_64.7z $dir
+            elif [[ $dir == *-ubuntu-22.04-arm ]]; then
+              echo "Processing $dir (Ubuntu ARM64)"
+              (cd $dir && zip -r ../artifacts-master/ubuntu-aarch64-latest.zip *)
+              7z a -mx=9 artifacts-store/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu-aarch64.7z $dir
+            elif [[ $dir == *-windows-latest ]]; then
+              echo "Processing $dir (Windows)"
+              (cd $dir && zip -r ../artifacts-master/windows-latest.zip *)
+              7z a -mx=9 artifacts-store/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_windows.7z $dir
+            fi
+          done
+          echo "=== artifacts-master ==="
+          ls -al artifacts-master/
+          echo "=== artifacts-store ==="
+          ls -al artifacts-store/
+
+      - name: Upload to master repository
+        run: |
+          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate \
+            -n 'Automatic CI builds' \
+            -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" \
+            continuous artifacts-master/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Make release on store repository
-        shell: bash
+      - name: Upload to store repository
         run: |
-          mkdir artifacts/
-          files=$(find . \( -name "*latest" -o -name "*22.04" -o -name "*22.04-arm" -o -name "*apk-android" \))
-          for f in $files; do
-            if [[ $f == *apk-android ]]; then
-              echo "Copying $f"
-              cp $(basename $f)/*.apk artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_android.apk
-            elif [[ $f == *macos-latest ]]; then
-              cp $(basename $f)/$(basename $f).dmg artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_macos.dmg
-            else
-              if [[ $f == *ubuntu-22.04 ]]; then
-                if [[ $f == *appimage* ]]; then
-                  cp $(basename $f)/*.AppImage* artifacts/
-                else
-                  rm -f $(basename $f)/*.AppImage*
-                  echo "Compressing $f (x86_64)"
-                  7z a -mx=9 artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu-x86_64.7z $(basename $f)
-                fi
-              elif [[ $f == *ubuntu-22.04-arm ]]; then
-                if [[ $f == *appimage* ]]; then
-                  cp $(basename $f)/*.AppImage* artifacts/
-                else
-                  rm -f $(basename $f)/*.AppImage*
-                  echo "Compressing $f (ARM64)"
-                  7z a -mx=9 artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu-aarch64.7z $(basename $f)
-                fi
-              else
-                echo "Compressing $f"
-                7z a -mx=9 artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_windows.7z $(basename $f)
-              fi
-            fi
-          done
-          ls -al artifacts/
-          wget -c https://github.com/tcnksm/ghr/releases/download/v0.17.0/ghr_v0.17.0_linux_amd64.tar.gz
-          tar xfv ghr_v0.17.0_linux_amd64.tar.gz
-          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K-builds -n "Build: ${{ env.Build_Variable }}" -b "$(printf "Corresponding commit: [${{ env.Latest_Commit_Message }}](https://github.com/Vita3K/Vita3K/commit/${{ github.sha }}) (${{ env.Commiter_Name }})")" ${{ env.Build_Variable }} artifacts/
-        if: matrix.repo == 'store'
+          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K-builds \
+            -n "Build: ${{ env.Build_Variable }}" \
+            -b "$(printf "Corresponding commit: [${{ env.Latest_Commit_Message }}](https://github.com/Vita3K/Vita3K/commit/${{ github.sha }}) (${{ env.Commiter_Name }})")" \
+            ${{ env.Build_Variable }} artifacts-store/
         env:
           GITHUB_TOKEN: ${{ secrets.STORE_TOKEN }}
