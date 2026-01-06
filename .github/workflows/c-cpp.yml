@@ -326,15 +326,6 @@ jobs:
           echo "=== artifacts-store ==="
           ls -al artifacts-store/
 
-      - name: Upload to master repository
-        run: |
-          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate \
-            -n 'Automatic CI builds' \
-            -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" \
-            continuous artifacts-master/
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload to store repository
         run: |
           ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K-builds \
@@ -343,3 +334,12 @@ jobs:
             ${{ env.Build_Variable }} artifacts-store/
         env:
           GITHUB_TOKEN: ${{ secrets.STORE_TOKEN }}
+
+      - name: Upload to master repository
+        run: |
+          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate \
+            -n 'Automatic CI builds' \
+            -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" \
+            continuous artifacts-master/
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
