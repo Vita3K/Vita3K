@@ -85,6 +85,12 @@ endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+file(CREATE_LINK
+    "${CMAKE_BINARY_DIR}/compile_commands.json"
+    "${CMAKE_SOURCE_DIR}/compile_commands.json"
+    COPY_ON_ERROR
+    SYMBOLIC
+)
 
 if(NOT MSVC)
 	add_compile_options(-Wformat -Werror=format-security)
