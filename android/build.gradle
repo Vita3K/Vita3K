@@ -15,6 +15,9 @@ android {
 		versionCode 21
 		versionName "0.2.1"
 
+        def build_variable = "-${'git rev-list --count HEAD'.execute().text.trim()}"
+		versionNameSuffix build_variable
+
 		externalNativeBuild {
 			cmake {
 				abiFilters.addAll( 'arm64-v8a' )
@@ -84,7 +87,7 @@ android {
 		cmake {
 			path '../CMakeLists.txt'
 			version '3.22.1+'
-		} 
+		}
 	}
 
     buildFeatures {
