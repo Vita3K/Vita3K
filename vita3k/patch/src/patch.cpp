@@ -21,21 +21,20 @@
 
 #include <util/fs.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const std::string &bin) {
     // Find a file in the path with the titleid
     std::vector<Patch> patches;
-
-    LOG_INFO("Looking for patches for titleid {}", titleid);
 
     for (auto &entry : fs::directory_iterator(path)) {
         auto filename = fs_utils::path_to_utf8(entry.path().filename());
         // Just in case users decide to use lowercase filenames
         std::transform(filename.begin(), filename.end(), filename.begin(), ::toupper);
 
-        bool isPatchlist = filename.find("PATCHLIST.TXT") != std::string::npos;
+        bool is_patchlist = filename.find("PATCHLIST.TXT") != std::string::npos;
 
-        if ((filename.find(titleid) != std::string::npos && filename.ends_with(".TXT")) || isPatchlist) {
+        if ((filename.find(titleid) != std::string::npos && filename.ends_with(".TXT")) || is_patchlist) {
             // Read the file
             std::ifstream file(entry.path().c_str());
             PatchHeader patch_header = PatchHeader{
@@ -43,25 +42,27 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const
                 "eboot.bin"
             };
 
+            auto line_number = 0;
+            std::string line;
             // Parse the file
-            while (file.good()) {
-                std::string line;
-                std::getline(file, line);
+            while (std::getline(file, line)) {
+                line_number++;
 
                 // If this is a header, remember the binary the next patches are for
-                if (line[0] == '[') {
-                    patch_header = read_header(line, isPatchlist);
+                if (!line.empty() && line[0] == '[') {
+                    patch_header = read_header(line, is_patchlist);
                     continue;
                 }
 
                 // Ignore comments and patches for other binaries
-                if (line[0] == '#' || line[0] == '\n' || bin.find(patch_header.bin) == std::string::npos || (isPatchlist && patch_header.titleid != titleid))
+                // And @ lines for now
+                if (line.empty() || line[0] == '#' || line[0] == '@' || bin.find(patch_header.bin) == std::string::npos || (is_patchlist && patch_header.titleid != titleid))
                     continue;
 
                 try {
                     patches.push_back(parse_patch(line));
                 } catch (std::exception &e) {
-                    LOG_ERROR("Failed to parse patch line: {}", line);
+                    LOG_ERROR("Failed to parse patch line: {} [{}]", line_number, line);
                     LOG_ERROR("Failed with: {}", e.what());
                 }
             }
@@ -85,6 +86,10 @@ Patch parse_patch(const std::string &patch) {
 
     // All following values (separated by spaces) are the values to be written
     std::string values = patch.substr(patch.find(' ') + 1);
+    // set vblank to 1(60Hz) for now
+    string_utils::replace(values, "4 - vblank", "3");
+    string_utils::replace(values, "vblank - 1", "0");
+    string_utils::replace(values, "vblank", "1");
     std::vector<uint8_t> values_vec;
 
     // Get all additional values separated by spaces
