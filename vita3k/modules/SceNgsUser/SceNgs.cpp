@@ -424,7 +424,6 @@ EXPORT(SceUInt32, sceNgsSystemUpdate, ngs::System *system) {
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
-
     system->voice_scheduler.update(emuenv.kernel, emuenv.mem, thread_id);
 
     return SCE_NGS_OK;
@@ -788,6 +787,10 @@ EXPORT(SceInt32, sceNgsVoiceInit, ngs::Voice *voice, const SceNgsVoicePreset *pr
     if (init_flags & SCE_NGS_VOICE_INIT_PRESET) {
         if (!preset) {
             STUBBED("Default preset not implemented");
+            for (size_t i = 0; i < voice->rack->modules.size(); i++) {
+                if (voice->rack->modules[i])
+                    voice->rack->modules[i]->set_default_preset(emuenv.mem, voice->datas[i]);
+            }
         } else if (!voice->set_preset(emuenv.mem, preset)) {
             return RET_ERROR(SCE_NGS_ERROR);
         }
@@ -807,19 +810,27 @@ EXPORT(SceInt32, sceNgsVoiceKeyOff, ngs::Voice *voice) {
     if (!emuenv.cfg.current_config.ngs_enable) {
         return SCE_NGS_OK;
     }
-
     if (!voice) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    voice->is_keyed_off = true;
-    voice->rack->system->voice_scheduler.off(emuenv.mem, voice);
+    {
+        std::unique_lock<std::mutex> lock(*voice->voice_mutex);
+        voice->is_keyed_off = true;
 
-    // call the finish callback, I got no idea what the module id should be in this case
-    voice->invoke_callback(emuenv.kernel, emuenv.mem, thread_id, voice->finished_callback, voice->finished_callback_user_data, 0);
+        for (auto &module : voice->rack->modules) {
+            if (module && module->module_id() == 0x5CE6) {
+                voice->rack->system->voice_scheduler.off(emuenv.mem, voice);
 
-    voice->is_keyed_off = false;
-    voice->rack->system->voice_scheduler.stop(emuenv.mem, voice);
+                lock.unlock();
+                voice->invoke_callback(emuenv.kernel, emuenv.mem, thread_id, voice->finished_callback, voice->finished_callback_user_data, 0);
+                lock.lock();
+
+                voice->is_keyed_off = false;
+                voice->rack->system->voice_scheduler.stop(emuenv.mem, voice);
+            }
+        }
+    }
     return SCE_NGS_OK;
 }
 
@@ -972,7 +983,7 @@ EXPORT(SceInt32, sceNgsVoiceSetFinishedCallback, ngs::Voice *voice, Ptr<void> ca
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
-
+    LOG_DEBUG("sceNgsVoiceSetFinishedCallback");
     if (!voice)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
@@ -1007,7 +1018,7 @@ EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, ngs::Voice *voice, const SceNgsModul
     TRACY_FUNC(sceNgsVoiceSetParamsBlock, voice, header, size, pNumErrors);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
-
+    LOG_DEBUG("size: {}", size);
     if (!voice)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
@@ -1028,7 +1039,7 @@ EXPORT(SceInt32, sceNgsVoiceSetPreset, ngs::Voice *voice, const SceNgsVoicePrese
     TRACY_FUNC(sceNgsVoiceSetPreset, voice, preset);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
-
+    LOG_DEBUG("sceNgsVoiceSetPreset");
     if (!voice || !preset)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 

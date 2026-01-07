@@ -81,6 +81,12 @@ void PlayerModule::on_param_change(const MemState &mem, ModuleData &data) {
     }
 }
 
+void PlayerModule::set_default_preset(const MemState &mem, ModuleData &data) {
+    SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
+    LOG_WARN_ONCE("Player reset state");
+    *state = {};
+}
+
 bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     SceNgsPlayerParams *params = data.get_parameters<SceNgsPlayerParams>(mem);
     SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
@@ -196,8 +202,47 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                 // makes the value 4 bits aligned so we have no issue with decoding, adpcm or not and whether the sound is mono or stereo
                 bytes_to_send = std::min<uint32_t>(bytes_to_send, params->buffer_params[state->current_buffer].bytes_count - state->current_byte_position_in_buffer);
 
-                // Send buffered audio data to decoder
-                decoder->send(input + state->current_byte_position_in_buffer, bytes_to_send);
+                const uint8_t *chunk = input + state->current_byte_position_in_buffer;
+
+                // HE-ADPCM requires full frames (0x10 bytes per channel).
+                // We accumulate leftover bytes from previous chunks until we have enough to form one or more complete frames.
+                if (decoder->he_adpcm) {
+                    // Current leftover from previous iteration
+                    auto remaining_bytes = state->adpcm_buffer.size();
+
+                    // Total bytes available after appending the new chunk
+                    const auto combined_bytes = remaining_bytes + bytes_to_send;
+
+                    // One HE-ADPCM frame = 0x10 bytes per channel
+                    const uint32_t frame_size = 0x10 * params->channels;
+
+                    // Number of complete frames we can produce with leftover + chunk
+                    const uint32_t full_frames = combined_bytes / frame_size;
+
+                    // Total bytes corresponding to full frames
+                    const auto bytes_to_send_adpcm = full_frames * frame_size;
+
+                    // Number of bytes we must take from the new chunk to complete these frames
+                    const auto chunk_bytes_needed = bytes_to_send_adpcm - remaining_bytes;
+
+                    // Fill the buffer: append the required part of the chunk to complete full frames
+                    state->adpcm_buffer.resize(bytes_to_send_adpcm);
+                    memcpy(state->adpcm_buffer.data() + remaining_bytes, chunk, chunk_bytes_needed);
+
+                    // Send the completed frames to the decoder
+                    if (full_frames > 0)
+                        decoder->send(state->adpcm_buffer.data(), bytes_to_send_adpcm);
+
+                    // Compute leftover bytes that did not form a full frame
+                    remaining_bytes = combined_bytes - bytes_to_send_adpcm;
+
+                    // Store leftover for next iteration
+                    state->adpcm_buffer.resize(remaining_bytes);
+                    if (remaining_bytes > 0)
+                        memcpy(state->adpcm_buffer.data(), chunk + chunk_bytes_needed, remaining_bytes);
+                } else {
+                    decoder->send(chunk, bytes_to_send);
+                }
 
                 state->current_byte_position_in_buffer += bytes_to_send;
                 state->bytes_consumed_since_key_on += bytes_to_send;
@@ -264,7 +309,7 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                     data.extra_storage.resize(current_count + samples_count.samples * sizeof(float) * 2);
 
                     // Receive the samples processed by the decoder and append them to the buffer of already processed samples
-                    decoder->receive(current_count + data.extra_storage.data(), nullptr);
+                    decoder->receive(data.extra_storage.data() + current_count, nullptr);
                 }
             }
 

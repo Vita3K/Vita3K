@@ -309,15 +309,18 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     if (sfo::get_data_by_key(attribute2, emuenv.sfo_handle, "ATTRIBUTE2")) {
         // Convert the string to an unsigned 32-bit integer
         const uint32_t attr_val = string_utils::stoi_def(attribute2, 0, "memory expansion mode");
-
+        // LOG_DEBUG("val: {}.", attr_val);
         switch (attr_val & 0x0C) {
         case 0x4: // Check for the +29MiB mode
+            LOG_DEBUG("Is +29MiB mode.");
             max_user += MiB(29);
             break;
         case 0x8: // Check for the +77MiB mode
+            LOG_DEBUG("Is +77MiB mode.");
             max_user += MiB(77);
             break;
         case 0xC: // Check for the +109MiB mode
+            LOG_DEBUG("Is +109MiB mode.");
             max_user += MiB(109);
             break;
         default: break;
@@ -335,7 +338,7 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
     info->size_cdram = std::max<int>(max_cdram - state->allocated_cdram, 0);
     info->size_user = std::max<int>(max_user - state->allocated_user, 0);
     info->size_phycont = std::max<int>(max_phycont - state->allocated_phycont, 0);
-
+    // LOG_DEBUG("Free memory size: user={} cdram={} phycont={}", info->size_user, info->size_cdram, info->size_phycont);
     return 0;
 }
 

@@ -202,7 +202,7 @@ static uint32_t current_user_id_selected = 0;
 static UserMenu menu_selected = SELECT, menu = SELECT;
 
 void init_user_management(GuiState &gui, EmuEnvState &emuenv) {
-    init_app_background(gui, emuenv, "NPXS10013");
+    init_app_background(gui, emuenv, "vs0:app/NPXS10013");
     gui.vita_area.home_screen = false;
     gui.vita_area.information_bar = false;
     gui.vita_area.user_management = true;
@@ -285,11 +285,6 @@ static void create_temp_user(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 static void clear_user_temp(GuiState &gui) {
-#ifdef __ANDROID__
-    // Remove only avatar if is from cache
-    if (temp.avatar.find("cache/temp_avatar") != std::string::npos)
-        fs::remove(fs_utils::utf8_to_path(temp.avatar));
-#endif
     temp = {};
     gui.users_avatar["temp"] = {};
     gui.users_avatar.erase("temp");
@@ -297,31 +292,9 @@ static void clear_user_temp(GuiState &gui) {
 }
 
 static void create_and_save_user(GuiState &gui, EmuEnvState &emuenv) {
-    // Backup current avatar string
-    const auto old_avatar = menu == EDIT ? gui.users[user_id_selected].avatar : "";
-
     // Assign temp user data
     gui.users[user_id_selected] = temp;
 
-#ifdef __ANDROID__
-    // Backup current avatar path only if user already exists
-    const fs::path old_avatar_path = !old_avatar.empty() && (old_avatar != "default") ? fs_utils::utf8_to_path(old_avatar) : fs::path{};
-
-    // Determine if avatar changed
-    const auto avatar_changed = old_avatar != temp.avatar;
-
-    // Copy new avatar if needed
-    if (avatar_changed && (temp.avatar != "default")) {
-        const auto dst_avatar_path = emuenv.pref_path / "ux0/user" / user_id_selected / "avatar" / fs::path(temp.avatar).filename();
-        fs::create_directories(dst_avatar_path.parent_path());
-        fs::copy_file(fs_utils::utf8_to_path(temp.avatar), dst_avatar_path, fs::copy_options::overwrite_existing);
-        gui.users[user_id_selected].avatar = fs_utils::path_to_utf8(dst_avatar_path);
-    }
-
-    // Remove old avatar only in EDIT and only if it really changed
-    if (avatar_changed && !old_avatar_path.empty())
-        fs::remove(old_avatar_path);
-#endif
     // Move avatar texture + infos
     gui.users_avatar[user_id_selected] = std::move(gui.users_avatar["temp"]);
     users_avatar_infos[user_id_selected] = users_avatar_infos["temp"];
@@ -518,8 +491,8 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize, IM_COL32(0.f, 0.f, 0.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
     const ImVec2 WINDOW_POS_MAX(WINDOW_POS.x + WINDOW_SIZE.x, WINDOW_POS.y + WINDOW_SIZE.y);
-    if (gui.apps_background.contains("NPXS10013"))
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10013"], WINDOW_POS, WINDOW_POS_MAX);
+    if (gui.apps_background.contains("vs0:app/NPXS10013"))
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["vs0:app/NPXS10013"], WINDOW_POS, WINDOW_POS_MAX);
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(WINDOW_POS, WINDOW_POS_MAX, IM_COL32(10.f, 50.f, 140.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
@@ -760,12 +733,6 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             fs::path avatar_path{};
             host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(avatar_path, { { "Image file", { "bmp", "gif", "jpg", "jpeg", "png", "tif" } } });
             if (result == host::dialog::filesystem::Result::SUCCESS) {
-#ifdef __ANDROID__
-                // On Android, copy the picked file to a temporary path (content URI)
-                const auto temp_avatar_path = emuenv.cache_path / "temp_avatar" / avatar_path.filename();
-                if (copy_file_from_host(avatar_path, temp_avatar_path))
-                    avatar_path = temp_avatar_path;
-#endif
                 if (fs::exists(avatar_path) && init_avatar(gui, emuenv, "temp", avatar_path.string()))
                     temp.avatar = avatar_path.string();
             } else if (result == host::dialog::filesystem::Result::ERROR)

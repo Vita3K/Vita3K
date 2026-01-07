@@ -587,7 +587,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         // use these features (because they are used by the vita GPU) if they are available
         vk::PhysicalDeviceFeatures enabled_features{
-            .depthClamp = physical_device_features.depthClamp,
             .fillModeNonSolid = physical_device_features.fillModeNonSolid,
             .wideLines = physical_device_features.wideLines,
             .samplerAnisotropy = physical_device_features.samplerAnisotropy,
@@ -1279,7 +1278,6 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             LOG_CRITICAL_ONCE("No coherent memory available for memory mapping, this may be caused by an old driver!");
             mapped_memory_type = std::countr_zero(host_mem_props.memoryTypeBits);
         }
-
         vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryHostPointerInfoEXT, vk::MemoryAllocateFlagsInfo> alloc_info{
             vk::MemoryAllocateInfo{
                 .allocationSize = size,
@@ -1291,7 +1289,6 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                 .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
         };
         const vk::DeviceMemory device_memory = device.allocateMemory(alloc_info.get());
-
         vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
             vk::BufferCreateInfo{
                 .size = size,
@@ -1388,7 +1385,7 @@ std::tuple<vk::Buffer, uint32_t> VKState::get_matching_mapping(const Ptr<void> a
     auto mapped_memory = mapped_memories.lower_bound(address.address());
     if (mapped_memory == mapped_memories.end()
         || mapped_memory->first + mapped_memory->second.size < address.address()) {
-        LOG_ERROR("Could not find matching mapped buffer for vertex stream");
+        LOG_ERROR("Could not find matching mapped buffer for vertex stream: {}", address);
         return { nullptr, 0 };
     }
 

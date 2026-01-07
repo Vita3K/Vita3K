@@ -18,6 +18,7 @@
 #include <net/epoll.h>
 
 #include <optional>
+#include <util/log.h>
 
 int Epoll::add(int id, std::weak_ptr<Socket> sock, SceNetEpollEvent *ev) {
     if (!eventEntries.try_emplace(id, EpollSocket{ ev->events, ev->data, sock }).second) {
@@ -46,6 +47,20 @@ int Epoll::mod(int id, SceNetEpollEvent *ev) {
     return 0;
 }
 
+static std::string event_to_string(unsigned int events) {
+    std::string result;
+    if (events & SCE_NET_EPOLLIN) {
+        result += "EPOLLIN ";
+    }
+    if (events & SCE_NET_EPOLLOUT) {
+        result += "EPOLLOUT ";
+    }
+    if (events & SCE_NET_EPOLLERR) {
+        result += "EPOLLERR ";
+    }
+    return result.empty() ? "NONE" : result;
+}
+
 static void add_event_fd_set(fd_set *set, int *maxFd, abs_socket sock) {
     FD_SET(sock, set);
     if (sock > *maxFd)
@@ -61,17 +76,22 @@ int Epoll::wait(SceNetEpollEvent *events, int maxevents, int timeout_microsecond
 
     const auto get_valid_posix_socket = [](const std::weak_ptr<Socket> &weak_sock, int id) -> std::optional<abs_socket> {
         const auto sock = weak_sock.lock();
-        if (!sock)
+        if (!sock) {
+            LOG_ERROR("Epoll: Invalid socket for id {}", id);
             return std::nullopt;
+        }
 
         const auto posixSocket = std::dynamic_pointer_cast<PosixSocket>(sock);
-        if (!posixSocket)
+        if (!posixSocket) {
+            LOG_ERROR("Epoll: Not a valid PosixSocket for id {}", id);
             return std::nullopt;
+        }
 
         return posixSocket->sock;
     };
 
     for (const auto &[id, entry] : eventEntries) {
+        //LOG_DEBUG("Epoll: Checking sock {} for events: {}", id, event_to_string(entry.events));
         const auto sock = get_valid_posix_socket(entry.sock, id);
         if (!sock)
             continue;
@@ -90,9 +110,12 @@ int Epoll::wait(SceNetEpollEvent *events, int maxevents, int timeout_microsecond
     timeval timeout;
     timeout.tv_sec = timeout_microseconds / 1000000;
     timeout.tv_usec = timeout_microseconds % 1000000;
-    auto ret = select(maxFd + 1, &readFds, &writeFds, &exceptFds, &timeout);
-    if (ret < 0)
-        return PosixSocket::translate_return_value(ret);
+    const auto ret = select(maxFd + 1, &readFds, &writeFds, &exceptFds, &timeout);
+    if (ret < 0) {
+        const int err = PosixSocket::translate_return_value(ret);
+        LOG_ERROR("select error: {}, {}", ret, log_hex(err));
+        return err;
+    }
 
     int eventCount = 0;
     for (const auto &[id, entry] : eventEntries) {
@@ -113,8 +136,10 @@ int Epoll::wait(SceNetEpollEvent *events, int maxevents, int timeout_microsecond
 
             events[i].events = eventTypes;
             events[i].data = entry.data;
+            //LOG_DEBUG("Epoll: Event for sock {}: {}", id, event_to_string(eventTypes));
         }
     }
 
+    //LOG_DEBUG("Epoll: Total events: {}, max events: {}", eventCount, maxevents);
     return eventCount;
 }

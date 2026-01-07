@@ -14,4 +14,4 @@ add_library(packages STATIC
 )
 target_include_directories(packages PUBLIC include)
 target_link_libraries(packages PUBLIC emuenv util)
-target_link_libraries(packages PRIVATE config crypto emuenv FAT16 host_dialog io miniz psvpfsparser vita-toolchain)
+target_link_libraries(packages PRIVATE config crypto emuenv FAT16 io miniz psvpfsparser vita-toolchain)
