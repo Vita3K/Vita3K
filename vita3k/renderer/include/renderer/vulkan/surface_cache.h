@@ -110,6 +110,8 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     // only for double buffer, do we need to sync the two views?
     bool need_buffer_sync = false;
 
+    std::shared_ptr<bool> dirty = std::make_shared<bool>(false);
+
     ColorSurfaceCacheInfo() = default;
     ~ColorSurfaceCacheInfo();
 };
