@@ -91,17 +91,23 @@ SceSize get_directory_used_size(const VitaIoDevice device, const std::string &vf
 // * End utility functions *
 // ****************************
 
+static bool is_valid_output_path(const VitaIoDevice device) {
+    return !(device == VitaIoDevice::savedata0 || device == VitaIoDevice::savedata1 || device == VitaIoDevice::app0
+        || device == VitaIoDevice::_INVALID || device == VitaIoDevice::addcont0 || device == VitaIoDevice::tty0
+        || device == VitaIoDevice::tty1 || device == VitaIoDevice::tty2 || device == VitaIoDevice::tty3
+        || device == VitaIoDevice::music0 || device == VitaIoDevice::photo0 || device == VitaIoDevice::video0);
+}
+
 bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, const fs::path &pref_path, bool redirect_stdio) {
     // Iterate through the entire list of devices and create the subdirectories if they do not exist
-    for (auto i : VitaIoDevice::_names()) {
-        if (!device::is_valid_output_path(i))
-            continue;
-        fs::create_directories(pref_path / i);
-    }
+    boost::mp11::mp_for_each<boost::describe::describe_enumerators<VitaIoDevice>>([&pref_path](auto i) {
+        if (is_valid_output_path(i.value))
+            fs::create_directories(pref_path / i.name);
+    });
 
-    const fs::path ux0{ pref_path / (+VitaIoDevice::ux0)._to_string() };
-    const fs::path uma0{ pref_path / (+VitaIoDevice::uma0)._to_string() };
-    const fs::path vd0{ pref_path / (+VitaIoDevice::vd0)._to_string() };
+    const fs::path ux0{ pref_path / "ux0" };
+    const fs::path uma0{ pref_path / "uma0" };
+    const fs::path vd0{ pref_path / "vd0" };
 
     fs::create_directories(ux0 / "data");
     fs::create_directories(ux0 / "app");
@@ -157,7 +163,7 @@ void init_device_paths(IOState &io) {
 }
 
 bool init_savedata_app_path(IOState &io, const fs::path &pref_path) {
-    const fs::path user_id_path{ pref_path / (+VitaIoDevice::ux0)._to_string() / "user" / io.user_id };
+    const fs::path user_id_path{ pref_path / "ux0" / "user" / io.user_id };
     const fs::path savedata_path{ user_id_path / "savedata" };
     const fs::path savedata_game_path{ savedata_path / io.savedata };
 
@@ -172,17 +178,17 @@ bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &tra
     std::string final_path{};
 
     switch (device) {
-    case +VitaIoDevice::app0: {
+    case VitaIoDevice::app0: {
         std::string app_id = translated_path.string().substr(0, 14);
         final_path = system_path.string().substr(0, system_path.string().find(app_id)) + app_id;
         break;
     }
-    case +VitaIoDevice::addcont0: {
+    case VitaIoDevice::addcont0: {
         std::string addcont_id = translated_path.string().substr(0, 18);
         final_path = system_path.string().substr(0, system_path.string().find(addcont_id)) + addcont_id;
         break;
     }
-    case +VitaIoDevice::vs0: {
+    case VitaIoDevice::vs0: {
         // This only works if ALL the parent folders of the path are the correct case or are in a case insensitive fs
         // Only the file's name is searched for, not the parent folders
         final_path = system_path.string().substr(0, system_path.string().find_last_of('/'));
@@ -223,61 +229,61 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
     // TODO: Handle dot-dot paths
 
     switch (device) {
-    case +VitaIoDevice::savedata0: // Redirect savedata0: to ux0:user/00/savedata/<title_id>
-    case +VitaIoDevice::savedata1: {
+    case VitaIoDevice::savedata0: // Redirect savedata0: to ux0:user/00/savedata/<title_id>
+    case VitaIoDevice::savedata1: {
         relative_path = device::remove_device_from_path(relative_path, device, device_paths.savedata0);
         device = VitaIoDevice::ux0;
         break;
     }
-    case +VitaIoDevice::app0: { // Redirect app0: to ux0:app/<title_id>
+    case VitaIoDevice::app0: { // Redirect app0: to ux0:app/<title_id>
         relative_path = device::remove_device_from_path(relative_path, device, device_paths.app0);
         device = VitaIoDevice::ux0;
         break;
     }
-    case +VitaIoDevice::addcont0: { // Redirect addcont0: to ux0:addcont/<title_id>
+    case VitaIoDevice::addcont0: { // Redirect addcont0: to ux0:addcont/<title_id>
         relative_path = device::remove_device_from_path(relative_path, device, device_paths.addcont0);
         device = VitaIoDevice::ux0;
         break;
     }
-    case +VitaIoDevice::music0: { // Redirect music0: to ux0:music
+    case VitaIoDevice::music0: { // Redirect music0: to ux0:music
         relative_path = device::remove_device_from_path(relative_path, device, "music");
         device = VitaIoDevice::ux0;
         break;
     }
-    case +VitaIoDevice::photo0: { // Redirect photo0: to ux0:picture
+    case VitaIoDevice::photo0: { // Redirect photo0: to ux0:picture
         relative_path = device::remove_device_from_path(relative_path, device, "picture");
         device = VitaIoDevice::ux0;
         break;
     }
-    case +VitaIoDevice::video0: { // Redirect video0: to ux0:video
+    case VitaIoDevice::video0: { // Redirect video0: to ux0:video
         relative_path = device::remove_device_from_path(relative_path, device, "video");
         device = VitaIoDevice::ux0;
         break;
     }
 
-    case +VitaIoDevice::host0:
-    case +VitaIoDevice::gro0:
-    case +VitaIoDevice::grw0:
-    case +VitaIoDevice::imc0:
-    case +VitaIoDevice::os0:
-    case +VitaIoDevice::pd0:
-    case +VitaIoDevice::sa0:
-    case +VitaIoDevice::sd0:
-    case +VitaIoDevice::tm0:
-    case +VitaIoDevice::ud0:
-    case +VitaIoDevice::uma0:
-    case +VitaIoDevice::ur0:
-    case +VitaIoDevice::ux0:
-    case +VitaIoDevice::vd0:
-    case +VitaIoDevice::vs0:
-    case +VitaIoDevice::xmc0: {
+    case VitaIoDevice::host0:
+    case VitaIoDevice::gro0:
+    case VitaIoDevice::grw0:
+    case VitaIoDevice::imc0:
+    case VitaIoDevice::os0:
+    case VitaIoDevice::pd0:
+    case VitaIoDevice::sa0:
+    case VitaIoDevice::sd0:
+    case VitaIoDevice::tm0:
+    case VitaIoDevice::ud0:
+    case VitaIoDevice::uma0:
+    case VitaIoDevice::ur0:
+    case VitaIoDevice::ux0:
+    case VitaIoDevice::vd0:
+    case VitaIoDevice::vs0:
+    case VitaIoDevice::xmc0: {
         relative_path = device::remove_device_from_path(relative_path, device);
         break;
     }
-    case +VitaIoDevice::tty0:
-    case +VitaIoDevice::tty1:
-    case +VitaIoDevice::tty2:
-    case +VitaIoDevice::tty3: {
+    case VitaIoDevice::tty0:
+    case VitaIoDevice::tty1:
+    case VitaIoDevice::tty2:
+    case VitaIoDevice::tty3: {
         return std::string{};
     }
     default: {
@@ -323,7 +329,7 @@ SceUID open_file(IOState &io, const char *path, const int flags, const fs::path 
         const auto fd = io.next_fd++;
         io.tty_files.emplace(fd, tty_type);
 
-        LOG_TRACE_IF(log_file_op, "{}: Opening terminal {}:", export_name, device._to_string());
+        LOG_TRACE_IF(log_file_op, "{}: Opening terminal {}:", export_name, device);
         return fd;
     }
 

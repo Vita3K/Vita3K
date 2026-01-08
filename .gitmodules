@@ -1,6 +1,3 @@
-[submodule "external/better-enums"]
-	path = external/better-enums
-	url = https://github.com/aantron/better-enums
 [submodule "external/boost"]
 	path = external/boost
 	url = https://github.com/Vita3K/ext-boost

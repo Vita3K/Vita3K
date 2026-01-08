@@ -41,20 +41,6 @@ VitaIoDevice get_device(const std::string &path);
 std::string get_device_string(const VitaIoDevice dev, const bool with_colon = false);
 
 /**
- * \brief Check if the device is a valid output path.
- * \param device Input device to be checked.
- * \return True if valid, False otherwise.
- */
-bool is_valid_output_path(const VitaIoDevice device);
-
-/**
- * \brief Check if the device string is valid.
- * \param device Input device to be checked.
- * \return True if valid, False otherwise.
- */
-bool is_valid_output_path(const std::string &device);
-
-/**
  * \brief Construct a normalized path (optionally with an extension) to be outputted onto the Vita.
  * \param dev The input Vita device.
  * \param path The Vita location needed.
