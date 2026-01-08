@@ -280,7 +280,7 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 			<home_screen_backgrounds name="Aloitusnäytön taustat">
 			</home_screen_backgrounds>
 		</theme_background>
-		<date_time name="päiväys ja aika">
+		<date_time name="Päiväys ja aika">
 			<date_format name ="Päiväyksen muoto">
 				<yyyy_mm_dd>VVVV/KK/PP</yyyy_mm_dd>
 				<dd_mm_yyyy>PP/KK/VVVV</dd_mm_yyyy>
@@ -322,7 +322,10 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		<system name="Järjestelmä">
 		</system>
 		<network name="Verkko">
+			<ip_address>IP-osoite</ip_address>
+			<subnet_mask>Aliverkon peite</subnet_mask>
 		</network>
+		<save_close>Tallenna & Sulkea</save_close>
 	</settings_dialog>
 
 	<sys_apps_title>

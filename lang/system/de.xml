@@ -326,8 +326,13 @@ Dein Vita3K-System ist bereit!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Einstellungen">
+		<system name="System">
+		</system>
 		<network name="Netzwerk">
+			<ip_address>IP-adresse</ip_address>
+			<subnet_mask>Subnetzmaske</subnet_mask>
 		</network>
+		<save_close>Speichern & Schließen</save_close>
 	</settings_dialog>
 
 	<sys_apps_title>

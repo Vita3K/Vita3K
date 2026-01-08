@@ -661,7 +661,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 }
 
                 ImGui::SameLine();
-                if (ImGui::Button("Download Custom Driver"))
+                if (ImGui::Button(lang.gpu["download_custom_driver"].c_str()))
                     open_path("https://github.com/K11MCH1/AdrenoToolsDrivers/releases/");
 
                 // first is the stock gpu

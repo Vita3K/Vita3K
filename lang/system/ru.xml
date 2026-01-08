@@ -80,6 +80,7 @@
 			<updated>Обновлен</updated>
 			<size>Размер</size>
 			<version>Версия</version>
+			<category>Категория</category>
 			<last_time_used>Время последнего использования</last_time_used>
 			<time_used>Время использования</time_used>
 			<never>Никогда</never>
@@ -764,10 +765,13 @@
 		<network name="Сеть">
 			<psn_signed_in>Подключен к PSN</psn_signed_in>
 			<psn_signed_in_description>Если флажок установлен, игры будут считать, что пользователь подключен к сети PSN (но не в сети).</psn_signed_in_description>
+			<ip_address>IP-адрес</ip_address>
+			<subnet_mask>Маска подсети</subnet_mask>
 		</network>
 		<save>Сохранить</save>
 		<save_reboot>Сохранить и перезапустить</save_reboot>
 		<save_apply>Сохранить и применить</save_apply>
+		<save_close>Сохранить и закрыть</save_close>
 		<keep_changes>Нажмите на Сохранить, чтобы сохранить изменения.</keep_changes>
 	</settings_dialog>
 

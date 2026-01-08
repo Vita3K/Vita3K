@@ -341,7 +341,10 @@ Je Vita3K-systeem is gereed!</completed_setup>
 		<system name="Systeem">
 		</system>
 		<network name="Netwerk">
+			<ip_address>IP-adres</ip_address>
+			<subnet_mask>Subnetmasker</subnet_mask>
 		</network>
+		<save_close>Opslaan & Sluiten</save_close>
 	</settings_dialog>
 
 	<sys_apps_title>

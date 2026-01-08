@@ -92,6 +92,9 @@ depending on its size and your hardware.</app_delete_description>
 			<size>Size</size>
 			<version>Version</version>
 			<title_id>Title ID</title_id>
+			<category>Category</category>
+			<gd>Game Digital Application</gd>
+			<gp>Game Patch</gp>
 			<last_time_used>Last time used</last_time_used>
 			<time_used>Time used</time_used>
 			<never>Never</never>
@@ -340,6 +343,7 @@ Connect a controller that is compatible with SDL3.</not_connected>
 		<toggle_texture_replacement>Toggle Texture Replacement</toggle_texture_replacement>
 		<take_screenshot>Take A Screenshot</take_screenshot>
 		<error_duplicate_key>The key is used for other bindings or it is reserved.</error_duplicate_key>
+		<reset_controls_binding>Reset Controls Binding</reset_controls_binding>
 	</controls>
 
 	<dialog>
@@ -607,6 +611,12 @@ Check vita3k.log to see console output for details.
 	<settings_dialog name="Settings">
 		<core name="Core">
 			<modules_mode>Modules Mode</modules_mode>
+			<automatic>Automatic</automatic>
+			<automatic_description>Select Automatic mode to use a preset list of modules.</automatic_description>
+			<auto_manual>Auto & Manual</auto_manual>
+			<auto_manual_description>Select this mode to load Automatic module and selected modules from the list below.</auto_manual_description>
+			<manual>Manual</manual>
+			<manual_description>Select Manual mode to load selected modules from the list below.</manual_description>
 			<modules_list>Modules List</modules_list>
 			<select_modules>Select your desired modules.</select_modules>
 			<search_modules>Search Modules</search_modules>
@@ -614,12 +624,6 @@ Check vita3k.log to see console output for details.
 			<no_modules>No modules present.
 Please download and install the last PS Vita firmware.</no_modules>
 			<refresh_list>Refresh List</refresh_list>
-			<automatic>Automatic</automatic>
-			<automatic_description>Select Automatic mode to use a preset list of modules.</automatic_description>
-			<auto_manual>Auto & Manual</auto_manual>
-			<auto_manual_description>Select this mode to load Automatic module and selected modules from the list below.</auto_manual_description>
-			<manual>Manual</manual>
-			<manual_description>Select Manual mode to load selected modules from the list below.</manual_description>
 		</core>
 		<cpu>
 			<cpu_opt>Enable optimizations</cpu_opt>
@@ -632,6 +636,7 @@ Please download and install the last PS Vita firmware.</no_modules>
 			<gpu>GPU (Reboot to apply)</gpu>
 			<select_gpu>Select the GPU Vita3K should run on.</select_gpu>
 			<add_custom_driver>Add custom driver</add_custom_driver>
+			<download_custom_driver>Download custom driver</download_custom_driver>
 			<remove_custom_driver>Remove custom driver</remove_custom_driver>
 			<standard>Standard</standard>
 			<high>High</high>

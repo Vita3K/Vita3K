@@ -78,6 +78,7 @@
 			<size>サイズ</size>
 			<version>バージョン</version>
 			<title_id>タイトルID</title_id>
+			<category>カテゴリー</category>
 			<last_time_used>最後に起動した日時</last_time_used>
 			<time_used>プレイ時間</time_used>
 			<never>なし</never>
@@ -682,6 +683,8 @@ GUIでのアジア地域のフォントサポートに必須です。
 		<network name="ネットワーク">
 			<psn_status>PSNステータス</psn_status>
 			<select_psn_state>PSネットワークの状態を選択してください。</select_psn_state>
+			<ip_address>IPアドレス</ip_address>
+			<subnet_mask>サブネットマスク</subnet_mask>
 			<enable_http>HTTPの有効化</enable_http>
 			<enable_http_description>このボックスにチェックを入れて、ゲームがインターネットでHTTPプロトコルを使用できるようにします。</enable_http_description>
 			<timeout_attempts>HTTPタイムアウト試行回数</timeout_attempts>
@@ -699,6 +702,7 @@ GUIでのアジア地域のフォントサポートに必須です。
 		</network>
 		<save_reboot>保存して再起動</save_reboot>
 		<save_apply>保存して適用</save_apply>
+		<save_close>保存して閉じる</save_close>
 		<keep_changes>セーブをクリックして変更を保存します。</keep_changes>
 	</settings_dialog>
 

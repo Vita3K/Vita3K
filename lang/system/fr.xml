@@ -75,6 +75,7 @@
 			<size>Taille</size>
 			<version>Version</version>
 			<title_id>ID du Titre</title_id>
+			<category>Catégorie</category>
 			<last_time_used>Dernière fois utilisé</last_time_used>
 			<time_used>Temps utilisé</time_used>
 			<never>Jamais</never>
@@ -420,7 +421,10 @@ Votre système Vita3K est prêt !</completed_setup>
 		<system name="Système">
 		</system>
 		<network name="Réseau">
+			<ip_address>Adresse IP</ip_address>
+			<subnet_mask>Masque de sous-réseau</subnet_mask>
 		</network>
+		<save_close>Sauvegarder & Fermer</save_close>
 	</settings_dialog>
 
 	<sys_apps_title>

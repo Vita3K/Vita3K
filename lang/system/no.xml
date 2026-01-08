@@ -321,7 +321,10 @@ Vita3K-systemet ditt er klart!</completed_setup>
 		<system name="System">
 		</system>
 		<network name="Nettverk">
+			<ip_address>IP-adresse</ip_address>
+			<subnet_mask>Subnet-maske</subnet_mask>
 		</network>
+		<save_close>Lagre & Lukke</save_close>
 	</settings_dialog>
 
 	<sys_apps_title>

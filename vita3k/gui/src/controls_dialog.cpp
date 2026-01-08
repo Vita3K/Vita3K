@@ -69,6 +69,15 @@ static void prepare_map_array(EmuEnvState &emuenv, std::array<int, total_key_ent
     CONFIG_INDIVIDUAL(ADD_KEYBOARD_MEMBERS)
 #undef ADD_KEYBOARD_MEMBERS
 }
+static void reset_map_array(EmuEnvState &emuenv) {
+#define RESET_KEYBOARD_MEMBERS(option_type, option_name, option_default, member_name) \
+    if constexpr (std::string_view(#member_name).starts_with("keyboard_")) {          \
+        emuenv.cfg.member_name = option_default;                                      \
+    }
+
+    CONFIG_INDIVIDUAL(RESET_KEYBOARD_MEMBERS)
+#undef RESET_KEYBOARD_MEMBERS
+}
 
 static bool need_open_error_duplicate_key_popup = false;
 
@@ -214,6 +223,12 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE))
             ImGui::CloseCurrentPopup();
         ImGui::EndPopup();
+    }
+
+    ImGui::Spacing();
+    if (ImGui::Button(lang["reset_controls_binding"].c_str())) {
+        reset_map_array(emuenv);
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
     ImGui::Spacing();
     ImGui::Separator();

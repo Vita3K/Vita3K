@@ -770,6 +770,7 @@ lebih rendah dapat meningkatkan performa tetapi dapat membuat game tidak stabil 
 		</debug>
 		<save_reboot>Simpan & BuatUlang</save_reboot>
 		<save_apply>Simpan & Terapkan</save_apply>
+		<save_close>Simpan & Tutup</save_close>
 		<keep_changes>Klik Simpan untuk menyimpan perubahan Kamu.</keep_changes>
 	</settings_dialog>
 
