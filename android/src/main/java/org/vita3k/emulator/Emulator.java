@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.Settings;
@@ -14,6 +15,7 @@ import android.system.ErrnoException;
 import android.system.Os;
 import android.view.Surface;
 import android.view.ViewGroup;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.Keep;
@@ -98,6 +100,26 @@ public class Emulator extends SDLActivity
             String game_id = intent.getAction().substring(7);
             if(!game_id.equals(currentGameId))
                 ProcessPhoenix.triggerRebirth(getContext(), intent);
+        }
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        hideSystemBars();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        hideSystemBars();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            hideSystemBars();
         }
     }
 
@@ -322,4 +344,15 @@ public class Emulator extends SDLActivity
     }
 
     public native void filedialogReturn(String result_path);
+
+    private void hideSystemBars() {
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        );
+    }
 }
