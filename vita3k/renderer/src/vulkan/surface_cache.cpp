@@ -59,6 +59,28 @@ static bool format_need_additional_memory(SceGxmColorBaseFormat format) {
 
 namespace renderer::vulkan {
 
+static void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
+    const bool supports_surface_sync = (info.tiling == SurfaceTiling::Linear
+        && format_support_surface_sync(info.format));
+
+    uint32_t addr_start = align_down(info.data.address(), mem.page_size);
+    uint32_t addr_end = align(info.data.address() + info.total_bytes, mem.page_size);
+
+    // Use MemPerm::None to trap both reads and writes for surfaces that support sync,
+    // MemPerm::ReadOnly to trap only writes for other surfaces
+    MemPerm perm = supports_surface_sync ? MemPerm::None : MemPerm::ReadOnly;
+    std::shared_ptr<bool> need_sync = supports_surface_sync ? info.need_surface_sync : nullptr;
+
+    add_protect(mem, addr_start, addr_end - addr_start, perm,
+        [dirty = info.dirty, need_sync](Address, bool write) {
+            if (write)
+                *dirty = true;
+            else if (need_sync)
+                *need_sync = true;
+            return true;
+        });
+}
+
 ColorSurfaceCacheInfo::~ColorSurfaceCacheInfo() {
     sws_freeContext(sws_context);
 }
@@ -188,6 +210,11 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
             color_surface_queue.set_as_lru(&info);
         } else {
             color_surface_queue.set_as_mru(&info);
+            *info.dirty = false;
+
+            if (info.data)
+                protect_surface(mem, info);
+
             last_written_surface = &info;
 
             // if this surface has not been rendered to for the last 60 frames, consider it is not safe not to render all shaders to it
@@ -275,27 +302,11 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
 
     last_written_surface = &info_added;
     info_added.need_surface_sync.reset();
-    info_added.need_surface_sync = std::make_shared<bool>();
-    *info_added.need_surface_sync = false;
+    info_added.need_surface_sync = std::make_shared<bool>(false);
+    info_added.dirty.reset();
+    info_added.dirty = std::make_shared<bool>(false);
 
-    // we only support surface sync of linear surfaces for now
-    if (!can_mprotect_mapped_memory) {
-        // perform surface sync on everything
-        // it is slow but well... we can't mprotect the buffer
-        *info_added.need_surface_sync = color->surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR;
-    } else if (color->surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR && format_support_surface_sync(base_format)) {
-        uint32_t addr_start = align(info_added.data.address(), KiB(4));
-        uint32_t addr_end = align_down(info_added.data.address() + info_added.total_bytes, KiB(4));
-        if (addr_start >= addr_end) {
-            // we still need to protect something, even if it's not completely accurate
-            addr_start = align_down(info_added.data.address(), KiB(4));
-            addr_end = align(info_added.data.address() + info_added.total_bytes, KiB(4));
-        }
-        add_protect(mem, addr_start, addr_end - addr_start, MemPerm::None, [need_sync = info_added.need_surface_sync](Address addr, bool) {
-            *need_sync = true;
-            return true;
-        });
-    }
+    protect_surface(mem, info_added);
 
     // it's not impossible that this surface will be rendered once and only used after, so do not skip any shader on it
     state.pipeline_cache.can_use_deferred_compilation = false;
@@ -326,6 +337,10 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     overlap = (overlap && (ite->first + ite->second->total_bytes) > address);
 
     if (!overlap)
+        return std::nullopt;
+
+    if (*ite->second->dirty)
+        // Guest wrote to the surface backing memory since it was rendered, so GPU data is stale.
         return std::nullopt;
 
     const vk::ComponentMapping swizzle = texture::translate_swizzle(gxm::get_format(texture));
