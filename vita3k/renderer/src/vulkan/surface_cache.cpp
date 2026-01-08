@@ -328,6 +328,14 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     if (!overlap)
         return std::nullopt;
 
+    // If the surface hasn't been rendered to for a long time, don't return stale GPU data.
+    // Let the texture cache read from guest memory instead.
+    // Fixes Trails in the Sky FC Evolution red screen on scene transitions.
+    constexpr uint64_t big_delay_between_frames = 60;
+    const uint64_t frame_timestamp = static_cast<VKContext *>(state.context)->frame_timestamp;
+    if (frame_timestamp - ite->second->last_frame_rendered > big_delay_between_frames)
+        return std::nullopt;
+
     const vk::ComponentMapping swizzle = texture::translate_swizzle(gxm::get_format(texture));
     vk::Format vk_format = color::translate_format(base_format);
 
