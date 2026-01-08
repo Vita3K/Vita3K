@@ -1024,6 +1024,12 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["title_id"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["title_id"].c_str(), APP_INDEX->title_id.c_str());
             ImGui::Spacing();
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["category"] + "  ").c_str()).x);
+            if (APP_INDEX->category == "gd")
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["category"].c_str(), lang.info["gd"].c_str());
+            else if (APP_INDEX->category == "gp")
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["category"].c_str(), lang.info["gp"].c_str());
+            ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang_compat.name + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang_compat.name.c_str());
             ImGui::SameLine();

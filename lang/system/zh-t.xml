@@ -92,6 +92,9 @@
 			<size>檔案大小</size>
 			<version>版本</version>
 			<title_id>標題ID</title_id>
+			<category>類別</category>
+			<gd>數位版遊戲</gd>
+			<gp>遊戲補丁</gp>
 			<last_time_used>上次使用時間</last_time_used>
 			<time_used>使用時間</time_used>
 			<never>從來沒有</never>
@@ -339,6 +342,7 @@
 		<toggle_texture_replacement>切換紋理替換</toggle_texture_replacement>
 		<take_screenshot>截圖</take_screenshot>
 		<error_duplicate_key>此按鈕已繫結至其他鍵或已被保留。</error_duplicate_key>
+		<reset_controls_binding>重設控制繫結</reset_controls_binding>
 	</controls>
 
 	<dialog>
@@ -630,6 +634,7 @@
 			<gpu>GPU（重啟後應用）</gpu>
 			<select_gpu>選擇Vita3K應使用的GPU。</select_gpu>
 			<add_custom_driver>添加自訂驅動</add_custom_driver>
+			<download_custom_driver>下載自訂驅動</download_custom_driver>
 			<remove_custom_driver>移除自訂驅動</remove_custom_driver>
 			<standard>標準</standard>
 			<high>高</high>
@@ -818,7 +823,7 @@
 			<psn_signed_in_description>如果勾選此項，遊戲將認為使用者已接入至PSN（但為離線）。</psn_signed_in_description>
 			<ip_address>IP位址</ip_address>
 			<ip_address_description>選擇在adhoc中使用的IP位址。</ip_address_description>
-			<subnet_mask>子網掩碼</subnet_mask>
+			<subnet_mask>子網路遮罩</subnet_mask>
 			<enable_http>啟用HTTP</enable_http>
 			<enable_http_description>勾選此項啟用遊戲在網際網路上使用HTTP協議。</enable_http_description>
 			<timeout_attempts>HTTP超時嘗試</timeout_attempts>

@@ -91,6 +91,7 @@ jest to zależne od jej rozmiaru i twojego sprzętu.</app_delete_description>
 			<size>Rozmiar</size>
 			<version>Wersja</version>
 			<title_id>Identyfikator tytułu</title_id>
+			<category>Kategoria</category>
 			<last_time_used>Ostatnio uruchamiane</last_time_used>
 			<time_used>Uruchomione przez</time_used>
 			<never>Nigdy</never>
@@ -789,6 +790,8 @@ Wartość minimalna jest nieprzeźroczysta, a wartość minimalna jest przeźroc
 		<network name="Sieć">
 			<psn_signed_in>Zalogowany do PSN</psn_signed_in>
 			<psn_signed_in_description>Jeśli zaznaczone, gry będą zakładać że użytkownik jest połączony z PlayStation Network (ale w trybie offline).</psn_signed_in_description>
+			<ip_address>Adres IP</ip_address>
+			<subnet_mask>Maska podsieci</subnet_mask>
 			<enable_http>Włącz HTTP</enable_http>
 			<enable_http_description>Zaznacz, aby umożliwić grom korzystanie z protokołu HTTP w internecie.</enable_http_description>
 			<timeout_attempts>Próby przekroczenia czasu połączenia HTTP</timeout_attempts>

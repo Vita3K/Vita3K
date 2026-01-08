@@ -328,7 +328,10 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 		<system name="Sistem">
 		</system>
 		<network name="Ağ">
+			<ip_address>IP Adresi</ip_address>
+			<subnet_mask>Alt Ağ Maskesi</subnet_mask>
 		</network>
+		<save_close>Kaydet & Kapat</save_close>
 	</settings_dialog>
 
 	<sys_apps_title>

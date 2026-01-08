@@ -90,6 +90,7 @@
 			<size>Розмір</size>
 			<version>Версія</version>
 			<title_id>Ідентифікатор</title_id>
+			<category>Каталог</catrgory>
 			<last_time_used>Востаннє запущено</last_time_used>
 			<time_used>Часу проведено</time_used>
 			<never>Жодного разу</never>
@@ -769,6 +770,7 @@
 		</debug>
 		<save_reboot>Зберегти & Перезапустити</save_reboot>
 		<save_apply>Зберегти & Застосувати</save_apply>
+		<save_close>Зберегти & Закрити</save_close>
 		<keep_changes>Натисніть 'Зберегти', аби зберегти зміни.</keep_changes>
 	</settings_dialog>
 

@@ -779,6 +779,7 @@ lebih rendah boleh meningkatkan prestasi tetapi boleh membuat permainan tidak st
 		</debug>
 		<save_reboot>Simpan & Reboot</save_reboot>
 		<save_apply>Simpan & Apply</save_apply>
+		<save_close>Simpan & Tutup</save_close>
 		<keep_changes>Klik pada simpan untuk menyimpan perubahan awak.</keep_changes>
 	</settings_dialog>
 

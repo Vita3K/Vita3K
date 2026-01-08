@@ -335,7 +335,10 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		<system name="Sistema">
 		</system>
 		<network name="Red">
+			<ip_address>Dirección IP</ip_address>
+			<subnet_mask>Máscara de subred</subnet_mask>
 		</network>
+		<save_close>Guardar & Cerrar</save_close>
 	</settings_dialog>
 
 	<sys_apps_title>

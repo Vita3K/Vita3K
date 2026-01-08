@@ -92,6 +92,9 @@
 			<size>大小</size>
 			<version>版本</version>
 			<title_id>标题ID</title_id>
+			<category>类别</category>
+			<gd>数字版游戏</gd>
+			<gp>游戏补丁</gp>
 			<last_time_used>最近使用时间</last_time_used>
 			<time_used>使用时间</time_used>
 			<never>从来没有</never>
@@ -339,6 +342,7 @@
 		<toggle_texture_replacement>切换纹理替换</toggle_texture_replacement>
 		<take_screenshot>截图</take_screenshot>
 		<error_duplicate_key>该按键已被使用并绑定其他键或被预留。</error_duplicate_key>
+		<reset_controls_binding>重置控制绑定</reset_controls_binding>
 	</controls>
 
 	<dialog>
@@ -630,6 +634,7 @@
 			<gpu>GPU（重启后应用）</gpu>
 			<select_gpu>选择Vita3K应使用的GPU。</select_gpu>
 			<add_custom_driver>添加自定义驱动</add_custom_driver>
+			<download_custom_driver>下载自定义驱动</download_custom_driver>
 			<remove_custom_driver>移除自定义驱动</remove_custom_driver>
 			<standard>标准</standard>
 			<high>高</high>

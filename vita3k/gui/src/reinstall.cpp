@@ -25,26 +25,46 @@
 namespace gui {
 
 void draw_reinstall_dialog(GenericDialogState *status, GuiState &gui, EmuEnvState &emuenv) {
+    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
+    const auto BUTTON_SIZE = ImVec2(180.f * SCALE.x, 45.f * SCALE.y);
+    const auto WINDOW_SIZE = ImVec2(616.f * SCALE.x, 264.f * SCALE.y);
+
     auto &lang = gui.lang.install_dialog.reinstall;
     auto &info = gui.lang.app_context.info;
     auto &common = emuenv.common_dialog.lang.common;
 
     ImGui::PushFont(gui.vita_font[emuenv.current_font_level]);
-    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(0, 0));
-    ImGui::Begin(lang["reinstall_content"].c_str());
-    ImGui::Text("%s", lang["already_installed"].c_str());
+    ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(display_size);
+    ImGui::Begin("##reinstall", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f), emuenv.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
+    ImGui::BeginChild("##reinstall_child", WINDOW_SIZE, ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    const auto POS_BUTTON = (ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f) + (10.f * SCALE.x);
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["reinstall_content"].c_str());
     ImGui::Spacing();
-    ImGui::Text("%s: %s\n%s: %s\n%s: %s", info["name"].c_str(), emuenv.app_info.app_title.c_str(), info["title_id"].c_str(), emuenv.app_info.app_title_id.c_str(), info["version"].c_str(), emuenv.app_info.app_version.c_str());
+    ImGui::Separator();
     ImGui::Spacing();
-    ImGui::Text("%s", lang["reinstall_overwrite"].c_str());
-    if (ImGui::Button(common["yes"].c_str())) {
-        *status = CONFIRM_STATE;
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(common["no"].c_str())) {
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["already_installed"].c_str());
+    ImGui::Spacing();
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s: %s\n%s: %s\n%s: %s", info["name"].c_str(), emuenv.app_info.app_title.c_str(), info["title_id"].c_str(), emuenv.app_info.app_title_id.c_str(), info["version"].c_str(), emuenv.app_info.app_version.c_str());
+    ImGui::Spacing();
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["reinstall_overwrite"].c_str());
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * SCALE.x));
+    if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE))
         *status = CANCEL_STATE;
-    }
+    ImGui::SameLine(0, 20.f * SCALE.x);
+    if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE))
+        *status = CONFIRM_STATE;
+    ImGui::SameLine(0, 20.f * SCALE.x);
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
     ImGui::End();
     ImGui::PopFont();
 }

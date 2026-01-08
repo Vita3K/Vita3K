@@ -25,15 +25,9 @@
 namespace gui {
 
 void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
-    const auto BUTTON_SIZE = ImVec2(180.f * SCALE.x, 45.f * SCALE.y);
-
-    auto &lang = gui.lang.install_dialog.license_install;
-    auto &license = gui.lang.install_dialog.pkg_install;
-    auto &indicator = gui.lang.indicator;
-    auto &common = emuenv.common_dialog.lang.common;
+    static bool delete_license_file;
+    static std::string title, zRIF;
+    static fs::path license_path{};
 
     enum class State {
         UNDEFINED,
@@ -45,18 +39,26 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     static State state = State::UNDEFINED;
 
-    static std::string title, zRIF;
-    static fs::path license_path{};
-    static bool delete_license_file;
+    auto &lang = gui.lang.install_dialog.license_install;
+    auto &license = gui.lang.install_dialog.pkg_install;
+    auto &indicator = gui.lang.indicator;
+    auto &common = emuenv.common_dialog.lang.common;
 
-    ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
+    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
+    const auto BUTTON_SIZE = ImVec2(180.f * SCALE.x, 45.f * SCALE.y);
+    const auto WINDOW_SIZE = ImVec2(616.f * SCALE.x, 264.f * SCALE.y);
+
+    ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size);
     ImGui::Begin("##license_install", &gui.file_menu.license_install_dialog, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f), emuenv.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
     ImGui::SetWindowFontScale(RES_SCALE.x);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
-    ImGui::BeginChild("##license_install_child", ImVec2(616.f * SCALE.x, 264.f * SCALE.y), ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::BeginChild("##license_install_child", WINDOW_SIZE, ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     const auto POS_BUTTON = (ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f) + (10.f * SCALE.x);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
     TextColoredCentered(GUI_COLOR_TEXT_TITLE, title.c_str());
     ImGui::Spacing();
     ImGui::Separator();

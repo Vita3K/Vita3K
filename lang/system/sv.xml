@@ -319,8 +319,13 @@ Ditt Vita3K-system är redo!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Inställningar">
+		<system name="System">
+		</system>
 		<network name="Nätverk">
+			<ip_address>IP-adress</ip_address>
+			<subnet_mask>Undernätmask</subnet_mask>
 		</network>
+		<save_close>Spara & Stänga</save_close>
 	</settings_dialog>
 
 	<sys_apps_title>

@@ -344,7 +344,10 @@
 		<system name="시스템">
 		</system>
 		<network name="네트워크">
+			<ip_address>IP 어드레스</ip_address>
+			<subnet_mask>서브넷 마스크</subnet_mask>
 		</network>
+		<save_close>저장 & 닫다</save_close>
 	</settings_dialog>
 
 	<sys_apps_title>
