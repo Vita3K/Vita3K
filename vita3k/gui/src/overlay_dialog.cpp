@@ -165,7 +165,8 @@ void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Separator();
     if (emuenv.cfg.enable_gamepad_overlay && ImGui::Checkbox(lang["overlay_show_touch_switch"].c_str(), &emuenv.cfg.overlay_show_touch_switch)) {
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
-        set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), overlay_editing);
+        if (overlay_editing)
+            set_controller_overlay_state(get_overlay_display_mask(emuenv.cfg), true);
     }
     ImGui::Text("%s", lang["l2_r2_triggers"].c_str());
     ImGui::Spacing();
