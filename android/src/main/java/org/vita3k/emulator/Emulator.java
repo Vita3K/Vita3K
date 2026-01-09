@@ -129,9 +129,10 @@ public class Emulator extends SDLActivity
         ProcessPhoenix.triggerRebirth(getContext(), restart_intent);
     }
 
-    static final int PICKER_DIALOG_CODE = 545;
-    static final int STORAGE_MANAGER_FILE_DIALOG_CODE = 546;
-    static final int STORAGE_MANAGER_FOLDER_DIALOG_CODE = 547;
+    static final int FILE_DIALOG_CODE = 545;
+    static final int FOLDER_DIALOG_CODE = 546;
+    static final int STORAGE_MANAGER_FILE_DIALOG_CODE = 547;
+    static final int STORAGE_MANAGER_FOLDER_DIALOG_CODE = 548;
 
     private boolean ensureStoragePermission(int requestCode) {
         // If running Android 10-, SDL should have already asked for read and write permissions
@@ -155,7 +156,7 @@ public class Emulator extends SDLActivity
                 .putExtra(Intent.EXTRA_LOCAL_ONLY, true);
 
         intent = Intent.createChooser(intent, "Choose a file");
-        startActivityForResult(intent, PICKER_DIALOG_CODE);
+        startActivityForResult(intent, FILE_DIALOG_CODE);
     }
 
     private boolean isStorageManagerEnabled(){
@@ -175,17 +176,14 @@ public class Emulator extends SDLActivity
                 .putExtra(Intent.EXTRA_LOCAL_ONLY, true);
 
         intent = Intent.createChooser(intent, "Choose a folder");
-        startActivityForResult(intent, PICKER_DIALOG_CODE);
+        startActivityForResult(intent, FOLDER_DIALOG_CODE);
     }
 
-    private String resolveUriToPath(Intent data) {
+    private String resolveUriToPath(Uri result_uri) {
         String result_path = "";
-        int result_fd = -1;
-        Uri result_uri = data.getData();
 
         try (ParcelFileDescriptor file_descr = getContentResolver().openFileDescriptor(result_uri, "r")) {
-            result_fd = file_descr.detachFd();
-            result_path = Os.readlink("/proc/self/fd/" + result_fd);
+            result_path = Os.readlink("/proc/self/fd/" + file_descr.getFd());
 
             // replace /mnt/user/{id} with /storage
             if (result_path.startsWith("/mnt/user/")) {
@@ -216,9 +214,18 @@ public class Emulator extends SDLActivity
                     filedialogReturn("");
                 break;
             // --- PICKER ---
-            case PICKER_DIALOG_CODE: {
+            case FILE_DIALOG_CODE:
+            case FOLDER_DIALOG_CODE: {
                 if (resultCode == RESULT_OK) {
-                    String res = resolveUriToPath(data);
+                    // get uri from result
+                    Uri result_uri = data.getData();
+
+                    // for folder picker, convert to tree uri
+                    if (requestCode == FOLDER_DIALOG_CODE)
+                        result_uri = DocumentFile.fromTreeUri(getApplicationContext(), result_uri).getUri();
+
+                    // resolve uri to path
+                    String res = resolveUriToPath(result_uri);
                     if (res != null)
                         filedialogReturn(res);
                 }
