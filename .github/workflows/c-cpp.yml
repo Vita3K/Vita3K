@@ -30,12 +30,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: x86_64
             cache_path: ~/.ccache
             extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-x86_64.AppImage
             cmake_preset: linux-ninja-clang-appimage
-          - os: ubuntu-22.04-arm
+          - os: ubuntu-24.04-arm
             arch: aarch64
             cache_path: ~/.ccache
             extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-aarch64.AppImage
@@ -60,7 +60,7 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Set up build environment (macos-latest)
+      - name: Set up build environment (macOS)
         run: |
           sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
           brew install ccache create-dmg
@@ -68,31 +68,20 @@ jobs:
           ccache --set-config=compiler_check=content
         if: matrix.os == 'macos-latest'
 
-      - name: Set up build environment (ubuntu-22.04)
+      - name: Set up build environment (Linux)
         run: |
           sudo add-apt-repository -y ppa:mhier/libboost-latest # boost repo
           sudo add-apt-repository universe
           sudo apt update
           sudo apt -y install ccache libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev libsdl2-dev ninja-build libfuse2
 
-          if [[ "${{ matrix.os }}" == "ubuntu-22.04-arm" ]]; then
-            # easy update clang linux os from external repo for specific clang version
-            wget https://apt.llvm.org/llvm.sh
-            chmod +x ./llvm.sh
-            sudo ./llvm.sh 15
-            sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-15 100
-            sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-15 100
-            sudo update-alternatives --set clang /usr/bin/clang-15
-            sudo update-alternatives --set clang++ /usr/bin/clang++-15
-          fi
-
           # Set up linuxdeploy for AppImage
           curl -sLO https://github.com/linuxdeploy/linuxdeploy/releases/latest/download/linuxdeploy-${{ matrix.arch }}.AppImage
           sudo cp -f linuxdeploy-${{ matrix.arch }}.AppImage /usr/local/bin/
           sudo chmod +x /usr/local/bin/linuxdeploy-${{ matrix.arch }}.AppImage
-        if: startsWith(matrix.os, 'ubuntu-22.04')
+        if: startsWith(matrix.os, 'ubuntu')
 
-      - name: Set up build environment (windows-latest)
+      - name: Set up build environment (Windows)
         run: |
           vcpkg install zlib:x64-windows-static-md boost-system:x64-windows-static-md boost-filesystem:x64-windows-static-md boost-program-options:x64-windows-static-md boost-icl:x64-windows-static-md boost-variant:x64-windows-static-md curl:x64-windows-static-md openssl:x64-windows-static-md
           choco install ccache
@@ -101,7 +90,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows-latest'
 
-      - name: Set up build environment (android)
+      - name: Set up build environment (Android)
         run: |
           sudo apt-get install -y ninja-build
           vcpkg install boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
@@ -127,7 +116,10 @@ jobs:
       - name: Decode Android keystore
         env:
           KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
-        run: echo "$KEYSTORE_ENCODED" | base64 --decode > /home/runner/keystore.jks
+        run: |
+          if [ -n "$KEYSTORE_ENCODED" ]; then
+            echo "$KEYSTORE_ENCODED" | base64 --decode > /home/runner/keystore.jks
+          fi
         if: matrix.os == 'android'
 
       - uses: actions/cache@v5
@@ -152,7 +144,7 @@ jobs:
         run: ccache -s
         if: matrix.os != 'android'
 
-      - name: Build Vita3K (android)
+      - name: Build Vita3K (Android)
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
@@ -165,7 +157,7 @@ jobs:
           cp -r lang android/assets
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
-          if [ -n "${{ secrets.KEYSTORE }}" ];
+          if [ -e "$SIGNING_STORE_PATH" ];
           then
             BUILD_TYPE=Release
           else
@@ -180,16 +172,14 @@ jobs:
         run: ctest --build-config ${{ env.BUILD_CONFIG }} --output-on-failure
         if: matrix.os != 'android'
 
-      - name: Compute git short sha
+      - name: Get commit info
         shell: bash
-        run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: |
+          echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "BUILD_VARIABLE=$(git rev-list HEAD --count)" >> $GITHUB_ENV
+        if: env.GIT_SHORT_SHA == ''
 
-      - name: Set Build Variable
-        shell: bash
-        run: echo "build_variable=$(git rev-list HEAD --count)" >> $GITHUB_ENV
-        if: startsWith(matrix.os, 'ubuntu-22.04')
-
-      - name: Create DMG (macos-latest)
+      - name: Create DMG (macOS)
         run: |
           cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
           create-dmg \
@@ -199,7 +189,7 @@ jobs:
             --icon-size 100 \
             --icon Vita3K.app 120 115 \
             --app-drop-link 360 115 \
-            vita3k-${{ env.git_short_sha }}-${{ matrix.os }}.dmg \
+            vita3k-${{ env.GIT_SHORT_SHA }}-${{ matrix.os }}.dmg \
             Vita3K.app
           rm -rf Vita3K.app
         if: matrix.os == 'macos-latest'
@@ -209,32 +199,28 @@ jobs:
           cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
           mkdir -p ../appimage
           mv -f *AppImage* ../appimage/
-        if: startsWith(matrix.os, 'ubuntu-22.04')
+        if: startsWith(matrix.os, 'ubuntu')
 
-      - name: Upload artifact (linux AppImage)
+      - name: Upload artifact (Linux AppImage)
         uses: actions/upload-artifact@v6
         with:
-          name: vita3k-${{ env.git_short_sha }}-${{ matrix.os }}-appimage
+          name: vita3k-${{ env.GIT_SHORT_SHA }}-${{ matrix.os }}-appimage
           path: build/${{ matrix.cmake_preset }}/bin/appimage
-        if: startsWith(matrix.os, 'ubuntu-22.04')
+        if: startsWith(matrix.os, 'ubuntu')
 
-      - name: Upload artifact (android apk)
+      - name: Upload artifact (Android apk)
         uses: actions/upload-artifact@v6
         with:
-          name: vita3k-${{ env.git_short_sha }}-android
+          name: vita3k-${{ env.GIT_SHORT_SHA }}-android
           path: ${{ env.APK_PATH }}
         if: matrix.os == 'android'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: vita3k-${{ env.git_short_sha }}-${{ matrix.os }}
+          name: vita3k-${{ env.GIT_SHORT_SHA }}-${{ matrix.os }}
           path: build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
         if: matrix.os != 'android'
-
-    outputs:
-      BuildTag: ${{ env.build_variable }}
-      ShortSHA: ${{ env.git_short_sha }}
 
   create-release:
     needs: [build]
@@ -251,21 +237,17 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v7
 
-      - name: Get Build Variable
-        run: echo "Build_Variable=${{ needs.build.outputs.BuildTag }}" >> $GITHUB_ENV
-
-      - name: Get Git Short SHA
-        run: echo "Short_SHA=${{ needs.build.outputs.ShortSHA }}" >> $GITHUB_ENV
-
       - name: Get latest commit message
-        run: echo "Latest_Commit_Message=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
+        run: echo "LAST_COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
 
       - name: Get last committer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          COMMITTER_NAME=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          https://api.github.com/repos/Vita3K/Vita3K/commits/${{ github.sha }} \
+          COMMITTER=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }} \
           | jq -r '.commit.author.name')
-          echo "Commiter_Name=$COMMITTER_NAME" >> $GITHUB_ENV
+          echo "COMMITTER_NAME=$COMMITTER" >> $GITHUB_ENV
 
       - name: Download ghr
         run: |
@@ -281,31 +263,31 @@ jobs:
             if [[ $dir == *-android ]]; then
               echo "Processing $dir (Android)"
               cp $dir/*.apk artifacts-master/android-latest.apk
-              cp $dir/*.apk artifacts-store/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_android.apk
+              cp $dir/*.apk artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}_android.apk
             elif [[ $dir == *-macos-latest ]]; then
               echo "Processing $dir (macOS)"
               cp $dir/*.dmg artifacts-master/macos-latest.dmg
-              cp $dir/*.dmg artifacts-store/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_macos.dmg
-            elif [[ $dir == *-ubuntu-22.04-appimage ]]; then
+              cp $dir/*.dmg artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}_macos.dmg
+            elif [[ $dir == *-ubuntu-latest-appimage ]]; then
               echo "Processing $dir (x86_64 AppImage)"
               cp $dir/*.AppImage* artifacts-master/
               cp $dir/*.AppImage* artifacts-store/
-            elif [[ $dir == *-ubuntu-22.04-arm-appimage ]]; then
+            elif [[ $dir == *-ubuntu-24.04-arm-appimage ]]; then
               echo "Processing $dir (ARM64 AppImage)"
               cp $dir/*.AppImage* artifacts-master/
               cp $dir/*.AppImage* artifacts-store/
-            elif [[ $dir == *-ubuntu-22.04 ]]; then
+            elif [[ $dir == *-ubuntu-latest ]]; then
               echo "Processing $dir (Ubuntu x86_64)"
               (cd $dir && zip -r ../artifacts-master/ubuntu-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu-x86_64.7z $dir
-            elif [[ $dir == *-ubuntu-22.04-arm ]]; then
+              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}_ubuntu-x86_64.7z $dir
+            elif [[ $dir == *-ubuntu-24.04-arm ]]; then
               echo "Processing $dir (Ubuntu ARM64)"
               (cd $dir && zip -r ../artifacts-master/ubuntu-aarch64-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu-aarch64.7z $dir
+              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}_ubuntu-aarch64.7z $dir
             elif [[ $dir == *-windows-latest ]]; then
               echo "Processing $dir (Windows)"
               (cd $dir && zip -r ../artifacts-master/windows-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_windows.7z $dir
+              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}_windows.7z $dir
             fi
           done
           echo "=== artifacts-master ==="
@@ -315,18 +297,18 @@ jobs:
 
       - name: Upload to store repository
         run: |
-          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K-builds \
-            -n "Build: ${{ env.Build_Variable }}" \
-            -b "$(printf "Corresponding commit: [${{ env.Latest_Commit_Message }}](https://github.com/Vita3K/Vita3K/commit/${{ github.sha }}) (${{ env.Commiter_Name }})")" \
-            ${{ env.Build_Variable }} artifacts-store/
+          ghr_v0.17.0_linux_amd64/ghr -u ${{ github.repository_owner }} -r Vita3K-builds \
+            -n "Build: ${{ env.BUILD_VARIABLE }}" \
+            -b "$(printf "Corresponding commit: [${{ env.LAST_COMMIT_MESSAGE }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})")" \
+            ${{ env.BUILD_VARIABLE }} artifacts-store/
         env:
           GITHUB_TOKEN: ${{ secrets.STORE_TOKEN }}
 
       - name: Upload to master repository
         run: |
-          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate \
+          ghr_v0.17.0_linux_amd64/ghr -u ${{ github.repository_owner }} -r Vita3K -recreate \
             -n 'Automatic CI builds' \
-            -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" \
+            -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}")" \
             continuous artifacts-master/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
