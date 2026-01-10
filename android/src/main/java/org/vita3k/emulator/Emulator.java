@@ -238,19 +238,20 @@ public class Emulator extends SDLActivity
             // --- PICKER ---
             case FILE_DIALOG_CODE:
             case FOLDER_DIALOG_CODE: {
-                if (resultCode == RESULT_OK) {
-                    // get uri from result
-                    Uri result_uri = data.getData();
-
-                    // for folder picker, convert to tree uri
-                    if (requestCode == FOLDER_DIALOG_CODE)
-                        result_uri = DocumentFile.fromTreeUri(getApplicationContext(), result_uri).getUri();
-
-                    // resolve uri to path
-                    String res = resolveUriToPath(result_uri);
-                    if (res != null)
-                        filedialogReturn(res);
+                if (resultCode != RESULT_OK) {
+                    filedialogReturn("");
+                    break;
                 }
+                // get uri from result
+                Uri result_uri = data.getData();
+
+                // for folder picker, convert to tree uri
+                if (requestCode == FOLDER_DIALOG_CODE)
+                    result_uri = DocumentFile.fromTreeUri(getApplicationContext(), result_uri).getUri();
+
+                // resolve uri to path
+                String res = resolveUriToPath(result_uri);
+                filedialogReturn(res != null ? res : "");
                 break;
             }
         }
