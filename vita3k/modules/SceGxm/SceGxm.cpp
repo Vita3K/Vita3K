@@ -2792,7 +2792,7 @@ EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
 
     std::unique_lock<std::mutex> lock(emuenv.renderer->notification_mutex);
     if (*value != target_value) {
-        emuenv.renderer->notification_ready.wait(lock, [&]() { return *value == target_value; });
+        emuenv.renderer->notification_ready.wait(lock, [&]() { return *value == target_value || emuenv.display.abort.load(); });
     }
 
     return 0;
