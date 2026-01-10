@@ -60,7 +60,7 @@ add_library(gui STATIC ${GUI_SOURCES})
 
 target_include_directories(gui PUBLIC include ${CMAKE_SOURCE_DIR}/vita3k)
 target_link_libraries(gui PUBLIC app compat config dialog emuenv ime imgui lang regmgr np)
-target_link_libraries(gui PRIVATE audio cppcommon ctrl kernel miniz motion psvpfsparser pugixml::pugixml stb renderer packages SDL3::SDL3 touch vkutil host::dialog concurrentqueue)
+target_link_libraries(gui PRIVATE audio camera cppcommon ctrl kernel miniz motion psvpfsparser pugixml::pugixml stb renderer packages SDL3::SDL3 touch vkutil host::dialog concurrentqueue)
 # Link macOS frameworks for Objective-C++ code
 if(APPLE)
 	target_link_libraries(gui PRIVATE

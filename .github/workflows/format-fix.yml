@@ -1,0 +1,14 @@
+name: fix format
+
+on: [push, workflow_dispatch]
+
+jobs:
+  format-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Format fix
+        run: .github/format-fix.sh
+
