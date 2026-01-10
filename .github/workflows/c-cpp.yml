@@ -57,7 +57,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
           submodules: recursive
 
       - name: Set up build environment (macOS)
@@ -172,12 +171,10 @@ jobs:
         run: ctest --build-config ${{ env.BUILD_CONFIG }} --output-on-failure
         if: matrix.os != 'android'
 
-      - name: Get commit info
+      - name: Compute git short SHA
         shell: bash
-        run: |
-          echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          echo "BUILD_VARIABLE=$(git rev-list HEAD --count)" >> $GITHUB_ENV
         if: env.GIT_SHORT_SHA == ''
+        run: echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Create DMG (macOS)
         run: |
@@ -233,12 +230,17 @@ jobs:
       github.repository == 'Vita3K/Vita3K'
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Download Artifacts
         uses: actions/download-artifact@v7
 
-      - name: Get latest commit message
-        run: echo "LAST_COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
+      - name: Get commit info
+        run: |
+          echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "BUILD_VARIABLE=$(git rev-list --count HEAD)" >> $GITHUB_ENV
+          echo "LAST_COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
 
       - name: Get last committer
         env:
