@@ -28,18 +28,19 @@
 	</about>
 
 	<app_context>
-		<manual>Kılavuzu</manual>
-		<update>Güncelle</update>
+		<live_area>
+			<manual>Kılavuzu</manual>
+			<update>Güncelle</update>
+		</live_area>
+		<delete>
+			<delete_app>Bu uygulama ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</delete_app>
+		</delete>
 		<update_history>Güncelleme Geçmişi</update_history>
 		<history_version>Sürüm {}</history_version>
-		<delete>
-			<app_delete>Bu uygulama ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</app_delete>
-			<saved_data_delete>Bu kayıtlı verileri silmek istiyor musunuz?</saved_data_delete>
-		</delete>
 		<info name="Bilgi">
 			<eligible>Uygun</eligible> 
 			<ineligible>Uygun değil</ineligible>
-			<level>Seviye</level>
+			<level>Seviye {}</level>
 			<name>Ad</name>
 			<trophy_earning>Kupa Kazanma</trophy_earning>
 			<parental_controls>Ebeveyn Kontrolleri</parental_controls>
@@ -207,6 +208,7 @@ Hata Kodu: {}</an_error_occurred>
 		<save_data>
 			<delete>
 				<cancel_deleting>Silmeyi iptal etmek istiyor musunuz?</cancel_deleting>
+				<could_not_delete>Dosya silinemedi.</could_not_delete>
 				<deletion_complete>Silme tamamlandı.</deletion_complete>
 				<delete_saved_data>Bu kayıtlı verileri silmek istiyor musunuz?</delete_saved_data>
 			</delete>
@@ -216,6 +218,7 @@ Hata Kodu: {}</an_error_occurred>
 			</info>
 			<load name="Yükle">
 				<cancel_loading>Yüklemeyi iptal etmek istiyor musunuz?</cancel_loading>
+				<could_not_load>Dosya yüklenemedi.</could_not_load>
 				<no_saved_data>Kayıtlı veri yok.</no_saved_data>
 				<load_complete>Yükleme tamamlandı.</load_complete>
 				<loading>Yükleniyor...</loading>
@@ -223,6 +226,7 @@ Hata Kodu: {}</an_error_occurred>
 			</load>
 			<save name="Kaydet">
 				<cancel_saving>Kaydetmeyi iptal etmek istiyor musunuz?</cancel_saving>
+				<couldt_save>Dosya kaydedilemedi.</couldt_save>
 				<could_not_save>Dosya kaydedilemedi.
 Hafıza kartında yeterli boş alan yok.</could_not_save>
 				<not_free_space>Hafıza kartında yeterli boş alan yok.</not_free_space>

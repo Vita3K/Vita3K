@@ -39,38 +39,45 @@
 	</about>
 
 	<app_context>
-		<check_app_state>アプリの状態を確認</check_app_state>
-		<copy_vita3k_summary>Vita3K概要をコピー</copy_vita3k_summary>
-		<open_state_report>状態レポートを開く</open_state_report>
-		<create_state_report>状態レポートを作成</create_state_report>
-		<update_database>データベースを更新</update_database>
-		<copy_app_info>アプリの情報をコピー</copy_app_info>
-		<name_and_id>名前とタイトルID</name_and_id>
-		<custom_config>カスタム設定</custom_config>
-		<create>作成</create>
-		<edit>編集</edit>
-		<remove>削除</remove>
-		<open_folder>フォルダを開く</open_folder>
-		<addcont>追加データ</addcont>
-		<license>ライセンス</license>
-		<shaders_cache>シェーダーキャッシュ</shaders_cache>
-		<shaders_log>シェーダーログ</shaders_log>
-		<manual>マニュアル</manual>
-		<update>アップデート</update>
+		</compat>
+			<check_app_state>アプリの状態を確認</check_app_state>
+			<copy_vita3k_summary>Vita3K概要をコピー</copy_vita3k_summary>
+			<open_state_report>状態レポートを開く</open_state_report>
+			<create_state_report>状態レポートを作成</create_state_report>
+			<update_database>データベースを更新</update_database>
+		</compat>
+		<copy_app_info name="アプリの情報をコピー">
+			<name_and_id>名前とタイトルID</name_and_id>
+		</copy_app_info>
+		<custom_config name="カスタム設定">
+			<create>作成</create>
+			<edit>編集</edit>
+			<remove>削除</remove>
+		</custom_config>
+		<path>
+			<open_folder>フォルダを開く</open_folder>
+			<addcont>追加データ</addcont>
+			<license>ライセンス</license>
+			<shaders_cache>シェーダーキャッシュ</shaders_cache>
+			<shaders_log>シェーダーログ</shaders_log>
+		</path>
+		<live_area>
+			<manual>マニュアル</manual>
+			<update>アップデート</update>
+		</live_area>
+		<delete>
+			<delete_app>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</delete_app>
+			<delete_app_description>アプリの削除にはアプリのサイズと
+ご利用のハードウェアにより時間がかかる場合があります。</delete_app_description>
+			<delete_addcont>この追加データを削除しますか？</delete_addcont>
+			<delete_license>このライセンスを削除しますか？</delete_license>
+		</delete>
 		<update_history>アップデート履歴</update_history>
 		<history_version>バージョン {}</history_version>
-		<delete>
-			<app_delete>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</app_delete>
-			<app_delete_description>アプリの削除にはアプリのサイズと
-ご利用のハードウェアにより時間がかかる場合があります。</app_delete_description>
-			<addcont_delete>この追加データを削除しますか？</addcont_delete>
-			<license_delete>このライセンスを削除しますか？</license_delete>
-			<saved_data_delete>このセーブデータを削除しますか？</saved_data_delete>
-		</delete>
 		<info name="情報">
 			<eligible>権利あり</eligible>
 			<ineligible>権利なし</ineligible>
-			<level>レベル</level>
+			<level>レベル {}</level>
 			<name>名前</name>
 			<trophy_earning>トロフィー獲得</trophy_earning>
 			<parental_controls>ペアレンタルコントロール</parental_controls>
@@ -324,6 +331,7 @@ SDL3に対応したコントローラーを接続してください。</not_conn
 		<save_data>
 			<delete>
 				<cancel_deleting>削除をキャンセルしますか？</cancel_deleting>
+				<could_not_delete>削除できませんでした。</could_not_delete>
 				<deletion_complete>削除しました。</deletion_complete>
 				<delete_saved_data>このセーブデータを削除しますか？</delete_saved_data>
 			</delete>
@@ -333,6 +341,7 @@ SDL3に対応したコントローラーを接続してください。</not_conn
 			</info>
 			<load name="ロード">
 				<cancel_loading>ロードをキャンセルしますか？</cancel_loading>
+				<could_not_load>ロードできませんでした。</could_not_load>
 				<no_saved_data>セーブデータがありません。</no_saved_data>
 				<load_complete>ロードしました。</load_complete>
 				<loading>ロード中です...</loading>
@@ -340,6 +349,7 @@ SDL3に対応したコントローラーを接続してください。</not_conn
 			</load>
 			<save name="セーブ">
 				<cancel_saving>セーブをキャンセルしますか？</cancel_saving>
+				<couldt_save>セーブできませんでした。</couldt_save>
 				<could_not_save>セーブできませんでした。
 メモリーカードの空き容量が不足しています。</could_not_save>
 				<not_free_space>メモリーカードの空き容量が不足しています。</not_free_space>

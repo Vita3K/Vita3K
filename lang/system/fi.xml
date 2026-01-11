@@ -25,18 +25,19 @@
 	</main_menubar>
 
 	<app_context>
-		<manual>Käyttöoppaan</manual>
-		<update>Päivitys</update>
+		<live_area>
+			<manual>Käyttöoppaan</manual>
+			<update>Päivitys</update>
+		</live_area>
+		<delete>
+			<delete_app>Tämä sovellus ja kaikki siihen liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</delete_app>
+		</delete>
 		<update_history>Päivityshistoria</update_history>
 		<history_version>Versio {}</history_version>
-		<delete>
-			<app_delete>Tämä sovellus ja kaikki siihen liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</app_delete>
-			<saved_data_delete>Haluatko poistaa nämä tallennentut tiedot?</saved_data_delete>
-		</delete>
 		<info name="Info">
 			<eligible>Kelpo</eligible>
 			<ineligible>Epäkelpo</ineligible>
-			<level>Taso</level>
+			<level>Taso {}</level>
 			<name>Nimi</name>
 			<trophy_earning>Trophyjen ansaitseminen</trophy_earning>
 			<parental_controls>Lapsilukko</parental_controls>
@@ -201,6 +202,7 @@ Virhekoodi: {}</an_error_occurred>
 		<save_data>
 			<delete>
 				<cancel_deleting>Haluatko peruuttaa poistamisen?</cancel_deleting>
+				<could_not_delete>Tiedostoa ei voitu poistaa.</could_not_delete>
 				<deletion_complete>Poistaminen suoritettu.</deletion_complete>
 				<delete_saved_data>Haluatko poistaa nämä tallennetut tiedot?</delete_saved_data>
 			</delete>
@@ -210,6 +212,7 @@ Virhekoodi: {}</an_error_occurred>
 			</info>
 			<load name="Lataa">
 				<cancel_loading>Haluatko peruuttaa latauksen?</cancel_loading>
+				<could_not_load>Tiedostoa ei voitu ladata.</could_not_load>
 				<no_saved_data>Tallennettua tietoa ei ole saatavilla.</no_saved_data>
 				<load_complete>Lataus suoritettu.</load_complete>
 				<loading>Ladataan...</loading>
@@ -217,6 +220,7 @@ Virhekoodi: {}</an_error_occurred>
 			</load>
 			<save name="Tallenna">
 				<cancel_saving>Haluatko peruuttaa tallennuksen?</cancel_saving>
+				<couldt_save>Tiedostoa ei voitu tallentaa.</couldt_save>
 				<could_not_save>Tiedostoa ei voitu tallentaa.
 Muistikortilla ei ole tarpeeksi vapaata tilaa.</could_not_save>
 				<not_free_space>Muistikortilla ei ole tarpeeksi vapaata tilaa.</not_free_space>

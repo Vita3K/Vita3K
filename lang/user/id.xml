@@ -49,36 +49,41 @@
 	</about>
 
 	<app_context>
-		<check_app_state>Cek state Aplikasi</check_app_state>
-		<copy_vita3k_summary>Salin Ringkasan Vita3K</copy_vita3k_summary>
-		<open_state_report>Buka laporan state</open_state_report>
-		<create_state_report>Buat state laporan</create_state_report>
-		<update_database>Perbarui database</update_database>
-		<copy_app_info>Salin info Apl</copy_app_info>
-		<name_and_id>Nama dan Judul ID</name_and_id>
-		<app_summary>Ringkasan Apl</app_summary>
+		<compat>
+			<check_app_state>Cek state Aplikasi</check_app_state>
+			<copy_vita3k_summary>Salin Ringkasan Vita3K</copy_vita3k_summary>
+			<open_state_report>Buka laporan state</open_state_report>
+			<create_state_report>Buat state laporan</create_state_report>
+			<update_database>Perbarui database</update_database>
+		</compat>
+		<copy_app_info name="Salin info Apl">
+			<name_and_id>Nama dan Judul ID</name_and_id>
+			<app_summary>Ringkasan Apl</app_summary>
+		</copy_app_info>
 		<create_shortcut>Buat Pintasan</create_shortcut>
-		<custom_config>Kastom Config</custom_config>
-		<create>Bikin</create>
-		<remove>Hapus</remove>
-		<open_folder>Buka Folder</open_folder>
-		<license>lisensi</license>
-		<shaders_cache>Cache Shader</shaders_cache>
-		<shaders_log>Catatan Shader</shaders_log>
+		<custom_config name="Kastom Config">
+			<create>Bikin</create>
+			<remove>Hapus</remove>
+		</custom_config>
+		</path>
+			<open_folder>Buka Folder</open_folder>
+			<license>lisensi</license>
+			<shaders_cache>Cache Shader</shaders_cache>
+			<shaders_log>Catatan Shader</shaders_log>
+		</path>
+		<delete>
+			<delete_app>Aplikasi ini dan semua data terkait, termasuk data yang disimpan, akan dihapus.</delete_app>
+			<delete_app_description>Menghapus aplikasi mungkin memakan waktu cukup lama
+tergantung pada ukuran dan perangkat keras Kamu.</delete_app_description>
+			<delete_addcont>Apakah Kamu ingin menghapus data yg dimasukkan ini?</delete_addcont>
+			<delete_license>Apakah kamu ingin menghapus lisensi ini?</delete_license>
+		</delete>
 		<update_history>History Perbarui</update_history>
 		<history_version>Versi {}</history_version>
-		<delete>
-			<app_delete>Aplikasi ini dan semua data terkait, termasuk data yang disimpan, akan dihapus.</app_delete>
-			<app_delete_description>Menghapus aplikasi mungkin memakan waktu cukup lama
-tergantung pada ukuran dan perangkat keras Kamu.</app_delete_description>
-			<addcont_delete>Apakah Kamu ingin menghapus data yg dimasukkan ini?</addcont_delete>
-			<license_delete>Apakah kamu ingin menghapus lisensi ini?</license_delete>
-			<saved_data_delete>Apakah Kamu ingin menghapus data tersimpan ini?</saved_data_delete>
-		</delete>
 		<info name="Informasi">
 			<eligible>Memenuhi Syarat</eligible>
 			<ineligible>Gak Memenuhi Syarat</ineligible>
-			<level>Level</level>
+			<level>Level {}</level>
 			<name>Nama</name>
 			<trophy_earning>Perolehan Trofi</trophy_earning>
 			<parental_controls>Pengawasan Ortu</parental_controls>
@@ -335,6 +340,7 @@ Sambungkan Kontroleryang kompatibel dengan SDL3.</not_connected>
 		<save_data>
 			<delete>
 				<cancel_deleting>Kamu yakin untuk batalkan penghapusan?</cancel_deleting>
+				<could_not_delete>Tidak dapat hapus file.</could_not_delete>
 				<deletion_complete>Penghapusan Berhasil.</deletion_complete>
 				<delete_saved_data>Kamu yakin untuk hapus save data ini?</delete_saved_data>
 			</delete>
@@ -344,6 +350,7 @@ Sambungkan Kontroleryang kompatibel dengan SDL3.</not_connected>
 			</info>
 			<load name="Load">
 				<cancel_loading>Kamu yakin untuk batalkan loading?</cancel_loading>
+				<could_not_load>Tidak dapat load file.</could_not_load>
 				<no_saved_data>Disini gak ada save data.</no_saved_data>
 				<load_complete>Loading Berhasil.</load_complete>
 				<loading>Loading...</loading>
@@ -351,6 +358,7 @@ Sambungkan Kontroleryang kompatibel dengan SDL3.</not_connected>
 			</load>
 			<save name="Simpan">
 				<cancel_saving>Kamu yakin untuk batalkan saving?</cancel_saving>
+				<couldt_save>Tidak dapat menyimpan file.</couldt_save>
 				<could_not_save>Tidak dapat menyimpan file.
 Tidak ada cukup ruang kosong di kartu memori.</could_not_save>
 				<not_free_space>Tidak ada cukup ruang kosong di kartu memori.</not_free_space>

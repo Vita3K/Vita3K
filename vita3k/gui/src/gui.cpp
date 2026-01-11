@@ -672,15 +672,17 @@ App *get_app_index(GuiState &gui, const std::string &app_path) {
 }
 
 void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    emuenv.app_path = app_path;
+    sfo::SfoAppInfo app_info;
     vfs::FileBuffer param;
     if (vfs::read_app_file(param, emuenv.pref_path, app_path, "sce_sys/param.sfo")) {
-        sfo::get_param_info(emuenv.app_info, param, emuenv.cfg.sys_lang);
+        sfo::get_param_info(app_info, param, emuenv.cfg.sys_lang);
     } else {
-        emuenv.app_info.app_addcont = emuenv.app_info.app_savedata = emuenv.app_info.app_short_title = emuenv.app_info.app_title = emuenv.app_info.app_title_id = emuenv.app_path; // Use app path as TitleID, addcont, Savedata, Short title and Title
-        emuenv.app_info.app_version = emuenv.app_info.app_category = emuenv.app_info.app_parental_level = "N/A";
+        app_info.app_addcont = app_info.app_savedata = app_info.app_short_title = app_info.app_title = app_info.app_title_id = app_path; // Use app path as TitleID, addcont, Savedata, Short title and Title
+        app_info.app_parental_level = "0"; // Default Parental Level
+        app_info.app_version = "0.00"; // Default Version
+        app_info.app_category = "-"; // Default Category
     }
-    gui.app_selector.user_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, emuenv.app_info.app_content_id, emuenv.app_info.app_addcont, emuenv.app_info.app_savedata, emuenv.app_info.app_parental_level, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, emuenv.app_path });
+    gui.app_selector.user_apps.push_back({ app_info.app_version, app_info.app_category, app_info.app_content_id, app_info.app_addcont, app_info.app_savedata, app_info.app_parental_level, app_info.app_short_title, app_info.app_title, app_info.app_title_id, app_path });
 }
 
 void get_user_apps_title(GuiState &gui, EmuEnvState &emuenv) {

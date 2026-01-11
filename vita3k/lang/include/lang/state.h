@@ -52,6 +52,7 @@ struct DialogLangState {
     struct SaveData {
         std::map<std::string, std::string> deleting = {
             { "cancel_deleting", "Do you want to cancel deleting?" },
+            { "could_not_delete", "Could not delete the file." },
             { "deletion_complete", "Deletion complete." },
             { "delete_saved_data", "Do you want to delete this saved data?" },
         };
@@ -62,6 +63,7 @@ struct DialogLangState {
         std::map<std::string, std::string> load = {
             { "title", "Load" },
             { "cancel_loading", "Do you want to cancel loading?" },
+            { "could_not_load", "Could not load the file." },
             { "no_saved_data", "There is no saved data." },
             { "load_complete", "Loading complete." },
             { "loading", "Loading..." },
@@ -70,6 +72,7 @@ struct DialogLangState {
         std::map<std::string, std::string> save = {
             { "title", "Save" },
             { "cancel_saving", "Do you want to cancel saving?" },
+            { "couldt_save", "Could not save the file." },
             { "could_not_save", "Could not save the file.\nThere is not enough free space on the memory card." },
             { "not_free_space", "There is not enough free space on the memory card." },
             { "new_saved_data", "New Saved Data" },
@@ -101,6 +104,7 @@ struct LangState {
         std::map<std::string, std::string> file = {
             { "title", "File" },
             { "open_pref_path", "Open Pref Path" },
+            { "open_patch_path", "Open Patch Path" },
             { "open_textures_path", "Open Textures Path" },
             { "install_firmware", "Install Firmware" },
             { "install_pkg", "Install .pkg" },
@@ -154,42 +158,56 @@ struct LangState {
     };
     struct AppContext {
         std::map<std::string, std::string> main = {
+            { "create_shortcut", "Create Shortcut" },
+            { "update_history", "Update History" },
+            { "history_version", "Version {}" }
+        };
+        std::map<std::string, std::string> compat = {
             { "check_app_state", "Check App state" },
             { "copy_vita3k_summary", "Copy Vita3K Summary" },
             { "open_state_report", "Open state report" },
             { "create_state_report", "Create state report" },
-            { "update_database", "Update database" },
-            { "copy_app_info", "Copy App info" },
+            { "update_database", "Update database" }
+        };
+        std::map<std::string, std::string> copy_app_info = {
+            { "title", "Copy App info" },
             { "name_and_id", "Name and Title ID" },
-            { "app_summary", "App Summary" },
-            { "create_shortcut", "Create Shortcut" },
-            { "custom_config", "Custom Config" },
+            { "app_summary", "App Summary" }
+        };
+        std::map<std::string, std::string> custom_config = {
+            { "title", "Custom Config" },
             { "create", "Create" },
             { "edit", "Edit" },
-            { "remove", "Remove" },
+            { "remove", "Remove" }
+        };
+        std::map<std::string, std::string> path = {
             { "open_folder", "Open Folder" },
             { "addcont", "DLC" },
             { "license", "License" },
+            { "patch", "Patch" },
             { "shaders_cache", "Shaders Cache" },
-            { "shaders_log", "Shaders Log" },
+            { "shaders_log", "Shaders Log" }
+        };
+        std::map<std::string, std::string> live_area = {
             { "manual", "Manual" },
-            { "update", "Update" },
-            { "update_history", "Update History" },
-            { "history_version", "Version {}" },
-            { "other", "Other" },
+            { "update", "Update" }
         };
         std::map<std::string, std::string> deleting = {
-            { "app_delete", "This application and all related data, including saved data, will be deleted." },
-            { "app_delete_description", "Deleting an application may take a while,\ndepending on its size and your hardware." },
-            { "addcont_delete", "Do you want to delete this add-on data?" },
-            { "license_delete", "Do you want to delete this license?" },
-            { "saved_data_delete", "Do you want to delete this saved data?" }
+            { "delete_app", "This application and all related data, including saved data, will be deleted." },
+            { "delete_app_description", "Deleting an application may take a while,\ndepending on its size and your hardware." },
+            { "delete_patch", "Do you want to delete this patch?" },
+            { "delete_addcont", "Do you want to delete this add-on data?" },
+            { "delete_license", "Do you want to delete this license?" }
+        };
+        std::map<std::string, std::string> other = {
+            { "title", "Other" },
+            { "reset_last_time_played", "Reset Last Time Played" }
         };
         std::map<std::string, std::string> info = {
             { "title", "Information" },
             { "eligible", "Eligible" },
             { "ineligible", "Ineligible" },
-            { "level", "Level" },
+            { "level", "Level {}" },
             { "name", "Name" },
             { "trophy_earning", "Trophy Earning" },
             { "parental_controls", "Parental Controls" },
@@ -210,9 +228,6 @@ struct LangState {
             { "time_used_hours", "{}h:{}m:{}s" },
             { "time_used_days", "{}d:{}h:{}m:{}s" },
             { "time_used_weeks", "{}w:{}d:{}h:{}m:{}s" }
-        };
-        std::map<std::string, std::string> other = {
-            { "reset_last_time_played", "Reset Last Time Played" }
         };
     };
     AppContext app_context;
@@ -777,6 +792,7 @@ struct LangState {
         { "content_manager", "Content Manager" }
     };
     std::map<std::string, std::string> trophy_collection = {
+        { "all_trophy_deleted", "All trophy information saved on this user will be deleted." },
         { "delete_trophy", "Delete Trophy" },
         { "trophy_deleted", "This trophy information saved on this user will be deleted." },
         { "locked", "Locked" },

@@ -28,18 +28,19 @@
 	</about>
 
 	<app_context>
-		<manual>Handleiding</manual>
-		<update>Update</update>
+		<live_area>
+			<manual>Handleiding</manual>
+			<update>Update</update>
+		</live_area>
+		<delete>
+			<delete_app>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</delete_app>
+		</delete>
 		<update_history>Updategeschiedenis</update_history>
 		<history_version>Versie {}</history_version>
-		<delete>
-			<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
-			<saved_data_delete>Wil je deze opgeslagen data verwijderen?</saved_data_delete>
-		</delete>
 		<info name="Informatie">
 			<eligible>Geschikt</eligible>
 			<ineligible>Niet geschikt</ineligible>
-			<level>Niveau</level>
+			<level>Niveau {}</level>
 			<name>Naam</name>
 			<trophy_earning>Trofeeën verdienen</trophy_earning>
 			<parental_controls>Ouderlijk toezicht</parental_controls>
@@ -220,6 +221,7 @@ Foutcode: {}</an_error_occurred>
 		<save_data>
 			<delete>
 				<cancel_deleting>Wil je het verwijderen annuleren?</cancel_deleting>
+				<could_not_delete>Kan het bestand niet verwijderen.</could_not_delete>
 				<deletion_complete>Het verwijderen is voltooid.</deletion_complete>
 				<delete_saved_data>Wil je deze opgeslagen data verwijderen?</delete_saved_data>
 			</delete>
@@ -229,6 +231,7 @@ Foutcode: {}</an_error_occurred>
 			</info>
 			<load name="Laden">
 				<cancel_loading>Wil je het laden annuleren?</cancel_loading>
+				<could_not_load>Kan het bestand niet laden.</could_not_load>
 				<no_saved_data>Er zijn geen opgeslagen data.</no_saved_data>
 				<load_complete>Het laden is voltooid.</load_complete>
 				<loading>Bezig met laden...</loading>
@@ -236,6 +239,7 @@ Foutcode: {}</an_error_occurred>
 			</load>
 			<save name="Opslaan">
 				<cancel_saving>Wil je het opslaan annuleren?</cancel_saving>
+				<couldt_save>Kan het bestand niet opslaan.</couldt_save>
 				<could_not_save>Kan het bestand niet opslaan.
 Er is onvoldoende vrije ruimte op de geheugenkaart.</could_not_save>
 				<not_free_space>Er is onvoldoende vrije ruimte op de geheugenkaart.</not_free_space>

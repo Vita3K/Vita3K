@@ -40,40 +40,47 @@
 	</about>
 
 	<app_context>
-		<check_app_state>Проверить совместимость приложения</check_app_state>
-		<copy_vita3k_summary>Скопировать Vita3K Summary</copy_vita3k_summary>
-		<open_state_report>Открыть отчёт о совместимости</open_state_report>
-		<create_state_report>Создать отчёт о совместимости</create_state_report>
-		<update_database>Обновить базу данных</update_database>
-		<copy_app_info>Скопировать инф.</copy_app_info>
-		<name_and_id>Название и Title ID</name_and_id>
-		<app_summary>Информация вкратце</app_summary>
-		<custom_config>Настройки приложения</custom_config>
-		<create>Создать</create>
-		<edit>Изменить</edit>
-		<remove>Удалить</remove>
-		<open_folder>Открыть папку</open_folder>
-		<license>Лицензия</license>
-		<shaders_cache>Кэш шейдеров</shaders_cache>
-		<shaders_log>Лог шейдеров</shaders_log>
-		<export_textures>Экспорт текстур</export_textures>
-		<import_textures>Импорт текстур</import_textures>
-		<manual>Руководство</manual>
-		<update>Обновление</update>
+		<compat>
+			<check_app_state>Проверить совместимость приложения</check_app_state>
+			<copy_vita3k_summary>Скопировать Vita3K Summary</copy_vita3k_summary>
+			<open_state_report>Открыть отчёт о совместимости</open_state_report>
+			<create_state_report>Создать отчёт о совместимости</create_state_report>
+			<update_database>Обновить базу данных</update_database>
+		</compat>
+		<copy_app_info name="Скопировать инф.">
+			<name_and_id>Название и Title ID</name_and_id>
+			<app_summary>Информация вкратце</app_summary>
+		</copy_app_info>
+		<custom_config name="Настройки приложения">
+			<create>Создать</create>
+			<edit>Изменить</edit>
+			<remove>Удалить</remove>
+		</custom_config>
+		<path>
+			<open_folder>Открыть папку</open_folder>
+			<license>Лицензия</license>
+			<shaders_cache>Кэш шейдеров</shaders_cache>
+			<shaders_log>Лог шейдеров</shaders_log>
+			<export_textures>Экспорт текстур</export_textures>
+			<import_textures>Импорт текстур</import_textures>
+		</path>
+		<live_area>
+			<manual>Руководство</manual>
+			<update>Обновление</update>
+		</live_area>
+		<delete>
+			<delete_app>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</delete_app>
+			<delete_app_description>Удаление приложения может занять некоторое время
+в зависимости от его размера и производительности вашей системы.</delete_app_description>
+			<delete_addcont>Удалить DLC?</delete_addcont>
+			<delete_license>Удалить лицензию?</delete_license>
+		</delete>
 		<update_history>Хронология обновлений</update_history>
 		<history_version>Версия {}</history_version>
-		<delete>
-			<app_delete>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</app_delete>
-			<app_delete_description>Удаление приложения может занять некоторое время
-в зависимости от его размера и производительности вашей системы.</app_delete_description>
-			<addcont_delete>Удалить DLC?</addcont_delete>
-			<license_delete>Удалить лицензию?</license_delete>
-			<saved_data_delete>Удалить эти сохранённые данные?</saved_data_delete>
-		</delete>
 		<info name="Информация">
 			<eligible>Допущен</eligible>
 			<ineligible>Не допущен</ineligible>
-			<level>Уровень</level>
+			<level>Уровень {}</level>
 			<name>Название</name>
 			<trophy_earning>Полученные призы</trophy_earning>
 			<parental_controls>Родительский контроль</parental_controls>
@@ -327,6 +334,7 @@
 		<save_data>
 			<delete>
 				<cancel_deleting>Отменить удаление?</cancel_deleting>
+				<could_not_delete>Не удалось удалить файл.</could_not_delete>
 				<deletion_complete>Удаление завершено.</deletion_complete>
 				<delete_saved_data>Удалить эти сохраненные данные?</delete_saved_data>
 			</delete>
@@ -336,6 +344,7 @@
 			</info>
 			<load name="Загрузить">
 				<cancel_loading>Отменить загрузку?</cancel_loading>
+				<could_not_load>Не удалось загрузить файл.</could_not_load>
 				<no_saved_data>Отсутствуют сохраненные данные.</no_saved_data>
 				<load_complete>Загрузка завершена.</load_complete>
 				<loading>Идет загрузка...</loading>
@@ -343,6 +352,7 @@
 			</load>
 			<save name="Сохранить">
 				<cancel_saving>Отменить сохранение?</cancel_saving>
+				<couldt_save>Не удалось сохранить файл.</couldt_save>
 				<could_not_save>Не удалось сохранить файл.
 На карте памяти недостаточно свободного места.</could_not_save>
 				<not_free_space>На карте памяти недостаточно свободного места.</not_free_space>

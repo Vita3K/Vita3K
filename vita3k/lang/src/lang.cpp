@@ -143,6 +143,24 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     // Main
                     set_lang_string(lang.app_context.main, app_context);
 
+                    // Compat
+                    set_lang_string(lang.app_context.compat, app_context.child("compat"));
+
+                    // Copy App info
+                    set_lang_string(lang.app_context.copy_app_info, app_context.child("copy_app_info"));
+
+                    // Custom Config
+                    set_lang_string(lang.app_context.custom_config, app_context.child("custom_config"));
+
+                    // Path
+                    set_lang_string(lang.app_context.path, app_context.child("path"));
+
+                    // Live Area
+                    set_lang_string(lang.app_context.live_area, app_context.child("live_area"));
+
+                    // Other
+                    set_lang_string(lang.app_context.other, app_context.child("other"));
+
                     // Delete
                     set_lang_string(lang.app_context.deleting, app_context.child("delete"));
 

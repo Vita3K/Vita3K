@@ -50,37 +50,44 @@
 	</about>
 
 	<app_context>
-		<check_app_state>Semak keadaan Apl</check_app_state>
-		<copy_vita3k_summary>Salin Ringkasan Vita3K</copy_vita3k_summary>
-		<open_state_report>Buka laporan state</open_state_report>
-		<create_state_report>Buat laporan state</create_state_report>
-		<update_database>Pangkalan data maklumat</update_database>
-		<copy_app_info>Salin maklumat Apl</copy_app_info>
-		<name_and_id>Nama dan ID Tajuk</name_and_id>
-		<app_summary>Ringkasan Apl</app_summary>
+		<compat>
+			<check_app_state>Semak keadaan Apl</check_app_state>
+			<copy_vita3k_summary>Salin Ringkasan Vita3K</copy_vita3k_summary>
+			<open_state_report>Buka laporan state</open_state_report>
+			<create_state_report>Buat laporan state</create_state_report>
+			<update_database>Pangkalan data maklumat</update_database>
+		</compat>
+		<copy_app_info name="Salin maklumat Apl">
+			<name_and_id>Nama dan ID Tajuk</name_and_id>
+			<app_summary>Ringkasan Apl</app_summary>
+		</copy_app_info>
 		<create_shortcut>Buat Shortcut</create_shortcut>
-		<custom_config>Konfigurasi Tersuai</custom_config>
-		<create>Cipta</create>
-		<remove>Alih keluar</remove>
-		<open_folder>Buka Folder</open_folder>
-		<license>Lesen</license>
-		<shaders_cache>Cache Shaders</shaders_cache>
-		<shaders_log>Log Shaders</shaders_log>
-		<update>Kemas kini</update>
+		<custom_config name="Konfigurasi Tersuai">
+			<create>Cipta</create>
+			<remove>Alih keluar</remove>
+		</custom_config>
+		<path>
+			<open_folder>Buka Folder</open_folder>
+			<license>Lesen</license>
+			<shaders_cache>Cache Shaders</shaders_cache>
+			<shaders_log>Log Shaders</shaders_log>
+		</path>
+		<live_area>
+			<update>Kemas kini</update>
+		</live_area>
+		<delete>
+			<delete_app>Apl ini dan semua data berkaitan, termasuk data yang disimpan, akan dipadamkan.</delete_app>
+			<delete_app_description>Memadamkan Apl mungkin mengambil sedikit masa,
+bergantung pada saiznya dan perkakasan awak.</delete_app_description>
+			<delete_addcont>Adakah awak mahu memadamkan data tambahan ini?</delete_addcont>
+			<delete_license>Adakah awak mahu memadamkan lesen ini?</delete_license>
+		</delete>
 		<update_history>Kemas kini Sejarah</update_history>
 		<history_version>Versi {}</history_version>
-		<delete>
-			<app_delete>Apl ini dan semua data berkaitan, termasuk data yang disimpan, akan dipadamkan.</app_delete>
-			<app_delete_description>Memadamkan Apl mungkin mengambil sedikit masa,
-bergantung pada saiznya dan perkakasan awak.</app_delete_description>
-			<addcont_delete>Adakah awak mahu memadamkan data tambahan ini?</addcont_delete>
-			<license_delete>Adakah awak mahu memadamkan lesen ini?</license_delete>
-			<saved_data_delete>Adakah awak mahu memadamkan data yang disimpan ini?</saved_data_delete>
-		</delete>
 		<info name="Maklumat">
 			<eligible>Layak</eligible>
 			<ineligible>Tak Layak</ineligible>
-			<level>Tahap</level>
+			<level>Tahap {}</level>
 			<name>Nama</name>
 			<trophy_earning>Pendapatan Trofi</trophy_earning>
 			<parental_controls>Kawalan Ibu Bapa</parental_controls>
@@ -341,6 +348,7 @@ Sila sambungkan Kontroler yang serasi dengan SDL3.</not_connected>
 		<save_data>
 			<delete>
 				<cancel_deleting>Adakah Awak mahu membatalkan pemadaman?</cancel_deleting>
+				<could_not_delete>Tidak dapat memadam fail.</could_not_delete>
 				<deletion_complete>Pemadaman selesai.</deletion_complete>
 				<delete_saved_data>Adakah awak mahu memadamkan data yang disimpan ini?</delete_saved_data>
 			</delete>
@@ -350,6 +358,7 @@ Sila sambungkan Kontroler yang serasi dengan SDL3.</not_connected>
 			</info>
 			<load name="Load">
 				<cancel_loading>Adakah awak mahu membatalkan loading?</cancel_loading>
+				<could_not_load>Tidak dapat memuatkan fail.</could_not_load>
 				<no_saved_data>Tiada data yang disimpan.</no_saved_data>
 				<load_complete>Loading selesai.</load_complete>
 				<loading>Muatkan...</loading>
@@ -357,6 +366,7 @@ Sila sambungkan Kontroler yang serasi dengan SDL3.</not_connected>
 			</load>
 			<save name="Simpan">
 				<cancel_saving>Adakah awak mahu membatalkan simpanan?</cancel_saving>
+				<couldt_save>Tidak dapat menyimpan fail.</couldt_save>
 				<could_not_save>Tidak dapat menyimpan fail.
 Tiada ruang kosong yang mencukupi pada kad memori.</could_not_save>
 				<not_free_space>Tiada ruang kosong yang mencukupi pada kad memori.</not_free_space>
