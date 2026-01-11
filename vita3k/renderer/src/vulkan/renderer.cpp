@@ -891,10 +891,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
     support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);
 
-#if defined(__linux__) && !defined(__ANDROID__) // According to my tests (Macdu), mprotect on buffers (mapped with external memory host) only works with Nvidia drivers
-    surface_cache.can_mprotect_mapped_memory = std::string_view(physical_device_properties.deviceName).find("NVIDIA") != std::string_view::npos;
-#endif
-
     return true;
 }
 
