@@ -22,8 +22,11 @@
 #include <net/types.h>
 
 #include <array>
+#include <atomic>
+#include <condition_variable>
 #include <map>
 #include <mutex>
+#include <thread>
 
 typedef std::map<int, SocketPtr> NetSockets;
 typedef std::map<int, EpollPtr> NetEpolls;
@@ -54,4 +57,14 @@ struct NetCtlState {
     SceNetCtlEventType lastNotifiedAdhocEvent = SCE_NET_CTL_EVENT_TYPE_NONE;
     std::atomic<bool> adhocThreadRun = false;
     std::mutex mutex;
+
+    ~NetCtlState() {
+        {
+            const std::lock_guard<std::mutex> lock(mutex);
+            adhocThreadRun = false;
+        }
+        adhocCondVar.notify_all();
+        if (adhocThread.joinable())
+            adhocThread.join();
+    }
 };
