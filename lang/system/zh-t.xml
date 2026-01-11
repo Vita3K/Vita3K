@@ -4,6 +4,7 @@
 	<main_menubar>
 		<file name="檔案">
 			<open_pref_path>開啟存放路徑</open_pref_path>
+			<open_patch_path>開啟補丁路徑</open_patch_path>
 			<open_textures_path>開啟紋理路徑</open_textures_path>
 			<install_firmware>安裝韌體</install_firmware>
 			<install_pkg>安裝pkg</install_pkg>
@@ -51,40 +52,52 @@
 	</about>
 
 	<app_context>
-		<check_app_state>檢查應用程式狀態</check_app_state>
-		<copy_vita3k_summary>複製Vita3K摘要</copy_vita3k_summary>
-		<open_state_report>開啟狀態匯報</open_state_report>
-		<create_state_report>建立狀態匯報</create_state_report>
-		<update_database>更新資料庫</update_database>
-		<copy_app_info>複製應用程式資訊</copy_app_info>
-		<name_and_id>名稱和標題ID</name_and_id>
-		<app_summary>應用程式摘要</app_summary>
+		<compat>
+			<check_app_state>檢查應用程式狀態</check_app_state>
+			<copy_vita3k_summary>複製Vita3K摘要</copy_vita3k_summary>
+			<open_state_report>開啟狀態匯報</open_state_report>
+			<create_state_report>建立狀態匯報</create_state_report>
+			<update_database>更新資料庫</update_database>
+		</compat>
+		<copy_app_info name="複製應用程式資訊">
+			<name_and_id>名稱和標題ID</name_and_id>
+			<app_summary>應用程式摘要</app_summary>
+		</copy_app_info>
 		<create_shortcut>建立快取方式</create_shortcut>
-		<custom_config>自訂組態</custom_config>
-		<create>建立</create>
-		<edit>編輯</edit>
-		<remove>移除</remove>
-		<open_folder>開啟資料夾</open_folder>
-		<addcont>追加內容</addcont>
-		<license>授權</license>
-		<shaders_cache>著色器快取</shaders_cache>
-		<shaders_log>著色器記錄</shaders_log>
-		<manual>說明書</manual>
-		<update>更新</update>
+		<custom_config name="自訂組態">
+			<create>建立</create>
+			<edit>編輯</edit>
+			<remove>移除</remove>
+		</custom_config>
+		<path>
+			<open_folder>開啟資料夾</open_folder>
+			<addcont>追加內容</addcont>
+			<license>授權</license>
+			<patch>補丁</patch>
+			<shaders_cache>著色器快取</shaders_cache>
+			<shaders_log>著色器記錄</shaders_log>
+		</path>
+		<live_area>
+			<manual>說明書</manual>
+			<update>更新</update>
+		</live_area>
+		<delete>
+			<delete_app>刪除此應用程式及所有相關資料（包括保存資料）。</delete_app>
+			<delete_app_description>刪除應用程式可能需要一段時間，
+取決於它的大小和您的硬體。</delete_app_description>
+			<delete_patch>確定要刪除此補丁嗎？</delete_patch>
+			<delete_addcont>確定要刪除此追加內容嗎？</delete_addcont>
+			<delete_license>確定要刪除此授權嗎？</delete_license>
+		</delete>
+		<other name="其他">
+			<reset_last_time_played>重設上次遊玩時間</reset_last_time_played>
+		</other>
 		<update_history>更新履歷</update_history>
 		<history_version>{} 版本</history_version>
-		<delete>
-			<app_delete>刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
-			<app_delete_description>刪除應用程式可能需要一段時間，
-取決於它的大小和您的硬體。</app_delete_description>
-			<addcont_delete>確定要刪除此追加內容嗎？</addcont_delete>
-			<license_delete>確定要刪除此授權嗎？</license_delete>
-			<saved_data_delete>確定要刪除此保存資料嗎？</saved_data_delete>
-		</delete>
 		<info name="資訊">
 			<eligible>有權</eligible>
 			<ineligible>無權</ineligible>
-			<level>等級</level>
+			<level>等級 {}</level>
 			<name>名稱</name>
 			<trophy_earning>獲得獎盃</trophy_earning>
 			<parental_controls>家長監控</parental_controls>
@@ -352,6 +365,7 @@
 		<save_data>
 			<delete>
 				<cancel_deleting>確定要取消刪除嗎？</cancel_deleting>
+				<could_not_delete>無法刪除。</could_not_delete>
 				<deletion_complete>已刪除。</deletion_complete>
 				<delete_saved_data>確定要刪除此保存資料嗎？</delete_saved_data>
 			</delete>
@@ -361,6 +375,7 @@
 			</info>
 			<load name="載入">
 				<cancel_loading>確定要取消載入嗎？</cancel_loading>
+				<could_not_load>無法載入。</could_not_load>
 				<no_saved_data>找不到保存資料。</no_saved_data>
 				<load_complete>已載入。</load_complete>
 				<loading>載入中……</loading>
@@ -368,6 +383,7 @@
 			</load>
 			<save name="保存">
 				<cancel_saving>確定要取消保存嗎？</cancel_saving>
+				<couldt_save>無法保存。</couldt_save>
 				<could_not_save>無法保存。
 記憶卡的可用容量不足。</could_not_save>
 				<not_free_space>記憶卡的可用容量不足。</not_free_space>
@@ -877,6 +893,7 @@
 	</sys_apps_title>
 
 	<trophy_collection>
+		<all_trophy_deleted>刪除該使用者已保存的全部獎杯資訊。</all_trophy_deleted>
 		<delete_trophy>刪除獎盃</delete_trophy>
 		<trophy_deleted>刪除該使用者已保存的獎杯資訊。</trophy_deleted>
 		<locked>未解鎖</locked>

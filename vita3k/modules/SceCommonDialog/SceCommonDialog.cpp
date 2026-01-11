@@ -1045,7 +1045,12 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
     emuenv.common_dialog.savedata.display_type = p->dispType == 0 ? emuenv.common_dialog.savedata.display_type : p->dispType;
     emuenv.common_dialog.savedata.userdata = p->userdata;
 
+    auto &lang = emuenv.common_dialog.lang;
     auto &common = emuenv.common_dialog.lang.common;
+    auto &save_data = lang.save_data;
+    auto &deleting = save_data.deleting;
+    auto &load = save_data.load;
+    auto &save = save_data.save;
 
     switch (emuenv.common_dialog.savedata.mode) {
     default:
@@ -1071,19 +1076,18 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
             error_code = p->errorCodeParam.get(emuenv.mem);
             emuenv.common_dialog.savedata.slot_id[emuenv.common_dialog.savedata.selected_save] = error_code->targetSlot.id;
             emuenv.common_dialog.savedata.list_empty_param[emuenv.common_dialog.savedata.selected_save] = error_code->targetSlot.emptyParam.get(emuenv.mem);
-
             emuenv.common_dialog.savedata.btn_num = 1;
             emuenv.common_dialog.savedata.btn[0] = common["ok"];
             emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
             switch (emuenv.common_dialog.savedata.display_type) {
             case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-                emuenv.common_dialog.savedata.msg = fmt::format("An error has occurred while saving.\n({})", log_hex(error_code->errorCode));
+                emuenv.common_dialog.savedata.msg = fmt::format("{}\n({})", save["couldt_save"], log_hex(error_code->errorCode));
                 break;
             case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-                emuenv.common_dialog.savedata.msg = fmt::format("An error has occurred while loading.\n({})", log_hex(error_code->errorCode));
+                emuenv.common_dialog.savedata.msg = fmt::format("{}\n({})", load["could_not_load"], log_hex(error_code->errorCode));
                 break;
             case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-                emuenv.common_dialog.savedata.msg = fmt::format("An error has occurred while deleting.\n({})", log_hex(error_code->errorCode));
+                emuenv.common_dialog.savedata.msg = fmt::format("{}\n({})", deleting["could_not_delete"], log_hex(error_code->errorCode));
                 break;
             }
             break;
@@ -1096,8 +1100,6 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
             if (progress_bar->msg) {
                 emuenv.common_dialog.savedata.msg = progress_bar->msg.cast<char>().get(emuenv.mem);
             } else {
-                auto &lang = emuenv.common_dialog.lang;
-                auto &save_data = lang.save_data;
                 switch (progress_bar->sysMsgParam.sysMsgType) {
                 case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_PROGRESS:
                     switch (emuenv.common_dialog.savedata.display_type) {

@@ -25,18 +25,19 @@
 	</main_menubar>
 
 	<app_context>
-		<manual>Manual</manual>
-		<update>Atualização</update>
+		<live_area>
+			<manual>Manual</manual>
+			<update>Atualização</update>
+		</live_area>
+		<delete>
+			<delete_app>Esta aplicação e todos os dados relacionados, incluindo dados guardados, serão elminados.</delete_app>
+		</delete>
 		<update_history>Histórico de atualização</update_history>
 		<history_version>Versão {}</history_version>
-		<delete>
-			<app_delete>Esta aplicação e todos os dados relacionados, incluindo dados guardados, serão elminados.</app_delete>
-			<saved_data_delete>Pretende elminar estes dados guardados?</saved_data_delete>
-		</delete>
 		<info name="Informações">
 			<eligible>Elegível</eligible>
 			<ineligible>Inelegível</ineligible>
-			<level>Nível</level>
+			<level>Nível {}</level>
 			<name>Nome</name>
 			<trophy_earning>Ganho de Troféus</trophy_earning>
 			<parental_controls>Controlo parental</parental_controls>
@@ -204,6 +205,7 @@ Código de erro: {}</an_error_occurred>
 		<save_data>
 			<delete>
 				<cancel_deleting>Pretende cancelar a eliminação?</cancel_deleting>
+				<could_not_delete>Não foi possível eliminar o ficheiro.</could_not_delete>
 				<deletion_complete>Eliminação concluída.</deletion_complete>
 				<delete_saved_data>Pretende eliminar estes dados guardados?</delete_saved_data>
 			</delete>
@@ -213,6 +215,7 @@ Código de erro: {}</an_error_occurred>
 			</info>
 			<load name="Carregar">
 				<cancel_loading>Pretende cancelar o carregamento?</cancel_loading>
+				<could_not_load>Não foi possível carregar o ficheiro.</could_not_load>
 				<no_saved_data>Não existem dados guardados.</no_saved_data>
 				<load_complete>Carregamento concluído.</load_complete>
 				<loading>A carregar...</loading>
@@ -220,6 +223,7 @@ Código de erro: {}</an_error_occurred>
 			</load>
 			<save name="Guardar">
 				<cancel_saving>Pretende cancelar a operação de guardar?</cancel_saving>
+				<couldt_save>Não foi possível guardar o ficheiro.</couldt_save>
 				<could_not_save>Não foi possível guardar o ficheiro.
 Não existe espaço livre suficiente no cartão de memória.</could_not_save>
 				<not_free_space>Não existe espaço livre suficiente no cartão de memória.</not_free_space>

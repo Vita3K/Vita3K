@@ -25,18 +25,19 @@
 	</main_menubar>
 
 	<app_context>
-		<manual>Handbok</manual>
-		<update>Uppdatera</update>
+		<live_area>
+			<manual>Handbok</manual>
+			<update>Uppdatera</update>
+		</live_area>
+		<delete>
+			<delete_app>Den här applikationen och alla tillhörande data, inklusive sparade data, kommer att raderas.</delete_app>
+		</delete>
 		<update_history>Uppdateringshistorik</update_history>
 		<history_version>Version {}</history_version>
-		<delete>
-			<app_delete>Den här applikationen och alla tillhörande data, inklusive sparade data, kommer att raderas.</app_delete>
-			<saved_data_delete>Vill du radera dessa sparade data?</saved_data_delete>
-		</delete>
 		<info name="Information">
 			<eligible>Möjligt</eligible>
 			<ineligible>Inte möjligt</ineligible>
-			<level>Nivå</level>
+			<level>Nivå {}</level>
 			<name>Namn</name>
 			<trophy_earning>Vinna trophy</trophy_earning>
 			<parental_controls>Föräldrakontroll</parental_controls>
@@ -201,6 +202,7 @@ Felkod: {}</an_error_occurred>
 		<save_data>
 			<delete>
 				<cancel_deleting>Vill du avbryta raderingen?</cancel_deleting>
+				<could_not_delete>Kunde inte radera filen.</could_not_delete>
 				<deletion_complete>Radering slutförd.</deletion_complete>
 				<delete_saved_data>Vill du radera dessa sparade data?</delete_saved_data>
 			</delete>
@@ -210,6 +212,7 @@ Felkod: {}</an_error_occurred>
 			</info>
 			<load name="Ladda">
 				<cancel_loading>Vill du avbryta laddningen?</cancel_loading>
+				<could_not_load>Kunde inte ladda filen.</could_not_load>
 				<no_saved_data>Det finns inga sparade data.</no_saved_data>
 				<load_complete>Laddning slutförd.</load_complete>
 				<loading>Laddar...</loading>
@@ -217,6 +220,7 @@ Felkod: {}</an_error_occurred>
 			</load>
 			<save name="Spara">
 				<cancel_saving>Vill du avbryta sparningen?</cancel_saving>
+				<couldt_save>Kunde inte spara filen.</couldt_save>
 				<could_not_save>Kunde inte spara filen.
 Det finns inte tillräckligt med ledigt utrymme på minneskortet.</could_not_save>
 				<not_free_space>Det finns inte tillräckligt med ledigt utrymme på minneskortet.</not_free_space>

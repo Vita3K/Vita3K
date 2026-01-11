@@ -36,28 +36,33 @@
 	</about>
 
 	<app_context>
-		<copy_app_info>앱 정보 복사</copy_app_info>
-		<name_and_id>이름와 Title ID</name_and_id>
-		<custom_config>커스텀 설정</custom_config>
-		<create>만들기</create>
-		<edit>편집</edit>
-		<remove>삭제</remove>
-		<open_folder>폴더 열기</open_folder>
-		<license>라이센스</license>
-		<shaders_cache>셰이더 캐시</shaders_cache>
-		<shaders_log>셰이더 로그</shaders_log>
-		<manual>설명서</manual>
-		<update>업데이트</update>
+		<copy_app_info name="앱 정보 복사">
+			<name_and_id>이름와 Title ID</name_and_id>
+		</copy_app_info>
+		<custom_config name="커스텀 설정">
+			<create>만들기</create>
+			<edit>편집</edit>
+			<remove>삭제</remove>
+		</custom_config>
+		<path>
+			<open_folder>폴더 열기</open_folder>
+			<license>라이센스</license>
+			<shaders_cache>셰이더 캐시</shaders_cache>
+			<shaders_log>셰이더 로그</shaders_log>
+		</path>
+		<live_area>
+			<manual>설명서</manual>
+			<update>업데이트</update>
+		</live_area>
+		<delete>
+			<delete_app>이 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</delete_app>
+		</delete>
 		<update_history>업데이트 이력</update_history>
 		<history_version>버전 {}</history_version>
-		<delete>
-			<app_delete>이 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</app_delete>
-			<saved_data_delete>이 저장 데이터를 삭제하시겠습니까?</saved_data_delete>
-		</delete>
 		<info name="정보">
 			<eligible>권리 있음</eligible>
 			<ineligible>권리 없음</ineligible>
-			<level>레벨</level>		
+			<level>레벨 {}</level>		
 			<name>이름</name>
 			<trophy_earning>트로피 획득</trophy_earning>
 			<parental_controls>자녀보호 기능</parental_controls>
@@ -232,6 +237,7 @@
 		<save_data>
 			<delete>
 				<cancel_deleting>삭제를 취소하시겠습니까?</cancel_deleting>
+				<could_not_delete>삭제지 못했습니다.</could_not_delete>
 				<deletion_complete>삭제했습니다.</deletion_complete>
 				<delete_saved_data>이 저장 데이터를 삭제하시겠습니까?</delete_saved_data>
 			</delete>
@@ -241,6 +247,7 @@
 			</info>
 			<load name="불러오기">
 				<cancel_loading>불러오기를 취소하시겠습니까?</cancel_loading>
+				<could_not_load>불러오지 못했습니다.</could_not_load>
 				<no_saved_data>저장 데이터가 없습니다.</no_saved_data>
 				<load_complete>불러오기를 완료했습니다.</load_complete>
 				<loading>불러오기 중입니다...</loading>
@@ -248,6 +255,7 @@
 			</load>
 			<save name="저장">
 				<cancel_saving>저장을 취소하시겠습니까?</cancel_saving>
+				<couldt_save>저장하지 못했습니다.</couldt_save>
 				<could_not_save>저장하지 못했습니다.
 메모리 카드의 빈 용량이 부족합니다.</could_not_save>
 				<not_free_space>메모리 카드의 빈 용량이 부족합니다.</not_free_space>

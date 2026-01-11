@@ -38,36 +38,43 @@
 	</about>
 
 	<app_context>
-		<check_app_state>Vérifier l'état de l'App</check_app_state>
-		<copy_vita3k_summary>Copier le résumé de Vita3K</copy_vita3k_summary>
-		<open_state_report>Ouvrir le rapport d'état</open_state_report>
-		<create_state_report>Créer le rapport d'état</create_state_report>
-		<update_database>Mettre à jour la base de données</update_database>
-		<copy_app_info>Copier l'info de l'App</copy_app_info>
-		<name_and_id>Nom et ID du Titre</name_and_id>
-		<app_summary>Résumé de l'App</app_summary>
+		<compat>
+			<check_app_state>Vérifier l'état de l'App</check_app_state>
+			<copy_vita3k_summary>Copier le résumé de Vita3K</copy_vita3k_summary>
+			<open_state_report>Ouvrir le rapport d'état</open_state_report>
+			<create_state_report>Créer le rapport d'état</create_state_report>
+			<update_database>Mettre à jour la base de données</update_database>
+		<compat>
+		<copy_app_info>Copier l'info de l'App
+			<name_and_id>Nom et ID du Titre</name_and_id>
+			<app_summary>Résumé de l'App</app_summary>
+		</copy_app_info>
 		<create_shortcut>Créer un raccourci</create_shortcut>
-		<custom_config>Config personnalisée</custom_config>
-		<create>Créer</create>
-		<edit>Editer</edit>
-		<remove>Supprimer</remove>
-		<open_folder>Ouvrir le dossier</open_folder>
-		<addcont>DLCs</addcont>
-		<license>License</license>
-		<shaders_cache>Cache des shaders</shaders_cache>
-		<shaders_log>Journal des shaders</shaders_log>
-		<manual>Manuel</manual>
-		<update>Mise à jour</update>
+		<custom_config name="Config personnalisée">
+			<create>Créer</create>
+			<edit>Editer</edit>
+			<remove>Supprimer</remove>
+		</custom_config>
+		<path>
+			<open_folder>Ouvrir le dossier</open_folder>
+			<addcont>DLCs</addcont>
+			<license>License</license>
+			<shaders_cache>Cache des shaders</shaders_cache>
+			<shaders_log>Journal des shaders</shaders_log>
+		</path>
+		<live_area>
+			<manual>Manuel</manual>
+			<update>Mise à jour</update>
+		</live_area>
+		<delete>
+			<delete_app>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</delete_app>
+		</delete>
 		<update_history>Historique de mise à jour</update_history>
 		<history_version>Version {}</history_version>
-		<delete>
-			<app_delete>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</app_delete>
-			<saved_data_delete>Supprimer ces données sauvegardées ?</saved_data_delete>
-		</delete>
 		<info name="Informations">
  			<eligible>Autorisé</eligible>
 			<ineligible>Non autorisé</ineligible>
-			<level>Niveau</level>
+			<level>Niveau {}</level>
 			<name>Nom</name>
 			<trophy_earning>Obtention de trophées</trophy_earning>
 			<parental_controls>Contrôle parental</parental_controls>
@@ -254,6 +261,7 @@ Connecter un contrôleur compatible avec SDL3.</not_connected>
 		<save_data>
 			<delete>
 				<cancel_deleting>Annuler la suppression ?</cancel_deleting>
+				<could_not_delete>La supprimer du fichier a échoué.</could_not_delete>
 				<deletion_complete>Suppression terminée.</deletion_complete>
 				<delete_saved_data>Supprimer ces données sauvegardées ?</delete_saved_data>
 			</delete>
@@ -263,6 +271,7 @@ Connecter un contrôleur compatible avec SDL3.</not_connected>
 			</info>
 			<load name="Charger">
 				<cancel_loading>Annuler le chargement ?</cancel_loading>
+				<could_not_load>La chargement du fichier a échoué.</could_not_load>
 				<no_saved_data>Aucune donnée sauvegardée.</no_saved_data>
 				<load_complete>Chargement terminé.</load_complete>
 				<loading>Chargement en cours...</loading>
@@ -270,6 +279,7 @@ Connecter un contrôleur compatible avec SDL3.</not_connected>
 			</load>
 			<save name="Sauvegarder">
 				<cancel_saving>Annuler la sauvegarde ?</cancel_saving>
+				<couldt_save>La sauvegarde du fichier a échoué.</couldt_save>
 				<could_not_save>La sauvegarde du fichier a échoué.
 Espace libre insuffisant sur la carte mémoire.</could_not_save>
 				<not_free_space>Espace libre insuffisant sur la carte mémoire.</not_free_space>

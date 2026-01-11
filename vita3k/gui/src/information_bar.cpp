@@ -511,7 +511,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
                     if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
                         ImGui::CloseCurrentPopup();
                     }
-                    ImGui::SameLine(0.f, 20.f);
+                    ImGui::SameLine(0, 20.f * SCALE.x);
                     if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
                         notice_info.clear();
                         for (auto &notice : gui.notice_info_icon)

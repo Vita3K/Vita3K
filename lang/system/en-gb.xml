@@ -4,6 +4,7 @@
 	<main_menubar>
 		<file name="File">
 			<open_pref_path>Open Pref Path</open_pref_path>
+			<open_patch_path>Open Patch Path</open_patch_path>
 			<open_textures_path>Open Textures Path</open_textures_path>
 			<install_firmware>Install Firmware</install_firmware>
 			<install_pkg>Install .pkg</install_pkg>
@@ -51,40 +52,52 @@
 	</about>
 
 	<app_context>
-		<check_app_state>Check App state</check_app_state>
-		<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
-		<open_state_report>Open state report</open_state_report>
-		<create_state_report>Create state report</create_state_report>
-		<update_database>Update database</update_database>
-		<copy_app_info>Copy App info</copy_app_info>
-		<name_and_id>Name and Title ID</name_and_id>
-		<app_summary>App Summary</app_summary>
+		<compat>
+			<check_app_state>Check App state</check_app_state>
+			<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
+			<open_state_report>Open state report</open_state_report>
+			<create_state_report>Create state report</create_state_report>
+			<update_database>Update database</update_database>
+		</compat>
+		<copy_app_info name="Copy App info">
+			<name_and_id>Name and Title ID</name_and_id>
+			<app_summary>App Summary</app_summary>
+		</copy_app_info>
 		<create_shortcut>Create Shortcut</create_shortcut>
-		<custom_config>Custom Config</custom_config>
-		<create>Create</create>
-		<edit>Edit</edit>
-		<remove>Remove</remove>
-		<open_folder>Open Folder</open_folder>
-		<addcont>DLC</addcont>
-		<license>License</license>
-		<shaders_cache>Shaders Cache</shaders_cache>
-		<shaders_log>Shaders Log</shaders_log>
-		<manual>Manual</manual>
-		<update>Update</update>
+		<custom_config name="Custom Config">
+			<create>Create</create>
+			<edit>Edit</edit>
+			<remove>Remove</remove>
+		</custom_config>
+		<path>
+			<open_folder>Open Folder</open_folder>
+			<addcont>DLC</addcont>
+			<license>License</license>
+			<patch>Patch</patch>
+			<shaders_cache>Shaders Cache</shaders_cache>
+			<shaders_log>Shaders Log</shaders_log>
+		</path>
+		<live_area>
+			<manual>Manual</manual>
+			<update>Update</update>
+		</live_area>
+		<delete>
+			<delete_app>This application and all related data, including saved data, will be deleted.</delete_app>
+			<delete_app_description>Deleting an application may take a while,
+depending on its size and your hardware.</delete_app_description>
+			<delete_patch>Do you want to delete this patch?</delete_patch>
+			<delete_addcont>Do you want to delete this add-on data?</delete_addcont>
+			<delete_license>Do you want to delete this license?</delete_license>
+		</delete>
+		<other name="Other">
+			<reset_last_time_played>Reset Last Time Played</reset_last_time_played>
+		</other>
 		<update_history>Update History</update_history>
 		<history_version>Version {}</history_version>
-		<delete>
-			<app_delete>This application and all related data, including saved data, will be deleted.</app_delete>
-			<app_delete_description>Deleting an application may take a while,
-depending on its size and your hardware.</app_delete_description>
-			<addcont_delete>Do you want to delete this add-on data?</addcont_delete>
-			<license_delete>Do you want to delete this license?</license_delete>
-			<saved_data_delete>Do you want to delete this saved data?</saved_data_delete>
-		</delete>
 		<info name="Information">
 			<eligible>Eligible</eligible>
 			<ineligible>Ineligible</ineligible>
-			<level>Level</level>
+			<level>Level {}</level>
 			<name>Name</name>
 			<trophy_earning>Trophy Earning</trophy_earning>
 			<parental_controls>Parental Controls</parental_controls>
@@ -353,6 +366,7 @@ Connect a controller that is compatible with SDL3.</not_connected>
 		<save_data>
 			<delete>
 				<cancel_deleting>Do you want to cancel deleting?</cancel_deleting>
+				<could_not_delete>Could not delete the file.</could_not_delete>
 				<deletion_complete>Deletion complete.</deletion_complete>
 				<delete_saved_data>Do you want to delete this saved data?</delete_saved_data>
 			</delete>
@@ -362,6 +376,7 @@ Connect a controller that is compatible with SDL3.</not_connected>
 			</info>
 			<load name="Load">
 				<cancel_loading>Do you want to cancel loading?</cancel_loading>
+				<could_not_load>Could not load the file.</could_not_load>
 				<no_saved_data>There is no saved data.</no_saved_data>
 				<load_complete>Loading complete.</load_complete>
 				<loading>Loading...</loading>
@@ -369,6 +384,7 @@ Connect a controller that is compatible with SDL3.</not_connected>
 			</load>
 			<save name="Save">
 				<cancel_saving>Do you want to cancel saving?</cancel_saving>
+				<couldt_save>Could not save the file.</couldt_save>
 				<could_not_save>Could not save the file.
 There is not enough free space on the memory card.</could_not_save>
 				<not_free_space>There is not enough free space on the memory card.</not_free_space>
@@ -880,6 +896,7 @@ lower can improve performance but can make games unstable if you have bad enough
 	</sys_apps_title>
 
 	<trophy_collection>
+		<all_trophy_deleted>All trophy information saved on this user will be deleted.</all_trophy_deleted>
 		<delete_trophy>Delete Trophy</delete_trophy>
 		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<locked>Locked</locked>

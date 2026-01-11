@@ -51,39 +51,46 @@
 	</about>
 
 	<app_context>
-		<check_app_state>Sprawdź stan aplikacji</check_app_state>
-		<copy_vita3k_summary>Kopiuj podsumowanie Vita3K</copy_vita3k_summary>
-		<open_state_report>Otwórz raport o stanie</open_state_report>
-		<create_state_report>Stwórz raport o stanie</create_state_report>
-		<update_database>Aktualizuj bazę danych</update_database>
-		<copy_app_info>Kopiuj informację o aplikacji</copy_app_info>
-		<name_and_id>Nazwa i numer identyfikacyjny aplikacji</name_and_id>
-		<app_summary>Podsumowanie aplikacji</app_summary>
-		<custom_config>Własna konfiguracja</custom_config>
-		<create>Utwórz</create>
-		<edit>Edytuj</edit>
-		<remove>Usuń</remove>
-		<open_folder>Otwórz folder</open_folder>
-		<addcont>Dodatkowa zawartość (DLC)</addcont>
-		<license>Licencja</license>
-		<shaders_cache>Pamięć podręczna cieni</shaders_cache>
-		<shaders_log>Dziennik zdarzeń cieni</shaders_log>
-		<manual>Instrukcja obsługi</manual>
-		<update>Aktualizuj</update>
+		<compat>
+			<check_app_state>Sprawdź stan aplikacji</check_app_state>
+			<copy_vita3k_summary>Kopiuj podsumowanie Vita3K</copy_vita3k_summary>
+			<open_state_report>Otwórz raport o stanie</open_state_report>
+			<create_state_report>Stwórz raport o stanie</create_state_report>
+			<update_database>Aktualizuj bazę danych</update_database>
+		</compat>
+		<copy_app_info name="Kopiuj informację o aplikacji">
+			<name_and_id>Nazwa i numer identyfikacyjny aplikacji</name_and_id>
+			<app_summary>Podsumowanie aplikacji</app_summary>
+		</copy_app_info>
+		<custom_config name="Własna konfiguracja">
+			<create>Utwórz</create>
+			<edit>Edytuj</edit>
+			<remove>Usuń</remove>
+		</custom_config>
+		<path>
+			<open_folder>Otwórz folder</open_folder>
+			<addcont>Dodatkowa zawartość (DLC)</addcont>
+			<license>Licencja</license>
+			<shaders_cache>Pamięć podręczna cieni</shaders_cache>
+			<shaders_log>Dziennik zdarzeń cieni</shaders_log>
+		</path>
+		</live_area>
+			<manual>Instrukcja obsługi</manual>
+			<update>Aktualizuj</update>
+		</live_area>
+		<delete>
+			<delete_app>Aplikacja i wszystkie powiązane dane, w tym zapisane dane, zostaną usunięte.</delete_app>
+			<delete_app_description>Usunięcie aplikacji może zająć trochę czasu,
+jest to zależne od jej rozmiaru i twojego sprzętu.</delete_app_description>
+			<delete_addcont>Czy chcesz usunąć dane dodatkowej zawartości (DLC)?</delete_addcont>
+			<delete_license>Czy chcesz usunąć tę licencję?</delete_license>
+		</delete>
 		<update_history>Historia aktualizacji</update_history>
 		<history_version>Wersja {}</history_version>
-		<delete>
-			<app_delete>Aplikacja i wszystkie powiązane dane, w tym zapisane dane, zostaną usunięte.</app_delete>
-			<app_delete_description>Usunięcie aplikacji może zająć trochę czasu,
-jest to zależne od jej rozmiaru i twojego sprzętu.</app_delete_description>
-			<addcont_delete>Czy chcesz usunąć dane dodatkowej zawartości (DLC)?</addcont_delete>
-			<license_delete>Czy chcesz usunąć tę licencję?</license_delete>
-			<saved_data_delete>Czy chcesz usunąć te zapisane dane?</saved_data_delete>
-		</delete>
 		<info name="Informacje">
 			<eligible>Spełnia warunki</eligible>
 			<ineligible>Nie spełnia warunków</ineligible>
-			<level>Poziom</level>
+			<level>Poziom {}</level>
 			<name>Nazwa</name>
 			<trophy_earning>Zdobywanie trofeów</trophy_earning>
 			<parental_controls>Kontrola rodzicielska</parental_controls>
@@ -348,6 +355,7 @@ Proszę, podłącz kontroler, który jest kompatybilny z SDL3.</not_connected>
 		<save_data>
 			<delete>
 				<cancel_deleting>Czy chcesz anulować usunięcie?</cancel_deleting>
+				<could_not_delete>Nie można usunąć pliku.</could_not_delete>
 				<deletion_complete>Usuwanie ukończone.</deletion_complete>
 				<delete_saved_data>Czy chcesz usunąć te zapisane dane?</delete_saved_data>
 			</delete>
@@ -357,6 +365,7 @@ Proszę, podłącz kontroler, który jest kompatybilny z SDL3.</not_connected>
 			</info>
 			<load name="Załaduj">
 				<cancel_loading>Czy chcesz anulować ładowanie?</cancel_loading>
+				<could_not_load>Nie można załadować pliku.</could_not_load>
 				<no_saved_data>Brak zapisanych danych.</no_saved_data>
 				<load_complete>Ładowanie ukończone.</load_complete>
 				<loading>Ładowanie...</loading>
@@ -364,6 +373,7 @@ Proszę, podłącz kontroler, który jest kompatybilny z SDL3.</not_connected>
 			</load>
 			<save name="Zapisz">
 				<cancel_saving>Czy chcesz anulować zapis?</cancel_saving>
+				<couldt_save>Nie można zapisać pliku.</couldt_save>
 				<could_not_save>Nie można zapisać pliku.
 Na karcie pamięci nie ma wystarczającej ilości wolnego miejsca.</could_not_save>
 				<not_free_space>Na karcie pamięci nie ma wystarczającej ilości wolnego miejsca.</not_free_space>

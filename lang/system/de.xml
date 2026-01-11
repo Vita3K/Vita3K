@@ -28,18 +28,19 @@
 	</about>
 
 	<app_context>
-		<manual>Handbuch</manual>
-		<update>Aktualisierung</update>
+		<live_area>
+			<manual>Handbuch</manual>
+			<update>Aktualisierung</update>
+		</live_area>
+		<delete>
+			<delete_app>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</delete_app>
+		</delete>
 		<update_history>Update-Verlauf</update_history>
 		<history_version>Version {}</history_version>
-		<delete>
-			<app_delete>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</app_delete>
-			<saved_data_delete>Willst du die Nutzerdaten löschen?</saved_data_delete>
-		</delete>
 		<info name="Information">
 			<eligible>berechtigt</eligible>
 			<ineligible>nicht berechtigt</ineligible>
-			<level>Stufe</level>
+			<level>Stufe {}</level>
 			<name>Name</name>
 			<trophy_earning>Verdienen von Trophäen</trophy_earning>
 			<parental_controls>Kindersicherung</parental_controls>
@@ -207,6 +208,7 @@ Fehlercode: {}</an_error_occurred>
 		<save_data>
 			<delete>
 				<cancel_deleting>Möchtest du den Löschvorgang abbrechen?</cancel_deleting>
+				<could_not_delete>Löschen der Datei gescheitert.</could_not_delete>
 				<deletion_complete>Löschen abgeschlossen.</deletion_complete>
 				<delete_saved_data>Möchtest du diese gespeicherten Daten löschen?</delete_saved_data>
 			</delete>
@@ -216,6 +218,7 @@ Fehlercode: {}</an_error_occurred>
 			</info>
 			<load name="Laden">
 				<cancel_loading>Möchtest du den Ladevorgang abbrechen?</cancel_loading>
+				<could_not_load>Laden der Datei gescheitert.</could_not_load>
 				<no_saved_data>Es gibt keine gespeicherten Daten.</no_saved_data>
 				<load_complete>Laden abgeschlossen.</load_complete>
 				<loading>Lädt ...</loading>
@@ -223,6 +226,7 @@ Fehlercode: {}</an_error_occurred>
 			</load>
 			<save name="Speichern">
 				<cancel_saving>Möchtest du den Speichervorgang abbrechen?</cancel_saving>
+				<couldt_save>Speichern der Datei gescheitert.</couldt_save>
 				<could_not_save>Speichern der Datei gescheitert.
 Nicht genügend freier Speicherplatz auf der Speicherkarte.</could_not_save>
 				<not_free_space>Nicht genügend freier Speicherplatz auf der Speicherkarte.</not_free_space>

@@ -25,18 +25,19 @@
 	</main_menubar>
 
 	<app_context>
-		<manual>Vejledning</manual>
-		<update>Opdater</update>
+		<live_area>
+			<manual>Vejledning</manual>
+			<update>Opdater</update>
+		</live_area>
+		<delete>
+			<delete_app>Dette program og alle relaterede data, herunder gemte data, vil blive slettet.</delete_app>
+		</delete>
 		<update_history>Opdateringshistorik</update_history>
 		<history_version>Version {}</history_version>
-		<delete>
-			<app_delete>Dette program og alle relaterede data, herunder gemte data, vil blive slettet.</app_delete>
-			<saved_data_delete>Ønsker du at disse gemte data?</saved_data_delete>
-		</delete>
 		<info name="Information">
 			<eligible>Kvalificeret</eligible>
 			<ineligible>Ikke kvalificeret</ineligible>
-			<level>Niveau</level>
+			<level>Niveau {}</level>
 			<name>Navn</name>
 			<trophy_earning>Trophy opnåelse</trophy_earning>
 			<parental_controls>Forældrekontrol</parental_controls>
@@ -201,6 +202,7 @@ Fejlkode: {}</an_error_occurred>
 		<save_data>
 			<delete>
 				<cancel_deleting>Ønsker du at afbryde sletningen?</cancel_deleting>
+				<could_not_delete>Kunne ikke slette filen.</could_not_delete>
 				<deletion_complete>Sletning udført.</deletion_complete>
 				<delete_saved_data>Ønsker du at slette disse gemte data?</delete_saved_data>
 			</delete>
@@ -210,6 +212,7 @@ Fejlkode: {}</an_error_occurred>
 			</info>
 			<load name="Indlæs">
 				<cancel_loading>Ønsker du at afbryde indlæsningen?</cancel_loading>
+				<could_not_load>Kunne ikke indlæse filen.</could_not_load>
 				<no_saved_data>Der er ingen gemte data.</no_saved_data>
 				<load_complete>Indlæsning udført.</load_complete>
 				<loading>Indlæser...</loading>
@@ -217,6 +220,7 @@ Fejlkode: {}</an_error_occurred>
 			</load>
 			<save name="Gem">
 				<cancel_saving>Ønsker du at afbryde lagringen?</cancel_saving>
+				<couldt_save>Kunne ikke gemme filen.</couldt_save>
 				<could_not_save>Kunne ikke gemme filen.
 Der er ikke nok ledig plads på hukommelseskortet.</could_not_save>
 				<not_free_space>Der er ikke nok ledig plads på hukommelseskortet.</not_free_space>
