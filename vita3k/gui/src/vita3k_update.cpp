@@ -204,14 +204,18 @@ static void download_update(const fs::path &base_path) {
 #ifdef _WIN32
         download_continuous_link += "windows-latest.zip";
 #elif defined(__APPLE__)
-        download_continuous_link += "macos-latest.dmg";
+#ifdef __aarch64__
+        download_continuous_link += "macos-arm64-latest.zip";
+#else
+        download_continuous_link += "macos-latest.zip";
+#endif
 #elif defined(__ANDROID__)
         download_continuous_link += "android-latest.apk";
 #elif defined(__linux__)
-#if defined(__x86_64__)
-        download_continuous_link += "/ubuntu-latest.zip";
-#elif defined(__aarch64__)
-        download_continuous_link += "/ubuntu-aarch64-latest.zip";
+#ifdef __aarch64__
+        download_continuous_link += "ubuntu-aarch64-latest.zip";
+#else
+        download_continuous_link += "ubuntu-latest.zip";
 #endif
 #endif
 

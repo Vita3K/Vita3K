@@ -11,9 +11,12 @@ boot=0
 # determine architecture for correct zip
 arch="$(uname -m)"
 case "$arch" in
-    x86_64) zip_name="ubuntu-latest.zip" ;;
+    x86_64|amd64) zip_name="ubuntu-latest.zip" ;;
     aarch64|arm64) zip_name="ubuntu-aarch64-latest.zip" ;;
-    *) zip_name="vita3k-latest.zip" ;;
+    *)
+      echo "Unsupported architecture: $arch"
+      exit 1
+      ;;
 esac
 
 # Download if not present
