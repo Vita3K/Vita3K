@@ -1,9 +1,16 @@
 #!/bin/sh
 DIR="$(dirname "$0")"
 APP_PATH="$(dirname "$0")/../../.."
+ARCH=$(uname -m)
+
+if [ "$ARCH" = "arm64" ]; then
+  DMG_NAME=macos-arm64-latest.dmg
+else
+  DMG_NAME=macos-latest.dmg
+fi
 
 if [ ! -e "$DIR"/vita3k-latest.dmg ]; then
-	curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/macos-latest.dmg -o "$DIR"/vita3k-latest.dmg
+	curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/$DMG_NAME -o "$DIR"/vita3k-latest.dmg
 fi
 
 hdiutil attach "$DIR"/vita3k-latest.dmg

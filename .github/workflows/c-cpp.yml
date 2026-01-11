@@ -35,11 +35,13 @@ jobs:
             cache_path: ~/.ccache
             extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-x86_64.AppImage
             cmake_preset: linux-ninja-clang-appimage
+
           - os: ubuntu-24.04-arm
             arch: aarch64
             cache_path: ~/.ccache
             extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-aarch64.AppImage
             cmake_preset: linux-ninja-clang-appimage
+
           - os: windows-latest
             cache_path: |
                 C:\vcpkg\installed
@@ -47,10 +49,19 @@ jobs:
                 C:\Users\runneradmin\AppData\Local\ccache
             extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
             cmake_preset: windows-ninja
-          - os: macos-latest
+
+          - os: macos-intel
+            runs_on: macos-latest
             cache_path: ~/Library/Caches/ccache
             extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="x86_64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
             cmake_preset: macos-ninja
+
+          - os: macos-arm64
+            runs_on: macos-latest
+            cache_path: ~/Library/Caches/ccache
+            extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="arm64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
+            cmake_preset: macos-ninja
+
           - os: android
             runs_on: ubuntu-latest
 
@@ -66,7 +77,7 @@ jobs:
           brew install ccache create-dmg
           echo "$(brew --prefix ccache)/libexec" >> $GITHUB_PATH
           ccache --set-config=compiler_check=content
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
 
       - name: Set up build environment (Linux)
         run: |
@@ -190,7 +201,7 @@ jobs:
             vita3k-${{ env.GIT_SHORT_SHA }}-${{ matrix.os }}.dmg \
             Vita3K.app
           rm -rf Vita3K.app
-        if: matrix.os == 'macos-latest'
+        if: startsWith(matrix.os, 'macos')
 
       - name: Prepare Linux AppImage artifact
         run: |
@@ -266,11 +277,15 @@ jobs:
             if [[ $dir == *-android ]]; then
               echo "Processing $dir (Android)"
               cp $dir/*.apk artifacts-master/android-latest.apk
-              cp $dir/*.apk artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}_android.apk
-            elif [[ $dir == *-macos-latest ]]; then
-              echo "Processing $dir (macOS)"
+              cp $dir/*.apk artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-android.apk
+            elif [[ $dir == *-macos-intel ]]; then
+              echo "Processing $dir (macOS Intel)"
               cp $dir/*.dmg artifacts-master/macos-latest.dmg
-              cp $dir/*.dmg artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}_macos.dmg
+              cp $dir/*.dmg artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-macos.dmg
+            elif [[ $dir == *-macos-arm64 ]]; then
+              echo "Processing $dir (macOS ARM64)"
+              cp $dir/*.dmg artifacts-master/macos-arm64-latest.dmg
+              cp $dir/*.dmg artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-macos-arm64.dmg
             elif [[ $dir == *-ubuntu-latest-appimage ]]; then
               echo "Processing $dir (x86_64 AppImage)"
               cp $dir/*.AppImage* artifacts-master/
@@ -282,15 +297,15 @@ jobs:
             elif [[ $dir == *-ubuntu-latest ]]; then
               echo "Processing $dir (Ubuntu x86_64)"
               (cd $dir && zip -r ../artifacts-master/ubuntu-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}_ubuntu-x86_64.7z $dir
+              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-ubuntu-x86_64.7z $dir
             elif [[ $dir == *-ubuntu-24.04-arm ]]; then
               echo "Processing $dir (Ubuntu ARM64)"
               (cd $dir && zip -r ../artifacts-master/ubuntu-aarch64-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}_ubuntu-aarch64.7z $dir
+              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-ubuntu-aarch64.7z $dir
             elif [[ $dir == *-windows-latest ]]; then
-              echo "Processing $dir (Windows)"
+              echo "Processing $dir (Windows x86_64)"
               (cd $dir && zip -r ../artifacts-master/windows-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}_windows.7z $dir
+              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-windows.7z $dir
             fi
           done
           echo "=== artifacts-master ==="
