@@ -540,7 +540,7 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
 static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
 
-#ifdef __aarch64__
+#if defined(__aarch64__) || defined(_M_ARM64)
 #ifdef __APPLE__
     const uint32_t esr = context->uc_mcontext->__es.__esr;
 #else

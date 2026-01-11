@@ -42,12 +42,24 @@ jobs:
             extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-aarch64.AppImage
             cmake_preset: linux-ninja-clang-appimage
 
-          - os: windows-latest
+          - os: windows-x64
+            arch: x64
+            runs_on: windows-latest
             cache_path: |
                 C:\vcpkg\installed
                 C:\vcpkg\packages
                 C:\Users\runneradmin\AppData\Local\ccache
             extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
+            cmake_preset: windows-ninja
+
+          - os: windows-arm64
+            arch: arm64
+            runs_on: windows-latest
+            cache_path: |
+              C:\vcpkg\installed
+              C:\vcpkg\packages
+              C:\Users\runneradmin\AppData\Local\ccache
+            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=arm64-windows-static-md
             cmake_preset: windows-ninja
 
           - os: macos-intel
@@ -94,12 +106,15 @@ jobs:
 
       - name: Set up build environment (Windows)
         run: |
-          vcpkg install zlib:x64-windows-static-md boost-system:x64-windows-static-md boost-filesystem:x64-windows-static-md boost-program-options:x64-windows-static-md boost-icl:x64-windows-static-md boost-variant:x64-windows-static-md curl:x64-windows-static-md openssl:x64-windows-static-md
+          vcpkg install zlib:${{ matrix.arch }}-windows-static-md boost-system:${{ matrix.arch }}-windows-static-md boost-filesystem:${{ matrix.arch }}-windows-static-md boost-program-options:${{ matrix.arch }}-windows-static-md `
+            boost-icl:${{ matrix.arch }}-windows-static-md boost-variant:${{ matrix.arch }}-windows-static-md curl:${{ matrix.arch }}-windows-static-md openssl:${{ matrix.arch }}-windows-static-md
           choco install ccache
-        if: matrix.os == 'windows-latest'
+        if: startsWith(matrix.os, 'windows')
 
       - uses: ilammy/msvc-dev-cmd@v1
-        if: matrix.os == 'windows-latest'
+        with:
+          arch: ${{ (matrix.arch == 'x64' && 'x64') || 'amd64_arm64' }}
+        if: startsWith(matrix.os, 'windows')
 
       - name: Set up build environment (Android)
         run: |
@@ -185,7 +200,6 @@ jobs:
 
       - name: Compute git short SHA
         shell: bash
-        if: env.GIT_SHORT_SHA == ''
         run: echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Create DMG (macOS)
@@ -281,7 +295,7 @@ jobs:
             elif [[ $dir == *-macos-intel ]]; then
               echo "Processing $dir (macOS Intel)"
               cp $dir/*.dmg artifacts-master/macos-latest.dmg
-              cp $dir/*.dmg artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-macos.dmg
+              cp $dir/*.dmg artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-macos-intel.dmg
             elif [[ $dir == *-macos-arm64 ]]; then
               echo "Processing $dir (macOS ARM64)"
               cp $dir/*.dmg artifacts-master/macos-arm64-latest.dmg
@@ -302,10 +316,14 @@ jobs:
               echo "Processing $dir (Ubuntu ARM64)"
               (cd $dir && zip -r ../artifacts-master/ubuntu-aarch64-latest.zip *)
               7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-ubuntu-aarch64.7z $dir
-            elif [[ $dir == *-windows-latest ]]; then
+            elif [[ $dir == *-windows-x64 ]]; then
               echo "Processing $dir (Windows x86_64)"
               (cd $dir && zip -r ../artifacts-master/windows-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-windows.7z $dir
+              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-windows-x86_64.7z $dir
+            elif [[ $dir == *-windows-arm64 ]]; then
+              echo "Processing $dir (Windows ARM64)"
+              (cd $dir && zip -r ../artifacts-master/windows-arm64-latest.zip *)
+              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-windows-arm64.7z $dir
             fi
           done
           echo "=== artifacts-master ==="
