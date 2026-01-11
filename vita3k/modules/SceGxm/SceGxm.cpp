@@ -21,7 +21,7 @@
 
 #include <span>
 #include <stack>
-#if defined(__x86_64__) && !defined(__APPLE__)
+#if (defined(__x86_64__) || defined(_M_X86)) && !defined(__APPLE__)
 #include <xxh_x86dispatch.h>
 #else
 #define XXH_INLINE_ALL
