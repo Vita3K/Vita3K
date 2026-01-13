@@ -177,6 +177,8 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         0x2200, 0x22FF, // Math operators
         0x2460, 0x24FF, // Enclosed Alphanumerics
         0x25A0, 0x26FF, // Miscellaneous symbols
+        0x3130, 0x316F, // Unified alphabets CJK
+        0xAC00, 0xD79F, // Unified characters CJK
         0x4E00, 0x9FFF, // Unified ideograms CJK
         0,
     };
@@ -287,12 +289,18 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
                     io.Fonts->AddFontFromMemoryTTF(font_data, font_mplus.size(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
 
                     const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
-                    if (!emuenv.cfg.initial_setup || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T)) {
+                    if (!emuenv.cfg.initial_setup || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T) || (sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN)) {
                         std::vector<uint8_t> font_source{};
+                        std::vector<uint8_t> font_neodgm{};
                         if (fs_utils::read_data(default_font_path / "SourceHanSansSC-Bold-Min.ttf", font_source)) {
                             font_data = IM_ALLOC(font_source.size());
                             memcpy(font_data, font_source.data(), font_source.size());
                             io.Fonts->AddFontFromMemoryTTF(font_data, font_source.size(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
+                        }
+                        if (fs_utils::read_data(default_font_path / "neodgm.ttf", font_neodgm)) {
+                            font_data = IM_ALLOC(font_neodgm.size());
+                            memcpy(font_data, font_neodgm.data(), font_neodgm.size());
+                            io.Fonts->AddFontFromMemoryTTF(font_data, font_neodgm.size(), font_config.SizePixels, &font_config, japanese_and_extra_ranges.Data);
                         }
                     }
                     font_config.MergeMode = false;
@@ -672,15 +680,17 @@ App *get_app_index(GuiState &gui, const std::string &app_path) {
 }
 
 void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    emuenv.app_path = app_path;
+    sfo::SfoAppInfo app_info;
     vfs::FileBuffer param;
     if (vfs::read_app_file(param, emuenv.pref_path, app_path, "sce_sys/param.sfo")) {
-        sfo::get_param_info(emuenv.app_info, param, emuenv.cfg.sys_lang);
+        sfo::get_param_info(app_info, param, emuenv.cfg.sys_lang);
     } else {
-        emuenv.app_info.app_addcont = emuenv.app_info.app_savedata = emuenv.app_info.app_short_title = emuenv.app_info.app_title = emuenv.app_info.app_title_id = emuenv.app_path; // Use app path as TitleID, addcont, Savedata, Short title and Title
-        emuenv.app_info.app_version = emuenv.app_info.app_category = emuenv.app_info.app_parental_level = "N/A";
+        app_info.app_addcont = app_info.app_savedata = app_info.app_short_title = app_info.app_title = app_info.app_title_id = app_path; // Use app path as TitleID, addcont, Savedata, Short title and Title
+        app_info.app_parental_level = "0"; // Default Parental Level
+        app_info.app_version = "0.00"; // Default Version
+        app_info.app_category = "-"; // Default Category
     }
-    gui.app_selector.user_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, emuenv.app_info.app_content_id, emuenv.app_info.app_addcont, emuenv.app_info.app_savedata, emuenv.app_info.app_parental_level, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, emuenv.app_path });
+    gui.app_selector.user_apps.push_back({ app_info.app_version, app_info.app_category, app_info.app_content_id, app_info.app_addcont, app_info.app_savedata, app_info.app_parental_level, app_info.app_short_title, app_info.app_title, app_info.app_title_id, app_path });
 }
 
 void get_user_apps_title(GuiState &gui, EmuEnvState &emuenv) {

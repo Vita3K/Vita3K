@@ -25,18 +25,19 @@
 	</main_menubar>
 
 	<app_context>
-		<manual>Håndboken</manual>
-		<update>Oppdater</update>
+		<live_area>
+			<manual>Håndboken</manual>
+			<update>Oppdater</update>
+		</live_area>
+		<delete>
+			<delete_app>Dette programmet og all relatert data, inkludert lagreda data, vil bli slettet.</delete_app>
+		</delete>
 		<update_history>Oppdater historikk</update_history>
 		<history_version>Versjon {}</history_version>
-		<delete>
-			<app_delete>Dette programmet og all relatert data, inkludert lagreda data, vil bli slettet.</app_delete>
-			<saved_data_delete>Vil du slette disse lagrede dataene?</saved_data_delete>
-		</delete>
 		<info name="Informasjon">
 			<eligible>Valgbar</eligible>
 			<ineligible>Ikke valgbar</ineligible>
-			<level>Nivå</level>
+			<level>Nivå {}</level>
 			<name>Navn</name>
 			<trophy_earning>Trophy-oppnåing</trophy_earning>
 			<parental_controls>Foreldrakontroll</parental_controls>
@@ -51,6 +52,8 @@
 Feilkode: {}</an_error_occurred>
 		<cancel>Avbryt</cancel>
 		<close>Lukke</close>
+		<could_not_load>Kunne ikke lagre filen.</could_not_load>
+		<could_not_save>Kunne ikke lagre filen.</could_not_save>
 		<delete>Slett</delete>
 		<error>Feil</error>
 		<file_corrupted>Filen er korrupt.</file_corrupted>
@@ -218,8 +221,13 @@ Feilkode: {}</an_error_occurred>
 			<save name="Lagre">
 				<cancel_saving>Vil du avbryte lagringen?</cancel_saving>
 				<could_not_save>Kunne ikke lagre filen.
-Det er ikke nok ledig plass på minnekortet.</could_not_save>
-				<not_free_space>Det er ikke nok ledig plass på minnekortet.</not_free_space>
+Det er ikke nok ledig plass på minnekortet.  For å lagre arbeidet ditt i programmet, må du frigjøre minimum {} ledig plass.
+
+For å opprette denne ledige plassen må du trykke på PS-knappen for å stoppe dette programmet, og deretter slette andre programmer eller innhold.</could_not_save>
+				<not_free_space>Det er ikke nok ledig plass på minnekortet.
+For å fortsette å bruke programmet, må du frigjøre minst {} ledig plass.
+
+Trykk på PS-knappen for å stoppe dette programmet og deretter slette andre programmer eller innhold.</not_free_space>
 				<new_saved_data>Nylagret data</new_saved_data>
 				<saving_complete>Lagring fullført.</saving_complete>
 				<save_the_data>Vil du lagre dataene?</save_the_data>

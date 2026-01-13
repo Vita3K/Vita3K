@@ -4,6 +4,7 @@
 	<main_menubar>
 		<file name="文件">
 			<open_pref_path>打开存放路径</open_pref_path>
+			<open_patch_path>打开补丁路径</open_patch_path>
 			<open_textures_path>打开纹理路径</open_textures_path>
 			<install_firmware>安装固件</install_firmware>
 			<install_pkg>安装pkg</install_pkg>
@@ -51,40 +52,52 @@
 	</about>
 
 	<app_context>
-		<check_app_state>检查应用程序状态</check_app_state>
-		<copy_vita3k_summary>复制Vita3K摘要</copy_vita3k_summary>
-		<open_state_report>打开状态报告</open_state_report>
-		<create_state_report>创建状态报告</create_state_report>
-		<update_database>更新数据库</update_database>
-		<copy_app_info>复制应用程序信息</copy_app_info>
-		<name_and_id>名称和标题ID</name_and_id>
-		<app_summary>应用程序摘要</app_summary>
+		<compat>
+			<check_app_state>检查应用程序状态</check_app_state>
+			<copy_vita3k_summary>复制Vita3K摘要</copy_vita3k_summary>
+			<open_state_report>打开状态报告</open_state_report>
+			<create_state_report>创建状态报告</create_state_report>
+			<update_database>更新数据库</update_database>
+		</compat>
+		<copy_app_info name="复制应用程序信息">
+			<name_and_id>名称和标题ID</name_and_id>
+			<app_summary>应用程序摘要</app_summary>
+		</copy_app_info>
 		<create_shortcut>创建快捷方式</create_shortcut>
-		<custom_config>自定义配置</custom_config>
-		<create>创建</create>
-		<edit>编辑</edit>
-		<remove>移除</remove>
-		<open_folder>打开文件夹</open_folder>
-		<addcont>追加内容</addcont>
-		<license>授权</license>
-		<shaders_cache>着色器缓存</shaders_cache>
-		<shaders_log>着色器日志</shaders_log>
-		<manual>说明书</manual>
-		<update>升级</update>
+		<custom_config name="自定义配置">
+			<create>创建</create>
+			<edit>编辑</edit>
+			<remove>移除</remove>
+		</custom_config>
+		<path>
+			<open_folder>打开文件夹</open_folder>
+			<patch>补丁</patch>
+			<addcont>追加内容</addcont>
+			<license>授权</license>
+			<shaders_cache>着色器缓存</shaders_cache>
+			<shaders_log>着色器日志</shaders_log>
+		</path>
+		<live_area>
+			<manual>说明书</manual>
+			<update>升级</update>
+		</live_area>
+		<delete>
+			<delete_app>删除此应用程序及所有相关数据，包括保存数据。</delete_app>
+			<delete_app_description>删除应用程序可能需要一段时间，
+取决于它的大小和您的硬件。</delete_app_description>
+			<delete_patch>要删除此补丁吗？</delete_patch>
+			<delete_addcont>要删除此追加内容吗？</delete_addcont>
+			<delete_license>要删除此授权吗？</delete_license>
+		</delete>
+		<other name="其他">
+			<reset_last_time_played>重置最近游玩时间</reset_last_time_played>
+		</other>
 		<update_history>更新历史记录</update_history>
 		<history_version>{}版本</history_version>
-		<delete>
-			<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
-			<app_delete_description>删除应用程序可能需要一段时间，
-取决于它的大小和您的硬件。</app_delete_description>
-			<addcont_delete>要删除此追加内容吗？</addcont_delete>
-			<license_delete>要删除此授权吗？</license_delete>
-			<saved_data_delete>要删除此保存数据吗？</saved_data_delete>
-		</delete>
 		<info name="信息">
 			<eligible>有权</eligible>
 			<ineligible>无权</ineligible>
-			<level>级别</level>
+			<level>级别 {}</level>
 			<name>名称</name>
 			<trophy_earning>获得奖杯</trophy_earning>
 			<parental_controls>视听者限制</parental_controls>
@@ -113,6 +126,8 @@
 错误代码：{}</an_error_occurred>
 		<cancel>取消</cancel>
 		<close>关闭</close>
+		<could_not_load>无法读取文件。</could_not_load>
+		<could_not_save>无法保存文件。</could_not_save>
 		<delete>删除</delete>
 		<error>错误</error>
 		<file_corrupted>文件已损坏。</file_corrupted>
@@ -257,11 +272,14 @@
 		<get_failed>无法获取当前兼容性数据库，请检查防火墙/互联网连接后再重试。</get_failed>
 		<download_failed>无法下载更新于{}的应用程序兼容性数据库，请稍后重试。</download_failed>
 		<load_failed>无法读取已下载更新于{}的应用程序兼容性数据库。</load_failed>
-		<new_app_listed>兼容性数据库已成功从{}更新至{}。&#xA;
+		<new_app_listed>兼容性数据库已成功从{}更新至{}。
+
 已列出{}个新的应用程序，使总数达到{}个！</new_app_listed>
-		<app_listed>兼容性数据库已成功从{}更新至{}。&#xA;
+		<app_listed>兼容性数据库已成功从{}更新至{}。
+
 已列出{}个应用程序！</app_listed>
-		<download_app_listed>已成功下载并加载{}更新的兼容性数据库。&#xA;
+		<download_app_listed>已成功下载并加载{}更新的兼容性数据库。
+
 已列出{}个应用程序！</download_app_listed>
 	</compat_db>
 
@@ -369,8 +387,13 @@
 			<save name="保存">
 				<cancel_saving>要取消保存吗？</cancel_saving>
 				<could_not_save>无法保存文件。
-存储卡没有足够的空余容量。</could_not_save>
-				<not_free_space>存储卡没有足够的空余容量。</not_free_space>
+存储卡没有足够的空余容量。若要保存应用程序的进度，需准备{}以上的空余容量。
+
+若要准备空余容量，请按下PS键暂停此应用程序，并删除其它应用程序或内容。</could_not_save>
+				<not_free_space>存储卡没有足够的空余容量。
+若要继续执行应用程序，请准备{}以上的空余容量。
+
+请按下PS键暂停此应用程序，并删除其它应用程序或内容。</not_free_space>
 				<new_saved_data>新建保存数据</new_saved_data>
 				<saving_complete>保存完毕。</saving_complete>
 				<save_the_data>要保存数据吗？</save_the_data>
@@ -463,7 +486,7 @@
 			<enter_zrif>输入zRIF</enter_zrif>
 			<enter_zrif_key>输入zRIF密钥</enter_zrif_key>
 			<input_zrif>请在此处输入您的zRIF</input_zrif>
-			<copy_paste_zrif>使用Ctrl（Cmd）+ C复制，使用Ctrl（Cmd）+ V粘贴。</copy_paste_zrif>
+			<copy_paste_zrif>Ctrl+C复制，Ctrl+V粘贴。</copy_paste_zrif>
 			<delete_pkg>删除pkg文件？</delete_pkg>
 			<delete_bin_rif>删除work.bin/rif文件？</delete_bin_rif>
 			<failed_install_package>无法安装该包。
@@ -877,6 +900,7 @@
 	</sys_apps_title>
 
 	<trophy_collection>
+		<all_trophy_deleted>该用户已保存的全部奖杯信息将被删除。</all_trophy_deleted>
 		<delete_trophy>删除奖杯</delete_trophy>
 		<trophy_deleted>该用户已保存的奖杯信息将被删除。</trophy_deleted>
 		<locked>未解锁</locked>

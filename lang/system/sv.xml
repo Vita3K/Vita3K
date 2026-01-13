@@ -25,18 +25,19 @@
 	</main_menubar>
 
 	<app_context>
-		<manual>Handbok</manual>
-		<update>Uppdatera</update>
+		<live_area>
+			<manual>Handbok</manual>
+			<update>Uppdatera</update>
+		</live_area>
+		<delete>
+			<delete_app>Den här applikationen och alla tillhörande data, inklusive sparade data, kommer att raderas.</delete_app>
+		</delete>
 		<update_history>Uppdateringshistorik</update_history>
 		<history_version>Version {}</history_version>
-		<delete>
-			<app_delete>Den här applikationen och alla tillhörande data, inklusive sparade data, kommer att raderas.</app_delete>
-			<saved_data_delete>Vill du radera dessa sparade data?</saved_data_delete>
-		</delete>
 		<info name="Information">
 			<eligible>Möjligt</eligible>
 			<ineligible>Inte möjligt</ineligible>
-			<level>Nivå</level>
+			<level>Nivå {}</level>
 			<name>Namn</name>
 			<trophy_earning>Vinna trophy</trophy_earning>
 			<parental_controls>Föräldrakontroll</parental_controls>
@@ -51,6 +52,8 @@
 Felkod: {}</an_error_occurred>
 		<cancel>Avbryt</cancel>
 		<close>Stänga</close>
+		<could_not_load>Kunde inte ladda filen.</could_not_load>
+		<could_not_save>Kunde inte spara filen.</could_not_save>
 		<delete>Radera</delete>
 		<error>Fel</error>
 		<file_corrupted>Filen är skadad.</file_corrupted>
@@ -218,8 +221,13 @@ Felkod: {}</an_error_occurred>
 			<save name="Spara">
 				<cancel_saving>Vill du avbryta sparningen?</cancel_saving>
 				<could_not_save>Kunde inte spara filen.
-Det finns inte tillräckligt med ledigt utrymme på minneskortet.</could_not_save>
-				<not_free_space>Det finns inte tillräckligt med ledigt utrymme på minneskortet.</not_free_space>
+Det finns inte tillräckligt med ledigt utrymme på minneskortet. Du måste skapa minst {} ledigt utrymme om du vill spara dina framsteg i den här applikationen.
+
+Skapa mer ledigt utrymme genom att trycka på PS-knappen för att pausa den här applikationen och radera sedan övriga applikationer eller data.</could_not_save>
+				<not_free_space>Det finns inte tillräckligt med ledigt utrymme på minneskortet.
+Du måste skapa minst {} ledigt utrymme om du vill fortsätta använda applikationen.
+
+Tryck på PS-knappen för att pausa den här applikationen och radera sedan övriga applikationer eller innehåll.</not_free_space>
 				<new_saved_data>Nya sparade data</new_saved_data>
 				<saving_complete>Sparning slutförd.</saving_complete>
 				<save_the_data>Vill du spara datan?</save_the_data>
@@ -252,6 +260,7 @@ Stäng inte av systemet och stäng inte applikationen.</warning_saving>
 		<completed_setup>Du har slutfört den första inställningen.
 Ditt Vita3K-system är redo!</completed_setup>
 		<select_language>Välj ett språk.</select_language>
+		<install_firmware>Installera firmware.</install_firmware>
 		<next>Nästa</next>
 	</initial_setup>
 

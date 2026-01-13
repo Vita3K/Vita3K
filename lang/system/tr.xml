@@ -28,18 +28,19 @@
 	</about>
 
 	<app_context>
-		<manual>Kılavuzu</manual>
-		<update>Güncelle</update>
+		<live_area>
+			<manual>Kılavuzu</manual>
+			<update>Güncelle</update>
+		</live_area>
+		<delete>
+			<delete_app>Bu uygulama ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</delete_app>
+		</delete>
 		<update_history>Güncelleme Geçmişi</update_history>
 		<history_version>Sürüm {}</history_version>
-		<delete>
-			<app_delete>Bu uygulama ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</app_delete>
-			<saved_data_delete>Bu kayıtlı verileri silmek istiyor musunuz?</saved_data_delete>
-		</delete>
 		<info name="Bilgi">
 			<eligible>Uygun</eligible> 
 			<ineligible>Uygun değil</ineligible>
-			<level>Seviye</level>
+			<level>Seviye {}</level>
 			<name>Ad</name>
 			<trophy_earning>Kupa Kazanma</trophy_earning>
 			<parental_controls>Ebeveyn Kontrolleri</parental_controls>
@@ -57,6 +58,8 @@
 Hata Kodu: {}</an_error_occurred>
 		<cancel>İptal</cancel>
 		<close>Kapat</close>
+		<could_not_load>Dosya yüklenemedi.</could_not_load>
+		<could_not_save>Dosya kaydedilemedi.</could_not_save>
 		<delete>Sil</delete>
 		<error>Hata</error>
 		<file_corrupted>Dosya bozuk.</file_corrupted>
@@ -224,8 +227,13 @@ Hata Kodu: {}</an_error_occurred>
 			<save name="Kaydet">
 				<cancel_saving>Kaydetmeyi iptal etmek istiyor musunuz?</cancel_saving>
 				<could_not_save>Dosya kaydedilemedi.
-Hafıza kartında yeterli boş alan yok.</could_not_save>
-				<not_free_space>Hafıza kartında yeterli boş alan yok.</not_free_space>
+Hafıza kartında yeterli boş alan yok. Uygulamadaki ilerlemenizi kaydetmek için en az {} daha boş alan oluşturmanız gerekiyor.
+
+Boş alan oluşturmak için PS düğmesine basarak uygulamayı duraklatın ve ardından başka uygulamaları ya da içerikleri silin.</could_not_save>
+				<not_free_space>Hafıza kartında yeterli boş alan yok.
+Uygulamayı kullanmaya devam etmek için en az {} daha boş alan oluşturmanız gerekiyor.
+
+Uygulamayı duraklatmak için PS düğmesine basın ve ardından başka uygulamaları ya da içerikleri silin.</not_free_space>
 				<new_saved_data>Yeni Kaydedilmiş Veriler</new_saved_data>
 				<saving_complete>Kaydetme tamamlandı.</saving_complete>
 				<save_the_data>Verileri kaydetmek istiyor musunuz?</save_the_data>

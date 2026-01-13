@@ -28,18 +28,19 @@
 	</about>
 
 	<app_context>
-		<manual>Manuale</manual>
-		<update>Aggiornamento</update>
+		<live_area>
+			<manual>Manuale</manual>
+			<update>Aggiornamento</update>
+		</live_area>
+		<delete>
+			<delete_app>Questa applicazione e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</delete_app>
+		</delete>
 		<update_history>Cronologia degli aggiornamenti</update_history>
 		<history_version>Versione {}</history_version>
-		<delete>
-			<app_delete>Questa applicazione e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</app_delete>
-			<saved_data_delete>Vuoi eliminare questi dati salvati?</saved_data_delete>
-		</delete>
 		<info name="Informazioni">
 			<eligible>Idoneo</eligible>
 			<ineligible>Non idoneo</ineligible>
-			<level>Livello</level>
+			<level>Livello {}</level>
 			<name>Nome</name>
 			<trophy_earning>Guadagno di trofei</trophy_earning>
 			<parental_controls>Filtro contenuti</parental_controls>
@@ -56,6 +57,8 @@
 		<an_error_occurred>Si è verificato un errore.
 Codice di errore: {}</an_error_occurred>
 		<cancel>Annulla</cancel>
+		<could_not_load>Impossibile caricare il file.</could_not_load>
+		<could_not_save>Impossibile salvare il file.</could_not_save>
 		<close>Chiudersi</close>
 		<delete>Elimina</delete>
 		<error>Errore</error>
@@ -236,8 +239,13 @@ Codice di errore: {}</an_error_occurred>
 			<save name="Salva">
 				<cancel_saving>Vuoi annullare il salvataggio?</cancel_saving>
 				<could_not_save>Impossibile salvare il file.
-Spazio libero insufficiente sulla scheda di memoria.</could_not_save>
-				<not_free_space>Spazio libero insufficiente sulla scheda di memoria.</not_free_space>
+Spazio libero insufficiente sulla scheda di memoria. Per potere salvare l'avanzamento dell'applicazione, devono essere disponibili almeno {} di spazio libero.
+
+Per creare spazio libero, premi il tasto PS per mettere in pausa l'applicazione, quindi elimina altre applicazioni o del contenuto.</could_not_save>
+				<not_free_space>Spazio libero insufficiente sulla scheda di memoria.
+Per continuare a usare l'applicazione, devono essere disponibili almeno {} di spazio libero.
+
+Premi il tasto PS per mettere in pausa l'applicazione, quindi elimina altre applicazioni o del contenuto.</not_free_space>
 				<new_saved_data>Nuovi dati salvati</new_saved_data>
 				<saving_complete>Salvataggio completato.</saving_complete>
 				<save_the_data>Vuoi salvare i dati?</save_the_data>

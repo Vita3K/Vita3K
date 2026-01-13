@@ -897,7 +897,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::PushStyleColor(ImGuiCol_Text, !gui.theme_backgrounds_font_color.empty() && gui.users[emuenv.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT);
                 ImGui::Selectable(app.title_id.c_str(), false, ImGuiSelectableFlags_None, list_selectable_size);
                 ImGui::NextColumn();
-                ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, list_selectable_size);
+                ImGui::Selectable(app.app_ver == "0.00" ? "-" : app.app_ver.c_str(), false, ImGuiSelectableFlags_None, list_selectable_size);
                 ImGui::NextColumn();
                 ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, list_selectable_size);
                 ImGui::NextColumn();

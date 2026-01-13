@@ -25,18 +25,19 @@
 	</main_menubar>
 
 	<app_context>
-		<manual>Vejledning</manual>
-		<update>Opdater</update>
+		<live_area>
+			<manual>Vejledning</manual>
+			<update>Opdater</update>
+		</live_area>
+		<delete>
+			<delete_app>Dette program og alle relaterede data, herunder gemte data, vil blive slettet.</delete_app>
+		</delete>
 		<update_history>Opdateringshistorik</update_history>
 		<history_version>Version {}</history_version>
-		<delete>
-			<app_delete>Dette program og alle relaterede data, herunder gemte data, vil blive slettet.</app_delete>
-			<saved_data_delete>Ønsker du at disse gemte data?</saved_data_delete>
-		</delete>
 		<info name="Information">
 			<eligible>Kvalificeret</eligible>
 			<ineligible>Ikke kvalificeret</ineligible>
-			<level>Niveau</level>
+			<level>Niveau {}</level>
 			<name>Navn</name>
 			<trophy_earning>Trophy opnåelse</trophy_earning>
 			<parental_controls>Forældrekontrol</parental_controls>
@@ -51,6 +52,8 @@
 Fejlkode: {}</an_error_occurred>
 		<cancel>Afbryd</cancel>
 		<close>Lukke</close>
+		<could_not_load>Kunne ikke indlæse filen.</could_not_load>
+		<could_not_save>Kunne ikke gemme filen.</could_not_save>
 		<delete>Slet</delete>
 		<error>Fejl</error>
 		<file_corrupted>Filen er defekt.</file_corrupted>
@@ -218,8 +221,13 @@ Fejlkode: {}</an_error_occurred>
 			<save name="Gem">
 				<cancel_saving>Ønsker du at afbryde lagringen?</cancel_saving>
 				<could_not_save>Kunne ikke gemme filen.
-Der er ikke nok ledig plads på hukommelseskortet.</could_not_save>
-				<not_free_space>Der er ikke nok ledig plads på hukommelseskortet.</not_free_space>
+Der er ikke nok ledig plads på hukommelseskortet. Du skal skabe mindst {} ledig plads for at gemme dit forløb i programmet.
+
+Tryk på PS-knappen for at sætte programmet på pause, og slet derefter de andre programmer eller indhold for at skabe den ledige plads.</could_not_save>
+				<not_free_space>Der er ikke nok ledig plads på hukommelseskortet.
+Du skal skabe mindst {} ledig plads for at fortsætte med at bruge programmet.
+
+Tryk på PS-knappen for at sætte programmet på pause, og slet derefter de andre programmer eller indhold.</not_free_space>
 				<new_saved_data>Nye gemte data</new_saved_data>
 				<saving_complete>Lagring udført.</saving_complete>
 				<save_the_data>Ønsker du at gemme dataene?</save_the_data>

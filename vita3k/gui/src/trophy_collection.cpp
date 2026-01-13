@@ -507,7 +507,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::PushTextWrapPos(POPUP_SIZE.x - PADDING);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", np_com_id_info[delete_np_com_id].name["000"].c_str());
                 ImGui::PopTextWrapPos();
-                ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
+                ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
                 const auto delete_str = lang["trophy_deleted"].c_str();
                 ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - ImGui::CalcTextSize(delete_str, 0, false, POPUP_SIZE.x - (108.f * SCALE.x)).x / 2, (POPUP_SIZE.y / 2) + 10));
                 ImGui::PushTextWrapPos(POPUP_SIZE.x - (54.f * SCALE.x));
@@ -829,10 +829,29 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Spacing();
                 ImGui::Separator();
                 ImGui::Spacing();
-                if (ImGui::MenuItem(gui.lang.indicator["delete_all"].c_str())) {
-                    if (fs::remove_all(TROPHY_PATH))
-                        LOG_INFO("All trophies successfully deleted.");
+                if (ImGui::Button(gui.lang.indicator["delete_all"].c_str()))
+                    ImGui::OpenPopup("Delete All");
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f * SCALE.x);
+                ImGui::SetNextWindowSize(POPUP_SIZE, ImGuiCond_Always);
+                ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (WINDOW_SIZE.x / 2.f) - (POPUP_SIZE.x / 2.f), WINDOW_POS.y + (WINDOW_SIZE.y / 2.f) - (POPUP_SIZE.y / 2.f)), ImGuiCond_Always);
+                if (ImGui::BeginPopupModal("Delete All", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
+                    ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+                    const auto delete_all_str = lang["all_trophy_deleted"].c_str();
+                    ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - ImGui::CalcTextSize(delete_all_str, 0, false, POPUP_SIZE.x - (108.f * SCALE.x)).x / 2, (POPUP_SIZE.y / 2) - (46.f * SCALE.y)));
+                    ImGui::PushTextWrapPos(POPUP_SIZE.x - (54.f * SCALE.x));
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", delete_all_str);
+                    ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
+                    if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle)))
+                        ImGui::CloseCurrentPopup();
+                    ImGui::SameLine(0, 20.f * SCALE.x);
+                    if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
+                        if (fs::remove_all(TROPHY_PATH))
+                            LOG_INFO("All trophies successfully deleted.");
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
                 }
+                ImGui::PopStyleVar();
             } else {
                 if (ImGui::MenuItem(lang["original"].c_str(), nullptr, trophy_sort == TrophySortType::ORIGINAL)) {
                     std::sort(trophy_list.begin(), trophy_list.end(), [](const auto &ta, const auto &tb) {
