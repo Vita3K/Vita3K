@@ -25,18 +25,19 @@
 	</main_menubar>
 
 	<app_context>
-		<manual>Manual</manual>
-		<update>Atualização</update>
+		<live_area>
+			<manual>Manual</manual>
+			<update>Atualização</update>
+		</live_area>
+		<delete>
+			<delete_app>Esta aplicação e todos os dados relacionados, incluindo dados guardados, serão elminados.</delete_app>
+		</delete>
 		<update_history>Histórico de atualização</update_history>
 		<history_version>Versão {}</history_version>
-		<delete>
-			<app_delete>Esta aplicação e todos os dados relacionados, incluindo dados guardados, serão elminados.</app_delete>
-			<saved_data_delete>Pretende elminar estes dados guardados?</saved_data_delete>
-		</delete>
 		<info name="Informações">
 			<eligible>Elegível</eligible>
 			<ineligible>Inelegível</ineligible>
-			<level>Nível</level>
+			<level>Nível {}</level>
 			<name>Nome</name>
 			<trophy_earning>Ganho de Troféus</trophy_earning>
 			<parental_controls>Controlo parental</parental_controls>
@@ -54,6 +55,8 @@
 Código de erro: {}</an_error_occurred>
 		<cancel>Cancelar</cancel>
 		<close>Fechar</close>
+		<could_not_load>Não foi possível carregar o ficheiro.</could_not_load>
+		<could_not_save>Não foi possível guardar o ficheiro.</could_not_save>
 		<delete>Eliminar</delete>
 		<error>Erro</error>
 		<file_corrupted>O ficheiro está corrompido.</file_corrupted>
@@ -221,8 +224,13 @@ Código de erro: {}</an_error_occurred>
 			<save name="Guardar">
 				<cancel_saving>Pretende cancelar a operação de guardar?</cancel_saving>
 				<could_not_save>Não foi possível guardar o ficheiro.
-Não existe espaço livre suficiente no cartão de memória.</could_not_save>
-				<not_free_space>Não existe espaço livre suficiente no cartão de memória.</not_free_space>
+Não existe espaço livre suficiente no cartão de memória. Não existe espaço livre suficiente no cartão de memória. Para guardar o progresso na aplicação, tem de criar, pelo menos, {} de espaço livre.
+
+Para criar o espaço livre, prima o botão PS para pausar esta aplicação e, em seguida, elimine outras aplicações ou conteúdo.</could_not_save>
+				<not_free_space>Não existe espaço livre suficiente no cartão de memória.
+Para continuar a utilizar a aplicação, tem de criar, pelo menos, {} de espaço livre.
+
+Prima o botão PS para pausar esta aplicação e, em seguida, elimine outras aplicações ou conteúdo.</not_free_space>
 				<new_saved_data>Novos dados guardados</new_saved_data>
 				<saving_complete>Guardado.</saving_complete>
 				<save_the_data>Pretende guardar os dados?</save_the_data>

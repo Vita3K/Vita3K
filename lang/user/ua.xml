@@ -50,39 +50,46 @@
 	</about>
 
 	<app_context>
-		<check_app_state>Перевірити стан програми</check_app_state>
-		<copy_vita3k_summary>Скопіювати звіт Vita3K</copy_vita3k_summary>
-		<open_state_report>Відкрити звіт про стан</open_state_report>
-		<create_state_report>Створити звіт про стан</create_state_report>
-		<update_database>Оновити базу даних</update_database>
-		<copy_app_info>Скопіювати інформацію про програму</copy_app_info>
-		<name_and_id>Ім'я та ідентифікатор</name_and_id>
-		<app_summary>Звіт роботи програми</app_summary>
-		<custom_config>Індивідуальна конфігурація</custom_config>
-		<create>Створити</create>
-		<edit>Редагувати</edit>
-		<remove>Вилучити</remove>
-		<open_folder>Відкрити папку</open_folder>
-		<addcont>Завантажуваний вміст</addcont>
-		<license>Ліцензія</license>
-		<shaders_cache>Кеш шейдерів</shaders_cache>
-		<shaders_log>Журнал шейдерів</shaders_log>
-		<manual>Довідка</manual>
-		<update>Оновити</update>
+		<compat>
+			<check_app_state>Перевірити стан програми</check_app_state>
+			<copy_vita3k_summary>Скопіювати звіт Vita3K</copy_vita3k_summary>
+			<open_state_report>Відкрити звіт про стан</open_state_report>
+			<create_state_report>Створити звіт про стан</create_state_report>
+			<update_database>Оновити базу даних</update_database>
+		</compat>
+		<copy_app_info name="Скопіювати інформацію про програму">
+			<name_and_id>Ім'я та ідентифікатор</name_and_id>
+			<app_summary>Звіт роботи програми</app_summary>
+		</copy_app_info>
+		<custom_config name="Індивідуальна конфігурація">
+			<create>Створити</create>
+			<edit>Редагувати</edit>
+			<remove>Вилучити</remove>
+		</custom_config>
+		<path>
+			<open_folder>Відкрити папку</open_folder>
+			<addcont>Завантажуваний вміст</addcont>
+			<license>Ліцензія</license>
+			<shaders_cache>Кеш шейдерів</shaders_cache>
+			<shaders_log>Журнал шейдерів</shaders_log>
+		</path>
+		<live_area>
+			<manual>Довідка</manual>
+			<update>Оновити</update>
+		</live_area>
+		<delete>
+			<delete_app>Ця програма та всі пов'язані дані, враховуючи збережені дані, будуть видалені.</delete_app>
+			<delete_app_description>Видалення програми може зайняти деякий час,
+в залежності від того, скільки місця вона займає на пристрої.</delete_app_description>
+			<delete_addcont>Ви хочете видалити дані цього доповнення?</delete_addcont>
+			<delete_license>Ви хочете видалити цю ліцензію?</delete_license>
+		</delete>
 		<update_history>Оновити історію</update_history>
 		<history_version>Версія {}</history_version>
-		<delete>
-			<app_delete>Ця програма та всі пов'язані дані, враховуючи збережені дані, будуть видалені.</app_delete>
-			<app_delete_description>Видалення програми може зайняти деякий час,
-в залежності від того, скільки місця вона займає на пристрої.</app_delete_description>
-			<addcont_delete>Ви хочете видалити дані цього доповнення?</addcont_delete>
-			<license_delete>Ви хочете видалити цю ліцензію?</license_delete>
-			<saved_data_delete>Ви хочете видалити ці збережені дані?</saved_data_delete>
-		</delete>
 		<info name="Інформація">
 			<eligible>Допущено</eligible>
 			<ineligible>Не допущено</ineligible>
-			<level>Рівень</level>
+			<level>Рівень {}</level>
 			<name>Ім'я</name>
 			<trophy_earning>Отримання трофеїв</trophy_earning>
 			<parental_controls>Батьківський контроль</parental_controls>
@@ -90,7 +97,7 @@
 			<size>Розмір</size>
 			<version>Версія</version>
 			<title_id>Ідентифікатор</title_id>
-			<category>Каталог</catrgory>
+			<category>Каталог</category>
 			<last_time_used>Востаннє запущено</last_time_used>
 			<time_used>Часу проведено</time_used>
 			<never>Жодного разу</never>
@@ -109,6 +116,8 @@
 Код помилки: {}</an_error_occurred>
 		<cancel>Відміна</cancel>
 		<close>Закрити</close>
+		<could_not_load>Не вдалося завантажити файл.</could_not_load>
+		<could_not_save>Не вдалося зберегти файл.</could_not_save>
 		<delete>Видалити</delete>
 		<error>Помилка</error>
 		<file_corrupted>Файл пошкоджено.</file_corrupted>
@@ -254,11 +263,14 @@
 		<get_failed>Не вдалося під'єднатися до бази даних сумісностей, перевірте доступ до брендмауеру/Інтернету, та спробуйте ще раз пізніше.</get_failed>
 		<download_failed>Не вдалося завантажити базу даних сумісностей програм, що була оновлена у: {}, спробуйте ще раз пізніше.</download_failed>
 		<load_failed>Не вдалося завантажити базу даних сумісностей програм, що була завантажена та оновлена у: {}.</load_failed>
-		<new_app_listed>База даних суміснотей була успішно оновлена з {} до {}.&#xA;
+		<new_app_listed>База даних суміснотей була успішно оновлена з {} до {}.
+
 {} Нову програму/програми виявлено, загалом налічується {}!</new_app_listed>
-		<app_listed>База даних суміснотей була успішно оновлена з {} до {}.&#xA;
+		<app_listed>База даних суміснотей була успішно оновлена з {} до {}.
+
 {} програм виявлено!</app_listed>
-		<download_app_listed>База даних сумісностей, що була оновлена у {} успішно завантажена.&#xA;
+		<download_app_listed>База даних сумісностей, що була оновлена у {} успішно завантажена.
+
 {} програм виявлено!</download_app_listed>
 	</compat_db>
 
@@ -428,7 +440,7 @@
 			<enter_zrif>Ввести zRIF</enter_zrif>
 			<enter_zrif_key>Ввести ключ zRIF</enter_zrif_key>
 			<input_zrif>Будь ласка, введіть свій zRIF тут</input_zrif>
-			<copy_paste_zrif>Ctrl (Cmd) + C аби скопіювати, Ctrl (Cmd) + V аби вставити.</copy_paste_zrif>
+			<copy_paste_zrif>Ctrl + C аби скопіювати, Ctrl + V аби вставити.</copy_paste_zrif>
 			<delete_pkg>Видалити файл pkg?</delete_pkg>
 			<delete_bin_rif>Видалити файл work.bin/rif?</delete_bin_rif>
 			<failed_install_package>Не вдалося завантажити пакет.

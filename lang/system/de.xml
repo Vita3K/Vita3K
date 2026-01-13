@@ -28,18 +28,19 @@
 	</about>
 
 	<app_context>
-		<manual>Handbuch</manual>
-		<update>Aktualisierung</update>
+		<live_area>
+			<manual>Handbuch</manual>
+			<update>Aktualisierung</update>
+		</live_area>
+		<delete>
+			<delete_app>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</delete_app>
+		</delete>
 		<update_history>Update-Verlauf</update_history>
 		<history_version>Version {}</history_version>
-		<delete>
-			<app_delete>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</app_delete>
-			<saved_data_delete>Willst du die Nutzerdaten löschen?</saved_data_delete>
-		</delete>
 		<info name="Information">
 			<eligible>berechtigt</eligible>
 			<ineligible>nicht berechtigt</ineligible>
-			<level>Stufe</level>
+			<level>Stufe {}</level>
 			<name>Name</name>
 			<trophy_earning>Verdienen von Trophäen</trophy_earning>
 			<parental_controls>Kindersicherung</parental_controls>
@@ -57,6 +58,8 @@
 Fehlercode: {}</an_error_occurred>
 		<cancel>Abbrechen</cancel>
 		<close>Schließen</close>
+		<could_not_load>Laden der Datei gescheitert.</could_not_load>
+		<could_not_save>Speichern der Datei gescheitert.</could_not_save>
 		<delete>Löschen</delete>
 		<error>Fehler</error>
 		<file_corrupted>Die Datei ist beschädigt.</file_corrupted>
@@ -224,8 +227,13 @@ Fehlercode: {}</an_error_occurred>
 			<save name="Speichern">
 				<cancel_saving>Möchtest du den Speichervorgang abbrechen?</cancel_saving>
 				<could_not_save>Speichern der Datei gescheitert.
-Nicht genügend freier Speicherplatz auf der Speicherkarte.</could_not_save>
-				<not_free_space>Nicht genügend freier Speicherplatz auf der Speicherkarte.</not_free_space>
+Nicht genügend freier Speicherplatz auf der Speicherkarte. Du musst mindestens {} freien Speicherplatz schaffen, damit du Fortschritte speichern kannst.
+
+Um freien Speicherplatz zu schaffen, drücke die PS-Taste, um diese Anwendung anzuhalten, und lösche dann andere Anwendungen oder Inhalte.</could_not_save>
+				<not_free_space>Nicht genügend freier Speicherplatz auf der Speicherkarte.
+Um die Anwendung weiterhin zu verwenden, müssen mindestens {} freier Speicherplatz geschaffen werden.
+
+Drücke die PS-Taste, um diese Anwendung anzuhalten, und lösche dann andere Anwendungen oder Inhalte.</not_free_space>
 				<new_saved_data>Neue gespeicherte Daten</new_saved_data>
 				<saving_complete>Speichern abgeschlossen.</saving_complete>
 				<save_the_data>Möchtest du die Daten speichern?</save_the_data>

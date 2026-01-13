@@ -40,40 +40,47 @@
 	</about>
 
 	<app_context>
-		<check_app_state>Проверить совместимость приложения</check_app_state>
-		<copy_vita3k_summary>Скопировать Vita3K Summary</copy_vita3k_summary>
-		<open_state_report>Открыть отчёт о совместимости</open_state_report>
-		<create_state_report>Создать отчёт о совместимости</create_state_report>
-		<update_database>Обновить базу данных</update_database>
-		<copy_app_info>Скопировать инф.</copy_app_info>
-		<name_and_id>Название и Title ID</name_and_id>
-		<app_summary>Информация вкратце</app_summary>
-		<custom_config>Настройки приложения</custom_config>
-		<create>Создать</create>
-		<edit>Изменить</edit>
-		<remove>Удалить</remove>
-		<open_folder>Открыть папку</open_folder>
-		<license>Лицензия</license>
-		<shaders_cache>Кэш шейдеров</shaders_cache>
-		<shaders_log>Лог шейдеров</shaders_log>
-		<export_textures>Экспорт текстур</export_textures>
-		<import_textures>Импорт текстур</import_textures>
-		<manual>Руководство</manual>
-		<update>Обновление</update>
+		<compat>
+			<check_app_state>Проверить совместимость приложения</check_app_state>
+			<copy_vita3k_summary>Скопировать Vita3K Summary</copy_vita3k_summary>
+			<open_state_report>Открыть отчёт о совместимости</open_state_report>
+			<create_state_report>Создать отчёт о совместимости</create_state_report>
+			<update_database>Обновить базу данных</update_database>
+		</compat>
+		<copy_app_info name="Скопировать инф.">
+			<name_and_id>Название и Title ID</name_and_id>
+			<app_summary>Информация вкратце</app_summary>
+		</copy_app_info>
+		<custom_config name="Настройки приложения">
+			<create>Создать</create>
+			<edit>Изменить</edit>
+			<remove>Удалить</remove>
+		</custom_config>
+		<path>
+			<open_folder>Открыть папку</open_folder>
+			<license>Лицензия</license>
+			<shaders_cache>Кэш шейдеров</shaders_cache>
+			<shaders_log>Лог шейдеров</shaders_log>
+			<export_textures>Экспорт текстур</export_textures>
+			<import_textures>Импорт текстур</import_textures>
+		</path>
+		<live_area>
+			<manual>Руководство</manual>
+			<update>Обновление</update>
+		</live_area>
+		<delete>
+			<delete_app>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</delete_app>
+			<delete_app_description>Удаление приложения может занять некоторое время
+в зависимости от его размера и производительности вашей системы.</delete_app_description>
+			<delete_addcont>Удалить DLC?</delete_addcont>
+			<delete_license>Удалить лицензию?</delete_license>
+		</delete>
 		<update_history>Хронология обновлений</update_history>
 		<history_version>Версия {}</history_version>
-		<delete>
-			<app_delete>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</app_delete>
-			<app_delete_description>Удаление приложения может занять некоторое время
-в зависимости от его размера и производительности вашей системы.</app_delete_description>
-			<addcont_delete>Удалить DLC?</addcont_delete>
-			<license_delete>Удалить лицензию?</license_delete>
-			<saved_data_delete>Удалить эти сохранённые данные?</saved_data_delete>
-		</delete>
 		<info name="Информация">
 			<eligible>Допущен</eligible>
 			<ineligible>Не допущен</ineligible>
-			<level>Уровень</level>
+			<level>Уровень {}</level>
 			<name>Название</name>
 			<trophy_earning>Полученные призы</trophy_earning>
 			<parental_controls>Родительский контроль</parental_controls>
@@ -92,6 +99,8 @@
 Код ошибки: {}</an_error_occurred>
 		<cancel>Отмена</cancel>
 		<close>Закрыть</close>
+		<could_not_load>Не удалось загрузить файл.</could_not_load>
+		<could_not_save>Не удалось сохранить файл.</could_not_save>
 		<delete>Удалить</delete>
 		<error>Ошибка</error>
 		<file_corrupted>Файл поврежден.</file_corrupted>
@@ -237,10 +246,13 @@
 		<download_failed>Не удалось загрузить базу данных совместимости приложений, обновленную на: {}, повторите попытку позже.</download_failed>
 		<load_failed>Не удалось открыть базу данных совместимости приложений, обновленную на: {}.</load_failed>
 		<new_app_listed>База данных совместимости была успешно обновлена с {} до {}.
+
 В списке появилось {} новых приложений, в результате чего общее количество приложений достигло {}!</new_app_listed>
 		<app_listed>База данных совместимости была успешно обновлена с {} до {}.
+
 В списке {} приложений!</app_listed>
 		<download_app_listed>База данных совместимости, обновленная в {}, была успешно загружена.
+
 {} приложений в списке!</download_app_listed>
 	</compat_db>
 
@@ -344,8 +356,13 @@
 			<save name="Сохранить">
 				<cancel_saving>Отменить сохранение?</cancel_saving>
 				<could_not_save>Не удалось сохранить файл.
-На карте памяти недостаточно свободного места.</could_not_save>
-				<not_free_space>На карте памяти недостаточно свободного места.</not_free_space>
+На карте памяти недостаточно свободного места. Для сохранения процента выполнения приложения необходимо не менее {} свободного места.
+
+Для освобождения места нажмите кнопку PS, чтобы приостановить приложение, и удалите другие приложения или данные.</could_not_save>
+				<not_free_space>На карте памяти недостаточно свободного места.
+Чтобы продолжить использование приложения, необходимо не менее {} свободного места.
+
+Нажмите кнопку PS, чтобы приостановить приложение, и удалите другие приложения или данные.</not_free_space>
 				<new_saved_data>Новые сохраненные данные</new_saved_data>
 				<saving_complete>Сохранение завершено.</saving_complete>
 				<save_the_data>Сохранить данные?</save_the_data>
@@ -439,7 +456,7 @@
 			<enter_zrif>Введите zRIF</enter_zrif>
 			<enter_zrif_key>Введите zRIF ключ</enter_zrif_key>
 			<input_zrif>Пожалуйста, введите свой zRIF здесь</input_zrif>
-			<copy_paste_zrif>Ctrl (Cmd) + C чтобы копировать, Ctrl (Cmd) + V вставить.</copy_paste_zrif>
+			<copy_paste_zrif>Ctrl + C чтобы копировать, Ctrl + V вставить.</copy_paste_zrif>
 			<delete_pkg>Удалить файл pkg?</delete_pkg>
 			<delete_bin_rif>Удалить файл work.bin/rif?</delete_bin_rif>
 			<failed_install_package>Не удалось установить пакет.

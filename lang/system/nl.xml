@@ -28,18 +28,19 @@
 	</about>
 
 	<app_context>
-		<manual>Handleiding</manual>
-		<update>Update</update>
+		<live_area>
+			<manual>Handleiding</manual>
+			<update>Update</update>
+		</live_area>
+		<delete>
+			<delete_app>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</delete_app>
+		</delete>
 		<update_history>Updategeschiedenis</update_history>
 		<history_version>Versie {}</history_version>
-		<delete>
-			<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
-			<saved_data_delete>Wil je deze opgeslagen data verwijderen?</saved_data_delete>
-		</delete>
 		<info name="Informatie">
 			<eligible>Geschikt</eligible>
 			<ineligible>Niet geschikt</ineligible>
-			<level>Niveau</level>
+			<level>Niveau {}</level>
 			<name>Naam</name>
 			<trophy_earning>Trofeeën verdienen</trophy_earning>
 			<parental_controls>Ouderlijk toezicht</parental_controls>
@@ -57,6 +58,8 @@
 Foutcode: {}</an_error_occurred>
 		<cancel>Annuleren</cancel>
 		<close>Sluiten</close>
+		<could_not_load>Kan het bestand niet laden.</could_not_load>
+		<could_not_save>Kan het bestand niet opslaan.</could_not_save>
 		<delete>Verwijderen</delete>
 		<error>Fout</error>
 		<file_corrupted>Het bestand is beschadigd.</file_corrupted>
@@ -237,8 +240,13 @@ Foutcode: {}</an_error_occurred>
 			<save name="Opslaan">
 				<cancel_saving>Wil je het opslaan annuleren?</cancel_saving>
 				<could_not_save>Kan het bestand niet opslaan.
-Er is onvoldoende vrije ruimte op de geheugenkaart.</could_not_save>
-				<not_free_space>Er is onvoldoende vrije ruimte op de geheugenkaart.</not_free_space>
+Er is onvoldoende vrije ruimte op de geheugenkaart. Om je voortgang in de applicatie te kunnen opslaan, moet je tenminste {} vrije ruimte maken.
+
+Om vrije ruimte te maken, druk je op de PS-toets om deze applicatie te pauzeren en verwijder je vervolgens andere applicaties of content.</could_not_save>
+				<not_free_space>Er is onvoldoende vrije ruimte op de geheugenkaart.
+Om de applicatie te kunnen blijven gebruiken, moet je tenminste {} vrije ruimte maken.
+
+Druk op de PS-toets om deze applicatie te pauzeren en verwijder andere applicaties of content.</not_free_space>
 				<new_saved_data>Nieuwe opgeslagen data</new_saved_data>
 				<saving_complete>Opslaan voltooid.</saving_complete>
 				<save_the_data>Wil je de data opslaan?</save_the_data>

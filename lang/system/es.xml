@@ -30,22 +30,27 @@
 	</about>
 
 	<app_context>
-		<name_and_id>Nombre y título ID</name_and_id>
-		<create>Hacer</create>
-		<edit>Editar</edit>
-		<remove>Quitar</remove>
-		<manual>Manual</manual>
-		<update>Actualización</update>
+		<copy_app_info name="Copy App info">
+			<name_and_id>Nombre y título ID</name_and_id>
+		</copy_app_info>
+		<custom_config name="Custom Config">
+			<create>Hacer</create>
+			<edit>Editar</edit>
+			<remove>Quitar</remove>
+		</custom_config>
+		<live_area>
+			<manual>Manual</manual>
+			<update>Actualización</update>
+		</live_area>
+		<delete>
+			<delete_app>Se eliminarán la aplicación y todos los datos relacionados, incluidos los datos guardados.</delete_app>
+		</delete>
 		<update_history>Historial de actualizaciones</update_history>
 		<history_version>Versión {}</history_version>
-		<delete>
-			<app_delete>Se eliminarán la aplicación y todos los datos relacionados, incluidos los datos guardados.</app_delete>
-			<saved_data_delete>¿Quieres eliminar estos datos guardados?</saved_data_delete>
-		</delete>
 		<info name="Información">
 			<eligible>Elegible</eligible>
 			<ineligible>No elegible</ineligible>
-			<level>Nivel</level>
+			<level>Nivel {}</level>
 			<name>Nombre</name>
 			<trophy_earning>Ganar trofeos</trophy_earning>
 			<parental_controls>Control paterno</parental_controls>
@@ -64,6 +69,8 @@
 Código del error: {}</an_error_occurred>
 		<cancel>Cancelar</cancel>
 		<close>Cerrar</close>
+		<could_not_load>No se ha podido cargar el archivo.</could_not_load>
+		<could_not_save>No se ha podido guardar el archivo.</could_not_save>
 		<delete>Eliminar</delete>
 		<error>Error</error>
 		<file_corrupted>El archivo está dañado.</file_corrupted>
@@ -231,8 +238,13 @@ Código del error: {}</an_error_occurred>
 			<save name="Guardar">
 				<cancel_saving>¿Quieres cancelar el guardado?</cancel_saving>
 				<could_not_save>No se ha podido guardar el archivo.
-No hay suficiente espacio libre en la tarjeta de memoria.</could_not_save>
-				<not_free_space>No hay suficiente espacio libre en la tarjeta de memoria.</not_free_space>
+No hay suficiente espacio libre en la tarjeta de memoria. Para guardar tu progreso en la aplicación, tienes que crear al menos {} de espacio libre.
+
+Para crear espacio libre, pulsa el botón PS para poner la aplicación en pausa y borrar otras aplicaciones o contenido.</could_not_save>
+				<not_free_space>No hay suficiente espacio libre en la tarjeta de memoria.
+Para seguir usando la aplicación, tienes que crear al menos {} de espacio libre.
+
+Pulsa el botón PS para poner la aplicación en pausa y borrar otras aplicaciones o contenido.</not_free_space>
 				<new_saved_data>Nuevos datos guardados</new_saved_data>
 				<saving_complete>Guardado.</saving_complete>
 				<save_the_data>¿Quieres guardar los datos?</save_the_data>

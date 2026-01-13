@@ -588,18 +588,21 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
         if (fs::exists(CUSTOM_CONFIG_PATH))
             fs::remove_all(CUSTOM_CONFIG_PATH);
+        const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
+        if (fs::exists(SAVE_DATA_PATH))
+            fs::remove_all(SAVE_DATA_PATH);
+        const auto PATCH_PATH{ emuenv.shared_path / "patch" / title_id };
+        if (fs::exists(PATCH_PATH))
+            fs::remove_all(PATCH_PATH);
+        const auto ORIGIN_PATCH_PATH{ emuenv.pref_path / "ux0/patch" / title_id };
+        if (fs::exists(ORIGIN_PATCH_PATH))
+            fs::remove_all(ORIGIN_PATCH_PATH);
         const auto ADDCONT_PATH{ emuenv.pref_path / "ux0/addcont" / APP_INDEX->addcont };
         if (fs::exists(ADDCONT_PATH))
             fs::remove_all(ADDCONT_PATH);
         const auto LICENSE_PATH{ emuenv.pref_path / "ux0/license" / title_id };
         if (fs::exists(LICENSE_PATH))
             fs::remove_all(LICENSE_PATH);
-        const auto PATCH_PATH{ emuenv.pref_path / "ux0/patch" / title_id };
-        if (fs::exists(PATCH_PATH))
-            fs::remove_all(PATCH_PATH);
-        const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
-        if (fs::exists(SAVE_DATA_PATH))
-            fs::remove_all(SAVE_DATA_PATH);
         const auto SHADER_CACHE_PATH{ emuenv.cache_path / "shaders" / title_id };
         if (fs::exists(SHADER_CACHE_PATH))
             fs::remove_all(SHADER_CACHE_PATH);
@@ -666,10 +669,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
     const auto APP_PATH{ emuenv.pref_path / "ux0/app" / app_path };
     const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
+    const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
+    const auto PATCH_PATH{ emuenv.shared_path / "patch" / title_id };
     const auto ADDCONT_PATH{ emuenv.pref_path / "ux0/addcont" / APP_INDEX->addcont };
     const auto LICENSE_PATH{ emuenv.pref_path / "ux0/license" / title_id };
     const auto MANUAL_PATH{ APP_PATH / "sce_sys/manual" };
-    const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
     const auto SHADER_CACHE_PATH{ emuenv.cache_path / "shaders" / title_id };
     const auto SHADER_LOG_PATH{ emuenv.cache_path / "shaderlog" / title_id };
     const auto EXPORT_TEXTURES_PATH{ emuenv.shared_path / "textures/export" / title_id };
@@ -685,6 +689,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto &app_str = gui.lang.content_manager.application;
     auto &savedata_str = gui.lang.content_manager.saved_data;
     auto &common = emuenv.common_dialog.lang.common;
+    auto &delete_saved_data = emuenv.common_dialog.lang.save_data.deleting["delete_saved_data"];
     auto &lang_compat = gui.lang.compatibility;
     auto &textures = gui.lang.settings_dialog.gpu;
 
@@ -704,7 +709,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         if (!is_system_app) {
             if (ImGui::BeginMenu(lang_compat.name.c_str())) {
                 if (!is_commercial_app || !gui.compat.compat_db_loaded) {
-                    if (ImGui::MenuItem(lang.main["check_app_state"].c_str())) {
+                    if (ImGui::MenuItem(lang.compat["check_app_state"].c_str())) {
                         const std::string compat_url = is_commercial_app ? "https://vita3k.org/compatibility?g=" + title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + APP_INDEX->title;
                         open_path(compat_url);
                     }
@@ -731,14 +736,14 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                             ImGui::LogText("%s", vita3k_summary.c_str());
                             ImGui::LogFinish();
                         };
-                        if (ImGui::MenuItem(lang.main["copy_vita3k_summary"].c_str()))
+                        if (ImGui::MenuItem(lang.compat["copy_vita3k_summary"].c_str()))
                             copy_vita3k_summary();
-                        if (ImGui::MenuItem(lang.main["open_state_report"].c_str())) {
+                        if (ImGui::MenuItem(lang.compat["open_state_report"].c_str())) {
                             copy_vita3k_summary();
                             open_path(fmt::format("{}/{}", ISSUES_URL, gui.compat.app_compat_db[title_id].issue_id));
                         }
                     } else {
-                        if (ImGui::MenuItem(lang.main["create_state_report"].c_str())) {
+                        if (ImGui::MenuItem(lang.compat["create_state_report"].c_str())) {
                             // Create body of state report
 
                             // Encode title for URL
@@ -789,13 +794,13 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                         }
                     }
                 }
-                if (is_commercial_app && ImGui::MenuItem(lang.main["update_database"].c_str()))
+                if (is_commercial_app && ImGui::MenuItem(lang.compat["update_database"].c_str()))
                     load_and_update_compat_user_apps(gui, emuenv);
 
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu(lang.main["copy_app_info"].c_str())) {
-                if (ImGui::MenuItem(lang.main["name_and_id"].c_str())) {
+            if (ImGui::BeginMenu(lang.copy_app_info["title"].c_str())) {
+                if (ImGui::MenuItem(lang.copy_app_info["name_and_id"].c_str())) {
                     ImGui::LogToClipboard();
                     ImGui::LogText("%s [%s]", APP_INDEX->title.c_str(), title_id.c_str());
                     ImGui::LogFinish();
@@ -810,7 +815,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     ImGui::LogText("%s", title_id.c_str());
                     ImGui::LogFinish();
                 }
-                if (ImGui::MenuItem(lang.main["app_summary"].c_str())) {
+                if (ImGui::MenuItem(lang.copy_app_info["app_summary"].c_str())) {
                     ImGui::LogToClipboard();
                     ImGui::LogText("# App summary\n- App name: %s\n- App serial: %s\n- App version: %s", APP_INDEX->title.c_str(), title_id.c_str(), APP_INDEX->app_ver.c_str());
                     ImGui::LogFinish();
@@ -821,32 +826,34 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 create_app_icon(emuenv, app_path);
                 create_shortcut(emuenv, app_path, string_utils::remove_special_chars(APP_INDEX->title));
             }
-            if (ImGui::BeginMenu(lang.main["custom_config"].c_str())) {
+            if (ImGui::BeginMenu(lang.custom_config["title"].c_str())) {
                 if (!fs::exists(CUSTOM_CONFIG_PATH)) {
-                    if (ImGui::MenuItem(lang.main["create"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
+                    if (ImGui::MenuItem(lang.custom_config["create"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
                         init_config(gui, emuenv, app_path);
                 } else {
-                    if (ImGui::MenuItem(lang.main["edit"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
+                    if (ImGui::MenuItem(lang.custom_config["edit"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
                         init_config(gui, emuenv, app_path);
-                    if (ImGui::MenuItem(lang.main["remove"].c_str()))
+                    if (ImGui::MenuItem(lang.custom_config["remove"].c_str()))
                         fs::remove(CUSTOM_CONFIG_PATH);
                 }
                 ImGui::EndMenu();
             }
 
 #ifndef ANDROID
-            if (ImGui::BeginMenu(lang.main["open_folder"].c_str())) {
+            if (ImGui::BeginMenu(lang.path["open_folder"].c_str())) {
                 if (ImGui::MenuItem(app_str["title"].c_str()))
                     open_path(APP_PATH.string());
-                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.main["addcont"].c_str()))
-                    open_path(ADDCONT_PATH.string());
-                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang.main["license"].c_str()))
-                    open_path(LICENSE_PATH.string());
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
                     open_path(SAVE_DATA_PATH.string());
-                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang.main["shaders_cache"].c_str()))
+                if (fs::exists(PATCH_PATH) && ImGui::MenuItem(lang.path["patch"].c_str()))
+                    open_path(PATCH_PATH.string());
+                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.path["addcont"].c_str()))
+                    open_path(ADDCONT_PATH.string());
+                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang.path["license"].c_str()))
+                    open_path(LICENSE_PATH.string());
+                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang.path["shaders_cache"].c_str()))
                     open_path(SHADER_CACHE_PATH.string());
-                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.main["shaders_log"].c_str()))
+                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.path["shaders_log"].c_str()))
                     open_path(SHADER_LOG_PATH.string());
                 if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(textures["export_textures"].c_str()))
                     open_path(EXPORT_TEXTURES_PATH.string());
@@ -861,24 +868,26 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_live_area(gui, emuenv, app_path);
                 if (ImGui::MenuItem(common["search"].c_str(), nullptr))
                     open_search(APP_INDEX->title);
-                if (fs::exists(MANUAL_PATH) && !fs::is_empty(MANUAL_PATH) && ImGui::MenuItem(lang.main["manual"].c_str(), nullptr))
+                if (fs::exists(MANUAL_PATH) && !fs::is_empty(MANUAL_PATH) && ImGui::MenuItem(lang.live_area["manual"].c_str(), nullptr))
                     open_manual(gui, emuenv, app_path);
-                if (ImGui::MenuItem(lang.main["update"].c_str()))
+                if (ImGui::MenuItem(lang.live_area["update"].c_str()))
                     update_app(gui, emuenv, app_path);
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu(common["delete"].c_str())) {
                 if (ImGui::MenuItem(app_str["title"].c_str()))
-                    context_dialog = lang.deleting["app_delete"];
-                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.main["addcont"].c_str()))
-                    context_dialog = lang.deleting["addcont_delete"];
-                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang.main["license"].c_str()))
-                    context_dialog = lang.deleting["license_delete"];
+                    context_dialog = lang.deleting["delete_app"];
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
-                    context_dialog = lang.deleting["saved_data_delete"];
-                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang.main["shaders_cache"].c_str()))
+                    context_dialog = delete_saved_data;
+                if (fs::exists(PATCH_PATH) && ImGui::MenuItem(lang.path["patch"].c_str()))
+                    context_dialog = lang.deleting["delete_patch"];
+                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.path["addcont"].c_str()))
+                    context_dialog = lang.deleting["delete_addcont"];
+                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang.path["license"].c_str()))
+                    context_dialog = lang.deleting["delete_license"];
+                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang.path["shaders_cache"].c_str()))
                     fs::remove_all(SHADER_CACHE_PATH);
-                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.main["shaders_log"].c_str()))
+                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang.path["shaders_log"].c_str()))
                     fs::remove_all(SHADER_LOG_PATH);
                 if (fs::exists(EXPORT_TEXTURES_PATH) && ImGui::MenuItem(textures["export_textures"].c_str()))
                     fs::remove_all(EXPORT_TEXTURES_PATH);
@@ -887,7 +896,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::EndMenu();
             }
 
-            if (ImGui::BeginMenu(lang.main["other"].c_str())) {
+            if (ImGui::BeginMenu(lang.other["title"].c_str())) {
                 if (ImGui::MenuItem(lang.other["reset_last_time_played"].c_str())) {
                     reset_last_time_app_used(gui, emuenv, app_path);
                 }
@@ -963,8 +972,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             ImGui::SetCursorPosY((WINDOW_SIZE.y / 2) + 10);
             TextColoredCentered(GUI_COLOR_TEXT, context_dialog.c_str(), 54.f * SCALE.x);
-            if (context_dialog == lang.deleting["app_delete"])
-                SetTooltipEx(lang.deleting["app_delete_description"].c_str());
+            if (context_dialog == lang.deleting["delete_app"])
+                SetTooltipEx(lang.deleting["delete_app_description"].c_str());
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
             if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
@@ -974,14 +983,16 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * SCALE.x));
         }
         if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
-            if (context_dialog == lang.deleting["app_delete"])
+            if (context_dialog == lang.deleting["delete_app"])
                 delete_app(gui, emuenv, app_path);
-            if (context_dialog == lang.deleting["addcont_delete"])
-                fs::remove_all(ADDCONT_PATH);
-            if (context_dialog == lang.deleting["license_delete"])
-                fs::remove_all(LICENSE_PATH);
-            else if (context_dialog == lang.deleting["saved_data_delete"])
+            if (context_dialog == delete_saved_data)
                 fs::remove_all(SAVE_DATA_PATH);
+            if (context_dialog == lang.deleting["delete_patch"])
+                fs::remove_all(PATCH_PATH);
+            if (context_dialog == lang.deleting["delete_addcont"])
+                fs::remove_all(ADDCONT_PATH);
+            else if (context_dialog == lang.deleting["delete_license"])
+                fs::remove_all(LICENSE_PATH);
             context_dialog.clear();
         }
         ImGui::PopStyleVar();
@@ -1019,9 +1030,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["trophy_earning"].c_str(), gui.app_selector.app_info.trophy.c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["parental_controls"] + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["parental_controls"].c_str(), lang.info["level"].c_str());
-            ImGui::SameLine();
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->parental_level.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["parental_controls"].c_str(), APP_INDEX->parental_level == "0" ? "-" : fmt::format(fmt::runtime(lang.info["level"]), APP_INDEX->parental_level).c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["updated"] + "  ").c_str()).x);
             auto DATE_TIME = get_date_time(gui, emuenv, gui.app_selector.app_info.updated);
@@ -1032,10 +1041,10 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             }
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["size"] + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (lang.info["size"] + "  " + get_unit_size(gui.app_selector.app_info.size)).c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["size"].c_str(), get_unit_size(gui.app_selector.app_info.size) == "0 B" ? "-" : get_unit_size(gui.app_selector.app_info.size).c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["version"] + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["version"].c_str(), APP_INDEX->app_ver.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["version"].c_str(), APP_INDEX->app_ver == "0.00" ? "-" : APP_INDEX->app_ver.c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang.info["title_id"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang.info["title_id"].c_str(), APP_INDEX->title_id.c_str());

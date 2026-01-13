@@ -25,18 +25,19 @@
 	</main_menubar>
 
 	<app_context>
-		<manual>Käyttöoppaan</manual>
-		<update>Päivitys</update>
+		<live_area>
+			<manual>Käyttöoppaan</manual>
+			<update>Päivitys</update>
+		</live_area>
+		<delete>
+			<delete_app>Tämä sovellus ja kaikki siihen liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</delete_app>
+		</delete>
 		<update_history>Päivityshistoria</update_history>
 		<history_version>Versio {}</history_version>
-		<delete>
-			<app_delete>Tämä sovellus ja kaikki siihen liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</app_delete>
-			<saved_data_delete>Haluatko poistaa nämä tallennentut tiedot?</saved_data_delete>
-		</delete>
 		<info name="Info">
 			<eligible>Kelpo</eligible>
 			<ineligible>Epäkelpo</ineligible>
-			<level>Taso</level>
+			<level>Taso {}</level>
 			<name>Nimi</name>
 			<trophy_earning>Trophyjen ansaitseminen</trophy_earning>
 			<parental_controls>Lapsilukko</parental_controls>
@@ -51,6 +52,8 @@
 Virhekoodi: {}</an_error_occurred>
 		<cancel>Peruuta</cancel>
 		<close>Sulkea</close>
+		<could_not_load>Tiedostoa ei voitu ladata.</could_not_load>
+		<could_not_save>Tiedostoa ei voitu tallentaa.</could_not_save>
 		<delete>Poista</delete>
 		<error>Virhe</error>
 		<file_corrupted>Tiedosto on vioittunt.</file_corrupted>
@@ -218,8 +221,13 @@ Virhekoodi: {}</an_error_occurred>
 			<save name="Tallenna">
 				<cancel_saving>Haluatko peruuttaa tallennuksen?</cancel_saving>
 				<could_not_save>Tiedostoa ei voitu tallentaa.
-Muistikortilla ei ole tarpeeksi vapaata tilaa.</could_not_save>
-				<not_free_space>Muistikortilla ei ole tarpeeksi vapaata tilaa.</not_free_space>
+Muistikortilla ei ole tarpeeksi vapaata tilaa. Jotta voit tallentaa sovelluksen käytön, sinun on vapautettava vähintään {} tallennustilaa.
+
+Voit vapauttaa tallennustilaa painamalla PS-näppäintä, jolloin sovellus siirtyy tauolle, ja poista sitten muut sovellukset tai muu sisältö.</could_not_save>
+				<not_free_space>Muistikortilla ei ole tarpeeksi vapaata tilaa.
+Jotta voit jatkaa sovelluksen käyttämistä, sinun on vapautettava vähintään {} tallennustilaa.
+
+Aseta sovellus tauolle painamalla PS-näppäintä, ja poista sitten muut sovellukset tai muu sisältö.</not_free_space>
 				<new_saved_data>Uusi tallennettu tieto</new_saved_data>
 				<saving_complete>Tallennus suoritettu.</saving_complete>
 				<save_the_data>Haluatko tallentaa tiedot?</save_the_data>

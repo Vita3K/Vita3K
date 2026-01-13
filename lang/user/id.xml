@@ -49,36 +49,41 @@
 	</about>
 
 	<app_context>
-		<check_app_state>Cek state Aplikasi</check_app_state>
-		<copy_vita3k_summary>Salin Ringkasan Vita3K</copy_vita3k_summary>
-		<open_state_report>Buka laporan state</open_state_report>
-		<create_state_report>Buat state laporan</create_state_report>
-		<update_database>Perbarui database</update_database>
-		<copy_app_info>Salin info Apl</copy_app_info>
-		<name_and_id>Nama dan Judul ID</name_and_id>
-		<app_summary>Ringkasan Apl</app_summary>
+		<compat>
+			<check_app_state>Cek state Aplikasi</check_app_state>
+			<copy_vita3k_summary>Salin Ringkasan Vita3K</copy_vita3k_summary>
+			<open_state_report>Buka laporan state</open_state_report>
+			<create_state_report>Buat state laporan</create_state_report>
+			<update_database>Perbarui database</update_database>
+		</compat>
+		<copy_app_info name="Salin info Apl">
+			<name_and_id>Nama dan Judul ID</name_and_id>
+			<app_summary>Ringkasan Apl</app_summary>
+		</copy_app_info>
 		<create_shortcut>Buat Pintasan</create_shortcut>
-		<custom_config>Kastom Config</custom_config>
-		<create>Bikin</create>
-		<remove>Hapus</remove>
-		<open_folder>Buka Folder</open_folder>
-		<license>lisensi</license>
-		<shaders_cache>Cache Shader</shaders_cache>
-		<shaders_log>Catatan Shader</shaders_log>
+		<custom_config name="Kastom Config">
+			<create>Bikin</create>
+			<remove>Hapus</remove>
+		</custom_config>
+		<path>
+			<open_folder>Buka Folder</open_folder>
+			<license>lisensi</license>
+			<shaders_cache>Cache Shader</shaders_cache>
+			<shaders_log>Catatan Shader</shaders_log>
+		</path>
+		<delete>
+			<delete_app>Aplikasi ini dan semua data terkait, termasuk data yang disimpan, akan dihapus.</delete_app>
+			<delete_app_description>Menghapus aplikasi mungkin memakan waktu cukup lama
+tergantung pada ukuran dan perangkat keras Kamu.</delete_app_description>
+			<delete_addcont>Apakah Kamu ingin menghapus data yg dimasukkan ini?</delete_addcont>
+			<delete_license>Apakah kamu ingin menghapus lisensi ini?</delete_license>
+		</delete>
 		<update_history>History Perbarui</update_history>
 		<history_version>Versi {}</history_version>
-		<delete>
-			<app_delete>Aplikasi ini dan semua data terkait, termasuk data yang disimpan, akan dihapus.</app_delete>
-			<app_delete_description>Menghapus aplikasi mungkin memakan waktu cukup lama
-tergantung pada ukuran dan perangkat keras Kamu.</app_delete_description>
-			<addcont_delete>Apakah Kamu ingin menghapus data yg dimasukkan ini?</addcont_delete>
-			<license_delete>Apakah kamu ingin menghapus lisensi ini?</license_delete>
-			<saved_data_delete>Apakah Kamu ingin menghapus data tersimpan ini?</saved_data_delete>
-		</delete>
 		<info name="Informasi">
 			<eligible>Memenuhi Syarat</eligible>
 			<ineligible>Gak Memenuhi Syarat</ineligible>
-			<level>Level</level>
+			<level>Level {}</level>
 			<name>Nama</name>
 			<trophy_earning>Perolehan Trofi</trophy_earning>
 			<parental_controls>Pengawasan Ortu</parental_controls>
@@ -104,6 +109,8 @@ tergantung pada ukuran dan perangkat keras Kamu.</app_delete_description>
 Kode kesalahan: {}</an_error_occurred>
 		<cancel>Batal</cancel>
 		<close>Tutup</close>
+		<could_not_load>Tidak dapat load file.</could_not_load>
+		<could_not_save>Tidak dapat menyimpan file.</could_not_save>
 		<delete>Hapus</delete>
 		<error>Kekeliruan</error>
 		<file_corrupted>File ini udah corrupt.</file_corrupted>
@@ -248,10 +255,13 @@ Kode kesalahan: {}</an_error_occurred>
 		<download_failed>Gagal mengunduh database kompatibilitas Aplikasi yang di-update di: {}, coba lagi nanti.</download_failed>
 		<load_failed>Gagal memuat database kompatibilitas Aplikasi yang diunduh diupdate di: {}.</load_failed>
 		<new_app_listed>Database kompatibilitas sukses di-update dari {} ke {}.
+
 {} aplikasi baru terdaftar, sehingga totalnya menjadi {}!</new_app_listed>
 		<app_listed>Database kompatibilitas sukses di-update dari {} ke {}
+
 {} aplikasi terdaftar!</app_listed>
 		<download_app_listed>Database kompatibilitas yang di-update di {} telah sukses diunduh dan dimuat.
+
 {} aplikasi dilistkan!</download_app_listed>
 	</compat_db>
 
@@ -413,7 +423,7 @@ Asia. (Umumnya Direkomendasikan)</firmware_font_package_note>
 			<enter_zrif>Masukkan zRIF</enter_zrif>
 			<enter_zrif_key>Masukkan zRIF key</enter_zrif_key>
 			<input_zrif>Kamu dimohon masukkan zRIF disini</input_zrif>
-			<copy_paste_zrif>Ctrl (Cmd) + C untuk menyalin, Ctrl (Cmd) + V untuk menempel.</copy_paste_zrif>
+			<copy_paste_zrif>Ctrl + C untuk menyalin, Ctrl + V untuk menempel.</copy_paste_zrif>
 			<delete_pkg>Yakin untuk hapus file pkg?</delete_pkg>
 			<delete_bin_rif>Yakin untuk hapus file work.bin/rif?</delete_bin_rif>
 		</pkg_install>

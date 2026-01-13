@@ -50,37 +50,44 @@
 	</about>
 
 	<app_context>
-		<check_app_state>Semak keadaan Apl</check_app_state>
-		<copy_vita3k_summary>Salin Ringkasan Vita3K</copy_vita3k_summary>
-		<open_state_report>Buka laporan state</open_state_report>
-		<create_state_report>Buat laporan state</create_state_report>
-		<update_database>Pangkalan data maklumat</update_database>
-		<copy_app_info>Salin maklumat Apl</copy_app_info>
-		<name_and_id>Nama dan ID Tajuk</name_and_id>
-		<app_summary>Ringkasan Apl</app_summary>
+		<compat>
+			<check_app_state>Semak keadaan Apl</check_app_state>
+			<copy_vita3k_summary>Salin Ringkasan Vita3K</copy_vita3k_summary>
+			<open_state_report>Buka laporan state</open_state_report>
+			<create_state_report>Buat laporan state</create_state_report>
+			<update_database>Pangkalan data maklumat</update_database>
+		</compat>
+		<copy_app_info name="Salin maklumat Apl">
+			<name_and_id>Nama dan ID Tajuk</name_and_id>
+			<app_summary>Ringkasan Apl</app_summary>
+		</copy_app_info>
 		<create_shortcut>Buat Shortcut</create_shortcut>
-		<custom_config>Konfigurasi Tersuai</custom_config>
-		<create>Cipta</create>
-		<remove>Alih keluar</remove>
-		<open_folder>Buka Folder</open_folder>
-		<license>Lesen</license>
-		<shaders_cache>Cache Shaders</shaders_cache>
-		<shaders_log>Log Shaders</shaders_log>
-		<update>Kemas kini</update>
+		<custom_config name="Konfigurasi Tersuai">
+			<create>Cipta</create>
+			<remove>Alih keluar</remove>
+		</custom_config>
+		<path>
+			<open_folder>Buka Folder</open_folder>
+			<license>Lesen</license>
+			<shaders_cache>Cache Shaders</shaders_cache>
+			<shaders_log>Log Shaders</shaders_log>
+		</path>
+		<live_area>
+			<update>Kemas kini</update>
+		</live_area>
+		<delete>
+			<delete_app>Apl ini dan semua data berkaitan, termasuk data yang disimpan, akan dipadamkan.</delete_app>
+			<delete_app_description>Memadamkan Apl mungkin mengambil sedikit masa,
+bergantung pada saiznya dan perkakasan awak.</delete_app_description>
+			<delete_addcont>Adakah awak mahu memadamkan data tambahan ini?</delete_addcont>
+			<delete_license>Adakah awak mahu memadamkan lesen ini?</delete_license>
+		</delete>
 		<update_history>Kemas kini Sejarah</update_history>
 		<history_version>Versi {}</history_version>
-		<delete>
-			<app_delete>Apl ini dan semua data berkaitan, termasuk data yang disimpan, akan dipadamkan.</app_delete>
-			<app_delete_description>Memadamkan Apl mungkin mengambil sedikit masa,
-bergantung pada saiznya dan perkakasan awak.</app_delete_description>
-			<addcont_delete>Adakah awak mahu memadamkan data tambahan ini?</addcont_delete>
-			<license_delete>Adakah awak mahu memadamkan lesen ini?</license_delete>
-			<saved_data_delete>Adakah awak mahu memadamkan data yang disimpan ini?</saved_data_delete>
-		</delete>
 		<info name="Maklumat">
 			<eligible>Layak</eligible>
 			<ineligible>Tak Layak</ineligible>
-			<level>Tahap</level>
+			<level>Tahap {}</level>
 			<name>Nama</name>
 			<trophy_earning>Pendapatan Trofi</trophy_earning>
 			<parental_controls>Kawalan Ibu Bapa</parental_controls>
@@ -106,6 +113,8 @@ bergantung pada saiznya dan perkakasan awak.</app_delete_description>
 Kod ralat: {}</an_error_occurred>
 		<cancel>Batal</cancel>
 		<close>Tutup</close>
+		<could_not_load>Tidak dapat memuatkan fail.</could_not_load>
+		<could_not_save>Tidak dapat menyimpan fail.</could_not_save>
 		<delete>Padam</delete>
 		<error>Ralat</error>
 		<file_corrupted>Fail itu rosak.</file_corrupted>
@@ -249,11 +258,14 @@ Kod ralat: {}</an_error_occurred>
 		<get_failed>Gagal mendapatkan pangkalan data keserasian semasa, semak akses firewall/internet, cuba lagi kemudian.</get_failed>
 		<download_failed>Gagal memuat turun pangkalan data keserasian Aplikasi yang dikemas kini di: {}, cuba sebentar lagi.</download_failed>
 		<load_failed>Gagal memuatkan pangkalan data keserasian Aplikasi yang dimuat turun dikemas kini di: {}.</load_failed>
-		<new_app_listed>Pangkalan data keserasian telah berjaya dikemas kini daripada {} ke {};
+		<new_app_listed>Pangkalan data keserasian telah berjaya dikemas kini daripada {} ke {}.
+
 {} apl baharu disenaraikan, menjadikan jumlah keseluruhan kepada {}!</new_app_listed>
-		<app_listed>Pangkalan data keserasian telah berjaya dikemas kini daripada {} ke {};
+		<app_listed>Pangkalan data keserasian telah berjaya dikemas kini daripada {} ke {}.
+
 {} apl disenaraikan!</app_listed>
-		<download_app_listed>Pangkalan data keserasian yang dikemas kini pada {} telah berjaya dimuat turun dan dimuatkan;
+		<download_app_listed>Pangkalan data keserasian yang dikemas kini pada {} telah berjaya dimuat turun dan dimuatkan.
+
 {} apl disenaraikan!</download_app_listed>
 	</compat_db>
 
@@ -418,7 +430,7 @@ dan juga untuk sokongan fon serantau Asia. (Secara Umum Disyorkan)</firmware_fon
 			<enter_zrif>Masukkan zRIF</enter_zrif>
 			<enter_zrif_key>Masukkan zRIF key</enter_zrif_key>
 			<input_zrif>Sila masukkan zRIF awak di sini</input_zrif>
-			<copy_paste_zrif>Ctrl (Cmd) + C untuk menyalin, Ctrl (Cmd) + V untuk menampal.</copy_paste_zrif>
+			<copy_paste_zrif>Ctr + C untuk menyalin, Ctrl + V untuk menampal.</copy_paste_zrif>
 			<delete_pkg>Padamkan fail pkg?</delete_pkg>
 			<delete_bin_rif>Padamkan fail work.bin/rif?</delete_bin_rif>
 			<failed_install_package>Gagal memasang pakej.

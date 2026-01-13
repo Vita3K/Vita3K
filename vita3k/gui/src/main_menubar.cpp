@@ -24,20 +24,22 @@
 namespace gui {
 
 static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
-    const auto textures_path{ emuenv.shared_path / "textures" };
-
     auto &lang = gui.lang.main_menubar.file;
+    const auto PATCH_PATH{ emuenv.shared_path / "patch" };
+    const auto TEXTURES_PATH{ emuenv.shared_path / "textures" };
     if (ImGui::BeginMenu(lang["title"].c_str())) {
 #ifndef __ANDROID__
         if (ImGui::MenuItem(lang["open_pref_path"].c_str()))
             open_path(emuenv.pref_path.string());
+        if (ImGui::MenuItem(lang["open_patch_path"].c_str()))
+            open_path(PATCH_PATH.string());
         if (ImGui::MenuItem(lang["open_textures_path"].c_str())) {
-            if (!fs::exists(textures_path)) {
-                fs::create_directories(textures_path);
-                fs::create_directories(textures_path / "export");
-                fs::create_directories(textures_path / "import");
+            if (!fs::exists(TEXTURES_PATH)) {
+                fs::create_directories(TEXTURES_PATH);
+                fs::create_directories(TEXTURES_PATH / "export");
+                fs::create_directories(TEXTURES_PATH / "import");
             }
-            open_path(textures_path.string());
+            open_path(TEXTURES_PATH.string());
         }
         ImGui::Separator();
 #endif

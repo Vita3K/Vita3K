@@ -36,32 +36,39 @@
 	</about>
 
 	<app_context>
-		<update_database>Atualizar Database</update_database>
-		<copy_app_info>Copiar informação do aplicativo</copy_app_info>
-		<name_and_id>Nome e ID do título</name_and_id>
-		<app_summary>Sumário de aplicativos</app_summary>
-		<custom_config>Configuração Personalizada</custom_config>
-		<create>Criar</create>
-		<edit>Editar</edit>
-		<remove>Remover</remove>
-		<open_folder>Abrir pasta</open_folder>
-		<license>Licença</license>
-		<shader_cache>Cache de Shader</shader_cache>
-		<shader_log>Log de Shader</shader_log>
-		<manual>Manual</manual>
-		<update>Atualização</update>
+		<compat>
+			<update_database>Atualizar Database</update_database>
+		</compat>
+		<copy_app_info name="Copiar informação do aplicativo">
+			<name_and_id>Nome e ID do título</name_and_id>
+			<app_summary>Sumário de aplicativos</app_summary>
+		</copy_app_info>
+		<custom_config name="Configuração Personalizada">
+			<create>Criar</create>
+			<edit>Editar</edit>
+			<remove>Remover</remove>
+		</custom_config>
+		<path>
+			<open_folder>Abrir pasta</open_folder>
+			<license>Licença</license>
+			<shader_cache>Cache de Shader</shader_cache>
+			<shader_log>Log de Shader</shader_log>
+		</path>
+		<live_area>
+			<manual>Manual</manual>
+			<update>Atualização</update>
+		</live_area>
+		<delete>
+			<delete_app>Esse aplicativo e todos os dados relacionados, inclusive dados salvos, serão excluídos.</delete_app>
+			<delete_app_description>Deletar um aplicativo pode demorar algum tempo
+dependendo de seu tamanho e hardware.</delete_app_description>
+		</delete>
 		<update_history>Histórico de atualizações</update_history>
 		<history_version>Versão {}</history_version>
-		<delete>
-			<app_delete>Esse aplicativo e todos os dados relacionados, inclusive dados salvos, serão excluídos.</app_delete>
-			<app_delete_description>Deletar um aplicativo pode demorar algum tempo
-dependendo de seu tamanho e hardware.</app_delete_description>
-			<saved_data_delete>Deseja excluir esses dados salvos?</saved_data_delete>
-		</delete>
 		<info name="Informações">
 			<eligible>Qualificado</eligible>
 			<ineligible>Não qualificado</ineligible>
-			<level>Nível</level>
+			<level>Nível {}</level>
 			<name>Nome</name>
 			<trophy_earning>Conquista de troféus</trophy_earning>
 			<parental_controls>Controle parental</parental_controls>
@@ -80,6 +87,8 @@ dependendo de seu tamanho e hardware.</app_delete_description>
 Código de erro: {}</an_error_occurred>
 		<cancel>Cancelar</cancel>
 		<close>Fechar</close>
+		<could_not_load>Não foi possível carregar o arquivo.</could_not_load>
+		<could_not_save>Não foi possível salvar o arquivo.</could_not_save>
 		<delete>Excluir</delete>
 		<error>Erro</error>
 		<file_corrupted>O arquivo está corrompido.</file_corrupted>
@@ -265,8 +274,13 @@ Conecte um controle que seja compatível com SDL3.</not_connected>
 			<save name="Salvar">
 				<cancel_saving>Deseja cancelar o salvamento?</cancel_saving>
 				<could_not_save>Não foi possível salvar o arquivo.
-Não há espaço livre suficiente no cartão de memória.</could_not_save>
-				<not_free_space>Não há espaço livre suficiente no cartão de memória.</not_free_space>
+Não há espaço livre suficiente no cartão de memória. Para salvar o seu progresso no aplicativo, crie pelo menos {} de espaço livre.
+
+Para criar espaço livre, pressione o botão PS para pausar esse aplicativo e exclua outros aplicativos ou conteúdo.</could_not_save>
+				<not_free_space>Não há espaço livre suficiente no cartão de memória.
+Para continuar usando o aplicativo, crie pelo menos {} de espaço livre.
+
+Pressione o botão PS para pausar o aplicativo e exclua outros aplicativos ou conteúdo.</not_free_space>
 				<new_saved_data>Novos dados salvos</new_saved_data>
 				<saving_complete>Gravação concluída.</saving_complete>
 				<save_the_data>Deseja salvar os dados?</save_the_data>

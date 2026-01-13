@@ -499,7 +499,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
                 if (ImGui::Button(lang["delete_all"].c_str()))
                     ImGui::OpenPopup("Delete All");
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f * SCALE.x);
                 ImGui::SetNextWindowSize(DELETE_POPUP_SIZE, ImGuiCond_Always);
                 ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + (VIEWPORT_SIZE.x / 2.f) - (DELETE_POPUP_SIZE.x / 2.f), VIEWPORT_POS.y + (VIEWPORT_SIZE.y / 2.f) - (DELETE_POPUP_SIZE.y / 2.f)));
                 if (ImGui::BeginPopupModal("Delete All", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
@@ -511,7 +511,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
                     if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
                         ImGui::CloseCurrentPopup();
                     }
-                    ImGui::SameLine(0.f, 20.f);
+                    ImGui::SameLine(0, 20.f * SCALE.x);
                     if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
                         notice_info.clear();
                         for (auto &notice : gui.notice_info_icon)
