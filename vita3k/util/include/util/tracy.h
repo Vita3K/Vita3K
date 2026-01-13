@@ -17,11 +17,15 @@
 
 #pragma once
 
+#include <boost/describe/enum.hpp>
+#include <boost/describe/enum_to_string.hpp>
+
 #include <mem/ptr.h>
 #include <mem/state.h>
 #include <util/log.h>
 
 #include <sstream>
+#include <type_traits>
 
 // universal to string converters for module specific types (usually enums)
 template <typename T>
@@ -65,6 +69,15 @@ inline std::string to_debug_str(const MemState &mem, const char *type) {
 template <>
 inline std::string to_debug_str<std::string>(const MemState &mem, std::string type) {
     return type;
+}
+
+template <typename T>
+    requires(boost::describe::has_describe_enumerators<T>::value)
+inline std::string to_debug_str(const MemState &mem, T type) {
+    auto name = boost::describe::enum_to_string(type, "");
+    if (!name || *name == '\0')
+        return std::to_string(static_cast<std::underlying_type_t<T>>(type));
+    return std::string(name);
 }
 
 inline std::string to_debug_str(const MemState &mem) {
