@@ -59,6 +59,7 @@ void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pa
 void get_firmware_file(EmuEnvState &emuenv);
 void get_modules_list(GuiState &gui, EmuEnvState &emuenv);
 void get_notice_list(EmuEnvState &emuenv);
+ImU32 get_selectable_color_pulse(const float max_alpha = 255.f);
 std::string get_theme_title_from_buffer(const vfs::FileBuffer &buffer);
 std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, EmuEnvState &emuenv, const std::string &app);
 void get_time_apps(GuiState &gui, EmuEnvState &emuenv);
@@ -113,7 +114,7 @@ bool set_scroll_animation(float &scroll, float target_scroll, const std::string 
 void set_shaders_compiled_display(GuiState &gui, EmuEnvState &emuenv);
 void stop_bgm();
 void switch_bgm_state(const bool pause);
-void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
+void refresh_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void reset_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app);
 void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app);
 void update_live_area_current_open_apps_list(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
