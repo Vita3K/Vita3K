@@ -371,35 +371,43 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto VIEWPORT_WIDTH_POS_MAX(VIEWPORT_POS.x + VIEWPORT_SIZE.x);
 
-    const ImVec2 NOTICE_SIZE = notice_info_count_new ? ImVec2(104.0f * SCALE.x, 95.0f * SCALE.y) : ImVec2(90.0f * SCALE.x, 82.0f * SCALE.y);
+    const ImVec2 NOTICE_SIZE = notice_info_count_new ? ImVec2(108.f * SCALE.x, 99.0f * SCALE.y) : ImVec2(88.f * SCALE.x, 81.f * SCALE.y);
     const ImVec2 NOTICE_ICON_POS(VIEWPORT_WIDTH_POS_MAX - NOTICE_SIZE.x, VIEWPORT_POS.y);
     const ImVec2 NOTICE_ICON_POS_MAX(NOTICE_ICON_POS.x + NOTICE_SIZE.x, NOTICE_ICON_POS.y + NOTICE_SIZE.y);
 
     const auto NOTICE_COLOR = gui.information_bar_color.notice_font;
 
-    const ImVec2 WINDOW_SIZE = notice_info_state ? VIEWPORT_SIZE : (notice_info_count_new ? ImVec2(84.f * SCALE.x, 76.f * SCALE.y) : ImVec2(72.f * SCALE.x, 62.f * SCALE.y));
+    const ImVec2 WINDOW_SIZE = notice_info_state ? VIEWPORT_SIZE : (notice_info_count_new ? ImVec2(86.f * SCALE.x, 78.f * SCALE.y) : ImVec2(70.f * SCALE.x, 64.f * SCALE.y));
     const ImVec2 WINDOW_POS = ImVec2(VIEWPORT_POS.x + (notice_info_state ? 0.f : VIEWPORT_SIZE.x - WINDOW_SIZE.x), VIEWPORT_POS.y);
 
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 50.f * SCALE.x);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
     ImGui::Begin("##notice_info", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
-    const auto draw_list = ImGui::GetForegroundDrawList();
+    const auto draw_list = ImGui::GetWindowDrawList();
+
+    const float tex_w = NOTICE_SIZE.x;
+    const float tex_h = NOTICE_SIZE.y;
+    const ImVec2 uv0(0.5f / tex_w, 0.5f / tex_h);
+    const ImVec2 uv1((tex_w - 0.5f) / tex_w, (tex_h - 0.5f) / tex_h);
+
     if (notice_info_count_new) {
         if (gui.theme_information_bar_notice.contains(NoticeIcon::NEW))
-            draw_list->AddImage(gui.theme_information_bar_notice[NoticeIcon::NEW], NOTICE_ICON_POS, NOTICE_ICON_POS_MAX);
+            draw_list->AddImage(gui.theme_information_bar_notice[NoticeIcon::NEW], NOTICE_ICON_POS, NOTICE_ICON_POS_MAX, uv0, uv1);
         else
-            draw_list->AddCircleFilled(ImVec2(VIEWPORT_WIDTH_POS_MAX - (24.f * SCALE.x), VIEWPORT_POS.y + (16.f * SCALE.y)), 60.f * SCALE.x, IM_COL32(11.f, 90.f, 252.f, 255.f));
+            draw_list->AddCircleFilled(ImVec2(VIEWPORT_WIDTH_POS_MAX - (23.f * SCALE.x), VIEWPORT_POS.y + (14.f * SCALE.y)), 61.f * SCALE.x, IM_COL32(11.f, 90.f, 252.f, 255.f));
         const auto FONT_SCALE = 40.f * SCALE.x;
         const auto NOTICE_COUNT_FONT_SCALE = FONT_SCALE / 40.f;
         const auto NOTICE_COUNT_SIZE = ImGui::CalcTextSize(std::to_string(notice_info_count_new).c_str()).x * NOTICE_COUNT_FONT_SCALE;
-        draw_list->AddText(gui.vita_font[emuenv.current_font_level], FONT_SCALE, ImVec2(VIEWPORT_WIDTH_POS_MAX - (NOTICE_SIZE.x / 2.f) - (NOTICE_COUNT_SIZE / 2.f) + (12.f * SCALE.x), VIEWPORT_POS.y + (15.f * SCALE.y)), NOTICE_COLOR, std::to_string(notice_info_count_new).c_str());
+        draw_list->AddText(gui.vita_font[emuenv.current_font_level], FONT_SCALE, ImVec2(VIEWPORT_WIDTH_POS_MAX - (NOTICE_SIZE.x / 2.f) - (NOTICE_COUNT_SIZE / 2.f) + (18.f * SCALE.x), VIEWPORT_POS.y + (15.f * SCALE.y)), NOTICE_COLOR, std::to_string(notice_info_count_new).c_str());
     } else {
         if (gui.theme_information_bar_notice.contains(NoticeIcon::NO))
-            draw_list->AddImage(gui.theme_information_bar_notice[NoticeIcon::NO], NOTICE_ICON_POS, NOTICE_ICON_POS_MAX);
+            draw_list->AddImage(gui.theme_information_bar_notice[NoticeIcon::NO], NOTICE_ICON_POS, NOTICE_ICON_POS_MAX, uv0, uv1);
         else
-            draw_list->AddCircleFilled(ImVec2(VIEWPORT_WIDTH_POS_MAX - (28.f * SCALE.x), VIEWPORT_POS.y + (18.f * SCALE.y)), 44.f * SCALE.x, IM_COL32(62.f, 98.f, 160.f, 255.f));
+            draw_list->AddCircleFilled(ImVec2(VIEWPORT_WIDTH_POS_MAX - (22.5f * SCALE.x), VIEWPORT_POS.y + (15.f * SCALE.y)), 45.f * SCALE.x, IM_COL32(62.f, 98.f, 160.f, 255.f));
     }
 
     if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootWindow) && !ImGui::IsAnyItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -533,7 +541,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
     ImGui::End();
-    ImGui::PopStyleVar();
+    ImGui::PopStyleVar(2);
 
     const auto display_size = ImGui::GetIO().DisplaySize;
     draw_list->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, VIEWPORT_POS.y), IM_COL32(0.f, 0.f, 0.f, 255.f));
@@ -680,10 +688,10 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     if (emuenv.display.imgui_render && !gui.vita_area.start_screen && !gui.vita_area.live_area_screen && !gui.vita_area.user_management && !gui.help_menu.vita3k_update && get_sys_apps_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
         gui.vita_area.information_bar = false;
 
+    ImGui::End();
+
     if (is_notif_pos)
         draw_notice_info(gui, emuenv);
-
-    ImGui::End();
 }
 
 } // namespace gui

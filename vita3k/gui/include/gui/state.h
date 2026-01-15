@@ -246,6 +246,23 @@ struct InfoMessage {
     std::string msg;
 };
 
+enum class GateAnimationState {
+    None,
+    EnterApp,
+    PreRunApp,
+    ReturnApp
+};
+
+struct GateAnimation {
+    GateAnimationState state = GateAnimationState::None;
+    static constexpr float duration = 0.32f;
+    float progress = 0.f;
+    std::chrono::steady_clock::time_point start_time;
+
+    void start(GateAnimationState anim_state);
+    void update();
+};
+
 // 2.f is enough for the current font size.
 const float FontScaleCandidates[] = { 1.f, 1.5f, 2.f };
 const int FontScaleCandidatesSize = std::size(FontScaleCandidates);
@@ -328,6 +345,7 @@ struct GuiState {
 
     InfoBarColor information_bar_color;
 
+    GateAnimation gate_animation{};
     ImGui_Texture live_area_last_app_frame;
     std::map<std::string, std::map<std::string, ImGui_Texture>> live_area_contents;
     std::map<std::string, std::map<std::string, std::map<std::string, std::vector<ImGui_Texture>>>> live_items;
