@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -578,9 +578,29 @@ EXPORT(int, sceNetSend, int sid, const void *msg, unsigned int len, int flags) {
     RET_NET_ERRNO(sock ? sock->send_packet(msg, len, flags, nullptr, 0) : SCE_NET_ERROR_EBADF);
 }
 
-EXPORT(int, sceNetSendmsg) {
-    TRACY_FUNC(sceNetSendmsg);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetSendmsg, int sid, const SceNetMsghdr *msg, int flags) {
+    TRACY_FUNC(sceNetSendmsg, sid, msg, flags);
+
+    auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
+    if (!sock)
+        RET_NET_ERRNO(SCE_NET_ERROR_EBADF);
+
+    size_t total_len = 0;
+    for (int i = 0; i < msg->msg_iovlen; ++i) {
+        const SceNetIovec &iov = msg->msg_iov.get(emuenv.mem)[i];
+        total_len += iov.iov_len;
+    }
+
+    std::vector<char> buf;
+    buf.reserve(total_len);
+
+    for (int i = 0; i < msg->msg_iovlen; ++i) {
+        const SceNetIovec &iov = msg->msg_iov.get(emuenv.mem)[i];
+        const char *data = reinterpret_cast<const char *>(iov.iov_base.get(emuenv.mem));
+        buf.insert(buf.end(), data, data + iov.iov_len);
+    }
+
+    RET_NET_ERRNO(sock->send_packet(buf.data(), total_len, flags, msg->msg_name.get(emuenv.mem), msg->msg_namelen));
 }
 
 EXPORT(int, sceNetSendto, int sid, const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) {
