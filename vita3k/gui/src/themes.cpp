@@ -289,6 +289,12 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                 if (!info_bar_prop.child("m_newNoticeFilePath").text().empty())
                     notice_name[NoticeIcon::NEW] = info_bar_prop.child("m_newNoticeFilePath").text().as_string();
 
+                // Set constants for circle mask
+                constexpr int cx = 88;
+                constexpr int cy = 22;
+                constexpr float radius = 62.0f;
+                constexpr float r2 = radius * radius;
+
                 for (const auto &notice : notice_name) {
                     int32_t width = 0;
                     int32_t height = 0;
@@ -308,6 +314,19 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                         LOG_ERROR("Invalid notice icon for content id: {}.", content_id);
                         continue;
                     }
+
+                    // Make circle alpha mask
+                    for (int y = 0; y < height; ++y) {
+                        for (int x = 0; x < width; ++x) {
+                            int dx = x - cx;
+                            int dy = y - cy;
+                            if (dx * dx + dy * dy > r2) {
+                                int idx = (y * width + x) * 4;
+                                data[idx + 3] = 0;
+                            }
+                        }
+                    }
+
                     gui.theme_information_bar_notice[type] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
                     stbi_image_free(data);
                 }
