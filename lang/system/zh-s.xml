@@ -447,6 +447,9 @@
 请尽情享受Vita3K吧。</completed_setup>
 		<select_language>请选择语言。</select_language>
 		<select_pref_path>请选择存放路径。</select_pref_path>
+		<storage_file_permissions>Vita3K需要完整的文件访问权限。
+点击"授予访问权限"以继续。</storage_file_permissions>
+		<grant_access>授予访问权限</grant_access>
 		<current_emu_path>当前模拟器路径</current_emu_path>
 		<change_emu_path>更改模拟器路径</change_emu_path>
 		<reset_emu_path>重置模拟器路径</reset_emu_path>
@@ -788,7 +791,6 @@
 			<reset_emu_path>重置模拟器路径</reset_emu_path>
 			<reset_emu_path_description>重置Vita3K模拟器为默认路径。
 您需要手动将旧文件夹移动到新位置。</reset_emu_path_description>
-			<storage_folder_permissions>使用不同路径需要额外权限</storage_folder_permissions>
 			<custom_config_settings>自定义配置设置</custom_config_settings>
 			<clear_custom_config>清除自定义配置</clear_custom_config>
 			<screenshot_image_type>截图图像类型</screenshot_image_type>

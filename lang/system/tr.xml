@@ -266,6 +266,9 @@ Sistemi veya uygulamayı kapatmayın.</warning_saving>
 		<completed_setup>Başlangıç ayarlarını tamamladınız.
 Vita3K sisteminiz artık hazır!</completed_setup>
 		<select_language>Dil seçin.</select_language>
+		<storage_file_permissions>Vita3K tam dosya erişimi gerektirir.
+Devam etmek için 'Erişim Ver' düğmesine dokunun.</storage_file_permissions>
+		<grant_access>Erişim Ver</grant_access>
 		<install_firmware>Yazılım Yükle.</install_firmware>
 		<next>İleri</next>
 	</initial_setup>
