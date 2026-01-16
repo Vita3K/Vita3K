@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ static Modules parse_db(const Node &db) {
 
 static void gen_license_comment(std::ostream &dst) {
     dst << "// Vita3K emulator project" << '\n';
-    dst << "// Copyright (C) 2025 Vita3K team" << '\n';
+    dst << "// Copyright (C) 2026 Vita3K team" << '\n';
     dst << "//" << '\n';
     dst << "// This program is free software; you can redistribute it and/or modify" << '\n';
     dst << "// it under the terms of the GNU General Public License as published by" << '\n';
