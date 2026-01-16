@@ -202,7 +202,11 @@ static void download_update(const fs::path &base_path) {
     std::thread download([base_path]() {
         std::string download_continuous_link = "https://github.com/Vita3K/Vita3K/releases/download/continuous/";
 #ifdef _WIN32
+#if defined(__aarch64__) || defined(_M_ARM64)
+        download_continuous_link += "windows-arm64-latest.zip";
+#else
         download_continuous_link += "windows-latest.zip";
+#endif
 #elif defined(__APPLE__)
 #ifdef __aarch64__
         download_continuous_link += "macos-arm64-latest.zip";
