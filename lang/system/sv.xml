@@ -260,6 +260,9 @@ Stäng inte av systemet och stäng inte applikationen.</warning_saving>
 		<completed_setup>Du har slutfört den första inställningen.
 Ditt Vita3K-system är redo!</completed_setup>
 		<select_language>Välj ett språk.</select_language>
+		<storage_file_permissions>Vita3K kräver fullständig filåtkomst.
+Tryck på 'Ge Åtkomst' för att fortsätta.</storage_file_permissions>
+		<grant_access>Ge Åtkomst</grant_access>
 		<install_firmware>Installera firmware.</install_firmware>
 		<next>Nästa</next>
 	</initial_setup>

@@ -448,6 +448,9 @@ Do not power off the system or close the application.</warning_saving>
 Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
 		<select_pref_path>Select a pref path.</select_pref_path>
+		<storage_file_permissions>Vita3K requires full file access.
+Tap 'Grant Access' to continue.</storage_file_permissions>
+		<grant_access>Grant Access</grant_access>
 		<current_emu_path>Current emulator path</current_emu_path>
 		<change_emu_path>Change Emulator Path</change_emu_path>
 		<reset_emu_path>Reset Emulator Path</reset_emu_path>
@@ -791,7 +794,6 @@ You will need to move your old folder to the new location manually.</change_emu_
 			<reset_emu_path>Reset Emulator Path</reset_emu_path>
 			<reset_emu_path_description>Reset Vita3K emulator path to the default.
 You will need to move your old folder to the new location manually.</reset_emu_path_description>
-			<storage_folder_permissions>Using a different path requires additional permissions</storage_folder_permissions>
 			<custom_config_settings>Custom Config Settings</custom_config_settings>
 			<clear_custom_config>Clear Custom Config</clear_custom_config>
 			<screenshot_image_type>Screenshot Image Type</screenshot_image_type>

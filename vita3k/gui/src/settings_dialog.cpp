@@ -1063,10 +1063,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.emulator["reset_emu_path_description"].c_str());
         }
         ImGui::Spacing();
-#ifdef __ANDROID__
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.emulator["storage_folder_permissions"].c_str());
-        ImGui::Spacing();
-#endif
         ImGui::Separator();
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["custom_config_settings"].c_str());
         ImGui::Spacing();
