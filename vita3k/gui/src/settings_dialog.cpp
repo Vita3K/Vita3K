@@ -952,8 +952,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang.audio["enable_ngs_support"].c_str(), &config.ngs_enable);
         SetTooltipEx(lang.audio["ngs_description"].c_str());
         ImGui::Spacing();
-        ImGui::SliderInt("Bgm Volume", &emuenv.cfg.bgm_volume, 0, 100, "%d %%", ImGuiSliderFlags_AlwaysClamp);
-        SetTooltipEx("Adjusts the background music volume percentage of the theme");
+        ImGui::SliderInt(lang.audio["bgm_volume"].c_str(), &emuenv.cfg.bgm_volume, 0, 100, "%d %%", ImGuiSliderFlags_AlwaysClamp);
+        SetTooltipEx(lang.audio["bgm_volume_description"].c_str());
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::EndTabItem();

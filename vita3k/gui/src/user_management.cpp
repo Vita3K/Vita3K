@@ -742,7 +742,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         const auto INPUT_NAME_SIZE = 330.f * SCALE.x;
         const auto INPUT_NAME_POS = ImVec2((SIZE_USER.x / 2.f) - (INPUT_NAME_SIZE / 2.f), SIZE_USER.y - (118.f * SCALE.y));
         ImGui::SetCursorPos(ImVec2(INPUT_NAME_POS.x, INPUT_NAME_POS.y - (30.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["name"].c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.lang.app_context.info["name"].c_str());
         ImGui::SetCursorPos(INPUT_NAME_POS);
         ImGui::PushItemWidth(INPUT_NAME_SIZE);
         // It's correct to use std::string this way because of small string optimization (string is small enough to be stored in the string object itself)

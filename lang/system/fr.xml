@@ -486,7 +486,6 @@ Voulez-vous vraiment continuer?</user_delete_warn>
 		<user_deleted>Utilisateur supprimé.</user_deleted>
 		<choose_avatar>Choisir un avatar</choose_avatar>
 		<reset_avatar>Réinitialiser l'avatar</reset_avatar>
-		<name>Nom</name>
 		<user>Utilisateur</user>
 		<confirm>Confirmer</confirm>
 		<automatic_user_login>Connexion automatique de l'utilisateur</automatic_user_login>

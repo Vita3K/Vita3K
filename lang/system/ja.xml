@@ -765,7 +765,6 @@ GUIでのアジア地域のフォントサポートに必須です。
 		<user_deleted>ユーザーを削除しました。</user_deleted>
 		<choose_avatar>アバターを選ぶ</choose_avatar>
 		<reset_avatar>アバターをリセットする</reset_avatar>
-		<name>名前</name>
 		<confirm>確定</confirm>
 		<automatic_user_login>ユーザー自動ログインをする</automatic_user_login>
 	</user_management>

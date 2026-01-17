@@ -334,7 +334,6 @@ struct LangState {
         { "pinch_modifier", "Pinch modifier" },
         { "alternate_pinch_in", "Alternate pinch in key" },
         { "alternate_pinch_out", "Alternate pinch out/stretch key" },
-
         { "error_duplicate_key", "The key is used for other bindings or it is reserved." },
         { "reset_controls_binding", "Reset Controls Binding" }
     };
@@ -634,7 +633,9 @@ struct LangState {
             { "audio_volume", "Audio Volume" },
             { "audio_volume_description", "Adjusts the volume percentage of all audio outputs." },
             { "enable_ngs_support", "Enable NGS support" },
-            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." }
+            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." },
+            { "bgm_volume", "Bgm Volume" },
+            { "bgm_volume_description", "Adjusts the background music volume percentage of the theme." }
         };
         std::map<std::string, std::string> system = {
             { "title", "System" },
@@ -829,7 +830,6 @@ struct LangState {
         { "user_deleted", "User deleted." },
         { "choose_avatar", "Choose Avatar" },
         { "reset_avatar", "Reset Avatar" },
-        { "name", "Name" },
         { "user", "User" },
         { "confirm", "Confirm" },
         { "automatic_user_login", "Automatic User Login" }

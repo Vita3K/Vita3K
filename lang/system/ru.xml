@@ -837,8 +837,6 @@
 		<user_deleted>Пользователь удален.</user_deleted>
 		<choose_avatar>Выбрать аватар</choose_avatar>
 		<reset_avatar>Сбросить аватар</reset_avatar>
-		<name>Название</name>
-		<user>Пользователь</user>
 		<confirm>Подтвердить</confirm>
 		<automatic_user_login>Автоматический вход в систему</automatic_user_login>
 	</user_management>

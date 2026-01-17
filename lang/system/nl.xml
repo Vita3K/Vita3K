@@ -393,7 +393,6 @@ Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefuncti
 Weet je zeker dat je doorgaan?</user_delete_warn>
 		<user_deleted>Gebruiker verwijderd.</user_deleted>
 		<choose_avatar>Avatar kiezen</choose_avatar>
-		<name>Naam</name>
 		<user>Gebruiker</user>
 		<confirm>Bevestigen</confirm>
 	</user_management>
