@@ -31,6 +31,7 @@ struct SpirvUtilFunctions {
     std::map<DataType, spv::Function *> pack_funcs;
     spv::Function *fetch_memory{ nullptr };
     spv::Function *unpack_fx10{ nullptr };
+    spv::Function *pack_fx10{ nullptr };
 
     // buffer_address_vec[i][1] contains the buffer pointer with an array of vec_i and stride 16 bytes
     // 0 in the last index is for the read buffer, 1 is for the write buffer
@@ -56,6 +57,7 @@ spv::Id make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size)
 
 spv::Id unwrap_type(spv::Builder &b, spv::Id type);
 
+spv::Id create_constant_vector_or_scalar(spv::Builder &b, spv::Id constant, int comp_count);
 spv::Id convert_to_float(spv::Builder &b, const SpirvUtilFunctions &utils, spv::Id opr, DataType type, bool normal);
 spv::Id convert_to_int(spv::Builder &b, const SpirvUtilFunctions &utils, spv::Id opr, DataType type, bool normal);
 

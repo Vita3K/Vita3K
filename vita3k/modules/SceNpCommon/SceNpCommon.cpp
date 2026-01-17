@@ -123,9 +123,15 @@ EXPORT(int, sceNpCmpNpIdInOrder) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpCmpOnlineId) {
+EXPORT(int, sceNpCmpOnlineId, const np::SceNpId *npid1, const np::SceNpId *npid2) {
     TRACY_FUNC(sceNpCmpOnlineId);
-    return UNIMPLEMENTED();
+    if (!npid1 || !npid2)
+        return SCE_NP_UTIL_ERROR_INVALID_ARGUMENT;
+
+    if (std::strncmp(npid1->handle.data, npid2->handle.data, SCE_NP_ONLINEID_MAX_LENGTH) != 0)
+        return SCE_NP_UTIL_ERROR_NOT_MATCH;
+
+    return SCE_NP_UTIL_Ok;
 }
 
 EXPORT(int, sceNpCommonBase64Encode) {

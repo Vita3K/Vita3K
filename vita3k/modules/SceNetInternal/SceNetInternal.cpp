@@ -31,3 +31,17 @@ EXPORT(int, sceNetInternalIcmConnect, int sid, int flags) {
     // call sceNetSyscallIcmConnect(sid, flags)
     return UNIMPLEMENTED();
 }
+
+EXPORT(Ptr<const char>, SceNetInternal_F3917021, int unk) {
+    TRACY_FUNC(SceNetInternal_F3917021);
+    LOG_DEBUG("SceNetInternal_F3917021, {}", unk);
+    Ptr<char> rep = Ptr<char>(alloc(emuenv.mem, 0x10, "ip_field"));
+    strcpy(rep.get(emuenv.mem), "127.0.0.1");
+    return rep;
+}
+
+EXPORT(int, SceNetInternal_689B9D7D, uint32_t *actual_interval) {
+    TRACY_FUNC(SceNetInternal_689B9D7D);
+    LOG_DEBUG("actual interval: {}", *actual_interval);
+    return 0;
+}

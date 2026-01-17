@@ -258,7 +258,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
     input->add_option("--installed-path,-r", command_line.run_app_path, "Path to the installed app to run")
-        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_pref_path() / "ux0/app")))->group("Input");
+        ->default_str({})->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
@@ -316,7 +316,24 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         std::cout << window_title << std::endl;
         return QuitRequested;
     }
-
+    if (command_line.run_app_path.has_value()) {
+        std::string &app_path = *command_line.run_app_path;
+        if (!fs::path(app_path).has_parent_path())
+            app_path.insert(0, "ux0:app/");
+        std::string app_parrent_path = fs::path(app_path).parent_path().string();
+        string_utils::replace(app_parrent_path, ":", "/");
+        std::set<std::string> exist_apps = get_file_set(fs::path(cfg.pref_path) / app_parrent_path);
+        if (exist_apps.find(fs::path(app_path).stem().string()) == exist_apps.end()) {
+            std::cout << "--installed-path: " << app_path << " no in {";
+            for (auto &app : exist_apps) {
+                std::cout << app;
+                if (app != *exist_apps.rbegin())
+                    std::cout << ", ";
+            }
+            std::cout << "}" << std::endl;
+            return InitConfigFailed;
+        }
+    }
     if (command_line.recompile_shader_path.has_value()) {
         cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
         return QuitRequested;

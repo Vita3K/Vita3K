@@ -530,16 +530,16 @@ EXPORT(SceInt32, sceAppUtilSystemParamGetInt, SceSystemParamId paramId, SceInt32
 
 EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf, SceSize bufSize) {
     TRACY_FUNC(sceAppUtilSystemParamGetString, paramId, buf, bufSize);
-    constexpr auto devname_len = SCE_SYSTEM_PARAM_USERNAME_MAXSIZE;
-    char devname[devname_len];
     switch (paramId) {
-    case SCE_SYSTEM_PARAM_ID_USER_NAME:
-        if (gethostname(devname, devname_len)) {
-            // fallback to User Name
-            std::strncpy(devname, emuenv.io.user_name.c_str(), sizeof(devname));
-        }
-        std::strncpy(reinterpret_cast<char *>(buf), devname, sizeof(devname));
+    case SCE_SYSTEM_PARAM_ID_USER_NAME: {
+        constexpr auto devname_len = SCE_SYSTEM_PARAM_USERNAME_MAXSIZE;
+        char devname[devname_len];
+        std::strncpy(devname, emuenv.io.user_name.c_str(), sizeof(devname) - 1);
+        devname[devname_len - 1] = '\0';
+        std::strncpy(reinterpret_cast<char *>(buf), devname, sizeof(devname) - 1);
+        reinterpret_cast<char *>(buf)[devname_len - 1] = '\0';
         break;
+    }
     default:
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
     }

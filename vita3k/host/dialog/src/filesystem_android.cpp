@@ -28,6 +28,8 @@
 
 #include <host/dialog/filesystem.h>
 
+#include <util/log.h>
+
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_system.h>
 #include <SDL3/SDL_timer.h>

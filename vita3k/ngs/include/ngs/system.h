@@ -195,6 +195,8 @@ struct Rack : public MempoolObject {
     int32_t max_patches_per_input;
     int32_t patches_per_output;
 
+    bool is_released = false;
+
     std::vector<Ptr<Voice>> voices;
     std::vector<std::unique_ptr<Module>> modules;
 
@@ -208,6 +210,7 @@ struct System : public MempoolObject {
     int32_t max_voices;
     int32_t granularity;
     int32_t sample_rate;
+    uint32_t flags;
 
     VoiceScheduler voice_scheduler;
 

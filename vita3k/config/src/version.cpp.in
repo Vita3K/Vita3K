@@ -20,6 +20,7 @@
 const char org_name[] = "${VITA3K_ORG_NAME}";
 const char app_name[] = "${VITA3K_APP_NAME}";
 const char app_version[] = "${VITA3K_APP_VERSION}";
+const int app_master_number = ${GIT_MASTER_COUNT};
 const int app_number = ${GIT_COUNT};
 const char app_hash[] = "${GIT_HASH}";
 const char window_title[] = "${VITA3K_APP_NAME} ${VITA3K_APP_VERSION} ${GIT_COUNT}-${VITA3K_GIT_REV}";

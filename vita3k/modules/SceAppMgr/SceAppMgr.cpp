@@ -17,6 +17,8 @@
 
 #include "SceAppMgr.h"
 
+#include <io/device.h>
+#include <io/functions.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <packages/sfo.h>
@@ -409,18 +411,27 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
     if (optParam)
         return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
 
-    // Create exec path
-    auto exec_path = static_cast<std::string>(appPath);
-    if (exec_path.find("app0:/") != std::string::npos)
-        exec_path.erase(0, 6);
-    else
-        exec_path.erase(0, 5);
+    fs::path full_path;
+    const auto app_device = device::get_device(appPath);
+    if (app_device == VitaIoDevice::app0) {
+        emuenv.load_exec_path = device::remove_device_from_path(appPath, app_device);
+        emuenv.load_app_path = emuenv.io.app_path;
+    } else {
+        const std::string app_path(appPath);
+        const auto first_sep = app_path.find('/');
+        const auto second_sep = app_path.find('/', first_sep + 1);
+        if ((first_sep == std::string::npos) || (second_sep == std::string::npos))
+            return RET_ERROR(SCE_APPMGR_ERROR_INVALID_PARAMETER);
 
-    LOG_INFO("sceAppMgrLoadExec run self: {}", appPath);
+        emuenv.load_app_path = app_path.substr(0, second_sep);
+        emuenv.load_exec_path = app_path.substr(second_sep + 1);
+    }
+
+    const auto complete_path = emuenv.pref_path / convert_path(emuenv.load_app_path) / emuenv.load_exec_path;
+    LOG_INFO("sceAppMgrLoadExec run self: {} in path: {}", appPath, complete_path.string());
 
     // Load exec executable
-    vfs::FileBuffer exec_buffer;
-    if (vfs::read_app_file(exec_buffer, emuenv.pref_path, emuenv.io.app_path, exec_path)) {
+    if (fs::exists(complete_path)) {
         if (argv && argv->get(emuenv.mem)) {
             size_t args = 0;
             emuenv.load_exec_argv = "\"";
@@ -439,8 +450,6 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
 
         emuenv.kernel.exit_delete_all_threads();
 
-        emuenv.load_app_path = emuenv.io.app_path;
-        emuenv.load_exec_path = exec_path;
         emuenv.load_exec = true;
         // make sure we are not stuck waiting for a gpu command
         emuenv.renderer->should_display = true;

@@ -55,17 +55,64 @@ if(GIT_HASH STREQUAL "")
 elseif((GIT_REPO STREQUAL "Vita3K") AND ((GIT_BRANCH STREQUAL "master") OR (GIT_BRANCH STREQUAL "HEAD")))
 	set(VITA3K_GIT_REV "${GIT_HASH}")
 
-	if(USE_VITA3K_UPDATE)
-		add_definitions(-DUSE_VITA3K_UPDATE)
-	endif()
 else()
 	set(VITA3K_GIT_REV "${GIT_HASH}-${GIT_REPO}/${GIT_BRANCH}")
+endif()
+
+if(ANDROID AND USE_VITA3K_UPDATE)
+	add_definitions(-DUSE_VITA3K_UPDATE)
+endif()
+
+if(NOT GIT_HASH STREQUAL "")
+    execute_process(
+        COMMAND git remote -v
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE REMOTE_LIST
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    set(OFFICIAL_URL "https://github.com/Vita3K/Vita3K")
+    set(REMOTE_NAME "")
+
+    foreach(line IN LISTS REMOTE_LIST)
+        if(line MATCHES "${OFFICIAL_URL}")
+            string(REGEX MATCH "^[^ \t]+" REMOTE_NAME "${line}")
+            break()
+        endif()
+    endforeach()
+
+	if(REMOTE_NAME STREQUAL "")
+        set(REMOTE_NAME "Vita3K")
+        execute_process(
+            COMMAND git remote add ${REMOTE_NAME} ${OFFICIAL_URL}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
+    endif()
+    execute_process(
+        COMMAND git fetch ${REMOTE_NAME} master
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+    execute_process(
+        COMMAND git merge-base HEAD ${REMOTE_NAME}/master
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE MERGE_BASE
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND git rev-list --count ${MERGE_BASE}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_MASTER_COUNT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+else()
+    set(GIT_MASTER_COUNT 0)
 endif()
 
 file(WRITE ${CMAKE_BINARY_DIR}/vita3k/config/gitver.h
 	"#define APP_VER_HI ${VITA3K_APP_VER_HI}\n"
 	"#define APP_VER_MID ${VITA3K_APP_VER_MID}\n"
 	"#define APP_VER_LO ${VITA3K_APP_VER_LO}\n"
+	"#define APP_MASTER_NUMBER ${GIT_MASTER_COUNT}\n"
 	"#define APP_NUMBER ${GIT_COUNT}\n"
 )
 

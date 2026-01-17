@@ -47,7 +47,11 @@ typedef std::shared_ptr<Socket> SocketPtr;
 
 struct Socket {
     int sockopt_so_onesbcast = 0;
+    bool is_bound = false;
     int sce_type;
+
+    uint32_t bound_ctx_id = 0;
+    const char *name = nullptr;
 
     explicit Socket(int domain, int type, int protocol)
         : sce_type(type) {}
@@ -84,6 +88,8 @@ struct PosixSocket : public Socket {
 
     int abort_flags = 0;
     bool is_aborted = false;
+
+    bool is_listening = false;
 
     explicit PosixSocket(int domain, int type, int protocol)
         : Socket(domain, type, protocol)

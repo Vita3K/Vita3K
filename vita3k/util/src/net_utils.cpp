@@ -368,7 +368,15 @@ std::string get_web_response(const std::string &url) {
 }
 
 std::string get_web_regex_result(const std::string &url, const std::regex &regex) {
-    std::string result;
+    const auto result = get_web_regex_results(url, regex);
+    if (result.empty())
+        return {};
+
+    return result.back();
+}
+
+std::vector<std::string> get_web_regex_results(const std::string &url, const std::regex &regex) {
+    std::vector<std::string> results;
 
     // Get the response of the web
     const auto response = get_web_response(url);
@@ -378,12 +386,13 @@ std::string get_web_regex_result(const std::string &url, const std::regex &regex
         std::smatch match;
         // Check if the response matches the regex
         if (std::regex_search(response, match, regex)) {
-            result = match[1];
+            for (size_t i = 1; i < match.size(); ++i)
+                results.push_back(match[i].str());
         } else
             LOG_ERROR("No success found regex: {}", response);
     }
 
-    return result;
+    return results;
 }
 
 static uint64_t get_current_time_ms() {
@@ -414,7 +423,7 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
         // Calculate progress percentage
         const auto total_bytes_downloaded = static_cast<double>(downloaded_bytes + data->first.bytes_already_downloaded);
         const auto file_size = total_bytes + data->first.bytes_already_downloaded;
-        const auto progress_percent = static_cast<float>(total_bytes_downloaded) / static_cast<float>(file_size) * 100.0f;
+        const auto progress = static_cast<float>(total_bytes_downloaded) / static_cast<float>(file_size);
 
         // Calculate elapsed time
         const auto current_time = get_current_time_ms();
@@ -424,8 +433,7 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
         const auto remaining_bytes = static_cast<double>(total_bytes - downloaded_bytes);
         const auto remaining_time = static_cast<uint64_t>((remaining_bytes / downloaded_bytes) * elapsed_time_ms) / 1000;
 
-        ProgressState *callback_result = data->second(progress_percent, remaining_time);
-
+        ProgressState *callback_result = data->second(progress, remaining_time, static_cast<uint64_t>(total_bytes_downloaded));
         std::unique_lock<std::mutex> lock(callback_result->mutex);
 
         // Store the current pause state
@@ -474,13 +482,22 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
     curl_easy_setopt(curl_download, CURLOPT_WRITEDATA, fp);
     int res = curl_easy_perform(curl_download);
 
+    long http_code = 0;
+    curl_easy_getinfo(curl_download, CURLINFO_RESPONSE_CODE, &http_code);
+    if ((http_code != 200) && (http_code != 206)) {
+        LOG_WARN("Download failed with HTTP code: {}", http_code);
+        fclose(fp);
+        curl_easy_cleanup(curl_download);
+        if (fs::exists(output_file_path))
+            fs::remove(output_file_path);
+        return false;
+    }
+
     fclose(fp);
     curl_easy_cleanup(curl_download);
-    if (progress_callback)
-        progress_callback(0, 0);
 
     if (res == CURLE_ABORTED_BY_CALLBACK)
-        LOG_CRITICAL("Aborted update by user");
+        LOG_WARN("Aborted by user");
 
     return res == CURLE_OK;
 }

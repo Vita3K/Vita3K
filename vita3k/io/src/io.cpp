@@ -70,7 +70,8 @@ bool read_file(const VitaIoDevice device, FileBuffer &buf, const fs::path &pref_
 }
 
 bool read_app_file(FileBuffer &buf, const fs::path &pref_path, const std::string &app_path, const fs::path &vfs_file_path) {
-    return read_file(VitaIoDevice::ux0, buf, pref_path, fs::path("app") / app_path / vfs_file_path);
+    const auto app_device = device::get_device(app_path);
+    return read_file(app_device, buf, pref_path, device::remove_device_from_path(app_path, app_device) / vfs_file_path);
 }
 
 SceSize get_directory_used_size(const VitaIoDevice device, const std::string &vfs_path, const fs::path &pref_path) {
@@ -105,6 +106,7 @@ bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, con
 
     fs::create_directories(ux0 / "data");
     fs::create_directories(ux0 / "app");
+    fs::create_directories(ux0 / "cache");
     fs::create_directories(ux0 / "music");
     fs::create_directories(ux0 / "picture");
     fs::create_directories(ux0 / "theme");
@@ -129,7 +131,7 @@ bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, con
 
 void init_device_paths(IOState &io) {
     io.device_paths.savedata0 = "user/" + io.user_id + "/savedata/" + io.savedata;
-    io.device_paths.app0 = "app/" + io.app_path;
+    io.device_paths.app0 = device::remove_device_from_path(io.app_path, device::get_device(io.app_path));
     io.device_paths.addcont0 = "addcont/" + io.addcont;
 }
 
@@ -190,7 +192,16 @@ fs::path find_in_cache(IOState &io, const std::string &system_path) {
     }
 }
 
-std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths) {
+std::string convert_path(const std::string &path) {
+    auto convert_path = path;
+
+    // replace colon with slash
+    string_utils::replace(convert_path, ":", "/");
+
+    return convert_path;
+}
+
+std::string translate_path(const char *path, VitaIoDevice &device, const IOState &io) {
     auto relative_path = device::remove_duplicate_device(path, device);
 
     // replace invalid slashes with proper forward slash
@@ -202,17 +213,22 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
     switch (device) {
     case +VitaIoDevice::savedata0: // Redirect savedata0: to ux0:user/00/savedata/<title_id>
     case +VitaIoDevice::savedata1: {
-        relative_path = device::remove_device_from_path(relative_path, device, device_paths.savedata0);
+        relative_path = device::remove_device_from_path(relative_path, device, io.device_paths.savedata0);
         device = VitaIoDevice::ux0;
         break;
     }
     case +VitaIoDevice::app0: { // Redirect app0: to ux0:app/<title_id>
-        relative_path = device::remove_device_from_path(relative_path, device, device_paths.app0);
-        device = VitaIoDevice::ux0;
+        relative_path = device::remove_device_from_path(relative_path, device, io.device_paths.app0);
+        device = device::get_device(io.app_path);
         break;
     }
     case +VitaIoDevice::addcont0: { // Redirect addcont0: to ux0:addcont/<title_id>
-        relative_path = device::remove_device_from_path(relative_path, device, device_paths.addcont0);
+        relative_path = device::remove_device_from_path(relative_path, device, io.device_paths.addcont0);
+        device = VitaIoDevice::ux0;
+        break;
+    }
+    case +VitaIoDevice::cache0: { // Redirect cache0: to ux0:cache/<title_id>
+        relative_path = device::remove_device_from_path(relative_path, device, "cache/" + io.title_id);
         device = VitaIoDevice::ux0;
         break;
     }
@@ -233,7 +249,6 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
     }
 
     case +VitaIoDevice::host0:
-    case +VitaIoDevice::gro0:
     case +VitaIoDevice::grw0:
     case +VitaIoDevice::imc0:
     case +VitaIoDevice::os0:
@@ -276,7 +291,7 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
 fs::path expand_path(IOState &io, const char *path, const fs::path &pref_path) {
     auto device = device::get_device(path);
 
-    const auto translated_path = translate_path(path, device, io.device_paths);
+    const auto translated_path = translate_path(path, device, io);
     return device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio).string();
 }
 
@@ -304,7 +319,7 @@ SceUID open_file(IOState &io, const char *path, const int flags, const fs::path 
         return fd;
     }
 
-    const auto translated_path = translate_path(path, device, io.device_paths);
+    const auto translated_path = translate_path(path, device, io);
     if (translated_path.empty()) {
         LOG_ERROR("Cannot translate path: {}", path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -493,7 +508,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &p
             return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
         }
 
-        const auto translated_path = translate_path(file, device, io.device_paths);
+        const auto translated_path = translate_path(file, device, io);
         file_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio);
 
         if (!fs::exists(file_path)) {
@@ -605,7 +620,7 @@ int remove_file(IOState &io, const char *file, const fs::path &pref_path, const 
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto translated_path = translate_path(file, device, io.device_paths);
+    const auto translated_path = translate_path(file, device, io);
     if (translated_path.empty()) {
         LOG_ERROR("Cannot translate path: {}", translated_path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -637,13 +652,13 @@ int rename(IOState &io, const char *old_name, const char *new_name, const fs::pa
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto translated_old_path = translate_path(old_name, device, io.device_paths);
+    const auto translated_old_path = translate_path(old_name, device, io);
     if (translated_old_path.empty()) {
         LOG_ERROR("Cannot translate path: {}", translated_old_path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto translated_new_path = translate_path(new_name, device, io.device_paths);
+    const auto translated_new_path = translate_path(new_name, device, io);
     if (translated_new_path.empty()) {
         LOG_ERROR("Cannot translate path: {}", translated_new_path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -674,7 +689,7 @@ int rename(IOState &io, const char *old_name, const char *new_name, const fs::pa
 SceUID open_dir(IOState &io, const char *path, const fs::path &pref_path, const char *export_name) {
     auto device = device::get_device(path);
     auto device_for_icase = device;
-    const auto translated_path = translate_path(path, device, io.device_paths);
+    const auto translated_path = translate_path(path, device, io);
 
     auto dir_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio) / "";
     if (!fs::exists(dir_path)) {
@@ -791,7 +806,7 @@ bool copy_path(const fs::path &src_path, const fs::path &pref_path, const std::s
 
 int create_dir(IOState &io, const char *dir, int mode, const fs::path &pref_path, const char *export_name, const bool recursive) {
     auto device = device::get_device(dir);
-    const auto translated_path = translate_path(dir, device, io.device_paths);
+    const auto translated_path = translate_path(dir, device, io);
     if (translated_path.empty()) {
         LOG_ERROR("Failed to translate path: {}", dir);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -838,7 +853,7 @@ int remove_dir(IOState &io, const char *dir, const fs::path &pref_path, const ch
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto translated_path = translate_path(dir, device, io.device_paths);
+    const auto translated_path = translate_path(dir, device, io);
     if (translated_path.empty()) {
         LOG_ERROR("Cannot translate path: {}", dir);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);

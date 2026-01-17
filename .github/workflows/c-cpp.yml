@@ -252,8 +252,8 @@ jobs:
       group: create-release
       cancel-in-progress: false
     if: |
-      github.ref == 'refs/heads/master' &&
-      github.repository == 'Vita3K/Vita3K'
+      github.ref == 'refs/heads/shadow' &&
+      github.repository == 'Zangetsu38/Vita3K'
     steps:
       - uses: actions/checkout@v6
         with:
@@ -267,6 +267,9 @@ jobs:
           echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
           echo "BUILD_VARIABLE=$(git rev-list --count HEAD)" >> $GITHUB_ENV
           echo "LAST_COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
+          git fetch https://github.com/Vita3K/Vita3K.git master
+          master_commit=$(git merge-base HEAD FETCH_HEAD)
+          echo "APP_MASTER_NUMBER=$(git rev-list --count $master_commit)" >> $GITHUB_ENV
 
       - name: Get last committer
         env:
@@ -337,6 +340,8 @@ jobs:
             -n "Build: ${{ env.BUILD_VARIABLE }}" \
             -b "$(printf "Corresponding commit: [${{ env.LAST_COMMIT_MESSAGE }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})")" \
             ${{ env.BUILD_VARIABLE }} artifacts-store/
+        if: github.repository == 'Vita3K/Vita3K'
+
         env:
           GITHUB_TOKEN: ${{ secrets.STORE_TOKEN }}
 
@@ -344,7 +349,7 @@ jobs:
         run: |
           ghr_v0.17.0_linux_amd64/ghr -u ${{ github.repository_owner }} -r Vita3K -recreate \
             -n 'Automatic CI builds' \
-            -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}")" \
+            -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}\n<!-- App master count: ${{ env.APP_MASTER_NUMBER }} -->")" \
             continuous artifacts-master/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

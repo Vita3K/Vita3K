@@ -22,6 +22,8 @@
 
 #include <algorithm>
 #include <cstring>
+
+#include <util/log.h>
 #include <util/vector_utils.h>
 
 namespace ngs {
@@ -130,6 +132,9 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
     }
 
     for (ngs::Voice *voice : queue_copy) {
+        if (!voice->rack)
+            continue;
+
         // Modify the state, in peace....
         std::unique_lock<std::mutex> voice_lock(*voice->voice_mutex);
         memset(voice->products, 0, sizeof(voice->products));
@@ -139,13 +144,16 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
 
         for (size_t i = 0; i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {
+                const auto module_id = voice->rack->modules[i]->module_id();
                 if (voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i], scheduler_lock, voice_lock)) {
                     finished = true;
-                    finished_module = voice->rack->modules[i]->module_id();
+                    finished_module = module_id;
                 }
             }
         }
+
         if (finished) {
+            //finished_module = voice->is_keyed_off ? 0 : finished_module;
             voice->is_keyed_off = true;
             voice->transition(mem, VOICE_STATE_FINALIZING);
             if (voice->finished_callback) {

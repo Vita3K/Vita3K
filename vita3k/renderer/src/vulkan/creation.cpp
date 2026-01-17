@@ -218,16 +218,14 @@ bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
 void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
     VKRenderTarget &render_target = *reinterpret_cast<VKRenderTarget *>(rt.get());
 
-    // don't forget to destroy the framebuffers
     state.surface_cache.destroy_associated_framebuffers(&render_target);
-
-    // deferred destroy everything in case some object is still being used
     FrameObject &frame = state.frame();
     frame.destroy_queue.add_image(render_target.color);
     frame.destroy_queue.add_image(render_target.depthstencil);
 
     for (auto fence : render_target.fences)
         frame.destroy_queue.add(fence);
+
     for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
         for (auto cmd_buffer : render_target.cmd_buffers[i])
             frame.destroy_queue.add_cmd_buffer(cmd_buffer, state.frames[i].render_pool);
