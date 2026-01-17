@@ -375,7 +375,6 @@ Voit ansaita trophyjä käyttämällä trophy-ominaisuutta tukevaa sovellusta.</
 Oletko varma, että haluat jatkaa?</user_delete_warn>
 		<user_deleted>Käyttäjä on poistettu.</user_deleted>
 		<choose_avatar>Valitse avatar</choose_avatar>
-		<name>Nimi</name>
 		<user>Kayttaja</user>
 		<confirm>Vahvista</confirm>
 	</user_management>

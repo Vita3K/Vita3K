@@ -692,7 +692,6 @@ Anda perlu memindahkan folder lama ke lokasi baru secara manual.</change_emu_pat
 			<reset_emu_path>Reset Letak Emulator</reset_emu_path>
 			<reset_emu_path_description>Reset letak emulator Vita3K ke default.
 Kamu perlu memindahkan folder lama ke lokasi baru secara manual.</reset_emu_path_description>
-			<storage_folder_permissions>Menggunakan Letak yang berbeda memerlukan izin tambahan</storage_folder_permissions>
 			<custom_config_settings>Pengaturan Konfigurasi Kustom</custom_config_settings>
 			<clear_custom_config>Bersihkan Konfigurasi Kustom</clear_custom_config>
 		</emulator>
@@ -816,7 +815,6 @@ Kamu bisa mendapatkan trofi dengan menggunakan aplikasi yang mendukung fitur tro
 Apakah anda yakin ingin melanjutkan?</user_delete_warn>
 		<user_deleted>User telah dihapus.</user_deleted>
 		<change_avatar>Ganti Avatar</change_avatar>
-		<name>Nama</name>
 		<confirm>Konfirmasi</confirm>
 		<automatic_user_login>Automatis User Login</automatic_user_login>
 	</user_management>

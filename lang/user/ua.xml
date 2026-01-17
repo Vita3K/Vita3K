@@ -820,8 +820,6 @@
 		<user_deleted>Користувача видалено.</user_deleted>
 		<choose_avatar>Обрати аватар</choose_avatar>
 		<reset_avatar>Скинути аватар</reset_avatar>
-		<name>Ім'я</name>
-		<user>Користувач</user>
 		<confirm>Підтвердити</confirm>
 		<automatic_user_login>Автоматичний вхід у систему</automatic_user_login>
 	</user_management>

@@ -395,7 +395,6 @@ Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.</no_
 Vuoi davvero continuare?</user_delete_warn>
 		<user_deleted>Utente eliminato.</user_deleted>
 		<choose_avatar>Scegli avatar</choose_avatar>
-		<name>Nome</name>
 		<user>Utente</user>
 		<confirm>Conferma</confirm>
 	</user_management>

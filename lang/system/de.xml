@@ -385,7 +385,6 @@ Wirklich fortfahren?</user_delete_warn>
 		<user_deleted>Benutzer gelöscht.</user_deleted>
 		<choose_avatar>Avatar auswählen</choose_avatar>
 		<reset_avatar>Avatar zurücksetzen</reset_avatar>
-		<name>Name</name>
 		<user>Benutzer</user>
 		<confirm>Bestätigen</confirm>
 		<automatic_user_login>Benutzer automatisch einloggen</automatic_user_login>

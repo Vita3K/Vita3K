@@ -394,7 +394,6 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 ¿Deseas continuar?</user_delete_warn>
 		<user_deleted>Usuario eliminado.</user_deleted>
 		<choose_avatar>Elegir avatar</choose_avatar>
-		<name>Nombre</name>
 		<user>Usuario</user>
 		<confirm>Confirmar</confirm>
 	</user_management>

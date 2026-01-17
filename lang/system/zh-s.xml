@@ -359,6 +359,9 @@
 		<miscellaneous>杂项</miscellaneous>
 		<toggle_texture_replacement>切换纹理替换</toggle_texture_replacement>
 		<take_screenshot>截图</take_screenshot>
+		<pinch_modifier>捏合变更键</pinch_modifier>
+		<alternate_pinch_in>交替捏合向内键</alternate_pinch_in>
+		<alternate_pinch_out>交替捏合向外/伸缩键</alternate_pinch_out>
 		<error_duplicate_key>该按键已被使用并绑定其他键或被预留。</error_duplicate_key>
 		<reset_controls_binding>重置控制绑定</reset_controls_binding>
 	</controls>
@@ -722,6 +725,8 @@
 			<audio_volume_description>调整全局音频输出的音量百分比。</audio_volume_description>
 			<enable_ngs_support>启用NGS支持</enable_ngs_support>
 			<ngs_description>取消勾选此项禁用对高级音频库NGS的支持。</ngs_description>
+			<bgm_volume>背景音乐音量</bgm_volume>
+			<bgm_volume_description>调整主题背景音乐的音量百分比。</bgm_volume_description>
 		</audio>
 		<system name="系统">
 			<select_enter_button>确认按键分配
@@ -938,7 +943,6 @@
 		<user_deleted>用户已删除。</user_deleted>
 		<choose_avatar>选择虚拟形象</choose_avatar>
 		<reset_avatar>重置虚拟形象</reset_avatar>
-		<name>名称</name>
 		<confirm>确定</confirm>
 		<automatic_user_login>自动登录用户</automatic_user_login>
 	</user_management>

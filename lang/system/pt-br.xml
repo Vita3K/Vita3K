@@ -459,7 +459,6 @@ Tem certeza de que deseja continuar?</user_delete_warn>
 		<user_deleted>Usuário excluído.</user_deleted>
 		<choose_avatar>Escolher avatar</choose_avatar>
 		<reset_avatar>Resetar avatar</reset_avatar>
-		<name>Nome</name>
 		<user>Usuario</user>
 		<confirm>Confirmar</confirm>
 		<automatic_user_login>Login Automático de Usuário</automatic_user_login>

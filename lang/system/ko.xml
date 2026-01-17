@@ -411,7 +411,6 @@ Vita3K를 즐기러 GOGO!</completed_setup>
 		<user_deleted>유저를 삭제했습니다.</user_deleted>
 		<choose_avatar>아바타 선택하기</choose_avatar>
 		<reset_avatar>아바타 리셋</reset_avatar>
-		<name>이름</name>
 		<confirm>확인</confirm>
 		<automatic_user_login>유저를 자동 로그인</automatic_user_login>
 	</user_management>

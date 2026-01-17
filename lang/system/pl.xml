@@ -900,7 +900,6 @@ Czy na pewno chcesz kontynuować?</user_delete_warn>
 		<user_deleted>Usunięto użytkownika.</user_deleted>
 		<choose_avatar>Wybierz awatar</choose_avatar>
 		<reset_avatar>Resetuj awatar</reset_avatar>
-		<name>Nazwa</name>
 		<user>Uzytkownik</user>
 		<confirm>Potwierdź</confirm>
 		<automatic_user_login>Automatyczne logowanie</automatic_user_login>
