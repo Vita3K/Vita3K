@@ -63,8 +63,13 @@ static void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
     const bool supports_surface_sync = (info.tiling == SurfaceTiling::Linear
         && format_support_surface_sync(info.format));
 
-    uint32_t addr_start = align_down(info.data.address(), mem.page_size);
-    uint32_t addr_end = align(info.data.address() + info.total_bytes, mem.page_size);
+    uint32_t addr_start = align(info.data.address(), KiB(4));
+    uint32_t addr_end = align_down(info.data.address() + info.total_bytes, KiB(4));
+    if (addr_start >= addr_end) {
+        // we still need to protect something, even if it's not completely accurate
+        addr_start = align_down(info.data.address(), KiB(4));
+        addr_end = align(info.data.address() + info.total_bytes, KiB(4));
+    }
 
     // Use MemPerm::None to trap both reads and writes for surfaces that support sync,
     // MemPerm::ReadOnly to trap only writes for other surfaces
