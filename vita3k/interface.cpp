@@ -84,6 +84,7 @@ static void set_theme_name(EmuEnvState &emuenv, vfs::FileBuffer &buf) {
     const auto nospace = std::remove_if(emuenv.app_info.app_title_id.begin(), emuenv.app_info.app_title_id.end(), isspace);
     emuenv.app_info.app_title_id.erase(nospace, emuenv.app_info.app_title_id.end());
     emuenv.app_info.app_category = "theme";
+    emuenv.app_info.app_content_id = emuenv.app_info.app_title_id;
     emuenv.app_info.app_title += " (Theme)";
 }
 
@@ -145,7 +146,7 @@ static bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const Zi
             return false;
     } else if (is_theme) {
         set_theme_name(emuenv, theme);
-        output_path /= fs::path("theme") / emuenv.app_info.app_title_id;
+        output_path /= fs::path("theme") / emuenv.app_info.app_content_id;
     } else {
         LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), sfo_path);
         return false;
@@ -657,6 +658,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             gui.is_key_locked = true;
             if (allow_switch_state) {
                 // Show/Hide Live Area during app running
+                const auto current_app_state = emuenv.kernel.is_threads_paused();
                 const auto live_area_app_index = gui::get_live_area_current_open_apps_list_index(gui, emuenv.io.app_path);
                 if (live_area_app_index == gui.live_area_current_open_apps_list.end())
                     gui::open_live_area(gui, emuenv, emuenv.io.app_path);
@@ -666,17 +668,21 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                         gui.live_area_app_current_open = static_cast<int32_t>(std::distance(live_area_app_index, gui.live_area_current_open_apps_list.end()) - 1);
 
                     // Switch Live Area state
-                    gui.vita_area.information_bar = !gui.vita_area.information_bar;
-                    gui.vita_area.live_area_screen = !gui.vita_area.live_area_screen;
+                    if (!gui.vita_area.live_area_screen) {
+                        gui.vita_area.information_bar = true;
+                        gui.vita_area.live_area_screen = true;
+                    }
                 }
 
-                // Update the last app frame for live area
-                if (gui.vita_area.live_area_screen)
+                if (!current_app_state) {
+                    // Update the last app frame for live area
                     update_live_area_last_app_frame(emuenv, gui);
-
-                app::switch_state(emuenv, !emuenv.kernel.is_threads_paused());
-                gui::switch_bgm_state(!emuenv.kernel.is_threads_paused());
-
+                    gui.gate_animation.start(GateAnimationState::ReturnApp);
+                    app::switch_state(emuenv, !current_app_state);
+                    gui::switch_bgm_state(!current_app_state);
+                } else {
+                    gui.gate_animation.start(GateAnimationState::EnterApp);
+                }
             } else if (!gui::get_sys_apps_state(gui))
                 gui::close_system_app(gui, emuenv);
             break;
@@ -748,7 +754,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 gui.is_capturing_keys = false;
             }
 
-            if (ImGui::GetIO().WantTextInput || gui.is_key_locked || emuenv.drop_inputs)
+            if (ImGui::GetIO().WantTextInput || gui.is_key_locked || emuenv.drop_inputs || gui.gate_animation.state != GateAnimationState::None)
                 continue;
 #ifdef __ANDROID__
             if (event.key.scancode == SDL_SCANCODE_AC_BACK)
