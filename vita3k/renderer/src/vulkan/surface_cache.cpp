@@ -215,10 +215,10 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
             color_surface_queue.set_as_lru(&info);
         } else {
             color_surface_queue.set_as_mru(&info);
-            *info.dirty = false;
 
-            if (info.data)
+            if (info.data && *info.dirty)
                 protect_surface(mem, info);
+            *info.dirty = false;
 
             last_written_surface = &info;
 
