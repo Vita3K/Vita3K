@@ -209,9 +209,10 @@ static void download_update(const fs::path &base_path) {
 #endif
 #elif defined(__APPLE__)
 #ifdef __aarch64__
-        download_continuous_link += "macos-arm64-latest.zip";
+        // download_continuous_link += "macos-arm64-latest.dmg"; // unstable
+        download_continuous_link += "macos-latest.dmg";
 #else
-        download_continuous_link += "macos-latest.zip";
+        download_continuous_link += "macos-latest.dmg";
 #endif
 #elif defined(__ANDROID__)
         download_continuous_link += "android-latest.apk";
