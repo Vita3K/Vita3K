@@ -127,6 +127,11 @@ public:
     bool support_astc = false;
     // some smartphone GPUs do not support linear filtering on depth surfaces
     bool support_depth_linear_filtering = true;
+    bool support_x8d24 = false;
+    bool support_e5rgb9 = false;
+    bool support_a2rgb10 = false;
+    // powerVR only
+    bool support_pvrt = false;
 
     bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id, const size_t sampler_cache_size = 0);
     void set_replacement_state(bool import_textures, bool export_textures, bool export_as_png);
