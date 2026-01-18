@@ -241,6 +241,9 @@ void destroy_bgm_player() {
         at9_stream.stop_requested = true;
     }
 
+    // Wake up the playback thread if it's waiting on init_cv
+    at9_stream.init_cv.notify_one();
+
     // Wait for the playback handle thread to finish
     if (playback_handle_thread.joinable())
         playback_handle_thread.join();
