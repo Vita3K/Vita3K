@@ -110,6 +110,8 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     // only for double buffer, do we need to sync the two views?
     bool need_buffer_sync = false;
 
+    std::shared_ptr<bool> dirty = std::make_shared<bool>(false);
+
     ColorSurfaceCacheInfo() = default;
     ~ColorSurfaceCacheInfo();
 };
@@ -191,11 +193,6 @@ public:
     // when creating a mutable image, can we pass as an argument
     // the possible format used for an image view to improve performance ?
     bool support_image_format_specifier = false;
-
-    // can we protect mapped memory ?
-    // On Windows this causes no issue, but according to my test
-    // It only works with Nvidia drivers on Linux...
-    bool can_mprotect_mapped_memory = true;
 
     explicit VKSurfaceCache(VKState &state);
 

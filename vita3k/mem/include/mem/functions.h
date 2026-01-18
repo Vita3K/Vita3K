@@ -37,6 +37,16 @@ enum struct MemPerm {
     ReadWrite = ReadOnly | WriteOnly
 };
 
+constexpr MemPerm most_restrictive_perm(MemPerm a, MemPerm b) {
+    if (a == MemPerm::None || b == MemPerm::None)
+        return MemPerm::None;
+    if (a == MemPerm::ReadOnly || b == MemPerm::ReadOnly)
+        return MemPerm::ReadOnly;
+    if (a == MemPerm::WriteOnly || b == MemPerm::WriteOnly)
+        return MemPerm::WriteOnly;
+    return MemPerm::ReadWrite;
+}
+
 bool init(MemState &state, const bool use_page_table);
 Address alloc(MemState &state, uint32_t size, const char *name, Address start_addr = user_main_memory_start);
 Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned int alignment, Address start_addr = user_main_memory_start);
