@@ -284,11 +284,13 @@ void init_bgm_player(const float vol) {
     }
 
     // Configure the audio output parameters
-    cubeb_stream_params output_params;
-    output_params.format = CUBEB_SAMPLE_S16LE; // Format PCM 16-bit, little-endian
-    output_params.rate = 48000; // Sample rate 48 kHz
-    output_params.channels = 2; // Stereo
-    output_params.layout = CUBEB_LAYOUT_STEREO;
+    cubeb_stream_params output_params{
+        .format = CUBEB_SAMPLE_S16LE, // Format PCM 16-bit, little-endian
+        .rate = 48000, // Sample rate 48 kHz
+        .channels = 2, // Stereo
+        .layout = CUBEB_LAYOUT_STEREO, // Stereo layout
+        .prefs = CUBEB_STREAM_PREF_NONE // No special preferences
+    };
 
     // Get the minimum latency for the output parameters
     uint32_t latency;
