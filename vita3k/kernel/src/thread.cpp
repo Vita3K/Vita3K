@@ -182,6 +182,13 @@ void ThreadState::exit_delete(bool exit) {
     } else {
         stop(*cpu);
     }
+
+    // Wake if thread waiting on status_cond
+    if (status == ThreadStatus::wait)
+        update_status(ThreadStatus::run);
+
+    // Wake if thread waiting on sceKernelWaitSignal
+    signal.send();
 }
 
 bool ThreadState::run_loop() {
