@@ -20,6 +20,7 @@
 #include "module/load_module.h"
 
 #include <app/functions.h>
+#include <audio/state.h>
 #include <config/state.h>
 #include <ctime>
 #include <ctrl/functions.h>
@@ -704,6 +705,8 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             gui::destroy_bgm_player();
             if (!emuenv.io.app_path.empty())
                 gui::update_time_app_used(gui, emuenv, emuenv.io.app_path);
+            if (emuenv.audio.adapter)
+                emuenv.audio.switch_state(true);
             emuenv.kernel.exit_delete_all_threads();
             emuenv.gxm.display_queue.abort();
             emuenv.display.abort = true;
