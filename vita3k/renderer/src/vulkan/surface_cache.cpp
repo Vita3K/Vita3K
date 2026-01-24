@@ -67,6 +67,11 @@ static void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
     uint32_t addr_end = align_down(info.data.address() + info.total_bytes, KiB(4));
     if (addr_start >= addr_end) {
         // we still need to protect something, even if it's not completely accurate
+        if (!supports_surface_sync) {
+            // Small surface with no inner pages - skip dirty tracking to avoid
+            // false positives from unrelated writes to the same page
+            return;
+        }
         addr_start = align_down(info.data.address(), KiB(4));
         addr_end = align(info.data.address() + info.total_bytes, KiB(4));
     }
