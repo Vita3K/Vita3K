@@ -168,9 +168,9 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
 
 void KernelState::exit_delete_all_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
-    for (auto &[_, thread] : threads) {
-        thread->exit_delete();
-    }
+    for (auto &[_, thread] : threads)
+        // Skip end callbacks; running guest code can access torn-down state
+        thread->exit_delete(false);
 }
 
 void KernelState::pause_threads() {
