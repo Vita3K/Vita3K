@@ -21,12 +21,14 @@
 
 #include <SDL3/SDL_audio.h>
 
+#include <condition_variable>
+
 class SDLAudioAdapter : public AudioAdapter {
 private:
     SDL_AudioDeviceID device_id = 0;
     int device_buffer_samples = 0;
     SDL_AudioSpec dst_spec;
-    static void SDLCALL thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount);
+    static void SDLCALL audio_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount);
 
 public:
     SDLAudioAdapter(AudioState &audio_state);
@@ -43,11 +45,17 @@ public:
 typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
 
 struct SDLAudioOutPort : public AudioOutPort {
-    //   thread currently waiting for the audio to be processed
-    SceUID thread = -1;
     int channels = 2;
     AudioStreamPtr stream;
     SDLAudioAdapter &adapter;
+
+    // Ring buffer for audio data (similar to Cubeb)
+    std::mutex mutex;
+    std::condition_variable cond_var;
+    std::vector<AudioBuffer> audio_buffers;
+    int next_audio_buffer = 0;
+    int nb_buffers_ready = 0;
+
     SDLAudioOutPort(AudioStreamPtr stream, AudioAdapter &adapter)
         : stream(std::move(stream))
         , adapter(dynamic_cast<SDLAudioAdapter &>(adapter)) {}
