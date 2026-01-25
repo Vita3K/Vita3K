@@ -72,6 +72,16 @@ void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const
     adapter->audio_output(thread, out_port, buffer);
 
     uint64_t now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+    if (audio_backend == "SDL") {
+        const int samples_available = adapter->get_rest_sample(out_port);
+        const int sleep_threshold = 2 * out_port.len;
+        if (samples_available < sleep_threshold) {
+            out_port.last_output = now;
+            return;
+        }
+    }
+
     uint64_t diff = now - out_port.last_output;
     uint64_t to_wait = out_port.len_microseconds - diff;
     if (diff < out_port.len_microseconds && to_wait > 1000) {

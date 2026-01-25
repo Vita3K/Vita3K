@@ -95,7 +95,9 @@ AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sam
 void SDLAudioAdapter::audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) {
     //  Put audio to the port's stream and see how much is left to play.
     SDLAudioOutPort &port = static_cast<SDLAudioOutPort &>(out_port);
-    SDL_CHECK_VOID(SDL_PutAudioStreamData(port.stream.get(), buffer, out_port.len_bytes));
+    if (buffer) {
+        SDL_CHECK_VOID(SDL_PutAudioStreamData(port.stream.get(), buffer, out_port.len_bytes));
+    }
     const int samples_available = get_rest_sample(port);
     // If there's lots of audio left to play, stop this thread.
     // The audio callback will wake it up later when it's running out of data.
