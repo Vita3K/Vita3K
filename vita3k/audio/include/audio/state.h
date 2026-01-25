@@ -76,7 +76,8 @@ public:
     virtual void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) {}
     virtual void set_volume(AudioOutPort &out_port, float volume) {}
     virtual void switch_state(const bool pause) {}
-    virtual int get_rest_sample(AudioOutPort &out_port) { return 0; };
+    virtual int get_rest_sample(AudioOutPort &out_port) { return 0; }
+    virtual int get_min_buffer_samples() { return 0; }
     friend struct AudioState;
 };
 
