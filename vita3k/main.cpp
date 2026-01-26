@@ -277,6 +277,7 @@ int main(int argc, char *argv[]) {
 #endif
 
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR | SDL_INIT_CAMERA)) {
+            LOG_ERROR("SDL initialisation failed: {}", SDL_GetError());
             app::error_dialog("SDL initialisation failed.");
             return SDLInitFailed;
         }

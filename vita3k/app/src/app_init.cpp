@@ -353,11 +353,9 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 #endif
 
     state.manual_dpi_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
-
     state.window = WindowPtr(SDL_CreateWindow(window_title, DEFAULT_RES_WIDTH * state.manual_dpi_scale, DEFAULT_RES_HEIGHT * state.manual_dpi_scale, window_type | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY), SDL_DestroyWindow);
-
     if (!state.window) {
-        LOG_ERROR("SDL failed to create window!");
+        LOG_ERROR("SDL failed to create window: {}", SDL_GetError());
         return false;
     }
     state.manual_dpi_scale = SDL_GetDisplayContentScale(SDL_GetDisplayForWindow(state.window.get()));
