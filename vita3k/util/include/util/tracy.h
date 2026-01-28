@@ -22,7 +22,6 @@
 #include <util/log.h>
 
 #include <sstream>
-#include <type_traits>
 
 // universal to string converters for module specific types (usually enums)
 template <typename T>
@@ -30,6 +29,11 @@ std::string to_debug_str(const MemState &mem, T type) {
     std::ostringstream datass;
     datass << type;
     return std::move(datass).str();
+}
+
+template <fmt::formattable T>
+std::string to_debug_str(const MemState &mem, T type) {
+    return fmt::format("{}", type);
 }
 
 // Override pointers, we want to print the address in hex
@@ -66,12 +70,6 @@ inline std::string to_debug_str(const MemState &mem, const char *type) {
 template <>
 inline std::string to_debug_str<std::string>(const MemState &mem, std::string type) {
     return type;
-}
-
-template <typename T>
-    requires(boost::describe::has_describe_enumerators<T>::value)
-inline std::string to_debug_str(const MemState &mem, T type) {
-    return fmt::format("{}", type);
 }
 
 inline std::string to_debug_str(const MemState &mem) {
