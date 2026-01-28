@@ -128,8 +128,8 @@ struct formatter<T, Char> : formatter<string_view, Char> {
 public:
     template <typename FormatContext>
     auto format(const T e, FormatContext &ctx) const {
-        auto name = boost::describe::enum_to_string(e, "");
-        if (name && *name != '\0') {
+        auto name = boost::describe::enum_to_string(e, nullptr);
+        if (name != nullptr) {
             return detail::write(ctx.out(), name);
         } else {
             auto enum_as_uint = static_cast<std::make_unsigned_t<T>>(e);
