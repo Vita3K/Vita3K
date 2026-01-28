@@ -19,12 +19,15 @@
 
 #include <module/module.h>
 
+#include <boost/describe/enum.hpp>
+
 enum SceAudiodecCodec : uint32_t {
     SCE_AUDIODEC_TYPE_AT9 = 0x1003,
     SCE_AUDIODEC_TYPE_MP3 = 0x1004,
     SCE_AUDIODEC_TYPE_AAC = 0x1005,
     SCE_AUDIODEC_TYPE_CELP = 0x1006,
 };
+BOOST_DESCRIBE_ENUM(SceAudiodecCodec, SCE_AUDIODEC_TYPE_AT9, SCE_AUDIODEC_TYPE_MP3, SCE_AUDIODEC_TYPE_AAC, SCE_AUDIODEC_TYPE_CELP)
 
 struct SceAudiodecInitStreamParam {
     SceUInt32 size;
