@@ -38,6 +38,7 @@ public:
     void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) override;
     void set_volume(AudioOutPort &out_port, float volume) override;
     int get_rest_sample(AudioOutPort &out_port) override;
+    int get_min_buffer_samples() override { return device_buffer_samples; }
 };
 
 typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
