@@ -293,7 +293,7 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.zip")
 			message(STATUS "Downloading openssl...")
-			file(DOWNLOAD https://firedaemon.com/download-firedaemon-openssl-3-5-zip
+			file(DOWNLOAD https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.6.1.zip
 				"${CMAKE_BINARY_DIR}/external/openssl.zip" SHOW_PROGRESS)
 		endif()
 
