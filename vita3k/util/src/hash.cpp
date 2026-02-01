@@ -15,9 +15,42 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <fmt/format.h>
+
 #include <util/hash.h>
 
 #include <openssl/evp.h>
+
+std::string derive_password(const std::string_view &password) {
+    const std::string_view salt_str = "No matter where you store, everyone has access somewhere.";
+
+    // Size of SHA3-256 digest
+    constexpr int digest_len = 32; // 256 bits
+
+    unsigned char derived_password_digest[digest_len];
+
+    // PBKDF2-HMAC-SHA3-256
+    if (!PKCS5_PBKDF2_HMAC(
+            password.data(),
+            static_cast<int>(password.size()),
+            reinterpret_cast<const unsigned char *>(salt_str.data()),
+            static_cast<int>(salt_str.size()),
+            200000, // number of iterations
+            EVP_sha3_256(), // SHA3-256 algorithm
+            digest_len,
+            derived_password_digest)) {
+        throw std::runtime_error("PBKDF2 failed");
+    }
+
+    // Conversion to hex
+    std::string derived_password;
+    derived_password.reserve(digest_len * 2);
+    for (int i = 0; i < digest_len; i++) {
+        derived_password += fmt::format("{:02X}", derived_password_digest[i]);
+    }
+
+    return derived_password;
+}
 
 Sha256Hash sha256(const void *data, size_t size) {
     Sha256Hash hash;
