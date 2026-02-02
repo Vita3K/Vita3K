@@ -491,10 +491,12 @@ Pour obtenir des trophées, utilisez une application compatible avec cette fonct
 		<not_earned>Pas obtenu</not_earned>
 		<original>Original</original>
 		<sort>Trier</sort>
+		<sync_with_server>Synchroniser avec le serveur</sync_with_server>
 		<trophies>Trophées</trophies>
 		<grade>Rang</grade>
 		<progress>Progression</progress>
 		<updated>Mis à jour</updated>
+		<syncing_trophy>Synchronisation des informations de trophées avec le serveur...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

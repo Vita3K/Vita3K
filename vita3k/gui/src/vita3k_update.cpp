@@ -281,7 +281,7 @@ static void download_update(const fs::path &base_path) {
         };
 
         if (net_utils::download_file(download_continuous_link, fs_utils::path_to_utf8(vita3k_latest_path), progress_callback)) {
-            SDL_Event event;
+            SDL_Event event{};
             event.type = SDL_EVENT_QUIT;
 
 #ifdef _WIN32

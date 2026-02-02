@@ -842,12 +842,14 @@ struct LangState {
         { "not_earned", "Not Earned" },
         { "original", "Original" },
         { "sort", "Sort" },
+        { "sync_with_server", "Sync with Server" },
         { "trophies", "Trophies" },
         { "grade", "Grade" },
         { "progress", "Progress" },
         { "updated", "Updated" },
         { "advance", "Advance" },
-        { "show_hidden", "Show Hidden Trophies" }
+        { "show_hidden", "Show Hidden Trophies" },
+        { "syncing_trophy", "Syncing trophy information with the server..." }
     };
     std::map<std::string, std::string> user_management = {
         { "select_user", "Select User" },

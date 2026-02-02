@@ -957,12 +957,14 @@ You can earn trophies by using an application that supports the trophy feature.<
 		<not_earned>Not Earned</not_earned>
 		<original>Original</original>
 		<sort>Sort</sort>
+		<sync_with_server>Sync with Server</sync_with_server>
 		<trophies>Trophies</trophies>
 		<grade>Grade</grade>
 		<progress>Progress</progress>
 		<updated>Updated</updated>
 		<advance>Advance</advance>
 		<show_hidden>Show Hidden Trophies</show_hidden>
+		<syncing_trophy>Syncing trophy information with the server...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>

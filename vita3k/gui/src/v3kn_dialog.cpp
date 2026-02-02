@@ -255,6 +255,194 @@ static void handle_v3kn_status(EmuEnvState &emuenv, const net_utils::WebResponse
     }
 }
 
+struct TrophySync {
+    time_t last_updated;
+    uint32_t progress;
+};
+
+void start_trophy_sync(GuiState &gui, EmuEnvState &emuenv, std::map<std::string, uint32_t> &trophy_progress, std::atomic<float> &sync_progress, std::atomic<bool> &sync_cancel, std::vector<std::string> &sync_downloaded) {
+    std::thread([&, trophy_progress]() {
+        const fs::path trophies_path{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy" };
+        const auto url = get_v3kn_server_url(user_info.host, "v3kn/trophies_info");
+        const auto res = net_utils::get_web_response_ex(url, user_info.token);
+
+        // Handle response and update connection status
+        handle_v3kn_status(emuenv, res);
+
+        if (res.body.starts_with("ERR:")) {
+            gui.info_message.title = emuenv.common_dialog.lang.common["error"];
+            gui.info_message.level = spdlog::level::err;
+            gui.info_message.msg = get_v3kn_error_message(emuenv, res);
+            sync_cancel = true;
+            return;
+        }
+        std::map<std::string, TrophySync> server_trophy_progress;
+        pugi::xml_document doc;
+        pugi::xml_parse_result result{};
+        if (res.body.starts_with("OK:")) {
+            result = doc.load_string(res.body.substr(3).c_str());
+            if (!result) {
+                gui.info_message.title = emuenv.common_dialog.lang.common["error"];
+                gui.info_message.level = spdlog::level::err;
+                gui.info_message.msg = fmt::format("V3KN trophy sync: failed to parse server response: {}", result.description());
+                sync_cancel.store(true);
+                return;
+            }
+            pugi::xml_node trophies_node = doc.child("trophies");
+            for (pugi::xml_node trophy_node : trophies_node.children("trophy")) {
+                const std::string trophy_id = trophy_node.attribute("id").as_string();
+                const uint32_t progress = trophy_node.attribute("progress").as_uint();
+                const time_t last_updated = static_cast<time_t>(trophy_node.attribute("last_updated").as_ullong());
+                server_trophy_progress[trophy_id] = TrophySync{ last_updated, progress };
+            }
+        }
+
+        // After getting server trophy progress, compare and download/upload as needed
+        uint32_t total_trophies = static_cast<uint32_t>(trophy_progress.size() + server_trophy_progress.size());
+        uint32_t processed_trophies = 0;
+        std::map<std::string, uint32_t> download_trophy_progress{};
+        std::map<std::string, uint32_t> updated_trophy_progress{};
+        // Before download and upload, first determine what needs to be done with create 2 lists
+        if (!server_trophy_progress.empty()) {
+            for (const auto &[trophy_id, server_sync] : server_trophy_progress) {
+                const auto it = trophy_progress.find(trophy_id);
+                if (it != trophy_progress.end()) {
+                    const uint32_t local_progress = it->second;
+                    if (server_sync.progress > local_progress) {
+                        // Server has more progress, need to download
+                        download_trophy_progress[trophy_id] = server_sync.progress;
+                    } else if (local_progress > server_sync.progress) {
+                        // Local has more progress, need to upload
+                        updated_trophy_progress[trophy_id] = local_progress;
+                    }
+                } else {
+                    // Trophy not found locally, need to download
+                    download_trophy_progress[trophy_id] = server_sync.progress;
+                }
+            }
+        }
+
+        for (const auto &[trophy_id, local_progress] : trophy_progress) {
+            if (!server_trophy_progress.contains(trophy_id)) {
+                // Trophy not found on server, need to upload
+                updated_trophy_progress[trophy_id] = local_progress;
+            }
+        }
+
+        // Now combine the two lists to get total operations
+        const uint32_t total_operations = static_cast<uint32_t>(download_trophy_progress.size() + updated_trophy_progress.size());
+
+        // Create a reusable CURL session with keep-alive for multiple downloads
+        auto curl_download_session = net_utils::init_curl_download_session(user_info.token);
+
+        // Now perform downloads if needed
+        for (const auto &[trophy_id, progress_value] : download_trophy_progress) {
+            if (sync_cancel) {
+                break;
+            }
+            const auto download_url = get_v3kn_server_url(user_info.host, fmt::format("v3kn/download_file?type=trophy&id={}", trophy_id));
+            const auto trophy_file = trophies_path / "data" / trophy_id / "TROPUSR.DAT";
+            const auto trophy_temp_file = trophy_file.parent_path() / "TROPUSR_v3kn_tmp.DAT";
+            fs::create_directories(trophy_file.parent_path());
+            const auto trophy_file_str = fs_utils::path_to_utf8(trophy_temp_file);
+            const auto download_res = net_utils::download_file_ex(download_url, trophy_file_str, nullptr, user_info.token, &curl_download_session);
+            if (download_res.body.starts_with("ERR:")) {
+                net_utils::cleanup_curl_session(curl_download_session);
+                gui.info_message.title = emuenv.common_dialog.lang.common["error"];
+                gui.info_message.level = spdlog::level::err;
+                gui.info_message.msg = get_v3kn_error_message(emuenv, download_res);
+                sync_cancel = true;
+                LOG_ERROR("Download failed for trophy {}, res: {}", trophy_id, download_res.body);
+                return;
+            }
+
+            // Erase existing trophy file if any before moving temp file
+            if (fs::exists(trophy_file))
+                fs::remove(trophy_file);
+
+            // Move the temporary file to the final location after successful download
+            fs::rename(trophy_temp_file, trophy_file);
+
+            // Update the file's last modified time to match server's last_updated
+            if (!server_trophy_progress.contains(trophy_id)) {
+                LOG_WARN("V3KN trophy sync: downloaded trophy {} not found in server progress map", trophy_id);
+                continue;
+            }
+            const auto last_updated = server_trophy_progress[trophy_id].last_updated;
+            fs::last_write_time(trophy_file, last_updated);
+
+            // Update local trophy progress map
+            sync_downloaded.push_back(trophy_id);
+
+            // Update local trophy progress
+            processed_trophies++;
+            sync_progress = static_cast<float>(processed_trophies) / static_cast<float>(total_operations);
+        }
+
+        net_utils::cleanup_curl_session(curl_download_session);
+
+        // If result of xml is null, create first trophies child
+        if (!result)
+            doc.append_child("trophies");
+
+        // Create a reusable CURL session with keep-alive for multiple uploads
+        auto curl_session = net_utils::init_curl_upload_session(user_info.token);
+
+        // Now perform uploads if needed
+        for (const auto &[trophy_id, progress_value] : updated_trophy_progress) {
+            if (sync_cancel) {
+                break;
+            }
+
+            const auto trophy_file_path = trophies_path / "data" / trophy_id / "TROPUSR.DAT";
+            const auto trophy_file_path_str = fs_utils::path_to_utf8(trophy_file_path);
+
+            // Update the XML document progressively with each trophy
+            std::stringstream trophies_info_xml;
+            pugi::xml_node trophies_node = doc.child("trophies");
+            pugi::xml_node trophy_node = trophies_node.find_child_by_attribute("trophy", "id", trophy_id.c_str());
+            if (!trophy_node) {
+                trophy_node = trophies_node.append_child("trophy");
+                trophy_node.append_attribute("id").set_value(trophy_id.c_str());
+            }
+
+            // Update last_updated with file's last modified time
+            pugi::xml_attribute last_updated_attr = trophy_node.attribute("last_updated");
+            if (!last_updated_attr)
+                last_updated_attr = trophy_node.append_attribute("last_updated");
+            const auto last_updated = fs::last_write_time(trophy_file_path);
+            last_updated_attr.set_value(static_cast<unsigned long long>(last_updated));
+
+            // Update progress attribute
+            pugi::xml_attribute progress_attr = trophy_node.attribute("progress");
+            if (!progress_attr)
+                progress_attr = trophy_node.append_attribute("progress");
+            progress_attr.set_value(progress_value);
+
+            // Save the progressively updated XML to stringstream
+            doc.save(trophies_info_xml);
+
+            // Upload the trophy file with the progressively updated XML using the reusable session
+            const auto upload_url = get_v3kn_server_url(user_info.host, fmt::format("v3kn/upload_file?type=trophy&id={}", trophy_id));
+            const auto upload_res = net_utils::upload_file(upload_url, trophy_file_path_str, user_info.token, trophies_info_xml.str(), nullptr, &curl_session);
+            if (!upload_res.body.starts_with("OK:")) {
+                net_utils::cleanup_curl_session(curl_session);
+                gui.info_message.function = spdlog::level::err;
+                gui.info_message.title = emuenv.common_dialog.lang.common["error"];
+                gui.info_message.msg = get_v3kn_error_message(emuenv, upload_res);
+                sync_cancel.store(true);
+                LOG_ERROR("Upload failed for {}, res: {}", trophy_file_path_str, upload_res.body);
+                return;
+            }
+            processed_trophies++;
+            sync_progress = static_cast<float>(processed_trophies) / static_cast<float>(total_operations);
+        }
+
+        net_utils::cleanup_curl_session(curl_session);
+        sync_progress = 1.0f;
+    }).detach();
+}
+
 static bool create_zip_from_directory(const fs::path &directory, const fs::path &zip_path) {
     mz_zip_archive zip;
     memset(&zip, 0, sizeof(zip));
