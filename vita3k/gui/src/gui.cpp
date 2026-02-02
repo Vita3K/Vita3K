@@ -668,6 +668,42 @@ bool set_scroll_animation(float &scroll, float target_scroll, const std::string 
     return t < 1.f;
 }
 
+static void init_vita_icons(GuiState &gui, EmuEnvState &emuenv) {
+    static const std::array<std::string, 7> icon_names = {
+        "trophy_all",
+        "trophy_bronze",
+        "trophy_gold",
+        "trophy_hidden",
+        "trophy_locked",
+        "trophy_platinum",
+        "trophy_silver",
+    };
+
+    const fs::path vita_icons_path{ emuenv.static_assets_path / "data/image/vita" };
+    for (const auto &name : icon_names) {
+        const fs::path icon_path = vita_icons_path / (name + ".png");
+        if (gui.vita_icons.contains(name))
+            continue;
+
+        vfs::FileBuffer buffer;
+        if (!fs_utils::read_data(icon_path, buffer)) {
+            LOG_WARN("Vita icon not found at {}.", icon_path.string());
+            continue;
+        }
+
+        int32_t width = 0;
+        int32_t height = 0;
+        stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+        if (!data) {
+            LOG_ERROR("Invalid vita icon: {}.", icon_path.string());
+            continue;
+        }
+
+        gui.vita_icons[name] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
+        stbi_image_free(data);
+    }
+}
+
 void init_home(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.app_selector.user_apps.empty() && (emuenv.cfg.load_app_list || !emuenv.cfg.run_app_path)) {
         if (!get_user_apps(gui, emuenv))
@@ -675,6 +711,7 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     init_app_background(gui, emuenv, "NPXS10015");
+    init_vita_icons(gui, emuenv);
 
     regmgr::init_regmgr(emuenv.regmgr, emuenv.pref_path);
 

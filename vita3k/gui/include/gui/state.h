@@ -307,6 +307,8 @@ struct GuiState {
     ImGui_Texture v3kn_avatar;
     ImGui_Texture v3kn_panel;
 
+    std::map<std::string, ImGui_Texture> vita_icons;
+
     MemoryEditor memory_editor;
     MemoryEditor gxp_shader_editor;
     size_t memory_editor_start = 0;

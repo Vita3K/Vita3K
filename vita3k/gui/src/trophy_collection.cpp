@@ -28,22 +28,23 @@
 #include <io/device.h>
 #include <io/functions.h>
 
+#include <v3kn/storage.h>
+
 #include <pugixml.hpp>
 #include <stb_image.h>
 
 namespace gui {
+
 using namespace np::trophy;
 
 struct NPComId {
     std::map<std::string, std::string> name;
     std::map<std::string, std::string> detail;
     std::vector<std::string> group_id;
-    std::map<std::string, uint32_t> trophy_count_by_group;
     std::map<std::string, std::vector<std::string>> trophy_id_by_group;
     tm updated;
-    std::map<std::string, uint32_t> unlocked_count;
-    std::map<std::string, uint32_t> progress;
-    std::map<std::string, std::map<std::string, std::string>> unlocked_type_count;
+
+    TrophyProgressInfo trophy_progress_info;
 
     Context context;
 };
@@ -58,66 +59,56 @@ struct NPComIdSort {
 static std::map<std::string, NPComId> np_com_id_info;
 static std::vector<NPComIdSort> np_com_id_list;
 
-static constexpr uint32_t TROPHY_USR_MAGIC = 0x12D5819A;
-static bool load_trophy_progress(IOState &io, const SceUID &progress_input_file, const std::string &np_com_id) {
-    auto read_trophy_progress_file = [&](void *data, uint32_t amount) -> int {
-        return read_file(data, io, progress_input_file, amount, "load_trophy_progress_file");
-    };
-
-    // Check magic
-    uint32_t magic;
-    if (read_trophy_progress_file(&magic, 4) != 4 || magic != TROPHY_USR_MAGIC) {
-        LOG_ERROR("Failed to read stuff magic");
+static bool load_trophy_conf_data(GuiState &gui, EmuEnvState &emuenv, const std::string &np_com_id, const fs::path &trophy_conf_np_com_id_path) {
+    if (!fs::exists(trophy_conf_np_com_id_path) || fs::is_empty(trophy_conf_np_com_id_path))
         return false;
+
+    const std::string sfm_name = fs::exists(trophy_conf_np_com_id_path / fmt::format("TROP_{:0>2d}.SFM", emuenv.cfg.sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", emuenv.cfg.sys_lang) : "TROP.SFM";
+
+    std::map<std::string, std::string> np_com_list_name_icons;
+    np_com_list_name_icons["000"] = fs::exists(trophy_conf_np_com_id_path / fmt::format("ICON0_{:0>2d}.PNG", emuenv.cfg.sys_lang)) ? fmt::format("ICON0_{:0>2d}.PNG", emuenv.cfg.sys_lang) : "ICON0.PNG";
+
+    pugi::xml_document doc;
+    if (doc.load_file((trophy_conf_np_com_id_path / sfm_name).c_str())) {
+        const auto trophy_conf = doc.child("trophyconf");
+        if (np_com_id_info[np_com_id].context.trophy_count_by_group[0])
+            np_com_id_info[np_com_id].group_id.emplace_back("000");
+        np_com_id_info[np_com_id].name["000"] = trophy_conf.child("title-name").text().as_string();
+        np_com_id_info[np_com_id].detail["000"] = trophy_conf.child("title-detail").text().as_string();
+        for (const auto &group : trophy_conf.children("group")) {
+            const std::string group_id = group.attribute("id").as_string();
+            np_com_id_info[np_com_id].group_id.push_back(group_id);
+            np_com_id_info[np_com_id].name[group_id] = group.child("name").text().as_string();
+            np_com_id_info[np_com_id].detail[group_id] = group.child("detail").text().as_string();
+            np_com_list_name_icons[group_id] = fs::exists(trophy_conf_np_com_id_path / fmt::format("GR{}_{:0>2d}.PNG", group_id, emuenv.cfg.sys_lang)) ? fmt::format("GR{}_{:0>2d}.PNG", group_id, emuenv.cfg.sys_lang) : fmt::format("GR{}.PNG", group_id);
+        }
+        for (const auto &trophy : trophy_conf.children("trophy")) {
+            const std::string gid = trophy.attribute("gid").empty() ? "000" : trophy.attribute("gid").as_string();
+            const std::string trophy_id = trophy.attribute("id").as_string();
+            np_com_id_info[np_com_id].trophy_id_by_group[gid].push_back(trophy_id);
+        }
     }
 
-    // Read trophy progress
-    std::fill_n(np_com_id_info[np_com_id].context.trophy_progress, (MAX_TROPHIES >> 5), 0);
-    if (read_trophy_progress_file(np_com_id_info[np_com_id].context.trophy_progress, sizeof(np_com_id_info[np_com_id].context.trophy_progress)) != sizeof(np_com_id_info[np_com_id].context.trophy_progress)) {
-        LOG_ERROR("Failed to read trophy progress");
-        return false;
-    }
+    for (const auto &group : np_com_list_name_icons) {
+        int32_t width = 0;
+        int32_t height = 0;
+        vfs::FileBuffer buffer;
 
-    // Read trophy availability
-    if (read_trophy_progress_file(np_com_id_info[np_com_id].context.trophy_availability, sizeof(np_com_id_info[np_com_id].context.trophy_availability)) != sizeof(np_com_id_info[np_com_id].context.trophy_availability)) {
-        LOG_ERROR("Failed to read trophy availability");
-        return false;
-    }
+        vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, "user/" + emuenv.io.user_id + "/trophy/conf/" + np_com_id + "/" + group.second);
 
-    // Read group count
-    if (read_trophy_progress_file(&np_com_id_info[np_com_id].context.group_count, 4) != 4) {
-        LOG_ERROR("Failed to read count group id");
-        return false;
-    }
+        if (buffer.empty()) {
+            LOG_WARN("Icon: '{}', Not found for NPComId: {}.", group.second, np_com_id);
+            continue;
+        }
 
-    // Read trophy count
-    if (read_trophy_progress_file(&np_com_id_info[np_com_id].context.trophy_count, 4) != 4) {
-        LOG_ERROR("Failed to read trophy count");
-        return false;
-    }
+        stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+        if (!data) {
+            LOG_ERROR("Invalid icon: '{}' for NPComId: {}.", group.second, np_com_id);
+            continue;
+        }
 
-    // Read platinum trophy ID
-    if (read_trophy_progress_file(&np_com_id_info[np_com_id].context.platinum_trophy_id, 4) != 4) {
-        LOG_ERROR("Failed to read platinum trophy ID");
-        return false;
-    }
-
-    // Read trophy count by group
-    if (read_trophy_progress_file(np_com_id_info[np_com_id].context.trophy_count_by_group.data(), (uint32_t)np_com_id_info[np_com_id].context.trophy_count_by_group.size() * 4) != (int)np_com_id_info[np_com_id].context.trophy_count_by_group.size() * 4) {
-        LOG_ERROR("Failed to read trophy count by group");
-        return false;
-    }
-
-    // Read trophy timestamps
-    if (read_trophy_progress_file(np_com_id_info[np_com_id].context.unlock_timestamps.data(), (uint32_t)np_com_id_info[np_com_id].context.unlock_timestamps.size() * 8) != (int)np_com_id_info[np_com_id].context.unlock_timestamps.size() * 8) {
-        LOG_ERROR("Failed to read unlock_timestamp");
-        return false;
-    }
-
-    // Read trophy type
-    if (read_trophy_progress_file(np_com_id_info[np_com_id].context.trophy_kinds.data(), (uint32_t)np_com_id_info[np_com_id].context.trophy_kinds.size() * 4) != (int)np_com_id_info[np_com_id].context.trophy_kinds.size() * 4) {
-        LOG_ERROR("Failed to read trophy type");
-        return false;
+        gui.trophy_np_com_id_list_icons[np_com_id][group.first] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
+        stbi_image_free(data);
     }
 
     return true;
@@ -128,139 +119,44 @@ enum class NpComIdSortType {
     NAME,
     PROGRESS
 };
+
 static NpComIdSortType np_com_id_sort;
 static bool show_hidden_trophy = false;
 
 void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     const auto TROPHY_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy" };
+    const auto TROPHY_DATA_PATH = TROPHY_PATH / "data";
     const auto TROPHY_CONF_PATH = TROPHY_PATH / "conf";
 
     gui.trophy_np_com_id_list_icons.clear();
     np_com_id_info.clear();
     np_com_id_list.clear();
 
-    if (fs::exists(TROPHY_CONF_PATH) && !fs::is_empty(TROPHY_CONF_PATH)) {
-        for (const auto &trophy : fs::directory_iterator(TROPHY_CONF_PATH)) {
+    if (fs::exists(TROPHY_DATA_PATH) && !fs::is_empty(TROPHY_DATA_PATH)) {
+        for (const auto &trophy : fs::directory_iterator(TROPHY_DATA_PATH)) {
             if (!trophy.path().empty() && fs::is_directory(trophy.path())) {
                 const std::string np_com_id = trophy.path().stem().generic_string();
 
+                const auto trophy_data_np_com_id_path{ TROPHY_DATA_PATH / np_com_id };
                 const auto trophy_conf_np_com_id_path{ TROPHY_CONF_PATH / np_com_id };
-                const auto trophy_data_np_com_id_path{ fs::path(TROPHY_PATH) / "data" / np_com_id };
 
-                if (!fs::exists(trophy_data_np_com_id_path / "TROPUSR.DAT")) {
-                    LOG_ERROR("Trophy Data progress not found for Np Com ID: {}, clean trophy file.", np_com_id);
+                if (!load_and_compute_trophy_stats(emuenv, np_com_id_info[np_com_id].context, np_com_id, np_com_id_info[np_com_id].trophy_progress_info)) {
+                    LOG_ERROR("Failed to load and compute trophy stats for NPComId: {}, removing trophy data and config.", np_com_id);
+                    const auto trophy_conf_np_com_id_path_local{ TROPHY_CONF_PATH / np_com_id };
                     fs::remove_all(trophy_data_np_com_id_path);
-                    fs::remove_all(trophy_conf_np_com_id_path);
+                    fs::remove_all(trophy_conf_np_com_id_path_local);
                     continue;
                 }
 
-                // Read Updated time
                 const auto updated = fs::last_write_time(trophy_data_np_com_id_path / "TROPUSR.DAT");
                 SAFE_LOCALTIME(&updated, &np_com_id_info[np_com_id].updated);
 
-                // Open trophy progress file
-                const auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + emuenv.io.user_id + "/trophy/data/" + np_com_id + "/TROPUSR.DAT");
-                const auto progress_input_file = open_file(emuenv.io, trophy_progress_save_file.c_str(), SCE_O_RDONLY, emuenv.pref_path, "load_trophy_progress_file");
+                const auto progress = np_com_id_info[np_com_id].trophy_progress_info.progress["global"];
 
-                if (!load_trophy_progress(emuenv.io, progress_input_file, np_com_id)) {
-                    LOG_ERROR("Failed to load trophy progress for Np Com ID: {}, cleaning the trophy file.", np_com_id);
-                    close_file(emuenv.io, progress_input_file, "load_trophy_progress_file");
-                    fs::remove_all(trophy_data_np_com_id_path);
-                    fs::remove_all(trophy_conf_np_com_id_path);
+                if (!load_trophy_conf_data(gui, emuenv, np_com_id, trophy_conf_np_com_id_path))
                     continue;
-                }
-
-                close_file(emuenv.io, progress_input_file, "load_trophy_progress_file");
-
-                const std::string sfm_name = fs::exists(trophy_conf_np_com_id_path / fmt::format("TROP_{:0>2d}.SFM", emuenv.cfg.sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", emuenv.cfg.sys_lang) : "TROP.SFM";
-
-                std::map<std::string, std::string> np_com_list_name_icons;
-                np_com_list_name_icons["000"] = fs::exists(trophy_conf_np_com_id_path / fmt::format("ICON0_{:0>2d}.PNG", emuenv.cfg.sys_lang)) ? fmt::format("ICON0_{:0>2d}.PNG", emuenv.cfg.sys_lang) : "ICON0.PNG";
-
-                pugi::xml_document doc;
-                if (doc.load_file((trophy_conf_np_com_id_path / sfm_name).c_str())) {
-                    const auto trophy_conf = doc.child("trophyconf");
-                    if (np_com_id_info[np_com_id].context.trophy_count_by_group[0])
-                        np_com_id_info[np_com_id].group_id.emplace_back("000");
-                    np_com_id_info[np_com_id].name["000"] = trophy_conf.child("title-name").text().as_string();
-                    np_com_id_info[np_com_id].detail["000"] = trophy_conf.child("title-detail").text().as_string();
-                    for (const auto &conf : trophy_conf) {
-                        if (conf.name() == std::string("group")) {
-                            const std::string group_id = conf.attribute("id").as_string();
-                            np_com_id_info[np_com_id].group_id.push_back(group_id);
-                            np_com_id_info[np_com_id].name[group_id] = conf.child("name").text().as_string();
-                            np_com_id_info[np_com_id].detail[group_id] = conf.child("detail").text().as_string();
-                            np_com_list_name_icons[group_id] = fs::exists(trophy_conf_np_com_id_path / fmt::format("GR{}_{:0>2d}.PNG", group_id, emuenv.cfg.sys_lang)) ? fmt::format("GR{}_{:0>2d}.PNG", group_id, emuenv.cfg.sys_lang) : fmt::format("GR{}.PNG", group_id);
-                        }
-                        if (conf.name() == std::string("trophy")) {
-                            const std::string gid = conf.attribute("gid").empty() ? "000" : conf.attribute("gid").as_string();
-                            const std::string trophy_id = conf.attribute("id").as_string();
-                            np_com_id_info[np_com_id].trophy_id_by_group[gid].push_back(trophy_id);
-                        }
-                    }
-                }
-
-                np_com_id_info[np_com_id].trophy_count_by_group["global"] = np_com_id_info[np_com_id].context.trophy_count;
-                np_com_id_info[np_com_id].unlocked_count["global"] = np_com_id_info[np_com_id].context.total_trophy_unlocked();
-
-                std::map<std::string, std::map<SceNpTrophyGrade, uint32_t>> unlocked_type_count;
-                auto trophy_index = 0;
-                for (uint32_t gid = 0; gid < np_com_id_info[np_com_id].context.group_count + 1; gid++) {
-                    if (np_com_id_info[np_com_id].context.trophy_count_by_group[gid]) {
-                        const std::string group_id = fmt::format("{:0>3d}", gid);
-                        np_com_id_info[np_com_id].trophy_count_by_group[group_id] = np_com_id_info[np_com_id].context.trophy_count_by_group[gid];
-                        if (np_com_id_info[np_com_id].unlocked_count["global"]) {
-                            for (uint32_t i = 0; i < np_com_id_info[np_com_id].trophy_count_by_group[group_id]; i++, trophy_index++) {
-                                if (np_com_id_info[np_com_id].context.is_trophy_unlocked(trophy_index)) {
-                                    ++unlocked_type_count[group_id][np_com_id_info[np_com_id].context.trophy_kinds[trophy_index]];
-                                    ++unlocked_type_count["global"][np_com_id_info[np_com_id].context.trophy_kinds[trophy_index]];
-                                    ++np_com_id_info[np_com_id].unlocked_count[group_id];
-                                }
-                            }
-                        }
-                        const auto plat_count = unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM];
-                        const auto gold_count = unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD];
-                        const auto silver_count = unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER];
-                        const auto bronze_count = unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE];
-                        np_com_id_info[np_com_id].unlocked_type_count[group_id]["detail"] = fmt::format("P:{}  G:{}  S:{}  B:{}", plat_count, gold_count, silver_count, bronze_count);
-                        np_com_id_info[np_com_id].unlocked_type_count[group_id]["general"] = fmt::format("{}   {}   {}   {}", plat_count, gold_count, silver_count, bronze_count);
-                        np_com_id_info[np_com_id].progress[group_id] = (np_com_id_info[np_com_id].unlocked_count[group_id] * 100) / np_com_id_info[np_com_id].trophy_count_by_group[group_id];
-                    }
-                }
-
-                const auto plat_count = unlocked_type_count["global"][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM];
-                const auto gold_count = unlocked_type_count["global"][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD];
-                const auto silver_count = unlocked_type_count["global"][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER];
-                const auto bronze_count = unlocked_type_count["global"][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE];
-                np_com_id_info[np_com_id].unlocked_type_count["global"]["detail"] = fmt::format("P:{}  G:{}  S:{}  B:{}", plat_count, gold_count, silver_count, bronze_count);
-                np_com_id_info[np_com_id].unlocked_type_count["global"]["general"] = fmt::format("{}   {}   {}   {}", plat_count, gold_count, silver_count, bronze_count);
-
-                const auto progress = np_com_id_info[np_com_id].unlocked_count["global"] * 100 / np_com_id_info[np_com_id].context.trophy_count;
-                np_com_id_info[np_com_id].progress["global"] = progress;
 
                 np_com_id_list.push_back({ np_com_id, np_com_id_info[np_com_id].name["000"], progress, updated });
-
-                for (const auto &group : np_com_list_name_icons) {
-                    int32_t width = 0;
-                    int32_t height = 0;
-                    vfs::FileBuffer buffer;
-
-                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, "user/" + emuenv.io.user_id + "/trophy/conf/" + np_com_id + "/" + group.second);
-
-                    if (buffer.empty()) {
-                        LOG_WARN("Icon: '{}', Not found for NPComId: {}.", group.second, np_com_id);
-                        continue;
-                    }
-
-                    stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-                    if (!data) {
-                        LOG_ERROR("Invalid icon: '{}' for NPComId: {}.", group.second, np_com_id);
-                        continue;
-                    }
-
-                    gui.trophy_np_com_id_list_icons[np_com_id][group.first] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
-                    stbi_image_free(data);
-                }
             }
         }
     }
@@ -315,16 +211,14 @@ static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::strin
 
     pugi::xml_document doc;
     if (doc.load_file((trophy_conf_id_path / sfm_name).c_str())) {
-        for (const auto &conf : doc.child("trophyconf")) {
-            if (conf.name() == std::string("trophy")) {
-                const std::string gid = conf.attribute("gid").empty() ? "000" : conf.attribute("gid").as_string();
-                const std::string trophy_id = conf.attribute("id").as_string();
-                if (group_id == gid) {
-                    trophy_info[trophy_id].name = conf.child("name").text().as_string();
-                    trophy_info[trophy_id].detail = conf.child("detail").text().as_string();
-                    trophy_info[trophy_id].type["general"] = conf.attribute("ttype").as_string();
-                    trophy_info[trophy_id].hidden = conf.attribute("hidden").as_string();
-                }
+        for (const auto &conf : doc.child("trophyconf").children("trophy")) {
+            const std::string gid = conf.attribute("gid").empty() ? "000" : conf.attribute("gid").as_string();
+            const std::string trophy_id = conf.attribute("id").as_string();
+            if (group_id == gid) {
+                trophy_info[trophy_id].name = conf.child("name").text().as_string();
+                trophy_info[trophy_id].detail = conf.child("detail").text().as_string();
+                trophy_info[trophy_id].type["general"] = conf.attribute("ttype").as_string();
+                trophy_info[trophy_id].hidden = conf.attribute("hidden").as_string();
             }
         }
     }
@@ -411,6 +305,80 @@ void open_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, const std::string 
     get_trophy_list(gui, emuenv, np_com_id_selected, group_id_selected);
 }
 
+enum class TrophyDialogState {
+    NONE,
+    SYNC_TROPHY,
+    DELETE_ALL,
+};
+
+static TrophyDialogState trophy_dialog_state = TrophyDialogState::NONE;
+static std::atomic<float> sync_progress{ 0.f };
+static std::atomic<bool> sync_cancel{ false };
+static std::vector<std::string> sync_downloaded;
+static std::chrono::steady_clock::time_point sync_complete_time;
+static void sync_trophy(GuiState &gui, EmuEnvState &emuenv) {
+    sync_cancel = false;
+    sync_progress = 0.f;
+
+    std::map<std::string, TrophySync> trophy_progress;
+    for (auto &[np_com_id, info] : np_com_id_info) {
+        auto &trophy_progress_info = info.trophy_progress_info;
+        const auto global_progress = trophy_progress_info.progress["global"];
+        if (global_progress > 0) {
+            const auto plat_count = trophy_progress_info.unlocked_type_count["global"][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM];
+            const auto gold_count = trophy_progress_info.unlocked_type_count["global"][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD];
+            const auto silver_count = trophy_progress_info.unlocked_type_count["global"][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER];
+            const auto bronze_count = trophy_progress_info.unlocked_type_count["global"][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE];
+            trophy_progress[np_com_id] = {
+                .last_updated = trophy_progress_info.last_updated,
+                .unlocked_ids = trophy_progress_info.unlocked_ids["global"],
+                .platinum = plat_count,
+                .gold = gold_count,
+                .silver = silver_count,
+                .bronze = bronze_count,
+                .progress = global_progress,
+            };
+        }
+    }
+
+    v3kn::start_trophy_sync(gui, emuenv, trophy_progress, sync_progress, sync_cancel, sync_downloaded);
+}
+
+static void refresh_synced_trophies(GuiState &gui, EmuEnvState &emuenv) {
+    std::thread([&]() {
+        for (const auto &np_com_id : sync_downloaded) {
+            if (!load_and_compute_trophy_stats(emuenv, np_com_id_info[np_com_id].context, np_com_id, np_com_id_info[np_com_id].trophy_progress_info)) {
+                LOG_WARN("Failed to load trophy stats for synced trophy: {}", np_com_id);
+                continue;
+            }
+
+            const auto TROPHY_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy" };
+            const auto trophy_data_np_com_id_path{ TROPHY_PATH / "data" / np_com_id };
+
+            auto &trophy_progress_info = np_com_id_info[np_com_id].trophy_progress_info;
+            const auto updated = trophy_progress_info.last_updated;
+            const auto progress = trophy_progress_info.progress["global"];
+
+            const auto it = std::find_if(np_com_id_list.begin(), np_com_id_list.end(), [&np_com_id](const auto &np_com) {
+                return np_com.id == np_com_id;
+            });
+            if (it != np_com_id_list.end()) {
+                it->progress = progress;
+                it->updated = updated;
+            } else {
+                const auto TROPHY_CONF_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy" / "conf" / np_com_id };
+                if (load_trophy_conf_data(gui, emuenv, np_com_id, TROPHY_CONF_PATH))
+                    np_com_id_list.push_back({ np_com_id, np_com_id_info[np_com_id].name["000"], progress, updated });
+            }
+        }
+
+        std::sort(np_com_id_list.begin(), np_com_id_list.end(), [](const auto &ta, const auto &tb) {
+            return ta.updated > tb.updated;
+        });
+        sync_downloaded.clear();
+    }).detach();
+}
+
 void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
     const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
@@ -427,13 +395,13 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 WINDOW_POS(VIEWPORT_POS.x, VIEWPORT_POS.y + INFORMATION_BAR_HEIGHT);
     const ImVec2 WINDOW_SIZE(VIEWPORT_SIZE.x, VIEWPORT_SIZE.y - INFORMATION_BAR_HEIGHT);
 
-    const auto SIZE_LIST = ImVec2((!np_com_id_selected.empty() && group_id_selected.empty() ? 810.f : 790.f) * SCALE.x, 442.f * SCALE.y);
+    const auto SIZE_LIST = ImVec2((!np_com_id_selected.empty() && group_id_selected.empty() ? 810.f : 800.f) * SCALE.x, 416.f * SCALE.y);
     const auto SIZE_INFO = ImVec2(820.f * SCALE.x, 484.f * SCALE.y);
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
     const auto TROPHY_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "trophy" };
 
-    const auto is_background = gui.apps_background.contains("NPXS10008");
+    const auto BG_PATH = "NPXS10008";
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
@@ -446,8 +414,8 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto draw_list = ImGui::GetBackgroundDrawList();
     const ImVec2 BG_POS_MAX(VIEWPORT_POS.x + VIEWPORT_SIZE.x, VIEWPORT_POS.y + VIEWPORT_SIZE.y);
-    if (is_background)
-        draw_list->AddImage(gui.apps_background["NPXS10008"], VIEWPORT_POS, BG_POS_MAX);
+    if (gui.apps_background.contains(BG_PATH))
+        draw_list->AddImage(gui.apps_background[BG_PATH], VIEWPORT_POS, BG_POS_MAX);
     else
         draw_list->AddRectFilled(VIEWPORT_POS, BG_POS_MAX, IM_COL32(31.f, 12.f, 0.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
@@ -458,18 +426,24 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     if (group_id_selected.empty()) {
         ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
         if (!np_com_id_list.empty() && np_com_id_selected.empty()) {
-            ImGui::SetCursorPos(ImVec2(VIEWPORT_POS.x + (10.f * SCALE.x), VIEWPORT_POS.y + (27.f * SCALE.y) - (ImGui::CalcTextSize(common["search"].c_str()).y / 2.f)));
+            ImGui::SetCursorPos(ImVec2(10.f * SCALE.x, (27.f * SCALE.y) - (ImGui::CalcTextSize(common["search"].c_str()).y / 2.f)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", common["search"].c_str());
             ImGui::SameLine();
             search_bar.Draw("##search_bar", 180 * SCALE.x);
         }
-        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (285.f * SCALE.x), (15.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, "P   G   S   B");
-        ImGui::SetCursorPosY(54.f * SCALE.y);
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (292.f * SCALE.x), (24.f * SCALE.y)));
+        if (gui.vita_icons.contains("trophy_all")) {
+            const ImVec2 original_icon_size(364.f, 132.f);
+            const auto ratio = original_icon_size.x / original_icon_size.y;
+            const auto icon_height = (66.f * SCALE.y);
+            ImGui::Image(gui.vita_icons["trophy_all"], ImVec2(icon_height * ratio, icon_height));
+        } else
+            ImGui::TextColored(GUI_COLOR_TEXT, "P   G   S   B");
+        ImGui::SetCursorPosY(96.f * SCALE.y);
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.f);
     }
-    ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (90.f * SCALE.x), WINDOW_POS.y + (!trophy_id_selected.empty() || detail_np_com_id ? 16.0f : 58.f) * SCALE.y), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (90.f * SCALE.x), WINDOW_POS.y + (!trophy_id_selected.empty() || detail_np_com_id ? 16.0f : 96.f) * SCALE.y), ImGuiCond_Always);
     ImGui::BeginChild("##trophy_collection_child", !trophy_id_selected.empty() || detail_np_com_id ? SIZE_INFO : SIZE_LIST, ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
     // Trophy Collection
@@ -483,6 +457,42 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetScrollY(scroll_pos[scroll_type]);
             set_scroll_pos = false;
         }
+
+        const auto get_unlocked_group_count_str = [&](const auto &np_com_id, const auto &group_id, const std::string &level) {
+            auto &trophy_progress_info = np_com_id_info[np_com_id].trophy_progress_info;
+            const auto plat_count = trophy_progress_info.unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM];
+            const auto gold_count = trophy_progress_info.unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD];
+            const auto silver_count = trophy_progress_info.unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER];
+            const auto bronze_count = trophy_progress_info.unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE];
+            if (level == "detail")
+                return fmt::format("P:{}  G:{}  S:{}  B:{}", plat_count, gold_count, silver_count, bronze_count);
+
+            return fmt::format("{}   {}   {}   {}", plat_count, gold_count, silver_count, bronze_count);
+        };
+        const auto draw_grade_count = [&](const char *icon_name, const uint32_t count, const float spacing_after) {
+            const auto row_pos = ImGui::GetCursorPos();
+            const ImVec2 icon_size(32.f * SCALE.x, 32.f * SCALE.y);
+            const auto text_pos_y = row_pos.y + (2.f * SCALE.y);
+
+            if (gui.vita_icons.contains(icon_name)) {
+                ImGui::SetCursorPos(ImVec2(row_pos.x, row_pos.y));
+                ImGui::Image(gui.vita_icons[icon_name], icon_size);
+                ImGui::SameLine(0.f, 0.f * SCALE.x);
+                ImGui::SetCursorPosY(text_pos_y);
+            }
+
+            ImGui::TextColored(GUI_COLOR_TEXT, "%u", count);
+            if (spacing_after > 0.f)
+                ImGui::SameLine(0.f, spacing_after);
+        };
+        const auto draw_unlocked_group_count_icons = [&](const auto &np_com_id, const auto &group_id) {
+            auto &trophy_progress_info = np_com_id_info[np_com_id].trophy_progress_info;
+
+            draw_grade_count("trophy_platinum", trophy_progress_info.unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM], 10.f * SCALE.x);
+            draw_grade_count("trophy_gold", trophy_progress_info.unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD], 10.f * SCALE.x);
+            draw_grade_count("trophy_silver", trophy_progress_info.unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER], 10.f * SCALE.x);
+            draw_grade_count("trophy_bronze", trophy_progress_info.unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE], 0.f);
+        };
 
         if (np_com_id_selected.empty()) {
             // Ask Delete Trophy Popup
@@ -538,7 +548,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
             // Select Np Com ID
             ImGui::Columns(3, nullptr, false);
             ImGui::SetColumnWidth(0, SIZE_ICON_LIST.x + (10.f * SCALE.x));
-            ImGui::SetColumnWidth(1, 405.f * SCALE.x);
+            ImGui::SetColumnWidth(1, 350.f * SCALE.x);
             for (const auto &np_com : np_com_id_list) {
                 ImGui::PushID(np_com.id.c_str());
                 if (!search_bar.PassFilter(np_com.name.c_str()))
@@ -569,22 +579,58 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
 
                 ImGui::SetCursorPosY(Title_POS + (50.f * SCALE.y));
                 ImGui::SetWindowFontScale(1.f * RES_SCALE.x);
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
                 ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
                 ImGui::ProgressBar(np_com.progress / 100.f, ImVec2(200 * SCALE.x, 15.f * SCALE.y), "");
                 ImGui::PopStyleColor();
+                ImGui::PopStyleVar();
                 ImGui::SameLine(0.f, (10.f * SCALE.x));
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (6.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", std::to_string(np_com.progress).append("%").c_str());
                 ImGui::NextColumn();
                 ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-                ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-                ImGui::Selectable(np_com_id_info[np_com.id].unlocked_type_count["global"]["general"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
+                const auto get_cursor_screen_pos = ImGui::GetCursorScreenPos();
+                const ImVec2 COUNT_BOX_SIZE(220 * SCALE.x, 70 * SCALE.y);
+                const ImVec2 COUNT_BOX_POS_MIN(get_cursor_screen_pos.x + (30.f * SCALE.x),
+                    get_cursor_screen_pos.y + ((SIZE_ICON_LIST.y - COUNT_BOX_SIZE.y) / 2.f));
+                const ImVec2 COUNT_BOX_POS_MAX(COUNT_BOX_POS_MIN.x + COUNT_BOX_SIZE.x, COUNT_BOX_POS_MIN.y + COUNT_BOX_SIZE.y);
+                ImGui::GetWindowDrawList()->AddRect(COUNT_BOX_POS_MIN, COUNT_BOX_POS_MAX, IM_COL32(255, 255, 255, 255), 10.f * SCALE.x);
+                ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.6f, 0.5f));
+                ImGui::Selectable(get_unlocked_group_count_str(np_com.id, "global", "general").c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
                 ImGui::PopID();
                 ImGui::PopStyleVar();
                 ImGui::NextColumn();
             }
             ImGui::Columns(1);
         } else {
+            const auto get_grade_icon_str = [&](const std::string &trophy_id) {
+                const auto hidden_trophy = (!trophy_info[trophy_id].earned && (trophy_info[trophy_id].hidden == "yes"));
+                std::string grade_icon_str = "trophy_";
+                const auto grade = np_com_id_info[np_com_id_selected].context.trophy_kinds[string_utils::stoi_def(trophy_id, 0, "trophy id")];
+                if (!hidden_trophy || show_hidden_trophy) {
+                    switch (grade) {
+                    case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE:
+                        grade_icon_str += "bronze";
+                        break;
+                    case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER:
+                        grade_icon_str += "silver";
+                        break;
+                    case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD:
+                        grade_icon_str += "gold";
+                        break;
+                    case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
+                        grade_icon_str += "platinum";
+                        break;
+                    default:
+                        grade_icon_str += "bronze";
+                        break;
+                    }
+                } else
+                    grade_icon_str += "hidden";
+
+                return grade_icon_str;
+            };
+
             // Select Group ID
             if (group_id_selected.empty()) {
                 if (gui.trophy_np_com_id_list_icons[np_com_id_selected].contains("000"))
@@ -621,16 +667,17 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::PopStyleVar();
                     ImGui::SetCursorPosY(Title_POS + (50.f * SCALE.y));
                     ImGui::SetWindowFontScale(1.f * RES_SCALE.x);
+                    auto &trophy_progress_info = np_com_id_info[np_com_id_selected].trophy_progress_info;
                     ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
-                    ImGui::ProgressBar(np_com_id_info[np_com_id_selected].progress[group_id] / 100.f, ImVec2(200 * SCALE.x, 15.f * SCALE.y), "");
+                    ImGui::ProgressBar(trophy_progress_info.progress[group_id] / 100.f, ImVec2(200 * SCALE.x, 15.f * SCALE.y), "");
                     ImGui::PopStyleColor();
                     ImGui::SameLine(0.f, (10.f * SCALE.x));
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (6.f * SCALE.y));
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", std::to_string(np_com_id_info[np_com_id_selected].progress[group_id]).append("%").c_str());
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", std::to_string(trophy_progress_info.progress[group_id]).append("%").c_str());
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
                     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-                    ImGui::Selectable(np_com_id_info[np_com_id_selected].unlocked_type_count[group_id]["general"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
+                    ImGui::Selectable(get_unlocked_group_count_str(np_com_id_selected, group_id, "general").c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
                     ImGui::SameLine(0.f, 25.f * SCALE.x);
                     ImGui::Selectable(">", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
                     ImGui::PopStyleVar();
@@ -649,16 +696,20 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SetCursorPosY(SIZE_ICON_LIST.y + (20.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["progress"].c_str());
                 ImGui::SameLine(260.f * SCALE.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", std::to_string(np_com_id_info[np_com_id_selected].progress[group_id_selected]).append("%").c_str());
+                auto &trophy_progress_info = np_com_id_info[np_com_id_selected].trophy_progress_info;
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", std::to_string(trophy_progress_info.progress[group_id_selected]).append("%").c_str());
                 ImGui::SameLine(360 * SCALE.x);
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * SCALE.y));
                 ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
-                ImGui::ProgressBar(np_com_id_info[np_com_id_selected].progress[group_id_selected] / 100.f, ImVec2(200 * SCALE.x, 15.f * SCALE.y), "");
+                ImGui::ProgressBar(trophy_progress_info.progress[group_id_selected] / 100.f, ImVec2(200 * SCALE.x, 15.f * SCALE.y), "");
                 ImGui::PopStyleColor();
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (30.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["trophies"].c_str());
                 ImGui::SameLine(260.f * SCALE.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%d/%d\n%s", np_com_id_info[np_com_id_selected].unlocked_count[group_id_selected], np_com_id_info[np_com_id_selected].trophy_count_by_group[group_id_selected], np_com_id_info[np_com_id_selected].unlocked_type_count[group_id_selected]["detail"].c_str());
+                const auto trophy_count = group_id_selected == "global" ? np_com_id_info[np_com_id_selected].context.trophy_count : np_com_id_info[np_com_id_selected].context.trophy_count_by_group[std::stoll(group_id_selected)];
+                ImGui::TextColored(GUI_COLOR_TEXT, "%d/%d", trophy_progress_info.unlocked_ids[group_id_selected].size(), trophy_count);
+                ImGui::SetCursorPos(ImVec2(260.f * SCALE.x, ImGui::GetCursorPosY() + (4.f * SCALE.y)));
+                draw_unlocked_group_count_icons(np_com_id_selected, group_id_selected);
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (45.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["updated"].c_str());
                 ImGui::SameLine(260.f * SCALE.x);
@@ -687,37 +738,51 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Columns(4, nullptr, false);
                 ImGui::SetColumnWidth(0, 30.f * SCALE.x);
                 ImGui::SetColumnWidth(1, SIZE_TROPHY_LIST.x + (15.f * SCALE.x));
-                ImGui::SetColumnWidth(2, 40.f * SCALE.x);
+                ImGui::SetColumnWidth(2, 38.f * SCALE.x);
                 for (const auto &trophy : trophy_list) {
                     ImGui::NextColumn();
-                    ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
+                    ImGui::Separator();
+                    ImGui::SetWindowFontScale(1.15f * RES_SCALE.x);
+                    ImGui::PushID(trophy.id.c_str());
                     if (trophy_info[trophy.id].earned)
                         ImGui::Image(gui.trophy_list[trophy.id], SIZE_TROPHY_LIST);
                     else {
-                        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-                        ImGui::PushID(trophy.id.c_str());
-                        if (ImGui::Selectable(lang["locked"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_TROPHY_LIST.y))) {
-                            trophy_id_selected = trophy.id;
-                            scroll_pos[ScrollType::Trophy] = ImGui::GetScrollY();
+                        const auto icon_pos = ImGui::GetCursorPos();
+                        if (gui.vita_icons.contains("trophy_locked")) {
+                            const ImVec2 LOCKED_SIZE(64.f * SCALE.x, 64.f * SCALE.y);
+                            ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + (SIZE_TROPHY_LIST.x - LOCKED_SIZE.x) / 2.f, ImGui::GetCursorPosY() + (SIZE_TROPHY_LIST.y - LOCKED_SIZE.y) / 2.f));
+                            ImGui::Image(gui.vita_icons["trophy_locked"], LOCKED_SIZE);
+                        } else {
+                            const auto LOCKED_SIZE = ImGui::CalcTextSize(lang["locked"].c_str());
+                            ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + (SIZE_TROPHY_LIST.x - LOCKED_SIZE.x) / 2.f, ImGui::GetCursorPosY() + (SIZE_TROPHY_LIST.y - LOCKED_SIZE.y) / 2.f));
+                            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["locked"].c_str());
                         }
-                        ImGui::PopID();
-                        ImGui::PopStyleVar();
+                        ImGui::SetCursorPosY(icon_pos.y + SIZE_TROPHY_LIST.y + ImGui::GetStyle().ItemSpacing.y);
                     }
                     ImGui::NextColumn();
+                    ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
                     const auto hidden_trophy = (!trophy_info[trophy.id].earned && (trophy_info[trophy.id].hidden == "yes"));
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (14.f * SCALE.y));
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", hidden_trophy && !show_hidden_trophy ? "?" : trophy_info[trophy.id].type["general"].c_str());
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (10.f * SCALE.y));
+                    const auto trophy_grade_name = get_grade_icon_str(trophy.id);
+                    if (gui.vita_icons.contains(trophy_grade_name)) {
+                        const ImVec2 ICON_SIZE = !hidden_trophy || show_hidden_trophy ? ImVec2(32.f * SCALE.x, 32.f * SCALE.y) : ImVec2(27.f * SCALE.x, 27.f * SCALE.y);
+                        ImGui::Image(gui.vita_icons[trophy_grade_name], ICON_SIZE);
+                    } else
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", hidden_trophy && !show_hidden_trophy ? "?" : trophy_info[trophy.id].type["general"].c_str());
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.2f));
                     const auto name_pos = ImGui::GetCursorPosY();
-                    if (ImGui::Selectable(hidden_trophy && !show_hidden_trophy ? hidden_trophy_str : trophy.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_TROPHY_LIST.y)))
+                    if (ImGui::Selectable(hidden_trophy && !show_hidden_trophy ? hidden_trophy_str : trophy.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_TROPHY_LIST.y))) {
                         trophy_id_selected = trophy.id;
+                        scroll_pos[ScrollType::Trophy] = ImGui::GetScrollY();
+                    }
                     ImGui::PopStyleVar();
                     if (!hidden_trophy || show_hidden_trophy) {
                         ImGui::SetCursorPosY(name_pos + (40.f * SCALE.y));
-                        ImGui::SetWindowFontScale(1.0f * RES_SCALE.x);
+                        ImGui::SetWindowFontScale(1.f * RES_SCALE.y);
                         ImGui::Text("%s", trophy_info[trophy.id].detail.c_str());
                     }
+                    ImGui::PopID();
                     ImGui::NextColumn();
                 }
                 ImGui::Columns(1);
@@ -737,13 +802,24 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + SIZE_INFO.x - SIZE_TROPHY_LIST.x - (48.f * SCALE.x));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", selected_trophy_str);
                 ImGui::PopTextWrapPos();
-                ImGui::SetCursorPosY(SIZE_TROPHY_LIST.y + (25.f * SCALE.y));
+                const auto TROPHY_GRADE_STR_POS_Y = SIZE_TROPHY_LIST.y + (25.f * SCALE.y);
+                ImGui::SetCursorPosY(TROPHY_GRADE_STR_POS_Y);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["grade"].c_str());
-                ImGui::SameLine(250.f * SCALE.x);
+                const ImVec2 TROHY_GRADE_POS(250.f * SCALE.x, TROPHY_GRADE_STR_POS_Y);
+                ImGui::SetCursorPos(TROHY_GRADE_POS);
+                const auto trophy_grade_name = get_grade_icon_str(trophy_id_selected);
+                if (gui.vita_icons.contains(trophy_grade_name)) {
+                    const ImVec2 ICON_SIZE = !hidden_trophy || show_hidden_trophy ? ImVec2(32.f * SCALE.x, 32.f * SCALE.y) : ImVec2(27.f * SCALE.x, 27.f * SCALE.y);
+                    const ImVec2 ICON_POS(TROHY_GRADE_POS.x - (ICON_SIZE.x / 8.f), TROHY_GRADE_POS.y - (ICON_SIZE.y / 8.f));
+                    ImGui::SetCursorPos(ICON_POS);
+                    ImGui::Image(gui.vita_icons[trophy_grade_name], ICON_SIZE);
+                    ImGui::SetCursorPos(ImVec2(TROHY_GRADE_POS.x + (30.f * SCALE.x), TROPHY_GRADE_STR_POS_Y));
+                }
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", hidden_trophy && !show_hidden_trophy ? "?" : trophy_info[trophy_id_selected].type["detail"].c_str());
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["earned"].c_str());
                 ImGui::SameLine(250.f * SCALE.x);
+
                 if (trophy_info[trophy_id_selected].earned) {
                     auto DATE_TIME = get_date_time(gui, emuenv, trophy_info[trophy_id_selected].unlocked_time);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
@@ -768,9 +844,12 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
     ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
 
+    const ImVec2 SMALL_BUTTON_SIZE(60.f * SCALE.x, 40.f * SCALE.y);
+    const ImVec2 SMALL_BUTTON_POS(8.f * SCALE.x, WINDOW_SIZE.y - (52.f * SCALE.y));
+
     // Back
-    ImGui::SetCursorPos(ImVec2(8.f * SCALE.x, WINDOW_SIZE.y - (52.f * SCALE.y)));
-    if (ImGui::Button("<<", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+    ImGui::SetCursorPos(SMALL_BUTTON_POS);
+    if (ImGui::Button("<<", SMALL_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
         if (!np_com_id_selected.empty()) {
             if (detail_np_com_id) {
                 detail_np_com_id = false;
@@ -797,10 +876,10 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
             close_system_app(gui, emuenv);
     }
 
-    // Sort
+    // Sort and Sync
     if (trophy_id_selected.empty() && !detail_np_com_id && (np_com_id_selected.empty() || !group_id_selected.empty())) {
-        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (70.f * SCALE.x), WINDOW_SIZE.y - (52.f * SCALE.y)));
-        if (ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_triangle)))
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - (SMALL_BUTTON_SIZE.x + SMALL_BUTTON_POS.x), SMALL_BUTTON_POS.y));
+        if (ImGui::Button("...", SMALL_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_triangle)))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["sort"].c_str());
@@ -829,29 +908,18 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Spacing();
                 ImGui::Separator();
                 ImGui::Spacing();
-                if (ImGui::Button(gui.lang.indicator["delete_all"].c_str()))
-                    ImGui::OpenPopup("Delete All");
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f * SCALE.x);
-                ImGui::SetNextWindowSize(POPUP_SIZE, ImGuiCond_Always);
-                ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (WINDOW_SIZE.x / 2.f) - (POPUP_SIZE.x / 2.f), WINDOW_POS.y + (WINDOW_SIZE.y / 2.f) - (POPUP_SIZE.y / 2.f)), ImGuiCond_Always);
-                if (ImGui::BeginPopupModal("Delete All", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
-                    ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-                    const auto delete_all_str = lang["all_trophy_deleted"].c_str();
-                    ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - ImGui::CalcTextSize(delete_all_str, 0, false, POPUP_SIZE.x - (108.f * SCALE.x)).x / 2, (POPUP_SIZE.y / 2) - (46.f * SCALE.y)));
-                    ImGui::PushTextWrapPos(POPUP_SIZE.x - (54.f * SCALE.x));
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", delete_all_str);
-                    ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
-                    if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle)))
-                        ImGui::CloseCurrentPopup();
-                    ImGui::SameLine(0, 20.f * SCALE.x);
-                    if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
-                        if (fs::remove_all(TROPHY_PATH))
-                            LOG_INFO("All trophies successfully deleted.");
-                        ImGui::CloseCurrentPopup();
-                    }
-                    ImGui::EndPopup();
+                if (ImGui::Button(lang["sync_with_server"].c_str())) {
+                    sync_trophy(gui, emuenv);
+                    trophy_dialog_state = TrophyDialogState::SYNC_TROPHY;
+                    ImGui::CloseCurrentPopup();
                 }
-                ImGui::PopStyleVar();
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+                if (ImGui::Button(gui.lang.indicator["delete_all"].c_str())) {
+                    trophy_dialog_state = TrophyDialogState::DELETE_ALL;
+                    ImGui::CloseCurrentPopup();
+                }
             } else {
                 if (ImGui::MenuItem(lang["original"].c_str(), nullptr, trophy_sort == TrophySortType::ORIGINAL)) {
                     std::sort(trophy_list.begin(), trophy_list.end(), [](const auto &ta, const auto &tb) {
@@ -888,6 +956,98 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     show_hidden_trophy = !show_hidden_trophy;
             }
             ImGui::EndPopup();
+        }
+
+        static const auto get_timestamp_ms = []() {
+            return duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        };
+
+        if (trophy_dialog_state != TrophyDialogState::NONE) {
+            ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
+            ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
+            ImGui::Begin("##trophy_dialog_overlay", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+
+            switch (trophy_dialog_state) {
+            case TrophyDialogState::SYNC_TROPHY: {
+                const ImVec2 SYNC_POPUP_SIZE(760.f * SCALE.x, 440.f * SCALE.y);
+                const ImVec2 SYNC_BUTTON_SIZE(320.f * SCALE.x, 46.f * SCALE.y);
+                ImGui::SetNextWindowPos(ImVec2(VIEWPORT_POS.x + ((VIEWPORT_SIZE.x - SYNC_POPUP_SIZE.x) / 2.f), VIEWPORT_POS.y + ((VIEWPORT_SIZE.y - SYNC_POPUP_SIZE.y) / 2.f)), ImGuiCond_Always);
+                ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 15.f * SCALE.x);
+                ImGui::BeginChild("##sync_trophy_popup", SYNC_POPUP_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+                ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+                const auto sync_str = lang["syncing_trophy"].c_str();
+                ImGui::SetCursorPos(ImVec2(SYNC_POPUP_SIZE.x / 2 - ImGui::CalcTextSize(sync_str, 0, false, SYNC_POPUP_SIZE.x - (104.f * SCALE.x)).x / 2, 116.f * SCALE.y));
+                ImGui::PushTextWrapPos(SYNC_POPUP_SIZE.x - (52.f * SCALE.x));
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", sync_str);
+                ImGui::PopTextWrapPos();
+                const ImVec2 progress_bar_size(560.f * SCALE.x, 12.f * SCALE.y);
+                ImGui::SetCursorPos(ImVec2((SYNC_POPUP_SIZE.x - progress_bar_size.x) / 2, (SYNC_POPUP_SIZE.y / 2.f) - progress_bar_size.y));
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
+                ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
+                ImGui::ProgressBar(sync_progress.load(), progress_bar_size, "");
+                ImGui::PopStyleColor();
+                const auto progress_str = std::to_string(static_cast<uint32_t>(sync_progress.load() * 100)).append("%");
+                ImGui::SetCursorPos(ImVec2(SYNC_POPUP_SIZE.x / 2 - ImGui::CalcTextSize(progress_str.c_str()).x / 2, (SYNC_POPUP_SIZE.y / 2.f) + (18.f * SCALE.y)));
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
+                ImGui::SetCursorPos(ImVec2((SYNC_POPUP_SIZE.x - SYNC_BUTTON_SIZE.x) / 2.f, SYNC_POPUP_SIZE.y - SYNC_BUTTON_SIZE.y - (24.0f * SCALE.y)));
+                ImGui::BeginDisabled((sync_progress.load() >= 1.f));
+                if (ImGui::Button(common["cancel"].c_str(), SYNC_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
+                    sync_cancel.store(true);
+                    trophy_dialog_state = TrophyDialogState::NONE;
+                }
+                ImGui::EndDisabled();
+                if ((sync_progress.load() >= 1.f) || sync_cancel.load()) {
+                    if (sync_progress.load() >= 1.f) {
+                        static uint64_t sync_complete_time;
+                        if (sync_complete_time == 0) {
+                            sync_complete_time = get_timestamp_ms();
+                            if (!sync_downloaded.empty())
+                                refresh_synced_trophies(gui, emuenv);
+                        }
+
+                        auto elapsed = get_timestamp_ms() - sync_complete_time;
+
+                        if (elapsed >= 900) {
+                            trophy_dialog_state = TrophyDialogState::NONE;
+                            sync_complete_time = 0;
+                        }
+                    } else {
+                        trophy_dialog_state = TrophyDialogState::NONE;
+                    }
+                }
+                ImGui::PopStyleVar(2);
+                ImGui::EndChild();
+                break;
+            }
+            case TrophyDialogState::DELETE_ALL: {
+                ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (WINDOW_SIZE.x / 2.f) - (POPUP_SIZE.x / 2.f), WINDOW_POS.y + (WINDOW_SIZE.y / 2.f) - (POPUP_SIZE.y / 2.f)), ImGuiCond_Always);
+                ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 15.f * SCALE.x);
+                ImGui::BeginChild("##delete_all_popup", POPUP_SIZE, ImGuiChildFlags_Borders, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+                ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+                const auto delete_all_str = lang["all_trophy_deleted"].c_str();
+                ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - ImGui::CalcTextSize(delete_all_str, 0, false, POPUP_SIZE.x - (108.f * SCALE.x)).x / 2, (POPUP_SIZE.y / 2) - (46.f * SCALE.y)));
+                ImGui::PushTextWrapPos(POPUP_SIZE.x - (54.f * SCALE.x));
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", delete_all_str);
+                ImGui::PopTextWrapPos();
+                ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
+                if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle))) {
+                    trophy_dialog_state = TrophyDialogState::NONE;
+                }
+                ImGui::SameLine(0, 20.f * SCALE.x);
+                if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
+                    if (fs::remove_all(TROPHY_PATH))
+                        LOG_INFO("All trophies successfully deleted.");
+                    trophy_dialog_state = TrophyDialogState::NONE;
+                }
+                ImGui::EndChild();
+                ImGui::PopStyleVar();
+                break;
+            }
+            default:
+                break;
+            }
+
+            ImGui::End();
         }
     }
     ImGui::SetWindowFontScale(1.f);
