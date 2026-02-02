@@ -69,6 +69,8 @@ AudioOutPortPtr AudioState::open_port(int nb_channels, int freq, int nb_sample) 
 }
 
 void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) {
+    if (!buffer)
+        return;
     adapter->audio_output(thread, out_port, buffer);
 
     uint64_t now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
