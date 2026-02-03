@@ -184,12 +184,10 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-#ifndef __ANDROID__
             ImGui::Checkbox(lang["delete_pkg"].c_str(), &delete_pkg_file);
-            if (license_path != "")
+            if (!license_path.empty())
                 ImGui::Checkbox(lang["delete_bin_rif"].c_str(), &delete_license_file);
             ImGui::Spacing();
-#endif
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 if (delete_pkg_file) {
