@@ -118,10 +118,8 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Separator();
                 ImGui::Spacing();
             }
-#ifndef __ANDROID__
             ImGui::Checkbox(lang["delete_firmware"].c_str(), &delete_pup_file);
             ImGui::Spacing();
-#endif
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 if (delete_pup_file) {
