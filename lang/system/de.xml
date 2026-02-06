@@ -337,6 +337,8 @@ Tippe auf 'Zugriff gewähren', um fortzufahren.</storage_file_permissions>
 	</settings>
 
 	<settings_dialog name="Einstellungen">
+		<camera name="Kamera">
+		</camera>
 		<system name="System">
 		</system>
 		<network name="Netzwerk">

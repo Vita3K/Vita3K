@@ -363,6 +363,8 @@ Vita3K를 즐기러 GOGO!</completed_setup>
 	</settings>
 
 	<settings_dialog name="설정">
+		<camera name="카메라">
+		</camera>
 		<system name="시스템">
 		</system>
 		<network name="네트워크">

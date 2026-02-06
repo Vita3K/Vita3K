@@ -409,6 +409,8 @@ fundo</add_background>
 	</settings>
 
 	<settings_dialog name="Configurações">
+		<camera name="Câmera">
+		</camera>
 		<system name="Sistema">
 		</system>
 		<network name="Rede">

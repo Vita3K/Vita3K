@@ -98,9 +98,10 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const ImVec2 SCALE(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
-    const ImVec2 WINDOW_SIZE(616.f * SCALE.x, 264.f * SCALE.y);
     const ImVec2 BUTTON_SIZE(180.f * SCALE.x, 45.f * SCALE.y);
+    const ImVec2 WINDOW_SIZE(616.f * SCALE.x, 264.f * SCALE.y);
 
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f * SCALE.x);
     ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2), emuenv.logical_viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE);
     if (ImGui::BeginPopupModal("install", &gui.file_menu.pkg_install_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
@@ -116,6 +117,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             title = lang["select_license_type"];
             if (ImGui::Button(lang["select_bin_rif"].c_str(), BUTTON_SIZE))
                 state = State::LICENSE;
+            ImGui::Spacing();
             ImGui::SetCursorPosX(POS_BUTTON);
             if (ImGui::Button(lang["enter_zrif"].c_str(), BUTTON_SIZE))
                 state = State::ZRIF;
@@ -147,7 +149,11 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PushItemWidth(640.f * SCALE.x);
             ImGui::InputTextWithHint("##enter_zrif", lang["input_zrif"].c_str(), &zRIF);
             ImGui::PopItemWidth();
+#ifdef __ANDROID__
             SetTooltipEx(lang["copy_paste_zrif"].c_str());
+#else
+            SetTooltipEx(gui.lang.install_dialog.license_install["copy_paste_zrif"].c_str());
+#endif
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -241,6 +247,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PopStyleColor();
         }
         }
+        ImGui::PopStyleVar();
         ImGui::EndPopup();
     }
 }

@@ -4,7 +4,7 @@
 	<main_menubar>
 		<file name="檔案">
 			<open_pref_path>開啟存放路徑</open_pref_path>
-			<open_patch_path>開啟補丁路徑</open_patch_path>
+			<open_patches_path>開啟補丁路徑</open_patches_path>
 			<open_textures_path>開啟紋理路徑</open_textures_path>
 			<install_firmware>安裝韌體</install_firmware>
 			<install_pkg>安裝pkg</install_pkg>
@@ -492,7 +492,8 @@
 			<enter_zrif>輸入zRIF</enter_zrif>
 			<enter_zrif_key>輸入zRIF金鑰</enter_zrif_key>
 			<input_zrif>請在此處輸入您的zRIF</input_zrif>
-			<copy_paste_zrif>Ctrl+C複製，Ctrl+V貼上。</copy_paste_zrif>
+			<copy_paste_zrif>使用輸入法剪貼板複製貼上。
+鍵盤：Ctrl+C複製，Ctrl+V貼上。</copy_paste_zrif>
 			<delete_pkg>刪除pkg檔案？</delete_pkg>
 			<delete_bin_rif>刪除work.bin/rif檔案？</delete_bin_rif>
 			<failed_install_package>無法安裝該包。
@@ -507,9 +508,11 @@
 			<update_app>更新應用程式至：</update_app>
 			<failed_install_archive>無法安裝{}個封存檔中的內容：</failed_install_archive>
 			<not_compatible_content>找不到{}個封存檔中的相容內容：</not_compatible_content>
+			<invalid_archive>這些封存檔是Vitamin或無效內容。</invalid_archive>
 			<delete_archive>刪除封存檔？</delete_archive>
 		</archive_install>
 		<license_install>
+			<copy_paste_zrif>Ctrl+C複製，Ctrl+V貼上。</copy_paste_zrif>
 			<successed_install_license>已成功安裝授權。</successed_install_license>
 			<failed_install_license>無法安裝授權。
 請檢查work.bin/rif檔案或zRIF金鑰。</failed_install_license>
@@ -548,11 +551,12 @@
 	</live_area>
 
 	<message>
-		<load_app_failed>無法讀取“{}”，
-請檢查vita3k.log查閲控制臺輸出的詳細資訊。
+		<could_not_load>無法載入{}，請檢查vita3k.log查閲控制臺輸出的詳細資訊。
+
 1、您是否安裝了韌體？
+2、您是否存在該應用程式/遊戲的授權？
 2、重新傾印您已擁有的PS Vita應用程式/遊戲，並在Vita3K中安裝。
-3、如果您想要安裝/執行Vitamin是不支援的。</load_app_failed>
+3、如果您想要安裝/執行Vitamin是不支援的。</could_not_load>
 	</message>
 
 	<overlay name="虛擬按鈕">
@@ -728,6 +732,14 @@
 			<bgm_volume>背景音樂音量</bgm_volume>
 			<bgm_volume_description>調整主題背景音樂的音量百分比。</bgm_volume_description>
 		</audio>
+		<camera name="相機">
+			<front_camera>前置攝像頭</front_camera>
+			<back_camera>後置攝像頭</back_camera>
+			<image_not_set>圖像未設定</image_not_set>
+			<set_image>設定圖像</set_image>
+			<solid_color>純色</solid_color>
+			<static_image>靜態圖像</static_image>
+		</camera>
 		<system name="系統">
 			<select_enter_button>確認按鈕分配
 請選擇您的“確認”按鈕。</select_enter_button>

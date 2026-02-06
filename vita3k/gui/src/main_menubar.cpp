@@ -25,14 +25,14 @@ namespace gui {
 
 static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
     auto &lang = gui.lang.main_menubar.file;
-    const auto PATCH_PATH{ emuenv.shared_path / "patch" };
+    const auto PATCHES_PATH{ emuenv.shared_path / "patch" };
     const auto TEXTURES_PATH{ emuenv.shared_path / "textures" };
     if (ImGui::BeginMenu(lang["title"].c_str())) {
 #ifndef __ANDROID__
         if (ImGui::MenuItem(lang["open_pref_path"].c_str()))
             open_path(emuenv.pref_path.string());
-        if (ImGui::MenuItem(lang["open_patch_path"].c_str()))
-            open_path(PATCH_PATH.string());
+        if (ImGui::MenuItem(lang["open_patches_path"].c_str()))
+            open_path(PATCHES_PATH.string());
         if (ImGui::MenuItem(lang["open_textures_path"].c_str())) {
             if (!fs::exists(TEXTURES_PATH)) {
                 fs::create_directories(TEXTURES_PATH);

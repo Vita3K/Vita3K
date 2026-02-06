@@ -480,7 +480,6 @@ również dla wsparcia regionalnych azjatyckich czcionek (Zalecane)</firmware_fo
 			<enter_zrif>Wprowadź klucz zRIF</enter_zrif>
 			<enter_zrif_key>Wprowadź klucz zRIF</enter_zrif_key>
 			<input_zrif>Proszę wprowadź twój klucz zRIF tutaj...</input_zrif>
-			<copy_paste_zrif>Ctrl + C, aby skopiować, Ctrl + V, aby wkleić.</copy_paste_zrif>
 			<delete_pkg>Usunąć plik .pkg?</delete_pkg>
 			<delete_bin_rif>Usunąć plik work.bin/rif?</delete_bin_rif>
 			<failed_install_package>Nie udało się zainstalować pakietu.
@@ -498,6 +497,7 @@ Upewnij się, że pliki pkg oraz work.bin/rif lub klucz zRIF są poprawnie.</fai
 			<delete_archive>Usunąć archiwum?</delete_archive>
 		</archive_install>
 		<license_install>
+			<copy_paste_zrif>Ctrl + C, aby skopiować, Ctrl + V, aby wkleić.</copy_paste_zrif>
 			<successed_install_license>Licencja została zainstalowana pomyślnie.</successed_install_license>
 			<failed_install_license>Instalacja licencji zakończyła się n.
 Upewnij się, że pliki work.bin/rif lub klucz zRIF.</failed_install_license>
@@ -536,11 +536,12 @@ Upewnij się, że pliki work.bin/rif lub klucz zRIF.</failed_install_license>
 	</live_area>
 	
 	<message>
-		<load_app_failed>Nie udało się wczytać "{}".
-Sprawdź plik vita3k.log, aby zobaczyć szczegóły na konsoli.
+		<could_not_load>Nie można załadować pliku {},sprawdź plik vita3k.log, aby zobaczyć szczegóły na konsoli.
+
 1. Czy zainstalowałeś oprogramowanie (firmware)?
-2. Zrób ponowny zrzut swojej aplikacji/gry PS Vita i zainstaluj ją na Vita3K.
-3. Instalacja lub uruchamianie Vitamin nie jest wspierane.</load_app_failed>
+2. Czy posiadasz licencję na tę aplikację/grę?
+3. Zrób ponowny zrzut swojej aplikacji/gry PS Vita i zainstaluj ją na Vita3K.
+4. Instalacja lub uruchamianie Vitamin nie jest wspierane.</could_not_load>
 	</message>
 
 	<performance_overlay>
@@ -690,6 +691,8 @@ W innych grach może to nie mieć żadnego efektu lub spowodować, że będą dz
 			<enable_ngs_support>Włącz wsparcie dla NGS</enable_ngs_support>
 			<ngs_description>Odznacz, aby wyłączyć wsparcie dla zaawansowanej biblioteki dzwięków NGS.</ngs_description>
 		</audio>
+		<camera name="Kamera">
+		</camera>
 		<system name="System">
 			<select_enter_button>Przypisanie przycisku potwierdzenia
 Wybierz swój przycisk potwierdzenia.</select_enter_button>
