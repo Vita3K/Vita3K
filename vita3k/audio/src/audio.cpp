@@ -20,17 +20,12 @@
 #include <audio/impl/cubeb_audio.h>
 #include <audio/impl/sdl_audio.h>
 
-#include <kernel/thread/thread_state.h>
-
 #include <util/log.h>
 
-#include <algorithm>
 #include <cassert>
 #include <cstring>
 
-bool AudioState::init(const ResumeAudioThread &resume_thread, const std::string &adapter_name) {
-    this->resume_thread = resume_thread;
-
+bool AudioState::init(const std::string &adapter_name) {
     set_backend(adapter_name);
     if (!adapter)
         return false;
@@ -68,10 +63,8 @@ AudioOutPortPtr AudioState::open_port(int nb_channels, int freq, int nb_sample) 
     return port;
 }
 
-void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) {
-    if (!buffer)
-        return;
-    adapter->audio_output(thread, out_port, buffer);
+void AudioState::audio_output(AudioOutPort &out_port, const void *buffer) {
+    adapter->audio_output(out_port, buffer);
 
     uint64_t now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     uint64_t diff = now - out_port.last_output;

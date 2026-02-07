@@ -28,8 +28,6 @@
 #define SCE_AUDIO_OUT_MAX_VOL 32768 //!< Maximum output port volume
 #define SCE_AUDIO_VOLUME_0DB SCE_AUDIO_OUT_MAX_VOL //!< Maximum output port volume
 
-typedef std::function<void(SceUID)> ResumeAudioThread;
-
 struct AudioOutPort {
     // Channel range from 0 - 32768
     int left_channel_volume = SCE_AUDIO_VOLUME_0DB;
@@ -73,7 +71,7 @@ public:
 
     virtual bool init() = 0;
     virtual AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample) { return nullptr; }
-    virtual void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) {}
+    virtual void audio_output(AudioOutPort &out_port, const void *buffer) {}
     virtual void set_volume(AudioOutPort &out_port, float volume) {}
     virtual void switch_state(const bool pause) {}
     virtual int get_rest_sample(AudioOutPort &out_port) { return 0; };
@@ -87,14 +85,13 @@ struct AudioState {
     int next_port_id = 1;
     AudioOutPortPtrs out_ports;
     AudioInPort in_port;
-    ResumeAudioThread resume_thread;
     std::string audio_backend;
     float global_volume = 1;
 
-    bool init(const ResumeAudioThread &resume_thread, const std::string &adapter_name);
+    bool init(const std::string &adapter_name);
     void set_backend(const std::string &adapter_name);
     AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample);
-    void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer);
+    void audio_output(AudioOutPort &out_port, const void *buffer);
     void set_volume(AudioOutPort &out_port, float volume);
     void set_global_volume(float volume);
     void switch_state(const bool pause);

@@ -425,14 +425,7 @@ bool late_init(EmuEnvState &state) {
         return false;
     }
 
-    const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
-        const auto thread = state.kernel.get_thread(thread_id);
-        const std::lock_guard<std::mutex> lock(thread->mutex);
-        if (thread->status == ThreadStatus::wait) {
-            thread->update_status(ThreadStatus::run);
-        }
-    };
-    if (!state.audio.init(resume_thread, state.cfg.audio_backend)) {
+    if (!state.audio.init(state.cfg.audio_backend)) {
         LOG_WARN("Failed to initialize audio! Audio will not work.");
     }
 

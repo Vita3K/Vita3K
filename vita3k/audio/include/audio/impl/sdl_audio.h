@@ -18,36 +18,37 @@
 #pragma once
 
 #include "../state.h"
-
 #include <SDL3/SDL_audio.h>
+#include <condition_variable>
 
 class SDLAudioAdapter : public AudioAdapter {
 private:
     SDL_AudioDeviceID device_id = 0;
     int device_buffer_samples = 0;
     SDL_AudioSpec dst_spec;
+
     static void SDLCALL thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount);
 
 public:
-    SDLAudioAdapter(AudioState &audio_state);
+    explicit SDLAudioAdapter(AudioState &audio_state);
     ~SDLAudioAdapter() override;
 
     bool init() override;
     void switch_state(const bool pause) override;
     AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample) override;
-    void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) override;
+    void audio_output(AudioOutPort &out_port, const void *buffer) override;
     void set_volume(AudioOutPort &out_port, float volume) override;
     int get_rest_sample(AudioOutPort &out_port) override;
 };
 
-typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
+using AudioStreamPtr = std::shared_ptr<SDL_AudioStream>;
 
 struct SDLAudioOutPort : public AudioOutPort {
-    //   thread currently waiting for the audio to be processed
-    SceUID thread = -1;
     int channels = 2;
     AudioStreamPtr stream;
     SDLAudioAdapter &adapter;
+    std::mutex mutex;
+    std::condition_variable cond_var;
     SDLAudioOutPort(AudioStreamPtr stream, AudioAdapter &adapter)
         : stream(std::move(stream))
         , adapter(dynamic_cast<SDLAudioAdapter &>(adapter)) {}
