@@ -20,6 +20,9 @@ on:
   schedule:
     - cron: '0 1 * * 3'
 
+env:
+  SCCACHE_GHA_ENABLED: "true"
+
 jobs:
   analyze:
     name: Analyze
@@ -38,22 +41,20 @@ jobs:
         cmake_preset: [linux-ninja-clang]
 
     steps:
-      - name: Set up build environment (ubuntu-latest)
-        run: |
-          sudo add-apt-repository -y ppa:mhier/libboost-latest
-          sudo apt update
-          sudo apt -y install ccache libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev libsdl2-dev ninja-build
-
-      - uses: actions/cache@v5
-        with:
-          path: ~/.ccache
-          key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
-          restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
-
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           submodules: recursive
+
+      - name: Set up build environment (ubuntu-latest)
+        run: |
+          sudo add-apt-repository -y ppa:mhier/libboost-latest
+          sudo apt update
+          sudo apt -y install ccache libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev ninja-build
+
+      - uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
@@ -67,7 +68,7 @@ jobs:
 
       - name: Build
         run: |
-         cmake --preset ${{ matrix.cmake_preset }}
+         cmake -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache --preset ${{ matrix.cmake_preset }}
          cmake --build build/${{ matrix.cmake_preset }} --config ${{ matrix.config }}
 
       - name: Perform CodeQL Analysis
