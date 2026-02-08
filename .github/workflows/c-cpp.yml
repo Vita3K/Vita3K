@@ -10,6 +10,7 @@ on:
 
 env:
   BUILD_CONFIG: Release
+  SCCACHE_GHA_ENABLED: "true"
 
 jobs:
   format-check:
@@ -32,14 +33,12 @@ jobs:
         include:
           - os: ubuntu-latest
             arch: x86_64
-            cache_path: ~/.ccache
-            extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-x86_64.AppImage
+            extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-x86_64.AppImage
             cmake_preset: linux-ninja-clang-appimage
 
           - os: ubuntu-24.04-arm
             arch: aarch64
-            cache_path: ~/.ccache
-            extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-aarch64.AppImage
+            extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-aarch64.AppImage
             cmake_preset: linux-ninja-clang-appimage
 
           - os: windows-latest
@@ -47,9 +46,8 @@ jobs:
             cache_path: |
               C:\vcpkg\installed
               C:\vcpkg\packages
-              C:\Users\runneradmin\AppData\Local\ccache
             vcpkg_triplet: x64-windows-static-md
-            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
+            extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
             cmake_preset: windows-ninja
 
           - os: windows-11-arm
@@ -57,9 +55,8 @@ jobs:
             cache_path: |
               C:\vcpkg\installed
               C:\vcpkg\packages
-              C:\Users\runneradmin\AppData\Local\ccache
             vcpkg_triplet: arm64-windows-static-md
-            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=arm64-windows-static-md
+            extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=arm64-windows-static-md
             cmake_preset: windows-ninja-clang
 
           - os: macos-intel
@@ -84,6 +81,14 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
+      - uses: actions/cache@v5
+        with:
+          path: ${{ matrix.cache_path }}
+          key: cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-${{ github.sha }}
+          restore-keys: |
+            cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-
+        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'macos')
+
       - name: Set up build environment (macOS)
         run: |
           sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
@@ -97,7 +102,7 @@ jobs:
           sudo add-apt-repository -y ppa:mhier/libboost-latest # boost repo
           sudo add-apt-repository universe
           sudo apt update
-          sudo apt -y install ccache libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev libsdl2-dev ninja-build libfuse2
+          sudo apt -y install libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev ninja-build libfuse2
 
           # Set up linuxdeploy for AppImage
           curl -sLO https://github.com/linuxdeploy/linuxdeploy/releases/latest/download/linuxdeploy-${{ matrix.arch }}.AppImage
@@ -108,7 +113,6 @@ jobs:
       - name: Set up build environment (Windows)
         run: |
           vcpkg install zlib boost-system boost-filesystem boost-program-options boost-icl boost-variant curl openssl --triplet=${{ matrix.vcpkg_triplet }}
-          choco install ccache
         if: startsWith(matrix.os, 'windows')
 
       - uses: ilammy/msvc-dev-cmd@v1
@@ -124,6 +128,11 @@ jobs:
 
       - uses: hendrikmuhs/ccache-action@v1.2
         if: matrix.os == 'android'
+
+      - uses: mozilla-actions/sccache-action@v0.0.9
+        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'ubuntu')
+        with:
+          disable_annotations: true
 
       - name: Restore Gradle Cache
         uses: actions/cache@v5
@@ -148,17 +157,9 @@ jobs:
           fi
         if: matrix.os == 'android'
 
-      - uses: actions/cache@v5
-        with:
-          path: ${{ matrix.cache_path }}
-          key: cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-${{ github.sha }}
-          restore-keys: |
-            cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-
-        if: matrix.os != 'android'
-
       - name: Reset ccache statistics
         run: ccache -z
-        if: matrix.os != 'android'
+        if: startsWith(matrix.os, 'macos')
 
       - name: Build Vita3K
         run: |
@@ -168,7 +169,11 @@ jobs:
 
       - name: Print ccache statistics
         run: ccache -s
-        if: matrix.os != 'android'
+        if: startsWith(matrix.os, 'macos')
+
+      - name: Print sccache statistics
+        run: sccache --show-stats
+        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'ubuntu')
 
       - name: Build Vita3K (Android)
         env:
