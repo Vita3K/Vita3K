@@ -186,7 +186,7 @@ struct User {
     std::string avatar = "default";
     gui::SortType sort_apps_type = gui::TITLE;
     gui::SortState sort_apps_state = gui::ASCENDANT;
-    bool system_music = true;
+    bool system_music = false;
     std::string theme_id = "default";
     bool use_theme_bg = true;
     std::string start_type = "default";
