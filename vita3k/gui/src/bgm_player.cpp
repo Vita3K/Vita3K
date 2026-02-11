@@ -22,6 +22,7 @@
 #include <cubeb/cubeb.h>
 #include <gui/functions.h>
 #include <io/VitaIoDevice.h>
+#include <io/state.h>
 
 namespace gui {
 
@@ -160,10 +161,10 @@ static long audio_callback(cubeb_stream *stream, void *user_ptr, const void *inp
     return nframes;
 }
 
-std::thread playback_handle_thread;
-cubeb_stream *stream = nullptr;
-cubeb *ctx = nullptr;
-At9Stream at9_stream;
+static std::thread playback_handle_thread;
+static cubeb_stream *stream = nullptr;
+static cubeb *ctx = nullptr;
+static At9Stream at9_stream;
 
 // Function to handle the playback thread
 static void pcm_playback_handle_thread() {
@@ -260,6 +261,9 @@ void switch_bgm_state(const bool pause) {
         LOG_ERROR("The background music stream is not initialized!");
         return;
     }
+
+    if (!at9_stream.initialized)
+        return;
 
     if (pause)
         cubeb_stream_stop(stream);
@@ -415,9 +419,9 @@ bool init_bgm_streaming(uint8_t *at9_data, uint32_t size) {
     return true;
 }
 
-bool init_bgm(EmuEnvState &emuenv, const std::pair<std::string, std::string> &path_bgm) {
-    const auto device = VitaIoDevice::_from_string(path_bgm.first.c_str());
-    const auto &path = path_bgm.second;
+bool init_bgm(GuiState &gui, EmuEnvState &emuenv) {
+    const auto device = VitaIoDevice::_from_string(gui.current_path_bgm.first.c_str());
+    const auto &path = gui.current_path_bgm.second;
 
     // Check if the path is initialsetup.at9 and if the stream is already initialized
     if ((path.find("initialsetup.at9") != std::string::npos) && at9_stream.initialized)
@@ -426,13 +430,16 @@ bool init_bgm(EmuEnvState &emuenv, const std::pair<std::string, std::string> &pa
     // Stop current Background Music
     stop_bgm();
 
+    if (!emuenv.io.user_id.empty() && !gui.users[emuenv.io.user_id].system_music)
+        return false;
+
     // Attempt to read the AT9 file from the specified path
     vfs::FileBuffer at9_buffer;
     if (!vfs::read_file(device, at9_buffer, emuenv.pref_path, path)) {
         if (device == VitaIoDevice::pd0)
-            LOG_WARN("Failed to read AT9 file from {}:{}, install Preinst Firmware for fix it", path_bgm.first, path);
+            LOG_WARN("Failed to read AT9 file from {}:{}, install Preinst Firmware for fix it", gui.current_path_bgm.first, path);
         else
-            LOG_ERROR("Failed to read AT9 file from {}:{}", path_bgm.first, path);
+            LOG_ERROR("Failed to read AT9 file from {}:{}", gui.current_path_bgm.first, path);
 
         return false;
     }

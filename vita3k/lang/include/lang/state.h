@@ -487,6 +487,10 @@ struct LangState {
     };
     struct Settings {
         std::map<std::string, std::string> main = { { "title", "Settings" } };
+        std::map<std::string, std::string> sound_display = {
+            { "title", "Sound & Display" },
+            { "system_music", "System Music" }
+        };
         struct ThemeBackground {
             std::map<std::string, std::string> main = {
                 { "title", "Theme & Background" },

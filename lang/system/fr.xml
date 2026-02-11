@@ -373,6 +373,9 @@ Appuyez sur 'Autoriser l'accès' pour continuer.</storage_file_permissions>
 	</live_area>
 
 	<settings name="Paramètres">
+		<sound_display name="Son et affichage">
+			<system_music>Musique système</system_music>
+		</sound_display>
 		<theme_background name="Thème et Arrière-plan">
 			<default>Par défaut</default>
 			<theme name="Thème">

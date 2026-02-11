@@ -186,6 +186,7 @@ struct User {
     std::string avatar = "default";
     gui::SortType sort_apps_type = gui::TITLE;
     gui::SortState sort_apps_state = gui::ASCENDANT;
+    bool system_music = true;
     std::string theme_id = "default";
     bool use_theme_bg = true;
     std::string start_type = "default";
@@ -317,6 +318,7 @@ struct GuiState {
 
     std::map<std::string, std::vector<TimeApp>> time_apps;
 
+    std::pair<std::string, std::string> current_path_bgm;
     std::uint64_t current_theme_bg = 0;
     std::map<std::string, std::map<ThemePreviewType, ImGui_Texture>> themes_preview;
     std::vector<ImGui_Texture> theme_backgrounds;

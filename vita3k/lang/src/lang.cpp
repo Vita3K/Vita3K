@@ -325,6 +325,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     // Main
                     set_lang_string(lang.settings.main, settings);
 
+                    // Sound & Display
+                    set_lang_string(lang.settings.sound_display, settings.child("sound_display"));
+
                     // Theme & Background
                     const auto theme_background = settings.child("theme_background");
                     if (!theme_background.empty()) {

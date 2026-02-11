@@ -356,7 +356,8 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
     }
 
     // Initialize the theme BGM with the path
-    init_bgm(emuenv, path_bgm);
+    gui.current_path_bgm = path_bgm;
+    init_bgm(gui, emuenv);
 
     for (const auto &icon : theme_icon_name) {
         int32_t width = 0;
