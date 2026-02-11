@@ -124,6 +124,10 @@ void get_users_list(GuiState &gui, EmuEnvState &emuenv) {
                     user.sort_apps_state = static_cast<SortState>(sort_apps_list.attribute("state").as_uint());
                 }
 
+                // Load sound display settings
+                auto sound_display = user_child.child("sound-display");
+                user.system_music = sound_display.attribute("system-music").as_bool(true);
+
                 // Load theme settings
                 auto theme = user_child.child("theme");
                 if (!theme.attribute("use-background").empty())
@@ -169,6 +173,10 @@ void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
     auto sort_apps_list = user_child.append_child("sort-apps-list");
     sort_apps_list.append_attribute("type") = user.sort_apps_type;
     sort_apps_list.append_attribute("state") = user.sort_apps_state;
+
+    // Save sound display settings
+    auto sound_display = user_child.append_child("sound-display");
+    sound_display.append_attribute("system-music") = user.system_music;
 
     // Save theme settings
     auto theme = user_child.append_child("theme");

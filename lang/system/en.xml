@@ -576,6 +576,9 @@ Check vita3k.log to see console output for details.
 	</performance_overlay>
 
 	<settings name="Settings">
+		<sound_display name="Sound & Display">
+			<system_music>System Music</system_music>
+		</sound_display>
 		<theme_background name="Theme & Background">
 			<default>Default</default>
 			<theme name="Theme">

@@ -308,7 +308,8 @@ int main(int argc, char *argv[]) {
         gui::pre_init(gui, emuenv);
         gui::init_bgm_player(emuenv.cfg.bgm_volume);
         if (!emuenv.cfg.initial_setup) {
-            if (gui::init_bgm(emuenv, { "pd0", "data/systembgm/initialsetup.at9" }))
+            gui.current_path_bgm = { "pd0", "data/systembgm/initialsetup.at9" };
+            if (gui::init_bgm(gui, emuenv))
                 gui::switch_bgm_state(false);
             while (!emuenv.cfg.initial_setup) {
                 if (handle_events(emuenv, gui)) {

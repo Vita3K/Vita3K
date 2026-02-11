@@ -72,7 +72,7 @@ void init(GuiState &gui, EmuEnvState &emuenv);
 void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void init_apps_icon(GuiState &gui, EmuEnvState &emuenv, const std::vector<gui::App> &app_list);
-bool init_bgm(EmuEnvState &emuenv, const std::pair<std::string, std::string> &path_bgm);
+bool init_bgm(GuiState &gui, EmuEnvState &emuenv);
 void init_bgm_player(const float vol);
 void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void init_content_manager(GuiState &gui, EmuEnvState &emuenv);
