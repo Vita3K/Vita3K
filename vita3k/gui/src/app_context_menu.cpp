@@ -572,7 +572,7 @@ static void update_last_time_app_used_helper(GuiState &gui, EmuEnvState &emuenv,
 }
 
 void reset_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app) {
-    update_last_time_app_used_helper(gui, emuenv, app, (time_t)0);
+    update_last_time_app_used_helper(gui, emuenv, app, static_cast<time_t>(0));
 }
 
 void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app) {
@@ -739,10 +739,10 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                         if (ImGui::MenuItem(lang.compat["copy_vita3k_summary"].c_str()))
                             copy_vita3k_summary();
                         if (ImGui::MenuItem(lang.compat["open_state_report"].c_str())) {
-                            copy_vita3k_summary();
                             open_path(fmt::format("{}/{}", ISSUES_URL, gui.compat.app_compat_db[title_id].issue_id));
                         }
                     } else {
+#ifndef __ANDROID__
                         if (ImGui::MenuItem(lang.compat["create_state_report"].c_str())) {
                             // Create body of state report
 
@@ -792,6 +792,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                                 "{}/new?assignees=&labels=&projects=&template=1-ISSUE_TEMPLATE.md&title={} [{}]&body={}%0A%0A{}%0A%0A{}%0A%0A{}",
                                 ISSUES_URL, title, title_id, app_summary, vita3k_summary, test_env_summary, rest_of_body));
                         }
+#endif // ANDROID
                     }
                 }
                 if (is_commercial_app && ImGui::MenuItem(lang.compat["update_database"].c_str()))
