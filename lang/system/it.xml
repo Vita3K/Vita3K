@@ -348,6 +348,8 @@ Tocca 'Concedi Accesso' per continuare.</storage_file_permissions>
 	</settings>
 
 	<settings_dialog name="Impostazioni">
+		<camera name="Fotocamera">
+		</camera>
 		<system name="Sistema">
 		</system>
 		<network name="Rete">

@@ -336,6 +336,8 @@ Devam etmek için 'Erişim Ver' düğmesine dokunun.</storage_file_permissions>
 	</settings>
 
 	<settings_dialog name="Ayarlar">
+		<camera name="Kamera">
+		</camera>
 		<system name="Sistem">
 		</system>
 		<network name="Ağ">
