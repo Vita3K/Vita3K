@@ -23,11 +23,6 @@
 
 #include <cubeb/cubeb.h>
 
-struct AudioBuffer {
-    std::vector<uint8_t> buffer;
-    int buffer_position;
-};
-
 struct CubebAudioOutPort : AudioOutPort {
     cubeb_stream *out_stream = nullptr;
     cubeb_stream_params spec;
