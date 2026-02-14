@@ -1175,7 +1175,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                 vk::ImportAndroidHardwareBufferInfoANDROID{
                     .buffer = buffer },
                 vk::MemoryAllocateFlagsInfo{
-                    .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+                    .flags = vk::MemoryAllocateFlagBits::eDeviceMask }
             };
             device_memory = device.allocateMemory(alloc_info.get());
         } else {
@@ -1196,7 +1196,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
                     .handleType = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd,
                     .fd = fd },
                 vk::MemoryAllocateFlagsInfo{
-                    .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+                    .flags = vk::MemoryAllocateFlagBits::eDeviceMask }
             };
             device_memory = device.allocateMemory(alloc_info.get());
         }
@@ -1218,7 +1218,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         const uint64_t buffer_address = device.getBufferAddress(address_info);
 
         add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(mapped_location));
-        mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, buffer }, mapped_buffer, size, buffer_address };
+        mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, std::move(buffer) }, mapped_buffer, size, buffer_address };
 #else
         LOG_ERROR("Native buffer is only supported on Android!\n");
 #endif
@@ -1228,12 +1228,21 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         // add 4 KiB because we can as an easy way to prevent crashes due to memory accesses right after the memory boundary
         // also make sure later the mapped address is 4K aligned
         vkutil::Buffer buffer(size + KiB(4));
+#if defined(__ARM__) || defined(__AARCH64__) && !defined(__APPLE__)
+        constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
+            .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessRandom,
+	        .usage = vma::MemoryUsage::eAuto,
+		    .requiredFlags = vk::MemoryPropertyFlagBits::eHostVisible,
+            .preferredFlags = vk::MemoryPropertyFlagBits::eDeviceLocal,
+        };
+#else
         constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
             .flags = vma::AllocationCreateFlagBits::eMapped | vma::AllocationCreateFlagBits::eHostAccessSequentialWrite,
             .usage = vma::MemoryUsage::eAutoPreferHost,
             .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
             .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
         };
+#endif
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
         const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
         const uint64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
