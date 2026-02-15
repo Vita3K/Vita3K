@@ -277,11 +277,6 @@ jobs:
           | jq -r '.commit.author.name')
           echo "COMMITTER_NAME=$COMMITTER" >> $GITHUB_ENV
 
-      - name: Download ghr
-        run: |
-          wget -c https://github.com/tcnksm/ghr/releases/download/v0.17.0/ghr_v0.17.0_linux_amd64.tar.gz
-          tar xfv ghr_v0.17.0_linux_amd64.tar.gz
-
       - name: Prepare artifacts
         run: |
           mkdir -p artifacts-master artifacts-store
@@ -331,20 +326,24 @@ jobs:
           echo "=== artifacts-store ==="
           ls -al artifacts-store/
 
-      - name: Upload to store repository
-        run: |
-          ghr_v0.17.0_linux_amd64/ghr -u ${{ github.repository_owner }} -r Vita3K-builds \
-            -n "Build: ${{ env.BUILD_VARIABLE }}" \
-            -b "$(printf "Corresponding commit: [${{ env.LAST_COMMIT_MESSAGE }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})")" \
-            ${{ env.BUILD_VARIABLE }} artifacts-store/
-        env:
-          GITHUB_TOKEN: ${{ secrets.STORE_TOKEN }}
+      - name: "Upload to store repository"
+        uses: tcnksm/ghr@v0
+        with:
+            tag: ${{ env.BUILD_VARIABLE }}
+            path: artifacts-store/
+            owner: ${{ github.repository_owner }}
+            repository: Vita3K-builds
+            name: "Build: ${{ env.BUILD_VARIABLE }}"
+            body: "Corresponding commit: [${{ env.LAST_COMMIT_MESSAGE }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})"
+            token: ${{ secrets.STORE_TOKEN }}
 
-      - name: Upload to master repository
-        run: |
-          ghr_v0.17.0_linux_amd64/ghr -u ${{ github.repository_owner }} -r Vita3K -recreate \
-            -n 'Automatic CI builds' \
-            -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}")" \
-            continuous artifacts-master/
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Upload to master repository"
+        uses: tcnksm/ghr@v0
+        with:
+            tag: continuous
+            path: artifacts-master/
+            delete: "true"
+            owner: ${{ github.repository_owner }}
+            repository: Vita3K
+            name: "Automatic CI builds"
+            body: "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}"
