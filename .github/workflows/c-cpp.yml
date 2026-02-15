@@ -335,6 +335,7 @@ jobs:
             repository: Vita3K-builds
             name: "Build: ${{ env.BUILD_VARIABLE }}"
             body: "Corresponding commit: [${{ env.LAST_COMMIT_MESSAGE }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})"
+            token: ${{ secrets.STORE_TOKEN }}
 
       - name: "Upload to master repository"
         uses: tcnksm/ghr@v0
