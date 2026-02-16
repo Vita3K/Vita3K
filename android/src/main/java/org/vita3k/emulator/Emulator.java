@@ -153,24 +153,20 @@ public class Emulator extends SDLActivity
 
     static final int FILE_DIALOG_CODE = 545;
     static final int FOLDER_DIALOG_CODE = 546;
-    static final int STORAGE_MANAGER_FILE_DIALOG_CODE = 547;
-    static final int STORAGE_MANAGER_FOLDER_DIALOG_CODE = 548;
 
-    private boolean ensureStoragePermission(int requestCode) {
-        // If running Android 10-, SDL should have already asked for read and write permissions
-        if (!isStorageManagerEnabled()) {
-            Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                    .setData(Uri.parse("package:" + BuildConfig.APPLICATION_ID));
-            startActivityForResult(intent, requestCode);
-            return false;
-        }
-        return true;
+    @Keep
+    public void setStoragePermission() {
+        Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                .setData(Uri.parse("package:" + BuildConfig.APPLICATION_ID));
+        startActivity(intent);
     }
 
     @Keep
     public void showFileDialog() {
-        if (!ensureStoragePermission(STORAGE_MANAGER_FILE_DIALOG_CODE))
+        if (!isStorageManagerEnabled()) {
+            setStoragePermission();
             return;
+        }
 
         Intent intent = new Intent()
                 .setType("*/*")
@@ -181,7 +177,9 @@ public class Emulator extends SDLActivity
         startActivityForResult(intent, FILE_DIALOG_CODE);
     }
 
-    private boolean isStorageManagerEnabled(){
+    @Keep
+    public boolean isStorageManagerEnabled(){
+        // If running Android 10-, SDL should have already asked for read and write permissions
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
             return true;
 
@@ -190,8 +188,10 @@ public class Emulator extends SDLActivity
 
     @Keep
     public void showFolderDialog() {
-        if (!ensureStoragePermission(STORAGE_MANAGER_FOLDER_DIALOG_CODE))
+        if (!isStorageManagerEnabled()) {
+            setStoragePermission();
             return;
+        }
 
         Intent intent = new Intent()
                 .setAction(Intent.ACTION_OPEN_DOCUMENT_TREE)
@@ -224,17 +224,6 @@ public class Emulator extends SDLActivity
         super.onActivityResult(requestCode, resultCode, data);
 
         switch (requestCode) {
-            // --- STORAGE MANAGER ---
-            case STORAGE_MANAGER_FILE_DIALOG_CODE:
-            case STORAGE_MANAGER_FOLDER_DIALOG_CODE:
-                if (isStorageManagerEnabled()) {
-                    if (requestCode == STORAGE_MANAGER_FILE_DIALOG_CODE)
-                        showFileDialog();
-                    else
-                        showFolderDialog();
-                } else
-                    filedialogReturn("");
-                break;
             // --- PICKER ---
             case FILE_DIALOG_CODE:
             case FOLDER_DIALOG_CODE: {

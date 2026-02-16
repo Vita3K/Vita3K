@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ void close_and_run_new_app(EmuEnvState &emuenv, const std::string &app_path);
 void close_live_area_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void close_system_app(GuiState &gui, EmuEnvState &emuenv);
 void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
+void destroy_bgm_player();
 void erase_app_notice(GuiState &gui, const std::string &title_id);
 void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 size_t get_app_size(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
@@ -58,6 +59,7 @@ void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pa
 void get_firmware_file(EmuEnvState &emuenv);
 void get_modules_list(GuiState &gui, EmuEnvState &emuenv);
 void get_notice_list(EmuEnvState &emuenv);
+ImU32 get_selectable_color_pulse(const float max_alpha = 255.f);
 std::string get_theme_title_from_buffer(const vfs::FileBuffer &buffer);
 std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, EmuEnvState &emuenv, const std::string &app);
 void get_time_apps(GuiState &gui, EmuEnvState &emuenv);
@@ -70,6 +72,8 @@ void init(GuiState &gui, EmuEnvState &emuenv);
 void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void init_apps_icon(GuiState &gui, EmuEnvState &emuenv, const std::vector<gui::App> &app_list);
+bool init_bgm(GuiState &gui, EmuEnvState &emuenv);
+void init_bgm_player(const float vol);
 void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void init_content_manager(GuiState &gui, EmuEnvState &emuenv);
 vfs::FileBuffer init_default_icon(GuiState &gui, EmuEnvState &emuenv);
@@ -103,11 +107,14 @@ void reset_controller_binding(EmuEnvState &emuenv);
 void save_apps_cache(GuiState &gui, EmuEnvState &emuenv);
 void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id);
 void select_app(GuiState &gui, const std::string &title_id);
+void set_bgm_volume(const float vol);
 void set_config(EmuEnvState &emuenv);
 void set_current_config(EmuEnvState &emuenv, const std::string &app_path);
 bool set_scroll_animation(float &scroll, float target_scroll, const std::string &target_id, std::function<void(float)> set_scroll);
 void set_shaders_compiled_display(GuiState &gui, EmuEnvState &emuenv);
-void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
+void stop_bgm();
+void switch_bgm_state(const bool pause);
+void refresh_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void reset_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app);
 void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app);
 void update_live_area_current_open_apps_list(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);

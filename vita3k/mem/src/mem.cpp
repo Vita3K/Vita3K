@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -331,6 +331,7 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
         protect.size = std::max(it->first + it->second.size, addr + protect.size) - start;
         addr = start;
         protect.blocks.merge(it->second.blocks); // transfer blocks to the new protect
+        protect.perm = most_restrictive_perm(protect.perm, it->second.perm);
 
         if (it == state.protect_tree.begin()) {
             state.protect_tree.erase(it);
@@ -341,7 +342,7 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
         state.protect_tree.erase(it--);
     }
 
-    protect_inner(state, addr, protect.size, perm);
+    protect_inner(state, addr, protect.size, protect.perm);
 
     state.protect_tree.emplace(addr, std::move(protect));
     return true;

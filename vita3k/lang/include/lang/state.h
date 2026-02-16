@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -34,6 +34,8 @@ struct DialogLangState {
         { "an_error_occurred", "An error occurred.\nError code: {}" },
         { "cancel", "Cancel" },
         { "close", "Close" },
+        { "could_not_load", "Could not load the file." },
+        { "could_not_save", "Could not save the file." },
         { "delete", "Delete" },
         { "error", "Error" },
         { "file_corrupted", "The file is corrupt." },
@@ -70,8 +72,8 @@ struct DialogLangState {
         std::map<std::string, std::string> save = {
             { "title", "Save" },
             { "cancel_saving", "Do you want to cancel saving?" },
-            { "could_not_save", "Could not save the file.\nThere is not enough free space on the memory card." },
-            { "not_free_space", "There is not enough free space on the memory card." },
+            { "could_not_save", "Could not save the file.\nThere is not enough free space on the memory card. To save your progress in the application, you must create at least {} of free space.\n\nTo create the free space, press PS button to pause this application, and then delete other applications or content." },
+            { "not_free_space", "There is not enough free space on the memory card.\nTo continue using the application, you must create at least {} of free space.\n\nPress the PS button to pause this application, and then delete other applications or content." },
             { "new_saved_data", "New Saved Data" },
             { "saving_complete", "Saving complete." },
             { "save_the_data", "Do you want to save the data?" },
@@ -101,6 +103,7 @@ struct LangState {
         std::map<std::string, std::string> file = {
             { "title", "File" },
             { "open_pref_path", "Open Pref Path" },
+            { "open_patch_path", "Open Patch Path" },
             { "open_textures_path", "Open Textures Path" },
             { "install_firmware", "Install Firmware" },
             { "install_pkg", "Install .pkg" },
@@ -154,42 +157,56 @@ struct LangState {
     };
     struct AppContext {
         std::map<std::string, std::string> main = {
+            { "create_shortcut", "Create Shortcut" },
+            { "update_history", "Update History" },
+            { "history_version", "Version {}" }
+        };
+        std::map<std::string, std::string> compat = {
             { "check_app_state", "Check App state" },
             { "copy_vita3k_summary", "Copy Vita3K Summary" },
             { "open_state_report", "Open state report" },
             { "create_state_report", "Create state report" },
-            { "update_database", "Update database" },
-            { "copy_app_info", "Copy App info" },
+            { "update_database", "Update database" }
+        };
+        std::map<std::string, std::string> copy_app_info = {
+            { "title", "Copy App info" },
             { "name_and_id", "Name and Title ID" },
-            { "app_summary", "App Summary" },
-            { "create_shortcut", "Create Shortcut" },
-            { "custom_config", "Custom Config" },
+            { "app_summary", "App Summary" }
+        };
+        std::map<std::string, std::string> custom_config = {
+            { "title", "Custom Config" },
             { "create", "Create" },
             { "edit", "Edit" },
-            { "remove", "Remove" },
+            { "remove", "Remove" }
+        };
+        std::map<std::string, std::string> path = {
             { "open_folder", "Open Folder" },
+            { "patch", "Patch" },
             { "addcont", "DLC" },
             { "license", "License" },
             { "shaders_cache", "Shaders Cache" },
-            { "shaders_log", "Shaders Log" },
+            { "shaders_log", "Shaders Log" }
+        };
+        std::map<std::string, std::string> live_area = {
             { "manual", "Manual" },
-            { "update", "Update" },
-            { "update_history", "Update History" },
-            { "history_version", "Version {}" },
-            { "other", "Other" },
+            { "update", "Update" }
         };
         std::map<std::string, std::string> deleting = {
-            { "app_delete", "This application and all related data, including saved data, will be deleted." },
-            { "app_delete_description", "Deleting an application may take a while,\ndepending on its size and your hardware." },
-            { "addcont_delete", "Do you want to delete this add-on data?" },
-            { "license_delete", "Do you want to delete this license?" },
-            { "saved_data_delete", "Do you want to delete this saved data?" }
+            { "delete_app", "This application and all related data, including saved data, will be deleted." },
+            { "delete_app_description", "Deleting an application may take a while,\ndepending on its size and your hardware." },
+            { "delete_patch", "Do you want to delete this patch?" },
+            { "delete_addcont", "Do you want to delete this add-on data?" },
+            { "delete_license", "Do you want to delete this license?" }
+        };
+        std::map<std::string, std::string> other = {
+            { "title", "Other" },
+            { "reset_last_time_played", "Reset Last Time Played" }
         };
         std::map<std::string, std::string> info = {
             { "title", "Information" },
             { "eligible", "Eligible" },
             { "ineligible", "Ineligible" },
-            { "level", "Level" },
+            { "level", "Level {}" },
             { "name", "Name" },
             { "trophy_earning", "Trophy Earning" },
             { "parental_controls", "Parental Controls" },
@@ -210,9 +227,6 @@ struct LangState {
             { "time_used_hours", "{}h:{}m:{}s" },
             { "time_used_days", "{}d:{}h:{}m:{}s" },
             { "time_used_weeks", "{}w:{}d:{}h:{}m:{}s" }
-        };
-        std::map<std::string, std::string> other = {
-            { "reset_last_time_played", "Reset Last Time Played" }
         };
     };
     AppContext app_context;
@@ -317,6 +331,9 @@ struct LangState {
         { "miscellaneous", "Miscellaneous" },
         { "toggle_texture_replacement", "Toggle Texture Replacement" },
         { "take_screenshot", "Take A Screenshot" },
+        { "pinch_modifier", "Pinch modifier" },
+        { "alternate_pinch_in", "Alternate pinch in key" },
+        { "alternate_pinch_out", "Alternate pinch out/stretch key" },
         { "error_duplicate_key", "The key is used for other bindings or it is reserved." },
         { "reset_controls_binding", "Reset Controls Binding" }
     };
@@ -358,6 +375,8 @@ struct LangState {
         { "completed_setup", "You have now completed initial setup.\nYour Vita3K system is ready!" },
         { "select_language", "Select a language." },
         { "select_pref_path", "Select a pref path." },
+        { "storage_file_permissions", "Vita3K requires full file access to work properly, tap 'Grant access' to continue." },
+        { "grant_access", "Grant Access" },
         { "current_emu_path", "Current emulator path" },
         { "change_emu_path", "Change Emulator Path" },
         { "reset_emu_path", "Reset Emulator Path" },
@@ -394,7 +413,7 @@ struct LangState {
             { "enter_zrif", "Enter zRIF" },
             { "enter_zrif_key", "Enter zRIF key" },
             { "input_zrif", "Please input your zRIF here" },
-            { "copy_paste_zrif", "Ctrl (Cmd) + C to copy, Ctrl (Cmd) + V to paste." },
+            { "copy_paste_zrif", "Ctrl + C to copy, Ctrl + V to paste." },
             { "delete_pkg", "Delete the pkg file?" },
             { "delete_bin_rif", "Delete the work.bin/rif file?" },
             { "failed_install_package", "Failed to install package.\nCheck pkg and work.bin/rif file or zRIF key." }
@@ -468,6 +487,10 @@ struct LangState {
     };
     struct Settings {
         std::map<std::string, std::string> main = { { "title", "Settings" } };
+        std::map<std::string, std::string> sound_display = {
+            { "title", "Sound & Display" },
+            { "system_music", "System Music" }
+        };
         struct ThemeBackground {
             std::map<std::string, std::string> main = {
                 { "title", "Theme & Background" },
@@ -614,7 +637,18 @@ struct LangState {
             { "audio_volume", "Audio Volume" },
             { "audio_volume_description", "Adjusts the volume percentage of all audio outputs." },
             { "enable_ngs_support", "Enable NGS support" },
-            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." }
+            { "ngs_description", "Uncheck the box to disable support for advanced audio library NGS." },
+            { "bgm_volume", "Bgm Volume" },
+            { "bgm_volume_description", "Adjusts the background music volume percentage of the theme." }
+        };
+        std::map<std::string, std::string> camera = {
+            { "title", "Camera" },
+            { "front_camera", "Front Camera" },
+            { "back_camera", "Back Camera" },
+            { "image_not_set", "Image not set" },
+            { "set_image", "Set image" },
+            { "solid_color", "Solid Color" },
+            { "static_image", "Static Image" }
         };
         std::map<std::string, std::string> system = {
             { "title", "System" },
@@ -679,7 +713,6 @@ struct LangState {
             { "change_emu_path_description", "Change Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually." },
             { "reset_emu_path", "Reset Emulator Path" },
             { "reset_emu_path_description", "Reset Vita3K emulator path to the default.\nYou will need to move your old folder to the new location manually." },
-            { "storage_folder_permissions", "Using a different path requires additional permissions" },
             { "custom_config_settings", "Custom Config Settings" },
             { "clear_custom_config", "Clear Custom Config" },
             { "screenshot_image_type", "screenshot Image Type" },
@@ -777,6 +810,7 @@ struct LangState {
         { "content_manager", "Content Manager" }
     };
     std::map<std::string, std::string> trophy_collection = {
+        { "all_trophy_deleted", "All trophy information saved on this user will be deleted." },
         { "delete_trophy", "Delete Trophy" },
         { "trophy_deleted", "This trophy information saved on this user will be deleted." },
         { "locked", "Locked" },
@@ -809,7 +843,6 @@ struct LangState {
         { "user_deleted", "User deleted." },
         { "choose_avatar", "Choose Avatar" },
         { "reset_avatar", "Reset Avatar" },
-        { "name", "Name" },
         { "user", "User" },
         { "confirm", "Confirm" },
         { "automatic_user_login", "Automatic User Login" }

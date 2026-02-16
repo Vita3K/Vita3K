@@ -28,18 +28,19 @@
 	</about>
 
 	<app_context>
-		<manual>Handbuch</manual>
-		<update>Aktualisierung</update>
+		<live_area>
+			<manual>Handbuch</manual>
+			<update>Aktualisierung</update>
+		</live_area>
+		<delete>
+			<delete_app>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</delete_app>
+		</delete>
 		<update_history>Update-Verlauf</update_history>
 		<history_version>Version {}</history_version>
-		<delete>
-			<app_delete>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</app_delete>
-			<saved_data_delete>Willst du die Nutzerdaten löschen?</saved_data_delete>
-		</delete>
 		<info name="Information">
 			<eligible>berechtigt</eligible>
 			<ineligible>nicht berechtigt</ineligible>
-			<level>Stufe</level>
+			<level>Stufe {}</level>
 			<name>Name</name>
 			<trophy_earning>Verdienen von Trophäen</trophy_earning>
 			<parental_controls>Kindersicherung</parental_controls>
@@ -57,6 +58,8 @@
 Fehlercode: {}</an_error_occurred>
 		<cancel>Abbrechen</cancel>
 		<close>Schließen</close>
+		<could_not_load>Laden der Datei gescheitert.</could_not_load>
+		<could_not_save>Speichern der Datei gescheitert.</could_not_save>
 		<delete>Löschen</delete>
 		<error>Fehler</error>
 		<file_corrupted>Die Datei ist beschädigt.</file_corrupted>
@@ -224,8 +227,13 @@ Fehlercode: {}</an_error_occurred>
 			<save name="Speichern">
 				<cancel_saving>Möchtest du den Speichervorgang abbrechen?</cancel_saving>
 				<could_not_save>Speichern der Datei gescheitert.
-Nicht genügend freier Speicherplatz auf der Speicherkarte.</could_not_save>
-				<not_free_space>Nicht genügend freier Speicherplatz auf der Speicherkarte.</not_free_space>
+Nicht genügend freier Speicherplatz auf der Speicherkarte. Du musst mindestens {} freien Speicherplatz schaffen, damit du Fortschritte speichern kannst.
+
+Um freien Speicherplatz zu schaffen, drücke die PS-Taste, um diese Anwendung anzuhalten, und lösche dann andere Anwendungen oder Inhalte.</could_not_save>
+				<not_free_space>Nicht genügend freier Speicherplatz auf der Speicherkarte.
+Um die Anwendung weiterhin zu verwenden, müssen mindestens {} freier Speicherplatz geschaffen werden.
+
+Drücke die PS-Taste, um diese Anwendung anzuhalten, und lösche dann andere Anwendungen oder Inhalte.</not_free_space>
 				<new_saved_data>Neue gespeicherte Daten</new_saved_data>
 				<saving_complete>Speichern abgeschlossen.</saving_complete>
 				<save_the_data>Möchtest du die Daten speichern?</save_the_data>
@@ -258,6 +266,9 @@ Schalte das System nicht aus und schließe die Anwendung nicht.</warning_saving>
 		<completed_setup>Die Erstinstallation ist jetzt abgeschlossen.
 Dein Vita3K-System ist bereit!</completed_setup>
 		<select_language>Wähle eine Sprache.</select_language>
+		<storage_file_permissions>Vita3K benötigt vollständigen Dateizugriff.
+Tippe auf 'Zugriff gewähren', um fortzufahren.</storage_file_permissions>
+		<grant_access>Zugriff gewähren</grant_access>
 		<install_firmware>Installiere Firmware.</install_firmware>
 		<next>Weiter</next>
 	</initial_setup>
@@ -374,7 +385,6 @@ Wirklich fortfahren?</user_delete_warn>
 		<user_deleted>Benutzer gelöscht.</user_deleted>
 		<choose_avatar>Avatar auswählen</choose_avatar>
 		<reset_avatar>Avatar zurücksetzen</reset_avatar>
-		<name>Name</name>
 		<user>Benutzer</user>
 		<confirm>Bestätigen</confirm>
 		<automatic_user_login>Benutzer automatisch einloggen</automatic_user_login>

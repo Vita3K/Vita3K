@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -513,7 +513,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["parental_controls"].c_str());
             ImGui::SameLine(310.f * SCALE.x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", info["level"].c_str(), get_app_index(gui, app_selected)->parental_level.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, app_selected)->parental_level == "0" ? "-" : fmt::format(fmt::runtime(info["level"]), get_app_index(gui, app_selected)->parental_level).c_str());
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["updated"].c_str());
             ImGui::SameLine(310.f * SCALE.x);
@@ -526,11 +526,11 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["size"].c_str());
             ImGui::SameLine(310.f * SCALE.x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_unit_size(gui.app_selector.app_info.size).c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_unit_size(gui.app_selector.app_info.size) == "0 B" ? "-" : get_unit_size(gui.app_selector.app_info.size).c_str());
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["version"].c_str());
             ImGui::SameLine(310.f * SCALE.x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, app_selected)->app_ver.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, app_selected)->app_ver == "0.00" ? "-" : get_app_index(gui, app_selected)->app_ver.c_str());
             for (const auto &addcont : addcont_info) {
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (40.f * SCALE.y));
                 ImGui::Separator();

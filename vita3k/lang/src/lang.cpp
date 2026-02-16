@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -142,6 +142,24 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 if (!app_context.empty()) {
                     // Main
                     set_lang_string(lang.app_context.main, app_context);
+
+                    // Compat
+                    set_lang_string(lang.app_context.compat, app_context.child("compat"));
+
+                    // Copy App info
+                    set_lang_string(lang.app_context.copy_app_info, app_context.child("copy_app_info"));
+
+                    // Custom Config
+                    set_lang_string(lang.app_context.custom_config, app_context.child("custom_config"));
+
+                    // Path
+                    set_lang_string(lang.app_context.path, app_context.child("path"));
+
+                    // Live Area
+                    set_lang_string(lang.app_context.live_area, app_context.child("live_area"));
+
+                    // Other
+                    set_lang_string(lang.app_context.other, app_context.child("other"));
 
                     // Delete
                     set_lang_string(lang.app_context.deleting, app_context.child("delete"));
@@ -307,6 +325,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     // Main
                     set_lang_string(lang.settings.main, settings);
 
+                    // Sound & Display
+                    set_lang_string(lang.settings.sound_display, settings.child("sound_display"));
+
                     // Theme & Background
                     const auto theme_background = settings.child("theme_background");
                     if (!theme_background.empty()) {
@@ -389,6 +410,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
 
                     // Audio
                     set_lang_string(lang.settings_dialog.audio, settings_dialog.child("audio"));
+
+                    // Camera
+                    set_lang_string(lang.settings_dialog.camera, settings_dialog.child("camera"));
 
                     // System
                     set_lang_string(lang.settings_dialog.system, settings_dialog.child("system"));

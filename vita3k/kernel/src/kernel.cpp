@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -148,7 +148,7 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     params.thid = thread->id;
 
     params.host_may_destroy_params = SDL_CreateSemaphore(0);
-    SDL_CreateThread(&thread_function, thread->name.c_str(), &params);
+    SDL_DetachThread(SDL_CreateThread(&thread_function, thread->name.c_str(), &params));
     SDL_WaitSemaphore(params.host_may_destroy_params);
     SDL_DestroySemaphore(params.host_may_destroy_params);
     return thread;
@@ -168,9 +168,9 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
 
 void KernelState::exit_delete_all_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
-    for (auto &[_, thread] : threads) {
-        thread->exit_delete();
-    }
+    for (auto &[_, thread] : threads)
+        // Skip end callbacks; running guest code can access torn-down state
+        thread->exit_delete(false);
 }
 
 void KernelState::pause_threads() {

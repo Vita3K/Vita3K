@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -211,6 +211,11 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
 
 bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_id) {
     std::vector<std::string> theme_bg_name;
+
+    // Set default values of bgm theme
+    std::pair<std::string, std::string> path_bgm = { "pd0", "data/systembgm/home.at9" };
+
+    // Create a map to associate specific system app title IDs with their corresponding theme icon names.
     std::map<std::string, std::string> theme_icon_name = {
         { "NPXS10003", {} },
         { "NPXS10008", {} },
@@ -218,6 +223,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         { "NPXS10026", {} }
     };
 
+    // Clear the current theme
     gui.app_selector.sys_apps_icon.clear();
     gui.current_theme_bg = 0;
     gui.information_bar_color = {};
@@ -246,6 +252,10 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                     theme_icon_name["NPXS10015"] = home_property.child("m_settings").child("m_iconFilePath").text().as_string();
                 if (!home_property.child("m_hostCollabo").child("m_iconFilePath").text().empty())
                     theme_icon_name["NPXS10026"] = home_property.child("m_hostCollabo").child("m_iconFilePath").text().as_string();
+
+                // Bgm theme
+                if (!home_property.child("m_bgmFilePath").text().empty())
+                    path_bgm = { "ux0", fmt::format("theme/{}/{}", content_id, home_property.child("m_bgmFilePath").text().as_string()) };
 
                 // Home
                 for (const auto &param : home_property.child("m_bgParam")) {
@@ -279,6 +289,12 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                 if (!info_bar_prop.child("m_newNoticeFilePath").text().empty())
                     notice_name[NoticeIcon::NEW] = info_bar_prop.child("m_newNoticeFilePath").text().as_string();
 
+                // Set constants for circle mask
+                constexpr int cx = 90;
+                constexpr int cy = 20;
+                constexpr float radius = 64.f;
+                constexpr float feather = 1.5f;
+
                 for (const auto &notice : notice_name) {
                     int32_t width = 0;
                     int32_t height = 0;
@@ -298,6 +314,26 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                         LOG_ERROR("Invalid notice icon for content id: {}.", content_id);
                         continue;
                     }
+
+                    // Make circle alpha mask
+                    for (int y = 0; y < height; ++y) {
+                        for (int x = 0; x < width; ++x) {
+                            const int dx = x - cx;
+                            const int dy = y - cy;
+                            const float dist = sqrtf(dx * dx + dy * dy);
+
+                            int idx = (y * width + x) * 4;
+                            if (dist >= radius) {
+                                data[idx + 3] = 0; // Outside -> transparent
+                            } else if (dist >= (radius - feather)) {
+                                // Border → smooth anti-aliased fade
+                                float t = (radius - dist) / feather; // 0 → 1
+                                t = std::clamp(t, 0.0f, 1.0f);
+                                data[idx + 3] = (unsigned char)(t * 255.0f);
+                            }
+                        }
+                    }
+
                     gui.theme_information_bar_notice[type] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
                     stbi_image_free(data);
                 }
@@ -305,6 +341,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         } else
             LOG_ERROR("theme.xml not found for Content ID: {}, in path: {}", content_id, THEME_XML_PATH);
     } else {
+        // Default theme background
         constexpr std::array<const char *, 5> app_id_bg_list = {
             "NPXS10002",
             "NPXS10006",
@@ -317,6 +354,10 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                 theme_bg_name.push_back(bg);
         }
     }
+
+    // Initialize the theme BGM with the path
+    gui.current_path_bgm = path_bgm;
+    init_bgm(gui, emuenv);
 
     for (const auto &icon : theme_icon_name) {
         int32_t width = 0;
@@ -501,6 +542,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     if (ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0)) {
         gui.vita_area.start_screen = false;
+        switch_bgm_state(false);
         gui.vita_area.home_screen = true;
         if (emuenv.cfg.show_info_bar)
             gui.vita_area.information_bar = true;

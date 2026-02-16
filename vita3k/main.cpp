@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -276,7 +276,8 @@ int main(int argc, char *argv[]) {
         SDL_SetHint(SDL_HINT_AUDIO_DRIVER, "openslES");
 #endif
 
-        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR)) {
+        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR | SDL_INIT_CAMERA)) {
+            LOG_ERROR("SDL initialisation failed: {}", SDL_GetError());
             app::error_dialog("SDL initialisation failed.");
             return SDLInitFailed;
         }
@@ -305,7 +306,11 @@ int main(int argc, char *argv[]) {
     GuiState gui;
     if (!cfg.console) {
         gui::pre_init(gui, emuenv);
+        gui::init_bgm_player(emuenv.cfg.bgm_volume);
         if (!emuenv.cfg.initial_setup) {
+            gui.current_path_bgm = { "pd0", "data/systembgm/initialsetup.at9" };
+            if (gui::init_bgm(gui, emuenv))
+                gui::switch_bgm_state(false);
             while (!emuenv.cfg.initial_setup) {
                 if (handle_events(emuenv, gui)) {
                     gui::draw_begin(gui, emuenv);
@@ -462,6 +467,7 @@ int main(int argc, char *argv[]) {
         gui.imgui_state->do_clear_screen = false;
     }
 
+    gui::switch_bgm_state(true);
     gui::init_app_background(gui, emuenv, emuenv.io.app_path);
     gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
 

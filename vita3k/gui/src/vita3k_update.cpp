@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -202,12 +202,17 @@ static void download_update(const fs::path &base_path) {
     std::thread download([base_path]() {
         std::string download_continuous_link = "https://github.com/Vita3K/Vita3K/releases/download/continuous/";
 #ifdef _WIN32
+#if defined(__aarch64__) || defined(_M_ARM64)
+        download_continuous_link += "windows-arm64-latest.zip";
+#else
         download_continuous_link += "windows-latest.zip";
+#endif
 #elif defined(__APPLE__)
 #ifdef __aarch64__
-        download_continuous_link += "macos-arm64-latest.zip";
+        // download_continuous_link += "macos-arm64-latest.dmg"; // unstable
+        download_continuous_link += "macos-latest.dmg";
 #else
-        download_continuous_link += "macos-latest.zip";
+        download_continuous_link += "macos-latest.dmg";
 #endif
 #elif defined(__ANDROID__)
         download_continuous_link += "android-latest.apk";

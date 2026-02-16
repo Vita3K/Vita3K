@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,8 +22,11 @@
 #include <net/types.h>
 
 #include <array>
+#include <atomic>
+#include <condition_variable>
 #include <map>
 #include <mutex>
+#include <thread>
 
 typedef std::map<int, SocketPtr> NetSockets;
 typedef std::map<int, EpollPtr> NetEpolls;
@@ -54,4 +57,14 @@ struct NetCtlState {
     SceNetCtlEventType lastNotifiedAdhocEvent = SCE_NET_CTL_EVENT_TYPE_NONE;
     std::atomic<bool> adhocThreadRun = false;
     std::mutex mutex;
+
+    ~NetCtlState() {
+        {
+            const std::lock_guard<std::mutex> lock(mutex);
+            adhocThreadRun = false;
+        }
+        adhocCondVar.notify_all();
+        if (adhocThread.joinable())
+            adhocThread.join();
+    }
 };
