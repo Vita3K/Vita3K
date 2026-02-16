@@ -1366,13 +1366,16 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, "Adhoc");
         ImGui::Spacing();
 
+        const auto addrs = net_utils::get_all_assigned_addrs();
         std::vector<std::string> addrsStrings;
         std::vector<const char *> addrsSelect;
         std::vector<const char *> nMaskSelect;
-        const auto addrs = net_utils::get_all_assigned_addrs();
+        addrsStrings.reserve(addrs.size());
+        addrsSelect.reserve(addrs.size());
+        nMaskSelect.reserve(addrs.size());
 
         for (const auto &addr : addrs) {
-            addrsStrings.emplace_back(fmt::format("{} ({})", addr.addr, addr.name).c_str());
+            addrsStrings.emplace_back(fmt::format("{} ({})", addr.addr, addr.name));
             addrsSelect.emplace_back(addrsStrings.back().c_str());
             nMaskSelect.emplace_back(addr.netMask.c_str());
         }
