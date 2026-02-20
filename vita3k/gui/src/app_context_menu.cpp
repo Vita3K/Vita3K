@@ -873,6 +873,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_manual(gui, emuenv, app_path);
                 if (ImGui::MenuItem(gui.lang.home_screen["refresh"].c_str()))
                     refresh_app(gui, emuenv, app_path);
+                if (title_id.starts_with("PCS") && ImGui::MenuItem(gui.lang.online_storage["online_storage"].c_str()))
+                    open_cloud_save(gui, emuenv, title_id);
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu(common["delete"].c_str())) {
