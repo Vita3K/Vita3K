@@ -4,7 +4,7 @@
 	<main_menubar>
 		<file name="文件">
 			<open_pref_path>打开存放路径</open_pref_path>
-			<open_patch_path>打开补丁路径</open_patch_path>
+			<open_patches_path>打开补丁路径</open_patches_path>
 			<open_textures_path>打开纹理路径</open_textures_path>
 			<install_firmware>安装固件</install_firmware>
 			<install_pkg>安装pkg</install_pkg>
@@ -492,7 +492,8 @@
 			<enter_zrif>输入zRIF</enter_zrif>
 			<enter_zrif_key>输入zRIF密钥</enter_zrif_key>
 			<input_zrif>请在此处输入您的zRIF</input_zrif>
-			<copy_paste_zrif>Ctrl+C复制，Ctrl+V粘贴。</copy_paste_zrif>
+			<copy_paste_zrif>使用输入法剪贴板复制粘贴。
+键盘：Ctrl+C复制，Ctrl+V粘贴。</copy_paste_zrif>
 			<delete_pkg>删除pkg文件？</delete_pkg>
 			<delete_bin_rif>删除work.bin/rif文件？</delete_bin_rif>
 			<failed_install_package>无法安装该包。
@@ -507,9 +508,11 @@
 			<update_app>更新应用程序至：</update_app>
 			<failed_install_archive>无法安装{}个压缩包中的内容：</failed_install_archive>
 			<not_compatible_content>未发现兼容内容的{}个压缩包：</not_compatible_content>
+			<invalid_archive>这些压缩包是Vitamin或无效内容。</invalid_archive>
 			<delete_archive>删除压缩包？</delete_archive>
 		</archive_install>
 		<license_install>
+			<copy_paste_zrif>Ctrl+C复制，Ctrl+V粘贴。</copy_paste_zrif>
 			<successed_install_license>已成功安装授权。</successed_install_license>
 			<failed_install_license>无法安装授权。
 请检查work.bin/rif文件或zRIF密钥。</failed_install_license>
@@ -548,11 +551,12 @@
 	</live_area>
 
 	<message>
-		<load_app_failed>无法读取“{}”，
-请检查vita3k.log查看控制台输出的详细信息。
+		<could_not_load>无法读取文件{}，请检查vita3k.log查看控制台输出的详细信息。
+
 1、您是否安装了固件？
-2、重新提取您已拥有的PS Vita应用程序/游戏，并在Vita3K中安装。
-3、如果您想要安装/运行Vitamin是不支持的。</load_app_failed>
+2、您是否存在该应用程序/游戏的授权？
+3、重新提取您已拥有的PS Vita应用程序/游戏，并在Vita3K中安装。
+4、如果您想要安装/运行Vitamin是不支持的。</could_not_load>
 	</message>
 
 	<overlay name="虚拟按键">
@@ -728,6 +732,14 @@
 			<bgm_volume>背景音乐音量</bgm_volume>
 			<bgm_volume_description>调整主题背景音乐的音量百分比。</bgm_volume_description>
 		</audio>
+		<camera name="相机">
+			<front_camera>前置摄像头</front_camera>
+			<back_camera>后置摄像头</back_camera>
+			<image_not_set>图像未设置</image_not_set>
+			<set_image>设置图像</set_image>
+			<solid_color>纯色</solid_color>
+			<static_image>静态图像</static_image>
+		</camera>
 		<system name="系统">
 			<select_enter_button>确认按键分配
 请选择您的“确认”按键。</select_enter_button>

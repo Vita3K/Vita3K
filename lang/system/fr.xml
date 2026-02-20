@@ -438,6 +438,8 @@ Appuyez sur 'Autoriser l'accès' pour continuer.</storage_file_permissions>
 	</settings>
 
 	<settings_dialog name="Paramètres">
+		<camera name="Appareil photo">
+		</camera>
 		<system name="Système">
 		</system>
 		<network name="Réseau">

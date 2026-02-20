@@ -346,6 +346,8 @@ Je Vita3K-systeem is gereed!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Instellingen">
+		<camera name="Camera">
+		</camera>
 		<system name="Systeem">
 		</system>
 		<network name="Netwerk">
