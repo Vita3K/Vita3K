@@ -959,6 +959,9 @@ static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message,
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_FINISHED:
         switch (emuenv.common_dialog.savedata.display_type) {
+        case SCE_SAVEDATA_DIALOG_TYPE_HIDDEN:
+            emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+            break;
         case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
             emuenv.common_dialog.savedata.msg = save["saving_complete"];
             break;
