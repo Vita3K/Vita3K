@@ -74,6 +74,9 @@ static const char *archs[] = {
 };
 
 void draw_disassembly_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    if (!ImGui::IsPopupOpen("Disassembly", ImGuiPopupFlags_AnyPopup)) {
+        ImGui::SetNextWindowSize(ImVec2(500, 400), ImGuiCond_FirstUseEver);
+    }
     ImGui::Begin("Disassembly", &gui.debug_menu.disassembly_dialog);
     ImGui::BeginChild("disasm", ImVec2(0, -(ImGui::GetTextLineHeightWithSpacing() + 10)));
     for (const std::string &assembly : gui.disassembly) {
