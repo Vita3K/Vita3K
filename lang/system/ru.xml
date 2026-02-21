@@ -668,6 +668,14 @@
 			<enable_ngs_support>Включение поддержки NGS</enable_ngs_support>
 			<ngs_description>Установите флажок, чтобы включить поддержку расширенной аудио библиотеки NGS.</ngs_description>
 		</audio>
+		<camera name="Камера">
+			<front_camera>Передняя камера</front_camera>
+			<back_camera>Задняя камера</back_camera>
+			<image_not_set>Изображение не установлено</image_not_set>
+			<set_image>Установить изображение</set_image>
+			<solid_color>Сплошной цвет</solid_color>
+			<static_image>Статичное изображение</static_image>
+		</camera>
 		<system name="Система">
 			<select_enter_button> Назначение кнопки "Ввод".
 Выберите свою кнопку "Ввод".</select_enter_button>
@@ -837,8 +845,6 @@
 		<user_deleted>Пользователь удален.</user_deleted>
 		<choose_avatar>Выбрать аватар</choose_avatar>
 		<reset_avatar>Сбросить аватар</reset_avatar>
-		<name>Название</name>
-		<user>Пользователь</user>
 		<confirm>Подтвердить</confirm>
 		<automatic_user_login>Автоматический вход в систему</automatic_user_login>
 	</user_management>

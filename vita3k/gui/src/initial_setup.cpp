@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,11 @@
 #include <gui/functions.h>
 #include <host/dialog/filesystem.h>
 #include <lang/functions.h>
+
+#ifdef __ANDROID__
+#include <SDL3/SDL_system.h>
+#include <jni.h>
+#endif
 
 namespace gui {
 
@@ -62,6 +67,9 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         FINISHED
     };
 
+#ifdef __ANDROID__
+    static bool has_all_files_access = false;
+#endif
     static InitialSetup setup = SELECT_LANGUAGE;
     static std::string title_str;
 
@@ -152,12 +160,38 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     case SELECT_PREF_PATH:
         title_str = lang["select_pref_path"];
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
+#ifdef __ANDROID__
+        has_all_files_access = []() -> bool {
+            JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
+            jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
+            jclass clazz = env->GetObjectClass(activity);
+
+            jmethodID method_id = env->GetMethodID(clazz, "isStorageManagerEnabled", "()Z");
+            jboolean result = env->CallBooleanMethod(activity, method_id);
+
+            env->DeleteLocalRef(clazz);
+            env->DeleteLocalRef(activity);
+
+            return result == JNI_TRUE;
+        }();
+
+        if (!has_all_files_access) {
+            TextColoredCentered(ImVec4(0.98f, 0.01f, 0.20f, 1.0f), lang["storage_file_permissions"].c_str(), 20.f * SCALE.x);
+            ImGui::SetCursorPos(BIG_BUTTON_POS);
+            if (ImGui::Button(lang["grant_access"].c_str(), BIG_BUTTON_SIZE)) {
+                JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
+                jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
+                jclass clazz(env->GetObjectClass(activity));
+                jmethodID method_id = env->GetMethodID(clazz, "setStoragePermission", "()V");
+                env->CallVoidMethod(activity, method_id);
+                env->DeleteLocalRef(activity);
+                env->DeleteLocalRef(clazz);
+            }
+            break;
+        }
+#endif
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["current_emu_path"].c_str());
         ImGui::Spacing();
-#ifdef __ANDROID__
-        TextColoredCentered(ImVec4(0.98f, 0.01f, 0.20f, 1.0f), gui.lang.settings_dialog.emulator["storage_folder_permissions"].c_str());
-        ImGui::Spacing();
-#endif
         TextCentered(emuenv.cfg.pref_path.c_str(), 0);
         ImGui::SetCursorPos(!is_default_path ? ImVec2((WINDOW_SIZE.x / 2.f) - BIG_BUTTON_SIZE.x - (20.f * SCALE.x), BIG_BUTTON_POS.y) : BIG_BUTTON_POS);
         if (ImGui::Button(lang["change_emu_path"].c_str(), BIG_BUTTON_SIZE)) {
@@ -244,7 +278,9 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             config::serialize_config(emuenv.cfg, emuenv.config_path);
         }
         break;
-    default: break;
+    default:
+        LOG_ERROR("Unknown initial setup step: {}", static_cast<int>(setup));
+        break;
     }
 
     ImGui::SetWindowFontScale(1.f);
@@ -258,10 +294,16 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     if ((setup > SELECT_LANGUAGE) && ImGui::Button(lang["back"].c_str(), BUTTON_SIZE) || (setup > SELECT_LANGUAGE) && ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_circle)))
         setup = (InitialSetup)(setup - 1);
     ImGui::SetCursorPos(ImVec2(VIEWPORT_SIZE.x - BUTTON_SIZE.x - BUTTON_POS.x, BUTTON_POS.y));
-    if ((setup < FINISHED) && ImGui::Button(lang["next"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
+#ifdef __ANDROID__
+    ImGui::BeginDisabled((setup == SELECT_PREF_PATH) && !has_all_files_access);
+#endif
+    if ((setup < FINISHED) && (ImGui::Button(lang["next"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross)))) {
         setup = (InitialSetup)(setup + 1);
         config::serialize_config(emuenv.cfg, emuenv.config_path);
     }
+#ifdef __ANDROID__
+    ImGui::EndDisabled();
+#endif
     ImGui::SetWindowFontScale(1.f);
 
     ImGui::PopStyleVar();

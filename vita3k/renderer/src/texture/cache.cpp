@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -458,6 +458,10 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+            if (support_pvrt) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_PVRT");
+                break;
+            }
             if (!is_swizzled)
                 LOG_ERROR_ONCE("Unhandled non-swizzled PVRT format, please report it to the developers");
 
@@ -479,22 +483,34 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
             // this format is supported on all GPUs with vulkan
-            if (is_vulkan)
+            if (is_vulkan && support_e5rgb9) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9");
                 break;
+            }
+
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 6);
             decompress_packed_float_e5m9m9m9(base_format, texture_data_decompressed.data(), pixels, width, memory_height);
             pixels = texture_data_decompressed.data();
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
             // don't change what openGL is doing (which is completely wrong)
-            if (!is_vulkan)
+            // ignore conversion if supported
+            if (!is_vulkan || support_a2rgb10) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10");
                 break;
+            }
+
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 8);
             convert_u2f10f10f10_to_f16f16f16f16(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height, fmt);
             pixels = texture_data_decompressed.data();
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16;
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+            if (support_x8d24) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_X8U24");
+                break;
+            }
+
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
             if (is_vulkan) {
                 // d24_u8 or x8_d24 is not supported on all GPUs (thanks AMD)

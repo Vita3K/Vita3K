@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -59,6 +59,7 @@ struct RegMgrState;
 struct SfoFile;
 struct GDBState;
 struct HTTPState;
+struct CameraState;
 
 typedef int32_t SceInt;
 struct IVector2 {
@@ -104,6 +105,7 @@ private:
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
     std::unique_ptr<HTTPState> _http;
+    std::unique_ptr<CameraState> _camera;
 
 public:
     // App info contained in its `param.sfo` file
@@ -174,6 +176,7 @@ public:
     FVector2 gui_scale = { 1.f, 1.f };
     GDBState &gdb;
     HTTPState &http;
+    CameraState &camera;
     int max_font_level = 0;
     int current_font_level = 0;
 

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -194,12 +194,12 @@ static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiode
             ctrl->pcm_size_max = info.channels * SCE_AUDIODEC_MP3_V2_MAX_PCM_SIZE;
             return 0;
         default:
-            LOG_ERROR("Invalid MPEG version {}.", to_debug_str(emuenv.mem, info.version));
+            LOG_ERROR("Invalid MPEG version {}.", info.version);
             return SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION;
         }
     }
     default: {
-        LOG_ERROR("Unimplemented audio decoder {}.", to_debug_str(emuenv.mem, codec));
+        LOG_ERROR("Unimplemented audio decoder {}.", codec);
         return -1;
     }
     }

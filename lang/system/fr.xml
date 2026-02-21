@@ -339,6 +339,9 @@ Ne pas éteindre le système, ni fermer l'application.</warning_saving>
 		<completed_setup>Vous avez terminé l'installation initiale.
 Votre système Vita3K est prêt !</completed_setup>
 		<select_language>Sélectionner une langue.</select_language>
+		<storage_file_permissions>Vita3K nécessite un accès complet aux fichiers.
+Appuyez sur 'Autoriser l'accès' pour continuer.</storage_file_permissions>
+		<grant_access>Autoriser l'accès</grant_access>
 		<install_firmware>Installer le Firmware.</install_firmware>
 		<next>Suivant</next>
 	</initial_setup>
@@ -370,6 +373,9 @@ Votre système Vita3K est prêt !</completed_setup>
 	</live_area>
 
 	<settings name="Paramètres">
+		<sound_display name="Son et affichage">
+			<system_music>Musique système</system_music>
+		</sound_display>
 		<theme_background name="Thème et Arrière-plan">
 			<default>Par défaut</default>
 			<theme name="Thème">
@@ -483,7 +489,6 @@ Voulez-vous vraiment continuer?</user_delete_warn>
 		<user_deleted>Utilisateur supprimé.</user_deleted>
 		<choose_avatar>Choisir un avatar</choose_avatar>
 		<reset_avatar>Réinitialiser l'avatar</reset_avatar>
-		<name>Nom</name>
 		<user>Utilisateur</user>
 		<confirm>Confirmer</confirm>
 		<automatic_user_login>Connexion automatique de l'utilisateur</automatic_user_login>

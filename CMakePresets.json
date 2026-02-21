@@ -11,9 +11,6 @@
       "hidden": true,
       "description": "Base hidden preset to set general options",
       "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "USE_DISCORD_RICH_PRESENCE": true
-      },
       "environment": {
         "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
       }
@@ -34,16 +31,14 @@
       "inherits": "windows",
       "displayName": "Windows with Visual Studio 2026",
       "description": "Windows native build using Visual Studio 2026 generator and default toolchain/compiler",
-      "generator": "Visual Studio 18 2026",
-      "architecture": "x64"
+      "generator": "Visual Studio 18 2026"
     },
     {
       "name": "windows-vs2022",
       "inherits": "windows",
       "displayName": "Windows with Visual Studio 2022",
       "description": "Windows native build using Visual Studio 2022 generator and default toolchain/compiler",
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x64"
+      "generator": "Visual Studio 17 2022"
     },
     {
       "name": "windows-vs2022-clang",
@@ -150,7 +145,7 @@
     }
   ],
   "buildPresets": [
-      {
+    {
       "name": "windows-vs2026-debug",
       "displayName": "Debug",
       "description": "Build with debugging information and no compiler optimizations",

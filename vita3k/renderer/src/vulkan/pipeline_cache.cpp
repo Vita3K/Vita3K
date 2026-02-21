@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -396,7 +396,7 @@ static const vk::SpecializationInfo srgb_info_false = {
 
 vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints, bool is_srgb) {
     if (maskupdate)
-        LOG_CRITICAL("Mask not implemented in the vulkan renderer!");
+        LOG_WARN_ONCE("Mask not implemented in the vulkan renderer!");
 
     const vk::ShaderModule shader_compiling = std::bit_cast<vk::ShaderModule>(~0ULL);
 
@@ -518,7 +518,7 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, bool force
     vk::AttachmentLoadOp load_op = force_load ? vk::AttachmentLoadOp::eLoad : vk::AttachmentLoadOp::eClear;
     vk::AttachmentStoreOp store_op = force_store ? vk::AttachmentStoreOp::eStore : vk::AttachmentStoreOp::eDontCare;
     vk::AttachmentDescription ds_attachment{
-        .format = vk::Format::eD32SfloatS8Uint,
+        .format = state.deep_stencil_use,
         .samples = vk::SampleCountFlagBits::e1,
         .loadOp = load_op,
         .storeOp = store_op,

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -182,6 +182,13 @@ void ThreadState::exit_delete(bool exit) {
     } else {
         stop(*cpu);
     }
+
+    // Wake if thread waiting on status_cond
+    if (status == ThreadStatus::wait)
+        update_status(ThreadStatus::run);
+
+    // Wake if thread waiting on sceKernelWaitSignal
+    signal.send();
 }
 
 bool ThreadState::run_loop() {

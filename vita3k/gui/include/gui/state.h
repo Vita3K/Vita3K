@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -186,6 +186,7 @@ struct User {
     std::string avatar = "default";
     gui::SortType sort_apps_type = gui::TITLE;
     gui::SortState sort_apps_state = gui::ASCENDANT;
+    bool system_music = true;
     std::string theme_id = "default";
     bool use_theme_bg = true;
     std::string start_type = "default";
@@ -246,6 +247,23 @@ struct InfoMessage {
     std::string msg;
 };
 
+enum class GateAnimationState {
+    None,
+    EnterApp,
+    PreRunApp,
+    ReturnApp
+};
+
+struct GateAnimation {
+    GateAnimationState state = GateAnimationState::None;
+    static constexpr float duration = 0.32f;
+    float progress = 0.f;
+    std::chrono::steady_clock::time_point start_time;
+
+    void start(GateAnimationState anim_state);
+    void update();
+};
+
 // 2.f is enough for the current font size.
 const float FontScaleCandidates[] = { 1.f, 1.5f, 2.f };
 const int FontScaleCandidatesSize = std::size(FontScaleCandidates);
@@ -300,6 +318,7 @@ struct GuiState {
 
     std::map<std::string, std::vector<TimeApp>> time_apps;
 
+    std::pair<std::string, std::string> current_path_bgm;
     std::uint64_t current_theme_bg = 0;
     std::map<std::string, std::map<ThemePreviewType, ImGui_Texture>> themes_preview;
     std::vector<ImGui_Texture> theme_backgrounds;
@@ -328,6 +347,7 @@ struct GuiState {
 
     InfoBarColor information_bar_color;
 
+    GateAnimation gate_animation{};
     ImGui_Texture live_area_last_app_frame;
     std::map<std::string, std::map<std::string, ImGui_Texture>> live_area_contents;
     std::map<std::string, std::map<std::string, std::map<std::string, std::vector<ImGui_Texture>>>> live_items;

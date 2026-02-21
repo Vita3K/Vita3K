@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,8 +26,10 @@
 #define SCE_NET_AF_INET 2
 
 // Define our own htonll and ntohll because its not available in some systems/platforms
-#define HTONLL(x) ((((uint64_t)htonl((x)&0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32)))
-#define NTOHLL(x) ((((uint64_t)ntohl((x)&0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32)))
+#define HTONLL(x) ((((uint64_t)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32)))
+#define NTOHLL(x) ((((uint64_t)ntohl((x) & 0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32)))
+
+typedef SceUInt32 SceNetSocklen_t;
 
 enum SceNetProtocol : uint32_t {
     SCE_NET_IPPROTO_IP = 0,
@@ -363,6 +365,21 @@ struct SceNetSockaddr {
     char sa_data[14];
 };
 static_assert(sizeof(SceNetSockaddr) == 16, "SceNetSockaddr has incorrect size");
+
+struct SceNetIovec {
+    Ptr<void> iov_base; // Base address (pointer)
+    SceSize iov_len; // Size of area (in bytes) indicated by iov_base
+};
+
+struct SceNetMsghdr {
+    Ptr<SceNetSockaddr> msg_name; // Pointer to address structure
+    SceNetSocklen_t msg_namelen; // Size of address structure
+    Ptr<SceNetIovec> msg_iov; // Pointer to scatter/gather array
+    int msg_iovlen; // Number of elements in msg_iov array
+    Ptr<void> msg_control; // (unsupported)
+    SceNetSocklen_t msg_controllen; // (unsupported)
+    int msg_flags; // (unsupported)
+};
 
 struct SceNetInitParam {
     Ptr<void> memory;

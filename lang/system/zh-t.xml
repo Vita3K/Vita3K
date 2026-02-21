@@ -359,6 +359,9 @@
 		<miscellaneous>雜項</miscellaneous>
 		<toggle_texture_replacement>切換紋理替換</toggle_texture_replacement>
 		<take_screenshot>截圖</take_screenshot>
+		<pinch_modifier>捏合變更按鈕</pinch_modifier>
+		<alternate_pinch_in>交替捏合向內按鈕</alternate_pinch_in>
+		<alternate_pinch_out>交替捏合向外/伸縮按鈕</alternate_pinch_out>
 		<error_duplicate_key>此按鈕已繫結至其他鍵或已被保留。</error_duplicate_key>
 		<reset_controls_binding>重設控制繫結</reset_controls_binding>
 	</controls>
@@ -447,6 +450,9 @@
 請盡情享受Vita3K。</completed_setup>
 		<select_language>請選擇語言。</select_language>
 		<select_pref_path>請選擇存放路徑。</select_pref_path>
+		<storage_file_permissions>Vita3K需要完整的檔案存取權限。
+點擊"授予存取權限"以繼續。</storage_file_permissions>
+		<grant_access>授予存取權限</grant_access>
 		<current_emu_path>當前模擬器路徑</current_emu_path>
 		<change_emu_path>更改模擬器路徑</change_emu_path>
 		<reset_emu_path>重置模擬器路徑</reset_emu_path>
@@ -719,6 +725,8 @@
 			<audio_volume_description>調整全域音訊輸出的音量百分比。</audio_volume_description>
 			<enable_ngs_support>啟用NGS支援</enable_ngs_support>
 			<ngs_description>取消勾選此項停用對高階音訊庫NGS的支援。</ngs_description>
+			<bgm_volume>背景音樂音量</bgm_volume>
+			<bgm_volume_description>調整主題背景音樂的音量百分比。</bgm_volume_description>
 		</audio>
 		<system name="系統">
 			<select_enter_button>確認按鈕分配
@@ -788,7 +796,6 @@
 			<reset_emu_path>重置模擬器路徑</reset_emu_path>
 			<reset_emu_path_description>重置Vita3K模擬器為預設路徑。
 您需要手動將舊資料夾移動到預設位置。</reset_emu_path_description>
-			<storage_folder_permissions>使用不同路徑需要額外權限</storage_folder_permissions>
 			<custom_config_settings>自訂組態設定</custom_config_settings>
 			<clear_custom_config>清除自訂組態</clear_custom_config>
 			<screenshot_image_type>截圖圖像類型</screenshot_image_type>
@@ -936,7 +943,6 @@
 		<user_deleted>已刪除使用者。</user_deleted>
 		<choose_avatar>選擇個人造型</choose_avatar>
 		<reset_avatar>重置個人造型</reset_avatar>
-		<name>名稱</name>
 		<confirm>確定</confirm>
 		<automatic_user_login>自動登入使用者</automatic_user_login>
 	</user_management>

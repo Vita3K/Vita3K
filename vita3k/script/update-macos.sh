@@ -4,7 +4,8 @@ APP_PATH="$(dirname "$0")/../../.."
 ARCH=$(uname -m)
 
 if [ "$ARCH" = "arm64" ]; then
-  DMG_NAME=macos-arm64-latest.dmg
+  # DMG_NAME=macos-arm64-latest.dmg # unstable
+  DMG_NAME=macos-latest.dmg
 else
   DMG_NAME=macos-latest.dmg
 fi

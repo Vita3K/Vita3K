@@ -43,12 +43,24 @@ jobs:
             cmake_preset: linux-ninja-clang-appimage
 
           - os: windows-latest
+            arch: x86_64
             cache_path: |
-                C:\vcpkg\installed
-                C:\vcpkg\packages
-                C:\Users\runneradmin\AppData\Local\ccache
+              C:\vcpkg\installed
+              C:\vcpkg\packages
+              C:\Users\runneradmin\AppData\Local\ccache
+            vcpkg_triplet: x64-windows-static-md
             extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
             cmake_preset: windows-ninja
+
+          - os: windows-11-arm
+            arch: arm64
+            cache_path: |
+              C:\vcpkg\installed
+              C:\vcpkg\packages
+              C:\Users\runneradmin\AppData\Local\ccache
+            vcpkg_triplet: arm64-windows-static-md
+            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=arm64-windows-static-md
+            cmake_preset: windows-ninja-clang
 
           - os: macos-intel
             runs_on: macos-latest
@@ -64,6 +76,7 @@ jobs:
 
           - os: android
             runs_on: ubuntu-latest
+            vcpkg_triplet: arm64-android
 
     steps:
       - uses: actions/checkout@v6
@@ -94,17 +107,19 @@ jobs:
 
       - name: Set up build environment (Windows)
         run: |
-          vcpkg install zlib:x64-windows-static-md boost-system:x64-windows-static-md boost-filesystem:x64-windows-static-md boost-program-options:x64-windows-static-md boost-icl:x64-windows-static-md boost-variant:x64-windows-static-md curl:x64-windows-static-md openssl:x64-windows-static-md
+          vcpkg install zlib boost-system boost-filesystem boost-program-options boost-icl boost-variant curl openssl --triplet=${{ matrix.vcpkg_triplet }}
           choco install ccache
-        if: matrix.os == 'windows-latest'
+        if: startsWith(matrix.os, 'windows')
 
       - uses: ilammy/msvc-dev-cmd@v1
-        if: matrix.os == 'windows-latest'
+        with:
+          arch: ${{ matrix.arch }}
+        if: startsWith(matrix.os, 'windows')
 
       - name: Set up build environment (Android)
         run: |
           sudo apt-get install -y ninja-build
-          vcpkg install boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
+          vcpkg install boost-system boost-filesystem boost-program-options boost-icl boost-variant openssl zlib --triplet=${{ matrix.vcpkg_triplet }}
         if: matrix.os == 'android'
 
       - uses: hendrikmuhs/ccache-action@v1.2
@@ -185,7 +200,6 @@ jobs:
 
       - name: Compute git short SHA
         shell: bash
-        if: env.GIT_SHORT_SHA == ''
         run: echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Create DMG (macOS)
@@ -263,11 +277,6 @@ jobs:
           | jq -r '.commit.author.name')
           echo "COMMITTER_NAME=$COMMITTER" >> $GITHUB_ENV
 
-      - name: Download ghr
-        run: |
-          wget -c https://github.com/tcnksm/ghr/releases/download/v0.17.0/ghr_v0.17.0_linux_amd64.tar.gz
-          tar xfv ghr_v0.17.0_linux_amd64.tar.gz
-
       - name: Prepare artifacts
         run: |
           mkdir -p artifacts-master artifacts-store
@@ -281,7 +290,7 @@ jobs:
             elif [[ $dir == *-macos-intel ]]; then
               echo "Processing $dir (macOS Intel)"
               cp $dir/*.dmg artifacts-master/macos-latest.dmg
-              cp $dir/*.dmg artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-macos.dmg
+              cp $dir/*.dmg artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-macos-intel.dmg
             elif [[ $dir == *-macos-arm64 ]]; then
               echo "Processing $dir (macOS ARM64)"
               cp $dir/*.dmg artifacts-master/macos-arm64-latest.dmg
@@ -305,7 +314,11 @@ jobs:
             elif [[ $dir == *-windows-latest ]]; then
               echo "Processing $dir (Windows x86_64)"
               (cd $dir && zip -r ../artifacts-master/windows-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-windows.7z $dir
+              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-windows-x86_64.7z $dir
+            elif [[ $dir == *-windows-11-arm ]]; then
+              echo "Processing $dir (Windows ARM64)"
+              (cd $dir && zip -r ../artifacts-master/windows-arm64-latest.zip *)
+              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-windows-arm64.7z $dir
             fi
           done
           echo "=== artifacts-master ==="
@@ -313,20 +326,24 @@ jobs:
           echo "=== artifacts-store ==="
           ls -al artifacts-store/
 
-      - name: Upload to store repository
-        run: |
-          ghr_v0.17.0_linux_amd64/ghr -u ${{ github.repository_owner }} -r Vita3K-builds \
-            -n "Build: ${{ env.BUILD_VARIABLE }}" \
-            -b "$(printf "Corresponding commit: [${{ env.LAST_COMMIT_MESSAGE }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})")" \
-            ${{ env.BUILD_VARIABLE }} artifacts-store/
-        env:
-          GITHUB_TOKEN: ${{ secrets.STORE_TOKEN }}
+      - name: "Upload to store repository"
+        uses: tcnksm/ghr@v0
+        with:
+            tag: ${{ env.BUILD_VARIABLE }}
+            path: artifacts-store/
+            owner: ${{ github.repository_owner }}
+            repository: Vita3K-builds
+            name: "Build: ${{ env.BUILD_VARIABLE }}"
+            body: "Corresponding commit: [${{ env.LAST_COMMIT_MESSAGE }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})"
+            token: ${{ secrets.STORE_TOKEN }}
 
-      - name: Upload to master repository
-        run: |
-          ghr_v0.17.0_linux_amd64/ghr -u ${{ github.repository_owner }} -r Vita3K -recreate \
-            -n 'Automatic CI builds' \
-            -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}")" \
-            continuous artifacts-master/
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Upload to master repository"
+        uses: tcnksm/ghr@v0
+        with:
+            tag: continuous
+            path: artifacts-master/
+            delete: "true"
+            owner: ${{ github.repository_owner }}
+            repository: Vita3K
+            name: "Automatic CI builds"
+            body: "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}"

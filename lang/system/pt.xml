@@ -376,7 +376,6 @@ Pode ganhar troféus utilizando uma aplicações que suporte a funcionalidade de
 Tem a certeza de que pretende continuar?</user_delete_warn>
 		<user_deleted>Utilizador eliminado.</user_deleted>
 		<choose_avatar>Escolher avatar</choose_avatar>
-		<name>Nome</name>
 		<user>Utilizador</user>
 		<confirm>Confirmar</confirm>
 	</user_management>

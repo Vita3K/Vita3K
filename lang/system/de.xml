@@ -266,6 +266,9 @@ Schalte das System nicht aus und schließe die Anwendung nicht.</warning_saving>
 		<completed_setup>Die Erstinstallation ist jetzt abgeschlossen.
 Dein Vita3K-System ist bereit!</completed_setup>
 		<select_language>Wähle eine Sprache.</select_language>
+		<storage_file_permissions>Vita3K benötigt vollständigen Dateizugriff.
+Tippe auf 'Zugriff gewähren', um fortzufahren.</storage_file_permissions>
+		<grant_access>Zugriff gewähren</grant_access>
 		<install_firmware>Installiere Firmware.</install_firmware>
 		<next>Weiter</next>
 	</initial_setup>
@@ -382,7 +385,6 @@ Wirklich fortfahren?</user_delete_warn>
 		<user_deleted>Benutzer gelöscht.</user_deleted>
 		<choose_avatar>Avatar auswählen</choose_avatar>
 		<reset_avatar>Avatar zurücksetzen</reset_avatar>
-		<name>Name</name>
 		<user>Benutzer</user>
 		<confirm>Bestätigen</confirm>
 		<automatic_user_login>Benutzer automatisch einloggen</automatic_user_login>

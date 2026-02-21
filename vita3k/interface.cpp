@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include "module/load_module.h"
 
 #include <app/functions.h>
+#include <audio/state.h>
 #include <config/state.h>
 #include <ctime>
 #include <ctrl/functions.h>
@@ -84,6 +85,7 @@ static void set_theme_name(EmuEnvState &emuenv, vfs::FileBuffer &buf) {
     const auto nospace = std::remove_if(emuenv.app_info.app_title_id.begin(), emuenv.app_info.app_title_id.end(), isspace);
     emuenv.app_info.app_title_id.erase(nospace, emuenv.app_info.app_title_id.end());
     emuenv.app_info.app_category = "theme";
+    emuenv.app_info.app_content_id = emuenv.app_info.app_title_id;
     emuenv.app_info.app_title += " (Theme)";
 }
 
@@ -145,7 +147,7 @@ static bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const Zi
             return false;
     } else if (is_theme) {
         set_theme_name(emuenv, theme);
-        output_path /= fs::path("theme") / emuenv.app_info.app_title_id;
+        output_path /= fs::path("theme") / emuenv.app_info.app_content_id;
     } else {
         LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), sfo_path);
         return false;
@@ -657,6 +659,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             gui.is_key_locked = true;
             if (allow_switch_state) {
                 // Show/Hide Live Area during app running
+                const auto current_app_state = emuenv.kernel.is_threads_paused();
                 const auto live_area_app_index = gui::get_live_area_current_open_apps_list_index(gui, emuenv.io.app_path);
                 if (live_area_app_index == gui.live_area_current_open_apps_list.end())
                     gui::open_live_area(gui, emuenv, emuenv.io.app_path);
@@ -666,16 +669,21 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                         gui.live_area_app_current_open = static_cast<int32_t>(std::distance(live_area_app_index, gui.live_area_current_open_apps_list.end()) - 1);
 
                     // Switch Live Area state
-                    gui.vita_area.information_bar = !gui.vita_area.information_bar;
-                    gui.vita_area.live_area_screen = !gui.vita_area.live_area_screen;
+                    if (!gui.vita_area.live_area_screen) {
+                        gui.vita_area.information_bar = true;
+                        gui.vita_area.live_area_screen = true;
+                    }
                 }
 
-                // Update the last app frame for live area
-                if (gui.vita_area.live_area_screen)
+                if (!current_app_state) {
+                    // Update the last app frame for live area
                     update_live_area_last_app_frame(emuenv, gui);
-
-                app::switch_state(emuenv, !emuenv.kernel.is_threads_paused());
-
+                    gui.gate_animation.start(GateAnimationState::ReturnApp);
+                    app::switch_state(emuenv, !current_app_state);
+                    gui::switch_bgm_state(!current_app_state);
+                } else {
+                    gui.gate_animation.start(GateAnimationState::EnterApp);
+                }
             } else if (!gui::get_sys_apps_state(gui))
                 gui::close_system_app(gui, emuenv);
             break;
@@ -694,8 +702,11 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
         switch (event.type) {
         case SDL_EVENT_QUIT:
+            gui::destroy_bgm_player();
             if (!emuenv.io.app_path.empty())
                 gui::update_time_app_used(gui, emuenv, emuenv.io.app_path);
+            if (emuenv.audio.adapter)
+                emuenv.audio.switch_state(true);
             emuenv.kernel.exit_delete_all_threads();
             emuenv.gxm.display_queue.abort();
             emuenv.display.abort = true;
@@ -746,7 +757,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 gui.is_capturing_keys = false;
             }
 
-            if (ImGui::GetIO().WantTextInput || gui.is_key_locked || emuenv.drop_inputs)
+            if (ImGui::GetIO().WantTextInput || gui.is_key_locked || emuenv.drop_inputs || gui.gate_animation.state != GateAnimationState::None)
                 continue;
 #ifdef __ANDROID__
             if (event.key.scancode == SDL_SCANCODE_AC_BACK)
@@ -763,8 +774,15 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 toggle_texture_replacement(emuenv);
             if (event.key.scancode == emuenv.cfg.keyboard_take_screenshot && !gui.is_key_capture_dropped)
                 take_screenshot(emuenv);
-#endif
+            if ((event.key.scancode == emuenv.cfg.keyboard_pinch_modifier || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out) && !gui.is_key_capture_dropped)
+                pinch_modifier(true);
 
+            const float pinch_amount = 0.5;
+            if (event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in && !gui.is_key_capture_dropped)
+                pinch_automove(pinch_amount * -1);
+            if (event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out && !gui.is_key_capture_dropped)
+                pinch_automove(pinch_amount);
+#endif
             if (sce_ctrl_btn != 0) {
                 if (last_buttons.contains(sce_ctrl_btn)) {
                     continue;
@@ -777,11 +795,17 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         }
         case SDL_EVENT_KEY_UP:
             gui.is_key_locked = false;
+            if (event.key.scancode == emuenv.cfg.keyboard_pinch_modifier || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out) {
+                pinch_modifier(false);
+                pinch_automove(0);
+            }
+
             break;
 
+        case SDL_EVENT_MOUSE_WHEEL:
+            pinch_move(event.wheel.y);
         case SDL_EVENT_MOUSE_MOTION:
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
-        case SDL_EVENT_MOUSE_WHEEL:
             gui.is_nav_button = false;
             break;
 

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -58,6 +58,36 @@ static bool format_need_additional_memory(SceGxmColorBaseFormat format) {
 }
 
 namespace renderer::vulkan {
+
+static void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
+    const bool trap_reads = (info.tiling == SurfaceTiling::Linear
+        && format_support_surface_sync(info.format));
+
+    uint32_t addr_start = align(info.data.address(), KiB(4));
+    uint32_t addr_end = align_down(info.data.address() + info.total_bytes, KiB(4));
+    bool small_surface = addr_start >= addr_end;
+    if (small_surface) {
+        // we still need to protect something, even if it's not completely accurate
+        addr_start = align_down(info.data.address(), KiB(4));
+        addr_end = align(info.data.address() + info.total_bytes, KiB(4));
+    }
+
+    // Use MemPerm::None to trap both reads and writes for surfaces that support sync,
+    // MemPerm::ReadOnly to trap only writes for other surfaces
+    MemPerm perm = trap_reads ? MemPerm::None : MemPerm::ReadOnly;
+    std::shared_ptr<bool> need_sync = trap_reads ? info.need_surface_sync : nullptr;
+    // Don't track dirty for small surfaces to avoid false positives from unrelated writes
+    std::shared_ptr<bool> dirty = small_surface ? nullptr : info.dirty;
+
+    add_protect(mem, addr_start, addr_end - addr_start, perm,
+        [dirty, need_sync](Address, bool write) {
+            if (write && dirty)
+                *dirty = true;
+            if (need_sync)
+                *need_sync = true;
+            return true;
+        });
+}
 
 ColorSurfaceCacheInfo::~ColorSurfaceCacheInfo() {
     sws_freeContext(sws_context);
@@ -188,6 +218,11 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
             color_surface_queue.set_as_lru(&info);
         } else {
             color_surface_queue.set_as_mru(&info);
+
+            if (info.data && *info.dirty)
+                protect_surface(mem, info);
+            *info.dirty = false;
+
             last_written_surface = &info;
 
             // if this surface has not been rendered to for the last 60 frames, consider it is not safe not to render all shaders to it
@@ -275,26 +310,16 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
 
     last_written_surface = &info_added;
     info_added.need_surface_sync.reset();
-    info_added.need_surface_sync = std::make_shared<bool>();
-    *info_added.need_surface_sync = false;
+    info_added.need_surface_sync = std::make_shared<bool>(false);
+    info_added.dirty = std::make_shared<bool>(false);
 
     // we only support surface sync of linear surfaces for now
     if (!can_mprotect_mapped_memory) {
         // perform surface sync on everything
         // it is slow but well... we can't mprotect the buffer
         *info_added.need_surface_sync = color->surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR;
-    } else if (color->surfaceType == SCE_GXM_COLOR_SURFACE_LINEAR && format_support_surface_sync(base_format)) {
-        uint32_t addr_start = align(info_added.data.address(), KiB(4));
-        uint32_t addr_end = align_down(info_added.data.address() + info_added.total_bytes, KiB(4));
-        if (addr_start >= addr_end) {
-            // we still need to protect something, even if it's not completely accurate
-            addr_start = align_down(info_added.data.address(), KiB(4));
-            addr_end = align(info_added.data.address() + info_added.total_bytes, KiB(4));
-        }
-        add_protect(mem, addr_start, addr_end - addr_start, MemPerm::None, [need_sync = info_added.need_surface_sync](Address addr, bool) {
-            *need_sync = true;
-            return true;
-        });
+    } else {
+        protect_surface(mem, info_added);
     }
 
     // it's not impossible that this surface will be rendered once and only used after, so do not skip any shader on it
@@ -326,6 +351,10 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     overlap = (overlap && (ite->first + ite->second->total_bytes) > address);
 
     if (!overlap)
+        return std::nullopt;
+
+    if (*ite->second->dirty)
+        // Guest wrote to the surface backing memory since it was rendered, so GPU data is stale.
         return std::nullopt;
 
     const vk::ComponentMapping swizzle = texture::translate_swizzle(gxm::get_format(texture));
@@ -688,7 +717,7 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
 
     image.width = width;
     image.height = height;
-    image.format = vk::Format::eD32SfloatS8Uint;
+    image.format = state.deep_stencil_use;
     image.layout = vkutil::ImageLayout::Undefined;
     image.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled);
 
@@ -838,7 +867,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
             vk::ImageViewCreateInfo view_info{
                 .image = cached_info.texture.image,
                 .viewType = vk::ImageViewType::e2D,
-                .format = vk::Format::eD32SfloatS8Uint,
+                .format = state.deep_stencil_use,
                 .components = {},
                 .subresourceRange = range
             };
@@ -861,7 +890,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         return TextureLookupResult{
             img_view,
             vkutil::ImageLayout::DepthStencilReadOnly,
-            vk::Format::eD32SfloatS8Uint
+            state.deep_stencil_use
         };
     }
 
@@ -883,7 +912,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         // no compatible read surface found
 
         DepthSurfaceView read_only{
-            .depth_view = vkutil::Image(width, height, vk::Format::eD32SfloatS8Uint),
+            .depth_view = vkutil::Image(width, height, state.deep_stencil_use),
             .scene_timestamp = 0,
             .delta_col = delta_col_samples,
             .delta_row = delta_row_samples,
@@ -907,7 +936,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
         vk::ImageViewCreateInfo view_info{
             .image = read_only.depth_view.image,
             .viewType = vk::ImageViewType::e2D,
-            .format = vk::Format::eD32SfloatS8Uint,
+            .format = state.deep_stencil_use,
             .components = {},
             .subresourceRange = range
         };

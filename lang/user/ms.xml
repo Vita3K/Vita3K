@@ -704,7 +704,6 @@ Anda perlu mengalihkan folder lama anda ke lokasi baharu secara manual.</change_
 			<reset_emu_path>Tetapkan Semula Laluan Emulator</reset_emu_path>
 			<reset_emu_path_description>Tetapkan semula laluan emulator Vita3K kepada lalai.
 Awak perlu mengalihkan folder lama awak ke lokasi baharu secara manual.</reset_emu_path_description>
-			<storage_folder_permissions>Menggunakan laluan yang berbeza memerlukan kebenaran tambahan</storage_folder_permissions>
 			<custom_config_settings>Tetapan Konfigurasi Tersuai</custom_config_settings>
 			<clear_custom_config>Bersihkan Konfigurasi Tersuai</clear_custom_config>
 		</emulator>
@@ -829,7 +828,6 @@ Adakah awak pasti mahu meneruskan?</user_delete_warn>
 		<user_deleted>User dipadamkan.</user_deleted>
 		<choose_avatar>Pilih Avatar</choose_avatar>
 		<reset_avatar>Tetapkan Semula Avatar</reset_avatar>
-		<name>Nama</name>
 		<confirm>Sahkan</confirm>
 		<automatic_user_login>User Login Automatik</automatic_user_login>
 	</user_management>

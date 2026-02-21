@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -53,6 +53,16 @@ static int curr_touch_id[2] = { 0, 0 };
 static int next_touch_id = 1;
 static uint64_t last_vcount[2] = { 0, 0 };
 static bool forceTouchEnabled[2] = { false, false };
+static bool pinchModifierEnabled = false;
+static float pinch_velocity = 0;
+static bool oldPinchBehavior = false;
+constexpr SceInt16 initial_pinch_dist = 300;
+static SceInt16 pinch_dist = initial_pinch_dist;
+static SceInt16 pinch_speed = 40;
+
+static void reset_pinch() {
+    pinch_dist = initial_pinch_dist;
+}
 
 static SceTouchData recover_touch_events(const EmuEnvState &emuenv) {
     SceTouchData touch_data;
@@ -123,7 +133,7 @@ void touch_vsync_update(const EmuEnvState &emuenv) {
 
     } else {
         SceFVector2 touch_pos_window = { 0, 0 };
-        const uint32_t buttons = SDL_GetMouseState(&touch_pos_window.x, &touch_pos_window.y);
+        uint32_t buttons = SDL_GetMouseState(&touch_pos_window.x, &touch_pos_window.y);
 
         for (int port = 0; port < 2; port++) {
             // do it for both the front and the back touchscreen
@@ -131,6 +141,9 @@ void touch_vsync_update(const EmuEnvState &emuenv) {
             memset(data, 0, sizeof(SceTouchData));
             data->timeStamp = timestamp;
 
+            if (pinchModifierEnabled) {
+                buttons |= SDL_BUTTON_LMASK;
+            }
             const uint32_t mask = (port == SCE_TOUCH_PORT_BACK) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
             if ((buttons & mask) && emuenv.renderer_focused) {
                 if (!is_touched[port]) {
@@ -169,6 +182,25 @@ void touch_vsync_update(const EmuEnvState &emuenv) {
                     }
                     data->report[data->reportNum].id = curr_touch_id[port];
                     ++data->reportNum;
+
+                    if (pinchModifierEnabled) {
+                        if (pinch_velocity != 0) {
+                            pinch_move(pinch_velocity);
+                        }
+
+                        const SceInt16 baseTouchposX = data->report[data->reportNum - 1].x;
+
+                        data->report[data->reportNum - 1].x = baseTouchposX - pinch_dist;
+                        data->report[data->reportNum].x = baseTouchposX + pinch_dist;
+                        data->report[data->reportNum].y = data->report[data->reportNum - 1].y;
+                        data->report[data->reportNum].id = data->report[data->reportNum - 1].id + 1;
+                        ++data->reportNum;
+
+                        // QOL loop pinch when going too far, this is convenient when you want multiple consecutive pinches without releasing the modifier key
+                        if (data->report[data->reportNum - 1].x < baseTouchposX || data->report[data->reportNum - 2].x < 0) {
+                            reset_pinch();
+                        }
+                    }
                 }
 
                 if (!emuenv.touch.touch_mode[port]) {
@@ -182,6 +214,23 @@ void touch_vsync_update(const EmuEnvState &emuenv) {
 
     touch_buffer_idx++;
     touch_buffer_idx %= MAX_TOUCH_BUFFER_SAVED;
+}
+
+void pinch_modifier(bool isHold) {
+    pinchModifierEnabled = isHold;
+
+    // reset pinch state when modifier key is released
+    if (!isHold) {
+        reset_pinch();
+    }
+}
+
+void pinch_move(float velocity) {
+    pinch_dist += velocity * pinch_speed;
+}
+
+void pinch_automove(float velocity) {
+    pinch_velocity = velocity;
 }
 
 int handle_touch_event(SDL_TouchFingerEvent &finger) {

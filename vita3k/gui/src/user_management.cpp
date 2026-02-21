@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -124,6 +124,10 @@ void get_users_list(GuiState &gui, EmuEnvState &emuenv) {
                     user.sort_apps_state = static_cast<SortState>(sort_apps_list.attribute("state").as_uint());
                 }
 
+                // Load sound display settings
+                auto sound_display = user_child.child("sound-display");
+                user.system_music = sound_display.attribute("system-music").as_bool(true);
+
                 // Load theme settings
                 auto theme = user_child.child("theme");
                 if (!theme.attribute("use-background").empty())
@@ -169,6 +173,10 @@ void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
     auto sort_apps_list = user_child.append_child("sort-apps-list");
     sort_apps_list.append_attribute("type") = user.sort_apps_type;
     sort_apps_list.append_attribute("state") = user.sort_apps_state;
+
+    // Save sound display settings
+    auto sound_display = user_child.append_child("sound-display");
+    sound_display.append_attribute("system-music") = user.system_music;
 
     // Save theme settings
     auto theme = user_child.append_child("theme");
@@ -742,7 +750,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         const auto INPUT_NAME_SIZE = 330.f * SCALE.x;
         const auto INPUT_NAME_POS = ImVec2((SIZE_USER.x / 2.f) - (INPUT_NAME_SIZE / 2.f), SIZE_USER.y - (118.f * SCALE.y));
         ImGui::SetCursorPos(ImVec2(INPUT_NAME_POS.x, INPUT_NAME_POS.y - (30.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["name"].c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.lang.app_context.info["name"].c_str());
         ImGui::SetCursorPos(INPUT_NAME_POS);
         ImGui::PushItemWidth(INPUT_NAME_SIZE);
         // It's correct to use std::string this way because of small string optimization (string is small enough to be stored in the string object itself)

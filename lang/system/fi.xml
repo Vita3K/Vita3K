@@ -260,6 +260,9 @@ Aseta sovellus tauolle painamalla PS-näppäintä, ja poista sitten muut sovellu
 		<completed_setup>Olet nyt saanut valmiiksi alkumäärityksen.
 Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		<select_language>Valitse kieli.</select_language>
+		<storage_file_permissions>Vita3K vaatii täyden tiedostokäyttöoikeuden.
+Napauta 'Myönnä Käyttöoikeus' jatkaaksesi.</storage_file_permissions>
+		<grant_access>Myönnä Käyttöoikeus</grant_access>
 		<install_firmware>Asenna laiteohjelmisto.</install_firmware>
 		<next>Seuraava</next>
 	</initial_setup>
@@ -372,7 +375,6 @@ Voit ansaita trophyjä käyttämällä trophy-ominaisuutta tukevaa sovellusta.</
 Oletko varma, että haluat jatkaa?</user_delete_warn>
 		<user_deleted>Käyttäjä on poistettu.</user_deleted>
 		<choose_avatar>Valitse avatar</choose_avatar>
-		<name>Nimi</name>
 		<user>Kayttaja</user>
 		<confirm>Vahvista</confirm>
 	</user_management>

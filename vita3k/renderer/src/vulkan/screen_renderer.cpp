@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -65,6 +65,15 @@ bool ScreenRenderer::create(SDL_Window *window) {
 bool ScreenRenderer::setup() {
     const auto surface_formats = state.physical_device.getSurfaceFormatsKHR(surface);
     bool surface_format_found = false;
+
+    // check for linear filtering on depth support
+    // usefull because some device crashed if it's not supported
+    const vk::FormatProperties d24u8_support = state.physical_device.getFormatProperties(vk::Format::eD24UnormS8Uint);
+    const vk::FormatProperties d32u8_support = state.physical_device.getFormatProperties(vk::Format::eD32SfloatS8Uint);
+
+    bool support_d24u8 = static_cast<bool>(d24u8_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+    bool support_d32u8 = static_cast<bool>(d32u8_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+
     for (const auto &format : surface_formats) {
         // actually we don't care that much because we will just be copying what the game rendered
         // rgba8 or bgra8 should be the best as it matches the format output from the vita (we don't care about the swizzle)
@@ -77,6 +86,17 @@ bool ScreenRenderer::setup() {
     }
     if (!surface_format_found)
         surface_format = surface_formats[0];
+
+    if(support_d32u8){
+        LOG_INFO_ONCE("Your device support high deep stencil quality");
+        state.deep_stencil_use = vk::Format::eD32SfloatS8Uint;
+    }else if(support_d24u8){
+        state.deep_stencil_use = vk::Format::eD24UnormS8Uint;
+    }else{
+        LOG_WARN_ONCE("Your device doesn't support standard deep stencil ");
+        // vk::Format::eD16UnormS8Uint didn't support in Android
+        state.deep_stencil_use = vk::Format::eD16Unorm;
+    }
 
     // preferred order : mailbox > fifo_relaxed > fifo > whatever
     // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else

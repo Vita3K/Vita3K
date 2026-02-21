@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,6 +36,16 @@ enum struct MemPerm {
     WriteOnly = 1 << 1,
     ReadWrite = ReadOnly | WriteOnly
 };
+
+constexpr MemPerm most_restrictive_perm(MemPerm a, MemPerm b) {
+    if (a == MemPerm::None || b == MemPerm::None)
+        return MemPerm::None;
+    if (a == MemPerm::ReadOnly || b == MemPerm::ReadOnly)
+        return MemPerm::ReadOnly;
+    if (a == MemPerm::WriteOnly || b == MemPerm::WriteOnly)
+        return MemPerm::WriteOnly;
+    return MemPerm::ReadWrite;
+}
 
 bool init(MemState &state, const bool use_page_table);
 Address alloc(MemState &state, uint32_t size, const char *name, Address start_addr = user_main_memory_start);

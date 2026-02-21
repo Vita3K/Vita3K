@@ -313,6 +313,9 @@ Não desligue o sistema nem feche o aplicativo.</warning_saving>
 		<completed_setup>Você concluiu a configuração inicial.
 O seu sistema Vita3K está pronto!</completed_setup>
 		<select_language>Selecione um idioma.</select_language>
+		<storage_file_permissions>Vita3K requer acesso completo aos arquivos.
+Toque em 'Conceder Acesso' para continuar.</storage_file_permissions>
+		<grant_access>Conceder Acesso</grant_access>
 		<install_firmware>Instalar firmware.</install_firmware>
 		<installed>Instalado:</installed>
 		<download_font_package>Baixar Pacote de Fonte</download_font_package>
@@ -456,7 +459,6 @@ Tem certeza de que deseja continuar?</user_delete_warn>
 		<user_deleted>Usuário excluído.</user_deleted>
 		<choose_avatar>Escolher avatar</choose_avatar>
 		<reset_avatar>Resetar avatar</reset_avatar>
-		<name>Nome</name>
 		<user>Usuario</user>
 		<confirm>Confirmar</confirm>
 		<automatic_user_login>Login Automático de Usuário</automatic_user_login>

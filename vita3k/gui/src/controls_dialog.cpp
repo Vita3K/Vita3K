@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -205,6 +205,10 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TableSetupColumn("mapped_button");
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_toggle_texture_replacement, lang["toggle_texture_replacement"].c_str());
         remapper_button(gui, emuenv, &emuenv.cfg.keyboard_take_screenshot, lang["take_screenshot"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_pinch_modifier, lang["pinch_modifier"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_alternate_pinch_in, lang["alternate_pinch_in"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_alternate_pinch_out, lang["alternate_pinch_out"].c_str());
+
         ImGui::EndTable();
     }
 #endif

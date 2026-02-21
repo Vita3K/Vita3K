@@ -277,6 +277,9 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		<completed_setup>Completaste la configuración inicial.
 ¡Tu sistema Vita3K está listo!</completed_setup>
 		<select_language>Selecciona un idioma.</select_language>
+		<storage_file_permissions>Vita3K requiere acceso completo a los archivos.
+Toca 'Conceder Acceso' para continuar.</storage_file_permissions>
+		<grant_access>Conceder Acceso</grant_access>
 		<install_firmware>Instalar Firmware.</install_firmware>
 		<next>Siguiente</next>
 	</initial_setup>
@@ -391,7 +394,6 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 ¿Deseas continuar?</user_delete_warn>
 		<user_deleted>Usuario eliminado.</user_deleted>
 		<choose_avatar>Elegir avatar</choose_avatar>
-		<name>Nombre</name>
 		<user>Usuario</user>
 		<confirm>Confirmar</confirm>
 	</user_management>

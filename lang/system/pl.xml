@@ -438,6 +438,9 @@ System Vita3K jest gotowy!</completed_setup>
 		<select_language>Wybierz język.</select_language>
 		<next>Dalej</next>
 		<select_pref_path>Wybierz preferowaną ścieżkę.</select_pref_path>
+		<storage_file_permissions>Vita3K wymaga pełnego dostępu do plików.
+Dotknij 'Przyznaj dostęp', aby kontynuować.</storage_file_permissions>
+		<grant_access>Przyznaj dostęp</grant_access>
 		<current_emu_path>Obecna ścieżka emulatora</current_emu_path>
 		<change_emu_path>Zmień ścieżka emulatora</change_emu_path>
 		<reset_emu_path>Resetuj ścieżka emulatora</reset_emu_path>
@@ -897,7 +900,6 @@ Czy na pewno chcesz kontynuować?</user_delete_warn>
 		<user_deleted>Usunięto użytkownika.</user_deleted>
 		<choose_avatar>Wybierz awatar</choose_avatar>
 		<reset_avatar>Resetuj awatar</reset_avatar>
-		<name>Nazwa</name>
 		<user>Uzytkownik</user>
 		<confirm>Potwierdź</confirm>
 		<automatic_user_login>Automatyczne logowanie</automatic_user_login>

@@ -360,6 +360,9 @@ Connect a controller that is compatible with SDL3.</not_connected>
 		<miscellaneous>Miscellaneous</miscellaneous>
 		<toggle_texture_replacement>Toggle Texture Replacement</toggle_texture_replacement>
 		<take_screenshot>Take A Screenshot</take_screenshot>
+		<pinch_modifier>Pinch modifier</pinch_modifier>
+		<alternate_pinch_in>Alternate pinch in key</alternate_pinch_in>
+		<alternate_pinch_out>Alternate pinch out/stretch key</alternate_pinch_out>
 		<error_duplicate_key>The key is used for other bindings or it is reserved.</error_duplicate_key>
 		<reset_controls_binding>Reset Controls Binding</reset_controls_binding>
 	</controls>
@@ -448,6 +451,9 @@ Do not power off the system or close the application.</warning_saving>
 Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
 		<select_pref_path>Select a pref path.</select_pref_path>
+		<storage_file_permissions>Vita3K requires full file access.
+Tap 'Grant Access' to continue.</storage_file_permissions>
+		<grant_access>Grant Access</grant_access>
 		<current_emu_path>Current emulator path</current_emu_path>
 		<change_emu_path>Change Emulator Path</change_emu_path>
 		<reset_emu_path>Reset Emulator Path</reset_emu_path>
@@ -570,6 +576,9 @@ Check vita3k.log to see console output for details.
 	</performance_overlay>
 
 	<settings name="Settings">
+		<sound_display name="Sound & Display">
+			<system_music>System Music</system_music>
+		</sound_display>
 		<theme_background name="Theme & Background">
 			<default>Default</default>
 			<theme name="Theme">
@@ -721,7 +730,17 @@ and not all GPUs are compatible with this.</spirv_shader_description>
 			<audio_volume_description>Adjusts the volume percentage of all audio outputs.</audio_volume_description>
 			<enable_ngs_support>Enable NGS support</enable_ngs_support>
 			<ngs_description>Uncheck the box to disable support for advanced audio library NGS.</ngs_description>
+			<bgm_volume>Bgm Volume</bgm_volume>
+			<bgm_volume_description>Adjusts the background music volume percentage of the theme.</bgm_volume_description>
 		</audio>
+		<camera name="Camera">
+			<front_camera>Front Camera</front_camera>
+			<back_camera>Back Camera</back_camera>
+			<image_not_set>Image not set</image_not_set>
+			<set_image>Set image</set_image>
+			<solid_color>Solid Color</solid_color>
+			<static_image>Static Image</static_image>
+		</camera>
 		<system name="System">
 			<select_enter_button>Enter button assignment
 Select your 'Enter' button.</select_enter_button>
@@ -791,7 +810,6 @@ You will need to move your old folder to the new location manually.</change_emu_
 			<reset_emu_path>Reset Emulator Path</reset_emu_path>
 			<reset_emu_path_description>Reset Vita3K emulator path to the default.
 You will need to move your old folder to the new location manually.</reset_emu_path_description>
-			<storage_folder_permissions>Using a different path requires additional permissions</storage_folder_permissions>
 			<custom_config_settings>Custom Config Settings</custom_config_settings>
 			<clear_custom_config>Clear Custom Config</clear_custom_config>
 			<screenshot_image_type>Screenshot Image Type</screenshot_image_type>
@@ -939,7 +957,6 @@ Are you sure you want to continue?</user_delete_warn>
 		<user_deleted>User deleted.</user_deleted>
 		<choose_avatar>Choose Avatar</choose_avatar>
 		<reset_avatar>Reset Avatar</reset_avatar>
-		<name>Name</name>
 		<user>User</user>
 		<confirm>Confirm</confirm>
 		<automatic_user_login>Automatic User Login</automatic_user_login>

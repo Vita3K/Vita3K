@@ -260,6 +260,9 @@ Stäng inte av systemet och stäng inte applikationen.</warning_saving>
 		<completed_setup>Du har slutfört den första inställningen.
 Ditt Vita3K-system är redo!</completed_setup>
 		<select_language>Välj ett språk.</select_language>
+		<storage_file_permissions>Vita3K kräver fullständig filåtkomst.
+Tryck på 'Ge Åtkomst' för att fortsätta.</storage_file_permissions>
+		<grant_access>Ge Åtkomst</grant_access>
 		<install_firmware>Installera firmware.</install_firmware>
 		<next>Nästa</next>
 	</initial_setup>
@@ -374,7 +377,6 @@ Du kan få trophies om du använder en applikation som stöder trophy-funktionen
 Är du säker på att du vill fortsetta?</user_delete_warn>
 		<user_deleted>Användaren har tagits bort.</user_deleted>
 		<choose_avatar>Välj avatar</choose_avatar>
-		<name>Namn</name>
 		<confirm>Bekräfta</confirm>
 	</user_management>
 

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ Context::Context(const CommunicationID &comm_id, IOState *io, const SceUID troph
     };
 }
 
-#define SET_TROPHY_BIT(arr, bit) arr[(bit) >> 5] |= (1 << ((bit)&31))
+#define SET_TROPHY_BIT(arr, bit) arr[(bit) >> 5] |= (1 << ((bit) & 31))
 
 static bool read_trophy_entry_to_buffer(TRPFile &trophy_file, const char *fname, std::string &buffer) {
     // Read the trophy config

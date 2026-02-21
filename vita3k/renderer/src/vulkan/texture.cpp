@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -254,8 +254,20 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     samplers.resize(max_sampler_used);
 
     // check for linear filtering on depth support
-    const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(vk::Format::eD32SfloatS8Uint);
+    const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(state.deep_stencil_use);
+    const vk::FormatProperties x8d24_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
     support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+    support_x8d24 = static_cast<bool>(x8d24_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+
+    // other format
+    const vk::FormatProperties e5rgb9_support = state.physical_device.getFormatProperties(vk::Format::eE5B9G9R9UfloatPack32);
+    const vk::FormatProperties a2rgb10_support = state.physical_device.getFormatProperties(vk::Format::eA2R10G10B10UnormPack32);
+    support_e5rgb9 = static_cast<bool>(e5rgb9_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+    support_a2rgb10 = static_cast<bool>(a2rgb10_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+
+    // powerVR only
+    const vk::FormatProperties pvrt_support = state.physical_device.getFormatProperties(vk::Format::ePvrtc12BppUnormBlockIMG);
+    support_pvrt = static_cast<bool>(pvrt_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 
     // check for dxt support
     const vk::FormatProperties dxt_support = state.physical_device.getFormatProperties(vk::Format::eBc1RgbaSrgbBlock);
@@ -265,6 +277,14 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     // check for astc support
     const vk::FormatProperties astc_support = state.physical_device.getFormatProperties(vk::Format::eAstc4x4SrgbBlock);
     support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+
+    LOG_TRACE("Support_depth_linear_filtering : {}", support_depth_linear_filtering);
+    LOG_TRACE("Support_x8d24 : {}", support_x8d24);
+    LOG_TRACE("Support_e5rgb9 : {}", support_e5rgb9);
+    LOG_TRACE("Support_a2rgb10 : {}", support_a2rgb10);
+    LOG_TRACE("Support_dxt : {}", support_dxt);
+    LOG_TRACE("Support_astc : {}", support_astc);
+    LOG_TRACE("Support_pvrt : {}", support_pvrt);
 
     return true;
 }

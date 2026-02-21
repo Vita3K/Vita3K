@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -231,6 +231,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
 
     enum class SettingsMenu {
         SELECT,
+        SOUND_DISPLAY,
         THEME_BACKGROUND,
         DATE_TIME,
         LANGUAGE
@@ -282,6 +283,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     auto &lang = gui.lang.settings;
     auto &theme_background = lang.theme_background;
     auto &theme = theme_background.theme;
+    auto &sound_display = lang.sound_display;
     auto &date_time = lang.date_time;
     auto &language = lang.language;
 
@@ -350,6 +352,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
         title = lang.main["title"];
         ImGui::SetWindowFontScale(1.2f);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
+        if (ImGui::Selectable(sound_display["title"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
+            settings_menu = SettingsMenu::SOUND_DISPLAY;
         if (ImGui::Selectable(theme_background.main["title"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT))) {
             get_themes_list(gui, emuenv);
             settings_menu = SettingsMenu::THEME_BACKGROUND;
@@ -363,6 +367,27 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleVar();
         ImGui::Separator();
         break;
+    case SettingsMenu::SOUND_DISPLAY: {
+        title = sound_display["title"];
+        ImGui::SetWindowFontScale(1.02f);
+        const auto system_music_size = ImGui::CalcTextSize(sound_display["system_music"].c_str());
+        ImGui::SetCursorPos(ImVec2(116.f * SCALE.x, (SIZE_SELECT - system_music_size.y) / 2.f));
+        ImGui::Text("%s", sound_display["system_music"].c_str());
+        const ImVec2 padding_checkbox(8.6f * SCALE.y, 8.6f * SCALE.y);
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, padding_checkbox);
+        ImGui::PushStyleColor(ImGuiCol_CheckMark, ImVec4(227.f / 255.f, 237.f / 255.f, 225.f / 255.f, 1.f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.62f, 0.75f, 0.62f, 0.6f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.62f, 0.75f, 0.62f, 0.7f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.62f, 0.75f, 0.62f, 0.8f));
+        ImGui::SetCursorPos(ImVec2(SIZE_LIST.x - (106.f * SCALE.x), (SIZE_SELECT - (42.f * SCALE.y)) / 2.f));
+        if (ImGui::Checkbox("##system_music", &gui.users[emuenv.io.user_id].system_music)) {
+            init_bgm(gui, emuenv);
+            save_user(gui, emuenv, emuenv.io.user_id);
+        }
+        ImGui::PopStyleColor(4);
+        ImGui::PopStyleVar();
+        break;
+    }
     case SettingsMenu::THEME_BACKGROUND: {
         // Themes & Backgrounds
         const auto select = common["select"].c_str();

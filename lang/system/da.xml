@@ -372,7 +372,6 @@ Du kan opnå trophies ved at bruge et program, der understøtter trophy-funkitio
 Er du sikker på, at du ønsker at fortsætte.</user_delete_warn>
 		<user_deleted>Bruger blev slettet.</user_deleted>
 		<choose_avatar>Vælg avatar</choose_avatar>
-		<name>Navn</name>
 		<user>Bruger</user>
 		<confirm>Bekræft</confirm>
 	</user_management>
