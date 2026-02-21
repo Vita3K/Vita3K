@@ -212,12 +212,16 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
 #endif
     // glad_set_post_callback(after_callback);
     // Detect GPU and features
-    const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
-    const std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    LOG_INFO("GPU = {}", gpu_name);
-    LOG_INFO("GL_VERSION = {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
-    LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
+    const char *gl_version = reinterpret_cast<const char *>(glGetString(GL_VERSION));
+    gl_version = gl_version ? gl_version : "Unknown";
+
+    const char *gl_shading_language_version = reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+    gl_shading_language_version = gl_shading_language_version ? gl_shading_language_version : "Unknown";
+
+    LOG_INFO("GPU = {}", state->get_gpu_name());
+    LOG_INFO("GL_VERSION = {}", gl_version);
+    LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", gl_shading_language_version);
 
 #ifndef NDEBUG
     glDebugMessageCallback(reinterpret_cast<GLDEBUGPROC>(debug_output_callback), nullptr);
@@ -765,7 +769,9 @@ int GLState::get_max_2d_texture_width() {
 }
 
 std::string_view GLState::get_gpu_name() {
-    return reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
+    const char *gl_renderer = reinterpret_cast<const char *>(glGetString(GL_RENDERER));
+    gl_renderer = gl_renderer ? gl_renderer : "Unknown";
+    return gl_renderer;
 }
 
 void GLState::precompile_shader(const ShadersHash &hash) {
