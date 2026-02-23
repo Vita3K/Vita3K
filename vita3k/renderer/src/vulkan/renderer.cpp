@@ -35,8 +35,6 @@
 
 #include <SDL3/SDL_vulkan.h>
 
-#include <ranges>
-
 #ifdef __APPLE__
 #include <MoltenVK/mvk_vulkan.h>
 #endif
@@ -536,13 +534,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             physical_device = physical_devices[gpu_idx - 1];
         } else {
             // choose a suitable gpu
-            // searching backward ensures the first gpu (usually the best one) is used when there is no discrete gpu
-            for (const auto &device : std::views::reverse(physical_devices) | std::views::filter(&device_is_compatible)) {
-                physical_device = device;
+            for (const auto &device : physical_devices) {
+                if (device_is_compatible(device)) {
+                    physical_device = device;
 
-                // if it is an integrated gpu, try to find a discrete one
-                if (device.getProperties().deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
-                    break;
+                    // if it is an integrated gpu, try to find a discrete one
+                    if (device.getProperties().deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
+                        break;
+                }
             }
         }
 
