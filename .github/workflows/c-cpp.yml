@@ -22,25 +22,196 @@ jobs:
       - name: Format check
         run: .github/format-check.sh
 
-  build:
-    name: Build (${{ matrix.os }})
-    needs: [format-check]
-    runs-on: ${{ matrix.runs_on || matrix.os }}
+  get-info:
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.vars.outputs.short_sha }}
+      build_variable: ${{ steps.vars.outputs.build_variable }}
+      last_commit_message: ${{ steps.vars.outputs.last_commit_message }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
+      - name: Get commit info
+        id: vars
+        run: |
+          echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "build_variable=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
+          echo "last_commit_message=$(git log -1 --pretty=format:'%s')" >> $GITHUB_OUTPUT
+
+  linux_build:
+    name: Build (${{ matrix.os }}, ${{ matrix.compiler }})
+    needs: [format-check, get-info]
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             arch: x86_64
+            compiler: clang
             extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-x86_64.AppImage
             cmake_preset: linux-ninja-clang-appimage
 
+          # Test for gcc compiler
+          - os: ubuntu-latest
+            arch: x86_64
+            compiler: gcc
+            extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-x86_64.AppImage
+            cmake_preset: linux-ninja-gnu
+
           - os: ubuntu-24.04-arm
             arch: aarch64
+            compiler: clang
             extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-aarch64.AppImage
             cmake_preset: linux-ninja-clang-appimage
 
+          # Test for gcc compiler
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+            compiler: gcc
+            extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-aarch64.AppImage
+            cmake_preset: linux-ninja-gnu
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up build environment
+        run: |
+          sudo add-apt-repository -y ppa:mhier/libboost-latest # boost repo
+          sudo add-apt-repository universe
+          sudo apt update
+          sudo apt -y install libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev ninja-build libfuse2
+
+          # Set up linuxdeploy for AppImage
+          curl -sLO https://github.com/linuxdeploy/linuxdeploy/releases/latest/download/linuxdeploy-${{ matrix.arch }}.AppImage
+          sudo cp -f linuxdeploy-${{ matrix.arch }}.AppImage /usr/local/bin/
+          sudo chmod +x /usr/local/bin/linuxdeploy-${{ matrix.arch }}.AppImage
+
+      - uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
+
+      - name: Build Vita3K
+        run: |
+          cmake ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
+          cmake --build build/${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
+
+      - name: Print sccache statistics
+        run: sccache --show-stats
+
+      - name: Run tests
+        working-directory: build/${{ matrix.cmake_preset }}
+        run: ctest --build-config ${{ env.BUILD_CONFIG }} --output-on-failure
+
+      - name: Prepare Linux AppImage artifact
+        run: |
+          cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
+          mkdir -p ../appimage
+          mv -f *AppImage* ../appimage/
+        if: matrix.cmake_preset != 'linux-ninja-gnu'
+
+      - name: Upload artifact (AppImage)
+        uses: actions/upload-artifact@v6
+        with:
+          name: vita3k-${{ needs.get-info.outputs.short_sha }}-${{ matrix.os }}-appimage
+          path: build/${{ matrix.cmake_preset }}/bin/appimage
+        if: matrix.cmake_preset != 'linux-ninja-gnu'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: vita3k-${{ needs.get-info.outputs.short_sha }}-${{ matrix.os }}
+          path: build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
+        if: matrix.cmake_preset != 'linux-ninja-gnu'
+
+  macos_build:
+    name: Build (${{ matrix.os }})
+    needs: [format-check, get-info]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-intel
+            runs_on: macos-latest
+            cache_path: ~/Library/Caches/ccache
+            extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="x86_64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
+            cmake_preset: macos-ninja
+
+          - os: macos-arm64
+            runs_on: macos-latest
+            cache_path: ~/Library/Caches/ccache
+            extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="arm64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
+            cmake_preset: macos-ninja
+
+    runs-on: ${{ matrix.runs_on }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - uses: actions/cache@v5
+        with:
+          path: ${{ matrix.cache_path }}
+          key: cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-${{ github.sha }}
+          restore-keys: |
+            cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-
+
+      - name: Set up build environment
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          brew install ccache create-dmg
+          echo "$(brew --prefix ccache)/libexec" >> $GITHUB_PATH
+          ccache --set-config=compiler_check=content
+
+      - name: Reset ccache statistics
+        run: ccache -z
+
+      - name: Build Vita3K
+        run: |
+          cmake ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
+          cmake --build build/${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
+
+      - name: Print ccache statistics
+        run: ccache -s
+
+      - name: Run tests
+        working-directory: build/${{ matrix.cmake_preset }}
+        run: ctest --build-config ${{ env.BUILD_CONFIG }} --output-on-failure
+
+      - name: Create DMG
+        run: |
+          cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
+          create-dmg \
+            --volname "Vita3K Installer" \
+            --volicon Vita3K.app/Contents/Resources/Vita3K.icns \
+            --window-size 500 300 \
+            --icon-size 100 \
+            --icon Vita3K.app 120 115 \
+            --app-drop-link 360 115 \
+            vita3k-${{ needs.get-info.outputs.short_sha }}-${{ matrix.os }}.dmg \
+            Vita3K.app
+          rm -rf Vita3K.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: vita3k-${{ needs.get-info.outputs.short_sha }}-${{ matrix.os }}
+          path: build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
+
+  windows_build:
+    name: Build (${{ matrix.os }})
+    needs: [format-check, get-info]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - os: windows-latest
             arch: x86_64
             cache_path: |
@@ -59,22 +230,7 @@ jobs:
             extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=arm64-windows-static-md
             cmake_preset: windows-ninja-clang
 
-          - os: macos-intel
-            runs_on: macos-latest
-            cache_path: ~/Library/Caches/ccache
-            extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="x86_64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
-            cmake_preset: macos-ninja
-
-          - os: macos-arm64
-            runs_on: macos-latest
-            cache_path: ~/Library/Caches/ccache
-            extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="arm64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
-            cmake_preset: macos-ninja
-
-          - os: android
-            runs_on: ubuntu-latest
-            vcpkg_triplet: arm64-android
-
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -87,52 +243,61 @@ jobs:
           key: cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-${{ github.sha }}
           restore-keys: |
             cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-
-        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'macos')
 
-      - name: Set up build environment (macOS)
-        run: |
-          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
-          brew install ccache create-dmg
-          echo "$(brew --prefix ccache)/libexec" >> $GITHUB_PATH
-          ccache --set-config=compiler_check=content
-        if: startsWith(matrix.os, 'macos')
-
-      - name: Set up build environment (Linux)
-        run: |
-          sudo add-apt-repository -y ppa:mhier/libboost-latest # boost repo
-          sudo add-apt-repository universe
-          sudo apt update
-          sudo apt -y install libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev ninja-build libfuse2
-
-          # Set up linuxdeploy for AppImage
-          curl -sLO https://github.com/linuxdeploy/linuxdeploy/releases/latest/download/linuxdeploy-${{ matrix.arch }}.AppImage
-          sudo cp -f linuxdeploy-${{ matrix.arch }}.AppImage /usr/local/bin/
-          sudo chmod +x /usr/local/bin/linuxdeploy-${{ matrix.arch }}.AppImage
-        if: startsWith(matrix.os, 'ubuntu')
-
-      - name: Set up build environment (Windows)
+      - name: Set up build environment
         run: |
           vcpkg install zlib boost-system boost-filesystem boost-program-options boost-icl boost-variant curl openssl --triplet=${{ matrix.vcpkg_triplet }}
-        if: startsWith(matrix.os, 'windows')
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.arch }}
-        if: startsWith(matrix.os, 'windows')
 
-      - name: Set up build environment (Android)
+      - uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
+
+      - name: Build Vita3K
+        run: |
+          cmake ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
+          cmake --build build/${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
+
+      - name: Print sccache statistics
+        run: sccache --show-stats
+
+      - name: Run tests
+        working-directory: build/${{ matrix.cmake_preset }}
+        run: ctest --build-config ${{ env.BUILD_CONFIG }} --output-on-failure
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: vita3k-${{ needs.get-info.outputs.short_sha }}-${{ matrix.os }}
+          path: build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
+
+  android_build:
+    name: Build (${{ matrix.os }})
+    needs: [format-check, get-info]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: android
+            runs_on: ubuntu-latest
+            vcpkg_triplet: arm64-android
+
+    runs-on: ${{ matrix.runs_on }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up build environment
         run: |
           sudo apt-get install -y ninja-build
           vcpkg install boost-system boost-filesystem boost-program-options boost-icl boost-variant openssl zlib --triplet=${{ matrix.vcpkg_triplet }}
-        if: matrix.os == 'android'
 
       - uses: hendrikmuhs/ccache-action@v1.2
-        if: matrix.os == 'android'
-
-      - uses: mozilla-actions/sccache-action@v0.0.9
-        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'ubuntu')
-        with:
-          disable_annotations: true
 
       - name: Restore Gradle Cache
         uses: actions/cache@v5
@@ -146,7 +311,6 @@ jobs:
             ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('android/**/*.xml') }}-
             ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-
             ${{ runner.os }}-gradle-
-        if: matrix.os == 'android'
 
       - name: Decode Android keystore
         env:
@@ -155,27 +319,8 @@ jobs:
           if [ -n "$KEYSTORE_ENCODED" ]; then
             echo "$KEYSTORE_ENCODED" | base64 --decode > /home/runner/keystore.jks
           fi
-        if: matrix.os == 'android'
-
-      - name: Reset ccache statistics
-        run: ccache -z
-        if: startsWith(matrix.os, 'macos')
 
       - name: Build Vita3K
-        run: |
-          cmake ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
-          cmake --build build/${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
-        if: matrix.os != 'android'
-
-      - name: Print ccache statistics
-        run: ccache -s
-        if: startsWith(matrix.os, 'macos')
-
-      - name: Print sccache statistics
-        run: sccache --show-stats
-        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'ubuntu')
-
-      - name: Build Vita3K (Android)
         env:
           SIGNING_STORE_PATH: "/home/runner/keystore.jks"
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
@@ -198,60 +343,14 @@ jobs:
           echo "APK_PATH=android/build/outputs/apk/${BUILD_TYPE,,}/android-${BUILD_TYPE,,}.apk" >> $GITHUB_ENV
         if: matrix.os == 'android'
 
-      - name: Run tests
-        working-directory: build/${{ matrix.cmake_preset }}
-        run: ctest --build-config ${{ env.BUILD_CONFIG }} --output-on-failure
-        if: matrix.os != 'android'
-
-      - name: Compute git short SHA
-        shell: bash
-        run: echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
-      - name: Create DMG (macOS)
-        run: |
-          cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
-          create-dmg \
-            --volname "Vita3K Installer" \
-            --volicon Vita3K.app/Contents/Resources/Vita3K.icns \
-            --window-size 500 300 \
-            --icon-size 100 \
-            --icon Vita3K.app 120 115 \
-            --app-drop-link 360 115 \
-            vita3k-${{ env.GIT_SHORT_SHA }}-${{ matrix.os }}.dmg \
-            Vita3K.app
-          rm -rf Vita3K.app
-        if: startsWith(matrix.os, 'macos')
-
-      - name: Prepare Linux AppImage artifact
-        run: |
-          cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
-          mkdir -p ../appimage
-          mv -f *AppImage* ../appimage/
-        if: startsWith(matrix.os, 'ubuntu')
-
-      - name: Upload artifact (Linux AppImage)
-        uses: actions/upload-artifact@v6
-        with:
-          name: vita3k-${{ env.GIT_SHORT_SHA }}-${{ matrix.os }}-appimage
-          path: build/${{ matrix.cmake_preset }}/bin/appimage
-        if: startsWith(matrix.os, 'ubuntu')
-
-      - name: Upload artifact (Android apk)
-        uses: actions/upload-artifact@v6
-        with:
-          name: vita3k-${{ env.GIT_SHORT_SHA }}-android
-          path: ${{ env.APK_PATH }}
-        if: matrix.os == 'android'
-
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: vita3k-${{ env.GIT_SHORT_SHA }}-${{ matrix.os }}
-          path: build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
-        if: matrix.os != 'android'
+          name: vita3k-${{ needs.get-info.outputs.short_sha }}-android
+          path: ${{ env.APK_PATH }}
 
   create-release:
-    needs: [build]
+    needs: [linux_build, macos_build, windows_build, android_build]
     runs-on: ubuntu-latest
     concurrency:
       group: create-release
@@ -261,17 +360,9 @@ jobs:
       github.repository == 'Vita3K/Vita3K'
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
       - name: Download Artifacts
         uses: actions/download-artifact@v7
-
-      - name: Get commit info
-        run: |
-          echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          echo "BUILD_VARIABLE=$(git rev-list --count HEAD)" >> $GITHUB_ENV
-          echo "LAST_COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
 
       - name: Get last committer
         env:
@@ -291,15 +382,15 @@ jobs:
             if [[ $dir == *-android ]]; then
               echo "Processing $dir (Android)"
               cp $dir/*.apk artifacts-master/android-latest.apk
-              cp $dir/*.apk artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-android.apk
+              cp $dir/*.apk artifacts-store/vita3k-${{ needs.get-info.outputs.build_variable }}-${{ needs.get-info.outputs.short_sha }}-android.apk
             elif [[ $dir == *-macos-intel ]]; then
               echo "Processing $dir (macOS Intel)"
               cp $dir/*.dmg artifacts-master/macos-latest.dmg
-              cp $dir/*.dmg artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-macos-intel.dmg
+              cp $dir/*.dmg artifacts-store/vita3k-${{ needs.get-info.outputs.build_variable }}-${{ needs.get-info.outputs.short_sha }}-macos-intel.dmg
             elif [[ $dir == *-macos-arm64 ]]; then
               echo "Processing $dir (macOS ARM64)"
               cp $dir/*.dmg artifacts-master/macos-arm64-latest.dmg
-              cp $dir/*.dmg artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-macos-arm64.dmg
+              cp $dir/*.dmg artifacts-store/vita3k-${{ needs.get-info.outputs.build_variable }}-${{ needs.get-info.outputs.short_sha }}-macos-arm64.dmg
             elif [[ $dir == *-ubuntu-latest-appimage ]]; then
               echo "Processing $dir (x86_64 AppImage)"
               cp $dir/*.AppImage* artifacts-master/
@@ -311,19 +402,19 @@ jobs:
             elif [[ $dir == *-ubuntu-latest ]]; then
               echo "Processing $dir (Ubuntu x86_64)"
               (cd $dir && zip -r ../artifacts-master/ubuntu-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-ubuntu-x86_64.7z $dir
+              7z a -mx=9 artifacts-store/vita3k-${{ needs.get-info.outputs.build_variable }}-${{ needs.get-info.outputs.short_sha }}-ubuntu-x86_64.7z $dir
             elif [[ $dir == *-ubuntu-24.04-arm ]]; then
               echo "Processing $dir (Ubuntu ARM64)"
               (cd $dir && zip -r ../artifacts-master/ubuntu-aarch64-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-ubuntu-aarch64.7z $dir
+              7z a -mx=9 artifacts-store/vita3k-${{ needs.get-info.outputs.build_variable }}-${{ needs.get-info.outputs.short_sha }}-ubuntu-aarch64.7z $dir
             elif [[ $dir == *-windows-latest ]]; then
               echo "Processing $dir (Windows x86_64)"
               (cd $dir && zip -r ../artifacts-master/windows-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-windows-x86_64.7z $dir
+              7z a -mx=9 artifacts-store/vita3k-${{ needs.get-info.outputs.build_variable }}-${{ needs.get-info.outputs.short_sha }}-windows-x86_64.7z $dir
             elif [[ $dir == *-windows-11-arm ]]; then
               echo "Processing $dir (Windows ARM64)"
               (cd $dir && zip -r ../artifacts-master/windows-arm64-latest.zip *)
-              7z a -mx=9 artifacts-store/vita3k-${{ env.BUILD_VARIABLE }}-${{ env.GIT_SHORT_SHA }}-windows-arm64.7z $dir
+              7z a -mx=9 artifacts-store/vita3k-${{ needs.get-info.outputs.build_variable }}-${{ needs.get-info.outputs.short_sha }}-windows-arm64.7z $dir
             fi
           done
           echo "=== artifacts-master ==="
@@ -334,12 +425,12 @@ jobs:
       - name: "Upload to store repository"
         uses: tcnksm/ghr@v0
         with:
-            tag: ${{ env.BUILD_VARIABLE }}
+            tag: ${{ needs.get-info.outputs.build_variable }}
             path: artifacts-store/
             owner: ${{ github.repository_owner }}
             repository: Vita3K-builds
-            name: "Build: ${{ env.BUILD_VARIABLE }}"
-            body: "Corresponding commit: [${{ env.LAST_COMMIT_MESSAGE }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})"
+            name: "Build: ${{ needs.get-info.outputs.build_variable }}"
+            body: "Corresponding commit: [${{ needs.get-info.outputs.last_commit_message }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})"
             token: ${{ secrets.STORE_TOKEN }}
 
       - name: "Upload to master repository"
@@ -351,4 +442,4 @@ jobs:
             owner: ${{ github.repository_owner }}
             repository: Vita3K
             name: "Automatic CI builds"
-            body: "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}"
+            body: "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ needs.get-info.outputs.build_variable }}"
