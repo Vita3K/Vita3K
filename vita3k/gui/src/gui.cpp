@@ -572,6 +572,12 @@ void save_apps_cache(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
+static void init_app_custom_config(GuiState &gui, EmuEnvState &emuenv) {
+    for (auto &app : gui.app_selector.user_apps) {
+        app.custom_config = fs::exists(emuenv.config_path / "config" / fmt::format("config_{}.xml", app.path));
+    }
+}
+
 bool set_scroll_animation(float &scroll, float target_scroll, const std::string &target_id, std::function<void(float)> set_scroll) {
     // Persistent state for animation tracking (keeps values between frames)
     static float start_time = 0.f;
@@ -625,7 +631,7 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
         if (!get_user_apps(gui, emuenv))
             init_user_apps(gui, emuenv);
     }
-
+    init_app_custom_config(gui, emuenv);
     init_app_background(gui, emuenv, "NPXS10015");
 
     regmgr::init_regmgr(emuenv.regmgr, emuenv.pref_path);
@@ -654,9 +660,15 @@ void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pa
     get_app_param(gui, emuenv, app_path);
     init_app_icon(gui, emuenv, app_path);
 
-    const auto TIME_APP_INDEX = get_time_app_index(gui, emuenv, app_path);
-    if (TIME_APP_INDEX != gui.time_apps[emuenv.io.user_id].end())
-        get_app_index(gui, app_path)->last_time = TIME_APP_INDEX->last_time_used;
+    auto app = get_app_index(gui, app_path);
+    if (app) {
+        const auto TIME_APP_INDEX = get_time_app_index(gui, emuenv, app_path);
+        if (TIME_APP_INDEX != gui.time_apps[emuenv.io.user_id].end())
+            app->last_time = TIME_APP_INDEX->last_time_used;
+        else
+            app->last_time = 0;
+        app->custom_config = fs::exists(emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path));
+    }
 
     gui.app_selector.is_app_list_sorted = false;
 }
