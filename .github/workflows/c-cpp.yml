@@ -73,6 +73,9 @@ jobs:
 
           - os: android
             runs_on: ubuntu-latest
+            cache_path: |
+              /usr/local/share/vcpkg/installed
+              /usr/local/share/vcpkg/packages
             vcpkg_triplet: arm64-android
 
     steps:
@@ -87,7 +90,7 @@ jobs:
           key: cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-${{ github.sha }}
           restore-keys: |
             cache-${{ matrix.os }}-${{ env.BUILD_CONFIG }}-
-        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'macos')
+        if: ${{ ! startsWith(matrix.os, 'ubuntu') }}
 
       - name: Set up build environment (macOS)
         run: |
@@ -138,10 +141,7 @@ jobs:
       - name: Restore Gradle Cache
         uses: actions/cache@v5
         with:
-          path: |
-            ~/.gradle/
-            /usr/local/share/vcpkg/installed
-            /usr/local/share/vcpkg/packages
+          path: '~/.gradle/'
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('android/**/*.xml') }}-${{ hashFiles('android/**.java') }}
           restore-keys: |
             ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('android/**/*.xml') }}-
@@ -189,8 +189,7 @@ jobs:
           cp -r lang android/assets
           cp -r vita3k/shaders-builtin android/assets
           export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
-          if [ -e "$SIGNING_STORE_PATH" ];
-          then
+          if [ -e "$SIGNING_STORE_PATH" ]; then
             BUILD_TYPE=Release
           else
             BUILD_TYPE=Reldebug
@@ -335,21 +334,21 @@ jobs:
       - name: "Upload to store repository"
         uses: tcnksm/ghr@v0
         with:
-            tag: ${{ env.BUILD_VARIABLE }}
-            path: artifacts-store/
-            owner: ${{ github.repository_owner }}
-            repository: Vita3K-builds
-            name: "Build: ${{ env.BUILD_VARIABLE }}"
-            body: "Corresponding commit: [${{ env.LAST_COMMIT_MESSAGE }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})"
-            token: ${{ secrets.STORE_TOKEN }}
+          tag: ${{ env.BUILD_VARIABLE }}
+          path: artifacts-store/
+          owner: ${{ github.repository_owner }}
+          repository: Vita3K-builds
+          name: "Build: ${{ env.BUILD_VARIABLE }}"
+          body: "Corresponding commit: [${{ env.LAST_COMMIT_MESSAGE }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})"
+          token: ${{ secrets.STORE_TOKEN }}
 
       - name: "Upload to master repository"
         uses: tcnksm/ghr@v0
         with:
-            tag: continuous
-            path: artifacts-master/
-            delete: "true"
-            owner: ${{ github.repository_owner }}
-            repository: Vita3K
-            name: "Automatic CI builds"
-            body: "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}"
+          tag: continuous
+          path: artifacts-master/
+          delete: "true"
+          owner: ${{ github.repository_owner }}
+          repository: Vita3K
+          name: "Automatic CI builds"
+          body: "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}"
