@@ -529,19 +529,27 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     {
         std::vector<vk::PhysicalDevice> physical_devices = instance.enumeratePhysicalDevices();
 
-        if (gpu_idx != 0 && gpu_idx <= physical_devices.size()) {
+        if (gpu_idx > 0 && gpu_idx <= physical_devices.size()) {
             // force choose the gpu
             physical_device = physical_devices[gpu_idx - 1];
         } else {
             // choose a suitable gpu
             for (const auto &device : physical_devices) {
-                if (device_is_compatible(device)) {
-                    physical_device = device;
+                if (!device_is_compatible(device))
+                    continue;
 
-                    // if it is an integrated gpu, try to find a discrete one
-                    if (device.getProperties().deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
-                        break;
+                using enum vk::PhysicalDeviceType;
+                const auto device_type = device.getProperties().deviceType;
+                if (!physical_device)
+                    physical_device = device;
+                else if (physical_device.getProperties().deviceType != device_type) {
+                    if (device_type == eDiscreteGpu || device_type == eIntegratedGpu)
+                        physical_device = device;
                 }
+
+                // if it is not a discrete gpu, try to find a discrete one
+                if (device_type == eDiscreteGpu)
+                    break;
             }
         }
 
