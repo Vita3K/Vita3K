@@ -133,6 +133,9 @@ static void perform_transfer_copy_mode(MemState &mem, const SceGxmTransferImage 
 
 COMMAND(handle_transfer_copy) {
     TRACY_FUNC_COMMANDS(handle_transfer_copy);
+    const auto finish_transfer = [&]() {
+        renderer::finish_transfer_op(renderer);
+    };
     const uint32_t colorKeyValue = helper.pop<uint32_t>();
     const uint32_t colorKeyMask = helper.pop<uint32_t>();
     SceGxmTransferColorKeyMode colorKeyMode = helper.pop<SceGxmTransferColorKeyMode>();
@@ -145,6 +148,7 @@ COMMAND(handle_transfer_copy) {
     if (src_fmt != dst_fmt) {
         LOG_ERROR_ONCE("Unhandled format conversion from 0x{:0X} to 0x{:0X}", fmt::underlying(src_fmt), fmt::underlying(dst_fmt));
         delete[] images;
+        finish_transfer();
         return;
     }
 
@@ -182,6 +186,7 @@ COMMAND(handle_transfer_copy) {
         }
 
         delete[] images;
+        finish_transfer();
     };
 
     if (renderer.current_backend == Backend::Vulkan && renderer.features.enable_memory_mapping && !renderer.disable_surface_sync) {
@@ -197,9 +202,13 @@ COMMAND(handle_transfer_downscale) {
     TRACY_FUNC_COMMANDS(handle_transfer_downscale);
     SceGxmTransferImage *src = helper.pop<SceGxmTransferImage *>();
     SceGxmTransferImage *dst = helper.pop<SceGxmTransferImage *>();
+    const auto finish_transfer = [&]() {
+        renderer::finish_transfer_op(renderer);
+    };
 
     if (src->format != dst->format) {
         LOG_ERROR_ONCE("Unhandled format conversion from 0x{:0X} to 0x{:0X}", fmt::underlying(src->format), fmt::underlying(dst->format));
+        finish_transfer();
         return;
     }
 
@@ -209,7 +218,7 @@ COMMAND(handle_transfer_downscale) {
     dst->address = (dst->address.cast<uint8_t>() + dst->y * dst->stride + dst->x * pixel_bytes).cast<void>();
 
     // only rgb formats are supported by the PS Vita for downscaling
-    vulkan::CallbackRequestFunction downscale_operation = [&mem, src, dst]() {
+    vulkan::CallbackRequestFunction downscale_operation = [&mem, src, dst, finish_transfer]() {
         AVPixelFormat pixel_fmt = AV_PIX_FMT_NONE;
         switch (src->format) {
         case SCE_GXM_TRANSFER_FORMAT_U5U6U5_BGR:
@@ -274,6 +283,7 @@ COMMAND(handle_transfer_downscale) {
 
         delete src;
         delete dst;
+        finish_transfer();
     };
 
     if (renderer.current_backend == Backend::Vulkan && renderer.features.enable_memory_mapping && !renderer.disable_surface_sync) {
@@ -309,6 +319,7 @@ COMMAND(handle_transfer_fill) {
     // TODO: handle case where dest is a cached surface
 
     delete dest;
+    renderer::finish_transfer_op(renderer);
 }
 
 } // namespace renderer

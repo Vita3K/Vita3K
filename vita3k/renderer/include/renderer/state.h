@@ -22,6 +22,7 @@
 #include <renderer/types.h>
 #include <threads/queue.h>
 
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <string_view>
@@ -79,6 +80,10 @@ struct State {
 
     std::condition_variable notification_ready;
     std::mutex notification_mutex;
+
+    std::atomic<uint32_t> pending_transfer_ops{ 0 };
+    std::condition_variable transfer_ops_done;
+    std::mutex transfer_ops_mutex;
 
     std::vector<ShadersHash> shaders_cache_hashs;
     std::string shader_version;

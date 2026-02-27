@@ -5435,6 +5435,7 @@ EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFor
 EXPORT(int, sceGxmTransferFinish) {
     TRACY_FUNC(sceGxmTransferFinish);
     // same as sceGxmFinish
+    renderer::wait_for_transfer_ops(*emuenv.renderer);
     renderer::finish(*emuenv.renderer, nullptr);
 
     return 0;

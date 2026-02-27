@@ -96,15 +96,27 @@ void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndex
 }
 
 void transfer_copy(State &state, uint32_t colorKeyValue, uint32_t colorKeyMask, SceGxmTransferColorKeyMode colorKeyMode, const SceGxmTransferImage *images, SceGxmTransferType srcType, SceGxmTransferType destType) {
-    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::TransferCopy, false, colorKeyValue, colorKeyMask, colorKeyMode, images, srcType, destType);
+    start_transfer_op(state);
+    const int result = renderer::send_single_command(state, nullptr, renderer::CommandOpcode::TransferCopy, false, colorKeyValue, colorKeyMask, colorKeyMode, images, srcType, destType);
+    if (result != 0) {
+        finish_transfer_op(state);
+    }
 }
 
 void transfer_downscale(State &state, const SceGxmTransferImage *src, const SceGxmTransferImage *dest) {
-    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::TransferDownscale, false, src, dest);
+    start_transfer_op(state);
+    const int result = renderer::send_single_command(state, nullptr, renderer::CommandOpcode::TransferDownscale, false, src, dest);
+    if (result != 0) {
+        finish_transfer_op(state);
+    }
 }
 
 void transfer_fill(State &state, uint32_t fillColor, const SceGxmTransferImage *dest) {
-    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::TransferFill, false, fillColor, dest);
+    start_transfer_op(state);
+    const int result = renderer::send_single_command(state, nullptr, renderer::CommandOpcode::TransferFill, false, fillColor, dest);
+    if (result != 0) {
+        finish_transfer_op(state);
+    }
 }
 
 void sync_surface_data(State &state, Context *ctx, const SceGxmNotification vertex_notification, const SceGxmNotification fragment_notification) {
@@ -140,6 +152,24 @@ void set_visibility_buffer(State &state, Context *ctx, Ptr<uint32_t> visibility_
 
 void set_visibility_index(State &state, Context *ctx, bool enable, uint32_t index, bool is_increment) {
     renderer::add_state_set_command(ctx, renderer::GXMState::VisibilityIndex, index, enable, is_increment);
+}
+
+void start_transfer_op(State &state) {
+    state.pending_transfer_ops.fetch_add(1, std::memory_order_relaxed);
+}
+
+void finish_transfer_op(State &state) {
+    if (state.pending_transfer_ops.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+        std::lock_guard<std::mutex> lock(state.transfer_ops_mutex);
+        state.transfer_ops_done.notify_all();
+    }
+}
+
+void wait_for_transfer_ops(State &state) {
+    std::unique_lock<std::mutex> lock(state.transfer_ops_mutex);
+    state.transfer_ops_done.wait(lock, [&state]() {
+        return state.pending_transfer_ops.load(std::memory_order_acquire) == 0;
+    });
 }
 
 } // namespace renderer
