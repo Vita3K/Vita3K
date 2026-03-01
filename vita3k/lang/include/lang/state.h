@@ -33,6 +33,7 @@ struct DialogLangState {
     std::map<std::string, std::string> common = {
         { "an_error_occurred", "An error occurred.\nError code: {}" },
         { "cancel", "Cancel" },
+        { "connecting_please_wait", "Connecting...\nPlease wait." },
         { "close", "Close" },
         { "could_not_load", "Could not load the file." },
         { "could_not_save", "Could not save the file." },
@@ -47,7 +48,11 @@ struct DialogLangState {
         { "select_all", "Select All" },
         { "select", "Select" },
         { "submit", "Submit" },
-        { "yes", "Yes" }
+        { "yes", "Yes" },
+        { "could_not_connect_server", "Could not connect to the server." },
+        { "must_sign_in_vita3k_network", "You must sign in to Vita3K Network to use this feature." },
+        { "could_not_connect_internet", "Could not connect to the Internet." },
+        { "vita3k_network_connection_lost", "The connection to Vita3K Network has been lost." }
     };
     std::map<std::string, std::string> message = { { "load_app_failed", "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Have you installed the firmware?\n2. Re-dump your own PS Vita app/game and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported." } };
     std::map<std::string, std::string> trophy = { { "preparing_start_app", "Preparing to start the application..." } };
@@ -468,6 +473,26 @@ struct LangState {
         };
     };
     LiveArea live_area;
+    std::map<std::string, std::string> online_storage = {
+        { "save_data_auto_upload", "Saved Data Auto - Upload" },
+        { "copying", "Copying..." },
+        { "download", "Download" },
+        { "eligible", "Eligible" },
+        { "ineligible", "Ineligible" },
+        { "location", "Location" },
+        { "memory_card", "Memory Card" },
+        { "minutes_left", "{} Minutes Left" },
+        { "online_storage", "Online Storage" },
+        { "overwrite_saved_data", "Do you want to overwrite the saved data ?" },
+        { "ps_vita_system", "PS Vita System" },
+        { "ps_tv_system", "PS TV System" },
+        { "seconds_left", "{} Seconds Left" },
+        { "size", "Size" },
+        { "trophy_earning", "Trophy Earning" },
+        { "updated", "Updated" },
+        { "upload", "Upload" },
+        { "uploaded", "Uploaded" }
+    };
     std::map<std::string, std::string> overlay = {
         { "title", "Overlay" },
         { "gamepad_overlay", "Gamepad Overlay" },

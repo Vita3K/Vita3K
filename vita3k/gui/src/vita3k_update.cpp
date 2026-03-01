@@ -194,10 +194,11 @@ bool init_vita3k_update(GuiState &gui) {
 
 static std::atomic<float> progress(0);
 static std::atomic<uint64_t> remaining(0);
+static std::atomic<uint64_t> downloaded(0);
 static net_utils::ProgressState progress_state{};
 
 static void download_update(const fs::path &base_path) {
-    progress_state.download = true;
+    progress_state.canceled = false;
     progress_state.pause = false;
     std::thread download([base_path]() {
         std::string download_continuous_link = "https://github.com/Vita3K/Vita3K/releases/download/continuous/";
@@ -272,9 +273,10 @@ static void download_update(const fs::path &base_path) {
         // Download latest Vita3K version
         LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
 
-        static const auto progress_callback = [](float updated_progress, uint64_t updated_remaining) {
+        static const auto progress_callback = [](float updated_progress, uint64_t updated_remaining, uint64_t updated_downloaded) -> net_utils::ProgressState * {
             progress = updated_progress;
             remaining = updated_remaining;
+            downloaded = updated_downloaded;
             return &progress_state;
         };
 
@@ -322,7 +324,7 @@ static void download_update(const fs::path &base_path) {
             std::system(vita3K_batch.c_str());
 #endif
         } else {
-            if (progress_state.download) {
+            if (!progress_state.canceled) {
                 LOG_WARN("Download failed, please try again later.");
                 state = NOT_COMPLETE_UPDATE;
             } else
@@ -513,7 +515,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SameLine(0, 40.f * SCALE.x);
         if (ImGui::Button(common["yes"].c_str(), LARGE_BUTTON_SIZE)) {
             std::unique_lock<std::mutex> lock(progress_state.mutex);
-            progress_state.download = false;
+            progress_state.canceled = true;
             progress_state.pause = false; // Unpause so it gets handled by the callback
             progress_state.cv.notify_one();
 
