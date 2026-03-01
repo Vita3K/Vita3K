@@ -347,6 +347,8 @@ Toca 'Conceder Acceso' para continuar.</storage_file_permissions>
 	</settings>
 
 	<settings_dialog name="Ajustes">
+		<camera name="Cámara">
+		</camera>
 		<system name="Sistema">
 		</system>
 		<network name="Red">

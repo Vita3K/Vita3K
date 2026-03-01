@@ -330,6 +330,8 @@ Napauta 'Myönnä Käyttöoikeus' jatkaaksesi.</storage_file_permissions>
 	</settings>
 
 	<settings_dialog name="Asetukset">
+		<camera name="Kamera">
+		</camera>
 		<system name="Järjestelmä">
 		</system>
 		<network name="Verkko">

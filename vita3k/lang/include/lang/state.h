@@ -49,7 +49,7 @@ struct DialogLangState {
         { "submit", "Submit" },
         { "yes", "Yes" }
     };
-    std::map<std::string, std::string> message = { { "load_app_failed", "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Have you installed the firmware?\n2. Re-dump your own PS Vita app/game and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported." } };
+    std::map<std::string, std::string> message = { { "could_not_load", "Could not load the file {}, check vita3k.log to see console output for details.\n\n1. Have you installed the firmware?\n2. Have you exist the license of this application/game?\n3. Re-dump your own PS Vita application(s)/game(s) and install it on Vita3K.\n4. If you want to install or boot Vitamin, it is not supported." } };
     std::map<std::string, std::string> trophy = { { "preparing_start_app", "Preparing to start the application..." } };
     struct SaveData {
         std::map<std::string, std::string> deleting = {
@@ -103,7 +103,7 @@ struct LangState {
         std::map<std::string, std::string> file = {
             { "title", "File" },
             { "open_pref_path", "Open Pref Path" },
-            { "open_patch_path", "Open Patch Path" },
+            { "open_patches_path", "Open Patches Path" },
             { "open_textures_path", "Open Textures Path" },
             { "install_firmware", "Install Firmware" },
             { "install_pkg", "Install .pkg" },
@@ -413,7 +413,7 @@ struct LangState {
             { "enter_zrif", "Enter zRIF" },
             { "enter_zrif_key", "Enter zRIF key" },
             { "input_zrif", "Please input your zRIF here" },
-            { "copy_paste_zrif", "Ctrl + C to copy, Ctrl + V to paste." },
+            { "copy_paste_zrif", "Use the input method clipboard to copy and paste.\nKeyboard: Ctrl + C to copy, Ctrl + V to paste." },
             { "delete_pkg", "Delete the pkg file?" },
             { "delete_bin_rif", "Delete the work.bin/rif file?" },
             { "failed_install_package", "Failed to install package.\nCheck pkg and work.bin/rif file or zRIF key." }
@@ -427,9 +427,11 @@ struct LangState {
             { "update_app", "Update App to:" },
             { "failed_install_archive", "Failed to install {} archive(s) contents:" },
             { "not_compatible_content", "No compatible content found in {} archive(s):" },
+            { "invalid_archive", "The archive(s) is/are Vitamin or invalid contents." },
             { "delete_archive", "Delete archive?" }
         };
         std::map<std::string, std::string> license_install = {
+            { "copy_paste_zrif", "Ctrl + C to copy, Ctrl + V to paste." },
             { "successed_install_license", "Successfully installed license." },
             { "failed_install_license", "Failed to install license.\nCheck work.bin/rif file or zRIF key." }
         };

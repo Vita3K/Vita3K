@@ -456,7 +456,6 @@
 			<enter_zrif>Введите zRIF</enter_zrif>
 			<enter_zrif_key>Введите zRIF ключ</enter_zrif_key>
 			<input_zrif>Пожалуйста, введите свой zRIF здесь</input_zrif>
-			<copy_paste_zrif>Ctrl + C чтобы копировать, Ctrl + V вставить.</copy_paste_zrif>
 			<delete_pkg>Удалить файл pkg?</delete_pkg>
 			<delete_bin_rif>Удалить файл work.bin/rif?</delete_bin_rif>
 			<failed_install_package>Не удалось установить пакет.
@@ -474,6 +473,7 @@
 			<delete_archive>Удалить архив?</delete_archive>
 		</archive_install>
 		<license_install>
+			<copy_paste_zrif>Ctrl + C чтобы копировать, Ctrl + V вставить.</copy_paste_zrif>
 			<successed_install_license>Лицензия успешно установлена.</successed_install_license>
 			<failed_install_license>Не удалось установить лицензию.
 Пожалуйста, проверьте файл work.bin/rif или zRIF ключ.</failed_install_license>
@@ -516,11 +516,12 @@
 	</live_area>
 
 	<message>
-		<load_app_failed>Не удалось загрузить "{}".
-Проверьте vita3k.log, чтобы увидеть вывод консоли для получения подробной информации.
+		<could_not_load>Не удалось загрузить файл {}, проверьте vita3k.log, чтобы увидеть вывод консоли для получения подробной информации.
+
 1. Установлена ли у вас прошивка?
-2. Скопируйте собственное приложение(я)/игру(ы) и установите его на Vita 3K.
-3. Если вы хотите установить или запустить Vitamin, он не поддерживается.</load_app_failed>
+2. У вас есть лицензия на это приложение/игру?
+3. Скопируйте собственное приложение(я)/игру(ы) и установите его на Vita 3K.
+4. Если вы хотите установить или запустить Vitamin, он не поддерживается.</could_not_load>
 	</message>
 	<performance_overlay>
 		<avg>Сред</avg>

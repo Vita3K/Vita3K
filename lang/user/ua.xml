@@ -440,7 +440,6 @@
 			<enter_zrif>Ввести zRIF</enter_zrif>
 			<enter_zrif_key>Ввести ключ zRIF</enter_zrif_key>
 			<input_zrif>Будь ласка, введіть свій zRIF тут</input_zrif>
-			<copy_paste_zrif>Ctrl + C аби скопіювати, Ctrl + V аби вставити.</copy_paste_zrif>
 			<delete_pkg>Видалити файл pkg?</delete_pkg>
 			<delete_bin_rif>Видалити файл work.bin/rif?</delete_bin_rif>
 			<failed_install_package>Не вдалося завантажити пакет.
@@ -458,6 +457,7 @@
 			<delete_archive>Видалити архів?</delete_archive>
 		</archive_install>
 		<license_install>
+			<copy_paste_zrif>Ctrl + C аби скопіювати, Ctrl + V аби вставити.</copy_paste_zrif>
 			<successed_install_license>Ліцензію успішно завантажено.</successed_install_license>
 			<failed_install_license>Не вдалося завантажити ліцензію.
 Будь ласка, перевірте файл work.bin/rif або ключ zRIF.</failed_install_license>

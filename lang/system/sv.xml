@@ -331,6 +331,8 @@ Tryck på 'Ge Åtkomst' för att fortsätta.</storage_file_permissions>
 	</settings>
 
 	<settings_dialog name="Inställningar">
+		<camera name="Kamera">
+		</camera>
 		<system name="System">
 		</system>
 		<network name="Nätverk">

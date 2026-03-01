@@ -423,7 +423,6 @@ Asia. (Umumnya Direkomendasikan)</firmware_font_package_note>
 			<enter_zrif>Masukkan zRIF</enter_zrif>
 			<enter_zrif_key>Masukkan zRIF key</enter_zrif_key>
 			<input_zrif>Kamu dimohon masukkan zRIF disini</input_zrif>
-			<copy_paste_zrif>Ctrl + C untuk menyalin, Ctrl + V untuk menempel.</copy_paste_zrif>
 			<delete_pkg>Yakin untuk hapus file pkg?</delete_pkg>
 			<delete_bin_rif>Yakin untuk hapus file work.bin/rif?</delete_bin_rif>
 		</pkg_install>
@@ -440,6 +439,7 @@ Asia. (Umumnya Direkomendasikan)</firmware_font_package_note>
 			<delete_archive>Hapus arsip?</delete_archive>
 		</archive_install>
 		<license_install>
+			<copy_paste_zrif>Ctrl + C untuk menyalin, Ctrl + V untuk menempel.</copy_paste_zrif>
 			<successed_install_license>Telah selesai instalasi lisensi.</successed_install_license>
 		</license_install>
 		<reinstall>
@@ -480,11 +480,12 @@ Asia. (Umumnya Direkomendasikan)</firmware_font_package_note>
 	</live_area>
 
 	<message>
-		<load_app_failed>Gagal untuk memuat "{}".
-Periksa vita3k.log untuk melihat keluaran konsol untuk detailnya.
+		<could_not_load>Tidak dapat load file {}, periksa vita3k.log untuk melihat keluaran konsol untuk detailnya.
+
 1. Apakah Kamu sudah menginstal firmware?
-2. Buat PS Vita aplikasi/game Kamu sendiri dan instal di Vita3K.
-3. Jika Kamu ingin menginstal atau mem-boot Vitamin, tidak didukung.</load_app_failed>
+2. Apakah Anda memiliki lisensi untuk aplikasi/game ini?
+3. Buat PS Vita aplikasi/game Kamu sendiri dan instal di Vita3K.
+4. Jika Kamu ingin menginstal atau mem-boot Vitamin, tidak didukung.</could_not_load>
 	</message>
 
 	<overlay name="Overlay">
