@@ -66,7 +66,7 @@ void GateAnimation::update() {
 namespace gui {
 
 bool get_sys_apps_state(GuiState &gui) {
-    return !gui.vita_area.content_manager && !gui.vita_area.settings && !gui.vita_area.trophy_collection && !gui.vita_area.manual;
+    return !gui.vita_area.cloud_save && !gui.vita_area.content_manager && !gui.vita_area.settings && !gui.vita_area.trophy_collection && !gui.vita_area.manual;
 }
 
 struct FRAME {
@@ -577,7 +577,8 @@ enum LiveAreaType {
     GATE,
     SEARCH,
     MANUAL,
-    REFRESH
+    REFRESH,
+    CLOUD
 };
 
 struct ButtonEntry {
@@ -912,6 +913,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             const ImVec2 background_pos_max(background_pos_min.x + bg_scal_size.x, background_pos_min.y + bg_scal_size.y);
             DRAW_LIST->AddImage(gui.live_items[app_path][frame.id]["background"][current_item[app_path][frame.id]], background_pos_min, background_pos_max);
         }
+
         if (gui.live_items[app_path][frame.id].contains("image")) {
             const auto image_pos_min = set_screen_pos(img_pos);
             img_scal_size = apply_zoom_size(img_scal_size);
@@ -1251,7 +1253,9 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         if (manual_exist)
             buttons.emplace_back("Manual", MANUAL, [&]() { open_manual(gui, emuenv, app_path); });
         buttons.emplace_back("Refresh", REFRESH, [&]() { refresh_app(gui, emuenv, app_path); });
-
+        if (app_path.find("PCS") != std::string::npos) {
+            buttons.emplace_back("Cloud", CLOUD, [&]() { open_cloud_save(gui, emuenv, APP_INDEX->title_id); });
+        }
         const auto BUTTONS_COUNT = static_cast<int>(buttons.size());
         const float spacing = 42.0f * SCALE.x;
         const ImVec2 BUTTONS_POS = ImVec2(
@@ -1272,6 +1276,8 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             auto WIDGET_COLOR = IM_COL32(10, 169, 246, 255);
             if (TYPE == MANUAL)
                 WIDGET_COLOR = IM_COL32(202, 0, 106, 255);
+            else if (TYPE == CLOUD)
+                WIDGET_COLOR = IM_COL32(255, 255, 70, 255);
 
             DRAW_LIST->AddRectFilled(WIDGET_POS_MIN, ImVec2(WIDGET_POS_MIN.x + widget_scal_size.x, WIDGET_POS_MIN.y + widget_scal_size.y), WIDGET_COLOR, 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
             DRAW_LIST->AddText(gui.vita_font[emuenv.current_font_level], widget_font_size, WIDGET_STR_POS, IM_COL32(255, 255, 255, 255), WIDGET_STR);

@@ -92,7 +92,9 @@ bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string 
 bool init_user_backgrounds(GuiState &gui, EmuEnvState &emuenv);
 void init_user_management(GuiState &gui, EmuEnvState &emuenv);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
+void init_v3kn_user_info(EmuEnvState &emuenv);
 void load_and_update_compat_user_apps(GuiState &gui, EmuEnvState &emuenv);
+void open_cloud_save(GuiState &gui, EmuEnvState &emuenv, const std::string &titleid);
 void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void open_path(const std::string &path);
@@ -112,6 +114,7 @@ void set_config(EmuEnvState &emuenv);
 void set_current_config(EmuEnvState &emuenv, const std::string &app_path);
 bool set_scroll_animation(float &scroll, float target_scroll, const std::string &target_id, std::function<void(float)> set_scroll);
 void set_shaders_compiled_display(GuiState &gui, EmuEnvState &emuenv);
+void start_trophy_sync(GuiState &gui, EmuEnvState &emuenv, std::map<std::string, uint32_t> &trophy_progress, std::atomic<float> &sync_progress, std::atomic<bool> &sync_cancel, std::vector<std::string> &sync_downloaded);
 void stop_bgm();
 void switch_bgm_state(const bool pause);
 void refresh_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);

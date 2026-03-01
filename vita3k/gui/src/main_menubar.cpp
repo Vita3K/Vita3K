@@ -73,7 +73,7 @@ static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
         if (ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, ICON_SIZE.y)))
-            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.title_id);
+            pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.path);
         ImGui::PopStyleVar();
         ImGui::PopID();
         ImGui::PopStyleColor();
@@ -129,6 +129,7 @@ static void draw_config_menu(GuiState &gui, EmuEnvState &emuenv) {
             init_config(gui, emuenv, emuenv.io.app_path);
         if (ImGui::MenuItem(lang["user_management"].c_str(), nullptr, &gui.vita_area.user_management, (!gui.vita_area.user_management && emuenv.io.title_id.empty())))
             init_user_management(gui, emuenv);
+        ImGui::MenuItem("Vita3K Network", nullptr, &gui.configuration_menu.v3kn_dialog);
         ImGui::EndMenu();
     }
 }
