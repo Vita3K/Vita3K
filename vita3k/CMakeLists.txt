@@ -241,6 +241,11 @@ if(APPLE)
 	message(STATUS "MoltenVK dylib path: ${MOLTENVK_DYLIB}")
 	target_sources(vita3k PRIVATE ${MOLTENVK_DYLIB})
 	set_source_files_properties(${MOLTENVK_DYLIB} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
+	
+	add_custom_command(
+		TARGET vita3k
+		POST_BUILD
+		COMMAND codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - $<TARGET_FILE_DIR:vita3k>/Vita3K)
 elseif(LINUX)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath='$ORIGIN'")
 	if(BUILD_APPIMAGE)
