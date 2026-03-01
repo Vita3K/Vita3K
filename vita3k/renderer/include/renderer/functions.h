@@ -85,6 +85,9 @@ void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndex
 void transfer_copy(State &state, uint32_t colorKeyValue, uint32_t colorKeyMask, SceGxmTransferColorKeyMode colorKeyMode, const SceGxmTransferImage *images, SceGxmTransferType srcType, SceGxmTransferType destType);
 void transfer_downscale(State &state, const SceGxmTransferImage *src, const SceGxmTransferImage *dest);
 void transfer_fill(State &state, uint32_t fillColor, const SceGxmTransferImage *dest);
+void start_transfer_op(State &state);
+void finish_transfer_op(State &state);
+void wait_for_transfer_ops(State &state);
 void sync_surface_data(State &state, Context *ctx, const SceGxmNotification vertex_notification, const SceGxmNotification fragment_notification);
 
 bool create_context(State &state, std::unique_ptr<Context> &context);
