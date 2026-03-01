@@ -30,6 +30,11 @@
 
 typedef std::function<void(SceUID)> ResumeAudioThread;
 
+struct AudioBuffer {
+    std::vector<uint8_t> buffer;
+    int buffer_position = 0;
+};
+
 struct AudioOutPort {
     // Channel range from 0 - 32768
     int left_channel_volume = SCE_AUDIO_VOLUME_0DB;
@@ -40,8 +45,6 @@ struct AudioOutPort {
     int len_bytes = 0;
     // number of microseconds a buffer lasts for
     uint64_t len_microseconds = 0;
-    // last time sceAudioOutOutput was called with this port (timestamp in microseconds)
-    uint64_t last_output = 0;
 
     // current config
     int type = 0;
