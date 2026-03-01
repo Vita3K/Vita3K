@@ -386,6 +386,9 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
         if (!save_xml)
             LOG_ERROR("Failed to save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH);
+        auto app = get_app_index(gui, emuenv.app_path);
+        if (app)
+            app->custom_config = true;
     } else {
         emuenv.cfg.cpu_opt = config.cpu_opt;
         emuenv.cfg.modules_mode = config.modules_mode;

@@ -829,13 +829,21 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             }
             if (ImGui::BeginMenu(lang.custom_config["title"].c_str())) {
                 if (!fs::exists(CUSTOM_CONFIG_PATH)) {
-                    if (ImGui::MenuItem(lang.custom_config["create"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
+                    if (ImGui::MenuItem(lang.custom_config["create"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog)) {
                         init_config(gui, emuenv, app_path);
+                        auto app = get_app_index(gui, app_path);
+                        if (app)
+                            app->custom_config = true;
+                    }
                 } else {
                     if (ImGui::MenuItem(lang.custom_config["edit"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
                         init_config(gui, emuenv, app_path);
-                    if (ImGui::MenuItem(lang.custom_config["remove"].c_str()))
+                    if (ImGui::MenuItem(lang.custom_config["remove"].c_str())) {
                         fs::remove(CUSTOM_CONFIG_PATH);
+                        auto app = get_app_index(gui, app_path);
+                        if (app)
+                            app->custom_config = false;
+                    }
                 }
                 ImGui::EndMenu();
             }
