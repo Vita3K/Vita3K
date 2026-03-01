@@ -59,6 +59,7 @@ struct VKState : public renderer::State {
     vk::PhysicalDeviceFeatures physical_device_features;
     vk::PhysicalDeviceMemoryProperties physical_device_memory;
     std::vector<vk::QueueFamilyProperties> physical_device_queue_families;
+    vk::Format deep_stencil_use;
 
     vma::Allocator allocator;
 

@@ -60,6 +60,14 @@ static constexpr vk::ImageSubresourceRange ds_subresource_range = {
     .layerCount = 1
 };
 
+static constexpr vk::ImageSubresourceRange d_subresource_range = {
+    .aspectMask = vk::ImageAspectFlagBits::eDepth,
+    .baseMipLevel = 0,
+    .levelCount = 1,
+    .baseArrayLayer = 0,
+    .layerCount = 1
+};
+
 static constexpr vk::ImageSubresourceLayers color_subresource_layer = {
     .aspectMask = vk::ImageAspectFlagBits::eColor,
     .mipLevel = 0,
