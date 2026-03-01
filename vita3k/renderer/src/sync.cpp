@@ -24,6 +24,7 @@
 #include <display/state.h>
 #include <renderer/gl/functions.h>
 #include <renderer/vulkan/functions.h>
+#include <renderer/vulkan/state.h>
 
 #include <renderer/functions.h>
 #include <util/tracy.h>
@@ -93,6 +94,12 @@ COMMAND(new_frame) {
 void finish(State &state, Context *context) {
     // Add NOP then wait for it
     renderer::send_single_command(state, context, renderer::CommandOpcode::Nop, true, 1);
+
+    // Wait for the VK wait thread to drain pending notification writes.
+    if (state.current_backend == Backend::Vulkan) {
+        auto &vk_state = reinterpret_cast<vulkan::VKState &>(state);
+        vk_state.request_queue.wait_empty();
+    }
 }
 
 int wait_for_status(State &state, int *status, int signal, bool wake_on_equal) {
