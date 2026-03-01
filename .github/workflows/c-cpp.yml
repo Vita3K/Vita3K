@@ -231,21 +231,21 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
 
       - name: Upload artifact (Linux AppImage)
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: vita3k-${{ env.GIT_SHORT_SHA }}-${{ matrix.os }}-appimage
           path: build/${{ matrix.cmake_preset }}/bin/appimage
         if: startsWith(matrix.os, 'ubuntu')
 
       - name: Upload artifact (Android apk)
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: vita3k-${{ env.GIT_SHORT_SHA }}-android
           path: ${{ env.APK_PATH }}
         if: matrix.os == 'android'
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: vita3k-${{ env.GIT_SHORT_SHA }}-${{ matrix.os }}
           path: build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
@@ -266,7 +266,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
 
       - name: Get commit info
         run: |
