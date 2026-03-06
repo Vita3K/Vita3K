@@ -325,6 +325,7 @@ Connect a controller that is compatible with SDL3.</not_connected>
 	<controls>
 		<button>Button</button>
 		<mapped_button>Mapped button</mapped_button>
+		<mapped_button_alt>Alternate mapped button</mapped_button_alt>
 		<left_stick_up>Left stick up</left_stick_up>
 		<left_stick_down>Left stick down</left_stick_down>
 		<left_stick_right>Left stick right</left_stick_right>

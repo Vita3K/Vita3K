@@ -296,6 +296,7 @@ struct LangState {
     std::map<std::string, std::string> controls = {
         { "button", "Button" },
         { "mapped_button", "Mapped button" },
+        { "mapped_button_alt", "Alternate mapped button" },
         { "left_stick_up", "Left stick up" },
         { "left_stick_down", "Left stick down" },
         { "left_stick_right", "Left stick right" },

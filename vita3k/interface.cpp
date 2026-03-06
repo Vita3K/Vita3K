@@ -718,25 +718,25 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
 
         case SDL_EVENT_KEY_DOWN: {
             const auto get_sce_ctrl_btn_from_scancode = [&emuenv](const SDL_Scancode scancode) {
-                if (scancode == emuenv.cfg.keyboard_button_up)
+                if (scancode == emuenv.cfg.keyboard_button_up || scancode == emuenv.cfg.keyboard_button_up_alt)
                     return SCE_CTRL_UP;
-                else if (scancode == emuenv.cfg.keyboard_button_right)
+                else if (scancode == emuenv.cfg.keyboard_button_right || scancode == emuenv.cfg.keyboard_button_right_alt)
                     return SCE_CTRL_RIGHT;
-                else if (scancode == emuenv.cfg.keyboard_button_down)
+                else if (scancode == emuenv.cfg.keyboard_button_down || scancode == emuenv.cfg.keyboard_button_down_alt)
                     return SCE_CTRL_DOWN;
-                else if (scancode == emuenv.cfg.keyboard_button_left)
+                else if (scancode == emuenv.cfg.keyboard_button_left || scancode == emuenv.cfg.keyboard_button_left_alt)
                     return SCE_CTRL_LEFT;
-                else if (scancode == emuenv.cfg.keyboard_button_l1)
+                else if (scancode == emuenv.cfg.keyboard_button_l1 || scancode == emuenv.cfg.keyboard_button_l1_alt)
                     return SCE_CTRL_L1;
-                else if (scancode == emuenv.cfg.keyboard_button_r1)
+                else if (scancode == emuenv.cfg.keyboard_button_r1 || scancode == emuenv.cfg.keyboard_button_r1_alt)
                     return SCE_CTRL_R1;
-                else if (scancode == emuenv.cfg.keyboard_button_triangle)
+                else if (scancode == emuenv.cfg.keyboard_button_triangle || scancode == emuenv.cfg.keyboard_button_triangle_alt)
                     return SCE_CTRL_TRIANGLE;
-                else if (scancode == emuenv.cfg.keyboard_button_circle)
+                else if (scancode == emuenv.cfg.keyboard_button_circle || scancode == emuenv.cfg.keyboard_button_circle_alt)
                     return SCE_CTRL_CIRCLE;
-                else if (scancode == emuenv.cfg.keyboard_button_cross)
+                else if (scancode == emuenv.cfg.keyboard_button_cross || scancode == emuenv.cfg.keyboard_button_cross_alt)
                     return SCE_CTRL_CROSS;
-                else if (scancode == emuenv.cfg.keyboard_button_psbutton)
+                else if (scancode == emuenv.cfg.keyboard_button_psbutton || scancode == emuenv.cfg.keyboard_button_psbutton_alt)
                     return SCE_CTRL_PSBUTTON;
                 else
                     return static_cast<SceCtrlButtons>(0);
@@ -764,23 +764,23 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 sce_ctrl_btn = SCE_CTRL_PSBUTTON;
 #else
             // toggle gui state
-            if (allow_switch_state && (event.key.scancode == emuenv.cfg.keyboard_gui_toggle_gui))
+            if (allow_switch_state && (event.key.scancode == emuenv.cfg.keyboard_gui_toggle_gui || event.key.scancode == emuenv.cfg.keyboard_gui_toggle_gui_alt))
                 emuenv.display.imgui_render = !emuenv.display.imgui_render;
-            if (event.key.scancode == emuenv.cfg.keyboard_gui_toggle_touch && !gui.is_key_capture_dropped)
+            if ((event.key.scancode == emuenv.cfg.keyboard_gui_toggle_touch || event.key.scancode == emuenv.cfg.keyboard_gui_toggle_touch_alt) && !gui.is_key_capture_dropped)
                 toggle_touchscreen();
-            if (event.key.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped)
+            if ((event.key.scancode == emuenv.cfg.keyboard_gui_fullscreen || event.key.scancode == emuenv.cfg.keyboard_gui_fullscreen_alt) && !gui.is_key_capture_dropped)
                 switch_full_screen(emuenv);
-            if (event.key.scancode == emuenv.cfg.keyboard_toggle_texture_replacement && !gui.is_key_capture_dropped)
+            if ((event.key.scancode == emuenv.cfg.keyboard_toggle_texture_replacement || event.key.scancode == emuenv.cfg.keyboard_toggle_texture_replacement_alt) && !gui.is_key_capture_dropped)
                 toggle_texture_replacement(emuenv);
-            if (event.key.scancode == emuenv.cfg.keyboard_take_screenshot && !gui.is_key_capture_dropped)
+            if ((event.key.scancode == emuenv.cfg.keyboard_take_screenshot || event.key.scancode == emuenv.cfg.keyboard_take_screenshot_alt) && !gui.is_key_capture_dropped)
                 take_screenshot(emuenv);
-            if ((event.key.scancode == emuenv.cfg.keyboard_pinch_modifier || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out) && !gui.is_key_capture_dropped)
+            if ((event.key.scancode == emuenv.cfg.keyboard_pinch_modifier || event.key.scancode == emuenv.cfg.keyboard_pinch_modifier_alt || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in_alt || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out_alt) && !gui.is_key_capture_dropped)
                 pinch_modifier(true);
 
             const float pinch_amount = 0.5;
-            if (event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in && !gui.is_key_capture_dropped)
+            if ((event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in_alt) && !gui.is_key_capture_dropped)
                 pinch_automove(pinch_amount * -1);
-            if (event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out && !gui.is_key_capture_dropped)
+            if ((event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out_alt) && !gui.is_key_capture_dropped)
                 pinch_automove(pinch_amount);
 #endif
             if (sce_ctrl_btn != 0) {
@@ -795,7 +795,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         }
         case SDL_EVENT_KEY_UP:
             gui.is_key_locked = false;
-            if (event.key.scancode == emuenv.cfg.keyboard_pinch_modifier || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out) {
+            if (event.key.scancode == emuenv.cfg.keyboard_pinch_modifier || event.key.scancode == emuenv.cfg.keyboard_pinch_modifier_alt || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_in_alt || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out || event.key.scancode == emuenv.cfg.keyboard_alternate_pinch_out_alt) {
                 pinch_modifier(false);
                 pinch_automove(0);
             }

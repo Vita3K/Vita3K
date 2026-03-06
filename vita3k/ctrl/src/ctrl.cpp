@@ -179,12 +179,12 @@ void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     state.has_motion_support = found_gyro && found_accel;
 }
 
-static float keys_to_axis(const bool *keys, SDL_Scancode code1, SDL_Scancode code2) {
+static float keys_to_axis(const bool *keys, SDL_Scancode code1, SDL_Scancode code1_alt, SDL_Scancode code2, SDL_Scancode code2_alt) {
     float temp = 0;
-    if (keys[code1]) {
+    if (keys[code1] || keys[code1_alt]) {
         temp -= 1;
     }
-    if (keys[code2]) {
+    if (keys[code2] || keys[code2_alt]) {
         temp += 1;
     }
 
@@ -194,51 +194,51 @@ static float keys_to_axis(const bool *keys, SDL_Scancode code1, SDL_Scancode cod
 static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, EmuEnvState &emuenv) {
     const auto keys = SDL_GetKeyboardState(nullptr);
     if (ext) {
-        if (keys[emuenv.cfg.keyboard_button_l1])
+        if (keys[emuenv.cfg.keyboard_button_l1] || keys[emuenv.cfg.keyboard_button_l1_alt])
             *buttons |= SCE_CTRL_L1;
-        if (keys[emuenv.cfg.keyboard_button_r1])
+        if (keys[emuenv.cfg.keyboard_button_r1] || keys[emuenv.cfg.keyboard_button_r1_alt])
             *buttons |= SCE_CTRL_R1;
-        if (keys[emuenv.cfg.keyboard_button_l2])
+        if (keys[emuenv.cfg.keyboard_button_l2] || keys[emuenv.cfg.keyboard_button_l2_alt])
             *buttons |= SCE_CTRL_L2;
-        if (keys[emuenv.cfg.keyboard_button_r2])
+        if (keys[emuenv.cfg.keyboard_button_r2] || keys[emuenv.cfg.keyboard_button_r2_alt])
             *buttons |= SCE_CTRL_R2;
-        if (keys[emuenv.cfg.keyboard_button_l3])
+        if (keys[emuenv.cfg.keyboard_button_l3] || keys[emuenv.cfg.keyboard_button_l3_alt])
             *buttons |= SCE_CTRL_L3;
-        if (keys[emuenv.cfg.keyboard_button_r3])
+        if (keys[emuenv.cfg.keyboard_button_r3] || keys[emuenv.cfg.keyboard_button_r3_alt])
             *buttons |= SCE_CTRL_R3;
     } else {
-        if (keys[emuenv.cfg.keyboard_button_l1])
+        if (keys[emuenv.cfg.keyboard_button_l1] || keys[emuenv.cfg.keyboard_button_l1_alt])
             *buttons |= SCE_CTRL_L;
-        if (keys[emuenv.cfg.keyboard_button_r1])
+        if (keys[emuenv.cfg.keyboard_button_r1] || keys[emuenv.cfg.keyboard_button_r1_alt])
             *buttons |= SCE_CTRL_R;
     }
-    if (keys[emuenv.cfg.keyboard_button_select])
+    if (keys[emuenv.cfg.keyboard_button_select] || keys[emuenv.cfg.keyboard_button_select_alt])
         *buttons |= SCE_CTRL_SELECT;
-    if (keys[emuenv.cfg.keyboard_button_start])
+    if (keys[emuenv.cfg.keyboard_button_start] || keys[emuenv.cfg.keyboard_button_start_alt])
         *buttons |= SCE_CTRL_START;
-    if (keys[emuenv.cfg.keyboard_button_up])
+    if (keys[emuenv.cfg.keyboard_button_up] || keys[emuenv.cfg.keyboard_button_up_alt])
         *buttons |= SCE_CTRL_UP;
-    if (keys[emuenv.cfg.keyboard_button_right])
+    if (keys[emuenv.cfg.keyboard_button_right] || keys[emuenv.cfg.keyboard_button_right_alt])
         *buttons |= SCE_CTRL_RIGHT;
-    if (keys[emuenv.cfg.keyboard_button_down])
+    if (keys[emuenv.cfg.keyboard_button_down] || keys[emuenv.cfg.keyboard_button_down_alt])
         *buttons |= SCE_CTRL_DOWN;
-    if (keys[emuenv.cfg.keyboard_button_left])
+    if (keys[emuenv.cfg.keyboard_button_left] || keys[emuenv.cfg.keyboard_button_left_alt])
         *buttons |= SCE_CTRL_LEFT;
-    if (keys[emuenv.cfg.keyboard_button_triangle])
+    if (keys[emuenv.cfg.keyboard_button_triangle] || keys[emuenv.cfg.keyboard_button_triangle_alt])
         *buttons |= SCE_CTRL_TRIANGLE;
-    if (keys[emuenv.cfg.keyboard_button_circle])
+    if (keys[emuenv.cfg.keyboard_button_circle] || keys[emuenv.cfg.keyboard_button_circle_alt])
         *buttons |= SCE_CTRL_CIRCLE;
-    if (keys[emuenv.cfg.keyboard_button_cross])
+    if (keys[emuenv.cfg.keyboard_button_cross] || keys[emuenv.cfg.keyboard_button_cross_alt])
         *buttons |= SCE_CTRL_CROSS;
-    if (keys[emuenv.cfg.keyboard_button_square])
+    if (keys[emuenv.cfg.keyboard_button_square] || keys[emuenv.cfg.keyboard_button_square_alt])
         *buttons |= SCE_CTRL_SQUARE;
-    if (keys[emuenv.cfg.keyboard_button_psbutton])
+    if (keys[emuenv.cfg.keyboard_button_psbutton] || keys[emuenv.cfg.keyboard_button_psbutton_alt])
         *buttons |= SCE_CTRL_PSBUTTON;
 
-    axes[0] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_left), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_right));
-    axes[1] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_up), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_down));
-    axes[2] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_left), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_right));
-    axes[3] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_up), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_down));
+    axes[0] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_left), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_left_alt), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_right), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_right_alt));
+    axes[1] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_up), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_up_alt), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_down), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_down_alt));
+    axes[2] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_left), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_left_alt), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_right), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_right_alt));
+    axes[3] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_up), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_up_alt), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_down), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_down_alt));
 }
 
 static std::array<ControllerBinding, 13> get_controller_bindings(EmuEnvState &emuenv) {
