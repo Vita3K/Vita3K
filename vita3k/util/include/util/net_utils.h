@@ -36,7 +36,7 @@ struct parsedUrl {
 struct ProgressState {
     std::condition_variable cv;
     std::mutex mutex;
-    bool download = true;
+    bool canceled = false;
     bool pause = false;
 };
 
@@ -51,12 +51,30 @@ struct AssignedAddr {
     std::string netMask; // Network mask
 };
 
-typedef const std::function<ProgressState *(float, uint64_t)> &ProgressCallback;
+typedef const std::function<ProgressState *(float, uint64_t, uint64_t)> &ProgressCallback;
 typedef std::pair<ProgressData, ProgressCallback> CallbackData;
 
+struct WebResponse {
+    int curl_res = 0;
+    std::string body;
+};
+
+struct CurlSession {
+    void *handle = nullptr;
+    void *headers = nullptr;
+};
+
 bool download_file(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback = nullptr);
+WebResponse download_file_ex(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback = nullptr, const std::string &token = "", CurlSession *session = nullptr);
 std::string get_web_response(const std::string &url);
+WebResponse get_web_response_ex(const std::string &url, const std::string &token = "", const std::string &post_data = "");
 std::string get_web_regex_result(const std::string &url, const std::regex &regex);
+std::vector<std::string> get_web_regex_results(const std::string &url, const std::regex &regex);
+WebResponse upload_file(const std::string &url, const std::string &input_file_path, const std::string &token, const std::string &metadata, ProgressCallback progress_callback = nullptr, CurlSession *session = nullptr);
+
+CurlSession init_curl_download_session(const std::string &token);
+CurlSession init_curl_upload_session(const std::string &token);
+void cleanup_curl_session(CurlSession &session);
 
 SceHttpErrorCode parse_url(const std::string &url, parsedUrl &out);
 const char *int_method_to_char(const int n);
