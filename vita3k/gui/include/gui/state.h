@@ -66,8 +66,9 @@ struct App {
     std::string title;
     std::string title_id;
     std::string path;
-    time_t last_time;
-    compat::CompatibilityState compat;
+    time_t last_time{};
+    compat::CompatibilityState compat = compat::UNKNOWN;
+    bool custom_config = false;
 };
 
 struct AppInfo {
