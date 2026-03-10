@@ -45,6 +45,7 @@ set(GUI_SOURCES
 	src/disassembly_dialog.cpp
 	src/trophy_unlocked.cpp
 	src/about_dialog.cpp
+	src/v3kn_dialog.cpp
 	src/vita3k_update.cpp
 	src/welcome_dialog.cpp
 )
