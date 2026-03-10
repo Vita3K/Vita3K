@@ -430,7 +430,6 @@ dan juga untuk sokongan fon serantau Asia. (Secara Umum Disyorkan)</firmware_fon
 			<enter_zrif>Masukkan zRIF</enter_zrif>
 			<enter_zrif_key>Masukkan zRIF key</enter_zrif_key>
 			<input_zrif>Sila masukkan zRIF awak di sini</input_zrif>
-			<copy_paste_zrif>Ctr + C untuk menyalin, Ctrl + V untuk menampal.</copy_paste_zrif>
 			<delete_pkg>Padamkan fail pkg?</delete_pkg>
 			<delete_bin_rif>Padamkan fail work.bin/rif?</delete_bin_rif>
 			<failed_install_package>Gagal memasang pakej.
@@ -448,6 +447,7 @@ Sila semak fail pkg dan work.bin/rif atau key zRIF.</failed_install_package>
 			<delete_archive>Padamkan arkib?</delete_archive>
 		</archive_install>
 		<license_install>
+			<copy_paste_zrif>Ctr + C untuk menyalin, Ctrl + V untuk menampal.</copy_paste_zrif>
 			<successed_install_license>Berjaya instalasi lesen.</successed_install_license>
 			<failed_install_license>Gagal memasang lesen.
 Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
@@ -486,11 +486,12 @@ Sila semak fail work.bin/rif atau zRIF key.</failed_install_license>
 	</live_area>
 
 	<message>
-		<load_app_failed>Gagal memuatkan "{}".
-Semak vita3k.log untuk melihat output konsol untuk mendapatkan butiran.
+		<could_not_load>Tidak dapat memuatkan fail {}, semak vita3k.log untuk melihat output konsol untuk mendapatkan butiran.
+
 1. Adakah awak telah memasang perisian tegar?
-2. Buat PS Vita apl/gim awak sendiri dan pasang pada Vita3K.
-3. Jika anda ingin memasang atau boot Vitamin, ia tidak disokong.</load_app_failed>
+2. Adakah anda memiliki lesen untuk apl/gim ini?
+3. Buat PS Vita apl/gim awak sendiri dan pasang pada Vita3K.
+4. Jika anda ingin memasang atau boot Vitamin, ia tidak disokong.</could_not_load>
 	</message>
 
 	<overlay name="Tindanan">

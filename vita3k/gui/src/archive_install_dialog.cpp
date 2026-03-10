@@ -100,7 +100,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::BeginChild("##archive_Install_child", WINDOW_SIZE, ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysAutoResize | ImGuiChildFlags_AutoResizeX | ImGuiChildFlags_AutoResizeY, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     const auto POS_BUTTON = (ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f) + (10.f * SCALE.x);
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, title.c_str());
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, title.c_str());
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
@@ -259,6 +259,8 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Spacing();
                 const auto not_compatible_content_str = fmt::format(fmt::runtime(lang["not_compatible_content"]), invalid_archives.size());
                 ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", not_compatible_content_str.c_str());
+                ImGui::Spacing();
+                TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, lang["invalid_archive"].c_str());
                 ImGui::Spacing();
                 for (const auto &archive : invalid_archives)
                     ImGui::TextWrapped("%s", fs_utils::path_to_utf8(archive.filename()).c_str());

@@ -437,7 +437,6 @@ GUIでのアジア地域のフォントサポートに必須です。
 			<enter_zrif>zRIFを入力</enter_zrif>
 			<enter_zrif_key>zRIF keyを入力</enter_zrif_key>
 			<input_zrif>zRIFをここに入力してください</input_zrif>
-			<copy_paste_zrif>Ctrl + C でコピー、Ctrl + V でペーストします。</copy_paste_zrif>
 			<delete_pkg>先ほどのpkgを削除しますか？</delete_pkg>
 			<delete_bin_rif>先ほどのwork.bin/rifを削除しますか？</delete_bin_rif>
 		</pkg_install>
@@ -453,6 +452,7 @@ GUIでのアジア地域のフォントサポートに必須です。
 			<delete_archive>アーカイブを削除しますか？</delete_archive>
 		</archive_install>
 		<license_install>
+			<copy_paste_zrif>Ctrl + C でコピー、Ctrl + V でペーストします。</copy_paste_zrif>
 			<successed_install_license>ライセンスのインストールに成功しました。</successed_install_license>
 		</license_install>
 		<reinstall>
@@ -606,6 +606,8 @@ GUIでのアジア地域のフォントサポートに必須です。
 			<enable_ngs_support>NGSサポートを有効にする</enable_ngs_support>
 			<ngs_description>NGSオーディオライブラリのサポートを無効にするには、チェックボックスを外します。</ngs_description>
 		</audio>
+		<camera name="カメラ">
+		</camera>
 		<system name="システム">
 			<select_enter_button>決定ボタンの割り当て
 「決定」ボタンを選択してください。</select_enter_button>

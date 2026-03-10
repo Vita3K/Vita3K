@@ -594,12 +594,12 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
         if (fs::exists(SAVE_DATA_PATH))
             fs::remove_all(SAVE_DATA_PATH);
-        const auto PATCH_PATH{ emuenv.shared_path / "patch" / title_id };
+        const auto PATCH_PATH{ emuenv.pref_path / "ux0/patch" / title_id };
         if (fs::exists(PATCH_PATH))
             fs::remove_all(PATCH_PATH);
-        const auto ORIGIN_PATCH_PATH{ emuenv.pref_path / "ux0/patch" / title_id };
-        if (fs::exists(ORIGIN_PATCH_PATH))
-            fs::remove_all(ORIGIN_PATCH_PATH);
+        const auto PATCHES_PATH{ emuenv.shared_path / "patch" / title_id };
+        if (fs::exists(PATCHES_PATH))
+            fs::remove_all(PATCHES_PATH);
         const auto ADDCONT_PATH{ emuenv.pref_path / "ux0/addcont" / APP_INDEX->addcont };
         if (fs::exists(ADDCONT_PATH))
             fs::remove_all(ADDCONT_PATH);
@@ -673,7 +673,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto APP_PATH{ emuenv.pref_path / "ux0/app" / app_path };
     const auto CUSTOM_CONFIG_PATH{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
     const auto SAVE_DATA_PATH{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
-    const auto PATCH_PATH{ emuenv.shared_path / "patch" / title_id };
+    const auto PATCHES_PATH{ emuenv.shared_path / "patch" / title_id };
     const auto ADDCONT_PATH{ emuenv.pref_path / "ux0/addcont" / APP_INDEX->addcont };
     const auto LICENSE_PATH{ emuenv.pref_path / "ux0/license" / title_id };
     const auto MANUAL_PATH{ APP_PATH / "sce_sys/manual" };
@@ -848,8 +848,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_path(APP_PATH.string());
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
                     open_path(SAVE_DATA_PATH.string());
-                if (fs::exists(PATCH_PATH) && ImGui::MenuItem(lang.path["patch"].c_str()))
-                    open_path(PATCH_PATH.string());
+                if (fs::exists(PATCHES_PATH) && ImGui::MenuItem(lang.path["patch"].c_str()))
+                    open_path(PATCHES_PATH.string());
                 if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.path["addcont"].c_str()))
                     open_path(ADDCONT_PATH.string());
                 if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang.path["license"].c_str()))
@@ -882,7 +882,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     context_dialog = lang.deleting["delete_app"];
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
                     context_dialog = delete_saved_data;
-                if (fs::exists(PATCH_PATH) && ImGui::MenuItem(lang.path["patch"].c_str()))
+                if (fs::exists(PATCHES_PATH) && ImGui::MenuItem(lang.path["patch"].c_str()))
                     context_dialog = lang.deleting["delete_patch"];
                 if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang.path["addcont"].c_str()))
                     context_dialog = lang.deleting["delete_addcont"];
@@ -996,7 +996,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             if (context_dialog == delete_saved_data)
                 fs::remove_all(SAVE_DATA_PATH);
             if (context_dialog == lang.deleting["delete_patch"])
-                fs::remove_all(PATCH_PATH);
+                fs::remove_all(PATCHES_PATH);
             if (context_dialog == lang.deleting["delete_addcont"])
                 fs::remove_all(ADDCONT_PATH);
             else if (context_dialog == lang.deleting["delete_license"])
