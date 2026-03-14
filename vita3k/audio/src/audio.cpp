@@ -24,10 +24,6 @@
 
 #include <util/log.h>
 
-#include <algorithm>
-#include <cassert>
-#include <cstring>
-
 bool AudioState::init(const ResumeAudioThread &resume_thread, const std::string &adapter_name) {
     this->resume_thread = resume_thread;
 
@@ -72,22 +68,6 @@ void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const
     if (!buffer)
         return;
     adapter->audio_output(thread, out_port, buffer);
-
-    uint64_t now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    uint64_t diff = now - out_port.last_output;
-    uint64_t to_wait = out_port.len_microseconds - diff;
-    if (diff < out_port.len_microseconds && to_wait > 1000) {
-        // This is what we should be waiting to be perfectly accurate
-        // However, doing so would cause the host audio buffer to often lack samples to output
-        // This is because the PS Vita and the host audio parameters do not match exactly
-        // So instead only wait 50% of the time
-        // also don't sleep for less than 0.5 ms
-        to_wait /= 2;
-        std::this_thread::sleep_for(std::chrono::microseconds(to_wait));
-        out_port.last_output = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    } else {
-        out_port.last_output = now;
-    }
 }
 
 void AudioState::set_volume(AudioOutPort &out_port, float volume) {
