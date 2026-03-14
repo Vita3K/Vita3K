@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <chrono>
+#include <future>
 #include <renderer/commands.h>
 #include <renderer/driver_functions.h>
 #include <renderer/state.h>
@@ -97,12 +98,15 @@ void finish(State &state, Context *context) {
     renderer::send_single_command(state, context, renderer::CommandOpcode::Nop, true, 1);
 
     // Wait for the VK wait thread to finish processing all pending requests.
-    // Push a dummy request then wait for the queue to drain, ensuring the last
-    // real request has been fully processed (not just dequeued).
-    if (state.current_backend == Backend::Vulkan) {
+    // Push a callback request on the queue and wait for it to be treated
+    if (state.current_backend == Backend::Vulkan && state.features.enable_memory_mapping) {
         auto &vk_state = static_cast<vulkan::VKState &>(state);
-        vk_state.request_queue.push(vulkan::CallbackRequest{ nullptr });
-        vk_state.request_queue.wait_empty();
+        std::promise<void> promise;
+        auto callback = [&]() {
+            promise.set_value();
+        };
+        vk_state.request_queue.push(vulkan::CallbackRequest{ new vulkan::CallbackRequestFunction(callback) });
+        promise.get_future().wait();
     }
 }
 
