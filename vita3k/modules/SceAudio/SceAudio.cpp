@@ -19,6 +19,7 @@
 
 #include <audio/state.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 #include <util/lock_and_find.h>
 #include <util/tracy.h>
 
@@ -194,12 +195,20 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
+    // Empty "buf" variable is valid. It mean wait until sound output is completed.
+    // Because this function always returns when all sound is out, then on empty buf it returns immediately.
+    // Return value is the number of samples (value of 0 or greater) registered to the audio driver for normal termination.
+    if (!buf)
+        return 0;
+
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
     if (!thread) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
-
-    emuenv.audio.audio_output(*thread, *prt, buf);
+    // is it really useful to update the thread status?
+    thread->update_status(ThreadStatus::wait);
+    emuenv.audio.audio_output(*prt, buf);
+    thread->update_status(ThreadStatus::run);
 
     return prt->len;
 }
