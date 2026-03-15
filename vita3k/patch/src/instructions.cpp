@@ -20,12 +20,33 @@
 #include <util/log.h>
 
 uint32_t nop(std::vector<uint32_t> &args) {
-    return 0;
+    return 0xBF00;
 }
 
+// args[0] - destination register Rd (0-7 only)
+// args[1] - immediate value (8-bit, 0-255)
 uint32_t t1_mov(std::vector<uint32_t> &args) {
-    uint8_t b0 = args[1];
-    uint8_t b1 = 0b00100000 | (args[0] << 8);
+    uint8_t Rd = args[0] & 0x7; // register index (3-bit)
+    uint8_t imm = args[1] & 0xFF; // immediate value (8-bit)
 
-    return (b1 << 8) | b0;
+    return static_cast<uint32_t>((0x20 | Rd) << 8) | imm;
+}
+
+// args[0] = sf (0 = MOV, 1 = MOVS)
+// args[1] = Rd (0-15)
+// args[2] = imm (only compatible with 0-255)
+uint32_t a1_mov(std::vector<uint32_t> &args) {
+    uint8_t sf = args[0] & 1;
+    uint8_t rd = args[1] & 0xF;
+    uint8_t imm = args[2] & 0xFF;
+
+    uint32_t instr = 0;
+    instr |= 0b1110u << 28; // cond = AL
+    instr |= 0b1u << 25; // I = 1 (immediate mode)
+    instr |= 0b1101u << 21; // opcode = MOV
+    instr |= sf << 20; // S bit
+    instr |= rd << 12; // Rd
+    instr |= imm; // imm8 (rotate = 0)
+
+    return instr;
 }
