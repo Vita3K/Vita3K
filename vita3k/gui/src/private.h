@@ -58,6 +58,7 @@ void draw_event_flags_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_disassembly_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_v3kn_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_overlay_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv);
@@ -66,6 +67,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv);
 void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv);
 
 void draw_app_close(GuiState &gui, EmuEnvState &emuenv);
+void draw_cloud_save(GuiState &gui, EmuEnvState &emuenv);
 void draw_content_manager(GuiState &gui, EmuEnvState &emuenv);
 void draw_home_screen(GuiState &gui, EmuEnvState &emuenv);
 void draw_information_bar(GuiState &gui, EmuEnvState &emuenv);
