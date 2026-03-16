@@ -93,6 +93,8 @@
 		<an_error_occurred>Une erreur est survenue.
 Code d'erreur: {}</an_error_occurred>
 		<cancel>Annuler</cancel>
+		<connecting_please_wait>Connexion en cours...
+Merci de patienter.</connecting_please_wait>
 		<close>Fermer</close>
 		<could_not_load>Le chargement du fichier a échoué.</could_not_load>
 		<could_not_save>La sauvegarde du fichier a échoué.</could_not_save>
@@ -106,6 +108,10 @@ Code d'erreur: {}</an_error_occurred>
 		<select_all>Sélectionner tout</select_all>
 		<select>Sélectionner</select>
 		<yes>Oui</yes>
+		<could_not_connect_server>La connexion au serveur a échoué.</could_not_connect_server>	
+		<must_sign_in_vita3k_network>Vous devez vous connecter à Vita3K Network pour utiliser cette fonctionnalité.</must_sign_in_vita3k_network>
+		<could_not_connect_internet>La connexion à Internet a échoué.</could_not_connect_internet>
+		<vita3k_network_connection_lost>La connexion à Vita3K Network a été interrompue.</vita3k_network_connection_lost>
 		<wday>
 			<day>dimanche</day>
 			<day>lundi</day>
@@ -372,6 +378,27 @@ Appuyez sur 'Autoriser l'accès' pour continuer.</storage_file_permissions>
 		</help>
 	</live_area>
 
+	<online_storage>
+		<save_data_auto_upload>Téléchargement en amont automatique des données sauvegardées</save_data_auto_upload>
+		<copying>Copie en cours...</copying>
+		<download>Télécharger</download>
+		<eligible>Autorisé</eligible>
+		<ineligible>Non autorisé</ineligible>
+		<location>Emplacement</location>
+		<memory_card>Carte mémoire</memory_card>
+		<minutes_left>{} minutes restantes</minutes_left>
+		<online_storage>Stockage en ligne</online_storage>
+		<overwrite_saved_data>Écraser les données sauvegardées ?</overwrite_saved_data>
+		<ps_vita_system>Système PS Vita</ps_vita_system>
+		<ps_tv_system>Système PS TV</ps_tv_system>
+		<seconds_left>{} secondes restantes</seconds_left>
+		<size>Taille</size>
+		<trophy_earning>Obtention de trophées</trophy_earning>
+		<updated>Mis à jour</updated>
+		<upload>Téléchargement en amont</upload>
+		<uploaded>Téléchargée en amont</uploaded>
+	</online_storage>
+
 	<settings name="Paramètres">
 		<sound_display name="Son et affichage">
 			<system_music>Musique système</system_music>
@@ -467,10 +494,12 @@ Pour obtenir des trophées, utilisez une application compatible avec cette fonct
 		<not_earned>Pas obtenu</not_earned>
 		<original>Original</original>
 		<sort>Trier</sort>
+		<sync_with_server>Synchroniser avec le serveur</sync_with_server>
 		<trophies>Trophées</trophies>
 		<grade>Rang</grade>
 		<progress>Progression</progress>
 		<updated>Mis à jour</updated>
+		<syncing_trophy>Synchronisation des informations de trophées avec le serveur...</syncing_trophy>
 	</trophy_collection>
 
 	<user_management>
