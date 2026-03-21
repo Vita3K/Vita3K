@@ -46,6 +46,7 @@
 #include <SDL3/SDL_camera.h>
 #include <algorithm>
 #include <camera/state.h>
+#include <imgui_internal.h>
 #include <pugixml.hpp>
 #include <util/vector_utils.h>
 
@@ -1366,13 +1367,16 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         TextColoredCentered(GUI_COLOR_TEXT_MENUBAR, "Adhoc");
         ImGui::Spacing();
 
+        const auto addrs = net_utils::get_all_assigned_addrs();
         std::vector<std::string> addrsStrings;
         std::vector<const char *> addrsSelect;
         std::vector<const char *> nMaskSelect;
-        const auto addrs = net_utils::get_all_assigned_addrs();
+        addrsStrings.reserve(addrs.size());
+        addrsSelect.reserve(addrs.size());
+        nMaskSelect.reserve(addrs.size());
 
         for (const auto &addr : addrs) {
-            addrsStrings.emplace_back(fmt::format("{} ({})", addr.addr, addr.name).c_str());
+            addrsStrings.emplace_back(fmt::format("{} ({})", addr.addr, addr.name));
             addrsSelect.emplace_back(addrsStrings.back().c_str());
             nMaskSelect.emplace_back(addr.netMask.c_str());
         }
@@ -1496,9 +1500,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                                                "be manually instrumented in source code.";
 
         // Tracy modules list
+        static std::vector<std::string> tracy_modules = tracy_module_utils::get_available_module_names();
         if (ImGui::BeginListBox(tracy_modules_list_label, { 0.0f, ImGui::GetTextLineHeightWithSpacing() * 8.25f + ImGui::GetStyle().FramePadding.y * 2.0f })) {
             // Get all HLE modules available for advanced profiling using Tracy. Do it only once.
-            static std::vector<std::string> tracy_modules = tracy_module_utils::get_available_module_names();
             // For every HLE module available for advanced profiling using Tracy
             for (auto &module : tracy_modules) {
                 bool activation_state = tracy_module_utils::is_tracy_active(module);
@@ -1519,6 +1523,39 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 }
             }
             ImGui::EndListBox();
+        }
+        // Calculate checkbox state based on Tracy modules selection
+        int selected_count = 0;
+        int visible_count = static_cast<int>(tracy_modules.size());
+        for (const auto &module : tracy_modules) {
+            if (tracy_module_utils::is_tracy_active(module))
+                selected_count++;
+        }
+
+        bool all_selected = selected_count == visible_count;
+        bool partial_selected = (selected_count > 0) && (selected_count < visible_count);
+
+        // Set checkbox appearance based on state (indeterminate when partially selected)
+        if (partial_selected) {
+            ImGui::PushItemFlag(ImGuiItemFlags_MixedValue, true);
+        }
+
+        static bool selection_state = all_selected || partial_selected;
+        if (ImGui::Checkbox("Select all##tracy", &selection_state)) {
+            // Toggle all tracy modules
+            for (const auto &module : tracy_modules) {
+                tracy_module_utils::set_tracy_active(module, selection_state);
+                const bool module_existed = vector_utils::contains(emuenv.cfg.tracy_advanced_profiling_modules, module);
+                if (selection_state && !module_existed) {
+                    emuenv.cfg.tracy_advanced_profiling_modules.push_back(module);
+                } else if (!selection_state && module_existed) {
+                    std::erase(emuenv.cfg.tracy_advanced_profiling_modules, module);
+                }
+            }
+        }
+
+        if (partial_selected) {
+            ImGui::PopItemFlag();
         }
 #endif // TRACY_ENABLE
 

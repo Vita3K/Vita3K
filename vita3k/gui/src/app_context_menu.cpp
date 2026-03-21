@@ -26,6 +26,9 @@
 #include <io/state.h>
 #include <renderer/state.h>
 
+#include <packages/license.h>
+#include <packages/sce_types.h>
+
 #include <util/log.h>
 #include <util/safe_time.h>
 #include <util/string_utils.h>
@@ -839,7 +842,6 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 }
                 ImGui::EndMenu();
             }
-
 #ifndef ANDROID
             if (ImGui::BeginMenu(lang.path["open_folder"].c_str())) {
                 if (ImGui::MenuItem(app_str["title"].c_str()))
@@ -898,6 +900,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             }
 
             if (ImGui::BeginMenu(lang.other["title"].c_str())) {
+                if (ImGui::MenuItem("Decrypt all SELF")) {
+                    if (!emuenv.license.rif.contains(title_id))
+                        get_license(emuenv, title_id, APP_INDEX->content_id);
+                    decrypt_selfs(APP_PATH, emuenv.cache_path, emuenv.license.rif[title_id].key);
+                }
                 if (ImGui::MenuItem(lang.other["reset_last_time_played"].c_str())) {
                     reset_last_time_app_used(gui, emuenv, app_path);
                 }

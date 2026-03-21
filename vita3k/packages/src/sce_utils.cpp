@@ -833,7 +833,18 @@ std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader
     }
 }
 
+static bool is_fself_encrypted(const std::vector<uint8_t> &fself) {
+    const SCE_header &self_header = *reinterpret_cast<const SCE_header *>(fself.data());
+    const segment_info *const seg_infos = reinterpret_cast<const segment_info *>(&fself[self_header.section_info_offset]);
+    return seg_infos->encryption != 2;
+}
+
 std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint8_t *klic) {
+    if (fself.size() < sizeof(SCE_header)) {
+        LOG_ERROR("Invalid SELF: buffer too small for SCE_header ({} bytes).", fself.size());
+        return {};
+    }
+
     const SCE_header &self_header = *reinterpret_cast<const SCE_header *>(fself.data());
 
     // Check if a valid SELF or is still in encrypted layer
@@ -842,12 +853,11 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint
         return {};
     }
 
-    const segment_info *const seg_infos = reinterpret_cast<const segment_info *>(&fself[self_header.section_info_offset]);
-    const AppInfoHeader app_info_hdr = AppInfoHeader(reinterpret_cast<const char *>(&fself[self_header.appinfo_offset]));
-
     // Check the encryption self type
-    if (seg_infos->encryption == 2)
+    if (!is_fself_encrypted(fself))
         return fself; // Self is not encrypted, return the original self
+
+    const AppInfoHeader app_info_hdr = AppInfoHeader(reinterpret_cast<const char *>(&fself[self_header.appinfo_offset]));
 
     // Check if the self is an app and if a klic have all 0 inside it
     const auto is_app = app_info_hdr.self_type == SelfType::APP;
@@ -1081,4 +1091,65 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint
 
     // Return the decrypted self
     return decrypted_self;
+}
+
+void decrypt_selfs(const fs::path &input_path, const fs::path &cache_path, const uint8_t *klic) {
+    const auto is_self = [](const fs::path &file_path) -> bool {
+        const auto extension = file_path.filename().extension();
+        const auto is_self = ((extension == ".suprx") || (extension == ".skprx") || (extension == ".self"));
+        return (is_self || (file_path.filename() == "eboot.bin"));
+    };
+
+    if (std::all_of(klic, klic + 16, [](uint8_t i) { return i == 0; })) {
+        LOG_ERROR("No klic provided for decrypting encrypted App selfs");
+        return;
+    }
+
+    const auto output_path = cache_path / "decrypted_selfs" / input_path.stem();
+
+    for (auto &entry : fs::recursive_directory_iterator(input_path)) {
+        if (entry.is_regular_file() && is_self(entry.path())) {
+            // Open the self file
+            fs::ifstream f(entry.path(), std::ios::binary);
+            if (!f) {
+                LOG_ERROR("Failed to open self {}", fs_utils::path_to_utf8(entry.path().filename()));
+                continue;
+            }
+
+            // Read the entire self file into a vector
+            std::vector<uint8_t> fself;
+            fself.assign((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+
+            // Ensure we have at least enough data for the SCE_header structure.
+            if (fself.size() < sizeof(SCE_header)) {
+                LOG_ERROR("Invalid SELF: buffer too small for SCE_header ({} bytes).", fself.size());
+                continue;
+            }
+
+            // Check if the self is encrypted before attempting decryption
+            if (!is_fself_encrypted(fself)) {
+                LOG_INFO("Self {} is already decrypted, skipping decryption", fs_utils::path_to_utf8(entry.path().filename()));
+                continue;
+            }
+
+            // Decrypt the self
+            fself = decrypt_fself(fself, klic);
+            if (fself.empty()) {
+                LOG_ERROR("Failed to decrypt self {}", fs_utils::path_to_utf8(entry.path().filename()));
+                continue;
+            }
+
+            // Write the decrypted self to the output path
+            const auto output_file_path = output_path / fs::relative(entry.path(), input_path);
+            fs::create_directories(output_file_path.parent_path());
+            fs::ofstream out(output_file_path, std::ios::binary);
+            if (!out) {
+                LOG_ERROR("Failed to write decrypted self {}", fs_utils::path_to_utf8(output_file_path));
+                continue;
+            }
+            out.write(reinterpret_cast<const char *>(fself.data()), fself.size());
+            const auto out_rel = fs::relative(output_file_path, cache_path);
+            LOG_INFO("Decrypted self to {}", fs_utils::path_to_utf8(out_rel));
+        }
+    }
 }
