@@ -78,7 +78,12 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
     static std::terminate_handler old_terminate = nullptr;
     old_terminate = std::set_terminate([]() {
         try {
-            std::rethrow_exception(std::current_exception());
+            auto eptr = std::current_exception();
+            if (eptr) {
+                std::rethrow_exception(eptr);
+            } else {
+                LOG_CRITICAL("Unhandled 'std::terminate()' call");
+            }
         } catch (const std::exception &e) {
             LOG_CRITICAL("Unhandled C++ exception. {}", e.what());
         } catch (...) {

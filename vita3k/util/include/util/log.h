@@ -36,11 +36,7 @@
 #define LOG_ERROR SPDLOG_ERROR
 #define LOG_CRITICAL SPDLOG_CRITICAL
 
-#define LOG_IF(log_function, flag, ...) \
-    do {                                \
-        if (flag)                       \
-            log_function(__VA_ARGS__);  \
-    } while (0)
+#define LOG_IF(log_function, flag, ...) ((flag) ? log_function(__VA_ARGS__) : static_cast<void>(0))
 
 #define LOG_TRACE_IF(flag, ...) LOG_IF(LOG_TRACE, flag, __VA_ARGS__)
 #define LOG_DEBUG_IF(flag, ...) LOG_IF(LOG_DEBUG, flag, __VA_ARGS__)
