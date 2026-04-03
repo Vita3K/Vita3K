@@ -107,6 +107,11 @@ bool init(MemState &state, const bool use_page_table) {
     memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * table_length);
 
     state.allocator.set_maximum(table_length);
+    
+#ifdef PAGE_NOT_4KIB
+    state.multiplier = state.page_size / KiB(4);
+    state.seg_allocator.set_maximum(table_length * state.multiplier);
+#endif
 
     const auto handler = [&state](uint8_t *addr, bool write) noexcept {
         return handle_access_violation(state, addr, write);
@@ -126,9 +131,9 @@ bool init(MemState &state, const bool use_page_table) {
 
     state.use_page_table = use_page_table;
     if (use_page_table) {
-        state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / KiB(4)]);
+        state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / state.page_size]);
         // we use an absolute offset (it is faster), so each entry is the same
-        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / KiB(4), state.memory.get());
+        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / state.page_size, state.memory.get());
     }
 
     return true;
@@ -167,6 +172,9 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
         page_num = state.allocator.allocate_from(start_page, page_count, false);
         if (page_num < 0)
             return 0;
+#ifdef PAGE_NOT_4KIB
+        state.seg_allocator.allocate_at(start_page * state.multiplier, page_count * state.multiplier);
+#endif
     }
 
     const uint32_t size = page_count * state.page_size;
@@ -283,14 +291,15 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     if (LOG_PROTECT) {
         fmt::print("Access: {}\n", log_hex(vaddr));
     }
-
-    auto it = state.protect_tree.lower_bound(vaddr);
-    if (it == state.protect_tree.end()) {
+    
+    auto it = state.protect_tree.upper_bound(vaddr);
+    if (it == state.protect_tree.begin()) {
         // HACK: keep going
         unprotect_inner(state, align_down(vaddr, state.page_size), state.page_size);
         LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
         return true;
     }
+    --it;
 
     ProtectSegmentInfo &info = it->second;
     if (vaddr < it->first || vaddr >= it->first + info.size) {
@@ -317,7 +326,7 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
     align_to_page(state, addr, protect.size);
 
     ProtectBlockInfo block;
-    block.size = size;
+    block.size = protect.size;
     block.callback = callback;
 
     protect.blocks.emplace(addr, std::move(block));
@@ -451,7 +460,27 @@ Address alloc_at(MemState &state, Address address, uint32_t size, const char *na
     const uint32_t wanted_page = address / state.page_size;
     size += address % state.page_size;
     const uint32_t page_count = align(size, state.page_size) / state.page_size;
+#ifdef PAGE_NOT_4KIB
+    const uint32_t seg_wanted = address / KiB(4);
+    const uint32_t seg_count = align(size, KiB(4)) / KiB(4);
+    if (state.seg_allocator.allocate_at(seg_wanted, seg_count) < 0) {
+        LOG_CRITICAL("Failed to allocate at specific page");
+        //        return 0;
+    }
+    const uint32_t remnant = state.allocator.free_slot_count(wanted_page, wanted_page + page_count);
+    const uint32_t pre_alloced = page_count - remnant;
+    assert(pre_alloced <= 2);
+
+    uint32_t start_page = wanted_page;
+    if (pre_alloced == 2 || (pre_alloced == 1 && state.allocator.free_slot_count(wanted_page, wanted_page + 1) == 0))
+        start_page += 1;
+
+    alloc_inner(state, start_page, remnant, name, true);
+    state.alloc_table[start_page].allocated = 0;
+    state.force_alloc.emplace(address, std::make_pair(seg_count, page_count));
+#else
     alloc_inner(state, wanted_page, page_count, name, true);
+#endif
     return address;
 }
 
@@ -473,10 +502,50 @@ Block alloc_block(MemState &mem, uint32_t size, const char *name, Address start_
     });
 }
 
+#ifdef PAGE_NOT_4KIB
+void free_force_alloc(MemState &state, Address address) {
+    const uint32_t mul = state.multiplier;
+    const std::pair<uint32_t, uint32_t> pair = state.force_alloc.at(address);
+    const uint32_t page_num = address / state.page_size;
+    const uint32_t seg_count = pair.first;
+    uint32_t page_count = pair.second;
+
+    state.seg_allocator.free(address / KiB(4), seg_count);
+
+    uint32_t start_page = page_num;
+    if (state.seg_allocator.free_slot_count(page_num * mul, mul) != mul) {
+        start_page += 1;
+        page_count -= 1;
+    }
+    if (state.seg_allocator.free_slot_count((page_num + page_count) * mul, mul) != mul) {
+        page_count -= 1;
+    }
+
+    state.allocator.free(start_page, page_count);
+    state.force_alloc.erase(address);
+    if (PAGE_NAME_TRACKING) {
+        state.page_name_map.erase(page_num);
+    }
+
+    uint8_t *const memory = &state.memory[start_page * state.page_size];
+
+    int ret = mprotect(memory, page_count * state.page_size, PROT_NONE);
+    LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+    ret = madvise(memory, page_count * state.page_size, MADV_DONTNEED);
+    LOG_CRITICAL_IF(ret == -1, "madvise failed: {}", get_error_msg());
+}
+#endif
+
 void free(MemState &state, Address address) {
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const uint32_t page_num = address / state.page_size;
     assert(page_num >= 0);
+    
+#ifdef PAGE_NOT_4KIB
+    if (state.force_alloc.find(address) != state.force_alloc.end()) [[unlikely]] {
+        return free_force_alloc(state, address);
+    }
+#endif
 
     AllocMemPage &page = state.alloc_table[page_num];
     if (!page.allocated) {

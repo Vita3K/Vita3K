@@ -37,8 +37,18 @@ SceOff FileStats::read(void *input_data, const int element_size, const SceSize e
     // that's because host io does not work well with memory trapping and read-only buffer
     // so set 1 byte to 0 in all pages to trigger all possible pagefaults in this range
     // todo: call a mem function to check this instead
+    
+#ifdef _WIN32
+    SYSTEM_INFO system_info = {};
+    GetSystemInfo(&system_info);
+    uint32_t page_size = system_info.dwPageSize;
+#else
+    uint32_t page_size = static_cast<int>(sysconf(_SC_PAGESIZE));
+#endif
+    //LOG_WARN("Page Size: {}", page_size);
+    
     volatile uint8_t *input_addr = reinterpret_cast<volatile uint8_t *>(input_data);
-    for (int i = 0; i < element_size * element_count; i += 0x1000)
+    for (int i = 0; i < element_size * element_count; i += page_size)
         input_addr[i] = 0;
     input_addr[element_size * element_count - 1] = 0;
 
