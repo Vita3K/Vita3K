@@ -35,9 +35,9 @@
 void SDLCALL SDLAudioAdapter::thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
     assert(userdata != nullptr);
     assert(stream != nullptr);
-    const int bytes_available = SDL_GetAudioStreamAvailable(stream);
-    if (bytes_available < 2 * total_amount || additional_amount > 0) {
-        SDLAudioOutPort *port = static_cast<SDLAudioOutPort *>(userdata);
+    SDLAudioOutPort *port = static_cast<SDLAudioOutPort *>(userdata);
+    const int samples_available = port->adapter.get_rest_sample(*port);
+    if (samples_available < 2 * port->adapter.device_buffer_samples || additional_amount > 0) {
         port->cond_var.notify_one();
     }
 }
