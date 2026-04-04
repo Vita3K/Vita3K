@@ -677,11 +677,11 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         // This works under the assumption that once this big enough texture decided to modify. It will have to modify either all of its data,
         // or replace with an entire new texture.
         bool should_use_hash = true;
-        if (use_protect && info->texture_size >= mem.page_size * 4) {
-            range_protect_begin = align(gxm_texture.data_addr << 2, mem.page_size);
-            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.page_size);
+        if (use_protect && info->texture_size >= mem.host_page_size * 4) {
+            range_protect_begin = align(gxm_texture.data_addr << 2, mem.host_page_size);
+            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.host_page_size);
 
-            if (range_protect_end - range_protect_begin >= mem.page_size * 4) {
+            if (range_protect_end - range_protect_begin >= mem.host_page_size * 4) {
                 should_use_hash = false;
             }
         }
@@ -708,8 +708,8 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
             upload = previous_hash != info->hash;
         } else {
-            range_protect_begin = align(gxm_texture.data_addr << 2, mem.page_size);
-            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.page_size);
+            range_protect_begin = align(gxm_texture.data_addr << 2, mem.host_page_size);
+            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.host_page_size);
             upload = info->dirty;
         }
     }

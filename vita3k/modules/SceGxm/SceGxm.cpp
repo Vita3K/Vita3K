@@ -5470,7 +5470,7 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
     // we don't run into issues later
     // TODO: call a mem function to invalidate the range instead
     uint8_t *addr_start = base.cast<uint8_t>().get(emuenv.mem);
-    for (volatile uint8_t *addr = addr_start; addr < addr_start + ite->second.size; addr += emuenv.mem.page_size) {
+    for (volatile uint8_t *addr = addr_start; addr < addr_start + ite->second.size; addr += emuenv.mem.host_page_size) {
         // this should cause a read and a write
         *addr = *addr;
     }

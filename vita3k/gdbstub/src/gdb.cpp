@@ -340,7 +340,7 @@ static bool check_memory_region(Address address, Address length, MemState &mem) 
 
     Address it = address;
     bool valid = true;
-    for (; it < address + length; it += mem.page_size) {
+    for (; it < address + length; it += mem.host_page_size) {
         if (!is_valid_addr(mem, it)) {
             valid = false;
             break;

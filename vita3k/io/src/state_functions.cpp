@@ -26,6 +26,16 @@
 
 #include <io/state.h>
 
+static const uint32_t page_size = []() -> uint32_t {
+#ifdef _WIN32
+    SYSTEM_INFO system_info = {};
+    GetSystemInfo(&system_info);
+    return system_info.dwPageSize;
+#else
+    return static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
+#endif
+}();
+
 SceOff FileStats::read(void *input_data, const int element_size, const SceSize element_count) const {
     if (!wrapped_file)
         return -1;
@@ -38,7 +48,7 @@ SceOff FileStats::read(void *input_data, const int element_size, const SceSize e
     // so set 1 byte to 0 in all pages to trigger all possible pagefaults in this range
     // todo: call a mem function to check this instead
     volatile uint8_t *input_addr = reinterpret_cast<volatile uint8_t *>(input_data);
-    for (int i = 0; i < element_size * element_count; i += 0x1000)
+    for (int i = 0; i < element_size * element_count; i += page_size)
         input_addr[i] = 0;
     input_addr[element_size * element_count - 1] = 0;
 

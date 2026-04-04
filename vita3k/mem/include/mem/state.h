@@ -66,7 +66,7 @@ struct MemState {
     std::mutex generation_mutex;
     std::mutex protect_mutex;
 
-    uint32_t page_size = 0;
+    uint32_t host_page_size = 0;
     Memory memory;
     AllocPageTable alloc_table;
     BitmapAllocator allocator;
