@@ -239,14 +239,14 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::Button(lang["install_firmware_file"].c_str(), BIG_BUTTON_SIZE))
             gui.file_menu.firmware_install_dialog = true;
         if (gui.file_menu.firmware_install_dialog) {
-            ImGui::SetWindowFontScale(RES_SCALE.x);
+            ImGui::SetWindowFontScale(RES_SCALE.y);
             draw_firmware_install_dialog(gui, emuenv);
         }
         break;
 
     case SELECT_INTERFACE_SETTINGS:
         title_str = lang["select_interface_settings"];
-        ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
+        ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - (ImGui::GetFontSize() * 3.f));
         ImGui::Checkbox(gui.lang.settings_dialog.gui["display_info_message"].c_str(), &emuenv.cfg.display_info_message);
         SetTooltipEx(gui.lang.settings_dialog.gui["display_info_message_description"].c_str());
         ImGui::SameLine();
@@ -266,6 +266,16 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SliderInt(lang["icon_size"].c_str(), &emuenv.cfg.icon_size, 64, 128);
             SetTooltipEx(lang["select_icon_size"].c_str());
         }
+        ImGui::Spacing();
+        if (ImGui::Checkbox(gui.lang.settings.sound_display["system_music"].c_str(), &emuenv.cfg.system_music.value()))
+            switch_bgm_state(!emuenv.cfg.system_music.value());
+        SetTooltipEx("This option can be changed later in the system Settings app.");
+        if (emuenv.cfg.system_music.value()) {
+            ImGui::Spacing();
+            if (ImGui::SliderInt(gui.lang.settings_dialog.audio["bgm_volume"].c_str(), &emuenv.cfg.bgm_volume, 0, 100, "%d %%", ImGuiSliderFlags_AlwaysClamp))
+                set_bgm_volume(emuenv.cfg.bgm_volume);
+            SetTooltipEx(gui.lang.settings_dialog.audio["bgm_volume_description"].c_str());
+        }
         break;
 
     case FINISHED:
@@ -275,6 +285,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(BIG_BUTTON_POS);
         if (ImGui::Button(common["ok"].c_str(), BIG_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
             emuenv.cfg.initial_setup = true;
+            stop_bgm();
             config::serialize_config(emuenv.cfg, emuenv.config_path);
         }
         break;

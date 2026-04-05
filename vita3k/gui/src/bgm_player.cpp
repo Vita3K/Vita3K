@@ -419,9 +419,11 @@ bool init_bgm_streaming(uint8_t *at9_data, uint32_t size) {
     return true;
 }
 
+constexpr std::string_view initial_setup_bgm = "data/systembgm/initialsetup.at9";
+
 bool init_bgm(GuiState &gui, EmuEnvState &emuenv) {
-    const auto device = VitaIoDevice::_from_string(gui.current_path_bgm.first.c_str());
-    const auto &path = gui.current_path_bgm.second;
+    const auto device = gui.current_path_bgm.first.empty() ? VitaIoDevice::pd0 : VitaIoDevice::_from_string(gui.current_path_bgm.first.c_str());
+    const auto &path = gui.current_path_bgm.second.empty() ? static_cast<std::string>(initial_setup_bgm) : gui.current_path_bgm.second;
 
     // Check if the path is initialsetup.at9 and if the stream is already initialized
     if ((path.find("initialsetup.at9") != std::string::npos) && at9_stream.initialized)

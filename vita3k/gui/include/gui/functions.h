@@ -93,6 +93,7 @@ bool init_user_backgrounds(GuiState &gui, EmuEnvState &emuenv);
 void init_user_management(GuiState &gui, EmuEnvState &emuenv);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
 void load_and_update_compat_user_apps(GuiState &gui, EmuEnvState &emuenv);
+void load_fonts(GuiState &gui, EmuEnvState &emuenv, bool reload);
 void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void open_path(const std::string &path);

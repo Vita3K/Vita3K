@@ -304,6 +304,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_Shutdown(ImGui_VulkanState &state) {
 
 static void ImGui_ImplSdlVulkan_DeletePipeline(ImGui_VulkanState &state) {
     get_renderer(state).device.destroy(state.Pipeline);
+    state.Pipeline = nullptr;
 }
 
 static bool ImGui_ImplSdlVulkan_CreatePipeline(ImGui_VulkanState &state) {
@@ -698,6 +699,9 @@ IMGUI_API ImTextureID ImGui_ImplSdlVulkan_CreateTexture(ImGui_VulkanState &state
 }
 
 IMGUI_API void ImGui_ImplSdlVulkan_DeleteTexture(ImGui_VulkanState &state, ImTextureID texture) {
+    if (!texture)
+        return;
+
     auto texture_ptr = static_cast<TextureState *>(texture);
     auto &vk_state = get_renderer(state);
 
@@ -713,14 +717,21 @@ IMGUI_API void ImGui_ImplSdlVulkan_InvalidateDeviceObjects(ImGui_VulkanState &st
     auto &vk_state = get_renderer(state);
 
     ImGui_ImplSdlVulkan_DeleteTexture(state, state.Font);
+    ImGui::GetIO().Fonts->TexID = 0;
+    state.Font = nullptr;
     ImGui_ImplSdlVulkan_DeletePipeline(state);
 
     vk_state.device.destroy(state.PipelineLayout);
+    state.PipelineLayout = nullptr;
     vk_state.device.destroy(state.DescriptorSetLayout);
+    state.DescriptorSetLayout = nullptr;
 
     vk_state.device.destroy(state.FontSampler);
+    state.FontSampler = nullptr;
 
     vk_state.device.destroy(state.DescriptorPool);
+    state.DescriptorPool = nullptr;
+    state.DescriptorSets.clear();
 }
 
 IMGUI_API bool ImGui_ImplSdlVulkan_CreateDeviceObjects(ImGui_VulkanState &state) {

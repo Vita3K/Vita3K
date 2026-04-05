@@ -223,6 +223,17 @@ void init_user_management(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void init_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
+    // Check whether we are leaving the initial setup screen.
+    if (emuenv.cfg.system_music.has_value()) {
+        // If the user changed the system music setting there, save it for the currently selected user.
+        if (gui.users[user_id].system_music != emuenv.cfg.system_music.value()) {
+            gui.users[user_id].system_music = emuenv.cfg.system_music.value();
+            save_user(gui, emuenv, user_id);
+        }
+        // Reset the system music setting so it does not affect the next selected user.
+        emuenv.cfg.system_music.reset();
+    }
+
     emuenv.io.user_id = user_id;
     emuenv.io.user_name = gui.users[user_id].name;
     init_user_backgrounds(gui, emuenv);

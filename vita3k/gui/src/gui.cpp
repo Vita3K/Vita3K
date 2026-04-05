@@ -153,6 +153,7 @@ static void init_style(EmuEnvState &emuenv) {
 
 static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     ImGuiIO &io = ImGui::GetIO();
+    gui.fw_font = false;
 
     // Set Large Font
     constexpr ImWchar large_font_chars[] = { L'0', L'1', L'2', L'3', L'4', L'5', L'6', L'7', L'8', L'9', L':', L'A', L'M', L'P', 0 };
@@ -828,10 +829,22 @@ void pre_init(GuiState &gui, EmuEnvState &emuenv) {
     assert(gui.imgui_state);
 
     init_style(emuenv);
-    init_font(gui, emuenv);
     lang::init_lang(gui.lang, emuenv);
 
-    bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
+    load_fonts(gui, emuenv, false);
+}
+
+void load_fonts(GuiState &gui, EmuEnvState &emuenv, bool reload) {
+    assert(gui.imgui_state);
+
+    if (reload) {
+        ImGui_ImplSdl_InvalidateDeviceObjects(gui.imgui_state.get());
+        ImGui::GetIO().Fonts->Clear();
+    }
+
+    init_font(gui, emuenv);
+
+    const bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);
 }
 
