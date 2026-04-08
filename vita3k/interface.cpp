@@ -603,6 +603,48 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
     const auto allow_switch_state = !emuenv.io.title_id.empty() && !gui.vita_area.app_close && !gui.vita_area.home_screen && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog && gui::get_sys_apps_state(gui);
 
     const auto ui_navigation = [&emuenv, &gui, allow_switch_state](const uint32_t sce_ctrl_btn) {
+        switch (sce_ctrl_btn) {
+        case SCE_CTRL_CROSS:
+        case SCE_CTRL_CIRCLE:
+            gui.is_key_locked = true;
+            if (gui.vita_area.start_screen)
+                gui::close_start_screen(gui, emuenv);
+            break;
+        case SCE_CTRL_PSBUTTON:
+            gui.is_key_locked = true;
+            if (allow_switch_state) {
+                // Show/Hide Live Area during app running
+                const auto current_app_state = emuenv.kernel.is_threads_paused();
+                const auto live_area_app_index = gui::get_live_area_current_open_apps_list_index(gui, emuenv.io.app_path);
+                if (live_area_app_index == gui.live_area_current_open_apps_list.end())
+                    gui::open_live_area(gui, emuenv, emuenv.io.app_path);
+                else {
+                    // If current live area app open is not the current app running, set it as current
+                    if ((gui.live_area_app_current_open < 0) || (gui.live_area_current_open_apps_list[gui.live_area_app_current_open] != emuenv.io.app_path))
+                        gui.live_area_app_current_open = static_cast<int32_t>(std::distance(live_area_app_index, gui.live_area_current_open_apps_list.end()) - 1);
+
+                    // Switch Live Area state
+                    if (!gui.vita_area.live_area_screen) {
+                        gui.vita_area.information_bar = true;
+                        gui.vita_area.live_area_screen = true;
+                    }
+                }
+
+                if (!current_app_state) {
+                    // Update the last app frame for live area
+                    update_live_area_last_app_frame(emuenv, gui);
+                    gui.gate_animation.start(GateAnimationState::ReturnApp);
+                    app::switch_state(emuenv, !current_app_state);
+                    gui::switch_bgm_state(!current_app_state);
+                } else {
+                    gui.gate_animation.start(GateAnimationState::EnterApp);
+                }
+            } else if (!gui::get_sys_apps_state(gui))
+                gui::close_system_app(gui, emuenv);
+            break;
+        default: break;
+        }
+
         if (gui.vita_area.app_close) {
             const auto cancel = [&gui]() {
                 gui.vita_area.app_close = false;
@@ -642,52 +684,6 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
 
             default: break;
             }
-        }
-
-        switch (sce_ctrl_btn) {
-        case SCE_CTRL_CROSS:
-        case SCE_CTRL_CIRCLE:
-            gui.is_key_locked = true;
-            if (gui.vita_area.start_screen) {
-                gui.vita_area.start_screen = false;
-                gui.vita_area.home_screen = true;
-                if (emuenv.cfg.show_info_bar)
-                    gui.vita_area.information_bar = true;
-            }
-            break;
-        case SCE_CTRL_PSBUTTON:
-            gui.is_key_locked = true;
-            if (allow_switch_state) {
-                // Show/Hide Live Area during app running
-                const auto current_app_state = emuenv.kernel.is_threads_paused();
-                const auto live_area_app_index = gui::get_live_area_current_open_apps_list_index(gui, emuenv.io.app_path);
-                if (live_area_app_index == gui.live_area_current_open_apps_list.end())
-                    gui::open_live_area(gui, emuenv, emuenv.io.app_path);
-                else {
-                    // If current live area app open is not the current app running, set it as current
-                    if ((gui.live_area_app_current_open < 0) || (gui.live_area_current_open_apps_list[gui.live_area_app_current_open] != emuenv.io.app_path))
-                        gui.live_area_app_current_open = static_cast<int32_t>(std::distance(live_area_app_index, gui.live_area_current_open_apps_list.end()) - 1);
-
-                    // Switch Live Area state
-                    if (!gui.vita_area.live_area_screen) {
-                        gui.vita_area.information_bar = true;
-                        gui.vita_area.live_area_screen = true;
-                    }
-                }
-
-                if (!current_app_state) {
-                    // Update the last app frame for live area
-                    update_live_area_last_app_frame(emuenv, gui);
-                    gui.gate_animation.start(GateAnimationState::ReturnApp);
-                    app::switch_state(emuenv, !current_app_state);
-                    gui::switch_bgm_state(!current_app_state);
-                } else {
-                    gui.gate_animation.start(GateAnimationState::EnterApp);
-                }
-            } else if (!gui::get_sys_apps_state(gui))
-                gui::close_system_app(gui, emuenv);
-            break;
-        default: break;
         }
     };
 
@@ -813,7 +809,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             if (!emuenv.kernel.is_threads_paused() && (event.gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD))
                 toggle_touchscreen();
 
-            if (ImGui::GetIO().WantTextInput || emuenv.drop_inputs)
+            if (ImGui::GetIO().WantTextInput || gui.is_key_locked || emuenv.drop_inputs || (gui.gate_animation.state != GateAnimationState::None))
                 continue;
 
             for (const auto &binding : get_controller_bindings_ext(emuenv)) {
@@ -827,6 +823,10 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     break;
                 }
             }
+            break;
+
+        case SDL_EVENT_GAMEPAD_BUTTON_UP:
+            gui.is_key_locked = false;
             break;
 
         case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:

@@ -309,7 +309,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                         LOG_WARN("Notice icon, Name: '{}', Not found for content id: {}.", name, content_id);
                         continue;
                     }
-                    stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+                    stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                     if (!data) {
                         LOG_ERROR("Invalid notice icon for content id: {}.", content_id);
                         continue;
@@ -459,6 +459,14 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
+void close_start_screen(GuiState &gui, EmuEnvState &emuenv) {
+    gui.vita_area.start_screen = false;
+    switch_bgm_state(false);
+    gui.vita_area.home_screen = true;
+    if (!emuenv.cfg.show_info_bar)
+        gui.vita_area.information_bar = false;
+}
+
 void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
@@ -540,13 +548,8 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     }
     ImGui::PopFont();
 
-    if (ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0)) {
-        gui.vita_area.start_screen = false;
-        switch_bgm_state(false);
-        gui.vita_area.home_screen = true;
-        if (emuenv.cfg.show_info_bar)
-            gui.vita_area.information_bar = true;
-    }
+    if (ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0))
+        close_start_screen(gui, emuenv);
 
     ImGui::End();
     ImGui::PopStyleVar(3);
