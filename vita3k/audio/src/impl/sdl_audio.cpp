@@ -75,6 +75,10 @@ AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sam
         .freq = freq
     };
     SDL_CHECK(SDL_GetAudioDeviceFormat(device_id, &dst_spec, &device_buffer_samples));
+#ifdef __ANDROID__
+    // Android's audio latency is higher than other platforms, so increase prebuffering to reduce underruns.
+    device_buffer_samples *= 2;
+#endif
     const AudioStreamPtr stream(SDL_CreateAudioStream(&src_spec, &dst_spec), SDL_DestroyAudioStream);
     SDL_CHECK(stream);
     SDL_CHECK(SDL_BindAudioStream(device_id, stream.get()));
