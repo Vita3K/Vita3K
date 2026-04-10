@@ -1060,6 +1060,7 @@ void TextCentered(const char *text, float wrap_width) {
 namespace ImGui {
 
 void ScrollWhenDragging() {
+#ifdef __ANDROID__
     ImGuiContext &g = *ImGui::GetCurrentContext();
     ImGuiIO &io = ImGui::GetIO();
     ImGuiWindow *window = g.CurrentWindow;
@@ -1067,6 +1068,7 @@ void ScrollWhenDragging() {
         ImGui::SetScrollY(window, window->Scroll.y - io.MouseDelta.y);
         ImGui::SetActiveID(0, window);
     }
+#endif
 }
 
 } // namespace ImGui
