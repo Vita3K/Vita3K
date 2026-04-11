@@ -50,10 +50,25 @@ struct KuBridgeState {
     Address abort_handler{};
 
     // Maps a SceUID → base address of the reserved virtual memory region.
-    // These regions are created by kuKernelMemReserve and tracked so that
-    // kuKernelMemDecommit can locate and free sub-regions.
+    // These regions are created by kuKernelMemReserve / kuKernelAllocMemBlock
+    // and tracked so that kuKernelMemDecommit can locate and free sub-regions.
     std::unordered_map<SceUID, Address> reserved_blocks;
-    SceUID next_reserved_uid{ 0x70000000 }; // synthetic UIDs for reserved blocks
+
+    // Synthetic UIDs are issued from a separate range well above what the
+    // kernel SysmemState counter will reach in practice.  We use 32-bit
+    // arithmetic on SceUID (int32_t), so we detect near-wrap and saturate.
+    static constexpr SceUID ku_uid_base = 0x40000001;
+    SceUID next_reserved_uid{ ku_uid_base };
+
+    SceUID get_next_uid() {
+        const SceUID uid = next_reserved_uid;
+        // Advance, wrapping back to base on exhaustion (extremely unlikely).
+        if (next_reserved_uid < 0x7FFFFFFE)
+            ++next_reserved_uid;
+        else
+            next_reserved_uid = ku_uid_base;
+        return uid;
+    }
 };
 
 LIBRARY_INIT(SceKuBridge) {
@@ -129,7 +144,7 @@ EXPORT(SceUID, kuKernelAllocMemBlock, const char *name, SceKernelMemBlockType ty
     // Track the block in KuBridgeState so we can free it later.
     const auto state = emuenv.kernel.obj_store.get<KuBridgeState>();
     std::lock_guard<std::mutex> lock(state->mutex);
-    const SceUID uid = state->next_reserved_uid++;
+    const SceUID uid = state->get_next_uid();
     state->reserved_blocks[uid] = base;
 
     LOG_INFO("kuKernelAllocMemBlock: '{}' size={} base={:#010x} uid={}", name, size, base, uid);
@@ -260,7 +275,7 @@ EXPORT(SceUID, kuKernelMemReserve, Ptr<Ptr<void>> addr, SceSize size, SceKernelM
     // Register in KuBridgeState.
     const auto state = emuenv.kernel.obj_store.get<KuBridgeState>();
     std::lock_guard<std::mutex> lock(state->mutex);
-    const SceUID uid = state->next_reserved_uid++;
+    const SceUID uid = state->get_next_uid();
     state->reserved_blocks[uid] = base;
 
     LOG_INFO("kuKernelMemReserve: size={} base={:#010x} uid={}", size, base, uid);

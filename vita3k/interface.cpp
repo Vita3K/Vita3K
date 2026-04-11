@@ -488,7 +488,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
 
             // Kernel plugins — only HLE-backed ones are meaningful.
             for (const auto &plugin_path : tai_config.kernel_plugins) {
-                const bool is_kubridge = plugin_path.find("kubridge") != std::string::npos;
+                const bool is_kubridge = fs::path(plugin_path).filename() == "kubridge.skprx";
                 if (is_kubridge) {
                     LOG_INFO("Tai: kernel plugin '{}' is HLE-backed (kubridge), skipping real load", plugin_path);
                 } else {

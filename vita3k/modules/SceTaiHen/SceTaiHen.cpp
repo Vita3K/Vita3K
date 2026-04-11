@@ -551,8 +551,11 @@ EXPORT(SceUID, taiLoadStartKernelModule, const char *path, SceSize args, Ptr<con
     if (path) {
         const std::string_view path_view(path);
         // kubridge.skprx is fully HLE-implemented as SceKuBridge.
-        // Return a synthetic module UID so the caller doesn't fail on the check.
-        if (path_view.find("kubridge") != std::string_view::npos) {
+        // Match only the exact filename to avoid false positives like
+        // "my_kubridge_proxy.skprx". Extract the part after the last '/' or ':'.
+        const auto sep = path_view.find_last_of("/:");
+        const std::string_view filename = (sep != std::string_view::npos) ? path_view.substr(sep + 1) : path_view;
+        if (filename == "kubridge.skprx") {
             LOG_INFO("taiLoadStartKernelModule: '{}' is HLE-implemented, returning synthetic UID", path);
             // Return a fixed synthetic UID in the positive kernel module range.
             return 0x40000001;

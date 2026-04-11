@@ -27,7 +27,7 @@ namespace tai {
 namespace {
 
 /// Trim leading and trailing whitespace (including CR) from a string.
-static std::string trim(std::string s) {
+std::string trim(std::string s) {
     // Erase leading whitespace.
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char c) {
         return !std::isspace(c);
@@ -42,7 +42,7 @@ static std::string trim(std::string s) {
 /// Return true if the string looks like a Vita title ID.
 /// Title IDs are exactly 9 characters: 4 uppercase letters + 5 digits
 /// (e.g. "PCSX00000").
-static bool is_title_id(const std::string &s) {
+bool is_title_id(const std::string &s) {
     if (s.size() != 9)
         return false;
     for (int i = 0; i < 4; ++i) {
