@@ -90,6 +90,23 @@ typedef std::multimap<uint32_t, Address> FuncBindingInfos;
 
 typedef std::map<uint32_t, uint32_t> ModuleUidByNid;
 
+// taiHEN hook tracking
+struct TaiHookInfo {
+    uint32_t func_nid;         ///< NID of the hooked function
+    Address hook_func;         ///< Address of the hook function (guest code)
+    Address previous_export;   ///< Export address before this hook was installed
+    Address trampoline;        ///< SVC trampoline allocated for host functions (0 if guest function)
+    bool was_in_export_nids;   ///< Whether the NID was already in export_nids before hooking
+};
+
+struct TaiInjectInfo {
+    Address target_addr;                  ///< Address where data was injected
+    std::vector<uint8_t> original_data;   ///< Original bytes that were overwritten
+};
+
+using TaiHookInfos = std::map<SceUID, TaiHookInfo>;
+using TaiInjectInfos = std::map<SceUID, TaiInjectInfo>;
+
 struct KernelState {
     KernelState();
 
@@ -131,6 +148,10 @@ struct KernelState {
     FuncBindingInfos func_binding_infos;
     VarBindingInfos var_binding_infos;
     ModuleUidByNid module_uid_by_nid;
+
+    // taiHEN hook and inject tracking (protected by export_nids_mutex)
+    TaiHookInfos tai_hooks;
+    TaiInjectInfos tai_injects;
 
     bool cpu_opt;
     CorenumAllocator corenum_allocator;

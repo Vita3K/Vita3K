@@ -207,6 +207,7 @@ set(SOURCE_LIST
 	SceVoiceQoS/SceVoiceQoS.cpp
 	SceVshBridge/SceDrmBridge.cpp
 	SceVshBridge/SceVshBridge.cpp
+	SceTaiHen/SceTaiHen.cpp
 	SceWlanBt/SceWlan.cpp
 )
 
