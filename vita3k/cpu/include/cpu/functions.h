@@ -58,9 +58,7 @@ void write_cpsr(CPUState &state, uint32_t value);
 uint32_t stack_alloc(CPUState &state, size_t size);
 uint32_t stack_free(CPUState &state, size_t size);
 
-ExclusiveMonitorPtr new_exclusive_monitor(int max_num_cores);
-void free_exclusive_monitor(ExclusiveMonitorPtr monitor);
-void clear_exclusive(ExclusiveMonitorPtr monitor, std::size_t core_num);
+void clear_exclusive(CPUState &state);
 
 // Debugging helpers
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size = nullptr);

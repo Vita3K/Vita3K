@@ -56,8 +56,7 @@ CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, M
         return CPUStatePtr();
     }
 
-    Dynarmic::ExclusiveMonitor *monitor = static_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exclusive_monitor());
-    state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt);
+    state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, cpu_opt);
 
     return state;
 }
@@ -164,6 +163,10 @@ bool get_log_code(CPUState &state) {
 
 bool get_log_mem(CPUState &state) {
     return state.cpu->get_log_mem();
+}
+
+void clear_exclusive(CPUState &state) {
+    state.cpu->clear_exclusive();
 }
 
 std::size_t get_processor_id(CPUState &state) {

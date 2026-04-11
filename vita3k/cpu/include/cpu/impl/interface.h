@@ -66,6 +66,8 @@ struct CPUInterface {
     virtual bool get_log_code() = 0;
     virtual bool get_log_mem() = 0;
 
+    virtual void clear_exclusive() = 0;
+
     virtual std::size_t processor_id() const {
         return 0;
     }

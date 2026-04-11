@@ -19,6 +19,7 @@
 #include <tracy/Tracy.hpp>
 #endif
 
+#include <cpu/common.h>
 #include <kernel/state.h>
 
 #include <kernel/thread/thread_state.h>
@@ -83,10 +84,7 @@ KernelState::KernelState()
 }
 
 bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt) {
-    constexpr std::size_t MAX_CORE_COUNT = 150;
-
     corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
-    exclusive_monitor = new_exclusive_monitor(MAX_CORE_COUNT);
     start_tick = rtc_get_ticks(rtc_base_ticks());
     base_tick = { rtc_base_ticks() };
     cpu_protocol = std::make_unique<CPUProtocol>(*this, mem, call_import);

@@ -135,7 +135,6 @@ struct KernelState {
     bool cpu_opt;
     CorenumAllocator corenum_allocator;
     CPUProtocolPtr cpu_protocol;
-    ExclusiveMonitorPtr exclusive_monitor;
 
     ObjectStore obj_store;
 

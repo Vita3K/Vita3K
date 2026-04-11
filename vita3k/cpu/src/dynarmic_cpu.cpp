@@ -298,6 +298,8 @@ public:
     }
 };
 
+Dynarmic::ExclusiveMonitor DynarmicCPU::shared_monitor(MAX_CORE_COUNT);
+
 std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     Dynarmic::A32::UserConfig config{};
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
@@ -310,7 +312,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     }
     config.hook_hint_instructions = true;
     config.enable_cycle_counting = false;
-    config.global_monitor = monitor;
+    config.global_monitor = &shared_monitor;
     config.coprocessors[15] = cp15;
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
@@ -319,11 +321,10 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
 
-DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt)
+DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, bool cpu_opt)
     : parent(state)
     , cb(std::make_unique<ArmDynarmicCallback>(*state, *this))
     , cp15(std::make_shared<ArmDynarmicCP15>())
-    , monitor(monitor)
     , core_id(processor_id)
     , cpu_opt(cpu_opt) {
     jit = make_jit();
@@ -488,17 +489,6 @@ void DynarmicCPU::invalidate_jit_cache(Address start, size_t length) {
     jit->InvalidateCacheRange(start, length);
 }
 
-// TODO: proper abstraction
-ExclusiveMonitorPtr new_exclusive_monitor(int max_num_cores) {
-    return new Dynarmic::ExclusiveMonitor(max_num_cores);
-}
-
-void free_exclusive_monitor(ExclusiveMonitorPtr monitor) {
-    Dynarmic::ExclusiveMonitor *monitor_ = static_cast<Dynarmic::ExclusiveMonitor *>(monitor);
-    delete monitor_;
-}
-
-void clear_exclusive(ExclusiveMonitorPtr monitor, std::size_t core_num) {
-    Dynarmic::ExclusiveMonitor *monitor_ = static_cast<Dynarmic::ExclusiveMonitor *>(monitor);
-    monitor_->ClearProcessor(core_num);
+void DynarmicCPU::clear_exclusive() {
+    shared_monitor.ClearProcessor(core_id);
 }
