@@ -334,6 +334,7 @@ DynarmicCPU::~DynarmicCPU() = default;
 int DynarmicCPU::run() {
     halted = false;
     break_ = false;
+    exit_request = false;
     parent->svc_called = false;
     Dynarmic::HaltReason halt_reason;
     do {
@@ -383,7 +384,7 @@ bool DynarmicCPU::get_log_mem() {
 }
 
 void DynarmicCPU::stop() {
-    jit->HaltExecution();
+    exit_request = true;
 }
 
 uint32_t DynarmicCPU::get_reg(uint8_t idx) {
