@@ -23,6 +23,7 @@
 #include <mem/block.h>
 #include <mem/ptr.h>
 
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <optional>
@@ -125,7 +126,7 @@ private:
     KernelState &kernel;
 
     CPUContext init_cpu_ctx;
-    ThreadToDo to_do = ThreadToDo::wait;
+    std::atomic<ThreadToDo> to_do{ ThreadToDo::wait };
     std::condition_variable something_to_do;
 
     // if looking at the thread stack, the number of times run_loop appear
