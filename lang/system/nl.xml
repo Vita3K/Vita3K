@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="Bestand">
+			<open_pref_path>Open Opslag Pad</open_pref_path>
+			<install_firmware>Installeer Firmware</install_firmware>
+			<install_pkg>Installeer .pkg</install_pkg>
+			<install_zip>Installeer .zip, .vpk</install_zip>
+			<install_license>Installeer een licentie</install_license>
+			<exit>Afsluiten</exit>
+		</file>
+		<emulation name="Emuleren">
+			<last_apps_used>Laatste gebruikte apps</last_apps_used>
+		</emulation>
+		<configuration name="Configuratie">
+			<user_management>Gebruikerbeheer</user_management>
+		</configuration>
+		<controls name="Besturing">
+			<keyboard_controls>Toetsenbord Besturing</keyboard_controls>
+		</controls>
+		<help name="Help">
+			<welcome>Welkom</welcome>
+		</help>
+	</main_menubar>
+
+	<about name="Over">
+	</about>
+
+	<app_context>
+		<live_area>
+			<manual>Handleiding</manual>
+			<update>Update</update>
+		</live_area>
+		<delete>
+			<delete_app>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</delete_app>
+		</delete>
+		<update_history>Updategeschiedenis</update_history>
+		<history_version>Versie {}</history_version>
+		<info name="Informatie">
+			<eligible>Geschikt</eligible>
+			<ineligible>Niet geschikt</ineligible>
+			<level>Niveau {}</level>
+			<name>Naam</name>
+			<trophy_earning>Trofeeën verdienen</trophy_earning>
+			<parental_controls>Ouderlijk toezicht</parental_controls>
+			<updated>Geüpdatet</updated>
+			<size>Grootte</size>
+			<version>Versie</version>
+			<last_time_used>Laatst gebruikt</last_time_used>
+			<time_used>Gebruikte tijd</time_used>
+			<never>Nooit</never>
+		</info>
+	</app_context>
+
+	<common>
+		<an_error_occurred>Er is een fout opgetreden.
+Foutcode: {}</an_error_occurred>
+		<cancel>Annuleren</cancel>
+		<close>Sluiten</close>
+		<could_not_load>Kan het bestand niet laden.</could_not_load>
+		<could_not_save>Kan het bestand niet opslaan.</could_not_save>
+		<delete>Verwijderen</delete>
+		<error>Fout</error>
+		<file_corrupted>Het bestand is beschadigd.</file_corrupted>
+		<microphone_disabled>Schakel de microfoon in.</microphone_disabled>
+		<no>Nee</no>
+		<please_wait>Een ogenblik geduld...</please_wait>
+		<select_all>Alles selecteren</select_all>
+		<select>Selecteren</select>
+		<yes>Ja</yes>
+		<wday>
+			<day>zondag</day>
+			<day>maandag</day>
+			<day>dinsdag</day>
+			<day>woensdag</day>
+			<day>donderdag</day>
+			<day>vrijdag</day>
+			<day>zaterdag</day>
+		</wday>
+		<ymonth>
+			<month>Januari</month>
+			<month>Februari</month>
+			<month>Maart</month>
+			<month>April</month>
+			<month>Mei</month>
+			<month>Juni</month>
+			<month>Juli</month>
+			<month>Augustus</month>
+			<month>September</month>
+			<month>Oktober</month>
+			<month>November</month>
+			<month>December</month>
+		</ymonth>
+		<small_ymonth>
+			<month>januari</month>
+			<month>februari</month>
+			<month>maart</month>
+			<month>april</month>
+			<month>mei</month>
+			<month>juni</month>
+			<month>juli</month>
+			<month>augustus</month>
+			<month>september</month>
+			<month>oktober</month>
+			<month>november</month>
+			<month>december</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</small_mday>
+		<hidden_trophy>Verborgen trofee</hidden_trophy>
+		<one_hour_ago>1 uur geleden</one_hour_ago>
+		<one_minute_ago>1 minuut geleden</one_minute_ago>
+		<bronze>Brons</bronze>
+		<gold>Goud</gold>
+		<platinum>Platina</platinum>
+		<silver>Zilver</silver>
+		<hours_ago>{} uur geleden</hours_ago>
+		<minutes_ago>{} minuten geleden</minutes_ago>
+	</common>
+
+	<compatibility name="Compatibilità">
+		<states>
+			<state id = "-1">Unknown</state>
+			<state id = "0">Niente</state>
+			<state id = "1">Avviabile</state>
+			<state id = "2">Intro</state>
+			<state id = "3">Menu</state>
+			<state id = "4">In Gioco -</state>
+			<state id = "5">In Gioco +</state>
+			<state id = "6">Giocabile</state>
+		</states>
+	</compatibility>
+
+	<content_manager name="Content manager">
+		<application name="Applicaties">
+			<delete>De geselecteerde applicaties en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</delete>
+			<no_item>Er zijn geen content-items.</no_item>
+		</application>
+		<saved_data name="Opgeslagen data">
+			<delete>De geselecteerde opgeslagen data-items worden verwijderd.</delete>
+			<no_saved_data>Er zijn geen opgeslagen data.</no_saved_data>
+		</saved_data>
+		<theme>Thema</theme>
+		<free_space>Vrije ruimte</free_space>
+		<clear_all>Alles wissen</clear_all>
+	</content_manager>
+
+	<controllers name="Controllers">
+		<num>Num</num>
+	</controllers>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Bezig met het voorbereiden voor het starten van de applicatie...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Wil je het verwijderen annuleren?</cancel_deleting>
+				<deletion_complete>Het verwijderen is voltooid.</deletion_complete>
+				<delete_saved_data>Wil je deze opgeslagen data verwijderen?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Details</details>
+				<updated>Geüpdatet</updated>
+			</info>
+			<load name="Laden">
+				<cancel_loading>Wil je het laden annuleren?</cancel_loading>
+				<no_saved_data>Er zijn geen opgeslagen data.</no_saved_data>
+				<load_complete>Het laden is voltooid.</load_complete>
+				<loading>Bezig met laden...</loading>
+				<load_saved_data>Wil je deze opgeslagen data laden?</load_saved_data>
+			</load>
+			<save name="Opslaan">
+				<cancel_saving>Wil je het opslaan annuleren?</cancel_saving>
+				<could_not_save>Kan het bestand niet opslaan.
+Er is onvoldoende vrije ruimte op de geheugenkaart. Om je voortgang in de applicatie te kunnen opslaan, moet je tenminste {} vrije ruimte maken.
+
+Om vrije ruimte te maken, druk je op de PS-toets om deze applicatie te pauzeren en verwijder je vervolgens andere applicaties of content.</could_not_save>
+				<not_free_space>Er is onvoldoende vrije ruimte op de geheugenkaart.
+Om de applicatie te kunnen blijven gebruiken, moet je tenminste {} vrije ruimte maken.
+
+Druk op de PS-toets om deze applicatie te pauzeren en verwijder andere applicaties of content.</not_free_space>
+				<new_saved_data>Nieuwe opgeslagen data</new_saved_data>
+				<saving_complete>Opslaan voltooid.</saving_complete>
+				<save_the_data>Wil je de data opslaan?</save_the_data>
+				<saving>Bezig met opslaan...</saving>
+				<warning_saving>Bezig met opslaan...
+Schakel het systeem niet uit en sluit de applicatie niet.</warning_saving>
+				<overwrite_saved_data>Wil je deze opgeslagen data overschrijven?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>De volgende applicatie wordt gesloten.</app_close>
+		<data_delete>Te verwijderen data:</data_delete>
+	</game_data>
+
+	<indicator>
+		<app_added_home>De applicatie is toegevoegd aan het beginscherm.</app_added_home>
+		<delete_all>Alles verwijderen</delete_all>
+		<notif_deleted>De meldingen worden verwijderd.</notif_deleted>
+		<install_failed>Kan niet installeren.</install_failed>
+		<install_complete>De installatie is voltooid.</install_complete>
+		<installing>Bezig met installeren...</installing>
+		<no_notif>Er zijn geen meldingen.</no_notif>
+		<trophy_earned>Je hebt een trofee gewonnen!</trophy_earned>
+	</indicator>
+
+	<initial_setup>
+		<back>Terug</back>
+		<completed_setup>Je hebt de initiële setup nu voltooid.
+Je Vita3K-systeem is gereed!</completed_setup>
+		<select_language>Selecteer een taal.</select_language>
+		<install_firmware>Installeer Firmware.</install_firmware>
+		<next>Volgende</next>
+	</initial_setup>
+
+	<live_area>
+		<start>Starten</start>
+		<continue>Doorgaan</continue>
+	</live_area>
+
+	<settings name="Instellingen">
+		<theme_background name="Thema en achtergrond">
+			<default>Standaard</default>
+			<theme name="Thema">
+				<information name="Informatie">
+					<name>Naam</name>
+					<provider>Provider</provider>
+					<updated>Geüpdatet</updated>
+					<size>Grootte</size>
+					<version>Versie</version>
+				</information>
+				<delete>Dit thema wordt verwijderd.</delete>
+			</theme>
+			<start_screen name="Startscherm">
+				<image>Afbeelding</image>
+			</start_screen>
+			<home_screen_backgrounds name="Achtergronden voor beginscherm">
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Datum en tijd">
+			<date_format name ="Datumweergave">
+				<yyyy_mm_dd>YYYY/MM/DD</yyyy_mm_dd>
+				<dd_mm_yyyy>DD/MM/YYYY</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/DD/YYYY</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Tijdweergave">
+				<clock_12_hour>12-uursklok</clock_12_hour>
+				<clock_24_hour>24-uursklok</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Taal">
+			<system_language>Systeemtaal</system_language>
+			<input_language name="Invoertalen">
+				<keyboards name="Toetsenborden">
+					<ime_languages>
+						<lang id="1">Deens</lang>
+						<lang id="2">Duits</lang>
+						<lang id="262144">Engels (Verenigd Koninkrijk)</lang>
+						<lang id="4">Engels (Verenigde Staten)</lang>
+						<lang id="8">Spaans</lang>
+						<lang id="16">Frans</lang>
+						<lang id="32">Italiaans</lang>
+						<lang id="64">Nederlands</lang>
+						<lang id="128">Noors</lang>
+						<lang id="256">Pools</lang>
+						<lang id="131072">Portugees (Brazilië)</lang>
+						<lang id="512">Portugees (Portugal)</lang>
+						<lang id="1024">Russisch</lang>
+						<lang id="2048">Fins</lang>
+						<lang id="4096">Zweeds</lang>
+						<lang id="524288">Turks</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<settings_dialog name="Instellingen">
+		<system name="Systeem">
+		</system>
+		<network name="Netwerk">
+			<ip_address>IP-adres</ip_address>
+			<subnet_mask>Subnetmasker</subnet_mask>
+		</network>
+		<save_close>Opslaan & Sluiten</save_close>
+	</settings_dialog>
+
+	<sys_apps_title>
+		<browser>Browser</browser>
+		<internet_browser>Internetbrowser</internet_browser>
+		<trophies>Trofeeën</trophies>
+		<trophy_collection>Trofeecollectie</trophy_collection>
+		<settings>Instellingen</settings>
+		<content_manager>Content manager</content_manager>
+	</sys_apps_title>
+
+	<trophy_collection>
+		<details>Details</details>
+		<earned>Gewonnen</earned>
+		<name>Naam</name>
+		<no_trophies>Er zijn geen trofeeën.
+Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefunctie ondersteunt.</no_trophies>
+		<not_earned>Niet verdiend</not_earned>
+		<original>Origineel</original>
+		<sort>Sorteren</sort>
+		<trophies>Trofeeën</trophies>
+		<grade>Rang</grade>
+		<progress>Voortgang</progress>
+		<updated>Geüpdatet</updated>
+	</trophy_collection>
+
+	<user_management>
+		<select_user>Gebruiker selecteren</select_user>
+		<create_user>Gebruiker maken</create_user>
+		<user_created>De volgende gebruiker is gemaakt:</user_created>
+		<edit_user>Gebruiker bewerken</edit_user>
+		<user_name_used>De naam is al in gebruik.</user_name_used>
+		<delete_user>Gebruiker verwijderen</delete_user>
+		<user_delete>Selecteer de gebruiker die u wil verwijderen.</user_delete>
+		<user_delete_msg>De volgende gebruiker wordt verwijderd:</user_delete_msg>
+		<user_delete_message>Als je de gebruiker verwijdert, worden de door de gebruiker opgeslagen data, trofeeën verwijderd.</user_delete_message>
+		<user_delete_warn>De gebruiker wordt verwijderd.
+Weet je zeker dat je doorgaan?</user_delete_warn>
+		<user_deleted>Gebruiker verwijderd.</user_deleted>
+		<choose_avatar>Avatar kiezen</choose_avatar>
+		<user>Gebruiker</user>
+		<confirm>Bevestigen</confirm>
+	</user_management>
+
+	<vita3k_update name="Vita3K-update">
+ 		<new_version_available>Een nieuwe versie van Vita3K is beschikbaar.</new_version_available>
+		<back>Terug</back>
+ 		<cancel_update_resume>Wil je de update annuleren?
+Als je annuleert zet het Vita3K bij de volgende update het downloaden verder vanaf dit punt.</cancel_update_resume>
+		<downloading>Bezig met downloaden...
+Nadat het downloaden is voltooid, Vita3K automatisch opnieuw gestart en wordt de nieuwe update geïnstalleerd.</downloading>
+		<not_complete_update>Kan de update niet voltooien.</not_complete_update>
+		<minutes_left>{} minuten resterend</minutes_left>
+		<next>Volgende</next>
+		<seconds_left>{} seconden resterend</seconds_left>
+		<update_vita3k>Wil je Vita3K updaten?</update_vita3k>
+		<later_version_already_installed>Een recentere versie van Vita3K is al geïnstalleerd.</later_version_already_installed>
+		<latest_version_already_installed>De meest recente versie van Vita3K is al geïnstalleerd.</latest_version_already_installed>
+		<new_features>Nieuwe functies in versie {}</new_features>
+		<update>Update</update>
+		<version>Versie {}</version>
+	</vita3k_update>
+</lang>

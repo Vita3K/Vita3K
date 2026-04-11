@@ -1,0 +1,990 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="文件">
+			<open_pref_path>打开存放路径</open_pref_path>
+			<open_patch_path>打开补丁路径</open_patch_path>
+			<open_textures_path>打开纹理路径</open_textures_path>
+			<install_firmware>安装固件</install_firmware>
+			<install_pkg>安装pkg</install_pkg>
+			<install_zip>安装zip、vpk</install_zip>
+			<install_license>安装授权</install_license>
+			<exit>退出</exit>
+		</file>
+		<emulation name="模拟">
+			<last_apps_used>最近使用的应用程序</last_apps_used>
+			<empty>空</empty>
+		</emulation>
+		<debug name="调试">
+			<threads>线程</threads>
+			<semaphores>信号量</semaphores>
+			<mutexes>互斥锁</mutexes>
+			<lightweight_mutexes>轻量互斥锁</lightweight_mutexes>
+			<condition_variables>条件变量</condition_variables>
+			<lightweight_condition_variables>轻量条件变量</lightweight_condition_variables>
+			<event_flags>事件标志</event_flags>
+			<memory_allocations>内存分配</memory_allocations>
+			<disassembly>反汇编</disassembly>
+		</debug>
+		<configuration name="配置">
+			<user_management>用户管理</user_management>
+		</configuration>
+		<controls name="控制">
+			<keyboard_controls>键盘控制</keyboard_controls>
+		</controls>
+		<help name="帮助">
+			<welcome>欢迎</welcome>
+		</help>
+	</main_menubar>
+
+	<about name="关于">
+		<vita3k>Vita3K：PS Vita/PS TV模拟器，是全球首个实用的PS Vita/PS TV模拟器。</vita3k>
+		<about_vita3k>Vita3K是使用C++编写的实验性开源PlayStation Vita/PlayStation TV模拟器，适用于Windows、Linux、macOS以及Android操作系统。</about_vita3k>
+		<special_credit>特别鸣谢：Vita3K图标设计者：</special_credit>
+		<github_website>如果您有兴趣参与贡献，请浏览我们的：</github_website>
+		<vita3k_website>更多信息请访问我们的网站：</vita3k_website>
+		<ko-fi_website>如果您想支持我们，您可以捐赠或者订阅我们的：</ko-fi_website>
+		<vita3k_staff>Vita3K人员名单</vita3k_staff>
+		<developers>开发人员</developers>
+		<contributors>贡献者</contributors>
+		<supporters>赞助者</supporters>
+	</about>
+
+	<app_context>
+		<compat>
+			<check_app_state>检查应用程序状态</check_app_state>
+			<copy_vita3k_summary>复制Vita3K摘要</copy_vita3k_summary>
+			<open_state_report>打开状态报告</open_state_report>
+			<create_state_report>创建状态报告</create_state_report>
+			<update_database>更新数据库</update_database>
+		</compat>
+		<copy_app_info name="复制应用程序信息">
+			<name_and_id>名称和标题ID</name_and_id>
+			<app_summary>应用程序摘要</app_summary>
+		</copy_app_info>
+		<create_shortcut>创建快捷方式</create_shortcut>
+		<custom_config name="自定义配置">
+			<create>创建</create>
+			<edit>编辑</edit>
+			<remove>移除</remove>
+		</custom_config>
+		<path>
+			<open_folder>打开文件夹</open_folder>
+			<patch>补丁</patch>
+			<addcont>追加内容</addcont>
+			<license>授权</license>
+			<shaders_cache>着色器缓存</shaders_cache>
+			<shaders_log>着色器日志</shaders_log>
+		</path>
+		<live_area>
+			<manual>说明书</manual>
+			<update>升级</update>
+		</live_area>
+		<delete>
+			<delete_app>删除此应用程序及所有相关数据，包括保存数据。</delete_app>
+			<delete_app_description>删除应用程序可能需要一段时间，
+取决于它的大小和您的硬件。</delete_app_description>
+			<delete_patch>要删除此补丁吗？</delete_patch>
+			<delete_addcont>要删除此追加内容吗？</delete_addcont>
+			<delete_license>要删除此授权吗？</delete_license>
+		</delete>
+		<other name="其他">
+			<reset_last_time_played>重置最近游玩时间</reset_last_time_played>
+		</other>
+		<update_history>更新历史记录</update_history>
+		<history_version>{}版本</history_version>
+		<info name="信息">
+			<eligible>有权</eligible>
+			<ineligible>无权</ineligible>
+			<level>级别 {}</level>
+			<name>名称</name>
+			<trophy_earning>获得奖杯</trophy_earning>
+			<parental_controls>视听者限制</parental_controls>
+			<updated>升级日期</updated>
+			<size>大小</size>
+			<version>版本</version>
+			<title_id>标题ID</title_id>
+			<category>类别</category>
+			<gd>数字版游戏</gd>
+			<gp>游戏补丁</gp>
+			<last_time_used>最近使用时间</last_time_used>
+			<time_used>使用时间</time_used>
+			<never>从来没有</never>
+		</info>
+		<time_used>
+			<time_used_seconds>{}秒</time_used_seconds>
+			<time_used_minutes>{}分钟{}秒</time_used_minutes>
+			<time_used_hours>{}小时{}分钟{}秒</time_used_hours>
+			<time_used_days>{}天{}小时{}分钟{}秒</time_used_days>
+			<time_used_weeks>{}周{}天{}小时{}分钟{}秒</time_used_weeks>
+		</time_used>
+	</app_context>
+
+	<common>
+		<an_error_occurred>发生了错误。
+错误代码：{}</an_error_occurred>
+		<cancel>取消</cancel>
+		<close>关闭</close>
+		<could_not_load>无法读取文件。</could_not_load>
+		<could_not_save>无法保存文件。</could_not_save>
+		<delete>删除</delete>
+		<error>错误</error>
+		<file_corrupted>文件已损坏。</file_corrupted>
+		<microphone_disabled>请启用麦克风。</microphone_disabled>
+		<no>否</no>
+		<please_wait>请稍等…</please_wait>
+		<search>搜索</search>
+		<select_all>全部选择</select_all>
+		<select>选择</select>
+		<submit>提交</submit>
+		<yes>是</yes>
+		<wday>
+			<day>星期日</day>
+			<day>星期一</day>
+			<day>星期二</day>
+			<day>星期三</day>
+			<day>星期四</day>
+			<day>星期五</day>
+			<day>星期六</day>
+		</wday>
+		<ymonth>
+			<month>1月</month>
+			<month>2月</month>
+			<month>3月</month>
+			<month>4月</month>
+			<month>5月</month>
+			<month>6月</month>
+			<month>7月</month>
+			<month>8月</month>
+			<month>9月</month>
+			<month>10月</month>
+			<month>11月</month>
+			<month>12月</month>
+		</ymonth>
+		<small_ymonth>
+			<month>1月</month>
+			<month>2月</month>
+			<month>3月</month>
+			<month>4月</month>
+			<month>5月</month>
+			<month>6月</month>
+			<month>7月</month>
+			<month>8月</month>
+			<month>9月</month>
+			<month>10月</month>
+			<month>11月</month>
+			<month>12月</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1日</days>
+			<days>2日</days>
+			<days>3日</days>
+			<days>4日</days>
+			<days>5日</days>
+			<days>6日</days>
+			<days>7日</days>
+			<days>8日</days>
+			<days>9日</days>
+			<days>10日</days>
+			<days>11日</days>
+			<days>12日</days>
+			<days>13日</days>
+			<days>14日</days>
+			<days>15日</days>
+			<days>16日</days>
+			<days>17日</days>
+			<days>18日</days>
+			<days>19日</days>
+			<days>20日</days>
+			<days>21日</days>
+			<days>22日</days>
+			<days>23日</days>
+			<days>24日</days>
+			<days>25日</days>
+			<days>26日</days>
+			<days>27日</days>
+			<days>28日</days>
+			<days>29日</days>
+			<days>30日</days>
+			<days>31日</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1日</days>
+			<days>2日</days>
+			<days>3日</days>
+			<days>4日</days>
+			<days>5日</days>
+			<days>6日</days>
+			<days>7日</days>
+			<days>8日</days>
+			<days>9日</days>
+			<days>10日</days>
+			<days>11日</days>
+			<days>12日</days>
+			<days>13日</days>
+			<days>14日</days>
+			<days>15日</days>
+			<days>16日</days>
+			<days>17日</days>
+			<days>18日</days>
+			<days>19日</days>
+			<days>20日</days>
+			<days>21日</days>
+			<days>22日</days>
+			<days>23日</days>
+			<days>24日</days>
+			<days>25日</days>
+			<days>26日</days>
+			<days>27日</days>
+			<days>28日</days>
+			<days>29日</days>
+			<days>30日</days>
+			<days>31日</days>
+		</small_mday>
+		<hidden_trophy>隐藏奖杯</hidden_trophy>
+		<one_hour_ago>1小时前</one_hour_ago>
+		<one_minute_ago>1分钟前</one_minute_ago>
+		<bronze>Bronze（铜）</bronze>
+		<gold>Gold（金）</gold>
+		<platinum>Platinum（白金）</platinum>
+		<silver>Silver（银）</silver>
+		<hours_ago>{}小时前</hours_ago>
+		<minutes_ago>{}分钟前</minutes_ago>
+	</common>
+
+	<compatibility name="兼容性">
+		<states>
+			<state id = "-1">未知</state>
+			<state id = "0">无法启动</state>
+			<state id = "1">可引导</state>
+			<state id = "2">有图像</state>
+			<state id = "3">可进入菜单</state>
+			<state id = "4">可进入游戏-</state>
+			<state id = "5">可进入游戏+</state>
+			<state id = "6">可玩</state>
+		</states>
+	</compatibility>
+
+	<compat_db>
+		<get_failed>无法获取当前兼容性数据库，请检查防火墙/互联网连接后再重试。</get_failed>
+		<download_failed>无法下载更新于{}的应用程序兼容性数据库，请稍后重试。</download_failed>
+		<load_failed>无法读取已下载更新于{}的应用程序兼容性数据库。</load_failed>
+		<new_app_listed>兼容性数据库已成功从{}更新至{}。
+
+已列出{}个新的应用程序，使总数达到{}个！</new_app_listed>
+		<app_listed>兼容性数据库已成功从{}更新至{}。
+
+已列出{}个应用程序！</app_listed>
+		<download_app_listed>已成功下载并加载{}更新的兼容性数据库。
+
+已列出{}个应用程序！</download_app_listed>
+	</compat_db>
+
+	<compile_shaders>
+		<compiling_shaders>正在编译着色器</compiling_shaders>
+		<pipelines_compiled>已编译{}个管线</pipelines_compiled>
+		<shaders_compiled>已编译{}个着色器</shaders_compiled>
+	</compile_shaders>
+
+	<content_manager name="内容管理">
+		<application name="应用程序">
+			<delete>即将删除选择的应用程序及所有相关数据，包括保存数据。</delete>
+			<no_item>没有内容。</no_item>
+		</application>
+		<saved_data name="保存数据">
+			<delete>所选择的保存数据将被删除。</delete>
+			<no_saved_data>保存数据不存在。</no_saved_data>
+		</saved_data>
+		<theme>主题</theme>
+		<free_space>空余容量</free_space>
+		<clear_all>全部清除</clear_all>
+	</content_manager>
+
+	<controllers name="控制器">
+		<connected>已连接{}个控制器</connected>
+		<num>编号</num>
+		<motion_support>体感支持</motion_support>
+		<rebind_controls>重新绑定控制</rebind_controls>
+		<led_color>LED灯色</led_color>
+		<use_custom_color>使用自定义颜色</use_custom_color>
+		<use_custom_color_description>勾选此项可为控制器的LED灯使用自定义颜色。</use_custom_color_description>
+		<red>红</red>
+		<green>绿</green>
+		<blue>蓝</blue>
+		<not_connected>未连接兼容的控制器。
+请连接与SDL3兼容的控制器。</not_connected>
+		<disable_motion>禁用体感</disable_motion>
+		<motion_sensors>使用内置设备传感器</motion_sensors>
+		<reset_controller_binding>重置控制器绑定</reset_controller_binding>
+	</controllers>
+
+	<controls>
+		<button>按键</button>
+		<mapped_button>映射按键</mapped_button>
+		<left_stick_up>左摇杆上</left_stick_up>
+		<left_stick_down>左摇杆下</left_stick_down>
+		<left_stick_right>左摇杆右</left_stick_right>
+		<left_stick_left>左摇杆左</left_stick_left>
+		<right_stick_up>右摇杆上</right_stick_up>
+		<right_stick_down>右摇杆下</right_stick_down>
+		<right_stick_right>右摇杆右</right_stick_right>
+		<right_stick_left>右摇杆左</right_stick_left>
+		<d_pad_up>方向键上</d_pad_up>
+		<d_pad_down>方向键下</d_pad_down>
+		<d_pad_right>方向键右</d_pad_right>
+		<d_pad_left>方向键左</d_pad_left>
+		<square_button>方形键</square_button>
+		<cross_button>交叉键</cross_button>
+		<circle_button>圆形键</circle_button>
+		<triangle_button>三角键</triangle_button>
+		<start_button>Start键</start_button>
+		<select_button>Select键</select_button>
+		<ps_button>PS键</ps_button>
+		<l1_button>L1键</l1_button>
+		<r1_button>R1键</r1_button>
+		<ps_tv_mode>仅在PS TV模式下有效。</ps_tv_mode>
+		<l2_button>L2键</l2_button>
+		<r2_button>R2键</r2_button>
+		<l3_button>L3键</l3_button>
+		<r3_button>R3键</r3_button>
+		<gui>图形用户界面</gui>
+		<full_screen>全屏</full_screen>
+		<toggle_touch>切换触摸</toggle_touch>
+		<toggle_touch_description>在背触和前触之间切换。</toggle_touch_description>
+		<toggle_gui_visibility>切换图形用户界面可见性</toggle_gui_visibility>
+		<toggle_gui_visibility_description>在应用程序运行时，在屏幕顶部显示和隐藏图形用户界面之间切换。</toggle_gui_visibility_description>
+		<miscellaneous>杂项</miscellaneous>
+		<toggle_texture_replacement>切换纹理替换</toggle_texture_replacement>
+		<take_screenshot>截图</take_screenshot>
+		<pinch_modifier>捏合变更键</pinch_modifier>
+		<alternate_pinch_in>交替捏合向内键</alternate_pinch_in>
+		<alternate_pinch_out>交替捏合向外/伸缩键</alternate_pinch_out>
+		<error_duplicate_key>该按键已被使用并绑定其他键或被预留。</error_duplicate_key>
+		<reset_controls_binding>重置控制绑定</reset_controls_binding>
+	</controls>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>正在准备启动应用程序…</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>要取消删除吗？</cancel_deleting>
+				<deletion_complete>删除完毕。</deletion_complete>
+				<delete_saved_data>要删除此保存数据吗？</delete_saved_data>
+			</delete>
+			<info>
+				<details>详细信息</details>
+				<updated>升级日期</updated>
+			</info>
+			<load name="读取">
+				<cancel_loading>要取消读取吗？</cancel_loading>
+				<no_saved_data>保存数据不存在。</no_saved_data>
+				<load_complete>读取完毕。</load_complete>
+				<loading>正在读取…</loading>
+				<load_saved_data>要读取此保存数据吗？</load_saved_data>
+			</load>
+			<save name="保存">
+				<cancel_saving>要取消保存吗？</cancel_saving>
+				<could_not_save>无法保存文件。
+存储卡没有足够的空余容量。若要保存应用程序的进度，需准备{}以上的空余容量。
+
+若要准备空余容量，请按下PS键暂停此应用程序，并删除其它应用程序或内容。</could_not_save>
+				<not_free_space>存储卡没有足够的空余容量。
+若要继续执行应用程序，请准备{}以上的空余容量。
+
+请按下PS键暂停此应用程序，并删除其它应用程序或内容。</not_free_space>
+				<new_saved_data>新建保存数据</new_saved_data>
+				<saving_complete>保存完毕。</saving_complete>
+				<save_the_data>要保存数据吗？</save_the_data>
+				<saving>正在保存…</saving>
+				<warning_saving>正在保存…
+请勿关闭电源或关闭应用程序。</warning_saving>
+				<overwrite_saved_data>要覆盖此保存数据吗？</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>下列应用程序即将关闭。</app_close>
+		<data_delete>删除的数据：</data_delete>
+	</game_data>
+
+	<home_screen>
+		<filter>筛选</filter>
+		<sort_app>应用程序排序按</sort_app>
+		<all>全部</all>
+		<by_region>按地区</by_region>
+		<usa>美版</usa>
+		<europe>欧版</europe>
+		<japan>日版</japan>
+		<asia>亚版</asia>
+		<by_type>按类型</by_type>
+		<commercial>商业</commercial>
+		<homebrew>自制</homebrew>
+		<by_compatibility_state>按兼容性状态</by_compatibility_state>
+		<ver>版本</ver>
+		<cat>类别</cat>
+		<comp>兼容性</comp>
+		<last_time>最近使用时间</last_time>
+		<refresh>刷新</refresh>
+	</home_screen>
+
+	<indicator>
+		<app_added_home>已将应用程序添加至主画面。</app_added_home>
+		<delete_all>全部删除</delete_all>
+		<notif_deleted>最新资讯将被删除。</notif_deleted>
+		<install_failed>无法安装。</install_failed>
+		<install_complete>安装完毕。</install_complete>
+		<installing>正在安装…</installing>
+		<no_notif>没有最新资讯。</no_notif>
+		<trophy_earned>已获得奖杯！</trophy_earned>
+	</indicator>
+
+	<initial_setup>
+		<back>返回</back>
+		<completed_setup>初始设定已完成。
+请尽情享受Vita3K吧。</completed_setup>
+		<select_language>请选择语言。</select_language>
+		<select_pref_path>请选择存放路径。</select_pref_path>
+		<storage_file_permissions>Vita3K需要完整的文件访问权限。
+点击"授予访问权限"以继续。</storage_file_permissions>
+		<grant_access>授予访问权限</grant_access>
+		<current_emu_path>当前模拟器路径</current_emu_path>
+		<change_emu_path>更改模拟器路径</change_emu_path>
+		<reset_emu_path>重置模拟器路径</reset_emu_path>
+		<install_firmware>安装固件。</install_firmware>
+		<install_highly_recommended>强烈建议安装全部固件文件。</install_highly_recommended>
+		<installed>已安装：</installed>
+		<download_font_package>下载字体包</download_font_package>
+		<install_firmware_file>安装固件文件</install_firmware_file>
+		<select_interface_settings>请选择界面设定。</select_interface_settings>
+		<show_info_bar>信息栏可见</show_info_bar>
+		<info_bar_description>勾选此项在应用程序选择页面内显示信息栏。
+信息栏是时间、电量以及信息中心。</info_bar_description>
+		<show_live_area_screen>Live Area应用程序屏幕</show_live_area_screen>
+		<live_area_screen_description>勾选此项在点击应用程序时默认打开Live Area页面。
+如果禁用，请右键点击应用程序将其打开。</live_area_screen_description>
+		<apps_list_grid>网格模式</apps_list_grid>
+		<apps_list_grid_description>勾选此项将应用程序列表设置为像PS Vita一样的网格模式。</apps_list_grid_description>
+		<icon_size>应用程序图标大小</icon_size>
+		<select_icon_size>选择您喜欢的图标大小。</select_icon_size>
+		<completed>已完成。</completed>
+		<next>继续</next>
+	</initial_setup>
+
+	<install_dialog>
+		<firmware_install>
+			<firmware_installation>固件安装</firmware_installation>
+			<firmware_installing>正在安装，请稍等…</firmware_installing>
+			<successed_install_firmware>固件已成功安装。</successed_install_firmware>
+			<firmware_version>固件版本：</firmware_version>
+			<no_font_exist>不存在固件字体包，请下载并安装。</no_font_exist>
+			<firmware_font_package_description>一些应用程序需要固件字体包，也需要亚洲区域字体支持。（强烈建议安装）</firmware_font_package_description>
+			<delete_firmware>删除固件安装文件？</delete_firmware>
+		</firmware_install>
+		<pkg_install>
+			<select_license_type>请选择授权类型</select_license_type>
+			<select_bin_rif>选择work.bin/rif</select_bin_rif>
+			<enter_zrif>输入zRIF</enter_zrif>
+			<enter_zrif_key>输入zRIF密钥</enter_zrif_key>
+			<input_zrif>请在此处输入您的zRIF</input_zrif>
+			<copy_paste_zrif>Ctrl+C复制，Ctrl+V粘贴。</copy_paste_zrif>
+			<delete_pkg>删除pkg文件？</delete_pkg>
+			<delete_bin_rif>删除work.bin/rif文件？</delete_bin_rif>
+			<failed_install_package>无法安装该包。
+请检查pkg以及work.bin/rif文件或zRIF密钥。</failed_install_package>
+		</pkg_install>
+		<archive_install>
+			<select_install_type>请选择安装类型</select_install_type>
+			<select_file>选择文件</select_file>
+			<select_directory>选择目录</select_directory>
+			<compatible_content>发现兼容内容的{}个压缩包。</compatible_content>
+			<successed_install_archive>已成功安装{}个压缩包中的内容：</successed_install_archive>
+			<update_app>更新应用程序至：</update_app>
+			<failed_install_archive>无法安装{}个压缩包中的内容：</failed_install_archive>
+			<not_compatible_content>未发现兼容内容的{}个压缩包：</not_compatible_content>
+			<delete_archive>删除压缩包？</delete_archive>
+		</archive_install>
+		<license_install>
+			<successed_install_license>已成功安装授权。</successed_install_license>
+			<failed_install_license>无法安装授权。
+请检查work.bin/rif文件或zRIF密钥。</failed_install_license>
+		</license_install>
+		<reinstall>
+			<reinstall_content>是否重新安装该内容？</reinstall_content>
+			<already_installed>已经安装过该内容。</already_installed>
+			<reinstall_overwrite>您想要重新安装并覆盖已存在的数据吗？</reinstall_overwrite>
+		</reinstall>
+	</install_dialog>
+
+	<live_area>
+		<start>开始</start>
+		<continue>继续</continue>
+		<help>
+			<control_setting>在控制设置中使用键盘配置</control_setting>
+			<firmware_not_detected>未检测到固件，强烈建议安装</firmware_not_detected>
+			<firmware_font_not_detected>未检测到固件字体，建议在“Live Area”中安装字体固件</firmware_font_not_detected>
+			<live_area_help>Live Area帮助</live_area_help>
+			<browse_app>浏览应用程序列表</browse_app>
+			<browse_app_control>方向键、左摇杆、滚轮上/下或使用滚动条</browse_app_control>
+			<start_app>开启应用</start_app>
+			<start_app_control>点击开始或按交叉键</start_app_control>
+			<show_hide>应用程序运行时显示/隐藏</show_hide>
+			<show_hide_control>按PS键</show_hide_control>
+			<exit_livearea>退出Live Area</exit_livearea>
+			<exit_livearea_control>点击Esc或按圆形键</exit_livearea_control>
+			<manual_help>说明书帮助</manual_help>
+			<browse_page>浏览页面</browse_page>
+			<browse_page_control>方向键、左摇杆、滚轮上/下或使用滚动条、点击&lt;/&gt;</browse_page_control>
+			<hide_show>隐藏/显示按钮</hide_show>
+			<hide_show_control>点击左键或按三角键</hide_show_control>
+			<exit_manual>退出说明书</exit_manual>
+			<exit_manual_control>点击Esc或按PS键</exit_manual_control>
+		</help>
+	</live_area>
+
+	<message>
+		<load_app_failed>无法读取“{}”，
+请检查vita3k.log查看控制台输出的详细信息。
+1、您是否安装了固件？
+2、重新提取您已拥有的PS Vita应用程序/游戏，并在Vita3K中安装。
+3、如果您想要安装/运行Vitamin是不支持的。</load_app_failed>
+	</message>
+
+	<overlay name="虚拟按键">
+		<gamepad_overlay>手柄虚拟按键</gamepad_overlay>
+		<enable_gamepad_overlay>在游戏中显示手柄虚拟按键</enable_gamepad_overlay>
+		<hide_gamepad_overlay>隐藏手柄虚拟按键</hide_gamepad_overlay>
+		<modify_gamepad_overlay>修改手柄虚拟按键</modify_gamepad_overlay>
+		<overlay_scale>虚拟按键缩放</overlay_scale>
+		<overlay_opacity>虚拟按键不透明度</overlay_opacity>
+		<reset_gamepad>重置手柄布局</reset_gamepad>
+		<overlay_show_touch_switch>显示前/后触屏切换按键。</overlay_show_touch_switch>
+		<l2_r2_triggers>仅当启用PSTV模式时，才会显示L2/R2键。</l2_r2_triggers>
+	</overlay>
+
+	<performance_overlay>
+		<avg>平均</avg>
+		<min>最低</min>
+		<max>最高</max>
+	</performance_overlay>
+
+	<settings name="设定">
+		<theme_background name="主题&背景">
+			<default>原始</default>
+			<theme name="主题">
+				<find_a_psvita_custom_themes>寻找PSVita自制主题</find_a_psvita_custom_themes>
+				<information name="信息">
+					<name>名称</name>
+					<provider>提供者</provider>
+					<updated>升级日期</updated>
+					<size>大小</size>
+					<version>版本</version>
+					<content_id>内容ID</content_id>
+				</information>
+				<delete>删除此主题。</delete>
+			</theme>
+			<start_screen name="开始画面">
+				<image>图像</image>
+				<add_image>添加图像</add_image>
+			</start_screen>
+			<home_screen_backgrounds name="主画面的背景">
+				<delete_background>删除背景</delete_background>
+				<add_background>添加背景</add_background>
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="日期&时间">
+			<date_format name ="日期格式">
+				<yyyy_mm_dd>年/月/日</yyyy_mm_dd>
+				<dd_mm_yyyy>日/月/年</dd_mm_yyyy>
+				<mm_dd_yyyy>月/日/年</mm_dd_yyyy>
+			</date_format>
+			<time_format name="时间格式">
+				<clock_12_hour>12小时制</clock_12_hour>
+				<clock_24_hour>24小时制</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="语言">
+			<system_language>系统语言</system_language>
+			<input_language name="输入语言">
+				<keyboards name="键盘">
+					<ime_languages>
+						<lang id="1">丹麦语</lang>
+						<lang id="2">德语</lang>
+						<lang id="262144">英语(英国)</lang>
+						<lang id="4">英语(美国)</lang>
+						<lang id="8">西班牙语</lang>
+						<lang id="16">法语</lang>
+						<lang id="32">意大利语</lang>
+						<lang id="64">荷兰语</lang>
+						<lang id="128">挪威语</lang>
+						<lang id="256">波兰语</lang>
+						<lang id="131072">葡萄牙语（巴西）</lang>
+						<lang id="512">葡萄牙语（葡萄牙）</lang>
+						<lang id="1024">俄语</lang>
+						<lang id="2048">芬兰语</lang>
+						<lang id="4096">瑞典语</lang>
+						<lang id="524288">土耳其语</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<settings_dialog name="设置">
+		<core name="核心">
+			<modules_mode>模块模式</modules_mode>
+			<automatic>自动</automatic>
+			<automatic_description>选择自动模式会使用预设的模块列表。</automatic_description>
+			<auto_manual>自动&手动</auto_manual>
+			<auto_manual_description>选择此模式会加载预设模块以及从列表中所选定的模块。</auto_manual_description>
+			<manual>手动</manual>
+			<manual_description>选择手动模式会从列表中加载所选定的模块。</manual_description>
+			<modules_list>模块列表</modules_list>
+			<select_modules>选择您所需的模块。</select_modules>
+			<search_modules>搜索模块</search_modules>
+			<clear_list>清除列表</clear_list>
+			<no_modules>没有模块存在。
+请下载并安装最新的PS Vita固件。</no_modules>
+			<refresh_list>刷新列表</refresh_list>
+		</core>
+		<cpu>
+			<cpu_opt>启用优化</cpu_opt>
+			<cpu_opt_description>勾选此项启用额外的CPU JIT优化。</cpu_opt_description>
+		</cpu>
+		<gpu>
+			<reset>重置</reset>
+			<backend_renderer>后端渲染器</backend_renderer>
+			<select_backend_renderer>选择您喜欢的后端渲染器。</select_backend_renderer>
+			<gpu>GPU（重启后应用）</gpu>
+			<select_gpu>选择Vita3K应使用的GPU。</select_gpu>
+			<add_custom_driver>添加自定义驱动</add_custom_driver>
+			<download_custom_driver>下载自定义驱动</download_custom_driver>
+			<remove_custom_driver>移除自定义驱动</remove_custom_driver>
+			<standard>标准</standard>
+			<high>高</high>
+			<renderer_accuracy>渲染精度</renderer_accuracy>
+			<v_sync>垂直同步</v_sync>
+			<v_sync_description>禁用垂直同步可以解决某些游戏的速度问题。
+建议保留启用它以避免画面撕裂。</v_sync_description>
+			<disable_surface_sync>禁用表面同步</disable_surface_sync>
+			<surface_sync_description>提升速度，勾选此项禁用处理器与显卡之间的表面同步。
+某些游戏需要表面同步，
+如果禁用（特别是在放大时），则可大幅提升性能。</surface_sync_description>
+			<async_pipeline_compilation>异步管线编译</async_pipeline_compilation>
+			<async_pipeline_compilation_description>允许在多个并发线程上同时编译管线。
+这可以减少管线编译卡顿，但代价是会出现短暂的图形故障。</async_pipeline_compilation_description>
+			<nearest>最邻近</nearest>
+			<bilinear>双线性</bilinear>
+			<bicubic>双三次</bicubic>
+			<screen_filter>屏幕过滤</screen_filter>
+			<screen_filter_description>设置要应用的后处理过滤器。</screen_filter_description>
+			<internal_resolution_upscaling>内部分辨率放大</internal_resolution_upscaling>
+			<internal_resolution_upscaling_description>为Vita3K启用放大效果。
+实验性：不保证游戏能在超过1倍时正确渲染。</internal_resolution_upscaling_description>
+			<anisotropic_filtering>各向异性过滤</anisotropic_filtering>
+			<anisotropic_filtering_description>各向异性过滤是一种提高表面图像质量的技术，
+它们相对于观察者是倾斜的，
+它没有缺点，但会影响性能。</anisotropic_filtering_description>
+			<texture_replacement>纹理替换</texture_replacement>
+			<export_textures>导出纹理</export_textures>
+			<import_textures>导入纹理</import_textures>
+			<texture_exporting_format>纹理导出格式</texture_exporting_format>
+			<fps_hack>FPS修改</fps_hack>
+			<fps_hack_description>游戏修改允许一些以30FPS运行的游戏在模拟器上以60FPS的速度运行。
+请注意这只是一个修改，仅适用于某些游戏。
+在其他游戏中，它可能没有效果或使其出现两倍速。</fps_hack_description>
+			<disabled>禁用</disabled>
+			<double_buffer>双重缓冲</double_buffer>
+			<external_host>外部主机</external_host>
+			<page_table>页表</page_table>
+			<native_buffer>原生缓冲</native_buffer>
+			<mapping_method>内存映射方式</mapping_method>
+			<mapping_method_description>内存映射提高了性能，减少了内存使用量，并修复了许多图形问题。
+但是它在某些GPU上可能不稳定。</mapping_method_description>
+			<turbo_mode>启用睿频模式</turbo_mode>
+			<turbo_mode_description>提供了一种方法来强制GPU以允许的最高时钟频率运行（温控仍然适用）。</turbo_mode_description>
+			<shaders>着色器</shaders>
+			<shader_cache>使用着色器缓存</shader_cache>
+			<shader_cache_description>勾选此项以启用着色器缓存以在游戏启动时对其进行预编译。
+取消勾选则禁用该功能。</shader_cache_description>
+			<spirv_shader>使用Spir-V着色器（已弃用）</spirv_shader>
+			<spirv_shader_description>将生成的Spir-V着色器直接传递给驱动程序。
+请注意，一些有益的扩展功能将被禁用，
+并非所有显卡都与此兼容。</spirv_shader_description>
+			<clean_shaders>清除着色器缓存以及日志</clean_shaders>
+		</gpu>
+		<audio name="音频">
+			<audio_backend>音频后端</audio_backend>
+			<select_audio_backend>选择您喜欢的音频后端。</select_audio_backend>
+			<audio_volume>音频音量</audio_volume>
+			<audio_volume_description>调整全局音频输出的音量百分比。</audio_volume_description>
+			<enable_ngs_support>启用NGS支持</enable_ngs_support>
+			<ngs_description>取消勾选此项禁用对高级音频库NGS的支持。</ngs_description>
+			<bgm_volume>背景音乐音量</bgm_volume>
+			<bgm_volume_description>调整主题背景音乐的音量百分比。</bgm_volume_description>
+		</audio>
+		<system name="系统">
+			<select_enter_button>确认按键分配
+请选择您的“确认”按键。</select_enter_button>
+			<enter_button_description>这是在应用程序对话框中用作“确认”的按键。
+某些应用程序不使用此功能并获取默认确认按键。</enter_button_description>
+			<circle>〇</circle>
+			<cross>×</cross>
+			<pstv_mode>PS TV模式</pstv_mode>
+			<pstv_mode_description>勾选此项启用PS TV模拟模式。</pstv_mode_description>
+			<show_mode>Show模式</show_mode>
+			<show_mode_description>勾选此项启用Show模式。</show_mode_description>
+			<demo_mode>Demo模式</demo_mode>
+			<demo_mode_description>勾选此项启用Demo模式。</demo_mode_description>
+		</system>
+		<emulator name="模拟器">
+			<boot_apps_full_screen>以全屏启动应用程序</boot_apps_full_screen>
+			<trace>追踪</trace>
+			<info>信息</info>
+			<warning>警告</warning>
+			<error>错误</error>
+			<critical>严重</critical>
+			<off>关闭</off>
+			<log_level>日志级别</log_level>
+			<select_log_level>选择您喜欢的日志级别。</select_log_level>
+			<archive_log>归档日志</archive_log>
+			<archive_log_description>勾选此项启用归档日志。</archive_log_description>
+			<discord_rich_presence>启用Discord Rich Presence以在Discord上展示您正在运行的应用程序。</discord_rich_presence>
+			<texture_cache>纹理缓存</texture_cache>
+			<texture_cache_description>取消勾选此项禁用纹理缓存。</texture_cache_description>
+			<show_compile_shaders>显示编译着色器</show_compile_shaders>
+			<compile_shaders_description>取消勾选此项禁用编译着色器对话框的显示。</compile_shaders_description>
+			<show_touchpad_cursor>显示触摸板光标</show_touchpad_cursor>
+			<touchpad_cursor_description>取消勾选此项禁用屏幕上的触摸板光标的显示。</touchpad_cursor_description>
+			<log_compat_warn>记录兼容性警告</log_compat_warn>
+			<log_compat_warn_description>勾选此项启用对GitHub议题的兼容性警告的记录。</log_compat_warn_description>
+			<check_for_updates>检查更新</check_for_updates>
+			<check_for_updates_description>启动时自动检查更新。</check_for_updates_description>
+			<file_loading_delay>文件加载延迟</file_loading_delay>
+			<file_loading_delay_description>文件加载延迟（毫秒）。
+某些游戏需要设置此项，以防加载速度比真实硬件快得多（例如：寂静岭）。
+默认为0毫秒。</file_loading_delay_description>
+			<performance_overlay>性能图层</performance_overlay>
+			<performance_overlay_description>在屏幕上以图层的形式显示性能信息。</performance_overlay_description>
+			<minimum>最少</minimum>
+			<low>少</low>
+			<medium>中等</medium>
+			<maximum>最多</maximum>
+			<detail>细节</detail>
+			<select_detail>选择您喜欢的性能图层细节。</select_detail>
+			<top_left>左上</top_left>
+			<top_center>顶部中间</top_center>
+			<top_right>右上</top_right>
+			<bottom_left>左下</bottom_left>
+			<bottom_center>底部中间</bottom_center>
+			<bottom_right>右下</bottom_right>
+			<position>位置</position>
+			<select_position>选择您喜欢的性能图层位置。</select_position>
+			<case_insensitive>勾选以在区分大小写的文件系统上启用不区分大小写的路径查找。
+重启时复位</case_insensitive>
+			<case_insensitive_description>允许模拟器尝试在非Windows平台上不区分大小写的文件搜索。</case_insensitive_description>
+			<emu_storage_folder>模拟系统存储文件夹</emu_storage_folder>
+			<current_emu_path>当前模拟器路径：</current_emu_path>
+			<change_emu_path>更改模拟器路径</change_emu_path>
+			<change_emu_path_description>更改Vita3K模拟器文件夹路径。
+您需要手动将旧文件夹移动到新位置。</change_emu_path_description>
+			<reset_emu_path>重置模拟器路径</reset_emu_path>
+			<reset_emu_path_description>重置Vita3K模拟器为默认路径。
+您需要手动将旧文件夹移动到新位置。</reset_emu_path_description>
+			<custom_config_settings>自定义配置设置</custom_config_settings>
+			<clear_custom_config>清除自定义配置</clear_custom_config>
+			<screenshot_image_type>截图图像类型</screenshot_image_type>
+			<null>无</null>
+			<screenshot_format>截图格式</screenshot_format>
+		</emulator>
+		<gui name="图形用户界面">
+			<show_gui>图形用户界面可见</show_gui>
+			<gui_description>勾选此项在启动应用程序后显示图形用户界面。</gui_description>
+			<show_info_bar>信息栏可见</show_info_bar>
+			<info_bar_description>勾选此项在应用程序选择页面内显示信息栏。</info_bar_description>
+			<user_lang>图形用户界面语言</user_lang>
+			<select_user_lang>选择您的用户语言。</select_user_lang>
+			<display_info_message>显示信息消息</display_info_message>
+			<display_info_message_description>取消勾选此项只在日志中显示信息消息。</display_info_message_description>
+			<display_system_apps>显示系统应用程序</display_system_apps>
+			<display_system_apps_description>取消勾选此项禁用从主画面中显示的系统应用程序。
+它们将仅显示在主菜单栏中。</display_system_apps_description>
+			<show_live_area_screen>Live Area应用程序屏幕</show_live_area_screen>
+			<live_area_screen_description>勾选此项在点击应用程序时默认打开Live Area页面。
+如果禁用，请右键点击应用程序将其打开。</live_area_screen_description>
+			<stretch_the_display_area>拉伸显示区域</stretch_the_display_area>
+			<stretch_the_display_area_description>勾选此项扩大显示区域以适应屏幕尺寸。</stretch_the_display_area_description>
+			<fullscreen_hd_res_pixel_perfect>全屏高清精准渲染</fullscreen_hd_res_pixel_perfect>
+			<fullscreen_hd_res_pixel_perfect_description>对于屏幕比例为16:9的高清显示器，勾选此项可在全屏模式下获得像素级精准渲染，
+但代价是屏幕顶部和底部会有轻微裁剪。</fullscreen_hd_res_pixel_perfect_description>
+			<apps_list_grid>网格模式</apps_list_grid>
+			<apps_list_grid_description>勾选此项将应用程序列表设置为网格模式。</apps_list_grid_description>
+			<icon_size>应用程序图标大小</icon_size>
+			<select_icon_size>选择您喜欢的图标大小。</select_icon_size>
+			<font_support>字体支持</font_support>
+			<asia_font_support>亚洲区域</asia_font_support>
+			<asia_font_support_description>勾选此项启用对中文以及韩文的字体支持。
+启用此功能将占用更多内存，并且需要您重启模拟器才能生效。</asia_font_support_description>
+			<firmware_font_package_description>一些应用程序需要固件字体包
+以及在图形用户界面中的亚洲区域字体支持。
+通常也强烈建议将其用于图形用户界面。</firmware_font_package_description>
+			<theme_background>主题&背景</theme_background>
+			<current_theme_content_id>当前主题内容ID：</current_theme_content_id>
+			<reset_default_theme>重置原始主题</reset_default_theme>
+			<using_theme_background>使用主题背景</using_theme_background>
+			<clean_user_backgrounds>清除用户背景</clean_user_backgrounds>
+			<current_start_background>当前主画面的背景：</current_start_background>
+			<reset_start_background>重置主画面的背景</reset_start_background>
+			<background_alpha>背景透明度</background_alpha>
+			<select_background_alpha>选择您喜欢的背景透明度。
+最小值不透明，最大值透明。</select_background_alpha>
+			<delay_background>背景延迟</delay_background>
+			<select_delay_background>选择更改背景前的延迟（以秒为单位）。</select_delay_background>
+			<delay_start>开始画面延迟</delay_start>
+			<select_delay_start>选择返回开始画面前的延迟（以秒为单位）。</select_delay_start>
+		</gui>
+		<network name="网络">
+			<psn_signed_in>已登入PSN</psn_signed_in>
+			<psn_signed_in_description>如果勾选此项，游戏将认为用户已连接至PSN（但为离线）。</psn_signed_in_description>
+			<ip_address>IP地址</ip_address>
+			<ip_address_description>选择在adhoc中使用的IP地址。</ip_address_description>
+			<subnet_mask>子网掩码</subnet_mask>
+			<enable_http>启用HTTP</enable_http>
+			<enable_http_description>勾选此项启用游戏在互联网上使用HTTP协议。</enable_http_description>
+			<timeout_attempts>HTTP超时尝试</timeout_attempts>
+			<timeout_attempts_description>当服务器没有响应时要进行多次尝试。
+如果您有非常不稳定或是非常慢的网络可能会很有用。</timeout_attempts_description>
+			<timeout_sleep>HTTP超时休眠</timeout_sleep>
+			<timeout_sleep_description>当服务器没有响应时尝试进入休眠时间。
+如果您有非常不稳定或是非常慢的网络可能会很有用。</timeout_sleep_description>
+			<read_end_attempts>HTTP读取终止尝试</read_end_attempts>
+			<read_end_attempts_description>当没有更多数据可读取时，尝试多次可以提升性能，
+但如果您的网络很糟糕，则会导致游戏不稳定。</read_end_attempts_description>
+			<read_end_sleep>HTTP读取终止休眠</read_end_sleep>
+			<read_end_sleep_description>尝试在没有更多数据可读取时进入休眠时间，这可以提升性能，
+但如果您的网络很糟糕，则会导致游戏不稳定。</read_end_sleep_description>
+		</network>
+		<debug>
+			<log_imports>导入记录</log_imports>
+			<log_imports_description>记录模块导入符号。</log_imports_description>
+			<log_exports>导出记录</log_exports>
+			<log_exports_description>记录模块导出符号。</log_exports_description>
+			<log_active_shaders>着色器记录</log_active_shaders>
+			<log_active_shaders_description>记录在每次绘制调用中使用的着色器。</log_active_shaders_description>
+			<log_uniforms>统一变量记录</log_uniforms>
+			<log_uniforms_description>记录着色器统一变量的名称和值。</log_uniforms_description>
+			<color_surface_debug>保存颜色表面</color_surface_debug>
+			<color_surface_debug_description>保存颜色表面到文件。</color_surface_debug_description>
+			<dump_elfs>ELF提取</dump_elfs>
+			<dump_elfs_description>将加载的代码提取为ELF。</dump_elfs_description>
+			<validation_layer>验证层（要求重启）</validation_layer>
+			<validation_layer_description>启用Vulkan验证层。</validation_layer_description>
+			<unwatch_code>取消监视代码</unwatch_code>
+			<watch_code>监视代码</watch_code>
+			<unwatch_memory>取消监视内存</unwatch_memory>
+			<watch_memory>监视内存</watch_memory>
+			<unwatch_import_calls>取消监视导入调用</unwatch_import_calls>
+			<watch_import_calls>监视导入调用</watch_import_calls>
+		</debug>
+		<save_reboot>保存并重启</save_reboot>
+		<save_apply>保存并应用</save_apply>
+		<save_close>保存并关闭</save_close>
+		<keep_changes>点击保存保留您的更改。</keep_changes>
+	</settings_dialog>
+
+	<sys_apps_title>
+		<browser>浏览器</browser>
+		<internet_browser>互联网浏览器</internet_browser>
+		<trophies>Trophy（奖杯）</trophies>
+		<trophy_collection>Trophy（奖杯）收藏</trophy_collection>
+		<settings>设定</settings>
+		<content_manager>内容管理</content_manager>
+	</sys_apps_title>
+
+	<trophy_collection>
+		<all_trophy_deleted>该用户已保存的全部奖杯信息将被删除。</all_trophy_deleted>
+		<delete_trophy>删除奖杯</delete_trophy>
+		<trophy_deleted>该用户已保存的奖杯信息将被删除。</trophy_deleted>
+		<locked>未解锁</locked>
+		<details>详细信息</details>
+		<earned>获得日期</earned>
+		<name>名称</name>
+		<no_trophies>找不到奖杯。
+您可通过游玩支持奖杯功能的应用程序获得奖杯。</no_trophies>
+		<not_earned>未获得</not_earned>
+		<original>原始</original>
+		<sort>排列</sort>
+		<trophies>奖杯数</trophies>
+		<grade>Grade（等级）</grade>
+		<progress>达成率</progress>
+		<updated>升级日期</updated>
+		<advance>高级</advance>
+		<show_hidden>展示隐藏奖杯</show_hidden>
+	</trophy_collection>
+
+	<user_management>
+		<select_user>选择用户</select_user>
+		<create_user>创建用户</create_user>
+		<user_created>已创建以下用户。</user_created>
+		<edit_user>编辑用户</edit_user>
+		<open_user_folder>打开用户文件夹</open_user_folder>
+		<user_name_used>此名称已被使用。</user_name_used>
+		<delete_user>删除用户</delete_user>
+		<user_delete>请选择要删除的用户。</user_delete>
+		<user_delete_msg>将删除以下用户。</user_delete_msg>
+		<user_delete_message>若删除用户，该用户的保存数据、奖杯也会一并被删除。</user_delete_message>
+		<user_delete_warn>用户将被删除。
+确定要继续吗？</user_delete_warn>
+		<user_deleted>用户已删除。</user_deleted>
+		<choose_avatar>选择虚拟形象</choose_avatar>
+		<reset_avatar>重置虚拟形象</reset_avatar>
+		<confirm>确定</confirm>
+		<automatic_user_login>自动登录用户</automatic_user_login>
+	</user_management>
+
+	<vita3k_update name="Vita3K更新">
+ 		<new_version_available>检测到新版本的Vita3K。</new_version_available>
+		<back>返回</back>
+ 		<cancel_update_resume>要取消升级吗？
+若取消升级，下次升级时将从中断处开始下载。</cancel_update_resume>
+		<downloading>下载中…
+下载完毕后，Vita3K将会自动重新启动，并安装新的升级。</downloading>
+		<not_complete_update>无法完成升级。</not_complete_update>
+		<minutes_left>剩余 {}分钟</minutes_left>
+		<next>继续</next>
+		<seconds_left>剩余 {}秒</seconds_left>
+		<update_vita3k>要升级Vita3K吗？</update_vita3k>
+		<later_version_already_installed>已安装新版本的Vita3K。</later_version_already_installed>
+		<latest_version_already_installed>已安装最新版本的Vita3K。</latest_version_already_installed>
+		<new_features>{}版本的追加功能</new_features>
+		<authors>作者</authors>
+		<comments>注释</comments>
+		<update>更新</update>
+		<version>{}版本</version>
+	</vita3k_update>
+
+	<welcome name="欢迎使用Vita3K">
+		<vita3k>Vita3K PlayStation Vita模拟器</vita3k>
+		<about_vita3k>Vita3K是使用C++编写的开源PlayStation Vita模拟器，适用于Windows、Linux、macOS以及Android。</about_vita3k>
+		<development_stage>目前模拟器仍处于开发阶段，因此非常感谢任何反馈和测试。</development_stage>
+		<about_firmware>要开始使用，请安装全部PS Vita固件文件。</about_firmware>
+		<download_preinst_firmware>下载预装固件</download_preinst_firmware>
+		<download_firmware>下载固件</download_firmware>
+		<download_firmware_font_package>下载固件字体包</download_firmware_font_package>
+		<vita3k_quickstart>有关如何设置Vita3K的综合指南可在</vita3k_quickstart>
+		<quickstart>快速入门</quickstart>
+		<page>页面中找到。</page>
+		<check_compatibility>参考商业游戏以及自制程序兼容性列表来查看目前可运行的内容。</check_compatibility>
+		<commercial_compatibility_list>商业游戏兼容性列表</commercial_compatibility_list>
+		<homebrew_compatibility_list>自制程序兼容性列表</homebrew_compatibility_list>
+		<welcome_contribution>欢迎参与贡献！</welcome_contribution>
+		<discord_help>可以在#help频道中找到更多支持</discord_help>
+		<no_piracy>Vita3K不纵容盗版。您必须提取您自己拥有的游戏。</no_piracy>
+		<show_next_time>下次显示</show_next_time>
+	</welcome>
+</lang>

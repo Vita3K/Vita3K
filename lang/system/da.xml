@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="Fil">
+			<open_pref_path>Open Pref Path</open_pref_path>
+			<install_firmware>Install Firmware</install_firmware>
+			<install_pkg>Install .pkg</install_pkg>
+			<install_zip>Install .zip, .vpk</install_zip>
+			<install_license>Install License</install_license>
+			<exit>Afslut</exit>
+		</file>
+		<emulation name="Emulation">
+			<last_apps_used>Last Apps used</last_apps_used>
+		</emulation>
+		<configuration name="Configuration">
+			<user_management>Brugeradministration</user_management>
+		</configuration>
+		<controls name="Controls">
+			<keyboard_controls>Keyboard Controls</keyboard_controls>
+		</controls>
+		<help name="Hjælp">
+			<welcome>Welcome</welcome>
+		</help>
+	</main_menubar>
+
+	<app_context>
+		<live_area>
+			<manual>Vejledning</manual>
+			<update>Opdater</update>
+		</live_area>
+		<delete>
+			<delete_app>Dette program og alle relaterede data, herunder gemte data, vil blive slettet.</delete_app>
+		</delete>
+		<update_history>Opdateringshistorik</update_history>
+		<history_version>Version {}</history_version>
+		<info name="Information">
+			<eligible>Kvalificeret</eligible>
+			<ineligible>Ikke kvalificeret</ineligible>
+			<level>Niveau {}</level>
+			<name>Navn</name>
+			<trophy_earning>Trophy opnåelse</trophy_earning>
+			<parental_controls>Forældrekontrol</parental_controls>
+			<updated>Opdateret</updated>
+			<size>Størrelse</size>
+			<version>Version</version>
+		</info>
+	</app_context>
+	
+	<common>
+		<an_error_occurred>Der er opstået en fejl.
+Fejlkode: {}</an_error_occurred>
+		<cancel>Afbryd</cancel>
+		<close>Lukke</close>
+		<could_not_load>Kunne ikke indlæse filen.</could_not_load>
+		<could_not_save>Kunne ikke gemme filen.</could_not_save>
+		<delete>Slet</delete>
+		<error>Fejl</error>
+		<file_corrupted>Filen er defekt.</file_corrupted>
+		<microphone_disabled>Aktivér mikrofonen.</microphone_disabled>
+		<no>Nej</no>
+		<please_wait>Vent venligst...</please_wait>
+		<select_all>Vælg alle</select_all>
+		<select>Vælg</select>
+		<yes>Ja</yes>
+		<wday>
+			<day>søndag</day>
+			<day>mandag</day>
+			<day>tirsdag</day>
+			<day>onsdag</day>
+			<day>torsdag</day>
+			<day>fredag</day>
+			<day>lørdag</day>
+		</wday>
+		<ymonth>
+			<month>Januar</month>
+			<month>Februar</month>
+			<month>Marts</month>
+			<month>April</month>
+			<month>Maj</month>
+			<month>Juni</month>
+			<month>Juli</month>
+			<month>August</month>
+			<month>September</month>
+			<month>Oktober</month>
+			<month>November</month>
+			<month>December</month>
+		</ymonth>
+		<small_ymonth>
+			<month>januar</month>
+			<month>februar</month>
+			<month>marts</month>
+			<month>april</month>
+			<month>maj</month>
+			<month>juni</month>
+			<month>juli</month>
+			<month>august</month>
+			<month>september</month>
+			<month>oktober</month>
+			<month>november</month>
+			<month>december</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</small_mday>
+		<hidden_trophy>Skjult Trophy</hidden_trophy>
+		<one_hour_ago>1 time siden</one_hour_ago>
+		<one_minute_ago>1 minut siden</one_minute_ago>
+		<bronze>Bronze</bronze>
+		<gold>Gold</gold>
+		<platinum>Platinum</platinum>
+		<silver>Silver</silver>
+		<hours_ago>{} timer siden</hours_ago>
+		<minutes_ago>{} minutter siden</minutes_ago>
+	</common>
+	
+	<content_manager name="Indholdsadministrator">
+		<application name="Programmer">
+			<delete>De valgte programmer og alle relaterede data, herunder gemte data, vil blive slettet.</delete>
+			<no_item>Der er ingen indholdsenheder.</no_item>
+		</application>
+		<saved_data name="Gemte Data">
+			<delete>De valgte gemte dataelementer vil blive slettede.</delete>
+			<no_saved_data>Der er ingen gemte data.</no_saved_data>
+		</saved_data>
+		<theme>Tema</theme>
+		<free_space>Ledig plads</free_space>
+		<clear_all>Ryd alle</clear_all>
+	</content_manager>
+
+	<controllers name="Controllers">
+		<num>Num</num>
+	</controllers>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Forbereder start af programmet...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Ønsker du at afbryde sletningen?</cancel_deleting>
+				<deletion_complete>Sletning udført.</deletion_complete>
+				<delete_saved_data>Ønsker du at slette disse gemte data?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Detaljer</details>
+				<updated>Opdateret</updated>
+			</info>
+			<load name="Indlæs">
+				<cancel_loading>Ønsker du at afbryde indlæsningen?</cancel_loading>
+				<no_saved_data>Der er ingen gemte data.</no_saved_data>
+				<load_complete>Indlæsning udført.</load_complete>
+				<loading>Indlæser...</loading>
+				<load_saved_data>Ønsker du at indlæse disse gemte data?</load_saved_data>
+			</load>
+			<save name="Gem">
+				<cancel_saving>Ønsker du at afbryde lagringen?</cancel_saving>
+				<could_not_save>Kunne ikke gemme filen.
+Der er ikke nok ledig plads på hukommelseskortet. Du skal skabe mindst {} ledig plads for at gemme dit forløb i programmet.
+
+Tryk på PS-knappen for at sætte programmet på pause, og slet derefter de andre programmer eller indhold for at skabe den ledige plads.</could_not_save>
+				<not_free_space>Der er ikke nok ledig plads på hukommelseskortet.
+Du skal skabe mindst {} ledig plads for at fortsætte med at bruge programmet.
+
+Tryk på PS-knappen for at sætte programmet på pause, og slet derefter de andre programmer eller indhold.</not_free_space>
+				<new_saved_data>Nye gemte data</new_saved_data>
+				<saving_complete>Lagring udført.</saving_complete>
+				<save_the_data>Ønsker du at gemme dataene?</save_the_data>
+				<saving>Gemmer...</saving>
+				<warning_saving>Gemmer...
+Undlad at slukke for systemet eller lukke programmet.</warning_saving>
+				<overwrite_saved_data>Ønsker du at overskrive disse gemte data?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>Følgende program bliver lukket.</app_close>
+		<data_delete>Data, som skal slettes:</data_delete>
+	</game_data>
+
+	<indicator>
+		<app_added_home>Programmet er blevet føjet til hjemmeskærm.</app_added_home>
+		<delete_all>Slet alt</delete_all>
+		<notif_deleted>Meddelelserne vil blive slettet.</notif_deleted>
+		<install_failed>Kunne ikke installere.</install_failed>
+		<install_complete>Installation udført.</install_complete>
+		<installing>Installerer...</installing>
+		<no_notif>Der er ingen meddelelsen.</no_notif>
+		<trophy_earned>Du har opnået et trophy!</trophy_earned>
+	</indicator>
+
+	<initial_setup>
+		<back>Tilbage</back>
+		<completed_setup>Nu har du udført opstartsopsætningen.
+Dit Vita3K-system er klart!</completed_setup>
+		<select_language>Vælg et sprog.</select_language>
+		<next>Næste</next>
+	</initial_setup>
+
+	<live_area>
+		<start>Start</start>
+		<continue>Fortsæt</continue>
+	</live_area>
+	
+	<settings name="Indstillinger">
+		<theme_background name="Tema og baggrund">
+			<default>Standard</default>
+			<theme name="Tema">
+				<information name="Information">
+					<name>Navn</name>
+					<provider>Udbyder</provider>
+					<updated>Opdateret</updated>
+					<size>Størrelse</size>
+					<version>Version</version>
+				</information>
+				<delete>Dette tema vil blive slettet.</delete>
+			</theme>
+			<start_screen name="Startskærm">
+				<image>Billede</image>
+			</start_screen>
+			<home_screen_backgrounds name="Baggrunde til hjemmeskærmen">
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Dato og tid">
+			<date_format name ="Datoformat">
+				<yyyy_mm_dd>ÅÅÅÅ/MM/DD</yyyy_mm_dd>
+				<dd_mm_yyyy>DD/MM/ÅÅÅÅ</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/DD/ÅÅÅÅ</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Tidsformat">
+				<clock_12_hour>12 timers ur</clock_12_hour>
+				<clock_24_hour>24 timers ur</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Sprog">
+			<system_language>Systemsprog</system_language>
+			<input_language name="Indtast sprog">
+				<keyboards name="Tasaturer">
+					<ime_languages>
+						<lang id="1">Dansk</lang>
+						<lang id="2">Tysk</lang>
+						<lang id="262144">Engelsk (Storbritannien)</lang>
+						<lang id="4">Engelsk (USA)</lang>
+						<lang id="8">Spansk</lang>
+						<lang id="16">Fransk</lang>
+						<lang id="32">Italiensk</lang>
+						<lang id="64">Hollandsk</lang>
+						<lang id="128">Norsk</lang>
+						<lang id="256">Polsk</lang>
+						<lang id="131072">Portugisisk (Brasilien)</lang>
+						<lang id="512">Portugisisk (Portugal)</lang>
+						<lang id="1024">Russisk</lang>
+						<lang id="2048">Finsk</lang>
+						<lang id="4096">Svensk</lang>
+						<lang id="524288">Tyrkisk</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<settings_dialog name="Indstillinger">
+		<system name="System">
+		</system>
+		<network name="Netværk">
+			<ip_address>IP-adresse</ip_address>
+			<subnet_mask>Subnetmaske</subnet_mask>
+		</network>
+		<save_close>Gem & Lukke</save_close>
+	</settings_dialog>
+
+	<sys_apps_title>
+		<browser>Browser</browser>
+		<internet_browser>Internetbrowser</internet_browser>
+		<trophies>Trophies</trophies>
+		<trophy_collection>Trophy Collection</trophy_collection>
+		<settings>Indstillinger</settings>
+		<content_manager>Indholdsadministrator</content_manager>
+	</sys_apps_title>
+	
+	<trophy_collection>
+		<details>Detaljer</details>
+		<earned>Opnået</earned>
+		<name>Navn</name>
+		<no_trophies>Der er ingen trophies.
+Du kan opnå trophies ved at bruge et program, der understøtter trophy-funkitionen.</no_trophies>
+		<not_earned>Ikke opnået</not_earned>
+		<original>Original</original>
+		<sort>Sortér</sort>
+		<trophies>Trophies</trophies>
+		<grade>Grade</grade>
+		<progress>Forløb</progress>
+		<updated>Opdaterest</updated>
+	</trophy_collection>
+
+	<user_management>
+		<select_user>Vælg bruger</select_user>
+		<create_user>Opret bruger</create_user>
+		<user_created>Den følgende bruger er blevet oprettet:</user_created>
+		<user_name_used>Navent er allerede i brug.</user_name_used>
+		<delete_user>Slet bruger</delete_user>
+		<user_delete>Vælg den bruger, som du vil slette.</user_delete>
+		<user_delete_msg>Følgende bruger vil bilve slettet:</user_delete_msg>
+		<user_delete_message>Hvis du sletter brugeren, slettes denne brugers gemte data, trofæer.</user_delete_message>
+		<user_delete_warn>Brugeren vil bilve slettet.
+Er du sikker på, at du ønsker at fortsætte.</user_delete_warn>
+		<user_deleted>Bruger blev slettet.</user_deleted>
+		<choose_avatar>Vælg avatar</choose_avatar>
+		<user>Bruger</user>
+		<confirm>Bekræft</confirm>
+	</user_management>
+
+	<vita3k_update name="Vita3K-opdatering">
+ 		<new_version_available>En ny version af Vita3K er tilgængelig.</new_version_available>
+		<back>Tilbage</back>
+		<cancel_update_resume>Ønsker du at afbryde opdateringen?
+Hvis du afbryder, vil Vita3K starte download fra dette punkt, næste gang du opdaterer.</cancel_update_resume>
+		<downloading>Downloader...
+Efter download er udført, vil Vita3K automatisk genstarte og derefter installere den nye opdateringen.</downloading>
+		<not_complete_update>Kunne ikke udføre opdateringen.</not_complete_update>
+		<minutes_left>{} minutter tilbage</minutes_left>
+		<next>Næste</next>
+		<seconds_left>{} sekunder tilbage</seconds_left>
+		<update_vita3k>Ønsker du at opdatere Vita3K?</update_vita3k>
+		<later_version_already_installed>Den senere version af Vita3K er allerede installeret.</later_version_already_installed>
+		<latest_version_already_installed>Den seneste version af Vita3K er allerede installeret.</latest_version_already_installed>
+		<new_features>Nye funktioner i version {}</new_features>
+		<update>Opdater</update>
+		<version>Version {}</version>
+	</vita3k_update>
+</lang>

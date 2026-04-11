@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="File">
+			<open_pref_path>Apri la Cartella Pref</open_pref_path>
+			<install_firmware>Installa il Firmware</install_firmware>
+			<install_pkg>Installa un .pkg</install_pkg>
+			<install_zip>Installa un .zip, .vpk</install_zip>
+			<install_license>Installa una licenza</install_license>
+			<exit>Esci</exit>
+		</file>
+		<emulation name="Emulazione">
+			<last_apps_used>Ultime app utilizzate</last_apps_used>
+		</emulation>
+		<configuration name="Configurazione">
+			<user_management>Gestione utenti</user_management>
+		</configuration>
+		<controls name="Controlli">
+			<keyboard_controls>Controlli della Tastiera</keyboard_controls>
+		</controls>
+		<help name="Aiuto">
+			<welcome>Benvevuto</welcome>
+		</help>
+	</main_menubar>
+
+	<about name="A Proposito">
+	</about>
+
+	<app_context>
+		<live_area>
+			<manual>Manuale</manual>
+			<update>Aggiornamento</update>
+		</live_area>
+		<delete>
+			<delete_app>Questa applicazione e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</delete_app>
+		</delete>
+		<update_history>Cronologia degli aggiornamenti</update_history>
+		<history_version>Versione {}</history_version>
+		<info name="Informazioni">
+			<eligible>Idoneo</eligible>
+			<ineligible>Non idoneo</ineligible>
+			<level>Livello {}</level>
+			<name>Nome</name>
+			<trophy_earning>Guadagno di trofei</trophy_earning>
+			<parental_controls>Filtro contenuti</parental_controls>
+			<updated>Aggiornato</updated>
+			<size>Dimensione</size>
+			<version>Versione</version>
+			<last_time_used>Ultimo usato</last_time_used>
+			<time_used>Tempo utilizzato</time_used>
+			<never>Mai</never>
+		</info>
+	</app_context>
+
+	<common>
+		<an_error_occurred>Si è verificato un errore.
+Codice di errore: {}</an_error_occurred>
+		<cancel>Annulla</cancel>
+		<could_not_load>Impossibile caricare il file.</could_not_load>
+		<could_not_save>Impossibile salvare il file.</could_not_save>
+		<close>Chiudersi</close>
+		<delete>Elimina</delete>
+		<error>Errore</error>
+		<file_corrupted>Il file è danneggiato.</file_corrupted>
+		<microphone_disabled>Attiva il microfono.</microphone_disabled>
+		<please_wait>Attendi...</please_wait>
+		<select_all>Seleziona tutto</select_all>
+		<select>Seleziona</select>
+		<yes>Sì</yes>
+		<wday>
+			<day>domenica</day>
+			<day>lunedi</day>
+			<day>martedi</day>
+			<day>mercoledi</day>
+			<day>giovedi</day>
+			<day>venerdi</day>
+			<day>sabato</day>
+		</wday>
+		<ymonth>
+			<month>Gennaio</month>
+			<month>Febbraio</month>
+			<month>Marzo</month>
+			<month>Aprile</month>
+			<month>Maggio</month>
+			<month>Giugno</month>
+			<month>Luglio</month>
+			<month>Agosto</month>
+			<month>Settembre</month>
+			<month>Ottobre</month>
+			<month>Novembre</month>
+			<month>Dicembre</month>
+		</ymonth>
+		<small_ymonth>
+			<month>gennaio</month>
+			<month>febbraio</month>
+			<month>marzo</month>
+			<month>aprile</month>
+			<month>maggio</month>
+			<month>giugno</month>
+			<month>luglio</month>
+			<month>agosto</month>
+			<month>settembre</month>
+			<month>ottobre</month>
+			<month>novembre</month>
+			<month>dicembre</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</small_mday>
+		<hidden_trophy>Trofeo nascosto</hidden_trophy>
+		<one_hour_ago>1 ora fa</one_hour_ago>
+		<one_minute_ago>1 minuto fa</one_minute_ago>
+		<bronze>Bronzo</bronze>
+		<gold>Oro</gold>
+		<platinum>Platino</platinum>
+		<silver>Argento</silver>
+		<hours_ago>{} ore fa</hours_ago>
+		<minutes_ago>{} minuti fa</minutes_ago>
+	</common>
+
+	<compatibility name="Compatibilità">
+		<states>
+			<state id = "-1">Unknown</state>
+			<state id = "0">Niente</state>
+			<state id = "1">Avviabile</state>
+			<state id = "2">Intro</state>
+			<state id = "3">Menu</state>
+			<state id = "4">In Gioco -</state>
+			<state id = "5">In Gioco +</state>
+			<state id = "6">Giocabile</state>
+		</states>
+	</compatibility>
+
+	<content_manager name="Gestione contenuto">
+		<application name="Applicazioni">
+			<delete>Le applicazioni selezionate e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</delete>
+			<no_item>Nessun elemento di contenuto.</no_item>
+		</application>
+		<saved_data name="Dati salvati">
+			<delete>I dati salvati selezionati saranno eliminati.</delete>
+			<no_saved_data>Non ci sono dati salvati.</no_saved_data>
+		</saved_data>
+		<theme>Tema</theme>
+		<free_space>Spazio libero</free_space>
+		<clear_all>Cancella tutto</clear_all>
+	</content_manager>
+
+	<controllers name="Controllers">
+		<num>Num</num>
+	</controllers>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Preparazione per l'avvio dell'applicazione...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Vuoi annullare l'eliminazione?</cancel_deleting>
+				<deletion_complete>Eliminazione completata.</deletion_complete>
+				<delete_saved_data>Vuoi eliminare questi dati salvati?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Dettagli</details>
+				<updated>Aggiornato</updated>
+			</info>
+			<load name="Carica">
+				<cancel_loading>Vuoi annullare il caricamento?</cancel_loading>
+				<no_saved_data>Non ci sono dati salvati.</no_saved_data>
+				<load_complete>Caricamento completato.</load_complete>
+				<loading>Caricamento in corso...</loading>
+				<load_saved_data>Vuoi caricare questi dati salvati?</load_saved_data>
+			</load>
+			<save name="Salva">
+				<cancel_saving>Vuoi annullare il salvataggio?</cancel_saving>
+				<could_not_save>Impossibile salvare il file.
+Spazio libero insufficiente sulla scheda di memoria. Per potere salvare l'avanzamento dell'applicazione, devono essere disponibili almeno {} di spazio libero.
+
+Per creare spazio libero, premi il tasto PS per mettere in pausa l'applicazione, quindi elimina altre applicazioni o del contenuto.</could_not_save>
+				<not_free_space>Spazio libero insufficiente sulla scheda di memoria.
+Per continuare a usare l'applicazione, devono essere disponibili almeno {} di spazio libero.
+
+Premi il tasto PS per mettere in pausa l'applicazione, quindi elimina altre applicazioni o del contenuto.</not_free_space>
+				<new_saved_data>Nuovi dati salvati</new_saved_data>
+				<saving_complete>Salvataggio completato.</saving_complete>
+				<save_the_data>Vuoi salvare i dati?</save_the_data>
+				<saving>Salvataggio in corso...</saving>
+				<warning_saving>Salvataggio in corso...
+Non spegnere il sistema né chiudere l'applicazione.</warning_saving>
+				<overwrite_saved_data>Vuoi sovrascrivere questi dati salvati?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>La seguente applicazione sarà chiusa.</app_close>
+		<data_delete>Dati da eliminare:</data_delete>
+	</game_data>
+
+	<indicator>
+		<app_added_home>L'applicazione è stata aggiunta alla schermata principale.</app_added_home>
+		<delete_all>Elimina tutto</delete_all>
+		<notif_deleted>Le notifiche saranno eliminate.</notif_deleted>
+		<install_failed>Impossibile installare.</install_failed>
+		<install_complete>Installazione completata.</install_complete>
+		<installing>Installazione in corso...</installing>
+		<no_notif>Non ci sono notifiche.</no_notif>
+		<trophy_earned>Hai guadagnato un trofeo!</trophy_earned>
+	</indicator>
+
+	<initial_setup>
+		<back>Indietro</back>
+		<completed_setup>Hai finito la configurazione iniziale.
+Il tuo sistema Vita3K è pronto per l'uso!</completed_setup>
+		<select_language>Seleziona una lingua.</select_language>
+		<storage_file_permissions>Vita3K richiede accesso completo ai file.
+Tocca 'Concedi Accesso' per continuare.</storage_file_permissions>
+		<grant_access>Concedi Accesso</grant_access>
+		<install_firmware>Installa il Firmware.</install_firmware>
+		<next>Seguente</next>
+	</initial_setup>
+
+	<live_area>
+		<start>Avvia</start>
+		<continue>Continua</continue>
+	</live_area>
+
+	<settings name="Impostazioni">
+		<theme_background name="Tema e Sfondo">
+			<default>Predefinita</default>
+			<theme name="Tema">
+				<information name="Informazioni">
+					<name>Nome</name>
+					<provider>Fornitore</provider>
+					<updated>Aggiornato</updated>
+					<size>Dimensione</size>
+					<version>Versione</version>
+				</information>
+				<delete>Questo tema sarà eliminato.</delete>
+			</theme>
+			<start_screen name="Schermata iniziale">
+				<image>Immagine</image>
+			</start_screen>
+			<home_screen_backgrounds name="Sfondi schermata principale">
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Date e ora">
+			<date_format name ="Formato della data">
+				<yyyy_mm_dd>AAAA/MM/GG</yyyy_mm_dd>
+				<dd_mm_yyyy>GG/MM/AAAA</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/GG/AAAA</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Formato dell'ora">
+				<clock_12_hour>12 ore</clock_12_hour>
+				<clock_24_hour>24 ore</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Lingua">
+			<system_language>Lingua del sistema</system_language>
+			<input_language name="Lingua di immissione dati">
+				<keyboards name="Tastiere">
+					<ime_languages>
+						<lang id="1">Danese</lang>
+						<lang id="2">Tedesco</lang>
+						<lang id="262144">Inglese (Regno Unito)</lang>
+						<lang id="4">Inglese (Stati Uniti)</lang>
+						<lang id="8">Spagnolo</lang>
+						<lang id="16">Francese</lang>
+						<lang id="32">Italiano</lang>
+						<lang id="64">Olandese</lang>
+						<lang id="128">Norvegese</lang>
+						<lang id="256">Polacco</lang>
+						<lang id="131072">Portoghese (Brasile)</lang>
+						<lang id="512">Portoghese (Portogallo)</lang>
+						<lang id="1024">Russo</lang>
+						<lang id="2048">Finlandese</lang>
+						<lang id="4096">Svedese</lang>
+						<lang id="524288">Turco</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<settings_dialog name="Impostazioni">
+		<system name="Sistema">
+		</system>
+		<network name="Rete">
+			<ip_address>Indirizzo IP</ip_address>
+			<subnet_mask>Maschera di sottorete</subnet_mask>
+		</network>
+		<save_close>Salva & Chiudersi</save_close>
+	</settings_dialog>
+
+	<sys_apps_title>
+		<browser>Browser</browser>
+		<internet_browser>Browser per Internet</internet_browser>
+		<trophies>Trofei</trophies>
+		<trophy_collection>Collezione dei trofei</trophy_collection>
+		<settings>Impostazioni</settings>
+		<content_manager>Gestione contenuto</content_manager>
+	</sys_apps_title>
+
+	<trophy_collection>
+		<details>Dettagli</details>
+		<earned>Guadagnato</earned>
+		<name>Nome</name>
+		<no_trophies>Non ci sono trofei.
+Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.</no_trophies>
+		<not_earned>Non guadagnato</not_earned>
+		<original>Originale</original>
+		<sort>Ordina</sort>
+		<trophies>Trofei</trophies>
+		<grade>Grado</grade>
+		<progress>Avanzamento</progress>
+		<updated>Aggiornato</updated>
+	</trophy_collection>
+
+	<user_management>
+		<select_user>Seleziona utente</select_user>
+		<create_user>Crea utente</create_user>
+		<user_created>L'utente seguente è stato creato:</user_created>
+		<edit_user>Modifica utente</edit_user>
+		<user_name_used>Il nome utente è già in uso.</user_name_used>
+		<delete_user>Elimina utente</delete_user>
+		<user_delete>Seleziona l'utente che vuoi eliminare.</user_delete>
+		<user_delete_msg>Il seguente utenti verrà eliminato:</user_delete_msg>
+		<user_delete_message>Se elimini l'utente, i dati salvati, le trofei dell'utente saranno eliminati.</user_delete_message>
+		<user_delete_warn>L'utente serà eliminato.
+Vuoi davvero continuare?</user_delete_warn>
+		<user_deleted>Utente eliminato.</user_deleted>
+		<choose_avatar>Scegli avatar</choose_avatar>
+		<user>Utente</user>
+		<confirm>Conferma</confirm>
+	</user_management>
+
+	<vita3k_update name="Aggiornamento del Vita3K">
+ 		<new_version_available>È disponibile una nuova versione del Vita3K.</new_version_available>
+		<back>Indietro</back>
+ 		<cancel_update_resume>Vuoi annullare l'aggiornamento?
+Se lo annulli, al prossimo aggiornamento Vita3K ricomincerà il download da questo punto.</cancel_update_resume>
+		<downloading>Download in corso...
+Al termine del download, Vita3K si riavvierà automaticamente e quindi installerà il nuovo aggiornamento.</downloading>
+		<not_complete_update>Impossibile completare l'aggiornamento.</not_complete_update>
+		<minutes_left>Tempo rimanente: {} minuti</minutes_left>
+		<next>Seguente</next>
+		<seconds_left>Tempo rimanente: {} secondi</seconds_left>
+		<update_vita3k>Vuoi aggiornare Vita3K?</update_vita3k>
+		<later_version_already_installed>È già installata una versione più recente del Vita3K.</later_version_already_installed>
+		<latest_version_already_installed>La versione più recente del Vita3K è già installata.</latest_version_already_installed>
+		<new_features>Nuove funzioni disponibili nella versione {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>Aggiorna</update>
+		<version>Versione {}</version>
+	</vita3k_update>
+</lang>

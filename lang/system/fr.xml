@@ -1,0 +1,517 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="Fichier">
+			<open_pref_path>Ouvrir le Dossier Pref</open_pref_path>
+			<install_firmware>Installer le Firmware</install_firmware>
+			<install_pkg>Installer un .pkg</install_pkg>
+			<install_zip>Installer un .zip, .vpk</install_zip>
+			<install_license>Installer une Licence</install_license>
+			<exit>Quitter</exit>
+		</file>
+		<emulation name="Émulation">
+			<last_apps_used>Dernières Apps utilisées</last_apps_used>
+		</emulation>
+		<configuration name="Configuration">
+			<user_management>Gestion des Utilisateurs</user_management>
+		</configuration>
+		<controls name="Commandes">
+			<keyboard_controls>Commandes du Clavier</keyboard_controls>
+		</controls>
+		<help name="Aide">
+			<welcome>Bienvenue</welcome>
+		</help>
+	</main_menubar>
+
+	<about name="À Propos">
+		<vita3k>Vita3K: un émulateur PS Vita/PS TV. Le premier émulateur PS Vita/PS TV fonctionnel au monde.</vita3k>
+		<about_vita3k>Vita3K est un émulateur expérimental open-source de PlayStation Vita/PlayStation TV écrit en C++ pour les systèmes d'exploitation Windows, Linux, macOS et Android.</about_vita3k>
+		<special_credit>Crédit spécial: L'icône Vita3K a été désigné par:</special_credit>
+		<github_website>Si vous souhaitez apporter votre contribution, consultez notre:</github_website>
+		<vita3k_website>Visitez notre site web pour plus d'informations:</vita3k_website>
+		<ko-fi_website>Si vous souhaitez nous soutenir, vous pouvez nous faire un don ou vous abonnez a notre:</ko-fi_website>
+		<vita3k_staff>L'équipe de Vita3K</vita3k_staff>
+		<developers>Développeurs</developers>
+		<contributors>Contributeurs</contributors>
+		<supporters>Supporters</supporters>
+	</about>
+
+	<app_context>
+		<compat>
+			<check_app_state>Vérifier l'état de l'App</check_app_state>
+			<copy_vita3k_summary>Copier le résumé de Vita3K</copy_vita3k_summary>
+			<open_state_report>Ouvrir le rapport d'état</open_state_report>
+			<create_state_report>Créer le rapport d'état</create_state_report>
+			<update_database>Mettre à jour la base de données</update_database>
+		</compat>
+		<copy_app_info>Copier l'info de l'App
+			<name_and_id>Nom et ID du Titre</name_and_id>
+			<app_summary>Résumé de l'App</app_summary>
+		</copy_app_info>
+		<create_shortcut>Créer un raccourci</create_shortcut>
+		<custom_config name="Config personnalisée">
+			<create>Créer</create>
+			<edit>Editer</edit>
+			<remove>Supprimer</remove>
+		</custom_config>
+		<path>
+			<open_folder>Ouvrir le dossier</open_folder>
+			<addcont>DLCs</addcont>
+			<license>License</license>
+			<shaders_cache>Cache des shaders</shaders_cache>
+			<shaders_log>Journal des shaders</shaders_log>
+		</path>
+		<live_area>
+			<manual>Manuel</manual>
+			<update>Mise à jour</update>
+		</live_area>
+		<delete>
+			<delete_app>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</delete_app>
+		</delete>
+		<update_history>Historique de mise à jour</update_history>
+		<history_version>Version {}</history_version>
+		<info name="Informations">
+ 			<eligible>Autorisé</eligible>
+			<ineligible>Non autorisé</ineligible>
+			<level>Niveau {}</level>
+			<name>Nom</name>
+			<trophy_earning>Obtention de trophées</trophy_earning>
+			<parental_controls>Contrôle parental</parental_controls>
+			<updated>Mis à jour</updated>
+			<size>Taille</size>
+			<version>Version</version>
+			<title_id>ID du Titre</title_id>
+			<category>Catégorie</category>
+			<last_time_used>Dernière fois utilisé</last_time_used>
+			<time_used>Temps utilisé</time_used>
+			<never>Jamais</never>
+		</info>
+	</app_context>
+
+	<common>
+		<an_error_occurred>Une erreur est survenue.
+Code d'erreur: {}</an_error_occurred>
+		<cancel>Annuler</cancel>
+		<close>Fermer</close>
+		<could_not_load>Le chargement du fichier a échoué.</could_not_load>
+		<could_not_save>La sauvegarde du fichier a échoué.</could_not_save>
+		<delete>Supprimer</delete>
+		<error>Erreur</error>
+		<file_corrupted>Le fichier est corrompu.</file_corrupted>
+		<microphone_disabled>Activez le microphone.</microphone_disabled>
+		<no>Non</no>
+		<please_wait>Merci de patienter...</please_wait>
+		<search>Recherche</search>
+		<select_all>Sélectionner tout</select_all>
+		<select>Sélectionner</select>
+		<yes>Oui</yes>
+		<wday>
+			<day>dimanche</day>
+			<day>lundi</day>
+			<day>mardi</day>
+			<day>mercredi</day>
+			<day>jeudi</day>
+			<day>vendredi</day>
+			<day>samedi</day>
+		</wday>
+		<ymonth>
+			<month>Janvier</month>
+			<month>Février</month>
+			<month>Mars</month>
+			<month>Avril</month>
+			<month>Mai</month>
+			<month>Juin</month>
+			<month>Juillet</month>
+			<month>Août</month>
+			<month>Septembre</month>
+			<month>Octobre</month>
+			<month>Novembre</month>
+			<month>Décembre</month>
+		</ymonth>
+		<small_ymonth>
+			<month>janvier</month>
+			<month>février</month>
+			<month>mars</month>
+			<month>avril</month>
+			<month>mai</month>
+			<month>juin</month>
+			<month>juillet</month>
+			<month>août</month>
+			<month>septembre</month>
+			<month>octobre</month>
+			<month>novembre</month>
+			<month>décembre</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</small_mday>
+		<hidden_trophy>Trophée masqué</hidden_trophy>
+		<one_hour_ago>Il y a 1 heure</one_hour_ago>
+		<one_minute_ago>Il y a 1 minute</one_minute_ago>
+		<bronze>Bronze</bronze>
+		<gold>Or</gold>
+		<platinum>Platine</platinum>
+		<silver>Argent</silver>
+		<hours_ago>Il y a {} heures</hours_ago>
+		<minutes_ago>Il y a {} minutes</minutes_ago>
+	</common>
+
+	<compatibility name="Compatibilité">
+		<states>
+			<state id = "-1">Inconnue</state>
+			<state id = "0">Rien</state>
+			<state id = "1">Amorçable</state>
+			<state id = "2">Intro</state>
+			<state id = "3">Menu</state>
+			<state id = "4">En jeu -</state>
+			<state id = "5">En jeu +</state>
+			<state id = "6">Jouable</state>
+		</states>
+	</compatibility>
+
+	<content_manager name="Gestionnaire de contenu">
+		<application name="Applications">
+			<delete>Les applications sélectionnées et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</delete>
+			<no_item>Aucun élément de contenu.</no_item>
+		</application>
+		<saved_data name="Données sauvegardées">
+			<delete>Les données sauvegardées sélectionnées vont être supprimées.</delete>
+			<no_saved_data>Aucune données sauvegardées.</no_saved_data>
+		</saved_data>
+		<theme>Thème</theme>
+		<free_space>Espace libre</free_space>
+		<clear_all>Décocher tout</clear_all>
+	</content_manager>
+
+	<controllers name="Contrôleurs">
+		<connected>{} contrôleurs connectés</connected>
+		<num>Num</num>
+		<not_connected>Aucun contrôleur compatible n'est connecté.
+Connecter un contrôleur compatible avec SDL3.</not_connected>
+	</controllers>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Préparation au lancement de l'application...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Annuler la suppression ?</cancel_deleting>
+				<deletion_complete>Suppression terminée.</deletion_complete>
+				<delete_saved_data>Supprimer ces données sauvegardées ?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Détails</details>
+				<updated>Mis à jour</updated>
+			</info>
+			<load name="Charger">
+				<cancel_loading>Annuler le chargement ?</cancel_loading>
+				<no_saved_data>Aucune donnée sauvegardée.</no_saved_data>
+				<load_complete>Chargement terminé.</load_complete>
+				<loading>Chargement en cours...</loading>
+				<load_saved_data>Charger ces données sauvegardées ?</load_saved_data>
+			</load>
+			<save name="Sauvegarder">
+				<cancel_saving>Annuler la sauvegarde ?</cancel_saving>
+				<could_not_save>La sauvegarde du fichier a échoué.
+Espace libre insuffisant sur la carte mémoire. Pour sauvegarder votre progression dans cette application, vous devez libérer au moins {} d'espace.
+
+Pour libérer de l'espace, appuyez sur la touche PS pour mette cette application en pause, puis supprimez d'autres applications ou contenus.</could_not_save>
+				<not_free_space>Espace libre insuffisant sur la carte mémoire.
+Pour continuer à utiliser cette application,vous devez libérer au moins {} d'espace.
+
+Appuyez sur la touche PS pour mette cette application en pause, puis supprimez d'autres applications ou contenus.</not_free_space>
+				<new_saved_data>Nouvelles données sauvegardées</new_saved_data>
+				<saving_complete>Sauvegarde terminée.</saving_complete>
+				<save_the_data>Sauvegarder les données ?</save_the_data>
+				<saving>Sauvegarde en cours...</saving>
+				<warning_saving>Sauvegarde en cours...
+Ne pas éteindre le système, ni fermer l'application.</warning_saving>
+				<overwrite_saved_data>Écraser ces données sauvegardées ?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>L'application suivante va être fermée.</app_close>
+		<data_delete>Données à supprimer :</data_delete>
+	</game_data>
+
+	<home_screen>
+		<filter>Filtre</filter>
+		<sort_app>Trier les applications par</sort_app>
+		<all>Toutes</all>
+		<by_region>Par région</by_region>
+		<usa>USA</usa>
+		<europe>Europe</europe>
+		<japan>Japon</japan>
+		<asia>Asie</asia>
+		<by_type>Par type</by_type>
+		<commercial>Commercial</commercial>
+		<homebrew>Homebrew</homebrew>
+		<by_compatibility_state>Par état de compatibilité</by_compatibility_state>
+		<ver>Ver</ver>
+		<cat>Cat</cat>
+		<comp>Comp</comp>
+		<last_time>Dernière fois</last_time>
+		<refresh>Rafraîchir</refresh>
+	</home_screen>
+
+	<indicator>
+		<app_added_home>L'application a été ajoutée à l'écran d'accueil.</app_added_home>
+		<delete_all>Supprimer tout</delete_all>
+		<notif_deleted>Les notifications vont être supprimées.</notif_deleted>
+		<install_failed>L'installation a échoué.</install_failed>
+		<install_complete>Installation terminée.</install_complete>
+		<installing>Installation en cours...</installing>
+		<no_notif>Aucune notification.</no_notif>
+		<trophy_earned>Vous avez obtenu un trophée !</trophy_earned>
+	</indicator>
+
+	<initial_setup>
+		<back>Précédent</back>
+		<completed_setup>Vous avez terminé l'installation initiale.
+Votre système Vita3K est prêt !</completed_setup>
+		<select_language>Sélectionner une langue.</select_language>
+		<storage_file_permissions>Vita3K nécessite un accès complet aux fichiers.
+Appuyez sur 'Autoriser l'accès' pour continuer.</storage_file_permissions>
+		<grant_access>Autoriser l'accès</grant_access>
+		<install_firmware>Installer le Firmware.</install_firmware>
+		<next>Suivant</next>
+	</initial_setup>
+
+	<live_area>
+		<start>Démarrer</start>
+		<continue>Continuer</continue>
+		<help>
+			<control_setting>Using configuration set for keyboard in control setting</control_setting>
+			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
+			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
+			<live_area_help>Live Area Help</live_area_help>
+			<browse_app>Browse in app list</browse_app>
+			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
+			<start_app>Démarrer App</start_app>
+			<start_app_control>Cliquer sur Démarrer ou Appuyer sur Croix</start_app_control>
+			<show_hide>Show/Hide Live Area during app run</show_hide>
+			<show_hide_control>Appuyer sur PS</show_hide_control>
+			<exit_livearea>Exit Live Area</exit_livearea>
+			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
+			<manual_help>Manual Help</manual_help>
+			<browse_page>Browse page</browse_page>
+			<browse_page_control>D-pad, Left Stick, Wheel in Up/Down or using Slider, Click on &lt;/&gt;</browse_page_control>
+			<hide_show>Hide/Show button</hide_show>
+			<hide_show_control>Left Click or Press on Triangle</hide_show_control>
+			<exit_manual>Exit Manual</exit_manual>
+			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
+		</help>
+	</live_area>
+
+	<settings name="Paramètres">
+		<sound_display name="Son et affichage">
+			<system_music>Musique système</system_music>
+		</sound_display>
+		<theme_background name="Thème et Arrière-plan">
+			<default>Par défaut</default>
+			<theme name="Thème">
+				<find_a_psvita_custom_themes>Trouver un thème personnalisé pour PSVita</find_a_psvita_custom_themes>
+				<information name="Informations">
+					<name>Nom</name>
+					<provider>Prestataire</provider>
+					<updated>Mis à jour</updated>
+					<size>Taille</size>
+					<version>Version</version>
+					<content_id>Content ID</content_id>
+				</information>
+				<delete>Ce thème va être supprimé.</delete>
+			</theme>
+			<start_screen name="Écran de démarrage">
+				<image>Image</image>
+				<add_image>Ajouter une image</add_image>
+			</start_screen>
+			<home_screen_backgrounds name="Arrière-plans d'écran d'accueil">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Date et heure">
+			<date_format name ="Affichage de la date">
+				<yyyy_mm_dd>AAAA/MM/JJ</yyyy_mm_dd>
+				<dd_mm_yyyy>JJ/MM/AAAA</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/JJ/AAAA</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Affichage de l'heure">
+				<clock_12_hour>Affichage 12h</clock_12_hour>
+				<clock_24_hour>Affichage 24h</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Langue">
+			<system_language>Langue système</system_language>
+			<input_language name="Langue de saisie">
+				<keyboards name="Claviers">
+					<ime_languages>
+						<lang id="1">Danois</lang>
+						<lang id="2">Allemand</lang>
+						<lang id="262144">Anglais (Royaume-Uni)</lang>
+						<lang id="4">Anglais (États-Unis)</lang>
+						<lang id="8">Espagnol</lang>
+						<lang id="16">Français</lang>
+						<lang id="32">Italien</lang>
+						<lang id="64">Néerlandais</lang>
+						<lang id="128">Norvégien</lang>
+						<lang id="256">Polonais</lang>
+						<lang id="131072">Portugais (Brésil)</lang>
+						<lang id="512">Portugais (Portugal)</lang>
+						<lang id="1024">Russe</lang>
+						<lang id="2048">Finnois</lang>
+						<lang id="4096">Suédois</lang>
+						<lang id="524288">Turc</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<settings_dialog name="Paramètres">
+		<system name="Système">
+		</system>
+		<network name="Réseau">
+			<ip_address>Adresse IP</ip_address>
+			<subnet_mask>Masque de sous-réseau</subnet_mask>
+		</network>
+		<save_close>Sauvegarder & Fermer</save_close>
+	</settings_dialog>
+
+	<sys_apps_title>
+		<browser>Navigateur</browser>
+		<internet_browser>Navigateur Internet</internet_browser>
+		<trophies>Trophées</trophies>
+		<trophy_collection>Collection de trophées</trophy_collection>
+		<settings>Paramètres</settings>
+		<content_manager>Gestionnaire de contenu</content_manager>
+	</sys_apps_title>
+
+	<trophy_collection>
+		<delete_trophy>Supprimer le trophée</delete_trophy>
+		<trophy_deleted>Les informations sur les trophées enregistrées pour cet utilisateur seront supprimées.</trophy_deleted>
+		<details>Détails</details>
+		<earned>Obtenu</earned>
+		<name>Nom</name>
+		<no_trophies>Aucun trophée.
+Pour obtenir des trophées, utilisez une application compatible avec cette fonctionnalité.</no_trophies>
+		<not_earned>Pas obtenu</not_earned>
+		<original>Original</original>
+		<sort>Trier</sort>
+		<trophies>Trophées</trophies>
+		<grade>Rang</grade>
+		<progress>Progression</progress>
+		<updated>Mis à jour</updated>
+	</trophy_collection>
+
+	<user_management>
+		<select_user>Sélectionnez un utilisateur</select_user>
+		<create_user>Créer un utilisateur</create_user>
+		<user_created>L'utilisateur suivant a été créé :</user_created>
+		<edit_user>Modifier un utilisateur</edit_user>
+		<open_user_folder>Ouvrir le dossier de l'utilisateur</open_user_folder>
+		<user_name_used>Ce nom est déjà utilisé.</user_name_used>
+		<delete_user>Supprimer un utilisateur</delete_user>
+		<user_delete>Sélectionnez l'utilisateur que vous souhaitez supprimer.</user_delete>
+		<user_delete_msg>L'utilisateur suivant va être supprimé.</user_delete_msg>
+		<user_delete_message>Si vous supprimez cet utilisateur, toutes ses données, trophées seront supprimés.</user_delete_message>
+		<user_delete_warn>L'utilisateur va être supprimé.
+Voulez-vous vraiment continuer?</user_delete_warn>
+		<user_deleted>Utilisateur supprimé.</user_deleted>
+		<choose_avatar>Choisir un avatar</choose_avatar>
+		<reset_avatar>Réinitialiser l'avatar</reset_avatar>
+		<user>Utilisateur</user>
+		<confirm>Confirmer</confirm>
+		<automatic_user_login>Connexion automatique de l'utilisateur</automatic_user_login>
+	</user_management>
+
+	<vita3k_update name="Mise à jour Vita3K">
+ 		<new_version_available>Une nouvelle version de Vita3K est disponible.</new_version_available>
+		<back>Précédent</back>
+		<cancel_update_resume>Annuler la mise à jour ?
+Si vous annulez, Vita3K reprendra le téléchargement à ce point lors de la prochaine mise à jour.</cancel_update_resume>
+		<downloading>Téléchargement en cours...
+Une fois le téléchargement terminé, Vita3K redémarrera automatiquement et installera la nouvelle mise à jour.</downloading>
+		<not_complete_update>La mise à jour n'a pas pu être terminée.</not_complete_update>
+		<minutes_left>{} minutes restantes</minutes_left>
+		<next>Suivant</next>
+		<seconds_left>{} secondes restantes</seconds_left>
+		<update_vita3k>Mettre à jour Vita3K ?</update_vita3k>
+		<later_version_already_installed>Une version plus récente de Vita3K est déjà installée.</later_version_already_installed>
+		<latest_version_already_installed>La dernière version de Vita3K est déjà installée.</latest_version_already_installed>
+		<new_features>Nouveautés de la version {}</new_features>
+		<authors>Auteurs</authors>
+		<comments>Commentaires</comments>
+		<update>Mettre à jour</update>
+		<version>Version {}</version>
+	</vita3k_update>
+</lang>

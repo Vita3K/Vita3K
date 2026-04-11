@@ -1,0 +1,262 @@
+// Vita3K emulator project
+// Copyright (C) 2026 Vita3K team
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+#include "private.h"
+
+#include <config/functions.h>
+#include <config/state.h>
+#include <dialog/state.h>
+#include <emuenv/state.h>
+#include <gui/functions.h>
+#include <interface.h>
+#include <util/vector_utils.h>
+
+namespace gui {
+
+static constexpr std::array<const char *, 256> SDL_key_to_string{ "[unset]", "[unknown]", "[unknown]", "[unknown]", "A", "B", "C", "D", "E", "F", "G",
+    "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
+    "Return/Enter", "Escape", "Backspace", "Tab", "Space", "-", "=", "[", "]", "\\", "NonUS #", ";", "'", "Grave", ",", ".", "/", "CapsLock", "F1",
+    "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "PrtScrn", "ScrlLock", "Pause", "Insert", "Home", "PgUp", "Delete",
+    "End", "PgDown", "Ar Right", "Ar Left", "Ar Down", "Ar Up", "NumLock/Clear", "Keypad /", "Keypad *", "Keypad -", "Keypad +",
+    "Keypad Enter", "Keypad 1", "Keypad 2", "Keypad 3", "Keypad 4", "Keypad 5", "Keypad 6", "Keypad 7", "Keypad 8", "Keypad 9", "Keypad 0",
+    "Keypad .", "NonUs \\", "App", "Power", "Keypad =", "F13", "F14", "F15", "F16", "F17", "F18", "F19", "F20", "F21", "F22", "F23", "F24", "Execute",
+    "Help", "Menu", "Select", "Stop", "Again", "Undo", "Cut", "Copy", "Paste", "Find", "Mute", "VolUp", "VolDown", "[unset]", "[unset]", "[unset]",
+    "Keypad ,", "Kp = As400", "International1", "International2", "International3", "International4", "International5", "International6",
+    "International7", "International8", "International9", "Lang1", "Lang2", "Lang3", "Lang4", "Lang5", "Lang6", "Lang7", "Lang8", "Lang9", "Alt Erase",
+    "SysReq", "Cancel", "Clear", "Prior", "Return2", "Separator", "Out", "Oper", "ClearAgain", "Crsel", "Exsel", "[unset]", "[unset]", "[unset]",
+    "[unset]", "[unset]", "[unset]", "[unset]", "[unset]", "[unset]", "[unset]", "[unset]", "Keypad 00", "Keypad 000", "ThousSeparat", "DecSeparat",
+    "CurrencyUnit", "CurrencySubUnit", "Keypad (", "Keypad )", "Keypad {", "Keypad }", "Keypad Tab", "Keypad Backspace", "Keypad A", "Keypad B",
+    "Keypad C", "Keypad D", "Keypad E", "Keypad F", "Keypad XOR", "Keypad Power", "Keypad %", "Keypad <", "Keypad >", "Keypad &", "Keypad &&",
+    "Keypad |", "Keypad ||", "Keypad :", "Keypad #", "Keypad Space", "Keypad @", "Keypad !", "Keypad MemStr", "Keypad MemRec", "Keypad MemClr",
+    "Keypad Mem+", "Keypad Mem-", "Keypad Mem*", "Keypad Mem/", "Keypad +/-", "Keypad Clear", "Keypad ClearEntry", "Keypad Binary", "Keypad Octal",
+    "Keypad Dec", "Keypad HexaDec", "[unset]", "[unset]", "LCtrl", "LShift", "LAlt", "Win/Cmd", "RCtrl", "RShift", "RAlt", "RWin/Cmd" };
+
+#define CALC_KEYBOARD_MEMBERS(option_type, option_name, option_default, member_name) \
+    +(std::string_view(#member_name).starts_with("keyboard_") ? 1 : 0) // NOLINT(bugprone-macro-parentheses)
+
+static constexpr short total_key_entries = 0 CONFIG_INDIVIDUAL(CALC_KEYBOARD_MEMBERS);
+#undef CALC_KEYBOARD_MEMBERS
+
+template <typename T>
+static int int_or_zero(T value) {
+    static_assert(std::is_same_v<T, int>);
+    if constexpr (std::is_same_v<T, int>)
+        return value;
+    else
+        return 0;
+}
+static void prepare_map_array(EmuEnvState &emuenv, std::array<int, total_key_entries> &map) {
+    size_t i = 0;
+#define ADD_KEYBOARD_MEMBERS(option_type, option_name, option_default, member_name) \
+    if constexpr (std::string_view(#member_name).starts_with("keyboard_")) {        \
+        map[i++] = int_or_zero(emuenv.cfg.member_name);                             \
+    }
+
+    CONFIG_INDIVIDUAL(ADD_KEYBOARD_MEMBERS)
+#undef ADD_KEYBOARD_MEMBERS
+}
+static void reset_map_array(EmuEnvState &emuenv) {
+#define RESET_KEYBOARD_MEMBERS(option_type, option_name, option_default, member_name) \
+    if constexpr (std::string_view(#member_name).starts_with("keyboard_")) {          \
+        emuenv.cfg.member_name = option_default;                                      \
+    }
+
+    CONFIG_INDIVIDUAL(RESET_KEYBOARD_MEMBERS)
+#undef RESET_KEYBOARD_MEMBERS
+}
+
+static bool need_open_error_duplicate_key_popup = false;
+
+static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, int *button_alt, const char *button_name, const char *tooltip = nullptr) {
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("%s", button_name);
+    if (tooltip)
+        SetTooltipEx(tooltip);
+
+    auto render_button = [&](int *b_ptr, int col_index) {
+        if (!b_ptr)
+            return;
+        ImGui::TableSetColumnIndex(col_index);
+        int key_association = *b_ptr;
+
+        ImGui::PushID(b_ptr); // Use pointer as unique ID instead of button_name
+        if (ImGui::Button(SDL_key_to_string[key_association])) {
+            gui.old_captured_key = key_association;
+            gui.is_capturing_keys = true;
+            // capture the original state
+            std::array<int, total_key_entries> original_state;
+            prepare_map_array(emuenv, original_state);
+            while (gui.is_capturing_keys) {
+                handle_events(emuenv, gui);
+                *b_ptr = gui.captured_key;
+                if (*b_ptr < 0 || *b_ptr > 231)
+                    *b_ptr = 0;
+                else if (gui.is_key_capture_dropped || (!gui.is_capturing_keys && *b_ptr != key_association && vector_utils::contains(original_state, *b_ptr))) {
+                    // undo the changes
+                    *b_ptr = key_association;
+                    gui.is_key_capture_dropped = false;
+                    need_open_error_duplicate_key_popup = true;
+                }
+            }
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        }
+        ImGui::PopID();
+    };
+
+    render_button(button, 1);
+    render_button(button_alt, 2);
+}
+
+void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
+
+    auto &lang = gui.lang.controls;
+    auto &common = emuenv.common_dialog.lang.common;
+
+#ifndef __ANDROID__
+    float height = emuenv.logical_viewport_size.y / emuenv.manual_dpi_scale;
+    if (ImGui::BeginMainMenuBar()) {
+        height = height - ImGui::GetWindowHeight() * 2;
+        ImGui::EndMainMenuBar();
+    }
+
+    ImGui::SetNextWindowSize(ImVec2(0, height));
+#endif
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::Begin("##controls", &gui.controls_menu.controls_dialog, ImGuiWindowFlags_NoTitleBar);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, gui.lang.main_menubar.controls["title"].c_str());
+    ImGui::Spacing();
+    ImGui::Separator();
+
+    if (ImGui::BeginTable("main", 3)) {
+        ImGui::TableSetupColumn("button");
+        ImGui::TableSetupColumn("mapped_button");
+        ImGui::TableSetupColumn("mapped_button_alt");
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["button"].c_str());
+        ImGui::TableSetColumnIndex(1);
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["mapped_button"].c_str());
+        ImGui::TableSetColumnIndex(2);
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["mapped_button_alt"].c_str());
+
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_up, &emuenv.cfg.keyboard_leftstick_up_alt, lang["left_stick_up"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_down, &emuenv.cfg.keyboard_leftstick_down_alt, lang["left_stick_down"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_right, &emuenv.cfg.keyboard_leftstick_right_alt, lang["left_stick_right"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_left, &emuenv.cfg.keyboard_leftstick_left_alt, lang["left_stick_left"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_up, &emuenv.cfg.keyboard_rightstick_up_alt, lang["right_stick_up"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_down, &emuenv.cfg.keyboard_rightstick_down_alt, lang["right_stick_down"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_right, &emuenv.cfg.keyboard_rightstick_right_alt, lang["right_stick_right"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_left, &emuenv.cfg.keyboard_rightstick_left_alt, lang["right_stick_left"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_up, &emuenv.cfg.keyboard_button_up_alt, lang["d_pad_up"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_down, &emuenv.cfg.keyboard_button_down_alt, lang["d_pad_down"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_right, &emuenv.cfg.keyboard_button_right_alt, lang["d_pad_right"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_left, &emuenv.cfg.keyboard_button_left_alt, lang["d_pad_left"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_square, &emuenv.cfg.keyboard_button_square_alt, lang["square_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_cross, &emuenv.cfg.keyboard_button_cross_alt, lang["cross_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_circle, &emuenv.cfg.keyboard_button_circle_alt, lang["circle_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_triangle, &emuenv.cfg.keyboard_button_triangle_alt, lang["triangle_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_start, &emuenv.cfg.keyboard_button_start_alt, lang["start_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_select, &emuenv.cfg.keyboard_button_select_alt, lang["select_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_psbutton, &emuenv.cfg.keyboard_button_psbutton_alt, lang["ps_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l1, &emuenv.cfg.keyboard_button_l1_alt, lang["l1_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r1, &emuenv.cfg.keyboard_button_r1_alt, lang["r1_button"].c_str());
+        ImGui::EndTable();
+    }
+
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["ps_tv_mode"].c_str());
+    ImGui::Spacing();
+    if (ImGui::BeginTable("PSTV_mode", 3)) {
+        ImGui::TableSetupColumn("button");
+        ImGui::TableSetupColumn("mapped_button");
+        ImGui::TableSetupColumn("mapped_button_alt");
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l2, &emuenv.cfg.keyboard_button_l2_alt, lang["l2_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r2, &emuenv.cfg.keyboard_button_r2_alt, lang["r2_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l3, &emuenv.cfg.keyboard_button_l3_alt, lang["l3_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r3, &emuenv.cfg.keyboard_button_r3_alt, lang["r3_button"].c_str());
+        ImGui::EndTable();
+    }
+
+#ifndef __ANDROID__
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["gui"].c_str());
+    if (ImGui::BeginTable("gui", 3)) {
+        ImGui::TableSetupColumn("button");
+        ImGui::TableSetupColumn("mapped_button");
+        ImGui::TableSetupColumn("mapped_button_alt");
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_gui_fullscreen, &emuenv.cfg.keyboard_gui_fullscreen_alt, lang["full_screen"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_gui_toggle_touch, &emuenv.cfg.keyboard_gui_toggle_touch_alt, lang["toggle_touch"].c_str(), lang["toggle_touch_description"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_gui_toggle_gui, &emuenv.cfg.keyboard_gui_toggle_gui_alt, lang["toggle_gui_visibility"].c_str(), lang["toggle_gui_visibility_description"].c_str());
+        ImGui::EndTable();
+    }
+
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["miscellaneous"].c_str());
+    if (ImGui::BeginTable("misc", 3)) {
+        ImGui::TableSetupColumn("button");
+        ImGui::TableSetupColumn("mapped_button");
+        ImGui::TableSetupColumn("mapped_button_alt");
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_toggle_texture_replacement, &emuenv.cfg.keyboard_toggle_texture_replacement_alt, lang["toggle_texture_replacement"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_take_screenshot, &emuenv.cfg.keyboard_take_screenshot_alt, lang["take_screenshot"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_pinch_modifier, &emuenv.cfg.keyboard_pinch_modifier_alt, lang["pinch_modifier"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_alternate_pinch_in, &emuenv.cfg.keyboard_alternate_pinch_in_alt, lang["alternate_pinch_in"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_alternate_pinch_out, &emuenv.cfg.keyboard_alternate_pinch_out_alt, lang["alternate_pinch_out"].c_str());
+
+        ImGui::EndTable();
+    }
+#endif
+
+    if (need_open_error_duplicate_key_popup) {
+        ImGui::OpenPopup(common["error"].c_str());
+        need_open_error_duplicate_key_popup = false;
+    }
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopupModal(common["error"].c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("%s", lang["error_duplicate_key"].c_str());
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+        if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE))
+            ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
+    ImGui::Spacing();
+    if (ImGui::Button(lang["reset_controls_binding"].c_str())) {
+        reset_map_array(emuenv);
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    }
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+    if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
+        gui.controls_menu.controls_dialog = false;
+
+    ImGui::ScrollWhenDragging();
+    ImGui::End();
+}
+
+} // namespace gui

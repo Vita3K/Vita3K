@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="Arkiv">
+			<open_pref_path>Öppna inställningssökväg</open_pref_path>
+			<install_firmware>Installera firmware</install_firmware>
+			<install_pkg>Installera .pkg</install_pkg>
+			<install_zip>Installera .zip, .vpk</install_zip>
+			<install_license>Installera licens</install_license>
+			<exit>Avsluta</exit>
+		</file>
+		<emulation name="Emulering">
+			<last_apps_used>Senaste använda program</last_apps_used>
+		</emulation>
+		<configuration name="Konfiguration">
+			<user_management>Hantering av användare</user_management>
+		</configuration>
+		<controls name="Handkontroller">
+			<keyboard_controls>Tangentbordskontroller</keyboard_controls>
+		</controls>
+		<help name="Hjälp">
+			<welcome>Välkommen</welcome>
+		</help>
+	</main_menubar>
+
+	<app_context>
+		<live_area>
+			<manual>Handbok</manual>
+			<update>Uppdatera</update>
+		</live_area>
+		<delete>
+			<delete_app>Den här applikationen och alla tillhörande data, inklusive sparade data, kommer att raderas.</delete_app>
+		</delete>
+		<update_history>Uppdateringshistorik</update_history>
+		<history_version>Version {}</history_version>
+		<info name="Information">
+			<eligible>Möjligt</eligible>
+			<ineligible>Inte möjligt</ineligible>
+			<level>Nivå {}</level>
+			<name>Namn</name>
+			<trophy_earning>Vinna trophy</trophy_earning>
+			<parental_controls>Föräldrakontroll</parental_controls>
+			<updated>Uppdaterat</updated>
+			<size>Storlek</size>
+			<version>Version</version>
+		</info>
+	</app_context>
+	
+	<common>
+		<an_error_occurred>Ett fel har inträffat.
+Felkod: {}</an_error_occurred>
+		<cancel>Avbryt</cancel>
+		<close>Stänga</close>
+		<could_not_load>Kunde inte ladda filen.</could_not_load>
+		<could_not_save>Kunde inte spara filen.</could_not_save>
+		<delete>Radera</delete>
+		<error>Fel</error>
+		<file_corrupted>Filen är skadad.</file_corrupted>
+		<microphone_disabled>Aktivera mikrofonen.</microphone_disabled>
+		<no>Nej</no>
+		<please_wait>Vänta...</please_wait>
+		<select_all>Välj alla</select_all>
+		<select>Välj</select>
+		<yes>Ja</yes>
+		<wday>
+			<day>söndag</day>
+			<day>måndag</day>
+			<day>tisdag</day>
+			<day>onsdag</day>
+			<day>torsdag</day>
+			<day>fredag</day>
+			<day>lördag</day>
+		</wday>
+		<ymonth>
+			<month>Januari</month>
+			<month>Februari</month>
+			<month>Mars</month>
+			<month>April</month>
+			<month>Maj</month>
+			<month>Juni</month>
+			<month>Juli</month>
+			<month>Augusti</month>
+			<month>September</month>
+			<month>Oktober</month>
+			<month>November</month>
+			<month>December</month>
+		</ymonth>
+		<small_ymonth>
+			<month>januari</month>
+			<month>februari</month>
+			<month>mars</month>
+			<month>april</month>
+			<month>maj</month>
+			<month>juni</month>
+			<month>juli</month>
+			<month>augusti</month>
+			<month>september</month>
+			<month>oktober</month>
+			<month>november</month>
+			<month>december</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</small_mday>
+		<hidden_trophy>Dold trophy</hidden_trophy>
+		<one_hour_ago>1 timme sedan</one_hour_ago>
+		<one_minute_ago>1 minut sedan</one_minute_ago>
+		<bronze>Brons</bronze>
+		<gold>Guld</gold>
+		<platinum>Platina</platinum>
+		<silver>Silver</silver>
+		<hours_ago>{} timmar sedan</hours_ago>
+		<minutes_ago>{} minuter sedan</minutes_ago>
+	</common>
+
+	<content_manager name="Innehållshanterare">
+		<application name="Applikationer">
+			<delete>De markerade applikationerna och alla tillhörande data, inklusive sparade data, kommer att raderas.</delete>
+			<no_item>Det finns inga innehållsobjekt.</no_item>
+		</application>
+		<saved_data name="Sparade data">
+			<delete>De sparade data som har markerats kommer att raderas.</delete>
+			<no_saved_data>Det finns inga sparade data.</no_saved_data>
+		</saved_data>
+		<theme>Tema</theme>
+		<free_space>Ledigt utrymme</free_space>
+		<clear_all>Återställ alla</clear_all>
+	</content_manager>
+
+	<controllers name="Handkontroller">
+		<num>Num</num>
+	</controllers>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Förbereder start av applikationen...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Vill du avbryta raderingen?</cancel_deleting>
+				<deletion_complete>Radering slutförd.</deletion_complete>
+				<delete_saved_data>Vill du radera dessa sparade data?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Detaljer</details>
+				<updated>Uppdaterat</updated>
+			</info>
+			<load name="Ladda">
+				<cancel_loading>Vill du avbryta laddningen?</cancel_loading>
+				<no_saved_data>Det finns inga sparade data.</no_saved_data>
+				<load_complete>Laddning slutförd.</load_complete>
+				<loading>Laddar...</loading>
+				<load_saved_data>Vill du ladda in dessa sparade data?</load_saved_data>
+			</load>
+			<save name="Spara">
+				<cancel_saving>Vill du avbryta sparningen?</cancel_saving>
+				<could_not_save>Kunde inte spara filen.
+Det finns inte tillräckligt med ledigt utrymme på minneskortet. Du måste skapa minst {} ledigt utrymme om du vill spara dina framsteg i den här applikationen.
+
+Skapa mer ledigt utrymme genom att trycka på PS-knappen för att pausa den här applikationen och radera sedan övriga applikationer eller data.</could_not_save>
+				<not_free_space>Det finns inte tillräckligt med ledigt utrymme på minneskortet.
+Du måste skapa minst {} ledigt utrymme om du vill fortsätta använda applikationen.
+
+Tryck på PS-knappen för att pausa den här applikationen och radera sedan övriga applikationer eller innehåll.</not_free_space>
+				<new_saved_data>Nya sparade data</new_saved_data>
+				<saving_complete>Sparning slutförd.</saving_complete>
+				<save_the_data>Vill du spara datan?</save_the_data>
+				<saving>Sparar...</saving>
+				<warning_saving>Sparar...
+Stäng inte av systemet och stäng inte applikationen.</warning_saving>
+				<overwrite_saved_data>Vill du skriva över dessa sparade data?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>Följande applikation stängs.</app_close>
+		<data_delete>Data att radera:</data_delete>
+	</game_data>
+
+	<indicator>
+		<app_added_home>Applikationen har lagts till på hemskärmen.</app_added_home>
+		<delete_all>Radera alla</delete_all>
+		<notif_deleted>Notiserna raderas.</notif_deleted>
+		<install_failed>Kunde inte installera.</install_failed>
+		<install_complete>Installation slutförd.</install_complete>
+		<installing>Installerar...</installing>
+		<no_notif>Det finns inga notiser.</no_notif>
+		<trophy_earned>Du har vunnit en trophy!</trophy_earned>
+	</indicator>
+
+	<initial_setup>
+		<back>Tillbaka</back>
+		<completed_setup>Du har slutfört den första inställningen.
+Ditt Vita3K-system är redo!</completed_setup>
+		<select_language>Välj ett språk.</select_language>
+		<storage_file_permissions>Vita3K kräver fullständig filåtkomst.
+Tryck på 'Ge Åtkomst' för att fortsätta.</storage_file_permissions>
+		<grant_access>Ge Åtkomst</grant_access>
+		<install_firmware>Installera firmware.</install_firmware>
+		<next>Nästa</next>
+	</initial_setup>
+
+	<live_area>
+		<start>Starta</start>
+		<continue>Fortsätt</continue>
+	</live_area>
+	
+	<settings name="Inställningar">
+		<theme_background name="Tema och bakgrund">
+			<default>Standardinställning</default>
+			<theme name="Tema">
+				<information name="Information">
+					<name>Namn</name>
+					<provider>Leverantör</provider>
+					<updated>Uppdaterat</updated>
+					<size>Storlek</size>
+					<version>Version</version>
+				</information>
+				<delete>Det här temat kommer att raderas.</delete>
+			</theme>
+			<start_screen name="Startskärm">
+				<image>Bild</image>
+				<add_image>Lägg till bild</add_image>
+			</start_screen>
+			<home_screen_backgrounds name="Bakgrunder för hemskärmen">
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Datum och tid">
+			<date_format name ="Datumformat">
+				<yyyy_mm_dd>ÅÅÅÅ/MM/DD</yyyy_mm_dd>
+				<dd_mm_yyyy>DD/MM/ÅÅÅÅ</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/DD/ÅÅÅÅ</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Tidsformat">
+				<clock_12_hour>12-timmarsklocka</clock_12_hour>
+				<clock_24_hour>24-timmarsklocka</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Språk">
+			<system_language>Systemspråk</system_language>
+			<input_language name="Inmatningsspråk">
+				<keyboards name="Tangentbord">
+					<ime_languages>
+						<lang id="1">Danska</lang>
+						<lang id="2">Tyska</lang>
+						<lang id="262144">Engelska (Storbritannien)</lang>
+						<lang id="4">Engelsk (USA)</lang>
+						<lang id="8">Spanska</lang>
+						<lang id="16">Franska</lang>
+						<lang id="32">Italienska</lang>
+						<lang id="64">Holländska</lang>
+						<lang id="128">Norska</lang>
+						<lang id="256">Polska</lang>
+						<lang id="131072">Portugisiska (Brasilien)</lang>
+						<lang id="512">Portugisiska (Portugal)</lang>
+						<lang id="1024">Ryska</lang>
+						<lang id="2048">Finska</lang>
+						<lang id="4096">Svenska</lang>
+						<lang id="524288">Turkiska</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<settings_dialog name="Inställningar">
+		<system name="System">
+		</system>
+		<network name="Nätverk">
+			<ip_address>IP-adress</ip_address>
+			<subnet_mask>Undernätmask</subnet_mask>
+		</network>
+		<save_close>Spara & Stänga</save_close>
+	</settings_dialog>
+
+	<sys_apps_title>
+		<browser>Webbläsare</browser>
+		<internet_browser>Webbläsare</internet_browser>
+		<trophies>Trophies</trophies>
+		<trophy_collection>Trophy-samling</trophy_collection>
+		<settings>Inställningar</settings>
+		<content_manager>Innehållshanterare</content_manager>
+	</sys_apps_title>
+
+	<trophy_collection>
+		<details>Detaljer</details>
+		<earned>Vunna</earned>
+		<name>Namn</name>
+		<no_trophies>Det finns inga trophies.
+Du kan få trophies om du använder en applikation som stöder trophy-funktionen.</no_trophies>
+		<not_earned>Ej vunnen</not_earned>
+		<original>Ursprunglig</original>
+		<sort>Sortera</sort>
+		<trophies>Trophies</trophies>
+		<grade>Grad</grade>
+		<progress>Framsteg</progress>
+		<updated>Uppdaterat</updated>
+	</trophy_collection>
+
+	<user_management>
+		<select_user>Välj användare</select_user>
+		<create_user>Skapa användare</create_user>
+		<user_created>Följande användare har skapats:</user_created>
+		<user_name_used>Namnet finns redan.</user_name_used>
+		<delete_user>Ta bort användare</delete_user>
+		<user_delete>Välj den användare du vill ta bort.</user_delete>
+		<user_delete_msg>Följande användare kommer att tas bort:</user_delete_msg>
+		<user_delete_message>Om du tar bort användaren tas de data, troféer som användaren sparat bort.</user_delete_message>
+		<user_delete_warn>Användare kommer att tas bort.
+Är du säker på att du vill fortsetta?</user_delete_warn>
+		<user_deleted>Användaren har tagits bort.</user_deleted>
+		<choose_avatar>Välj avatar</choose_avatar>
+		<confirm>Bekräfta</confirm>
+	</user_management>
+
+	<vita3k_update name="Vita3K-uppdatering">
+ 		<new_version_available>En ny version av Vita3K är tillgänglig.</new_version_available>
+		<back>Tillbaka</back>
+ 		<cancel_update_resume>Vill du avbryta uppdateringen?
+Om du avbryter kommer Vita3K att börja ladda ned från den här punkten nästa gång du uppdaterar.</cancel_update_resume>
+		<downloading>Laddar ned...
+När nedladdningen är slutförd kommer Vita3K automatiskt att startas om och den nya uppdatera installeras.</downloading>
+		<not_complete_update>Kunde inte slutföra uppdateringen.</not_complete_update>
+		<minutes_left>{} minuter kvar</minutes_left>
+		<next>Nästa</next>
+		<seconds_left>{} sekunder kvar</seconds_left>
+		<update_vita3k>Vill du uppdatera Vita3K?</update_vita3k>
+		<later_version_already_installed>Den senare versionen av Vita3K har redan installerats.</later_version_already_installed>
+		<latest_version_already_installed>Den senaste versionen av Vita3K har redan installerats.</latest_version_already_installed>
+		<new_features>Nya funktioner i version {}</new_features>
+		<update>Uppdatera</update>
+		<version>Version {}</version>
+	</vita3k_update>
+</lang>

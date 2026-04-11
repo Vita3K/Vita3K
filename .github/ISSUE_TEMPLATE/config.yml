@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Vita3K Discord
+    url: https://discord.gg/6aGwQzh
+    about: Please ask questions or seek tech support on Discord
+  - name: Report game compatibility
+    url: https://github.com/Vita3K/compatibility
+    about: Please report game compatibility and regressions here
+  - name: Android
+    url: https://github.com/Vita3K/Vita3K-Android/issues
+    about: Please open Android specific issues here
