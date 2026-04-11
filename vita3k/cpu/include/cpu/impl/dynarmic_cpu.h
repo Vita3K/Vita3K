@@ -39,7 +39,6 @@ class DynarmicCPU : public CPUInterface {
 
     std::size_t core_id = 0;
 
-    bool exit_request = false;
     bool halted = false;
     bool break_ = false;
 
