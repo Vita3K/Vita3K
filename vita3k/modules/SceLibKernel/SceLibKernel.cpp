@@ -139,9 +139,13 @@ EXPORT(int, sceClibLookCtypeTable, uint32_t param1) {
     }
 }
 
-EXPORT(int, sceClibMemchr) {
-    TRACY_FUNC(sceClibMemchr);
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceClibMemchr, Ptr<const void> buf, int c, SceSize len) {
+    TRACY_FUNC(sceClibMemchr, buf, c, len);
+    const void *src = buf.get(emuenv.mem);
+    void *res = const_cast<void *>(memchr(src, c, len));
+    if (!res)
+        return Ptr<void>(nullptr);
+    return Ptr<void>(buf.address() + int(size_t(res) - size_t(src)));
 }
 
 EXPORT(int, sceClibMemcmp, const void *s1, const void *s2, SceSize len) {
@@ -342,9 +346,12 @@ EXPORT(int, sceClibStrcatChk) {
 }
 
 EXPORT(Ptr<char>, sceClibStrchr, const char *str, int c) {
-    TRACY_FUNC(sceClibStrchr, str, c);
-    char *res = const_cast<char *>(strchr(str, c));
-    return Ptr<char>(res, emuenv.mem);
+    TRACY_FUNC(sceClibStrchr, str, ch);
+    const char *s = str.get(emuenv.mem);
+    char *res = const_cast<char *>(strchr(str, ch));
+    if (res)
+        return Ptr<char>(str.address() + int(size_t(res) - size_t(s)));
+    return Ptr<char>(nullptr);
 }
 
 EXPORT(int, sceClibStrcmp, const char *s1, const char *s2) {
@@ -420,16 +427,22 @@ EXPORT(uint32_t, sceClibStrnlen, const char *s1, SceSize maxlen) {
     return static_cast<uint32_t>(strnlen(s1, maxlen));
 }
 
-EXPORT(Ptr<char>, sceClibStrrchr, const char *src, int ch) {
+EXPORT(Ptr<char>, sceClibStrrchr, Ptr<const char> src, int ch) {
     TRACY_FUNC(sceClibStrrchr, src, ch);
+    const char *s = src.get(emuenv.mem);
     char *res = const_cast<char *>(strrchr(src, ch));
-    return Ptr<char>(res, emuenv.mem);
+    if (res)
+        return Ptr<char>(src.address() + int(size_t(res) - size_t(s)));
+    return Ptr<char>(nullptr);
 }
 
-EXPORT(Ptr<char>, sceClibStrstr, const char *s1, const char *s2) {
+EXPORT(Ptr<char>, sceClibStrstr, Ptr<const char> s1, const char *s2) {
     TRACY_FUNC(sceClibStrstr, s1, s2);
-    char *res = const_cast<char *>(strstr(s1, s2));
-    return Ptr<char>(res, emuenv.mem);
+    const char *src = s1.get(emuenv.mem);
+    char *res = const_cast<char *>(strstr(src, s2));
+    if (res)
+        return Ptr<char>(s1.address() + int(size_t(res) - size_t(src));
+    return Ptr<char>(nullptr);
 }
 
 EXPORT(int64_t, sceClibStrtoll, const char *str, char **endptr, int base) {
