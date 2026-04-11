@@ -30,9 +30,11 @@
 #include <display/state.h>
 #include <gui/functions.h>
 #include <gxm/state.h>
+#include <io/VitaIoDevice.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
+#include <modules/tai_config.h>
 #include <packages/functions.h>
 #include <packages/license.h>
 #include <packages/pkg.h>
@@ -44,6 +46,7 @@
 #include <motion/event_handler.h>
 #include <string>
 #include <touch/functions.h>
+#include <util/lock_and_find.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 #include <util/vector_utils.h>
@@ -466,6 +469,50 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
         return FileNotFound;
     // Set self name from self path, can contain folder, get file name only
     emuenv.self_name = fs::path(emuenv.self_path).filename().string();
+
+    // -----------------------------------------------------------------
+    // taiHEN plugin loading
+    // Read ux0:tai/config.txt (falling back to ur0:tai/config.txt) and
+    // load any user-mode plugins listed for *ALL or the current title.
+    // Kernel plugins (.skprx) are handled specially: kubridge.skprx is
+    // fully HLE-backed so we just log its presence; all others are skipped.
+    {
+        vfs::FileBuffer cfg_buf;
+        const bool found_ux0 = vfs::read_file(VitaIoDevice::ux0, cfg_buf, emuenv.pref_path, "tai/config.txt");
+        if (!found_ux0)
+            vfs::read_file(VitaIoDevice::ur0, cfg_buf, emuenv.pref_path, "tai/config.txt");
+
+        if (!cfg_buf.empty()) {
+            const std::string cfg_str(reinterpret_cast<const char *>(cfg_buf.data()), cfg_buf.size());
+            const tai::PluginConfig tai_config = tai::parse(cfg_str);
+
+            // Kernel plugins — only HLE-backed ones are meaningful.
+            for (const auto &plugin_path : tai_config.kernel_plugins) {
+                const bool is_kubridge = plugin_path.find("kubridge") != std::string::npos;
+                if (is_kubridge) {
+                    LOG_INFO("Tai: kernel plugin '{}' is HLE-backed (kubridge), skipping real load", plugin_path);
+                } else {
+                    LOG_WARN("Tai: kernel plugin '{}' cannot be loaded in Vita3K (no kernel emulation)", plugin_path);
+                }
+            }
+
+            // User plugins: *ALL first, then title-specific.
+            const auto user_plugins = tai::plugins_for_title(tai_config, emuenv.io.title_id);
+            for (const auto &plugin_path : user_plugins) {
+                LOG_INFO("Tai: loading user plugin '{}'", plugin_path);
+                const SceUID plugin_uid = load_module(emuenv, plugin_path);
+                if (plugin_uid >= 0) {
+                    const auto plugin_mod = lock_and_find(plugin_uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+                    if (plugin_mod) {
+                        start_module(emuenv, plugin_mod->info);
+                        LOG_INFO("Tai: started plugin '{}'", plugin_mod->info.module_name);
+                    }
+                } else {
+                    LOG_WARN("Tai: failed to load plugin '{}' (error {:#010x})", plugin_path, static_cast<uint32_t>(plugin_uid));
+                }
+            }
+        }
+    }
 
     // get list of preload modules
     SceUInt32 process_preload_disabled = 0;

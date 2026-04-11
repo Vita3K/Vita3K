@@ -208,6 +208,7 @@ set(SOURCE_LIST
 	SceVshBridge/SceDrmBridge.cpp
 	SceVshBridge/SceVshBridge.cpp
 	SceTaiHen/SceTaiHen.cpp
+	SceTaiHen/tai_config.cpp
 	SceKuBridge/SceKuBridge.cpp
 	SceWlanBt/SceWlan.cpp
 )
