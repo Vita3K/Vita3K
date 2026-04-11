@@ -127,10 +127,20 @@ if(WIN32)
 	target_link_libraries(winsock INTERFACE WSOCK32 WS2_32 IPHLPAPI)
 endif()
 
+# Only enable Dynarmic for x86-64 and aarch64 architectures
+if (ARCHITECTURE STREQUAL "x86_64" OR ARCHITECTURE STREQUAL "arm64")
+	message(STATUS "Dynarmic support enabled for architecture: ${ARCHITECTURE}")
+	set(DYNARMIC_ENABLED ON CACHE BOOL "Enable Dynarmic support")
+	add_compile_definitions(DYNARMIC_ENABLED)
+else()
+	message(STATUS "Dynarmic support disabled for architecture: ${ARCHITECTURE}")
+	set(DYNARMIC_ENABLED OFF CACHE BOOL "Enable Dynarmic support")
+endif()
+
 set(DYNARMIC_TESTS OFF CACHE BOOL "")
 set(DYNARMIC_NO_BUNDLED_FMT ON CACHE BOOL "")
 set(DYNARMIC_FRONTENDS "A32" CACHE STRING "")
-add_subdirectory(dynarmic)
+add_subdirectory(dynarmic EXCLUDE_FROM_ALL)
 
 if(MSVC)
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -235,7 +245,7 @@ if(APPLE)
 			"${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" SHOW_PROGRESS)
 	endif()
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK")
-		execute_process(COMMAND tar xf "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" --strip-components=1 MoltenVK/MoltenVK 
+		execute_process(COMMAND tar xf "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" --strip-components=1 MoltenVK/MoltenVK
 			WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external")
 	endif()
 	target_include_directories(vulkan INTERFACE "${CMAKE_BINARY_DIR}/external/MoltenVK/include")
@@ -260,6 +270,12 @@ elseif(ANDROID AND NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
 
 		file(COPY "${CMAKE_BINARY_DIR}/external/validation_layers/${VALIDATION_BINARY}/${ANDROID_ABI}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../android/prebuilt")
 	endif()
+endif()
+
+# See https://github.com/KhronosGroup/Vulkan-Hpp?tab=readme-ov-file#cc-interop-for-handles
+if(ARCHITECTURE STREQUAL "arm")
+	message(STATUS "Enabling Vulkan-Hpp typesafe conversion for arm architecture")
+	target_compile_definitions(vulkan INTERFACE VULKAN_HPP_TYPESAFE_CONVERSION=1)
 endif()
 
 add_library(vma INTERFACE)
@@ -329,7 +345,7 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 				if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/arm64")
 					file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/arm64")
 					execute_process(COMMAND perl ../Configure darwin64-arm64 -mmacosx-version-min=11 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/arm64")
-					execute_process(COMMAND make -j${CPU_COUNT} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/arm64" OUTPUT_QUIET)	
+					execute_process(COMMAND make -j${CPU_COUNT} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/arm64" OUTPUT_QUIET)
 				endif()
 				if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/x86_64")
 					file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/x86_64")
