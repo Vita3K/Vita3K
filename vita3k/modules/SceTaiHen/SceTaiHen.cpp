@@ -30,6 +30,7 @@
 #include <util/tracy.h>
 
 #include <cstring>
+#include <string_view>
 
 TRACY_MODULE_NAME(SceTaiHen);
 
@@ -539,10 +540,24 @@ EXPORT(int, taiStopUnloadModule, SceUID uid, SceSize args, Ptr<const void> argp,
 }
 
 // Load and start a kernel module.
-// Vita3K runs in user-mode emulation only, so kernel modules cannot be loaded.
-// We return an error to indicate this limitation.
+// Vita3K runs in user-mode emulation only, so kernel modules cannot be loaded
+// from disk. However, several well-known kernel plugins (kubridge.skprx) have
+// their functions implemented as Host Library Emulation (HLE) in Vita3K.
+// For those, we return a synthetic positive UID so the caller's error check
+// passes, while the actual function calls are resolved via the NID table.
 EXPORT(SceUID, taiLoadStartKernelModule, const char *path, SceSize args, Ptr<const void> argp, int flags) {
     TRACY_FUNC(taiLoadStartKernelModule, path, args, argp, flags);
+
+    if (path) {
+        const std::string_view path_view(path);
+        // kubridge.skprx is fully HLE-implemented as SceKuBridge.
+        // Return a synthetic module UID so the caller doesn't fail on the check.
+        if (path_view.find("kubridge") != std::string_view::npos) {
+            LOG_INFO("taiLoadStartKernelModule: '{}' is HLE-implemented, returning synthetic UID", path);
+            // Return a fixed synthetic UID in the positive kernel module range.
+            return 0x40000001;
+        }
+    }
 
     LOG_WARN("taiLoadStartKernelModule: kernel module loading is not supported in Vita3K (path='{}')",
         path ? path : "<null>");
@@ -552,10 +567,19 @@ EXPORT(SceUID, taiLoadStartKernelModule, const char *path, SceSize args, Ptr<con
     return TAI_ERROR_NOT_IMPLEMENTED;
 }
 
-// Stop and unload a kernel module (stub - kernel mode not supported).
+// Stop and unload a kernel module.
+// For HLE-backed kernel modules (like kubridge) that returned a synthetic UID,
+// we silently accept the stop request.
 EXPORT(int, taiStopUnloadKernelModule, SceUID uid, SceSize args, Ptr<const void> argp, int flags, Ptr<int> res) {
     TRACY_FUNC(taiStopUnloadKernelModule, uid, args, argp, flags, res);
-    LOG_WARN("taiStopUnloadKernelModule: kernel module unloading is not supported in Vita3K");
+    // Synthetic UID range used for HLE kernel modules
+    if (uid >= 0x40000000) {
+        LOG_INFO("taiStopUnloadKernelModule: releasing HLE kernel module uid={:#010x}", uid);
+        if (res)
+            *res.get(emuenv.mem) = 0;
+        return SCE_KERNEL_OK;
+    }
+    LOG_WARN("taiStopUnloadKernelModule: kernel module unloading is not supported in Vita3K (uid={})", uid);
     return TAI_ERROR_NOT_IMPLEMENTED;
 }
 
