@@ -52,7 +52,7 @@
 
 // Credit to jfhs for their GDB stub for RPCS3 which this stub is based on.
 
-typedef char PacketData[1200];
+typedef char PacketData[4096];
 
 // The longest packet the stub waits for before it drops it
 constexpr size_t MAX_PACKET_SIZE = 16384;
@@ -63,7 +63,10 @@ struct PacketCommand {
 
     int64_t begin_index = -1;
     int64_t end_index = -1;
+    // Decoded (post-unescape) length, which is what handlers see.
     int64_t content_length = -1;
+    // On-wire length between '$' and '#', needed to advance past the packet.
+    int64_t raw_length = -1;
 
     char *content_start{};
     char *checksum_start{};
@@ -116,35 +119,69 @@ static uint8_t make_checksum(const char *data, int64_t length) {
     return static_cast<uint8_t>(sum % 256);
 }
 
+// Parse a single RSP packet of the form `$<body>#cc`, where `<body>` may
+// contain `}`-escaped bytes (`}` + (byte ^ 0x20)) for any of the four
+// framing bytes $, #, }, *. Decodes escapes in place so handlers see the
+// literal bytes gdb intended to send.
 static PacketCommand parse_command(char *data, int64_t length) {
     PacketCommand command = {};
 
     command.data = data;
     command.length = length;
 
-    // TODO: Use std::find() to find packet begin and end.
-    if (length > 1)
-        command.begin_index = 1;
-    for (int64_t a = 0; a < length; a++) {
-        if (data[a] == '#')
-            command.end_index = a;
-    }
-
-    command.is_valid = command.begin_index != -1 && command.end_index != -1
-        && command.end_index > command.begin_index && command.end_index + 2 < length;
-    if (!command.is_valid)
+    // Minimum valid packet is "$#cc" (4 bytes), and must start with '$'.
+    if (length < 4 || data[0] != '$')
         return command;
 
-    command.content_start = command.data + command.begin_index;
-    command.content_length = command.end_index - command.begin_index;
+    command.begin_index = 1;
+    command.content_start = data + 1;
 
-    command.checksum_start = command.data + command.end_index + 1;
+    // Walk forward looking for an unescaped '#'. A '}' byte consumes the
+    // following byte as part of an escape sequence.
+    int64_t i = 1;
+    while (i < length) {
+        if (data[i] == '}') {
+            if (i + 1 >= length)
+                return command; // truncated inside an escape
+            i += 2;
+            continue;
+        }
+        if (data[i] == '#')
+            break;
+        ++i;
+    }
+    if (i >= length || data[i] != '#')
+        return command;
+
+    command.end_index = i;
+    command.raw_length = i - command.begin_index;
+
+    // Need two hex checksum chars after '#'.
+    if (i + 2 >= length)
+        return command;
+
+    command.checksum_start = data + i + 1;
     command.checksum = static_cast<uint8_t>(parse_hex(std::string(command.checksum_start, 2)));
 
-    command.is_valid = make_checksum(command.content_start, command.content_length) == command.checksum;
-    if (!command.is_valid)
+    // Checksum is computed over the on-wire (still-escaped) body bytes.
+    if (make_checksum(command.content_start, command.raw_length) != command.checksum)
         return command;
 
+    // Unescape in place: dst always trails src, so this is safe.
+    char *src = command.content_start;
+    const char *const src_end = data + i;
+    char *dst = command.content_start;
+    while (src < src_end) {
+        if (*src == '}' && (src + 1) < src_end) {
+            *dst++ = static_cast<char>(static_cast<uint8_t>(*(src + 1)) ^ 0x20);
+            src += 2;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    command.content_length = dst - command.content_start;
+
+    command.is_valid = true;
     return command;
 }
 
@@ -472,8 +509,6 @@ static std::string cmd_write_memory(EmuEnvState &state, PacketCommand &command) 
     return "OK";
 }
 
-// server_next() might not be able to tell the difference between the end of the packet ($) and 0x24 ($).
-// Thus, cmd_write_binary is disabled.
 static std::string cmd_write_binary(EmuEnvState &state, PacketCommand &command) {
     const std::string content = content_string(command);
     const size_t pos_first = content.find(',');
@@ -723,7 +758,7 @@ const static PacketFunctionBundle functions[] = {
     { "G", cmd_write_registers },
     { "m", cmd_read_memory },
     { "M", cmd_write_memory },
-    { "X", cmd_unimplemented }, // change cmd_unimplemented to cmd_write_binary to enable binary downloading
+    { "X", cmd_write_binary },
 
     // Query Packets
     { "qfThreadInfo", cmd_get_first_thread },
