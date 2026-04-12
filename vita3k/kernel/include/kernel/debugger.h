@@ -56,6 +56,7 @@ struct Debugger {
     void remove_watch_memory_addr(KernelState &state, Address addr);
     void add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode);
     void remove_breakpoint(MemState &mem, uint32_t addr);
+    void remove_all_breakpoints(MemState &mem);
     Address get_watch_memory_addr(Address addr);
     void update_watches();
     void deinit();
