@@ -1063,10 +1063,45 @@ void ScrollWhenDragging() {
     ImGuiContext &g = *ImGui::GetCurrentContext();
     ImGuiIO &io = ImGui::GetIO();
     ImGuiWindow *window = g.CurrentWindow;
-    if (g.HoveredWindow == window && ImGui::IsMouseDragging(0)) {
-        ImGui::SetScrollY(window, window->Scroll.y - io.MouseDelta.y);
-        ImGui::SetActiveID(0, window);
+
+    static ImGuiID drag_scroll_window_id = 0;
+    static bool drag_scroll_active = false;
+
+    if (!io.MouseDown[ImGuiMouseButton_Left]) {
+        drag_scroll_active = false;
+        drag_scroll_window_id = 0;
+        return;
     }
+
+    if (g.HoveredWindow != window)
+        return;
+
+    const ImVec2 drag_delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left);
+    const float abs_drag_x = fabsf(drag_delta.x);
+    const float abs_drag_y = fabsf(drag_delta.y);
+    const ImGuiID scroll_x_id = window->GetID("#SCROLLX");
+    const ImGuiID scroll_y_id = window->GetID("#SCROLLY");
+    const bool active_item_is_scrollbar = (g.ActiveId == scroll_x_id) || (g.ActiveId == scroll_y_id);
+
+    if (!drag_scroll_active) {
+        if (!ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+            return;
+
+        if (abs_drag_y <= abs_drag_x)
+            return;
+
+        if ((g.ActiveId != 0) && (g.ActiveIdWindow == window) && active_item_is_scrollbar)
+            return;
+
+        drag_scroll_active = true;
+        drag_scroll_window_id = window->ID;
+
+        if (g.ActiveId != 0 && g.ActiveIdWindow == window)
+            ImGui::ClearActiveID();
+    } else if (drag_scroll_window_id != window->ID)
+        return;
+
+    ImGui::SetScrollY(window, window->Scroll.y - io.MouseDelta.y);
 }
 
 } // namespace ImGui
