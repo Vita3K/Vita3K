@@ -278,8 +278,12 @@ std::optional<uint32_t> ThreadState::run_guest(std::unique_lock<std::mutex> &loc
         if (const std::optional<Address> fault = cpu->take_abort())
             dispatch_abort(*fault);
         lock.lock();
-        if (exit.debugger_stop)
+        if (exit.debugger_stop) {
             debugger_hold = true;
+            // A step's end isn't a breakpoint
+            if (!step)
+                kernel.debugger.notify_breakpoint(id);
+        }
         if (exit.kind == GuestExit::Kind::returned)
             return exit.value;
         // A thread that doesn't run here anymore parks again at the top

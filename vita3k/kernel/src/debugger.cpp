@@ -50,6 +50,15 @@ Debugger::Debugger(KernelState &kernel)
     : parent(kernel) {
 }
 
+void Debugger::notify_breakpoint(SceUID thread_id) {
+    {
+        std::lock_guard<std::mutex> lock(break_mutex);
+        break_thread_id = thread_id;
+        has_break = true;
+    }
+    break_cv.notify_one();
+}
+
 void Debugger::add_watch_memory_addr(Address addr, size_t size) {
     std::lock_guard<std::mutex> lock(mutex);
     watch_memory_addrs.emplace(addr, WatchMemory{ addr, size });
