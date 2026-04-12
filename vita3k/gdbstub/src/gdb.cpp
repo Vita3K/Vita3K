@@ -17,6 +17,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <config/state.h>
 #include <emuenv/state.h>
 #include <util/log.h>
 
@@ -45,19 +46,9 @@
 #include <unistd.h>
 #endif
 
-#define LOG_GDB_LEVEL 0
-
-#if LOG_GDB_LEVEL >= 1
-#define LOG_GDB LOG_INFO
-#else
-#define LOG_GDB(a, ...)
-#endif
-
-#if LOG_GDB_LEVEL >= 2
-#define LOG_GDB_DEBUG LOG_INFO
-#else
-#define LOG_GDB_DEBUG(a, ...)
-#endif
+// Opt-in packet trace, gated by its own config bool so it can be toggled
+// without touching the global log level.
+#define LOG_GDB_PACKET(state, ...) LOG_INFO_IF((state).cfg.log_gdb_packets, __VA_ARGS__)
 
 // Credit to jfhs for their GDB stub for RPCS3 which this stub is based on.
 
@@ -266,14 +257,14 @@ static std::string cmd_set_current_thread(EmuEnvState &state, PacketCommand &com
 
     switch (command.content_start[1]) {
     case 'c':
-        LOG_GDB("GDB Server Deprecated Continue Option 'c'");
+        LOG_GDB_PACKET(state, "GDB Server Deprecated Continue Option 'c'");
         // state.gdb.current_continue_thread = select_thread(state, thread_id);
         break;
     case 'g':
         state.gdb.current_thread = select_thread(state, thread_id);
         break;
     default:
-        LOG_GDB("GDB Server Unknown Set Current Thread OP. {}", command.content_start[1]);
+        LOG_WARN("GDB Server Unknown Set Current Thread OP. {}", command.content_start[1]);
         break;
     }
 
@@ -312,7 +303,7 @@ static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
         return;
     }
 
-    LOG_GDB("GDB Server Modified Invalid Register {}", reg);
+    LOG_WARN("GDB Server Modified Invalid Register {}", reg);
 }
 
 // How many 32-bit words a register has in p and P packets
@@ -388,7 +379,7 @@ static std::string cmd_read_register(EmuEnvState &state, PacketCommand &command)
     const uint32_t reg = parse_hex(content.substr(1));
     const std::optional<uint32_t> first = reg_first_word(reg);
     if (!first) {
-        LOG_GDB("GDB Server Queried Invalid Register {}", reg);
+        LOG_WARN("GDB Server Queried Invalid Register {}", reg);
         return be_hex(0);
     }
     // A double register is two words and a quad register four, the low one first
@@ -600,7 +591,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             return stop_reply(stopped->id);
         }
         default:
-            LOG_GDB("Unsupported vCont command '{}'", cmd);
+            LOG_WARN("Unsupported vCont command '{}'", cmd);
             break;
         }
 
@@ -675,7 +666,7 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
     const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
-    LOG_GDB("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
+    LOG_INFO("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
 
     // kind is 2 for a 16-bit Thumb instruction, 3 for a 32-bit one and 4 for ARM. A 16-bit BKPT
     // over the first halfword stops at a 32-bit Thumb instruction too.
@@ -694,20 +685,20 @@ static std::string cmd_remove_breakpoint(EmuEnvState &state, PacketCommand &comm
     const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
-    LOG_GDB("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
+    LOG_INFO("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
     state.kernel.debugger.remove_breakpoint(state.mem, address);
 
     return "OK";
 }
 
 static std::string cmd_deprecated(EmuEnvState &state, PacketCommand &command) {
-    LOG_GDB("GDB Server: Deprecated Packet. {}", content_string(command));
+    LOG_GDB_PACKET(state, "GDB Server: Deprecated Packet. {}", content_string(command));
 
     return "";
 }
 
 static std::string cmd_unimplemented(EmuEnvState &state, PacketCommand &command) {
-    LOG_GDB("GDB Server: Unimplemented Packet. {}", content_string(command));
+    LOG_GDB_PACKET(state, "GDB Server: Unimplemented Packet. {}", content_string(command));
 
     return "";
 }
@@ -794,7 +785,7 @@ static int64_t server_next(EmuEnvState &state) {
 
     const int64_t length = recv(state.gdb.client_socket, buffer, sizeof(buffer), 0);
     if (length <= 0) {
-        LOG_GDB("GDB Server Connection Closed");
+        LOG_INFO("GDB Server Connection Closed");
         return -1;
     }
     state.gdb.input_buffer.append(buffer, static_cast<size_t>(length));
@@ -807,7 +798,7 @@ static int64_t server_next(EmuEnvState &state) {
         }
         case '-': {
             input.erase(0, 1);
-            LOG_GDB("GDB Server Transmission Error");
+            LOG_WARN("GDB Server Transmission Error");
             server_reply(state.gdb, state.gdb.last_reply.c_str());
             break;
         }
@@ -816,7 +807,7 @@ static int64_t server_next(EmuEnvState &state) {
             // Wait for the rest of a packet split across reads, up to a limit
             if (end == std::string::npos || input.size() < end + 3) {
                 if (input.size() > MAX_PACKET_SIZE) {
-                    LOG_GDB("GDB Server Packet Too Long");
+                    LOG_WARN("GDB Server Packet Too Long");
                     input.clear();
                     server_ack(state.gdb, '-');
                 }
@@ -830,7 +821,7 @@ static int64_t server_next(EmuEnvState &state) {
                 for (const auto &function : functions) {
                     if (command_begins_with(command, function.name)) {
                         found_command = true;
-                        LOG_GDB("GDB Server Recognized Command as {}. {}", function.name,
+                        LOG_GDB_PACKET(state, "GDB Server Recognized Command as {}. {}", function.name,
                             std::string(command.content_start, command.content_length));
                         state.gdb.last_reply = function.function(state, command);
                         if (state.gdb.server_die)
@@ -840,13 +831,13 @@ static int64_t server_next(EmuEnvState &state) {
                     }
                 }
                 if (!found_command) {
-                    LOG_GDB("GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
+                    LOG_GDB_PACKET(state, "GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
                     state.gdb.last_reply = "";
                     server_reply(state.gdb, state.gdb.last_reply.c_str());
                 }
             } else {
                 server_ack(state.gdb, '-');
-                LOG_GDB("GDB Server Invalid Command. {}", input.substr(0, packet_size));
+                LOG_WARN("GDB Server Invalid Command. {}", input.substr(0, packet_size));
             }
             input.erase(0, packet_size);
             break;
@@ -867,7 +858,7 @@ static void server_listen(EmuEnvState &state) {
     state.gdb.input_buffer.clear();
 
     if (state.gdb.client_socket == -1) {
-        LOG_GDB("GDB Server Failed: Could not accept socket.");
+        LOG_ERROR("GDB Server Failed: Could not accept socket.");
         return;
     }
 
@@ -887,7 +878,7 @@ static void server_listen(EmuEnvState &state) {
 }
 
 void server_open(EmuEnvState &state) {
-    LOG_GDB("Starting GDB Server...");
+    LOG_INFO("Starting GDB Server...");
 
 #ifdef _WIN32
     int32_t err = WSAStartup(MAKEWORD(2, 2), &state.gdb.wsaData);
