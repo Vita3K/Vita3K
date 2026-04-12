@@ -560,7 +560,6 @@ static std::vector<ThreadStatePtr> list_threads(EmuEnvState &state) {
 
 static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
     const std::string content = content_string(command);
-    constexpr auto watch_delay = std::chrono::milliseconds(100);
 
     uint64_t index = 5;
     uint64_t next = 0;
@@ -592,38 +591,66 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
         case 'c':
         case 'C': {
             // Resume the world. A thread something else holds stays stopped.
+            state.kernel.debugger.has_break = false;
             state.kernel.set_threads_suspended(false);
 
-            // Wait until some thread hits a breakpoint
-            ThreadStatePtr stopped;
-            while (!stopped) {
-                auto lock = std::unique_lock(state.kernel.mutex);
-
-                if (state.gdb.server_die)
-                    return "";
-                for (const auto &[_, thread] : state.kernel.threads) {
-                    if (thread->stopped_at_breakpoint()) {
-                        stopped = thread;
-                        break;
-                    }
+            // Wait for a breakpoint hit (condvar) or a Ctrl-C interrupt
+            // (\x03 byte on the socket). The condvar fires instantly on
+            // breakpoint; the 100ms timeout is only for the interrupt poll.
+            SceUID stopped_id = 0;
+            bool did_break = false;
+            bool interrupted = false;
+            while (!did_break && !interrupted && !state.gdb.server_die) {
+                {
+                    std::unique_lock<std::mutex> bk_lock(state.kernel.debugger.break_mutex);
+                    state.kernel.debugger.break_cv.wait_for(bk_lock, std::chrono::milliseconds(100), [&]() {
+                        return state.kernel.debugger.has_break.load() || state.gdb.server_die;
+                    });
                 }
 
-                lock.unlock();
+                if (state.kernel.debugger.has_break.load()) {
+                    stopped_id = state.kernel.debugger.break_thread_id;
+                    state.kernel.debugger.has_break = false;
+                    did_break = true;
+                }
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(watch_delay));
+                // Check for gdb interrupt (Ctrl-C sends raw \x03).
+                if (!did_break) {
+                    fd_set read_set;
+                    timeval tv = { 0, 0 };
+                    FD_ZERO(&read_set);
+                    FD_SET(state.gdb.client_socket, &read_set);
+                    if (select(state.gdb.client_socket + 1, &read_set, nullptr, nullptr, &tv) > 0) {
+                        char byte;
+                        if (recv(state.gdb.client_socket, &byte, 1, MSG_PEEK) == 1 && byte == '\x03') {
+                            recv(state.gdb.client_socket, &byte, 1, 0);
+                            interrupted = true;
+                            LOG_INFO("GDB interrupt received (Ctrl-C)");
+                            auto lock = std::unique_lock(state.kernel.mutex);
+                            if (!state.kernel.threads.empty())
+                                stopped_id = state.kernel.threads.begin()->first;
+                        }
+                    }
+                }
             }
 
-            LOG_INFO("GDB Breakpoint trigger (thread name: {}, thread_id: {})", stopped->name, stopped->id);
-            LOG_INFO("PC: {} LR: {}", stopped->cpu->get_pc(), stopped->cpu->get_lr());
-            LOG_INFO("{}", log_stack_traceback(state, *stopped->cpu));
+            if (state.gdb.server_die)
+                return "";
+
+            if (did_break) {
+                const ThreadStatePtr stopped = state.kernel.get_thread(stopped_id);
+                LOG_INFO("GDB Breakpoint trigger (thread name: {}, thread_id: {})", stopped->name, stopped->id);
+                LOG_INFO("PC: {} LR: {}", stopped->cpu->get_pc(), stopped->cpu->get_lr());
+                LOG_INFO("{}", log_stack_traceback(state, *stopped->cpu));
+            }
 
             // Stop the world. A thread inside a kernel call stops when the call returns.
             state.kernel.set_threads_suspended(true);
             for (const ThreadStatePtr &thread : list_threads(state))
                 thread->wait_until_not_running();
 
-            state.gdb.current_thread = stopped->id;
-            return stop_reply(stopped->id);
+            state.gdb.current_thread = stopped_id;
+            return stop_reply(stopped_id);
         }
         default:
             LOG_WARN("Unsupported vCont command '{}'", cmd);
