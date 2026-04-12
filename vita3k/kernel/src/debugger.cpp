@@ -50,6 +50,15 @@ Debugger::Debugger(KernelState &kernel)
     : parent(kernel) {
 }
 
+void Debugger::remove_all_breakpoints(MemState &mem) {
+    const auto lock = std::lock_guard(mutex);
+    for (const auto &[addr, bk] : breakpoints) {
+        std::memcpy(Ptr<uint8_t>(addr).get(mem), &bk.data, bk.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT));
+        parent.invalidate_jit_cache(addr, 4);
+    }
+    breakpoints.clear();
+}
+
 void Debugger::notify_breakpoint(SceUID thread_id) {
     {
         std::lock_guard<std::mutex> lock(break_mutex);
