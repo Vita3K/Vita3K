@@ -67,7 +67,7 @@ struct Debugger {
     std::mutex break_mutex;
     std::condition_variable break_cv;
     SceUID break_thread_id = 0;
-    std::atomic<bool> has_break{false};
+    std::atomic<bool> has_break{ false };
 
 private:
     std::mutex mutex;
