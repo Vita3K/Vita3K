@@ -690,6 +690,23 @@ static std::string cmd_die(EmuEnvState &state, PacketCommand &command) {
 
 static std::string cmd_attached(EmuEnvState &state, PacketCommand &command) { return "1"; }
 
+static std::string cmd_offsets(EmuEnvState &state, PacketCommand &command) {
+    const auto guard = std::lock_guard(state.kernel.mutex);
+    if (state.kernel.loaded_modules.empty())
+        return "";
+
+    // The first loaded module is the main executable (eboot.bin).
+    // TextSeg/DataSeg format gives gdb the absolute segment addresses;
+    // gdb computes the relocation offsets from the ELF headers internally.
+    const auto &module = state.kernel.loaded_modules.begin()->second;
+    uint32_t text_addr = module->info.segments[0].vaddr.address();
+    uint32_t data_addr = module->info.segments[1].vaddr.address();
+
+    if (data_addr)
+        return fmt::format("TextSeg={:x};DataSeg={:x}", text_addr, data_addr);
+    return fmt::format("TextSeg={:x}", text_addr);
+}
+
 static std::string cmd_thread_status(EmuEnvState &state, PacketCommand &command) { return "T0"; }
 
 static std::string cmd_reason(EmuEnvState &state, PacketCommand &command) { return "S05"; }
@@ -798,6 +815,7 @@ const static PacketFunctionBundle functions[] = {
     { "qsThreadInfo", cmd_get_next_thread },
     { "qSupported", cmd_supported },
     { "qXfer:features:read:target.xml:", cmd_target_xml },
+    { "qOffsets", cmd_offsets },
     { "qAttached", cmd_attached },
     { "qTStatus", cmd_thread_status },
     { "qC", cmd_get_current_thread },

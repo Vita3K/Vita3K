@@ -50,6 +50,8 @@ struct KernelModule {
     SceKernelModuleInfo info;
     Ptr<const uint8_t> info_segment_address;
     uint32_t info_offset;
+    // ELF p_vaddr per segment, kept for gdb qOffsets computation.
+    uint32_t segment_p_vaddr[MODULE_INFO_NUM_SEGMENTS] = {};
 };
 using SceKernelModulePtr = std::shared_ptr<KernelModule>;
 
