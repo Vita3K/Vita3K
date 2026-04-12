@@ -788,6 +788,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         segment.vaddr = it->second.addr;
         segment.memsz = segments[segment_index].p_memsz;
         segment.filesz = segments[segment_index].p_filesz;
+        kernelModuleInfo->segment_p_vaddr[segment_index] = it->second.p_vaddr;
     }
 
     sceKernelModuleInfo->state = module_info->type;
