@@ -211,7 +211,8 @@ static int64_t server_ack(GDBState &state, char ack = '+') {
 
 static std::string cmd_supported(EmuEnvState &state, PacketCommand &command) {
     return "multiprocess-;swbreak+;hwbreak-;qRelocInsn-;fork-events-;vfork-events-;"
-           "exec-events-;vContSupported+;QThreadEvents-;no-resumed-;qXfer:features:read+";
+           "exec-events-;vContSupported+;QThreadEvents-;no-resumed-;qXfer:features:read+;"
+           "qXfer:libraries:read+";
 }
 
 // Register numbers in the target description and in remote packets.
@@ -271,6 +272,36 @@ static std::string cmd_target_xml(EmuEnvState &state, PacketCommand &command) {
         return "l";
     const std::string part = TARGET_XML.substr(offset, length);
     return (offset + part.size() < TARGET_XML.size() ? "m" : "l") + part;
+}
+
+static std::string cmd_xfer_libraries(EmuEnvState &state, PacketCommand &command) {
+    const std::string content = content_string(command);
+    const std::string prefix = "qXfer:libraries:read::";
+    if (content.substr(0, prefix.size()) != prefix)
+        return "E00";
+
+    const std::string params = content.substr(prefix.size());
+    const size_t comma = params.find(',');
+    const uint32_t offset = parse_hex(params.substr(0, comma));
+    const uint32_t length = parse_hex(params.substr(comma + 1));
+
+    std::string xml = "<library-list>";
+    {
+        const auto guard = std::lock_guard(state.kernel.mutex);
+        for (const auto &[uid, module] : state.kernel.loaded_modules) {
+            const uint32_t base = module->info.segments[0].vaddr.address();
+            xml += fmt::format("<library name=\"{}\"><segment address=\"{:#x}\"/></library>",
+                module->info.module_name, base);
+        }
+    }
+    xml += "</library-list>";
+
+    if (offset >= xml.size())
+        return "l";
+
+    const std::string chunk = xml.substr(offset, length);
+    const bool last = (offset + chunk.size()) >= xml.size();
+    return (last ? "l" : "m") + chunk;
 }
 
 static std::string cmd_reply_empty(EmuEnvState &state, PacketCommand &command) {
@@ -811,6 +842,7 @@ const static PacketFunctionBundle functions[] = {
     { "X", cmd_write_binary },
 
     // Query Packets
+    { "qXfer:libraries:read:", cmd_xfer_libraries },
     { "qfThreadInfo", cmd_get_first_thread },
     { "qsThreadInfo", cmd_get_next_thread },
     { "qSupported", cmd_supported },
