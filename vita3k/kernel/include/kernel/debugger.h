@@ -18,7 +18,10 @@
 #pragma once
 #include <mem/state.h>
 #include <mem/util.h>
+#include <util/types.h>
 
+#include <atomic>
+#include <condition_variable>
 #include <map>
 #include <mutex>
 
@@ -56,6 +59,15 @@ struct Debugger {
     Address get_watch_memory_addr(Address addr);
     void update_watches();
     void deinit();
+
+    // GDB breakpoint notification: signaled from the thread loop when a
+    // thread hits a breakpoint and transitions to suspend.
+    void notify_breakpoint(SceUID thread_id);
+
+    std::mutex break_mutex;
+    std::condition_variable break_cv;
+    SceUID break_thread_id = 0;
+    std::atomic<bool> has_break{false};
 
 private:
     std::mutex mutex;
