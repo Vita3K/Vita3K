@@ -608,7 +608,10 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
         const char cmd = text[0];
         switch (cmd) {
         case 's':
-        case 'S': {
+        case 'S':
+        case 'r': {
+            // Treat range-stepping (r<start>,<end>) as a single instruction
+            // step. gdb will re-issue vCont;r until PC leaves the range.
             // The action names the thread to step, else it's the current one
             const size_t colon = text.find(':');
             SceUID thread_id = colon == std::string::npos ? 0 : static_cast<SceUID>(parse_hex(text.substr(colon + 1)));
@@ -783,6 +786,12 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
     const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
+    // Only Z0 (software breakpoint) is supported. Returning empty for Z1-Z4
+    // tells gdb to fall back to software watchpoints instead of letting it
+    // corrupt the target memory by patching BKPT at a data address.
+    if (type != 0)
+        return "";
+
     const uint32_t bp_size = (kind == 2 || kind == 3) ? 2 : 4;
     if (!check_memory_region(address, bp_size, state.mem)) {
         LOG_WARN("GDB Server Breakpoint rejected — address {} not mapped.", log_hex(address));
@@ -807,6 +816,10 @@ static std::string cmd_remove_breakpoint(EmuEnvState &state, PacketCommand &comm
     const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
     const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
+
+    // Match cmd_add_breakpoint: only Z0 is handled.
+    if (type != 0)
+        return "";
 
     LOG_INFO("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
     state.kernel.debugger.remove_breakpoint(state.mem, address);
