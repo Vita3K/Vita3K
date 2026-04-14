@@ -17,6 +17,10 @@
 
 #include <module/module.h>
 
+#include <kernel/types.h>
+
+#include <cstring>
+
 EXPORT(int, ksceKernelCpuAtomicAddAndGet16) {
     return UNIMPLEMENTED();
 }
@@ -341,6 +345,27 @@ EXPORT(int, ksceKernelCpuDcacheWritebackRange) {
     return UNIMPLEMENTED();
 }
 
+// Cache ops used by kubridge (3.60 SceSysmemForDriver NIDs)
+EXPORT(int, ksceKernelCpuDcacheWritebackInvalidateRange) {
+    // No-op in emulator — no real CPU cache
+    return 0;
+}
+
+EXPORT(int, ksceKernelCpuIcacheInvalidateRange) {
+    return 0;
+}
+
+EXPORT(int, ksceKernelCpuIcacheAndL2WritebackInvalidateRange) {
+    return 0;
+}
+
+EXPORT(int, ksceKernelCpuUnrestrictedMemcpy, Ptr<void> dst, Ptr<const void> src, uint32_t len) {
+    if (!dst || !src)
+        return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+    std::memcpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    return 0;
+}
+
 EXPORT(int, ksceKernelCpuDisableInterrupts) {
     return UNIMPLEMENTED();
 }
@@ -427,4 +452,15 @@ EXPORT(int, ksceKernelCpuUnlockStoreFlag) {
 
 EXPORT(int, ksceKernelCpuUnlockStoreLR) {
     return UNIMPLEMENTED();
+}
+
+// SceExcpmgrForKernel stubs (kubridge-required)
+EXPORT(int, sceKernelRegisterExceptionHandler, int excpKind, int prio, Ptr<void> handler) {
+    LOG_WARN("sceKernelRegisterExceptionHandler: excpKind={} prio={} (no-op in emulator)", excpKind, prio);
+    return 0;
+}
+
+EXPORT(int, sceKernelReturnFromException, Ptr<void> context) {
+    LOG_WARN("sceKernelReturnFromException: no-op in emulator");
+    return 0;
 }

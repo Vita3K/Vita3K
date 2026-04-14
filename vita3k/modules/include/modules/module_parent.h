@@ -51,5 +51,7 @@ bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
 int unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
 bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int *retcode);
 
+void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &titleid);
+
 Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem);
 Ptr<void> get_client_vtable(MemState &mem);

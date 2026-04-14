@@ -60,3 +60,14 @@ EXPORT(int, ksceKernelIsCDialogAvailable) {
 EXPORT(int, ksceKernelIsGameBudget) {
     return UNIMPLEMENTED();
 }
+
+// kubridge-required stubs
+EXPORT(SceUID, ksceKernelAllocRemoteProcessHeap, SceUID pid, uint32_t size, Ptr<void> opt) {
+    STUBBED("ksceKernelAllocRemoteProcessHeap");
+    return 0;
+}
+
+EXPORT(int, ksceKernelFreeRemoteProcessHeap, SceUID pid, Ptr<void> ptr) {
+    STUBBED("ksceKernelFreeRemoteProcessHeap");
+    return 0;
+}
