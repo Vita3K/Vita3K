@@ -21,41 +21,48 @@
 #include <tracy/Tracy.hpp>
 #endif
 
+#include "bridge_types.h"
 #include "lay_out_args.h"
-#include "read_arg.h"
+#include "vargs.h"
 #include "write_return_value.h"
 
 #include <config/state.h>
 #include <emuenv/state.h>
 
-using ImportFn = std::function<void(EmuEnvState &emuenv, CPUState &cpu, SceUID thread_id)>;
+using ImportFn = void (*)(EmuEnvState &emuenv, CPUState &cpu, SceUID thread_id);
 using ImportVarFactory = std::function<Address(EmuEnvState &emuenv)>;
 using LibraryInitFn = std::function<void(EmuEnvState &emuenv)>;
 
-// Function returns a value that is written to CPU registers.
-template <typename Ret, typename... Args, size_t... indices>
-std::enable_if_t<!std::is_same_v<Ret, void>> call(Ret (*export_fn)(EmuEnvState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, const LayoutArgsState &state, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, EmuEnvState &emuenv) {
-    const Ret ret = (*export_fn)(emuenv, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, state, emuenv.mem)...);
-    write_return_value(cpu, ret);
+// Reads a scalar or vargs argument from the CPU state, applying the bridge types conversion.
+template <ArgLayout Layout, LayoutArgsState VargsState, typename Arg>
+Arg read_bridged_arg(CPUState &cpu, const MemState &mem) {
+    if constexpr (std::is_same_v<Arg, module::vargs>) {
+        return module::vargs{ VargsState };
+    } else {
+        using Arm = typename BridgeTypes<Arg>::ArmType;
+        return BridgeTypes<Arg>::arm_to_host(read<Arm>(cpu, Layout, mem), mem);
+    }
 }
 
-// Function does not return a value.
-template <typename... Args, size_t... indices>
-void call(void (*export_fn)(EmuEnvState &, SceUID, const char *, Args...), const char *export_name, const ArgsLayout<Args...> &args_layout, const LayoutArgsState &state, std::index_sequence<indices...>, SceUID thread_id, CPUState &cpu, EmuEnvState &emuenv) {
-    (*export_fn)(emuenv, thread_id, export_name, read<Args, indices, Args...>(cpu, args_layout, state, emuenv.mem)...);
-}
+// Creates a bridge function that reads arguments from the CPU state and calls the export function.
+template <auto ExportFn, typename Ret, typename... Args>
+ImportFn make_bridge(const char *name, Ret (*)(EmuEnvState &, SceUID, const char *, Args...)) {
+    static const char *export_name = name;
+    static constexpr auto layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
 
-template <typename Ret, typename... Args>
-ImportFn bridge(Ret (*export_fn)(EmuEnvState &, SceUID, const char *, Args...), const char *export_name) {
-    constexpr std::tuple<ArgsLayout<Args...>, LayoutArgsState> args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
-
-    return [export_fn, export_name, args_layout](EmuEnvState &emuenv, CPUState &cpu, SceUID thread_id) {
+    return [](EmuEnvState &emuenv, CPUState &cpu, SceUID thread_id) {
 #ifdef TRACY_ENABLE
-        ZoneNamedC(___tracy_scoped_zone, 0xFFF34C, emuenv.cfg.tracy_primitive_impl); // Tracy - Track function scope and set color to yellow
-        ZoneNameV(___tracy_scoped_zone, export_name, strlen(export_name)); // Tracy - Edit scope name based on export_name
+        ZoneNamedC(___tracy_scoped_zone, 0xFFF34C, emuenv.cfg.tracy_primitive_impl);
+        ZoneNameV(___tracy_scoped_zone, export_name, strlen(export_name));
 #endif
-
-        using Indices = std::index_sequence_for<Args...>;
-        call(export_fn, export_name, std::get<0>(args_layout), std::get<1>(args_layout), Indices(), thread_id, cpu, emuenv);
+        constexpr auto arr = std::get<0>(layout);
+        constexpr auto vargs_state = std::get<1>(layout);
+        [&]<size_t... Is>(std::index_sequence<Is...>) {
+            if constexpr (std::is_void_v<Ret>) {
+                ExportFn(emuenv, thread_id, export_name, read_bridged_arg<arr[Is], vargs_state, Args>(cpu, emuenv.mem)...);
+            } else {
+                write_return_value(cpu, ExportFn(emuenv, thread_id, export_name, read_bridged_arg<arr[Is], vargs_state, Args>(cpu, emuenv.mem)...));
+            }
+        }(std::index_sequence_for<Args...>{});
     };
 }
