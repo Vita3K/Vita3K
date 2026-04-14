@@ -121,32 +121,43 @@ EXPORT(int, taiGetModuleInfo, const char *module, Ptr<void> info) {
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
     }
 
+    auto info_ptr = info.get(emuenv.mem);
+    uint32_t user_size = *reinterpret_cast<uint32_t *>(info_ptr);
+    if (user_size < 0x34) {
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE;
+    }
+
+    auto fill_info = [&](SceUID uid, const char *name, Address seg0_addr, uint32_t seg0_size) {
+        auto out = reinterpret_cast<uint8_t *>(info_ptr);
+        *reinterpret_cast<uint32_t *>(out + 4) = uid; // modid
+        *reinterpret_cast<uint32_t *>(out + 8) = 0; // module_nid
+        std::strncpy(reinterpret_cast<char *>(out + 12), name, 27);
+        *reinterpret_cast<uint32_t *>(out + 0x28) = seg0_addr;
+        *reinterpret_cast<uint32_t *>(out + 0x2C) = seg0_addr + seg0_size;
+    };
+
+    // Search LLE loaded modules first
     const auto &loaded_modules = emuenv.kernel.loaded_modules;
     for (const auto &[uid, mod] : loaded_modules) {
         if (std::string(mod->info.module_name) == module) {
-            // tai_module_info_t layout:
-            // uint32_t size (offset 0)
-            // SceUID modid (offset 4)
-            // uint32_t module_nid (offset 8)
-            // char name[27] (offset 12)
-            // ... exports_start, exports_end, imports_start, imports_end
-            auto info_ptr = info.get(emuenv.mem);
-            uint32_t user_size = *reinterpret_cast<uint32_t *>(info_ptr);
-            if (user_size < 0x34) {
-                return SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE;
-            }
-
-            auto out = reinterpret_cast<uint8_t *>(info_ptr);
-            *reinterpret_cast<uint32_t *>(out + 4) = uid; // modid
-            *reinterpret_cast<uint32_t *>(out + 8) = 0; // module_nid (not tracked in Vita3K)
-            std::strncpy(reinterpret_cast<char *>(out + 12), mod->info.module_name, 27);
-            // segments info
-            *reinterpret_cast<uint32_t *>(out + 0x28) = mod->info.segments[0].vaddr.address(); // exports_start (approx)
-            *reinterpret_cast<uint32_t *>(out + 0x2C) = mod->info.segments[0].vaddr.address() + mod->info.segments[0].memsz; // exports_end (approx)
-
-            LOG_DEBUG("taiGetModuleInfo: found module '{}' uid={}", module, uid);
+            fill_info(uid, mod->info.module_name,
+                mod->info.segments[0].vaddr.address(),
+                mod->info.segments[0].memsz);
+            LOG_DEBUG("taiGetModuleInfo: found LLE module '{}' uid={}", module, uid);
             return 0;
         }
+    }
+
+    // For HLE modules (SceSysmem etc), return a synthetic entry.
+    // Plugins may look these up to patch them, but in the emulator HLE modules
+    // have no ARM code. We provide a valid UID so callers don't get garbage.
+    auto *state = emuenv.kernel.obj_store.get<TaihenState>();
+    if (state) {
+        const std::lock_guard<std::mutex> lock(state->mutex);
+        SceUID synthetic_uid = state->alloc_uid();
+        fill_info(synthetic_uid, module, 0, 0);
+        LOG_WARN("taiGetModuleInfo: '{}' is HLE, returning synthetic uid={} (patches won't work)", module, synthetic_uid);
+        return 0;
     }
 
     LOG_WARN("taiGetModuleInfo: module '{}' not found", module);
@@ -382,7 +393,7 @@ EXPORT(int, module_get_offset, SceUID pid, SceUID modid, int segidx, uint32_t of
 
     const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
     if (mod_it == emuenv.kernel.loaded_modules.end()) {
-        LOG_WARN("module_get_offset: module {} not found", modid);
+        LOG_DEBUG("module_get_offset: module {} not found (may be HLE)", modid);
         return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
     }
 
@@ -487,18 +498,15 @@ void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &title
     load_taihen_config(emuenv);
 
     // Load KERNEL plugins (once)
+    // Note: we only load_module here. start_module is called by run_app()
+    // which iterates all loaded_modules and starts them.
     if (!state->kernel_plugins_loaded) {
         auto kernel_it = state->config.find("KERNEL");
         if (kernel_it != state->config.end()) {
             for (const auto &plugin_path : kernel_it->second) {
                 LOG_INFO("taiHEN: loading kernel plugin: {}", plugin_path);
                 SceUID uid = load_module(emuenv, plugin_path);
-                if (uid >= 0) {
-                    const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
-                    if (mod_it != emuenv.kernel.loaded_modules.end()) {
-                        start_module(emuenv, mod_it->second->info);
-                    }
-                } else {
+                if (uid < 0) {
                     LOG_ERROR("taiHEN: failed to load kernel plugin: {} (error {})", plugin_path, uid);
                 }
             }
@@ -512,12 +520,7 @@ void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &title
         for (const auto &plugin_path : title_it->second) {
             LOG_INFO("taiHEN: loading plugin for {}: {}", titleid, plugin_path);
             SceUID uid = load_module(emuenv, plugin_path);
-            if (uid >= 0) {
-                const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
-                if (mod_it != emuenv.kernel.loaded_modules.end()) {
-                    start_module(emuenv, mod_it->second->info);
-                }
-            } else {
+            if (uid < 0) {
                 LOG_ERROR("taiHEN: failed to load plugin: {} (error {})", plugin_path, uid);
             }
         }

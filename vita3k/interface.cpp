@@ -509,6 +509,10 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv) {
         if (res < 0)
             return FileNotFound;
     }
+
+    // Load taiHEN plugins configured for this title
+    load_taihen_plugins_for_title(emuenv, emuenv.io.title_id);
+
     return Success;
 }
 
