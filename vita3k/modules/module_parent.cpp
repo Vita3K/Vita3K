@@ -253,6 +253,11 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
 
     if (module_id >= 0) {
         const auto module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+        // Cache the inner decrypted ELF so the gdb stub can serve a
+        // BFD-parseable image via vFile. Gated on gdbstub so non-gdb
+        // runs don't pay the per-module memory overhead.
+        if (emuenv.cfg.gdbstub)
+            module->elf_bytes = extract_elf_from_self(module_buffer);
         LOG_INFO("Module {} (at \"{}\") loaded", module->info.module_name, module_path);
     } else {
         LOG_ERROR("Failed to load module {}", module_path);

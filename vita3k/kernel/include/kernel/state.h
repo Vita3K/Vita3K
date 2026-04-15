@@ -33,6 +33,7 @@
 #include <atomic>
 #include <map>
 #include <mutex>
+#include <string>
 #include <vector>
 
 struct ThreadState;
@@ -47,6 +48,14 @@ struct KernelModule {
     uint32_t info_offset;
     // ELF p_vaddr per segment, kept for gdb qOffsets computation.
     uint32_t segment_p_vaddr[MODULE_INFO_NUM_SEGMENTS] = {};
+    // Vita-style source path (e.g. "vs0:sys/external/libc.suprx"), used by
+    // the gdb stub so clients can fetch module files via vFile and
+    // auto-load symbols.
+    std::string vita_path;
+    // Decrypted inner ELF bytes, extracted at module load time. Populated
+    // only when the gdb stub is enabled. Used by vFile to serve a parseable
+    // ELF instead of the SCE-wrapped on-disk SELF.
+    std::vector<uint8_t> elf_bytes;
 };
 typedef std::shared_ptr<KernelModule> SceKernelModulePtr;
 
