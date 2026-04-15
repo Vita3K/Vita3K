@@ -28,10 +28,12 @@
 #include <gdbstub/state.h>
 
 #include <cpu/functions.h>
+#include <io/functions.h>
 
 #include <kernel/state.h>
 #include <mem/state.h>
 #include <sstream>
+#include <vector>
 
 // Sockets
 #ifdef _WIN32
@@ -906,6 +908,182 @@ static std::string cmd_remove_breakpoint(EmuEnvState &state, PacketCommand &comm
     return "OK";
 }
 
+// GDB's Host I/O (vFile) flag values, from include/gdb/fileio.h.
+// These are the GDB-protocol values, NOT host POSIX values.
+constexpr int GDB_O_RDONLY = 0x0;
+constexpr int GDB_O_WRONLY = 0x1;
+constexpr int GDB_O_RDWR = 0x2;
+constexpr int GDB_O_APPEND = 0x8;
+constexpr int GDB_O_CREAT = 0x200;
+constexpr int GDB_O_TRUNC = 0x400;
+constexpr int GDB_O_EXCL = 0x800;
+
+constexpr int GDB_ENOENT = 2;
+constexpr int GDB_EBADF = 9;
+constexpr int GDB_EINVAL = 22;
+
+static int gdb_flags_to_sce(int gdb_flags) {
+    int sce = 0;
+    const int access = gdb_flags & 0x3;
+    if (access == GDB_O_WRONLY)
+        sce |= SCE_O_WRONLY;
+    else if (access == GDB_O_RDWR)
+        sce |= SCE_O_RDWR;
+    else
+        sce |= SCE_O_RDONLY;
+    if (gdb_flags & GDB_O_APPEND)
+        sce |= SCE_O_APPEND;
+    if (gdb_flags & GDB_O_CREAT)
+        sce |= SCE_O_CREAT;
+    if (gdb_flags & GDB_O_TRUNC)
+        sce |= SCE_O_TRUNC;
+    if (gdb_flags & GDB_O_EXCL)
+        sce |= SCE_O_EXCL;
+    return sce;
+}
+
+static std::string vfile_unhex_path(const std::string &hex) {
+    std::string out;
+    out.reserve(hex.size() / 2);
+    for (size_t i = 0; i + 1 < hex.size(); i += 2) {
+        const unsigned v = static_cast<unsigned>(std::stoul(hex.substr(i, 2), nullptr, 16));
+        out.push_back(static_cast<char>(v));
+    }
+    return out;
+}
+
+// Escape the four RSP framing bytes ($, #, }, *) in a binary attachment.
+// Null bytes pass through unchanged — callers must use the length-taking
+// server_reply path so they aren't truncated by strlen.
+static std::string vfile_escape_binary(const char *data, size_t len) {
+    std::string out;
+    out.reserve(len);
+    for (size_t i = 0; i < len; i++) {
+        const unsigned char c = static_cast<unsigned char>(data[i]);
+        if (c == '$' || c == '#' || c == '}' || c == '*') {
+            out.push_back('}');
+            out.push_back(static_cast<char>(c ^ 0x20));
+        } else {
+            out.push_back(static_cast<char>(c));
+        }
+    }
+    return out;
+}
+
+static std::string vfile_error(int err) {
+    return fmt::format("F-1,{:x}", err);
+}
+
+static void vfile_put32_be(char *dst, uint32_t v) {
+    dst[0] = static_cast<char>((v >> 24) & 0xff);
+    dst[1] = static_cast<char>((v >> 16) & 0xff);
+    dst[2] = static_cast<char>((v >> 8) & 0xff);
+    dst[3] = static_cast<char>(v & 0xff);
+}
+
+static void vfile_put64_be(char *dst, uint64_t v) {
+    for (int i = 0; i < 8; i++)
+        dst[i] = static_cast<char>((v >> (56 - 8 * i)) & 0xff);
+}
+
+static std::string cmd_vfile(EmuEnvState &state, PacketCommand &command) {
+    const std::string content = content_string(command);
+    // strip "vFile:" prefix
+    const std::string sub = content.substr(6);
+
+    // setfs:<pid>  — we only have one filesystem, accept any pid as success.
+    if (sub.compare(0, 6, "setfs:") == 0) {
+        return "F0";
+    }
+
+    // open:<pathname-hex>,<flags-hex>,<mode-hex>
+    if (sub.compare(0, 5, "open:") == 0) {
+        const std::string args = sub.substr(5);
+        const size_t c1 = args.find(',');
+        const size_t c2 = args.find(',', c1 + 1);
+        if (c1 == std::string::npos || c2 == std::string::npos)
+            return vfile_error(GDB_EINVAL);
+        const std::string path = vfile_unhex_path(args.substr(0, c1));
+        const int gdb_flags = static_cast<int>(std::stoul(args.substr(c1 + 1, c2 - c1 - 1), nullptr, 16));
+        // mode bits ignored — Vita3K has no concept of host mode bits
+        const int sce_flags = gdb_flags_to_sce(gdb_flags);
+        const SceUID fd = open_file(state.io, path.c_str(), sce_flags, state.pref_path, "gdbstub");
+        if (fd < 0) {
+            LOG_INFO("GDB vFile open failed: '{}'", path);
+            return vfile_error(GDB_ENOENT);
+        }
+        LOG_INFO("GDB vFile opened: '{}' fd={}", path, fd);
+        return fmt::format("F{:x}", fd);
+    }
+
+    // close:<fd-hex>
+    if (sub.compare(0, 6, "close:") == 0) {
+        const SceUID fd = static_cast<SceUID>(std::stoul(sub.substr(6), nullptr, 16));
+        const int rc = close_file(state.io, fd, "gdbstub");
+        if (rc < 0)
+            return vfile_error(GDB_EBADF);
+        return "F0";
+    }
+
+    // pread:<fd-hex>,<count-hex>,<offset-hex>
+    if (sub.compare(0, 6, "pread:") == 0) {
+        const std::string args = sub.substr(6);
+        const size_t c1 = args.find(',');
+        const size_t c2 = args.find(',', c1 + 1);
+        if (c1 == std::string::npos || c2 == std::string::npos)
+            return vfile_error(GDB_EINVAL);
+        const SceUID fd = static_cast<SceUID>(std::stoul(args.substr(0, c1), nullptr, 16));
+        uint32_t count = static_cast<uint32_t>(std::stoul(args.substr(c1 + 1, c2 - c1 - 1), nullptr, 16));
+        const uint64_t offset = std::stoull(args.substr(c2 + 1), nullptr, 16);
+
+        // Cap to fit in PacketData (4096) with reply header + worst-case 2x
+        // escaping headroom.
+        constexpr uint32_t MAX_PREAD = 1024;
+        if (count > MAX_PREAD)
+            count = MAX_PREAD;
+
+        if (seek_file(fd, static_cast<SceOff>(offset), SCE_SEEK_SET, state.io, "gdbstub") < 0)
+            return vfile_error(GDB_EBADF);
+
+        std::vector<char> buf(count);
+        const int n = read_file(buf.data(), state.io, fd, count, "gdbstub");
+        if (n < 0)
+            return vfile_error(GDB_EBADF);
+
+        return fmt::format("F{:x};", n) + vfile_escape_binary(buf.data(), static_cast<size_t>(n));
+    }
+
+    // fstat:<fd-hex>
+    if (sub.compare(0, 6, "fstat:") == 0) {
+        const SceUID fd = static_cast<SceUID>(std::stoul(sub.substr(6), nullptr, 16));
+        SceIoStat sce_stat{};
+        if (stat_file_by_fd(state.io, fd, &sce_stat, state.pref_path, "gdbstub") < 0)
+            return vfile_error(GDB_EBADF);
+
+        // GDB's struct stat is a fixed 64-byte big-endian layout.
+        // See "struct stat" in the gdb manual, Host I/O Packets section.
+        char st[64] = {};
+        vfile_put32_be(st + 0, 0); // dev
+        vfile_put32_be(st + 4, 0); // ino
+        vfile_put32_be(st + 8, 0100644); // mode: regular file, rw-r--r--
+        vfile_put32_be(st + 12, 1); // nlink
+        vfile_put32_be(st + 16, 0); // uid
+        vfile_put32_be(st + 20, 0); // gid
+        vfile_put32_be(st + 24, 0); // rdev
+        vfile_put64_be(st + 28, static_cast<uint64_t>(sce_stat.st_size)); // size
+        vfile_put64_be(st + 36, 4096); // blksize
+        vfile_put64_be(st + 44, (static_cast<uint64_t>(sce_stat.st_size) + 511) / 512); // blocks
+        vfile_put32_be(st + 52, 0); // atime
+        vfile_put32_be(st + 56, 0); // mtime
+        vfile_put32_be(st + 60, 0); // ctime
+
+        return fmt::format("F{:x};", 64) + vfile_escape_binary(st, 64);
+    }
+
+    LOG_GDB_PACKET(state, "GDB Server: Unimplemented vFile op. {}", content);
+    return "";
+}
+
 static std::string cmd_deprecated(EmuEnvState &state, PacketCommand &command) {
     LOG_GDB_PACKET(state, "GDB Server: Deprecated Packet. {}", content_string(command));
 
@@ -965,6 +1143,7 @@ const static PacketFunctionBundle functions[] = {
     { "vCont", cmd_continue },
     { "vKill", cmd_kill },
     { "vMustReplyEmpty", cmd_reply_empty },
+    { "vFile:", cmd_vfile },
     { "v", cmd_unimplemented },
 
     // Breakpoints
@@ -1018,7 +1197,7 @@ static int64_t server_next(EmuEnvState &state) {
         }
         case '-': {
             LOG_WARN("GDB Server Transmission Error. {}", std::string(buffer, length));
-            server_reply(state.gdb, state.gdb.last_reply.c_str());
+            server_reply(state.gdb, state.gdb.last_reply.data(), state.gdb.last_reply.size());
             break;
         }
         case '$': {
@@ -1035,14 +1214,14 @@ static int64_t server_next(EmuEnvState &state) {
                         state.gdb.last_reply = function.function(state, command);
                         if (state.gdb.server_die)
                             break;
-                        server_reply(state.gdb, state.gdb.last_reply.c_str());
+                        server_reply(state.gdb, state.gdb.last_reply.data(), state.gdb.last_reply.size());
                         break;
                     }
                 }
                 if (!found_command) {
                     LOG_GDB_PACKET(state, "GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
                     state.gdb.last_reply = "";
-                    server_reply(state.gdb, state.gdb.last_reply.c_str());
+                    server_reply(state.gdb, state.gdb.last_reply.data(), state.gdb.last_reply.size());
                 }
                 a += command.raw_length + 3;
 
