@@ -17,6 +17,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <audio/state.h>
 #include <config/state.h>
 #include <emuenv/state.h>
 #include <util/log.h>
@@ -566,6 +567,7 @@ static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) {
     state.kernel.set_threads_suspended(false);
 
     state.gdb.current_thread = 0;
+    state.audio.switch_state(false);
     LOG_INFO("GDB Server Detached — breakpoints removed, threads resumed.");
     return "OK";
 }
@@ -634,6 +636,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             // Resume the world. A thread something else holds stays stopped.
             state.kernel.debugger.has_break = false;
             state.kernel.set_threads_suspended(false);
+            state.audio.switch_state(false);
 
             // Wait for a breakpoint hit (condvar) or a Ctrl-C interrupt
             // (\x03 byte on the socket). The condvar fires instantly on
@@ -689,6 +692,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             state.kernel.set_threads_suspended(true);
             for (const ThreadStatePtr &thread : list_threads(state))
                 thread->wait_until_not_running();
+            state.audio.switch_state(true);
 
             state.gdb.current_thread = stopped_id;
             return stop_reply(stopped_id);
