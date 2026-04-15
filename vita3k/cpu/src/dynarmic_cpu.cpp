@@ -344,6 +344,8 @@ int DynarmicCPU::run() {
 }
 
 int DynarmicCPU::step() {
+    // Mirror run(): clear stale break_ so hit_breakpoint() isn't lying.
+    break_ = false;
     parent->svc_called = false;
     jit->Step();
     return 0;
