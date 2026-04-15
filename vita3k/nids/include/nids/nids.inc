@@ -6065,6 +6065,9 @@ NID(scePowerSetGpuXbarClockFrequency, 0xA7739DBE)
 NID(scePowerSetIdleTimerCount, 0xB11EF149)
 NID(scePowerSetUsingWireless, 0x4D695C1F)
 NID(scePowerUnregisterCallback, 0xDFA8BAF8)
+// Library "ScePowerForDriver"
+NID(kscePowerGetSysClockFrequency, 0xC63DACD5)
+NID(kscePowerSetSysClockFrequency, 0x0E333BEC)
 // Module "SceProcessmgr"
 // Library "SceProcessmgr"
 NID(_sceKernelExitProcessForUser, 0xC053DC6B)
