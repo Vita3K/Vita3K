@@ -1093,6 +1093,41 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint
     return decrypted_self;
 }
 
+std::vector<uint8_t> extract_elf_from_self(const std::vector<uint8_t> &self_buffer) {
+    if (self_buffer.size() < sizeof(SCE_header))
+        return {};
+
+    const SCE_header *hdr = reinterpret_cast<const SCE_header *>(self_buffer.data());
+    const uint64_t elf_off = hdr->header_len;
+    const uint64_t elf_sz = hdr->elf_filesize;
+    if (elf_sz == 0 || elf_off + elf_sz > self_buffer.size())
+        return {};
+
+    std::vector<uint8_t> elf(
+        self_buffer.begin() + elf_off,
+        self_buffer.begin() + elf_off + elf_sz);
+
+    // Vita ELFs use Sony-specific e_type values that gdb's BFD doesn't
+    // recognize; without this rewrite BFD parses the file but skips the
+    // section relocations, leaving every symbol at its link-time address.
+    constexpr size_t E_TYPE_OFFSET = 16; // Elf32_Ehdr.e_type
+    constexpr uint16_t ET_SCE_EXEC = 0xFE00;
+    constexpr uint16_t ET_SCE_RELEXEC = 0xFE04;
+    constexpr uint16_t ET_EXEC = 2;
+    constexpr uint16_t ET_DYN = 3;
+    if (elf.size() >= E_TYPE_OFFSET + sizeof(uint16_t)) {
+        uint16_t e_type = 0;
+        std::memcpy(&e_type, elf.data() + E_TYPE_OFFSET, sizeof(e_type));
+        if (e_type == ET_SCE_EXEC)
+            e_type = ET_EXEC;
+        else if (e_type == ET_SCE_RELEXEC)
+            e_type = ET_DYN;
+        std::memcpy(elf.data() + E_TYPE_OFFSET, &e_type, sizeof(e_type));
+    }
+
+    return elf;
+}
+
 void decrypt_selfs(const fs::path &input_path, const fs::path &cache_path, const uint8_t *klic) {
     const auto is_self = [](const fs::path &file_path) -> bool {
         const auto extension = file_path.filename().extension();
