@@ -139,6 +139,7 @@ set(SOURCE_LIST
 	ScePgf/ScePgf.cpp
 	ScePhotoExport/ScePhotoExport.cpp
 	ScePower/ScePower.cpp
+	ScePower/ScePowerForDriver.cpp
 	SceProcessmgr/SceProcessmgr.cpp
 	SceProcessmgr/SceProcessmgrForDriver.cpp
 	ScePromoterUtil/ScePromoterUtil.cpp
