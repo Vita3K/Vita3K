@@ -33,12 +33,18 @@
 
 class ArmDynarmicCP15 : public Dynarmic::A32::Coprocessor {
     uint32_t tpidruro;
+    uint32_t sctlr;
+    uint32_t dacr;
+    uint32_t dummy; // catch-all for unhandled cp15 accesses
 
 public:
     using CoprocReg = Dynarmic::A32::CoprocReg;
 
     explicit ArmDynarmicCP15()
-        : tpidruro(0) {
+        : tpidruro(0)
+        , sctlr(0)
+        , dacr(0)
+        , dummy(0) {
     }
 
     ~ArmDynarmicCP15() override = default;
@@ -51,7 +57,23 @@ public:
 
     CallbackOrAccessOneWord CompileSendOneWord(bool two, unsigned opc1, CoprocReg CRn,
         CoprocReg CRm, unsigned opc2) override {
-        return CallbackOrAccessOneWord{};
+        // MCR p15, 0, Rt, c13, c0, 3 — write TPIDRURO
+        if (CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 3) {
+            return &tpidruro;
+        }
+
+        // MCR p15, 0, Rt, c1, c0, 0 — write SCTLR
+        if (!two && CRn == CoprocReg::C1 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 0) {
+            return &sctlr;
+        }
+
+        // MCR p15, 0, Rt, c3, c0, 0 — write DACR
+        if (!two && CRn == CoprocReg::C3 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 0) {
+            return &dacr;
+        }
+
+        LOG_WARN("Unhandled CP15 MCR: two={} opc1={} CRn={} CRm={} opc2={}", two, opc1, (int)CRn, (int)CRm, opc2);
+        return &dummy;
     }
 
     CallbackOrAccessTwoWords CompileSendTwoWords(bool two, unsigned opc, CoprocReg CRm) override {
@@ -60,11 +82,23 @@ public:
 
     CallbackOrAccessOneWord CompileGetOneWord(bool two, unsigned opc1, CoprocReg CRn, CoprocReg CRm,
         unsigned opc2) override {
+        // MRC p15, 0, Rt, c13, c0, 3 — read TPIDRURO (thread-local storage)
         if (CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 3) {
             return &tpidruro;
         }
 
-        return CallbackOrAccessOneWord{};
+        // MRC p15, 0, Rt, c1, c0, 0 — read SCTLR
+        if (!two && CRn == CoprocReg::C1 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 0) {
+            return &sctlr;
+        }
+
+        // MRC p15, 0, Rt, c3, c0, 0 — read DACR
+        if (!two && CRn == CoprocReg::C3 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 0) {
+            return &dacr;
+        }
+
+        LOG_WARN("Unhandled CP15 MRC: two={} opc1={} CRn={} CRm={} opc2={}", two, opc1, (int)CRn, (int)CRm, opc2);
+        return &dummy;
     }
 
     CallbackOrAccessTwoWords CompileGetTwoWords(bool two, unsigned opc, CoprocReg CRm) override {
