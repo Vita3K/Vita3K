@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <memory>
 
 // Vita3K emulator project
@@ -201,7 +202,7 @@ static std::string cmd_supported(EmuEnvState &state, PacketCommand &command) {
     // "qXfer:features:read+".
     return "multiprocess-;swbreak+;hwbreak-;qRelocInsn-;fork-events-;vfork-events-;"
            "exec-events-;vContSupported+;QThreadEvents-;no-resumed-;"
-           "qXfer:libraries:read+";
+           "qXfer:libraries:read+;qXfer:libraries-svr4:read+";
 }
 
 // clang-format off
@@ -289,6 +290,83 @@ static std::string cmd_xfer_features(EmuEnvState &state, PacketCommand &command)
     return (last ? "l" : "m") + chunk;
 }
 
+// Convert a Vita path like "vs0:sys/external/libc.suprx" into a slash-only
+// form like "/vs0/sys/external/libc.suprx". gdb's BFD layer parses the
+// colon in "device:" as a filename/section separator and refuses to open
+// such paths, so we hand it a colon-free synthetic path in the library
+// list and translate back on the vFile side.
+static std::string vita_path_to_gdb_path(const std::string &vita) {
+    const size_t colon = vita.find(':');
+    if (colon == std::string::npos)
+        return vita;
+    return "/" + vita.substr(0, colon) + "/" + vita.substr(colon + 1);
+}
+
+// Inverse of the above: accept either a real Vita path ("ux0:/foo") or
+// the slash-only synthetic form ("/ux0/foo") and return what `open_file`
+// expects. Pass-through if the input doesn't match the synthetic shape.
+static std::string gdb_path_to_vita_path(const std::string &gdb_path) {
+    if (gdb_path.empty() || gdb_path[0] != '/')
+        return gdb_path;
+    const size_t second_slash = gdb_path.find('/', 1);
+    if (second_slash == std::string::npos)
+        return gdb_path;
+    return gdb_path.substr(1, second_slash - 1) + ":" + gdb_path.substr(second_slash + 1);
+}
+
+// Build the library list XML. Used by both the legacy `library-list` and
+// the svr4 variant; gdb dispatches on which qXfer name it requested.
+static std::string build_library_list_xml(EmuEnvState &state, bool svr4) {
+    std::string xml;
+    if (svr4)
+        xml = "<library-list-svr4 version=\"1.0\">";
+    else
+        xml = "<library-list>";
+
+    {
+        const auto guard = std::lock_guard(state.kernel.mutex);
+        // Skip the main module — qOffsets already tells gdb its load address.
+        bool first = true;
+        for (const auto &[uid, module] : state.kernel.loaded_modules) {
+            if (first) {
+                first = false;
+                continue;
+            }
+            // Prefer the real Vita-style path so gdb can vFile:open it and
+            // auto-load the .suprx symbols. Fall back to module name for any
+            // module loaded without a recorded path.
+            std::string name = !module->vita_path.empty()
+                ? vita_path_to_gdb_path(module->vita_path)
+                : std::string(module->info.module_name);
+            // Defensive: drop any embedded null bytes that would break XML.
+            name.erase(std::remove(name.begin(), name.end(), '\0'), name.end());
+
+            if (svr4) {
+                const uint32_t base = module->info.segments[0].vaddr.address();
+                xml += fmt::format(
+                    "<library name=\"{}\" lm=\"0x{:x}\" l_addr=\"0x{:x}\" l_ld=\"0x0\"/>",
+                    name, static_cast<uint32_t>(uid), base);
+            } else {
+                // Emit a <segment> per loadable PT_LOAD in ELF order so gdb
+                // can compute the load offset for each section.
+                // Without this, symbols past segment 0 land at
+                // bogus addresses
+                xml += fmt::format("<library name=\"{}\">", name);
+                for (size_t i = 0; i < MODULE_INFO_NUM_SEGMENTS; i++) {
+                    const auto &seg = module->info.segments[i];
+                    if (seg.size == 0)
+                        continue;
+                    xml += fmt::format("<segment address=\"{:#x}\"/>", seg.vaddr.address());
+                }
+                xml += "</library>";
+            }
+        }
+    }
+
+    xml += svr4 ? "</library-list-svr4>" : "</library-list>";
+    return xml;
+}
+
 static std::string cmd_xfer_libraries(EmuEnvState &state, PacketCommand &command) {
     const std::string content = content_string(command);
     const std::string prefix = "qXfer:libraries:read::";
@@ -300,16 +378,28 @@ static std::string cmd_xfer_libraries(EmuEnvState &state, PacketCommand &command
     const uint32_t offset = parse_hex(params.substr(0, comma));
     const uint32_t length = parse_hex(params.substr(comma + 1));
 
-    std::string xml = "<library-list>";
-    {
-        const auto guard = std::lock_guard(state.kernel.mutex);
-        for (const auto &[uid, module] : state.kernel.loaded_modules) {
-            const uint32_t base = module->info.segments[0].vaddr.address();
-            xml += fmt::format("<library name=\"{}\"><segment address=\"{:#x}\"/></library>",
-                module->info.module_name, base);
-        }
-    }
-    xml += "</library-list>";
+    const std::string xml = build_library_list_xml(state, false);
+
+    if (offset >= xml.size())
+        return "l";
+
+    const std::string chunk = xml.substr(offset, length);
+    const bool last = (offset + chunk.size()) >= xml.size();
+    return (last ? "l" : "m") + chunk;
+}
+
+static std::string cmd_xfer_libraries_svr4(EmuEnvState &state, PacketCommand &command) {
+    const std::string content = content_string(command);
+    const std::string prefix = "qXfer:libraries-svr4:read::";
+    if (content.substr(0, prefix.size()) != prefix)
+        return "E00";
+
+    const std::string params = content.substr(prefix.size());
+    const size_t comma = params.find(',');
+    const uint32_t offset = parse_hex(params.substr(0, comma));
+    const uint32_t length = parse_hex(params.substr(comma + 1));
+
+    const std::string xml = build_library_list_xml(state, true);
 
     if (offset >= xml.size())
         return "l";
@@ -1003,24 +1093,65 @@ static std::string cmd_vfile(EmuEnvState &state, PacketCommand &command) {
         const size_t c2 = args.find(',', c1 + 1);
         if (c1 == std::string::npos || c2 == std::string::npos)
             return vfile_error(GDB_EINVAL);
-        const std::string path = vfile_unhex_path(args.substr(0, c1));
+        const std::string raw_path = vfile_unhex_path(args.substr(0, c1));
+        // gdb's BFD layer can't tolerate ':' in remote filenames, so the
+        // library list emits "/vs0/.../foo.suprx" instead of "vs0:.../foo
+        // .suprx". Translate back to the device-prefix form open_file wants.
+        const std::string path = gdb_path_to_vita_path(raw_path);
         const int gdb_flags = static_cast<int>(std::stoul(args.substr(c1 + 1, c2 - c1 - 1), nullptr, 16));
-        // mode bits ignored — Vita3K has no concept of host mode bits
         const int sce_flags = gdb_flags_to_sce(gdb_flags);
-        const SceUID fd = open_file(state.io, path.c_str(), sce_flags, state.pref_path, "gdbstub");
-        if (fd < 0) {
-            LOG_INFO("GDB vFile open failed: '{}'", path);
-            return vfile_error(GDB_ENOENT);
+
+        // Step 1: try the loaded-module ELF cache. Only modules loaded
+        // with gdbstub on populate elf_bytes, and only those produce
+        // BFD-parseable ELFs (rather than encrypted SELF blobs).
+        std::vector<uint8_t> buffer;
+        bool served_from_module = false;
+        {
+            const auto guard = std::lock_guard(state.kernel.mutex);
+            for (const auto &[uid, module] : state.kernel.loaded_modules) {
+                if (!module->elf_bytes.empty() && module->vita_path == path) {
+                    buffer = module->elf_bytes;
+                    served_from_module = true;
+                    break;
+                }
+            }
         }
-        LOG_INFO("GDB vFile opened: '{}' fd={}", path, fd);
+
+        // Step 2: fall back to reading the raw file from the guest fs
+        // (lets `remote get` and other arbitrary fetches still work).
+        if (!served_from_module) {
+            const SceUID rfd = open_file(state.io, path.c_str(), sce_flags, state.pref_path, "gdbstub");
+            if (rfd < 0) {
+                LOG_INFO("GDB vFile open failed: '{}' (raw='{}')", path, raw_path);
+                return vfile_error(GDB_ENOENT);
+            }
+            // Slurp the whole file. seek to end to find size, then read.
+            const SceOff end = seek_file(rfd, 0, SCE_SEEK_END, state.io, "gdbstub");
+            seek_file(rfd, 0, SCE_SEEK_SET, state.io, "gdbstub");
+            if (end > 0) {
+                buffer.resize(static_cast<size_t>(end));
+                const int got = read_file(buffer.data(), state.io, rfd, static_cast<SceSize>(end), "gdbstub");
+                if (got < 0) {
+                    close_file(state.io, rfd, "gdbstub");
+                    return vfile_error(GDB_EBADF);
+                }
+                buffer.resize(static_cast<size_t>(got));
+            }
+            close_file(state.io, rfd, "gdbstub");
+        }
+
+        const int fd = state.gdb.next_vfile_fd++;
+        state.gdb.vfile_buffers[fd] = std::move(buffer);
+        LOG_INFO("GDB vFile opened: '{}' fd={} ({} bytes, {})", path, fd,
+            state.gdb.vfile_buffers[fd].size(),
+            served_from_module ? "decrypted module ELF" : "raw file");
         return fmt::format("F{:x}", fd);
     }
 
     // close:<fd-hex>
     if (sub.compare(0, 6, "close:") == 0) {
-        const SceUID fd = static_cast<SceUID>(std::stoul(sub.substr(6), nullptr, 16));
-        const int rc = close_file(state.io, fd, "gdbstub");
-        if (rc < 0)
+        const int fd = static_cast<int>(std::stoul(sub.substr(6), nullptr, 16));
+        if (state.gdb.vfile_buffers.erase(fd) == 0)
             return vfile_error(GDB_EBADF);
         return "F0";
     }
@@ -1032,9 +1163,14 @@ static std::string cmd_vfile(EmuEnvState &state, PacketCommand &command) {
         const size_t c2 = args.find(',', c1 + 1);
         if (c1 == std::string::npos || c2 == std::string::npos)
             return vfile_error(GDB_EINVAL);
-        const SceUID fd = static_cast<SceUID>(std::stoul(args.substr(0, c1), nullptr, 16));
+        const int fd = static_cast<int>(std::stoul(args.substr(0, c1), nullptr, 16));
         uint32_t count = static_cast<uint32_t>(std::stoul(args.substr(c1 + 1, c2 - c1 - 1), nullptr, 16));
         const uint64_t offset = std::stoull(args.substr(c2 + 1), nullptr, 16);
+
+        const auto it = state.gdb.vfile_buffers.find(fd);
+        if (it == state.gdb.vfile_buffers.end())
+            return vfile_error(GDB_EBADF);
+        const std::vector<uint8_t> &buf = it->second;
 
         // Cap to fit in PacketData (4096) with reply header + worst-case 2x
         // escaping headroom.
@@ -1042,23 +1178,22 @@ static std::string cmd_vfile(EmuEnvState &state, PacketCommand &command) {
         if (count > MAX_PREAD)
             count = MAX_PREAD;
 
-        if (seek_file(fd, static_cast<SceOff>(offset), SCE_SEEK_SET, state.io, "gdbstub") < 0)
-            return vfile_error(GDB_EBADF);
+        if (offset >= buf.size())
+            return "F0;"; // EOF
+        const uint64_t avail = buf.size() - offset;
+        const uint32_t n = count < avail ? count : static_cast<uint32_t>(avail);
 
-        std::vector<char> buf(count);
-        const int n = read_file(buf.data(), state.io, fd, count, "gdbstub");
-        if (n < 0)
-            return vfile_error(GDB_EBADF);
-
-        return fmt::format("F{:x};", n) + vfile_escape_binary(buf.data(), static_cast<size_t>(n));
+        return fmt::format("F{:x};", n)
+            + vfile_escape_binary(reinterpret_cast<const char *>(buf.data() + offset), n);
     }
 
     // fstat:<fd-hex>
     if (sub.compare(0, 6, "fstat:") == 0) {
-        const SceUID fd = static_cast<SceUID>(std::stoul(sub.substr(6), nullptr, 16));
-        SceIoStat sce_stat{};
-        if (stat_file_by_fd(state.io, fd, &sce_stat, state.pref_path, "gdbstub") < 0)
+        const int fd = static_cast<int>(std::stoul(sub.substr(6), nullptr, 16));
+        const auto it = state.gdb.vfile_buffers.find(fd);
+        if (it == state.gdb.vfile_buffers.end())
             return vfile_error(GDB_EBADF);
+        const uint64_t size = it->second.size();
 
         // GDB's struct stat is a fixed 64-byte big-endian layout.
         // See "struct stat" in the gdb manual, Host I/O Packets section.
@@ -1070,9 +1205,9 @@ static std::string cmd_vfile(EmuEnvState &state, PacketCommand &command) {
         vfile_put32_be(st + 16, 0); // uid
         vfile_put32_be(st + 20, 0); // gid
         vfile_put32_be(st + 24, 0); // rdev
-        vfile_put64_be(st + 28, static_cast<uint64_t>(sce_stat.st_size)); // size
+        vfile_put64_be(st + 28, size); // size
         vfile_put64_be(st + 36, 4096); // blksize
-        vfile_put64_be(st + 44, (static_cast<uint64_t>(sce_stat.st_size) + 511) / 512); // blocks
+        vfile_put64_be(st + 44, (size + 511) / 512); // blocks
         vfile_put32_be(st + 52, 0); // atime
         vfile_put32_be(st + 56, 0); // mtime
         vfile_put32_be(st + 60, 0); // ctime
@@ -1119,6 +1254,7 @@ const static PacketFunctionBundle functions[] = {
     { "X", cmd_write_binary },
 
     // Query Packets
+    { "qXfer:libraries-svr4:read:", cmd_xfer_libraries_svr4 },
     { "qXfer:libraries:read:", cmd_xfer_libraries },
     { "qXfer:features:read:", cmd_xfer_features },
     { "qfThreadInfo", cmd_get_first_thread },
@@ -1265,6 +1401,8 @@ static void server_listen(EmuEnvState &state) {
         close(state.gdb.client_socket);
 #endif
         state.gdb.client_socket = BAD_SOCK;
+        state.gdb.vfile_buffers.clear();
+        state.gdb.next_vfile_fd = 1;
 
         if (!state.gdb.server_die)
             LOG_INFO("GDB Server Client Disconnected, waiting for new connection...");

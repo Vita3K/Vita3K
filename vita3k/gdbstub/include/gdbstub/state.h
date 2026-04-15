@@ -17,8 +17,11 @@
 
 #pragma once
 
+#include <cstdint>
+#include <map>
 #include <memory>
 #include <thread>
+#include <vector>
 
 #ifdef _WIN32
 #include <winsock.h>
@@ -53,4 +56,11 @@ struct GDBState {
     SceUID current_thread = 0;
 
     bool client_has_xml = false;
+
+    // vFile fd cache. Each open allocates a fresh fd and stores the
+    // file's bytes in memory; pread/fstat/close operate on these buffers.
+    // Lets us serve decrypted ELFs for Vita modules from KernelModule's
+    // elf_bytes cache, transparent to the gdb client.
+    int next_vfile_fd = 1;
+    std::map<int, std::vector<uint8_t>> vfile_buffers;
 };
