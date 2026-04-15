@@ -268,26 +268,30 @@ static constexpr const char TARGET_XML[] =
     "</target>";
 // clang-format on
 
-static std::string cmd_xfer_features(EmuEnvState &state, PacketCommand &command) {
-    const std::string content = content_string(command);
-    const std::string prefix = "qXfer:features:read:target.xml:";
+// Shared chunking logic for qXfer:*:read packets. Validates the prefix,
+// parses "<offset>,<length>", and returns the appropriate "m<chunk>"
+// (more) / "l<chunk>" (last) / "l" (eof) reply.
+static std::string xfer_chunk_reply(const std::string &content, const std::string &prefix, const std::string &xml) {
     if (content.substr(0, prefix.size()) != prefix)
         return "E00";
-
-    state.gdb.client_has_xml = true;
 
     const std::string params = content.substr(prefix.size());
     const size_t comma = params.find(',');
     const uint32_t offset = parse_hex(params.substr(0, comma));
     const uint32_t length = parse_hex(params.substr(comma + 1));
 
-    const std::string xml(TARGET_XML);
     if (offset >= xml.size())
         return "l";
 
     const std::string chunk = xml.substr(offset, length);
     const bool last = (offset + chunk.size()) >= xml.size();
     return (last ? "l" : "m") + chunk;
+}
+
+static std::string cmd_xfer_features(EmuEnvState &state, PacketCommand &command) {
+    state.gdb.client_has_xml = true;
+    return xfer_chunk_reply(content_string(command),
+        "qXfer:features:read:target.xml:", TARGET_XML);
 }
 
 // Convert a Vita path like "vs0:sys/external/libc.suprx" into a slash-only
@@ -368,45 +372,13 @@ static std::string build_library_list_xml(EmuEnvState &state, bool svr4) {
 }
 
 static std::string cmd_xfer_libraries(EmuEnvState &state, PacketCommand &command) {
-    const std::string content = content_string(command);
-    const std::string prefix = "qXfer:libraries:read::";
-    if (content.substr(0, prefix.size()) != prefix)
-        return "E00";
-
-    const std::string params = content.substr(prefix.size());
-    const size_t comma = params.find(',');
-    const uint32_t offset = parse_hex(params.substr(0, comma));
-    const uint32_t length = parse_hex(params.substr(comma + 1));
-
-    const std::string xml = build_library_list_xml(state, false);
-
-    if (offset >= xml.size())
-        return "l";
-
-    const std::string chunk = xml.substr(offset, length);
-    const bool last = (offset + chunk.size()) >= xml.size();
-    return (last ? "l" : "m") + chunk;
+    return xfer_chunk_reply(content_string(command),
+        "qXfer:libraries:read::", build_library_list_xml(state, false));
 }
 
 static std::string cmd_xfer_libraries_svr4(EmuEnvState &state, PacketCommand &command) {
-    const std::string content = content_string(command);
-    const std::string prefix = "qXfer:libraries-svr4:read::";
-    if (content.substr(0, prefix.size()) != prefix)
-        return "E00";
-
-    const std::string params = content.substr(prefix.size());
-    const size_t comma = params.find(',');
-    const uint32_t offset = parse_hex(params.substr(0, comma));
-    const uint32_t length = parse_hex(params.substr(comma + 1));
-
-    const std::string xml = build_library_list_xml(state, true);
-
-    if (offset >= xml.size())
-        return "l";
-
-    const std::string chunk = xml.substr(offset, length);
-    const bool last = (offset + chunk.size()) >= xml.size();
-    return (last ? "l" : "m") + chunk;
+    return xfer_chunk_reply(content_string(command),
+        "qXfer:libraries-svr4:read::", build_library_list_xml(state, true));
 }
 
 static std::string cmd_reply_empty(EmuEnvState &state, PacketCommand &command) {
