@@ -22,6 +22,7 @@
 #include <kernel/state.h>
 #include <mem/functions.h>
 #include <modules/module_parent.h>
+#include <nids/functions.h>
 #include <util/arm.h>
 #include <util/log.h>
 
@@ -1221,6 +1222,80 @@ void load_taihen_config(EmuEnvState &emuenv) {
     }
 }
 
+// Register an HLE override for a kubridge export NID.
+// Creates an SVC stub in ARM memory, overwrites export_nids, and re-patches
+// any existing func_binding_infos so that callers dispatch to HLE C++ instead
+// of kubridge's ARM code (which uses firmware-specific offsets and MMU ops).
+static void register_hle_override(EmuEnvState &emuenv, uint32_t nid) {
+    auto &kernel = emuenv.kernel;
+    auto &mem = emuenv.mem;
+    const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
+
+    // Allocate 12 bytes for an SVC stub: svc #0; mov pc, lr; NID
+    Address stub_addr = alloc(mem, 12, "kubridge_hle_override");
+    if (!stub_addr) {
+        LOG_ERROR("register_hle_override: failed to allocate stub for NID {}", log_hex(nid));
+        return;
+    }
+
+    uint32_t *stub = Ptr<uint32_t>(stub_addr).get(mem);
+    stub[0] = 0xef000000; // svc #0
+    stub[1] = 0xe1a0f00e; // mov pc, lr
+    stub[2] = nid;
+
+    // Overwrite (or insert) the export_nids entry
+    kernel.export_nids[nid] = stub_addr;
+
+    // Re-patch any existing import stubs that already point to kubridge's ARM code
+    auto range = kernel.func_binding_infos.equal_range(nid);
+    for (auto it = range.first; it != range.second; ++it) {
+        auto address = it->second;
+        uint32_t *caller_stub = Ptr<uint32_t>(address).get(mem);
+        caller_stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)stub_addr, 12);
+        caller_stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(stub_addr >> 16), 12);
+        caller_stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
+        kernel.invalidate_jit_cache(address, 3 * sizeof(uint32_t));
+    }
+
+    const char *name = import_name(nid);
+    LOG_INFO("taiHEN: registered HLE override for NID {} ({}) at {}", log_hex(nid), name, log_hex(stub_addr));
+}
+
+// Apply HLE overrides for plugin exports that have HLE implementations.
+// When a plugin (e.g. kubridge) exports functions that can't run as LLE
+// (firmware-specific offsets, ARM MMU manipulation), we register them in
+// nids.inc and this function dynamically overrides the LLE exports with
+// SVC stubs that dispatch to our C++ implementations.
+static void apply_plugin_hle_overrides(EmuEnvState &emuenv) {
+    auto &kernel = emuenv.kernel;
+    int count = 0;
+
+    // Snapshot current export_nids to iterate (we'll modify it)
+    std::vector<std::pair<uint32_t, Address>> exports_snapshot;
+    {
+        const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
+        exports_snapshot.assign(kernel.export_nids.begin(), kernel.export_nids.end());
+    }
+
+    for (const auto &[nid, addr] : exports_snapshot) {
+        // Check if the exported NID's current address is an LLE (ARM) function
+        // AND we have an HLE implementation for it
+        uint32_t *stub = Ptr<uint32_t>(addr).get(emuenv.mem);
+        if (is_svc_stub(stub)) {
+            // Already an SVC stub (HLE), no need to override
+            continue;
+        }
+        if (has_hle_implementation(nid)) {
+            register_hle_override(emuenv, nid);
+            count++;
+        }
+    }
+
+    if (count > 0) {
+        LOG_INFO("taiHEN: applied {} HLE overrides for plugin exports", count);
+    }
+}
+
 void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &titleid) {
     auto *state = emuenv.kernel.obj_store.get<TaihenState>();
     if (!state)
@@ -1243,6 +1318,9 @@ void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &title
             }
         }
         state->kernel_plugins_loaded = true;
+
+        // Apply HLE overrides for plugin exports that have C++ implementations
+        apply_plugin_hle_overrides(emuenv);
     }
 
     // Load title-specific plugins
