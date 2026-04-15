@@ -68,6 +68,10 @@ static const ImportFn *resolve_import(uint32_t nid) {
     }
 }
 
+bool has_hle_implementation(uint32_t nid) {
+    return resolve_import(nid) != nullptr;
+}
+
 struct VarExport {
     uint32_t nid;
     ImportVarFactory factory;

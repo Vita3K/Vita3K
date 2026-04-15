@@ -73,6 +73,7 @@ set(SOURCE_LIST
 	SceKernelThreadMgr/SceThreadmgrCoredumpTime.cpp
 	SceKernelThreadMgr/SceThreadmgrForDriver.cpp
 	SceKernelThreadMgr/SceThreadmgrForKernel.cpp
+	SceKubridge/SceKubridge.cpp
 	SceLibc/SceLibc.cpp
 	SceLibc/SceLibm.cpp
 	SceLibc/SceLibstdcxx.cpp

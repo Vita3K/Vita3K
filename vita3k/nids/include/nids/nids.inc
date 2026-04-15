@@ -2476,6 +2476,14 @@ NID(ksceKernelWaitThreadEnd, 0x3E20216F)
 NID(ksceKernelWaitThreadEndCB, 0x9EF4F62C)
 // Library "SceThreadmgrForKernel"
 NID(ksceKernelGetFaultingProcess, 0xD8B9AC8D)
+// Module "SceKubridge"
+// Library "SceKubridge"
+NID(kuKernelMemProtect, 0x566D2AF1)
+NID(kuKernelMemReserve, 0xCED3608C)
+NID(kuKernelMemCommit, 0x9C0CD758)
+NID(kuKernelMemDecommit, 0x9BDF5881)
+NID(kuKernelRegisterExceptionHandler, 0xF9025D19)
+NID(kuKernelReleaseExceptionHandler, 0xDF9F3BED)
 // Module "SceLibc"
 // Library "SceLibc"
 NID(_Assert, 0xE4531F85)
