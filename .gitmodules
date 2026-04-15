@@ -90,3 +90,6 @@
 [submodule "external/libadrenotools"]
 	path = external/libadrenotools
 	url = https://github.com/bylaws/libadrenotools
+[submodule "external/substitute"]
+	path = external/substitute
+	url = https://github.com/Vita3K/substitute.git

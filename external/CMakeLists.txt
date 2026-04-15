@@ -56,6 +56,8 @@ set(SPDLOG_NO_THREAD_ID ON CACHE BOOL "")
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "")
 add_subdirectory(spdlog EXCLUDE_FROM_ALL)
 
+add_subdirectory(substitute EXCLUDE_FROM_ALL)
+
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
 
