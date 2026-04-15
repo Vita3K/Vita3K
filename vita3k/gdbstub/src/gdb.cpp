@@ -57,7 +57,8 @@
 
 // Credit to jfhs for their GDB stub for RPCS3 which this stub is based on.
 
-typedef char PacketData[4096];
+// Must match the PacketSize advertised in qSupported.
+typedef char PacketData[16384];
 
 // The longest packet the stub waits for before it drops it
 constexpr size_t MAX_PACKET_SIZE = 16384;
@@ -215,7 +216,8 @@ static int64_t server_ack(GDBState &state, char ack = '+') {
 }
 
 static std::string cmd_supported(EmuEnvState &state, PacketCommand &command) {
-    return "multiprocess-;swbreak+;hwbreak-;qRelocInsn-;fork-events-;vfork-events-;"
+    return "PacketSize=4000;"
+           "multiprocess-;swbreak+;hwbreak-;qRelocInsn-;fork-events-;vfork-events-;"
            "exec-events-;vContSupported+;QThreadEvents-;no-resumed-;qXfer:features:read+;"
            "qXfer:libraries:read+;qXfer:libraries-svr4:read+";
 }
@@ -1076,9 +1078,9 @@ static std::string cmd_vfile(EmuEnvState &state, PacketCommand &command) {
             return vfile_error(GDB_EBADF);
         const std::vector<uint8_t> &buf = it->second;
 
-        // Cap to fit in PacketData (4096) with reply header + worst-case 2x
-        // escaping headroom.
-        constexpr uint32_t MAX_PREAD = 1024;
+        // Cap to fit in PacketData (16384) with reply header + worst-case
+        // 2x binary escape expansion.
+        constexpr uint32_t MAX_PREAD = 8000;
         if (count > MAX_PREAD)
             count = MAX_PREAD;
 
