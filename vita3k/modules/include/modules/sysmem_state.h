@@ -15,18 +15,34 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <module/module.h>
+#pragma once
 
-EXPORT(int, ksceKernelInvokeProcEventHandler) {
-    return UNIMPLEMENTED();
-}
+#include <kernel/types.h>
 
-EXPORT(SceUID, ksceKernelRegisterProcEventHandler, const char *name, Ptr<void> handler, int priority) {
-    // Stub: return a fake UID. kubridge registers a process event handler
-    // for cleanup on process exit, but in the emulator we don't need it.
-    return 0x40001;
-}
+#include <map>
+#include <memory>
+#include <mutex>
 
-EXPORT(int, ksceKernelUnregisterProcEventHandler) {
-    return UNIMPLEMENTED();
-}
+// Shared SysmemState definition used by SceSysmem and kubridge HLE.
+
+struct KernelMemBlock : SceKernelMemBlockInfo {
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+};
+
+typedef std::shared_ptr<KernelMemBlock> KernelMemBlockPtr;
+typedef std::map<SceUID, KernelMemBlockPtr> Blocks;
+
+struct SysmemState {
+    std::mutex mutex;
+    Blocks blocks;
+    Blocks vm_blocks;
+    SceUID next_uid = 1;
+
+    uint32_t allocated_user = 0;
+    uint32_t allocated_cdram = 0;
+    uint32_t allocated_phycont = 0;
+
+    SceUID get_next_uid() {
+        return next_uid++;
+    }
+};

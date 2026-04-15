@@ -16,7 +16,10 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "../SceLibKernel/SceLibKernel.h"
+#include "SceThreadmgr.h"
 #include <module/module.h>
+
+#include <kernel/state.h>
 
 EXPORT(int, ksceKernelCancelCallback) {
     return UNIMPLEMENTED();
@@ -82,8 +85,11 @@ EXPORT(int, ksceKernelCreateSimpleEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelCreateThread) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, ksceKernelCreateThread, const char *name, SceKernelThreadEntry entry, int initPriority, SceSize stackSize, SceUInt attr, int cpuAffinityMask, void *pOptParam) {
+    const ThreadStatePtr thread = emuenv.kernel.create_thread(emuenv.mem, name, entry.cast<void>(), initPriority, cpuAffinityMask, stackSize, nullptr);
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_ERROR);
+    return thread->id;
 }
 
 EXPORT(int, ksceKernelDeleteCallback) {
@@ -282,8 +288,8 @@ EXPORT(int, ksceKernelSignalSema) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelStartThread) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
+    return CALL_EXPORT(_sceKernelStartThread, thid, arglen, argp);
 }
 
 EXPORT(int, ksceKernelStartTimer) {
@@ -362,8 +368,8 @@ EXPORT(int, ksceKernelWaitSema) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelWaitThreadEnd) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
+    return CALL_EXPORT(_sceKernelWaitThreadEnd, thid, stat, timeout);
 }
 
 EXPORT(int, ksceKernelWaitThreadEndCB) {

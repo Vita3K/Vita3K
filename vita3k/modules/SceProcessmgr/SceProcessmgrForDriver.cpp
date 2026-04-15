@@ -17,8 +17,14 @@
 
 #include <module/module.h>
 
-EXPORT(int, ksceKernelCreateProcessLocalStorage) {
-    return UNIMPLEMENTED();
+#include <atomic>
+
+static std::atomic<int> pls_key_counter{1};
+
+EXPORT(int, ksceKernelCreateProcessLocalStorage, const char *name, SceSize size) {
+    // Return a unique key for this PLS entry.
+    // kubridge uses this for per-process exception handler context.
+    return pls_key_counter.fetch_add(1);
 }
 
 EXPORT(int, ksceKernelGetProcessInfo) {
