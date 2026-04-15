@@ -300,7 +300,15 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
         return SCE_ERROR_ERRNO_ENOENT;
     }
 
-    return load_module_data(module_buffer.data());
+    const SceUID module_id = load_module_data(module_buffer.data());
+    // Cache the inner decrypted ELF so the gdb stub can serve a
+    // BFD-parseable image via vFile. Gated on gdbstub so non-gdb
+    // runs don't pay the per-module memory overhead.
+    if (module_id >= 0 && emuenv.cfg.gdbstub) {
+        const auto module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+        module->elf_bytes = extract_elf_from_self(module_buffer);
+    }
+    return module_id;
 }
 
 int unload_module(EmuEnvState &emuenv, SceUID module_id) {
