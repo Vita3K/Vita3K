@@ -721,29 +721,117 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
         std::string text = content.substr(index + 1, next - index - 1);
 
         const char cmd = text[0];
+
+        // Step the inferior thread by one instruction (resume in step
+        // mode, then wait for it to stop). Shared by vCont;s/S and the
+        // inner loop of vCont;r.
+        const auto single_step_inferior = [&](const ThreadStatePtr &thread) {
+            thread->resume(true);
+            auto thread_lock = std::unique_lock(thread->mutex);
+            thread->status_cond.wait(thread_lock, [&]() {
+                return thread->status == ThreadStatus::suspend
+                    || thread->status == ThreadStatus::wait;
+            });
+        };
+
+        // Poll the client socket (non-blocking) for a Ctrl-C interrupt
+        // byte. Returns true if one was consumed. Keeps long range
+        // steps interruptible.
+        const auto poll_ctrl_c = [&]() {
+            fd_set read_set;
+            timeval tv = { 0, 0 };
+            FD_ZERO(&read_set);
+            FD_SET(state.gdb.client_socket, &read_set);
+            if (select(state.gdb.client_socket + 1, &read_set, nullptr, nullptr, &tv) <= 0)
+                return false;
+            char byte = 0;
+            if (recv(state.gdb.client_socket, &byte, 1, MSG_PEEK) == 1 && byte == '\x03') {
+                recv(state.gdb.client_socket, &byte, 1, 0);
+                return true;
+            }
+            return false;
+        };
+
         switch (cmd) {
+        case 'r': {
+            // Server-side range stepping: single-step the inferior
+            // thread until PC leaves [start, end). gdb would otherwise
+            // send one vCont;r per instruction (a round trip per insn
+            // for every source-line `next`), which is painfully slow
+            // over even a local socket.
+            const size_t comma = text.find(',');
+            if (comma == std::string::npos) {
+                LOG_WARN("Malformed vCont;r packet: {}", text);
+                break;
+            }
+            const size_t thread_delim = text.find(':', comma + 1);
+            const uint32_t range_start = parse_hex(text.substr(1, comma - 1));
+            const size_t end_len = thread_delim == std::string::npos
+                ? std::string::npos
+                : thread_delim - comma - 1;
+            const uint32_t range_end = parse_hex(text.substr(comma + 1, end_len));
+
+            ThreadStatePtr inferior;
+            {
+                const auto guard = std::lock_guard(state.kernel.mutex);
+                if (state.gdb.inferior_thread != 0) {
+                    auto it = state.kernel.threads.find(state.gdb.inferior_thread);
+                    if (it != state.kernel.threads.end())
+                        inferior = it->second;
+                }
+            }
+            if (!inferior) {
+                state.gdb.current_thread = state.gdb.inferior_thread;
+                return "S05";
+            }
+
+            // Poll the socket periodically so the user can still Ctrl-C
+            // out of a pathological in-range loop.
+            constexpr int CTRLC_POLL_INTERVAL = 1024;
+            int steps = 0;
+            while (!state.gdb.server_die) {
+                const uint32_t pc = read_pc(*inferior->cpu);
+                if (pc < range_start || pc >= range_end)
+                    break;
+
+                single_step_inferior(inferior);
+                ++steps;
+
+                if (inferior->status == ThreadStatus::wait)
+                    break;
+                if (state.kernel.debugger.has_break.load()) {
+                    state.gdb.inferior_thread = state.kernel.debugger.break_thread_id;
+                    state.kernel.debugger.has_break = false;
+                    break;
+                }
+                if ((steps % CTRLC_POLL_INTERVAL) == 0 && poll_ctrl_c()) {
+                    LOG_INFO("GDB interrupt received during range step (Ctrl-C)");
+                    break;
+                }
+            }
+
+            if (state.gdb.server_die)
+                return "";
+
+            state.gdb.current_thread = state.gdb.inferior_thread;
+            return "S05";
+        }
         case 'c':
         case 'C':
         case 's':
-        case 'S':
-        case 'r': {
-            // Treat range-stepping (r<start>,<end>) as a single instruction
-            // step. gdb will re-issue vCont;r until PC leaves the range.
-            bool step = cmd == 's' || cmd == 'S' || cmd == 'r';
+        case 'S': {
+            bool step = cmd == 's' || cmd == 'S';
 
             if (step && state.gdb.inferior_thread != 0) {
-                // Step just the inferior thread: everything else stays frozen.
-                // resume() acquires thread->mutex internally so can't hold here.
-                const auto guard = std::lock_guard(state.kernel.mutex);
-                auto thread = state.kernel.threads[state.gdb.inferior_thread];
-                thread->resume(true);
+                ThreadStatePtr thread;
                 {
-                    auto thread_lock = std::unique_lock(thread->mutex);
-                    thread->status_cond.wait(thread_lock, [&]() {
-                        return thread->status == ThreadStatus::suspend
-                            || thread->status == ThreadStatus::wait;
-                    });
+                    const auto guard = std::lock_guard(state.kernel.mutex);
+                    auto it = state.kernel.threads.find(state.gdb.inferior_thread);
+                    if (it != state.kernel.threads.end())
+                        thread = it->second;
                 }
+                if (thread)
+                    single_step_inferior(thread);
             }
 
             if (!step) {
@@ -892,7 +980,26 @@ static std::string cmd_offsets(EmuEnvState &state, PacketCommand &command) {
 
 static std::string cmd_thread_status(EmuEnvState &state, PacketCommand &command) { return "T0"; }
 
-static std::string cmd_reason(EmuEnvState &state, PacketCommand &command) { return "S05"; }
+static std::string cmd_reason(EmuEnvState &state, PacketCommand &command) {
+    // Point gdb at the main app thread. The main thread is created with the
+    // title_id as its name (see interface.cpp load_app).
+    const auto guard = std::lock_guard(state.kernel.mutex);
+    SceUID chosen = 0;
+    for (const auto &[uid, thread] : state.kernel.threads) {
+        if (thread->name == state.io.title_id) {
+            chosen = uid;
+            break;
+        }
+        if (chosen == 0 && read_pc(*thread->cpu) != 0)
+            chosen = uid;
+    }
+    if (chosen == 0 && !state.kernel.threads.empty())
+        chosen = state.kernel.threads.begin()->first;
+    if (chosen == 0)
+        return "S05";
+    state.gdb.current_thread = chosen;
+    return fmt::format("T05thread:{:x};", chosen);
+}
 
 static std::string cmd_get_first_thread(EmuEnvState &state, PacketCommand &command) {
     const auto guard = std::lock_guard(state.kernel.mutex);
