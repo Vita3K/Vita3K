@@ -84,6 +84,12 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem, CPUState
         assert(kernel.tls_psize <= kernel.tls_msize);
         memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
     }
+
+    // Seed PC and SP on the CPU so tools (gdbstub) that inspect the
+    // thread between create and start see its real entry point rather
+    // than zeros. start() reloads the full context and overwrites these.
+    this->cpu->set_pc(entry_point);
+    this->cpu->set_sp(stack.get() + this->stack_size);
 }
 
 int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback) {
