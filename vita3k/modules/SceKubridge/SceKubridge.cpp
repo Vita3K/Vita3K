@@ -49,14 +49,41 @@ struct KuKernelExceptionHandlerOpt {
     uint32_t size;
 };
 
+// Convert kubridge protection flags to Vita3K MemPerm.
+// Note: EXEC is not mapped — dynarmic handles execute permission separately.
+static MemPerm ku_prot_to_memperm(uint32_t prot) {
+    if (prot & KU_KERNEL_PROT_WRITE)
+        return MemPerm::ReadWrite;
+    if (prot & KU_KERNEL_PROT_READ)
+        return MemPerm::ReadOnly;
+    return MemPerm::None;
+}
+
 // kuKernelMemProtect — change memory protection on a range.
-// In Vita3K, all user memory is effectively RWX (dynarmic doesn't enforce
-// page protections), so this is a no-op that validates arguments.
+// Uses add_protect for restrictive permissions (so fault handler can catch access),
+// and unprotect_inner to restore access.
 EXPORT(int, kuKernelMemProtect, Ptr<void> addr, SceSize len, uint32_t prot) {
     if (!addr || len == 0)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
-    LOG_DEBUG("kuKernelMemProtect: addr={} len={} prot=0x{:02X}", log_hex(addr.address()), len, prot);
+    const MemPerm perm = ku_prot_to_memperm(prot);
+
+    if (perm == MemPerm::None || perm == MemPerm::ReadOnly) {
+        // Use add_protect so fault handler can catch violations gracefully.
+        // Callback logs the violation and lets the handler unprotect the page.
+        const Address va = addr.address();
+        add_protect(emuenv.mem, va, len, perm, [va, len](Address fault_addr, bool write) {
+            LOG_WARN("kuKernelMemProtect: access violation at 0x{:08X} (write={}) in protected range [0x{:08X}, 0x{:08X})",
+                fault_addr, write, va, va + len);
+            return true;
+        });
+    } else {
+        // ReadWrite or more permissive — just unprotect
+        unprotect_inner(emuenv.mem, addr.address(), len);
+    }
+
+    LOG_DEBUG("kuKernelMemProtect: addr={} len={} prot=0x{:02X} -> perm={}",
+        log_hex(addr.address()), len, prot, (int)perm);
     return 0;
 }
 
@@ -102,9 +129,8 @@ EXPORT(SceUID, kuKernelMemReserve, Ptr<Ptr<void>> addr, SceSize size, SceKernelM
 }
 
 // kuKernelMemCommit — commit physical pages to a reserved range.
-// In Vita3K (Option B, no mirrors), memory is already committed at Reserve time,
-// so this is a no-op. When baseBlock mirrors are needed (Option C), this will
-// need to use add_external_mapping().
+// Memory is already committed at Reserve time. Apply requested protection.
+// When baseBlock mirrors are needed (Option C), this will use add_external_mapping().
 EXPORT(int, kuKernelMemCommit, Ptr<void> addr, SceSize len, uint32_t prot, Ptr<KuKernelMemCommitOpt> pOpt) {
     if (!addr || len == 0)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
@@ -114,23 +140,34 @@ EXPORT(int, kuKernelMemCommit, Ptr<void> addr, SceSize len, uint32_t prot, Ptr<K
         if (opt->attr & KU_KERNEL_MEM_COMMIT_ATTR_HAS_BASE) {
             LOG_WARN("kuKernelMemCommit: baseBlock mirrors not yet implemented (baseBlock=0x{:08X} offset=0x{:08X})",
                 opt->baseBlock, opt->baseOffset);
-            // For now, memory is already committed — games that need mirrors
-            // will get separate copies instead of shared memory.
         }
     }
 
-    LOG_DEBUG("kuKernelMemCommit: addr={} len={} prot=0x{:02X}", log_hex(addr.address()), len, prot);
+    const MemPerm perm = ku_prot_to_memperm(prot);
+    // Memory already committed at Reserve time — just apply protection.
+    // Always unprotect (RW) since committed memory should be accessible.
+    unprotect_inner(emuenv.mem, addr.address(), len);
+
+    LOG_DEBUG("kuKernelMemCommit: addr={} len={} prot=0x{:02X} -> perm={}",
+        log_hex(addr.address()), len, prot, (int)perm);
     return 0;
 }
 
 // kuKernelMemDecommit — release physical pages from a committed range.
-// In Vita3K (Option B), we keep memory accessible. Real decommit would
-// mprotect(PROT_NONE) which would crash dynarmic.
+// Uses add_protect so the fault handler catches accesses gracefully
+// instead of crashing the emulator.
 EXPORT(int, kuKernelMemDecommit, Ptr<void> addr, SceSize len) {
     if (!addr || len == 0)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
-    LOG_DEBUG("kuKernelMemDecommit: addr={} len={}", log_hex(addr.address()), len);
+    const Address va = addr.address();
+    add_protect(emuenv.mem, va, len, MemPerm::None, [va, len](Address fault_addr, bool write) {
+        LOG_WARN("kuKernelMemDecommit: access to decommitted memory at 0x{:08X} (write={}) range [0x{:08X}, 0x{:08X})",
+            fault_addr, write, va, va + len);
+        return true;
+    });
+
+    LOG_DEBUG("kuKernelMemDecommit: addr={} len={}", log_hex(va), len);
     return 0;
 }
 
