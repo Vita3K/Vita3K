@@ -814,7 +814,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 return "";
 
             state.gdb.current_thread = state.gdb.inferior_thread;
-            return "S05";
+            return fmt::format("T05thread:{:x};", state.gdb.inferior_thread);
         }
         case 'c':
         case 'C':
@@ -921,7 +921,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             }
 
             state.gdb.current_thread = state.gdb.inferior_thread;
-            return "S05";
+            return fmt::format("T05thread:{:x};", state.gdb.inferior_thread);
         }
         default:
             LOG_WARN("Unsupported vCont command '{}'", cmd);
