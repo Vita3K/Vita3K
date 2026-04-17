@@ -17,6 +17,8 @@
 
 #include <module/module.h>
 
+#include <cpu/functions.h>
+#include <kernel/state.h>
 #include <kernel/types.h>
 
 #include <cstring>
@@ -351,11 +353,13 @@ EXPORT(int, ksceKernelCpuDcacheWritebackInvalidateRange) {
     return 0;
 }
 
-EXPORT(int, ksceKernelCpuIcacheInvalidateRange) {
+EXPORT(int, ksceKernelCpuIcacheInvalidateRange, Address addr, uint32_t size) {
+    emuenv.kernel.invalidate_jit_cache(addr, size);
     return 0;
 }
 
-EXPORT(int, ksceKernelCpuIcacheAndL2WritebackInvalidateRange) {
+EXPORT(int, ksceKernelCpuIcacheAndL2WritebackInvalidateRange, Address addr, uint32_t size) {
+    emuenv.kernel.invalidate_jit_cache(addr, size);
     return 0;
 }
 

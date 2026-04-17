@@ -547,6 +547,7 @@ EXPORT(SceUID, taiHookFunctionImportForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
     // Find the import stub for this NID in the specified module
     Address stub_addr;
     {
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
         stub_addr = find_import_stub_in_module(emuenv, module_name, func_nid);
     }
@@ -585,18 +586,22 @@ EXPORT(SceUID, taiHookFunctionOffsetForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
     Address hook_func = oargs->hook_func;
 
     // Find the target address from module + segment + offset
-    const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
-    if (mod_it == emuenv.kernel.loaded_modules.end()) {
-        LOG_WARN("taiHookFunctionOffsetForUser: module {} not found", modid);
-        return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
-    }
+    Address target_addr;
+    {
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
+        const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
+        if (mod_it == emuenv.kernel.loaded_modules.end()) {
+            LOG_WARN("taiHookFunctionOffsetForUser: module {} not found", modid);
+            return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+        }
 
-    const auto &mod = mod_it->second->info;
-    if (segidx < 0 || segidx >= MODULE_INFO_NUM_SEGMENTS || mod.segments[segidx].memsz == 0) {
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
-    }
+        const auto &mod = mod_it->second->info;
+        if (segidx < 0 || segidx >= MODULE_INFO_NUM_SEGMENTS || mod.segments[segidx].memsz == 0) {
+            return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+        }
 
-    Address target_addr = mod.segments[segidx].vaddr.address() + offset;
+        target_addr = mod.segments[segidx].vaddr.address() + offset;
+    }
     // Add Thumb bit if the thumb flag is set
     if (thumb)
         target_addr |= 1;
@@ -637,25 +642,28 @@ EXPORT(int, taiGetModuleInfo, const char *module, Ptr<void> info) {
     };
 
     // Search LLE loaded modules first
-    const auto &loaded_modules = emuenv.kernel.loaded_modules;
-    for (const auto &[uid, mod] : loaded_modules) {
-        if (std::string(mod->info.module_name) == module) {
-            // Find module_nid via reverse lookup in module_uid_by_nid
-            uint32_t mod_nid = 0;
-            {
-                const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
-                for (const auto &[nid, mapped_uid] : emuenv.kernel.module_uid_by_nid) {
-                    if (mapped_uid == uid) {
-                        mod_nid = nid;
-                        break;
+    {
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
+        const auto &loaded_modules = emuenv.kernel.loaded_modules;
+        for (const auto &[uid, mod] : loaded_modules) {
+            if (std::string(mod->info.module_name) == module) {
+                // Find module_nid via reverse lookup in module_uid_by_nid
+                uint32_t mod_nid = 0;
+                {
+                    const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+                    for (const auto &[nid, mapped_uid] : emuenv.kernel.module_uid_by_nid) {
+                        if (mapped_uid == uid) {
+                            mod_nid = nid;
+                            break;
+                        }
                     }
                 }
+                fill_info(uid, mod->info.module_name, mod_nid,
+                    mod->info.segments[0].vaddr.address(),
+                    mod->info.segments[0].memsz);
+                LOG_DEBUG("taiGetModuleInfo: found LLE module '{}' uid={} nid=0x{:08X}", module, uid, mod_nid);
+                return 0;
             }
-            fill_info(uid, mod->info.module_name, mod_nid,
-                mod->info.segments[0].vaddr.address(),
-                mod->info.segments[0].memsz);
-            LOG_DEBUG("taiGetModuleInfo: found LLE module '{}' uid={} nid=0x{:08X}", module, uid, mod_nid);
-            return 0;
         }
     }
 
@@ -805,18 +813,22 @@ EXPORT(SceUID, taiInjectDataForUser, Ptr<void> args) {
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
     // Resolve module + segment + offset to address
-    const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
-    if (mod_it == emuenv.kernel.loaded_modules.end()) {
-        LOG_WARN("taiInjectDataForUser: module {} not found", modid);
-        return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
-    }
+    Address dest_addr;
+    {
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
+        const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
+        if (mod_it == emuenv.kernel.loaded_modules.end()) {
+            LOG_WARN("taiInjectDataForUser: module {} not found", modid);
+            return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+        }
 
-    const auto &mod = mod_it->second->info;
-    if (segidx < 0 || segidx >= MODULE_INFO_NUM_SEGMENTS || mod.segments[segidx].memsz == 0) {
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
-    }
+        const auto &mod = mod_it->second->info;
+        if (segidx < 0 || segidx >= MODULE_INFO_NUM_SEGMENTS || mod.segments[segidx].memsz == 0) {
+            return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+        }
 
-    Address dest_addr = mod.segments[segidx].vaddr.address() + offset;
+        dest_addr = mod.segments[segidx].vaddr.address() + offset;
+    }
     Ptr<void> dest(dest_addr);
 
     // Delegate to taiInjectAbs logic
@@ -888,9 +900,12 @@ EXPORT(SceUID, taiLoadStartKernelModuleForUser, const char *path, Ptr<void> args
     if (uid < 0)
         return uid;
 
-    const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
-    if (mod_it != emuenv.kernel.loaded_modules.end()) {
-        start_module(emuenv, mod_it->second->info);
+    {
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
+        const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
+        if (mod_it != emuenv.kernel.loaded_modules.end()) {
+            start_module(emuenv, mod_it->second->info);
+        }
     }
     return uid;
 }
@@ -904,9 +919,12 @@ EXPORT(SceUID, taiLoadStartModuleForPidForUser, const char *path, Ptr<void> args
     if (uid < 0)
         return uid;
 
-    const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
-    if (mod_it != emuenv.kernel.loaded_modules.end()) {
-        start_module(emuenv, mod_it->second->info);
+    {
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
+        const auto mod_it = emuenv.kernel.loaded_modules.find(uid);
+        if (mod_it != emuenv.kernel.loaded_modules.end()) {
+            start_module(emuenv, mod_it->second->info);
+        }
     }
     return uid;
 }
@@ -1006,6 +1024,7 @@ EXPORT(SceUID, taiHookFunctionImportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
 
     Address stub_addr;
     {
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
         const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
         stub_addr = find_import_stub_in_module(emuenv, module, import_func_nid);
     }
@@ -1036,17 +1055,21 @@ EXPORT(SceUID, taiHookFunctionOffsetForKernel, SceUID pid, Ptr<uint32_t> p_hook,
     if (!state)
         return SCE_KERNEL_ERROR_ERROR;
 
-    const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
-    if (mod_it == emuenv.kernel.loaded_modules.end()) {
-        LOG_WARN("taiHookFunctionOffsetForKernel: module {} not found", modid);
-        return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+    Address target_addr;
+    {
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
+        const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
+        if (mod_it == emuenv.kernel.loaded_modules.end()) {
+            LOG_WARN("taiHookFunctionOffsetForKernel: module {} not found", modid);
+            return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+        }
+
+        const auto &mod = mod_it->second->info;
+        if (segidx < 0 || segidx >= MODULE_INFO_NUM_SEGMENTS || mod.segments[segidx].memsz == 0)
+            return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+
+        target_addr = mod.segments[segidx].vaddr.address() + offset;
     }
-
-    const auto &mod = mod_it->second->info;
-    if (segidx < 0 || segidx >= MODULE_INFO_NUM_SEGMENTS || mod.segments[segidx].memsz == 0)
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
-
-    Address target_addr = mod.segments[segidx].vaddr.address() + offset;
     target_addr &= ~1u; // Clear thumb bit
 
     const std::lock_guard<std::mutex> lock(state->mutex);
@@ -1081,17 +1104,21 @@ EXPORT(SceUID, taiInjectDataForKernel, SceUID pid, SceUID modid, int segidx, uin
     if (!data || size == 0)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-    const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
-    if (mod_it == emuenv.kernel.loaded_modules.end()) {
-        LOG_WARN("taiInjectDataForKernel: module {} not found", modid);
-        return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+    Address dest_addr;
+    {
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
+        const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
+        if (mod_it == emuenv.kernel.loaded_modules.end()) {
+            LOG_WARN("taiInjectDataForKernel: module {} not found", modid);
+            return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+        }
+
+        const auto &mod = mod_it->second->info;
+        if (segidx < 0 || segidx >= MODULE_INFO_NUM_SEGMENTS || mod.segments[segidx].memsz == 0)
+            return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+
+        dest_addr = mod.segments[segidx].vaddr.address() + offset;
     }
-
-    const auto &mod = mod_it->second->info;
-    if (segidx < 0 || segidx >= MODULE_INFO_NUM_SEGMENTS || mod.segments[segidx].memsz == 0)
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
-
-    Address dest_addr = mod.segments[segidx].vaddr.address() + offset;
     Ptr<void> dest(dest_addr);
 
     return export_taiInjectAbs(emuenv, thread_id, export_name, dest, Ptr<const void>(data.address()), size);
@@ -1121,18 +1148,22 @@ EXPORT(int, module_get_offset, SceUID pid, SceUID modid, int segidx, uint32_t of
     if (!addr)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
-    const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
-    if (mod_it == emuenv.kernel.loaded_modules.end()) {
-        LOG_DEBUG("module_get_offset: module {} not found (may be HLE)", modid);
-        return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
-    }
+    Address result;
+    {
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
+        const auto mod_it = emuenv.kernel.loaded_modules.find(modid);
+        if (mod_it == emuenv.kernel.loaded_modules.end()) {
+            LOG_DEBUG("module_get_offset: module {} not found (may be HLE)", modid);
+            return SCE_KERNEL_ERROR_MODULEMGR_NO_MOD;
+        }
 
-    const auto &mod = mod_it->second->info;
-    if (segidx < 0 || segidx >= MODULE_INFO_NUM_SEGMENTS || mod.segments[segidx].memsz == 0) {
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
-    }
+        const auto &mod = mod_it->second->info;
+        if (segidx < 0 || segidx >= MODULE_INFO_NUM_SEGMENTS || mod.segments[segidx].memsz == 0) {
+            return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+        }
 
-    Address result = mod.segments[segidx].vaddr.address() + offset;
+        result = mod.segments[segidx].vaddr.address() + offset;
+    }
     *addr.get(emuenv.mem) = result;
 
     LOG_DEBUG("module_get_offset: mod={} seg={} off={} -> {}", modid, segidx, log_hex(offset), log_hex(result));
