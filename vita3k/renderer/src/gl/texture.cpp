@@ -61,12 +61,14 @@ bool GLTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
         auto ext_name = reinterpret_cast<const char *>(glGetStringi(GL_EXTENSIONS, i));
         if (strcmp(ext_name, "GL_EXT_texture_compression_s3tc") == 0) {
             support_dxt = true;
-            break;
         }
 
         if (strcmp(ext_name, "GL_KHR_texture_compression_astc_ldr") == 0) {
             support_astc = true;
-            break;
+        }
+
+        if (strcmp(ext_name, "GL_ARB_ES3_compatibility") == 0) {
+            support_etc = true;
         }
     }
 
@@ -147,6 +149,8 @@ GLenum GLTextureCache::linear_to_srgb(const GLenum format) const {
         return GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
     case GL_COMPRESSED_RGBA_BPTC_UNORM:
         return GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
+    case GL_COMPRESSED_RGB8_ETC2:
+        return GL_COMPRESSED_SRGB8_ETC2;
     default:
         break;
     }
@@ -204,17 +208,21 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
 
     uint32_t mip_index = 0;
 
-    bool compressed = gxm::is_bcn_format(base_fmt);
+    const bool is_etc = gxm::is_etc_format(base_fmt);
+    // hardware compressed upload
+    const bool use_compressed_api = (gxm::is_bcn_format(base_fmt) && support_dxt) || (is_etc && support_etc);
 
     GLenum internal_format = translate_internal_format(base_format);
     GLenum format = translate_format(base_format);
-    const GLenum type = compressed ? 0 : translate_type(base_format);
+    GLenum type = use_compressed_api ? 0 : GL_UNSIGNED_BYTE;
 
-    if (!support_dxt && gxm::is_block_compressed_format(base_format)) {
+    if (is_etc ? !support_etc : (!support_dxt && gxm::is_block_compressed_format(base_format))) {
         // texture is decompressed on the CPU
         internal_format = bcn_to_rgba8(base_format);
-        int num_comp = gxm::get_num_components(base_format);
+        int num_comp = is_etc ? 4 : gxm::get_num_components(base_format);
         format = (num_comp == 4) ? GL_RGBA : (num_comp == 2 ? GL_RG : GL_RED);
+    } else if (!use_compressed_api) {
+        type = translate_type(base_format);
     }
     if (gxm_texture.gamma_mode)
         internal_format = linear_to_srgb(internal_format);
@@ -232,7 +240,7 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     }
 
     while (face_iterated < face_total_count && width && height) {
-        if (compressed && support_dxt) {
+        if (use_compressed_api) {
             size_t compressed_size = renderer::texture::get_compressed_size(base_fmt, width, height);
             glCompressedTexImage2D(upload_type, mip_index, internal_format, width, height, 0, static_cast<GLsizei>(compressed_size), nullptr);
         } else {
@@ -263,11 +271,12 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
         upload_type = GL_TEXTURE_CUBE_MAP_POSITIVE_X + (face - 1);
 
-    if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format)) {
+    if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format) || gxm::is_etc_format(base_format)) {
         glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
 
-        if (gxm::is_bcn_format(base_format)) {
-            const GLint block_size = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC4 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC4)
+        if (gxm::is_bcn_format(base_format) || gxm::is_etc_format(base_format)) {
+            // ETC1 blocks are 8 bytes as well
+            const GLint block_size = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC4 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC4 || gxm::is_etc_format(base_format))
                 ? 8
                 : 16;
             glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, block_size);

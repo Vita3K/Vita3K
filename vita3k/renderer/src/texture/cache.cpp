@@ -485,6 +485,10 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
     while (face_uploaded_count < face_total_count && org_width > 0 && org_height > 0) {
         pixels = texture_data;
 
+        // the conversions below change them, the next mip starts again from the guest format
+        bpp = gxm::bits_per_pixel(base_format);
+        bytes_per_pixel = (bpp + 7) >> 3;
+
         SceGxmTextureBaseFormat upload_format = base_format;
         uint32_t memory_height = height;
 
@@ -498,7 +502,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             break;
         case SCE_GXM_TEXTURE_LINEAR_STRIDED:
             pixels_per_stride = gxm::get_stride_in_bytes(gxm_texture) / bytes_per_pixel;
-            if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P4) // P4 textures are the only one not byte aligned, therefore bytes_per_pixel should be 0.5 and not 1, correct it here
+            if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P4 || gxm::is_etc_format(base_format)) // 4 bits per pixel, therefore bytes_per_pixel should be 0.5 and not 1, correct it here
                 pixels_per_stride *= 2;
             break;
         default:
@@ -617,11 +621,16 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             break;
         }
 
-        if (texture_type != SCE_GXM_TEXTURE_LINEAR && texture_type != SCE_GXM_TEXTURE_LINEAR_STRIDED && !gxm::is_pvrt_format(base_format)) {
+        if (texture_type == SCE_GXM_TEXTURE_TILED && gxm::is_etc_format(base_format))
+            // the 4 bits per pixel tiled converter does nothing, use the blocks as they are rather than a stale buffer
+            LOG_ERROR_ONCE("Unhandled tiled ETC1 format, please report it to the developers");
+
+        if (texture_type != SCE_GXM_TEXTURE_LINEAR && texture_type != SCE_GXM_TEXTURE_LINEAR_STRIDED && !gxm::is_pvrt_format(base_format)
+            && !(texture_type == SCE_GXM_TEXTURE_TILED && gxm::is_etc_format(base_format))) {
             // Convert data to linear layout
             texture_pixels_lineared.resize(pixels_per_stride * memory_height * bytes_per_pixel);
 
-            if (is_swizzled && gxm::is_bcn_format(base_format))
+            if (is_swizzled && (gxm::is_bcn_format(base_format) || gxm::is_etc_format(base_format)))
                 // just unswizzle the blocks
                 resolve_z_order_compressed_texture(base_format, texture_pixels_lineared.data(), pixels, pixels_per_stride, memory_height);
             else if (is_swizzled)
@@ -634,9 +643,10 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             pixels = texture_pixels_lineared.data();
         }
 
-        if (!support_dxt && gxm::is_bcn_format(base_format)) {
+        const bool is_etc = gxm::is_etc_format(base_format);
+        if (is_etc ? !support_etc : (!support_dxt && gxm::is_bcn_format(base_format))) {
             // decompress the texture
-            const int num_comp = gxm::get_num_components(base_format);
+            const int num_comp = is_etc ? 4 : gxm::get_num_components(base_format);
             texture_data_decompressed.resize(pixels_per_stride * memory_height * num_comp);
             decompress_compressed_texture(base_format, texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
             pixels = texture_data_decompressed.data();
@@ -658,8 +668,16 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         }
 
         upload_texture_impl(upload_format, width, height, mip_index, upload_pixels, upload_type, pixels_per_stride);
-        if (export_textures)
-            export_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
+        if (export_textures) {
+            if (is_etc && support_etc) {
+                // DDS has no ETC format, export the decoded texture
+                texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
+                decompress_compressed_texture(base_format, texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
+                export_texture_impl(SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8, width, height, mip_index, texture_data_decompressed.data(), upload_type, pixels_per_stride);
+            } else {
+                export_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
+            }
+        }
 
         const uint32_t nb_pixels = align(layout_width, align_width) * align(layout_height, align_height);
         const uint32_t mip_size = (nb_pixels >> block_shift) * block_size;
