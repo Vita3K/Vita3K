@@ -316,6 +316,10 @@ GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
         return GL_RGBA;
 
+    // ETC1 is a subset of ETC2, which is what the GPU is given
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
+        return GL_COMPRESSED_RGB8_ETC2;
+
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
         return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 
@@ -422,6 +426,10 @@ GLenum translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
         return GL_RGBA;
+
+    // ETC1 is a subset of ETC2, which is what the GPU is given
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
+        return GL_COMPRESSED_RGB8_ETC2;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
         return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
@@ -606,6 +614,7 @@ const GLint *translate_swizzle(SceGxmTextureFormat fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
         return translate_swizzle(static_cast<SceGxmTextureSwizzle3Mode>(swizzle));
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
