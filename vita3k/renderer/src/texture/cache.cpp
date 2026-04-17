@@ -473,6 +473,22 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
             pixels = texture_data_decompressed.data();
             break;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
+            if (support_etc) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_ETC1");
+                break;
+            }
+            if (!is_swizzled)
+                LOG_ERROR_ONCE("Unhandled non-swizzled ETC1 format, please report it to the developers");
+
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
+            // this actually also unswizzles the texture
+            decompress_compressed_texture(base_format, texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
+            bytes_per_pixel = 4;
+            bpp = 32;
+            upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
+            pixels = texture_data_decompressed.data();
+            break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
             // Convert U8U3U3U2 to U8U8U8U8
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
@@ -540,11 +556,11 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             break;
         }
 
-        if (texture_type != SCE_GXM_TEXTURE_LINEAR && texture_type != SCE_GXM_TEXTURE_LINEAR_STRIDED && !gxm::is_pvrt_format(base_format)) {
+        if (texture_type != SCE_GXM_TEXTURE_LINEAR && texture_type != SCE_GXM_TEXTURE_LINEAR_STRIDED && !gxm::is_pvrt_format(base_format) && !(gxm::is_etc_format(base_format) && !support_etc)) {
             // Convert data to linear layout
             texture_pixels_lineared.resize(pixels_per_stride * memory_height * bytes_per_pixel);
 
-            if (is_swizzled && gxm::is_bcn_format(base_format))
+            if (is_swizzled && (gxm::is_bcn_format(base_format) || (gxm::is_etc_format(base_format) && support_etc)))
                 // just unswizzle the blocks
                 resolve_z_order_compressed_texture(base_format, texture_pixels_lineared.data(), pixels, pixels_per_stride, memory_height);
             else if (is_swizzled)

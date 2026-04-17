@@ -688,6 +688,7 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
     // TODO: the following is not fully supported
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
@@ -829,6 +830,9 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
         return vk::Format::eBc7UnormBlock;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
+        return vk::Format::eEtc2R8G8B8UnormBlock;
 
 #define ASTC_FMT(b_x, b_y)                              \
     case SCE_GXM_TEXTURE_BASE_FORMAT_ASTC##b_x##x##b_y: \
