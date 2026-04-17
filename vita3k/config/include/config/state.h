@@ -62,6 +62,7 @@ struct Config {
         bool cpu_opt = true;
         int modules_mode = ModulesMode::AUTOMATIC;
         std::vector<std::string> lle_modules = {};
+        std::string audio_backend = "SDL";
         int audio_volume = 100;
         bool ngs_enable = true;
         bool pstv_mode = false;

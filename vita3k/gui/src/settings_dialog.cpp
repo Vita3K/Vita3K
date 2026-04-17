@@ -193,6 +193,7 @@ static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) 
             // Load Audio Config
             if (!config_child.child("audio").empty()) {
                 const auto audio_child = config_child.child("audio");
+                config.audio_backend = audio_child.attribute("audio-backend").as_string(emuenv.cfg.audio_backend.c_str());
                 config.audio_volume = audio_child.attribute("audio-volume").as_int();
                 config.ngs_enable = audio_child.attribute("enable-ngs").as_bool();
             }
@@ -270,6 +271,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.export_textures = emuenv.cfg.export_textures;
         config.export_as_png = emuenv.cfg.export_as_png;
         config.fps_hack = emuenv.cfg.fps_hack;
+        config.audio_backend = emuenv.cfg.audio_backend;
         config.audio_volume = emuenv.cfg.audio_volume;
         config.ngs_enable = emuenv.cfg.ngs_enable;
         config.pstv_mode = emuenv.cfg.pstv_mode;
@@ -305,7 +307,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     config.fullscreen_hd_res_pixel_perfect = emuenv.cfg.fullscreen_hd_res_pixel_perfect;
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
     max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
-    audio_backend_idx = (emuenv.cfg.audio_backend == "SDL") ? 0 : 1;
+    audio_backend_idx = (config.audio_backend == "SDL") ? 0 : 1;
     emuenv.app_path = app_path;
     emuenv.display.imgui_render = true;
 }
@@ -367,6 +369,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         // Audio
         auto audio_child = config_child.append_child("audio");
+        audio_child.append_attribute("audio-backend") = config.audio_backend.c_str();
         audio_child.append_attribute("audio-volume") = config.audio_volume;
         audio_child.append_attribute("enable-ngs") = config.ngs_enable;
 
@@ -406,6 +409,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.export_textures = config.export_textures;
         emuenv.cfg.export_as_png = config.export_as_png;
         emuenv.cfg.fps_hack = config.fps_hack;
+        emuenv.cfg.audio_backend = config.audio_backend;
         emuenv.cfg.audio_volume = config.audio_volume;
         emuenv.cfg.ngs_enable = config.ngs_enable;
         emuenv.cfg.pstv_mode = config.pstv_mode;
@@ -471,6 +475,7 @@ void set_current_config(EmuEnvState &emuenv, const std::string &app_path) {
         emuenv.cfg.current_config.export_textures = emuenv.cfg.export_textures;
         emuenv.cfg.current_config.export_as_png = emuenv.cfg.export_as_png;
         emuenv.cfg.current_config.fps_hack = emuenv.cfg.fps_hack;
+        emuenv.cfg.current_config.audio_backend = emuenv.cfg.audio_backend;
         emuenv.cfg.current_config.audio_volume = emuenv.cfg.audio_volume;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
         emuenv.cfg.current_config.pstv_mode = emuenv.cfg.pstv_mode;
@@ -982,7 +987,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::BeginDisabled();
         static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
         if (ImGui::Combo(lang.audio["audio_backend"].c_str(), &audio_backend_idx, LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
-            emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
+            config.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
         SetTooltipEx(lang.audio["select_audio_backend"].c_str());
         if (!emuenv.io.app_path.empty())
             ImGui::EndDisabled();

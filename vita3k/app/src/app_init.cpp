@@ -425,7 +425,7 @@ bool late_init(EmuEnvState &state) {
         return false;
     }
 
-    if (!state.audio.init(state.cfg.audio_backend)) {
+    if (!state.audio.init(state.cfg.current_config.audio_backend)) {
         LOG_WARN("Failed to initialize audio! Audio will not work.");
     }
 
