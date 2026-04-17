@@ -23,6 +23,7 @@
 
 #include <module/module.h>
 
+#include <cpu/functions.h>
 #include <kernel/state.h>
 #include <mem/functions.h>
 #include <modules/sysmem_state.h>
@@ -49,6 +50,21 @@ struct KuKernelExceptionHandlerOpt {
     uint32_t size;
 };
 
+// Page fault callback that triggers an abort handler if one is registered.
+// Called from signal handler context — must be signal-safe.
+// Sets abort_pending on the current thread's CPU and halts execution so
+// run_loop can invoke the ARM exception handler.
+static bool abort_aware_fault_callback(Address fault_addr, bool write, Address range_start, uint32_t range_size) {
+    CPUState *cpu = get_current_cpu_state();
+    if (cpu) {
+        cpu->abort_fault_addr.store(fault_addr);
+        cpu->abort_is_write.store(write);
+        cpu->abort_pending.store(true);
+        stop(*cpu); // HaltExecution — signal-safe (atomic only)
+    }
+    return true;
+}
+
 // Convert kubridge protection flags to Vita3K MemPerm.
 // Note: EXEC is not mapped — dynarmic handles execute permission separately.
 static MemPerm ku_prot_to_memperm(uint32_t prot) {
@@ -70,12 +86,11 @@ EXPORT(int, kuKernelMemProtect, Ptr<void> addr, SceSize len, uint32_t prot) {
 
     if (perm == MemPerm::None || perm == MemPerm::ReadOnly) {
         // Use add_protect so fault handler can catch violations gracefully.
-        // Callback logs the violation and lets the handler unprotect the page.
+        // If an exception handler is registered, the fault callback will
+        // halt the CPU and let run_loop invoke the ARM handler.
         const Address va = addr.address();
         add_protect(emuenv.mem, va, len, perm, [va, len](Address fault_addr, bool write) {
-            LOG_WARN("kuKernelMemProtect: access violation at 0x{:08X} (write={}) in protected range [0x{:08X}, 0x{:08X})",
-                fault_addr, write, va, va + len);
-            return true;
+            return abort_aware_fault_callback(fault_addr, write, va, len);
         });
     } else {
         // ReadWrite or more permissive — just unprotect
@@ -162,9 +177,7 @@ EXPORT(int, kuKernelMemDecommit, Ptr<void> addr, SceSize len) {
 
     const Address va = addr.address();
     add_protect(emuenv.mem, va, len, MemPerm::None, [va, len](Address fault_addr, bool write) {
-        LOG_WARN("kuKernelMemDecommit: access to decommitted memory at 0x{:08X} (write={}) range [0x{:08X}, 0x{:08X})",
-            fault_addr, write, va, va + len);
-        return true;
+        return abort_aware_fault_callback(fault_addr, write, va, len);
     });
 
     LOG_DEBUG("kuKernelMemDecommit: addr={} len={}", log_hex(va), len);
@@ -172,21 +185,29 @@ EXPORT(int, kuKernelMemDecommit, Ptr<void> addr, SceSize len) {
 }
 
 // kuKernelRegisterExceptionHandler — register user-mode exception handler.
-// On real Vita, this hooks ARM exception vectors (DABT/PABT/UNDEF).
-// In Vita3K, we stub this — dynarmic doesn't generate these exceptions
-// in a way that user code could handle.
+// On real Vita, kubridge hooks ARM exception vectors (DABT/PABT/UNDEF).
+// In Vita3K, we store the handler address and invoke it from run_loop
+// when a page fault triggers an abort via the add_protect callback.
 EXPORT(int, kuKernelRegisterExceptionHandler, uint32_t exceptionType,
     Ptr<void> pHandler, Ptr<Ptr<void>> pOldHandler, Ptr<KuKernelExceptionHandlerOpt> pOpt) {
-    LOG_WARN("kuKernelRegisterExceptionHandler: stubbed (type={}, handler={})",
-        exceptionType, log_hex(pHandler.address()));
+    if (exceptionType >= KernelState::EXCEPTION_HANDLER_MAX)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+
+    const Address old_handler = emuenv.kernel.exception_handlers[exceptionType].exchange(pHandler.address());
 
     if (pOldHandler) {
-        *pOldHandler.get(emuenv.mem) = Ptr<void>(0);
+        *pOldHandler.get(emuenv.mem) = Ptr<void>(old_handler);
     }
+
+    LOG_INFO("kuKernelRegisterExceptionHandler: type={} handler=0x{:08X} old=0x{:08X}",
+        exceptionType, pHandler.address(), old_handler);
     return 0;
 }
 
 // kuKernelReleaseExceptionHandler — unregister exception handler.
 EXPORT(void, kuKernelReleaseExceptionHandler, uint32_t exceptionType) {
-    LOG_WARN("kuKernelReleaseExceptionHandler: stubbed (type={})", exceptionType);
+    if (exceptionType < KernelState::EXCEPTION_HANDLER_MAX) {
+        const Address old = emuenv.kernel.exception_handlers[exceptionType].exchange(0);
+        LOG_INFO("kuKernelReleaseExceptionHandler: type={} old=0x{:08X}", exceptionType, old);
+    }
 }
