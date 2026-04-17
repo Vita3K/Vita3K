@@ -4295,7 +4295,7 @@ NID(__rtabi_uidivmod, 0xC33391D1)
 NID(__rtabi_llsr, 0xCBDA815C)
 NID(__rtabi_uldivmod, 0xCDF7708E)
 NID(__rtabi_uidiv, 0xFB311F87)
-// Module "SceLibTaihen"
+// Module "taihen"
 // Library "taihen"
 NID(taiHookFunctionExportForUser, 0x8746A1CE)
 NID(taiHookFunctionImportForUser, 0x53636E5D)

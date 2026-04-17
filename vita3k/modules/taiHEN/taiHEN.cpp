@@ -422,7 +422,7 @@ static SceUID create_export_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
         return uid;
     }
 
-    // === FALLBACK (Option C): patch import stubs ===
+    // Fallback: patch all import stubs that point to the original function
     LOG_DEBUG("taiHEN export hook: PC-relative in prologue, falling back to stub patching");
 
     // Allocate trampoline: MOVW/MOVT/BX → original_addr (ARM stub)
@@ -1352,7 +1352,7 @@ void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &title
 
 // ==================== Library Init ====================
 
-LIBRARY_INIT(SceLibTaihen) {
+LIBRARY_INIT(taihen) {
     emuenv.kernel.obj_store.create<TaihenState>();
     LOG_INFO("taiHEN: HLE module initialized");
 }
