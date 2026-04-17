@@ -2484,6 +2484,11 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
         return RET_ERROR(SCE_GXM_ERROR_NULL_PROGRAM);
     }
 
+    // vitaGL packs an unsigned base vertex offset into the lower 24 bits of the indexType parameter
+    // (bits 25-32 remain the real SceGxmIndexFormat value).  The encoding is always non-negative.
+    const int32_t base_vertex = static_cast<int32_t>(static_cast<uint32_t>(indexType) & 0x00FFFFFFu);
+    const SceGxmIndexFormat actual_index_type = static_cast<SceGxmIndexFormat>(static_cast<uint32_t>(indexType) & 0xFF000000u);
+
     const SceGxmFragmentProgram &gxm_fragment_program = *context->state.fragment_program.get(emuenv.mem);
     const SceGxmVertexProgram &gxm_vertex_program = *context->state.vertex_program.get(emuenv.mem);
 
@@ -2528,13 +2533,16 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
     size_t max_index = 0;
     if (!emuenv.renderer->features.enable_memory_mapping) {
         // we don't need to get the vertex buffer size with memory mapping
-        if (indexType == SCE_GXM_INDEX_FORMAT_U16) {
+        if (actual_index_type == SCE_GXM_INDEX_FORMAT_U16) {
             const uint16_t *const data = static_cast<const uint16_t *>(indices_ptr);
             max_index = *std::max_element(&data[0], &data[indexCount]);
         } else {
             const uint32_t *const data = static_cast<const uint32_t *>(indices_ptr);
             max_index = *std::max_element(&data[0], &data[indexCount]);
         }
+        // Account for base vertex offset when computing vertex buffer size
+        if (base_vertex > 0)
+            max_index += static_cast<size_t>(base_vertex);
     }
 
     size_t max_data_length[SCE_GXM_MAX_VERTEX_STREAMS] = {};
@@ -2564,7 +2572,7 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
         }
     }
 
-    renderer::draw(*emuenv.renderer, context->renderer.get(), primType, indexType, indexData, indexCount, instanceCount);
+    renderer::draw(*emuenv.renderer, context->renderer.get(), primType, actual_index_type, indexData, indexCount, instanceCount, base_vertex);
 
     // increase the ringbuffer position if a default vertex or fragment buffer was reserved, we know the new position will fit in the ringbuffer
     if (context->was_vert_default_uniform_reserved) {
@@ -2657,6 +2665,9 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
             const uint32_t *const data = draw->index_data.cast<const uint32_t>().get(emuenv.mem);
             max_index = *std::max_element(&data[0], &data[draw->vertex_count]);
         }
+        // Account for base vertex offset when computing vertex buffer size
+        if (draw->base_vertex > 0)
+            max_index += static_cast<uint32_t>(draw->base_vertex);
     }
 
     // set all textures that are used and mark them as dirty
@@ -2704,7 +2715,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         }
     }
 
-    renderer::draw(*emuenv.renderer, context->renderer.get(), draw->type, draw->index_format, draw->index_data, draw->vertex_count, draw->instance_count);
+    renderer::draw(*emuenv.renderer, context->renderer.get(), draw->type, draw->index_format, draw->index_data, draw->vertex_count, draw->instance_count, draw->base_vertex);
 
     // increase the ringbuffer position if a default vertex or fragment buffer was reserved, we know the new position will fit in the ringbuffer
     // also even in a precomputed draw, this is needed as some parts of the pipeline can be not precomputed
@@ -3232,7 +3243,8 @@ EXPORT(int, sceGxmPrecomputedDrawSetParams, SceGxmPrecomputedDraw *state, SceGxm
     }
 
     state->type = type;
-    state->index_format = index_format;
+    state->base_vertex = static_cast<int32_t>(static_cast<uint32_t>(index_format) & 0x00FFFFFFu);
+    state->index_format = static_cast<SceGxmIndexFormat>(static_cast<uint32_t>(index_format) & 0xFF000000u);
     state->index_data = index_data;
     state->vertex_count = vertex_count;
     state->instance_count = 1;
@@ -3247,7 +3259,8 @@ EXPORT(int, sceGxmPrecomputedDrawSetParamsInstanced, SceGxmPrecomputedDraw *prec
     }
 
     precomputedDraw->type = primType;
-    precomputedDraw->index_format = indexType;
+    precomputedDraw->base_vertex = static_cast<int32_t>(static_cast<uint32_t>(indexType) & 0x00FFFFFFu);
+    precomputedDraw->index_format = static_cast<SceGxmIndexFormat>(static_cast<uint32_t>(indexType) & 0xFF000000u);
     precomputedDraw->index_data = indexData;
     if (indexWrap == 0) {
         precomputedDraw->vertex_count = 0;

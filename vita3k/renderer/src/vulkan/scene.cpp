@@ -409,7 +409,7 @@ static void framebuffer_fetch_barrier(VKContext &context) {
 }
 
 void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format,
-    Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config) {
+    Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config, int32_t base_vertex) {
     const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
 
     void *indices_ptr = indices.get(mem);
@@ -610,7 +610,8 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
                     trapped_buffer->extra = *std::max_element(&data[0], &data[count]);
                 }
             }
-            max_index = trapped_buffer->extra;
+            // the vertices are fetched at index + base_vertex
+            max_index = trapped_buffer->extra + static_cast<uint32_t>(std::max(base_vertex, 0));
         }
         context.render_cmd.bindIndexBuffer(buffer, offset, index_type);
     } else if (!ordered_indices) {
@@ -651,11 +652,11 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         for (uint32_t instance = 0; instance < instance_count; ++instance) {
             for (size_t first = 0; first + vertices_per_primitive <= count; first += vertices_per_primitive) {
                 framebuffer_fetch_barrier(context);
-                context.render_cmd.drawIndexed(vertices_per_primitive, 1, static_cast<uint32_t>(first), 0, instance);
+                context.render_cmd.drawIndexed(vertices_per_primitive, 1, static_cast<uint32_t>(first), base_vertex, instance);
             }
         }
     } else {
-        context.render_cmd.drawIndexed(count, instance_count, 0, 0, 0);
+        context.render_cmd.drawIndexed(count, instance_count, 0, base_vertex, 0);
     }
     if (maskupdate && count && instance_count && context.record.writing_mask < 0.5f)
         context.render_target->mask_may_reject = true;
