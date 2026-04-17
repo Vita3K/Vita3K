@@ -59,7 +59,7 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
 }
 
 void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
-    MemState &mem, const Config &config) {
+    MemState &mem, const Config &config, int32_t base_vertex) {
     R_PROFILE(__func__);
 
     // a draw whose color nothing observes and which leaves depth, stencil and guest memory untouched has no effect
@@ -329,12 +329,12 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
             // the barrier before the first primitive was issued above
             if (first)
                 glTextureBarrier();
-            glDrawElements(mode, static_cast<GLsizei>(per_primitive), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second + first * index_size));
+            glDrawElementsBaseVertex(mode, static_cast<GLsizei>(per_primitive), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second + first * index_size), base_vertex);
         }
     } else if (instance_count == 1) {
-        glDrawElements(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second));
+        glDrawElementsBaseVertex(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), base_vertex);
     } else {
-        glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count);
+        glDrawElementsInstancedBaseVertex(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count, base_vertex);
     }
 
     restore_state();
