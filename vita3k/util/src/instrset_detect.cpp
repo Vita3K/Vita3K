@@ -17,7 +17,7 @@
 // Header files for non-vector intrinsic functions including _BitScanReverse(int), __cpuid(int[4],int), _xgetbv(int)
 #if defined(_MSC_VER) // Microsoft compiler or compatible Intel compiler
 #include <intrin.h>
-#elif !defined(__aarch64__)
+#elif !defined(__arm__) && !defined(__aarch64__)
 #include <x86intrin.h> // Gcc or Clang compiler
 #endif
 
@@ -28,7 +28,7 @@ namespace util {
 // input:  functionnumber = leaf (eax), ecxleaf = subleaf(ecx)
 // output: output[0] = eax, output[1] = ebx, output[2] = ecx, output[3] = edx
 static inline void cpuid(int output[4], int functionnumber, int ecxleaf) {
-#if defined(__aarch64__)
+#if defined(__arm__) || defined(__aarch64__)
     return;
 
 #elif defined(__GNUC__) || defined(__clang__) // use inline assembly, Gnu/AT&T syntax
@@ -61,7 +61,7 @@ static inline void cpuid(int output[4], int functionnumber, int ecxleaf) {
 
 // Define interface to xgetbv instruction
 static inline uint64_t xgetbv(int ctr) {
-#if defined(__aarch64__)
+#if defined(__arm__) || defined(__aarch64__)
     return 0;
 #elif (defined(_MSC_FULL_VER) && _MSC_FULL_VER >= 160040000) || (defined(__INTEL_COMPILER) && __INTEL_COMPILER >= 1200)
     // Microsoft or Intel compiler supporting _xgetbv intrinsic
@@ -108,7 +108,7 @@ namespace instrset {
    10  or above = AVX512VL, AVX512BW, AVX512DQ
 */
 int instrset_detect(void) {
-#ifdef __aarch64__
+#if defined(__arm__) || defined(__aarch64__)
     return 0;
 #else
     static int iset = -1; // remember value for next call
