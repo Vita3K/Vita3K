@@ -212,7 +212,6 @@ static Address find_import_stub_in_module(EmuEnvState &emuenv, const char *modul
 // This is for IMPORT hooks where target_addr points to a 12-byte import stub.
 static SceUID create_hook(EmuEnvState &emuenv, TaihenState *state, SceUID thread_id,
     Address target_addr, Address hook_func) {
-
     uint32_t *stub = Ptr<uint32_t>(target_addr).get(emuenv.mem);
 
     // Determine what the "original function" address is
@@ -295,7 +294,6 @@ static void write_arm_stub(uint32_t *dest, Address target) {
 // Returns hook UID on success, TAI_ERROR_HOOK_ERROR if function can't be hooked.
 static SceUID create_inline_hook(EmuEnvState &emuenv, TaihenState *state, SceUID thread_id,
     Address func_addr, Address hook_func, uint32_t func_nid = 0) {
-
     bool is_thumb = (func_addr & 1) != 0;
     Address code_addr = func_addr & ~1u;
     const void *code_host = Ptr<const void>(code_addr).get(emuenv.mem);
@@ -413,7 +411,6 @@ static SceUID create_inline_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
 // Falls back to stub patching if prologue contains PC-relative instructions.
 static SceUID create_export_hook(EmuEnvState &emuenv, TaihenState *state, SceUID thread_id,
     uint32_t func_nid, Address original_addr, Address hook_func) {
-
     // Try inline hook first
     SceUID uid = create_inline_hook(emuenv, state, thread_id, original_addr, hook_func, func_nid);
     if (uid >= 0) {
@@ -788,8 +785,8 @@ struct TaiInjectArgs {
     SceUID modid;
     int segidx;
     uint32_t offset;
-    int thumb;           // unused for inject, but present in struct
-    Address source;      // Ptr in guest memory
+    int thumb; // unused for inject, but present in struct
+    Address source; // Ptr in guest memory
     uint32_t source_size;
 };
 

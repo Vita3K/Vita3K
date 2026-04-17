@@ -145,7 +145,7 @@ EXPORT(SceUID, kuKernelMemReserve, Ptr<Ptr<void>> addr, SceSize size, SceKernelM
 
 // kuKernelMemCommit — commit physical pages to a reserved range.
 // Memory is already committed at Reserve time. Apply requested protection.
-    // When baseBlock mirroring is required, this should use add_external_mapping().
+// When baseBlock mirroring is required, this should use add_external_mapping().
 EXPORT(int, kuKernelMemCommit, Ptr<void> addr, SceSize len, uint32_t prot, Ptr<KuKernelMemCommitOpt> pOpt) {
     if (!addr || len == 0)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);

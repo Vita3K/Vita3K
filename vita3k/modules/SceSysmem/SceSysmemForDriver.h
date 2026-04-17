@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <module/module.h>
 #include <kernel/types.h>
+#include <module/module.h>
 
 struct SceKernelAllocMemBlockKernelOpt {
     SceSize size;

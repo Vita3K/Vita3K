@@ -19,7 +19,7 @@
 
 #include <atomic>
 
-static std::atomic<int> pls_key_counter{1};
+static std::atomic<int> pls_key_counter{ 1 };
 
 EXPORT(int, ksceKernelCreateProcessLocalStorage, const char *name, SceSize size) {
     // Return a unique key for this PLS entry.
