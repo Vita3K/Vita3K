@@ -278,6 +278,10 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     const vk::FormatProperties astc_support = state.physical_device.getFormatProperties(vk::Format::eAstc4x4SrgbBlock);
     support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 
+    // check for ETC2 support (ETC1 is a subset of ETC2)
+    const vk::FormatProperties etc_support = state.physical_device.getFormatProperties(vk::Format::eEtc2R8G8B8UnormBlock);
+    support_etc = static_cast<bool>(etc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+
     return true;
 }
 
@@ -302,6 +306,8 @@ static vk::Format linear_to_srgb(const vk::Format format) {
         return vk::Format::eBc3SrgbBlock;
     case vk::Format::eBc7UnormBlock:
         return vk::Format::eBc7SrgbBlock;
+    case vk::Format::eEtc2R8G8B8UnormBlock:
+        return vk::Format::eEtc2R8G8B8SrgbBlock;
     default: {
         LOG_WARN_ONCE("Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
         return format;
@@ -359,6 +365,9 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     if (gxm::is_bcn_format(base_format) && !support_dxt)
         // texture will be decompressed
         vk_format = bcn_to_rgba8(vk_format);
+    if (gxm::is_etc_format(base_format) && !support_etc)
+        // texture will be decompressed
+        vk_format = vk::Format::eR8G8B8A8Unorm;
     if (gxm_texture.gamma_mode)
         vk_format = linear_to_srgb(vk_format);
 
@@ -474,6 +483,10 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
     vk::DeviceSize upload_size;
     uint32_t buffer_height = height;
     if (gxm::is_bcn_format(base_format)) {
+        upload_size = renderer::texture::get_compressed_size(base_format, pixels_per_stride, height);
+        pixels_per_stride = align(pixels_per_stride, 4);
+        buffer_height = align(buffer_height, 4);
+    } else if (gxm::is_etc_format(base_format) && support_etc) {
         upload_size = renderer::texture::get_compressed_size(base_format, pixels_per_stride, height);
         pixels_per_stride = align(pixels_per_stride, 4);
         buffer_height = align(buffer_height, 4);

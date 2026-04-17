@@ -129,6 +129,8 @@ public:
     bool support_depth_linear_filtering = true;
     // powerVR only
     bool support_pvrt = false;
+    // ETC1/ETC2 support
+    bool support_etc = false;
     // other color format
     bool support_x8d24 = false;
     bool support_e5rgb9 = false;
