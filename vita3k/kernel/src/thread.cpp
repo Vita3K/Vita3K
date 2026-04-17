@@ -195,6 +195,9 @@ bool ThreadState::run_loop() {
     int res = 0;
     int run_level = std::max(call_level, 1);
 
+    // Set thread-local CPU state so signal handlers can access it
+    set_current_cpu_state(cpu.get());
+
     std::unique_lock<std::mutex> lock(mutex);
 
     auto run_thread_end_callback = [&]() {
@@ -273,6 +276,39 @@ bool ThreadState::run_loop() {
                 // handle svc call if this was what stopped the cpu
                 if (cpu->svc_called) {
                     cpu->protocol->call_svc(*cpu, cpu->svc, read_pc(*cpu), *this);
+                }
+
+                // handle pending abort (exception handler from page fault)
+                if (cpu->abort_pending.exchange(false)) {
+                    const uint32_t fault_addr = cpu->abort_fault_addr.load();
+                    // DABT = type 0
+                    const Address handler = kernel.exception_handlers[0].load();
+                    if (handler) {
+                        // Build KuKernelAbortContext on guest stack for the handler to read.
+                        // Note: by the time we get here, the page has already been unprotected
+                        // by the protect_tree mechanism, and the CPU may have executed past
+                        // the faulting instruction. The handler is called as a notification;
+                        // we don't restore from AbortContext afterward.
+                        // { r0-r12, sp, lr, pc, FAR } = 17 uint32_t = 68 bytes
+                        const uint32_t ctx_size = 17 * 4;
+                        uint32_t sp_val = read_sp(*cpu);
+                        sp_val -= ctx_size;
+                        sp_val &= ~7u; // align to 8
+
+                        auto *ctx = Ptr<uint32_t>(sp_val).get(*cpu->mem);
+                        for (int i = 0; i < 13; i++)
+                            ctx[i] = read_reg(*cpu, i);
+                        ctx[13] = sp_val + ctx_size;
+                        ctx[14] = read_lr(*cpu);
+                        ctx[15] = read_pc(*cpu);
+                        ctx[16] = fault_addr;
+
+                        LOG_DEBUG("DABT handler=0x{:08X} FAR=0x{:08X} PC=0x{:08X} SP=0x{:08X} sp_val=0x{:08X}",
+                            handler, fault_addr, ctx[15], read_sp(*cpu), sp_val);
+
+                        // run_callback saves/restores full CPU context internally
+                        run_callback(handler, { sp_val });
+                    }
                 }
 
                 lock.lock();

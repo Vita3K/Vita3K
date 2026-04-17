@@ -32,6 +32,7 @@
 #include <cstring>
 #include <map>
 #include <mutex>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -1266,7 +1267,7 @@ static void register_hle_override(EmuEnvState &emuenv, uint32_t nid) {
 // (firmware-specific offsets, ARM MMU manipulation), we register them in
 // nids.inc and this function dynamically overrides the LLE exports with
 // SVC stubs that dispatch to our C++ implementations.
-static void apply_plugin_hle_overrides(EmuEnvState &emuenv) {
+static void apply_plugin_hle_overrides(EmuEnvState &emuenv, const std::set<uint32_t> &pre_plugin_nids) {
     auto &kernel = emuenv.kernel;
     int count = 0;
 
@@ -1278,6 +1279,11 @@ static void apply_plugin_hle_overrides(EmuEnvState &emuenv) {
     }
 
     for (const auto &[nid, addr] : exports_snapshot) {
+        if (addr == 0)
+            continue;
+        // Only override NIDs that were added by plugins (not pre-existing system exports)
+        if (pre_plugin_nids.count(nid))
+            continue;
         // Check if the exported NID's current address is an LLE (ARM) function
         // AND we have an HLE implementation for it
         uint32_t *stub = Ptr<uint32_t>(addr).get(emuenv.mem);
@@ -1307,6 +1313,14 @@ void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &title
     // Note: we only load_module here. start_module is called by run_app()
     // which iterates all loaded_modules and starts them.
     if (!state->kernel_plugins_loaded) {
+        // Snapshot NIDs before loading plugins so we only override plugin exports
+        std::set<uint32_t> pre_plugin_nids;
+        {
+            const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+            for (const auto &[nid, addr] : emuenv.kernel.export_nids)
+                pre_plugin_nids.insert(nid);
+        }
+
         auto kernel_it = state->config.find("KERNEL");
         if (kernel_it != state->config.end()) {
             for (const auto &plugin_path : kernel_it->second) {
@@ -1320,7 +1334,7 @@ void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &title
         state->kernel_plugins_loaded = true;
 
         // Apply HLE overrides for plugin exports that have C++ implementations
-        apply_plugin_hle_overrides(emuenv);
+        apply_plugin_hle_overrides(emuenv, pre_plugin_nids);
     }
 
     // Load title-specific plugins

@@ -205,3 +205,13 @@ uint32_t stack_free(CPUState &state, size_t size) {
     write_sp(state, new_sp);
     return new_sp;
 }
+
+static thread_local CPUState *current_cpu_state = nullptr;
+
+void set_current_cpu_state(CPUState *state) {
+    current_cpu_state = state;
+}
+
+CPUState *get_current_cpu_state() {
+    return current_cpu_state;
+}
