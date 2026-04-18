@@ -111,6 +111,24 @@ TEST(lay_out, dword_alignment_can_waste_gprs) {
     ASSERT_EQ(std::get<1>(actual), state);
 }
 
+TEST(lay_out, spill_forces_following_integer_args_to_stack) {
+    const auto actual = lay_out<int32_t, int32_t, int32_t, int64_t, int32_t>();
+    const std::array<ArgLayout, 5> layouts = { {
+        { ArgLocation::gpr, 0 },
+        { ArgLocation::gpr, 1 },
+        { ArgLocation::gpr, 2 },
+        { ArgLocation::stack, 0 },
+        { ArgLocation::stack, 8 },
+    } };
+
+    const LayoutArgsState state = {
+        4, 12, 0
+    };
+
+    ASSERT_EQ(std::get<0>(actual), layouts);
+    ASSERT_EQ(std::get<1>(actual), state);
+}
+
 TEST(lay_out, vargs_does_not_affect_layout) {
     const auto actual = lay_out<int16_t, int16_t, module::vargs>();
     const std::array<ArgLayout, 3> layouts = { { { ArgLocation::gpr, 0 },

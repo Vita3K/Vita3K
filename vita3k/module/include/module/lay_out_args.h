@@ -40,7 +40,7 @@ constexpr std::tuple<ArgLayout, LayoutArgsState> add_arg_to_layout(const LayoutA
             const std::size_t stack_alignment = alignof(Arg); // TODO Assumes host matches ARM.
             const std::size_t stack_required = sizeof(Arg); // TODO Should this be aligned up?
             const std::size_t stack_offset = align(state.stack_used, stack_alignment);
-            return { { ArgLocation::stack, stack_offset }, { state.gpr_used, stack_offset + stack_required, state.float_used } };
+            return { { ArgLocation::stack, stack_offset }, { 4, stack_offset + stack_required, state.float_used } };
         }
 
         return { { ArgLocation::gpr, gpr_index }, { gpr_index + gpr_required, state.stack_used, state.float_used } };
