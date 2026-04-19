@@ -17,6 +17,7 @@
 
 #include "private.h"
 
+#include <bgm_player/functions.h>
 #include <config/functions.h>
 #include <config/state.h>
 #include <dialog/state.h>
@@ -268,12 +269,12 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::Spacing();
         if (ImGui::Checkbox(gui.lang.settings.sound_display["system_music"].c_str(), &emuenv.cfg.system_music.value()))
-            switch_bgm_state(!emuenv.cfg.system_music.value());
+            bgm_player::switch_bgm_state(!emuenv.cfg.system_music.value());
         SetTooltipEx("This option can be changed later in the system Settings app.");
         if (emuenv.cfg.system_music.value()) {
             ImGui::Spacing();
             if (ImGui::SliderInt(gui.lang.settings_dialog.audio["bgm_volume"].c_str(), &emuenv.cfg.bgm_volume, 0, 100, "%d %%", ImGuiSliderFlags_AlwaysClamp))
-                set_bgm_volume(emuenv.cfg.bgm_volume);
+                bgm_player::set_bgm_volume(emuenv.cfg.bgm_volume);
             SetTooltipEx(gui.lang.settings_dialog.audio["bgm_volume_description"].c_str());
         }
         break;
@@ -285,7 +286,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(BIG_BUTTON_POS);
         if (ImGui::Button(common["ok"].c_str(), BIG_BUTTON_SIZE) || ImGui::IsKeyPressed(static_cast<ImGuiKey>(emuenv.cfg.keyboard_button_cross))) {
             emuenv.cfg.initial_setup = true;
-            stop_bgm();
+            bgm_player::stop_bgm();
             config::serialize_config(emuenv.cfg, emuenv.config_path);
         }
         break;

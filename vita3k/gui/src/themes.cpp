@@ -17,6 +17,7 @@
 
 #include "private.h"
 
+#include <bgm_player/functions.h>
 #include <config/state.h>
 #include <gui/functions.h>
 #include <io/VitaIoDevice.h>
@@ -356,8 +357,8 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
     }
 
     // Initialize the theme BGM with the path
-    gui.current_path_bgm = path_bgm;
-    init_bgm(gui, emuenv);
+    bgm_player::set_current_bgm_path(path_bgm);
+    bgm_player::init_bgm(gui, emuenv);
 
     for (const auto &icon : theme_icon_name) {
         int32_t width = 0;
@@ -461,7 +462,7 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
 
 void close_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     gui.vita_area.start_screen = false;
-    switch_bgm_state(false);
+    bgm_player::switch_bgm_state(false);
     gui.vita_area.home_screen = true;
     if (!emuenv.cfg.show_info_bar)
         gui.vita_area.information_bar = false;

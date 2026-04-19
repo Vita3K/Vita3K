@@ -19,6 +19,7 @@
 
 #include <app/functions.h>
 #include <audio/state.h>
+#include <bgm_player/functions.h>
 #include <config/functions.h>
 #include <config/state.h>
 #include <dialog/state.h>
@@ -101,7 +102,7 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
     // Stop the Background Music
-    stop_bgm();
+    bgm_player::stop_bgm();
 
     // Clean User apps list
     gui.app_selector.user_apps.clear();
@@ -433,7 +434,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
     if (update_viewport_en)
         app::update_viewport(emuenv);
 
-    set_bgm_volume(emuenv.cfg.bgm_volume);
+    bgm_player::set_bgm_volume(emuenv.cfg.bgm_volume);
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
 

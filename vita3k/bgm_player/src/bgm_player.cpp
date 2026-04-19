@@ -15,16 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "private.h"
+#include <bgm_player/functions.h>
 
 #include <audio/state.h>
 #include <codec/state.h>
 #include <cubeb/cubeb.h>
-#include <gui/functions.h>
+
 #include <io/VitaIoDevice.h>
 #include <io/state.h>
+#include <io/vfs.h>
 
-namespace gui {
+namespace bgm_player {
 
 struct PcmBuffer {
     std::vector<uint8_t> data;
@@ -419,11 +420,14 @@ bool init_bgm_streaming(uint8_t *at9_data, uint32_t size) {
     return true;
 }
 
-constexpr std::string_view initial_setup_bgm = "data/systembgm/initialsetup.at9";
+static std::pair<std::string, std::string> current_path_bgm = { "pd0", "data/systembgm/initialsetup.at9" };
+void set_current_bgm_path(const std::pair<std::string, std::string> &path) {
+    current_path_bgm = path;
+}
 
 bool init_bgm(GuiState &gui, EmuEnvState &emuenv) {
-    const auto device = gui.current_path_bgm.first.empty() ? VitaIoDevice::pd0 : VitaIoDevice::_from_string(gui.current_path_bgm.first.c_str());
-    const auto &path = gui.current_path_bgm.second.empty() ? static_cast<std::string>(initial_setup_bgm) : gui.current_path_bgm.second;
+    const auto device = VitaIoDevice::_from_string(current_path_bgm.first.c_str());
+    const auto &path = current_path_bgm.second;
 
     // Check if the path is initialsetup.at9 and if the stream is already initialized
     if ((path.find("initialsetup.at9") != std::string::npos) && at9_stream.initialized)
@@ -439,9 +443,9 @@ bool init_bgm(GuiState &gui, EmuEnvState &emuenv) {
     vfs::FileBuffer at9_buffer;
     if (!vfs::read_file(device, at9_buffer, emuenv.pref_path, path)) {
         if (device == VitaIoDevice::pd0)
-            LOG_WARN("Failed to read AT9 file from {}:{}, install Preinst Firmware for fix it", gui.current_path_bgm.first, path);
+            LOG_WARN("Failed to read AT9 file from {}:{}, install Preinst Firmware for fix it", current_path_bgm.first, path);
         else
-            LOG_ERROR("Failed to read AT9 file from {}:{}", gui.current_path_bgm.first, path);
+            LOG_ERROR("Failed to read AT9 file from {}:{}", current_path_bgm.first, path);
 
         return false;
     }
@@ -455,4 +459,4 @@ bool init_bgm(GuiState &gui, EmuEnvState &emuenv) {
     return true;
 }
 
-} // namespace gui
+} // namespace bgm_player

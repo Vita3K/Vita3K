@@ -18,6 +18,7 @@
 #include "interface.h"
 
 #include <app/functions.h>
+#include <bgm_player/functions.h>
 #include <config/functions.h>
 #include <config/version.h>
 #include <dialog/state.h>
@@ -326,11 +327,11 @@ int main(int argc, char *argv[]) {
 
     if (!cfg.console) {
         gui::pre_init(gui, emuenv);
-        gui::init_bgm_player(emuenv.cfg.bgm_volume);
+        bgm_player::init_bgm_player(emuenv.cfg.bgm_volume);
         if (!emuenv.cfg.initial_setup) {
             emuenv.cfg.system_music.emplace(false);
-            if (gui::init_bgm(gui, emuenv))
-                gui::switch_bgm_state(true);
+            if (bgm_player::init_bgm(gui, emuenv))
+                bgm_player::switch_bgm_state(true);
             while (!emuenv.cfg.initial_setup) {
                 wait_for_frame_done();
                 if (handle_events(emuenv, gui)) {
@@ -470,7 +471,7 @@ int main(int argc, char *argv[]) {
         gui.imgui_state->do_clear_screen = false;
     }
 
-    gui::switch_bgm_state(true);
+    bgm_player::switch_bgm_state(true);
     gui::init_app_background(gui, emuenv, emuenv.io.app_path);
     gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
 

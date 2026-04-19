@@ -318,7 +318,6 @@ struct GuiState {
 
     std::map<std::string, std::vector<TimeApp>> time_apps;
 
-    std::pair<std::string, std::string> current_path_bgm;
     std::uint64_t current_theme_bg = 0;
     std::map<std::string, std::map<ThemePreviewType, ImGui_Texture>> themes_preview;
     std::vector<ImGui_Texture> theme_backgrounds;

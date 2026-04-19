@@ -17,6 +17,7 @@
 
 #include "private.h"
 
+#include <bgm_player/functions.h>
 #include <config/state.h>
 #include <dialog/state.h>
 #include <gui/functions.h>
@@ -130,9 +131,8 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 if (emuenv.cfg.initial_setup)
                     init_theme(gui, emuenv, gui.users[emuenv.cfg.user_id].theme_id);
                 else {
-                    gui.current_path_bgm = { "pd0", "data/systembgm/initialsetup.at9" };
-                    if (gui::init_bgm(gui, emuenv))
-                        gui::switch_bgm_state(false);
+                    if (bgm_player::init_bgm(gui, emuenv))
+                        bgm_player::switch_bgm_state(false);
                 }
                 fw_version.clear();
                 pup_path = "";

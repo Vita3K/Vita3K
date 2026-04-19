@@ -21,6 +21,7 @@
 
 #include <app/functions.h>
 #include <audio/state.h>
+#include <bgm_player/functions.h>
 #include <config/state.h>
 #include <ctime>
 #include <ctrl/functions.h>
@@ -614,7 +615,6 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             gui.is_key_locked = true;
             if (allow_switch_state) {
                 // Show/Hide Live Area during app running
-                const auto current_app_state = emuenv.kernel.is_threads_paused();
                 const auto live_area_app_index = gui::get_live_area_current_open_apps_list_index(gui, emuenv.io.app_path);
                 if (live_area_app_index == gui.live_area_current_open_apps_list.end())
                     gui::open_live_area(gui, emuenv, emuenv.io.app_path);
@@ -630,12 +630,12 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     }
                 }
 
-                if (!current_app_state) {
+                if (!emuenv.kernel.is_threads_paused()) {
                     // Update the last app frame for live area
                     update_live_area_last_app_frame(emuenv, gui);
                     gui.gate_animation.start(GateAnimationState::ReturnApp);
-                    app::switch_state(emuenv, !current_app_state);
-                    gui::switch_bgm_state(!current_app_state);
+                    app::switch_state(emuenv, true);
+                    bgm_player::switch_bgm_state(false);
                 } else {
                     gui.gate_animation.start(GateAnimationState::EnterApp);
                 }
@@ -698,7 +698,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
         switch (event.type) {
         case SDL_EVENT_QUIT:
-            gui::destroy_bgm_player();
+            bgm_player::destroy_bgm_player();
             if (!emuenv.io.app_path.empty())
                 gui::update_time_app_used(gui, emuenv, emuenv.io.app_path);
             if (emuenv.audio.adapter)
