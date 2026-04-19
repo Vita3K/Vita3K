@@ -269,7 +269,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Begin("##settings", &gui.vita_area.settings, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PopStyleVar();
 
-    const auto draw_list = ImGui::GetBackgroundDrawList();
+    const auto draw_list = ImGui::GetWindowDrawList();
     const ImVec2 BG_POS_MAX(VIEWPORT_POS.x + VIEWPORT_SIZE.x, VIEWPORT_POS.y + VIEWPORT_SIZE.y);
     if (is_background)
         draw_list->AddImage(gui.apps_background["NPXS10015"], VIEWPORT_POS, BG_POS_MAX);

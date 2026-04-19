@@ -1,4 +1,4 @@
-﻿// Vita3K emulator project
+// Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -69,6 +69,21 @@ namespace gui {
  */
 static Config::CurrentConfig config;
 
+enum class SettingsDialogSection {
+    Core,
+    CPU,
+    GPU,
+    Audio,
+    Camera,
+    System,
+    Emulator,
+    Gui,
+    Network,
+    Debug
+};
+
+static SettingsDialogSection current_settings_section = SettingsDialogSection::Core;
+
 void get_modules_list(GuiState &gui, EmuEnvState &emuenv) {
     gui.modules.clear();
 
@@ -110,6 +125,7 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     get_modules_list(gui, emuenv);
     get_sys_apps_title(gui, emuenv);
     get_notice_list(emuenv);
+    get_time_apps(gui, emuenv);
     get_users_list(gui, emuenv);
     init_home(gui, emuenv);
 }
@@ -310,7 +326,8 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
     audio_backend_idx = (config.audio_backend == "SDL") ? 0 : 1;
     emuenv.app_path = app_path;
-    emuenv.display.imgui_render = true;
+    gui.vita_area.home_screen = false;
+    gui.vita_area.information_bar = true;
 }
 
 /**
@@ -576,8 +593,10 @@ static int get_camera_combobox_index(int camera_type, const std::string &camera_
     }
     return camera_type;
 }
+
 void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
 
@@ -585,22 +604,106 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto &common = emuenv.common_dialog.lang;
     auto &firmware_font = gui.lang.install_dialog.firmware_install;
 
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x + (display_size.x / 2.f), emuenv.logical_viewport_pos.y + (display_size.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.48f));
-    const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
-    // Reference here is intentional
-    auto &show_settings_dialog = is_custom_config ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
-    ImGui::Begin("##settings", &show_settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
-    const auto settings_str = lang.main_window["title"];
-    TextColoredCentered(GUI_COLOR_TEXT_TITLE, (is_custom_config ? fmt::format("{}: {} [{}]", settings_str, get_app_index(gui, emuenv.app_path)->title, emuenv.app_path) : settings_str).c_str());
-    ImGui::Spacing();
-    ImGui::Separator();
-    ImGui::BeginTabBar("SettingsTabBar", ImGuiTabBarFlags_None);
+    const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
 
-    // Core
-    if (ImGui::BeginTabItem(lang.core["title"].c_str())) {
-        ImGui::PopStyleColor();
+    const ImVec2 WINDOW_POS(VIEWPORT_POS.x, VIEWPORT_POS.y + INFORMATION_BAR_HEIGHT);
+    const ImVec2 WINDOW_SIZE(VIEWPORT_SIZE.x, VIEWPORT_SIZE.y - INFORMATION_BAR_HEIGHT);
+    ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
+    const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
+    auto &show_settings_dialog = is_custom_config ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
+    constexpr auto flags = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings;
+    ImGui::Begin("##settings", &show_settings_dialog, flags);
+    ImGui::PopStyleVar();
+
+    constexpr auto BG_PATH = "NPXS10015";
+    const auto draw_list = ImGui::GetWindowDrawList();
+    const ImVec2 BG_POS_MAX(VIEWPORT_POS.x + VIEWPORT_SIZE.x, VIEWPORT_POS.y + VIEWPORT_SIZE.y);
+    if (gui.apps_background.contains(BG_PATH))
+        draw_list->AddImage(gui.apps_background[BG_PATH], VIEWPORT_POS, BG_POS_MAX);
+    else
+        draw_list->AddRectFilled(VIEWPORT_POS, BG_POS_MAX, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
+
+    const auto TITLE_BAR_HEIGHT = 64.f * SCALE.y;
+    ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+    const auto settings_str = lang.main_window["title"];
+    const auto title_text_width = ImGui::CalcTextSize(settings_str.c_str());
+    ImGui::SetCursorPosY((TITLE_BAR_HEIGHT - title_text_width.y) / 2.f);
+    TextColoredCentered(GUI_COLOR_TEXT_TITLE, (is_custom_config ? fmt::format("{}: {} [{}]", settings_str, get_app_index(gui, emuenv.app_path)->title, fs::path(emuenv.app_path).stem().string()) : settings_str).c_str());
+    ImGui::SetCursorPosY(TITLE_BAR_HEIGHT);
+    ImGui::Separator();
+    ImGui::SetWindowFontScale(0.85f * RES_SCALE.x);
+
+    const auto BUTTON_SIZE = ImVec2(240.f * SCALE.x, 44.f * SCALE.y);
+    const float sidebar_width = 190.f * SCALE.x;
+    const float sidebar_item_height = 38.f * SCALE.y;
+    const float sidebar_item_spacing = 6.f * SCALE.y;
+
+    const ImVec4 BASE_COLOR(0.70f, 0.90f, 1.00f, 0.20f);
+    const ImVec4 HOVERED_COLOR(0.78f, 0.94f, 1.00f, 0.30f);
+    const ImVec4 ACTIVE_COLOR(0.62f, 0.86f, 1.00f, 0.38f);
+
+    const auto draw_settings_section_button = [&](const char *label, const SettingsDialogSection section) {
+        const bool is_selected = current_settings_section == section;
+        ImGui::PushID(static_cast<int>(section));
+        ImGui::PushStyleColor(ImGuiCol_Text, is_selected ? GUI_COLOR_TEXT_TITLE : GUI_COLOR_TEXT);
+        if (is_selected) {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.78f, 0.95f, 1.00f, 0.28f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.84f, 0.97f, 1.00f, 0.36f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.70f, 0.90f, 1.00f, 0.42f));
+        } else {
+            ImGui::PushStyleColor(ImGuiCol_Button, BASE_COLOR);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, HOVERED_COLOR);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ACTIVE_COLOR);
+        }
+        if (ImGui::Button(label, ImVec2(-1.f, sidebar_item_height)))
+            current_settings_section = section;
+        ImGui::PopStyleColor(4);
+        ImGui::PopID();
+    };
+
+    ImGui::SetCursorPosY(TITLE_BAR_HEIGHT);
+    const auto CONTENT_HEIGHT = WINDOW_SIZE.y - (TITLE_BAR_HEIGHT * 2.f);
+    const float ROUNDED_SIZE = 8.f * SCALE.x;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, ROUNDED_SIZE);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f * SCALE.x);
+    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, ROUNDED_SIZE);
+
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.92f, 0.97f, 1.00f, 0.42f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, HOVERED_COLOR);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ACTIVE_COLOR);
+    ImGui::PushStyleColor(ImGuiCol_Button, BASE_COLOR);
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, ImVec4(0.10f, 0.16f, 0.18f, 0.12f));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, BASE_COLOR);
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, HOVERED_COLOR);
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, ACTIVE_COLOR);
+
+    ImGui::BeginChild("##settings_sections", ImVec2(sidebar_width, CONTENT_HEIGHT), 1, flags);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.f, sidebar_item_spacing));
+    draw_settings_section_button(lang.core["title"].c_str(), SettingsDialogSection::Core);
+    draw_settings_section_button("CPU", SettingsDialogSection::CPU);
+    draw_settings_section_button("GPU", SettingsDialogSection::GPU);
+    draw_settings_section_button(lang.audio["title"].c_str(), SettingsDialogSection::Audio);
+    draw_settings_section_button(lang.camera["title"].c_str(), SettingsDialogSection::Camera);
+    draw_settings_section_button(lang.system["title"].c_str(), SettingsDialogSection::System);
+    draw_settings_section_button(lang.emulator["title"].c_str(), SettingsDialogSection::Emulator);
+    draw_settings_section_button(lang.gui["title"].c_str(), SettingsDialogSection::Gui);
+    draw_settings_section_button(lang.network["title"].c_str(), SettingsDialogSection::Network);
+    draw_settings_section_button(gui.lang.main_menubar.debug["title"].c_str(), SettingsDialogSection::Debug);
+    ImGui::ScrollWhenDragging();
+    ImGui::PopStyleVar();
+    ImGui::EndChild();
+
+    const ImVec2 CONTENT_SIZE = ImVec2(VIEWPORT_SIZE.x - sidebar_width, CONTENT_HEIGHT);
+    ImGui::SameLine(0.f, 0.f);
+    ImGui::BeginChild("##settings_content", CONTENT_SIZE, 1, flags);
+
+    switch (current_settings_section) {
+    case SettingsDialogSection::Core: {
         ImGui::Spacing();
         if (!gui.modules.empty()) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang.core["modules_mode"].c_str());
@@ -654,25 +757,15 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         if (ImGui::Button(lang.core["refresh_list"].c_str()))
             get_modules_list(gui, emuenv);
-        ImGui::EndTabItem();
-    } else
-        ImGui::PopStyleColor();
-
-    // CPU
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem("CPU")) {
-        ImGui::PopStyleColor();
+        break;
+    }
+    case SettingsDialogSection::CPU: {
         ImGui::Spacing();
         ImGui::Checkbox(lang.cpu["cpu_opt"].c_str(), &config.cpu_opt);
         SetTooltipEx(lang.cpu["cpu_opt_description"].c_str());
-        ImGui::EndTabItem();
-    } else
-        ImGui::PopStyleColor();
-
-    // GPU
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem("GPU")) {
-        ImGui::PopStyleColor();
+        break;
+    }
+    case SettingsDialogSection::GPU: {
         ImGui::Spacing();
 
 #ifdef __APPLE__
@@ -975,14 +1068,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             }
         }
 
-        ImGui::EndTabItem();
-    } else
-        ImGui::PopStyleColor();
+        break;
+    }
 
-    // Audio
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem(lang.audio["title"].c_str())) {
-        ImGui::PopStyleColor();
+    case SettingsDialogSection::Audio: {
         ImGui::Spacing();
         if (!emuenv.io.app_path.empty())
             ImGui::BeginDisabled();
@@ -1003,14 +1092,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         SetTooltipEx(lang.audio["bgm_volume_description"].c_str());
         ImGui::Separator();
         ImGui::Spacing();
-        ImGui::EndTabItem();
-    } else
-        ImGui::PopStyleColor();
+        break;
+    }
 
-    // Camera
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem(lang.camera["title"].c_str())) {
-        ImGui::PopStyleColor();
+    case SettingsDialogSection::Camera: {
         ImGui::Spacing();
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.camera["front_camera"].c_str());
         // Combo box for camera selection
@@ -1099,14 +1184,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (old_back_camera_type != emuenv.cfg.back_camera_type || old_back_camera_id != emuenv.cfg.back_camera_id || old_back_camera_color != emuenv.cfg.back_camera_color || old_back_camera_image != emuenv.cfg.back_camera_image) {
             emuenv.camera.back()->update_config(emuenv.cfg.back_camera_type, emuenv.cfg.back_camera_id, emuenv.cfg.back_camera_image, emuenv.cfg.back_camera_color);
         }
-        ImGui::EndTabItem();
-    } else
-        ImGui::PopStyleColor();
+        break;
+    }
 
-    // System
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem(lang.system["title"].c_str())) {
-        ImGui::PopStyleColor();
+    case SettingsDialogSection::System: {
         ImGui::Spacing();
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang.system["select_enter_button"].c_str());
         SetTooltipEx(lang.system["enter_button_description"].c_str());
@@ -1121,14 +1202,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SameLine();
         ImGui::Checkbox(lang.system["demo_mode"].c_str(), &emuenv.cfg.demo_mode);
         SetTooltipEx(lang.system["demo_mode_description"].c_str());
-        ImGui::EndTabItem();
-    } else
-        ImGui::PopStyleColor();
 
-    // Emulator
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem(lang.emulator["title"].c_str())) {
-        ImGui::PopStyleColor();
+        break;
+    }
+
+    case SettingsDialogSection::Emulator: {
 #ifndef __ANDROID__
         ImGui::Spacing();
         ImGui::Checkbox(lang.emulator["boot_apps_full_screen"].c_str(), &emuenv.cfg.boot_apps_full_screen);
@@ -1220,14 +1298,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         const char *LIST_IMG_FORMAT[] = { lang.emulator["null"].c_str(), "JPEG", "PNG" };
         ImGui::Combo(lang.emulator["screenshot_format"].c_str(), &emuenv.cfg.screenshot_format, LIST_IMG_FORMAT, IM_ARRAYSIZE(LIST_IMG_FORMAT));
-        ImGui::EndTabItem();
-    } else
-        ImGui::PopStyleColor();
+        break;
+    }
 
-    // GUI
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem(lang.gui["title"].c_str())) {
-        ImGui::PopStyleColor();
+    case SettingsDialogSection::Gui: {
         ImGui::Spacing();
         ImGui::Checkbox(lang.gui["show_gui"].c_str(), &emuenv.cfg.show_gui);
         SetTooltipEx(lang.gui["gui_description"].c_str());
@@ -1350,14 +1424,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::SliderInt(lang.gui["delay_start"].c_str(), &emuenv.cfg.delay_start, 30, 300);
         SetTooltipEx(lang.gui["select_delay_start"].c_str());
-        ImGui::EndTabItem();
-    } else
-        ImGui::PopStyleColor();
+        break;
+    }
 
-    // Network
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem(lang.network["title"].c_str())) {
-        ImGui::PopStyleColor();
+    case SettingsDialogSection::Network: {
         ImGui::Spacing();
 
         // PSN
@@ -1422,14 +1492,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         SetTooltipEx(lang.network["read_end_attempts_description"].c_str());
         ImGui::SliderInt(lang.network["read_end_sleep"].c_str(), &emuenv.cfg.http_read_end_sleep_ms, 50, 3000);
         SetTooltipEx(lang.network["read_end_sleep_description"].c_str());
-        ImGui::EndTabItem();
-    } else
-        ImGui::PopStyleColor();
+        break;
+    }
 
-    // Debug
-    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    if (ImGui::BeginTabItem(gui.lang.main_menubar.debug["title"].c_str())) {
-        ImGui::PopStyleColor();
+    case SettingsDialogSection::Debug: {
         ImGui::Spacing();
         ImGui::Checkbox(lang.debug["log_imports"].c_str(), &emuenv.kernel.debugger.log_imports);
         ImGui::SameLine();
@@ -1507,7 +1573,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         // Tracy modules list
         static std::vector<std::string> tracy_modules = tracy_module_utils::get_available_module_names();
-        if (ImGui::BeginListBox(tracy_modules_list_label, { 0.0f, ImGui::GetTextLineHeightWithSpacing() * 8.25f + ImGui::GetStyle().FramePadding.y * 2.0f })) {
+        if (ImGui::BeginListBox(tracy_modules_list_label, { CONTENT_SIZE.x / 2.f, ImGui::GetTextLineHeightWithSpacing() * 8.25f + ImGui::GetStyle().FramePadding.y * 2.0f })) {
             // Get all HLE modules available for advanced profiling using Tracy. Do it only once.
             // For every HLE module available for advanced profiling using Tracy
             for (auto &module : tracy_modules) {
@@ -1528,6 +1594,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     }
                 }
             }
+            ImGui::ScrollWhenDragging();
             ImGui::EndListBox();
         }
         // Calculate checkbox state based on Tracy modules selection
@@ -1565,20 +1632,33 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
 #endif // TRACY_ENABLE
 
-        ImGui::EndTabItem();
-    } else
-        ImGui::PopStyleColor();
+        break;
+    }
+    default:
+        break;
+    }
 
-    ImGui::EndTabBar();
-
-    ImGui::Spacing();
+    ImGui::ScrollWhenDragging();
+    ImGui::EndChild();
+    ImGui::SetCursorPosY(WINDOW_SIZE.y - TITLE_BAR_HEIGHT);
     ImGui::Separator();
-    ImGui::Spacing();
-    static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * SCALE.x));
-    if (ImGui::Button(common.common["close"].c_str(), BUTTON_SIZE))
+    const ImVec2 FOOTER_BG_MIN(VIEWPORT_POS.x, VIEWPORT_POS.y + INFORMATION_BAR_HEIGHT + WINDOW_SIZE.y - TITLE_BAR_HEIGHT + 1.f);
+    const ImVec2 FOOTER_BG_MAX(FOOTER_BG_MIN.x + WINDOW_SIZE.x, FOOTER_BG_MIN.y + TITLE_BAR_HEIGHT);
+    draw_list->AddRectFilled(FOOTER_BG_MIN, FOOTER_BG_MAX, IM_COL32(11, 131, 0, 150.f));
+    ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - BUTTON_SIZE.x - (20.f * SCALE.x), WINDOW_SIZE.y - ((TITLE_BAR_HEIGHT + BUTTON_SIZE.y) / 2.f)));
+    ImGui::SetWindowFontScale(1.f * RES_SCALE.y);
+
+    const auto close_settings_dialog = [&]() {
+        const auto is_app_running = !emuenv.io.app_path.empty() && !emuenv.kernel.is_threads_paused();
         show_settings_dialog = false;
-    ImGui::SameLine(0, 20.f * SCALE.x);
+        if (!is_app_running)
+            gui.vita_area.home_screen = true;
+        if (!emuenv.cfg.show_info_bar || is_app_running)
+            gui.vita_area.information_bar = false;
+    };
+    if (ImGui::Button(common.common["close"].c_str(), BUTTON_SIZE))
+        close_settings_dialog();
+    ImGui::SameLine(0, 40.f * SCALE.x);
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));
     const auto is_reboot = !emuenv.io.app_path.empty()
         && ((emuenv.renderer->current_backend != emuenv.backend_renderer)
@@ -1590,12 +1670,15 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         save_config(gui, emuenv);
         if (is_apply)
             set_config(emuenv);
-        show_settings_dialog = false;
+
+        close_settings_dialog();
     }
     SetTooltipEx(lang.main_window["keep_changes"].c_str());
+    ImGui::PopStyleColor(8);
+    ImGui::PopStyleVar(3);
 
-    ImGui::ScrollWhenDragging();
     ImGui::End();
+    ImGui::PopStyleVar(2);
 }
 
 } // namespace gui
