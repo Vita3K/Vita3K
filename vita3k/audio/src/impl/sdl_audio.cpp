@@ -20,6 +20,8 @@
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_hints.h>
 
+#include <algorithm>
+
 #define SDL_CHECK_EXT(condition, ret)                         \
     do {                                                      \
         if (!(condition)) {                                   \
@@ -32,8 +34,17 @@
 #define SDL_CHECK_VOID(f_call) SDL_CHECK_EXT(f_call, )
 #define SDL_CHECK_NEG(f_call) SDL_CHECK_EXT((f_call) >= 0, {})
 
-static int get_threshold_samples(const int device_buffer_samples) {
-    return 4 * device_buffer_samples;
+static int get_stream_buffer_samples(const SDL_AudioSpec &spec, const AudioOutPort &out_port) {
+    return out_port.len_bytes / SDL_AUDIO_FRAMESIZE(spec);
+}
+
+static int get_threshold_samples(const int device_buffer_samples, const int stream_buffer_samples) {
+#ifdef __ANDROID__
+    // Android's audio latency is higher than other platforms, so increase prebuffering to reduce underruns.
+    return std::max(stream_buffer_samples, 4 * device_buffer_samples);
+#else
+    return std::max(stream_buffer_samples, device_buffer_samples);
+#endif
 }
 
 void SDLCALL SDLAudioAdapter::thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
@@ -41,7 +52,8 @@ void SDLCALL SDLAudioAdapter::thread_wakeup_callback(void *userdata, SDL_AudioSt
     assert(stream != nullptr);
     SDLAudioOutPort *port = static_cast<SDLAudioOutPort *>(userdata);
     const int samples_available = port->adapter.get_rest_sample(*port);
-    if (samples_available < get_threshold_samples(port->adapter.device_buffer_samples) || additional_amount > 0) {
+    const int stream_buffer_samples = get_stream_buffer_samples(port->adapter.dst_spec, *port);
+    if (samples_available < get_threshold_samples(port->adapter.device_buffer_samples, stream_buffer_samples)) {
         port->cond_var.notify_one();
     }
 }
@@ -94,12 +106,13 @@ AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sam
 void SDLAudioAdapter::audio_output(AudioOutPort &out_port, const void *buffer) {
     //  Put audio to the port's stream and see how much is left to play.
     SDLAudioOutPort &port = static_cast<SDLAudioOutPort &>(out_port);
+    const int stream_buffer_samples = get_stream_buffer_samples(dst_spec, out_port);
     // If there's lots of audio left to play, stop this thread.
     // The audio callback will wake it up later when it's running out of data.
     const int samples_available = get_rest_sample(port);
-    if (samples_available > get_threshold_samples(device_buffer_samples)) {
+    if (samples_available >= get_threshold_samples(device_buffer_samples, stream_buffer_samples)) {
         std::unique_lock<std::mutex> lock(port.mutex);
-        port.cond_var.wait_for(lock, std::chrono::microseconds(port.len_microseconds * 2));
+        port.cond_var.wait_for(lock, std::chrono::microseconds(port.len_microseconds));
     }
     SDL_CHECK_VOID(SDL_PutAudioStreamData(port.stream.get(), buffer, out_port.len_bytes));
 }

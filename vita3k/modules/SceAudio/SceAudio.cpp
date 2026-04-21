@@ -146,8 +146,21 @@ EXPORT(int, sceAudioOutGetAdopt, SceAudioOutPortType type) {
 }
 
 EXPORT(int, sceAudioOutGetConfig, int port, SceAudioOutConfigType type) {
-    TRACY_FUNC(sceAudioOutGetConfig, type);
-    return UNIMPLEMENTED();
+    TRACY_FUNC(sceAudioOutGetConfig, port, type);
+    const AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);
+    if (!prt) {
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+    }
+    switch (type) {
+    case SCE_AUDIO_OUT_CONFIG_TYPE_LEN:
+        return prt->len;
+    case SCE_AUDIO_OUT_CONFIG_TYPE_FREQ:
+        return prt->freq;
+    case SCE_AUDIO_OUT_CONFIG_TYPE_MODE:
+        return prt->mode;
+    default:
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_CONF_TYPE);
+    }
 }
 
 EXPORT(int, sceAudioOutGetPortVolume_forUser) {
@@ -201,7 +214,7 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
-    auto [cfg_it, inserted] = prt->tid_configs.try_emplace(thread_id, AudioOutPort::TidConfig { prt->len, prt->freq, prt->mode });
+    auto [cfg_it, inserted] = prt->tid_configs.try_emplace(thread_id, AudioOutPort::TidConfig{ prt->len, prt->freq, prt->mode });
     const bool config_match = (cfg_it->second.len == prt->len) && (cfg_it->second.freq == prt->freq) && (cfg_it->second.mode == prt->mode);
 
     (void)inserted;

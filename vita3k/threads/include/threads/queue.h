@@ -41,7 +41,7 @@ public:
                 }
             } else {
                 if (queue_.empty()) {
-                    condempty_.wait_for(mlock, std::chrono::microseconds(ms));
+                    condempty_.wait_for(mlock, std::chrono::milliseconds(ms));
                 }
             }
             if (aborted || queue_.empty()) {
@@ -63,7 +63,7 @@ public:
                 }
             } else {
                 if (queue_.empty()) {
-                    condempty_.wait_for(mlock, std::chrono::microseconds(ms));
+                    condempty_.wait_for(mlock, std::chrono::milliseconds(ms));
                 }
             }
             if (aborted || queue_.empty()) {
