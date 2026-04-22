@@ -19,7 +19,6 @@
 
 #include <cpu/common.h>
 #include <cpu/disasm/state.h>
-#include <mem/block.h>
 #include <mem/state.h>
 #include <util/types.h>
 
@@ -31,9 +30,6 @@ struct CPUState {
     SceUID thread_id = 0;
     MemState *mem = nullptr;
     DisasmState disasm;
-
-    Block halt_instruction;
-    Address halt_instruction_pc; // thumb mode pc
 
     CPUInterfacePtr cpu;
     bool svc_called;
