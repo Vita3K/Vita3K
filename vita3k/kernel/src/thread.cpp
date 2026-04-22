@@ -138,7 +138,7 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     call_level = 1;
     load_context(*cpu, init_cpu_ctx);
     write_pc(*cpu, entry_point);
-    write_lr(*cpu, cpu->halt_instruction_pc);
+    write_lr(*cpu, kernel.halt_instruction_pc);
     write_reg(*cpu, 0, arglen);
 
     // Copy data to stack
@@ -351,7 +351,7 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     call_level++;
     // we shouldn't have to clean the context I believe
     write_pc(*cpu, callback_address);
-    write_lr(*cpu, cpu->halt_instruction_pc);
+    write_lr(*cpu, kernel.halt_instruction_pc);
     push_arguments(args);
     thread_lock.unlock();
 

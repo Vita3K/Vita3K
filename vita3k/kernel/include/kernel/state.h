@@ -24,6 +24,7 @@
 #include <kernel/sync_primitives.h>
 #include <kernel/types.h>
 #include <mem/allocator.h>
+#include <mem/block.h>
 #include <mem/ptr.h>
 #include <mem/util.h>
 #include <rtc/rtc.h>
@@ -135,6 +136,10 @@ struct KernelState {
     bool cpu_opt;
     CorenumAllocator corenum_allocator;
     CPUProtocolPtr cpu_protocol;
+
+    // Shared NOP+WFI sentinel used by the Dynarmic as the halt return address
+    Block halt_instruction;
+    Address halt_instruction_pc;
 
     ObjectStore obj_store;
 
