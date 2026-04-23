@@ -19,6 +19,8 @@
 #include <gui/functions.h>
 #include <io/state.h>
 
+#include <SDL3/SDL_events.h>
+
 #include "private.h"
 
 namespace gui {
@@ -48,8 +50,12 @@ static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::MenuItem(lang["install_zip"].c_str(), nullptr, &gui.file_menu.archive_install_dialog);
         ImGui::MenuItem(lang["install_license"].c_str(), nullptr, &gui.file_menu.license_install_dialog);
         ImGui::Separator();
-        if (ImGui::MenuItem(lang["exit"].c_str()))
-            exit(0);
+        if (ImGui::MenuItem(lang["exit"].c_str())) {
+            SDL_Event quit_event{
+                .type = SDL_EVENT_QUIT
+            };
+            SDL_PushEvent(&quit_event);
+        }
         ImGui::EndMenu();
     }
 }
