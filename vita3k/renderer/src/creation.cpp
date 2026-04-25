@@ -260,7 +260,7 @@ bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, co
         break;
 
     case Backend::Vulkan:
-        state = std::make_unique<vulkan::VKState>(config.gpu_idx);
+        state = std::make_unique<vulkan::VKState>(config.current_config.gpu_idx);
         state->init_paths(root_paths);
         if (!vulkan::create(window, state, config))
             return false;

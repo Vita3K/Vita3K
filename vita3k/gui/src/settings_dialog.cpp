@@ -190,6 +190,7 @@ static bool get_custom_config(EmuEnvState &emuenv, const std::string &app_path) 
             if (!config_child.child("gpu").empty()) {
                 const auto gpu_child = config_child.child("gpu");
                 config.backend_renderer = gpu_child.attribute("backend-renderer").as_string();
+                config.gpu_idx = gpu_child.attribute("gpu-idx").as_int(emuenv.cfg.gpu_idx);
 #ifdef __ANDROID__
                 config.custom_driver_name = gpu_child.attribute("custom-driver-name").as_string();
 #endif
@@ -268,11 +269,12 @@ static std::vector<std::string> list_user_lang;
 void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     // If no app-specific config file is being used for the initialized application,
     // set up `config` with the values set in the global emulator configuration
-    if (!get_custom_config(emuenv, app_path)) {
+    if (app_path.empty() || !get_custom_config(emuenv, app_path)) {
         config.cpu_opt = emuenv.cfg.cpu_opt;
         config.modules_mode = emuenv.cfg.modules_mode;
         config.lle_modules = emuenv.cfg.lle_modules;
         config.backend_renderer = emuenv.cfg.backend_renderer;
+        config.gpu_idx = emuenv.cfg.gpu_idx;
 #ifdef __ANDROID__
         config.custom_driver_name = emuenv.cfg.custom_driver_name;
 #endif
@@ -369,6 +371,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         // GPU
         auto gpu_child = config_child.append_child("gpu");
         gpu_child.append_attribute("backend-renderer") = config.backend_renderer.c_str();
+        gpu_child.append_attribute("gpu-idx") = config.gpu_idx;
 #ifdef __ANDROID__
         gpu_child.append_attribute("custom-driver-name") = config.custom_driver_name.c_str();
 #endif
@@ -415,6 +418,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.modules_mode = config.modules_mode;
         emuenv.cfg.lle_modules = config.lle_modules;
         emuenv.cfg.backend_renderer = config.backend_renderer;
+        emuenv.cfg.gpu_idx = config.gpu_idx;
 #ifdef __ANDROID__
         emuenv.cfg.custom_driver_name = config.custom_driver_name;
 #endif
@@ -481,6 +485,7 @@ void set_current_config(EmuEnvState &emuenv, const std::string &app_path) {
         emuenv.cfg.current_config.modules_mode = emuenv.cfg.modules_mode;
         emuenv.cfg.current_config.lle_modules = emuenv.cfg.lle_modules;
         emuenv.cfg.current_config.backend_renderer = emuenv.cfg.backend_renderer;
+        emuenv.cfg.current_config.gpu_idx = emuenv.cfg.gpu_idx;
 #ifdef __ANDROID__
         emuenv.cfg.current_config.custom_driver_name = emuenv.cfg.custom_driver_name;
 #endif
@@ -793,18 +798,18 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             std::vector<const char *> gpu_list;
             for (const auto &gpu : gpu_list_str)
                 gpu_list.push_back(gpu.c_str());
-            ImGui::Combo(lang.gpu["gpu"].c_str(), &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size()));
+            ImGui::Combo(lang.gpu["gpu"].c_str(), &config.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size()));
             SetTooltipEx(lang.gpu["select_gpu"].c_str());
 
 #ifdef __ANDROID__
             if (emuenv.renderer->support_custom_drivers()) {
-                if (emuenv.cfg.gpu_idx == 0)
+                if (config.gpu_idx == 0)
                     config.custom_driver_name = "";
 
                 if (ImGui::Button(lang.gpu["add_custom_driver"].c_str())) {
                     app::add_custom_driver(emuenv);
                     // also set it to stock after
-                    emuenv.cfg.gpu_idx = 0;
+                    config.gpu_idx = 0;
                 }
 
                 ImGui::SameLine();
@@ -812,14 +817,14 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     open_path("https://github.com/K11MCH1/AdrenoToolsDrivers/releases/");
 
                 // first is the stock gpu
-                if (emuenv.cfg.gpu_idx > 0) {
-                    config.custom_driver_name = gpu_list_str[emuenv.cfg.gpu_idx];
+                if (config.gpu_idx > 0) {
+                    config.custom_driver_name = gpu_list_str[config.gpu_idx];
 
                     ImGui::SameLine();
                     if (ImGui::Button(lang.gpu["remove_custom_driver"].c_str())) {
                         app::remove_custom_driver(emuenv, config.custom_driver_name);
                         // set back to stock
-                        emuenv.cfg.gpu_idx = 0;
+                        config.gpu_idx = 0;
                         config.custom_driver_name = "";
                     }
                 }

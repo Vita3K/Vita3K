@@ -400,7 +400,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     }
 
 #ifdef __ANDROID__
-    state.renderer->current_custom_driver = state.cfg.custom_driver_name;
+    state.renderer->current_custom_driver = state.cfg.current_config.custom_driver_name;
 #endif
 
 #if USE_DISCORD
