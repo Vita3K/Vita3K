@@ -144,7 +144,11 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
         format = (num_comp == 4) ? GL_RGBA : (num_comp == 2 ? GL_RG : GL_RED);
     }
 
-    if (!support_etc && gxm::is_etc_format(base_format)) {
+    if (support_etc && gxm::is_etc_format(base_format)) {
+        // ETC1 is a subset of ETC2; use the ETC2 token for hardware upload
+        internal_format = GL_COMPRESSED_RGB8_ETC2;
+        format = GL_COMPRESSED_RGB8_ETC2;
+    } else if (gxm::is_etc_format(base_format)) {
         // texture is decompressed on the CPU
         internal_format = GL_RGBA;
         format = GL_RGBA;
@@ -162,7 +166,8 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     }
 
     while (face_iterated < face_total_count && width && height) {
-        if (compressed && support_dxt) {
+        const bool use_compressed_api = (gxm::is_bcn_format(base_fmt) && support_dxt) || (gxm::is_etc_format(base_fmt) && support_etc);
+        if (use_compressed_api) {
             size_t compressed_size = renderer::texture::get_compressed_size(base_fmt, width, height);
             glCompressedTexImage2D(upload_type, mip_index, internal_format, width, height, 0, static_cast<GLsizei>(compressed_size), nullptr);
         } else {
@@ -217,7 +222,7 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
             glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, block_height);
         }
 
-        const GLenum format = translate_format(base_format);
+        const GLenum format = gxm::is_etc_format(base_format) ? GL_COMPRESSED_RGB8_ETC2 : translate_format(base_format);
         size_t compressed_size = renderer::texture::get_compressed_size(base_format, width, height);
         glCompressedTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), pixels);
 
