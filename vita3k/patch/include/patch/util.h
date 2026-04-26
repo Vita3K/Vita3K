@@ -25,7 +25,7 @@
 #include "patch/instructions.h"
 #include "patch/patch.h"
 
-PatchHeader read_header(std::string &header, bool isPatchlist);
+PatchHeader read_header(std::string &header, bool is_patchlist);
 std::vector<uint8_t> to_bytes(unsigned long long value, uint8_t count);
 
 void strip_arg_spaces(std::string &line);

@@ -427,7 +427,10 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     } else {
         emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
     }
-    main_module_id = load_module(emuenv, "app0:" + emuenv.self_path);
+    {
+        const Patches patches = get_patches(emuenv.patch_path, emuenv.io.title_id, "app0:" + emuenv.self_path);
+        main_module_id = load_module(emuenv, "app0:" + emuenv.self_path, &patches);
+    }
     if (main_module_id >= 0) {
         const auto module = emuenv.kernel.loaded_modules[main_module_id];
         LOG_INFO("Main executable {} ({}) loaded", module->info.module_name, emuenv.self_path);
@@ -463,6 +466,8 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
                 emuenv.kernel.loaded_sysmodules[module_id] = {};
         }
     };
+    lib_load_list.emplace_back("os0:kd/bootimage.skprx");
+    lib_load_list.emplace_back("os0:kd/sysmodule.skprx");
     add_preload_module(0x00010000, SCE_SYSMODULE_INVALID, "libc", true);
     add_preload_module(0x00020000, SCE_SYSMODULE_DBG, "libdbg", false);
     add_preload_module(0x00080000, SCE_SYSMODULE_INVALID, "libshellsvc", false);

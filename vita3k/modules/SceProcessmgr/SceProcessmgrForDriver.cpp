@@ -15,17 +15,20 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "kernel/state.h"
+
 #include <module/module.h>
+#include <util/tracy.h>
 
-#include <atomic>
-
-static std::atomic<int> pls_key_counter{ 1 };
-static std::atomic<int> stub_uid_counter{ 0x40001 };
+TRACY_MODULE_NAME(SceProcessmgrForDriver)
 
 EXPORT(int, ksceKernelCreateProcessLocalStorage, const char *name, SceSize size) {
-    // Return a unique key for this PLS entry.
+    TRACY_FUNC(ksceKernelCreateProcessLocalStorage, name, size);
+    // >> 1 to make result positive (not error).
+    // result of memory allocation is always aligned (I think), so lowest bite is always 0
     // kubridge uses this for per-process exception handler context.
-    return pls_key_counter.fetch_add(1);
+    auto pls_data = alloc(emuenv.mem, size, name) >> 1;
+    return pls_data;
 }
 
 EXPORT(int, ksceKernelGetProcessInfo) {
@@ -36,8 +39,11 @@ EXPORT(int, ksceKernelGetProcessLocalStorageAddr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelGetProcessLocalStorageAddrForPid) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelGetProcessLocalStorageAddrForPid, SceUID pid, int key, Ptr<void> *out_addr, int create_if_doesnt_exist) {
+    TRACY_FUNC(ksceKernelGetProcessLocalStorageAddrForPid, pid, key, out_addr, create_if_doesnt_exist);
+    // See ksceKernelCreateProcessLocalStorage
+    *out_addr = key << 1;
+    return 0;
 }
 
 EXPORT(int, ksceKernelGetProcessStatus) {
@@ -70,11 +76,13 @@ EXPORT(int, ksceKernelIsGameBudget) {
 
 // kubridge-required stubs
 EXPORT(SceUID, ksceKernelAllocRemoteProcessHeap, SceUID pid, uint32_t size, Ptr<void> opt) {
+    TRACY_FUNC(ksceKernelAllocRemoteProcessHeap, pid, size, opt);
     STUBBED("ksceKernelAllocRemoteProcessHeap");
-    return stub_uid_counter.fetch_add(1);
+    return emuenv.kernel.get_next_uid();
 }
 
 EXPORT(int, ksceKernelFreeRemoteProcessHeap, SceUID pid, Ptr<void> ptr) {
+    TRACY_FUNC(ksceKernelFreeRemoteProcessHeap, pid, ptr);
     STUBBED("ksceKernelFreeRemoteProcessHeap");
     return 0;
 }

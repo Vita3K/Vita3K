@@ -15,12 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
-
 #include <module/module.h>
 
-struct SceKernelModuleInfo;
-
-DECL_EXPORT(SceInt32, sceKernelGetThreadCurrentPriority);
-DECL_EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, SceKernelModuleInfo *info);
-DECL_EXPORT(int, sceClibPrintf, const char *fmt, module::vargs args);
+EXPORT(int, sceDebugRegisterBacktraceInternalForKernel, Ptr<void> callback) {
+    return UNIMPLEMENTED();
+}

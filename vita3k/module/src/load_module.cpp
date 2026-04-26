@@ -34,7 +34,7 @@ static SysmodulePaths init_sysmodule_paths() {
     p[SCE_SYSMODULE_HTTPS] = { "libhttp", "libssl" };
     p[SCE_SYSMODULE_PERF] = { "libperf" };
     p[SCE_SYSMODULE_FIBER] = { "libfiber" };
-    p[SCE_SYSMODULE_ULT] = { "libult" };
+    p[SCE_SYSMODULE_ULT] = { "libfiber", "libult" };
     p[SCE_SYSMODULE_DBG] = { "librazorcapture_es4", "librazorhud_es4" };
     p[SCE_SYSMODULE_RAZOR_CAPTURE] = { "librazorcapture_es4" };
     p[SCE_SYSMODULE_RAZOR_HUD] = { "librazorhud_es4" };
@@ -143,6 +143,7 @@ static constexpr auto auto_lle_modules = {
     SCE_SYSMODULE_HTTP,
     SCE_SYSMODULE_SSL,
     SCE_SYSMODULE_HTTPS,
+    SCE_SYSMODULE_FIBER,
     SCE_SYSMODULE_ULT,
     SCE_SYSMODULE_SAS,
     SCE_SYSMODULE_PGF,
