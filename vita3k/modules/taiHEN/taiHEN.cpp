@@ -200,12 +200,8 @@ static Address find_import_stub_in_module(EmuEnvState &emuenv, const char *modul
                 return addr;
             }
         }
-        LOG_DEBUG("find_import_stub: NID {} stub at {} not in any segment of '{}' (segs: [0]={}-{}, [1]={}-{})",
-            log_hex(func_nid), log_hex(addr), module_name,
-            log_hex(mod->info.segments[0].vaddr.address()),
-            log_hex(mod->info.segments[0].vaddr.address() + mod->info.segments[0].memsz),
-            log_hex(mod->info.segments[1].vaddr.address()),
-            log_hex(mod->info.segments[1].vaddr.address() + mod->info.segments[1].memsz));
+        LOG_DEBUG("find_import_stub: NID {} stub at {} not in any segment of '{}'",
+            log_hex(func_nid), log_hex(addr), module_name);
     }
     return 0;
 }
@@ -1199,7 +1195,6 @@ EXPORT(int, module_get_offset, SceUID pid, SceUID modid, int segidx, uint32_t of
     }
     *addr.get(emuenv.mem) = result;
 
-    LOG_DEBUG("module_get_offset: mod={} seg={} off={} -> {}", modid, segidx, log_hex(offset), log_hex(result));
     return 0;
 }
 
@@ -1214,7 +1209,6 @@ EXPORT(int, module_get_export_func, SceUID pid, const char *modname, uint32_t li
         auto it = emuenv.kernel.export_nids.find(funcnid);
         if (it != emuenv.kernel.export_nids.end()) {
             *func.get(emuenv.mem) = it->second;
-            LOG_DEBUG("module_get_export_func: found NID {} at {} (export_nids)", log_hex(funcnid), log_hex(it->second));
             return 0;
         }
     }
@@ -1243,7 +1237,7 @@ EXPORT(int, module_get_export_func, SceUID pid, const char *modname, uint32_t li
         emuenv.kernel.invalidate_jit_cache(stub_addr, 12);
 
         *func.get(emuenv.mem) = stub_addr;
-        LOG_DEBUG("module_get_export_func: created dynamic SVC stub for NID {} at {}", log_hex(funcnid), log_hex(stub_addr));
+        LOG_INFO("module_get_export_func: created dynamic SVC stub for NID {} ({})", log_hex(funcnid), modname ? modname : "?");
         return 0;
     }
 }
