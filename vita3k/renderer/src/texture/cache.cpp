@@ -556,7 +556,10 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             break;
         }
 
-        if (texture_type != SCE_GXM_TEXTURE_LINEAR && texture_type != SCE_GXM_TEXTURE_LINEAR_STRIDED && !gxm::is_pvrt_format(base_format) && !(gxm::is_etc_format(base_format) && !support_etc)) {
+        // ETC1 without hardware support is CPU-decompressed above (which also unswizzles), so skip
+        // the linearisation step in that case; all other block-compressed formats go through here.
+        const bool skip_linearise = gxm::is_pvrt_format(base_format) || (gxm::is_etc_format(base_format) && !support_etc);
+        if (texture_type != SCE_GXM_TEXTURE_LINEAR && texture_type != SCE_GXM_TEXTURE_LINEAR_STRIDED && !skip_linearise) {
             // Convert data to linear layout
             texture_pixels_lineared.resize(pixels_per_stride * memory_height * bytes_per_pixel);
 

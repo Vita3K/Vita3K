@@ -2137,8 +2137,8 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
         return RET_ERROR(SCE_GXM_ERROR_NULL_PROGRAM);
     }
 
-    // Extract base vertex offset encoded in the index format parameter.
-    // On real Vita, bits 24+ encode the format (U16=0x00, U32=0x01) and bits 0-23 encode the base vertex.
+    // vitaGL packs an unsigned base vertex offset into the lower 24 bits of the indexType parameter
+    // (bits 25-32 remain the real SceGxmIndexFormat value).  The encoding is always non-negative.
     const int32_t base_vertex = static_cast<int32_t>(static_cast<uint32_t>(indexType) & 0x00FFFFFFu);
     const SceGxmIndexFormat actual_index_type = static_cast<SceGxmIndexFormat>(static_cast<uint32_t>(indexType) & 0xFF000000u);
 
