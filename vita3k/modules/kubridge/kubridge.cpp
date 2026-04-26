@@ -29,6 +29,9 @@
 #include <modules/sysmem_state.h>
 #include <util/align.h>
 #include <util/log.h>
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(kubridge);
 
 // kubridge protection flags
 constexpr uint32_t KU_KERNEL_PROT_NONE = 0x00;
@@ -79,6 +82,7 @@ static MemPerm ku_prot_to_memperm(uint32_t prot) {
 // Uses add_protect for restrictive permissions (so fault handler can catch access),
 // and unprotect_inner to restore access.
 EXPORT(int, kuKernelMemProtect, Ptr<void> addr, SceSize len, uint32_t prot) {
+    TRACY_FUNC(kuKernelMemProtect, addr, len, prot);
     if (!addr || len == 0)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
@@ -106,6 +110,7 @@ EXPORT(int, kuKernelMemProtect, Ptr<void> addr, SceSize len, uint32_t prot) {
 // On real Vita, this allocates virtual address space without physical backing.
 // In Vita3K, we allocate real memory immediately (no lazy allocation).
 EXPORT(SceUID, kuKernelMemReserve, Ptr<Ptr<void>> addr, SceSize size, SceKernelMemBlockType memBlockType) {
+    TRACY_FUNC(kuKernelMemReserve, addr, size, memBlockType);
     if (!addr)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
@@ -147,6 +152,7 @@ EXPORT(SceUID, kuKernelMemReserve, Ptr<Ptr<void>> addr, SceSize size, SceKernelM
 // Memory is already committed at Reserve time. Apply requested protection.
 // When baseBlock mirroring is required, this should use add_external_mapping().
 EXPORT(int, kuKernelMemCommit, Ptr<void> addr, SceSize len, uint32_t prot, Ptr<KuKernelMemCommitOpt> pOpt) {
+    TRACY_FUNC(kuKernelMemCommit, addr, len, prot, pOpt);
     if (!addr || len == 0)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
@@ -178,6 +184,7 @@ EXPORT(int, kuKernelMemCommit, Ptr<void> addr, SceSize len, uint32_t prot, Ptr<K
 // Uses add_protect so the fault handler catches accesses gracefully
 // instead of crashing the emulator.
 EXPORT(int, kuKernelMemDecommit, Ptr<void> addr, SceSize len) {
+    TRACY_FUNC(kuKernelMemDecommit, addr, len);
     if (!addr || len == 0)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
@@ -196,6 +203,7 @@ EXPORT(int, kuKernelMemDecommit, Ptr<void> addr, SceSize len) {
 // when a page fault triggers an abort via the add_protect callback.
 EXPORT(int, kuKernelRegisterExceptionHandler, uint32_t exceptionType,
     Ptr<void> pHandler, Ptr<Ptr<void>> pOldHandler, Ptr<KuKernelExceptionHandlerOpt> pOpt) {
+    TRACY_FUNC(kuKernelRegisterExceptionHandler, exceptionType, pHandler, pOldHandler, pOpt);
     if (exceptionType >= KernelState::EXCEPTION_HANDLER_MAX)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
@@ -212,6 +220,7 @@ EXPORT(int, kuKernelRegisterExceptionHandler, uint32_t exceptionType,
 
 // kuKernelReleaseExceptionHandler — unregister exception handler.
 EXPORT(void, kuKernelReleaseExceptionHandler, uint32_t exceptionType) {
+    TRACY_FUNC(kuKernelReleaseExceptionHandler, exceptionType);
     if (exceptionType < KernelState::EXCEPTION_HANDLER_MAX) {
         const Address old = emuenv.kernel.exception_handlers[exceptionType].exchange(0);
         LOG_INFO("kuKernelReleaseExceptionHandler: type={} old=0x{:08X}", exceptionType, old);

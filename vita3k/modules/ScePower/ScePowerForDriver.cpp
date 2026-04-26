@@ -17,11 +17,17 @@
 
 #include <module/module.h>
 
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(ScePowerForDriver);
+
 EXPORT(int, kscePowerGetSysClockFrequency) {
+    TRACY_FUNC(kscePowerGetSysClockFrequency);
     return 333;
 }
 
 EXPORT(int, kscePowerSetSysClockFrequency, int freq) {
+    TRACY_FUNC(kscePowerSetSysClockFrequency, freq);
     // No-op in the emulator — CPU speed is not tied to Vita clock frequency
     return 0;
 }

@@ -25,6 +25,9 @@
 #include <nids/functions.h>
 #include <util/arm.h>
 #include <util/log.h>
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(taiHEN);
 
 // substitute library for instruction relocation (from comex/substitute, LGPLv2.1+)
 #include <substitute_api.h>
@@ -485,6 +488,7 @@ static SceUID create_export_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
 // ==================== taihen library (user exports) ====================
 
 EXPORT(SceUID, taiHookFunctionExportForUser, Ptr<uint32_t> p_hook, Ptr<void> args) {
+    TRACY_FUNC(taiHookFunctionExportForUser, p_hook, args);
     if (!p_hook || !args)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -532,6 +536,7 @@ EXPORT(SceUID, taiHookFunctionExportForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
 }
 
 EXPORT(SceUID, taiHookFunctionImportForUser, Ptr<uint32_t> p_hook, Ptr<void> args) {
+    TRACY_FUNC(taiHookFunctionImportForUser, p_hook, args);
     if (!p_hook || !args)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -571,6 +576,7 @@ EXPORT(SceUID, taiHookFunctionImportForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
 }
 
 EXPORT(SceUID, taiHookFunctionOffsetForUser, Ptr<uint32_t> p_hook, Ptr<void> args) {
+    TRACY_FUNC(taiHookFunctionOffsetForUser, p_hook, args);
     if (!p_hook || !args)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -622,6 +628,7 @@ EXPORT(SceUID, taiHookFunctionOffsetForUser, Ptr<uint32_t> p_hook, Ptr<void> arg
 }
 
 EXPORT(int, taiGetModuleInfo, const char *module, Ptr<void> info) {
+    TRACY_FUNC(taiGetModuleInfo, module, info);
     if (!module || !info) {
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
     }
@@ -684,6 +691,7 @@ EXPORT(int, taiGetModuleInfo, const char *module, Ptr<void> info) {
 }
 
 EXPORT(int, taiHookRelease, SceUID tai_uid, uint32_t hook_ref) {
+    TRACY_FUNC(taiHookRelease, tai_uid, hook_ref);
     auto *state = emuenv.kernel.obj_store.get<TaihenState>();
     if (!state)
         return SCE_KERNEL_ERROR_ERROR;
@@ -751,6 +759,7 @@ EXPORT(int, taiHookRelease, SceUID tai_uid, uint32_t hook_ref) {
 }
 
 EXPORT(SceUID, taiInjectAbs, Ptr<void> dest, Ptr<const void> src, uint32_t size) {
+    TRACY_FUNC(taiInjectAbs, dest, src, size);
     if (!dest || !src || size == 0) {
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
     }
@@ -799,6 +808,7 @@ struct TaiInjectArgs {
 };
 
 EXPORT(SceUID, taiInjectDataForUser, Ptr<void> args) {
+    TRACY_FUNC(taiInjectDataForUser, args);
     if (!args)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -836,6 +846,7 @@ EXPORT(SceUID, taiInjectDataForUser, Ptr<void> args) {
 }
 
 EXPORT(int, taiInjectRelease, SceUID tai_uid) {
+    TRACY_FUNC(taiInjectRelease, tai_uid);
     auto *state = emuenv.kernel.obj_store.get<TaihenState>();
     if (!state)
         return SCE_KERNEL_ERROR_ERROR;
@@ -859,6 +870,7 @@ EXPORT(int, taiInjectRelease, SceUID tai_uid) {
 }
 
 EXPORT(int, taiGetModuleExportFunc, const char *modname, uint32_t libnid, uint32_t funcnid, Ptr<uint32_t> func) {
+    TRACY_FUNC(taiGetModuleExportFunc, modname, libnid, funcnid, func);
     if (!func)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -879,6 +891,7 @@ EXPORT(int, taiGetModuleExportFunc, const char *modname, uint32_t libnid, uint32
 // ==================== taihenUnsafe library ====================
 
 EXPORT(SceUID, taiLoadKernelModule, const char *path, int flags, Ptr<void> opt) {
+    TRACY_FUNC(taiLoadKernelModule, path, flags, opt);
     if (!path)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -887,11 +900,13 @@ EXPORT(SceUID, taiLoadKernelModule, const char *path, int flags, Ptr<void> opt) 
 }
 
 EXPORT(int, taiStartKernelModuleForUser, SceUID modid, Ptr<void> args, Ptr<void> opt, Ptr<int> res) {
+    TRACY_FUNC(taiStartKernelModuleForUser, modid, args, opt, res);
     STUBBED("taiStartKernelModuleForUser");
     return 0;
 }
 
 EXPORT(SceUID, taiLoadStartKernelModuleForUser, const char *path, Ptr<void> args) {
+    TRACY_FUNC(taiLoadStartKernelModuleForUser, path, args);
     if (!path)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -911,6 +926,7 @@ EXPORT(SceUID, taiLoadStartKernelModuleForUser, const char *path, Ptr<void> args
 }
 
 EXPORT(SceUID, taiLoadStartModuleForPidForUser, const char *path, Ptr<void> args) {
+    TRACY_FUNC(taiLoadStartModuleForPidForUser, path, args);
     if (!path)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -930,21 +946,25 @@ EXPORT(SceUID, taiLoadStartModuleForPidForUser, const char *path, Ptr<void> args
 }
 
 EXPORT(int, taiStopKernelModuleForUser, SceUID modid, Ptr<void> args, Ptr<void> opt, Ptr<int> res) {
+    TRACY_FUNC(taiStopKernelModuleForUser, modid, args, opt, res);
     STUBBED("taiStopKernelModuleForUser");
     return 0;
 }
 
 EXPORT(int, taiUnloadKernelModule, SceUID modid, int flags, Ptr<void> opt) {
+    TRACY_FUNC(taiUnloadKernelModule, modid, flags, opt);
     STUBBED("taiUnloadKernelModule");
     return 0;
 }
 
 EXPORT(int, taiStopUnloadKernelModuleForUser, SceUID modid, Ptr<void> args, Ptr<void> opt, Ptr<int> res) {
+    TRACY_FUNC(taiStopUnloadKernelModuleForUser, modid, args, opt, res);
     STUBBED("taiStopUnloadKernelModuleForUser");
     return 0;
 }
 
 EXPORT(int, taiMemcpyUserToKernel, Ptr<void> kernel_dst, Ptr<const void> user_src, uint32_t len) {
+    TRACY_FUNC(taiMemcpyUserToKernel, kernel_dst, user_src, len);
     if (!kernel_dst || !user_src)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
     // In emulator, user/kernel address space is the same
@@ -953,6 +973,7 @@ EXPORT(int, taiMemcpyUserToKernel, Ptr<void> kernel_dst, Ptr<const void> user_sr
 }
 
 EXPORT(int, taiMemcpyKernelToUser, Ptr<void> user_dst, Ptr<const void> kernel_src, uint32_t len) {
+    TRACY_FUNC(taiMemcpyKernelToUser, user_dst, kernel_src, len);
     if (!user_dst || !kernel_src)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
     std::memcpy(user_dst.get(emuenv.mem), kernel_src.get(emuenv.mem), len);
@@ -960,6 +981,7 @@ EXPORT(int, taiMemcpyKernelToUser, Ptr<void> user_dst, Ptr<const void> kernel_sr
 }
 
 EXPORT(int, taiReloadConfig) {
+    TRACY_FUNC(taiReloadConfig);
     auto *state = emuenv.kernel.obj_store.get<TaihenState>();
     if (!state)
         return SCE_KERNEL_ERROR_ERROR;
@@ -974,6 +996,7 @@ EXPORT(int, taiReloadConfig) {
 
 EXPORT(SceUID, taiHookFunctionExportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
     const char *module, uint32_t library_nid, uint32_t func_nid, Ptr<const void> hook_func) {
+    TRACY_FUNC(taiHookFunctionExportForKernel, pid, p_hook);
     if (!p_hook || !module)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1015,6 +1038,7 @@ EXPORT(SceUID, taiHookFunctionExportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
 
 EXPORT(SceUID, taiHookFunctionImportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
     const char *module, uint32_t import_library_nid, uint32_t import_func_nid, Ptr<const void> hook_func) {
+    TRACY_FUNC(taiHookFunctionImportForKernel, pid, p_hook);
     if (!p_hook || !module)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1048,6 +1072,7 @@ EXPORT(SceUID, taiHookFunctionImportForKernel, SceUID pid, Ptr<uint32_t> p_hook,
 
 EXPORT(SceUID, taiHookFunctionOffsetForKernel, SceUID pid, Ptr<uint32_t> p_hook,
     SceUID modid, int segidx, uint32_t offset, int thumb, Ptr<const void> hook_func) {
+    TRACY_FUNC(taiHookFunctionOffsetForKernel, pid, p_hook);
     if (!p_hook)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1085,22 +1110,26 @@ EXPORT(SceUID, taiHookFunctionOffsetForKernel, SceUID pid, Ptr<uint32_t> p_hook,
 }
 
 EXPORT(int, taiGetModuleInfoForKernel, SceUID pid, const char *module, Ptr<void> info) {
+    TRACY_FUNC(taiGetModuleInfoForKernel, pid, module, info);
     // Delegate to the user version — in emulator there's no pid separation
     return export_taiGetModuleInfo(emuenv, thread_id, export_name, module, info);
 }
 
 EXPORT(int, taiHookReleaseForKernel, SceUID tai_uid, uint32_t hook_ref) {
+    TRACY_FUNC(taiHookReleaseForKernel, tai_uid, hook_ref);
     // Delegate to user version — no pid separation in emulator
     return export_taiHookRelease(emuenv, thread_id, export_name, tai_uid, hook_ref);
 }
 
 EXPORT(SceUID, taiInjectAbsForKernel, SceUID pid, Ptr<void> dest, Ptr<const void> src, uint32_t size) {
+    TRACY_FUNC(taiInjectAbsForKernel, pid, dest, src, size);
     // Delegate — no pid separation in emulator
     return export_taiInjectAbs(emuenv, thread_id, export_name, dest, src, size);
 }
 
 EXPORT(SceUID, taiInjectDataForKernel, SceUID pid, SceUID modid, int segidx, uint32_t offset,
     Ptr<const void> data, uint32_t size) {
+    TRACY_FUNC(taiInjectDataForKernel, pid, modid, segidx, offset);
     if (!data || size == 0)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1125,26 +1154,31 @@ EXPORT(SceUID, taiInjectDataForKernel, SceUID pid, SceUID modid, int segidx, uin
 }
 
 EXPORT(int, taiInjectReleaseForKernel, SceUID tai_uid) {
+    TRACY_FUNC(taiInjectReleaseForKernel, tai_uid);
     return export_taiInjectRelease(emuenv, thread_id, export_name, tai_uid);
 }
 
 EXPORT(int, taiLoadPluginsForTitleForKernel, SceUID pid, const char *titleid, int flags) {
+    TRACY_FUNC(taiLoadPluginsForTitleForKernel, pid, titleid, flags);
     STUBBED("taiLoadPluginsForTitleForKernel");
     return 0;
 }
 
 EXPORT(int, taiReloadConfigForKernel, int schedule, int load_kernel) {
+    TRACY_FUNC(taiReloadConfigForKernel, schedule, load_kernel);
     return export_taiReloadConfig(emuenv, thread_id, export_name);
 }
 
 // ==================== taihenModuleUtils library ====================
 
 EXPORT(int, module_get_by_name_nid, SceUID pid, const char *name, uint32_t nid, Ptr<uint32_t> info) {
+    TRACY_FUNC(module_get_by_name_nid, pid, name, nid, info);
     STUBBED("module_get_by_name_nid");
     return 0;
 }
 
 EXPORT(int, module_get_offset, SceUID pid, SceUID modid, int segidx, uint32_t offset, Ptr<uint32_t> addr) {
+    TRACY_FUNC(module_get_offset, pid, modid, segidx, offset, addr);
     if (!addr)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1171,6 +1205,7 @@ EXPORT(int, module_get_offset, SceUID pid, SceUID modid, int segidx, uint32_t of
 }
 
 EXPORT(int, module_get_export_func, SceUID pid, const char *modname, uint32_t libnid, uint32_t funcnid, Ptr<uint32_t> func) {
+    TRACY_FUNC(module_get_export_func, pid, modname, libnid, funcnid, func);
     if (!func)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
 
@@ -1215,6 +1250,7 @@ EXPORT(int, module_get_export_func, SceUID pid, const char *modname, uint32_t li
 }
 
 EXPORT(int, module_get_import_func, SceUID pid, const char *modname, uint32_t libnid, uint32_t funcnid, Ptr<uint32_t> func) {
+    TRACY_FUNC(module_get_import_func, pid, modname, libnid, funcnid, func);
     STUBBED("module_get_import_func");
     return 0;
 }
