@@ -21,6 +21,7 @@
 #include <kernel/state.h>
 #include <kernel/thread/thread_state.h>
 #include <util/lock_and_find.h>
+#include <util/log.h>
 #include <util/tracy.h>
 
 TRACY_MODULE_NAME(SceAudio);
@@ -170,16 +171,21 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
     }
 
     const int channels = (mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
+    const int type_value = static_cast<int>(type);
+    const int mode_value = static_cast<int>(mode);
 
     AudioOutPortPtr port = emuenv.audio.open_port(channels, freq, len);
-    if (!port)
+    if (!port) {
+        LOG_WARN("sceAudioOutOpenPort failed type={} len={} freq={} mode={} backend={}", type_value, len, freq, mode_value, emuenv.audio.audio_backend);
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_NOT_OPENED);
+    }
 
     // Save the port configuration
     port->type = type;
     port->len = len;
     port->freq = freq;
     port->mode = mode;
+    port->tid_configs[thread_id] = { len, freq, mode };
 
     const std::lock_guard<std::mutex> lock(emuenv.audio.mutex);
     const int port_id = emuenv.audio.next_port_id++;
@@ -195,11 +201,22 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
+    auto [cfg_it, inserted] = prt->tid_configs.try_emplace(thread_id, AudioOutPort::TidConfig { prt->len, prt->freq, prt->mode });
+    const bool config_match = (cfg_it->second.len == prt->len) && (cfg_it->second.freq == prt->freq) && (cfg_it->second.mode == prt->mode);
+
+    (void)inserted;
+
     // Empty "buf" variable is valid. It mean wait until sound output is completed.
     // Because this function always returns when all sound is out, then on empty buf it returns immediately.
     // Return value is the number of samples (value of 0 or greater) registered to the audio driver for normal termination.
     if (!buf)
         return 0;
+
+    // Experimental behavior: if this thread's historical config does not match
+    // the current port config, silently drop its data without signaling an error.
+    if (!config_match) {
+        return prt->len;
+    }
 
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
     if (!thread) {
@@ -219,7 +236,9 @@ EXPORT(int, sceAudioOutGetRestSample, int port) {
     if (!prt) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
-    int samples_available = emuenv.audio.get_rest_sample(*prt);
+
+    const int raw_samples_available = emuenv.audio.get_rest_sample(*prt);
+    int samples_available = raw_samples_available;
     if (prt->type == SCE_AUDIO_OUT_PORT_TYPE_MAIN) {
         samples_available = std::clamp(samples_available, 0, prt->len);
     } else {
@@ -229,6 +248,7 @@ EXPORT(int, sceAudioOutGetRestSample, int port) {
         else
             samples_available = prt->len;
     }
+
     return samples_available;
 }
 
@@ -272,36 +292,46 @@ EXPORT(int, sceAudioOutSetConfig, int port, int len, int freq, int mode) {
     if (len == 0)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_SIZE);
 
-    if ((mode >= 0) && (mode != SCE_AUDIO_OUT_MODE_MONO) && (mode != SCE_AUDIO_OUT_MODE_STEREO))
+    const bool keep_mode = (mode < 0) || (mode == 0xFF);
+    if (!keep_mode && (mode != SCE_AUDIO_OUT_MODE_MONO) && (mode != SCE_AUDIO_OUT_MODE_STEREO)) {
+        LOG_WARN("sceAudioOutSetConfig invalid mode={} port={} len={} freq={}", mode, port, len, freq);
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_FORMAT);
+    }
 
-    AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);
-    if (!prt)
+    AudioOutPortPtr current_port = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);
+    if (!current_port)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
 
-    if ((freq >= 0) && (prt->type == SCE_AUDIO_OUT_PORT_TYPE_MAIN) && (freq != 48000))
+    if ((freq >= 0) && (current_port->type == SCE_AUDIO_OUT_PORT_TYPE_MAIN) && (freq != 48000))
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ);
 
-    const auto set_len = len > 0 ? len : prt->len;
-    const auto set_freq = freq >= 0 ? freq : prt->freq;
-    const auto set_mode = mode >= 0 ? mode : prt->mode;
+    const auto set_len = len > 0 ? len : current_port->len;
+    const auto set_freq = freq >= 0 ? freq : current_port->freq;
+    const auto set_mode = keep_mode ? current_port->mode : mode;
 
-    if ((set_len == prt->len) && (set_freq == prt->freq) && (set_mode == prt->mode))
+    // Only close/reopen if parameters actually changed
+    if ((set_len == current_port->len) && (set_freq == current_port->freq) && (set_mode == current_port->mode)) {
         return 0;
+    }
 
     if (CALL_EXPORT(sceAudioOutReleasePort, port) != 0)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
 
     const auto channels = (set_mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
 
-    prt = emuenv.audio.open_port(channels, set_freq, set_len);
+    AudioOutPortPtr prt = emuenv.audio.open_port(channels, set_freq, set_len);
     if (!prt)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_NOT_OPENED);
 
     // Save the port configuration
+    prt->type = current_port->type;
     prt->freq = set_freq;
     prt->len = set_len;
     prt->mode = set_mode;
+    prt->left_channel_volume = current_port->left_channel_volume;
+    prt->right_channel_volume = current_port->right_channel_volume;
+    prt->tid_configs = current_port->tid_configs;
+    emuenv.audio.set_volume(*prt, current_port->volume);
 
     const std::lock_guard<std::mutex> lock(emuenv.audio.mutex);
     emuenv.audio.out_ports.emplace(port, prt);
