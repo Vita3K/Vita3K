@@ -2140,7 +2140,7 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
     // Extract base vertex offset encoded in the index format parameter.
     // On real Vita, bits 24+ encode the format (U16=0x00, U32=0x01) and bits 0-23 encode the base vertex.
     const int32_t base_vertex = static_cast<int32_t>(static_cast<uint32_t>(indexType) & 0x00FFFFFFu);
-    const SceGxmIndexFormat actualIndexType = static_cast<SceGxmIndexFormat>(static_cast<uint32_t>(indexType) & 0xFF000000u);
+    const SceGxmIndexFormat actual_index_type = static_cast<SceGxmIndexFormat>(static_cast<uint32_t>(indexType) & 0xFF000000u);
 
     const SceGxmFragmentProgram &gxm_fragment_program = *context->state.fragment_program.get(emuenv.mem);
     const SceGxmVertexProgram &gxm_vertex_program = *context->state.vertex_program.get(emuenv.mem);
@@ -2186,7 +2186,7 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
     size_t max_index = 0;
     if (!emuenv.renderer->features.enable_memory_mapping) {
         // we don't need to get the vertex buffer size with memory mapping
-        if (actualIndexType == SCE_GXM_INDEX_FORMAT_U16) {
+        if (actual_index_type == SCE_GXM_INDEX_FORMAT_U16) {
             const uint16_t *const data = static_cast<const uint16_t *>(indices_ptr);
             max_index = *std::max_element(&data[0], &data[indexCount]);
         } else {
@@ -2225,7 +2225,7 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
         }
     }
 
-    renderer::draw(*emuenv.renderer, context->renderer.get(), primType, actualIndexType, indexData, indexCount, instanceCount, base_vertex);
+    renderer::draw(*emuenv.renderer, context->renderer.get(), primType, actual_index_type, indexData, indexCount, instanceCount, base_vertex);
 
     // increase the ringbuffer position if a default vertex or fragment buffer was reserved, we know the new position will fit in the ringbuffer
     if (context->was_vert_default_uniform_reserved) {
