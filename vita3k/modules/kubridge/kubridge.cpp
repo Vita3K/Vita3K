@@ -207,6 +207,12 @@ EXPORT(int, kuKernelRegisterExceptionHandler, uint32_t exceptionType,
     if (exceptionType >= KernelState::EXCEPTION_HANDLER_MAX)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
+    // Only DABT (type 0) is currently dispatched from run_loop.
+    // PABT (1) and UNDEF (2) are stored but never fired.
+    if (exceptionType != 0)
+        LOG_WARN("kuKernelRegisterExceptionHandler: type={} stored but not yet dispatched (only DABT=0 is)",
+            exceptionType);
+
     const Address old_handler = emuenv.kernel.exception_handlers[exceptionType].exchange(pHandler.address());
 
     if (pOldHandler) {
