@@ -195,8 +195,13 @@ bool ThreadState::run_loop() {
     int res = 0;
     int run_level = std::max(call_level, 1);
 
-    // Set thread-local CPU state so signal handlers can access it
+    // Set thread-local CPU state so signal handlers can access it.
+    // The guard clears it on any exit so a recycled host thread never sees
+    // a stale CPUState pointer.
     set_current_cpu_state(cpu.get());
+    struct CpuStateGuard {
+        ~CpuStateGuard() { set_current_cpu_state(nullptr); }
+    } cpu_state_guard;
 
     std::unique_lock<std::mutex> lock(mutex);
 
