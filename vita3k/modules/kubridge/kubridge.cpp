@@ -159,12 +159,18 @@ EXPORT(int, kuKernelMemCommit, Ptr<void> addr, SceSize len, uint32_t prot, Ptr<K
     }
 
     const MemPerm perm = ku_prot_to_memperm(prot);
-    // Memory already committed at Reserve time — just apply protection.
-    // Always unprotect (RW) since committed memory should be accessible.
-    unprotect_inner(emuenv.mem, addr.address(), len);
+    const Address va = addr.address();
+
+    if (perm == MemPerm::None || perm == MemPerm::ReadOnly) {
+        add_protect(emuenv.mem, va, len, perm, [va, len](Address fault_addr, bool write) {
+            return abort_aware_fault_callback(fault_addr, write, va, len);
+        });
+    } else {
+        unprotect_inner(emuenv.mem, va, len);
+    }
 
     LOG_DEBUG("kuKernelMemCommit: addr={} len={} prot=0x{:02X} -> perm={}",
-        log_hex(addr.address()), len, prot, (int)perm);
+        log_hex(va), len, prot, (int)perm);
     return 0;
 }
 
