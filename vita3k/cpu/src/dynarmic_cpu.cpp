@@ -35,7 +35,6 @@ class ArmDynarmicCP15 : public Dynarmic::A32::Coprocessor {
     uint32_t tpidruro;
     uint32_t sctlr;
     uint32_t dacr;
-    uint32_t dummy; // catch-all for unhandled cp15 accesses
 
 public:
     using CoprocReg = Dynarmic::A32::CoprocReg;
@@ -43,8 +42,7 @@ public:
     explicit ArmDynarmicCP15()
         : tpidruro(0)
         , sctlr(0)
-        , dacr(0)
-        , dummy(0) {
+        , dacr(0) {
     }
 
     ~ArmDynarmicCP15() override = default;
@@ -73,7 +71,7 @@ public:
         }
 
         LOG_WARN("Unhandled CP15 MCR: two={} opc1={} CRn={} CRm={} opc2={}", two, opc1, (int)CRn, (int)CRm, opc2);
-        return &dummy;
+        return CallbackOrAccessOneWord{};
     }
 
     CallbackOrAccessTwoWords CompileSendTwoWords(bool two, unsigned opc, CoprocReg CRm) override {
@@ -98,7 +96,7 @@ public:
         }
 
         LOG_WARN("Unhandled CP15 MRC: two={} opc1={} CRn={} CRm={} opc2={}", two, opc1, (int)CRn, (int)CRm, opc2);
-        return &dummy;
+        return CallbackOrAccessOneWord{};
     }
 
     CallbackOrAccessTwoWords CompileGetTwoWords(bool two, unsigned opc, CoprocReg CRm) override {
