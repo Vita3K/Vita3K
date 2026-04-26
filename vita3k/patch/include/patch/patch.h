@@ -32,5 +32,7 @@ struct PatchHeader {
     std::string bin;
 };
 
-std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const std::string &bin);
+using Patches = std::vector<Patch>;
+
+Patches get_patches(fs::path &path, const std::string &titleid, const std::string &bin);
 Patch parse_patch(const std::string &patch);

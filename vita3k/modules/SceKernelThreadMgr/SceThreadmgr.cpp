@@ -481,9 +481,19 @@ EXPORT(int, _sceKernelGetThreadEventInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetThreadExitStatus) {
-    TRACY_FUNC(_sceKernelGetThreadExitStatus);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelGetThreadExitStatus, SceUID thid, SceInt32 *pExitStatus) {
+    TRACY_FUNC(_sceKernelGetThreadExitStatus, thid, pExitStatus);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thid ? thid : thread_id);
+    if (!thread) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
+    if (thread->status != ThreadStatus::dormant) {
+        return SCE_KERNEL_ERROR_NOT_DORMANT;
+    }
+    if (pExitStatus) {
+        *pExitStatus = thread->returned_value;
+    }
+    return 0;
 }
 
 EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadInfo> pInfo) {

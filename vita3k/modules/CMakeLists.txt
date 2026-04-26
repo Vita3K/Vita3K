@@ -69,6 +69,7 @@ set(SOURCE_LIST
 	SceKernelDmacMgr/SceDmacmgr.cpp
 	SceKernelModulemgr/SceBacktrace.cpp
 	SceKernelModulemgr/SceModulemgr.cpp
+	SceKernelModulemgr/SceModulemgrForDriver.cpp
 	SceKernelThreadMgr/SceThreadmgr.cpp
 	SceKernelThreadMgr/SceThreadmgrCoredumpTime.cpp
 	SceKernelThreadMgr/SceThreadmgrForDriver.cpp
@@ -182,10 +183,12 @@ set(SOURCE_LIST
 	SceSysmem/SceCpu.cpp
 	SceSysmem/SceCpuForDriver.cpp
 	SceSysmem/SceDebugForDriver.cpp
+	SceSysmem/SceDebugForKernel.cpp
 	SceSysmem/SceDebugLed.cpp
 	SceSysmem/SceDipsw.cpp
 	SceSysmem/SceDipswForDriver.cpp
 	SceSysmem/SceProcEventForDriver.cpp
+	SceSysmem/SceQafMgrForDriver.cpp
 	SceSysmem/SceSysclibForDriver.cpp
 	SceSysmem/SceSysmem.cpp
 	SceSysmem/SceSysmemForDriver.cpp
@@ -223,7 +226,7 @@ endif()
 add_library(modules STATIC ${SOURCE_LIST})
 target_include_directories(modules PUBLIC include)
 target_include_directories(modules PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/taiHEN)
-target_link_libraries(modules PRIVATE app audio camera codec ctrl dialog lang display dlmalloc gxm ime kernel mem motion net ngs np regmgr ssl packages patch printf renderer rtc SDL3::SDL3 substitute touch xxHash::xxhash)
+target_link_libraries(modules PRIVATE app audio camera codec ctrl dialog lang display dlmalloc gxm ime kernel mem motion net ngs np patch regmgr ssl packages printf renderer rtc SDL3::SDL3 substitute touch xxHash::xxhash)
 target_link_libraries(modules PUBLIC module)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})
 

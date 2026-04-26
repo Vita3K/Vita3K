@@ -2199,6 +2199,21 @@ NID(sceKernelGetModuleList, 0x2EF2581F)
 NID(sceKernelGetSystemSwVersion, 0x5182E212)
 NID(sceKernelInhibitLoadingModule, 0x6CED1F63)
 NID(sceKernelIsCalledFromSysModule, 0x85E6D2BB)
+// Library "SceModulemgrForDriver"
+NID(ksceKernelGetModuleInfoByAddr, 0x1D9E0F7E)
+NID(ksceKernelLoadModule, 0x86D8D634)
+NID(ksceKernelLoadStartModule, 0x189BFBBB)
+NID(ksceKernelLoadStartModuleForPid, 0x9D953C22)
+NID(ksceKernelLoadStartSharedModuleForPid, 0xE2ADEF8D)
+NID(ksceKernelRegisterLibary, 0x861638AD)
+NID(ksceKernelReleaseLibary, 0x0975B104)
+NID(ksceKernelSearchModuleByName, 0xBBE1771C)
+NID(ksceKernelStartModule, 0x0675B682)
+NID(ksceKernelStopModule, 0x100DAEB9)
+NID(ksceKernelStopUnloadModule, 0x03B30B7E)
+NID(ksceKernelStopUnloadModuleForPid, 0x49A3EDC7)
+NID(ksceKernelStopUnloadSharedModuleForPid, 0x02D3D0C1)
+NID(ksceKernelUnloadModule, 0x728E72A6)
 // Module "SceKernelThreadMgr"
 // Library "SceThreadmgr"
 NID(__sceKernelCreateLwMutex, 0x4BB3154A)
@@ -2474,6 +2489,7 @@ NID(ksceKernelWaitEventFlagCB, 0x8A35F714)
 NID(ksceKernelWaitSema, 0x3C8B55A9)
 NID(ksceKernelWaitThreadEnd, 0x3E20216F)
 NID(ksceKernelWaitThreadEndCB, 0x9EF4F62C)
+NID(SceThreadmgrForDriver_20C228E4, 0x20C228E4)
 // Library "SceThreadmgrForKernel"
 NID(ksceKernelGetFaultingProcess, 0xD8B9AC8D)
 // Module "SceKubridge"
@@ -7006,6 +7022,8 @@ NID(ksceKernelSetDipsw, 0x82E45FBF)
 NID(ksceKernelInvokeProcEventHandler, 0x414CC813)
 NID(ksceKernelRegisterProcEventHandler, 0x2A43912D)
 NID(ksceKernelUnregisterProcEventHandler, 0x3DED57CC)
+// Library "SceQafMgrForDriver"
+NID(SceQafMgrForDriver_B9770A13, 0xB9770A13)
 // Library "SceSysclibForDriver"
 NID(__aeabi_idiv, 0x2518CD9E)
 NID(__aeabi_lcmp, 0x709077A1)
