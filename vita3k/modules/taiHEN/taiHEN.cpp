@@ -34,6 +34,7 @@ TRACY_MODULE_NAME(taiHEN);
 
 #include <cstring>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <sstream>
@@ -63,7 +64,6 @@ struct TaiHook {
     int patch_size; // number of bytes patched at target (for inline hooks)
     bool is_thumb; // true if the hooked function was Thumb mode
     std::vector<uint8_t> saved_bytes; // original bytes at target
-    TaiHook *next; // next hook in chain
 };
 
 struct TaiInjection {
@@ -76,7 +76,7 @@ struct TaiInjection {
 struct TaihenState {
     std::mutex mutex;
     SceUID next_uid = 0x70000; // UIDs for taiHEN objects
-    std::map<SceUID, TaiHook *> hooks;
+    std::map<SceUID, std::unique_ptr<TaiHook>> hooks;
     std::map<SceUID, TaiInjection> injections;
     std::map<std::string, std::vector<std::string>> config; // section → plugin paths
     bool config_loaded = false;
@@ -265,7 +265,7 @@ static SceUID create_hook(EmuEnvState &emuenv, TaihenState *state, SceUID thread
     emuenv.kernel.invalidate_jit_cache(trampoline_addr, 12);
 
     // Store hook info for release
-    TaiHook *hook = new TaiHook();
+    auto hook = std::make_unique<TaiHook>();
     hook->uid = state->alloc_uid();
     hook->pid = thread_id;
     hook->type = TAI_HOOK_IMPORT;
@@ -278,10 +278,10 @@ static SceUID create_hook(EmuEnvState &emuenv, TaihenState *state, SceUID thread
     hook->func_nid = 0;
     hook->patch_size = 12;
     hook->is_thumb = false;
-    hook->next = nullptr;
-    state->hooks[hook->uid] = hook;
+    const SceUID new_uid = hook->uid;
+    state->hooks.emplace(new_uid, std::move(hook));
 
-    return hook->uid;
+    return new_uid;
 }
 
 // Write ARM MOVW/MOVT/BX R12 (12 bytes) for import stub patching
@@ -390,7 +390,7 @@ static SceUID create_inline_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
     emuenv.kernel.invalidate_jit_cache(code_addr, copy_size);
     emuenv.kernel.invalidate_jit_cache(trampoline_addr, trampoline_total);
 
-    TaiHook *hook = new TaiHook();
+    auto hook = std::make_unique<TaiHook>();
     hook->uid = state->alloc_uid();
     hook->pid = thread_id;
     hook->type = TAI_HOOK_INLINE;
@@ -402,12 +402,12 @@ static SceUID create_inline_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
     hook->func_nid = func_nid;
     hook->patch_size = copy_size;
     hook->is_thumb = is_thumb;
-    hook->next = nullptr;
-    state->hooks[hook->uid] = hook;
+    const SceUID new_uid = hook->uid;
+    state->hooks.emplace(new_uid, std::move(hook));
 
     LOG_DEBUG("taiHEN inline hook: {} bytes patched at {} ({})",
         copy_size, log_hex(code_addr), is_thumb ? "Thumb" : "ARM");
-    return hook->uid;
+    return new_uid;
 }
 
 // Create an EXPORT hook using inline hooking (patch function prologue).
@@ -465,7 +465,7 @@ static SceUID create_export_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
 
     emuenv.kernel.invalidate_jit_cache(trampoline_addr, 12);
 
-    TaiHook *hook = new TaiHook();
+    auto hook = std::make_unique<TaiHook>();
     hook->uid = state->alloc_uid();
     hook->pid = thread_id;
     hook->type = TAI_HOOK_IMPORT; // Fallback uses import-style patching
@@ -477,12 +477,12 @@ static SceUID create_export_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
     hook->func_nid = func_nid;
     hook->patch_size = 0;
     hook->is_thumb = false;
-    hook->next = nullptr;
-    state->hooks[hook->uid] = hook;
+    const SceUID new_uid = hook->uid;
+    state->hooks.emplace(new_uid, std::move(hook));
 
     LOG_DEBUG("taiHEN export hook fallback: patched {} import stubs for NID {}",
         patched_count, log_hex(func_nid));
-    return hook->uid;
+    return new_uid;
 }
 
 // ==================== taihen library (user exports) ====================
@@ -704,7 +704,7 @@ EXPORT(int, taiHookRelease, SceUID tai_uid, uint32_t hook_ref) {
         return SCE_KERNEL_ERROR_INVALID_UID;
     }
 
-    TaiHook *hook = it->second;
+    TaiHook *hook = it->second.get();
 
     if (hook->type == TAI_HOOK_INLINE) {
         // Inline hook: restore original prologue bytes
@@ -752,7 +752,6 @@ EXPORT(int, taiHookRelease, SceUID tai_uid, uint32_t hook_ref) {
     free(emuenv.mem, hook->hook_user_addr);
 
     state->hooks.erase(it);
-    delete hook;
 
     LOG_DEBUG("taiHookRelease: released hook uid=0x{:X}", tai_uid);
     return 0;
