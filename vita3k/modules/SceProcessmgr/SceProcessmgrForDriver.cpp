@@ -20,6 +20,7 @@
 #include <atomic>
 
 static std::atomic<int> pls_key_counter{ 1 };
+static std::atomic<int> stub_uid_counter{ 0x40001 };
 
 EXPORT(int, ksceKernelCreateProcessLocalStorage, const char *name, SceSize size) {
     // Return a unique key for this PLS entry.
@@ -70,7 +71,7 @@ EXPORT(int, ksceKernelIsGameBudget) {
 // kubridge-required stubs
 EXPORT(SceUID, ksceKernelAllocRemoteProcessHeap, SceUID pid, uint32_t size, Ptr<void> opt) {
     STUBBED("ksceKernelAllocRemoteProcessHeap");
-    return 0;
+    return stub_uid_counter.fetch_add(1);
 }
 
 EXPORT(int, ksceKernelFreeRemoteProcessHeap, SceUID pid, Ptr<void> ptr) {

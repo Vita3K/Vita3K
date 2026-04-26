@@ -17,14 +17,18 @@
 
 #include <module/module.h>
 
+#include <atomic>
+
+static std::atomic<int> proc_event_uid_counter{ 0x40001 };
+
 EXPORT(int, ksceKernelInvokeProcEventHandler) {
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceUID, ksceKernelRegisterProcEventHandler, const char *name, Ptr<void> handler, int priority) {
-    // Stub: return a fake UID. kubridge registers a process event handler
-    // for cleanup on process exit, but in the emulator we don't need it.
-    return 0x40001;
+    // Stub: return a unique UID per registration. kubridge registers a process
+    // event handler for cleanup on exit, but in the emulator we don't need it.
+    return proc_event_uid_counter.fetch_add(1);
 }
 
 EXPORT(int, ksceKernelUnregisterProcEventHandler) {
