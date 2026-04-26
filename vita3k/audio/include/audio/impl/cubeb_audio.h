@@ -19,6 +19,7 @@
 
 #include "../state.h"
 
+#include <atomic>
 #include <condition_variable>
 
 #include <cubeb/cubeb.h>
@@ -28,17 +29,23 @@ struct AudioBuffer {
     int buffer_position;
 };
 
-struct CubebAudioOutPort : AudioOutPort {
-    cubeb_stream *out_stream = nullptr;
+struct CubebAudioSharedState {
     cubeb_stream_params spec;
-    // sync variables used to wait for the buffer to be ready
+    int len_bytes = 0;
     std::mutex mutex;
     std::condition_variable cond_var;
-    // buffer filled with audio data to pass to cubeb
     std::vector<AudioBuffer> audio_buffers;
-    // position of the next audio buffer to put audio
     int next_audio_buffer = 0;
     int nb_buffers_ready = 0;
+    std::atomic<bool> shutting_down = false;
+    std::atomic<int> active_callbacks = 0;
+    std::mutex shutdown_mutex;
+    std::condition_variable shutdown_cond_var;
+};
+
+struct CubebAudioOutPort : AudioOutPort {
+    cubeb_stream *out_stream = nullptr;
+    std::shared_ptr<CubebAudioSharedState> callback_state;
 
     // use the destructor to destroy the cubeb stream
     ~CubebAudioOutPort();
