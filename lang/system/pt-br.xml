@@ -346,6 +346,9 @@ durante o uso do aplicativo</show_hide>
 	</live_area>
 
 	<settings name="Configurações">
+		<sound_display name="Som e imagem">
+			<system_music>Música do sistema</system_music>
+		</sound_display>
 		<theme_background name="Tema e fundo">
 			<default>Padrão</default>
 			<theme name="Tema">
@@ -409,6 +412,8 @@ fundo</add_background>
 	</settings>
 
 	<settings_dialog name="Configurações">
+		<camera name="Câmera">
+		</camera>
 		<system name="Sistema">
 		</system>
 		<network name="Rede">

@@ -272,6 +272,9 @@ O seu sistema Vita3K está pronto!</completed_setup>
 	</live_area>
 
 	<settings name="Definições">
+		<sound_display name="Som e apresentação">
+			<system_music>Música do sistema</system_music>
+		</sound_display>
 		<theme_background name="Tema e fundo">
 			<default>Predefinição</default>
 			<theme name="Tema">
@@ -329,6 +332,8 @@ O seu sistema Vita3K está pronto!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Definições">
+		<camera name="Câmara">
+		</camera>
 		<system name="Sistema">
 		</system>
 		<network name="Rede">

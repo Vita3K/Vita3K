@@ -279,6 +279,9 @@ Tippe auf 'Zugriff gewähren', um fortzufahren.</storage_file_permissions>
 	</live_area>
 
 	<settings name="Einstellungen">
+		<sound_display name="Sound und Anzeige">
+			<system_music>Systemmusik</system_music>
+		</sound_display>
 		<theme_background name="Design und Hintergrund">
 			<default>Standard</default>
 			<theme name="Design">
@@ -337,6 +340,8 @@ Tippe auf 'Zugriff gewähren', um fortzufahren.</storage_file_permissions>
 	</settings>
 
 	<settings_dialog name="Einstellungen">
+		<camera name="Kamera">
+		</camera>
 		<system name="System">
 		</system>
 		<network name="Netzwerk">

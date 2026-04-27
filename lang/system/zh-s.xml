@@ -4,7 +4,7 @@
 	<main_menubar>
 		<file name="文件">
 			<open_pref_path>打开存放路径</open_pref_path>
-			<open_patch_path>打开补丁路径</open_patch_path>
+			<open_patches_path>打开补丁路径</open_patches_path>
 			<open_textures_path>打开纹理路径</open_textures_path>
 			<install_firmware>安装固件</install_firmware>
 			<install_pkg>安装pkg</install_pkg>
@@ -90,6 +90,7 @@
 			<delete_license>要删除此授权吗？</delete_license>
 		</delete>
 		<other name="其他">
+			<decrypt_all_self>解密全部SELF</decrypt_all_self>
 			<reset_last_time_played>重置最近游玩时间</reset_last_time_played>
 		</other>
 		<update_history>更新历史记录</update_history>
@@ -324,6 +325,7 @@
 	<controls>
 		<button>按键</button>
 		<mapped_button>映射按键</mapped_button>
+		<mapped_button_alt>备用映射按键</mapped_button_alt>
 		<left_stick_up>左摇杆上</left_stick_up>
 		<left_stick_down>左摇杆下</left_stick_down>
 		<left_stick_right>左摇杆右</left_stick_right>
@@ -472,6 +474,7 @@
 		<apps_list_grid_description>勾选此项将应用程序列表设置为像PS Vita一样的网格模式。</apps_list_grid_description>
 		<icon_size>应用程序图标大小</icon_size>
 		<select_icon_size>选择您喜欢的图标大小。</select_icon_size>
+		<system_music_description>此项可以稍后在系统设定应用程序中更改。</system_music_description>
 		<completed>已完成。</completed>
 		<next>继续</next>
 	</initial_setup>
@@ -492,6 +495,8 @@
 			<enter_zrif>输入zRIF</enter_zrif>
 			<enter_zrif_key>输入zRIF密钥</enter_zrif_key>
 			<input_zrif>请在此处输入您的zRIF</input_zrif>
+			<inputmethod_paste_zrif>使用输入法剪贴板复制粘贴。
+键盘：Ctrl+C复制，Ctrl+V粘贴。</inputmethod_paste_zrif>
 			<copy_paste_zrif>Ctrl+C复制，Ctrl+V粘贴。</copy_paste_zrif>
 			<delete_pkg>删除pkg文件？</delete_pkg>
 			<delete_bin_rif>删除work.bin/rif文件？</delete_bin_rif>
@@ -574,6 +579,9 @@
 	</performance_overlay>
 
 	<settings name="设定">
+		<sound_display name="声音& 显示器">
+			<system_music>系统音乐</system_music>
+		</sound_display>
 		<theme_background name="主题&背景">
 			<default>原始</default>
 			<theme name="主题">
@@ -728,6 +736,14 @@
 			<bgm_volume>背景音乐音量</bgm_volume>
 			<bgm_volume_description>调整主题背景音乐的音量百分比。</bgm_volume_description>
 		</audio>
+		<camera name="相机">
+			<front_camera>前置摄像头</front_camera>
+			<back_camera>后置摄像头</back_camera>
+			<image_not_set>图像未设置</image_not_set>
+			<set_image>设置图像</set_image>
+			<solid_color>纯色</solid_color>
+			<static_image>静态图像</static_image>
+		</camera>
 		<system name="系统">
 			<select_enter_button>确认按键分配
 请选择您的“确认”按键。</select_enter_button>

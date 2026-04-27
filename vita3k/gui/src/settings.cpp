@@ -357,6 +357,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
         if (ImGui::Selectable(sound_display["title"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
             settings_menu = SettingsMenu::SOUND_DISPLAY;
+        ImGui::Separator();
         if (ImGui::Selectable(theme_background.main["title"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT))) {
             get_themes_list(gui, emuenv);
             settings_menu = SettingsMenu::THEME_BACKGROUND;

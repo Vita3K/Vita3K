@@ -4,7 +4,7 @@
 	<main_menubar>
 		<file name="檔案">
 			<open_pref_path>開啟存放路徑</open_pref_path>
-			<open_patch_path>開啟補丁路徑</open_patch_path>
+			<open_patches_path>開啟補丁路徑</open_patches_path>
 			<open_textures_path>開啟紋理路徑</open_textures_path>
 			<install_firmware>安裝韌體</install_firmware>
 			<install_pkg>安裝pkg</install_pkg>
@@ -89,7 +89,8 @@
 			<delete_addcont>確定要刪除此追加內容嗎？</delete_addcont>
 			<delete_license>確定要刪除此授權嗎？</delete_license>
 		</delete>
-		<other name="其他">
+		<other name="其它">
+			<decrypt_all_self>解密全部SELF</decrypt_all_self>
 			<reset_last_time_played>重設上次遊玩時間</reset_last_time_played>
 		</other>
 		<update_history>更新履歷</update_history>
@@ -324,6 +325,7 @@
 	<controls>
 		<button>按鈕</button>
 		<mapped_button>按鍵對應</mapped_button>
+		<mapped_button_alt>備用按鍵對應</mapped_button_alt>
 		<left_stick_up>左操作桿上</left_stick_up>
 		<left_stick_down>左操作桿下</left_stick_down>
 		<left_stick_right>左操作桿右</left_stick_right>
@@ -472,6 +474,7 @@
 		<apps_list_grid_description>勾選此項將應用程式列表設定為像PS Vita一樣的網格模式。</apps_list_grid_description>
 		<icon_size>應用程式圖標大小</icon_size>
 		<select_icon_size>選擇您喜歡的圖標大小。</select_icon_size>
+		<system_music_description>此項可以稍後在系統設定应用程式中變更。</system_music_description>
 		<completed>已完成。</completed>
 		<next>繼續</next>
 	</initial_setup>
@@ -492,6 +495,8 @@
 			<enter_zrif>輸入zRIF</enter_zrif>
 			<enter_zrif_key>輸入zRIF金鑰</enter_zrif_key>
 			<input_zrif>請在此處輸入您的zRIF</input_zrif>
+			<inputmethod_paste_zrif>使用輸入法剪貼板複製貼上。
+鍵盤：Ctrl+C複製，Ctrl+V貼上。</inputmethod_paste_zrif>
 			<copy_paste_zrif>Ctrl+C複製，Ctrl+V貼上。</copy_paste_zrif>
 			<delete_pkg>刪除pkg檔案？</delete_pkg>
 			<delete_bin_rif>刪除work.bin/rif檔案？</delete_bin_rif>
@@ -574,6 +579,9 @@
 	</performance_overlay>
 
 	<settings name="設定">
+		<sound_display name="聲音&顯示器">
+			<system_music>系統音樂</system_music>
+		</sound_display>
 		<theme_background name="主題&背景">
 			<default>原音</default>
 			<theme name="主題">
@@ -703,8 +711,8 @@
 			<external_host>外部主機</external_host>
 			<page_table>頁表</page_table>
 			<native_buffer>原生緩衝</native_buffer>
-			<mapping_method>內存映射方式</mapping_method>
-			<mapping_method_description>內存映射提高了性能，減少內存使用量，並修復了許多圖形問題。
+			<mapping_method>記憶體對映方式</mapping_method>
+			<mapping_method_description>記憶體對映提高了性能，減少記憶體使用量，並修復了許多圖形問題。
 但是它在某些GPU上可能不穩定。</mapping_method_description>
 			<turbo_mode>啟用睿頻模式</turbo_mode>
 			<turbo_mode_description>提供了一種方法提來强制GPU以允許的最高時鐘頻率運行（溫控仍然適用）。</turbo_mode_description>
@@ -728,6 +736,14 @@
 			<bgm_volume>背景音樂音量</bgm_volume>
 			<bgm_volume_description>調整主題背景音樂的音量百分比。</bgm_volume_description>
 		</audio>
+		<camera name="相機">
+			<front_camera>前置攝像頭</front_camera>
+			<back_camera>後置攝像頭</back_camera>
+			<image_not_set>圖像未設定</image_not_set>
+			<set_image>設定圖像</set_image>
+			<solid_color>純色</solid_color>
+			<static_image>靜態圖像</static_image>
+		</camera>
 		<system name="系統">
 			<select_enter_button>確認按鈕分配
 請選擇您的“確認”按鈕。</select_enter_button>

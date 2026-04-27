@@ -48,7 +48,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
     const auto BUTTON_SIZE = ImVec2(180.f * SCALE.x, 45.f * SCALE.y);
-    const auto WINDOW_SIZE = ImVec2(616.f * SCALE.x, 264.f * SCALE.y);
+    const auto WINDOW_SIZE = ImVec2(616.f * SCALE.x, 240.f * SCALE.y);
 
     ImGui::SetNextWindowPos(ImVec2(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size);
@@ -69,6 +69,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         title = license["select_license_type"];
         if (ImGui::Button(license["select_bin_rif"].c_str(), BUTTON_SIZE))
             state = State::LICENSE;
+        ImGui::Spacing();
         ImGui::SetCursorPosX(POS_BUTTON);
         if (ImGui::Button(license["enter_zrif"].c_str(), BUTTON_SIZE))
             state = State::ZRIF;
@@ -101,7 +102,11 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushItemWidth(640.f * SCALE.x);
         ImGui::InputTextWithHint("##enter_zrif", license["input_zrif"].c_str(), &zRIF);
         ImGui::PopItemWidth();
+#ifdef __ANDROID__
+        SetTooltipEx(license["inputmethod_paste_zrif"].c_str());
+#else
         SetTooltipEx(license["copy_paste_zrif"].c_str());
+#endif
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

@@ -269,6 +269,9 @@ Vita3K-systemet ditt er klart!</completed_setup>
 	</live_area>
 	
 	<settings name="Innstillinger">
+		<sound_display name="Lyd og visning">
+			<system_music>Systemmusikk</system_music>
+		</sound_display>
 		<theme_background name="Tema og bakgrunn">
 			<default>Standard</default>
 			<theme name="Tema">
@@ -326,6 +329,8 @@ Vita3K-systemet ditt er klart!</completed_setup>
 	</settings>
 
 	<settings_dialog name="Innstillinger">
+		<camera name="Kamera">
+		</camera>
 		<system name="System">
 		</system>
 		<network name="Nettverk">

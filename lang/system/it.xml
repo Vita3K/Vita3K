@@ -291,6 +291,9 @@ Tocca 'Concedi Accesso' per continuare.</storage_file_permissions>
 	</live_area>
 
 	<settings name="Impostazioni">
+		<sound_display name="Audio e schermo">
+			<system_music>Musica di sistema</system_music>
+		</sound_display>
 		<theme_background name="Tema e Sfondo">
 			<default>Predefinita</default>
 			<theme name="Tema">
@@ -348,6 +351,8 @@ Tocca 'Concedi Accesso' per continuare.</storage_file_permissions>
 	</settings>
 
 	<settings_dialog name="Impostazioni">
+		<camera name="Fotocamera">
+		</camera>
 		<system name="Sistema">
 		</system>
 		<network name="Rete">

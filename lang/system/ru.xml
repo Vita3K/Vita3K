@@ -529,6 +529,9 @@
 	</performance_overlay>
 
 	<settings name="Настройки">
+		<sound_display name="Звук и изображение">
+			<system_music>Фоновая музыка системы</system_music>
+		</sound_display>
 		<theme_background name="Тема и Фон">
 			<default>По умолчанию</default>
 			<theme name="Тема">

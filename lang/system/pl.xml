@@ -550,6 +550,9 @@ Sprawdź plik vita3k.log, aby zobaczyć szczegóły na konsoli.
 	</performance_overlay>
 	
 	<settings name="Ustawienia">
+		<sound_display name="Dźwięk i ekran">
+			<system_music>Muzyka w systemie</system_music>
+		</sound_display>
 		<theme_background name="Motyw i tło">
 			<default>Domyślnie</default>
 			<theme name="Motyw">
@@ -690,6 +693,8 @@ W innych grach może to nie mieć żadnego efektu lub spowodować, że będą dz
 			<enable_ngs_support>Włącz wsparcie dla NGS</enable_ngs_support>
 			<ngs_description>Odznacz, aby wyłączyć wsparcie dla zaawansowanej biblioteki dzwięków NGS.</ngs_description>
 		</audio>
+		<camera name="Kamera">
+		</camera>
 		<system name="System">
 			<select_enter_button>Przypisanie przycisku potwierdzenia
 Wybierz swój przycisk potwierdzenia.</select_enter_button>

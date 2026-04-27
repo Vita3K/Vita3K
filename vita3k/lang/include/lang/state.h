@@ -103,7 +103,7 @@ struct LangState {
         std::map<std::string, std::string> file = {
             { "title", "File" },
             { "open_pref_path", "Open Pref Path" },
-            { "open_patch_path", "Open Patch Path" },
+            { "open_patches_path", "Open Patch Path" },
             { "open_textures_path", "Open Textures Path" },
             { "install_firmware", "Install Firmware" },
             { "install_pkg", "Install .pkg" },
@@ -200,6 +200,7 @@ struct LangState {
         };
         std::map<std::string, std::string> other = {
             { "title", "Other" },
+            { "decrypt_all_self", "Decrypt all SELF" },
             { "reset_last_time_played", "Reset Last Time Played" }
         };
         std::map<std::string, std::string> info = {
@@ -395,6 +396,7 @@ struct LangState {
         { "apps_list_grid_description", "Check the box to set the app list to grid mode like of PS Vita." },
         { "icon_size", "App Icon Size" },
         { "select_icon_size", "Select your preferred icon size." },
+        { "system_music_description", "This option can be changed later in the system Settings app." },
         { "completed", "Completed." },
         { "next", "Next" }
     };
@@ -414,6 +416,7 @@ struct LangState {
             { "enter_zrif", "Enter zRIF" },
             { "enter_zrif_key", "Enter zRIF key" },
             { "input_zrif", "Please input your zRIF here" },
+            { "inputmethod_paste_zrif", "Use the input method clipboard to copy and paste.\nKeyboard: Ctrl + C to copy, Ctrl + V to paste." },
             { "copy_paste_zrif", "Ctrl + C to copy, Ctrl + V to paste." },
             { "delete_pkg", "Delete the pkg file?" },
             { "delete_bin_rif", "Delete the work.bin/rif file?" },

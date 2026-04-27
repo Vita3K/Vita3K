@@ -4,7 +4,7 @@
 	<main_menubar>
 		<file name="File">
 			<open_pref_path>Open Pref Path</open_pref_path>
-			<open_patch_path>Open Patch Path</open_patch_path>
+			<open_patches_path>Open Patch Path</open_patches_path>
 			<open_textures_path>Open Textures Path</open_textures_path>
 			<install_firmware>Install Firmware</install_firmware>
 			<install_pkg>Install .pkg</install_pkg>
@@ -90,6 +90,7 @@ depending on its size and your hardware.</delete_app_description>
 			<delete_license>Do you want to delete this license?</delete_license>
 		</delete>
 		<other name="Other">
+			<decrypt_all_self>Decrypt all SELF</decrypt_all_self>
 			<reset_last_time_played>Reset Last Time Played</reset_last_time_played>
 		</other>
 		<update_history>Update History</update_history>
@@ -395,7 +396,7 @@ Connect a controller that is compatible with SDL3.</not_connected>
 There is not enough free space on the memory card. To save your progress in the application, you must create at least {} of free space.
 
 To create the free space, press PS button to pause this application, and then delete other applications or content.</could_not_save>
-				<not_free_space>There is not enough free space on the memory card. 
+				<not_free_space>There is not enough free space on the memory card.
 To continue using the application, you must create at least {} of free space.
 
 Press the PS button to pause this application, and then delete other applications or content.</not_free_space>
@@ -474,6 +475,7 @@ If disabled, right click on an application to open it.</live_area_screen_descrip
 		<apps_list_grid_description>Check the box to set the app list to grid mode like of PS Vita.</apps_list_grid_description>
 		<icon_size>App Icon Size</icon_size>
 		<select_icon_size>Select your preferred icon size.</select_icon_size>
+		<system_music_description>This option can be changed later in the system Settings app.</system_music_description>
 		<completed>Completed.</completed>
 		<next>Next</next>
 	</initial_setup>
@@ -495,6 +497,8 @@ and also for Asian regional font support. (Generally Recommended)</firmware_font
 			<enter_zrif>Enter zRIF</enter_zrif>
 			<enter_zrif_key>Enter zRIF key</enter_zrif_key>
 			<input_zrif>Please input your zRIF here</input_zrif>
+			<inputmethod_paste_zrif>Use the input method clipboard to copy and paste.
+Keyboard: Ctrl + C to copy, Ctrl + V to paste.</inputmethod_paste_zrif>
 			<copy_paste_zrif>Ctrl + C to copy, Ctrl + V to paste.</copy_paste_zrif>
 			<delete_pkg>Delete the pkg file?</delete_pkg>
 			<delete_bin_rif>Delete the work.bin/rif file?</delete_bin_rif>

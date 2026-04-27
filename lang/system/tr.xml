@@ -279,6 +279,9 @@ Devam etmek için 'Erişim Ver' düğmesine dokunun.</storage_file_permissions>
 	</live_area>
 
 	<settings name="Ayarlar">
+		<sound_display name="Ses & Görüntü">
+			<system_music>Sistem Müziği</system_music>
+		</sound_display>
 		<theme_background name="Tema & Arkaplan">
 			<default>Varsayılan</default>
 			<theme name="Tema">
@@ -336,6 +339,8 @@ Devam etmek için 'Erişim Ver' düğmesine dokunun.</storage_file_permissions>
 	</settings>
 
 	<settings_dialog name="Ayarlar">
+		<camera name="Kamera">
+		</camera>
 		<system name="Sistem">
 		</system>
 		<network name="Ağ">

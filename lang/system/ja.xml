@@ -488,6 +488,9 @@ GUIでのアジア地域のフォントサポートに必須です。
 	</live_area>
 
 	<settings name="設定">
+		<sound_display name="サウンド&ディスプレイ">
+			<system_music>システムのミュージック</system_music>
+		</sound_display>
 		<theme_background name="テーマ&背景">
 			<default>デフォルト</default>
 			<theme name="テーマ">
@@ -606,6 +609,8 @@ GUIでのアジア地域のフォントサポートに必須です。
 			<enable_ngs_support>NGSサポートを有効にする</enable_ngs_support>
 			<ngs_description>NGSオーディオライブラリのサポートを無効にするには、チェックボックスを外します。</ngs_description>
 		</audio>
+		<camera name="カメラ">
+		</camera>
 		<system name="システム">
 			<select_enter_button>決定ボタンの割り当て
 「決定」ボタンを選択してください。</select_enter_button>

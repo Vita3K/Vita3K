@@ -270,7 +270,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         if (ImGui::Checkbox(gui.lang.settings.sound_display["system_music"].c_str(), &emuenv.cfg.system_music.value()))
             bgm_player::switch_bgm_state(!emuenv.cfg.system_music.value());
-        SetTooltipEx("This option can be changed later in the system Settings app.");
+        SetTooltipEx(lang["system_music_description"].c_str());
         if (emuenv.cfg.system_music.value()) {
             ImGui::Spacing();
             if (ImGui::SliderInt(gui.lang.settings_dialog.audio["bgm_volume"].c_str(), &emuenv.cfg.bgm_volume, 0, 100, "%d %%", ImGuiSliderFlags_AlwaysClamp))

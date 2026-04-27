@@ -273,6 +273,9 @@ Napauta 'Myönnä Käyttöoikeus' jatkaaksesi.</storage_file_permissions>
 	</live_area>
 
 	<settings name="Asetukset">
+		<sound_display name="Ääni ja näyttö">
+			<system_music>Järjestelmän musiikki</system_music>
+		</sound_display>
 		<theme_background name="Teema ja tausta">
 			<default>Oletus</default>
 			<theme name="Teema">
@@ -330,6 +333,8 @@ Napauta 'Myönnä Käyttöoikeus' jatkaaksesi.</storage_file_permissions>
 	</settings>
 
 	<settings_dialog name="Asetukset">
+		<camera name="Kamera">
+		</camera>
 		<system name="Järjestelmä">
 		</system>
 		<network name="Verkko">
