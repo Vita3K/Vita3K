@@ -193,15 +193,23 @@ if(APPLE)
 		target_sources(vita3k PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon")
 		set(MACOSX_BUNDLE_ICON_FILE Vita3K.icon)
 	else()
+		# actool requires the .icon bundle to live inside a proper .xcassets catalog.
+		# Create a minimal wrapper catalog at configure time, then copy the .icon in at build time.
+		set(VITA3K_XCASSETS "${CMAKE_CURRENT_BINARY_DIR}/Vita3K_icons.xcassets")
+		file(WRITE "${VITA3K_XCASSETS}/Contents.json"
+			"{\"info\":{\"version\":1,\"author\":\"xcode\"}}")
 		add_custom_command(
 			OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/Vita3K.icns"
+			COMMAND ${CMAKE_COMMAND} -E copy_directory
+				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon"
+				"${VITA3K_XCASSETS}/Vita3K.icon"
 			COMMAND xcrun actool
 				--compile "${CMAKE_CURRENT_BINARY_DIR}"
 				--platform macosx
 				--minimum-deployment-target 11.0
 				--app-icon Vita3K
 				--output-partial-info-plist "${CMAKE_CURRENT_BINARY_DIR}/vita3k_icon.plist"
-				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon"
+				"${VITA3K_XCASSETS}"
 			DEPENDS
 				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon/icon.json"
 				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon/Assets/Vita3K.png")
