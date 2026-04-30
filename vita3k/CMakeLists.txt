@@ -193,29 +193,33 @@ if(APPLE)
 		target_sources(vita3k PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon")
 		set(MACOSX_BUNDLE_ICON_FILE Vita3K.icon)
 	else()
-		# actool requires the .icon bundle to live inside a proper .xcassets catalog.
-		# Create a minimal wrapper catalog at configure time, then copy the .icon in at build time.
-		set(VITA3K_XCASSETS "${CMAKE_CURRENT_BINARY_DIR}/Vita3K_icons.xcassets")
-		file(WRITE "${VITA3K_XCASSETS}/Contents.json"
-			"{\"info\":{\"version\":1,\"author\":\"xcode\"}}")
+		set(ACTOOL_OUT "${CMAKE_CURRENT_BINARY_DIR}/AssetsCompiled")
 		add_custom_command(
-			OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/Vita3K.icns"
-			COMMAND ${CMAKE_COMMAND} -E copy_directory
-				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon"
-				"${VITA3K_XCASSETS}/Vita3K.icon"
+			OUTPUT "${ACTOOL_OUT}/Assets.car" "${ACTOOL_OUT}/Vita3K.icns" "${ACTOOL_OUT}/assetcatalog_generated_info.plist"
 			COMMAND xcrun actool
-				--compile "${CMAKE_CURRENT_BINARY_DIR}"
-				--platform macosx
-				--minimum-deployment-target 11.0
+				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon"
 				--app-icon Vita3K
-				--output-partial-info-plist "${CMAKE_CURRENT_BINARY_DIR}/vita3k_icon.plist"
-				"${VITA3K_XCASSETS}"
-			DEPENDS
-				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon/icon.json"
-				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon/Assets/Vita3K.png")
-		set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/Vita3K.icns" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-		target_sources(vita3k PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/Vita3K.icns")
+				--compile "${ACTOOL_OUT}"
+				--output-partial-info-plist "${ACTOOL_OUT}/assetcatalog_generated_info.plist"
+				--platform macosx
+				--target-device mac
+				--minimum-deployment-target 11.0
+				--enable-on-demand-resources NO
+				--include-all-app-icons
+			DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon/icon.json"
+			VERBATIM)
+		add_custom_target(vita3k_assets DEPENDS "${ACTOOL_OUT}/Assets.car" "${ACTOOL_OUT}/Vita3K.icns")
+		add_dependencies(vita3k vita3k_assets)
+		set_source_files_properties("${ACTOOL_OUT}/Assets.car" "${ACTOOL_OUT}/Vita3K.icns"
+			PROPERTIES MACOSX_PACKAGE_LOCATION Resources GENERATED TRUE)
+		target_sources(vita3k PRIVATE "${ACTOOL_OUT}/Assets.car" "${ACTOOL_OUT}/Vita3K.icns")
 		set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
+		add_custom_command(
+			TARGET vita3k POST_BUILD
+			COMMAND /bin/sh -c
+				"/usr/libexec/PlistBuddy -c 'Add :CFBundleIconName string Vita3K' '$<TARGET_FILE_DIR:vita3k>/../Info.plist' 2>/dev/null; \
+				/usr/libexec/PlistBuddy -c 'Set :CFBundleIconName Vita3K' '$<TARGET_FILE_DIR:vita3k>/../Info.plist'"
+			VERBATIM)
 	endif()
 
 	add_custom_command(
