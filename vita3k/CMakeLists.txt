@@ -188,9 +188,27 @@ set_target_properties(vita3k PROPERTIES OUTPUT_NAME Vita3K
 	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 if(APPLE)
-	set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-	target_sources(vita3k PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon")
-	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icon)
+	if(CMAKE_GENERATOR STREQUAL "Xcode")
+		set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+		target_sources(vita3k PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon")
+		set(MACOSX_BUNDLE_ICON_FILE Vita3K.icon)
+	else()
+		add_custom_command(
+			OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/Vita3K.icns"
+			COMMAND xcrun actool
+				--compile "${CMAKE_CURRENT_BINARY_DIR}"
+				--platform macosx
+				--minimum-deployment-target 11.0
+				--app-icon Vita3K
+				--output-partial-info-plist "${CMAKE_CURRENT_BINARY_DIR}/vita3k_icon.plist"
+				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon"
+			DEPENDS
+				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon/icon.json"
+				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon/Assets/Vita3K.png")
+		set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/Vita3K.icns" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+		target_sources(vita3k PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/Vita3K.icns")
+		set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
+	endif()
 
 	add_custom_command(
 		TARGET vita3k
