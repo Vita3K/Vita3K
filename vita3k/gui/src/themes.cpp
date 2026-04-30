@@ -358,7 +358,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
 
     // Initialize the theme BGM with the path
     bgm_player::set_current_bgm_path(path_bgm);
-    bgm_player::init_bgm(gui, emuenv);
+    bgm_player::init_bgm(emuenv.pref_path, gui.users[emuenv.io.user_id].system_music);
 
     for (const auto &icon : theme_icon_name) {
         int32_t width = 0;

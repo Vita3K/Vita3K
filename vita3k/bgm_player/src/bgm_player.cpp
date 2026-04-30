@@ -425,7 +425,7 @@ void set_current_bgm_path(const std::pair<std::string, std::string> &path) {
     current_path_bgm = path;
 }
 
-bool init_bgm(GuiState &gui, EmuEnvState &emuenv) {
+bool init_bgm(const fs::path &pref_path, const bool is_enable) {
     const auto device = VitaIoDevice::_from_string(current_path_bgm.first.c_str());
     const auto &path = current_path_bgm.second;
 
@@ -436,12 +436,12 @@ bool init_bgm(GuiState &gui, EmuEnvState &emuenv) {
     // Stop current Background Music
     stop_bgm();
 
-    if (!emuenv.io.user_id.empty() && !gui.users[emuenv.io.user_id].system_music)
+    if (!is_enable)
         return false;
 
     // Attempt to read the AT9 file from the specified path
     vfs::FileBuffer at9_buffer;
-    if (!vfs::read_file(device, at9_buffer, emuenv.pref_path, path)) {
+    if (!vfs::read_file(device, at9_buffer, pref_path, path)) {
         if (device == VitaIoDevice::pd0)
             LOG_WARN("Failed to read AT9 file from {}:{}, install Preinst Firmware for fix it", current_path_bgm.first, path);
         else

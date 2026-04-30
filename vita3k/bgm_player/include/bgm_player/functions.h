@@ -17,13 +17,12 @@
 
 #pragma once
 
-#include <emuenv/state.h>
-#include <gui/state.h>
+#include <util/fs.h>
 
 namespace bgm_player {
 
 void destroy_bgm_player();
-bool init_bgm(GuiState &gui, EmuEnvState &emuenv);
+bool init_bgm(const fs::path &pref_path, const bool is_enable);
 void init_bgm_player(const float vol);
 void set_bgm_volume(const float vol);
 void set_current_bgm_path(const std::pair<std::string, std::string> &path);

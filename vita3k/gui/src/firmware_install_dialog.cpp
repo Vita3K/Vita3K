@@ -131,7 +131,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 if (emuenv.cfg.initial_setup)
                     init_theme(gui, emuenv, gui.users[emuenv.cfg.user_id].theme_id);
                 else {
-                    if (bgm_player::init_bgm(gui, emuenv))
+                    if (bgm_player::init_bgm(emuenv.pref_path, true))
                         bgm_player::switch_bgm_state(false);
                 }
                 fw_version.clear();
