@@ -133,7 +133,7 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2
         if: matrix.os == 'android'
 
-      - uses: mozilla-actions/sccache-action@v0.0.9
+      - uses: mozilla-actions/sccache-action@v0.0.10
         if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'ubuntu')
         with:
           disable_annotations: true

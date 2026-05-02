@@ -384,7 +384,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.62f, 0.75f, 0.62f, 0.8f));
         ImGui::SetCursorPos(ImVec2(SIZE_LIST.x - (106.f * SCALE.x), (SIZE_SELECT - (42.f * SCALE.y)) / 2.f));
         if (ImGui::Checkbox("##system_music", &gui.users[emuenv.io.user_id].system_music)) {
-            bgm_player::init_bgm(gui, emuenv);
+            bgm_player::init_bgm(emuenv.pref_path, gui.users[emuenv.io.user_id].system_music);
             save_user(gui, emuenv, emuenv.io.user_id);
         }
         ImGui::PopStyleColor(4);

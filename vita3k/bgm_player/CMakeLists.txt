@@ -6,4 +6,4 @@ add_library(
 )
 
 target_include_directories(bgm_player PUBLIC include)
-target_link_libraries(bgm_player PUBLIC audio cubeb codec gui emuenv io)
+target_link_libraries(bgm_player PUBLIC audio cubeb codec io)

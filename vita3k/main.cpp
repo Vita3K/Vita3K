@@ -330,7 +330,7 @@ int main(int argc, char *argv[]) {
         bgm_player::init_bgm_player(emuenv.cfg.bgm_volume);
         if (!emuenv.cfg.initial_setup) {
             emuenv.cfg.system_music.emplace(false);
-            if (bgm_player::init_bgm(gui, emuenv))
+            if (bgm_player::init_bgm(emuenv.pref_path, true))
                 bgm_player::switch_bgm_state(true);
             while (!emuenv.cfg.initial_setup) {
                 wait_for_frame_done();
