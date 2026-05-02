@@ -60,13 +60,13 @@ jobs:
             cmake_preset: windows-ninja-clang
 
           - os: macos-intel
-            runs_on: macos-latest
+            runs_on: macos-26-intel
             cache_path: ~/Library/Caches/ccache
             extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="x86_64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
             cmake_preset: macos-ninja
 
           - os: macos-arm64
-            runs_on: macos-latest
+            runs_on: macos-26
             cache_path: ~/Library/Caches/ccache
             extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="arm64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
             cmake_preset: macos-ninja
@@ -94,7 +94,7 @@ jobs:
 
       - name: Set up build environment (macOS)
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
           brew install ccache create-dmg
           echo "$(brew --prefix ccache)/libexec" >> $GITHUB_PATH
           ccache --set-config=compiler_check=content
