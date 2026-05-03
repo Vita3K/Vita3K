@@ -151,11 +151,11 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     }
 
     if (kernel.debugger.wait_for_debugger) {
-        to_do = ThreadToDo::suspend;
+        to_do.store(ThreadToDo::suspend);
         status = ThreadStatus::suspend;
         kernel.debugger.wait_for_debugger = false;
     } else {
-        to_do = ThreadToDo::run;
+        to_do.store(ThreadToDo::run);
         status = ThreadStatus::run;
     }
     something_to_do.notify_one();
@@ -175,8 +175,8 @@ void ThreadState::exit_delete(bool exit) {
 
     run_end_callback = exit;
 
-    const ThreadToDo last_to_do = to_do;
-    to_do = ThreadToDo::remove;
+    const ThreadToDo last_to_do = to_do.load();
+    to_do.store(ThreadToDo::remove);
     if (last_to_do == ThreadToDo::wait) {
         something_to_do.notify_one();
     } else {
@@ -205,10 +205,10 @@ bool ThreadState::run_loop() {
         if (!kernel.thread_event_end)
             return;
 
-        ThreadToDo old_to_do = to_do;
+        ThreadToDo old_to_do = to_do.load();
         int old_call_level = call_level;
         uint32_t old_returned_value = returned_value;
-        to_do = ThreadToDo::run;
+        to_do.store(ThreadToDo::run);
         call_level = 1;
 
         lock.unlock();
@@ -217,13 +217,14 @@ bool ThreadState::run_loop() {
             LOG_WARN("Thread start event handler returned {}", log_hex(ret));
         lock.lock();
 
-        to_do = old_to_do;
+        if (to_do.load() == ThreadToDo::run)
+            to_do.store(old_to_do);
         call_level = old_call_level;
         returned_value = old_returned_value;
     };
 
     while (true) {
-        switch (to_do) {
+        switch (to_do.load()) {
         case ThreadToDo::remove:
             if (run_level == 1) {
                 run_thread_end_callback();
@@ -239,7 +240,7 @@ bool ThreadState::run_loop() {
 
                 // nothing to do
                 update_status(ThreadStatus::dormant);
-                to_do = ThreadToDo::wait;
+                to_do.store(ThreadToDo::wait);
                 break;
             }
 
@@ -257,32 +258,26 @@ bool ThreadState::run_loop() {
                 }
             }
 
-            // Run the cpu — lock is NOT held on entry, HELD on exit
-            while (true) {
-                lock.lock();
-                const bool do_step = (to_do == ThreadToDo::step);
-                if (do_step)
-                    to_do = ThreadToDo::suspend;
-                lock.unlock();
-
-                if (do_step)
+            // Run the cpu
+            do {
+                if (to_do.load() == ThreadToDo::step) {
                     res = step(*cpu);
-                else
+                    ThreadToDo expected = ThreadToDo::step;
+                    to_do.compare_exchange_strong(expected, ThreadToDo::suspend);
+                } else {
                     res = run(*cpu);
+                }
 
                 // handle svc call if this was what stopped the cpu
                 if (cpu->svc_called) {
                     cpu->protocol->call_svc(*cpu, cpu->svc, read_pc(*cpu), *this);
                 }
+            } while ((to_do.load() == ThreadToDo::run) && (res == 0) && (call_level == run_level) && !hit_breakpoint(*cpu));
 
-                lock.lock();
-                if (to_do != ThreadToDo::run || res != 0 || call_level != run_level || hit_breakpoint(*cpu))
-                    break;
-                lock.unlock();
-            }
+            lock.lock();
 
             // Handle errors
-            if (to_do == ThreadToDo::remove)
+            if (to_do.load() == ThreadToDo::remove)
                 continue;
 
             if (res < 0) {
@@ -295,9 +290,9 @@ bool ThreadState::run_loop() {
                 break;
             }
 
-            if (hit_breakpoint(*cpu) || to_do == ThreadToDo::suspend) {
+            if (hit_breakpoint(*cpu) || (to_do.load() == ThreadToDo::suspend)) {
                 update_status(ThreadStatus::suspend);
-                to_do = ThreadToDo::wait;
+                to_do.store(ThreadToDo::wait);
             }
 
             if (call_level < run_level && run_level > 1)
@@ -380,9 +375,9 @@ uint32_t ThreadState::run_guest_function(Address callback_address, SceSize args,
     {
         // wait for the function to return
         std::unique_lock<std::mutex> lock(mutex);
-        if (status != ThreadStatus::dormant || to_do == ThreadToDo::run) {
+        if ((status != ThreadStatus::dormant) || (to_do.load() == ThreadToDo::run)) {
             status_cond.wait(lock, [&]() {
-                return status == ThreadStatus::dormant && to_do != ThreadToDo::run;
+                return (status == ThreadStatus::dormant) && (to_do.load() != ThreadToDo::run);
             });
         }
     }
@@ -414,20 +409,18 @@ Address ThreadState::stack_top() const {
 }
 
 void ThreadState::suspend() {
-    assert(to_do == ThreadToDo::run);
-    {
-        const std::lock_guard<std::mutex> lock(mutex);
-        to_do = ThreadToDo::suspend;
-    }
+    assert(to_do.load() == ThreadToDo::run);
+    to_do.store(ThreadToDo::suspend);
     stop(*cpu);
 }
 
 void ThreadState::resume(bool step) {
-    assert(to_do == ThreadToDo::wait || to_do == ThreadToDo::suspend);
+    const ThreadToDo old_to_do = to_do.load();
+    assert((old_to_do == ThreadToDo::wait) || (old_to_do == ThreadToDo::suspend));
 
     {
         const auto thread_lock = std::lock_guard(mutex);
-        to_do = step ? ThreadToDo::step : ThreadToDo::run;
+        to_do.store(step ? ThreadToDo::step : ThreadToDo::run);
     }
     something_to_do.notify_one();
 }
