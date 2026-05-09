@@ -260,6 +260,9 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox(lang["show_live_area_screen"].c_str(), &emuenv.cfg.show_live_area_screen);
         SetTooltipEx(lang["live_area_screen_description"].c_str());
         ImGui::Spacing();
+        ImGui::Checkbox("Font Scaling", &emuenv.cfg.font_scaling);
+        SetTooltipEx("Enable or disable font scaling in the GUI.\nThis option increases memory usage.");
+        ImGui::SameLine();
         ImGui::Checkbox(lang["apps_list_grid"].c_str(), &emuenv.cfg.apps_list_grid);
         SetTooltipEx(lang["apps_list_grid_description"].c_str());
         if (!emuenv.cfg.apps_list_grid) {

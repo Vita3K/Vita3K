@@ -1372,6 +1372,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 open_path("https://bit.ly/2P2rb0r");
             SetTooltipEx(lang.gui["firmware_font_package_description"].c_str());
         }
+        ImGui::SameLine();
+        ImGui::Checkbox("Font Scaling", &emuenv.cfg.font_scaling);
+        SetTooltipEx("Enable or disable font scaling in the GUI.\nThis option increases memory usage.\nRestart required for changes to take effect.");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

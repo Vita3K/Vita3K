@@ -185,7 +185,7 @@ enum ScreenshotFormat {
     code(int, "keyboard-take-screenshot-alt", 0, keyboard_take_screenshot_alt)                          \
     code(int, "keyboard-pinch-modifier-alt", 0, keyboard_pinch_modifier_alt)                            \
     code(int, "keyboard-alternate-pinch-in-alt", 0, keyboard_alternate_pinch_in_alt)                    \
-    code(int, "keyboard-alternate-pinch-out-alt", 0, keyboard_alternate_pinch_out_alt)                 \
+    code(int, "keyboard-alternate-pinch-out-alt", 0, keyboard_alternate_pinch_out_alt)                  \
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
     code(std::string, "user-lang", std::string{}, user_lang)                                            \
@@ -194,6 +194,7 @@ enum ScreenshotFormat {
     code(bool, "check-for-updates", true, check_for_updates)                                            \
     code(int, "file-loading-delay", 0, file_loading_delay)                                              \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
+    code(bool, "font-scaling", true, font_scaling)                                                     \
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(bool, "fps-hack", false, fps_hack)                                                             \

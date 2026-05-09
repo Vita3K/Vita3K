@@ -330,6 +330,7 @@ int main(int argc, char *argv[]) {
         bgm_player::init_bgm_player(emuenv.cfg.bgm_volume);
         if (!emuenv.cfg.initial_setup) {
             emuenv.cfg.system_music.emplace(false);
+            const auto current_font_scaling_state = emuenv.cfg.font_scaling;
             if (bgm_player::init_bgm(emuenv.pref_path, true))
                 bgm_player::switch_bgm_state(true);
             while (!emuenv.cfg.initial_setup) {
@@ -342,7 +343,7 @@ int main(int argc, char *argv[]) {
                 } else
                     return QuitRequested;
             }
-            if (!gui.fw_font)
+            if (!gui.fw_font || (emuenv.cfg.font_scaling != current_font_scaling_state))
                 gui::load_fonts(gui, emuenv, true);
         }
         gui::init(gui, emuenv);

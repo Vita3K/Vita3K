@@ -208,7 +208,8 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     int max_texture_size = emuenv.renderer->get_max_2d_texture_width();
     io.Fonts->TexDesiredWidth = max_texture_size;
 
-    for (int font_scale_count = std::size(FontScaleCandidates); font_scale_count > 0; font_scale_count--) {
+    const auto FONT_SCALE_COUNT = emuenv.cfg.font_scaling ? std::size(FontScaleCandidates) : 1;
+    for (int font_scale_count = FONT_SCALE_COUNT; font_scale_count > 0; font_scale_count--) {
         for (int i = 0; i < font_scale_count; i++) {
             float scale = FontScaleCandidates[i];
 
