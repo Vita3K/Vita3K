@@ -30,8 +30,7 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceSysmem);
 
-template <>
-std::string to_debug_str<SceKernelMemBlockType>(const MemState &mem, SceKernelMemBlockType type) {
+std::string to_debug_str(const MemState &mem, SceKernelMemBlockType type) {
     switch (type) {
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE";
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_RX";

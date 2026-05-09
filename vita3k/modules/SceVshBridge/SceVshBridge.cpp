@@ -21,6 +21,8 @@
 
 #include "../SceDisplay/SceDisplay.h"
 
+TRACY_MODULE_NAME(SceVshBridge);
+
 EXPORT(int, _vshAppMgrAcInstGetAcdirParam) {
     return UNIMPLEMENTED();
 }

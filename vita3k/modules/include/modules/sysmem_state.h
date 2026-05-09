@@ -22,8 +22,13 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <string>
+
+struct MemState;
 
 // Shared SysmemState definition used by SceSysmem and kubridge HLE.
+
+std::string to_debug_str(const MemState &mem, SceKernelMemBlockType type);
 
 struct KernelMemBlock : SceKernelMemBlockInfo {
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
