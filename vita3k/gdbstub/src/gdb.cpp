@@ -20,6 +20,7 @@
 #include <audio/state.h>
 #include <config/state.h>
 #include <emuenv/state.h>
+#include <util/align.h>
 #include <util/log.h>
 
 #include <gdbstub/functions.h>
@@ -787,7 +788,9 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
     const uint64_t first = content.find(',');
     const uint64_t second = content.find(',', first + 1);
     const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
-    const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
+    // GDB may set bit 0 of the address to indicate Thumb state; mask it so the
+    // breakpoint lands on the actual instruction boundary.
+    const uint32_t address = align_down(parse_hex(content.substr(first + 1, second - 1 - first)), 2);
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
     // Only Z0 (software breakpoint) is supported. Returning empty for Z1-Z4
@@ -818,7 +821,9 @@ static std::string cmd_remove_breakpoint(EmuEnvState &state, PacketCommand &comm
     const uint64_t first = content.find(',');
     const uint64_t second = content.find(',', first + 1);
     const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
-    const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
+    // Mirror cmd_add_breakpoint: strip the GDB Thumb-state bit so the lookup
+    // key matches the address used at insertion.
+    const uint32_t address = align_down(parse_hex(content.substr(first + 1, second - 1 - first)), 2);
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
     // Match cmd_add_breakpoint: only Z0 is handled.
