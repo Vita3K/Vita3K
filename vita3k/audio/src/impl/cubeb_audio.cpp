@@ -18,39 +18,57 @@
 #include "audio/impl/cubeb_audio.h"
 #include "util/log.h"
 
+#include <cstring>
+
 static long impl_cubeb_audio_callback(cubeb_stream *stream, void *user_data, const void *input, void *output, long nframes) {
     assert(user_data != nullptr);
     assert(stream != nullptr);
-    CubebAudioOutPort *port = static_cast<CubebAudioOutPort *>(user_data);
+    CubebAudioSharedState *state = static_cast<CubebAudioSharedState *>(user_data);
     uint8_t *output_buffer = static_cast<uint8_t *>(output);
 
+    memset(output_buffer, 0, nframes * state->spec.channels * sizeof(uint16_t));
+
+    state->active_callbacks.fetch_add(1, std::memory_order_acq_rel);
+    const auto finish_callback = [&]() {
+        if (state->active_callbacks.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+            std::lock_guard<std::mutex> lock(state->shutdown_mutex);
+            state->shutdown_cond_var.notify_all();
+        }
+    };
+
+    if (state->shutting_down.load(std::memory_order_acquire)) {
+        finish_callback();
+        return nframes;
+    }
+
     int bytes_given = 0;
-    const int bytes_to_give = nframes * port->spec.channels * sizeof(uint16_t);
+    const int bytes_to_give = nframes * state->spec.channels * sizeof(uint16_t);
     while (bytes_given < bytes_to_give) {
-        if (port->nb_buffers_ready == 0) {
+        if (state->nb_buffers_ready == 0) {
             // no data available, should we wait for it or return nothing?
             // return nothing for now
             break;
         }
 
-        AudioBuffer &audio_buffer = port->audio_buffers[port->next_audio_buffer];
+        AudioBuffer &audio_buffer = state->audio_buffers[state->next_audio_buffer];
         // compute the number of bytes we can copy from this buffer to the output
-        const int bytes_to_copy = std::min(bytes_to_give - bytes_given, port->len_bytes - audio_buffer.buffer_position);
+        const int bytes_to_copy = std::min(bytes_to_give - bytes_given, state->len_bytes - audio_buffer.buffer_position);
         memcpy(&output_buffer[bytes_given], &audio_buffer.buffer[audio_buffer.buffer_position], bytes_to_copy);
         audio_buffer.buffer_position += bytes_to_copy;
 
-        if (audio_buffer.buffer_position == port->len_bytes) {
+        if (audio_buffer.buffer_position == state->len_bytes) {
             // if we are done with this buffer, tell it
-            std::unique_lock<std::mutex> lock(port->mutex);
-            port->next_audio_buffer = (port->next_audio_buffer + 1) % port->audio_buffers.size();
-            port->nb_buffers_ready--;
+            std::unique_lock<std::mutex> lock(state->mutex);
+            state->next_audio_buffer = (state->next_audio_buffer + 1) % state->audio_buffers.size();
+            state->nb_buffers_ready--;
             lock.unlock();
-            port->cond_var.notify_one();
+            state->cond_var.notify_one();
         }
 
         bytes_given += bytes_to_copy;
     }
 
+    finish_callback();
     return nframes;
 }
 
@@ -59,9 +77,21 @@ static void impl_cubeb_state_callback(cubeb_stream *stm, void *user, cubeb_state
 }
 
 CubebAudioOutPort::~CubebAudioOutPort() {
+    if (callback_state) {
+        callback_state->shutting_down.store(true, std::memory_order_release);
+    }
+
     if (out_stream) {
         cubeb_stream_stop(out_stream);
         cubeb_stream_destroy(out_stream);
+        out_stream = nullptr;
+    }
+
+    if (callback_state) {
+        std::unique_lock<std::mutex> lock(callback_state->shutdown_mutex);
+        callback_state->shutdown_cond_var.wait(lock, [&]() {
+            return callback_state->active_callbacks.load(std::memory_order_acquire) == 0;
+        });
     }
 }
 
@@ -84,7 +114,8 @@ bool CubebAudioAdapter::init() {
 
 AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_sample) {
     std::shared_ptr<CubebAudioOutPort> port = std::make_shared<CubebAudioOutPort>();
-    port->spec = {
+    port->callback_state = std::make_shared<CubebAudioSharedState>();
+    port->callback_state->spec = {
         // all the ps vita samples are signed 16 bits low edian
         .format = CUBEB_SAMPLE_S16LE,
         .rate = static_cast<uint32_t>(freq),
@@ -95,21 +126,22 @@ AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_s
     };
 
     uint32_t latency;
-    cubeb_get_min_latency(cubeb_ctx, &port->spec, &latency);
+    cubeb_get_min_latency(cubeb_ctx, &port->callback_state->spec, &latency);
 
     if (cubeb_stream_init(cubeb_ctx, &port->out_stream, "Vita3K audio out", nullptr, nullptr, nullptr,
-            &port->spec, latency, impl_cubeb_audio_callback, impl_cubeb_state_callback, port.get())
+            &port->callback_state->spec, latency, impl_cubeb_audio_callback, impl_cubeb_state_callback, port->callback_state.get())
         != CUBEB_OK) {
         LOG_ERROR("Could not initialize cubeb stream");
         return nullptr;
     }
 
     port->len_bytes = nb_sample * nb_channels * sizeof(uint16_t);
+    port->callback_state->len_bytes = port->len_bytes;
 
     // allocate enough buffers to be able to satisfy a callback (+1 to make sure one buffer can be ready)
     const int nb_buffers = (latency + nb_sample - 1) / nb_sample + 1;
-    port->audio_buffers.resize(nb_buffers);
-    for (AudioBuffer &audio_buffer : port->audio_buffers) {
+    port->callback_state->audio_buffers.resize(nb_buffers);
+    for (AudioBuffer &audio_buffer : port->callback_state->audio_buffers) {
         // initialize all the buffers
         audio_buffer.buffer.resize(port->len_bytes);
         audio_buffer.buffer_position = 0;
@@ -121,24 +153,25 @@ AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_s
 
 void CubebAudioAdapter::audio_output(AudioOutPort &out_port, const void *buffer) {
     CubebAudioOutPort &port = static_cast<CubebAudioOutPort &>(out_port);
+    CubebAudioSharedState &state = *port.callback_state;
 
-    std::unique_lock<std::mutex> lock(port.mutex);
-    if (port.nb_buffers_ready == port.audio_buffers.size()) {
-        port.cond_var.wait(lock);
+    std::unique_lock<std::mutex> lock(state.mutex);
+    if (state.nb_buffers_ready == state.audio_buffers.size()) {
+        state.cond_var.wait(lock);
     }
 
-    assert(port.nb_buffers_ready < port.audio_buffers.size());
+    assert(state.nb_buffers_ready < state.audio_buffers.size());
     if (buffer) {
         // the buffer can be empty to drain the port
-        int next_buffer_pos = (port.next_audio_buffer + port.nb_buffers_ready) % port.audio_buffers.size();
+        int next_buffer_pos = (state.next_audio_buffer + state.nb_buffers_ready) % state.audio_buffers.size();
         // we could unlock the lock here and re-lock it right after, but will this be faster?
-        memcpy(port.audio_buffers[next_buffer_pos].buffer.data(), buffer, port.len_bytes);
-        port.audio_buffers[next_buffer_pos].buffer_position = 0;
-        port.nb_buffers_ready++;
+        memcpy(state.audio_buffers[next_buffer_pos].buffer.data(), buffer, port.len_bytes);
+        state.audio_buffers[next_buffer_pos].buffer_position = 0;
+        state.nb_buffers_ready++;
     }
 
     lock.unlock();
-    port.cond_var.notify_one();
+    state.cond_var.notify_one();
 }
 
 void CubebAudioAdapter::set_volume(AudioOutPort &out_port, float volume) {

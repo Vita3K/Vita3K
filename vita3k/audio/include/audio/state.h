@@ -46,6 +46,15 @@ struct AudioOutPort {
     int len = 0;
     int freq = 0;
     int mode = 0;
+
+    struct TidConfig {
+        int len = 0;
+        int freq = 0;
+        int mode = 0;
+    };
+
+    // Per-thread output configuration profile used for silent mismatch filtering.
+    std::map<SceUID, TidConfig> tid_configs;
 };
 
 typedef std::shared_ptr<AudioOutPort> AudioOutPortPtr;
