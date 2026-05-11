@@ -121,6 +121,7 @@ struct ThreadState {
 
 private:
     void push_arguments(const std::vector<uint32_t> &args);
+    void dispatch_abort(CPUState &cpu);
 
     KernelState &kernel;
 
