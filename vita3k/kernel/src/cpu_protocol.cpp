@@ -27,29 +27,6 @@ CPUProtocol::CPUProtocol(KernelState &kernel, MemState &mem, const CallImportFun
 }
 
 void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, ThreadState &thread) {
-    // Handle trampoline
-    // 1. Handle trampoline jumper
-    // to save the space we use interrupt to implement jumper
-    // as thumb instructions require total three instructions to jump to any pc without limitations
-    if (svc == TRAMPOLINE_JUMPER_SVC) {
-        // find thumb16 trampoline
-        Trampoline *tr = kernel->debugger.get_trampoline(pc - 2);
-        // find thumb32 or arm trampoline
-        if (!tr)
-            tr = kernel->debugger.get_trampoline(pc - 4);
-        write_pc(cpu, tr->trampoline_addr);
-        return;
-    }
-
-    // 2. Call trampoline callback
-    // this interrupt is made inside trampoline body
-    if (svc == TRAMPOLINE_HANDLER_SVC) {
-        Trampoline *tr = *Ptr<Trampoline *>(pc).get(*mem);
-        tr->callback(cpu, *mem, tr->lr);
-        return;
-    }
-
-    // This is usual service call
     uint32_t nid = *Ptr<uint32_t>(pc + 4).get(*mem);
     // TODO: just supply ThreadStatePtr to call_import
     // the only benefit of using thread_id instead--namely less locking-- has been gone for long
