@@ -87,7 +87,7 @@ bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cp
     corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
     start_tick = rtc_get_ticks(rtc_base_ticks());
     base_tick = { rtc_base_ticks() };
-    cpu_protocol = std::make_unique<CPUProtocol>(*this, mem, call_import);
+    this->call_import = call_import;
     this->cpu_opt = cpu_opt;
 
     return true;

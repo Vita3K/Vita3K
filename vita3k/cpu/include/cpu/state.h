@@ -30,7 +30,6 @@ struct CPUState {
 
     SceUID thread_id = 0;
     MemState *mem = nullptr;
-    CPUProtocolBase *protocol = nullptr;
     DisasmState disasm;
 
     Block halt_instruction;

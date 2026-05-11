@@ -17,8 +17,8 @@
 
 #pragma once
 
+#include <cpu/common.h>
 #include <kernel/callback.h>
-#include <kernel/cpu_protocol.h>
 #include <kernel/debugger.h>
 #include <kernel/object_store.h>
 #include <kernel/sync_primitives.h>
@@ -59,7 +59,7 @@ typedef std::map<SceUID, CallbackPtr> CallbackPtrs;
 typedef unordered_map_fast<uint32_t, Address> ExportNids;
 
 typedef std::map<Address, uint32_t> NotFoundVars;
-typedef std::unique_ptr<CPUProtocol> CPUProtocolPtr;
+typedef std::function<void(CPUState &cpu, uint32_t nid, SceUID thread_id)> CallImportFunc;
 
 struct CodecEngineBlock {
     uint32_t size;
@@ -134,7 +134,7 @@ struct KernelState {
 
     bool cpu_opt;
     CorenumAllocator corenum_allocator;
-    CPUProtocolPtr cpu_protocol;
+    CallImportFunc call_import;
 
     ObjectStore obj_store;
 

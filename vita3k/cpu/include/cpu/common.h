@@ -31,21 +31,11 @@
 struct CPUState;
 struct CPUContext;
 struct CPUInterface;
-struct ThreadState;
 
-typedef std::function<void(CPUState &cpu, uint32_t, Address)> CallSVC;
-
-typedef std::function<Address(Address)> GetWatchMemoryAddr;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::unique_ptr<CPUInterface> CPUInterfacePtr;
 
 inline constexpr std::size_t MAX_CORE_COUNT = 150;
-
-struct CPUProtocolBase {
-    virtual void call_svc(CPUState &cpu, uint32_t svc, Address pc, ThreadState &thread) = 0;
-    virtual Address get_watch_memory_addr(Address addr) = 0;
-    virtual ~CPUProtocolBase() = default;
-};
 
 struct CPUContext {
     CPUContext() = default;
