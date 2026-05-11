@@ -17,53 +17,161 @@
 
 #include "renderer/vulkan/screen_renderer.h"
 
-#include <SDL3/SDL_vulkan.h>
-
 #include "renderer/vulkan/state.h"
 #include "util/log.h"
 #include "vkutil/vkutil.h"
 
+#include <cstdint>
+#include <exception>
+
+#ifdef _WIN32
+#include <vulkan/vulkan_win32.h>
+#elif defined(__APPLE__)
+#include <vulkan/vulkan_metal.h>
+extern "C" void *get_metal_layer_from_view(void *nsview);
+#elif defined(__linux__) && !defined(__ANDROID__)
+#if defined(HAVE_X11)
+#include <vulkan/vulkan_xlib.h>
+#if defined(VK_USE_PLATFORM_XCB_KHR)
+#include <vulkan/vulkan_xcb.h>
+#endif
+#endif
+#if defined(HAVE_WAYLAND)
+#include <vulkan/vulkan_wayland.h>
+#endif
+#endif
+
 #ifdef __ANDROID__
-#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 #include <jni.h>
 
-static bool has_surface = false;
+static std::atomic<bool> has_surface{ false };
 
 extern "C" JNIEXPORT void JNICALL
-Java_org_vita3k_emulator_EmuSurface_setSurfaceStatus(JNIEnv *env, jobject thiz, bool surface_present) {
-    has_surface = surface_present;
+Java_org_vita3k_emulator_EmuSurface_setSurfaceStatus(JNIEnv *, jobject, bool surface_present) {
+    has_surface.store(surface_present, std::memory_order_release);
 }
-#else
-static constexpr bool has_surface = true;
 #endif
 
 namespace renderer::vulkan {
+
+#ifdef __ANDROID__
+bool has_android_surface() {
+    return has_surface.load(std::memory_order_acquire);
+}
+#endif
 
 ScreenRenderer::ScreenRenderer(VKState &state)
     : state(state) {
 }
 
-bool ScreenRenderer::create(SDL_Window *window) {
+bool ScreenRenderer::create() {
+#ifdef _WIN32
     if (this->surface) {
         state.instance.destroySurfaceKHR(this->surface);
         this->surface = nullptr;
     }
-
-    VkSurfaceKHR surface = VK_NULL_HANDLE;
-    bool surface_error = SDL_Vulkan_CreateSurface(window, state.instance, nullptr, &surface);
-    if (!surface_error) {
-        const char *error = SDL_GetError();
-        LOG_ERROR("Failed to create vulkan surface. SDL Error: {}.", error);
+    void *native_handle = state.window_callbacks.get_native_handle();
+    if (!native_handle) {
+        LOG_ERROR("Failed to get native window handle from Qt window");
         return false;
     }
-    this->window = window;
-    this->surface = vk::SurfaceKHR(surface);
+    vk::Win32SurfaceCreateInfoKHR create_info{};
+    create_info.hinstance = GetModuleHandle(nullptr);
+    create_info.hwnd = reinterpret_cast<HWND>(native_handle);
+    this->surface = state.instance.createWin32SurfaceKHR(create_info);
+#elif defined(__APPLE__)
+    if (this->surface) {
+        state.instance.destroySurfaceKHR(this->surface);
+        this->surface = nullptr;
+    }
+    {
+        void *native_handle = state.window_callbacks.get_native_handle();
+        if (!native_handle) {
+            LOG_ERROR("Failed to get NSView from Qt window");
+            return false;
+        }
+
+        void *metal_layer = get_metal_layer_from_view(native_handle);
+        if (!metal_layer) {
+            LOG_ERROR("Failed to get CAMetalLayer from NSView");
+            return false;
+        }
+        vk::MetalSurfaceCreateInfoEXT create_info{};
+        create_info.pLayer = static_cast<const CAMetalLayer *>(metal_layer);
+        this->surface = state.instance.createMetalSurfaceEXT(create_info);
+    }
+#elif defined(__ANDROID__)
+    {
+        auto *window = static_cast<SDL_Window *>(state.window_callbacks.get_native_handle());
+        if (!window) {
+            LOG_WARN("Android SDL window is not ready yet; deferring Vulkan surface recreation");
+            return false;
+        }
+
+        if (this->surface) {
+            SDL_Vulkan_DestroySurface(state.instance, this->surface, nullptr);
+            this->surface = nullptr;
+        }
+
+        VkSurfaceKHR surface_handle = VK_NULL_HANDLE;
+        if (!SDL_Vulkan_CreateSurface(window, state.instance, nullptr, &surface_handle)) {
+            LOG_WARN("SDL_Vulkan_CreateSurface failed: {}", SDL_GetError());
+            return false;
+        }
+
+        this->surface = surface_handle;
+    }
+#else
+    if (this->surface) {
+        state.instance.destroySurfaceKHR(this->surface);
+        this->surface = nullptr;
+    }
+    switch (state.window_callbacks.display_protocol) {
+#if defined(HAVE_X11)
+    case renderer::DisplayProtocol::X11: {
+        vk::XlibSurfaceCreateInfoKHR create_info{};
+        create_info.dpy = static_cast<Display *>(state.window_callbacks.native_display);
+        create_info.window = static_cast<Window>(reinterpret_cast<uintptr_t>(state.window_callbacks.get_native_handle()));
+        this->surface = state.instance.createXlibSurfaceKHR(create_info);
+        break;
+    }
+#if defined(VK_USE_PLATFORM_XCB_KHR)
+    case renderer::DisplayProtocol::Xcb: {
+        vk::XcbSurfaceCreateInfoKHR create_info{};
+        create_info.connection = static_cast<xcb_connection_t *>(state.window_callbacks.native_connection);
+        create_info.window = static_cast<xcb_window_t>(reinterpret_cast<uintptr_t>(state.window_callbacks.get_native_handle()));
+        this->surface = state.instance.createXcbSurfaceKHR(create_info);
+        break;
+    }
+#endif
+#endif
+#if defined(HAVE_WAYLAND)
+    case renderer::DisplayProtocol::Wayland: {
+        vk::WaylandSurfaceCreateInfoKHR create_info{};
+        create_info.display = static_cast<struct wl_display *>(state.window_callbacks.native_display);
+        create_info.surface = static_cast<struct wl_surface *>(state.window_callbacks.get_native_handle());
+        this->surface = state.instance.createWaylandSurfaceKHR(create_info);
+        break;
+    }
+#endif
+    default:
+        LOG_ERROR("Unsupported display protocol on Linux");
+        return false;
+    }
+#endif
+
+    if (!this->surface) {
+        LOG_ERROR("Failed to create Vulkan surface from native window handle");
+        return false;
+    }
 
     return true;
 }
 
 bool ScreenRenderer::setup() {
     const auto surface_formats = state.physical_device.getSurfaceFormatsKHR(surface);
+
     bool surface_format_found = false;
 
     // check for linear filtering on depth support
@@ -100,9 +208,9 @@ bool ScreenRenderer::setup() {
 
     // preferred order : mailbox > fifo_relaxed > fifo > whatever
     // the only drawback for mailbox is that it draws more power, so maybe on a portable device use something else
-    const auto present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
     // this one should always be available
     present_mode = vk::PresentModeKHR::eImmediate;
+    const auto present_modes = state.physical_device.getSurfacePresentModesKHR(surface);
     for (const auto &mode : present_modes) {
         if (mode == vk::PresentModeKHR::eMailbox) {
             present_mode = mode;
@@ -135,16 +243,14 @@ bool ScreenRenderer::setup() {
 }
 
 void ScreenRenderer::create_swapchain() {
-    // refresh the capabilities
     surface_capabilities = state.physical_device.getSurfaceCapabilitiesKHR(surface);
 
     if (surface_capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         extent = surface_capabilities.currentExtent;
     } else {
-        int width, height;
-        SDL_GetWindowSizeInPixels(window, &width, &height);
-        extent.width = std::clamp<uint32_t>(width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
-        extent.height = std::clamp<uint32_t>(height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
+        const renderer::WindowSize size = state.window_callbacks.get_size();
+        extent.width = std::clamp<uint32_t>(static_cast<uint32_t>(size.width), surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
+        extent.height = std::clamp<uint32_t>(static_cast<uint32_t>(size.height), surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
     }
 
     if (extent.width == 0 || extent.height == 0)
@@ -251,15 +357,38 @@ void ScreenRenderer::destroy_swapchain() {
 
 void ScreenRenderer::cleanup() {
     state.device.waitIdle();
+
+    filter.reset();
+
+    for (auto &img : vita_surface)
+        img.destroy();
+    vita_surface.clear();
+
+    if (vita_surface_staging) {
+        state.allocator.destroyBuffer(vita_surface_staging, vita_surface_staging_alloc);
+        vita_surface_staging = nullptr;
+    }
+
     for (vk::Framebuffer fb : swapchain_framebuffers)
         state.device.destroy(fb);
+    swapchain_framebuffers.clear();
 
     state.device.destroy(default_render_pass);
+    default_render_pass = nullptr;
     state.device.destroy(post_filter_render_pass);
+    post_filter_render_pass = nullptr;
+
+#ifdef __ANDROID__
+    state.device.destroy(stock_adreno_pass);
+    stock_adreno_pass = nullptr;
+#endif
 
     for (vk::ImageView view : swapchain_views)
         state.device.destroy(view);
+    swapchain_views.clear();
+
     state.device.destroy(swapchain);
+    swapchain = nullptr;
 
     for (uint32_t i = 0; i <= swapchain_size; i++) {
         if (i != swapchain_size)
@@ -268,17 +397,31 @@ void ScreenRenderer::cleanup() {
         state.device.destroy(image_acquired_semaphores[i]);
         state.device.destroy(image_ready_semaphores[i]);
     }
+    fences.clear();
+    image_acquired_semaphores.clear();
+    image_ready_semaphores.clear();
 
+    command_buffers.clear();
+
+#ifdef __ANDROID__
+    SDL_Vulkan_DestroySurface(state.instance, surface, nullptr);
+#else
     state.instance.destroy(surface);
+#endif
+    surface = nullptr;
 }
 
 static constexpr uint64_t next_image_timeout = std::numeric_limits<uint64_t>::max();
 
-bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
-    if (!has_surface) {
+bool ScreenRenderer::acquire_swapchain_image() {
+#ifdef __ANDROID__
+    if (!state.window_callbacks.has_surface()) {
+        need_rebuild = true;
+        current_cmd_buffer = nullptr;
         swapchain_image_idx = 0xDEADBEAF;
         return false;
     }
+#endif
 
     vk::Result acquire_result = vk::Result::eErrorOutOfDateKHR;
 
@@ -286,35 +429,33 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
     if (current_frame == swapchain_size + 1)
         current_frame = 0;
 
-    if (!surface_matches_window_size()) {
-        auto rebuilt = rebuild_swapchain_if_visible();
-        if (!rebuilt)
-            return false;
+    if (!ensure_swapchain()) {
+        current_cmd_buffer = nullptr;
+        swapchain_image_idx = 0xDEADBEAF;
+        return false;
     }
 
     if (swapchain)
         acquire_result = state.device.acquireNextImageKHR(swapchain,
             next_image_timeout, image_acquired_semaphores[current_frame], vk::Fence(), &swapchain_image_idx);
 
-    if (acquire_result != vk::Result::eSuccess) {
+    const bool has_acquired_image = acquire_result == vk::Result::eSuccess || acquire_result == vk::Result::eSuboptimalKHR;
+    if (!has_acquired_image) {
         if (acquire_result == vk::Result::eErrorOutOfDateKHR
-            || acquire_result == vk::Result::eSuboptimalKHR
             || acquire_result == vk::Result::eErrorSurfaceLostKHR) {
-            if (acquire_result == vk::Result::eErrorSurfaceLostKHR) {
-                create(this->window);
-            }
-
-            auto rebuilt = rebuild_swapchain_if_visible();
-            if (!rebuilt)
-                return false;
+            need_rebuild = true;
+            need_surface_recreate = acquire_result == vk::Result::eErrorSurfaceLostKHR;
         } else {
             LOG_WARN("Failed to get next image. Error: {}", vk::to_string(acquire_result));
         }
 
-        // don't set it to ~0 so that imgui can differentiate when we are in game selection and when acquiring the image failed
+        current_cmd_buffer = nullptr;
         swapchain_image_idx = 0xDEADBEAF;
         return false;
     }
+
+    if (acquire_result == vk::Result::eSuboptimalKHR)
+        need_rebuild = !surface_matches_window_size();
 
     // wait for the previous frame using this image to finish
     auto result = state.device.waitForFences(fences[swapchain_image_idx], VK_TRUE, next_image_timeout);
@@ -336,22 +477,22 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
         current_cmd_buffer.begin(begin_info);
     }
 
-    if (start_render_pass) {
-        vk::RenderPassBeginInfo pass_info{
-            .renderPass = default_render_pass,
-            .framebuffer = swapchain_framebuffers[swapchain_image_idx],
-            .renderArea = {
-                .offset = { 0, 0 },
-                .extent = extent }
-        };
-        vk::ClearValue clear_color{
-            .color = { std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f } }
-        };
-        pass_info.setClearValues(clear_color);
-        current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
-    }
-
     return true;
+}
+
+void ScreenRenderer::begin_default_render_pass() {
+    vk::RenderPassBeginInfo pass_info{
+        .renderPass = default_render_pass,
+        .framebuffer = swapchain_framebuffers[swapchain_image_idx],
+        .renderArea = {
+            .offset = { 0, 0 },
+            .extent = extent }
+    };
+    vk::ClearValue clear_color{
+        .color = { std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f } }
+    };
+    pass_info.setClearValues(clear_color);
+    current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
 }
 
 void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, const Viewport &viewport) {
@@ -420,24 +561,15 @@ void ScreenRenderer::swap_window() {
 
     auto result = state.general_queue.presentKHR(&present_info);
     if (result == vk::Result::eSuboptimalKHR) {
-        int width, height;
-        SDL_GetWindowSizeInPixels(window, &width, &height);
-
-        if (width != extent.width || height != extent.height) {
-            state.device.waitIdle();
-            destroy_swapchain();
-            // don't render anything when the window is minimized
-            if (width == 0 || height == 0)
-                return;
-
-            create_swapchain();
-            need_rebuild = true;
-        }
+        need_rebuild = !surface_matches_window_size();
     } else if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR) {
-        rebuild_swapchain_if_visible();
+        need_rebuild = true;
+        need_surface_recreate = result == vk::Result::eErrorSurfaceLostKHR;
     } else if (result != vk::Result::eSuccess) {
         LOG_ERROR("Could not present KHR.");
         assert(false);
+        swapchain_image_idx = ~0;
+        current_cmd_buffer = nullptr;
         return;
     }
 
@@ -447,7 +579,6 @@ void ScreenRenderer::swap_window() {
 
 void ScreenRenderer::set_filter(const std::string_view &filter) {
     if (this->filter && filter == this->filter->get_name())
-        // we are already using this filter
         return;
 
     this->filter.reset();
@@ -562,30 +693,46 @@ void ScreenRenderer::create_surface_image() {
     std::tie(vita_surface_staging, vita_surface_staging_alloc) = state.allocator.createBuffer(buffer_info, vkutil::vma_mapped_alloc, vita_surface_staging_info);
 }
 
-bool ScreenRenderer::rebuild_swapchain_if_visible() {
-    state.device.waitIdle();
-    destroy_swapchain();
-    int width, height;
-    SDL_GetWindowSizeInPixels(window, &width, &height);
-    // don't render anything when the window is minimized
-    if (width == 0 || height == 0)
-        return false;
+bool ScreenRenderer::ensure_swapchain() {
+    if (!need_rebuild && !need_surface_recreate && swapchain && surface_matches_window_size())
+        return true;
 
-    create_swapchain();
-    if (swapchain)
+    if (!rebuild_swapchain_if_visible()) {
         need_rebuild = true;
+        return false;
+    }
 
+    need_rebuild = false;
+    need_surface_recreate = false;
     return true;
 }
 
+bool ScreenRenderer::rebuild_swapchain_if_visible() {
+#ifdef __ANDROID__
+    if (!state.window_callbacks.has_surface())
+        return false;
+#endif
+    state.device.waitIdle();
+    destroy_swapchain();
+
+#ifdef __ANDROID__
+    if (!create())
+        return false;
+#else
+    if (need_surface_recreate && !create())
+        return false;
+#endif
+
+    create_swapchain();
+    return static_cast<bool>(swapchain);
+}
+
 bool ScreenRenderer::surface_matches_window_size() {
-    int width, height;
-    SDL_GetWindowSizeInPixels(window, &width, &height);
-    // if we're minimized, assume the current size is OK
-    if (width == 0 || height == 0)
+    const renderer::WindowSize size = state.window_callbacks.get_size();
+    if (size.width == 0 || size.height == 0)
         return true;
 
-    return extent.width == width && extent.height == height;
+    return extent.width == static_cast<uint32_t>(size.width) && extent.height == static_cast<uint32_t>(size.height);
 }
 
 } // namespace renderer::vulkan

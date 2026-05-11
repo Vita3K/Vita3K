@@ -141,6 +141,18 @@ struct SceImePreeditGeometry {
     SceUInt32 height;
 };
 
+enum ImeCapsLevel {
+    IME_CAPS_NONE = 0,
+    IME_CAPS_SHIFT = 1,
+    IME_CAPS_LOCK = 2
+};
+
+enum ImeRow {
+    IME_ROW_FIRST = 1,
+    IME_ROW_SECOND = 2,
+    IME_ROW_THIRD = 3
+};
+
 typedef void (*SceImeEventHandler)(void *arg, const SceImeEvent *e);
 
 typedef SceInt32 (*SceImeTextFilter)(

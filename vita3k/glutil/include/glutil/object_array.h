@@ -64,6 +64,14 @@ public:
         return names.size();
     }
 
+    void cleanup() {
+        if (deleter) {
+            deleter(static_cast<GLsizei>(names.size()), &names[0]);
+            names.fill(0);
+            deleter = nullptr;
+        }
+    }
+
 private:
     typedef std::array<GLuint, Size> Names;
 

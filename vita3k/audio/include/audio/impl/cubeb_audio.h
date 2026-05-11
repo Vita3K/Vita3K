@@ -56,4 +56,5 @@ public:
     void audio_output(AudioOutPort &out_port, const void *buffer) override;
     void set_volume(AudioOutPort &out_port, float volume) override;
     void switch_state(const bool pause) override;
+    void wake_all_ports() override;
 };

@@ -31,6 +31,7 @@
 #include <util/log.h>
 
 #include <SDL3/SDL_mutex.h>
+#include <SDL3/SDL_thread.h>
 
 int CorenumAllocator::new_corenum() {
     const std::lock_guard<std::mutex> guard(lock);
@@ -143,20 +144,42 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
 }
 
 ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option) {
+    if (shutting_down.load(std::memory_order_relaxed)) {
+        return nullptr;
+    }
+
     ThreadStatePtr thread = std::make_shared<ThreadState>(get_next_uid(), *this, mem);
     if (thread->init(name, entry_point, init_priority, affinity_mask, stack_size, option) < 0)
         return nullptr;
-    const auto lock = std::lock_guard(mutex);
-    threads.emplace(thread->id, thread);
+
+    const auto release_corenum = [&]() {
+        corenum_allocator.free_corenum(get_processor_id(*thread->cpu));
+    };
+
+    const std::lock_guard<std::mutex> lifecycle_lock(thread_lifecycle_mutex);
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        if (shutting_down.load(std::memory_order_acquire)) {
+            release_corenum();
+            return nullptr;
+        }
+        threads.emplace(thread->id, thread);
+    }
 
     ThreadParams params;
     params.kernel = this;
     params.thid = thread->id;
 
     params.host_may_destroy_params = SDL_CreateSemaphore(0);
-    SDL_DetachThread(SDL_CreateThread(&thread_function, thread->name.c_str(), &params));
+    SDL_Thread *sdl_thread = SDL_CreateThread(&thread_function, thread->name.c_str(), &params);
     SDL_WaitSemaphore(params.host_may_destroy_params);
     SDL_DestroySemaphore(params.host_may_destroy_params);
+
+    {
+        const std::lock_guard<std::mutex> ht_lock(host_threads_mutex);
+        // TODO: lazy cleanup i forgor
+        host_threads.emplace(thread->id, sdl_thread);
+    }
     return thread;
 }
 
@@ -172,11 +195,55 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
     return address;
 }
 
-void KernelState::exit_delete_all_threads() {
-    const std::lock_guard<std::mutex> lock(mutex);
-    for (auto &[_, thread] : threads)
-        // Skip end callbacks; running guest code can access torn-down state
-        thread->exit_delete(false);
+void KernelState::exit_delete_all_threads_and_wait() {
+    {
+        const std::lock_guard<std::mutex> lifecycle_lock(thread_lifecycle_mutex);
+        shutting_down.store(true, std::memory_order_release);
+    }
+
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        for (auto &[_, timer] : timers) {
+            timer->condvar.notify_all();
+        }
+    }
+
+    shutdown_condvar.notify_all();
+
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        for (auto &[_, thread] : threads)
+            thread->exit_delete(false);
+    }
+
+    std::map<SceUID, SDL_Thread *> threads_to_join;
+    SDL_Thread *self_thread = nullptr;
+    SceUID self_thread_id = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
+    const SDL_ThreadID current_thread_id = SDL_GetCurrentThreadID();
+    {
+        const std::lock_guard<std::mutex> lock(host_threads_mutex);
+        threads_to_join.swap(host_threads);
+    }
+
+    for (auto it = threads_to_join.begin(); it != threads_to_join.end(); ++it) {
+        if (SDL_GetThreadID(it->second) != current_thread_id)
+            continue;
+
+        self_thread = it->second;
+        self_thread_id = it->first;
+        threads_to_join.erase(it);
+        break;
+    }
+
+    if (self_thread) {
+        LOG_DEBUG("Detaching current host thread to avoid self-join (guest thread {}, host thread {})", self_thread_id, current_thread_id);
+        SDL_DetachThread(self_thread);
+    }
+
+    LOG_DEBUG("Joining {} host threads", threads_to_join.size());
+    for (auto &[id, sdl_thread] : threads_to_join) {
+        SDL_WaitThread(sdl_thread, nullptr);
+    }
 }
 
 void KernelState::pause_threads() {
@@ -194,6 +261,70 @@ void KernelState::resume_threads() {
         if (paused_threads_status[thread->id] == ThreadStatus::run)
             thread->resume();
     }
+    paused_threads_status.clear();
+}
+
+void KernelState::deinit(MemState &mem) {
+    {
+        const std::lock_guard<std::mutex> lock(host_threads_mutex);
+        assert(host_threads.empty());
+    }
+    threads.clear();
+
+    simple_events.clear();
+    timers.clear();
+    semaphores.clear();
+    condvars.clear();
+    lwcondvars.clear();
+    mutexes.clear();
+    lwmutexes.clear();
+    rwlocks.clear();
+    eventflags.clear();
+    msgpipes.clear();
+    callbacks.clear();
+
+    loaded_modules.clear();
+    loaded_sysmodules.clear();
+    loaded_internal_sysmodules.clear();
+
+    {
+        std::lock_guard<std::mutex> lock(export_nids_mutex);
+        export_nids.clear();
+        func_binding_infos.clear();
+        var_binding_infos.clear();
+        module_uid_by_nid.clear();
+    }
+
+    corenum_allocator.alloc.reset();
+    corenum_allocator.alloc.set_maximum(0);
+
+    obj_store.clear();
+
+    tls_address = Ptr<const void>(0);
+    tls_psize = 0;
+    tls_msize = 0;
+
+    thread_event_start = Ptr<const void>(0);
+    thread_event_start_arg = 0;
+    thread_event_end = Ptr<const void>(0);
+    thread_event_end_arg = 0;
+
+    codec_blocks.clear();
+
+    halt_instruction = nullptr;
+    halt_instruction_pc = 0;
+
+    process_param = nullptr;
+    client_vtable = Ptr<void>(0);
+    shellsvc_client = Ptr<Address>(0);
+    libc_dso_handle_main = Ptr<void>(0);
+
+    debugger.deinit();
+
+    next_uid = 1;
+
+    shutting_down.store(false, std::memory_order_relaxed);
+
     paused_threads_status.clear();
 }
 

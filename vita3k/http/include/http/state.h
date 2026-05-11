@@ -276,4 +276,7 @@ struct HTTPState {
     std::map<SceInt, SceRequest> requests;
     std::vector<Ptr<void>> guestPointers;
     void *ssl_ctx = nullptr;
+
+    void shutdown_connections();
+    void deinit();
 };

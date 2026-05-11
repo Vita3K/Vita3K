@@ -1291,7 +1291,7 @@ EXPORT(int, sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
 EXPORT(int, sceKernelExitProcess, int res) {
     TRACY_FUNC(sceKernelExitProcess, res);
     // TODO Handle exit code?
-    emuenv.kernel.exit_delete_all_threads();
+    emuenv.kernel.exit_delete_all_threads_and_wait();
 
     return SCE_KERNEL_OK;
 }

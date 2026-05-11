@@ -25,6 +25,8 @@
 #include <limits>
 #include <map>
 #include <set>
+#include <thread>
+#include <vector>
 
 struct SceGxmProgram;
 struct SceGxmFragmentProgram;
@@ -95,6 +97,7 @@ private:
     // queue containing request sent by the main thread to the compile threads
     PipelineCompileQueue pipeline_compile_queue;
     moodycamel::ProducerToken pipeline_compile_queue_token;
+    std::vector<std::thread> worker_threads;
 
     // each pipeline compiler thread uses this function as its entrypoint
     void compiler_thread(MemState &mem);
@@ -121,6 +124,7 @@ public:
 
     PipelineCache(VKState &state);
     void init(bool support_rasterized_order_access);
+    void cleanup();
 
     void read_pipeline_cache();
     void save_pipeline_cache();

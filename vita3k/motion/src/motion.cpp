@@ -24,49 +24,15 @@
 #include <util/log.h>
 
 #include <SDL3/SDL_gamepad.h>
-#include <SDL3/SDL_sensor.h>
-
 #include <numbers>
 
-enum DeviceRotation : int32_t {
-    ROTATION_UNKNOWN = -1,
-    ROTATION_0,
-    ROTATION_90,
-    ROTATION_180,
-    ROTATION_270
-};
-
-#ifdef __ANDROID__
-
-#include <SDL3/SDL_system.h>
-
-#include <jni.h>
-
-static DeviceRotation device_native_rotation = ROTATION_UNKNOWN;
-
-static void init_device_orientation() {
-    JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
-    jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
-    jclass clazz(env->GetObjectClass(activity));
-
-    jmethodID method_id = env->GetMethodID(clazz, "getNativeDisplayRotation", "()I");
-
-    device_native_rotation = static_cast<DeviceRotation>(env->CallIntMethod(activity, method_id));
-
-    // clean up the local references.
-    env->DeleteLocalRef(activity);
-    env->DeleteLocalRef(clazz);
+void set_display_rotation(MotionState &state, int rotation) {
+    state.device_native_rotation = static_cast<DeviceRotation>(rotation);
 }
-#else
-constexpr DeviceRotation device_native_rotation = ROTATION_0;
-#endif
-
-static uint32_t device_accel_id = 0;
-static uint32_t device_gyro_id = 0;
 
 static void detect_device_motion_support(MotionState &state) {
-    device_accel_id = 0;
-    device_gyro_id = 0;
+    state.device_accel_id = 0;
+    state.device_gyro_id = 0;
 
     int num_sensors;
     auto sensors_id = SDL_GetSensors(&num_sensors);
@@ -78,26 +44,22 @@ static void detect_device_motion_support(MotionState &state) {
     for (int idx = 0; idx < num_sensors; idx++) {
         switch (SDL_GetSensorTypeForID(sensors_id[idx])) {
         case SDL_SENSOR_ACCEL:
-            device_accel_id = sensors_id[idx];
+            state.device_accel_id = sensors_id[idx];
             break;
         case SDL_SENSOR_GYRO:
-            device_gyro_id = sensors_id[idx];
+            state.device_gyro_id = sensors_id[idx];
             break;
         default:
             break;
         }
 
-        if ((device_accel_id != 0) && (device_gyro_id != 0))
+        if ((state.device_accel_id != 0) && (state.device_gyro_id != 0))
             break;
     }
 
     SDL_free(sensors_id);
 
-    state.has_device_motion_support = ((device_accel_id != 0) && (device_gyro_id != 0));
-
-#ifdef __ANDROID__
-    init_device_orientation();
-#endif
+    state.has_device_motion_support = ((state.device_accel_id != 0) && (state.device_gyro_id != 0));
 }
 
 static std::string device_rotation_to_string(DeviceRotation rotation) {
@@ -116,26 +78,29 @@ static std::string device_rotation_to_string(DeviceRotation rotation) {
 }
 
 void MotionState::init() {
+    reset_runtime();
+    has_device_motion_support = false;
+    device_accel_id = 0;
+    device_gyro_id = 0;
+}
+
+void MotionState::clear_device_motion_support() {
+    stop_sensor_sampling();
+    has_device_motion_support = false;
+    device_accel_id = 0;
+    device_gyro_id = 0;
+}
+
+void MotionState::refresh_device_motion_support() {
+    clear_device_motion_support();
     detect_device_motion_support(*this);
 
     if (has_device_motion_support)
         LOG_INFO("Device has a built-in accelerometer and gyroscope (native display rotation: {}).", device_rotation_to_string(device_native_rotation));
 }
 
-struct SDL_SensorDeleter {
-    void operator()(SDL_Sensor *s) const { SDL_CloseSensor(s); }
-};
-
-using SDL_SensorPtr = std::unique_ptr<SDL_Sensor, SDL_SensorDeleter>;
-
-static SDL_SensorPtr device_accel;
-static SDL_SensorPtr device_gyro;
-
 void MotionState::stop_sensor_sampling() {
     is_sampling = false;
-    if (!has_device_motion_support)
-        return;
-
     device_accel.reset();
     device_gyro.reset();
 }
@@ -161,10 +126,19 @@ void MotionState::start_sensor_sampling() {
         return true;
     };
 
-    if (!open_sensor(device_accel, device_accel_id, "accelerometer") || !open_sensor(device_gyro, device_gyro_id, "gyroscope")) {
-        has_device_motion_support = false;
-        stop_sensor_sampling();
-    }
+    if (!open_sensor(device_accel, device_accel_id, "accelerometer") || !open_sensor(device_gyro, device_gyro_id, "gyroscope"))
+        clear_device_motion_support();
+}
+
+void MotionState::reset_runtime() {
+    stop_sensor_sampling();
+    motion_data.ResetQuaternion();
+    motion_data.ResetRotations();
+    last_counter = 0;
+    last_gyro_timestamp = 0;
+    last_accel_timestamp = 0;
+    last_updated_gyro_timestamp = 0;
+    last_updated_accel_timestamp = 0;
 }
 
 SceFVector3 get_acceleration(const MotionState &state) {
@@ -233,9 +207,6 @@ constexpr uint64_t to_microseconds(uint64_t ns) {
     return ns / 1000;
 }
 
-static uint64_t last_updated_gyro_timestamp = 0;
-static uint64_t last_updated_accel_timestamp = 0;
-
 template <typename SensorEvent>
 static void handle_motion_event(EmuEnvState &emuenv, int32_t sensor_type, const SensorEvent &sensor) {
     if (!emuenv.motion.is_sampling)
@@ -248,7 +219,7 @@ static void handle_motion_event(EmuEnvState &emuenv, int32_t sensor_type, const 
         Util::Vec3f data = { sensor.data[0], sensor.data[1], sensor.data[2] };
         const auto from_gamepad = sensor.type == SDL_EVENT_GAMEPAD_SENSOR_UPDATE;
         if (!from_gamepad) {
-            switch (device_native_rotation) {
+            switch (emuenv.motion.device_native_rotation) {
             case ROTATION_90: // portrait -> landscape left
                 std::tie(data.x, data.y, data.z) = std::make_tuple(-data.y, data.x, data.z);
                 break;
@@ -277,11 +248,11 @@ static void handle_motion_event(EmuEnvState &emuenv, int32_t sensor_type, const 
     if (sensor_type == SDL_SENSOR_ACCEL) {
         sensor_data /= -SDL_STANDARD_GRAVITY;
         emuenv.motion.motion_data.SetAcceleration(sensor_data);
-        last_updated_accel_timestamp = sensor_timestamp;
+        emuenv.motion.last_updated_accel_timestamp = sensor_timestamp;
     } else if (sensor_type == SDL_SENSOR_GYRO) {
         sensor_data /= 2.f * std::numbers::pi_v<float>;
         emuenv.motion.motion_data.SetGyroscope(sensor_data);
-        last_updated_gyro_timestamp = sensor_timestamp;
+        emuenv.motion.last_updated_gyro_timestamp = sensor_timestamp;
     }
 }
 
@@ -300,12 +271,12 @@ void refresh_motion(MotionState &state, CtrlState &ctrl_state) {
     if (!ctrl_state.has_motion_support && !state.has_device_motion_support)
         return;
 
-    state.motion_data.UpdateOrientation(last_updated_accel_timestamp - state.last_accel_timestamp);
+    state.motion_data.UpdateOrientation(state.last_updated_accel_timestamp - state.last_accel_timestamp);
     state.motion_data.UpdateBasicOrientation();
-    state.motion_data.UpdateRotation(last_updated_gyro_timestamp - state.last_gyro_timestamp);
+    state.motion_data.UpdateRotation(state.last_updated_gyro_timestamp - state.last_gyro_timestamp);
 
-    state.last_accel_timestamp = last_updated_accel_timestamp;
-    state.last_gyro_timestamp = last_updated_gyro_timestamp;
+    state.last_accel_timestamp = state.last_updated_accel_timestamp;
+    state.last_gyro_timestamp = state.last_updated_gyro_timestamp;
 
     state.last_counter++;
 }

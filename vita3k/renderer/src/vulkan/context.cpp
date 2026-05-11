@@ -34,15 +34,25 @@ void VKContext::wait_thread_function(const MemState &mem) {
     std::vector<vk::Fence> fences;
 
     auto wait_for_fences = [&]() {
-        if (!fences.empty()) {
-            auto result = state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
-            if (result != vk::Result::eSuccess) {
-                LOG_ERROR("Could not wait for fences.");
-                assert(false);
+        while (!fences.empty()) {
+            // timeout so we can check for shutdown
+            auto result = state.device.waitForFences(fences, VK_TRUE, 100'000'000ULL);
+            if (result == vk::Result::eSuccess) {
+                // don't reset them
+                fences.clear();
                 return;
             }
-            // don't reset them
+            if (result == vk::Result::eTimeout) {
+                if (state.request_queue.is_aborted()) {
+                    fences.clear();
+                    return;
+                }
+                continue;
+            }
+            LOG_ERROR("Could not wait for fences.");
+            assert(false);
             fences.clear();
+            return;
         }
     };
 

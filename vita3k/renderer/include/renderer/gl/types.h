@@ -30,10 +30,6 @@
 #include <memory>
 #include <vector>
 
-typedef struct SDL_GLContextState *SDL_GLContext;
-
-typedef std::unique_ptr<SDL_GLContextState, std::function<void(SDL_GLContext)>> GLContextPtr;
-
 struct SceGxmProgramParameter;
 
 namespace renderer::gl {
@@ -57,6 +53,7 @@ public:
     GLObjectArray<TextureCacheSize> textures;
 
     bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id);
+    void cleanup();
     void select(size_t index, const SceGxmTexture &texture) override;
     void configure_texture(const SceGxmTexture &texture) override;
     void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) override;

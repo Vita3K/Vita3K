@@ -72,12 +72,18 @@ public:
         objs.emplace(TypeInfo::registered<T>::index, ptr);
         return true;
     }
+
     template <typename T>
     void erase() {
         auto it = objs.find(TypeInfo::registered<T>::index);
         if (it == objs.end())
             return;
         objs.erase(it);
+    }
+
+    void clear() {
+        std::lock_guard<std::mutex> lock(mutex);
+        objs.clear();
     }
 
 private:

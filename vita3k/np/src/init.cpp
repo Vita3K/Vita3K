@@ -16,7 +16,10 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <np/common.h>
+#include <np/functions.h>
 #include <np/state.h>
+
+#include <io/functions.h>
 
 bool init(NpState &state, const np::CommunicationID *comm_id) {
     state.inited = true;
@@ -29,7 +32,11 @@ bool init(NpState &state, const np::CommunicationID *comm_id) {
 }
 
 bool deinit(NpState &state) {
-    // Reserved
+    deinit(state.trophy_state);
+
+    state.cbs.clear();
+    state.state_cb_id = 0;
+    state.comm_id = {};
     state.inited = false;
     return true;
 }
@@ -40,6 +47,12 @@ bool init(NpTrophyState &state) {
 }
 
 bool deinit(NpTrophyState &state) {
+    for (auto &ctx : state.contexts) {
+        if (ctx.valid && ctx.io)
+            close_file(*ctx.io, ctx.trophy_file_stream, "np_deinit");
+    }
+    state.contexts.clear();
+    state.clear_trophy_unlock_callbacks();
     state.inited = false;
     return true;
 }

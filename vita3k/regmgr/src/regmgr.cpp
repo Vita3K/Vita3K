@@ -54,25 +54,9 @@ static std::string decryptRegistryFile(const fs::path &reg_path) {
     return decryptedData;
 }
 
-enum RegType {
-    REG_TYPE_INT,
-    REG_TYPE_STR,
-    REG_TYPE_BIN,
-};
-
-struct RegValue {
-    std::string name;
-    RegType type;
-    uint32_t size;
-    std::vector<char> init_value;
-};
-
-static std::vector<std::string> reg_category_template;
-static std::map<std::string, std::vector<RegValue>> reg_template;
-
 static void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
-    reg_category_template.clear();
-    reg_template.clear();
+    regmgr.reg_category_template.clear();
+    regmgr.reg_template.clear();
 
     std::map<int, std::string> reg_map;
 
@@ -156,12 +140,12 @@ static void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
 
                         for (int i = firstNum; i <= secondNum; i++) {
                             const std::string categoryName = fmt::format("{}{:0>2d}{}", cat_begin, i, cat_end);
-                            reg_template[categoryName].push_back({ valueName, valueType, valueSize, initValueData });
-                            vector_utils::push_if_not_exists(reg_category_template, categoryName);
+                            regmgr.reg_template[categoryName].push_back({ valueName, valueType, valueSize, initValueData });
+                            vector_utils::push_if_not_exists(regmgr.reg_category_template, categoryName);
                         }
                     } else {
-                        reg_template[category].push_back({ valueName, valueType, valueSize, initValueData });
-                        vector_utils::push_if_not_exists(reg_category_template, category);
+                        regmgr.reg_template[category].push_back({ valueName, valueType, valueSize, initValueData });
+                        vector_utils::push_if_not_exists(regmgr.reg_category_template, category);
                     }
                 }
             }
@@ -185,7 +169,7 @@ static bool load_system_dreg(RegMgrState &regmgr) {
         // Skip the space
         file.read(space.data(), spaceSize + 1);
 
-        for (const auto &cat : reg_category_template) {
+        for (const auto &cat : regmgr.reg_category_template) {
             // Read the category
             const uint32_t cat_size = static_cast<uint32_t>(cat.size());
             std::vector<char> category(cat_size);
@@ -201,7 +185,7 @@ static bool load_system_dreg(RegMgrState &regmgr) {
             space.resize(diff_cat);
             file.read(space.data(), diff_cat);
 
-            for (const auto &entry : reg_template[cat]) {
+            for (const auto &entry : regmgr.reg_template[cat]) {
                 // Read the name
                 const uint32_t name_size = static_cast<uint32_t>(entry.name.size());
                 std::vector<char> name(name_size);
@@ -246,7 +230,7 @@ static void save_system_dreg(RegMgrState &regmgr) {
         file.write(space.data(), spaceSize + 1);
 
         // Write each category
-        for (const auto &cat : reg_category_template) {
+        for (const auto &cat : regmgr.reg_category_template) {
             // Write the category
             const uint32_t cat_size = static_cast<uint32_t>(cat.size());
             std::vector<char> category(cat_size);
@@ -259,7 +243,7 @@ static void save_system_dreg(RegMgrState &regmgr) {
             file.write(space.data(), diff_cat);
 
             // Write each entry
-            for (const auto &entry : reg_template[cat]) {
+            for (const auto &entry : regmgr.reg_template[cat]) {
                 // Write the name
                 const uint32_t name_size = static_cast<uint32_t>(entry.name.size());
                 std::vector<char> name(name_size);
@@ -288,7 +272,7 @@ static void save_system_dreg(RegMgrState &regmgr) {
 
 static void init_system_dreg(RegMgrState &regmgr) {
     // Initialize the system.dreg with the default values from the template
-    for (const auto &reg : reg_template) {
+    for (const auto &reg : regmgr.reg_template) {
         for (const auto &entry : reg.second) {
             auto &value = regmgr.system_dreg[reg.first][entry.name];
             value.resize(entry.size);
@@ -299,8 +283,8 @@ static void init_system_dreg(RegMgrState &regmgr) {
     save_system_dreg(regmgr);
 }
 
-static bool reg_category_or_name_is_empty(const std::string &category, const std::string &name) {
-    return reg_template.empty() || category.empty() || name.empty();
+static bool reg_category_or_name_is_empty(const RegMgrState &regmgr, const std::string &category, const std::string &name) {
+    return regmgr.reg_template.empty() || category.empty() || name.empty();
 }
 
 static std::string fix_category(const std::string &category) {
@@ -308,14 +292,14 @@ static std::string fix_category(const std::string &category) {
 }
 
 static std::string set_default_value(RegMgrState &regmgr, const std::string &category, const std::string &name) {
-    if (reg_category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(regmgr, category, name))
         return {};
 
-    const auto &reg = std::find_if(reg_template[category].begin(), reg_template[category].end(), [&](const auto &n) {
+    const auto &reg = std::find_if(regmgr.reg_template[category].begin(), regmgr.reg_template[category].end(), [&](const auto &n) {
         return n.name == name;
     });
 
-    if (reg == reg_template[category].end()) {
+    if (reg == regmgr.reg_template[category].end()) {
         LOG_ERROR("No default value found for {}{}", category, name);
         return {};
     }
@@ -333,7 +317,7 @@ static std::string set_default_value(RegMgrState &regmgr, const std::string &cat
 }
 
 void get_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, void *buf, uint32_t bufSize) {
-    if (reg_category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(regmgr, category, name))
         return;
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
@@ -343,7 +327,7 @@ void get_bin_value(RegMgrState &regmgr, const std::string &category, const std::
 }
 
 void set_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, const void *buf, const uint32_t bufSize) {
-    if (reg_category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(regmgr, category, name))
         return;
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
@@ -355,7 +339,7 @@ void set_bin_value(RegMgrState &regmgr, const std::string &category, const std::
 }
 
 int32_t get_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name) {
-    if (reg_category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(regmgr, category, name))
         return 0;
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
@@ -366,7 +350,7 @@ int32_t get_int_value(RegMgrState &regmgr, const std::string &category, const st
 }
 
 void set_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name, const int32_t value) {
-    if (reg_category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(regmgr, category, name))
         return;
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
@@ -377,7 +361,7 @@ void set_int_value(RegMgrState &regmgr, const std::string &category, const std::
 }
 
 std::string get_str_value(RegMgrState &regmgr, const std::string &category, const std::string &name) {
-    if (reg_category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(regmgr, category, name))
         return {};
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
@@ -387,7 +371,7 @@ std::string get_str_value(RegMgrState &regmgr, const std::string &category, cons
 }
 
 void set_str_value(RegMgrState &regmgr, const std::string &category, const std::string &name, const char *value, const uint32_t bufSize) {
-    if (reg_category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(regmgr, category, name))
         return;
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);

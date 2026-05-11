@@ -1,0 +1,98 @@
+{
+  "common.cancel": {
+    "message": "Cancelar"
+  },
+  "common.yes": {
+    "message": "Sí"
+  },
+  "common.delete": {
+    "message": "Eliminar"
+  },
+  "common.please_wait": {
+    "message": "Espera un momento..."
+  },
+  "common.an_error_occurred": {
+    "message": "Ha ocurrido un error.\nCódigo del error: {}"
+  },
+  "common.could_not_load": {
+    "message": "No se ha podido cargar el archivo."
+  },
+  "common.could_not_save": {
+    "message": "No se ha podido guardar el archivo."
+  },
+  "common.file_corrupted": {
+    "message": "El archivo está dañado."
+  },
+  "common.microphone_disabled": {
+    "message": "Activa el micrófono."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Guardar"
+  },
+  "dialog.save_data.load.title": {
+    "message": "Cargar"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Guardando..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Cargando..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Guardado."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Carga completada."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Eliminación completada."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "Nuevos datos guardados"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "No hay datos guardados."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "¿Quieres guardar los datos?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "¿Quieres cargar estos datos guardados?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "¿Quieres eliminar estos datos guardados?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "¿Quieres sobrescribir estos datos guardados?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "¿Quieres cancelar el guardado?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "¿Quieres cancelar la carga?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "¿Quieres cancelar la eliminación?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Guardando...\nNo apagues el sistema ni cierres la aplicación."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "No se ha podido guardar el archivo.\nNo hay suficiente espacio libre en la tarjeta de memoria. Para guardar tu progreso en la aplicación, tienes que crear al menos {} de espacio libre.\n\nPara crear espacio libre, pulsa el botón PS para poner la aplicación en pausa y borrar otras aplicaciones o contenido."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "No hay suficiente espacio libre en la tarjeta de memoria.\nPara seguir usando la aplicación, tienes que crear al menos {} de espacio libre.\n\nPulsa el botón PS para poner la aplicación en pausa y borrar otras aplicaciones o contenido."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Detalles"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Actualizado"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Preparándose para iniciar la aplicación..."
+  },
+  "overlay.trophy_earned": {
+    "message": "¡Has ganado un trofeo!"
+  }
+}

@@ -83,11 +83,22 @@ struct Config {
         bool export_textures = false;
         bool export_as_png = false;
         bool fps_hack = false;
+        bool shader_cache = true;
+        bool spirv_shader = false;
+        bool texture_cache = true;
         bool stretch_the_display_area = false;
         bool fullscreen_hd_res_pixel_perfect = false;
-        bool show_touchpad_cursor = true;
         int file_loading_delay = 0;
         bool psn_signed_in = false;
+        int sys_button = static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS);
+        int sys_lang = static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US);
+        int sys_date_format = static_cast<int>(SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY);
+        int sys_time_format = static_cast<int>(SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR);
+        std::vector<uint64_t> ime_langs = { 4 };
+        bool log_active_shaders = false;
+        bool log_uniforms = false;
+        bool color_surface_debug = false;
+        bool validation_layer = true;
     };
 
     /**

@@ -24,8 +24,18 @@
 #include <renderer/vulkan/types.h>
 
 #include <config/state.h>
+#include <display/state.h>
 #include <functional>
+#include <overlay/display_manager.h>
+#include <overlay/shader_precompile_progress.h>
 #include <util/log.h>
+
+#include <memory>
+#include <thread>
+
+#ifdef TRACY_ENABLE
+#include <tracy/Tracy.hpp>
+#endif
 
 struct FeatureState;
 
@@ -85,6 +95,7 @@ static void process_batch(renderer::State &state, const FeatureState &features, 
         { CommandOpcode::SignalSyncObject, cmd_handle_signal_sync_object },
         { CommandOpcode::WaitSyncObject, cmd_handle_wait_sync_object },
         { CommandOpcode::SignalNotification, cmd_handle_notification },
+        { CommandOpcode::SetScreenFilter, cmd_handle_set_screen_filter },
         { CommandOpcode::NewFrame, cmd_new_frame },
         { CommandOpcode::DestroyRenderTarget, cmd_handle_destroy_render_target },
         { CommandOpcode::DestroyContext, cmd_handle_destroy_context }
@@ -117,11 +128,14 @@ static void process_batch(renderer::State &state, const FeatureState &features, 
     } while (true);
 }
 
-void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config) {
-    // always display a frame every 500ms
-    auto max_time = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 500;
+void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms) {
+    auto max_time = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() + max_wait_ms;
 
     while (!state.should_display) {
+        // overlay requested an async present
+        if (state.async_flip_requested.load(std::memory_order_relaxed))
+            return;
+
         // Try to wait for a batch (about 2 or 3ms, game should be fast for this)
         auto cmd_list = state.command_buffer_queue.top(3);
 
@@ -135,6 +149,9 @@ void process_batches(renderer::State &state, const FeatureState &features, MemSt
                 return;
 
             if (!cmd_list || !wait_cmd(mem, *cmd_list)) {
+                if (state.async_flip_requested.load(std::memory_order_relaxed))
+                    return;
+
                 auto curr_time = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
                 if (curr_time >= max_time)
                     // display a frame even though the game is not diplaying anything
@@ -154,4 +171,118 @@ void reset_command_list(CommandList &command_list) {
     command_list.first = nullptr;
     command_list.last = nullptr;
 }
+
+static void render_loop(renderer::State &state, DisplayState &display, GxmState &gxm, MemState &mem, Config &config) {
+    if (state.precompile_requested) {
+        auto progress_overlay = state.overlay_manager
+            ? state.overlay_manager->create<overlay::shader_precompile_progress>()
+            : std::shared_ptr<overlay::shader_precompile_progress>();
+
+        if (progress_overlay && !state.precompile_bg_path.empty()) {
+            auto bg = std::make_unique<overlay::image_info>(state.precompile_bg_path);
+            if (bg->get_data())
+                progress_overlay->set_background_image(std::move(bg));
+        }
+
+        const int total = static_cast<int>(state.precompile_queue.size());
+        state.precompile_total = total;
+
+        for (int i = 0; i < total && !state.render_abort.load(std::memory_order_relaxed); ++i) {
+            if (!state.set_current())
+                break;
+
+            state.precompile_shader(state.precompile_queue[i]);
+            state.precompile_progress = i + 1;
+
+            if (progress_overlay) {
+                progress_overlay->set_progress(i + 1, total);
+                state.render_frame(display, gxm, mem);
+                state.swap_window();
+            }
+        }
+
+        state.precompile_queue.clear();
+
+        if (progress_overlay) {
+            if (!state.set_current()) {
+                state.done_current();
+                return;
+            }
+            progress_overlay->set_background_only();
+            state.render_frame(display, gxm, mem);
+            state.swap_window();
+        }
+
+        state.precompile_complete.store(true, std::memory_order_release);
+    }
+
+    if (!state.precompile_requested
+        && state.overlay_manager
+        && !state.precompile_bg_path.empty()) {
+        auto loading = state.overlay_manager->create<overlay::shader_precompile_progress>();
+        if (loading) {
+            if (!state.set_current()) {
+                state.done_current();
+                return;
+            }
+            auto bg = std::make_unique<overlay::image_info>(state.precompile_bg_path);
+            if (bg->get_data())
+                loading->set_background_image(std::move(bg));
+            loading->set_background_only();
+            state.render_frame(display, gxm, mem);
+            state.swap_window();
+        }
+    }
+    while (!state.render_abort.load(std::memory_order_relaxed)) {
+#ifdef TRACY_ENABLE
+        ZoneScopedN("Game rendering");
+#endif
+        if (!state.set_current())
+            break;
+
+        process_batches(state, state.features, mem, config, 500);
+
+        if (state.render_abort.load(std::memory_order_relaxed))
+            break;
+
+        if (state.overlay_manager) {
+            auto precompile = state.overlay_manager->get<overlay::shader_precompile_progress>();
+            if (precompile) {
+                DisplayFrameInfo peek;
+                {
+                    std::lock_guard<std::mutex> guard(display.display_info_mutex);
+                    peek = display.next_rendered_frame;
+                }
+                if (peek.base) {
+                    state.overlay_manager->remove<overlay::shader_precompile_progress>();
+                }
+            }
+        }
+
+        state.render_frame(display, gxm, mem);
+        state.swap_window();
+        state.async_flip_requested.store(false, std::memory_order_relaxed);
+
+#ifdef TRACY_ENABLE
+        FrameMark;
+#endif
+    }
+
+    state.done_current();
+}
+
+void start_render_thread(State &state, DisplayState &display, GxmState &gxm, MemState &mem, Config &config) {
+    state.render_abort = false;
+    state.render_thread = std::make_unique<std::thread>(render_loop, std::ref(state), std::ref(display), std::ref(gxm), std::ref(mem), std::ref(config));
+}
+
+void stop_render_thread(State &state) {
+    state.render_abort = true;
+    state.command_buffer_queue.abort();
+    if (state.render_thread && state.render_thread->joinable())
+        state.render_thread->join();
+    state.render_thread.reset();
+    state.command_buffer_queue.reset();
+}
+
 } // namespace renderer

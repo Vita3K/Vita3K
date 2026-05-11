@@ -17,15 +17,17 @@
 
 #include <module/module.h>
 
-#ifdef __ANDROID__
-#include <gui/functions.h>
-#endif
-
 #include <ime/functions.h>
 #include <ime/types.h>
 #include <kernel/state.h>
 
+#include <mutex>
+
 #include <util/lock_and_find.h>
+
+#ifdef __ANDROID__
+#include <ime/keyboard.h>
+#endif
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceIme);
@@ -43,9 +45,12 @@ EXPORT(SceInt32, sceImeClose) {
     TRACY_FUNC(sceImeClose);
     emuenv.ime.state = false;
 
+    if (emuenv.ime.param.inputTextBuffer.address())
+        free(emuenv.mem, emuenv.ime.param.inputTextBuffer.address());
+    emuenv.ime.param.inputTextBuffer = Ptr<SceWChar16>();
+
 #ifdef __ANDROID__
-    if (emuenv.cfg.enable_gamepad_overlay)
-        gui::set_controller_overlay_state(gui::get_overlay_display_mask(emuenv.cfg));
+    ime::set_keyboard_active(false);
 #endif
 
     return 0;
@@ -76,8 +81,6 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
     default: break;
     }
 
-    gui::init_ime_lang(emuenv.ime, static_cast<SceImeLanguage>(emuenv.cfg.current_ime_lang));
-
     emuenv.ime.edit_text.str = emuenv.ime.param.inputTextBuffer;
     emuenv.ime.param.inputTextBuffer = Ptr<SceWChar16>(alloc(emuenv.mem, SCE_IME_MAX_PREEDIT_LENGTH + emuenv.ime.param.maxTextLength + 1, "ime_str"));
     emuenv.ime.str = emuenv.ime.param.initialText ? reinterpret_cast<char16_t *>(emuenv.ime.param.initialText.get(emuenv.mem)) : u"";
@@ -90,7 +93,7 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
     emuenv.ime.state = true;
 
 #ifdef __ANDROID__
-    gui::set_controller_overlay_state(0);
+    ime::set_keyboard_active(true);
 #endif
 
     SceImeEvent e{};
@@ -108,6 +111,7 @@ EXPORT(SceInt32, sceImeSetCaret, const SceImeCaret *caret) {
     SceImeEvent *e = event.get(emuenv.mem);
     e->param.caretIndex = caret->index;
     CALL_EXPORT(SceImeEventHandler, emuenv.ime.param.arg, e);
+    free(emuenv.mem, event.address());
 
     return 0;
 }
@@ -123,6 +127,7 @@ EXPORT(SceInt32, sceImeSetPreeditGeometry, const SceImePreeditGeometry *preedit)
     e->param.rect.x = preedit->x;
     e->param.rect.y = preedit->y;
     CALL_EXPORT(SceImeEventHandler, emuenv.ime.param.arg, e);
+    free(emuenv.mem, event.address());
 
     return 0;
 }
@@ -137,13 +142,19 @@ EXPORT(SceInt32, sceImeUpdate) {
     if (!emuenv.ime.state)
         return RET_ERROR(SCE_IME_ERROR_NOT_OPENED);
 
+    std::lock_guard lock(emuenv.ime.mutex);
+
+    if (emuenv.ime.event_id == SCE_IME_EVENT_OPEN)
+        return 0;
+
     Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
     SceImeEvent *e = event.get(emuenv.mem);
     e->id = emuenv.ime.event_id;
-    memcpy(emuenv.ime.edit_text.str.get(emuenv.mem), emuenv.ime.str.c_str(), emuenv.ime.str.length() * sizeof(SceWChar16) + 1);
+    memcpy(emuenv.ime.edit_text.str.get(emuenv.mem), emuenv.ime.str.c_str(), (emuenv.ime.str.length() + 1) * sizeof(SceWChar16));
     e->param.text = emuenv.ime.edit_text;
     e->param.caretIndex = emuenv.ime.caretIndex;
     CALL_EXPORT(SceImeEventHandler, emuenv.ime.param.arg, e);
+    free(emuenv.mem, event.address());
     emuenv.ime.event_id = SCE_IME_EVENT_OPEN;
 
     return 0;

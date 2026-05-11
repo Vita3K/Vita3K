@@ -1,0 +1,101 @@
+{
+  "common.cancel": {
+    "message": "취소"
+  },
+  "common.yes": {
+    "message": "예"
+  },
+  "common.no": {
+    "message": "아니요"
+  },
+  "common.delete": {
+    "message": "삭제"
+  },
+  "common.please_wait": {
+    "message": "잠시 기다려 주십시오..."
+  },
+  "common.an_error_occurred": {
+    "message": "에러기 발생했습니다.\n에러  코드: {}"
+  },
+  "common.could_not_load": {
+    "message": "불러오지 못했습니다."
+  },
+  "common.could_not_save": {
+    "message": "저장하지 못했습니다."
+  },
+  "common.file_corrupted": {
+    "message": "파일이 손상되어 있습니다."
+  },
+  "common.microphone_disabled": {
+    "message": "마이크를 활성화해 주십시오."
+  },
+  "dialog.save_data.save.title": {
+    "message": "저장"
+  },
+  "dialog.save_data.load.title": {
+    "message": "불러오기"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "저장중입니다..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "불러오기 중입니다..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "저장했습니다."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "불러오기를 완료했습니다."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "삭제했습니다."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "새 저장 데이터"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "저장 데이터가 없습니다."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "데이터를 저장하시겠습니까?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "이 저장 데이터를 불러오시겠습니까?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "이 저장 데이터를 삭제하시겠습니까?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "이 저장 데이터를 덮어쓰시겠습니까?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "저장을 취소하시겠습니까?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "불러오기를 취소하시겠습니까?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "삭제를 취소하시겠습니까?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "저장중입니다…\n전원을 끄거나 애플리케이션을 종료하지 마십시오."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "저장하지 못했습니다.\n메모리 카드의 빈 용량이 부족합니다. 애플리케이션의 진행 상태를 저장하려면 {} 이상의 빈 용량이 필요합니다.\n\n빈 용량을 확보하시려면 PS 버튼을 눌러 이 애플리케이션을 일시 정지하신 후 다른 애플리케이션 및 콘텐츠를 삭제해 주십시오."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "메모리 카드의 빈 용량이 부족합니다.\n애플리케이션을 계속하려면 {} 이상의 빈 용량이 필요합니다.\n\nPS 버튼을 눌러 이 애플리케이션을 일시 정지하신 후 다른 애플리케이션 및 콘텐츠를 삭제해 주십시오."
+  },
+  "dialog.save_data.info.details": {
+    "message": "상세"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "갱신일"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "애플리케이션을 시작하기 위한 준비중입니다..."
+  },
+  "overlay.trophy_earned": {
+    "message": "홈 화면에 애플리케이션이 추가되었습니다."
+  }
+}

@@ -32,11 +32,13 @@
 #include <util/types.h>
 
 #include <atomic>
+#include <condition_variable>
 #include <map>
 #include <mutex>
 #include <vector>
 
 struct ThreadState;
+struct MemState;
 
 struct SDL_Thread;
 
@@ -146,18 +148,29 @@ struct KernelState {
     uint64_t start_tick;
     SceRtcTick base_tick;
     Ptr<SceProcessParam> process_param;
+    Ptr<void> client_vtable = Ptr<void>(0);
+    Ptr<Address> shellsvc_client = Ptr<Address>(0);
+    Ptr<void> libc_dso_handle_main = Ptr<void>(0);
 
     Debugger debugger;
 
     // kubridge exception handlers (DABT=0, PABT=1, UNDEF=2)
     static constexpr int EXCEPTION_HANDLER_MAX = 3;
     std::atomic<Address> exception_handlers[EXCEPTION_HANDLER_MAX]{};
+    std::mutex thread_lifecycle_mutex;
+    std::map<SceUID, SDL_Thread *> host_threads;
+    std::mutex host_threads_mutex;
+
+    std::atomic<bool> shutting_down{ false };
+    std::mutex shutdown_mutex;
+    std::condition_variable shutdown_condvar; // for delay_thread
 
     SceUID get_next_uid() {
         return next_uid++;
     }
 
     bool init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt);
+    void deinit(MemState &mem);
     void load_process_param(MemState &mem, Ptr<uint32_t> ptr);
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point = Ptr<const void>(0));
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
@@ -165,7 +178,7 @@ struct KernelState {
     ThreadStatePtr get_thread(SceUID thread_id);
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
 
-    void exit_delete_all_threads();
+    void exit_delete_all_threads_and_wait();
     bool is_threads_paused() { return !paused_threads_status.empty(); }
     void pause_threads();
     void resume_threads();

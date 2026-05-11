@@ -17,12 +17,17 @@
 
 #pragma once
 
-#include <emuenv/state.h>
-#include <gui/state.h>
+#include <compat/state.h>
+#include <filesystem>
+#include <optional>
+#include <span>
+#include <string>
 
 namespace compat {
-
-bool load_app_compat_db(GuiState &gui, EmuEnvState &emuenv);
-bool update_app_compat_db(GuiState &gui, EmuEnvState &emuenv);
+std::optional<UpdateInfo> parse_ver_resp(const CompatState &state, const std::string &body);
+bool load_from_disk(CompatState &state, const std::filesystem::path &cache_path);
+CompatibilityState get_app_compat(const CompatState &state, const std::string &title_id);
+bool install_db(CompatState &state, const std::filesystem::path &cache_path,
+    std::span<const uint8_t> zip_data, const std::string &new_version);
 
 } // namespace compat
