@@ -52,6 +52,8 @@ struct ThreadSignal {
     void wait();
     bool send();
 
+    std::atomic<bool> *shutting_down = nullptr;
+
 private:
     std::mutex mutex;
     std::condition_variable recv_cond;

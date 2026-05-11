@@ -25,4 +25,6 @@ struct CameraState {
     Camera cameras[2];
     Camera *front() { return &cameras[SCE_CAMERA_DEVICE_FRONT]; }
     Camera *back() { return &cameras[SCE_CAMERA_DEVICE_BACK]; }
+
+    void deinit();
 };

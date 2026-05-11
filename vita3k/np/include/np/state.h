@@ -49,7 +49,18 @@ struct NpTrophyState {
     std::mutex access_mutex;
 
     std::vector<np::trophy::Context> contexts;
-    NpTrophyUnlockCallback trophy_unlock_callback;
+    std::mutex callback_mutex;
+    std::vector<NpTrophyUnlockCallback> trophy_unlock_callbacks;
+
+    void add_trophy_unlock_callback(NpTrophyUnlockCallback cb) {
+        std::lock_guard lock(callback_mutex);
+        trophy_unlock_callbacks.push_back(std::move(cb));
+    }
+
+    void clear_trophy_unlock_callbacks() {
+        std::lock_guard lock(callback_mutex);
+        trophy_unlock_callbacks.clear();
+    }
 };
 
 enum SceNpServiceState : uint32_t {

@@ -1,0 +1,25 @@
+# Build artifacts
+.gradle/
+build/
+bin/
+gen/
+out/
+.externalNativeBuild/
+.cxx/
+.kotlin/
+
+# Local configuration
+local.properties
+
+# IDE specific
+.idea/
+*.iml
+*.ipr
+*.iws
+.navigation/
+captures/
+.cache/
+
+# System files
+.DS_Store
+Thumbs.db

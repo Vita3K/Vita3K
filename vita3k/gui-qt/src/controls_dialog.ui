@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ControlsDialog</class>
+ <widget class="QDialog" name="ControlsDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1250</width>
+    <height>620</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1250</width>
+    <height>620</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Controls</string>
+  </property>
+  <property name="class" stdset="0">
+   <string>settings-window</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QListWidget" name="settingsCategory">
+     <property name="minimumSize">
+      <size>
+       <width>145</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>165</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QStackedWidget" name="settingsContainer">
+     <property name="minimumSize">
+     <size>
+      <width>1010</width>
+      <height>530</height>
+     </size>
+    </property>
+     <widget class="QWidget" name="page_keyboard"/>
+     <widget class="QWidget" name="page_hotkeys"/>
+     <widget class="QWidget" name="page_controller_1"/>
+     <widget class="QWidget" name="page_controller_2"/>
+     <widget class="QWidget" name="page_controller_3"/>
+     <widget class="QWidget" name="page_controller_4"/>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../../resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

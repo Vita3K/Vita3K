@@ -31,7 +31,7 @@
 
 void ThreadSignal::wait() {
     std::unique_lock<std::mutex> lock(mutex);
-    recv_cond.wait(lock, [&]() { return signaled; });
+    recv_cond.wait(lock, [&]() { return signaled || (shutting_down && shutting_down->load(std::memory_order_relaxed)); });
     signaled = false;
 }
 
@@ -428,7 +428,8 @@ uint32_t ThreadState::run_guest_function(Address callback_address, SceSize args,
         std::unique_lock<std::mutex> lock(mutex);
         if (status != ThreadStatus::dormant || to_do == ThreadToDo::run) {
             status_cond.wait(lock, [&]() {
-                return status == ThreadStatus::dormant && to_do != ThreadToDo::run;
+                return kernel.shutting_down.load(std::memory_order_relaxed)
+                    || (status == ThreadStatus::dormant && to_do != ThreadToDo::run);
             });
         }
     }
@@ -441,6 +442,7 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem)
     : id(id)
     , kernel(kernel)
     , mem(mem) {
+    signal.shutting_down = &kernel.shutting_down;
 }
 
 void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus> expected) {

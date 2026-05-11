@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <input/physical_key.h>
 #include <util/system.h>
 
 enum ModulesMode {
@@ -47,11 +48,85 @@ enum ScreenshotFormat {
     PNG,
 };
 
+enum UpdateStartupMode {
+    UPDATE_STARTUP_OFF,
+    UPDATE_STARTUP_PROMPT,
+    UPDATE_STARTUP_BACKGROUND,
+    UPDATE_STARTUP_AUTO,
+};
+
+using PhysicalKeyCode = input::PhysicalKeyCode;
+
 // clang-format off
 // Singular options produced in config file
 // Order is code(option_type, option_name, option_default, member_name)
 // When adding in a new macro for generation, ALL options must be stated.
-// All member names starting with "keyboard_" will be considered as key input (See controls_dialog.cpp)
+#define CONFIG_KEYBOARD(code)                                                                                                          \
+    code(PhysicalKeyCode, "keyboard-button-select", PhysicalKeyCode::ShiftRight, keyboard_button_select)                               \
+    code(PhysicalKeyCode, "keyboard-button-start", PhysicalKeyCode::Enter, keyboard_button_start)                                      \
+    code(PhysicalKeyCode, "keyboard-button-up", PhysicalKeyCode::ArrowUp, keyboard_button_up)                                          \
+    code(PhysicalKeyCode, "keyboard-button-right", PhysicalKeyCode::ArrowRight, keyboard_button_right)                                 \
+    code(PhysicalKeyCode, "keyboard-button-down", PhysicalKeyCode::ArrowDown, keyboard_button_down)                                    \
+    code(PhysicalKeyCode, "keyboard-button-left", PhysicalKeyCode::ArrowLeft, keyboard_button_left)                                    \
+    code(PhysicalKeyCode, "keyboard-button-l1", PhysicalKeyCode::KeyQ, keyboard_button_l1)                                             \
+    code(PhysicalKeyCode, "keyboard-button-r1", PhysicalKeyCode::KeyE, keyboard_button_r1)                                             \
+    code(PhysicalKeyCode, "keyboard-button-l2", PhysicalKeyCode::KeyU, keyboard_button_l2)                                             \
+    code(PhysicalKeyCode, "keyboard-button-r2", PhysicalKeyCode::KeyO, keyboard_button_r2)                                             \
+    code(PhysicalKeyCode, "keyboard-button-l3", PhysicalKeyCode::KeyF, keyboard_button_l3)                                             \
+    code(PhysicalKeyCode, "keyboard-button-r3", PhysicalKeyCode::KeyH, keyboard_button_r3)                                             \
+    code(PhysicalKeyCode, "keyboard-button-triangle", PhysicalKeyCode::KeyV, keyboard_button_triangle)                                 \
+    code(PhysicalKeyCode, "keyboard-button-circle", PhysicalKeyCode::KeyC, keyboard_button_circle)                                     \
+    code(PhysicalKeyCode, "keyboard-button-cross", PhysicalKeyCode::KeyX, keyboard_button_cross)                                       \
+    code(PhysicalKeyCode, "keyboard-button-square", PhysicalKeyCode::KeyZ, keyboard_button_square)                                     \
+    code(PhysicalKeyCode, "keyboard-leftstick-left", PhysicalKeyCode::KeyA, keyboard_leftstick_left)                                   \
+    code(PhysicalKeyCode, "keyboard-leftstick-right", PhysicalKeyCode::KeyD, keyboard_leftstick_right)                                 \
+    code(PhysicalKeyCode, "keyboard-leftstick-up", PhysicalKeyCode::KeyW, keyboard_leftstick_up)                                       \
+    code(PhysicalKeyCode, "keyboard-leftstick-down", PhysicalKeyCode::KeyS, keyboard_leftstick_down)                                   \
+    code(PhysicalKeyCode, "keyboard-rightstick-left", PhysicalKeyCode::KeyJ, keyboard_rightstick_left)                                 \
+    code(PhysicalKeyCode, "keyboard-rightstick-right", PhysicalKeyCode::KeyL, keyboard_rightstick_right)                               \
+    code(PhysicalKeyCode, "keyboard-rightstick-up", PhysicalKeyCode::KeyI, keyboard_rightstick_up)                                     \
+    code(PhysicalKeyCode, "keyboard-rightstick-down", PhysicalKeyCode::KeyK, keyboard_rightstick_down)                                 \
+    code(PhysicalKeyCode, "keyboard-button-psbutton", PhysicalKeyCode::KeyP, keyboard_button_psbutton)                                 \
+    code(PhysicalKeyCode, "keyboard-gui-fullscreen", PhysicalKeyCode::F11, keyboard_gui_fullscreen)                                    \
+    code(PhysicalKeyCode, "keyboard-gui-toggle-touch", PhysicalKeyCode::KeyT, keyboard_gui_toggle_touch)                               \
+    code(PhysicalKeyCode, "keyboard-toggle-texture-replacement", PhysicalKeyCode::Unbound, keyboard_toggle_texture_replacement)        \
+    code(PhysicalKeyCode, "keyboard-take-screenshot", PhysicalKeyCode::Unbound, keyboard_take_screenshot)                              \
+    code(PhysicalKeyCode, "keyboard-pinch-modifier", PhysicalKeyCode::Unbound, keyboard_pinch_modifier)                                \
+    code(PhysicalKeyCode, "keyboard-alternate-pinch-in", PhysicalKeyCode::Unbound, keyboard_alternate_pinch_in)                        \
+    code(PhysicalKeyCode, "keyboard-alternate-pinch-out", PhysicalKeyCode::Unbound, keyboard_alternate_pinch_out)                      \
+    code(PhysicalKeyCode, "keyboard-button-select-alt", PhysicalKeyCode::Unbound, keyboard_button_select_alt)                          \
+    code(PhysicalKeyCode, "keyboard-button-start-alt", PhysicalKeyCode::Unbound, keyboard_button_start_alt)                            \
+    code(PhysicalKeyCode, "keyboard-button-up-alt", PhysicalKeyCode::Unbound, keyboard_button_up_alt)                                  \
+    code(PhysicalKeyCode, "keyboard-button-right-alt", PhysicalKeyCode::Unbound, keyboard_button_right_alt)                            \
+    code(PhysicalKeyCode, "keyboard-button-down-alt", PhysicalKeyCode::Unbound, keyboard_button_down_alt)                              \
+    code(PhysicalKeyCode, "keyboard-button-left-alt", PhysicalKeyCode::Unbound, keyboard_button_left_alt)                              \
+    code(PhysicalKeyCode, "keyboard-button-l1-alt", PhysicalKeyCode::Unbound, keyboard_button_l1_alt)                                  \
+    code(PhysicalKeyCode, "keyboard-button-r1-alt", PhysicalKeyCode::Unbound, keyboard_button_r1_alt)                                  \
+    code(PhysicalKeyCode, "keyboard-button-l2-alt", PhysicalKeyCode::Unbound, keyboard_button_l2_alt)                                  \
+    code(PhysicalKeyCode, "keyboard-button-r2-alt", PhysicalKeyCode::Unbound, keyboard_button_r2_alt)                                  \
+    code(PhysicalKeyCode, "keyboard-button-l3-alt", PhysicalKeyCode::Unbound, keyboard_button_l3_alt)                                  \
+    code(PhysicalKeyCode, "keyboard-button-r3-alt", PhysicalKeyCode::Unbound, keyboard_button_r3_alt)                                  \
+    code(PhysicalKeyCode, "keyboard-button-triangle-alt", PhysicalKeyCode::Unbound, keyboard_button_triangle_alt)                      \
+    code(PhysicalKeyCode, "keyboard-button-circle-alt", PhysicalKeyCode::Unbound, keyboard_button_circle_alt)                          \
+    code(PhysicalKeyCode, "keyboard-button-cross-alt", PhysicalKeyCode::Unbound, keyboard_button_cross_alt)                            \
+    code(PhysicalKeyCode, "keyboard-button-square-alt", PhysicalKeyCode::Unbound, keyboard_button_square_alt)                          \
+    code(PhysicalKeyCode, "keyboard-leftstick-left-alt", PhysicalKeyCode::Unbound, keyboard_leftstick_left_alt)                        \
+    code(PhysicalKeyCode, "keyboard-leftstick-right-alt", PhysicalKeyCode::Unbound, keyboard_leftstick_right_alt)                      \
+    code(PhysicalKeyCode, "keyboard-leftstick-up-alt", PhysicalKeyCode::Unbound, keyboard_leftstick_up_alt)                            \
+    code(PhysicalKeyCode, "keyboard-leftstick-down-alt", PhysicalKeyCode::Unbound, keyboard_leftstick_down_alt)                        \
+    code(PhysicalKeyCode, "keyboard-rightstick-left-alt", PhysicalKeyCode::Unbound, keyboard_rightstick_left_alt)                      \
+    code(PhysicalKeyCode, "keyboard-rightstick-right-alt", PhysicalKeyCode::Unbound, keyboard_rightstick_right_alt)                    \
+    code(PhysicalKeyCode, "keyboard-rightstick-up-alt", PhysicalKeyCode::Unbound, keyboard_rightstick_up_alt)                          \
+    code(PhysicalKeyCode, "keyboard-rightstick-down-alt", PhysicalKeyCode::Unbound, keyboard_rightstick_down_alt)                      \
+    code(PhysicalKeyCode, "keyboard-button-psbutton-alt", PhysicalKeyCode::Unbound, keyboard_button_psbutton_alt)                      \
+    code(PhysicalKeyCode, "keyboard-gui-fullscreen-alt", PhysicalKeyCode::Unbound, keyboard_gui_fullscreen_alt)                        \
+    code(PhysicalKeyCode, "keyboard-gui-toggle-touch-alt", PhysicalKeyCode::Unbound, keyboard_gui_toggle_touch_alt)                    \
+    code(PhysicalKeyCode, "keyboard-toggle-texture-replacement-alt", PhysicalKeyCode::Unbound, keyboard_toggle_texture_replacement_alt)\
+    code(PhysicalKeyCode, "keyboard-take-screenshot-alt", PhysicalKeyCode::Unbound, keyboard_take_screenshot_alt)                      \
+    code(PhysicalKeyCode, "keyboard-pinch-modifier-alt", PhysicalKeyCode::Unbound, keyboard_pinch_modifier_alt)                        \
+    code(PhysicalKeyCode, "keyboard-alternate-pinch-in-alt", PhysicalKeyCode::Unbound, keyboard_alternate_pinch_in_alt)                \
+    code(PhysicalKeyCode, "keyboard-alternate-pinch-out-alt", PhysicalKeyCode::Unbound, keyboard_alternate_pinch_out_alt)
+
 #define CONFIG_INDIVIDUAL(code)                                                                         \
     code(bool, "initial-setup", false, initial_setup)                                                   \
     code(bool, "gdbstub", false, gdbstub)                                                               \
@@ -62,14 +137,9 @@ enum ScreenshotFormat {
     code(bool, "pstv-mode", false, pstv_mode)                                                           \
     code(bool, "show-mode", false, show_mode)                                                           \
     code(bool, "demo-mode", false, demo_mode)                                                           \
-    code(bool, "show-gui", false, show_gui)                                                             \
-    code(bool, "show-info-bar", false, show_info_bar)                                                   \
     code(bool, "apps-list-grid", false, apps_list_grid)                                                 \
-    code(bool, "display-system-apps", true, display_system_apps)                                        \
     code(bool, "stretch_the_display_area", false, stretch_the_display_area)                             \
     code(bool, "fullscreen_hd_res_pixel_perfect", false, fullscreen_hd_res_pixel_perfect)               \
-    code(bool, "show-live-area-screen", true, show_live_area_screen)                                    \
-    code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \
     code(std::string, "backend-renderer", "Vulkan", backend_renderer)                                   \
     code(std::string, "custom-driver-name", "", custom_driver_name)                                     \
@@ -90,10 +160,10 @@ enum ScreenshotFormat {
     code(bool, "export-as-png", true, export_as_png)                                                    \
     code(std::string, "memory-mapping", "double-buffer", memory_mapping)                                \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
+    code(bool, "show-live-area-screen", false, show_live_area_screen)                                   \
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
-    code(int,  "bgm-volume", 65, bgm_volume)                                                            \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(int, "sys-date-format", (int)SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY, sys_date_format)           \
@@ -109,91 +179,21 @@ enum ScreenshotFormat {
     code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
     code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
     code(bool, "color-surface-debug", false, color_surface_debug)                                       \
-    code(bool, "show-touchpad-cursor", true, show_touchpad_cursor)                                      \
     code(bool, "performance-overlay", false, performance_overlay)                                       \
     code(int, "performance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)      \
     code(int, "performance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position) \
-    code(bool, "enable-gamepad-overlay", true, enable_gamepad_overlay)                                  \
-    code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
-    code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
-    code(int, "overlay-opacity", 100, overlay_opacity)                                                  \
     code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
     code(bool, "disable-motion", false, disable_motion)                                                 \
     code(float, "controller-analog-multiplier", 1.0f, controller_analog_multiplier)                     \
-    code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
-    code(int, "keyboard-button-start", 40, keyboard_button_start)                                       \
-    code(int, "keyboard-button-up", 82, keyboard_button_up)                                             \
-    code(int, "keyboard-button-right", 79, keyboard_button_right)                                       \
-    code(int, "keyboard-button-down", 81, keyboard_button_down)                                         \
-    code(int, "keyboard-button-left", 80, keyboard_button_left)                                         \
-    code(int, "keyboard-button-l1", 20, keyboard_button_l1)                                             \
-    code(int, "keyboard-button-r1", 8, keyboard_button_r1)                                              \
-    code(int, "keyboard-button-l2", 24, keyboard_button_l2)                                             \
-    code(int, "keyboard-button-r2", 18, keyboard_button_r2)                                             \
-    code(int, "keyboard-button-l3", 9, keyboard_button_l3)                                              \
-    code(int, "keyboard-button-r3", 11, keyboard_button_r3)                                             \
-    code(int, "keyboard-button-triangle", 25, keyboard_button_triangle)                                 \
-    code(int, "keyboard-button-circle", 6, keyboard_button_circle)                                      \
-    code(int, "keyboard-button-cross", 27, keyboard_button_cross)                                       \
-    code(int, "keyboard-button-square", 29, keyboard_button_square)                                     \
-    code(int, "keyboard-leftstick-left", 4, keyboard_leftstick_left)                                    \
-    code(int, "keyboard-leftstick-right", 7, keyboard_leftstick_right)                                  \
-    code(int, "keyboard-leftstick-up", 26, keyboard_leftstick_up)                                       \
-    code(int, "keyboard-leftstick-down", 22, keyboard_leftstick_down)                                   \
-    code(int, "keyboard-rightstick-left", 13, keyboard_rightstick_left)                                 \
-    code(int, "keyboard-rightstick-right", 15, keyboard_rightstick_right)                               \
-    code(int, "keyboard-rightstick-up", 12, keyboard_rightstick_up)                                     \
-    code(int, "keyboard-rightstick-down", 14, keyboard_rightstick_down)                                 \
-    code(int, "keyboard-button-psbutton", 19, keyboard_button_psbutton)                                 \
-    code(int, "keyboard-gui-toggle-gui", 10, keyboard_gui_toggle_gui)                                   \
-    code(int, "keyboard-gui-fullscreen", 68, keyboard_gui_fullscreen)                                   \
-    code(int, "keyboard-gui-toggle-touch", 23, keyboard_gui_toggle_touch)                               \
-    code(int, "keyboard-toggle-texture-replacement", 0, keyboard_toggle_texture_replacement)            \
-    code(int, "keyboard-take-screenshot", 0, keyboard_take_screenshot)                                  \
-    code(int, "keyboard-pinch-modifier", 0, keyboard_pinch_modifier)                                    \
-    code(int, "keyboard-alternate-pinch-in", 0, keyboard_alternate_pinch_in)                            \
-    code(int, "keyboard-alternate-pinch-out", 0, keyboard_alternate_pinch_out)                          \
-    code(int, "keyboard-button-select-alt", 0, keyboard_button_select_alt)                              \
-    code(int, "keyboard-button-start-alt", 0, keyboard_button_start_alt)                                \
-    code(int, "keyboard-button-up-alt", 0, keyboard_button_up_alt)                                      \
-    code(int, "keyboard-button-right-alt", 0, keyboard_button_right_alt)                                \
-    code(int, "keyboard-button-down-alt", 0, keyboard_button_down_alt)                                  \
-    code(int, "keyboard-button-left-alt", 0, keyboard_button_left_alt)                                  \
-    code(int, "keyboard-button-l1-alt", 0, keyboard_button_l1_alt)                                      \
-    code(int, "keyboard-button-r1-alt", 0, keyboard_button_r1_alt)                                      \
-    code(int, "keyboard-button-l2-alt", 0, keyboard_button_l2_alt)                                      \
-    code(int, "keyboard-button-r2-alt", 0, keyboard_button_r2_alt)                                      \
-    code(int, "keyboard-button-l3-alt", 0, keyboard_button_l3_alt)                                      \
-    code(int, "keyboard-button-r3-alt", 0, keyboard_button_r3_alt)                                      \
-    code(int, "keyboard-button-triangle-alt", 0, keyboard_button_triangle_alt)                          \
-    code(int, "keyboard-button-circle-alt", 0, keyboard_button_circle_alt)                              \
-    code(int, "keyboard-button-cross-alt", 0, keyboard_button_cross_alt)                                \
-    code(int, "keyboard-button-square-alt", 0, keyboard_button_square_alt)                              \
-    code(int, "keyboard-leftstick-left-alt", 0, keyboard_leftstick_left_alt)                            \
-    code(int, "keyboard-leftstick-right-alt", 0, keyboard_leftstick_right_alt)                          \
-    code(int, "keyboard-leftstick-up-alt", 0, keyboard_leftstick_up_alt)                                \
-    code(int, "keyboard-leftstick-down-alt", 0, keyboard_leftstick_down_alt)                            \
-    code(int, "keyboard-rightstick-left-alt", 0, keyboard_rightstick_left_alt)                          \
-    code(int, "keyboard-rightstick-right-alt", 0, keyboard_rightstick_right_alt)                        \
-    code(int, "keyboard-rightstick-up-alt", 0, keyboard_rightstick_up_alt)                              \
-    code(int, "keyboard-rightstick-down-alt", 0, keyboard_rightstick_down_alt)                          \
-    code(int, "keyboard-button-psbutton-alt", 0, keyboard_button_psbutton_alt)                          \
-    code(int, "keyboard-gui-toggle-gui-alt", 0, keyboard_gui_toggle_gui_alt)                            \
-    code(int, "keyboard-gui-fullscreen-alt", 0, keyboard_gui_fullscreen_alt)                            \
-    code(int, "keyboard-gui-toggle-touch-alt", 0, keyboard_gui_toggle_touch_alt)                        \
-    code(int, "keyboard-toggle-texture-replacement-alt", 0, keyboard_toggle_texture_replacement_alt)    \
-    code(int, "keyboard-take-screenshot-alt", 0, keyboard_take_screenshot_alt)                          \
-    code(int, "keyboard-pinch-modifier-alt", 0, keyboard_pinch_modifier_alt)                            \
-    code(int, "keyboard-alternate-pinch-in-alt", 0, keyboard_alternate_pinch_in_alt)                    \
-    code(int, "keyboard-alternate-pinch-out-alt", 0, keyboard_alternate_pinch_out_alt)                 \
+    CONFIG_KEYBOARD(code)                                                                               \
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
     code(std::string, "user-lang", std::string{}, user_lang)                                            \
-    code(bool, "display-info-message", false, display_info_message)                                     \
     code(bool, "show-welcome", true, show_welcome)                                                      \
+    code(bool, "warn-missing-firmware", true, warn_missing_firmware)                                    \
     code(bool, "check-for-updates", true, check_for_updates)                                            \
+    code(int, "check-for-updates-mode", static_cast<int>(UPDATE_STARTUP_PROMPT), check_for_updates_mode)\
     code(int, "file-loading-delay", 0, file_loading_delay)                                              \
-    code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(bool, "fps-hack", false, fps_hack)                                                             \
@@ -221,6 +221,7 @@ enum ScreenshotFormat {
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_VECTOR(code)                                                                             \
     code(std::vector<short>, "controller-binds", std::vector<short>{}, controller_binds)                \
+    code(std::vector<short>, "controller-axis-binds", std::vector<short>{}, controller_axis_binds)      \
     code(std::vector<int>, "controller-led-color", std::vector<int>{}, controller_led_color)            \
     code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)              \
     code(std::vector<uint64_t>, "ime-langs", std::vector<uint64_t>{4}, ime_langs)                       \

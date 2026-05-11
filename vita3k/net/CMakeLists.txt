@@ -6,6 +6,7 @@ add_library(
     include/net/state.h
     include/net/types.h
     include/net/socket.h
+    src/net.cpp
     src/epoll.cpp
     src/posixsocket.cpp
     src/p2psocket.cpp

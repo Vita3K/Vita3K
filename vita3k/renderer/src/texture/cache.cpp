@@ -529,7 +529,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
-            yuv420_texture_to_rgb(texture_data_decompressed.data(),
+            yuv420_texture_to_rgb(yuv_conversion_cache, texture_data_decompressed.data(),
                 static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height,
                 base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3);
             pixels = texture_data_decompressed.data();

@@ -749,6 +749,9 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     sceKernelModuleInfo->state = module_info->type;
 
     LOG_INFO("Linking SELF {}...", self_path);
+    if (self_path.find("eboot.bin") != std::string::npos)
+        LOG_INFO("eboot.bin module NID: {}", log_hex(module_info->module_nid));
+
     if (!load_exports(sceKernelModuleInfo, *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
     }

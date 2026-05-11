@@ -58,4 +58,4 @@ bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceUID thread_id, Sc
 void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &titleid);
 
 Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem);
-Ptr<void> get_client_vtable(MemState &mem);
+Ptr<void> get_client_vtable(KernelState &kernel, MemState &mem);

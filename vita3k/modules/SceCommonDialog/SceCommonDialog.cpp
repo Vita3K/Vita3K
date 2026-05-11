@@ -20,16 +20,23 @@
 #include <dialog/state.h>
 #include <dialog/types.h>
 #include <emuenv/app_util.h>
-#include <gui/state.h>
+#include <ime/state.h>
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
+#include <lang/state.h>
 #include <net/state.h>
 #include <packages/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
 #include <SDL3/SDL_timer.h>
+
+#include <mutex>
+
+#ifdef __ANDROID__
+#include <ime/keyboard.h>
+#endif
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceCommonDialog);
@@ -157,8 +164,13 @@ EXPORT(int, sceImeDialogAbort) {
     if (emuenv.common_dialog.type != IME_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
     }
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
+    emuenv.common_dialog.active_ime = nullptr;
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
+#ifdef __ANDROID__
+    ime::set_keyboard_active(false);
+#endif
     return 0;
 }
 
@@ -185,6 +197,8 @@ EXPORT(int, sceImeDialogInit, const Ptr<SceImeDialogParam> param) {
     if (emuenv.common_dialog.type != NO_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
+
     SceImeDialogParam *p = param.get(emuenv.mem);
 
     const auto title_data = p->title.cast<char16_t>().get(emuenv.mem);
@@ -203,6 +217,22 @@ EXPORT(int, sceImeDialogInit, const Ptr<SceImeDialogParam> param) {
     emuenv.common_dialog.ime.cancelable = (p->dialogMode == SCE_IME_DIALOG_DIALOG_MODE_WITH_CANCEL);
     emuenv.common_dialog.ime.result = p->inputTextBuffer.get(emuenv.mem);
 
+    // shared ime struct so ime funcs can work for ime_dialog
+    {
+        std::lock_guard lock2(emuenv.ime.mutex);
+        emuenv.ime.str = text;
+        emuenv.ime.caretIndex = static_cast<uint32_t>(text.size());
+        emuenv.ime.edit_text = {};
+        emuenv.ime.edit_text.caretIndex = emuenv.ime.caretIndex;
+        emuenv.ime.edit_text.preeditIndex = emuenv.ime.caretIndex;
+        emuenv.ime.param.maxTextLength = p->maxTextLength;
+    }
+    emuenv.common_dialog.active_ime = &emuenv.ime;
+
+#ifdef __ANDROID__
+    ime::set_keyboard_active(true);
+#endif
+
     return 0;
 }
 
@@ -214,8 +244,24 @@ EXPORT(int, sceImeDialogTerm) {
     if (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
+    emuenv.common_dialog.active_ime = nullptr;
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     emuenv.common_dialog.type = NO_DIALOG;
+
+    // clear the shared ime state.
+    {
+        std::lock_guard lock2(emuenv.ime.mutex);
+        emuenv.ime.str.clear();
+        emuenv.ime.caretIndex = 0;
+        emuenv.ime.edit_text = {};
+        emuenv.ime.event_id = SCE_IME_EVENT_OPEN;
+    }
+
+#ifdef __ANDROID__
+    ime::set_keyboard_active(false);
+#endif
+
     return 0;
 }
 
@@ -224,6 +270,7 @@ EXPORT(int, sceMsgDialogAbort) {
     if (emuenv.common_dialog.type != MESSAGE_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
     return 0;
@@ -234,6 +281,7 @@ EXPORT(int, sceMsgDialogClose) {
     if (emuenv.common_dialog.type != MESSAGE_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
     return 0;
@@ -263,6 +311,8 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
     if (emuenv.common_dialog.type != NO_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
+
     SceMsgDialogParam *p = param.get(emuenv.mem);
     SceMsgDialogUserMessageParam *up;
     SceMsgDialogButtonsParam *bp;
@@ -275,9 +325,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
     emuenv.common_dialog.msg.mode = p->mode;
     emuenv.common_dialog.msg.status = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
 
-    auto &common = emuenv.common_dialog.lang.common;
-    auto &save = emuenv.common_dialog.lang.save_data.save;
-    const auto &CANCEL = common["cancel"];
+    const auto &CANCEL = lang::get(lang::str::cancel);
 
     switch (p->mode) {
     case SCE_MSG_DIALOG_MODE_USER_MSG:
@@ -286,14 +334,14 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
         switch (up->buttonType) {
         case SCE_MSG_DIALOG_BUTTON_TYPE_OK:
             emuenv.common_dialog.msg.btn_num = 1;
-            emuenv.common_dialog.msg.btn[0] = common["ok"];
+            emuenv.common_dialog.msg.btn[0] = lang::get(lang::str::ok);
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_YESNO:
             emuenv.common_dialog.msg.btn_num = 2;
-            emuenv.common_dialog.msg.btn[0] = common["yes"];
+            emuenv.common_dialog.msg.btn[0] = lang::get(lang::str::yes);
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_YES;
-            emuenv.common_dialog.msg.btn[1] = common["no"];
+            emuenv.common_dialog.msg.btn[1] = lang::get(lang::str::no);
             emuenv.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_NONE:
@@ -301,7 +349,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_OK_CANCEL:
             emuenv.common_dialog.msg.btn_num = 2;
-            emuenv.common_dialog.msg.btn[0] = common["ok"];
+            emuenv.common_dialog.msg.btn[0] = lang::get(lang::str::ok);
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
             emuenv.common_dialog.msg.btn[1] = CANCEL;
             emuenv.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
@@ -328,11 +376,11 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
         switch (p->sysMsgParam.get(emuenv.mem)->sysMsgType) {
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT:
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_SMALL:
-            emuenv.common_dialog.msg.message = common["please_wait"];
+            emuenv.common_dialog.msg.message = lang::get(lang::str::please_wait);
             emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NOSPACE:
-            emuenv.common_dialog.msg.message = save["not_free_space"];
+            emuenv.common_dialog.msg.message = lang::get(lang::str::not_free_space);
             emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_MAGNETIC_CALIBRATION:
@@ -342,13 +390,13 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_MIC_DISABLED:
-            emuenv.common_dialog.msg.message = common["microphone_disabled"];
+            emuenv.common_dialog.msg.message = lang::get(lang::str::microphone_disabled);
             emuenv.common_dialog.msg.btn_num = 1;
-            emuenv.common_dialog.msg.btn[0] = common["ok"];
+            emuenv.common_dialog.msg.btn[0] = lang::get(lang::str::ok);
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_CANCEL:
-            emuenv.common_dialog.msg.message = common["please_wait"];
+            emuenv.common_dialog.msg.message = lang::get(lang::str::please_wait);
             emuenv.common_dialog.msg.btn[0] = CANCEL;
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_NO;
             emuenv.common_dialog.msg.btn_num = 1;
@@ -362,15 +410,15 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NOSPACE_CONTINUABLE:
-            emuenv.common_dialog.msg.message = fmt::format(fmt::runtime(save["not_free_space"]), "8000 KB");
+            emuenv.common_dialog.msg.message = fmt::format(fmt::runtime(lang::get(lang::str::not_free_space)), "8000 KB");
             emuenv.common_dialog.msg.btn_num = 1;
-            emuenv.common_dialog.msg.btn[0] = common["ok"];
+            emuenv.common_dialog.msg.btn[0] = lang::get(lang::str::ok);
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_MIC_DISABLED:
-            emuenv.common_dialog.msg.message = common["microphone_disabled"];
+            emuenv.common_dialog.msg.message = lang::get(lang::str::microphone_disabled);
             emuenv.common_dialog.msg.btn_num = 1;
-            emuenv.common_dialog.msg.btn[0] = common["ok"];
+            emuenv.common_dialog.msg.btn[0] = lang::get(lang::str::ok);
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_WIFI_REQUIRED_OPERATION:
@@ -391,9 +439,9 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
         }
         break;
     case SCE_MSG_DIALOG_MODE_ERROR_CODE:
-        emuenv.common_dialog.msg.message = fmt::format(fmt::runtime(common["an_error_occurred"]), log_hex(p->errorCodeParam.get(emuenv.mem)->errorCode));
+        emuenv.common_dialog.msg.message = fmt::format(fmt::runtime(lang::get(lang::str::an_error_occurred)), log_hex(p->errorCodeParam.get(emuenv.mem)->errorCode));
         emuenv.common_dialog.msg.btn_num = 1;
-        emuenv.common_dialog.msg.btn[0] = common["ok"];
+        emuenv.common_dialog.msg.btn[0] = lang::get(lang::str::ok);
         emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_MSG_DIALOG_MODE_PROGRESS_BAR:
@@ -407,10 +455,10 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             switch (pp->sysMsgParam.sysMsgType) {
             case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT:
             case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_SMALL:
-                emuenv.common_dialog.msg.message = common["please_wait"];
+                emuenv.common_dialog.msg.message = lang::get(lang::str::please_wait);
                 break;
             case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_CANCEL:
-                emuenv.common_dialog.msg.message = common["please_wait"];
+                emuenv.common_dialog.msg.message = lang::get(lang::str::please_wait);
                 emuenv.common_dialog.msg.btn_num = 1;
                 emuenv.common_dialog.msg.btn[0] = CANCEL;
                 emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_NO;
@@ -436,6 +484,7 @@ EXPORT(int, sceMsgDialogProgressBarInc, SceMsgDialogProgressBarTarget target, Sc
     if (emuenv.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
     emuenv.common_dialog.msg.bar_percent += delta;
     return 0;
 }
@@ -449,6 +498,7 @@ EXPORT(int, sceMsgDialogProgressBarSetMsg, SceMsgDialogProgressBarTarget target,
     if (emuenv.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
+    std::lock_guard<std::recursive_mutex> lock2(emuenv.common_dialog.mutex);
     emuenv.common_dialog.msg.message = reinterpret_cast<const char *>(msg);
     return 0;
 }
@@ -462,6 +512,7 @@ EXPORT(int, sceMsgDialogProgressBarSetValue, SceMsgDialogProgressBarTarget targe
     if (emuenv.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
+    std::lock_guard<std::recursive_mutex> lock3(emuenv.common_dialog.mutex);
     emuenv.common_dialog.msg.bar_percent = rate;
     if (emuenv.common_dialog.msg.bar_percent > 100) {
         emuenv.common_dialog.msg.bar_percent = 100;
@@ -477,6 +528,7 @@ EXPORT(int, sceMsgDialogTerm) {
     if (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     emuenv.common_dialog.type = NO_DIALOG;
     return 0;
@@ -825,6 +877,7 @@ EXPORT(int, sceSaveDataDialogAbort) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
     }
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
     emuenv.common_dialog.savedata.bar_percent = 0;
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     emuenv.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
@@ -846,7 +899,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
     if (fd < 0) {
         auto empty_param = emuenv.common_dialog.savedata.list_empty_param[index];
         if (empty_param) {
-            emuenv.common_dialog.savedata.title[index] = empty_param->title ? empty_param->title.get(emuenv.mem) : emuenv.common_dialog.lang.save_data.save["new_saved_data"];
+            emuenv.common_dialog.savedata.title[index] = empty_param->title ? empty_param->title.get(emuenv.mem) : lang::get(lang::str::new_saved_data);
             const char *iconPath = empty_param->iconPath.get(emuenv.mem);
             SceUChar8 *iconBuf = empty_param->iconBuf.cast<SceUChar8>().get(emuenv.mem);
             const auto iconBufSize = empty_param->iconBufSize;
@@ -877,18 +930,17 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
 }
 
 static void handle_user_message(SceSaveDataDialogUserMessageParam *user_message, EmuEnvState &emuenv) {
-    auto &common = emuenv.common_dialog.lang.common;
     switch (user_message->buttonType) {
     case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_OK:
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = common["ok"];
+        emuenv.common_dialog.savedata.btn[0] = lang::get(lang::str::ok);
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_YESNO:
         emuenv.common_dialog.savedata.btn_num = 2;
-        emuenv.common_dialog.savedata.btn[0] = common["no"];
+        emuenv.common_dialog.savedata.btn[0] = lang::get(lang::str::no);
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        emuenv.common_dialog.savedata.btn[1] = common["yes"];
+        emuenv.common_dialog.savedata.btn[1] = lang::get(lang::str::yes);
         emuenv.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_NONE:
@@ -899,115 +951,108 @@ static void handle_user_message(SceSaveDataDialogUserMessageParam *user_message,
 }
 
 static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message, EmuEnvState &emuenv) {
-    auto &lang = emuenv.common_dialog.lang;
-    auto &common = lang.common;
-    auto &save_data = lang.save_data;
-    auto &deleting = save_data.deleting;
-    auto &load = save_data.load;
-    auto &save = save_data.save;
-
     switch (sys_message->sysMsgType) {
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NODATA:
-        emuenv.common_dialog.savedata.msg = load["no_saved_data"];
+        emuenv.common_dialog.savedata.msg = lang::get(lang::str::no_saved_data);
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = common["ok"];
+        emuenv.common_dialog.savedata.btn[0] = lang::get(lang::str::ok);
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_CONFIRM:
         switch (emuenv.common_dialog.savedata.display_type) {
         case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-            emuenv.common_dialog.savedata.msg = save["save_the_data"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::save_the_data);
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-            emuenv.common_dialog.savedata.msg = load["load_saved_data"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::load_saved_data);
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-            emuenv.common_dialog.savedata.msg = deleting["delete_saved_data"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::delete_saved_data);
             break;
         }
         emuenv.common_dialog.savedata.btn_num = 2;
-        emuenv.common_dialog.savedata.btn[0] = common["no"];
+        emuenv.common_dialog.savedata.btn[0] = lang::get(lang::str::no);
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        emuenv.common_dialog.savedata.btn[1] = common["yes"];
+        emuenv.common_dialog.savedata.btn[1] = lang::get(lang::str::yes);
         emuenv.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_OVERWRITE:
-        emuenv.common_dialog.savedata.msg = save["overwrite_saved_data"];
+        emuenv.common_dialog.savedata.msg = lang::get(lang::str::overwrite_saved_data);
         emuenv.common_dialog.savedata.btn_num = 2;
-        emuenv.common_dialog.savedata.btn[0] = common["no"];
+        emuenv.common_dialog.savedata.btn[0] = lang::get(lang::str::no);
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        emuenv.common_dialog.savedata.btn[1] = common["yes"];
+        emuenv.common_dialog.savedata.btn[1] = lang::get(lang::str::yes);
         emuenv.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NOSPACE:
-        emuenv.common_dialog.savedata.msg = fmt::format(fmt::runtime(save["not_free_space"]), "8000 KB");
+        emuenv.common_dialog.savedata.msg = fmt::format(fmt::runtime(lang::get(lang::str::not_free_space)), "8000 KB");
         emuenv.common_dialog.savedata.btn_num = 0;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_PROGRESS:
         emuenv.common_dialog.savedata.btn_num = 0;
         switch (emuenv.common_dialog.savedata.display_type) {
         case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-            emuenv.common_dialog.savedata.msg = save["warning_saving"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::warning_saving);
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-            emuenv.common_dialog.savedata.msg = load["loading"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::loading);
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-            emuenv.common_dialog.savedata.msg = common["please_wait"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::please_wait);
             break;
         }
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_FINISHED:
         switch (emuenv.common_dialog.savedata.display_type) {
         case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-            emuenv.common_dialog.savedata.msg = save["saving_complete"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::saving_complete);
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-            emuenv.common_dialog.savedata.msg = load["load_complete"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::load_complete);
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-            emuenv.common_dialog.savedata.msg = deleting["deletion_complete"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::deletion_complete);
             break;
         }
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = common["ok"];
+        emuenv.common_dialog.savedata.btn[0] = lang::get(lang::str::ok);
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_CONFIRM_CANCEL:
         switch (emuenv.common_dialog.savedata.display_type) {
         case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-            emuenv.common_dialog.savedata.msg = load["cancel_loading"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::cancel_loading);
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-            emuenv.common_dialog.savedata.msg = save["cancel_saving"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::cancel_saving);
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-            emuenv.common_dialog.savedata.msg = deleting["cancel_deleting"];
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::cancel_deleting);
             break;
         }
         emuenv.common_dialog.savedata.btn_num = 2;
-        emuenv.common_dialog.savedata.btn[0] = common["no"];
+        emuenv.common_dialog.savedata.btn[0] = lang::get(lang::str::no);
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        emuenv.common_dialog.savedata.btn[1] = common["yes"];
+        emuenv.common_dialog.savedata.btn[1] = lang::get(lang::str::yes);
         emuenv.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_FILE_CORRUPTED:
-        emuenv.common_dialog.savedata.msg = common["file_corrupted"];
+        emuenv.common_dialog.savedata.msg = lang::get(lang::str::file_corrupted);
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = common["ok"];
+        emuenv.common_dialog.savedata.btn[0] = lang::get(lang::str::ok);
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NOSPACE_CONTINUABLE:
-        emuenv.common_dialog.savedata.msg = fmt::format(fmt::runtime(save["could_not_save"]), "8000 KB");
+        emuenv.common_dialog.savedata.msg = fmt::format(fmt::runtime(lang::get(lang::str::could_not_save_dialog)), "8000 KB");
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = common["ok"];
+        emuenv.common_dialog.savedata.btn[0] = lang::get(lang::str::ok);
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_TYPE_OK;
         break;
     case SCE_SAVEDATE_DIALOG_SYSMSG_TYPE_NODATA_IMPORT:
         emuenv.common_dialog.savedata.msg = "There is no saved data that can be used with this application.\n\
-			If the saved data you want to use is on the memory card, select the \"import saved data\" icon on the LiveArea screen.";
+            If the saved data you want to use is on the memory card, select the \"import saved data\" icon on the LiveArea screen.";
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = common["ok"];
+        emuenv.common_dialog.savedata.btn[0] = lang::get(lang::str::ok);
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     default: break;
@@ -1028,6 +1073,7 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
     }
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
     emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
     emuenv.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
@@ -1044,13 +1090,6 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
     emuenv.common_dialog.savedata.mode = p->mode;
     emuenv.common_dialog.savedata.display_type = p->dispType == 0 ? emuenv.common_dialog.savedata.display_type : p->dispType;
     emuenv.common_dialog.savedata.userdata = p->userdata;
-
-    auto &lang = emuenv.common_dialog.lang;
-    auto &common = emuenv.common_dialog.lang.common;
-    auto &save_data = lang.save_data;
-    auto &deleting = save_data.deleting;
-    auto &load = save_data.load;
-    auto &save = save_data.save;
 
     switch (emuenv.common_dialog.savedata.mode) {
     default:
@@ -1078,14 +1117,14 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
             emuenv.common_dialog.savedata.list_empty_param[emuenv.common_dialog.savedata.selected_save] = error_code->targetSlot.emptyParam.get(emuenv.mem);
 
             emuenv.common_dialog.savedata.btn_num = 1;
-            emuenv.common_dialog.savedata.btn[0] = common["ok"];
+            emuenv.common_dialog.savedata.btn[0] = lang::get(lang::str::ok);
             emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
             switch (emuenv.common_dialog.savedata.display_type) {
             case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-                emuenv.common_dialog.savedata.msg = fmt::format("{}\n({})", common["could_not_save"], log_hex(error_code->errorCode));
+                emuenv.common_dialog.savedata.msg = fmt::format("{}\n({})", lang::get(lang::str::could_not_save), log_hex(error_code->errorCode));
                 break;
             case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-                emuenv.common_dialog.savedata.msg = fmt::format("{}\n({})", common["could_not_load"], log_hex(error_code->errorCode));
+                emuenv.common_dialog.savedata.msg = fmt::format("{}\n({})", lang::get(lang::str::could_not_load), log_hex(error_code->errorCode));
                 break;
             case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
                 emuenv.common_dialog.savedata.msg = fmt::format("An error has occurred while deleting.\n({})", log_hex(error_code->errorCode));
@@ -1105,13 +1144,13 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
                 case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_PROGRESS:
                     switch (emuenv.common_dialog.savedata.display_type) {
                     case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-                        emuenv.common_dialog.savedata.msg = save_data.save["saving"];
+                        emuenv.common_dialog.savedata.msg = lang::get(lang::str::saving);
                         break;
                     case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-                        emuenv.common_dialog.savedata.msg = save_data.load["loading"];
+                        emuenv.common_dialog.savedata.msg = lang::get(lang::str::loading);
                         break;
                     case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-                        emuenv.common_dialog.savedata.msg = lang.common["please_wait"];
+                        emuenv.common_dialog.savedata.msg = lang::get(lang::str::please_wait);
                         break;
                     }
                     break;
@@ -1159,6 +1198,7 @@ EXPORT(int, sceSaveDataDialogFinish, const SceSaveDataDialogFinishParam *finishP
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
     }
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
     emuenv.common_dialog.savedata.bar_percent = 0;
     emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
@@ -1239,6 +1279,8 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
     }
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
+
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
     emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
 
@@ -1276,17 +1318,15 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
         if (list_param->listTitle) {
             emuenv.common_dialog.savedata.list_title = list_param->listTitle.cast<char>().get(emuenv.mem);
         } else {
-            auto &lang = emuenv.common_dialog.lang;
-            auto &save_data = lang.save_data;
             switch (p->dispType) {
             case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-                emuenv.common_dialog.savedata.list_title = save_data.save["title"];
+                emuenv.common_dialog.savedata.list_title = lang::get(lang::str::save_title);
                 break;
             case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-                emuenv.common_dialog.savedata.list_title = save_data.load["title"];
+                emuenv.common_dialog.savedata.list_title = lang::get(lang::str::load_title);
                 break;
             case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-                emuenv.common_dialog.savedata.list_title = lang.common["delete"];
+                emuenv.common_dialog.savedata.list_title = lang::get(lang::str::delete_);
                 break;
             }
         }
@@ -1331,19 +1371,17 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
         if (progress_bar->msg.get(emuenv.mem) != nullptr) {
             emuenv.common_dialog.savedata.msg = reinterpret_cast<const char *>(progress_bar->msg.get(emuenv.mem));
         } else {
-            auto &lang = emuenv.common_dialog.lang;
-            auto &save_data = lang.save_data;
             switch (progress_bar->sysMsgParam.sysMsgType) {
             case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_PROGRESS:
                 switch (emuenv.common_dialog.savedata.display_type) {
                 case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-                    emuenv.common_dialog.savedata.msg = save_data.save["saving"];
+                    emuenv.common_dialog.savedata.msg = lang::get(lang::str::saving);
                     break;
                 case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-                    emuenv.common_dialog.savedata.msg = save_data.load["loading"];
+                    emuenv.common_dialog.savedata.msg = lang::get(lang::str::loading);
                     break;
                 case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-                    emuenv.common_dialog.savedata.msg = lang.common["please_wait"];
+                    emuenv.common_dialog.savedata.msg = lang::get(lang::str::please_wait);
                     break;
                 }
                 break;
@@ -1371,6 +1409,7 @@ EXPORT(int, sceSaveDataDialogProgressBarInc, SceSaveDataDialogProgressBarTarget 
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
     emuenv.common_dialog.savedata.bar_percent += delta;
     if (emuenv.common_dialog.savedata.bar_percent >= 100) {
         emuenv.common_dialog.savedata.bar_percent = 100;
@@ -1388,6 +1427,7 @@ EXPORT(int, sceSaveDataDialogProgressBarSetValue, SceSaveDataDialogProgressBarTa
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
     emuenv.common_dialog.savedata.bar_percent = rate;
     if (emuenv.common_dialog.savedata.bar_percent >= 100) {
         emuenv.common_dialog.savedata.bar_percent = 100;
@@ -1401,6 +1441,7 @@ EXPORT(int, sceSaveDataDialogSubClose) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
     emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
     emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
     emuenv.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
@@ -1417,6 +1458,7 @@ EXPORT(int, sceSaveDataDialogTerm) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
     }
 
+    std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
     emuenv.common_dialog.savedata.bar_percent = 0;
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     emuenv.common_dialog.type = NO_DIALOG;

@@ -23,12 +23,6 @@
 [submodule "external/googletest"]
 	path = external/googletest
 	url = https://github.com/google/googletest
-[submodule "external/imgui"]
-	path = external/imgui
-	url = https://github.com/ocornut/imgui
-[submodule "external/imgui_club"]
-	path = external/imgui_club
-	url = https://github.com/ocornut/imgui_club
 [submodule "external/libfat16"]
 	path = external/libfat16
 	url = https://github.com/Vita3K/libfat16

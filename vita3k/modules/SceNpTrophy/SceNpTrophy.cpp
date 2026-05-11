@@ -526,18 +526,23 @@ static int do_trophy_callback(EmuEnvState &emuenv, np::trophy::Context *context,
 
     LOG_INFO("Trophy unlocked, name: {}, detail: {}, id = {}", callback_data.trophy_name, callback_data.trophy_detail, trophy_id);
 
-    // Call this async.
-    if (emuenv.np.trophy_state.trophy_unlock_callback) {
-        uint32_t buf_size = 0;
+    // Call all registered callbacks.
+    {
+        std::lock_guard lock(emuenv.np.trophy_state.callback_mutex);
+        if (!emuenv.np.trophy_state.trophy_unlock_callbacks.empty()) {
+            uint32_t buf_size = 0;
 
-        // Make filename
-        const std::string trophy_icon_filename = fmt::format("TROP{:0>3d}.PNG", trophy_id);
-        context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), nullptr, &buf_size);
+            // Make filename
+            const std::string trophy_icon_filename = fmt::format("TROP{:0>3d}.PNG", trophy_id);
+            context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), nullptr, &buf_size);
 
-        callback_data.icon_buf.resize(buf_size);
-        context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), &callback_data.icon_buf[0], &buf_size);
+            callback_data.icon_buf.resize(buf_size);
+            context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), &callback_data.icon_buf[0], &buf_size);
 
-        emuenv.np.trophy_state.trophy_unlock_callback(callback_data);
+            for (auto &cb : emuenv.np.trophy_state.trophy_unlock_callbacks) {
+                cb(callback_data);
+            }
+        }
     }
 
     return 0;

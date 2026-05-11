@@ -22,7 +22,9 @@
 #include <Windows.h>
 #endif
 
+#include <spdlog/async.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/dup_filter_sink.h>
 #include <spdlog/sinks/msvc_sink.h>
 #ifdef __ANDROID__
 #include <spdlog/sinks/android_sink.h>
@@ -30,19 +32,55 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #endif
 
+#include <functional>
 #include <iostream>
+#include <mutex>
 #include <vector>
 
 namespace logging {
 
 static const fs::path &LOG_FILE_NAME = "vita3k.log";
 static const char *LOG_PATTERN = "%^[%H:%M:%S.%e] |%L| [%!]: %v%$";
+static constexpr size_t ASYNC_LOG_QUEUE_SIZE = 65536;
 static std::vector<spdlog::sink_ptr> sinks;
+static std::once_flag s_async_logging_once;
+
+static std::function<void(std::string, int)> s_log_callback;
+static std::mutex s_log_callback_mutex;
 
 static void register_log_exception_handler();
+static void rebuild_default_logger();
 
 static void flush() {
     spdlog::details::registry::instance().flush_all();
+}
+
+template <typename Mutex>
+class callback_sink final : public spdlog::sinks::base_sink<Mutex> {
+protected:
+    void sink_it_(const spdlog::details::log_msg &msg) override {
+        std::function<void(std::string, int)> callback;
+        {
+            const std::lock_guard<std::mutex> lock(s_log_callback_mutex);
+            callback = s_log_callback;
+        }
+
+        if (!callback)
+            return;
+
+        spdlog::memory_buf_t formatted;
+        spdlog::sinks::base_sink<Mutex>::formatter_->format(msg, formatted);
+        callback(fmt::to_string(formatted), static_cast<int>(msg.level));
+    }
+
+    void flush_() override {};
+};
+
+using callback_sink_mt = callback_sink<std::mutex>;
+
+void set_log_callback(std::function<void(std::string, int)> cb) {
+    const std::lock_guard<std::mutex> lock(s_log_callback_mutex);
+    s_log_callback = std::move(cb);
 }
 
 ExitCode init(const Root &root_paths, bool use_stdout) {
@@ -52,6 +90,10 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
         sinks.push_back(std::make_shared<spdlog::sinks::android_sink_mt>());
 #else
         sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+#endif
+
+#ifndef __ANDROID__
+    sinks.push_back(std::make_shared<callback_sink_mt>());
 #endif
 
     if (add_sink(root_paths.get_log_path() / LOG_FILE_NAME) != Success)
@@ -109,14 +151,29 @@ ExitCode add_sink(const fs::path &log_path) {
     }
 
 #ifdef _MSC_VER
-    if (sinks.size() == 2) { // spdlog is being initialized
-        sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
-    }
+    sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
 #endif
 
-    spdlog::set_default_logger(std::make_shared<spdlog::logger>("vita3k logger", begin(sinks), end(sinks)));
-    spdlog::set_pattern(LOG_PATTERN);
+    rebuild_default_logger();
     return Success;
+}
+
+void rebuild_default_logger() {
+    std::call_once(s_async_logging_once, []() {
+        spdlog::init_thread_pool(ASYNC_LOG_QUEUE_SIZE, 1);
+    });
+
+    auto duplicate_filter = std::make_shared<spdlog::sinks::dup_filter_sink_mt>(std::chrono::seconds(2), spdlog::level::info);
+    for (const auto &sink : sinks)
+        duplicate_filter->add_sink(sink);
+
+    auto logger = std::make_shared<spdlog::async_logger>(
+        "vita3k logger",
+        duplicate_filter,
+        spdlog::thread_pool(),
+        spdlog::async_overflow_policy::overrun_oldest);
+    spdlog::set_default_logger(std::move(logger));
+    spdlog::set_pattern(LOG_PATTERN);
 }
 
 // log exceptions and flush log file on exceptions

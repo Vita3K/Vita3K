@@ -1,0 +1,110 @@
+{
+  "common.ok": {
+    "message": "OK"
+  },
+  "common.cancel": {
+    "message": "Cancel"
+  },
+  "common.yes": {
+    "message": "Yes"
+  },
+  "common.no": {
+    "message": "No"
+  },
+  "common.delete": {
+    "message": "Delete"
+  },
+  "common.submit": {
+    "message": "Submit"
+  },
+  "common.please_wait": {
+    "message": "Please wait..."
+  },
+  "common.an_error_occurred": {
+    "message": "An error occurred.\nError code: {}"
+  },
+  "common.could_not_load": {
+    "message": "Could not load the file."
+  },
+  "common.could_not_save": {
+    "message": "Could not save the file."
+  },
+  "common.file_corrupted": {
+    "message": "The file is corrupt."
+  },
+  "common.microphone_disabled": {
+    "message": "Enable the microphone."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Save"
+  },
+  "dialog.save_data.load.title": {
+    "message": "Load"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Saving..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Loading..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Saving complete."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Loading complete."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Deletion complete."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "New Saved Data"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "There is no saved data."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "Do you want to save the data?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "Do you want to load this saved data?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "Do you want to delete this saved data?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "Do you want to overwrite this saved data?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "Do you want to cancel saving?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "Do you want to cancel loading?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "Do you want to cancel deleting?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Saving...\nDo not power off the system or close the application."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "Could not save the file.\nThere is not enough free space on the memory card. To save your progress in the application, you must create at least {} of free space.\n\nTo create the free space, press PS button to pause this application, and then delete other applications or content."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "There is not enough free space on the memory card.\nTo continue using the application, you must create at least {} of free space.\n\nPress the PS button to pause this application, and then delete other applications or content."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Details"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Updated"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Preparing to start the application..."
+  },
+  "overlay.trophy_earned": {
+    "message": "You have earned a trophy!"
+  },
+  "message.load_app_failed": {
+    "message": "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Have you installed the firmware?\n2. Re-dump your own PS Vita app/game and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported."
+  }
+}

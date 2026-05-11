@@ -34,6 +34,12 @@ namespace config {
 ExitCode serialize_config(Config &cfg, const fs::path &output_path);
 
 /**
+ * \brief Reset all keyboard bindings to the current default physical key values.
+ * \param cfg Config object to update.
+ */
+void reset_keyboard_bindings(Config &cfg);
+
+/**
  * \brief Initializes config system, parsing command-line args and handling some basic ones:
  *        --help, --version, --log-level
  * \param cfg Config options are returned via this parameter.

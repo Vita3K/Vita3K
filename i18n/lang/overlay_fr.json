@@ -1,0 +1,101 @@
+{
+  "common.cancel": {
+    "message": "Annuler"
+  },
+  "common.yes": {
+    "message": "Oui"
+  },
+  "common.no": {
+    "message": "Non"
+  },
+  "common.delete": {
+    "message": "Supprimer"
+  },
+  "common.please_wait": {
+    "message": "Merci de patienter..."
+  },
+  "common.an_error_occurred": {
+    "message": "Une erreur est survenue.\nCode d'erreur: {}"
+  },
+  "common.could_not_load": {
+    "message": "Le chargement du fichier a échoué."
+  },
+  "common.could_not_save": {
+    "message": "La sauvegarde du fichier a échoué."
+  },
+  "common.file_corrupted": {
+    "message": "Le fichier est corrompu."
+  },
+  "common.microphone_disabled": {
+    "message": "Activez le microphone."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Sauvegarder"
+  },
+  "dialog.save_data.load.title": {
+    "message": "Charger"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Sauvegarde en cours..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Chargement en cours..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Sauvegarde terminée."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Chargement terminé."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Suppression terminée."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "Nouvelles données sauvegardées"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "Aucune donnée sauvegardée."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "Sauvegarder les données ?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "Charger ces données sauvegardées ?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "Supprimer ces données sauvegardées ?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "Écraser ces données sauvegardées ?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "Annuler la sauvegarde ?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "Annuler le chargement ?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "Annuler la suppression ?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Sauvegarde en cours...\nNe pas éteindre le système, ni fermer l'application."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "La sauvegarde du fichier a échoué.\nEspace libre insuffisant sur la carte mémoire. Pour sauvegarder votre progression dans cette application, vous devez libérer au moins {} d'espace.\n\nPour libérer de l'espace, appuyez sur la touche PS pour mette cette application en pause, puis supprimez d'autres applications ou contenus."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "Espace libre insuffisant sur la carte mémoire.\nPour continuer à utiliser cette application,vous devez libérer au moins {} d'espace.\n\nAppuyez sur la touche PS pour mette cette application en pause, puis supprimez d'autres applications ou contenus."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Détails"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Mis à jour"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Préparation au lancement de l'application..."
+  },
+  "overlay.trophy_earned": {
+    "message": "Vous avez obtenu un trophée !"
+  }
+}

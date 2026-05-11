@@ -21,7 +21,11 @@
 
 #include <io/vfs.h>
 
-#include <lang/state.h>
+#include <map>
+#include <mutex>
+#include <string>
+
+struct Ime;
 
 enum DialogType {
     NO_DIALOG,
@@ -64,7 +68,7 @@ struct SavedataState {
     uint32_t button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
 
     std::vector<vfs::FileBuffer> icon_buffer;
-    std::vector<ImTextureID> icon_texture;
+    std::vector<void *> icon_texture;
 
     uint32_t mode;
     uint32_t mode_to_display;
@@ -97,14 +101,30 @@ struct NetcheckState {
 };
 
 struct DialogState {
-    DialogLangState lang;
+    mutable std::recursive_mutex mutex;
+
     DialogType type = NO_DIALOG;
     SceCommonDialogStatus status = SCE_COMMON_DIALOG_STATUS_NONE;
     SceCommonDialogStatus substatus = SCE_COMMON_DIALOG_STATUS_NONE;
     SceCommonDialogResult result = SCE_COMMON_DIALOG_RESULT_OK;
     ImeState ime;
+    Ime *active_ime = nullptr; // non-owning
     MsgState msg;
     NetcheckState netcheck;
     TrophyState trophy;
     SavedataState savedata;
+
+    void deinit() {
+        std::lock_guard<std::recursive_mutex> lock(mutex);
+        type = NO_DIALOG;
+        status = SCE_COMMON_DIALOG_STATUS_NONE;
+        substatus = SCE_COMMON_DIALOG_STATUS_NONE;
+        result = SCE_COMMON_DIALOG_RESULT_OK;
+        ime = {};
+        active_ime = nullptr;
+        msg = {};
+        netcheck = {};
+        trophy = {};
+        savedata = {};
+    }
 };

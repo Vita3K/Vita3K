@@ -127,6 +127,29 @@ bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, con
     return true;
 }
 
+void io_deinit(IOState &io) {
+    io.std_files.clear();
+    io.dir_entries.clear();
+    io.tty_files.clear();
+
+    io.next_fd = 0;
+
+    io.device_paths = {};
+    io.addcont.clear();
+    io.content_id.clear();
+    io.savedata.clear();
+    io.title_id.clear();
+    io.app_path.clear();
+
+    io.cachemap.clear();
+
+    {
+        std::lock_guard<std::mutex> lock(io.overlay_mutex);
+        io.overlays.clear();
+        io.next_overlay_id = 1;
+    }
+}
+
 void init_device_paths(IOState &io) {
     io.device_paths.savedata0 = "user/" + io.user_id + "/savedata/" + io.savedata;
     io.device_paths.app0 = "app/" + io.app_path;

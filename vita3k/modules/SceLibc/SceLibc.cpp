@@ -28,8 +28,6 @@
 
 TRACY_MODULE_NAME(SceLibc);
 
-static Ptr<void> g_dso;
-
 EXPORT(int, _Assert) {
     TRACY_FUNC(_Assert);
     return UNIMPLEMENTED();
@@ -228,7 +226,7 @@ EXPORT(int, __cxa_guard_release) {
 EXPORT(void, __cxa_set_dso_handle_main, Ptr<void> dso) {
     TRACY_FUNC(__cxa_set_dso_handle_main, dso);
     // LOG_WARN("__cxa_set_dso_handle_main(dso=*0x%x)", dso);
-    g_dso = dso;
+    emuenv.kernel.libc_dso_handle_main = dso;
     // return UNIMPLEMENTED();
 }
 
