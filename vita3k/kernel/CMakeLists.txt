@@ -3,7 +3,6 @@ set(SOURCE_LIST
 	include/kernel/types.h
 	include/kernel/thread/thread_data_queue.h
 	include/kernel/thread/thread_state.h
-	include/kernel/cpu_protocol.h
 	include/kernel/sync_primitives.h
 	include/kernel/relocation.h
 	include/kernel/object_store.h
@@ -14,7 +13,6 @@ set(SOURCE_LIST
 	src/thread.cpp
 	src/debugger.cpp
 	src/load_self.cpp
-	src/cpu_protocol.cpp
 	src/sync_primitives.cpp
 	src/relocation.cpp
 	src/callback.cpp

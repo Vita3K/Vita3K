@@ -71,7 +71,7 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     start_tick = rtc_get_ticks(kernel.base_tick.tick);
     last_vblank_waited = 0;
 
-    cpu = init_cpu(kernel.cpu_opt, id, static_cast<std::size_t>(core_num), mem, kernel.cpu_protocol.get());
+    cpu = init_cpu(kernel.cpu_opt, id, static_cast<std::size_t>(core_num), mem);
     if (!cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
@@ -280,7 +280,9 @@ bool ThreadState::run_loop() {
 
                 // handle svc call if this was what stopped the cpu
                 if (cpu->svc_called) {
-                    cpu->protocol->call_svc(*cpu, cpu->svc, read_pc(*cpu), *this);
+                    const uint32_t nid = *Ptr<uint32_t>(read_pc(*cpu) + 4).get(mem);
+                    kernel.call_import(*cpu, nid, id);
+                    clear_exclusive(*cpu);
                 }
 
                 // handle pending abort (exception handler from page fault)
