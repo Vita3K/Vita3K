@@ -130,7 +130,6 @@ add_subdirectory(touch)
 add_subdirectory(util)
 add_subdirectory(gdbstub)
 add_subdirectory(packages)
-add_subdirectory(v3kn)
 add_subdirectory(vkutil)
 
 if(ANDROID)

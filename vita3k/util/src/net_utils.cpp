@@ -334,89 +334,41 @@ bool socketSetBlocking(int sockfd, bool blocking) {
     return true;
 }
 
-static int curl_cancel_callback(void *user_data, curl_off_t, curl_off_t, curl_off_t, curl_off_t) {
-    const auto *cancel_flag = static_cast<const std::atomic<bool> *>(user_data);
-    return (cancel_flag && cancel_flag->load()) ? 1 : 0;
-}
-
-WebResponse get_web_response_ex(const std::string &url, const std::string &token, const std::string &post_data, CurlSession *session, const std::atomic<bool> *cancel_flag) {
-    WebResponse web_response{};
-
-    const bool has_session_given = session;
-
-    CurlSession local_session;
-
-    if (!has_session_given) {
-        local_session = init_curl_download_session(token, false);
-        if (!local_session.handle) {
-            web_response.curl_res = CURLE_FAILED_INIT;
-            return web_response;
-        }
-        session = &local_session;
-    }
-
-    CURL *curl = static_cast<CURL *>(session->handle);
-    curl_slist *headers = static_cast<curl_slist *>(session->headers);
+std::string get_web_response(const std::string &url) {
+    auto curl = curl_easy_init();
+    if (!curl)
+        return {};
 
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    if (cancel_flag) {
-        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
-        curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, curl_cancel_callback);
-        curl_easy_setopt(curl, CURLOPT_XFERINFODATA, cancel_flag);
-    } else {
-        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
-    }
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "Vita3K Emulator");
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
 
 #ifdef __ANDROID__
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 #endif
 
-    if (!post_data.empty()) {
-        curl_easy_setopt(curl, CURLOPT_POST, 1L);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data.c_str());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, post_data.size());
-    }
-
+    std::string response_string;
     const auto writeFunc = +[](void *ptr, size_t size, size_t nmemb, std::string *data) {
         data->append((char *)ptr, size * nmemb);
         return size * nmemb;
     };
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFunc);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &web_response.body);
-
-    if (headers)
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-    web_response.curl_res = curl_easy_perform(curl);
-
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_string);
     long response_code;
+    curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
 
-    if (!has_session_given)
-        cleanup_curl_session(local_session);
+    curl_easy_cleanup(curl);
 
     if (response_code / 100 == 2)
-        return web_response;
+        return response_string;
 
-    web_response.body.clear();
-    return web_response;
-}
-
-std::string get_web_response(const std::string &url) {
-    const auto response = get_web_response_ex(url, "");
-    return response.body;
+    return {};
 }
 
 std::string get_web_regex_result(const std::string &url, const std::regex &regex) {
-    const auto result = get_web_regex_results(url, regex);
-    if (result.empty())
-        return {};
-
-    return result.back();
-}
-
-std::vector<std::string> get_web_regex_results(const std::string &url, const std::regex &regex) {
-    std::vector<std::string> results;
+    std::string result;
 
     // Get the response of the web
     const auto response = get_web_response(url);
@@ -426,13 +378,12 @@ std::vector<std::string> get_web_regex_results(const std::string &url, const std
         std::smatch match;
         // Check if the response matches the regex
         if (std::regex_search(response, match, regex)) {
-            for (size_t i = 1; i < match.size(); ++i)
-                results.push_back(match[i].str());
+            result = match[1];
         } else
             LOG_ERROR("No success found regex: {}", response);
     }
 
-    return results;
+    return result;
 }
 
 static uint64_t get_current_time_ms() {
@@ -444,85 +395,56 @@ static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream) {
     return written;
 }
 
-static int curl_callback(void *user_data, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
-    auto *data = (CallbackData *)user_data;
+typedef int (*CurlDownloadCallback)(void *c, long t, long d);
 
-    // Detect mode (download/upload)
-    const bool is_download = (dltotal > 0);
-    const bool is_upload = (ultotal > 0);
+bool download_file(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback) {
+    CURL *curl_download = curl_easy_init();
+    if (!curl_download)
+        return false;
 
-    // Skip if curl doesn't have info yet
-    if (!is_download && !is_upload)
-        return 0;
+    CurlDownloadCallback curl_callback = +[](void *user_data, long total_bytes, long downloaded_bytes) {
+        const auto data = (CallbackData *)user_data;
 
-    if (!data->second)
-        return 0;
+        if ((total_bytes == 0) || (downloaded_bytes == 0))
+            return 0; // Ignore if we dont have the total yet or if we haven't downloaded anything
 
-    float progress = 0.f;
-    double bytes_done = 0;
-    double bytes_total = 0;
+        if (!data->second)
+            return 0;
 
-    if (is_download) {
-        bytes_done = static_cast<double>(dlnow);
-        bytes_total = static_cast<double>(dltotal);
-        const auto total_bytes_done = static_cast<double>(dlnow + data->first.bytes_already_downloaded);
-        const auto file_size = static_cast<double>(dltotal + data->first.bytes_already_downloaded);
-        progress = static_cast<float>(total_bytes_done) / (static_cast<float>(file_size));
-    } else if (is_upload) {
-        bytes_done = static_cast<double>(ulnow);
-        bytes_total = static_cast<double>(ultotal);
-        progress = static_cast<float>(bytes_done) / static_cast<float>(bytes_total);
-    }
+        // Calculate progress percentage
+        const auto total_bytes_downloaded = static_cast<double>(downloaded_bytes + data->first.bytes_already_downloaded);
+        const auto file_size = total_bytes + data->first.bytes_already_downloaded;
+        const auto progress_percent = static_cast<float>(total_bytes_downloaded) / static_cast<float>(file_size) * 100.0f;
 
-    if (bytes_done == 0)
-        return 0;
+        // Calculate elapsed time
+        const auto current_time = get_current_time_ms();
+        const auto elapsed_time_ms = std::difftime(current_time, data->first.time);
 
-    // Calculate elapsed time
-    const auto current_time = get_current_time_ms();
-    const auto elapsed_time_ms = std::difftime(current_time, data->first.time);
+        // Calculate remaining time in seconds
+        const auto remaining_bytes = static_cast<double>(total_bytes - downloaded_bytes);
+        const auto remaining_time = static_cast<uint64_t>((remaining_bytes / downloaded_bytes) * elapsed_time_ms) / 1000;
 
-    // Calculate remaining time in seconds
-    const auto remaining_bytes = static_cast<double>(bytes_total - bytes_done);
-    const uint64_t remaining_time = static_cast<uint64_t>((remaining_bytes / (double)bytes_done) * elapsed_time_ms) / 1000;
+        ProgressState *callback_result = data->second(progress_percent, remaining_time);
 
-    // Callback UI
-    ProgressState *callback_result = data->second(progress, remaining_time, bytes_done);
+        std::unique_lock<std::mutex> lock(callback_result->mutex);
 
-    std::unique_lock<std::mutex> lock(callback_result->mutex);
+        // Store the current pause state
+        const auto pause = callback_result->pause;
 
-    const bool was_paused = callback_result->pause;
+        // Wait until the pause state becomes false (unpaused)
+        callback_result->cv.wait(lock, [&]() {
+            return !callback_result->pause;
+        });
 
-    callback_result->cv.wait(lock, [&]() {
-        return !callback_result->pause;
-    });
+        // When coming out of pause, add the time spent to the start time to keep the time consistent
+        if (pause)
+            data->first.time += std::difftime(get_current_time_ms(), current_time);
 
-    if (was_paused)
-        data->first.time += std::difftime(get_current_time_ms(), current_time);
-
-    if (callback_result->canceled)
-        return 1;
-
-    return 0;
-}
-
-WebResponse download_file_ex(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback, const std::string &token, CurlSession *session) {
-    WebResponse web_response{};
-
-    CurlSession local_session;
-
-    const bool has_session_given = session;
-
-    if (!has_session_given) {
-        local_session = init_curl_download_session(token);
-        if (!local_session.handle) {
-            web_response.curl_res = CURLE_FAILED_INIT;
-            return web_response;
+        if (!callback_result->download) {
+            return 1; // Returning anything that's not 0 aborts the request
         }
-        session = &local_session;
-    }
-
-    CURL *curl_download = static_cast<CURL *>(session->handle);
-    curl_slist *headers = static_cast<curl_slist *>(session->headers);
+        return 0;
+    };
 
     const auto start_time = get_current_time_ms();
     const uint64_t bytes_already_downloaded = fs::exists(output_file_path) ? fs::file_size(output_file_path) : 0;
@@ -534,232 +456,33 @@ WebResponse download_file_ex(const std::string &url, const std::string &output_f
     curl_easy_setopt(curl_download, CURLOPT_RESUME_FROM_LARGE, bytes_already_downloaded);
     curl_easy_setopt(curl_download, CURLOPT_XFERINFODATA, &callbackData);
     curl_easy_setopt(curl_download, CURLOPT_XFERINFOFUNCTION, curl_callback);
+    curl_easy_setopt(curl_download, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
 
-    if (headers)
-        curl_easy_setopt(curl_download, CURLOPT_HTTPHEADER, headers);
+#ifdef __ANDROID__
+    curl_easy_setopt(curl_download, CURLOPT_SSL_VERIFYPEER, 0L);
+#endif
 
     auto fp = fopen(output_file_path.c_str(), "ab");
     if (!fp) {
         LOG_CRITICAL("Could not fopen file {}", output_file_path);
-        if (!has_session_given)
-            cleanup_curl_session(local_session);
+        curl_easy_cleanup(curl_download);
         if (fs::exists(output_file_path))
             fs::remove(output_file_path);
-        web_response.curl_res = CURLE_FAILED_INIT;
-        return web_response;
+        return false;
     }
 
     curl_easy_setopt(curl_download, CURLOPT_WRITEDATA, fp);
-    web_response.curl_res = curl_easy_perform(curl_download);
-
-    long http_code = 0;
-    curl_easy_getinfo(curl_download, CURLINFO_RESPONSE_CODE, &http_code);
-    if ((http_code != 200) && (http_code != 206)) {
-        LOG_WARN("Download failed with HTTP code: {}", http_code);
-        fclose(fp);
-        if (!has_session_given)
-            cleanup_curl_session(local_session);
-        if (fs::exists(output_file_path))
-            fs::remove(output_file_path);
-        web_response.curl_res = CURLE_HTTP_RETURNED_ERROR;
-        return web_response;
-    }
+    int res = curl_easy_perform(curl_download);
 
     fclose(fp);
+    curl_easy_cleanup(curl_download);
+    if (progress_callback)
+        progress_callback(0, 0);
 
-    if (!has_session_given)
-        cleanup_curl_session(local_session);
+    if (res == CURLE_ABORTED_BY_CALLBACK)
+        LOG_CRITICAL("Aborted update by user");
 
-    if (web_response.curl_res == CURLE_ABORTED_BY_CALLBACK)
-        LOG_WARN("Aborted by user");
-
-    return web_response;
-}
-
-bool download_file(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback) {
-    return download_file_ex(url, output_file_path, progress_callback).curl_res == CURLE_OK;
-}
-
-static size_t write_string(void *ptr, size_t size, size_t nmemb, void *userdata) {
-    std::stringstream *ss = static_cast<std::stringstream *>(userdata);
-    ss->write(static_cast<char *>(ptr), size * nmemb);
-    return size * nmemb;
-}
-
-static WebResponse upload_impl(const std::string &url, const char *data, size_t data_size, const std::string &filename, const std::string &token, const std::string &metadata, ProgressCallback progress_callback, CurlSession *session) {
-    WebResponse response{};
-
-    const bool has_session_given = session;
-
-    CurlSession local_session;
-
-    if (!has_session_given) {
-        local_session = init_curl_upload_session(token, false);
-        if (!local_session.handle) {
-            response.curl_res = CURLE_FAILED_INIT;
-            return response;
-        }
-        session = &local_session;
-    }
-
-    CURL *curl_upload = static_cast<CURL *>(session->handle);
-    curl_slist *headers = static_cast<curl_slist *>(session->headers);
-
-    curl_easy_setopt(curl_upload, CURLOPT_URL, url.c_str());
-
-    const auto start_time = get_current_time_ms();
-    const auto callbackData = CallbackData({ start_time }, progress_callback);
-    curl_easy_setopt(curl_upload, CURLOPT_NOPROGRESS, progress_callback ? false : true);
-    if (progress_callback) {
-        curl_easy_setopt(curl_upload, CURLOPT_XFERINFODATA, &callbackData);
-        curl_easy_setopt(curl_upload, CURLOPT_XFERINFOFUNCTION, curl_callback);
-    }
-
-    std::stringstream response_stream;
-    curl_easy_setopt(curl_upload, CURLOPT_WRITEFUNCTION, write_string);
-    curl_easy_setopt(curl_upload, CURLOPT_WRITEDATA, &response_stream);
-
-    if (headers)
-        curl_easy_setopt(curl_upload, CURLOPT_HTTPHEADER, headers);
-
-    curl_mime *mime = curl_mime_init(curl_upload);
-    curl_mimepart *part = nullptr;
-
-    part = curl_mime_addpart(mime);
-    curl_mime_name(part, "file");
-    curl_mime_filename(part, filename.c_str());
-    curl_mime_data(part, data, data_size);
-
-    if (!metadata.empty()) {
-        part = curl_mime_addpart(mime);
-        curl_mime_name(part, "xml");
-        curl_mime_data(part, metadata.c_str(), CURL_ZERO_TERMINATED);
-    }
-
-    curl_easy_setopt(curl_upload, CURLOPT_MIMEPOST, mime);
-
-    response.curl_res = curl_easy_perform(curl_upload);
-    response.body = response_stream.str();
-
-    curl_mime_free(mime);
-
-    if (!has_session_given)
-        cleanup_curl_session(local_session);
-
-    return response;
-}
-
-WebResponse upload_file(const std::string &url, const std::string &input_file_path, const std::string &token, const std::string &metadata, ProgressCallback progress_callback, CurlSession *session) {
-    WebResponse response{};
-
-    std::ifstream file(input_file_path, std::ios::binary);
-    if (!file) {
-        LOG_CRITICAL("Could not open file {}", input_file_path);
-        response.curl_res = CURLE_READ_ERROR;
-        return response;
-    }
-
-    std::vector<char> file_buffer((std::istreambuf_iterator<char>(file)),
-        std::istreambuf_iterator<char>());
-
-    return upload_impl(url, file_buffer.data(), file_buffer.size(), fs::path(input_file_path).filename().string(), token, metadata, progress_callback, session);
-}
-
-WebResponse upload_data(const std::string &url, const std::vector<unsigned char> &data, const std::string &filename, const std::string &token, CurlSession *session) {
-    WebResponse response{};
-
-    if (data.empty()) {
-        response.curl_res = CURLE_READ_ERROR;
-        return response;
-    }
-
-    return upload_impl(url, reinterpret_cast<const char *>(data.data()), data.size(), filename, token, "", nullptr, session);
-}
-
-CurlSession init_curl_download_session(const std::string &token, bool is_keep_alive) {
-    CurlSession session;
-    session.handle = curl_easy_init();
-
-    if (!session.handle)
-        return session;
-
-    CURL *curl = static_cast<CURL *>(session.handle);
-
-    std::string os;
-#if defined(_WIN32)
-    os = "Windows";
-#elif defined(__ANDROID__)
-    os = "Android";
-#elif defined(__linux__)
-    os = "Linux";
-#elif defined(__APPLE__)
-    os = "macOS";
-#else
-    os = "Unknown OS";
-#endif
-
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, ("Vita3K Emulator on (" + os + ")").c_str());
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
-    if (is_keep_alive) {
-        curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
-        curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 120L);
-        curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 60L);
-    }
-
-#ifdef __ANDROID__
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-#endif
-
-    if (!token.empty()) {
-        curl_slist *headers = nullptr;
-        std::string auth_header = "Authorization: Bearer " + token;
-        headers = curl_slist_append(headers, auth_header.c_str());
-        session.headers = headers;
-    }
-
-    return session;
-}
-
-CurlSession init_curl_upload_session(const std::string &token, bool is_keep_alive) {
-    CurlSession session;
-    session.handle = curl_easy_init();
-
-    if (!session.handle)
-        return session;
-
-    CURL *curl = static_cast<CURL *>(session.handle);
-
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "Vita3K Emulator");
-
-    if (is_keep_alive) {
-        curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
-        curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 120L);
-        curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 60L);
-    }
-
-#ifdef __ANDROID__
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-#endif
-
-    if (!token.empty()) {
-        curl_slist *headers = nullptr;
-        std::string auth_header = "Authorization: Bearer " + token;
-        headers = curl_slist_append(headers, auth_header.c_str());
-        session.headers = headers;
-    }
-
-    return session;
-}
-
-void cleanup_curl_session(CurlSession &session) {
-    if (session.headers) {
-        curl_slist_free_all(static_cast<curl_slist *>(session.headers));
-        session.headers = nullptr;
-    }
-    if (session.handle) {
-        curl_easy_cleanup(static_cast<CURL *>(session.handle));
-        session.handle = nullptr;
-    }
+    return res == CURLE_OK;
 }
 
 std::vector<AssignedAddr> get_all_assigned_addrs() {

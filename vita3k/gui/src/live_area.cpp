@@ -35,12 +35,9 @@
 
 #include <util/log.h>
 
-#include <v3kn/storage.h>
-
 #include <pugixml.hpp>
 
 #include <chrono>
-#include <cmath>
 #include <imgui_internal.h>
 #include <stb_image.h>
 
@@ -69,7 +66,7 @@ void GateAnimation::update() {
 namespace gui {
 
 bool get_sys_apps_state(GuiState &gui) {
-    return !gui.vita_area.content_manager && !gui.vita_area.online_storage && !gui.vita_area.settings && !gui.vita_area.trophy_collection && !gui.vita_area.manual;
+    return !gui.vita_area.content_manager && !gui.vita_area.settings && !gui.vita_area.trophy_collection && !gui.vita_area.manual;
 }
 
 struct FRAME {
@@ -580,8 +577,7 @@ enum LiveAreaType {
     GATE,
     SEARCH,
     MANUAL,
-    REFRESH,
-    CLOUD
+    REFRESH
 };
 
 struct ButtonEntry {
@@ -916,7 +912,6 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             const ImVec2 background_pos_max(background_pos_min.x + bg_scal_size.x, background_pos_min.y + bg_scal_size.y);
             DRAW_LIST->AddImage(gui.live_items[app_path][frame.id]["background"][current_item[app_path][frame.id]], background_pos_min, background_pos_max);
         }
-
         if (gui.live_items[app_path][frame.id].contains("image")) {
             const auto image_pos_min = set_screen_pos(img_pos);
             img_scal_size = apply_zoom_size(img_scal_size);
@@ -1243,155 +1238,6 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     if (app_device == VitaIoDevice::ux0) {
-        const auto rotate_point = [](const ImVec2 &point, const ImVec2 &center, float cos_angle, float sin_angle) -> ImVec2 {
-            const ImVec2 offset(point.x - center.x, point.y - center.y);
-            return ImVec2(
-                center.x + (offset.x * cos_angle) - (offset.y * sin_angle),
-                center.y + (offset.x * sin_angle) + (offset.y * cos_angle));
-        };
-
-        const auto draw_cloud_icon = [&](ImDrawList *draw_list, const ImVec2 &pos_min, const ImVec2 &size) {
-            const float BG_ROUNDING = 12.0f * SCALE.x;
-            const float BORDER_THICKNESS = 1.5f * SCALE.x;
-            const float ANGLE = -0.24f;
-            const float COS_ANGLE = std::cos(ANGLE);
-            const float SIN_ANGLE = std::sin(ANGLE);
-            const float BRANCH_SQUARE = size.x * 0.225f;
-            const float HALF_SQUARE = BRANCH_SQUARE * 0.50f;
-            const float HALF_EXTENT = BRANCH_SQUARE * 1.50f;
-            const float SYMBOL_STROKE = 2.0f * SCALE.x;
-            const float SYMBOL_TRIANGLE_RADIUS = size.x * 0.053f;
-            const float SYMBOL_SQUARE_RADIUS = size.x * 0.051f;
-            const float SYMBOL_CIRCLE_RADIUS = size.x * 0.052f;
-            const float SYMBOL_CROSS_RADIUS = size.x * 0.047f;
-            const ImVec2 POS_MAX(pos_min.x + size.x, pos_min.y + size.y);
-            const ImVec2 CENTER(pos_min.x + size.x * 0.53f, pos_min.y + size.y * 0.44f);
-            const ImVec2 DEPTH(-5.6f * SCALE.x, 6.4f * SCALE.y);
-            const ImU32 BG_COLOR = IM_COL32(221, 221, 221, 255);
-            const ImU32 BORDER_COLOR = IM_COL32(192, 193, 196, 255);
-            const ImU32 FRONT_COLOR = IM_COL32(255, 226, 86, 255);
-            const ImU32 OUTLINE_COLOR = IM_COL32(220, 164, 20, 255);
-            const ImU32 SYMBOL_COLOR = IM_COL32(158, 103, 6, 255);
-            const ImVec2 RAW[12] = {
-                ImVec2(-HALF_SQUARE, -HALF_EXTENT), ImVec2(HALF_SQUARE, -HALF_EXTENT),
-                ImVec2(HALF_SQUARE, -HALF_SQUARE), ImVec2(HALF_EXTENT, -HALF_SQUARE),
-                ImVec2(HALF_EXTENT, HALF_SQUARE), ImVec2(HALF_SQUARE, HALF_SQUARE),
-                ImVec2(HALF_SQUARE, HALF_EXTENT), ImVec2(-HALF_SQUARE, HALF_EXTENT),
-                ImVec2(-HALF_SQUARE, HALF_SQUARE), ImVec2(-HALF_EXTENT, HALF_SQUARE),
-                ImVec2(-HALF_EXTENT, -HALF_SQUARE), ImVec2(-HALF_SQUARE, -HALF_SQUARE)
-            };
-            const ImVec2 FRONT_SQUARES[5] = {
-                ImVec2(0.0f, 0.0f),
-                ImVec2(0.0f, -BRANCH_SQUARE),
-                ImVec2(-BRANCH_SQUARE, 0.0f),
-                ImVec2(BRANCH_SQUARE, 0.0f),
-                ImVec2(0.0f, BRANCH_SQUARE)
-            };
-            struct FaceDef {
-                int first;
-                int second;
-                ImU32 color;
-                ImVec2 offset_scale;
-            };
-            const FaceDef FACES[] = {
-                { 4, 5, IM_COL32(220, 160, 52, 255), ImVec2(0.22f, 0.88f) },
-                { 6, 7, IM_COL32(205, 145, 36, 255), ImVec2(1.00f, 1.00f) },
-                { 7, 8, IM_COL32(212, 151, 42, 255), ImVec2(1.00f, 1.00f) },
-                { 8, 9, IM_COL32(219, 158, 48, 255), ImVec2(1.00f, 1.00f) },
-                { 9, 10, IM_COL32(214, 153, 44, 255), ImVec2(1.00f, 1.00f) },
-                { 10, 11, IM_COL32(208, 148, 40, 255), ImVec2(0.92f, 0.92f) },
-                { 11, 0, IM_COL32(198, 140, 34, 255), ImVec2(0.70f, 0.78f) }
-            };
-
-            draw_list->AddRectFilled(pos_min, POS_MAX, BG_COLOR, BG_ROUNDING, ImDrawFlags_RoundCornersBottom);
-            draw_list->AddRect(pos_min, POS_MAX, BORDER_COLOR, BG_ROUNDING, ImDrawFlags_RoundCornersBottom, BORDER_THICKNESS);
-
-            const auto to_world = [&](const ImVec2 &point) -> ImVec2 {
-                return ImVec2(CENTER.x + point.x * COS_ANGLE - point.y * SIN_ANGLE, CENTER.y + point.x * SIN_ANGLE + point.y * COS_ANGLE);
-            };
-            const auto rotate_symbol_point = [&](const ImVec2 &point, const ImVec2 &pivot) -> ImVec2 {
-                return rotate_point(point, pivot, COS_ANGLE, SIN_ANGLE);
-            };
-            const auto make_vec2 = [](float x, float y) -> ImVec2 {
-                ImVec2 value;
-                value.x = x;
-                value.y = y;
-                return value;
-            };
-            const auto draw_face = [&](int first, int second, ImU32 color, const ImVec2 &offset_scale) {
-                const ImVec2 offset = make_vec2(DEPTH.x * offset_scale.x, DEPTH.y * offset_scale.y);
-                const ImVec2 first_world = to_world(RAW[first]);
-                const ImVec2 second_world = to_world(RAW[second]);
-                const ImVec2 quad[4] = {
-                    make_vec2(first_world.x, first_world.y),
-                    make_vec2(second_world.x, second_world.y),
-                    make_vec2(second_world.x + offset.x, second_world.y + offset.y),
-                    make_vec2(first_world.x + offset.x, first_world.y + offset.y)
-                };
-                draw_list->AddConvexPolyFilled(quad, IM_ARRAYSIZE(quad), color);
-            };
-            const auto draw_square = [&](const ImVec2 &square_center, ImU32 color) {
-                const ImVec2 quad[4] = {
-                    to_world(ImVec2(square_center.x - HALF_SQUARE, square_center.y - HALF_SQUARE)),
-                    to_world(ImVec2(square_center.x + HALF_SQUARE, square_center.y - HALF_SQUARE)),
-                    to_world(ImVec2(square_center.x + HALF_SQUARE, square_center.y + HALF_SQUARE)),
-                    to_world(ImVec2(square_center.x - HALF_SQUARE, square_center.y + HALF_SQUARE))
-                };
-                draw_list->AddConvexPolyFilled(quad, IM_ARRAYSIZE(quad), color);
-            };
-            const auto symbol_center = [&](const ImVec2 &offset) -> ImVec2 {
-                return to_world(offset);
-            };
-
-            for (const auto &face : FACES)
-                draw_face(face.first, face.second, face.color, face.offset_scale);
-
-            for (const auto &square_center : FRONT_SQUARES)
-                draw_square(square_center, FRONT_COLOR);
-
-            ImVec2 TOP[12];
-            for (int i = 0; i < IM_ARRAYSIZE(RAW); ++i)
-                TOP[i] = to_world(RAW[i]);
-            draw_list->AddPolyline(TOP, IM_ARRAYSIZE(TOP), OUTLINE_COLOR, ImDrawFlags_Closed, 1.8f * SCALE.x);
-
-            {
-                const ImVec2 TRI_CENTER = symbol_center(ImVec2(0.0f, -BRANCH_SQUARE));
-                ImVec2 tri[3] = {
-                    ImVec2(TRI_CENTER.x, TRI_CENTER.y - SYMBOL_TRIANGLE_RADIUS),
-                    ImVec2(TRI_CENTER.x - (SYMBOL_TRIANGLE_RADIUS * 0.87f), TRI_CENTER.y + (SYMBOL_TRIANGLE_RADIUS * 0.50f)),
-                    ImVec2(TRI_CENTER.x + (SYMBOL_TRIANGLE_RADIUS * 0.87f), TRI_CENTER.y + (SYMBOL_TRIANGLE_RADIUS * 0.50f))
-                };
-                for (auto &point : tri)
-                    point = rotate_symbol_point(point, TRI_CENTER);
-                draw_list->AddPolyline(tri, IM_ARRAYSIZE(tri), SYMBOL_COLOR, ImDrawFlags_Closed, SYMBOL_STROKE);
-            }
-
-            {
-                const ImVec2 SQUARE_CENTER = symbol_center(ImVec2(-BRANCH_SQUARE, 0.0f));
-                ImVec2 square[4] = {
-                    ImVec2(SQUARE_CENTER.x - SYMBOL_SQUARE_RADIUS, SQUARE_CENTER.y - SYMBOL_SQUARE_RADIUS),
-                    ImVec2(SQUARE_CENTER.x + SYMBOL_SQUARE_RADIUS, SQUARE_CENTER.y - SYMBOL_SQUARE_RADIUS),
-                    ImVec2(SQUARE_CENTER.x + SYMBOL_SQUARE_RADIUS, SQUARE_CENTER.y + SYMBOL_SQUARE_RADIUS),
-                    ImVec2(SQUARE_CENTER.x - SYMBOL_SQUARE_RADIUS, SQUARE_CENTER.y + SYMBOL_SQUARE_RADIUS)
-                };
-                for (auto &point : square)
-                    point = rotate_symbol_point(point, SQUARE_CENTER);
-                draw_list->AddPolyline(square, IM_ARRAYSIZE(square), SYMBOL_COLOR, ImDrawFlags_Closed, SYMBOL_STROKE);
-            }
-
-            draw_list->AddCircle(symbol_center(ImVec2(BRANCH_SQUARE, 0.0f)), SYMBOL_CIRCLE_RADIUS, SYMBOL_COLOR, 0, SYMBOL_STROKE);
-
-            {
-                const ImVec2 CROSS_CENTER = symbol_center(ImVec2(0.0f, BRANCH_SQUARE));
-                const ImVec2 LINE_A = rotate_symbol_point(ImVec2(CROSS_CENTER.x - SYMBOL_CROSS_RADIUS, CROSS_CENTER.y - SYMBOL_CROSS_RADIUS), CROSS_CENTER);
-                const ImVec2 LINE_B = rotate_symbol_point(ImVec2(CROSS_CENTER.x + SYMBOL_CROSS_RADIUS, CROSS_CENTER.y + SYMBOL_CROSS_RADIUS), CROSS_CENTER);
-                const ImVec2 LINE_C = rotate_symbol_point(ImVec2(CROSS_CENTER.x - SYMBOL_CROSS_RADIUS, CROSS_CENTER.y + SYMBOL_CROSS_RADIUS), CROSS_CENTER);
-                const ImVec2 LINE_D = rotate_symbol_point(ImVec2(CROSS_CENTER.x + SYMBOL_CROSS_RADIUS, CROSS_CENTER.y - SYMBOL_CROSS_RADIUS), CROSS_CENTER);
-                draw_list->AddLine(LINE_A, LINE_B, SYMBOL_COLOR, SYMBOL_STROKE);
-                draw_list->AddLine(LINE_C, LINE_D, SYMBOL_COLOR, SYMBOL_STROKE);
-            }
-        };
-
         auto APP_INDEX = get_app_index(gui, app_path);
 
         const auto widget_scal_size = apply_zoom_size(ImVec2(70.0f * SCALE.x, 70.f * SCALE.y));
@@ -1405,9 +1251,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         if (manual_exist)
             buttons.emplace_back("Manual", MANUAL, [&]() { open_manual(gui, emuenv, app_path); });
         buttons.emplace_back("Refresh", REFRESH, [&]() { refresh_app(gui, emuenv, app_path); });
-        if (app_path.find("PCS") != std::string::npos) {
-            buttons.emplace_back("Cloud", CLOUD, [&]() { v3kn::open_online_storage(gui, emuenv, APP_INDEX->title_id); });
-        }
+
         const auto BUTTONS_COUNT = static_cast<int>(buttons.size());
         const float spacing = 42.0f * SCALE.x;
         const ImVec2 BUTTONS_POS = ImVec2(
@@ -1429,12 +1273,8 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             if (TYPE == MANUAL)
                 WIDGET_COLOR = IM_COL32(202, 0, 106, 255);
 
-            if (TYPE == CLOUD)
-                draw_cloud_icon(DRAW_LIST, WIDGET_POS_MIN, widget_scal_size);
-            else {
-                DRAW_LIST->AddRectFilled(WIDGET_POS_MIN, ImVec2(WIDGET_POS_MIN.x + widget_scal_size.x, WIDGET_POS_MIN.y + widget_scal_size.y), WIDGET_COLOR, 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
-                DRAW_LIST->AddText(gui.vita_font[emuenv.current_font_level], widget_font_size, WIDGET_STR_POS, IM_COL32(255, 255, 255, 255), WIDGET_STR);
-            }
+            DRAW_LIST->AddRectFilled(WIDGET_POS_MIN, ImVec2(WIDGET_POS_MIN.x + widget_scal_size.x, WIDGET_POS_MIN.y + widget_scal_size.y), WIDGET_COLOR, 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
+            DRAW_LIST->AddText(gui.vita_font[emuenv.current_font_level], widget_font_size, WIDGET_STR_POS, IM_COL32(255, 255, 255, 255), WIDGET_STR);
             ImGui::SetCursorPos(button_pos_scal);
             if (!is_current_animated) {
                 if (ImGui::Selectable(("##" + TITLE).c_str(), gui.is_nav_button && (live_area_type_selected == TYPE), ImGuiSelectableFlags_None, widget_scal_size))
