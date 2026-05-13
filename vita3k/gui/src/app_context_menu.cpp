@@ -33,8 +33,6 @@
 #include <util/safe_time.h>
 #include <util/string_utils.h>
 
-#include <v3kn/storage.h>
-
 #include <SDL3/SDL_cpuinfo.h>
 #include <SDL3/SDL_misc.h>
 #undef main
@@ -881,8 +879,6 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_manual(gui, emuenv, app_path);
                 if (ImGui::MenuItem(gui.lang.home_screen["refresh"].c_str()))
                     refresh_app(gui, emuenv, app_path);
-                if (title_id.starts_with("PCS") && ImGui::MenuItem(gui.lang.online_storage["online_storage"].c_str()))
-                    v3kn::open_online_storage(gui, emuenv, title_id);
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu(common["delete"].c_str())) {

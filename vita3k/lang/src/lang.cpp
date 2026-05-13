@@ -313,9 +313,6 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 // Message
                 set_lang_string(emuenv.common_dialog.lang.message, lang_child.child("message"));
 
-                // Online Storage
-                set_lang_string(lang.online_storage, lang_child.child("online_storage"));
-
                 // Overlay
                 set_lang_string(lang.overlay, lang_child.child("overlay"));
 
