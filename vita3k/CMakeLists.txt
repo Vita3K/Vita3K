@@ -1,9 +1,18 @@
+<<<<<<< Updated upstream
 set(VITA3K_ORG_NAME "Vita3K")
 set(VITA3K_APP_NAME "Vita3K")
 set(VITA3K_APP_VER_HI 0)
 set(VITA3K_APP_VER_MID 2)
 set(VITA3K_APP_VER_LO 1)
 set(VITA3K_APP_VERSION "v${VITA3K_APP_VER_HI}.${VITA3K_APP_VER_MID}.${VITA3K_APP_VER_LO}")
+=======
+set(RPCSV_ORG_NAME "RPCSV")
+set(RPCSV_APP_NAME "RPCSV")
+set(RPCSV_APP_VER_HI 0)
+set(RPCSV_APP_VER_MID 2)
+set(RPCSV_APP_VER_LO 0)
+set(RPCSV_APP_VERSION "v${RPCSV_APP_VER_HI}.${RPCSV_APP_VER_MID}.${RPCSV_APP_VER_LO}")
+>>>>>>> Stashed changes
 
 execute_process(
 	COMMAND git rev-list HEAD --count
@@ -52,23 +61,32 @@ if (NOT GIT_REPO STREQUAL "")
 endif()
 
 if(GIT_HASH STREQUAL "")
-	set(VITA3K_GIT_REV "Development version")
+	set(RPCSV_GIT_REV "Development version")
 	set(GIT_COUNT 0)
+<<<<<<< Updated upstream
 elseif((GIT_REPO STREQUAL "Vita3K") AND ((GIT_BRANCH STREQUAL "master") OR (GIT_BRANCH STREQUAL "HEAD")))
 	set(VITA3K_GIT_REV "${GIT_HASH}")
 	set(VITA3K_OFFICIAL_UPDATE_BUILD 1)
+=======
+elseif((GIT_REPO STREQUAL "RPCSV") AND ((GIT_BRANCH STREQUAL "master") OR (GIT_BRANCH STREQUAL "HEAD")))
+	set(RPCSV_GIT_REV "${GIT_HASH}")
+
+	if(USE_RPCSV_UPDATE)
+		add_definitions(-DUSE_RPCSV_UPDATE)
+	endif()
+>>>>>>> Stashed changes
 else()
-	set(VITA3K_GIT_REV "${GIT_HASH}-${GIT_REPO}/${GIT_BRANCH}")
+	set(RPCSV_GIT_REV "${GIT_HASH}-${GIT_REPO}/${GIT_BRANCH}")
 endif()
 
-file(WRITE ${CMAKE_BINARY_DIR}/vita3k/config/gitver.h
-	"#define APP_VER_HI ${VITA3K_APP_VER_HI}\n"
-	"#define APP_VER_MID ${VITA3K_APP_VER_MID}\n"
-	"#define APP_VER_LO ${VITA3K_APP_VER_LO}\n"
+file(WRITE ${CMAKE_BINARY_DIR}/RPCSV/config/gitver.h
+	"#define APP_VER_HI ${RPCSV_APP_VER_HI}\n"
+	"#define APP_VER_MID ${RPCSV_APP_VER_MID}\n"
+	"#define APP_VER_LO ${RPCSV_APP_VER_LO}\n"
 	"#define APP_NUMBER ${GIT_COUNT}\n"
 )
 
-include_directories(${CMAKE_BINARY_DIR}/vita3k/config)
+include_directories(${CMAKE_BINARY_DIR}/RPCSV/config)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set(LINUX TRUE)
@@ -151,6 +169,7 @@ add_subdirectory(gdbstub)
 add_subdirectory(packages)
 add_subdirectory(vkutil)
 
+<<<<<<< Updated upstream
 if(ANDROID)
 	add_library(vita3k SHARED
 		android/jni/android_state.cpp
@@ -202,24 +221,32 @@ if(ANDROID)
 else()
 	add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
 endif()
+=======
+add_executable(RPCSV MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
+>>>>>>> Stashed changes
 
 if(WIN32)
 	# This file is a bit special, it is run before anything else and must be added here
-	target_sources(vita3k PRIVATE util/src/vc_runtime_checker.cpp)
+	target_sources(RPCSV PRIVATE util/src/vc_runtime_checker.cpp)
 endif()
 
+<<<<<<< Updated upstream
 target_link_libraries(vita3k PRIVATE app audio compat config cppcommon ctrl dialog display ime lang gdbstub gxm io miniz modules motion packages patch renderer shader touch util psvpfsparser)
 if(NOT ANDROID)
 	target_link_libraries(vita3k PRIVATE gui-qt)
 endif()
+=======
+target_link_libraries(RPCSV PRIVATE app config cppcommon ctrl display gdbstub gui gxm io miniz modules motion packages patch renderer shader touch util)
+>>>>>>> Stashed changes
 if(USE_DISCORD_RICH_PRESENCE)
-	target_link_libraries(vita3k PRIVATE discord-rpc)
+	target_link_libraries(RPCSV PRIVATE discord-rpc)
 endif()
 
 if(LINUX)
-	target_link_libraries(vita3k PRIVATE -static-libgcc -static-libstdc++)
+	target_link_libraries(RPCSV PRIVATE -static-libgcc -static-libstdc++)
 endif()
 
+<<<<<<< Updated upstream
 if(NOT ANDROID)
 	file(GLOB VITA3K_QT_TS_FILES CONFIGURE_DEPENDS
 		"${CMAKE_SOURCE_DIR}/i18n/qt/*.ts")
@@ -261,32 +288,50 @@ if(NOT ANDROID)
 		LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
 		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 endif()
+=======
+set_target_properties(RPCSV PROPERTIES OUTPUT_NAME RPCSV
+	ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+	LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+>>>>>>> Stashed changes
 
 if(APPLE)
 	add_custom_command(
-		OUTPUT Vita3K.icns
-		COMMAND mkdir -p Vita3K.iconset
-		COMMAND sips -z 16 16     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_16x16.png
-		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_16x16@2x.png
-		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_32x32.png
-		COMMAND sips -z 64 64     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_32x32@2x.png
-		COMMAND sips -z 128 128   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_128x128.png
-		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_128x128@2x.png
-		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_256x256.png
-		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_256x256@2x.png
-		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_512x512.png
-		COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" Vita3K.iconset/icon_512x512@2x.png
-		COMMAND iconutil -c icns Vita3K.iconset
-		COMMAND rm -r Vita3K.iconset
-		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png")
-	set_source_files_properties(Vita3K.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+		OUTPUT RPCSV.icns
+		COMMAND mkdir -p RPCSV.iconset
+		COMMAND sips -z 16 16     "${CMAKE_CURRENT_SOURCE_DIR}/RPCSV.png" --out RPCSV.iconset/icon_16x16.png
+		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/RPCSV.png" --out RPCSV.iconset/icon_16x16@2x.png
+		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/RPCSV.png" --out RPCSV.iconset/icon_32x32.png
+		COMMAND sips -z 64 64     "${CMAKE_CURRENT_SOURCE_DIR}/RPCSV.png" --out RPCSV.iconset/icon_32x32@2x.png
+		COMMAND sips -z 128 128   "${CMAKE_CURRENT_SOURCE_DIR}/RPCSV.png" --out RPCSV.iconset/icon_128x128.png
+		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/RPCSV.png" --out RPCSV.iconset/icon_128x128@2x.png
+		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/RPCSV.png" --out RPCSV.iconset/icon_256x256.png
+		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/RPCSV.png" --out RPCSV.iconset/icon_256x256@2x.png
+		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/RPCSV.png" --out RPCSV.iconset/icon_512x512.png
+		COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/RPCSV.png" RPCSV.iconset/icon_512x512@2x.png
+		COMMAND iconutil -c icns RPCSV.iconset
+		COMMAND rm -r RPCSV.iconset
+		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/RPCSV.png")
+	set_source_files_properties(RPCSV.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
 	add_custom_command(
-		TARGET vita3k
+		TARGET RPCSV
 		POST_BUILD
+<<<<<<< Updated upstream
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/../Resources/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/../Resources/translations"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:vita3k>/../Resources/shaders-builtin")
+=======
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:RPCSV>/../Resources/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../lang" "$<TARGET_FILE_DIR:RPCSV>/../Resources/lang"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:RPCSV>/../Resources/shaders-builtin")
+	if(USE_RPCSV_UPDATE)
+		add_custom_command(
+		TARGET RPCSV
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/script/update-macos.sh" "$<TARGET_FILE_DIR:RPCSV>/../Resources/update-RPCSV.sh")
+	endif()
+>>>>>>> Stashed changes
 	if(USE_DISCORD_RICH_PRESENCE)
 		if(ARCHITECTURE STREQUAL "x86_64")
 			set(discord_dylib "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dylib")
@@ -297,18 +342,22 @@ if(APPLE)
 		endif()
 
 		add_custom_command(
-		TARGET vita3k
+		TARGET RPCSV
 		POST_BUILD
+<<<<<<< Updated upstream
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${discord_dylib}" "$<TARGET_FILE_DIR:vita3k>/../Resources")
+=======
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dylib" "$<TARGET_FILE_DIR:RPCSV>/../Resources")
+>>>>>>> Stashed changes
 	endif()
-	set_target_properties(vita3k PROPERTIES LINK_FLAGS "-rpath @loader_path/../Frameworks/ -rpath @loader_path/../Resources/ -ld64")
-	target_sources(vita3k PRIVATE Vita3K.icns)
-	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
-	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.Vita3K.Vita3K")
-	set(MACOSX_BUNDLE_BUNDLE_NAME "Vita3K")
+	set_target_properties(RPCSV PROPERTIES LINK_FLAGS "-rpath @loader_path/../Frameworks/ -rpath @loader_path/../Resources/ -ld64")
+	target_sources(RPCSV PRIVATE RPCSV.icns)
+	set(MACOSX_BUNDLE_ICON_FILE RPCSV.icns)
+	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.RPCSV.RPCSV")
+	set(MACOSX_BUNDLE_BUNDLE_NAME "RPCSV")
 
 	message(STATUS "MoltenVK dylib path: ${MOLTENVK_DYLIB}")
-	target_sources(vita3k PRIVATE ${MOLTENVK_DYLIB})
+	target_sources(RPCSV PRIVATE ${MOLTENVK_DYLIB})
 	set_source_files_properties(${MOLTENVK_DYLIB} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
 
 	qt_finalize_target(vita3k)
@@ -326,65 +375,115 @@ elseif(LINUX)
 	if(BUILD_APPIMAGE)
 		set(APPDIR "${CMAKE_BINARY_DIR}/AppImage")
 		add_custom_command(
-		TARGET vita3k
+		TARGET RPCSV
 		POST_BUILD
+<<<<<<< Updated upstream
 		COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/Vita3K"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "${APPDIR}/usr/share/Vita3K/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${APPDIR}/usr/share/Vita3K/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "${APPDIR}/usr/share/Vita3K/icons")
 		set(LINUXDEPLOY_WRAPPER "${CMAKE_SOURCE_DIR}/appimage/build.sh")
+=======
+		COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/RPCSV"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "${APPDIR}/usr/share/RPCSV/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../lang" "${APPDIR}/usr/share/RPCSV/lang"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${APPDIR}/usr/share/RPCSV/shaders-builtin")
+		if(USE_RPCSV_UPDATE)
+			set(LINUXDEPLOY_WRAPPER "${CMAKE_SOURCE_DIR}/appimage/build_updater.sh")
+		else()
+			set(LINUXDEPLOY_WRAPPER "${CMAKE_SOURCE_DIR}/appimage/build.sh")
+		endif()
+>>>>>>> Stashed changes
 		if(USE_DISCORD_RICH_PRESENCE)
 			set(DISCORD_LIB_APPIMAGE "-l \"${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so\"")
 		else()
 			set(DISCORD_LIB_APPIMAGE "")
 		endif()
 		add_custom_command(
-		TARGET vita3k
+		TARGET RPCSV
 		POST_BUILD
 		COMMAND ${LINUXDEPLOY_WRAPPER} ${LINUXDEPLOY_COMMAND} --appdir="${APPDIR}"
+<<<<<<< Updated upstream
 			-e "$<TARGET_FILE:vita3k>" --icon-filename="vita3k"
 			-i "${CMAKE_CURRENT_SOURCE_DIR}/../data/image/icon.png" -d "${CMAKE_CURRENT_SOURCE_DIR}/../appimage/vita3k.desktop"
 			--custom-apprun="${CMAKE_CURRENT_SOURCE_DIR}/../appimage/apprun.sh" --plugin qt --output=appimage ${DISCORD_LIB_APPIMAGE}
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*" "$<TARGET_FILE_DIR:vita3k>/"
+=======
+			-e "$<TARGET_FILE:RPCSV>" --icon-filename="RPCSV"
+			-i "${CMAKE_CURRENT_SOURCE_DIR}/../data/image/icon.png" -d "${CMAKE_CURRENT_SOURCE_DIR}/../appimage/RPCSV.desktop"
+			--custom-apprun="${CMAKE_CURRENT_SOURCE_DIR}/../appimage/apprun.sh" --output=appimage ${DISCORD_LIB_APPIMAGE}
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*" "$<TARGET_FILE_DIR:RPCSV>/"
+>>>>>>> Stashed changes
 		COMMAND ${CMAKE_COMMAND} -E rm "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*")
 	endif()
 	add_custom_command(
-	TARGET vita3k
+	TARGET RPCSV
 	POST_BUILD
+<<<<<<< Updated upstream
 	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
 	COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations"
 	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
 	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons")
+=======
+	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:RPCSV>/data"
+	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../lang" "$<TARGET_FILE_DIR:RPCSV>/lang"
+	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:RPCSV>/shaders-builtin")
+	if(USE_RPCSV_UPDATE)
+		add_custom_command(
+		TARGET RPCSV
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/script/update-linux.sh" "$<TARGET_FILE_DIR:RPCSV>/update-RPCSV.sh")
+	endif()
+>>>>>>> Stashed changes
 	if(USE_DISCORD_RICH_PRESENCE)
 		add_custom_command(
-		TARGET vita3k
+		TARGET RPCSV
 		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so" "$<TARGET_FILE_DIR:vita3k>")
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so" "$<TARGET_FILE_DIR:RPCSV>")
 	endif()
 elseif(WIN32)
+<<<<<<< Updated upstream
 	target_link_libraries(vita3k PRIVATE Version)
 	target_sources(vita3k PRIVATE resource.h Vita3K.ico Vita3K.rc Windows.manifest)
 	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT vita3k)
 	set_target_properties(vita3k PROPERTIES WIN32_EXECUTABLE TRUE VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin/$(Configuration)")
+=======
+	target_link_libraries(RPCSV PRIVATE Version)
+	target_sources(RPCSV PRIVATE resource.h RPCSV.ico RPCSV.rc Windows.manifest)
+	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT RPCSV)
+	set_target_properties(RPCSV PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin/$(Configuration)")
+>>>>>>> Stashed changes
 	add_custom_command(
-		TARGET vita3k
+		TARGET RPCSV
 		POST_BUILD
+<<<<<<< Updated upstream
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons")
+=======
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:RPCSV>/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../lang" "$<TARGET_FILE_DIR:RPCSV>/lang"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:RPCSV>/shaders-builtin")
+	if(USE_RPCSV_UPDATE)
+		add_custom_command(
+		TARGET RPCSV
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/script/update-windows.bat" "$<TARGET_FILE_DIR:RPCSV>/update-RPCSV.bat")
+	endif()
+>>>>>>> Stashed changes
 	if(USE_DISCORD_RICH_PRESENCE)
 		add_custom_command(
-		TARGET vita3k
+		TARGET RPCSV
 		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dll" "$<TARGET_FILE_DIR:vita3k>")
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dll" "$<TARGET_FILE_DIR:RPCSV>")
 	endif()
 	if(EXISTS "${OPENSSL_ROOT_DIR}")
 		add_custom_command(
-		TARGET vita3k
+		TARGET RPCSV
 		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libssl-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libcrypto-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>")
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libssl-3-x64.dll" "$<TARGET_FILE_DIR:RPCSV>"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libcrypto-3-x64.dll" "$<TARGET_FILE_DIR:RPCSV>")
 	endif()
 	if(WINDEPLOYQT_EXECUTABLE)
 		add_custom_command(TARGET vita3k POST_BUILD
@@ -404,7 +503,12 @@ elseif(ANDROID)
 	)
 endif()
 
+<<<<<<< Updated upstream
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)
 	# Enable Tracy profiling on the main compilation target
 	target_link_libraries(vita3k PRIVATE tracy)
 endif()
+=======
+# Enable Tracy profiling on the main compilation target
+target_link_libraries(RPCSV PRIVATE tracy)
+>>>>>>> Stashed changes

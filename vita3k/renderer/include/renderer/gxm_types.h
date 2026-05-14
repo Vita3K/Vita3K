@@ -1,8 +1,13 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
-// This file contains internal types used by Vita3K, and the
-// internal Vita3K's implementation of SceGxm's opaque types.
+// This file contains internal types used by RPCSV, and the
+// internal RPCSV's implementation of SceGxm's opaque types.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

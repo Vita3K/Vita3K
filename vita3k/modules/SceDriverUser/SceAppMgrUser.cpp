@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -526,7 +531,7 @@ EXPORT(int, sceAppMgrReceiveEvent) {
 EXPORT(int, sceAppMgrReceiveEventNum, SceUInt32 *eventNum) {
     TRACY_FUNC(sceAppMgrReceiveEventNum, eventNum);
 
-    // Vita3K does not yet manage events
+    // RPCSV does not yet manage events
     *eventNum = 0;
 
     return STUBBED("Set eventNum to 0");

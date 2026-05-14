@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,7 +44,7 @@
 
 namespace logging {
 
-static const fs::path &LOG_FILE_NAME = "vita3k.log";
+static const fs::path &LOG_FILE_NAME = "RPCSV.log";
 static const char *LOG_PATTERN = "%^[%H:%M:%S.%e] |%L| [%!]: %v%$";
 static constexpr size_t ASYNC_LOG_QUEUE_SIZE = 65536;
 static std::vector<spdlog::sink_ptr> sinks;
@@ -107,7 +112,7 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
 #ifdef _WIN32
     // set console codepage to UTF-8
     SetConsoleOutputCP(65001);
-    SetConsoleTitle("Vita3K PSVita Emulator");
+    SetConsoleTitle("RPCSV PSVita Emulator");
 #endif
 
 #ifdef __ANDROID__
@@ -154,7 +159,12 @@ ExitCode add_sink(const fs::path &log_path) {
     sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
 #endif
 
+<<<<<<< Updated upstream
     rebuild_default_logger();
+=======
+    spdlog::set_default_logger(std::make_shared<spdlog::logger>("RPCSV logger", begin(sinks), end(sinks)));
+    spdlog::set_pattern(LOG_PATTERN);
+>>>>>>> Stashed changes
     return Success;
 }
 

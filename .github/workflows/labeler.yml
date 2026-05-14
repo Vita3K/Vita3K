@@ -5,7 +5,7 @@ on:
 
 jobs:
   labeler:
-    if: github.repository == 'Vita3K/Vita3K'
+    if: github.repository == 'RPCSV/RPCSV'
     permissions:
       contents: read
       pull-requests: write

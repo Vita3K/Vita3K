@@ -26,7 +26,7 @@
 
 /*!
 \brief Implementation of the Texture Decompression functions.
-\PVRT2 decompression is implemented by Vita3K team.
+\PVRT2 decompression is implemented by RPCSV team.
 \file PVRCore/texture/PVRTDecompress.cpp
 \author PowerVR by Imagination, Developer Technology Team
 \copyright Copyright (c) Imagination Technologies Limited.

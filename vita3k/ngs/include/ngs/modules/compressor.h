@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 // Copyright (C) 2026 Vita3K team
+=======
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

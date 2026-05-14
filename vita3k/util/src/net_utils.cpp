@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -340,7 +345,7 @@ std::string get_web_response(const std::string &url) {
         return {};
 
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "Vita3K Emulator");
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "RPCSV Emulator");
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
 

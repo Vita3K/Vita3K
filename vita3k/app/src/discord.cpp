@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -82,8 +87,8 @@ void update_presence(const std::string &state, const std::string &details, bool 
     if (is_running()) {
         activity.SetDetails(details.c_str());
         activity.SetState(state.c_str());
-        activity.GetAssets().SetLargeImage("vita3k-logo");
-        activity.GetAssets().SetLargeText("Vita3K is the world's first functional PlayStation Vita emulator");
+        activity.GetAssets().SetLargeImage("RPCSV-logo");
+        activity.GetAssets().SetLargeText("RPCSV is the world's first functional PlayStation Vita emulator");
         activity.SetType(discord::ActivityType::Playing);
         if (reset_timer) {
             activity.GetTimestamps().SetStart(time(nullptr));

@@ -4,7 +4,7 @@
 # Project related configuration options
 #---------------------------------------------------------------------------
 DOXYFILE_ENCODING      = UTF-8
-PROJECT_NAME           = Vita3K
+PROJECT_NAME           = RPCSV
 PROJECT_NUMBER         =
 PROJECT_BRIEF          = "Experimental PlayStation Vita emulator"
 PROJECT_LOGO           = ../data/image/icon.png
@@ -118,7 +118,7 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = ../vita3k \
+INPUT                  = ../RPCSV \
                          ../tools
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.c \

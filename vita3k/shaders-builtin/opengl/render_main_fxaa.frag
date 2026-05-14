@@ -1,4 +1,4 @@
-// Vita3K emulator project
+// RPCSV emulator project
 // Code adapted from http://horde3d.org/wiki/index.php?title=Shading_Technique_-_FXAA
 
 uniform sampler2D fb;

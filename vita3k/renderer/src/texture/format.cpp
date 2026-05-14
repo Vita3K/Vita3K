@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 // Copyright (c) 2009 Benjamin Dobell, Glass Echidna
 //
 // This program is free software; you can redistribute it and/or modify

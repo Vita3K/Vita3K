@@ -42,176 +42,176 @@ tools:
     - any-glob-to-any-file:
       - 'tools/**'
 
-# vita3k Labels
+# RPCSV Labels
 app:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/app/**'
+      - 'RPCSV/app/**'
 audio:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/audio/**'
+      - 'RPCSV/audio/**'
 codec:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/codec/**'
+      - 'RPCSV/codec/**'
 compat:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/compat/**'
+      - 'RPCSV/compat/**'
 config:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/config/**'
+      - 'RPCSV/config/**'
 cpu:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/cpu/**'
+      - 'RPCSV/cpu/**'
 ctrl:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/ctrl/**'
+      - 'RPCSV/ctrl/**'
 debug:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/gdbstub/**'
-      - 'vita3k/**/tracy.cpp'
+      - 'RPCSV/gdbstub/**'
+      - 'RPCSV/**/tracy.cpp'
 dialog:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/dialog/**'
+      - 'RPCSV/dialog/**'
 display:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/display/**'
+      - 'RPCSV/display/**'
 emuenv:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/emuenv/**'
+      - 'RPCSV/emuenv/**'
 features:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/features/**'
+      - 'RPCSV/features/**'
 gdbstub:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/gdbstub/**'
+      - 'RPCSV/gdbstub/**'
 gxm:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/gxm/**'
+      - 'RPCSV/gxm/**'
 hle:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/module/**'
-      - 'vita3k/modules/**'
+      - 'RPCSV/module/**'
+      - 'RPCSV/modules/**'
 host:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/host/**'
+      - 'RPCSV/host/**'
 http:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/http/**'
+      - 'RPCSV/http/**'
 ime:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/ime/**'
+      - 'RPCSV/ime/**'
 io:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/io/**'
+      - 'RPCSV/io/**'
 kernel:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/kernel/**'
+      - 'RPCSV/kernel/**'
 memory:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/mem/**'
+      - 'RPCSV/mem/**'
 module:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/module/**'
+      - 'RPCSV/module/**'
 modules:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/modules/**'
+      - 'RPCSV/modules/**'
 motion:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/motion/**'
+      - 'RPCSV/motion/**'
 net:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/net/**'
+      - 'RPCSV/net/**'
 ngs:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/ngs/**'
+      - 'RPCSV/ngs/**'
 nids:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/nids/**'
+      - 'RPCSV/nids/**'
 np:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/np/**'
+      - 'RPCSV/np/**'
 opengl:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/renderer/**/gl/**'
-      - 'vita3k/glutil/**'
+      - 'RPCSV/renderer/**/gl/**'
+      - 'RPCSV/glutil/**'
 packages:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/packages/**'
+      - 'RPCSV/packages/**'
 patch:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/patch/**'
+      - 'RPCSV/patch/**'
 regmgr:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/regmgr/**'
+      - 'RPCSV/regmgr/**'
 renderer:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/renderer/**'
+      - 'RPCSV/renderer/**'
 rtc:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/rtc/**'
+      - 'RPCSV/rtc/**'
 script:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/script/**'
+      - 'RPCSV/script/**'
 shader:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/shader/**'
-      - 'vita3k/shaders-builtin/**'
+      - 'RPCSV/shader/**'
+      - 'RPCSV/shaders-builtin/**'
 texture:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/renderer/src/texture/**'
+      - 'RPCSV/renderer/src/texture/**'
 threads:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/threads/**'
+      - 'RPCSV/threads/**'
 touch:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/touch/**'
+      - 'RPCSV/touch/**'
 util:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/util/**'
+      - 'RPCSV/util/**'
 vulkan:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/renderer/**/vulkan/**'
-      - 'vita3k/vkutil/**'
+      - 'RPCSV/renderer/**/vulkan/**'
+      - 'RPCSV/vkutil/**'
 
 # OS Labels
 windows:
@@ -232,9 +232,9 @@ linux:
 gui:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/gui/**'
+      - 'RPCSV/gui/**'
 gui/lang:
   - changed-files:
     - any-glob-to-any-file:
       - 'lang/**'
-      - 'vita3k/lang/**'
+      - 'RPCSV/lang/**'

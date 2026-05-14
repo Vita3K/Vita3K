@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,10 +61,10 @@ bool copy_directories(const fs::path &src_path, const fs::path &dst_path);
 
 /**
  * @brief Copy all files from a source path to the corresponding path in the emulated PS Vita filesystem
- * (Vita3K pref path) and delete the source path
+ * (RPCSV pref path) and delete the source path
  *
  * @param src_path Path from the host filesystem
- * @param pref_path Vita3K pref path
+ * @param pref_path RPCSV pref path
  * @param app_title_id App title ID (`PCSXXXXXX`)
  * @param app_category Content type ID as specified by `param.sfo` file
  * @return true Success

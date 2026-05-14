@@ -1,23 +1,23 @@
-# Vita3K
+# RPCSV
 
-[![C/C++ CI](https://github.com/Vita3K/Vita3K/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/Vita3K/Vita3K/actions/workflows/c-cpp.yml)
-[![Release](https://img.shields.io/github/v/release/Vita3K/Vita3K-builds?include_prereleases)](https://github.com/Vita3K/Vita3K/releases)
-[![Vita3K discord server](https://img.shields.io/discord/408916678911459329?color=5865F2&label=Vita3K%20&logo=discord&logoColor=white)](https://discord.gg/6aGwQzh)
+[![C/C++ CI](https://github.com/RPCSV/RPCSV/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/RPCSV/RPCSV/actions/workflows/c-cpp.yml)
+[![Release](https://img.shields.io/github/v/release/RPCSV/RPCSV-builds?include_prereleases)](https://github.com/RPCSV/RPCSV/releases)
+[![RPCSV discord server](https://img.shields.io/discord/408916678911459329?color=5865F2&label=RPCSV%20&logo=discord&logoColor=white)](https://discord.gg/6aGwQzh)
 
 ## Introduction
 
-Vita3K is an experimental PlayStation Vita emulator for Windows, Linux, macOS and Android.
+RPCSV is an experimental PlayStation Vita emulator for Windows, Linux, macOS and Android.
 
-* [Website](https://vita3k.org/) (information for users)
-* [Wiki](https://github.com/Vita3K/Vita3K/wiki) (information for developers)
+* [Website](https://RPCSV.org/) (information for users)
+* [Wiki](https://github.com/RPCSV/RPCSV/wiki) (information for developers)
 * [Discord server](https://discord.gg/MaWhJVH) (recommended)
 
 ## Compatibility
 
 The emulator currently runs most homebrew programs and commercial games.
 
-- [Homebrew compatibility page](https://vita3k.org/compatibility-homebrew.html)
-- [Commercial compatibility page](https://vita3k.org/compatibility.html)
+- [Homebrew compatibility page](https://RPCSV.org/compatibility-homebrew.html)
+- [Commercial compatibility page](https://RPCSV.org/compatibility.html)
 
 ## Gallery
 
@@ -35,33 +35,33 @@ The emulator currently runs most homebrew programs and commercial games.
 
 ## License
 
-Vita3K is licensed under the **GPLv2** license. This is largely dictated by external dependencies, most notably Unicorn.
+RPCSV is licensed under the **GPLv2** license. This is largely dictated by external dependencies, most notably Unicorn.
 
 ## Downloads
 
-You can download the latest builds from [here](https://github.com/Vita3K/Vita3K/releases/tag/continuous).
+You can download the latest builds from [here](https://github.com/RPCSV/RPCSV/releases/tag/continuous).
 
 * Windows
   * Requirements:
     * [Microsoft Visual C++ 2015-2022 Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe)
 * Linux
   * Arch based:
-    * [vita3k-bin](https://aur.archlinux.org/packages/vita3k-bin)<sup><small>AUR</small></sup>
-    * [vita3k-git](https://aur.archlinux.org/packages/vita3k-git)<sup><small>AUR</small></sup>
+    * [RPCSV-bin](https://aur.archlinux.org/packages/RPCSV-bin)<sup><small>AUR</small></sup>
+    * [RPCSV-git](https://aur.archlinux.org/packages/RPCSV-git)<sup><small>AUR</small></sup>
   * Requirements:
     * xdg-desktop-portal
-* [Android](https://github.com/Vita3K/Vita3K-Android/releases/)
+* [Android](https://github.com/RPCSV/RPCSV-Android/releases/)
     * [Adreno drivers](https://github.com/K11MCH1/AdrenoToolsDrivers/releases/)
 * Others
-  * [Download Artifact](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
-  * [Old builds](https://github.com/Vita3K/Vita3K-builds/releases)
+  * [Download Artifact](https://github.com/RPCSV/RPCSV/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
+  * [Old builds](https://github.com/RPCSV/RPCSV-builds/releases)
 
 ## Building
 
 Please see [`building.md`](./building.md).
 
 ## Running
-Check our [quickstart guide](https://vita3k.org/quickstart) to make sure your computer meets the minimum requirements to run Vita3K.  
+Check our [quickstart guide](https://RPCSV.org/quickstart) to make sure your computer meets the minimum requirements to run RPCSV.  
 Don't forget to have your graphics driver up to date and to install the [Visual C++ 2015-2022 Redistributable](https://aka.ms/vs/17/release/VC_redist.x64.exe) if you are a Windows user.  
 
 ## Bugs and issues
@@ -71,9 +71,9 @@ The project is in an early stage, so please be mindful when opening new issues. 
 Thanks go out to people who offered advice or otherwise made this project possible, such as Davee, korruptor, Rinnegatamante, ScHlAuChi, Simon Kilroy, TheFlow, xerpi, xyz, Yifan Lu and many others.
 
 ## Donations
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/vita3k)
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/RPCSV)
 <br>
-Thank you to the supporters and to all those who support us on our [ko-fi](https://ko-fi.com/vita3K).
+Thank you to the supporters and to all those who support us on our [ko-fi](https://ko-fi.com/RPCSV).
 * Among them, those who subscribed to the Nibble Tier and upper: **j0hnnybrav0, Mored4u, TacoOblivion, Undeadbob and uplush**
 
 ## Note

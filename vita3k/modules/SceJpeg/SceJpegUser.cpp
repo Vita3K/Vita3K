@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -275,7 +280,7 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *pJpeg, SceSize isize,
      * but with the following limitations:
      * 1. YUV441 is currently not supported due to FFmpeg limitations. While no games are known to use
      *    YUV441, improvements may be necessary if such games are found.
-     * 2. JPEG files with non-standard MCUs will be processed without errors in Vita3K, whereas they
+     * 2. JPEG files with non-standard MCUs will be processed without errors in RPCSV, whereas they
      *    would cause decoding errors on the PS Vita.
      * 3. The calculation of coefBufferSize is not supported.
      */

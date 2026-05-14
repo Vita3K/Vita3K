@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream:vita3k/gui-qt/include/gui-qt/physical_key_qt.h
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes:vita3k/lang/include/lang/functions.h
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

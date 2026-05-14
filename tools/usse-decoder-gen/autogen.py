@@ -142,7 +142,7 @@ def update_matcher():
         // clang-format off
 """ + out + "\n        // clang-format on\n"
     num_str = ' '+str(num)
-    replace_file('../../vita3k/shader/src/usse_translator_entry.cpp', entry_pat, r'\1'+num_str+r'\2'+out+r'    \3')
+    replace_file('../../RPCSV/shader/src/usse_translator_entry.cpp', entry_pat, r'\1'+num_str+r'\2'+out+r'    \3')
 
 def update_visitor():
     # update headers
@@ -155,13 +155,13 @@ def update_visitor():
             return '    ' + x
         return ''
     out = '\n'.join([tab(x) for x in out.splitlines()])
-    replace_file('../../vita3k/shader/include/shader/usse_translator.h', header_pat, r'\1'+out+r'    \2')
+    replace_file('../../RPCSV/shader/include/shader/usse_translator.h', header_pat, r'\1'+out+r'    \2')
 
     # update sources
     def src_pat(name):
         return r'(bool USSETranslatorVisitor::' + name + r'\()[^)]*(\))'
     
-    files = glob('../../vita3k/shader/src/translator/*.cpp')
+    files = glob('../../RPCSV/shader/src/translator/*.cpp')
     for file in files:
         replace_file(file, [src_pat(func[0]) for func in funcdefs], [r'\1\n    '+func[1]+r'\2' for func in funcdefs])
 

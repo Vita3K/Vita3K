@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -286,7 +291,7 @@ void init_paths(Root &root_paths) {
 #if defined(__APPLE__)
         // Store other data in the user-wide path. Otherwise we may end up dumping
         // files into the "/Applications/" install directory or the app bundle.
-        // This will typically be "~/Library/Application Support/Vita3K/Vita3K/".
+        // This will typically be "~/Library/Application Support/RPCSV/RPCSV/".
         // Check for config.yml first, though, to maintain backwards compatibility,
         // even though storing user data inside the app bundle is not a good idea.
         auto existing_config = base_path / "config.yml";
@@ -353,8 +358,8 @@ void init_paths(Root &root_paths) {
                 root_paths.set_static_assets_path(fs::path(XDG_DATA_HOME) / app_name / "");
         }
 
-        if (APPDIR != NULL && fs::exists(fs::path(APPDIR) / "usr/share/Vita3K")) {
-            root_paths.set_static_assets_path(fs::path(APPDIR) / "usr/share/Vita3K");
+        if (APPDIR != NULL && fs::exists(fs::path(APPDIR) / "usr/share/RPCSV")) {
+            root_paths.set_static_assets_path(fs::path(APPDIR) / "usr/share/RPCSV");
         }
 
         // shared path

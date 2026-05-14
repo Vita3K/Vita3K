@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream:vita3k/overlay/include/overlay/pause_overlay.h
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes:vita3k/kernel/include/kernel/cpu_protocol.h
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

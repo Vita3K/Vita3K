@@ -5,7 +5,7 @@ labels: "feature request"
 body:
   - type: markdown
     attributes:
-      value: Tech support does not belong here. You should only file an issue here if you are requesting a feature you believe would make Vita3K better.
+      value: Tech support does not belong here. You should only file an issue here if you are requesting a feature you believe would make RPCSV better.
   - type: checkboxes
     attributes:
       label: Is there an existing issue for this?
@@ -24,7 +24,7 @@ body:
     id: why-feature
     attributes:
       label: Why would this feature be useful?
-      description: A brief description of why this feature would make Vita3K better.
+      description: A brief description of why this feature would make RPCSV better.
     validations:
       required: true
   - type: textarea

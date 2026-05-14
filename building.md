@@ -1,8 +1,8 @@
-# Build Vita3K
+# Build RPCSV
 
-Vita3K uses CMake for its project configuration and generation. In theory, it should be compatible with any project generator supported by CMake, C++17 compatible compiler and an IDE with CMake support. 
+RPCSV uses CMake for its project configuration and generation. In theory, it should be compatible with any project generator supported by CMake, C++17 compatible compiler and an IDE with CMake support. 
 
-The project provides [CMake presets](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html) to allow configuring and building Vita3K without having to deal with adding the needed arguments through a command-line interface or using the user interface of your IDE. As long as your IDE or code editor supports CMake, the software should immediately detect the presets and let you choose which configuration settings you want to use to generate the program. Reference on how to use CMake presets with various IDEs and code editors can be found here:
+The project provides [CMake presets](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html) to allow configuring and building RPCSV without having to deal with adding the needed arguments through a command-line interface or using the user interface of your IDE. As long as your IDE or code editor supports CMake, the software should immediately detect the presets and let you choose which configuration settings you want to use to generate the program. Reference on how to use CMake presets with various IDEs and code editors can be found here:
 
 - [Visual Studio](https://docs.microsoft.com/en-us/cpp/build/cmake-presets-vs)
 - [Visual Studio Code](https://github.com/microsoft/vscode-cmake-tools/blob/main/docs/cmake-presets.md)
@@ -12,7 +12,7 @@ All presets are named after `<target_os>-<project_generator>-<compiler>`, are au
 
 If you still want to use presets but none of them works for your setup, you can make new ones by creating a `CMakeUserPresets.json` file and you can check the specification [here](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html). Git will ignore this file.
 
-**Note: Vita3K doesn't support compilation for 32-bit/x86/i386 platforms.**
+**Note: RPCSV doesn't support compilation for 32-bit/x86/i386 platforms.**
 
 For convenience, the following building instructions are given as examples:
 
@@ -30,8 +30,8 @@ For convenience, the following building instructions are given as examples:
 - Clone this repo.
 
   ```cmd
-  git clone --recursive https://github.com/Vita3K/Vita3K
-  cd Vita3K
+  git clone --recursive https://github.com/RPCSV/RPCSV
+  cd RPCSV
   ```
 
 - Run Visual Studio 2022. On the project selection window open the local clone of the repository as a folder. Thanks to the integration between Visual Studio and CMake, Visual Studio will automatically detect the repository as a CMake project.
@@ -54,8 +54,8 @@ If you aren't satisfied with the way the Visual Studio integrates CMake projects
 
 - Clone the repository:
   ```cmd
-  git clone --recursive https://github.com/Vita3K/Vita3K
-  cd Vita3K
+  git clone --recursive https://github.com/RPCSV/RPCSV
+  cd RPCSV
   ```
 
 - Generate the project:
@@ -84,8 +84,8 @@ If you aren't satisfied with the way the Visual Studio integrates CMake projects
 - Clone this repo.
 
   ```sh
-  git clone --recursive https://github.com/Vita3K/Vita3K
-  cd Vita3K
+  git clone --recursive https://github.com/RPCSV/RPCSV
+  cd RPCSV
   ```
 
 - Generate Xcode project.
@@ -95,9 +95,9 @@ If you aren't satisfied with the way the Visual Studio integrates CMake projects
   ```
   This example will generate a Xcode project inside a folder called `build/macos-xcode`.
 
-- Open Xcode project `vita3k.xcodeproj` generated in `build/macos-xcode` directory.
+- Open Xcode project `RPCSV.xcodeproj` generated in `build/macos-xcode` directory.
 
-- When prompted to create schemes, create one for the `vita3k` target only. The project builds many targets, so it will make your life easier if you create schemes as needed.
+- When prompted to create schemes, create one for the `RPCSV` target only. The project builds many targets, so it will make your life easier if you create schemes as needed.
 
 - Build the project using the Xcode UI. If needed, the build process can be invoked as well the same way as with the other platforms using a terminal:
   ```sh
@@ -125,8 +125,8 @@ Note: The CMake preset `linux-ninja-clang` makes use of the LLD linker, which wi
 - Clone this repo.
 
   ```sh
-  git clone --recursive https://github.com/Vita3K/Vita3K
-  cd Vita3K
+  git clone --recursive https://github.com/RPCSV/RPCSV
+  cd RPCSV
   ```
 
 - Generate the project.
@@ -155,4 +155,4 @@ Note: The CMake preset `linux-ninja-clang` makes use of the LLD linker, which wi
   sudo apt install libboost-filesystem-dev libboost-program-options-dev libboost-system-dev # for Ubuntu/Debian
   ```
 
-  If needed, CMake options `VITA3K_FORCE_CUSTOM_BOOST` and `VITA3K_FORCE_SYSTEM_BOOST` can be set to change the way the CMake project looks for Boost.
+  If needed, CMake options `RPCSV_FORCE_CUSTOM_BOOST` and `RPCSV_FORCE_SYSTEM_BOOST` can be set to change the way the CMake project looks for Boost.

@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,7 +48,7 @@ void reset_keyboard_bindings(Config &cfg);
  * \brief Initializes config system, parsing command-line args and handling some basic ones:
  *        --help, --version, --log-level
  * \param cfg Config options are returned via this parameter.
- * \param root_paths Root location used throughout Vita3K.
+ * \param root_paths Root location used throughout RPCSV.
  * \return Success for completion, QuitRequest if Help or Version is requested, otherwise Error.
  */
 ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths);

@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -96,8 +101,338 @@ bool set_locale(int sys_lang) {
     return set_locale(locale_tag_for_sys_lang(sys_lang));
 }
 
+<<<<<<< Updated upstream
 void reset_defaults() {
     apply_locale(generated::english_locale());
+=======
+                // Main Menu Bar
+                const auto main_menubar = lang_child.child("main_menubar");
+                if (!main_menubar.empty()) {
+                    // File Menu
+                    set_lang_string(lang.main_menubar.file, main_menubar.child("file"));
+
+                    // Emulation Menu
+                    set_lang_string(lang.main_menubar.emulation, main_menubar.child("emulation"));
+
+                    // Debug Menu
+                    set_lang_string(lang.main_menubar.debug, main_menubar.child("debug"));
+
+                    // Configuration Menu
+                    set_lang_string(lang.main_menubar.configuration, main_menubar.child("configuration"));
+
+                    // Controls Menu
+                    set_lang_string(lang.main_menubar.controls, main_menubar.child("controls"));
+
+                    // Help Menu
+                    set_lang_string(lang.main_menubar.help, main_menubar.child("help"));
+                }
+
+                // About
+                set_lang_string(lang.about, lang_child.child("about"));
+
+                // App Context
+                const auto app_context = lang_child.child("app_context");
+                if (!app_context.empty()) {
+                    // Main
+                    set_lang_string(lang.app_context.main, app_context);
+
+                    // Delete
+                    set_lang_string(lang.app_context.deleting, app_context.child("delete"));
+
+                    // Information
+                    set_lang_string(lang.app_context.info, app_context.child("info"));
+
+                    // Time Used
+                    set_lang_string(lang.app_context.time_used, app_context.child("time_used"));
+                }
+
+                // Common
+                const auto common = lang_child.child("common");
+                if (!common.empty()) {
+                    set_lang_string(emuenv.common_dialog.lang.common, common);
+                    set_lang_string(lang.common.main, common);
+
+                    const auto set_calendar = [](std::vector<std::string> &dest, const pugi::xml_node child) {
+                        if (!child.empty()) {
+                            dest.clear();
+                            for (const auto day : child)
+                                dest.emplace_back(day.text().as_string());
+                        }
+                    };
+
+                    // Day of the week
+                    set_calendar(lang.common.wday, common.child("wday"));
+
+                    // Months of the year
+                    set_calendar(lang.common.ymonth, common.child("ymonth"));
+
+                    // Small months of the year
+                    set_calendar(lang.common.small_ymonth, common.child("small_ymonth"));
+
+                    // Days of the month
+                    set_calendar(lang.common.mday, common.child("mday"));
+
+                    // Small days of the month
+                    set_calendar(lang.common.small_mday, common.child("small_mday"));
+                }
+
+                // Compatibility
+                const auto compatibility_child = lang_child.child("compatibility");
+                if (!compatibility_child.empty()) {
+                    auto &lang_compatibility = lang.compatibility;
+                    // Name
+                    if (!compatibility_child.attribute("name").empty())
+                        lang_compatibility.name = compatibility_child.attribute("name").as_string();
+
+                    // States
+                    const auto states = compatibility_child.child("states");
+                    if (!states.empty()) {
+                        for (const auto state : states) {
+                            const auto id = static_cast<compat::CompatibilityState>(state.attribute("id").as_int());
+                            lang_compatibility.states[id] = state.text().as_string();
+                        }
+                    }
+                }
+
+                // Compatibility Database
+                set_lang_string(lang.compat_db, lang_child.child("compat_db"));
+
+                // Compile Shaders
+                set_lang_string(lang.compile_shaders, lang_child.child("compile_shaders"));
+
+                // Content Manager
+                const auto content_manager = lang_child.child("content_manager");
+                if (!content_manager.empty()) {
+                    // Main
+                    set_lang_string(lang.content_manager.main, content_manager);
+
+                    // Application
+                    set_lang_string(lang.content_manager.application, content_manager.child("application"));
+
+                    // Saved Data
+                    set_lang_string(lang.content_manager.saved_data, content_manager.child("saved_data"));
+                }
+
+                // Controllers
+                set_lang_string(lang.controllers, lang_child.child("controllers"));
+
+                // Controls
+                set_lang_string(lang.controls, lang_child.child("controls"));
+
+                // Dialog
+                const auto dialog = lang_child.child("dialog");
+                if (!dialog.empty()) {
+                    // Trophy
+                    set_lang_string(emuenv.common_dialog.lang.trophy, dialog.child("trophy"));
+
+                    // Save Data
+                    const auto save_data = dialog.child("save_data");
+                    if (!save_data.empty()) {
+                        auto &lang_save_data = emuenv.common_dialog.lang.save_data;
+                        // Delete
+                        set_lang_string(lang_save_data.deleting, save_data.child("delete"));
+
+                        // Info
+                        set_lang_string(lang_save_data.info, save_data.child("info"));
+
+                        // Load
+                        set_lang_string(lang_save_data.load, save_data.child("load"));
+
+                        // Save
+                        set_lang_string(lang_save_data.save, save_data.child("save"));
+                    }
+                }
+
+                // Game Data
+                set_lang_string(lang.game_data, lang_child.child("game_data"));
+
+                // Home Screen
+                set_lang_string(lang.home_screen, lang_child.child("home_screen"));
+
+                // Indicator
+                set_lang_string(lang.indicator, lang_child.child("indicator"));
+
+                // Initial Setup
+                if (!emuenv.cfg.initial_setup)
+                    set_lang_string(lang.initial_setup, lang_child.child("initial_setup"));
+
+                // Install Dialog
+                const auto install_dialog = lang_child.child("install_dialog");
+                if (!install_dialog.empty()) {
+                    // Firmware Install
+                    set_lang_string(lang.install_dialog.firmware_install, install_dialog.child("firmware_install"));
+
+                    // Package Install
+                    set_lang_string(lang.install_dialog.pkg_install, install_dialog.child("pkg_install"));
+
+                    // Archive Install
+                    set_lang_string(lang.install_dialog.archive_install, install_dialog.child("archive_install"));
+
+                    // License Install
+                    set_lang_string(lang.install_dialog.license_install, install_dialog.child("license_install"));
+
+                    // Reinstall
+                    set_lang_string(lang.install_dialog.reinstall, install_dialog.child("reinstall"));
+                }
+
+                // Live Area
+                const auto live_area = lang_child.child("live_area");
+                if (!live_area.empty()) {
+                    // Main
+                    set_lang_string(lang.live_area.main, live_area);
+
+                    // Help
+                    set_lang_string(lang.live_area.help, live_area.child("help"));
+                }
+
+                // Message
+                set_lang_string(emuenv.common_dialog.lang.message, lang_child.child("message"));
+
+                // Performance Overlay
+                set_lang_string(lang.performance_overlay, lang_child.child("performance_overlay"));
+
+                // Settings
+                const auto settings = lang_child.child("settings");
+                if (!settings.empty()) {
+                    // Main
+                    set_lang_string(lang.settings.main, settings);
+
+                    // Theme & Background
+                    const auto theme_background = settings.child("theme_background");
+                    if (!theme_background.empty()) {
+                        set_lang_string(lang.settings.theme_background.main, theme_background);
+
+                        // Theme
+                        const auto theme = theme_background.child("theme");
+                        if (!theme.empty()) {
+                            set_lang_string(lang.settings.theme_background.theme.main, theme);
+
+                            // Information
+                            set_lang_string(lang.settings.theme_background.theme.information, theme.child("information"));
+                        }
+
+                        // Start Screen
+                        set_lang_string(lang.settings.theme_background.start_screen, theme_background.child("start_screen"));
+
+                        // Home Screen Backgrounds
+                        set_lang_string(lang.settings.theme_background.home_screen_backgrounds, theme_background.child("home_screen_backgrounds"));
+                    }
+
+                    // Date & Time
+                    const auto date_time = settings.child("date_time");
+                    if (!date_time.empty()) {
+                        // Main
+                        set_lang_string(lang.settings.date_time.main, date_time);
+
+                        // Date Format
+                        set_lang_string(lang.settings.date_time.date_format, date_time.child("date_format"));
+
+                        // Time Format
+                        set_lang_string(lang.settings.date_time.time_format, date_time.child("time_format"));
+                    }
+
+                    // Language
+                    const auto language = settings.child("language");
+                    if (!language.empty()) {
+                        // Main
+                        auto &lang_settings = lang.settings.language;
+                        set_lang_string(lang.settings.language.main, language);
+
+                        // Input Language
+                        const auto input_language = language.child("input_language");
+                        if (!input_language.empty()) {
+                            // Main
+                            set_lang_string(lang_settings.input_language, input_language);
+
+                            // Keyboards
+                            const auto keyboards = input_language.child("keyboards");
+                            if (!keyboards.empty()) {
+                                set_lang_string(lang_settings.keyboards, keyboards);
+                                auto &lang_ime = emuenv.ime.lang.ime_keyboards;
+                                const auto &keyboard_lang_ime = keyboards.child("ime_languages");
+                                if (!keyboard_lang_ime.empty()) {
+                                    lang_ime.clear();
+                                    const auto op = [](const auto &lang) {
+                                        return std::make_pair(static_cast<SceImeLanguage>(lang.attribute("id").as_ullong()), lang.text().as_string());
+                                    };
+                                    std::transform(std::begin(keyboard_lang_ime), std::end(keyboard_lang_ime), std::back_inserter(lang_ime), op);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Settings Dialog
+                const auto settings_dialog = lang_child.child("settings_dialog");
+                if (!settings_dialog.empty()) {
+                    // Main
+                    set_lang_string(lang.settings_dialog.main_window, settings_dialog);
+
+                    // Core
+                    set_lang_string(lang.settings_dialog.core, settings_dialog.child("core"));
+
+                    // CPU
+                    set_lang_string(lang.settings_dialog.cpu, settings_dialog.child("cpu"));
+
+                    // GPU
+                    set_lang_string(lang.settings_dialog.gpu, settings_dialog.child("gpu"));
+
+                    // Audio
+                    set_lang_string(lang.settings_dialog.audio, settings_dialog.child("audio"));
+
+                    // System
+                    set_lang_string(lang.settings_dialog.system, settings_dialog.child("system"));
+
+                    // Emulator
+                    set_lang_string(lang.settings_dialog.emulator, settings_dialog.child("emulator"));
+
+                    // GUI
+                    set_lang_string(lang.settings_dialog.gui, settings_dialog.child("gui"));
+
+                    // Network
+                    set_lang_string(lang.settings_dialog.network, settings_dialog.child("network"));
+
+                    // Debug
+                    set_lang_string(lang.settings_dialog.debug, settings_dialog.child("debug"));
+                }
+
+                // System Applications Title
+                set_lang_string(lang.sys_apps_title, lang_child.child("sys_apps_title"));
+
+                // Trophy Collection
+                set_lang_string(lang.trophy_collection, lang_child.child("trophy_collection"));
+
+                // User Management
+                set_lang_string(lang.user_management, lang_child.child("user_management"));
+
+                // RPCSV Update
+                set_lang_string(lang.RPCSV_update, lang_child.child("RPCSV_update"));
+
+                // Welcome
+                set_lang_string(lang.welcome, lang_child.child("welcome"));
+            }
+        } else {
+            LOG_ERROR("Error open lang file xml: {}", lang_xml_path);
+            LOG_DEBUG("error: {} position: {}", load_xml_res.description(), load_xml_res.offset);
+            constexpr ptrdiff_t context_window = 20;
+            fs::ifstream file(lang_xml_path, std::ios::binary);
+            if (file.is_open()) {
+                const ptrdiff_t error_in_context = load_xml_res.offset < context_window ? load_xml_res.offset : context_window;
+                file.seekg(load_xml_res.offset - error_in_context, std::ios::beg);
+                if (!file.eof()) {
+                    std::string error_context;
+                    error_context.resize(context_window * 2);
+                    file.read(error_context.data(), context_window * 2);
+                    if (file.gcount() < context_window * 2)
+                        error_context.resize(file.gcount());
+                    LOG_DEBUG("Error preview: {}|{}", error_context.substr(0, error_in_context), error_context.substr(error_in_context));
+                }
+                file.close();
+            }
+        }
+    } else
+        LOG_ERROR("Lang file xml not found: {}", lang_xml_path);
+>>>>>>> Stashed changes
 }
 
 } // namespace lang

@@ -58,7 +58,7 @@ jobs:
           - os: macos-intel
             runs_on: macos-latest
             cache_path: ~/Library/Caches/ccache
-            extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="x86_64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
+            extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="x86_64" -DFORCE_BUILD_OPENSSL_MAC=ON -DRPCSV_FORCE_CUSTOM_BOOST=ON
             cmake_preset: macos-ninja
 
           - os: macos-arm64
@@ -267,16 +267,23 @@ jobs:
         run: |
           cd build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}
           create-dmg \
-            --volname "Vita3K Installer" \
-            --volicon Vita3K.app/Contents/Resources/Vita3K.icns \
+            --volname "RPCSV Installer" \
+            --volicon RPCSV.app/Contents/Resources/RPCSV.icns \
             --window-size 500 300 \
             --icon-size 100 \
-            --icon Vita3K.app 120 115 \
+            --icon RPCSV.app 120 115 \
             --app-drop-link 360 115 \
+<<<<<<< Updated upstream
             vita3k-${{ env.GIT_SHORT_SHA }}-${{ matrix.os }}.dmg \
             Vita3K.app
           rm -rf Vita3K.app
         if: startsWith(matrix.os, 'macos')
+=======
+            RPCSV-${{ env.git_short_sha }}-${{ matrix.version }}-${{ matrix.os }}.dmg \
+            RPCSV.app
+          rm -rf RPCSV.app
+        if: matrix.os == 'macos-latest'
+>>>>>>> Stashed changes
 
       - name: Prepare Linux AppImage artifact
         run: |
@@ -288,9 +295,16 @@ jobs:
       - name: Upload artifact (Linux AppImage)
         uses: actions/upload-artifact@v7
         with:
+<<<<<<< Updated upstream
           name: vita3k-${{ env.GIT_SHORT_SHA }}-${{ matrix.os }}-appimage
           path: build/${{ matrix.cmake_preset }}/bin/appimage
         if: startsWith(matrix.os, 'ubuntu')
+=======
+          name: RPCSV-${{ env.git_short_sha }}-${{ matrix.version }}-${{ matrix.os }}
+          # path is set up to be <binary_dir>/bin/<config_type> since that's how multi-config
+          # generators work on CMake
+          path: build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
+>>>>>>> Stashed changes
 
       - name: Upload artifact (Android apk)
         uses: actions/upload-artifact@v7
@@ -314,7 +328,7 @@ jobs:
       cancel-in-progress: false
     if: |
       github.ref == 'refs/heads/master' &&
-      github.repository == 'Vita3K/Vita3K'
+      github.repository == 'RPCSV/RPCSV'
     steps:
       - uses: actions/checkout@v6
         with:
@@ -330,6 +344,46 @@ jobs:
           echo "LAST_COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
 
       - name: Get last committer
+<<<<<<< Updated upstream
+=======
+        run: |
+          COMMITTER_NAME=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/RPCSV/RPCSV/commits/${{ github.sha }} \
+          | jq -r '.commit.author.name')
+          echo "Commiter_Name=$COMMITTER_NAME" >> $GITHUB_ENV
+
+      - name: Upload
+        shell: bash
+        run: |
+          mkdir artifacts/
+          files=$(find . \( -name "*latest" -o -name "*22.04" \))
+          for f in $files; do
+            if [[ $f == *macos-latest ]]
+            then
+              cp $(basename $f)/$(basename $f).dmg artifacts/macos-latest.dmg
+            else
+              if [[ $f == *ubuntu-22.04 ]]
+              then
+                if [[ $f == *appimage* ]]
+                then
+                  cp $(basename $f)/*.AppImage* artifacts/
+                else
+                  rm -f $(basename $f)/*.AppImage*
+                  echo "Compressing $f"
+                  (cd $(basename $f) && zip -r ../artifacts/$(basename $f  | cut -d "-" -f 4)-latest.zip *)
+                fi
+              else
+                echo "Compressing $f"
+                (cd $(basename $f) && zip -r ../artifacts/$(basename $f  | cut -d "-" -f 4)-latest.zip *)
+              fi
+            fi
+          done
+          ls -al artifacts/
+          wget -c https://github.com/tcnksm/ghr/releases/download/v0.17.0/ghr_v0.17.0_linux_amd64.tar.gz
+          tar xfv ghr_v0.17.0_linux_amd64.tar.gz
+          ghr_v0.17.0_linux_amd64/ghr -u RPCSV -r RPCSV -recreate -n 'Automatic CI builds' -b "$(printf "Corresponding commit: ${{ github.sha }}\nRPCSV Build: ${{ env.Build_Variable }}")" continuous artifacts/
+        if: matrix.repo == 'master'
+>>>>>>> Stashed changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -343,6 +397,7 @@ jobs:
           mkdir -p artifacts-master artifacts-store
           files=$(find . -maxdepth 1 -type d -name "vita3k-*")
           for f in $files; do
+<<<<<<< Updated upstream
             dir=$(basename $f)
             if [[ $dir == *-android ]]; then
               echo "Processing $dir (Android)"
@@ -408,3 +463,32 @@ jobs:
           repository: Vita3K
           name: "Automatic CI builds"
           body: "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}"
+=======
+            if [[ $f == *macos-latest ]]
+            then
+              cp $(basename $f)/$(basename $f).dmg artifacts/RPCSV-${{ env.Build_Variable }}-${{ env.Short_SHA }}_macos.dmg
+            else
+              if [[ $f == *ubuntu-22.04 ]]
+              then
+                if [[ $f == *appimage* ]]
+                then
+                  cp $(basename $f)/*.AppImage* artifacts/
+                else
+                  rm -f $(basename $f)/*.AppImage*
+                  echo "Compressing $f"
+                  7z a -mx=9 artifacts/RPCSV-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu.7z $(basename $f)
+                fi
+              else
+                echo "Compressing $f"
+                7z a -mx=9 artifacts/RPCSV-${{ env.Build_Variable }}-${{ env.Short_SHA }}_windows.7z $(basename $f)
+              fi
+            fi
+          done
+          ls -al artifacts/
+          wget -c https://github.com/tcnksm/ghr/releases/download/v0.17.0/ghr_v0.17.0_linux_amd64.tar.gz
+          tar xfv ghr_v0.17.0_linux_amd64.tar.gz
+          ghr_v0.17.0_linux_amd64/ghr -u RPCSV -r RPCSV-builds  -n "Build: ${{ env.Build_Variable }}" -b "$(printf "Corresponding commit: [${{ env.Latest_Commit_Message }}](https://github.com/RPCSV/RPCSV/commit/${{ github.sha }}) (${{ env.Commiter_Name }})")" ${{ env.Build_Variable }} artifacts/
+        if: matrix.repo == 'store'
+        env:
+          GITHUB_TOKEN: ${{ secrets.STORE_TOKEN }}
+>>>>>>> Stashed changes

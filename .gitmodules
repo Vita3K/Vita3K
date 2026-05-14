@@ -3,7 +3,7 @@
 	url = https://github.com/aantron/better-enums
 [submodule "external/boost"]
 	path = external/boost
-	url = https://github.com/Vita3K/ext-boost
+	url = https://github.com/RPCSV/ext-boost
 [submodule "external/capstone"]
 	path = external/capstone
 	url = https://github.com/aquynh/capstone.git
@@ -13,10 +13,10 @@
 	branch = v1.23
 [submodule "external/dlmalloc"]
 	path = external/dlmalloc
-	url = https://github.com/Vita3K/dlmalloc
+	url = https://github.com/RPCSV/dlmalloc
 [submodule "external/ffmpeg"]
 	path = external/ffmpeg
-	url = https://github.com/Vita3K/ffmpeg-core.git
+	url = https://github.com/RPCSV/ffmpeg-core.git
 [submodule "external/glslang"]
 	path = external/glslang
 	url = https://github.com/KhronosGroup/glslang
@@ -25,10 +25,10 @@
 	url = https://github.com/google/googletest
 [submodule "external/libfat16"]
 	path = external/libfat16
-	url = https://github.com/Vita3K/libfat16
+	url = https://github.com/RPCSV/libfat16
 [submodule "external/printf"]
 	path = external/printf
-	url = https://github.com/Vita3K/printf
+	url = https://github.com/RPCSV/printf
 [submodule "external/pugixml"]
 	path = external/pugixml
 	url = https://github.com/zeux/pugixml
@@ -56,19 +56,19 @@
 	url = https://github.com/jbeder/yaml-cpp
 [submodule "external/psvpfstools"]
 	path = external/psvpfstools
-	url = https://github.com/Vita3K/psvpfstools.git
+	url = https://github.com/RPCSV/psvpfstools.git
 [submodule "external/xxHash"]
 	path = external/xxHash
 	url = https://github.com/Cyan4973/xxHash
 [submodule "external/dynarmic"]
 	path = external/dynarmic
-	url = https://github.com/Vita3K/dynarmic.git
+	url = https://github.com/RPCSV/dynarmic.git
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt.git
 [submodule "external/LibAtrac9"]
 	path = external/LibAtrac9
-	url = https://github.com/Vita3K/LibAtrac9.git
+	url = https://github.com/RPCSV/LibAtrac9.git
 [submodule "external/tracy"]
 	path = external/tracy
 	url = https://github.com/wolfpld/tracy.git

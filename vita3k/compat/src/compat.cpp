@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -106,9 +111,14 @@ static bool parse_xml(CompatState &state, const uint8_t *data, size_t size) {
     return state.compat_db_loaded;
 }
 
+<<<<<<< Updated upstream
 std::optional<UpdateInfo> parse_ver_resp(const CompatState &state, const std::string &body) {
     static const std::regex re(
         R"(Last updated: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z))");
+=======
+static const std::string latest_link = "https://api.github.com/repos/RPCSV/compatibility/releases/latest";
+static const std::string app_compat_db_link = "https://github.com/RPCSV/compatibility/releases/download/compat_db/app_compat_db.xml.zip";
+>>>>>>> Stashed changes
 
     std::smatch match;
     if (!std::regex_search(body, match, re)) {

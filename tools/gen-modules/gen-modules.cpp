@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -97,8 +102,13 @@ static Modules parse_db(const Node &db) {
 }
 
 static void gen_license_comment(std::ostream &dst) {
+<<<<<<< Updated upstream
     dst << "// Vita3K emulator project" << '\n';
     dst << "// Copyright (C) 2026 Vita3K team" << '\n';
+=======
+    dst << "// RPCSV emulator project" << '\n';
+    dst << "// Copyright (C) 2025 RPCSV team" << '\n';
+>>>>>>> Stashed changes
     dst << "//" << '\n';
     dst << "// This program is free software; you can redistribute it and/or modify" << '\n';
     dst << "// it under the terms of the GNU General Public License as published by" << '\n';
@@ -146,7 +156,7 @@ static void gen_library_cpp(std::ostream &dst, const Library &library) {
 
 static void gen_module_stubs(const Modules &modules) {
     for (const Module &module : modules) {
-        const std::string module_path = "vita3k/modules/" + module.first;
+        const std::string module_path = "RPCSV/modules/" + module.first;
 
 #ifdef _WIN32
         CreateDirectoryA(module_path.c_str(), nullptr);
@@ -183,11 +193,11 @@ int main(int argc, const char *argv[]) {
         return 0;
     }
 
-    std::ofstream cmake("vita3k/modules/CMakeLists.txt", std::ios::binary);
+    std::ofstream cmake("RPCSV/modules/CMakeLists.txt", std::ios::binary);
     cmake << "set(SOURCE_LIST" << '\n';
     cmake << '\t' << "module_parent.cpp" << '\n';
 
-    std::ofstream nids("vita3k/nids/include/nids/nids.inc", std::ios::binary);
+    std::ofstream nids("RPCSV/nids/include/nids/nids.inc", std::ios::binary);
     gen_license_comment(nids);
 
     for (const auto &entry : std::filesystem::recursive_directory_iterator(db_dir)) {

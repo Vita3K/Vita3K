@@ -1,4 +1,4 @@
-// Vita3K emulator project
+// RPCSV emulator project
 // Code adapted from Citra
 
 // Copyright 2023 Citra Emulator Project

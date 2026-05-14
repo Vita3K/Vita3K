@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -74,7 +79,7 @@ CubebAudioAdapter::~CubebAudioAdapter() {
 }
 
 bool CubebAudioAdapter::init() {
-    if (cubeb_init(&cubeb_ctx, "Vita3K audio", nullptr) != CUBEB_OK) {
+    if (cubeb_init(&cubeb_ctx, "RPCSV audio", nullptr) != CUBEB_OK) {
         LOG_ERROR("Could not initialize cubeb context");
         return false;
     }
@@ -97,7 +102,7 @@ AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_s
     uint32_t latency;
     cubeb_get_min_latency(cubeb_ctx, &port->spec, &latency);
 
-    if (cubeb_stream_init(cubeb_ctx, &port->out_stream, "Vita3K audio out", nullptr, nullptr, nullptr,
+    if (cubeb_stream_init(cubeb_ctx, &port->out_stream, "RPCSV audio out", nullptr, nullptr, nullptr,
             &port->spec, latency, impl_cubeb_audio_callback, impl_cubeb_state_callback, port.get())
         != CUBEB_OK) {
         LOG_ERROR("Could not initialize cubeb stream");

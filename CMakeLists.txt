@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 cmake_minimum_required(VERSION 3.22)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
@@ -8,6 +9,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Android")
 endif()
 
 project(Vita3K)
+=======
+cmake_minimum_required(VERSION 3.17.2)
+project(RPCSV)
+>>>>>>> Stashed changes
 
 # Detects the amount of processors of the host machine and forwards the result to CPU_COUNT
 include(ProcessorCount)
@@ -28,6 +33,7 @@ if(APPLE)
     enable_language(OBJC)
 endif()
 
+<<<<<<< Updated upstream
 if(ANDROID)
 	set(CMAKE_SYSROOT "")
 	set(CMAKE_OSX_SYSROOT "")
@@ -50,6 +56,11 @@ else()
 	endif()
 	option(BUILD_APPIMAGE "Build an AppImage." OFF)
 endif()
+=======
+option(USE_DISCORD_RICH_PRESENCE "Build RPCSV with Discord Rich Presence" ON)
+option(USE_RPCSV_UPDATE "Build RPCSV with updater." ON)
+option(BUILD_APPIMAGE "Build an AppImage." OFF)
+>>>>>>> Stashed changes
 
 option(FORCE_BUILD_OPENSSL_MAC OFF)
 
@@ -158,22 +169,22 @@ macro(boost_compile)
 	endif()
 endmacro(boost_compile)
 
-option(VITA3K_FORCE_CUSTOM_BOOST "Force Vita3K build process to use the Boost version included with the repository" OFF)
-option(VITA3K_FORCE_SYSTEM_BOOST "Force Vita3K build process to use the Boost version in the system and CMake's default paths and ignore the Boost version included with Vita3K" OFF)
+option(RPCSV_FORCE_CUSTOM_BOOST "Force RPCSV build process to use the Boost version included with the repository" OFF)
+option(RPCSV_FORCE_SYSTEM_BOOST "Force RPCSV build process to use the Boost version in the system and CMake's default paths and ignore the Boost version included with RPCSV" OFF)
 
 # Boost modules to be found by CMake
 set(BOOST_MODULES_TO_FIND filesystem)
 
 # If build process isn't set to forcefully use system Boost
 macro(get_boost)
-	if(NOT VITA3K_FORCE_SYSTEM_BOOST)
+	if(NOT RPCSV_FORCE_SYSTEM_BOOST)
 		# find_package(Boost ...) setting
 		set(Boost_USE_STATIC_LIBS ON)
 
 		set(Boost_NO_WARN_NEW_VERSIONS 1)
 
 		# First, try to find Boost without any hints (system Boost)
-		if(NOT VITA3K_FORCE_CUSTOM_BOOST)
+		if(NOT RPCSV_FORCE_CUSTOM_BOOST)
 			find_package(Boost 1.81 COMPONENTS ${BOOST_MODULES_TO_FIND} QUIET)
 		endif()
 
@@ -292,5 +303,5 @@ if (${BUILD_APPIMAGE})
 endif()
 
 add_subdirectory(external)
-add_subdirectory(vita3k)
+add_subdirectory(RPCSV)
 add_subdirectory(tools/gen-modules)

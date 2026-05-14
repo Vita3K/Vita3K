@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 // Copyright (c) 2002-2011 The ANGLE Project Authors.
 //
 // This program is free software; you can redistribute it and/or modify

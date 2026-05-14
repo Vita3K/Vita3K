@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,7 +43,7 @@ namespace fs = boost::filesystem;
 namespace fs_utils {
 
 /**
- * \brief  Construct a file name (optionally with an extension) to be placed in a Vita3K directory.
+ * \brief  Construct a file name (optionally with an extension) to be placed in a RPCSV directory.
  * \param  base_path   The main output path for the file.
  * \param  folder_path The sub-directory/sub-directories to output to.
  * \param  file_name   The name of the file.

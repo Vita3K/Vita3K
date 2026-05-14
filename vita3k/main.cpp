@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 // Vita3K emulator project
 // Copyright (C) 2026 Vita3K team
+=======
+// RPCSV emulator project
+// Copyright (C) 2025 RPCSV team
+>>>>>>> Stashed changes
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -111,6 +116,13 @@ int main(int argc, char *argv[]) {
         admin_priv = true;
 #endif
 
+<<<<<<< Updated upstream
+=======
+    if (adminPriv) {
+        LOG_CRITICAL("PLEASE. DO NOT RUN RPCSV AS ADMIN OR WITH ADMIN PRIVILEGES.");
+    }
+
+>>>>>>> Stashed changes
     Config cfg{};
     EmuEnvState emuenv;
     const auto config_err = config::init_config(cfg, argc, argv, root_paths);
@@ -199,8 +211,158 @@ int main(int argc, char *argv[]) {
 
     init_libraries(emuenv);
 
+<<<<<<< Updated upstream
     if (!app::init_apps_list(emuenv)) {
         LOG_ERROR("Failed to initialize apps list.");
+=======
+    GuiState gui;
+    if (!cfg.console) {
+        gui::pre_init(gui, emuenv);
+        if (!emuenv.cfg.initial_setup) {
+            while (!emuenv.cfg.initial_setup) {
+                if (handle_events(emuenv, gui)) {
+                    gui::draw_begin(gui, emuenv);
+                    gui::draw_initial_setup(gui, emuenv);
+                    gui::draw_end(gui);
+                    emuenv.renderer->swap_window(emuenv.window.get());
+                } else
+                    return QuitRequested;
+            }
+            run_execv(argv, emuenv);
+        }
+        gui::init(gui, emuenv);
+        app::update_viewport(emuenv);
+    }
+
+    if (cfg.content_path.has_value()) {
+        auto gui_ptr = cfg.console ? nullptr : &gui;
+        const auto extention = string_utils::tolower(cfg.content_path->extension().string());
+        const auto is_archive = (extention == ".vpk") || (extention == ".zip");
+        const auto is_rif = (extention == ".rif") || (extention == "work.bin");
+        const auto is_directory = fs::is_directory(*cfg.content_path);
+
+        const auto content_is_app = [&]() {
+            std::vector<ContentInfo> contents_info = install_archive(emuenv, gui_ptr, *cfg.content_path);
+            const auto content_index = std::find_if(contents_info.begin(), contents_info.end(), [&](const ContentInfo &c) {
+                return c.category == "gd";
+            });
+            if ((content_index != contents_info.end()) && content_index->state) {
+                emuenv.app_info.app_title_id = content_index->title_id;
+                return true;
+            }
+
+            return false;
+        };
+        if ((is_archive && content_is_app()) || (is_directory && (install_contents(emuenv, gui_ptr, *cfg.content_path) == 1) && (emuenv.app_info.app_category == "gd")))
+            run_type = app::AppRunType::Extracted;
+        else {
+            if (is_rif)
+                copy_license(emuenv, *cfg.content_path);
+            else if (!is_archive && !is_directory)
+                LOG_ERROR("File dropped: [{}] is not supported.", *cfg.content_path);
+
+            emuenv.cfg.content_path.reset();
+            if (!cfg.console)
+                gui::init_home(gui, emuenv);
+        }
+    }
+
+    if (run_type == app::AppRunType::Extracted) {
+        emuenv.io.app_path = cfg.run_app_path ? *cfg.run_app_path : emuenv.app_info.app_title_id;
+        gui::init_user_app(gui, emuenv, emuenv.io.app_path);
+        if (emuenv.cfg.run_app_path.has_value())
+            emuenv.cfg.run_app_path.reset();
+        else if (emuenv.cfg.content_path.has_value())
+            emuenv.cfg.content_path.reset();
+    }
+
+    if (!cfg.console) {
+#if USE_DISCORD
+        auto discord_rich_presence_old = emuenv.cfg.discord_rich_presence;
+#endif
+
+        std::chrono::system_clock::time_point present = std::chrono::system_clock::now();
+        std::chrono::system_clock::time_point later = std::chrono::system_clock::now();
+        const double frame_time = 1000.0 / 60.0;
+        // Application not provided via argument, show app selector
+        while (run_type == app::AppRunType::Unknown) {
+            // get the current time & get the time we worked for
+            present = std::chrono::system_clock::now();
+            std::chrono::duration<double, std::milli> work_time = present - later;
+            // check if we are running faster than ~60fps (16.67ms)
+            if (work_time.count() < frame_time) {
+                // sleep for delta time.
+                std::chrono::duration<double, std::milli> delta_ms(frame_time - work_time.count());
+                auto delta_ms_duration = std::chrono::duration_cast<std::chrono::milliseconds>(delta_ms);
+                std::this_thread::sleep_for(std::chrono::milliseconds(delta_ms_duration.count()));
+            }
+            // save the later time
+            later = std::chrono::system_clock::now();
+
+            if (handle_events(emuenv, gui)) {
+                ZoneScopedN("UI rendering"); // Tracy - Track UI rendering loop scope
+                gui::draw_begin(gui, emuenv);
+
+#if USE_DISCORD
+                discordrpc::update_init_status(emuenv.cfg.discord_rich_presence, &discord_rich_presence_old);
+#endif
+                gui::draw_vita_area(gui, emuenv);
+                gui::draw_ui(gui, emuenv);
+
+                gui::draw_end(gui);
+                emuenv.renderer->swap_window(emuenv.window.get());
+                FrameMark; // Tracy - Frame end mark for UI rendering loop
+            } else {
+                return QuitRequested;
+            }
+
+            if (!emuenv.io.app_path.empty()) {
+                run_type = app::AppRunType::Extracted;
+                gui.vita_area.home_screen = false;
+                gui.vita_area.live_area_screen = false;
+            }
+        }
+    }
+
+    // When backend render is changed before boot app, reboot emu in new backend render and run app
+    if (emuenv.renderer->current_backend != emuenv.backend_renderer) {
+        emuenv.load_app_path = emuenv.io.app_path;
+        run_execv(argv, emuenv);
+        return Success;
+    }
+
+    gui::set_config(gui, emuenv, emuenv.io.app_path);
+
+    const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);
+    emuenv.app_info.app_version = APP_INDEX->app_ver;
+    emuenv.app_info.app_category = APP_INDEX->category;
+    emuenv.io.addcont = APP_INDEX->addcont;
+    emuenv.io.content_id = APP_INDEX->content_id;
+    emuenv.io.savedata = APP_INDEX->savedata;
+    emuenv.current_app_title = APP_INDEX->title;
+    emuenv.app_info.app_short_title = APP_INDEX->stitle;
+    emuenv.io.title_id = APP_INDEX->title_id;
+
+    // Check license for PS App Only
+    get_license(emuenv, emuenv.io.title_id, emuenv.io.content_id);
+
+    if (cfg.console) {
+        auto main_thread = emuenv.kernel.get_thread(emuenv.main_thread_id);
+        auto lock = std::unique_lock<std::mutex>(main_thread->mutex);
+        main_thread->status_cond.wait(lock, [&]() {
+            return main_thread->status == ThreadStatus::dormant;
+        });
+        return Success;
+    } else {
+        gui.imgui_state->do_clear_screen = false;
+    }
+
+    gui::init_app_background(gui, emuenv, emuenv.io.app_path);
+    gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
+
+    if (!app::late_init(emuenv)) {
+        app::error_dialog("Failed to initialize RPCSV", emuenv.window.get());
+>>>>>>> Stashed changes
         return 1;
     }
 

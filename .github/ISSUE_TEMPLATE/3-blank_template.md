@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-## Please do not ask for help or report compatibility regressions here, use [Vita3K Discord server](https://discord.gg/6aGwQzh) or [compatibility issue tracker](https://github.com/Vita3K/compatibility) instead.
+## Please do not ask for help or report compatibility regressions here, use [RPCSV Discord server](https://discord.gg/6aGwQzh) or [compatibility issue tracker](https://github.com/RPCSV/compatibility) instead.
 
 Please be careful when using this template.
 Make sure you have provided the necessary information.

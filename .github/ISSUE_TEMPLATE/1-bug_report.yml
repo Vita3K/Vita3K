@@ -5,9 +5,9 @@ labels: "bug"
 body:
   - type: markdown
     attributes:
-      value: Tech support does not belong here. You should only file an issue here if you think you have experienced an actual bug with Vita3K.
-             Android specific issues should go to https://github.com/Vita3K/Vita3K-Android/issues/new, and
-             Game specific issues should go to the respective game issue in https://github.com/Vita3K/compatibility.
+      value: Tech support does not belong here. You should only file an issue here if you think you have experienced an actual bug with RPCSV.
+             Android specific issues should go to https://github.com/RPCSV/RPCSV-Android/issues/new, and
+             Game specific issues should go to the respective game issue in https://github.com/RPCSV/compatibility.
   - type: checkboxes
     attributes:
       label: Is there an existing issue for this?
