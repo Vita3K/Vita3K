@@ -104,12 +104,9 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePt
         }
 
         wait_thread->status_cond.wait(thread_lock, [&]() {
-            return wait_thread->status == ThreadStatus::run || kernel.shutting_down.load(std::memory_order_relaxed);
+            return wait_thread->status == ThreadStatus::run;
         });
     }
-
-    if (kernel.shutting_down.load(std::memory_order_relaxed))
-        return;
 
     if (is_cb) {
         for (auto &[_, cb] : display.vblank_callbacks) {

@@ -17,7 +17,6 @@
 
 #include "SceAppMgr.h"
 
-#include <app/functions.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <packages/sfo.h>
@@ -436,9 +435,7 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
                 return RET_ERROR(SCE_APPMGR_ERROR_TOO_LONG_ARGV);
         }
 
-        emuenv.kernel.exit_delete_all_threads_and_wait();
-
-        app::request_in_process_launch(emuenv, { .app_path = emuenv.io.app_path, .self_path = std::move(exec_path), .argv = std::move(exec_argv), .reason = AppLaunchReason::LoadExec });
+        emuenv.kernel.request_process_exit(0, AppLaunchRequest{ .app_path = emuenv.io.app_path, .self_path = std::move(exec_path), .argv = std::move(exec_argv), .reason = AppLaunchReason::LoadExec });
 
         return SCE_KERNEL_OK;
     }
