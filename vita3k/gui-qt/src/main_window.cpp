@@ -811,7 +811,8 @@ bool MainWindow::handle_pending_app_launch_request() {
         return false;
 
     on_game_closed();
-    boot_game(*request, false);
+    if (request->reason != AppLaunchReason::ProcessExit)
+        boot_game(*request, false);
     return true;
 }
 

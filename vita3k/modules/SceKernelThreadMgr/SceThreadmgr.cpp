@@ -849,10 +849,8 @@ static int wait_thread_end(KernelState &kernel, ThreadStatePtr &waiter, ThreadSt
         target->waiting_threads.push_back(waiter);
     }
     waiter->status_cond.wait(waiter_lock, [&]() {
-        return waiter->status == ThreadStatus::run || kernel.shutting_down.load(std::memory_order_relaxed);
+        return waiter->status == ThreadStatus::run;
     });
-    if (kernel.shutting_down.load(std::memory_order_relaxed))
-        return SCE_KERNEL_ERROR_WAIT_CANCEL;
     return 0;
 }
 
@@ -1052,16 +1050,17 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
     return thread->id;
 }
 
-static int delay_thread(KernelState &kernel, SceUInt delay_us) {
+static int delay_thread(KernelState &kernel, SceUID thread_id, SceUInt delay_us) {
     if (delay_us == 0)
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
 
-    std::unique_lock<std::mutex> lock(kernel.shutdown_mutex);
-    if (kernel.shutdown_condvar.wait_for(lock, std::chrono::microseconds(delay_us),
-            [&] { return kernel.shutting_down.load(std::memory_order_relaxed); })) {
-        return SCE_KERNEL_ERROR_WAIT_CANCEL;
-    }
-
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
+    std::unique_lock<std::mutex> lock(thread->mutex);
+    thread->update_status(ThreadStatus::wait);
+    thread->status_cond.wait_for(lock, std::chrono::microseconds(delay_us),
+        [&] { return thread->status == ThreadStatus::run; });
+    if (thread->status != ThreadStatus::run)
+        thread->update_status(ThreadStatus::run);
     return SCE_KERNEL_OK;
 }
 
@@ -1072,21 +1071,21 @@ static int delay_thread_cb(EmuEnvState &emuenv, SceUID thread_id, SceUInt delay_
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
     if (delay_us > elapsed.count()) // If we spent less time than requested processing callbacks, sleep the remaining time
-        return delay_thread(emuenv.kernel, delay_us - elapsed.count());
+        return delay_thread(emuenv.kernel, thread_id, delay_us - elapsed.count());
     else // Else return directly
         return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelDelayThread, SceUInt delay) {
     TRACY_FUNC(sceKernelDelayThread, delay);
-    return delay_thread(emuenv.kernel, delay);
+    return delay_thread(emuenv.kernel, thread_id, delay);
 }
 
 EXPORT(int, sceKernelDelayThread200, SceUInt delay) {
     TRACY_FUNC(sceKernelDelayThread200, delay);
     if (delay < 201)
         delay = 201;
-    return delay_thread(emuenv.kernel, delay);
+    return delay_thread(emuenv.kernel, thread_id, delay);
 }
 
 EXPORT(int, sceKernelDelayThreadCB, SceUInt delay) {

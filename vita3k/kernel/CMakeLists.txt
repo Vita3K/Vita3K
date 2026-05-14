@@ -24,7 +24,7 @@ add_library(
 	${SOURCE_LIST}
 )
 
-target_include_directories(kernel PUBLIC include)
+target_include_directories(kernel PUBLIC include ${CMAKE_CURRENT_SOURCE_DIR}/../emuenv/include)
 target_link_libraries(kernel PUBLIC rtc cpu mem util nids)
 target_link_libraries(kernel PRIVATE patch SDL3::SDL3 miniz vita-toolchain)
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)

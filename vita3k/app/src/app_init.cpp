@@ -443,7 +443,7 @@ void deinit(EmuEnvState &state) {
     state.net.abort_all();
     state.http.shutdown_connections();
 
-    state.kernel.exit_delete_all_threads_and_wait();
+    state.kernel.process_exit();
 
     state.motion.reset_runtime();
 
