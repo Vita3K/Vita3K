@@ -41,5 +41,13 @@ input::NativeScanCodeSet qt_native_scan_code_set() {
 } // namespace
 
 input::PhysicalKeyCode physical_key_from_qt_event(const QKeyEvent &event) {
+#if defined(Q_OS_MACOS)
+    const auto native_virtual_key = event.nativeVirtualKey();
+    if (native_virtual_key == 0x0000)
+        return input::PhysicalKeyCode::KeyA;
+
+    return input::physical_key_from_native_scan_code(qt_native_scan_code_set(), native_virtual_key);
+#else
     return input::physical_key_from_native_scan_code(qt_native_scan_code_set(), event.nativeScanCode());
+#endif
 }
