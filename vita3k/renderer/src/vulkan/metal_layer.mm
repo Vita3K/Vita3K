@@ -19,5 +19,30 @@
 #import <QuartzCore/CAMetalLayer.h>
 
 extern "C" void *get_metal_layer_from_view(void *nsview) {
-    return (__bridge void *)((__bridge NSView *)nsview).layer;
+    NSView *view = (__bridge NSView *)nsview;
+    if (!view)
+        return nullptr;
+
+    view.wantsLayer = YES;
+    CALayer *layer = view.layer;
+    if (![layer isKindOfClass:[CAMetalLayer class]]) {
+        CAMetalLayer *metal_layer = [CAMetalLayer layer];
+        NSScreen *screen = view.window.screen ?: NSScreen.mainScreen;
+        metal_layer.contentsScale = screen ? screen.backingScaleFactor : 1.0;
+        view.layer = metal_layer;
+        layer = metal_layer;
+    }
+
+    CAMetalLayer *metal_layer = (CAMetalLayer *)layer;
+    NSScreen *screen = view.window.screen ?: NSScreen.mainScreen;
+    const CGFloat scale = screen ? screen.backingScaleFactor : view.window.backingScaleFactor;
+    const CGRect bounds = view.bounds;
+    metal_layer.frame = bounds;
+    metal_layer.contentsScale = scale > 0.0 ? scale : 1.0;
+    if (bounds.size.width > 0.0 && bounds.size.height > 0.0) {
+        metal_layer.drawableSize = CGSizeMake(bounds.size.width * metal_layer.contentsScale,
+            bounds.size.height * metal_layer.contentsScale);
+    }
+
+    return (__bridge void *)layer;
 }
