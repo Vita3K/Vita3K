@@ -267,7 +267,15 @@ target_include_directories(vma INTERFACE
 if(ANDROID)
 	set(USE_STATIC_ANDROID_FFMPEG ON)
 endif()
-add_subdirectory(ffmpeg)
+if(USE_SYSTEM_FFMPEG)
+	add_library(ffmpeg INTERFACE)
+	message(STATUS "Using shared FFMPEG")
+	find_package(FFMPEG REQUIRED)
+	target_include_directories(ffmpeg SYSTEM INTERFACE ${FFMPEG_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/ffmpeg/include)
+	target_link_libraries(ffmpeg INTERFACE ${FFMPEG_LIBRARIES})
+else()
+	add_subdirectory(ffmpeg)
+endif()
 
 if(APPLE OR NOT FORCE_BUILD_OPENSSL_MAC)
 	execute_process(
