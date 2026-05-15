@@ -893,6 +893,10 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     if (launch_request.reason != AppLaunchReason::LoadExec && !confirm_missing_firmware_warning())
         return std::nullopt;
 
+    refresh_controllers(emuenv.ctrl, emuenv);
+    if (m_controls_dialog)
+        m_controls_dialog->sync_controller_state();
+
     const bool update_last_time_used = launch_request.reason != AppLaunchReason::LoadExec && !m_live_area_widget;
     if (!m_app_session.begin_launch(launch_request, update_last_time_used)) {
         QMessageBox::critical(this, tr("Error"),
@@ -1135,6 +1139,9 @@ void MainWindow::on_game_closed() {
     m_app_session.stop(m_is_app_closing
             ? app::AppSessionStopReason::FrontendShutdown
             : app::AppSessionStopReason::UserRequest);
+    refresh_controllers(emuenv.ctrl, emuenv);
+    if (m_controls_dialog)
+        m_controls_dialog->sync_controller_state();
 
     QWindow *closed_window = m_game_container;
 
