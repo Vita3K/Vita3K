@@ -31,6 +31,7 @@
 #include <util/log.h>
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QGuiApplication>
 #include <QInputMethod>
 #include <QInputMethodEvent>
@@ -305,19 +306,34 @@ void GameWindow::sync_native_window_preferences() {
 
 bool GameWindow::event(QEvent *e) {
     if (e->type() == QEvent::Close) {
-        QMessageBox box;
-        box.setIcon(QMessageBox::Question);
-        box.setWindowIcon(icon());
-        box.setWindowTitle(tr("Exit Game?"));
-        box.setText(tr("Do you really want to exit the game?\n\nAny unsaved progress will be lost!"));
-        box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-        box.setDefaultButton(QMessageBox::No);
-        box.setWindowModality(Qt::WindowModal);
-        box.winId();
-        if (auto *handle = box.windowHandle())
-            handle->setTransientParent(this);
+        const bool confirm_exit_app = m_gui_settings
+            ? m_gui_settings->get_value(gui::mw_confirmExitApp).toBool()
+            : true;
+        bool confirmed = true;
 
-        if (box.exec() == QMessageBox::Yes) {
+        if (confirm_exit_app) {
+            QMessageBox box;
+            box.setIcon(QMessageBox::Question);
+            box.setWindowIcon(icon());
+            box.setWindowTitle(tr("Exit App?"));
+            box.setText(tr("Do you really want to exit the app?\n\nAny unsaved progress will be lost!"));
+            box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+            box.setDefaultButton(QMessageBox::No);
+            box.setWindowModality(Qt::WindowModal);
+
+            auto *dont_show_again = new QCheckBox(tr("Don't show this again"), &box);
+            box.setCheckBox(dont_show_again);
+
+            box.winId();
+            if (auto *handle = box.windowHandle())
+                handle->setTransientParent(this);
+
+            confirmed = box.exec() == QMessageBox::Yes;
+            if (confirmed && dont_show_again->isChecked() && m_gui_settings)
+                m_gui_settings->set_value(gui::mw_confirmExitApp, false);
+        }
+
+        if (confirmed) {
             e->ignore();
             Q_EMIT closed();
             return true;

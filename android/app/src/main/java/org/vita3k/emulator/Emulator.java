@@ -56,6 +56,8 @@ import org.libsdl.app.SDLSurface;
 import org.vita3k.emulator.data.AppStorage;
 import org.vita3k.emulator.data.NativeImeState;
 import org.vita3k.emulator.overlay.InputOverlay;
+import org.vita3k.emulator.overlay.OverlayLayout;
+import org.vita3k.emulator.overlay.OverlayStore;
 import org.vita3k.emulator.ui.screens.emulation.NativeImeOverlayHost;
 import org.vita3k.emulator.ui.screens.emulation.EmulationPauseMenuHost;
 import org.vita3k.emulator.ui.viewmodel.EmulationSessionViewModel;
@@ -341,6 +343,13 @@ public class Emulator extends SDLActivity
             overlay.resetButtonPlacement();
     }
 
+    @Keep
+    public void setControllerOverlayLayout(OverlayLayout layout) {
+        InputOverlay overlay = getmOverlay();
+        if (overlay != null && layout != null)
+            overlay.setLayout(layout);
+    }
+
     private int mSavedOverlayMask = 0;
 
     @Keep
@@ -419,6 +428,14 @@ public class Emulator extends SDLActivity
         InputOverlay overlay = getmOverlay();
         if (overlay != null)
             overlay.releaseAllInputs();
+    }
+
+    public OverlayLayout captureControllerOverlayLayout() {
+        InputOverlay overlay = getmOverlay();
+        if (overlay != null)
+            return overlay.captureLayout();
+
+        return OverlayStore.defaultLayout(this);
     }
 
     public void requestNativeQuit() {
@@ -1247,9 +1264,6 @@ public class Emulator extends SDLActivity
 
     private void syncOverlayFromSession(boolean forceOverlayRebind) {
         InputOverlay overlay = getmOverlay();
-        if (overlay != null) {
-            overlay.setLayoutProfileId(currentGameId);
-        }
         if (sessionViewModel != null) {
             sessionViewModel.applyOverlayState(this);
         }

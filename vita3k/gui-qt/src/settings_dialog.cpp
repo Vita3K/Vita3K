@@ -26,6 +26,7 @@
 #include <emuenv/state.h>
 #include <gui-qt/gui_language.h>
 #include <gui-qt/gui_settings.h>
+#include <gui-qt/qt_utils.h>
 #include <gui-qt/settings_dialog.h>
 #include <gui-qt/settings_dialog_tooltips.h>
 #include <io/state.h>
@@ -198,6 +199,12 @@ SettingsDialog::SettingsDialog(EmuEnvState &emuenv,
 }
 
 SettingsDialog::~SettingsDialog() {
+}
+
+void SettingsDialog::set_storage_path_locked(bool locked) {
+    m_storage_path_locked = locked;
+    if (m_app_path.empty())
+        m_ui->gb_storage->setEnabled(!locked);
 }
 
 void SettingsDialog::closeEvent(QCloseEvent *event) {
@@ -409,8 +416,8 @@ void SettingsDialog::load_config() {
     m_ui->label_perf_position->setEnabled(emuenv.cfg.performance_overlay);
     m_ui->perf_overlay_position_box->setEnabled(emuenv.cfg.performance_overlay);
 
-    m_ui->current_emu_path->setText(
-        tr("Current emulator path: %1").arg(QString::fromStdString(emuenv.cfg.pref_path)));
+    m_pending_pref_path = emuenv.pref_path;
+    update_current_emu_path_label();
 
     m_ui->screenshot_format->clear();
     m_ui->screenshot_format->addItems({ tr("None"), QStringLiteral("JPEG"), QStringLiteral("PNG") });
@@ -492,6 +499,9 @@ void SettingsDialog::load_config() {
 
     m_ui->show_welcome->setChecked(emuenv.cfg.show_welcome);
     m_ui->warn_missing_firmware->setChecked(emuenv.cfg.warn_missing_firmware);
+    m_ui->confirm_exit_app->setChecked(m_gui_settings
+            ? m_gui_settings->get_value(gui::mw_confirmExitApp).toBool()
+            : true);
     m_ui->warn_admin_privileges->setChecked(m_gui_settings
             ? m_gui_settings->get_value(gui::mw_warnAdminPrivileges).toBool()
             : true);
@@ -533,6 +543,8 @@ void SettingsDialog::load_config() {
 void SettingsDialog::build_desired_config(Config &desired) const {
     desired = emuenv.cfg;
     desired.current_config = emuenv.cfg.current_config;
+    if (m_app_path.empty())
+        desired.set_pref_path(m_pending_pref_path);
     auto &current = desired.current_config;
 
     if (m_ui->rb_modules_automatic->isChecked())
@@ -683,8 +695,12 @@ bool SettingsDialog::commit_changes(bool close_after) {
     const std::string previous_user_lang = emuenv.cfg.user_lang;
     const int previous_log_level = emuenv.cfg.log_level;
     const bool update_gui_settings = m_gui_settings && m_app_path.empty();
+    const bool storage_path_changed = m_app_path.empty() && (m_pending_pref_path != emuenv.pref_path);
     const auto previous_buffer_size = update_gui_settings ? m_gui_settings->get_value(gui::l_bufferSize).toInt() : 0;
     const QString previous_log_font_family = update_gui_settings ? m_gui_settings->get_value(gui::l_fontFamily).toString() : QString();
+    const bool previous_confirm_exit_app = update_gui_settings
+        ? m_gui_settings->get_value(gui::mw_confirmExitApp).toBool()
+        : true;
     const bool previous_warn_admin_privileges = update_gui_settings
         ? m_gui_settings->get_value(gui::mw_warnAdminPrivileges).toBool()
         : true;
@@ -692,10 +708,15 @@ bool SettingsDialog::commit_changes(bool close_after) {
         ? m_gui_settings->get_value(gui::gw_roundedCorners).toBool()
         : false;
 
+    if (storage_path_changed && !apply_pending_storage_path())
+        return false;
+
     Config desired;
     build_desired_config(desired);
     const auto result = app::commit_settings(emuenv, desired, m_app_path);
     m_config = desired.current_config;
+    if (storage_path_changed)
+        populate_modules_list();
 
     if (desired.log_level != previous_log_level)
         logging::set_level(static_cast<spdlog::level::level_enum>(desired.log_level));
@@ -710,6 +731,8 @@ bool SettingsDialog::commit_changes(bool close_after) {
         m_gui_settings->set_value(gui::l_fontFamily, selected_log_font_family);
         log_settings_changed = true;
     }
+    if (update_gui_settings && previous_confirm_exit_app != m_ui->confirm_exit_app->isChecked())
+        m_gui_settings->set_value(gui::mw_confirmExitApp, m_ui->confirm_exit_app->isChecked());
     if (update_gui_settings && previous_warn_admin_privileges != m_ui->warn_admin_privileges->isChecked())
         m_gui_settings->set_value(gui::mw_warnAdminPrivileges, m_ui->warn_admin_privileges->isChecked());
     if (update_gui_settings && previous_windows_rounded_corners != m_ui->windows_rounded_corners->isChecked())
@@ -845,6 +868,29 @@ void SettingsDialog::update_camera_color_preview() {
 void SettingsDialog::update_file_loading_delay_label() {
     m_ui->file_loading_delay_label->setText(
         tr("File Loading Delay: %1 ms").arg(m_ui->file_loading_delay->value()));
+}
+
+bool SettingsDialog::apply_pending_storage_path() {
+    if (m_pending_pref_path == emuenv.pref_path)
+        return true;
+
+    if (m_storage_path_locked) {
+        m_pending_pref_path = emuenv.pref_path;
+        update_current_emu_path_label();
+        return true;
+    }
+
+    if (!app::switch_emulator_path(emuenv, m_pending_pref_path)) {
+        QMessageBox::critical(this, tr("Error"),
+            tr("Failed to switch the emulator storage folder."));
+        return false;
+    }
+
+    m_storage_path_switched = true;
+    m_pending_pref_path = emuenv.pref_path;
+    update_current_emu_path_label();
+    Q_EMIT storage_path_changed();
+    return true;
 }
 
 void SettingsDialog::update_http_retry_labels() {
@@ -988,33 +1034,13 @@ void SettingsDialog::setup_connections() {
     connect(m_ui->change_emu_path, &QPushButton::clicked, this, [this] {
         const QString dir = QFileDialog::getExistingDirectory(
             this, tr("Select Emulator Storage Folder"),
-            QString::fromStdString(emuenv.cfg.pref_path));
-        if (!dir.isEmpty()) {
-            if (!app::switch_emulator_path(emuenv, fs::path(dir.toStdString()))) {
-                QMessageBox::critical(this, tr("Error"),
-                    tr("Failed to switch the emulator storage folder."));
-                return;
-            }
-
-            m_storage_path_switched = true;
-            populate_modules_list();
-            m_ui->current_emu_path->setText(
-                tr("Current emulator path: %1").arg(QString::fromStdString(emuenv.cfg.pref_path)));
-        }
+            QString::fromStdString(m_pending_pref_path.string()));
+        if (!dir.isEmpty())
+            set_pending_pref_path(fs::path(dir.toStdString()));
     });
     connect(m_ui->reset_emu_path, &QPushButton::clicked, this, [this] {
-        if (emuenv.default_path != emuenv.pref_path) {
-            if (!app::switch_emulator_path(emuenv, emuenv.default_path)) {
-                QMessageBox::critical(this, tr("Error"),
-                    tr("Failed to reset the emulator storage folder."));
-                return;
-            }
-
-            m_storage_path_switched = true;
-            populate_modules_list();
-            m_ui->current_emu_path->setText(
-                tr("Current emulator path: %1").arg(QString::fromStdString(emuenv.cfg.pref_path)));
-        }
+        if (emuenv.default_path != m_pending_pref_path)
+            set_pending_pref_path(emuenv.default_path);
     });
 
     connect(m_ui->clear_custom_config, &QPushButton::clicked, this, [this] {
@@ -1138,10 +1164,11 @@ void SettingsDialog::setup_connections() {
         { m_ui->label_screenshot_format, tr("Screenshot Format"), m_tooltips->screenshot_format },
         { m_ui->screenshot_format, tr("Screenshot Format"), m_tooltips->screenshot_format },
         // Interface
-        { m_ui->show_welcome, tr("Show Welcome Screen"), m_tooltips->show_welcome_screen },
-        { m_ui->warn_missing_firmware, tr("Warn When Firmware Is Missing"), m_tooltips->warn_missing_firmware },
-        { m_ui->warn_admin_privileges, tr("Warn When Running with Administrator Privileges"), m_tooltips->warn_admin_privileges },
-        { m_ui->windows_rounded_corners, tr("Rounded Corners"), m_tooltips->windows_rounded_corners },
+        { m_ui->show_welcome, tr("Show welcome screen"), m_tooltips->show_welcome_screen },
+        { m_ui->warn_missing_firmware, tr("Warn when firmware is missing"), m_tooltips->warn_missing_firmware },
+        { m_ui->confirm_exit_app, tr("Show exit app confirmation"), m_tooltips->confirm_exit_app },
+        { m_ui->warn_admin_privileges, tr("Warn when running with administrator privileges"), m_tooltips->warn_admin_privileges },
+        { m_ui->windows_rounded_corners, tr("Rounded corners"), m_tooltips->windows_rounded_corners },
         { m_ui->ui_language_box, tr("Interface Language"), m_tooltips->ui_language },
         { m_ui->log_buffer_size, tr("Log Buffer Size"), m_tooltips->log_buffer_size },
         { m_ui->log_font_family, tr("Log Font"), m_tooltips->log_font },
@@ -1263,25 +1290,31 @@ void SettingsDialog::on_close_clicked() {
 
 void SettingsDialog::reject() {
     if (m_dirty) {
-        const int result = QMessageBox::warning(this,
+        const auto result = gui::utils::show_message_box(
+            this,
+            QMessageBox::Warning,
             tr("Unsaved Changes"),
             tr("You have unsaved changes. What would you like to do?"),
-            QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
-            QMessageBox::Save);
+            {
+                { QStringLiteral("save"), tr("Save"), QMessageBox::AcceptRole, true },
+                { QStringLiteral("discard"), tr("Discard"), QMessageBox::DestructiveRole, false },
+                { QStringLiteral("cancel"), tr("Cancel"), QMessageBox::RejectRole, false },
+            });
 
-        switch (result) {
-        case QMessageBox::Save:
+        if (result.clicked_id == QStringLiteral("save")) {
             if (!commit_changes(true))
                 return;
             m_dirty = false;
             QDialog::accept();
             return;
-        case QMessageBox::Discard:
+        }
+
+        if (result.clicked_id == QStringLiteral("discard")) {
             QDialog::reject();
             return;
-        default: // Cancel
-            return;
         }
+
+        return;
     }
     QDialog::reject();
 }
@@ -1292,6 +1325,21 @@ void SettingsDialog::mark_dirty() {
         for (auto *bb : m_button_boxes)
             bb->button(QDialogButtonBox::Apply)->setEnabled(true);
     }
+}
+
+void SettingsDialog::set_pending_pref_path(const fs::path &pref_path) {
+    const fs::path normalized_pref_path = pref_path / "";
+    if (normalized_pref_path.empty() || normalized_pref_path == m_pending_pref_path)
+        return;
+
+    m_pending_pref_path = normalized_pref_path;
+    update_current_emu_path_label();
+    mark_dirty();
+}
+
+void SettingsDialog::update_current_emu_path_label() {
+    m_ui->current_emu_path->setText(
+        tr("Current emulator path: %1").arg(QString::fromStdString(m_pending_pref_path.string())));
 }
 
 void SettingsDialog::setup_dirty_tracking() {

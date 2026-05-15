@@ -19,15 +19,32 @@
 
 #include <QColor>
 #include <QIcon>
+#include <QMessageBox>
 #include <QPalette>
 #include <QPixmap>
+#include <QString>
 
 #include <util/fs.h>
 
 #include <map>
 #include <string>
+#include <vector>
+
+class QWidget;
 
 namespace gui::utils {
+
+struct MessageDialogButton {
+    QString id;
+    QString text;
+    QMessageBox::ButtonRole role = QMessageBox::AcceptRole;
+    bool is_default = false;
+};
+
+struct MessageDialogResult {
+    QString clicked_id;
+    bool checkbox_checked = false;
+};
 
 void open_dir(const std::string &path);
 
@@ -50,5 +67,18 @@ QColor get_label_color(
 QColor get_label_color(
     const QColor &fallback_light,
     const QColor &fallback_dark);
+
+MessageDialogResult show_message_box(
+    QWidget *parent,
+    QMessageBox::Icon icon,
+    const QString &title,
+    const QString &text,
+    const std::vector<MessageDialogButton> &buttons,
+    const QString &informative_text = {},
+    const QString &checkbox_text = {},
+    bool checkbox_checked = false,
+    Qt::TextFormat text_format = Qt::AutoText,
+    Qt::TextInteractionFlags text_interaction = Qt::NoTextInteraction,
+    const QString &detailed_text = {});
 
 } // namespace gui::utils

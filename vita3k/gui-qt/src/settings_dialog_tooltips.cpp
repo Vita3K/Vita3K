@@ -15,12 +15,12 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <gui-qt/qt_utils.h>
 #include <gui-qt/settings_dialog.h>
 #include <gui-qt/settings_dialog_tooltips.h>
 
 #include <QCoreApplication>
 #include <QMessageBox>
-#include <QPushButton>
 
 QString restart_required_setting_label(config::RestartRequiredSetting setting) {
     switch (setting) {
@@ -55,20 +55,21 @@ bool prompt_restart_required_dialog(QWidget *parent, const std::vector<config::R
     for (const auto setting : settings)
         changed_settings << restart_required_setting_label(setting);
 
-    QMessageBox message(parent);
-    message.setIcon(QMessageBox::Information);
-    message.setWindowTitle(QCoreApplication::translate("SettingsDialogTooltips", "Restart Required"));
-    message.setText(QCoreApplication::translate("SettingsDialogTooltips", "Some changes need an app restart to fully take effect."));
-    message.setInformativeText(QCoreApplication::translate(
-        "SettingsDialogTooltips",
-        "These changed settings will apply after restart:\n- %1")
-                                   .arg(changed_settings.join(QStringLiteral("\n- "))));
-    auto *restart_button = message.addButton(QCoreApplication::translate("SettingsDialogTooltips", "Restart App"), QMessageBox::AcceptRole);
-    message.addButton(QCoreApplication::translate("SettingsDialogTooltips", "Restart Later"), QMessageBox::RejectRole);
-    message.setDefaultButton(qobject_cast<QPushButton *>(restart_button));
-    message.exec();
+    const auto result = gui::utils::show_message_box(
+        parent,
+        QMessageBox::Information,
+        QCoreApplication::translate("SettingsDialogTooltips", "Restart Required"),
+        QCoreApplication::translate("SettingsDialogTooltips", "Some changes need an app restart to fully take effect."),
+        {
+            { QStringLiteral("restart"), QCoreApplication::translate("SettingsDialogTooltips", "Restart App"), QMessageBox::AcceptRole, true },
+            { QStringLiteral("later"), QCoreApplication::translate("SettingsDialogTooltips", "Restart Later"), QMessageBox::RejectRole, false },
+        },
+        QCoreApplication::translate(
+            "SettingsDialogTooltips",
+            "These changed settings will apply after restart:\n- %1")
+            .arg(changed_settings.join(QStringLiteral("\n- "))));
 
-    return message.clickedButton() == restart_button;
+    return result.clicked_id == QStringLiteral("restart");
 }
 
 QString SettingsDialogTooltips::category_summary(SettingsTab tab) const {
@@ -168,6 +169,7 @@ SettingsDialogTooltips::SettingsDialogTooltips(QObject *parent)
     , ime_langs(tr("Select which IME keyboard languages are available to applications."))
     , show_welcome_screen(tr("Show the Welcome Dialog at startup."))
     , warn_missing_firmware(tr("Show a warning before launching a game when one or more firmware packages are missing."))
+    , confirm_exit_app(tr("Show a confirmation dialog before closing a running app."))
     , warn_admin_privileges(tr("Show a warning at startup when Vita3K is launched with administrator or root privileges."))
     , windows_rounded_corners(tr("Enable rounded corners for the game window on Windows.\nUnsupported Windows versions may ignore this setting."))
     , log_buffer_size(tr("Set the maximum number of log lines to keep in memory.\nSet to 0 to remove the user cap and use the built-in safety limit."))

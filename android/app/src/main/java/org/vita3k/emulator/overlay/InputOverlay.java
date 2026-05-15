@@ -7,16 +7,13 @@ package org.vita3k.emulator.overlay;
 
 import org.vita3k.emulator.R;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.SurfaceView;
@@ -63,9 +60,9 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   private InputOverlayDrawableButton mButtonBeingConfigured;
   private InputOverlayDrawableDpad mDpadBeingConfigured;
   private InputOverlayDrawableJoystick mJoystickBeingConfigured;
-  private static float mGlobalScale = 1.0f;
-  private static int mGlobalOpacity = 100;
-  private String mLayoutProfileId = "";
+  private float mScale = 1.0f;
+  private int mOpacity = 100;
+  private OverlayLayout mLayout;
 
   // last Time the screen was touched
   private long mlastTouchTime;
@@ -84,14 +81,14 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
    */
   public static Bitmap resizeBitmap(Context context, Bitmap bitmap, float scale)
   {
-    // Determine the button size based on the smaller screen dimension.
-    // This makes sure the buttons are the same size in both portrait and landscape.
     DisplayMetrics dm = context.getResources().getDisplayMetrics();
     int minDimension = Math.min(dm.widthPixels, dm.heightPixels);
+    int maxBitmapDimension = Math.max(bitmap.getWidth(), bitmap.getHeight());
+    float bitmapScale = scale * minDimension / maxBitmapDimension;
 
     return Bitmap.createScaledBitmap(bitmap,
-            (int) (minDimension * scale),
-            (int) (minDimension * scale),
+            (int) (bitmap.getWidth() * bitmapScale),
+            (int) (bitmap.getHeight() * bitmapScale),
             true);
   }
 
@@ -105,8 +102,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   {
     super(context/*, attrs*/);
 
-    OverlayLayoutStore.ensureInitialized(getContext(), mLayoutProfileId);
-
     // Set the on touch listener.
     // Do not register the overlay as a touch listener
     // Instead let EmuSurface forward touch events
@@ -118,8 +113,18 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     // Request focus for the overlay so it has priority on presses.
     requestFocus();
 
+    mLayout = OverlayStore.defaultLayout(getContext());
+
     refreshControls();
     resetHideTimer();
+  }
+
+  @Override
+  protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+    super.onSizeChanged(w, h, oldw, oldh);
+    if ((w != oldw || h != oldh) && w > 0 && h > 0) {
+      refreshControls();
+    }
   }
 
   private void startHideTimer() {
@@ -399,8 +404,6 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     int fingerPositionX = (int) event.getX(pointerIndex);
     int fingerPositionY = (int) event.getY(pointerIndex);
 
-    String orientation = "";
-
     // Maybe combine Button and Joystick as subclasses of the same parent?
     // Or maybe create an interface like IMoveableHUDControl?
     boolean intersect = false;
@@ -437,7 +440,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             // Persist button position by saving new place.
             saveControlPosition(mButtonBeingConfigured.getLegacyId(),
                     mButtonBeingConfigured.getBounds().left,
-                    mButtonBeingConfigured.getBounds().top, orientation);
+                    mButtonBeingConfigured.getBounds().top);
             mButtonBeingConfigured = null;
             intersect = true;
           }
@@ -476,8 +479,8 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
           {
             // Persist button position by saving new place.
             saveControlPosition(mDpadBeingConfigured.getLegacyId(),
-                    mDpadBeingConfigured.getBounds().left, mDpadBeingConfigured.getBounds().top,
-                    orientation);
+                    mDpadBeingConfigured.getBounds().left,
+                    mDpadBeingConfigured.getBounds().top);
             mDpadBeingConfigured = null;
             intersect = true;
           }
@@ -513,7 +516,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
           {
             saveControlPosition(mJoystickBeingConfigured.getLegacyId(),
                     mJoystickBeingConfigured.getBounds().left,
-                    mJoystickBeingConfigured.getBounds().top, orientation);
+                    mJoystickBeingConfigured.getBounds().top);
             mJoystickBeingConfigured = null;
             intersect = true;
           }
@@ -556,151 +559,130 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   }
 
 
-  private void addVitaOverlayControls(String orientation)
+  private void addVitaOverlayControls(LayoutBounds layoutBounds, OverlayLayout layout)
   {
       overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_cross,
               R.drawable.button_cross_pressed, ButtonType.BUTTON_CROSS, ControlId.a,
-              orientation, OVERLAY_MASK_BASIC, mLayoutProfileId));
+              OVERLAY_MASK_BASIC, layout, layoutBounds, mScale, mOpacity));
 
       overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_circle,
               R.drawable.button_circle_pressed, ButtonType.BUTTON_CIRCLE, ControlId.b,
-              orientation, OVERLAY_MASK_BASIC, mLayoutProfileId));
+              OVERLAY_MASK_BASIC, layout, layoutBounds, mScale, mOpacity));
 
       overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_square,
               R.drawable.button_square_pressed, ButtonType.BUTTON_SQUARE, ControlId.x,
-              orientation, OVERLAY_MASK_BASIC, mLayoutProfileId));
+              OVERLAY_MASK_BASIC, layout, layoutBounds, mScale, mOpacity));
 
       overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_triangle,
               R.drawable.button_triangle_pressed, ButtonType.BUTTON_TRIANGLE, ControlId.y,
-              orientation, OVERLAY_MASK_BASIC, mLayoutProfileId));
+              OVERLAY_MASK_BASIC, layout, layoutBounds, mScale, mOpacity));
       overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_start,
               R.drawable.button_start_pressed, ButtonType.BUTTON_START,
-              ControlId.start, orientation, OVERLAY_MASK_BASIC, mLayoutProfileId));
+              ControlId.start, OVERLAY_MASK_BASIC, layout, layoutBounds, mScale, mOpacity));
 
       overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_ps,
             R.drawable.button_ps_pressed, ButtonType.BUTTON_PS,
-            ControlId.guide, orientation, OVERLAY_MASK_BASIC, mLayoutProfileId));
+            ControlId.guide, OVERLAY_MASK_BASIC, layout, layoutBounds, mScale, mOpacity));
 
       overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_select,
               R.drawable.button_select_pressed, ButtonType.BUTTON_SELECT,
-              ControlId.select, orientation, OVERLAY_MASK_BASIC, mLayoutProfileId));
+              ControlId.select, OVERLAY_MASK_BASIC, layout, layoutBounds, mScale, mOpacity));
 
       overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_l,
               R.drawable.button_l_pressed, ButtonType.TRIGGER_L,
-              ControlId.l1, orientation, OVERLAY_MASK_BASIC, mLayoutProfileId));
+              ControlId.l1, OVERLAY_MASK_BASIC, layout, layoutBounds, mScale, mOpacity));
       overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_r,
               R.drawable.button_r_pressed, ButtonType.TRIGGER_R,
-              ControlId.r1, orientation, OVERLAY_MASK_BASIC, mLayoutProfileId));
+              ControlId.r1, OVERLAY_MASK_BASIC, layout, layoutBounds, mScale, mOpacity));
 
     overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_l2,
             R.drawable.button_l2_pressed, ButtonType.TRIGGER_L2,
-            ControlId.l2, orientation, OVERLAY_MASK_L2R2, mLayoutProfileId));
+            ControlId.l2, OVERLAY_MASK_L2R2, layout, layoutBounds, mScale, mOpacity));
 
     overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_r2,
             R.drawable.button_r2_pressed, ButtonType.TRIGGER_R2,
-            ControlId.r2, orientation, OVERLAY_MASK_L2R2, mLayoutProfileId));
+            ControlId.r2, OVERLAY_MASK_L2R2, layout, layoutBounds, mScale, mOpacity));
 
     // L3 and R3
     overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_l3,
             R.drawable.button_l3_pressed, ButtonType.TRIGGER_L3,
-            ControlId.l3, orientation, OVERLAY_MASK_L3R3, mLayoutProfileId));
+            ControlId.l3, OVERLAY_MASK_L3R3, layout, layoutBounds, mScale, mOpacity));
 
     overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_r3,
             R.drawable.button_r3_pressed, ButtonType.TRIGGER_R3,
-            ControlId.r3, orientation, OVERLAY_MASK_L3R3, mLayoutProfileId));
+            ControlId.r3, OVERLAY_MASK_L3R3, layout, layoutBounds, mScale, mOpacity));
 
     overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_touch_f,
             R.drawable.button_touch_b, ButtonType.BUTTON_TOUCH_SWITCH,
-            ControlId.touch, orientation, OVERLAY_MASK_TOUCH_SCREEN_SWITCH, mLayoutProfileId));
+            ControlId.touch, OVERLAY_MASK_TOUCH_SCREEN_SWITCH, layout, layoutBounds, mScale, mOpacity));
 
     // show hide button
     overlayButtons.add(initializeOverlayButton(getContext(), R.drawable.button_hide,
             R.drawable.button_hide_pressed, ButtonType.BUTTON_TOUCH_HIDE,
-            ControlId.touch, orientation, OVERLAY_MASK_HIDE_TOGGLE, mLayoutProfileId));
+            ControlId.touch, OVERLAY_MASK_HIDE_TOGGLE, layout, layoutBounds, mScale, mOpacity));
 
       overlayDpads.add(initializeOverlayDpad(getContext(), R.drawable.dpad_idle,
               R.drawable.dpad_up,
               R.drawable.dpad_up_left,
               ButtonType.DPAD_UP, ControlId.dup, ControlId.ddown,
-              ControlId.dleft, ControlId.dright, orientation, mLayoutProfileId));
+              ControlId.dleft, ControlId.dright, layout, layoutBounds, mScale, mOpacity));
 
       overlayJoysticks.add(initializeOverlayJoystick(getContext(), R.drawable.joystick_range,
               R.drawable.joystick, R.drawable.joystick_pressed,
               ButtonType.STICK_LEFT, ControlId.axis_left_x,
-              ControlId.axis_left_y, orientation, mLayoutProfileId));
+              ControlId.axis_left_y, layout, layoutBounds, mScale, mOpacity));
       overlayJoysticks.add(initializeOverlayJoystick(getContext(), R.drawable.joystick_range,
               R.drawable.joystick, R.drawable.joystick_pressed,
               ButtonType.STICK_RIGHT, ControlId.axis_right_x,
-              ControlId.axis_right_y, orientation, mLayoutProfileId));
+              ControlId.axis_right_y, layout, layoutBounds, mScale, mOpacity));
   }
 
   public void refreshControls()
   {
-    OverlayLayoutStore.ensureInitialized(getContext(), mLayoutProfileId);
     // Remove all the overlay buttons from the HashSet.
     overlayButtons.clear();
     overlayDpads.clear();
     overlayJoysticks.clear();
 
-    String orientation = "";
-    addVitaOverlayControls(orientation);
+    LayoutBounds layoutBounds = resolveLayoutBounds();
+    addVitaOverlayControls(layoutBounds, mLayout);
 
     invalidate();
   }
 
   public void resetButtonPlacement()
   {
-    OverlayLayoutStore.resetToDefaults(getContext(), mLayoutProfileId);
-    refreshControls();
+    setLayout(OverlayStore.defaultLayout(getContext()), true);
   }
 
   public void setScale(float scale){
-    if (scale != mGlobalScale){
-      mGlobalScale = scale;
+    if (scale != mScale){
+      mScale = scale;
       refreshControls();
     }
   }
 
   public void setOpacity(int opacity){
-    if (opacity != mGlobalOpacity){
-      mGlobalOpacity = opacity;
+    if (opacity != mOpacity){
+      mOpacity = opacity;
       refreshControls();
     }
   }
 
-  private void saveControlPosition(int sharedPrefsId, int x, int y,
-          String orientation)
+  private void saveControlPosition(int buttonType, int x, int y)
   {
-    final SharedPreferences sPrefs = OverlayLayoutStore.preferences(getContext());
-    SharedPreferences.Editor sPrefsEditor = sPrefs.edit();
-    sPrefsEditor.putFloat(OverlayLayoutStore.positionXKey(sharedPrefsId, orientation, mLayoutProfileId), x);
-    sPrefsEditor.putFloat(OverlayLayoutStore.positionYKey(sharedPrefsId, orientation, mLayoutProfileId), y);
-    sPrefsEditor.apply();
+    LayoutBounds layoutBounds = resolveLayoutBounds();
+    float normalizedX = layoutBounds.width > 0 ? (float) x / layoutBounds.width : 0f;
+    float normalizedY = layoutBounds.height > 0 ? (float) y / layoutBounds.height : 0f;
+    OverlayLayout updatedLayout = mLayout.withPosition(buttonType, normalizedX, normalizedY);
+    setLayout(updatedLayout, false);
   }
 
   /**
    * Initializes an InputOverlayDrawableButton, given by resId, with all of the
    * parameters set for it to be properly shown on the InputOverlay.
    * <p>
-   * This works due to the way the X and Y coordinates are stored within
-   * the {@link SharedPreferences}.
-   * <p>
-   * In the input overlay configuration menu,
-   * once a touch event begins and then ends (ie. Organizing the buttons to one's own liking for the overlay).
-   * the X and Y coordinates of the button at the END of its touch event
-   * (when you remove your finger/stylus from the touchscreen) are then stored
-   * within a SharedPreferences instance so that those values can be retrieved here.
-   * <p>
-   * This has a few benefits over the conventional way of storing the values
-   * (ie. within the Dolphin ini file).
-   * <ul>
-   * <li>No native calls</li>
-   * <li>Keeps Android-only values inside the Android environment</li>
-   * </ul>
-   * <p>
-   * Technically no modifications should need to be performed on the returned
-   * InputOverlayDrawableButton. Simply add it to the HashSet of overlay items and wait
-   * for Android to call the onDraw method.
+   * Position and appearance are fully resolved before returning the drawable.
    *
    * @param context      The current {@link Context}.
    * @param defaultResId The resource ID of the {@link Drawable} to get the {@link Bitmap} of (Default State).
@@ -710,14 +692,11 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
    * @return An {@link InputOverlayDrawableButton} with the correct drawing bounds set.
    */
   private static InputOverlayDrawableButton initializeOverlayButton(Context context,
-          int defaultResId, int pressedResId, int legacyId, int control, String orientation, int role,
-          String layoutProfileId)
+          int defaultResId, int pressedResId, int legacyId, int control, int role,
+          OverlayLayout layout, LayoutBounds layoutBounds, float globalScale, int globalOpacity)
   {
     // Resources handle for fetching the initial Drawable resource.
     final Resources res = context.getResources();
-
-    // SharedPreference to retrieve the X and Y coordinates for the InputOverlayDrawableButton.
-    final SharedPreferences sPrefs = OverlayLayoutStore.preferences(context);
 
     // Decide scale based on button ID and user preference
     float scale = 0.15f;
@@ -734,7 +713,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             || legacyId == ButtonType.BUTTON_TOUCH_HIDE)
       scale = 0.11f;
 
-    scale *= mGlobalScale;
+    scale *= globalScale;
 
     // Initialize the InputOverlayDrawableButton.
     final Bitmap defaultStateBitmap =
@@ -745,10 +724,11 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
             new InputOverlayDrawableButton(res, defaultStateBitmap, pressedStateBitmap, legacyId,
                     control, role);
 
-    // The X and Y coordinates of the InputOverlayDrawableButton on the InputOverlay.
-    // These were set in the input overlay configuration menu.
-    int drawableX = (int) sPrefs.getFloat(OverlayLayoutStore.positionXKey(legacyId, orientation, layoutProfileId), 0f);
-    int drawableY = (int) sPrefs.getFloat(OverlayLayoutStore.positionYKey(legacyId, orientation, layoutProfileId), 0f);
+    OverlayPosition position = layout.positionFor(legacyId);
+    if (position == null)
+      position = new OverlayPosition(0f, 0f);
+    int drawableX = Math.round(position.getNormalizedX() * layoutBounds.width);
+    int drawableY = Math.round(position.getNormalizedY() * layoutBounds.height);
 
     int width = overlayDrawable.getWidth();
     int height = overlayDrawable.getHeight();
@@ -759,7 +739,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Need to set the image's position
     overlayDrawable.setPosition(drawableX, drawableY);
-    overlayDrawable.setOpacity((int) (mGlobalOpacity * 0.01 * 255));
+    overlayDrawable.setOpacity((int) (globalOpacity * 0.01 * 255));
 
     return overlayDrawable;
   }
@@ -787,19 +767,18 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
           int downControl,
           int leftControl,
           int rightControl,
-          String orientation,
-          String layoutProfileId)
+          OverlayLayout layout,
+          LayoutBounds layoutBounds,
+          float globalScale,
+          int globalOpacity)
   {
     // Resources handle for fetching the initial Drawable resource.
     final Resources res = context.getResources();
 
-    // SharedPreference to retrieve the X and Y coordinates for the InputOverlayDrawableDpad.
-    final SharedPreferences sPrefs = OverlayLayoutStore.preferences(context);
-
     // Decide scale based on button ID and user preference
     float scale = 0.35f;
 
-    scale *= mGlobalScale;
+    scale *= globalScale;
 
     // Initialize the InputOverlayDrawableDpad.
     final Bitmap defaultStateBitmap =
@@ -815,10 +794,11 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
                     pressedOneDirectionStateBitmap, pressedTwoDirectionsStateBitmap,
                     legacyId, upControl, downControl, leftControl, rightControl);
 
-    // The X and Y coordinates of the InputOverlayDrawableDpad on the InputOverlay.
-    // These were set in the input overlay configuration menu.
-    int drawableX = (int) sPrefs.getFloat(OverlayLayoutStore.positionXKey(legacyId, orientation, layoutProfileId), 0f);
-    int drawableY = (int) sPrefs.getFloat(OverlayLayoutStore.positionYKey(legacyId, orientation, layoutProfileId), 0f);
+    OverlayPosition position = layout.positionFor(legacyId);
+    if (position == null)
+      position = new OverlayPosition(0f, 0f);
+    int drawableX = Math.round(position.getNormalizedX() * layoutBounds.width);
+    int drawableY = Math.round(position.getNormalizedY() * layoutBounds.height);
 
     int width = overlayDrawable.getWidth();
     int height = overlayDrawable.getHeight();
@@ -829,7 +809,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Need to set the image's position
     overlayDrawable.setPosition(drawableX, drawableY);
-    overlayDrawable.setOpacity((int) (mGlobalOpacity * 0.01 * 255));
+    overlayDrawable.setOpacity((int) (globalOpacity * 0.01 * 255));
 
     return overlayDrawable;
   }
@@ -848,17 +828,15 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
    */
   private static InputOverlayDrawableJoystick initializeOverlayJoystick(Context context,
           int resOuter, int defaultResInner, int pressedResInner, int legacyId, int xControl,
-          int yControl, String orientation, String layoutProfileId)
+          int yControl, OverlayLayout layout, LayoutBounds layoutBounds, float globalScale,
+          int globalOpacity)
   {
     // Resources handle for fetching the initial Drawable resource.
     final Resources res = context.getResources();
 
-    // SharedPreference to retrieve the X and Y coordinates for the InputOverlayDrawableJoystick.
-    final SharedPreferences sPrefs = OverlayLayoutStore.preferences(context);
-
     // Decide scale based on user preference
     float scale = 0.275f;
-    scale *= mGlobalScale;
+    scale *= globalScale;
 
     // Initialize the InputOverlayDrawableJoystick.
     final Bitmap bitmapOuter =
@@ -866,10 +844,11 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     final Bitmap bitmapInnerDefault = BitmapFactory.decodeResource(res, defaultResInner);
     final Bitmap bitmapInnerPressed = BitmapFactory.decodeResource(res, pressedResInner);
 
-    // The X and Y coordinates of the InputOverlayDrawableButton on the InputOverlay.
-    // These were set in the input overlay configuration menu.
-    int drawableX = (int) sPrefs.getFloat(OverlayLayoutStore.positionXKey(legacyId, orientation, layoutProfileId), 0f);
-    int drawableY = (int) sPrefs.getFloat(OverlayLayoutStore.positionYKey(legacyId, orientation, layoutProfileId), 0f);
+    OverlayPosition position = layout.positionFor(legacyId);
+    if (position == null)
+      position = new OverlayPosition(0f, 0f);
+    int drawableX = Math.round(position.getNormalizedX() * layoutBounds.width);
+    int drawableY = Math.round(position.getNormalizedY() * layoutBounds.height);
 
     // Decide inner scale based on joystick ID
     float innerScale = 1.375f;
@@ -887,7 +866,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
     // Need to set the image's position
     overlayDrawable.setPosition(drawableX, drawableY);
-    overlayDrawable.setOpacity((int) (mGlobalOpacity * 0.01 * 255));
+    overlayDrawable.setOpacity((int) (globalOpacity * 0.01 * 255));
 
     return overlayDrawable;
   }
@@ -926,15 +905,18 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     updateVirtualControllerState();
   }
 
-  public void setLayoutProfileId(String layoutProfileId)
+  public void setLayout(OverlayLayout layout)
   {
-    String normalizedProfileId = OverlayLayoutStore.normalizeProfileId(layoutProfileId);
-    if(mLayoutProfileId.equals(normalizedProfileId))
+    if (layout == null)
       return;
 
-    mLayoutProfileId = normalizedProfileId;
-    OverlayLayoutStore.ensureInitialized(getContext(), mLayoutProfileId);
+    mLayout = layout.normalized();
     refreshControls();
+  }
+
+  public OverlayLayout captureLayout()
+  {
+    return mLayout.normalized();
   }
 
   public void rebindController()
@@ -969,6 +951,40 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   public native void setAxis(int axis, short value);
   public native void setButton(int button, boolean value);
   public native void setTouchState(boolean is_back);
+
+  private LayoutBounds resolveLayoutBounds() {
+    return resolveLayoutBounds(getWidth(), getHeight(), getContext());
+  }
+
+  private static LayoutBounds resolveLayoutBounds(int width, int height, Context context) {
+    if (width <= 0 || height <= 0) {
+      DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+      width = metrics.widthPixels;
+      height = metrics.heightPixels;
+    }
+
+    return new LayoutBounds(width, height);
+  }
+
+  private void setLayout(OverlayLayout layout, boolean refresh)
+  {
+    OverlayLayout normalizedLayout = layout != null ? layout.normalized()
+            : OverlayStore.defaultLayout(getContext());
+    mLayout = normalizedLayout;
+
+    if (refresh)
+      refreshControls();
+  }
+
+  private static final class LayoutBounds {
+    final int width;
+    final int height;
+
+    LayoutBounds(int width, int height) {
+      this.width = width;
+      this.height = height;
+    }
+  }
 
   public static final class ButtonType
   {

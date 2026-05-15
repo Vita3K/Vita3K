@@ -96,7 +96,7 @@ LogWidget::LogWidget(QWidget *parent)
     layout->addWidget(m_log);
     setWidget(container);
 
-    m_search_container = new QWidget(m_log->viewport());
+    m_search_container = new QWidget(m_log);
     m_search_container->setObjectName(QStringLiteral("log_search_container"));
     auto *search_layout = new QHBoxLayout(m_search_container);
     search_layout->setContentsMargins(6, 6, 6, 6);
@@ -121,6 +121,7 @@ LogWidget::LogWidget(QWidget *parent)
     search_layout->addWidget(m_search_close_button);
 
     m_search_container->hide();
+    m_log->installEventFilter(this);
     m_log->viewport()->installEventFilter(this);
 
     auto *find_shortcut = new QShortcut(QKeySequence::Find, this);
@@ -387,7 +388,7 @@ bool LogWidget::eventFilter(QObject *watched, QEvent *event) {
         }
     }
 
-    if (watched == m_log->viewport() && (event->type() == QEvent::Resize || event->type() == QEvent::Show))
+    if ((watched == m_log || watched == m_log->viewport()) && (event->type() == QEvent::Resize || event->type() == QEvent::Show))
         reposition_search_bar();
 
     return custom_dock_widget::eventFilter(watched, event);
@@ -456,7 +457,7 @@ void LogWidget::reposition_search_bar() {
 
     m_search_container->adjustSize();
     const QSize size = m_search_container->sizeHint();
-    const QRect viewport_rect = m_log->viewport()->rect();
+    const QRect viewport_rect = m_log->viewport()->geometry();
     const int margin = 8;
     m_search_container->setGeometry(
         viewport_rect.right() - size.width() - margin,

@@ -179,15 +179,19 @@ QGroupBox *make_button_group(const QString &title, QPushButton *&out_btn) {
 
 QGroupBox *make_diamond_group(const QString &title,
     QPushButton *&btn_up, QPushButton *&btn_down,
-    QPushButton *&btn_left, QPushButton *&btn_right) {
+    QPushButton *&btn_left, QPushButton *&btn_right,
+    const QString &label_up = QObject::tr("Up"),
+    const QString &label_down = QObject::tr("Down"),
+    const QString &label_left = QObject::tr("Left"),
+    const QString &label_right = QObject::tr("Right")) {
     auto *gb = new QGroupBox(title);
     auto *layout = new QGridLayout(gb);
     layout->setHorizontalSpacing(6);
     layout->setVerticalSpacing(6);
-    layout->addWidget(make_button_group(QObject::tr("Up"), btn_up), 0, 1, 1, 2, Qt::AlignHCenter);
-    layout->addWidget(make_button_group(QObject::tr("Left"), btn_left), 1, 0, 1, 2);
-    layout->addWidget(make_button_group(QObject::tr("Right"), btn_right), 1, 2, 1, 2);
-    layout->addWidget(make_button_group(QObject::tr("Down"), btn_down), 2, 1, 1, 2, Qt::AlignHCenter);
+    layout->addWidget(make_button_group(label_up, btn_up), 0, 1, 1, 2, Qt::AlignHCenter);
+    layout->addWidget(make_button_group(label_left, btn_left), 1, 0, 1, 2);
+    layout->addWidget(make_button_group(label_right, btn_right), 1, 2, 1, 2);
+    layout->addWidget(make_button_group(label_down, btn_down), 2, 1, 1, 2, Qt::AlignHCenter);
     return gb;
 }
 
@@ -510,7 +514,11 @@ QLayout *make_keyboard_bindings_layout(
 
     auto *right_col = new QVBoxLayout();
     right_col->addWidget(make_diamond_group(QObject::tr("Face Buttons"),
-        btn_triangle, btn_cross, btn_square, btn_circle));
+        btn_triangle, btn_cross, btn_square, btn_circle,
+        QObject::tr("Triangle"),
+        QObject::tr("Cross"),
+        QObject::tr("Square"),
+        QObject::tr("Circle")));
     right_col->addWidget(make_diamond_group(QObject::tr("Right Stick"),
         btn_rstick_up, btn_rstick_down, btn_rstick_left, btn_rstick_right));
     right_col->addStretch();
@@ -762,7 +770,11 @@ void ControlsDialog::build_controller_page(int index) {
     auto *right_column = new QVBoxLayout();
     right_column->addWidget(make_diamond_group(tr("Face Buttons"),
         t.btn_triangle, t.btn_cross,
-        t.btn_square, t.btn_circle));
+        t.btn_square, t.btn_circle,
+        tr("Triangle"),
+        tr("Cross"),
+        tr("Square"),
+        tr("Circle")));
     right_column->addWidget(make_diamond_group(tr("Right Stick"),
         t.btn_rstick_up, t.btn_rstick_down,
         t.btn_rstick_left, t.btn_rstick_right));
