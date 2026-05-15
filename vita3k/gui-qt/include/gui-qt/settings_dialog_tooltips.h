@@ -105,6 +105,7 @@ public:
     QString ime_langs;
     QString show_welcome_screen;
     QString warn_missing_firmware;
+    QString confirm_exit_app;
     QString warn_admin_privileges;
     QString windows_rounded_corners;
     QString log_buffer_size;

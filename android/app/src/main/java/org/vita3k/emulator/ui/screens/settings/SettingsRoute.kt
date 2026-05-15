@@ -56,8 +56,7 @@ import org.vita3k.emulator.R
 import org.vita3k.emulator.data.CustomDriverLoadStatus
 import org.vita3k.emulator.data.RestartRequiredSetting
 import org.vita3k.emulator.overlay.OverlayConfig
-import org.vita3k.emulator.overlay.OverlayConfigStore
-import org.vita3k.emulator.overlay.OverlayLayoutStore
+import org.vita3k.emulator.overlay.OverlayStore
 import org.vita3k.emulator.ui.CUSTOM_DRIVER_DOWNLOAD_URL
 import org.vita3k.emulator.ui.rememberConnectedGamepads
 import org.vita3k.emulator.ui.theme.ApplyDialogDim
@@ -97,10 +96,13 @@ fun SettingsRoute(
     val settingsLoaded = viewModel.isLoaded(titleId)
     val categories = remember(isPerApp) { settingsCategories(isPerApp) }
     val scrollState = rememberScrollState()
-    val overlayLayoutProfileId = titleId.orEmpty()
-    var overlayConfig by remember(titleId) { mutableStateOf(OverlayConfigStore.load(context)) }
+    val overlayScopeId = titleId.orEmpty()
+    var overlayState by remember(titleId) { mutableStateOf(OverlayStore.defaultState(context)) }
+    var originalOverlayState by remember(titleId) { mutableStateOf(overlayState) }
     val connectedGamepads = rememberConnectedGamepads(context)
     val controllerConnected = connectedGamepads.isNotEmpty()
+    val overlayDirty = overlayState != originalOverlayState
+    val hasPendingChanges = viewModel.isDirty || overlayDirty
 
     var selectedCategory by rememberSaveable(titleId) { mutableStateOf(SettingsCategory.Core) }
     var searchQuery by rememberSaveable(titleId) { mutableStateOf("") }
@@ -113,7 +115,7 @@ fun SettingsRoute(
     var activeHelp by remember { mutableStateOf<SettingsHelpEntry?>(null) }
     var searchActive by rememberSaveable(titleId) { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
-    var showOverlayEditor by remember(titleId) { mutableStateOf(false) }
+    var showOverlayEditor by rememberSaveable(titleId) { mutableStateOf(false) }
     var pendingRestartSettings by remember { mutableStateOf<List<RestartRequiredSetting>?>(null) }
     var closeAfterRestartNotice by remember { mutableStateOf(false) }
 
@@ -152,8 +154,56 @@ fun SettingsRoute(
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
 
+    LaunchedEffect(settingsLoaded, titleId, viewModel.hasCustomConfig) {
+        if (settingsLoaded) {
+            val loaded = OverlayStore.resolveState(
+                context = context,
+                scopeId = overlayScopeId,
+                allowGameOverride = isPerApp && viewModel.hasCustomConfig
+            )
+            overlayState = loaded
+            originalOverlayState = loaded
+        }
+    }
+
+    fun reloadOverlayState() {
+        val loaded = OverlayStore.resolveState(
+            context = context,
+            scopeId = overlayScopeId,
+            allowGameOverride = isPerApp && viewModel.hasCustomConfig
+        )
+        overlayState = loaded
+        originalOverlayState = loaded
+    }
+
+    fun persistOverlayStateChanges() {
+        val normalized = overlayState.copy(
+            config = overlayState.config.normalized(),
+            layout = overlayState.layout.normalized()
+        )
+        overlayState = normalized
+        if (isPerApp) {
+            OverlayStore.saveGameOverride(context, overlayScopeId, normalized)
+        } else {
+            OverlayStore.saveGlobalState(context, normalized)
+        }
+        originalOverlayState = normalized
+    }
+
+    fun saveSettings(onSaved: (List<RestartRequiredSetting>) -> Unit) {
+        val needsCustomConfigForOverlay = isPerApp && overlayDirty && !viewModel.hasCustomConfig
+        if (overlayDirty) {
+            persistOverlayStateChanges()
+        }
+        if (viewModel.isDirty || needsCustomConfigForOverlay) {
+            viewModel.save(forceCustomConfig = isPerApp, onSaved = onSaved)
+        } else {
+            onSaved(emptyList())
+        }
+    }
+
     fun tryBack() {
-        if (viewModel.isDirty) showDiscardDialog = true else onBack()
+        if (hasPendingChanges) showDiscardDialog = true else onBack()
     }
 
     BackHandler { tryBack() }
@@ -204,9 +254,9 @@ fun SettingsRoute(
                         }
                     },
                     actions = {
-                        if (!searchActive && viewModel.isDirty && !viewModel.saving && !viewModel.customDriverBusy) {
+                        if (!searchActive && hasPendingChanges && !viewModel.saving && !viewModel.customDriverBusy) {
                             IconButton(onClick = {
-                                viewModel.save(forceCustomConfig = isPerApp) { restartRequired ->
+                                saveSettings { restartRequired ->
                                     if (restartRequired.isNotEmpty()) {
                                         pendingRestartSettings = restartRequired
                                     }
@@ -278,7 +328,7 @@ fun SettingsRoute(
                     titleId = titleId,
                     isPerApp = isPerApp,
                     viewModel = viewModel,
-                    overlayConfig = overlayConfig,
+                    overlayConfig = overlayState.config,
                     supportedMemoryMappingMask = viewModel.supportedMemoryMappingMask,
                     customDriverLoadStatus = viewModel.customDriverLoadStatus,
                     availableCameras = viewModel.availableCameras,
@@ -291,6 +341,7 @@ fun SettingsRoute(
                     currentStoragePath = viewModel.currentStoragePath,
                     scrollState = scrollState,
                     controllerConnected = controllerConnected,
+                    hasOverlayChanges = overlayDirty,
                     connectedGamepads = connectedGamepads,
                     categories = categories,
                     onChangeStorageFolder = ::requestStorageFolderChange,
@@ -301,15 +352,13 @@ fun SettingsRoute(
                     onRequestRemoveCustomDriver = { pendingCustomDriverRemoval = it },
                     onClearAllCustomConfigs = { showClearAllCustomConfigsDialog = true },
                     onOverlayConfigChange = { updated ->
-                        overlayConfig = updated.normalized()
-                        OverlayConfigStore.save(context, overlayConfig)
+                        overlayState = overlayState.copy(config = updated.normalized())
                     },
                     onStartControlsEditor = {
                         showOverlayEditor = true
                     },
                     onResetControlsLayout = {
-                        OverlayLayoutStore.resetToDefaults(context, overlayLayoutProfileId)
-                        overlayConfig = OverlayConfigStore.load(context)
+                        overlayState = overlayState.copy(layout = OverlayStore.defaultLayout(context))
                     },
                     onShowHelp = { activeHelp = it },
                 )
@@ -318,11 +367,11 @@ fun SettingsRoute(
 
         if (showOverlayEditor) {
             OverlayLayoutEditorDialog(
-                overlayConfig = overlayConfig,
-                layoutProfileId = overlayLayoutProfileId,
-                onDismiss = {
+                overlayConfig = overlayState.config,
+                overlayLayout = overlayState.layout,
+                onDismiss = { updatedLayout ->
+                    overlayState = overlayState.copy(layout = updatedLayout)
                     showOverlayEditor = false
-                    overlayConfig = OverlayConfigStore.load(context)
                 }
             )
         }
@@ -334,7 +383,7 @@ fun SettingsRoute(
             onCancel = { showDiscardDialog = false },
             onSaveAndExit = {
                 showDiscardDialog = false
-                viewModel.save(forceCustomConfig = isPerApp) { restartRequired ->
+                saveSettings { restartRequired ->
                     if (restartRequired.isEmpty()) {
                         onBack()
                     } else {
@@ -346,6 +395,7 @@ fun SettingsRoute(
             onDiscard = {
                 showDiscardDialog = false
                 viewModel.discardChanges()
+                overlayState = originalOverlayState
                 onBack()
             }
         )
@@ -363,6 +413,7 @@ fun SettingsRoute(
                 TextButton(onClick = {
                     showResetDefaultsDialog = false
                     viewModel.resetToDefaults()
+                    overlayState = OverlayStore.defaultState(context)
                 }) {
                     Text(stringResource(R.string.settings_reset_defaults))
                 }
@@ -391,6 +442,8 @@ fun SettingsRoute(
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteCustomConfigDialog = false
+                    OverlayStore.deleteGameOverride(context, overlayScopeId)
+                    reloadOverlayState()
                     viewModel.deleteCustomConfig { restartRequired ->
                         if (restartRequired.isNotEmpty()) {
                             pendingRestartSettings = restartRequired
@@ -422,6 +475,7 @@ fun SettingsRoute(
             confirmButton = {
                 TextButton(onClick = {
                     showClearAllCustomConfigsDialog = false
+                    OverlayStore.clearAllGameOverrides(context)
                     viewModel.clearAllCustomConfigs()
                 }) {
                     Text(
@@ -544,6 +598,7 @@ private fun SettingsContentPane(
     currentStoragePath: String,
     scrollState: androidx.compose.foundation.ScrollState,
     controllerConnected: Boolean,
+    hasOverlayChanges: Boolean,
     connectedGamepads: List<org.vita3k.emulator.ConnectedGamepad>,
     categories: List<SettingsCategory>,
     onChangeStorageFolder: () -> Unit,
@@ -633,7 +688,7 @@ private fun SettingsContentPane(
             )
         }
 
-        if (titleId == null && viewModel.isDirty) {
+        if (titleId == null && (viewModel.isDirty || hasOverlayChanges)) {
             Spacer(modifier = Modifier.width(1.dp))
         }
     }

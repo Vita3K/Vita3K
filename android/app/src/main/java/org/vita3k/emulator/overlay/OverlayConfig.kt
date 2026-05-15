@@ -87,31 +87,18 @@ data class OverlayConfig(
 }
 
 object OverlayConfigStore {
-    private const val PREFS_NAME = "emulation_session"
-    private const val KEY_OVERLAY_MASK = "overlay_mask"
-    private const val KEY_OVERLAY_SCALE = "overlay_scale"
-    private const val KEY_OVERLAY_OPACITY = "overlay_opacity"
-    private const val KEY_HIDE_ON_CONTROLLER = "hide_overlay_on_controller"
+    fun load(
+        context: Context,
+        scopeId: String? = null,
+        allowGameOverride: Boolean = false
+    ): OverlayConfig = OverlayStore.loadConfig(context, scopeId, allowGameOverride)
 
-    fun load(context: Context): OverlayConfig {
-        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return OverlayConfig(
-            overlayMask = prefs.getInt(KEY_OVERLAY_MASK, DEFAULT_OVERLAY_MASK),
-            overlayScale = prefs.getInt(KEY_OVERLAY_SCALE, 100),
-            overlayOpacity = prefs.getInt(KEY_OVERLAY_OPACITY, 100),
-            hideOverlayWhenControllerConnected = prefs.getBoolean(KEY_HIDE_ON_CONTROLLER, true)
-        ).normalized()
-    }
-
-    fun save(context: Context, config: OverlayConfig) {
-        val normalized = config.normalized()
-        context.applicationContext
-            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putInt(KEY_OVERLAY_MASK, normalized.overlayMask)
-            .putInt(KEY_OVERLAY_SCALE, normalized.overlayScale)
-            .putInt(KEY_OVERLAY_OPACITY, normalized.overlayOpacity)
-            .putBoolean(KEY_HIDE_ON_CONTROLLER, normalized.hideOverlayWhenControllerConnected)
-            .apply()
+    fun save(
+        context: Context,
+        config: OverlayConfig,
+        scopeId: String? = null,
+        useGameOverride: Boolean = false
+    ) {
+        OverlayStore.saveConfig(context, config, scopeId, useGameOverride)
     }
 }

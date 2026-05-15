@@ -2427,28 +2427,35 @@ QGroupBox[flat=&quot;true&quot;]::title {
                    <item>
                     <widget class="QCheckBox" name="show_welcome">
                      <property name="text">
-                      <string>Show Welcome Screen</string>
+                      <string>Show welcome screen</string>
                      </property>
                     </widget>
                    </item>
                    <item>
                    <widget class="QCheckBox" name="warn_missing_firmware">
                     <property name="text">
-                     <string>Warn When Firmware Is Missing</string>
+                     <string>Warn when firmware is missing</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QCheckBox" name="confirm_exit_app">
+                    <property name="text">
+                     <string>Show exit app confirmation</string>
                     </property>
                    </widget>
                   </item>
                   <item>
                    <widget class="QCheckBox" name="warn_admin_privileges">
                     <property name="text">
-                     <string>Warn When Running with Administrator Privileges</string>
+                     <string>Warn when running with administrator privileges</string>
                     </property>
                    </widget>
                   </item>
                   <item>
                    <widget class="QCheckBox" name="windows_rounded_corners">
                     <property name="text">
-                     <string>Enable Rounded Corners for the Game Window</string>
+                     <string>Enable rounded corners for the game window</string>
                     </property>
                    </widget>
                   </item>

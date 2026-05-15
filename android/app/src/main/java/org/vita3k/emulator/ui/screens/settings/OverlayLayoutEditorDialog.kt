@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.os.Build
-import android.view.ViewTreeObserver
-import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -18,8 +16,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -27,19 +25,26 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import org.vita3k.emulator.overlay.InputOverlay
 import org.vita3k.emulator.overlay.OverlayConfig
+import org.vita3k.emulator.overlay.OverlayLayout
+import org.vita3k.emulator.overlay.OverlayStore
 import org.vita3k.emulator.ui.components.OverlayEditorPalette
 
 @Composable
 internal fun OverlayLayoutEditorDialog(
     overlayConfig: OverlayConfig,
-    onDismiss: () -> Unit,
-    layoutProfileId: String = ""
+    overlayLayout: OverlayLayout,
+    onDismiss: (OverlayLayout) -> Unit
 ) {
-    BackHandler(onBack = onDismiss)
-
-    val activity = LocalContext.current.findActivity()
+    val context = LocalContext.current
+    val activity = context.findActivity()
     var overlayView by remember { mutableStateOf<InputOverlay?>(null) }
-    OverlayEditorWindowEffect(activity = activity)
+
+    fun finishEditor() {
+        onDismiss(overlayView?.captureLayout() ?: overlayLayout)
+    }
+
+    OverlayEditorOrientationEffect(activity)
+    BackHandler(onBack = ::finishEditor)
 
     Box(
         modifier = Modifier
@@ -47,10 +52,10 @@ internal fun OverlayLayoutEditorDialog(
             .background(Color.Black)
     ) {
         AndroidView(
-            factory = { context ->
-                InputOverlay(context).apply {
+            factory = { viewContext ->
+                InputOverlay(viewContext).apply {
                     overlayView = this
-                    setLayoutProfileId(layoutProfileId)
+                    setLayout(overlayLayout)
                     setAllowVirtualController(false)
                     setAutoHideEnabled(false)
                     setIsInEditMode(true)
@@ -61,7 +66,7 @@ internal fun OverlayLayoutEditorDialog(
             },
             update = { view ->
                 overlayView = view
-                view.setLayoutProfileId(layoutProfileId)
+                view.setLayout(overlayLayout)
                 view.setAllowVirtualController(false)
                 view.setAutoHideEnabled(false)
                 view.setIsInEditMode(true)
@@ -73,70 +78,52 @@ internal fun OverlayLayoutEditorDialog(
         )
 
         OverlayEditorPalette(
-            onDone = onDismiss,
-            onReset = { overlayView?.resetButtonPlacement() }
+            onDone = ::finishEditor,
+            onReset = {
+                overlayView?.setLayout(OverlayStore.defaultLayout(context))
+            }
         )
     }
 }
 
 @Composable
-private fun OverlayEditorWindowEffect(activity: Activity?) {
+private fun OverlayEditorOrientationEffect(activity: Activity?) {
     DisposableEffect(activity) {
         if (activity == null) {
             return@DisposableEffect onDispose { }
         }
 
-        val window = activity.window
-        val decorView = window.decorView
         val previousOrientation = activity.requestedOrientation
-        val previousAttributes = WindowManager.LayoutParams().also { it.copyFrom(window.attributes) }
-        val systemBars = WindowInsetsCompat.Type.systemBars()
-        val barsWereVisible = ViewCompat.getRootWindowInsets(decorView)?.isVisible(systemBars) ?: true
-        val controller = WindowCompat.getInsetsController(window, decorView)
-        val focusListener = ViewTreeObserver.OnWindowFocusChangeListener { hasFocus ->
-            if (hasFocus) {
-                WindowCompat.getInsetsController(window, decorView)?.hide(systemBars)
-            }
-        }
+        val window = activity.window
+        val previousCutoutMode = window.attributes.layoutInDisplayCutoutMode
+        val decorView = window.decorView
 
         activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        controller?.setSystemBarsBehavior(
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        )
-        controller?.hide(systemBars)
-        ViewCompat.setOnApplyWindowInsetsListener(decorView) { view, insets ->
-            if (insets.isVisible(systemBars)) {
-                WindowCompat.getInsetsController(window, view)?.hide(systemBars)
-            }
-            insets
+        ViewCompat.getWindowInsetsController(decorView)?.apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.systemBars())
         }
-        if (decorView.viewTreeObserver.isAlive) {
-            decorView.viewTreeObserver.addOnWindowFocusChangeListener(focusListener)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
+            previousCutoutMode != android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        ) {
+            val attributes = window.attributes
+            attributes.layoutInDisplayCutoutMode =
+                android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            window.attributes = attributes
         }
         decorView.post {
-            WindowCompat.getInsetsController(window, decorView)?.hide(systemBars)
-            ViewCompat.requestApplyInsets(decorView)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val updatedAttributes = window.attributes
-            updatedAttributes.layoutInDisplayCutoutMode =
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-            window.attributes = updatedAttributes
+            ViewCompat.getWindowInsetsController(decorView)?.hide(WindowInsetsCompat.Type.systemBars())
         }
 
         onDispose {
-            ViewCompat.setOnApplyWindowInsetsListener(decorView, null)
-            if (decorView.viewTreeObserver.isAlive) {
-                decorView.viewTreeObserver.removeOnWindowFocusChangeListener(focusListener)
-            }
+            ViewCompat.getWindowInsetsController(decorView)?.show(WindowInsetsCompat.Type.systemBars())
             WindowCompat.setDecorFitsSystemWindows(window, true)
-            if (barsWereVisible) {
-                controller?.show(systemBars)
-            } else {
-                controller?.hide(systemBars)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val attributes = window.attributes
+                attributes.layoutInDisplayCutoutMode = previousCutoutMode
+                window.attributes = attributes
             }
-            window.attributes = previousAttributes
             activity.requestedOrientation = previousOrientation
         }
     }

@@ -18,10 +18,10 @@
 #include <gui-qt/update_manager.h>
 
 #include <config/version.h>
+#include <gui-qt/qt_utils.h>
 #include <updater/functions.h>
 #include <util/net_utils.h>
 
-#include <QAbstractButton>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDesktopServices>
@@ -31,7 +31,6 @@
 #include <QLocale>
 #include <QMessageBox>
 #include <QProgressDialog>
-#include <QPushButton>
 #include <QRegularExpression>
 #include <QUrl>
 
@@ -371,19 +370,23 @@ void UpdateManager::show_update_message(const updater::UpdateCheckResult &result
         break;
     }
 
-    QMessageBox dialog(m_parent_widget);
-    dialog.setIcon(QMessageBox::Information);
-    dialog.setWindowTitle(title);
-    dialog.setTextFormat(Qt::RichText);
-    dialog.setTextInteractionFlags(Qt::TextBrowserInteraction);
-    dialog.setText(tr_update("%1<br><br>Download page: <a href=\"%2\">Vita3K GitHub Releases</a>")
-                       .arg(to_html_with_breaks(summary), download_url.toHtmlEscaped()));
-    if (!details_text.isEmpty())
-        dialog.setDetailedText(details_text);
-    QAbstractButton *open_button = dialog.addButton(tr_update("Open Download Page"), QMessageBox::ActionRole);
-    dialog.addButton(QMessageBox::Ok);
-    dialog.exec();
+    const auto dialog_result = gui::utils::show_message_box(
+        m_parent_widget,
+        QMessageBox::Information,
+        title,
+        tr_update("%1<br><br>Download page: <a href=\"%2\">Vita3K GitHub Releases</a>")
+            .arg(to_html_with_breaks(summary), download_url.toHtmlEscaped()),
+        {
+            { QStringLiteral("open"), tr_update("Open Download Page"), QMessageBox::ActionRole, true },
+            { QStringLiteral("ok"), tr_update("OK"), QMessageBox::AcceptRole, false },
+        },
+        {},
+        {},
+        false,
+        Qt::RichText,
+        Qt::TextBrowserInteraction,
+        details_text);
 
-    if (dialog.clickedButton() == open_button)
+    if (dialog_result.clicked_id == QStringLiteral("open"))
         QDesktopServices::openUrl(QUrl(download_url));
 }

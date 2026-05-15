@@ -59,6 +59,7 @@ public:
     ~SettingsDialog();
 
     void show_tab(int tab_index);
+    void set_storage_path_locked(bool locked);
 
     bool storage_path_switched() const {
         return m_storage_path_switched;
@@ -69,6 +70,7 @@ public:
 Q_SIGNALS:
     void gui_stylesheet_request();
     void gui_log_settings_request();
+    void storage_path_changed();
     void ui_language_request(const QString &locale_tag);
     void restart_game_requested();
 
@@ -78,6 +80,7 @@ private slots:
     void on_close_clicked();
 
 private:
+    bool apply_pending_storage_path();
     bool commit_changes(bool close_after);
     bool prompt_restart_if_needed(const app::SettingsCommitResult &result, bool close_after);
     void apply_text_overrides();
@@ -93,10 +96,12 @@ private:
     void update_gpu_visibility();
     void update_camera_widgets();
     void update_camera_color_preview();
+    void update_current_emu_path_label();
     void update_modules_list_enabled();
     void update_file_loading_delay_label();
     void update_http_retry_labels();
     void mark_dirty();
+    void set_pending_pref_path(const fs::path &pref_path);
     void set_description(QWidget *tab, const QString &title, const QString &text);
     void add_stylesheets();
     void apply_stylesheet(bool reset = false);
@@ -113,8 +118,10 @@ private:
     std::string m_app_path;
     int m_initial_tab;
     bool m_dirty = false;
+    bool m_storage_path_locked = false;
     bool m_storage_path_switched = false;
     Config::CurrentConfig m_config;
+    fs::path m_pending_pref_path{};
     std::vector<config::RestartRequiredSetting> m_deferred_restart_settings;
     std::unique_ptr<Ui::vita3k_settings_dialog> m_ui;
     QString m_current_stylesheet;

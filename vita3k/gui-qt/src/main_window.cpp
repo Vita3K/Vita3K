@@ -247,16 +247,28 @@ void MainWindow::closeEvent(QCloseEvent *event) {
         return;
     }
 
-    if (m_game_window) {
-        const int result = QMessageBox::question(this,
-            tr("Exit?"),
-            tr("A game is still running. Do you really want to exit?\n\nAny unsaved progress will be lost!"),
-            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+    const bool confirm_exit_app = m_gui_settings
+        ? m_gui_settings->get_value(gui::mw_confirmExitApp).toBool()
+        : true;
 
-        if (result != QMessageBox::Yes) {
+    if (m_game_window && confirm_exit_app) {
+        QMessageBox box(this);
+        box.setIcon(QMessageBox::Question);
+        box.setWindowTitle(tr("Exit App?"));
+        box.setText(tr("An app is still running. Do you really want to exit?\n\nAny unsaved progress will be lost!"));
+        box.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        box.setDefaultButton(QMessageBox::No);
+
+        auto *dont_show_again = new QCheckBox(tr("Don't show this again"), &box);
+        box.setCheckBox(dont_show_again);
+
+        if (box.exec() != QMessageBox::Yes) {
             event->ignore();
             return;
         }
+
+        if (dont_show_again->isChecked() && m_gui_settings)
+            m_gui_settings->set_value(gui::mw_confirmExitApp, false);
     }
 
     if (!close_auxiliary_windows()) {
@@ -753,21 +765,23 @@ void MainWindow::open_settings(int tab_index) {
         register_auxiliary_window(m_settings_dialog);
         connect(m_settings_dialog, &SettingsDialog::gui_stylesheet_request, this, &MainWindow::apply_stylesheet);
         connect(m_settings_dialog, &SettingsDialog::gui_log_settings_request, this, &MainWindow::apply_log_gui_settings);
+        connect(m_settings_dialog, &SettingsDialog::storage_path_changed, this, [this] {
+            if (m_apps_list_widget)
+                m_apps_list_widget->refresh(true);
+        });
         connect(m_settings_dialog, &SettingsDialog::ui_language_request, this, &MainWindow::apply_ui_language);
         connect(m_settings_dialog, &SettingsDialog::restart_game_requested, this, &MainWindow::restart_running_app);
         connect(m_settings_dialog, &QDialog::finished, this, [this](int) {
             sync_discord_presence();
             refresh_status_bar();
             apply_log_gui_settings();
-
-            if (m_settings_dialog && m_settings_dialog->storage_path_switched())
-                m_apps_list_widget->refresh(true);
         });
         connect(m_settings_dialog, &QObject::destroyed, this, [this] {
             m_settings_dialog = nullptr;
         });
     }
 
+    m_settings_dialog->set_storage_path_locked(m_game_window != nullptr);
     m_settings_dialog->show_tab(tab_index);
     present_tool_window(m_settings_dialog);
 }
@@ -1104,6 +1118,8 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
 
     LOG_INFO("Game started: {} ({})", emuenv.current_app_title, launch_request.app_path);
 
+    if (m_settings_dialog)
+        m_settings_dialog->set_storage_path_locked(true);
     refresh_emulation_actions();
     refresh_status_bar();
     return std::nullopt;
@@ -1133,6 +1149,8 @@ void MainWindow::on_game_closed() {
     m_ui->toolbar_fullscreen->setIcon(m_icon_fullscreen_on);
     m_ui->toolbar_fullscreen->setText(tr("Fullscreen"));
 
+    if (m_settings_dialog)
+        m_settings_dialog->set_storage_path_locked(false);
     refresh_emulation_actions();
 
     if (!m_is_app_closing && m_apps_list_widget)
@@ -1170,29 +1188,27 @@ bool MainWindow::confirm_missing_firmware_warning() {
     if (!firmware.font_package)
         missing_components << tr("Font package");
 
-    QMessageBox warning_box(this);
-    warning_box.setIcon(QMessageBox::Warning);
-    warning_box.setWindowTitle(tr("Missing Firmware"));
-    warning_box.setText(tr("Firmware is not fully installed."));
-    warning_box.setInformativeText(tr(
-        "The following firmware components are missing:\n- %1\n\n"
-        "Games may fail to boot or render correctly until they are installed.")
-                                       .arg(missing_components.join(QStringLiteral("\n- "))));
+    const auto result = gui::utils::show_message_box(
+        this,
+        QMessageBox::Warning,
+        tr("Missing Firmware"),
+        tr("Firmware is not fully installed."),
+        {
+            { QStringLiteral("launch"), tr("Launch Anyway"), QMessageBox::AcceptRole, false },
+            { QStringLiteral("cancel"), tr("Cancel"), QMessageBox::RejectRole, true },
+        },
+        tr(
+            "The following firmware components are missing:\n- %1\n\n"
+            "Games may fail to boot or render correctly until they are installed.")
+            .arg(missing_components.join(QStringLiteral("\n- "))),
+        tr("Don't show this warning again"));
 
-    auto *dont_show_again = new QCheckBox(tr("Don't show this warning again"), &warning_box);
-    warning_box.setCheckBox(dont_show_again);
-
-    auto *launch_button = warning_box.addButton(tr("Launch Anyway"), QMessageBox::AcceptRole);
-    warning_box.addButton(QMessageBox::Cancel);
-    warning_box.setDefaultButton(QMessageBox::Cancel);
-    warning_box.exec();
-
-    if (dont_show_again->isChecked()) {
+    if (result.checkbox_checked) {
         emuenv.cfg.warn_missing_firmware = false;
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
 
-    return warning_box.clickedButton() == launch_button;
+    return result.clicked_id == QStringLiteral("launch");
 }
 
 bool MainWindow::prompt_admin_privileges_warning_if_needed() {
@@ -1210,23 +1226,22 @@ bool MainWindow::prompt_admin_privileges_warning_if_needed() {
 
     LOG_WARN("{}", text.toStdString());
 
-    QMessageBox warning_box(this);
-    warning_box.setIcon(QMessageBox::Warning);
-    warning_box.setWindowTitle(title);
-    warning_box.setText(text);
+    const auto result = gui::utils::show_message_box(
+        this,
+        QMessageBox::Warning,
+        title,
+        text,
+        {
+            { QStringLiteral("continue"), tr("Continue"), QMessageBox::AcceptRole, false },
+            { QStringLiteral("exit"), tr("Exit"), QMessageBox::DestructiveRole, true },
+        },
+        {},
+        tr("Don't show this warning again"));
 
-    auto *dont_show_again = new QCheckBox(tr("Don't show this warning again"), &warning_box);
-    warning_box.setCheckBox(dont_show_again);
-
-    auto *continue_button = warning_box.addButton(tr("Continue"), QMessageBox::AcceptRole);
-    auto *exit_button = warning_box.addButton(tr("Exit"), QMessageBox::DestructiveRole);
-    warning_box.setDefaultButton(qobject_cast<QPushButton *>(exit_button));
-    warning_box.exec();
-
-    if (dont_show_again->isChecked() && m_gui_settings)
+    if (result.checkbox_checked && m_gui_settings)
         m_gui_settings->set_value(gui::mw_warnAdminPrivileges, false);
 
-    if (warning_box.clickedButton() == continue_button)
+    if (result.clicked_id == QStringLiteral("continue"))
         return true;
 
     close();

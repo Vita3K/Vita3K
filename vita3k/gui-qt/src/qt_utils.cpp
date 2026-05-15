@@ -18,13 +18,16 @@
 #include <gui-qt/qt_utils.h>
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QDesktopServices>
 #include <QIcon>
 #include <QImage>
 #include <QLabel>
+#include <QMessageBox>
 #include <QPainter>
 #include <QPalette>
 #include <QPixmap>
+#include <QPushButton>
 #include <QRgb>
 #include <QStyleHints>
 #include <QUrl>
@@ -127,6 +130,68 @@ QIcon get_colorized_icon(const QIcon &icon,
 
         result.addPixmap(QPixmap::fromImage(img), mode);
     }
+
+    return result;
+}
+
+MessageDialogResult show_message_box(
+    QWidget *parent,
+    QMessageBox::Icon icon,
+    const QString &title,
+    const QString &text,
+    const std::vector<MessageDialogButton> &buttons,
+    const QString &informative_text,
+    const QString &checkbox_text,
+    bool checkbox_checked,
+    Qt::TextFormat text_format,
+    Qt::TextInteractionFlags text_interaction,
+    const QString &detailed_text) {
+    QMessageBox box(icon, title, text, QMessageBox::NoButton, parent,
+        Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
+    box.setTextFormat(text_format);
+    box.setTextInteractionFlags(text_interaction);
+    box.setWindowModality(Qt::WindowModal);
+
+    if (!informative_text.isEmpty())
+        box.setInformativeText(informative_text);
+    if (!detailed_text.isEmpty())
+        box.setDetailedText(detailed_text);
+
+    if (!checkbox_text.isEmpty()) {
+        auto *checkbox = new QCheckBox(checkbox_text, &box);
+        checkbox->setChecked(checkbox_checked);
+        box.setCheckBox(checkbox);
+    }
+
+    std::vector<QAbstractButton *> button_widgets;
+    button_widgets.reserve(buttons.size());
+    QPushButton *default_button = nullptr;
+
+    for (const auto &button_spec : buttons) {
+        auto *button = box.addButton(button_spec.text, button_spec.role);
+        if (button_spec.is_default)
+            default_button = qobject_cast<QPushButton *>(button);
+        button_widgets.push_back(button);
+    }
+
+    MessageDialogResult result;
+
+    if (!default_button && !button_widgets.empty())
+        default_button = qobject_cast<QPushButton *>(button_widgets.front());
+    if (default_button)
+        box.setDefaultButton(default_button);
+
+    box.exec();
+
+    for (size_t i = 0; i < button_widgets.size(); ++i) {
+        if (box.clickedButton() == button_widgets[i]) {
+            result.clicked_id = buttons[i].id;
+            break;
+        }
+    }
+
+    if (auto *checkbox = box.checkBox())
+        result.checkbox_checked = checkbox->isChecked();
 
     return result;
 }

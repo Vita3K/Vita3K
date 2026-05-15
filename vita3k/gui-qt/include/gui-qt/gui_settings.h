@@ -49,6 +49,7 @@ const GuiSave mw_loggerVisible = GuiSave(main_window, QStringLiteral("loggerVisi
 const GuiSave mw_appsListVisible = GuiSave(main_window, QStringLiteral("gamelistVisible"), true);
 const GuiSave mw_toolBarVisible = GuiSave(main_window, QStringLiteral("toolBarVisible"), true);
 const GuiSave mw_titleBarsVisible = GuiSave(main_window, QStringLiteral("titleBarsVisible"), true);
+const GuiSave mw_confirmExitApp = GuiSave(main_window, QStringLiteral("confirmExitApp"), true);
 const GuiSave mw_warnAdminPrivileges = GuiSave(main_window, QStringLiteral("warnAdminPrivileges"), true);
 
 const GuiSave gl_sortCol = GuiSave(apps_list, QStringLiteral("sortCol"), 1);
