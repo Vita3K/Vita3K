@@ -11,6 +11,7 @@ on:
 env:
   BUILD_CONFIG: Release
   SCCACHE_GHA_ENABLED: "true"
+  PACKAGES: boost-system boost-filesystem boost-program-options boost-icl boost-variant curl openssl zlib
 
 jobs:
   format-check:
@@ -72,7 +73,6 @@ jobs:
             cache_path: |
               /usr/local/share/vcpkg/installed
               /usr/local/share/vcpkg/packages
-            vcpkg_triplet: arm64-android
 
     steps:
       - uses: actions/checkout@v6
@@ -117,7 +117,7 @@ jobs:
 
       - name: Set up build environment (Windows)
         run: |
-          vcpkg install zlib boost-system boost-filesystem boost-program-options boost-icl boost-variant curl openssl --triplet=${{ matrix.vcpkg_triplet }}
+          vcpkg install ${{ env.PACKAGES }} --triplet=${{ matrix.vcpkg_triplet }}
         if: startsWith(matrix.os, 'windows') && !matrix.msys2_env
 
       - uses: ilammy/msvc-dev-cmd@v1
@@ -128,7 +128,8 @@ jobs:
       - name: Set up build environment (Android)
         run: |
           sudo apt-get install -y ninja-build
-          vcpkg install boost-system boost-filesystem boost-program-options boost-icl boost-variant openssl zlib --triplet=${{ matrix.vcpkg_triplet }}
+          vcpkg install ${{ env.PACKAGES }} --triplet=arm64-android
+          vcpkg install ${{ env.PACKAGES }} --triplet=x64-android
         if: matrix.os == 'android'
 
       - uses: hendrikmuhs/ccache-action@v1.2

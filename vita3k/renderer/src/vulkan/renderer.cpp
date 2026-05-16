@@ -46,11 +46,14 @@
 
 #ifdef __ANDROID__
 #include <SDL3/SDL_system.h>
-#include <adrenotools/bcenabler.h>
-#include <adrenotools/driver.h>
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <util/float_to_half.h>
+
+#ifdef USE_ADRENO_TOOLS
+#include <adrenotools/bcenabler.h>
+#include <adrenotools/driver.h>
+#endif
 
 #include <android/hardware_buffer.h>
 
@@ -153,7 +156,7 @@ const static std::vector<const char *> required_device_extensions = {
 
 namespace renderer::vulkan {
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(USE_ADRENO_TOOLS)
 // need to avoid patching bcn per custom driver more than once
 static bool patch_bcn_once(void *function_to_patch) {
     static std::unordered_set<void *> patched_functions;
@@ -386,7 +389,7 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 
     // Create Instance
     {
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(USE_ADRENO_TOOLS)
         PFN_vkGetInstanceProcAddr vk_get_instance_proc_addr = android_driver::resolve_vk_get_instance_proc_addr(config.current_config.custom_driver_name);
         if (!vk_get_instance_proc_addr)
             return false;
@@ -1783,10 +1786,12 @@ bool VKState::support_custom_drivers() {
 }
 
 void VKState::set_turbo_mode(bool set) {
+#ifdef USE_ADRENO_TOOLS
     if (!support_custom_drivers())
         return;
 
     adrenotools_set_turbo(set);
+#endif
 }
 #endif
 
