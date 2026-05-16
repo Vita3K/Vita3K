@@ -15,6 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "gui-qt/qt_utils.h"
+
 #include <gui-qt/app_icon_item.h>
 #include <gui-qt/apps_list_delegate.h>
 #include <gui-qt/apps_list_table.h>
@@ -428,7 +430,7 @@ void AppsListTable::populate(const std::vector<app::AppEntry> &apps,
             new SortableItem(QString::fromStdString(app.parental_level),
                 QVariant(parental_level_sort_key(app.parental_level))));
 
-        const QString app_dir = QString::fromStdString((pref_path / "ux0/app" / app.path).string());
+        const QString app_dir = gui::utils::to_qt_path(pref_path / "ux0/app" / app.path);
         const auto size_it = m_size_cache.find(app.path);
         const quint64 cached_size = (size_it != m_size_cache.end()) ? size_it->second : 0;
         auto *size_item = new SortableItem(

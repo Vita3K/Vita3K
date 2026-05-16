@@ -809,9 +809,9 @@ void SettingsDialog::populate_cameras_list() {
     m_ui->back_camera_image_path->setText(tr("No image selected"));
 
     if (!emuenv.cfg.front_camera_image.empty())
-        m_ui->front_camera_image_path->setText(QString::fromStdString(emuenv.cfg.front_camera_image));
+        m_ui->front_camera_image_path->setText(QString::fromUtf8(emuenv.cfg.front_camera_image));
     if (!emuenv.cfg.back_camera_image.empty())
-        m_ui->back_camera_image_path->setText(QString::fromStdString(emuenv.cfg.back_camera_image));
+        m_ui->back_camera_image_path->setText(QString::fromUtf8(emuenv.cfg.back_camera_image));
 }
 
 void SettingsDialog::populate_adhoc_list() {
@@ -1009,20 +1009,20 @@ void SettingsDialog::setup_connections() {
     connect(m_ui->front_camera_image_btn, &QPushButton::clicked, this, [this] {
         const QString file = QFileDialog::getOpenFileName(
             this, tr("Select Front Camera Image"),
-            QString::fromStdString(emuenv.cfg.front_camera_image),
+            QString::fromUtf8(emuenv.cfg.front_camera_image),
             tr("Images (*.png *.jpg *.jpeg *.bmp)"));
         if (!file.isEmpty()) {
-            emuenv.cfg.front_camera_image = file.toStdString();
+            emuenv.cfg.front_camera_image = file.toUtf8();
             m_ui->front_camera_image_path->setText(file);
         }
     });
     connect(m_ui->back_camera_image_btn, &QPushButton::clicked, this, [this] {
         const QString file = QFileDialog::getOpenFileName(
             this, tr("Select Back Camera Image"),
-            QString::fromStdString(emuenv.cfg.back_camera_image),
+            QString::fromUtf8(emuenv.cfg.back_camera_image),
             tr("Images (*.png *.jpg *.jpeg *.bmp)"));
         if (!file.isEmpty()) {
-            emuenv.cfg.back_camera_image = file.toStdString();
+            emuenv.cfg.back_camera_image = file.toUtf8();
             m_ui->back_camera_image_path->setText(file);
         }
     });
@@ -1034,9 +1034,9 @@ void SettingsDialog::setup_connections() {
     connect(m_ui->change_emu_path, &QPushButton::clicked, this, [this] {
         const QString dir = QFileDialog::getExistingDirectory(
             this, tr("Select Emulator Storage Folder"),
-            QString::fromStdString(m_pending_pref_path.string()));
+            gui::utils::to_qt_path(m_pending_pref_path));
         if (!dir.isEmpty())
-            set_pending_pref_path(fs::path(dir.toStdString()));
+            set_pending_pref_path(gui::utils::to_fs_path(dir));
     });
     connect(m_ui->reset_emu_path, &QPushButton::clicked, this, [this] {
         if (emuenv.default_path != m_pending_pref_path)
@@ -1339,7 +1339,7 @@ void SettingsDialog::set_pending_pref_path(const fs::path &pref_path) {
 
 void SettingsDialog::update_current_emu_path_label() {
     m_ui->current_emu_path->setText(
-        tr("Current emulator path: %1").arg(QString::fromStdString(m_pending_pref_path.string())));
+        tr("Current emulator path: %1").arg(gui::utils::to_qt_path(m_pending_pref_path)));
 }
 
 void SettingsDialog::setup_dirty_tracking() {

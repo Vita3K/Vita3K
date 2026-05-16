@@ -276,7 +276,7 @@ void prepare_game_launch_overlay(EmuEnvState &emuenv) {
 
     const auto bg_path = emuenv.pref_path / "ux0/app" / emuenv.io.app_path / "sce_sys/pic0.png";
     if (fs::exists(bg_path))
-        renderer.precompile_bg_path = bg_path.string();
+        renderer.precompile_bg_path = fs_utils::path_to_utf8(bg_path);
 
     if (renderer::get_shaders_cache_hashs(renderer) && emuenv.cfg.shader_cache) {
         renderer.precompile_queue = renderer.shaders_cache_hashs;

@@ -256,7 +256,7 @@ void PkgInstallDialog::run_install(const fs::path &pkg_path,
     title_label->setAlignment(Qt::AlignCenter);
     main_layout->addWidget(title_label);
 
-    auto *pkg_label = new QLabel(QString::fromStdString(pkg_path.filename().string()), this);
+    auto *pkg_label = new QLabel(gui::utils::to_qt_path(pkg_path.filename()), this);
     pkg_label->setAlignment(Qt::AlignCenter);
     main_layout->addWidget(pkg_label);
 

@@ -380,7 +380,7 @@ void MainWindow::initialize() {
     this->setWindowTitle(QString::fromStdString(window_title));
 
     emuenv.compat.log_compat_warn = emuenv.cfg.log_compat_warn;
-    m_game_compat = new GameCompatibility(emuenv.compat, emuenv.cache_path.string(), this);
+    m_game_compat = new GameCompatibility(emuenv.compat, emuenv.cache_path.native(), this);
 
     emuenv.vulkan_device_info = std::make_unique<renderer::VulkanDeviceInfo>(renderer::enumerate_vulkan_devices());
 
@@ -712,7 +712,7 @@ void MainWindow::handle_drop(const QString &path) {
 
     } else if (ext == ".bin" || ext == ".rif" || drop_path.filename() == "work.bin") {
         if (copy_license(emuenv, drop_path))
-            LOG_INFO("License installed via drop: {}", drop_path.string());
+            LOG_INFO("License installed via drop: {}", drop_path);
         else
             QMessageBox::critical(this, tr("Install Failed"),
                 tr("Failed to install the dropped license file.\n"
@@ -1009,7 +1009,7 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         const QStringList locations = QStandardPaths::standardLocations(QStandardPaths::FontsLocation);
         std::vector<std::string> font_dirs;
         for (const QString &location : locations) {
-            std::string font_dir = location.toStdString();
+            std::string font_dir = location.toUtf8().constData();
             if (!font_dir.ends_with('/') && !font_dir.ends_with('\\'))
                 font_dir += '/';
             font_dirs.push_back(font_dir);
@@ -1231,7 +1231,7 @@ bool MainWindow::prompt_admin_privileges_warning_if_needed() {
         "This can create files owned by the wrong user and cause permission problems later.\n"
         "Please close Vita3K and relaunch it without elevated privileges.");
 
-    LOG_WARN("{}", text.toStdString());
+    LOG_WARN("{}", text.toUtf8().constData());
 
     const auto result = gui::utils::show_message_box(
         this,
@@ -1503,19 +1503,19 @@ void MainWindow::setup_toolbar() {
 
         QMenu menu(this);
         menu.addAction(tr("Open Emulated Storage Path"), this, [this] {
-            gui::utils::open_dir(emuenv.pref_path.string());
+            gui::utils::open_dir(emuenv.pref_path);
         });
 
         const auto patch_path = emuenv.shared_path / "patch";
         menu.addAction(tr("Open Patch Path"), this, [patch_path] {
-            gui::utils::open_dir(patch_path.string());
+            gui::utils::open_dir(patch_path);
         });
 
         const auto textures_path = emuenv.shared_path / "textures";
         menu.addAction(tr("Open Textures Path"), this, [textures_path] {
             if (!fs::exists(textures_path))
                 fs::create_directories(textures_path);
-            gui::utils::open_dir(textures_path.string());
+            gui::utils::open_dir(textures_path);
         });
 
         menu.exec(pos);
@@ -1659,10 +1659,10 @@ void MainWindow::apply_stylesheet() {
                 QStringLiteral("url(\"gui-configs/"),
                 QStringLiteral("url(\"") + settings_dir + QStringLiteral("/"));
 
-            LOG_INFO("Loaded stylesheet '{}' from {}", stylesheet_name.toStdString(), stylesheet_path.toStdString());
+            LOG_INFO("Loaded stylesheet '{}' from {}", stylesheet_name.toUtf8().constData(), stylesheet_path.toUtf8().constData());
             qApp->setStyleSheet(qss);
         } else {
-            LOG_ERROR("Could not find stylesheet '{}', falling back to light", stylesheet_name.toStdString());
+            LOG_ERROR("Could not find stylesheet '{}', falling back to light", stylesheet_name.toUtf8().constData());
             qApp->setStyleSheet(gui::stylesheets::light_style_sheet);
         }
     }

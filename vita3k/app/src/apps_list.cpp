@@ -58,7 +58,7 @@ static int64_t get_path_write_time(const fs::path &path) {
     try {
         return static_cast<int64_t>(fs::last_write_time(path));
     } catch (const std::exception &e) {
-        LOG_WARN("Failed to read timestamp for '{}': {}", path.string(), e.what());
+        LOG_WARN("Failed to read timestamp for '{}': {}", path, e.what());
         return -1;
     }
 }
@@ -173,7 +173,7 @@ static bool write_apps_cache_file(const EmuEnvState &emuenv, const std::vector<A
         write_app_cache_entry(apps_node, app);
 
     if (!doc.save_file(cache_path.c_str())) {
-        LOG_ERROR("Failed to write apps cache to {}", cache_path.string());
+        LOG_ERROR("Failed to write apps cache to {}", cache_path);
         return false;
     }
 
@@ -272,13 +272,13 @@ bool load_cached_apps(EmuEnvState &emuenv) {
 
     pugi::xml_document doc;
     if (!doc.load_file(cache_path.c_str())) {
-        LOG_WARN("Apps cache at '{}' is unreadable; rebuilding.", cache_path.string());
+        LOG_WARN("Apps cache at '{}' is unreadable; rebuilding.", cache_path);
         return false;
     }
 
     const auto root = doc.child("apps-cache");
     if (root.empty()) {
-        LOG_WARN("Apps cache at '{}' is malformed; rebuilding.", cache_path.string());
+        LOG_WARN("Apps cache at '{}' is malformed; rebuilding.", cache_path);
         return false;
     }
 
@@ -367,7 +367,7 @@ void load_app_times(EmuEnvState &emuenv) {
 
     pugi::xml_document doc;
     if (!doc.load_file(time_path.c_str())) {
-        LOG_ERROR("time.xml is corrupted at {}; removing.", time_path.string());
+        LOG_ERROR("time.xml is corrupted at {}; removing.", time_path);
         fs::remove(time_path);
         return;
     }
@@ -416,7 +416,7 @@ void save_app_times(EmuEnvState &emuenv) {
 
     const auto time_path{ emuenv.pref_path / "ux0/user/time.xml" };
     if (!doc.save_file(time_path.c_str()))
-        LOG_ERROR("Failed to write {}", time_path.string());
+        LOG_ERROR("Failed to write {}", time_path);
 }
 
 void update_last_time_app_used(EmuEnvState &emuenv, const std::string &app_path) {

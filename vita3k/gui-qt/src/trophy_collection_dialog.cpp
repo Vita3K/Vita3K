@@ -15,6 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "gui-qt/qt_utils.h"
+
 #include <gui-qt/trophy_collection_dialog.h>
 
 #include <config/state.h>
@@ -308,7 +310,7 @@ void TrophyCollectionDialog::load_all_apps() {
     QStringList dirs;
     for (const auto &entry : fs::directory_iterator(trophy_conf)) {
         if (fs::is_directory(entry))
-            dirs << QString::fromStdString(entry.path().filename().string());
+            dirs << gui::utils::to_qt_path(entry.path().filename());
     }
 
     if (dirs.isEmpty()) {
@@ -371,8 +373,8 @@ bool TrophyCollectionDialog::load_app_data(const QString &np_com_id_str) {
         : conf_path / "TROP.SFM";
 
     pugi::xml_document doc;
-    if (!doc.load_file(sfm.string().c_str())) {
-        LOG_ERROR("Failed to parse {}", sfm.string());
+    if (!doc.load_file(sfm.c_str())) {
+        LOG_ERROR("Failed to parse {}", sfm);
         return false;
     }
 
@@ -380,10 +382,10 @@ bool TrophyCollectionDialog::load_app_data(const QString &np_com_id_str) {
     data->title = QString::fromStdString(root.child("title-name").text().as_string());
 
     const auto icon_locale = fmt::format("ICON0_{:0>2d}.PNG", m_emuenv.cfg.sys_lang);
-    data->icon_path = QString::fromStdString(
+    data->icon_path = gui::utils::to_qt_path(
         fs::exists(conf_path / icon_locale)
-            ? (conf_path / icon_locale).string()
-            : (conf_path / "ICON0.PNG").string());
+            ? (conf_path / icon_locale)
+            : (conf_path / "ICON0.PNG"));
 
     for (const auto &node : root.children("trophy")) {
         TrophyEntry e;
@@ -494,8 +496,8 @@ void TrophyCollectionDialog::populate_trophy_table(int app_idx) {
         m_trophy_model->appendRow({ icon_item, name_item, detail_item,
             grade_item, status_item, id_item, time_item });
 
-        const QString icon_path = QString::fromStdString(
-            (conf_path / fmt::format("TROP{:0>3d}.PNG", t.id)).string());
+        const QString icon_path = gui::utils::to_qt_path(
+            conf_path / fmt::format("TROP{:0>3d}.PNG", t.id));
         load_trophy_icon_async(row, icon_path);
     }
 

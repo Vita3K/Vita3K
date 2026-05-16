@@ -174,7 +174,7 @@ void AppsListContextMenu::build_multi(const std::vector<const app::AppEntry *> &
                 try {
                     fs::remove_all(path);
                 } catch (const std::exception &e) {
-                    LOG_WARN("Failed to remove {}: {}", path.string(), e.what());
+                    LOG_WARN("Failed to remove {}: {}", path, e.what());
                 }
             }
         }
@@ -369,41 +369,41 @@ void AppsListContextMenu::add_open_folder_actions(const app::AppEntry &app) {
 
     auto *open_app = open_menu->addAction(tr("Application"));
     connect(open_app, &QAction::triggered, this, [this] {
-        gui::utils::open_dir(m_paths.app.string());
+        gui::utils::open_dir(m_paths.app);
     });
 
     if (fs::exists(m_paths.save_data)) {
         auto *a = open_menu->addAction(tr("Save Data"));
         connect(a, &QAction::triggered, this, [this] {
-            gui::utils::open_dir(m_paths.save_data.string());
+            gui::utils::open_dir(m_paths.save_data);
         });
     }
 
     if (fs::exists(m_paths.patch)) {
         auto *a = open_menu->addAction(tr("Patch"));
         connect(a, &QAction::triggered, this, [this] {
-            gui::utils::open_dir(m_paths.patch.string());
+            gui::utils::open_dir(m_paths.patch);
         });
     }
 
     if (fs::exists(m_paths.addcont)) {
         auto *a = open_menu->addAction(tr("DLC"));
         connect(a, &QAction::triggered, this, [this] {
-            gui::utils::open_dir(m_paths.addcont.string());
+            gui::utils::open_dir(m_paths.addcont);
         });
     }
 
     if (fs::exists(m_paths.license)) {
         auto *a = open_menu->addAction(tr("License"));
         connect(a, &QAction::triggered, this, [this] {
-            gui::utils::open_dir(m_paths.license.string());
+            gui::utils::open_dir(m_paths.license);
         });
     }
 
     if (fs::exists(m_paths.shader_cache)) {
         auto *a = open_menu->addAction(tr("Shader Cache"));
         connect(a, &QAction::triggered, this, [this] {
-            gui::utils::open_dir(m_paths.shader_cache.string());
+            gui::utils::open_dir(m_paths.shader_cache);
         });
     }
 
@@ -413,21 +413,21 @@ void AppsListContextMenu::add_open_folder_actions(const app::AppEntry &app) {
     if (!shader_log.empty()) {
         auto *a = open_menu->addAction(tr("Shader Log"));
         connect(a, &QAction::triggered, this, [shader_log] {
-            gui::utils::open_dir(shader_log.string());
+            gui::utils::open_dir(shader_log);
         });
     }
 
     if (fs::exists(m_paths.export_textures)) {
         auto *a = open_menu->addAction(tr("Export Textures"));
         connect(a, &QAction::triggered, this, [this] {
-            gui::utils::open_dir(m_paths.export_textures.string());
+            gui::utils::open_dir(m_paths.export_textures);
         });
     }
 
     if (fs::exists(m_paths.import_textures)) {
         auto *a = open_menu->addAction(tr("Import Textures"));
         connect(a, &QAction::triggered, this, [this] {
-            gui::utils::open_dir(m_paths.import_textures.string());
+            gui::utils::open_dir(m_paths.import_textures);
         });
     }
 }
@@ -462,7 +462,7 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
                 try {
                     fs::remove_all(m_paths.save_data);
                 } catch (const std::exception &e) {
-                    LOG_WARN("Failed to remove {}: {}", m_paths.save_data.string(), e.what());
+                    LOG_WARN("Failed to remove {}: {}", m_paths.save_data, e.what());
                 }
             }
         });
@@ -479,7 +479,7 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
                 try {
                     fs::remove_all(m_paths.patch);
                 } catch (const std::exception &e) {
-                    LOG_WARN("Failed to remove {}: {}", m_paths.patch.string(), e.what());
+                    LOG_WARN("Failed to remove {}: {}", m_paths.patch, e.what());
                 }
             }
         });
@@ -496,7 +496,7 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
                 try {
                     fs::remove_all(m_paths.addcont);
                 } catch (const std::exception &e) {
-                    LOG_WARN("Failed to remove {}: {}", m_paths.addcont.string(), e.what());
+                    LOG_WARN("Failed to remove {}: {}", m_paths.addcont, e.what());
                 }
             }
         });
@@ -513,7 +513,7 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
                 try {
                     fs::remove_all(m_paths.license);
                 } catch (const std::exception &e) {
-                    LOG_WARN("Failed to remove {}: {}", m_paths.license.string(), e.what());
+                    LOG_WARN("Failed to remove {}: {}", m_paths.license, e.what());
                 }
             }
         });
@@ -525,7 +525,7 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
             try {
                 fs::remove_all(m_paths.shader_cache);
             } catch (const std::exception &e) {
-                LOG_WARN("Failed to remove {}: {}", m_paths.shader_cache.string(), e.what());
+                LOG_WARN("Failed to remove {}: {}", m_paths.shader_cache, e.what());
             }
         });
     }
@@ -536,7 +536,7 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
             try {
                 fs::remove_all(m_paths.shader_log);
             } catch (const std::exception &e) {
-                LOG_WARN("Failed to remove {}: {}", m_paths.shader_log.string(), e.what());
+                LOG_WARN("Failed to remove {}: {}", m_paths.shader_log, e.what());
             }
         });
     }
@@ -547,7 +547,7 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
             try {
                 fs::remove_all(m_paths.export_textures);
             } catch (const std::exception &e) {
-                LOG_WARN("Failed to remove {}: {}", m_paths.export_textures.string(), e.what());
+                LOG_WARN("Failed to remove {}: {}", m_paths.export_textures, e.what());
             }
         });
     }
@@ -558,7 +558,7 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
             try {
                 fs::remove_all(m_paths.import_textures);
             } catch (const std::exception &e) {
-                LOG_WARN("Failed to remove {}: {}", m_paths.import_textures.string(), e.what());
+                LOG_WARN("Failed to remove {}: {}", m_paths.import_textures, e.what());
             }
         });
     }
@@ -661,7 +661,7 @@ void AppsListContextMenu::add_information_actions(const app::AppEntry &app) {
     auto *info = addAction(tr("Information"));
     connect(info, &QAction::triggered, this, [this, &app] {
         const auto APP_PATH = m_emuenv.pref_path / "ux0/app" / app.path;
-        const auto app_dir = QString::fromStdString(APP_PATH.string());
+        const auto app_dir = gui::utils::to_qt_path(APP_PATH);
 
         const bool has_report = m_emuenv.compat.compat_db_loaded
             && m_emuenv.compat.app_compat_db.contains(app.title_id);

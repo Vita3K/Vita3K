@@ -46,9 +46,10 @@ struct MessageDialogResult {
     bool checkbox_checked = false;
 };
 
-void open_dir(const std::string &path);
+void open_dir(const fs::path &path);
 
 fs::path to_fs_path(const QString &path);
+QString to_qt_path(const fs::path &path);
 
 QColor get_foreground_color(QWidget *widget = nullptr);
 

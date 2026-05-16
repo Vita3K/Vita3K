@@ -37,12 +37,16 @@
 
 namespace gui::utils {
 
-void open_dir(const std::string &path) {
-    QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(path)));
+void open_dir(const fs::path &path) {
+    QDesktopServices::openUrl(QUrl::fromLocalFile(to_qt_path(path)));
 }
 
 fs::path to_fs_path(const QString &path) {
-    return fs_utils::utf8_to_path(path.toUtf8().toStdString());
+    return fs::path(path.toStdWString());
+}
+
+QString to_qt_path(const fs::path &path) {
+    return QString::fromStdWString(path.wstring());
 }
 
 QColor get_foreground_color(QWidget *widget) {
