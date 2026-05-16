@@ -51,6 +51,10 @@ audio:
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/audio/**'
+camera:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/camera/**'
 codec:
   - changed-files:
     - any-glob-to-any-file:
@@ -105,10 +109,6 @@ hle:
     - any-glob-to-any-file:
       - 'vita3k/module/**'
       - 'vita3k/modules/**'
-host:
-  - changed-files:
-    - any-glob-to-any-file:
-      - 'vita3k/host/**'
 http:
   - changed-files:
     - any-glob-to-any-file:
@@ -117,6 +117,10 @@ ime:
   - changed-files:
     - any-glob-to-any-file:
       - 'vita3k/ime/**'
+input:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'vita3k/input/**'
 io:
   - changed-files:
     - any-glob-to-any-file:
@@ -227,14 +231,23 @@ linux:
     - any-glob-to-any-file:
       - 'appimage/*'
       - '**/*linux*'
+android:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*android*'
+      - '**/*gradle*'
 
 # GUI Labels
 gui:
   - changed-files:
     - any-glob-to-any-file:
-      - 'vita3k/gui/**'
+      - 'vita3k/*gui*/**'
 gui/lang:
   - changed-files:
     - any-glob-to-any-file:
       - 'lang/**'
       - 'vita3k/lang/**'
+qt:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*qt*'
