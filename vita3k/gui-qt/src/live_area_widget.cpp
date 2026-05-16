@@ -15,6 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "gui-qt/qt_utils.h"
+
 #include <gui-qt/live_area_widget.h>
 
 #include <config/state.h>
@@ -141,8 +143,7 @@ LiveAreaWidget::LiveAreaWidget(EmuEnvState &emuenv, const std::string &app_path,
     resize(960, 544);
     setFlags(Qt::Window);
 
-    const auto pref = QString::fromStdString(emuenv.pref_path.string());
-    m_app_fs_path = pref + "/ux0/app/" + QString::fromStdString(app_path);
+    m_app_fs_path = gui::utils::to_qt_path(emuenv.pref_path / "ux0/app" / app_path);
 
     load_contents();
 
@@ -235,7 +236,7 @@ void LiveAreaWidget::load_contents() {
     QString template_path = contents_dir + "/template.xml";
 
     if (!QFile::exists(template_path)) {
-        const auto pref = QString::fromStdString(m_emuenv.pref_path.string());
+        const auto pref = gui::utils::to_qt_path(m_emuenv.pref_path);
         contents_dir = pref + "/vs0/data/internal/livearea/default/sce_sys/livearea/contents";
         template_path = contents_dir + "/template.xml";
     }

@@ -623,7 +623,7 @@ void apply_renderer_config(EmuEnvState &emuenv) {
         }
         if (grade_name) {
             const auto icon_path = emuenv.static_assets_path / "icons" / (std::string(grade_name) + ".png");
-            std::ifstream file(icon_path.string(), std::ios::binary | std::ios::ate);
+            std::ifstream file(icon_path.c_str(), std::ios::binary | std::ios::ate);
             if (file) {
                 const auto size = file.tellg();
                 file.seekg(0);

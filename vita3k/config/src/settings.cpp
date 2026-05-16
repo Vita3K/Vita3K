@@ -157,7 +157,7 @@ bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path,
 
     pugi::xml_document doc;
     if (!doc.load_file(custom_cfg_path.c_str()) || doc.child("config").empty()) {
-        LOG_ERROR("Custom config at {} is corrupted or invalid.", custom_cfg_path.string());
+        LOG_ERROR("Custom config at {} is corrupted or invalid.", custom_cfg_path);
         fs::remove(custom_cfg_path);
         return false;
     }

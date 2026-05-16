@@ -55,6 +55,8 @@
 #include <tracy/Tracy.hpp>
 #endif
 
+#include "gui-qt/qt_utils.h"
+
 #include <SDL3/SDL_cpuinfo.h>
 #include <SDL3/SDL_gamepad.h>
 #include <SDL3/SDL_hints.h>
@@ -245,7 +247,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const QString gui_configs_dir = QString::fromStdString((emuenv.config_path / "gui-configs").string());
+    const QString gui_configs_dir = gui::utils::to_qt_path(emuenv.config_path / "gui-configs");
     auto gui_settings = std::make_shared<GuiSettings>(gui_configs_dir);
     auto persistent_settings = std::make_shared<PersistentSettings>(gui_configs_dir);
 

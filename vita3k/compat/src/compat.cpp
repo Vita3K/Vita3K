@@ -18,6 +18,7 @@
 #include <compat/functions.h>
 #include <compat/state.h>
 #include <config/state.h>
+#include <fmt/std.h>
 #include <util/log.h>
 
 #include <miniz.h>
@@ -127,13 +128,13 @@ bool load_from_disk(CompatState &state, const std::filesystem::path &cache_path)
     const auto db_path = cache_path / "app_compat_db.xml";
 
     if (!std::filesystem::exists(db_path)) {
-        LOG_WARN("DB not found at {}", db_path.string());
+        LOG_WARN("DB not found at {}", db_path);
         return false;
     }
 
     std::ifstream file(db_path, std::ios::binary | std::ios::ate);
     if (!file) {
-        LOG_ERROR("Could not open {}", db_path.string());
+        LOG_ERROR("Could not open {}", db_path);
         return false;
     }
 
@@ -142,7 +143,7 @@ bool load_from_disk(CompatState &state, const std::filesystem::path &cache_path)
 
     std::vector<uint8_t> buffer(size);
     if (!file.read(reinterpret_cast<char *>(buffer.data()), size)) {
-        LOG_ERROR("Failed to read {}", db_path.string());
+        LOG_ERROR("Failed to read {}", db_path);
         return false;
     }
 
@@ -167,7 +168,7 @@ bool install_db(CompatState &state, const std::filesystem::path &cache_path,
         }
 
         const auto out_path = cache_path / stat.m_filename;
-        if (!mz_zip_reader_extract_to_file(&zip, i, out_path.string().c_str(), 0)) {
+        if (!mz_zip_reader_extract_to_file(&zip, i, reinterpret_cast<const char *>(out_path.u8string().c_str()), 0)) {
             LOG_ERROR("Failed to extract {} from zip", stat.m_filename);
             mz_zip_reader_end(&zip);
             return false;

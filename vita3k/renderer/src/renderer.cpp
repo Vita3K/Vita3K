@@ -119,7 +119,7 @@ void State::init_overlay_font_dirs() {
     }
 
     if (!pref_path.empty()) {
-        auto fw_dir = (pref_path / "sa0" / "data" / "font" / "pvf").string();
+        auto fw_dir = fs_utils::path_to_utf8(pref_path / "sa0" / "data" / "font" / "pvf");
         if (!fw_dir.empty()) {
             if (fw_dir.back() != '/' && fw_dir.back() != '\\')
                 fw_dir += '/';
@@ -128,7 +128,7 @@ void State::init_overlay_font_dirs() {
     }
 
     {
-        auto dir = (static_assets / "data" / "fonts").string();
+        auto dir = fs_utils::path_to_utf8(static_assets / "data" / "fonts");
         if (!dir.empty()) {
             if (dir.back() != '/' && dir.back() != '\\')
                 dir += '/';
@@ -137,7 +137,7 @@ void State::init_overlay_font_dirs() {
     }
 
     {
-        auto icons_dir = (static_assets / "icons").string();
+        auto icons_dir = fs_utils::path_to_utf8(static_assets / "icons");
         if (!icons_dir.empty()) {
             if (icons_dir.back() != '/' && icons_dir.back() != '\\')
                 icons_dir += '/';

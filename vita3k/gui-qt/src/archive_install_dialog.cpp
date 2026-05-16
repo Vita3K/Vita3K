@@ -115,8 +115,7 @@ QFrame *make_result_row(const ArchiveInstallResult &result, QWidget *parent) {
     const QColor status_fg = result.success
         ? gui::utils::get_label_color(QColor(0x1f, 0x7a, 0x1f), QColor(0xb9, 0xf5, 0xbf))
         : gui::utils::get_label_color(QColor(0xa3, 0x2a, 0x1c), QColor(0xff, 0xb1, 0xaa));
-    status->setStyleSheet(QStringLiteral("border-radius: 10px; padding: 4px 10px; background-color: %1; color: %2;")
-                              .arg(status_bg.name(), status_fg.name()));
+    status->setStyleSheet(QStringLiteral("border-radius: 10px; padding: 4px 10px; background-color: %1; color: %2;").arg(status_bg.name(), status_fg.name()));
     layout->addWidget(status, 0, Qt::AlignTop);
 
     return row;
@@ -129,7 +128,7 @@ void ArchiveWorker::run() {
     int done = 0;
 
     for (const auto &archive_path : m_archives) {
-        const QString archive_name = QString::fromStdString(archive_path.filename().string());
+        const QString archive_name = gui::utils::to_qt_path(archive_path.filename());
         Q_EMIT current_title_changed(archive_name);
         Q_EMIT global_progress(done + 1, total);
 
