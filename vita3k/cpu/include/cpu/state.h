@@ -23,6 +23,7 @@
 #include <util/types.h>
 
 #include <atomic>
+#include <functional>
 #include <initializer_list>
 #include <optional>
 #include <string>
@@ -38,6 +39,10 @@ struct CPUState {
 
     // The return address a guest call gets in LR. Execution stops there.
     Address return_pc = 0;
+
+    // GDB data-watchpoint hook, set by the kernel to forward into Debugger::check_watchpoint from
+    // the Dynarmic memory callbacks. Returns the watched base address on a hit, 0 on a miss.
+    std::function<Address(Address addr, bool is_write)> check_watchpoint;
 
     // Set by the kubridge fault handler from a signal, read by the CPU after it halts
     std::atomic<bool> abort_pending{ false };

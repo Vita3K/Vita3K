@@ -169,6 +169,9 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     cpu->return_pc = halt_instruction.get() | 1;
     cpu->set_log_code(debugger.watch_code);
     cpu->set_log_mem(debugger.watch_memory);
+    cpu->check_watchpoint = [this](Address addr, bool is_write) {
+        return debugger.check_watchpoint(addr, is_write);
+    };
     ThreadStatePtr thread = std::make_shared<ThreadState>(id, *this, mem, std::move(cpu), name, entry_point.address(), init_priority, affinity_mask, stack_size, attr);
 
     {
