@@ -52,6 +52,13 @@ struct PredictedDisplayFrame {
 };
 
 struct DisplayState {
+    int viewport_drawable_w = 0;
+    int viewport_drawable_h = 0;
+    float viewport_x = 0;
+    float viewport_y = 0;
+    float viewport_w = 0;
+    float viewport_h = 0;
+
     // next frame as seen by SceDisplay
     DisplayFrameInfo sce_frame;
 
@@ -85,4 +92,6 @@ struct DisplayState {
     std::atomic<bool> predicting = false;
 
     std::atomic<Address> current_sync_object;
+
+    void deinit();
 };

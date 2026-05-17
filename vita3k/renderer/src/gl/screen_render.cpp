@@ -84,7 +84,7 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
     return true;
 }
 
-void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size) {
+void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size, GLuint default_fbo) {
     // Code for backup and restore is taken from ImGui project ImGui_ImplSdlGL3_RenderDrawData
     // Backup GL state
     GLint last_framebuffer;
@@ -117,7 +117,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     GLboolean last_color_mask[4];
     glGetBooleanv(GL_COLOR_WRITEMASK, last_color_mask);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, default_fbo);
     glDisable(GL_SCISSOR_TEST);
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
@@ -253,6 +253,9 @@ void ScreenRenderer::destroy() {
 
     glDeleteTextures(1, &m_screen_texture);
     m_screen_texture = 0;
+
+    m_render_shader_nofilter.reset();
+    m_render_shader_fxaa.reset();
 }
 
 ScreenRenderer::~ScreenRenderer() {

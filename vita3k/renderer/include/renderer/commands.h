@@ -76,6 +76,8 @@ enum class CommandOpcode : std::uint8_t {
 
     SignalNotification,
 
+    SetScreenFilter,
+
     /**
      * Start rendering a newframe
      */

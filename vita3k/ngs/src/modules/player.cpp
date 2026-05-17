@@ -354,4 +354,12 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
 
     return finished;
 }
+
+void PlayerModule::cleanup_voice_state(ModuleData &data) {
+    SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
+    if (state->swr) {
+        swr_free(&state->swr);
+    }
+}
+
 } // namespace ngs

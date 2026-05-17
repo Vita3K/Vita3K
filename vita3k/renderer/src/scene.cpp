@@ -39,6 +39,21 @@
 #endif
 
 namespace renderer {
+void destroy_command_payload(Command &cmd) {
+    switch (cmd.opcode) {
+    case CommandOpcode::SetContext: {
+        auto *color_surface = reinterpret_cast<SceGxmColorSurface **>(&cmd.data[sizeof(RenderTarget *)]);
+        auto *depth_stencil_surface = reinterpret_cast<SceGxmDepthStencilSurface **>(&cmd.data[sizeof(RenderTarget *) + sizeof(SceGxmColorSurface *)]);
+        delete *color_surface;
+        delete *depth_stencil_surface;
+        break;
+    }
+
+    default:
+        break;
+    }
+}
+
 COMMAND(handle_set_context) {
     TRACY_FUNC_COMMANDS(handle_set_context);
     RenderTarget *rt = helper.pop<RenderTarget *>();
@@ -54,8 +69,6 @@ COMMAND(handle_set_context) {
         render_context->record.color_surface.downscale = false;
     }
 
-    delete color_surface;
-
     if (depth_stencil_surface && !depth_stencil_surface->disabled()) {
         render_context->record.depth_stencil_surface = *depth_stencil_surface;
     } else {
@@ -63,7 +76,7 @@ COMMAND(handle_set_context) {
         render_context->record.depth_stencil_surface.stencil_data.reset();
     }
 
-    delete depth_stencil_surface;
+    destroy_command_payload(*helper.cmd);
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
@@ -113,8 +126,7 @@ COMMAND(handle_sync_surface_data) {
         signal_notifications();
 
     if (renderer.current_backend == Backend::Vulkan) {
-        // TODO: put this in a function
-        vulkan::VKContext *context = reinterpret_cast<vulkan::VKContext *>(renderer.context);
+        vulkan::VKContext *context = reinterpret_cast<vulkan::VKContext *>(render_context);
         if (context->is_recording)
             context->stop_recording(vertex_notification, fragment_notification);
     }

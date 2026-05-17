@@ -40,7 +40,7 @@ EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop
     LOG_INFO("file {}, line {}, {}", filename, line, buffer.data());
 
     if (do_stop)
-        emuenv.kernel.exit_delete_all_threads();
+        emuenv.kernel.exit_delete_all_threads_and_wait();
 
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;

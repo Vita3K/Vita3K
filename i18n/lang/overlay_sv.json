@@ -1,0 +1,101 @@
+{
+  "common.cancel": {
+    "message": "Avbryt"
+  },
+  "common.yes": {
+    "message": "Ja"
+  },
+  "common.no": {
+    "message": "Nej"
+  },
+  "common.delete": {
+    "message": "Radera"
+  },
+  "common.please_wait": {
+    "message": "Vänta..."
+  },
+  "common.an_error_occurred": {
+    "message": "Ett fel har inträffat.\nFelkod: {}"
+  },
+  "common.could_not_load": {
+    "message": "Kunde inte ladda filen."
+  },
+  "common.could_not_save": {
+    "message": "Kunde inte spara filen."
+  },
+  "common.file_corrupted": {
+    "message": "Filen är skadad."
+  },
+  "common.microphone_disabled": {
+    "message": "Aktivera mikrofonen."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Spara"
+  },
+  "dialog.save_data.load.title": {
+    "message": "Ladda"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Sparar..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Laddar..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Sparning slutförd."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Laddning slutförd."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Radering slutförd."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "Nya sparade data"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "Det finns inga sparade data."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "Vill du spara datan?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "Vill du ladda in dessa sparade data?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "Vill du radera dessa sparade data?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "Vill du skriva över dessa sparade data?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "Vill du avbryta sparningen?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "Vill du avbryta laddningen?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "Vill du avbryta raderingen?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Sparar...\nStäng inte av systemet och stäng inte applikationen."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "Kunde inte spara filen.\nDet finns inte tillräckligt med ledigt utrymme på minneskortet. Du måste skapa minst {} ledigt utrymme om du vill spara dina framsteg i den här applikationen.\n\nSkapa mer ledigt utrymme genom att trycka på PS-knappen för att pausa den här applikationen och radera sedan övriga applikationer eller data."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "Det finns inte tillräckligt med ledigt utrymme på minneskortet.\nDu måste skapa minst {} ledigt utrymme om du vill fortsätta använda applikationen.\n\nTryck på PS-knappen för att pausa den här applikationen och radera sedan övriga applikationer eller innehåll."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Detaljer"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Uppdaterat"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Förbereder start av applikationen..."
+  },
+  "overlay.trophy_earned": {
+    "message": "Du har vunnit en trophy!"
+  }
+}

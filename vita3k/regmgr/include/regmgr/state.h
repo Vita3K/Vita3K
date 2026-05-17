@@ -24,9 +24,24 @@
 #include <string>
 #include <vector>
 
+enum RegType {
+    REG_TYPE_INT,
+    REG_TYPE_STR,
+    REG_TYPE_BIN,
+};
+
+struct RegValue {
+    std::string name;
+    RegType type;
+    uint32_t size;
+    std::vector<char> init_value;
+};
+
 struct RegMgrState {
     std::mutex mutex;
     fs::path system_dreg_path;
 
     std::map<std::string, std::map<std::string, std::vector<char>>> system_dreg;
+    std::vector<std::string> reg_category_template;
+    std::map<std::string, std::vector<RegValue>> reg_template;
 };

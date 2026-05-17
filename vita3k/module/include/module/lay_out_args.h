@@ -28,92 +28,39 @@ class vargs;
 }
 
 template <typename Arg>
-constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_stack(const LayoutArgsState &state) {
-    const std::size_t stack_alignment = alignof(Arg); // TODO Assumes host matches ARM.
-    const std::size_t stack_required = sizeof(Arg); // TODO Should this be aligned up?
-    const std::size_t stack_offset = align(state.stack_used, stack_alignment);
-    const std::size_t next_stack_used = stack_offset + stack_required;
-    const ArgLayout layout = { ArgLocation::stack, stack_offset };
-    const LayoutArgsState next_state = { state.gpr_used, next_stack_used, state.float_used };
-
-    return { layout, next_state };
-}
-
-template <typename Arg>
-constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_gpr_or_stack(const LayoutArgsState &state) {
-    const std::size_t gpr_required = (sizeof(Arg) + 3) / 4;
-    const std::size_t gpr_alignment = gpr_required;
-    const std::size_t gpr_index = align(state.gpr_used, gpr_alignment);
-    const std::size_t next_gpr_used = gpr_index + gpr_required;
-
-    // Does variable not fit in register file?
-    if (next_gpr_used > 4) {
-        return add_to_stack<Arg>(state);
-    }
-
-    // Lay out in registers.
-    const ArgLayout layout = { ArgLocation::gpr, gpr_index };
-    const LayoutArgsState next_state = { next_gpr_used, state.stack_used, state.float_used };
-
-    return { layout, next_state };
-}
-
-template <typename Arg>
-constexpr std::tuple<ArgLayout, LayoutArgsState> add_to_float(const LayoutArgsState &state) {
-    const std::size_t float_index = state.float_used;
-    const std::size_t next_float_used = state.float_used + 1;
-
-    // Lay out in registers.
-    const ArgLayout layout = { ArgLocation::fp, float_index };
-    const LayoutArgsState next_state = { state.gpr_used, state.stack_used, next_float_used };
-
-    return { layout, next_state };
-}
-
-template <typename Arg>
 constexpr std::tuple<ArgLayout, LayoutArgsState> add_arg_to_layout(const LayoutArgsState &state) {
-    // TODO Support floats and vectors.
     if constexpr (std::is_same_v<Arg, float>) {
-        return add_to_float<Arg>(state);
+        return { { ArgLocation::fp, state.float_used }, { state.gpr_used, state.stack_used, state.float_used + 1 } };
     } else {
-        return add_to_gpr_or_stack<Arg>(state);
-    }
-}
+        const std::size_t gpr_required = (sizeof(Arg) + 3) / 4;
+        const std::size_t gpr_index = align(state.gpr_used, gpr_required);
 
-// Empty argument list -- no arguments to add.
-template <typename... Args>
-constexpr std::enable_if_t<sizeof...(Args) == 0> add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
-    // Nothing to do.
-}
-
-// One or more arguments to add.
-template <typename Head, typename... Tail>
-constexpr void add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
-    // Returns immediately if the Head is a varargs
-    if constexpr (std::is_same_v<Head, module::vargs>) {
-        return;
-    } else {
-        // Add the argument at the head of the list.
-        const std::tuple<ArgLayout, LayoutArgsState> result = add_arg_to_layout<Head>(state);
-        head = std::get<0>(result);
-        state = std::get<1>(result);
-
-        // Recursively add the remaining arguments.
-        // If the last argument is varargs, abandon adding
-        if (sizeof...(Tail) > 0) {
-            add_args_to_layout<Tail...>(*(&head + 1), state);
+        // Does variable not fit in register file?
+        if (gpr_index + gpr_required > 4) {
+            const std::size_t stack_alignment = alignof(Arg); // TODO Assumes host matches ARM.
+            const std::size_t stack_required = sizeof(Arg); // TODO Should this be aligned up?
+            const std::size_t stack_offset = align(state.stack_used, stack_alignment);
+            return { { ArgLocation::stack, stack_offset }, { 4, stack_offset + stack_required, state.float_used } };
         }
+
+        return { { ArgLocation::gpr, gpr_index }, { gpr_index + gpr_required, state.stack_used, state.float_used } };
     }
 }
 
 template <typename... Args>
-constexpr std::tuple<ArgsLayout<Args...>, LayoutArgsState> lay_out() {
+consteval std::tuple<ArgsLayout<Args...>, LayoutArgsState> lay_out() {
     LayoutArgsState state{};
-    ArgsLayout<Args...> layout = {};
+    ArgsLayout<Args...> layout{};
+    std::size_t i = 0;
 
-    if (sizeof...(Args) > 0) {
-        add_args_to_layout<Args...>(layout[0], state);
-    }
+    auto step = [&]<typename Arg>() {
+        if constexpr (!std::is_same_v<Arg, module::vargs>) {
+            auto [l, s] = add_arg_to_layout<Arg>(state);
+            layout[i++] = l;
+            state = s;
+        }
+    };
+    (step.template operator()<Args>(), ...);
 
     return { layout, state };
 }

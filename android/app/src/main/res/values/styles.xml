@@ -1,0 +1,16 @@
+<resources>
+    <!-- Compose activity theme: no action bar, always dark -->
+    <style name="Theme.Vita3K" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+    <style name="Theme.Vita3K.Starting" parent="Theme.Vita3K">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+</resources>

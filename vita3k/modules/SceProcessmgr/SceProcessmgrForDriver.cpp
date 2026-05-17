@@ -17,8 +17,15 @@
 
 #include <module/module.h>
 
-EXPORT(int, ksceKernelCreateProcessLocalStorage) {
-    return UNIMPLEMENTED();
+#include <atomic>
+
+static std::atomic<int> pls_key_counter{ 1 };
+static std::atomic<int> stub_uid_counter{ 0x40001 };
+
+EXPORT(int, ksceKernelCreateProcessLocalStorage, const char *name, SceSize size) {
+    // Return a unique key for this PLS entry.
+    // kubridge uses this for per-process exception handler context.
+    return pls_key_counter.fetch_add(1);
 }
 
 EXPORT(int, ksceKernelGetProcessInfo) {
@@ -59,4 +66,15 @@ EXPORT(int, ksceKernelIsCDialogAvailable) {
 
 EXPORT(int, ksceKernelIsGameBudget) {
     return UNIMPLEMENTED();
+}
+
+// kubridge-required stubs
+EXPORT(SceUID, ksceKernelAllocRemoteProcessHeap, SceUID pid, uint32_t size, Ptr<void> opt) {
+    STUBBED("ksceKernelAllocRemoteProcessHeap");
+    return stub_uid_counter.fetch_add(1);
+}
+
+EXPORT(int, ksceKernelFreeRemoteProcessHeap, SceUID pid, Ptr<void> ptr) {
+    STUBBED("ksceKernelFreeRemoteProcessHeap");
+    return 0;
 }

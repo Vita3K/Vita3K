@@ -33,4 +33,5 @@ struct State {
 };
 
 bool init(State &ngs, MemState &mem);
+void deinit(State &ngs, MemState &mem);
 } // namespace ngs

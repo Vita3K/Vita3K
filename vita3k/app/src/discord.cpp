@@ -30,9 +30,14 @@ namespace discordrpc {
 DiscordState discord_state{};
 
 bool init() {
+    if (discord_state.running && discord_state.core) {
+        return true;
+    }
+
     discord::Core *core{};
     auto result = discord::Core::Create(570296795943403530, DiscordCreateFlags_NoRequireDiscord, &core);
     if (result != discord::Result::Ok) {
+        LOG_ERROR("Failed to initialize Discord Rich Presence, err_code: {}", static_cast<int>(result));
         return false;
     }
     discord_state.core.reset(core);
@@ -44,30 +49,37 @@ bool init() {
     return true;
 }
 
+bool is_running() {
+    return discord_state.running && discord_state.core;
+}
+
+void run_callbacks() {
+    if (is_running()) {
+        discord_state.core->RunCallbacks();
+    }
+}
+
+void clear_presence() {
+    if (!is_running()) {
+        return;
+    }
+
+    discord_state.core->ActivityManager().ClearActivity([](discord::Result result) {
+        if (result != discord::Result::Ok) {
+            LOG_ERROR("Error clearing Discord Rich Presence, err_code: {}", static_cast<int>(result));
+        }
+    });
+}
+
 void shutdown() {
     discord_state.running = false;
     discord_state.core.reset();
 }
 
-void update_init_status(bool discord_rich_presence, bool *discord_rich_presence_old) {
-    if (*discord_rich_presence_old != discord_rich_presence) {
-        if (discord_rich_presence) {
-            discordrpc::init();
-            discordrpc::update_presence();
-        } else {
-            discordrpc::shutdown();
-        }
-        *discord_rich_presence_old = discord_rich_presence;
-    }
-    if (discord_state.running) {
-        discord_state.core->RunCallbacks();
-    }
-}
-
 void update_presence(const std::string &state, const std::string &details, bool reset_timer) {
     discord::Activity activity{};
 
-    if (discord_state.running) {
+    if (is_running()) {
         activity.SetDetails(details.c_str());
         activity.SetState(state.c_str());
         activity.GetAssets().SetLargeImage("vita3k-logo");

@@ -57,6 +57,31 @@ static bool is_depth_stencil_compatible_format(SceGxmTextureBaseFormat format, b
 VKTextureCache::VKTextureCache(VKState &state)
     : state(state) {}
 
+void VKTextureCache::cleanup() {
+    for (auto &entry : textures) {
+        if (entry.texture.image)
+            entry.texture.destroy();
+    }
+
+    for (auto &sampler : samplers)
+        state.device.destroy(sampler);
+    samplers.clear();
+
+    for (auto &staging : staging_buffers) {
+        staging.buffer.destroy();
+        staging.waiting_fence = nullptr;
+        staging.scene_timestamp = ~0;
+        staging.frame_timestamp = ~0;
+    }
+
+    staging_idx = 0;
+    last_waited_scene = 0;
+    current_texture = nullptr;
+    gxm_texture = nullptr;
+    cmd_buffer = nullptr;
+    is_texture_transfer_ready = false;
+}
+
 void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config) {
     // why are we doing this here?
     // well textures are synced right before the draw

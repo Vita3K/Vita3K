@@ -72,7 +72,7 @@ EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
     TRACY_FUNC(sceCtrlGetControllerPortInfo, info);
     info->port[0] = emuenv.cfg.current_config.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
     for (int i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
-        info->port[i + 1] = (emuenv.cfg.current_config.pstv_mode && !emuenv.ctrl.free_ports[i]) ? get_type_of_controller(i) : SCE_CTRL_TYPE_UNPAIRED;
+        info->port[i + 1] = (emuenv.cfg.current_config.pstv_mode && !emuenv.ctrl.free_ports[i]) ? get_type_of_controller(emuenv.ctrl, i) : SCE_CTRL_TYPE_UNPAIRED;
     }
     return 0;
 }

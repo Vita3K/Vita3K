@@ -1,0 +1,101 @@
+{
+  "common.cancel": {
+    "message": "Peruuta"
+  },
+  "common.yes": {
+    "message": "Kyllä"
+  },
+  "common.no": {
+    "message": "Ei"
+  },
+  "common.delete": {
+    "message": "Poista"
+  },
+  "common.please_wait": {
+    "message": "Odota hetki..."
+  },
+  "common.an_error_occurred": {
+    "message": "Virhe on tapahtunut.\nVirhekoodi: {}"
+  },
+  "common.could_not_load": {
+    "message": "Tiedostoa ei voitu ladata."
+  },
+  "common.could_not_save": {
+    "message": "Tiedostoa ei voitu tallentaa."
+  },
+  "common.file_corrupted": {
+    "message": "Tiedosto on vioittunt."
+  },
+  "common.microphone_disabled": {
+    "message": "Ota mikrofoni käyttöön."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Tallenna"
+  },
+  "dialog.save_data.load.title": {
+    "message": "Lataa"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Tallennetaan..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Ladataan..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Tallennus suoritettu."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Lataus suoritettu."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Poistaminen suoritettu."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "Uusi tallennettu tieto"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "Tallennettua tietoa ei ole saatavilla."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "Haluatko tallentaa tiedot?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "Haluatko ladata tallennetun tiedon?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "Haluatko poistaa nämä tallennetut tiedot?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "Haluatko kirjoittaa tallennetun tiedon päälle?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "Haluatko peruuttaa tallennuksen?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "Haluatko peruuttaa latauksen?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "Haluatko peruuttaa poistamisen?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Tallennetaan...\nÄlä katkaise virtaa järjestelmästä tai sulje sovellusta."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "Tiedostoa ei voitu tallentaa.\nMuistikortilla ei ole tarpeeksi vapaata tilaa. Jotta voit tallentaa sovelluksen käytön, sinun on vapautettava vähintään {} tallennustilaa.\n\nVoit vapauttaa tallennustilaa painamalla PS-näppäintä, jolloin sovellus siirtyy tauolle, ja poista sitten muut sovellukset tai muu sisältö."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "Muistikortilla ei ole tarpeeksi vapaata tilaa.\nJotta voit jatkaa sovelluksen käyttämistä, sinun on vapautettava vähintään {} tallennustilaa.\n\nAseta sovellus tauolle painamalla PS-näppäintä, ja poista sitten muut sovellukset tai muu sisältö."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Lisätiedot"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Päivitetty"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Valmistellaan sovelluksen käynnistämistä..."
+  },
+  "overlay.trophy_earned": {
+    "message": "Olet ansainnut trophyn!"
+  }
+}

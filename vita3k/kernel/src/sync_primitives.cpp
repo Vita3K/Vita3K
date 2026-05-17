@@ -77,10 +77,21 @@ inline static int find_condvar(CondvarPtr &condvar_out, CondvarPtrs **condvars_o
 
 // TODO: Write remaining time to timeout ptr when it's successfully signaled
 // Assumes primitive_lock is locked and thread_lock is unlocked
-inline static int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mutex> &thread_lock,
+inline static int handle_timeout(KernelState &kernel, const ThreadStatePtr &thread, std::unique_lock<std::mutex> &thread_lock,
     std::unique_lock<std::mutex> &primitive_lock, WaitingThreadQueuePtr &queue,
     const ThreadDataQueueInterator<WaitingThreadData> &data_it, const char *export_name,
     SceUInt *const timeout) {
+    if (kernel.shutting_down.load(std::memory_order_relaxed)) {
+        thread_lock.lock();
+        if (thread->status == ThreadStatus::wait)
+            thread->update_status(ThreadStatus::run);
+        thread_lock.unlock();
+        auto found = queue->find(thread);
+        if (found != queue->end())
+            queue->erase(found);
+        return SCE_KERNEL_ERROR_WAIT_CANCEL;
+    }
+
     if (timeout) {
         bool status = false;
         auto start = std::chrono::steady_clock::now();
@@ -195,7 +206,7 @@ SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, S
         const auto data_it = event->waiting_threads->push(data);
         thread_lock.unlock();
 
-        const int err = handle_timeout(thread, thread_lock, event_lock, event->waiting_threads, data_it, export_name, timeout);
+        const int err = handle_timeout(kernel, thread, thread_lock, event_lock, event->waiting_threads, data_it, export_name, timeout);
         if (err < 0) {
             // set it only if a timeout occurs
             // otherwise set in simple_event_setorpulse
@@ -461,14 +472,22 @@ SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID t
         const auto data_it = timer->waiting_threads->push(data);
 
         bool got_event = false;
-        while (!got_event) {
+        while (!got_event && !kernel.shutting_down.load(std::memory_order_relaxed)) {
             uint64_t wait_time = timer->next_event - current_time;
             // wait before we got an event and we are the first thread in the waiting list
             timer->condvar.wait_for(lock, std::chrono::microseconds(wait_time), [&] {
-                return (*timer->waiting_threads->begin()).thread->id == thread_id;
+                return kernel.shutting_down.load(std::memory_order_relaxed)
+                    || (*timer->waiting_threads->begin()).thread->id == thread_id;
             });
             current_time = get_current_time();
             got_event = timer->event_set || current_time > timer->next_event;
+        }
+
+        if (kernel.shutting_down.load(std::memory_order_relaxed)) {
+            timer->waiting_threads->erase(data_it);
+            thread->update_status(ThreadStatus::run, ThreadStatus::wait);
+            timer->condvar.notify_all();
+            return SCE_KERNEL_ERROR_WAIT_CANCEL;
         }
 
         timer->waiting_threads->pop();
@@ -662,7 +681,7 @@ inline static int mutex_lock_impl(KernelState &kernel, MemState &mem, const char
         const auto data_it = mutex->waiting_threads->push(data);
         thread_lock.unlock();
 
-        int res = handle_timeout(thread, thread_lock, mutex_lock, mutex->waiting_threads, data_it, export_name, timeout);
+        int res = handle_timeout(kernel, thread, thread_lock, mutex_lock, mutex->waiting_threads, data_it, export_name, timeout);
 
         if (weight == SyncWeight::Light) {
             mutex->workarea.get(mem)->lockCount = mutex->lock_count;
@@ -881,7 +900,7 @@ SceInt32 rwlock_lock(KernelState &kernel, MemState &mem, const char *export_name
         const auto data_it = rwlock->waiting_threads->push(data);
         thread_lock.unlock();
 
-        return handle_timeout(thread, thread_lock, rwlock_lock, rwlock->waiting_threads, data_it, export_name, timeout);
+        return handle_timeout(kernel, thread, thread_lock, rwlock_lock, rwlock->waiting_threads, data_it, export_name, timeout);
     }
 }
 
@@ -1059,7 +1078,7 @@ SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thr
         const auto data_it = semaphore->waiting_threads->push(data);
         thread_lock.unlock();
 
-        auto res = handle_timeout(thread, thread_lock, semaphore_lock, semaphore->waiting_threads, data_it, export_name, pTimeout);
+        auto res = handle_timeout(kernel, thread, thread_lock, semaphore_lock, semaphore->waiting_threads, data_it, export_name, pTimeout);
         if (was_canceled)
             res = SCE_KERNEL_ERROR_WAIT_CANCEL;
         return res;
@@ -1253,7 +1272,7 @@ int condvar_wait(KernelState &kernel, MemState &mem, const char *export_name, Sc
     const auto data_it = condvar->waiting_threads->push(data);
     thread_lock.unlock();
 
-    if (auto error = handle_timeout(thread, thread_lock, condition_variable_lock, condvar->waiting_threads, data_it, export_name, timeout))
+    if (auto error = handle_timeout(kernel, thread, thread_lock, condition_variable_lock, condvar->waiting_threads, data_it, export_name, timeout))
         return error;
 
     condition_variable_lock.unlock();
@@ -1464,7 +1483,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         const auto data_it = event->waiting_threads->push(data);
         thread_lock.unlock();
 
-        int err = handle_timeout(thread, thread_lock, event_lock, event->waiting_threads, data_it, export_name, timeout);
+        int err = handle_timeout(kernel, thread, thread_lock, event_lock, event->waiting_threads, data_it, export_name, timeout);
         if (err < 0 && outBits) {
             // set it only if a timeout occurs
             // otherwise set in eventflag_set
@@ -1746,7 +1765,13 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
             do {
                 // FIXME sleep on SimpleEvent
                 msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
-                thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::run; });
+                thread->status_cond.wait(thread_lock, [&] {
+                    return thread->status == ThreadStatus::run || kernel.shutting_down.load(std::memory_order_relaxed);
+                });
+                if (kernel.shutting_down.load(std::memory_order_relaxed)) {
+                    thread->update_status(ThreadStatus::run);
+                    return SCE_KERNEL_ERROR_WAIT_CANCEL;
+                }
                 if (msgpipe->beingDeleted) { // if beingDeleted then message pipe is locked, so we can't lock again
                     std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                     return SCE_KERNEL_ERROR_WAIT_DELETE;
@@ -1758,7 +1783,13 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
             return finish();
         } else { // There's a timeout - wait until we can fill buffer or timeout
             msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
-            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::run; });
+            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] {
+                return thread->status == ThreadStatus::run || kernel.shutting_down.load(std::memory_order_relaxed);
+            });
+            if (kernel.shutting_down.load(std::memory_order_relaxed)) {
+                thread->update_status(ThreadStatus::run);
+                return SCE_KERNEL_ERROR_WAIT_CANCEL;
+            }
             if (msgpipe->beingDeleted) {
                 std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                 return SCE_KERNEL_ERROR_WAIT_DELETE;
@@ -1849,7 +1880,13 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
             do {
                 // FIXME sleep on SimpleEvent
                 msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
-                thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::run; });
+                thread->status_cond.wait(thread_lock, [&] {
+                    return thread->status == ThreadStatus::run || kernel.shutting_down.load(std::memory_order_relaxed);
+                });
+                if (kernel.shutting_down.load(std::memory_order_relaxed)) {
+                    thread->update_status(ThreadStatus::run);
+                    return SCE_KERNEL_ERROR_WAIT_CANCEL;
+                }
                 if (msgpipe->beingDeleted) { // if beingDeleted then message pipe is locked, so we can't lock again
                     std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                     return SCE_KERNEL_ERROR_WAIT_DELETE;
@@ -1862,7 +1899,13 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
             return finish();
         } else { // There's a timeout - wait until we can fill buffer or timeout
             msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
-            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::run; });
+            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] {
+                return thread->status == ThreadStatus::run || kernel.shutting_down.load(std::memory_order_relaxed);
+            });
+            if (kernel.shutting_down.load(std::memory_order_relaxed)) {
+                thread->update_status(ThreadStatus::run);
+                return SCE_KERNEL_ERROR_WAIT_CANCEL;
+            }
             if (msgpipe->beingDeleted) {
                 std::atomic_fetch_add(&msgpipe->remainingThreads, static_cast<size_t>(-1));
                 return SCE_KERNEL_ERROR_WAIT_DELETE;

@@ -19,22 +19,33 @@
 
 #include <cpu/common.h>
 #include <cpu/disasm/state.h>
-#include <mem/block.h>
 #include <mem/state.h>
 #include <util/types.h>
+
+#include <atomic>
+#include <functional>
 
 struct CPUState {
     CPUState() = default;
 
     SceUID thread_id = 0;
     MemState *mem = nullptr;
-    CPUProtocolBase *protocol = nullptr;
     DisasmState disasm;
 
-    Block halt_instruction;
-    Address halt_instruction_pc; // thumb mode pc
+    // GDB data-watchpoint hook. Set by the kernel to forward into
+    // Debugger::check_watchpoint from the Dynarmic memory callbacks
+    // (replaces the old CPUProtocol bridge). Returns the watched base
+    // address on a hit, 0 on a miss; empty when no debugger is attached.
+    std::function<Address(Address addr, bool is_write)> check_watchpoint;
 
     CPUInterfacePtr cpu;
     bool svc_called;
     uint32_t svc;
+
+    // Exception handler support (kubridge abort handlers)
+    // These are set by the page fault callback (signal-safe atomics)
+    // and consumed by run_loop after HaltExecution returns.
+    std::atomic<bool> abort_pending{ false };
+    std::atomic<uint32_t> abort_fault_addr{ 0 };
+    std::atomic<bool> abort_is_write{ false };
 };

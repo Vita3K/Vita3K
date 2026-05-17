@@ -1,0 +1,107 @@
+{
+  "common.cancel": {
+    "message": "Отмена"
+  },
+  "common.yes": {
+    "message": "Да"
+  },
+  "common.no": {
+    "message": "Нет"
+  },
+  "common.delete": {
+    "message": "Удалить"
+  },
+  "common.submit": {
+    "message": "Подтвердить"
+  },
+  "common.please_wait": {
+    "message": "Подождите..."
+  },
+  "common.an_error_occurred": {
+    "message": "Произошла ошибка.\nКод ошибки: {}"
+  },
+  "common.could_not_load": {
+    "message": "Не удалось загрузить файл."
+  },
+  "common.could_not_save": {
+    "message": "Не удалось сохранить файл."
+  },
+  "common.file_corrupted": {
+    "message": "Файл поврежден."
+  },
+  "common.microphone_disabled": {
+    "message": "Включите микрофон."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Сохранить"
+  },
+  "dialog.save_data.load.title": {
+    "message": "Загрузить"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Идет сохранение..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Идет загрузка..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Сохранение завершено."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Загрузка завершена."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Удаление завершено."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "Новые сохраненные данные"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "Отсутствуют сохраненные данные."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "Сохранить данные?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "Загрузить эти сохраненные данные?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "Удалить эти сохраненные данные?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "Перезаписать сохраненные данные?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "Отменить сохранение?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "Отменить загрузку?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "Отменить удаление?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Идет сохранение...\nНе выключайте систему и не закрывайте приложение."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "Не удалось сохранить файл.\nНа карте памяти недостаточно свободного места. Для сохранения процента выполнения приложения необходимо не менее {} свободного места.\n\nДля освобождения места нажмите кнопку PS, чтобы приостановить приложение, и удалите другие приложения или данные."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "На карте памяти недостаточно свободного места.\nЧтобы продолжить использование приложения, необходимо не менее {} свободного места.\n\nНажмите кнопку PS, чтобы приостановить приложение, и удалите другие приложения или данные."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Подробности"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Обновлен"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Подготовка к запуску приложения..."
+  },
+  "overlay.trophy_earned": {
+    "message": "Вы получили приз!"
+  },
+  "message.load_app_failed": {
+    "message": "Не удалось загрузить \"{}\".\nПроверьте vita3k.log, чтобы увидеть вывод консоли для получения подробной информации.\n1. Установлена ли у вас прошивка?\n2. Скопируйте собственное приложение(я)/игру(ы) и установите его на Vita 3K.\n3. Если вы хотите установить или запустить Vitamin, он не поддерживается."
+  }
+}

@@ -18,6 +18,7 @@
 #include <config/functions.h>
 #include <config/state.h>
 #include <config/version.h>
+#include <input/physical_key.h>
 #include <yaml-cpp/yaml.h>
 
 #include <util/fs.h>
@@ -31,11 +32,64 @@
 #include <CLI11.hpp>
 
 #include <algorithm>
+#include <cctype>
 #include <exception>
 #include <iostream>
 #include <vector>
 
 namespace config {
+static bool is_numeric_scalar(const YAML::Node &node) {
+    if (!node.IsScalar())
+        return false;
+
+    const std::string value = node.Scalar();
+    if (value.empty())
+        return false;
+
+    return std::all_of(value.begin(), value.end(), [](const unsigned char c) {
+        return std::isdigit(c) != 0;
+    });
+}
+} // namespace config
+
+namespace YAML {
+
+template <>
+struct convert<input::PhysicalKeyCode> {
+    static Node encode(const input::PhysicalKeyCode &rhs) {
+        Node node;
+        node = rhs == input::PhysicalKeyCode::Unbound
+            ? std::string("Unbound")
+            : std::string(input::physical_key_code_name(rhs));
+        return node;
+    }
+
+    static bool decode(const Node &node, input::PhysicalKeyCode &rhs) {
+        if (!node.IsScalar())
+            return false;
+
+        const std::string value = node.Scalar();
+        if (value.empty() || value == "Unbound" || config::is_numeric_scalar(node)) {
+            rhs = input::PhysicalKeyCode::Unbound;
+            return true;
+        }
+
+        rhs = input::physical_key_from_code_name(value);
+        if (rhs == input::PhysicalKeyCode::Unbound)
+            LOG_WARN("Unknown physical keyboard binding '{}'; falling back to Unbound.", value);
+
+        return true;
+    }
+};
+
+} // namespace YAML
+
+namespace config {
+
+static void sync_update_preferences(Config &self) {
+    self.check_for_updates = self.check_for_updates_mode != static_cast<int>(UPDATE_STARTUP_OFF);
+}
+
 // Update the members of the Config object based on the YAML node.
 // Use this function when the YAML file is updated before the members.
 static void update_members(Config &self, const YAML::Node &p_yaml_node) {
@@ -48,10 +102,31 @@ static void update_members(Config &self, const YAML::Node &p_yaml_node) {
 
     CONFIG_LIST(UPDATE_MEMBERS)
 #undef UPDATE_MEMBERS
+
+    if (!p_yaml_node["check-for-updates-mode"].IsDefined() && p_yaml_node["check-for-updates"].IsDefined()) {
+        self.check_for_updates_mode = p_yaml_node["check-for-updates"].as<bool>()
+            ? static_cast<int>(UPDATE_STARTUP_PROMPT)
+            : static_cast<int>(UPDATE_STARTUP_OFF);
+    }
+
+    sync_update_preferences(self);
 #ifdef TRACY_ENABLE
     tracy_module_utils::cleanup(self.tracy_advanced_profiling_modules);
     tracy_module_utils::load_from(self.tracy_advanced_profiling_modules);
 #endif
+}
+
+static bool has_legacy_keyboard_bindings(const YAML::Node &yaml_node) {
+    bool legacy_keyboard_bindings = false;
+
+#define CHECK_LEGACY_KEYBOARD_BINDINGS(option_type, option_name, option_default, member_name) \
+    if (is_numeric_scalar(yaml_node[option_name]))                                            \
+        legacy_keyboard_bindings = true;
+
+    CONFIG_KEYBOARD(CHECK_LEGACY_KEYBOARD_BINDINGS)
+#undef CHECK_LEGACY_KEYBOARD_BINDINGS
+
+    return legacy_keyboard_bindings;
 }
 
 static void update_members(Config &self, const Config &rhs) {
@@ -60,6 +135,7 @@ static void update_members(Config &self, const Config &rhs) {
 
     CONFIG_LIST(UPDATE_MEMBERS)
 #undef UPDATE_MEMBERS
+    sync_update_preferences(self);
 #ifdef TRACY_ENABLE
     tracy_module_utils::cleanup(self.tracy_advanced_profiling_modules);
     tracy_module_utils::load_from(self.tracy_advanced_profiling_modules);
@@ -118,6 +194,7 @@ static void merge(Config &self, const Config &rhs) {
 #undef COMBINE_VECTOR
 
     check_members(self, rhs);
+    sync_update_preferences(self);
 }
 
 // Generate a YAML node based on the current values of the members.
@@ -130,14 +207,18 @@ static YAML::Node get(const Config &self) {
     CONFIG_LIST(GEN_VALUES)
 #undef GEN_VALUES
 
+    out.remove("check-for-updates");
+
     return out;
 }
 
 // Load a function to the node network, and then update the members
-static void load_new_config(Config &self, const fs::path &path) {
+static bool load_new_config(Config &self, const fs::path &path) {
     fs::ifstream fin(path);
     YAML::Node yaml_node = YAML::Load(fin);
+    const bool legacy_keyboard_bindings = has_legacy_keyboard_bindings(yaml_node);
     update_members(self, yaml_node);
+    return legacy_keyboard_bindings;
 }
 
 static std::set<std::string> get_file_set(const fs::path &loc, bool dirs_only = true) {
@@ -172,6 +253,16 @@ static fs::path check_path(const fs::path &output_path) {
     return output_path;
 }
 
+void reset_keyboard_bindings(Config &cfg) {
+    const Config defaults{};
+
+#define RESET_KEYBOARD_BINDING(option_type, option_name, option_default, member_name) \
+    cfg.member_name = defaults.member_name;
+
+    CONFIG_KEYBOARD(RESET_KEYBOARD_BINDING)
+#undef RESET_KEYBOARD_BINDING
+}
+
 static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &root_pref_path) {
     const auto loaded_path = check_path(load_path);
     if (loaded_path.empty() || !fs::exists(loaded_path)) {
@@ -180,7 +271,10 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &ro
     }
 
     try {
-        load_new_config(cfg, loaded_path);
+        if (load_new_config(cfg, loaded_path)) {
+            reset_keyboard_bindings(cfg);
+            LOG_INFO("Legacy numeric keyboard binding config detected; keyboard bindings were reset to physical defaults.");
+        }
     } catch (YAML::Exception &exception) {
         LOG_ERROR("Config file can't be loaded: Error: {}", exception.what());
         return FileNotFound;

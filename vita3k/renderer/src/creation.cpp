@@ -22,6 +22,7 @@
 #include <renderer/types.h>
 
 #include <renderer/gl/functions.h>
+#include <renderer/gl/state.h>
 #include <renderer/vulkan/functions.h>
 #include <renderer/vulkan/state.h>
 
@@ -87,7 +88,9 @@ COMMAND(handle_create_context) {
 COMMAND(handle_destroy_context) {
     TRACY_FUNC_COMMANDS(handle_destroy_context);
     std::unique_ptr<Context> *ctx = helper.pop<std::unique_ptr<Context> *>();
+
     ctx->reset();
+    renderer.context = nullptr;
 
     complete_command(renderer, helper, 0);
 }
@@ -133,7 +136,6 @@ COMMAND(handle_destroy_render_target) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
-        // nothing to do
         break;
 
     case Backend::Vulkan:
@@ -250,19 +252,21 @@ void destroy(SceGxmSyncObject *sync, State &state) {
     // nothing to do right now
 }
 
-bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths) {
+bool init(const WindowCallbacks &callbacks, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths) {
     switch (backend) {
     case Backend::OpenGL:
         state = std::make_unique<gl::GLState>();
+        state->window_callbacks = callbacks;
         state->init_paths(root_paths);
-        if (!gl::create(window, state, config))
+        if (!gl::create(state, config))
             return false;
         break;
 
     case Backend::Vulkan:
-        state = std::make_unique<vulkan::VKState>(config.gpu_idx);
+        state = std::make_unique<vulkan::VKState>(config.current_config.gpu_idx);
+        state->window_callbacks = callbacks;
         state->init_paths(root_paths);
-        if (!vulkan::create(window, state, config))
+        if (!vulkan::create(state, config))
             return false;
         break;
 

@@ -33,6 +33,34 @@ bool AudioState::init(const std::string &adapter_name) {
     return true;
 }
 
+void AudioState::stop_all_ports() {
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        for (auto &[_, port] : out_ports) {
+            port->stopping = true;
+        }
+    }
+    if (adapter)
+        adapter->wake_all_ports();
+}
+
+void AudioState::deinit() {
+    stop_all_ports();
+
+    const std::lock_guard<std::mutex> lock(mutex);
+
+    out_ports.clear();
+
+    if (in_port.running) {
+        SDL_DestroyAudioStream(static_cast<SDL_AudioStream *>(in_port.id));
+        in_port.id = nullptr;
+        in_port.running = false;
+        in_port.len_bytes = 0;
+    }
+
+    next_port_id = 1;
+}
+
 void AudioState::set_backend(const std::string &adapter_name) {
     if (adapter_name == this->audio_backend)
         return;
@@ -64,7 +92,13 @@ AudioOutPortPtr AudioState::open_port(int nb_channels, int freq, int nb_sample) 
 }
 
 void AudioState::audio_output(AudioOutPort &out_port, const void *buffer) {
+    if (out_port.stopping)
+        return;
+
     adapter->audio_output(out_port, buffer);
+
+    if (out_port.stopping)
+        return;
 
     uint64_t now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     uint64_t diff = now - out_port.last_output;
@@ -103,4 +137,13 @@ void AudioState::switch_state(const bool pause) {
 
 int AudioState::get_rest_sample(AudioOutPort &out_port) {
     return adapter->get_rest_sample(out_port);
+}
+
+void AudioState::wake_all_ports() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    for (auto &[_, port] : out_ports) {
+        port->stopping = true;
+    }
+    if (adapter)
+        adapter->wake_all_ports();
 }

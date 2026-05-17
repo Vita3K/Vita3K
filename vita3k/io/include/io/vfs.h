@@ -20,7 +20,7 @@
 #include <util/fs.h>
 #include <util/types.h>
 
-class VitaIoDevice;
+enum class VitaIoDevice : int;
 
 namespace vfs {
 

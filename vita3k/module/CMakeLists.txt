@@ -2,7 +2,6 @@ add_library(
 	module
 	STATIC
 	src/load_module.cpp
-	src/read_arg.cpp
 	src/write_return_value.cpp
 )
 

@@ -27,6 +27,7 @@
 #include <util/fs.h>
 
 #include <atomic>
+#include <functional>
 #include <type_traits>
 
 #define LOG_TRACE SPDLOG_TRACE
@@ -64,6 +65,7 @@ namespace logging {
 ExitCode init(const Root &root_paths, bool use_stdout);
 void set_level(spdlog::level::level_enum log_level);
 ExitCode add_sink(const fs::path &log_path);
+void set_log_callback(std::function<void(std::string, int)> cb);
 
 } // namespace logging
 

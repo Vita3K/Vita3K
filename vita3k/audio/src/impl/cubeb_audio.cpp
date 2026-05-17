@@ -123,8 +123,14 @@ void CubebAudioAdapter::audio_output(AudioOutPort &out_port, const void *buffer)
     CubebAudioOutPort &port = static_cast<CubebAudioOutPort &>(out_port);
 
     std::unique_lock<std::mutex> lock(port.mutex);
+
+    if (out_port.stopping)
+        return;
+
     if (port.nb_buffers_ready == port.audio_buffers.size()) {
         port.cond_var.wait(lock);
+        if (out_port.stopping)
+            return;
     }
 
     assert(port.nb_buffers_ready < port.audio_buffers.size());
@@ -153,5 +159,15 @@ void CubebAudioAdapter::switch_state(const bool pause) {
             cubeb_stream_stop(port.out_stream);
         else
             cubeb_stream_start(port.out_stream);
+    }
+}
+
+void CubebAudioAdapter::wake_all_ports() {
+    for (auto &[_, port_ptr] : state.out_ports) {
+        auto &port = static_cast<CubebAudioOutPort &>(*port_ptr);
+        {
+            std::lock_guard<std::mutex> lock(port.mutex);
+        }
+        port.cond_var.notify_all();
     }
 }

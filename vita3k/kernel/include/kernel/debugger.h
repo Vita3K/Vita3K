@@ -24,22 +24,7 @@
 #include <condition_variable>
 #include <map>
 
-constexpr uint32_t TRAMPOLINE_JUMPER_SVC = 0x54;
-constexpr uint32_t TRAMPOLINE_HANDLER_SVC = 0x53;
-
 struct KernelState;
-
-typedef std::function<bool(CPUState &cpu, MemState &mem, Address lr)> TrampolineCallback;
-
-struct Trampoline {
-    bool thumb_mode;
-    uint32_t original;
-    Block trampoline_code;
-    Address trampoline_addr;
-    Address addr;
-    Address lr;
-    TrampolineCallback callback;
-};
 
 struct Breakpoint {
     bool thumb_mode;
@@ -60,7 +45,6 @@ struct WatchMemory {
 
 typedef std::map<Address, WatchMemory> WatchMemoryAddrs;
 typedef std::map<Address, Breakpoint> Breakpoints;
-typedef std::map<Address, std::unique_ptr<Trampoline>> Trampolines;
 
 struct Debugger {
     Debugger() = delete;
@@ -80,15 +64,13 @@ struct Debugger {
     void add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode);
     void remove_breakpoint(MemState &mem, uint32_t addr);
     void remove_all_breakpoints(MemState &mem);
-    void add_trampoline(MemState &mem, uint32_t addr, bool thumb_mode, const TrampolineCallback &callback);
-    Trampoline *get_trampoline(Address addr);
-    void remove_trampoline(MemState &mem, uint32_t addr);
     Address get_watch_memory_addr(Address addr);
     // Check if addr triggers a watchpoint for the given access direction.
     // Returns the watched base address on match, 0 on miss. On match,
     // also sets break_watch_addr and break_watch_type for the stop reply.
     Address check_watchpoint(Address addr, bool is_write);
     void update_watches();
+    void deinit();
 
     // GDB breakpoint notification: signaled from the thread loop when a
     // thread hits a breakpoint and transitions to suspend.
@@ -109,5 +91,4 @@ private:
     KernelState &parent;
     WatchMemoryAddrs watch_memory_addrs;
     Breakpoints breakpoints;
-    Trampolines trampolines;
 };

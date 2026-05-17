@@ -529,7 +529,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
-            yuv420_texture_to_rgb(texture_data_decompressed.data(),
+            yuv420_texture_to_rgb(yuv_conversion_cache, texture_data_decompressed.data(),
                 static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height,
                 base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3);
             pixels = texture_data_decompressed.data();
@@ -677,11 +677,11 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         // This works under the assumption that once this big enough texture decided to modify. It will have to modify either all of its data,
         // or replace with an entire new texture.
         bool should_use_hash = true;
-        if (use_protect && info->texture_size >= mem.page_size * 4) {
-            range_protect_begin = align(gxm_texture.data_addr << 2, mem.page_size);
-            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.page_size);
+        if (use_protect && info->texture_size >= mem.host_page_size * 4) {
+            range_protect_begin = align(gxm_texture.data_addr << 2, mem.host_page_size);
+            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.host_page_size);
 
-            if (range_protect_end - range_protect_begin >= mem.page_size * 4) {
+            if (range_protect_end - range_protect_begin >= mem.host_page_size * 4) {
                 should_use_hash = false;
             }
         }
@@ -708,8 +708,8 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
             upload = previous_hash != info->hash;
         } else {
-            range_protect_begin = align(gxm_texture.data_addr << 2, mem.page_size);
-            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.page_size);
+            range_protect_begin = align(gxm_texture.data_addr << 2, mem.host_page_size);
+            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.host_page_size);
             upload = info->dirty;
         }
     }

@@ -17,6 +17,8 @@
 
 #include <module/module.h>
 
+#include <cstring>
+
 EXPORT(int, __aeabi_idiv) {
     return UNIMPLEMENTED();
 }
@@ -89,8 +91,9 @@ EXPORT(int, kmemmove) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, kmemset) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, kmemset, Ptr<void> dst, int ch, SceSize len) {
+    memset(dst.get(emuenv.mem), ch, len);
+    return dst;
 }
 
 EXPORT(int, rshift) {

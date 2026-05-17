@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <renderer/functions.h>
+#include <renderer/texture_cache.h>
 
 extern "C" {
 #include <libswscale/swscale.h>
@@ -23,34 +24,33 @@ extern "C" {
 
 namespace renderer::texture {
 
-static SwsContext *s_render_sws_context{};
-static size_t res[2] = { 0, 0 };
-static bool is_yuv_p3 = false;
-static SwsContext *get_sws_context(size_t width, size_t height, bool is_p3) {
+static SwsContext *get_sws_context(YUVConversionCache &cache, size_t width, size_t height, bool is_p3) {
     bool recreate = false;
-    if (res[0] != width || res[1] != height || is_yuv_p3 != is_p3) {
+    auto *context = static_cast<SwsContext *>(cache.sws_context);
+    if (cache.width != width || cache.height != height || cache.is_p3 != is_p3) {
         recreate = true;
-        res[0] = width;
-        res[1] = height;
-        is_yuv_p3 = is_p3;
-    } else if (s_render_sws_context == nullptr) {
+        cache.width = width;
+        cache.height = height;
+        cache.is_p3 = is_p3;
+    } else if (context == nullptr) {
         recreate = true;
     }
 
     if (recreate) {
-        if (s_render_sws_context != nullptr) {
-            sws_freeContext(s_render_sws_context);
-            s_render_sws_context = nullptr;
+        if (context != nullptr) {
+            sws_freeContext(context);
+            context = nullptr;
         }
         const AVPixelFormat format = is_p3 ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_NV12;
-        s_render_sws_context = sws_getContext(width, height, format, width, height, AV_PIX_FMT_RGB0,
+        context = sws_getContext(width, height, format, width, height, AV_PIX_FMT_RGB0,
             0, nullptr, nullptr, nullptr);
+        cache.sws_context = context;
     }
-    return s_render_sws_context;
+    return context;
 }
 
-void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, uint32_t layout_width, uint32_t layout_height, bool is_p3) {
-    SwsContext *context = get_sws_context(width, height, is_p3);
+void yuv420_texture_to_rgb(YUVConversionCache &cache, uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, uint32_t layout_width, uint32_t layout_height, bool is_p3) {
+    SwsContext *context = get_sws_context(cache, width, height, is_p3);
     assert(context);
 
     const uint8_t *slices[] = {
@@ -83,3 +83,10 @@ void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, uint32_t width, uin
 }
 
 } // namespace renderer::texture
+
+renderer::TextureCache::~TextureCache() {
+    if (auto *context = static_cast<SwsContext *>(yuv_conversion_cache.sws_context)) {
+        sws_freeContext(context);
+        yuv_conversion_cache.sws_context = nullptr;
+    }
+}

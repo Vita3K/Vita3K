@@ -30,14 +30,12 @@ struct Callback {
     /**
      * @brief Creates a Callback object
      *
-     * @param thread Thread object that created this callback
      * @param name Name of the callback
      * @param cb_func Pointer to the callback function
      * @param pCommon User-provided parameter
      */
-    Callback(SceUID thread_id, const ThreadStatePtr &thread, std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon)
+    Callback(SceUID thread_id, std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon)
         : thread_id(thread_id)
-        , thread(thread)
         , name(name)
         , cb_func(cb_func)
         , userdata(pCommon) {}
@@ -119,7 +117,6 @@ private:
     std::mutex _mutex;
 
     const SceUID thread_id; // UID of the thread that created this callback
-    const ThreadStatePtr thread; // Thread object that created this callback
     const std::string name; // Name of the callback
     const Ptr<SceKernelCallbackFunction> cb_func; // Function to execute when the callback should run
     const Ptr<void> userdata; // User-provided data - passed as pCommon

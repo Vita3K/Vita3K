@@ -52,9 +52,16 @@ jobs:
           sudo apt update
           sudo apt -y install ccache libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev ninja-build
 
-      - uses: mozilla-actions/sccache-action@v0.0.9
+      - uses: mozilla-actions/sccache-action@v0.0.10
         with:
           disable_annotations: true
+
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.2'
+          cache: true
+          install-deps: 'true'
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
