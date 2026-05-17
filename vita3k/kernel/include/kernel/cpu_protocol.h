@@ -29,6 +29,7 @@ struct CPUProtocol : public CPUProtocolBase {
     ~CPUProtocol() override = default;
     void call_svc(CPUState &cpu, uint32_t svc, Address pc, ThreadState &thread) override;
     Address get_watch_memory_addr(Address addr) override;
+    Address check_watchpoint(Address addr, bool is_write) override;
     ExclusiveMonitorPtr get_exclusive_monitor() override;
 
 private:

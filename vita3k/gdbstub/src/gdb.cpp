@@ -714,6 +714,29 @@ static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) {
 static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
     const std::string content = content_string(command);
 
+    // Build a T05 stop reply. If a watchpoint triggered, include the
+    // watch address and type so gdb displays "Hardware watchpoint N"
+    // instead of a generic SIGTRAP.
+    const auto stop_reply = [&](SceUID tid) -> std::string {
+        Address wp = state.kernel.debugger.break_watch_addr;
+        if (wp) {
+            state.kernel.debugger.break_watch_addr = 0;
+            const char *keyword = "watch";
+            switch (state.kernel.debugger.break_watch_type) {
+            case WatchType::READ:
+                keyword = "rwatch";
+                break;
+            case WatchType::ACCESS:
+                keyword = "awatch";
+                break;
+            default:
+                break;
+            }
+            return fmt::format("T05{}:{:x};thread:{:x};", keyword, wp, tid);
+        }
+        return fmt::format("T05thread:{:x};", tid);
+    };
+
     uint64_t index = 5;
     uint64_t next = 0;
     do {
@@ -814,7 +837,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 return "";
 
             state.gdb.current_thread = state.gdb.inferior_thread;
-            return fmt::format("T05thread:{:x};", state.gdb.inferior_thread);
+            return stop_reply(state.gdb.inferior_thread);
         }
         case 'c':
         case 'C':
@@ -840,6 +863,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                     auto lock = std::unique_lock(state.kernel.mutex);
                     state.kernel.debugger.wait_for_debugger = false;
                     state.kernel.debugger.has_break = false;
+                    state.kernel.debugger.break_watch_addr = 0;
                     for (const auto &pair : state.kernel.threads) {
                         auto &thread = pair.second;
                         if (thread->status == ThreadStatus::suspend) {
@@ -921,7 +945,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             }
 
             state.gdb.current_thread = state.gdb.inferior_thread;
-            return fmt::format("T05thread:{:x};", state.gdb.inferior_thread);
+            return stop_reply(state.gdb.inferior_thread);
         }
         default:
             LOG_WARN("Unsupported vCont command '{}'", cmd);
@@ -1032,30 +1056,32 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
     const uint64_t first = content.find(',');
     const uint64_t second = content.find(',', first + 1);
     const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
-    // GDB may set bit 0 of the address to indicate Thumb state; mask it so the
-    // breakpoint lands on the actual instruction boundary.
-    const uint32_t address = align_down(parse_hex(content.substr(first + 1, second - 1 - first)), 2);
+    const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
-    // Only Z0 (software breakpoint) is supported. Returning empty for Z1-Z4
-    // tells gdb to fall back to software watchpoints instead of letting it
-    // corrupt the target memory by patching BKPT at a data address.
-    if (type != 0)
-        return "";
-
-    const uint32_t bp_size = (kind == 2) ? 2 : 4;
-    if (!check_memory_region(address, bp_size, state.mem)) {
-        LOG_WARN("GDB Server Breakpoint rejected — address {} not mapped.", log_hex(address));
-        return "E01";
+    if (type == 0) {
+        const uint32_t bp_size = (kind == 2) ? 2 : 4;
+        if (!check_memory_region(address, bp_size, state.mem)) {
+            LOG_WARN("GDB Server Breakpoint rejected — address {} not mapped.", log_hex(address));
+            return "E01";
+        }
+        LOG_INFO("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
+        // GDB sets bit 0 of the address for Thumb breakpoints; the real
+        // instruction is 2-byte aligned. Keep the raw address for the
+        // mapping check and log, but strip the Thumb bit before recording.
+        state.kernel.debugger.add_breakpoint(state.mem, align_down(address, 2), kind == 2);
+        return "OK";
     }
 
-    LOG_INFO("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
+    if (type >= 2 && type <= 4) {
+        LOG_INFO("GDB Server New Watchpoint at {} (type={}, len={}).", log_hex(address), type, kind);
+        state.kernel.debugger.add_watch_memory_addr(address, kind, static_cast<WatchType>(type));
+        state.kernel.debugger.watch_memory = true;
+        state.kernel.debugger.update_watches();
+        return "OK";
+    }
 
-    // kind is 2 if it's thumb mode
-    // https://sourceware.org/gdb/current/onlinedocs/gdb/ARM-Breakpoint-Kinds.html#ARM-Breakpoint-Kinds
-    state.kernel.debugger.add_breakpoint(state.mem, address, kind == 2);
-
-    return "OK";
+    return "";
 }
 
 static std::string cmd_remove_breakpoint(EmuEnvState &state, PacketCommand &command) {
@@ -1064,19 +1090,24 @@ static std::string cmd_remove_breakpoint(EmuEnvState &state, PacketCommand &comm
     const uint64_t first = content.find(',');
     const uint64_t second = content.find(',', first + 1);
     const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
-    // Mirror cmd_add_breakpoint: strip the GDB Thumb-state bit so the lookup
-    // key matches the address used at insertion.
-    const uint32_t address = align_down(parse_hex(content.substr(first + 1, second - 1 - first)), 2);
+    const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
-    // Match cmd_add_breakpoint: only Z0 is handled.
-    if (type != 0)
-        return "";
+    if (type == 0) {
+        LOG_INFO("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
+        // Mirror cmd_add_breakpoint: strip the GDB Thumb-state bit so the
+        // lookup key matches the address used at insertion.
+        state.kernel.debugger.remove_breakpoint(state.mem, align_down(address, 2));
+        return "OK";
+    }
 
-    LOG_INFO("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
-    state.kernel.debugger.remove_breakpoint(state.mem, address);
+    if (type >= 2 && type <= 4) {
+        LOG_INFO("GDB Server Removed Watchpoint at {} (type={}).", log_hex(address), type);
+        state.kernel.debugger.remove_watch_memory_addr(state.kernel, address);
+        return "OK";
+    }
 
-    return "OK";
+    return "";
 }
 
 // GDB's Host I/O (vFile) flag values, from include/gdb/fileio.h.
