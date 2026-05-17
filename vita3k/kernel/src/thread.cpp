@@ -75,6 +75,9 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     if (!cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
+    cpu->check_watchpoint = [this](Address addr, bool is_write) {
+        return kernel.debugger.check_watchpoint(addr, is_write);
+    };
     if (kernel.debugger.watch_code) {
         set_log_code(*cpu, true);
     }
@@ -107,6 +110,12 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
         assert(kernel.tls_psize <= kernel.tls_msize);
         memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
     }
+
+    // Seed PC and SP on the CPU so tools (gdbstub) that inspect the
+    // thread between create and start see its real entry point rather
+    // than zeros. start() reloads the full context and overwrites these.
+    write_pc(*cpu, entry_point.address());
+    write_sp(*cpu, stack_top());
 
     CPUContext ctx;
     ctx.set_sp(stack_top());
@@ -153,7 +162,6 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     if (kernel.debugger.wait_for_debugger) {
         to_do = ThreadToDo::suspend;
         status = ThreadStatus::suspend;
-        kernel.debugger.wait_for_debugger = false;
     } else {
         to_do = ThreadToDo::run;
         status = ThreadStatus::run;
@@ -309,9 +317,14 @@ bool ThreadState::run_loop() {
                 break;
             }
 
-            if (hit_breakpoint(*cpu) || to_do == ThreadToDo::suspend) {
-                update_status(ThreadStatus::suspend);
-                to_do = ThreadToDo::wait;
+            {
+                bool bp = hit_breakpoint(*cpu);
+                if (bp || to_do == ThreadToDo::suspend) {
+                    update_status(ThreadStatus::suspend);
+                    to_do = ThreadToDo::wait;
+                    if (bp)
+                        kernel.debugger.notify_breakpoint(id);
+                }
             }
 
             if (call_level < run_level && run_level > 1)
@@ -462,9 +475,13 @@ Address ThreadState::stack_top() const {
 }
 
 void ThreadState::suspend() {
-    assert(to_do == ThreadToDo::run);
     {
         const std::lock_guard<std::mutex> lock(mutex);
+        // Threads already parked in wait/suspend/dormant (or being removed)
+        // are halted from the debugger's perspective. Only force-stop one
+        // that is actively running user code.
+        if (to_do != ThreadToDo::run)
+            return;
         to_do = ThreadToDo::suspend;
     }
     stop(*cpu);
@@ -478,6 +495,24 @@ void ThreadState::resume(bool step) {
         to_do = step ? ThreadToDo::step : ThreadToDo::run;
     }
     something_to_do.notify_one();
+}
+
+void ThreadState::step_and_wait() {
+    resume(true);
+
+    std::unique_lock<std::mutex> lock(mutex);
+    // resume(true) set to_do=step. The run loop only restores
+    // to_do==wait once the single step has actually completed and it
+    // re-parks for the debugger, so that is the reliable completion
+    // signal. status alone is unusable here: it is still ThreadStatus
+    // ::suspend from the previous stop and would make the wait return
+    // before the step runs. Also bail out if the step took the thread
+    // out of the run state entirely (exited, or blocked in a syscall).
+    status_cond.wait(lock, [this]() {
+        return to_do == ThreadToDo::wait
+            || status == ThreadStatus::dormant
+            || status == ThreadStatus::wait;
+    });
 }
 
 std::string ThreadState::log_stack_traceback() const {

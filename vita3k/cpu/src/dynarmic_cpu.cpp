@@ -136,7 +136,7 @@ public:
     ~ArmDynarmicCallback() override = default;
 
     std::optional<std::uint32_t> MemoryReadCode(Dynarmic::A32::VAddr addr) override {
-        if (cpu->log_mem)
+        if (cpu->log_code)
             LOG_TRACE("Instruction fetch at address 0x{:X}", addr);
         return MemoryRead32(addr);
     }
@@ -175,7 +175,12 @@ public:
 
         T ret = *ptr.get(*parent->mem);
         if (cpu->log_mem) {
-            LOG_TRACE("Read uint{}_t at address: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, ret);
+            if (cpu->log_code)
+                LOG_TRACE("Read uint{}_t at address: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, ret);
+            if (parent->check_watchpoint && parent->check_watchpoint(addr, false)) {
+                cpu->break_ = true;
+                cpu->jit->HaltExecution();
+            }
         }
         return ret;
     }
@@ -212,7 +217,12 @@ public:
 
         *ptr.get(*parent->mem) = value;
         if (cpu->log_mem) {
-            LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
+            if (cpu->log_code)
+                LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
+            if (parent->check_watchpoint && parent->check_watchpoint(addr, true)) {
+                cpu->break_ = true;
+                cpu->jit->HaltExecution();
+            }
         }
     }
 
@@ -377,6 +387,8 @@ int DynarmicCPU::run() {
 }
 
 int DynarmicCPU::step() {
+    // Mirror run(): clear stale break_ so hit_breakpoint() isn't lying.
+    break_ = false;
     parent->svc_called = false;
     jit->Step();
     return 0;
@@ -395,16 +407,20 @@ void DynarmicCPU::set_log_code(bool log) {
     if (log_code == log)
         return;
 
+    CPUContext ctx = save_context();
     log_code = log;
     jit = make_jit();
+    load_context(ctx);
 }
 
 void DynarmicCPU::set_log_mem(bool log) {
     if (log_mem == log)
         return;
 
+    CPUContext ctx = save_context();
     log_mem = log;
     jit = make_jit();
+    load_context(ctx);
 }
 
 bool DynarmicCPU::get_log_code() {

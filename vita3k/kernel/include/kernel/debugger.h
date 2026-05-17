@@ -20,6 +20,8 @@
 #include <mem/state.h>
 #include <mem/util.h>
 
+#include <atomic>
+#include <condition_variable>
 #include <map>
 
 struct KernelState;
@@ -29,9 +31,16 @@ struct Breakpoint {
     unsigned char data[4];
 };
 
+enum class WatchType : uint8_t {
+    WRITE = 2, // matches GDB Z2
+    READ = 3, // matches GDB Z3
+    ACCESS = 4, // matches GDB Z4
+};
+
 struct WatchMemory {
     Address start;
     size_t size;
+    WatchType type;
 };
 
 typedef std::map<Address, WatchMemory> WatchMemoryAddrs;
@@ -50,13 +59,32 @@ struct Debugger {
     bool log_exports = false;
     bool dump_elfs = false;
 
-    void add_watch_memory_addr(Address addr, size_t size);
+    void add_watch_memory_addr(Address addr, size_t size, WatchType type = WatchType::ACCESS);
     void remove_watch_memory_addr(KernelState &state, Address addr);
     void add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode);
     void remove_breakpoint(MemState &mem, uint32_t addr);
+    void remove_all_breakpoints(MemState &mem);
     Address get_watch_memory_addr(Address addr);
+    // Check if addr triggers a watchpoint for the given access direction.
+    // Returns the watched base address on match, 0 on miss. On match,
+    // also sets break_watch_addr and break_watch_type for the stop reply.
+    Address check_watchpoint(Address addr, bool is_write);
     void update_watches();
     void deinit();
+
+    // GDB breakpoint notification: signaled from the thread loop when a
+    // thread hits a breakpoint and transitions to suspend.
+    void notify_breakpoint(SceUID thread_id);
+
+    std::mutex break_mutex;
+    std::condition_variable break_cv;
+    SceUID break_thread_id = 0;
+    std::atomic<bool> has_break{ false };
+
+    // Set by the CPU callback when a watchpoint (not a breakpoint)
+    // triggers. Read by cmd_continue to build the stop reply.
+    Address break_watch_addr = 0;
+    WatchType break_watch_type = WatchType::WRITE;
 
 private:
     std::mutex mutex;
