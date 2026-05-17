@@ -195,12 +195,12 @@ static int64_t server_ack(GDBState &state, char ack = '+') {
 }
 
 static std::string cmd_supported(EmuEnvState &state, PacketCommand &command) {
-    // target.xml + qXfer handler are supported, but we don't advertise yet
-    // because VitaSDK's gdb requests it but then can't parse it and fails.
-    // We force CPSR.T=1 in the legacy g-packet instead giving gdb built with
-    // or without xml parsing Thumb detection. If arm-vita-eabi-gdb gets
-    // updated to support xml parsing in the future we can advertise
-    // "qXfer:features:read+".
+    // target.xml + qXfer handler are supported, but we don't advertise
+    // qXfer:features:read because VitaSDK's gdb is built --without-expat:
+    // it requests target.xml then can't parse it and fails. Thumb
+    // detection works regardless because the g-packet reports the real
+    // CPSR (its T-bit is accurate for Thumb code). If arm-vita-eabi-gdb
+    // ships an XML-capable build we can advertise "qXfer:features:read+".
     return "PacketSize=4000;"
            "multiprocess-;swbreak+;hwbreak-;qRelocInsn-;fork-events-;vfork-events-;"
            "exec-events-;vContSupported+;QThreadEvents-;no-resumed-;"
@@ -460,12 +460,11 @@ static std::string read_register_hex(CPUState &cpu, uint32_t reg) {
         return "000000000000000000000000"; // FPA f0-f7: 12 bytes of zero
     if (reg == 24)
         return "00000000"; // FPA fps: zero
-    if (reg == 25) {
-        // Vita is exclusively Thumb (Cortex-A9 MPCore). Ensure T bit is
-        // always reported so gdb auto-detects Thumb for breakpoints, even
-        // for threads whose CPU state hasn't been fully initialized yet.
-        return be_hex(read_cpsr(cpu) | 0x20);
-    }
+    if (reg == 25)
+        // Report the real CPSR. The Cortex-A9 runs both ARM and Thumb
+        // code, so gdb must see the actual T bit to decode and place
+        // breakpoints correctly.
+        return be_hex(read_cpsr(cpu));
     if (reg <= 57) {
         uint32_t d_idx = reg - 26;
         uint32_t lo = std::bit_cast<uint32_t>(read_float_reg(cpu, d_idx * 2));
@@ -520,7 +519,7 @@ static std::string cmd_read_registers(EmuEnvState &state, PacketCommand &command
         str.reserve(656);
         for (uint32_t a = 0; a < 16; a++)
             str += be_hex(fetch_core_reg(cpu, a));
-        str += be_hex(read_cpsr(cpu) | 0x20); // force T bit — Vita is always Thumb
+        str += be_hex(read_cpsr(cpu)); // real CPSR — Vita runs ARM and Thumb
         for (uint32_t d = 0; d < 32; d++) {
             uint32_t lo = std::bit_cast<uint32_t>(read_float_reg(cpu, d * 2));
             uint32_t hi = std::bit_cast<uint32_t>(read_float_reg(cpu, d * 2 + 1));
@@ -538,7 +537,7 @@ static std::string cmd_read_registers(EmuEnvState &state, PacketCommand &command
     for (uint32_t a = 0; a < 8; a++)
         str += "000000000000000000000000";
     str += "00000000";
-    str += be_hex(read_cpsr(cpu) | 0x20); // force T bit — Vita is always Thumb
+    str += be_hex(read_cpsr(cpu)); // real CPSR — Vita runs ARM and Thumb
     return str;
 }
 
