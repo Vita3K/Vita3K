@@ -446,6 +446,24 @@ void ThreadState::resume(bool step) {
     something_to_do.notify_one();
 }
 
+void ThreadState::step_and_wait() {
+    resume(true);
+
+    std::unique_lock<std::mutex> lock(mutex);
+    // resume(true) set to_do=step. The run loop only restores
+    // to_do==wait once the single step has actually completed and it
+    // re-parks for the debugger, so that is the reliable completion
+    // signal. status alone is unusable here: it is still ThreadStatus
+    // ::suspend from the previous stop and would make the wait return
+    // before the step runs. Also bail out if the step took the thread
+    // out of the run state entirely (exited, or blocked in a syscall).
+    status_cond.wait(lock, [this]() {
+        return to_do == ThreadToDo::wait
+            || status == ThreadStatus::dormant
+            || status == ThreadStatus::wait;
+    });
+}
+
 std::string ThreadState::log_stack_traceback() const {
     constexpr Address START_OFFSET = 0;
     constexpr Address END_OFFSET = 1024;

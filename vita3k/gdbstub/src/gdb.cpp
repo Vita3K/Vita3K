@@ -748,12 +748,12 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
         // mode, then wait for it to stop). Shared by vCont;s/S and the
         // inner loop of vCont;r.
         const auto single_step_inferior = [&](const ThreadStatePtr &thread) {
-            thread->resume(true);
-            auto thread_lock = std::unique_lock(thread->mutex);
-            thread->status_cond.wait(thread_lock, [&]() {
-                return thread->status == ThreadStatus::suspend
-                    || thread->status == ThreadStatus::wait;
-            });
+            // step_and_wait() blocks until the step has actually
+            // completed. A plain resume(true) only flips to_do, not
+            // status, so waiting on status here would return immediately
+            // (the thread is still parked at suspend from the prior stop)
+            // and the step would never run.
+            thread->step_and_wait();
         };
 
         // Poll the client socket (non-blocking) for a Ctrl-C interrupt

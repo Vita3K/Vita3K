@@ -117,6 +117,11 @@ struct ThreadState {
 
     void suspend();
     void resume(bool step = false);
+    // Resume for a single instruction and block until the step has
+    // actually completed (the run loop re-parks) or the thread is no
+    // longer running. resume(true) only flips to_do (not status), so
+    // callers cannot reliably detect step completion via status alone.
+    void step_and_wait();
     std::string log_stack_traceback() const;
 
 private:
