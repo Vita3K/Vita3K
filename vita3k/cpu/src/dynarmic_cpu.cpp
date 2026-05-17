@@ -104,7 +104,7 @@ public:
         : cpu(cpu) {}
 
     std::optional<std::uint32_t> MemoryReadCode(Dynarmic::A32::VAddr addr) override {
-        if (cpu.log_mem)
+        if (cpu.log_code)
             LOG_TRACE("Instruction fetch at address 0x{:X}", addr);
         if (addr < KiB(4))
             return std::nullopt;
@@ -151,7 +151,11 @@ public:
             return 0;
         const T ret = *Ptr<T>(addr).get(cpu.mem);
         if (cpu.log_mem) {
-            LOG_TRACE("Read uint{}_t at address: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, ret);
+            if (cpu.log_code)
+                LOG_TRACE("Read uint{}_t at address: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, ret);
+            if (cpu.check_watchpoint && cpu.check_watchpoint(addr, false)) {
+                cpu.jit->HaltExecution(HALT_BREAKPOINT);
+            }
         }
         return ret;
     }
@@ -178,7 +182,11 @@ public:
             return;
         *Ptr<T>(addr).get(cpu.mem) = value;
         if (cpu.log_mem) {
-            LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
+            if (cpu.log_code)
+                LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
+            if (cpu.check_watchpoint && cpu.check_watchpoint(addr, true)) {
+                cpu.jit->HaltExecution(HALT_BREAKPOINT);
+            }
         }
     }
 
