@@ -340,16 +340,20 @@ void DynarmicCPU::set_log_code(bool log) {
     if (log_code == log)
         return;
 
+    CPUContext ctx = get_context();
     log_code = log;
     jit = make_jit();
+    set_context(ctx);
 }
 
 void DynarmicCPU::set_log_mem(bool log) {
     if (log_mem == log)
         return;
 
+    CPUContext ctx = get_context();
     log_mem = log;
     jit = make_jit();
+    set_context(ctx);
 }
 
 bool DynarmicCPU::get_log_mem() {
