@@ -1,0 +1,181 @@
+// Vita3K emulator project
+// Copyright (C) 2026 Vita3K team
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+//
+// Canonical key names in this file follow the W3C UI Events KeyboardEvent.code
+// specification:
+// https://w3c.github.io/uievents-code/
+//
+// Native scan-code mapping values in this file are adapted from Chromium's
+// keycode converter tables:
+// - ui/events/keycodes/dom/keycode_converter.cc
+// - ui/events/keycodes/dom/keycode_converter_data.inc
+//
+// Copyright 2013 The Chromium Authors
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
+// and/or other materials provided with the distribution.
+//
+// 3. Neither the name of Google Inc. nor the names of its contributors may be
+// used to endorse or promote products derived from this software without
+// specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+PHYSICAL_KEY_ENTRY(0x070004, 30, 0x001E, 0x0000, "KeyA", KeyA)
+PHYSICAL_KEY_ENTRY(0x070005, 48, 0x0030, 0x000B, "KeyB", KeyB)
+PHYSICAL_KEY_ENTRY(0x070006, 46, 0x002E, 0x0008, "KeyC", KeyC)
+PHYSICAL_KEY_ENTRY(0x070007, 32, 0x0020, 0x0002, "KeyD", KeyD)
+PHYSICAL_KEY_ENTRY(0x070008, 18, 0x0012, 0x000E, "KeyE", KeyE)
+PHYSICAL_KEY_ENTRY(0x070009, 33, 0x0021, 0x0003, "KeyF", KeyF)
+PHYSICAL_KEY_ENTRY(0x07000A, 34, 0x0022, 0x0005, "KeyG", KeyG)
+PHYSICAL_KEY_ENTRY(0x07000B, 35, 0x0023, 0x0004, "KeyH", KeyH)
+PHYSICAL_KEY_ENTRY(0x07000C, 23, 0x0017, 0x0022, "KeyI", KeyI)
+PHYSICAL_KEY_ENTRY(0x07000D, 36, 0x0024, 0x0026, "KeyJ", KeyJ)
+PHYSICAL_KEY_ENTRY(0x07000E, 37, 0x0025, 0x0028, "KeyK", KeyK)
+PHYSICAL_KEY_ENTRY(0x07000F, 38, 0x0026, 0x0025, "KeyL", KeyL)
+PHYSICAL_KEY_ENTRY(0x070010, 50, 0x0032, 0x002E, "KeyM", KeyM)
+PHYSICAL_KEY_ENTRY(0x070011, 49, 0x0031, 0x002D, "KeyN", KeyN)
+PHYSICAL_KEY_ENTRY(0x070012, 24, 0x0018, 0x001F, "KeyO", KeyO)
+PHYSICAL_KEY_ENTRY(0x070013, 25, 0x0019, 0x0023, "KeyP", KeyP)
+PHYSICAL_KEY_ENTRY(0x070014, 16, 0x0010, 0x000C, "KeyQ", KeyQ)
+PHYSICAL_KEY_ENTRY(0x070015, 19, 0x0013, 0x000F, "KeyR", KeyR)
+PHYSICAL_KEY_ENTRY(0x070016, 31, 0x001F, 0x0001, "KeyS", KeyS)
+PHYSICAL_KEY_ENTRY(0x070017, 20, 0x0014, 0x0011, "KeyT", KeyT)
+PHYSICAL_KEY_ENTRY(0x070018, 22, 0x0016, 0x0020, "KeyU", KeyU)
+PHYSICAL_KEY_ENTRY(0x070019, 47, 0x002F, 0x0009, "KeyV", KeyV)
+PHYSICAL_KEY_ENTRY(0x07001A, 17, 0x0011, 0x000D, "KeyW", KeyW)
+PHYSICAL_KEY_ENTRY(0x07001B, 45, 0x002D, 0x0007, "KeyX", KeyX)
+PHYSICAL_KEY_ENTRY(0x07001C, 21, 0x0015, 0x0010, "KeyY", KeyY)
+PHYSICAL_KEY_ENTRY(0x07001D, 44, 0x002C, 0x0006, "KeyZ", KeyZ)
+
+PHYSICAL_KEY_ENTRY(0x07001E, 2, 0x0002, 0x0012, "Digit1", Digit1)
+PHYSICAL_KEY_ENTRY(0x07001F, 3, 0x0003, 0x0013, "Digit2", Digit2)
+PHYSICAL_KEY_ENTRY(0x070020, 4, 0x0004, 0x0014, "Digit3", Digit3)
+PHYSICAL_KEY_ENTRY(0x070021, 5, 0x0005, 0x0015, "Digit4", Digit4)
+PHYSICAL_KEY_ENTRY(0x070022, 6, 0x0006, 0x0017, "Digit5", Digit5)
+PHYSICAL_KEY_ENTRY(0x070023, 7, 0x0007, 0x0016, "Digit6", Digit6)
+PHYSICAL_KEY_ENTRY(0x070024, 8, 0x0008, 0x001A, "Digit7", Digit7)
+PHYSICAL_KEY_ENTRY(0x070025, 9, 0x0009, 0x001C, "Digit8", Digit8)
+PHYSICAL_KEY_ENTRY(0x070026, 10, 0x000A, 0x0019, "Digit9", Digit9)
+PHYSICAL_KEY_ENTRY(0x070027, 11, 0x000B, 0x001D, "Digit0", Digit0)
+
+PHYSICAL_KEY_ENTRY(0x070028, 28, 0x001C, 0x0024, "Enter", Enter)
+PHYSICAL_KEY_ENTRY(0x070029, 1, 0x0001, 0x0035, "Escape", Escape)
+PHYSICAL_KEY_ENTRY(0x07002A, 14, 0x000E, 0x0033, "Backspace", Backspace)
+PHYSICAL_KEY_ENTRY(0x07002B, 15, 0x000F, 0x0030, "Tab", Tab)
+PHYSICAL_KEY_ENTRY(0x07002C, 57, 0x0039, 0x0031, "Space", Space)
+PHYSICAL_KEY_ENTRY(0x07002D, 12, 0x000C, 0x001B, "Minus", Minus)
+PHYSICAL_KEY_ENTRY(0x07002E, 13, 0x000D, 0x0018, "Equal", Equal)
+PHYSICAL_KEY_ENTRY(0x07002F, 26, 0x001A, 0x0021, "BracketLeft", BracketLeft)
+PHYSICAL_KEY_ENTRY(0x070030, 27, 0x001B, 0x001E, "BracketRight", BracketRight)
+PHYSICAL_KEY_ENTRY(0x070031, 43, 0x002B, 0x002A, "Backslash", Backslash)
+PHYSICAL_KEY_ENTRY(0x070033, 39, 0x0027, 0x0029, "Semicolon", Semicolon)
+PHYSICAL_KEY_ENTRY(0x070034, 40, 0x0028, 0x0027, "Quote", Quote)
+PHYSICAL_KEY_ENTRY(0x070035, 41, 0x0029, 0x0032, "Backquote", Backquote)
+PHYSICAL_KEY_ENTRY(0x070036, 51, 0x0033, 0x002B, "Comma", Comma)
+PHYSICAL_KEY_ENTRY(0x070037, 52, 0x0034, 0x002F, "Period", Period)
+PHYSICAL_KEY_ENTRY(0x070038, 53, 0x0035, 0x002C, "Slash", Slash)
+PHYSICAL_KEY_ENTRY(0x070039, 58, 0x003A, 0x0039, "CapsLock", CapsLock)
+
+PHYSICAL_KEY_ENTRY(0x07003A, 59, 0x003B, 0x007A, "F1", F1)
+PHYSICAL_KEY_ENTRY(0x07003B, 60, 0x003C, 0x0078, "F2", F2)
+PHYSICAL_KEY_ENTRY(0x07003C, 61, 0x003D, 0x0063, "F3", F3)
+PHYSICAL_KEY_ENTRY(0x07003D, 62, 0x003E, 0x0076, "F4", F4)
+PHYSICAL_KEY_ENTRY(0x07003E, 63, 0x003F, 0x0060, "F5", F5)
+PHYSICAL_KEY_ENTRY(0x07003F, 64, 0x0040, 0x0061, "F6", F6)
+PHYSICAL_KEY_ENTRY(0x070040, 65, 0x0041, 0x0062, "F7", F7)
+PHYSICAL_KEY_ENTRY(0x070041, 66, 0x0042, 0x0064, "F8", F8)
+PHYSICAL_KEY_ENTRY(0x070042, 67, 0x0043, 0x0065, "F9", F9)
+PHYSICAL_KEY_ENTRY(0x070043, 68, 0x0044, 0x006D, "F10", F10)
+PHYSICAL_KEY_ENTRY(0x070044, 87, 0x0057, 0x0067, "F11", F11)
+PHYSICAL_KEY_ENTRY(0x070045, 88, 0x0058, 0x006F, "F12", F12)
+
+PHYSICAL_KEY_ENTRY(0x070046, 99, 0xE037, 0x0000, "PrintScreen", PrintScreen)
+PHYSICAL_KEY_ENTRY(0x070047, 70, 0x0046, 0x0000, "ScrollLock", ScrollLock)
+PHYSICAL_KEY_ENTRY(0x070048, 119, 0x0000, 0x0000, "Pause", Pause)
+PHYSICAL_KEY_ENTRY(0x070049, 110, 0xE052, 0x0072, "Insert", Insert)
+PHYSICAL_KEY_ENTRY(0x07004A, 102, 0xE047, 0x0073, "Home", Home)
+PHYSICAL_KEY_ENTRY(0x07004B, 104, 0xE049, 0x0074, "PageUp", PageUp)
+PHYSICAL_KEY_ENTRY(0x07004C, 111, 0xE053, 0x0075, "Delete", Delete)
+PHYSICAL_KEY_ENTRY(0x07004D, 107, 0xE04F, 0x0077, "End", End)
+PHYSICAL_KEY_ENTRY(0x07004E, 109, 0xE051, 0x0079, "PageDown", PageDown)
+PHYSICAL_KEY_ENTRY(0x07004F, 106, 0xE04D, 0x007C, "ArrowRight", ArrowRight)
+PHYSICAL_KEY_ENTRY(0x070050, 105, 0xE04B, 0x007B, "ArrowLeft", ArrowLeft)
+PHYSICAL_KEY_ENTRY(0x070051, 108, 0xE050, 0x007D, "ArrowDown", ArrowDown)
+PHYSICAL_KEY_ENTRY(0x070052, 103, 0xE048, 0x007E, "ArrowUp", ArrowUp)
+
+PHYSICAL_KEY_ENTRY(0x070053, 69, 0x0045, 0x0047, "NumLock", NumLock)
+PHYSICAL_KEY_ENTRY(0x070054, 98, 0xE035, 0x004B, "NumpadDivide", NumpadDivide)
+PHYSICAL_KEY_ENTRY(0x070055, 55, 0x0037, 0x0043, "NumpadMultiply", NumpadMultiply)
+PHYSICAL_KEY_ENTRY(0x070056, 74, 0x004A, 0x004E, "NumpadSubtract", NumpadSubtract)
+PHYSICAL_KEY_ENTRY(0x070057, 78, 0x004E, 0x0045, "NumpadAdd", NumpadAdd)
+PHYSICAL_KEY_ENTRY(0x070058, 96, 0xE01C, 0x004C, "NumpadEnter", NumpadEnter)
+PHYSICAL_KEY_ENTRY(0x070059, 79, 0x004F, 0x0053, "Numpad1", Numpad1)
+PHYSICAL_KEY_ENTRY(0x07005A, 80, 0x0050, 0x0054, "Numpad2", Numpad2)
+PHYSICAL_KEY_ENTRY(0x07005B, 81, 0x0051, 0x0055, "Numpad3", Numpad3)
+PHYSICAL_KEY_ENTRY(0x07005C, 75, 0x004B, 0x0056, "Numpad4", Numpad4)
+PHYSICAL_KEY_ENTRY(0x07005D, 76, 0x004C, 0x0057, "Numpad5", Numpad5)
+PHYSICAL_KEY_ENTRY(0x07005E, 77, 0x004D, 0x0058, "Numpad6", Numpad6)
+PHYSICAL_KEY_ENTRY(0x07005F, 71, 0x0047, 0x0059, "Numpad7", Numpad7)
+PHYSICAL_KEY_ENTRY(0x070060, 72, 0x0048, 0x005B, "Numpad8", Numpad8)
+PHYSICAL_KEY_ENTRY(0x070061, 73, 0x0049, 0x005C, "Numpad9", Numpad9)
+PHYSICAL_KEY_ENTRY(0x070062, 82, 0x0052, 0x0052, "Numpad0", Numpad0)
+PHYSICAL_KEY_ENTRY(0x070063, 83, 0x0053, 0x0041, "NumpadDecimal", NumpadDecimal)
+PHYSICAL_KEY_ENTRY(0x070064, 86, 0x0056, 0x000A, "IntlBackslash", IntlBackslash)
+PHYSICAL_KEY_ENTRY(0x070065, 127, 0xE05D, 0x0000, "ContextMenu", ContextMenu)
+PHYSICAL_KEY_ENTRY(0x070066, 116, 0xE05E, 0x0000, "Power", Power)
+PHYSICAL_KEY_ENTRY(0x070067, 117, 0x0000, 0x0051, "NumpadEqual", NumpadEqual)
+
+PHYSICAL_KEY_ENTRY(0x070087, 89, 0x0073, 0x005E, "IntlRo", IntlRo)
+PHYSICAL_KEY_ENTRY(0x070088, 93, 0x0070, 0x0000, "KanaMode", KanaMode)
+PHYSICAL_KEY_ENTRY(0x070089, 124, 0x007D, 0x005D, "IntlYen", IntlYen)
+PHYSICAL_KEY_ENTRY(0x07008A, 92, 0x0079, 0x0000, "Convert", Convert)
+PHYSICAL_KEY_ENTRY(0x07008B, 94, 0x007B, 0x0000, "NonConvert", NonConvert)
+PHYSICAL_KEY_ENTRY(0x070090, 122, 0x0072, 0x0068, "Lang1", Lang1)
+PHYSICAL_KEY_ENTRY(0x070091, 123, 0x0071, 0x0066, "Lang2", Lang2)
+PHYSICAL_KEY_ENTRY(0x070092, 90, 0x0078, 0x0000, "Lang3", Lang3)
+PHYSICAL_KEY_ENTRY(0x070093, 91, 0x0077, 0x0000, "Lang4", Lang4)
+PHYSICAL_KEY_ENTRY(0x070094, 95, 0x0076, 0x0000, "Lang5", Lang5)
+
+PHYSICAL_KEY_ENTRY(0x0700E0, 29, 0x001D, 0x003B, "ControlLeft", ControlLeft)
+PHYSICAL_KEY_ENTRY(0x0700E1, 42, 0x002A, 0x0038, "ShiftLeft", ShiftLeft)
+PHYSICAL_KEY_ENTRY(0x0700E2, 56, 0x0038, 0x003A, "AltLeft", AltLeft)
+PHYSICAL_KEY_ENTRY(0x0700E3, 125, 0xE05B, 0x0037, "MetaLeft", MetaLeft)
+PHYSICAL_KEY_ENTRY(0x0700E4, 97, 0xE01D, 0x003E, "ControlRight", ControlRight)
+PHYSICAL_KEY_ENTRY(0x0700E5, 54, 0x0036, 0x003C, "ShiftRight", ShiftRight)
+PHYSICAL_KEY_ENTRY(0x0700E6, 100, 0xE038, 0x003D, "AltRight", AltRight)
+PHYSICAL_KEY_ENTRY(0x0700E7, 126, 0xE05C, 0x0036, "MetaRight", MetaRight)
+
+PHYSICAL_KEY_ENTRY(0x0C00E2, 113, 0xE020, 0x004A, "AudioVolumeMute", AudioVolumeMute)
+PHYSICAL_KEY_ENTRY(0x0C00E9, 115, 0xE030, 0x0048, "AudioVolumeUp", AudioVolumeUp)
+PHYSICAL_KEY_ENTRY(0x0C00EA, 114, 0xE02E, 0x0049, "AudioVolumeDown", AudioVolumeDown)

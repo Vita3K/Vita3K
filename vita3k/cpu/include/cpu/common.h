@@ -21,6 +21,7 @@
 #include <mem/util.h> // Address.
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -30,22 +31,11 @@
 struct CPUState;
 struct CPUContext;
 struct CPUInterface;
-struct ThreadState;
 
-typedef std::function<void(CPUState &cpu, uint32_t, Address)> CallSVC;
-
-typedef std::function<Address(Address)> GetWatchMemoryAddr;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::unique_ptr<CPUInterface> CPUInterfacePtr;
-typedef void *ExclusiveMonitorPtr;
 
-struct CPUProtocolBase {
-    virtual void call_svc(CPUState &cpu, uint32_t svc, Address pc, ThreadState &thread) = 0;
-    virtual Address get_watch_memory_addr(Address addr) = 0;
-    virtual Address check_watchpoint(Address addr, bool is_write) = 0;
-    virtual ExclusiveMonitorPtr get_exclusive_monitor() = 0;
-    virtual ~CPUProtocolBase() = default;
-};
+inline constexpr std::size_t MAX_CORE_COUNT = 150;
 
 struct CPUContext {
     CPUContext() = default;

@@ -74,6 +74,7 @@ COMMAND(handle_nop);
 COMMAND(handle_signal_sync_object);
 COMMAND(handle_wait_sync_object);
 COMMAND(handle_notification);
+COMMAND(handle_set_screen_filter);
 COMMAND(new_frame);
 
 } // namespace renderer

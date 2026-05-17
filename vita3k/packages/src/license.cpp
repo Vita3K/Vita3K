@@ -27,7 +27,28 @@
 #include <util/bytes.h>
 #include <util/log.h>
 
+#include <zRIF/keyflate.h>
 #include <zrif2rif.h>
+
+#include <b64/cdecode.h>
+
+#include <cstring>
+
+bool validate_zrif(const std::string &zRIF) {
+    if (zRIF.empty())
+        return false;
+
+    char buf[2048];
+    base64_decodestate state;
+    base64_init_decodestate(&state);
+    const size_t decoded_len = base64_decode_block(zRIF.c_str(), static_cast<int>(zRIF.size()), buf, &state);
+    if (decoded_len == 0)
+        return false;
+
+    uint8_t license[512] = {};
+    const int inflated_len = inflateKey(reinterpret_cast<const uint8_t *>(buf), decoded_len, license, sizeof(license));
+    return inflated_len == 512;
+}
 
 static bool open_license(const fs::path &license_path, SceNpDrmLicense &license_buf) {
     memset(&license_buf, 0, sizeof(SceNpDrmLicense));
@@ -91,6 +112,11 @@ void get_license(EmuEnvState &emuenv, const std::string &title_id, const std::st
 }
 
 bool create_license(EmuEnvState &emuenv, const std::string &zRIF) {
+    if (!validate_zrif(zRIF)) {
+        LOG_ERROR("Invalid zRIF key provided");
+        return false;
+    }
+
     fs::create_directories(emuenv.cache_path);
 
     // Create a temp license file

@@ -24,6 +24,7 @@
 
 #include <display/state.h>
 #include <renderer/gl/functions.h>
+#include <renderer/gl/state.h>
 #include <renderer/vulkan/functions.h>
 #include <renderer/vulkan/state.h>
 #include <renderer/vulkan/types.h>
@@ -73,13 +74,28 @@ COMMAND(handle_notification) {
     renderer.notification_ready.notify_all();
 }
 
+COMMAND(handle_set_screen_filter) {
+    TRACY_FUNC_COMMANDS(handle_set_screen_filter);
+    std::unique_ptr<std::string> filter(helper.pop<std::string *>());
+
+    switch (renderer.current_backend) {
+    case Backend::OpenGL:
+        dynamic_cast<gl::GLState &>(renderer).set_screen_filter(*filter);
+        break;
+
+    case Backend::Vulkan:
+        dynamic_cast<vulkan::VKState &>(renderer).screen_renderer.set_filter(*filter);
+        break;
+    }
+}
+
 COMMAND(new_frame) {
     TRACY_FUNC_COMMANDS(new_frame);
     DisplayFrameInfo *next_frame = helper.pop<DisplayFrameInfo *>();
+    DisplayState *display = helper.pop<DisplayState *>();
 
     if (next_frame) {
         // set the predicted frame as the next one to render
-        DisplayState *display = helper.pop<DisplayState *>();
         std::lock_guard<std::mutex> guard(display->display_info_mutex);
         display->next_rendered_frame = *next_frame;
         delete next_frame;
@@ -88,7 +104,10 @@ COMMAND(new_frame) {
     }
 
     if (renderer.current_backend == Backend::Vulkan) {
-        vulkan::new_frame(*reinterpret_cast<vulkan::VKContext *>(renderer.context));
+        renderer::Context *active_context = helper.pop<renderer::Context *>();
+        if (active_context) {
+            vulkan::new_frame(*reinterpret_cast<vulkan::VKContext *>(active_context));
+        }
     }
 }
 
@@ -96,6 +115,10 @@ COMMAND(new_frame) {
 void finish(State &state, Context *context) {
     // Add NOP then wait for it
     renderer::send_single_command(state, context, renderer::CommandOpcode::Nop, true, 1);
+
+    // unblock game threads if shutting down
+    if (state.render_abort.load(std::memory_order_relaxed))
+        return;
 
     // Wait for the VK wait thread to finish processing all pending requests.
     // Push a callback request on the queue and wait for it to be treated
@@ -118,8 +141,11 @@ int wait_for_status(State &state, int *status, int signal, bool wake_on_equal) {
         return *status;
     }
 
-    // Wait for it to get signaled
-    state.command_finish_one.wait(lock, [&]() { return (*status == signal) ^ wake_on_unequal; });
+    // unblock threads if shutting down
+    state.command_finish_one.wait(lock, [&]() {
+        return state.render_abort.load(std::memory_order_relaxed)
+            || ((*status == signal) ^ wake_on_unequal);
+    });
     return *status;
 }
 

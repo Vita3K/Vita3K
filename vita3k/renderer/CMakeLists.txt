@@ -8,6 +8,7 @@ add_library(
 	src/gl/fence.cpp
 	src/gl/renderer.cpp
 	src/gl/ring_buffer.cpp
+	src/gl/overlay_renderer.cpp
 	src/gl/screen_render.cpp
 	src/gl/surface_cache.cpp
 	src/gl/sync_state.cpp
@@ -22,6 +23,7 @@ add_library(
 	src/vulkan/pipeline_cache.cpp
 	src/vulkan/renderer.cpp
 	src/vulkan/scene.cpp
+	src/vulkan/overlay_renderer.cpp
 	src/vulkan/screen_filters.cpp
 	src/vulkan/screen_renderer.cpp
 	src/vulkan/surface_cache.cpp
@@ -46,11 +48,26 @@ add_library(
 )
 
 target_include_directories(renderer PUBLIC include)
-target_link_libraries(renderer PUBLIC display mem stb shader glutil threads config util vkutil)
-target_link_libraries(renderer PRIVATE ddspp SDL3::SDL3 stb ffmpeg xxHash::xxhash concurrentqueue)
+target_link_libraries(renderer PUBLIC display mem stb shader glutil threads config util vkutil overlay)
+target_link_libraries(renderer PRIVATE dialog ddspp SDL3::SDL3 stb ffmpeg xxHash::xxhash concurrentqueue)
 
 if(ANDROID)
 	target_link_libraries(renderer PRIVATE android adrenotools)
+endif()
+
+if(APPLE)
+	target_sources(renderer PRIVATE src/vulkan/metal_layer.mm)
+	target_link_libraries(renderer PRIVATE "-framework QuartzCore" "-framework Cocoa")
+endif()
+
+if(X11_FOUND)
+	target_link_libraries(renderer PRIVATE ${X11_LIBRARIES})
+	target_include_directories(renderer PRIVATE ${X11_INCLUDE_DIR})
+endif()
+
+if(WAYLAND_FOUND)
+	target_link_libraries(renderer PRIVATE ${WAYLAND_LIBRARIES})
+	target_include_directories(renderer PRIVATE ${WAYLAND_INCLUDE_DIRS})
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")

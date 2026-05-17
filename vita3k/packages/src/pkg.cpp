@@ -352,3 +352,30 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     progress_callback(100);
     return true;
 }
+
+std::string find_pkg_zrif(const fs::path &pkg_path, const fs::path &pref_path) {
+    FILE *infile = FOPEN(pkg_path.c_str(), "rb");
+    if (!infile)
+        return {};
+
+    PkgHeader pkg_header{};
+    fread(&pkg_header, sizeof(PkgHeader), 1, infile);
+    fclose(infile);
+
+    const std::string content_id(pkg_header.content_id);
+    if (content_id.size() < 16)
+        return {};
+
+    const std::string title_id = content_id.substr(7, 9);
+    const auto rif_path = pref_path / "ux0/license" / title_id / (content_id + ".rif");
+
+    if (!fs::exists(rif_path))
+        return {};
+
+    LOG_INFO("Found license file: {}", rif_path);
+    fs::ifstream binfile(rif_path, std::ios::in | std::ios::binary | std::ios::ate);
+    if (!binfile)
+        return {};
+
+    return rif2zrif(binfile);
+}

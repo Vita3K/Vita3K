@@ -145,6 +145,62 @@ VKSurfaceCache::VKSurfaceCache(VKState &state)
     ds_surface_queue.init(max_surfaces_allowed);
 }
 
+void VKSurfaceCache::cleanup() {
+    for (auto &[key, fb] : framebuffer_array) {
+        state.device.destroy(fb.standard);
+        state.device.destroy(fb.shader_interlock);
+    }
+    framebuffer_array.clear();
+
+    for (auto &item : color_surface_queue.items) {
+        auto &info = item.content;
+        for (auto &casted : info.casted_textures) {
+            casted.transition_buffer.destroy();
+            casted.texture.destroy();
+        }
+        info.casted_textures.clear();
+
+        if (info.alternate_view) {
+            state.device.destroy(info.alternate_view);
+            info.alternate_view = nullptr;
+        }
+
+        if (info.blit_image)
+            info.blit_image->destroy();
+        if (info.copy_buffer)
+            info.copy_buffer->destroy();
+
+        info.texture.destroy();
+    }
+
+    for (auto &item : ds_surface_queue.items) {
+        auto &info = item.content;
+        for (auto &read_surface : info.read_surfaces) {
+            read_surface.depth_view.destroy();
+            read_surface.stencil_view.destroy();
+        }
+        info.read_surfaces.clear();
+
+        if (info.depth_view) {
+            state.device.destroy(info.depth_view);
+            info.depth_view = nullptr;
+        }
+        if (info.stencil_view) {
+            state.device.destroy(info.stencil_view);
+            info.stencil_view = nullptr;
+        }
+
+        info.texture.destroy();
+    }
+
+    color_address_lookup.clear();
+    depth_address_lookup.clear();
+    stencil_address_lookup.clear();
+    cpu_surfaces_changed.clear();
+    target = nullptr;
+    last_written_surface = nullptr;
+}
+
 SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(MemState &mem, SceGxmColorSurface *color) {
     // Create the key to access the cache struct
     const uint32_t address = color->data.address();
@@ -1326,6 +1382,9 @@ void VKSurfaceCache::perform_post_surface_sync(const MemState &mem, ColorSurface
 }
 
 void VKSurfaceCache::destroy_associated_framebuffers(const VKRenderTarget *render_target) {
+    if (!render_target)
+        return;
+
     destroy_framebuffers(render_target->color.view);
     destroy_framebuffers(render_target->depthstencil.view);
 }

@@ -95,10 +95,18 @@ public:
         return queue_.size();
     }
 
+    void wake() {
+        condempty_.notify_all();
+    }
+
     void abort() {
         aborted = true;
         condempty_.notify_all();
         cond_.notify_all();
+    }
+
+    bool is_aborted() const {
+        return aborted.load(std::memory_order_relaxed);
     }
 
     void reset() {

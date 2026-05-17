@@ -103,8 +103,13 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePt
             display.vblank_wait_infos.push_back({ wait_thread, target_vcount });
         }
 
-        wait_thread->status_cond.wait(thread_lock, [=]() { return wait_thread->status == ThreadStatus::run; });
+        wait_thread->status_cond.wait(thread_lock, [&]() {
+            return wait_thread->status == ThreadStatus::run || kernel.shutting_down.load(std::memory_order_relaxed);
+        });
     }
+
+    if (kernel.shutting_down.load(std::memory_order_relaxed))
+        return;
 
     if (is_cb) {
         for (auto &[_, cb] : display.vblank_callbacks) {
@@ -214,4 +219,38 @@ void update_prediction(EmuEnvState &emuenv, DisplayFrameInfo &frame) {
 
     // let predict_next_image reset the cycle if necessary
     display.predicted_cycles_seen = std::min(display.predicted_cycles_seen, 1U);
+}
+
+void DisplayState::deinit() {
+    abort = true;
+    if (vblank_thread && vblank_thread->joinable())
+        vblank_thread->join();
+
+    vblank_thread.reset();
+    abort = false;
+
+    {
+        const std::lock_guard<std::mutex> guard(mutex);
+        vblank_wait_infos.clear();
+        vblank_callbacks.clear();
+    }
+
+    {
+        const std::lock_guard<std::mutex> guard(display_info_mutex);
+        sce_frame = {};
+        next_rendered_frame = {};
+    }
+
+    predicted_frames.clear();
+    predicted_frame_position = static_cast<uint32_t>(-1);
+    predicted_cycles_seen = 0;
+    predicting = false;
+    current_sync_object = 0;
+
+    vblank_count = 0;
+    last_setframe_vblank_count = 0;
+
+    fps_hack = false;
+    // pretty sure we set this on game boot
+    fullscreen = false;
 }

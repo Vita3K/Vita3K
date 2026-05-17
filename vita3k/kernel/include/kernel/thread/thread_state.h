@@ -52,6 +52,8 @@ struct ThreadSignal {
     void wait();
     bool send();
 
+    std::atomic<bool> *shutting_down = nullptr;
+
 private:
     std::mutex mutex;
     std::condition_variable recv_cond;
@@ -126,6 +128,7 @@ struct ThreadState {
 
 private:
     void push_arguments(const std::vector<uint32_t> &args);
+    void dispatch_abort(CPUState &cpu);
 
     KernelState &kernel;
 

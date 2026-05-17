@@ -19,6 +19,7 @@
 
 #include <array>
 #include <camera/camera.h>
+#include <camera/state.h>
 #include <rtc/rtc.h>
 #include <stb_image.h>
 #include <util/log.h>
@@ -393,6 +394,23 @@ void Camera::update_config(int type, const std::string &id, const std::string &i
     this->color = color;
     if (is_started)
         refresh_camera_image(this);
+}
+
+void CameraState::deinit() {
+    for (auto &cam : cameras) {
+        if (cam.is_started)
+            cam.stop();
+
+        cam.is_opened = false;
+        cam.is_started = false;
+        cam.info = {};
+        cam.frame_idx = 0;
+        cam.last_frame_timestamp_us = 0;
+        cam.next_frame_timestamp_us = 0;
+        cam.frame_interval_us = 0;
+        cam.tick_diff_us = 0;
+    }
+    active_camera = SCE_CAMERA_DEVICE_UNKNOWN;
 }
 
 BOOST_DESCRIBE_ENUM(SDL_CameraPosition, SDL_CAMERA_POSITION_UNKNOWN, SDL_CAMERA_POSITION_FRONT_FACING, SDL_CAMERA_POSITION_BACK_FACING)

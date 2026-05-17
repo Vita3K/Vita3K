@@ -32,12 +32,16 @@
 #define SDL_CHECK_VOID(f_call) SDL_CHECK_EXT(f_call, )
 #define SDL_CHECK_NEG(f_call) SDL_CHECK_EXT((f_call) >= 0, {})
 
+static int get_threshold_samples(const int device_buffer_samples) {
+    return 4 * device_buffer_samples;
+}
+
 void SDLCALL SDLAudioAdapter::thread_wakeup_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
     assert(userdata != nullptr);
     assert(stream != nullptr);
     SDLAudioOutPort *port = static_cast<SDLAudioOutPort *>(userdata);
     const int samples_available = port->adapter.get_rest_sample(*port);
-    if (samples_available < 2 * port->adapter.device_buffer_samples || additional_amount > 0) {
+    if (samples_available < get_threshold_samples(port->adapter.device_buffer_samples) || additional_amount > 0) {
         port->cond_var.notify_one();
     }
 }
@@ -86,15 +90,21 @@ AudioOutPortPtr SDLAudioAdapter::open_port(int nb_channels, int freq, int nb_sam
     switch_state(false);
     return port;
 }
+
 void SDLAudioAdapter::audio_output(AudioOutPort &out_port, const void *buffer) {
+    if (out_port.stopping)
+        return;
+
     //  Put audio to the port's stream and see how much is left to play.
     SDLAudioOutPort &port = static_cast<SDLAudioOutPort &>(out_port);
     // If there's lots of audio left to play, stop this thread.
     // The audio callback will wake it up later when it's running out of data.
     const int samples_available = get_rest_sample(port);
-    if (samples_available > device_buffer_samples) {
+    if (samples_available > get_threshold_samples(device_buffer_samples)) {
         std::unique_lock<std::mutex> lock(port.mutex);
         port.cond_var.wait_for(lock, std::chrono::microseconds(port.len_microseconds * 2));
+        if (out_port.stopping)
+            return;
     }
     SDL_CHECK_VOID(SDL_PutAudioStreamData(port.stream.get(), buffer, out_port.len_bytes));
 }
@@ -109,4 +119,14 @@ int SDLAudioAdapter::get_rest_sample(AudioOutPort &out_port) {
     SDL_CHECK_NEG(bytes_available);
     // we have the number of bytes left, we can convert it back to the number of samples left
     return bytes_available / SDL_AUDIO_FRAMESIZE(dst_spec);
+}
+
+void SDLAudioAdapter::wake_all_ports() {
+    for (auto &[_, port_ptr] : state.out_ports) {
+        auto &port = static_cast<SDLAudioOutPort &>(*port_ptr);
+        {
+            std::lock_guard<std::mutex> lock(port.mutex);
+        }
+        port.cond_var.notify_all();
+    }
 }

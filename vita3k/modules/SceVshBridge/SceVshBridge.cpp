@@ -17,7 +17,11 @@
 
 #include <module/module.h>
 
+#include <kernel/state.h>
+
 #include "../SceDisplay/SceDisplay.h"
+
+TRACY_MODULE_NAME(SceVshBridge);
 
 EXPORT(int, _vshAppMgrAcInstGetAcdirParam) {
     return UNIMPLEMENTED();
@@ -163,8 +167,17 @@ EXPORT(int, _vshKernelGetCompiledSdkVersionByPid) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _vshKernelSearchModuleByName) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, _vshKernelSearchModuleByName, const char *module_name, const void *buffer) {
+    TRACY_FUNC(_vshKernelSearchModuleByName, module_name, buffer);
+    if (!module_name)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+    for (const auto &[uid, mod] : emuenv.kernel.loaded_modules) {
+        if (strcmp(mod->info.module_name, module_name) == 0)
+            return uid;
+    }
+    return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
 }
 
 EXPORT(int, _vshKernelShutdownSystem) {

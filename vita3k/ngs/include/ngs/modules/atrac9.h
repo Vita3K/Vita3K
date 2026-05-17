@@ -93,6 +93,8 @@ public:
     uint32_t module_id() const override { return 0x5CAA; }
     void on_state_change(const MemState &mem, ModuleData &v, const VoiceState previous) override;
     void on_param_change(const MemState &mem, ModuleData &data) override;
+    void cleanup_voice_state(ModuleData &data) override;
+    static void free_swr_contexts();
 
     static constexpr uint32_t get_max_parameter_size() {
         return sizeof(SceNgsAT9Params);

@@ -51,13 +51,9 @@ jobs:
             cmake_preset: windows-ninja
 
           - os: windows-11-arm
-            arch: arm64
-            cache_path: |
-              C:\vcpkg\installed
-              C:\vcpkg\packages
-            vcpkg_triplet: arm64-windows-static-md
-            extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=arm64-windows-static-md
-            cmake_preset: windows-ninja-clang
+            cache_path: C:\msys2-ccache
+            msys2_env: CLANGARM64
+            cmake_preset: windows-ninja
 
           - os: macos-intel
             runs_on: macos-latest
@@ -112,17 +108,22 @@ jobs:
           curl -sLO https://github.com/linuxdeploy/linuxdeploy/releases/latest/download/linuxdeploy-${{ matrix.arch }}.AppImage
           sudo cp -f linuxdeploy-${{ matrix.arch }}.AppImage /usr/local/bin/
           sudo chmod +x /usr/local/bin/linuxdeploy-${{ matrix.arch }}.AppImage
+
+          # Set up linuxdeploy-plugin-qt for Qt bundling in AppImage
+          curl -sLO https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/latest/download/linuxdeploy-plugin-qt-${{ matrix.arch }}.AppImage
+          sudo cp -f linuxdeploy-plugin-qt-${{ matrix.arch }}.AppImage /usr/local/bin/
+          sudo chmod +x /usr/local/bin/linuxdeploy-plugin-qt-${{ matrix.arch }}.AppImage
         if: startsWith(matrix.os, 'ubuntu')
 
       - name: Set up build environment (Windows)
         run: |
           vcpkg install zlib boost-system boost-filesystem boost-program-options boost-icl boost-variant curl openssl --triplet=${{ matrix.vcpkg_triplet }}
-        if: startsWith(matrix.os, 'windows')
+        if: startsWith(matrix.os, 'windows') && !matrix.msys2_env
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.arch }}
-        if: startsWith(matrix.os, 'windows')
+        if: startsWith(matrix.os, 'windows') && !matrix.msys2_env
 
       - name: Set up build environment (Android)
         run: |
@@ -133,19 +134,40 @@ jobs:
       - uses: hendrikmuhs/ccache-action@v1.2
         if: matrix.os == 'android'
 
-      - uses: mozilla-actions/sccache-action@v0.0.9
-        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'ubuntu')
+      - uses: mozilla-actions/sccache-action@v0.0.10
+        if: (startsWith(matrix.os, 'windows') && !matrix.msys2_env) || startsWith(matrix.os, 'ubuntu')
         with:
           disable_annotations: true
+
+      - name: Set up MSYS2 (Windows ARM)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msys2_env }}
+          update: true
+          cache: true
+          install: |
+            git
+          pacboy: |
+            clang:p
+            ccache:p
+            cmake:p
+            lld:p
+            ninja:p
+            boost:p
+            openssl:p
+            curl:p
+            zlib:p
+            qt6-base:p
+            qt6-svg:p
+            qt6-tools:p
+        if: matrix.msys2_env
 
       - name: Restore Gradle Cache
         uses: actions/cache@v5
         with:
           path: '~/.gradle/'
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('android/**/*.xml') }}-${{ hashFiles('android/**.java') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle', 'android/**/*.properties', 'android/**/*.xml', 'android/**/*.java', 'android/**/*.kt') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('android/**/*.xml') }}-
-            ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-
             ${{ runner.os }}-gradle-
         if: matrix.os == 'android'
 
@@ -162,11 +184,42 @@ jobs:
         run: ccache -z
         if: startsWith(matrix.os, 'macos')
 
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.2'
+          cache: true
+        if: matrix.os != 'android' && !matrix.msys2_env
+
       - name: Build Vita3K
         run: |
           cmake ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
           cmake --build build/${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
-        if: matrix.os != 'android'
+        if: matrix.os != 'android' && !matrix.msys2_env
+
+      - name: Build Vita3K (MSYS2)
+        shell: msys2 {0}
+        run: |
+          export CCACHE_DIR=$(cygpath -u "C:/msys2-ccache")
+          cmake -G "Ninja Multi-Config" -B build/${{ matrix.cmake_preset }} \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build/${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
+        if: matrix.msys2_env
+
+      - name: Deploy MSYS2 runtime libraries
+        shell: msys2 {0}
+        run: |
+          BINDIR="build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}"
+          MSYS2_BINDIR="/${MSYSTEM,,}/bin"
+          for dll in libc++.dll libunwind.dll; do
+            if [ -f "$MSYS2_BINDIR/$dll" ]; then
+              cp "$MSYS2_BINDIR/$dll" "$BINDIR/"
+            fi
+          done
+        if: matrix.msys2_env
 
       - name: Print ccache statistics
         run: ccache -s
@@ -174,7 +227,7 @@ jobs:
 
       - name: Print sccache statistics
         run: sccache --show-stats
-        if: startsWith(matrix.os, 'windows') || startsWith(matrix.os, 'ubuntu')
+        if: (startsWith(matrix.os, 'windows') && !matrix.msys2_env) || startsWith(matrix.os, 'ubuntu')
 
       - name: Build Vita3K (Android)
         env:
@@ -185,23 +238,26 @@ jobs:
           JVM_OPTS: -Xmx6G
           VCPKG_ROOT: /usr/local/share/vcpkg
         run: |
-          cp -r data android/assets
-          cp -r lang android/assets
-          cp -r vita3k/shaders-builtin android/assets
-          export JAVA_HOME=$(echo $JAVA_HOME_17_X64)
+          mkdir -p android/app/assets
+          rm -rf android/app/assets/data android/app/assets/shaders-builtin
+          cp -r data android/app/assets/data
+          cp -r vita3k/shaders-builtin android/app/assets/shaders-builtin
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          chmod +x android/gradlew
           if [ -e "$SIGNING_STORE_PATH" ]; then
             BUILD_TYPE=Release
           else
             BUILD_TYPE=Reldebug
           fi
-          ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assemble${BUILD_TYPE}
-          echo "APK_PATH=android/build/outputs/apk/${BUILD_TYPE,,}/android-${BUILD_TYPE,,}.apk" >> $GITHUB_ENV
+          cd android
+          ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand :app:assemble${BUILD_TYPE}
+          echo "APK_PATH=android/app/build/outputs/apk/${BUILD_TYPE,,}/app-${BUILD_TYPE,,}.apk" >> $GITHUB_ENV
         if: matrix.os == 'android'
 
       - name: Run tests
         working-directory: build/${{ matrix.cmake_preset }}
         run: ctest --build-config ${{ env.BUILD_CONFIG }} --output-on-failure
-        if: matrix.os != 'android'
+        if: matrix.os != 'android' && !matrix.msys2_env
 
       - name: Compute git short SHA
         shell: bash

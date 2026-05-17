@@ -1,0 +1,101 @@
+{
+  "common.cancel": {
+    "message": "Annuleren"
+  },
+  "common.yes": {
+    "message": "Ja"
+  },
+  "common.no": {
+    "message": "Nee"
+  },
+  "common.delete": {
+    "message": "Verwijderen"
+  },
+  "common.please_wait": {
+    "message": "Een ogenblik geduld..."
+  },
+  "common.an_error_occurred": {
+    "message": "Er is een fout opgetreden.\nFoutcode: {}"
+  },
+  "common.could_not_load": {
+    "message": "Kan het bestand niet laden."
+  },
+  "common.could_not_save": {
+    "message": "Kan het bestand niet opslaan."
+  },
+  "common.file_corrupted": {
+    "message": "Het bestand is beschadigd."
+  },
+  "common.microphone_disabled": {
+    "message": "Schakel de microfoon in."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Opslaan"
+  },
+  "dialog.save_data.load.title": {
+    "message": "Laden"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Bezig met opslaan..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Bezig met laden..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Opslaan voltooid."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Het laden is voltooid."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Het verwijderen is voltooid."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "Nieuwe opgeslagen data"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "Er zijn geen opgeslagen data."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "Wil je de data opslaan?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "Wil je deze opgeslagen data laden?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "Wil je deze opgeslagen data verwijderen?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "Wil je deze opgeslagen data overschrijven?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "Wil je het opslaan annuleren?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "Wil je het laden annuleren?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "Wil je het verwijderen annuleren?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Bezig met opslaan...\nSchakel het systeem niet uit en sluit de applicatie niet."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "Kan het bestand niet opslaan.\nEr is onvoldoende vrije ruimte op de geheugenkaart. Om je voortgang in de applicatie te kunnen opslaan, moet je tenminste {} vrije ruimte maken.\n\nOm vrije ruimte te maken, druk je op de PS-toets om deze applicatie te pauzeren en verwijder je vervolgens andere applicaties of content."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "Er is onvoldoende vrije ruimte op de geheugenkaart.\nOm de applicatie te kunnen blijven gebruiken, moet je tenminste {} vrije ruimte maken.\n\nDruk op de PS-toets om deze applicatie te pauzeren en verwijder andere applicaties of content."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Details"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Geüpdatet"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Bezig met het voorbereiden voor het starten van de applicatie..."
+  },
+  "overlay.trophy_earned": {
+    "message": "Je hebt een trofee gewonnen!"
+  }
+}

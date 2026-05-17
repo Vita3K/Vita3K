@@ -18,11 +18,9 @@
 #pragma once
 
 #include <cstdint>
-#include <imgui.h>
+#include <ctime>
 #include <map>
 #include <string>
-
-namespace compat {
 
 enum CompatibilityState {
     UNKNOWN = -1,
@@ -41,10 +39,16 @@ struct Compatibility {
     time_t updated_at;
 };
 
-struct CompatState {
-    bool compat_db_loaded = false;
-    std::map<std::string, Compatibility> app_compat_db;
-    static std::map<CompatibilityState, ImVec4> compat_color;
+struct UpdateInfo {
+    std::string latest_ver;
+    bool needs_update;
 };
 
-} // namespace compat
+struct CompatState {
+    bool compat_db_loaded = false;
+    bool log_compat_warn = false;
+    std::string db_updated_at;
+    uint32_t db_issue_count{};
+
+    std::map<std::string, Compatibility> app_compat_db;
+};
