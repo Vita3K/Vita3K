@@ -122,6 +122,7 @@ public class Emulator extends SDLActivity
     public void setCurrentGameId(String gameId){
         runOnUiThread(() -> {
             currentGameId = gameId != null ? gameId : "";
+            refreshControllerOverlayScope();
             if (sessionViewModel != null) {
                 String runningAppTitle = "";
                 try {
@@ -158,6 +159,7 @@ public class Emulator extends SDLActivity
                 if (overlay != null && overlay.getParent() == null) {
                     ((ViewGroup) mSurface.getParent()).addView(overlay);
                 }
+                refreshControllerOverlayScope();
                 refreshUiState(true);
             }
         });
@@ -219,6 +221,7 @@ public class Emulator extends SDLActivity
             inputManager.registerInputDeviceListener(this, null);
         }
         updateControllerConnectionState();
+        refreshControllerOverlayScope();
         syncOverlayFromSession();
         installImeOverlay();
         installPauseMenu();
@@ -436,6 +439,13 @@ public class Emulator extends SDLActivity
             return overlay.captureLayout();
 
         return OverlayStore.defaultLayout(this);
+    }
+
+    public void refreshControllerOverlayScope() {
+        InputOverlay overlay = getmOverlay();
+        if (overlay != null) {
+            overlay.refreshOverlayScope(currentGameId);
+        }
     }
 
     public void requestNativeQuit() {

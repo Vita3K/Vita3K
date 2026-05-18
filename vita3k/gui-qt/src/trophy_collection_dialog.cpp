@@ -21,13 +21,9 @@
 
 #include <config/state.h>
 #include <gui-qt/gui_settings.h>
-#include <io/functions.h>
+#include <io/state.h>
 #include <np/state.h>
-#include <np/trophy/context.h>
 #include <util/fs.h>
-#include <util/log.h>
-
-#include <pugixml.hpp>
 
 #include <QApplication>
 #include <QCheckBox>
@@ -40,10 +36,12 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
+#include <QPainter>
 #include <QProgressDialog>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QStackedWidget>
+#include <QStyledItemDelegate>
 #include <QTableView>
 #include <QtConcurrent>
 
@@ -54,6 +52,49 @@ static constexpr int RoleEarned = Qt::UserRole + 4;
 static constexpr int RoleTrophyId = Qt::UserRole + 5;
 static constexpr int RoleTimestamp = Qt::UserRole + 6;
 static constexpr int RoleOriginalPixmap = Qt::UserRole + 7;
+
+namespace {
+
+np::trophy::CollectionSource make_collection_source(const EmuEnvState &emuenv) {
+    np::trophy::CollectionSource source;
+    source.io = const_cast<IOState *>(&emuenv.io);
+    source.pref_path = emuenv.pref_path;
+    source.user_id = emuenv.io.user_id;
+    source.lang = static_cast<uint32_t>(emuenv.cfg.sys_lang);
+    return source;
+}
+
+class CenteredIconDelegate final : public QStyledItemDelegate {
+public:
+    explicit CenteredIconDelegate(QObject *parent = nullptr)
+        : QStyledItemDelegate(parent) {}
+
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override {
+        QStyleOptionViewItem opt = option;
+        initStyleOption(&opt, index);
+        opt.state &= ~QStyle::State_HasFocus;
+        opt.text.clear();
+        opt.icon = QIcon();
+
+        QStyle *style = opt.widget ? opt.widget->style() : QApplication::style();
+        style->drawPrimitive(QStyle::PE_PanelItemViewItem, &opt, painter, opt.widget);
+
+        const QVariant decoration = index.data(Qt::DecorationRole);
+        if (!decoration.canConvert<QPixmap>())
+            return;
+
+        const QPixmap pixmap = decoration.value<QPixmap>();
+        if (pixmap.isNull())
+            return;
+
+        const QSizeF size = pixmap.deviceIndependentSize();
+        const int x = opt.rect.x() + qRound((opt.rect.width() - size.width()) / 2.0);
+        const int y = opt.rect.y() + qRound((opt.rect.height() - size.height()) / 2.0);
+        painter->drawPixmap(x, y, pixmap);
+    }
+};
+
+} // namespace
 
 bool TrophyFilterProxy::filterAcceptsRow(int src_row, const QModelIndex &) const {
     const QStandardItemModel *m = qobject_cast<const QStandardItemModel *>(sourceModel());
@@ -120,6 +161,7 @@ TrophyCollectionDialog::TrophyCollectionDialog(EmuEnvState &emuenv,
     m_app_table->horizontalHeader()->setSectionResizeMode(AC_Progress, QHeaderView::ResizeToContents);
     m_app_table->horizontalHeader()->setSectionResizeMode(AC_Trophies, QHeaderView::ResizeToContents);
     m_app_table->setContextMenuPolicy(Qt::CustomContextMenu);
+    m_app_table->setItemDelegateForColumn(AC_Icon, new CenteredIconDelegate(m_app_table));
 
     m_trophy_model = new QStandardItemModel(0, TC_Count, this);
     m_trophy_model->setHorizontalHeaderLabels({ tr("Icon"), tr("Name"), tr("Description"),
@@ -152,6 +194,7 @@ TrophyCollectionDialog::TrophyCollectionDialog(EmuEnvState &emuenv,
     m_trophy_table->horizontalHeader()->setSectionResizeMode(TC_Id, QHeaderView::ResizeToContents);
     m_trophy_table->horizontalHeader()->setSectionResizeMode(TC_Time, QHeaderView::ResizeToContents);
     m_trophy_table->setContextMenuPolicy(Qt::CustomContextMenu);
+    m_trophy_table->setItemDelegateForColumn(TC_Icon, new CenteredIconDelegate(m_trophy_table));
 
     m_progress_label = new QLabel(tr("Progress: 0% (0/0)"), this);
 
@@ -299,33 +342,20 @@ TrophyCollectionDialog::~TrophyCollectionDialog() {
 void TrophyCollectionDialog::load_all_apps() {
     m_db.clear();
 
-    const fs::path trophy_conf = m_emuenv.pref_path
-        / "ux0/user" / m_emuenv.io.user_id / "trophy/conf";
-
-    if (!fs::exists(trophy_conf) || fs::is_empty(trophy_conf)) {
+    const auto collection_ids = np::trophy::list_collection_ids(make_collection_source(m_emuenv));
+    if (collection_ids.empty()) {
         populate_app_table();
         return;
     }
 
-    QStringList dirs;
-    for (const auto &entry : fs::directory_iterator(trophy_conf)) {
-        if (fs::is_directory(entry))
-            dirs << gui::utils::to_qt_path(entry.path().filename());
-    }
-
-    if (dirs.isEmpty()) {
-        populate_app_table();
-        return;
-    }
-
-    QProgressDialog progress(tr("Loading trophies…"), tr("Cancel"), 0, dirs.size(), this);
+    QProgressDialog progress(tr("Loading trophies…"), tr("Cancel"), 0, static_cast<int>(collection_ids.size()), this);
     progress.setWindowModality(Qt::WindowModal);
     progress.setMinimumDuration(0);
 
-    for (int i = 0; i < dirs.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(collection_ids.size()); ++i) {
         if (progress.wasCanceled())
             break;
-        load_app_data(dirs[i]);
+        load_app_data(QString::fromStdString(collection_ids[i]));
         progress.setValue(i + 1);
     }
 
@@ -333,97 +363,25 @@ void TrophyCollectionDialog::load_all_apps() {
 }
 
 bool TrophyCollectionDialog::load_app_data(const QString &np_com_id_str) {
-    const std::string np_com_id = np_com_id_str.toStdString();
-    const fs::path base = m_emuenv.pref_path / "ux0/user"
-        / m_emuenv.io.user_id / "trophy";
-    const fs::path conf_path = base / "conf" / np_com_id;
-    const fs::path dat_path = base / "data" / np_com_id / "TROPUSR.DAT";
-
-    if (!fs::exists(dat_path)) {
-        LOG_ERROR("TROPUSR.DAT missing for {}", np_com_id);
+    auto data = load_app_data_entry(np_com_id_str);
+    if (!data)
         return false;
-    }
-
-    auto data = std::make_unique<TrophyAppData>();
-    data->np_com_id = np_com_id;
-    data->context.io = &m_emuenv.io;
-    data->context.pref_path = m_emuenv.pref_path;
-    data->context.trophy_progress_output_file_path = "ux0:user/" + m_emuenv.io.user_id
-        + "/trophy/data/" + np_com_id + "/TROPUSR.DAT";
-
-    {
-        const SceUID fh = open_file(m_emuenv.io,
-            data->context.trophy_progress_output_file_path.c_str(),
-            SCE_O_RDONLY, m_emuenv.pref_path, "trophy_collection");
-        if (fh < 0) {
-            LOG_ERROR("Failed to open TROPUSR.DAT for {}", np_com_id);
-            return false;
-        }
-        const bool loaded = data->context.load_trophy_progress_file(fh);
-        close_file(m_emuenv.io, fh, "trophy_collection");
-        if (!loaded) {
-            LOG_ERROR("Failed to parse TROPUSR.DAT for {}", np_com_id);
-            return false;
-        }
-    }
-
-    const auto sfm_locale = fmt::format("TROP_{:0>2d}.SFM", m_emuenv.cfg.sys_lang);
-    const fs::path sfm = fs::exists(conf_path / sfm_locale)
-        ? conf_path / sfm_locale
-        : conf_path / "TROP.SFM";
-
-    pugi::xml_document doc;
-    if (!doc.load_file(sfm.c_str())) {
-        LOG_ERROR("Failed to parse {}", sfm);
-        return false;
-    }
-
-    const auto root = doc.child("trophyconf");
-    data->title = QString::fromStdString(root.child("title-name").text().as_string());
-
-    const auto icon_locale = fmt::format("ICON0_{:0>2d}.PNG", m_emuenv.cfg.sys_lang);
-    data->icon_path = gui::utils::to_qt_path(
-        fs::exists(conf_path / icon_locale)
-            ? (conf_path / icon_locale)
-            : (conf_path / "ICON0.PNG"));
-
-    for (const auto &node : root.children("trophy")) {
-        TrophyEntry e;
-        e.id = node.attribute("id").as_int();
-        e.hidden = node.attribute("hidden").as_string()[0] == 'y';
-        e.name = QString::fromStdString(node.child("name").text().as_string());
-        e.detail = QString::fromStdString(node.child("detail").text().as_string());
-
-        switch (node.attribute("ttype").as_string()[0]) {
-        case 'B': e.grade = static_cast<int>(np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE); break;
-        case 'S': e.grade = static_cast<int>(np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER); break;
-        case 'G': e.grade = static_cast<int>(np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD); break;
-        case 'P': e.grade = static_cast<int>(np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM); break;
-        default: break;
-        }
-
-        e.earned = data->context.is_trophy_unlocked(e.id);
-        e.timestamp = e.earned ? data->context.unlock_timestamps[e.id] : 0;
-
-        if (e.earned) {
-            data->unlocked++;
-            data->grade_unlocked[e.grade]++;
-        }
-
-        data->trophies.push_back(std::move(e));
-    }
-
-    data->total = static_cast<int>(data->trophies.size());
-
     m_db.push_back(std::move(data));
     return true;
+}
+
+std::unique_ptr<TrophyAppData> TrophyCollectionDialog::load_app_data_entry(const QString &np_com_id_str) const {
+    auto data = std::make_unique<TrophyAppData>();
+    if (!np::trophy::load_collection(make_collection_source(m_emuenv), np_com_id_str.toStdString(), *data))
+        return nullptr;
+    return data;
 }
 
 void TrophyCollectionDialog::populate_app_table() {
     m_app_model->removeRows(0, m_app_model->rowCount());
 
     std::sort(m_db.begin(), m_db.end(), [](const auto &a, const auto &b) {
-        return a->title.toLower() < b->title.toLower();
+        return QString::fromStdString(a->title).toLower() < QString::fromStdString(b->title).toLower();
     });
 
     for (int i = 0; i < static_cast<int>(m_db.size()); ++i) {
@@ -431,7 +389,7 @@ void TrophyCollectionDialog::populate_app_table() {
         const int pct = g.total > 0 ? (g.unlocked * 100 / g.total) : 0;
 
         auto *icon_item = new QStandardItem;
-        auto *name_item = new QStandardItem(g.title);
+        auto *name_item = new QStandardItem(QString::fromStdString(g.title));
         auto *progress_item = new QStandardItem(tr("%1% (%2/%3)").arg(pct).arg(g.unlocked).arg(g.total));
         auto *trophy_item = new QStandardItem(QString::number(g.total));
 
@@ -441,7 +399,7 @@ void TrophyCollectionDialog::populate_app_table() {
 
         m_app_model->appendRow({ icon_item, name_item, progress_item, trophy_item });
 
-        load_app_icon_async(i, g.icon_path);
+        load_app_icon_async(i, QString::fromUtf8(g.icon_path.c_str()));
     }
 
     adjust_app_icon_column();
@@ -471,15 +429,12 @@ void TrophyCollectionDialog::populate_trophy_table(int app_idx) {
         }
     };
 
-    const fs::path conf_path = m_emuenv.pref_path / "ux0/user"
-        / m_emuenv.io.user_id / "trophy/conf" / g.np_com_id;
-
     for (int row = 0; row < static_cast<int>(g.trophies.size()); ++row) {
         const auto &t = g.trophies[row];
 
         auto *icon_item = new QStandardItem;
-        auto *name_item = new QStandardItem(t.name);
-        auto *detail_item = new QStandardItem(t.detail);
+        auto *name_item = new QStandardItem(QString::fromStdString(t.name));
+        auto *detail_item = new QStandardItem(QString::fromStdString(t.detail));
         auto *grade_item = new QStandardItem(grade_str(t.grade));
         auto *status_item = new QStandardItem(t.earned ? tr("Earned") : tr("Not Earned"));
         auto *id_item = new QStandardItem(QString::number(t.id));
@@ -496,9 +451,7 @@ void TrophyCollectionDialog::populate_trophy_table(int app_idx) {
         m_trophy_model->appendRow({ icon_item, name_item, detail_item,
             grade_item, status_item, id_item, time_item });
 
-        const QString icon_path = gui::utils::to_qt_path(
-            conf_path / fmt::format("TROP{:0>3d}.PNG", t.id));
-        load_trophy_icon_async(row, icon_path);
+        load_trophy_icon_async(row, QString::fromUtf8(t.icon_path.c_str()));
     }
 
     adjust_trophy_icon_column();
@@ -782,7 +735,7 @@ void TrophyCollectionDialog::show_app_context_menu(const QPoint &pos) {
     if (db_idx < 0 || db_idx >= static_cast<int>(m_db.size()))
         return;
 
-    const QString name = m_db[db_idx]->title;
+    const QString name = QString::fromStdString(m_db[db_idx]->title);
     const fs::path conf = m_emuenv.pref_path / "ux0/user"
         / m_emuenv.io.user_id / "trophy/conf" / m_db[db_idx]->np_com_id;
     const fs::path data_dir = m_emuenv.pref_path / "ux0/user"
@@ -832,11 +785,21 @@ void TrophyCollectionDialog::refresh_app(const QString &np_com_id) {
     for (int i = 0; i < static_cast<int>(m_db.size()); ++i) {
         if (QString::fromStdString(m_db[i]->np_com_id) != np_com_id)
             continue;
-        if (load_app_data(np_com_id)) {
-            m_db.erase(m_db.begin() + i);
-        }
-        if (m_selected_app_idx == i)
+
+        auto refreshed = load_app_data_entry(np_com_id);
+        if (!refreshed)
+            break;
+
+        m_db[i] = std::move(refreshed);
+        const bool trophy_view = m_stacked && (m_stacked->currentIndex() == 1);
+        populate_app_table();
+
+        if (m_selected_app_idx == i) {
+            m_app_table->selectRow(i);
             populate_trophy_table(i);
+            if (trophy_view)
+                m_stacked->setCurrentIndex(1);
+        }
         break;
     }
 }

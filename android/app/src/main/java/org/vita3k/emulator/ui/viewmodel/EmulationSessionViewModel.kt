@@ -10,14 +10,12 @@ import org.vita3k.emulator.NativeLib
 import org.vita3k.emulator.data.NativeImeState
 import org.vita3k.emulator.overlay.DEFAULT_OVERLAY_MASK
 import org.vita3k.emulator.overlay.OverlayConfig
-import org.vita3k.emulator.overlay.OverlayLayout
 import org.vita3k.emulator.overlay.OverlayState
 import org.vita3k.emulator.overlay.OverlayStore
 
 data class EmulationSessionUiState(
     val titleId: String = "",
     val gameTitle: String = "",
-    val hasCustomConfig: Boolean = false,
     val showMenu: Boolean = false,
     val isPaused: Boolean = false,
     val isEditingControls: Boolean = false,
@@ -31,7 +29,6 @@ data class EmulationSessionUiState(
     val hideToggleVisible: Boolean = false,
     val overlayScale: Int = 100,
     val overlayOpacity: Int = 100,
-    val overlayLayout: OverlayLayout = OverlayLayout(),
     val hideOverlayWhenControllerConnected: Boolean = true,
     val controllerConnected: Boolean = false,
     val statusMessage: String? = null
@@ -40,6 +37,7 @@ data class EmulationSessionUiState(
 class EmulationSessionViewModel(application: Application) : AndroidViewModel(application) {
 
     private var initialized = false
+    private var useGameOverlayOverride = false
 
     var uiState by mutableStateOf(EmulationSessionUiState())
         private set
@@ -55,12 +53,12 @@ class EmulationSessionViewModel(application: Application) : AndroidViewModel(app
         val resolvedTitleId = titleId.orEmpty()
         val resolved = resolveOverlayState(resolvedTitleId)
         uiState = uiState
-            .withOverlayState(resolved.second)
+            .withOverlayConfig(resolved.second.config)
             .copy(
                 titleId = resolvedTitleId,
-                gameTitle = gameTitle.orEmpty(),
-                hasCustomConfig = resolved.first
+                gameTitle = gameTitle.orEmpty()
             )
+        useGameOverlayOverride = resolved.first
         initialized = true
     }
 
@@ -68,17 +66,16 @@ class EmulationSessionViewModel(application: Application) : AndroidViewModel(app
         val resolvedTitleId = titleId.orEmpty()
         val resolved = resolveOverlayState(resolvedTitleId)
         uiState = uiState
-            .withOverlayState(resolved.second)
+            .withOverlayConfig(resolved.second.config)
             .copy(
                 titleId = resolvedTitleId,
-                gameTitle = gameTitle.orEmpty(),
-                hasCustomConfig = resolved.first
+                gameTitle = gameTitle.orEmpty()
             )
+        useGameOverlayOverride = resolved.first
         initialized = true
     }
 
     fun applyOverlayState(emulator: Emulator) {
-        emulator.setControllerOverlayLayout(uiState.overlayLayout)
         emulator.setControllerOverlayScale(uiState.overlayScale / 100f)
         emulator.setControllerOverlayOpacity(uiState.overlayOpacity)
         val visibleMask = when {
@@ -239,12 +236,9 @@ class EmulationSessionViewModel(application: Application) : AndroidViewModel(app
 
     fun finishControlsEditor(emulator: Emulator) {
         releaseInputs(emulator)
-        val updatedOverlayState = currentOverlayState().copy(
-            layout = emulator.captureControllerOverlayLayout()
-        )
-        val hasCustomConfig = persistOverlayState(updatedOverlayState)
-        uiState = uiState.withOverlayState(updatedOverlayState).copy(
-            hasCustomConfig = hasCustomConfig,
+        val updatedOverlayState = captureOverlayState(emulator)
+        persistOverlayState(updatedOverlayState)
+        uiState = uiState.withOverlayConfig(updatedOverlayState.config).copy(
             showMenu = true,
             isPaused = uiState.wasPausedBeforeControlsEditor,
             isEditingControls = false,
@@ -256,14 +250,14 @@ class EmulationSessionViewModel(application: Application) : AndroidViewModel(app
     }
 
     fun resetControlsLayout(emulator: Emulator) {
-        val updatedOverlayState = currentOverlayState().copy(
-            layout = OverlayStore.defaultLayout(getApplication())
+        val defaultLayout = OverlayStore.defaultLayout(getApplication())
+        emulator.setControllerOverlayLayout(defaultLayout)
+        val updatedOverlayState = OverlayState(
+            config = currentOverlayConfig(),
+            layout = defaultLayout
         )
-        val hasCustomConfig = persistOverlayState(updatedOverlayState)
-        uiState = uiState.withOverlayState(updatedOverlayState).copy(
-            hasCustomConfig = hasCustomConfig,
-            statusMessage = null
-        )
+        persistOverlayState(updatedOverlayState)
+        uiState = uiState.copy(statusMessage = null)
         applyOverlayState(emulator)
     }
 
@@ -284,15 +278,46 @@ class EmulationSessionViewModel(application: Application) : AndroidViewModel(app
     }
 
     fun currentOverlayConfig(): OverlayConfig {
-        return currentOverlayState().config
+        return OverlayConfig(
+            overlayMask = uiState.overlayMask,
+            overlayScale = uiState.overlayScale,
+            overlayOpacity = uiState.overlayOpacity,
+            hideOverlayWhenControllerConnected = uiState.hideOverlayWhenControllerConnected
+        ).normalized()
     }
 
     fun updateOverlayConfig(emulator: Emulator, transform: (OverlayConfig) -> OverlayConfig) {
-        val updatedOverlayState = currentOverlayState().copy(
+        val updatedOverlayState = captureOverlayState(
+            emulator = emulator,
             config = transform(currentOverlayConfig()).normalized()
         )
-        val hasCustomConfig = persistOverlayState(updatedOverlayState)
-        uiState = uiState.withOverlayState(updatedOverlayState).copy(hasCustomConfig = hasCustomConfig)
+        persistOverlayState(updatedOverlayState)
+        uiState = uiState.withOverlayConfig(updatedOverlayState.config)
+        applyOverlayState(emulator)
+    }
+
+    fun promoteOverlayToGameOverride(emulator: Emulator) {
+        val titleId = uiState.titleId
+        if (titleId.isBlank()) {
+            return
+        }
+
+        OverlayStore.saveGameOverride(getApplication(), titleId, captureOverlayState(emulator))
+        useGameOverlayOverride = true
+    }
+
+    fun clearGameOverlayOverride(emulator: Emulator) {
+        val titleId = uiState.titleId
+        if (titleId.isBlank()) {
+            return
+        }
+
+        OverlayStore.deleteGameOverride(getApplication(), titleId)
+        useGameOverlayOverride = false
+        emulator.refreshControllerOverlayScope()
+        val resolved = resolveOverlayState(titleId)
+        useGameOverlayOverride = resolved.first
+        uiState = uiState.withOverlayConfig(resolved.second.config)
         applyOverlayState(emulator)
     }
 
@@ -300,41 +325,32 @@ class EmulationSessionViewModel(application: Application) : AndroidViewModel(app
         return if (uiState.overlayMask == 0) DEFAULT_OVERLAY_MASK else uiState.overlayMask
     }
 
-    private fun currentOverlayState(): OverlayState {
+    private fun captureOverlayState(
+        emulator: Emulator,
+        config: OverlayConfig = currentOverlayConfig()
+    ): OverlayState {
         return OverlayState(
-            config = OverlayConfig(
-                overlayMask = uiState.overlayMask,
-                overlayScale = uiState.overlayScale,
-                overlayOpacity = uiState.overlayOpacity,
-                hideOverlayWhenControllerConnected = uiState.hideOverlayWhenControllerConnected
-            ).normalized(),
-            layout = uiState.overlayLayout.normalized()
+            config = config.normalized(),
+            layout = emulator.captureControllerOverlayLayout().normalized()
         )
     }
 
-    private fun persistOverlayState(state: OverlayState): Boolean {
-        val hasCustomConfig = resolveHasCustomConfig(uiState.titleId)
-        if (hasCustomConfig && uiState.titleId.isNotBlank()) {
+    private fun persistOverlayState(state: OverlayState) {
+        if (useGameOverlayOverride && uiState.titleId.isNotBlank()) {
             OverlayStore.saveGameOverride(getApplication(), uiState.titleId, state)
         } else {
             OverlayStore.saveGlobalState(getApplication(), state)
         }
-        return hasCustomConfig
     }
 
     private fun resolveOverlayState(titleId: String): Pair<Boolean, OverlayState> {
-        val hasCustomConfig = resolveHasCustomConfig(titleId)
+        val useGameOverride = titleId.isNotBlank() && OverlayStore.hasGameOverride(getApplication(), titleId)
         val overlayState = OverlayStore.resolveState(
             context = getApplication(),
             scopeId = titleId,
-            allowGameOverride = hasCustomConfig
+            allowGameOverride = useGameOverride
         )
-        return hasCustomConfig to overlayState
-    }
-
-    private fun resolveHasCustomConfig(titleId: String): Boolean {
-        return titleId.isNotBlank() &&
-            runCatching { NativeLib.hasCustomConfig(titleId) }.getOrDefault(false)
+        return useGameOverride to overlayState
     }
 
     private fun releaseInputs(emulator: Emulator) {
@@ -353,8 +369,8 @@ class EmulationSessionViewModel(application: Application) : AndroidViewModel(app
         return runCatching { NativeLib.isAppPaused() }.getOrDefault(false)
     }
 
-    private fun EmulationSessionUiState.withOverlayState(state: OverlayState): EmulationSessionUiState {
-        val normalized = state.config.normalized()
+    private fun EmulationSessionUiState.withOverlayConfig(config: OverlayConfig): EmulationSessionUiState {
+        val normalized = config.normalized()
         return copy(
             controlsVisible = normalized.controlsVisible,
             overlayMask = normalized.overlayMask,
@@ -364,7 +380,6 @@ class EmulationSessionViewModel(application: Application) : AndroidViewModel(app
             hideToggleVisible = normalized.hideToggleVisible,
             overlayScale = normalized.overlayScale,
             overlayOpacity = normalized.overlayOpacity,
-            overlayLayout = state.layout.normalized(),
             hideOverlayWhenControllerConnected = normalized.hideOverlayWhenControllerConnected
         )
     }

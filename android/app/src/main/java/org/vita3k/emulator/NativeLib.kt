@@ -3,6 +3,7 @@ package org.vita3k.emulator
 import org.vita3k.emulator.data.EmulatorConfig
 import org.vita3k.emulator.data.InstallCallback
 import org.vita3k.emulator.data.NativeAppInfo
+import org.vita3k.emulator.data.NativeTrophyCollection
 import org.vita3k.emulator.data.NativeUser
 
 /**
@@ -42,6 +43,10 @@ object NativeLib {
     external fun installCompatibilityDatabase(zipData: ByteArray, version: String): Boolean
     /** Returns the installed application size in bytes, or 0 on error. */
     external fun getAppInstallSize(titleId: String): Long
+
+    // --- Trophies ---
+    /** Returns all trophy collections visible to the active user. */
+    external fun getTrophyCollections(): Array<NativeTrophyCollection>?
 
     // --- Installation ---
     /** Installs firmware from PUP file. Returns version string on success, empty on failure. */

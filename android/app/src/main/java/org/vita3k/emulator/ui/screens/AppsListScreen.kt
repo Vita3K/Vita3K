@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
@@ -107,6 +108,7 @@ fun AppsListScreen(
     onRefresh: () -> Unit,
     onInstallClick: () -> Unit,
     onOpenSettings: () -> Unit = {},
+    onOpenTrophyManager: () -> Unit = {},
     onOpenUserManagement: () -> Unit = {},
     onOpenWelcomeScreen: () -> Unit = {},
     onOpenCustomConfig: (AppInfo) -> Unit = {}
@@ -186,6 +188,10 @@ fun AppsListScreen(
                                 onRefresh = {
                                     showOverflowMenu = false
                                     onRefresh()
+                                },
+                                onTrophyManager = {
+                                    showOverflowMenu = false
+                                    onOpenTrophyManager()
                                 },
                                 onUserManagement = {
                                     showOverflowMenu = false
@@ -650,6 +656,7 @@ private fun AppsListOverflowMenu(
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     onRefresh: () -> Unit,
+    onTrophyManager: () -> Unit,
     onUserManagement: () -> Unit,
     onWelcomeScreen: () -> Unit,
     onCheckForUpdates: () -> Unit,
@@ -675,6 +682,16 @@ private fun AppsListOverflowMenu(
                     )
                 },
                 onClick = onRefresh
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.apps_list_menu_trophies)) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEvents,
+                        contentDescription = null
+                    )
+                },
+                onClick = onTrophyManager
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.apps_list_menu_users)) },
