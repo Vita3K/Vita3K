@@ -23,6 +23,6 @@
 #include <array>
 
 std::array<ControllerBinding, 15> get_controller_bindings_ext(EmuEnvState &emuenv);
-SceCtrlExternalInputMode get_type_of_controller(const int idx);
+SceCtrlExternalInputMode get_type_of_controller(CtrlState &state, int port);
 int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2 *pData, SceUInt32 count, bool negative, bool is_peek, bool is_v2, bool from_ext);
 void refresh_controllers(CtrlState &state, EmuEnvState &emuenv);

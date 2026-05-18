@@ -256,18 +256,22 @@ void PipelineCache::set_async_compilation(bool enable) {
 
     if (enable) {
         LOG_INFO("Enabling asynchronous pipeline compilation with {} threads", nb_worker_threads);
-        // launch all the threads
+        worker_threads.reserve(nb_worker_threads);
         for (int i = 0; i < nb_worker_threads; i++) {
-            std::thread thread(&PipelineCache::compiler_thread, this, std::ref(*state.mem));
-            thread.detach();
+            worker_threads.emplace_back(&PipelineCache::compiler_thread, this, std::ref(*state.mem));
         }
     } else {
         LOG_INFO("Asynchronous pipeline compilation is now disabled");
 
-        // we assume that by the time set_async_compilation is called again with enable=true, all previous worker threads have already exited
-        for (int i = 0; i < nb_worker_threads; i++)
+        for (size_t i = 0; i < worker_threads.size(); i++)
             // if a thread receives nullptr, it exits
             pipeline_compile_queue.enqueue(nullptr);
+
+        for (auto &thread : worker_threads) {
+            if (thread.joinable())
+                thread.join();
+        }
+        worker_threads.clear();
     }
 }
 
@@ -367,6 +371,63 @@ void PipelineCache::save_pipeline_cache() {
     pipeline_cache_file.write(reinterpret_cast<const char *>(pipeline_data.data()), pipeline_data.size());
     pipeline_cache_file.close();
     LOG_INFO("Pipeline cache saved");
+}
+
+void PipelineCache::cleanup() {
+    // stop threads
+    if (use_async_compilation)
+        set_async_compilation(false);
+
+    for (auto &[hash, pipeline] : pipelines)
+        state.device.destroy(pipeline);
+    pipelines.clear();
+
+    {
+        std::lock_guard<std::mutex> guard(shaders_mutex);
+        for (auto &[hash, shader] : shaders)
+            state.device.destroy(shader);
+        shaders.clear();
+    }
+
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
+            for (int k = 0; k < 2; k++) {
+                for (auto &[fmt, pass] : render_passes[i][j][k])
+                    state.device.destroy(pass);
+                render_passes[i][j][k].clear();
+            }
+
+    for (auto &[fmt, pass] : shader_interlock_pass)
+        state.device.destroy(pass);
+    shader_interlock_pass.clear();
+
+    for (int i = 0; i < 17; i++)
+        for (int j = 0; j < 17; j++) {
+            state.device.destroy(pipeline_layouts[i][j]);
+            pipeline_layouts[i][j] = nullptr;
+        }
+
+    state.device.destroy(uniforms_layout);
+    uniforms_layout = nullptr;
+    state.device.destroy(attachments_layout);
+    attachments_layout = nullptr;
+
+    state.device.destroy(vertex_textures_layout[0]);
+    vertex_textures_layout[0] = nullptr;
+    fragment_textures_layout[0] = nullptr;
+
+    for (int i = 1; i <= 16; i++) {
+        state.device.destroy(vertex_textures_layout[i]);
+        vertex_textures_layout[i] = nullptr;
+        state.device.destroy(fragment_textures_layout[i]);
+        fragment_textures_layout[i] = nullptr;
+    }
+
+    state.device.destroy(pipeline_cache);
+    pipeline_cache = nullptr;
+
+    next_pipeline_cache_save = std::numeric_limits<uint64_t>::max();
+    nb_worker_threads = 0;
 }
 
 // Vulkan structs used to specify a specialization constant
@@ -779,7 +840,6 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     const bool use_shader_interlock = state.features.support_shader_interlock && gxm_fragment_shader->is_frag_color_used();
 
     const vk::PipelineRasterizationStateCreateInfo rasterizer{
-        .depthClampEnable = state.physical_device_features.depthClamp,
         .polygonMode = translate_polygon_mode(record.front_polygon_mode),
         .cullMode = translate_cull_mode(record.cull_mode),
         // front face is always counter clockwise

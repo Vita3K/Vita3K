@@ -71,7 +71,7 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     start_tick = rtc_get_ticks(kernel.base_tick.tick);
     last_vblank_waited = 0;
 
-    cpu = init_cpu(kernel.cpu_opt, id, static_cast<std::size_t>(core_num), mem, kernel.cpu_protocol.get());
+    cpu = init_cpu(kernel.cpu_opt, id, static_cast<std::size_t>(core_num), mem);
     if (!cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
@@ -138,7 +138,7 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     call_level = 1;
     load_context(*cpu, init_cpu_ctx);
     write_pc(*cpu, entry_point);
-    write_lr(*cpu, cpu->halt_instruction_pc);
+    write_lr(*cpu, kernel.halt_instruction_pc);
     write_reg(*cpu, 0, arglen);
 
     // Copy data to stack
@@ -183,9 +183,8 @@ void ThreadState::exit_delete(bool exit) {
         stop(*cpu);
     }
 
-    // Wake if thread waiting on status_cond
-    if (status == ThreadStatus::wait)
-        update_status(ThreadStatus::run);
+    // Thread may enter a sync primitive wait after this runs, so always notify
+    update_status(ThreadStatus::run);
 
     // Wake if thread waiting on sceKernelWaitSignal
     signal.send();
@@ -194,6 +193,14 @@ void ThreadState::exit_delete(bool exit) {
 bool ThreadState::run_loop() {
     int res = 0;
     int run_level = std::max(call_level, 1);
+
+    // Set thread-local CPU state so signal handlers can access it.
+    // The guard clears it on any exit so a recycled host thread never sees
+    // a stale CPUState pointer.
+    set_current_cpu_state(cpu.get());
+    struct CpuStateGuard {
+        ~CpuStateGuard() { set_current_cpu_state(nullptr); }
+    } cpu_state_guard;
 
     std::unique_lock<std::mutex> lock(mutex);
 
@@ -272,8 +279,14 @@ bool ThreadState::run_loop() {
 
                 // handle svc call if this was what stopped the cpu
                 if (cpu->svc_called) {
-                    cpu->protocol->call_svc(*cpu, cpu->svc, read_pc(*cpu), *this);
+                    const uint32_t nid = *Ptr<uint32_t>(read_pc(*cpu) + 4).get(mem);
+                    kernel.call_import(*cpu, nid, id);
+                    clear_exclusive(*cpu);
                 }
+
+                // handle pending abort (exception handler from page fault)
+                if (cpu->abort_pending.exchange(false))
+                    dispatch_abort(*cpu);
 
                 lock.lock();
                 if (to_do != ThreadToDo::run || res != 0 || call_level != run_level || hit_breakpoint(*cpu))
@@ -351,7 +364,7 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     call_level++;
     // we shouldn't have to clean the context I believe
     write_pc(*cpu, callback_address);
-    write_lr(*cpu, cpu->halt_instruction_pc);
+    write_lr(*cpu, kernel.halt_instruction_pc);
     push_arguments(args);
     thread_lock.unlock();
 
@@ -371,6 +384,38 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     return returned_value;
 }
 
+void ThreadState::dispatch_abort(CPUState &cpu) {
+    const uint32_t fault_addr = cpu.abort_fault_addr.load();
+    // DABT = type 0
+    const Address handler = kernel.exception_handlers[0].load();
+    if (!handler)
+        return;
+
+    // Build KuKernelAbortContext on guest stack for the handler to read.
+    // Note: by the time we get here, the page has already been unprotected
+    // by the protect_tree mechanism, and the CPU may have executed past
+    // the faulting instruction. The handler is called as a notification;
+    // we don't restore from AbortContext afterward.
+    // { r0-r12, sp, lr, pc, FAR } = 17 uint32_t = 68 bytes
+    const uint32_t ctx_size = 17 * 4;
+    const uint32_t sp_orig = read_sp(cpu);
+    const uint32_t sp_aligned = align_down(sp_orig - ctx_size, 8);
+
+    auto *ctx = Ptr<uint32_t>(sp_aligned).get(*cpu.mem);
+    for (int i = 0; i < 13; i++)
+        ctx[i] = read_reg(cpu, i);
+    ctx[13] = sp_aligned + ctx_size;
+    ctx[14] = read_lr(cpu);
+    ctx[15] = read_pc(cpu);
+    ctx[16] = fault_addr;
+
+    LOG_DEBUG("DABT handler=0x{:08X} FAR=0x{:08X} PC=0x{:08X} SP=0x{:08X} sp_aligned=0x{:08X}",
+        handler, fault_addr, ctx[15], sp_orig, sp_aligned);
+
+    // run_callback saves/restores full CPU context internally
+    run_callback(handler, { sp_aligned });
+}
+
 uint32_t ThreadState::run_guest_function(Address callback_address, SceSize args, const Ptr<void> argp) {
     // save the previous entry point, just in case
     const auto old_entry_point = entry_point;
@@ -380,11 +425,9 @@ uint32_t ThreadState::run_guest_function(Address callback_address, SceSize args,
     {
         // wait for the function to return
         std::unique_lock<std::mutex> lock(mutex);
-        if (status != ThreadStatus::dormant || to_do == ThreadToDo::run) {
-            status_cond.wait(lock, [&]() {
-                return status == ThreadStatus::dormant && to_do != ThreadToDo::run;
-            });
-        }
+        status_cond.wait(lock, [&]() {
+            return status == ThreadStatus::dormant && to_do != ThreadToDo::run;
+        });
     }
 
     entry_point = old_entry_point;
@@ -400,6 +443,10 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem)
 void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus> expected) {
     if (expected)
         assert(expected.value() == this->status);
+
+    // Keep status as run after removal so handle_timeout's predicate is immediately satisfied
+    if (status == ThreadStatus::wait && to_do == ThreadToDo::remove)
+        return;
 
     this->status = status;
     status_cond.notify_all();

@@ -561,6 +561,24 @@ const char *mem_name(Address address, MemState &state) {
     return "";
 }
 
+void deinit_mem(MemState &state) {
+    const std::lock_guard<std::mutex> gen_lock(state.generation_mutex);
+
+    {
+        const std::lock_guard<std::mutex> prot_lock(state.protect_mutex);
+        state.protect_tree.clear();
+    }
+
+    state.memory.reset();
+    state.alloc_table.reset();
+    state.allocator.reset();
+    state.page_name_map.clear();
+    state.page_table.reset();
+    state.external_mapping.clear();
+    state.use_page_table = false;
+    state.host_page_size = 0;
+}
+
 #ifdef _WIN32
 
 static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {

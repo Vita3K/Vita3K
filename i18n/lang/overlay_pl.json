@@ -1,0 +1,110 @@
+{
+  "common.ok": {
+    "message": "OK"
+  },
+  "common.cancel": {
+    "message": "Anuluj"
+  },
+  "common.yes": {
+    "message": "Tak"
+  },
+  "common.no": {
+    "message": "Nie"
+  },
+  "common.delete": {
+    "message": "Usuń"
+  },
+  "common.submit": {
+    "message": "Zatwierdź"
+  },
+  "common.please_wait": {
+    "message": "Czekaj..."
+  },
+  "common.an_error_occurred": {
+    "message": "Wystąpił błąd.\nKod błędu: {}"
+  },
+  "common.could_not_load": {
+    "message": "Nie można załadować pliku."
+  },
+  "common.could_not_save": {
+    "message": "Nie można zapisać pliku."
+  },
+  "common.file_corrupted": {
+    "message": "Plik jest uszkodzony."
+  },
+  "common.microphone_disabled": {
+    "message": "Włącz mikrofon."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Zapisz"
+  },
+  "dialog.save_data.load.title": {
+    "message": "Załaduj"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Zapisywanie..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Ładowanie..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Zapis ukończony."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Ładowanie ukończone."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Usuwanie ukończone."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "Nowe zapisane dane"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "Brak zapisanych danych."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "Czy chcesz zapisać te dane?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "Czy chcesz załadować zapisane dane?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "Czy chcesz usunąć te zapisane dane?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "Czy chcesz zastąpić zapisane dane?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "Czy chcesz anulować zapis?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "Czy chcesz anulować ładowanie?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "Czy chcesz anulować usunięcie?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Zapisywanie...\nNie wyłączaj systemu ani nie zamykaj aplikacji."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "Nie można zapisać pliku.\nNa karcie pamięci nie ma wystarczającej ilości wolnego miejsca. Na karcie pamięci nie ma wystarczającej ilości wolnego miejsca. Aby zapisać postęp w aplikacji, należy uzyskać co najmniej {} wolnego miejsca.\n\nAby uzyskać wolne miejsce, naciśnij przycisk PS w celu wstrzymania działania tej aplikacji, a następnie usuń inne aplikacje lub zawartość."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "Na karcie pamięci nie ma wystarczającej ilości wolnego miejsca.\nAby kontynuować korzystanie z tej aplikacji, należy uzyskać co najmniej {} wolnego miejsca.\n\nNaciśnij przycisk PS, aby wstrzymać działanie tej aplikacji, a następnie usuń inne aplikacje lub zawartość."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Szczegóły"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Zaktualizowano"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Przygotowanie do uruchomienia aplikacji..."
+  },
+  "overlay.trophy_earned": {
+    "message": "Udało Ci się zdobyć trofeum!"
+  },
+  "message.load_app_failed": {
+    "message": "Nie udało się wczytać \"{}\".\nSprawdź plik vita3k.log, aby zobaczyć szczegóły na konsoli.\n1. Czy zainstalowałeś oprogramowanie (firmware)?\n2. Zrób ponowny zrzut swojej aplikacji/gry PS Vita i zainstaluj ją na Vita3K.\n3. Instalacja lub uruchamianie Vitamin nie jest wspierane."
+  }
+}

@@ -23,6 +23,8 @@
 #include <bitset>
 #include <string>
 
+struct EmuEnvState;
+
 namespace gxm {
 // Color.
 SceGxmColorBaseFormat get_base_format(SceGxmColorFormat src);
@@ -51,6 +53,9 @@ bool convert_color_format_to_texture_format(SceGxmColorFormat format, SceGxmText
 
 // Transfer
 uint32_t get_bits_per_pixel(SceGxmTransferFormat Format);
+
+void destroy_all_contexts(EmuEnvState &emuenv, bool force_backend_destroy);
+void destroy_all_render_targets(EmuEnvState &emuenv, bool force_backend_destroy);
 } // namespace gxm
 
 namespace gxp {

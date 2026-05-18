@@ -80,6 +80,8 @@ struct VKTextureCache : public TextureCache {
     vk::Sampler get_retrieved_sampler() const {
         return samplers[last_bound_sampler_index];
     }
+
+    void cleanup();
 };
 
 struct FrameDescriptor {
@@ -340,6 +342,7 @@ private:
 };
 
 struct VKRenderTarget : public renderer::RenderTarget {
+    vk::Device device;
     uint16_t width;
     uint16_t height;
     vkutil::Image color;
@@ -359,7 +362,7 @@ struct VKRenderTarget : public renderer::RenderTarget {
     int cmd_buffer_idx = 0;
 
     VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params);
-    ~VKRenderTarget() override = default;
+    ~VKRenderTarget() override;
 };
 
 struct VKFragmentProgram : public renderer::FragmentProgram {

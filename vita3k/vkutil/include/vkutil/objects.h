@@ -23,6 +23,7 @@
 namespace vkutil {
 
 void init(vma::Allocator vma_allocator);
+void deinit();
 
 struct Image {
     vma::Allocation allocation;

@@ -1,0 +1,746 @@
+<resources>
+    <!-- App name -->
+    <string name="app_name">Vita3K</string>
+
+    <!-- Common actions -->
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_yes">Yes</string>
+    <string name="action_no">No</string>
+    <string name="action_back">Back</string>
+    <string name="action_install">Install</string>
+
+    <!-- Compatibility states -->
+    <string name="compat_unknown">Unknown</string>
+    <string name="compat_nothing">Nothing</string>
+    <string name="compat_bootable">Bootable</string>
+    <string name="compat_intro">Intro</string>
+    <string name="compat_menu">Menu</string>
+    <string name="compat_ingame_less">Ingame−</string>
+    <string name="compat_ingame_more">Ingame+</string>
+    <string name="compat_playable">Playable</string>
+
+    <!-- App action groups -->
+    <string name="action_group_delete">Delete</string>
+    <string name="action_group_other">Other</string>
+
+    <!-- App action labels -->
+    <string name="app_action_application">Application</string>
+    <string name="app_action_save_data">Save Data</string>
+    <string name="app_action_patch">Patch</string>
+    <string name="app_action_dlc">DLC</string>
+    <string name="app_action_license">License</string>
+    <string name="app_action_shader_cache">Shader Cache</string>
+    <string name="app_action_shader_log">Shader Log</string>
+    <string name="app_action_export_textures">Export Textures</string>
+    <string name="app_action_import_textures">Import Textures</string>
+    <string name="app_action_reset_last_played">Reset Last Played</string>
+
+    <!-- Apps list screen -->
+    <string name="apps_list_app_title">Vita3K</string>
+    <plurals name="apps_list_n_selected">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="apps_list_cd_install">Install</string>
+    <string name="apps_list_cd_exit_selection">Exit selection</string>
+    <string name="apps_list_cd_select_all">Select all</string>
+    <string name="apps_list_cd_delete_selected">Delete selected</string>
+    <string name="apps_list_cd_search">Search</string>
+    <string name="apps_list_cd_sort">Sort</string>
+    <string name="apps_list_cd_toggle_view">Toggle view</string>
+    <string name="apps_list_cd_refresh">Refresh</string>
+    <string name="apps_list_cd_more_options">More options</string>
+    <string name="apps_list_cd_close_search">Close search</string>
+    <string name="apps_list_cd_selected">Selected</string>
+    <string name="apps_list_menu_users">User Management</string>
+    <string name="apps_list_menu_welcome">Welcome Screen</string>
+    <string name="apps_list_menu_check_updates">Check for Updates</string>
+    <string name="apps_list_menu_about">About</string>
+    <string name="apps_list_menu_trophies">Trophy Collection</string>
+    <string name="apps_list_search_placeholder">Search apps\u2026</string>
+    <string name="apps_list_sort_title">Title</string>
+    <string name="apps_list_sort_last_played">Last Played</string>
+    <string name="apps_list_sort_compatibility">Compatibility</string>
+    <string name="apps_list_custom_config_badge">CC</string>
+    <string name="apps_list_empty_search">No apps match \"%1$s\"</string>
+    <string name="apps_list_empty_missing_firmware">Missing firmware components: %1$s</string>
+    <string name="apps_list_empty_firmware_title">Firmware Required</string>
+    <string name="apps_list_empty_firmware_body">Install the missing PS Vita firmware components so that apps can function correctly.</string>
+    <string name="apps_list_empty_firmware_missing_list_title">Missing components</string>
+    <string name="apps_list_empty_no_firmware">No firmware installed</string>
+    <string name="apps_list_empty_missing_main_firmware">Main firmware is not installed</string>
+    <string name="apps_list_empty_no_apps">No apps installed</string>
+    <string name="apps_list_install_firmware">Install Firmware</string>
+    <string name="apps_list_install_app">Install App</string>
+    <string name="apps_list_init_failed">Failed to initialise emulator.</string>
+
+    <!-- App actions menu -->
+    <string name="app_menu_information">Information</string>
+    <string name="app_menu_delete">Delete\u2026</string>
+    <string name="app_menu_custom_config">Custom Config</string>
+
+    <!-- User management -->
+    <string name="user_management_title">User Management</string>
+    <string name="user_management_refresh">Refresh users</string>
+    <string name="user_management_active_user">Current User</string>
+    <string name="user_management_active_none">No user selected</string>
+    <string name="user_management_active_badge">Active</string>
+    <string name="user_management_create_user">Create User</string>
+    <string name="user_management_create_prompt">Create a local Vita user profile for saves, play history, and app data.</string>
+    <string name="user_management_name_label">User name</string>
+    <string name="user_management_switch_user">Select User</string>
+    <string name="user_management_delete_user">Delete User</string>
+    <string name="user_management_delete_title">Delete User</string>
+    <string name="user_management_delete_message">Are you sure you want to delete user \"%1$s\"?\n\nAll user data will be lost.</string>
+    <string name="user_management_empty_title">No users found</string>
+    <string name="user_management_empty_message">Create a user to start storing saves and play history.</string>
+    <string name="user_management_created_success">Created user %1$s.</string>
+    <string name="user_management_selected_success">Selected user %1$s.</string>
+    <string name="user_management_deleted_success">Deleted user %1$s.</string>
+    <string name="user_management_create_failed">Failed to create user.</string>
+    <string name="user_management_select_failed">Failed to select user.</string>
+    <string name="user_management_delete_failed">Failed to delete user.</string>
+
+    <!-- Batch delete dialog -->
+    <plurals name="batch_delete_title">
+        <item quantity="one">Delete %1$d Application</item>
+        <item quantity="other">Delete %1$d Applications</item>
+    </plurals>
+    <plurals name="batch_delete_message">
+        <item quantity="one">Are you sure you want to delete %1$d selected application?\n\nThis action cannot be undone.</item>
+        <item quantity="other">Are you sure you want to delete %1$d selected applications?\n\nThis action cannot be undone.</item>
+    </plurals>
+
+    <!-- Action confirm dialog -->
+    <string name="confirm_delete_title">Delete %1$s</string>
+    <string name="confirm_delete_message">This will permanently delete %1$s for this application. This action cannot be undone.</string>
+    <string name="confirm_reset_playtime_title">Reset Play Time</string>
+    <string name="confirm_reset_playtime_message">Are you sure you want to reset the play time for %1$s?</string>
+    <string name="confirm_reset_playtime_this_app">this app</string>
+
+    <!-- Action progress / result -->
+    <string name="action_deleting">Deleting %1$s\u2026</string>
+    <string name="action_applying">Applying action\u2026</string>
+    <string name="action_done">Done</string>
+    <string name="action_reset">Reset</string>
+    <plurals name="batch_delete_success">
+        <item quantity="one">Deleted %1$d application.</item>
+        <item quantity="other">Deleted %1$d applications.</item>
+    </plurals>
+    <string name="batch_delete_partial">Deleted %1$d of %2$d applications.</string>
+    <string name="action_deleted_success">%1$s deleted for %2$s.</string>
+    <string name="action_deleted_failed">Failed to delete %1$s for %2$s.</string>
+
+    <!-- App info sheet -->
+    <string name="app_info_title">App Information</string>
+    <string name="app_info_cd_close">Close</string>
+    <string name="app_info_field_title">Title</string>
+    <string name="app_info_field_serial">Serial</string>
+    <string name="app_info_field_app_version">App Version</string>
+    <string name="app_info_field_category">Category</string>
+    <string name="app_info_field_install_size">Install Size</string>
+    <string name="app_info_field_play_time">Play Time</string>
+    <string name="app_info_field_last_played">Last Played</string>
+    <string name="app_info_size_calculating">Calculating\u2026</string>
+    <string name="app_info_size_unknown">Unknown</string>
+    <string name="app_info_size_kb">%1$d KB</string>
+    <string name="app_info_size_mb">%1$.1f MB</string>
+    <string name="app_info_size_gb">%1$.2f GB</string>
+    <string name="app_info_playtime_never">Never played</string>
+    <string name="app_info_playtime_hm">%1$dh %2$dm</string>
+    <string name="app_info_playtime_ms">%1$dm %2$ds</string>
+    <string name="app_info_playtime_s">%1$ds</string>
+    <string name="app_info_last_played_never">Never</string>
+
+    <!-- About sheet -->
+    <string name="about_build">Build: %1$s</string>
+    <string name="about_revision">Revision: %1$s</string>
+    <string name="about_legal_notice">Vita3K does not condone piracy. You must dump your own games.</string>
+
+    <!-- Updates -->
+    <string name="updates_check_title">Check for Updates</string>
+    <string name="updates_check_progress">Checking for updates…</string>
+    <string name="updates_check_in_progress">An update check is already running.</string>
+    <string name="updates_available_title">Update Available</string>
+    <string name="updates_official_available_title">Official Build Available</string>
+    <string name="updates_latest_build">Latest build</string>
+    <string name="updates_open_download_page">Open Download Page</string>
+    <string name="updates_summary_available">A newer Vita3K build is available.\n\nCurrent version: %1$s\nLatest version: %2$s</string>
+    <string name="updates_summary_available_with_date">A newer Vita3K build is available.\n\nCurrent version: %1$s\nLatest version: %2$s\nPublished: %3$s</string>
+    <string name="updates_summary_custom_build">You are currently running a non-official or PR build.\n\nIf you update, you will switch to the latest official build and will no longer be on this custom or PR build.\n\nLatest official build: %1$s</string>
+    <string name="updates_summary_custom_build_with_date">You are currently running a non-official or PR build.\n\nIf you update, you will switch to the latest official build and will no longer be on this custom or PR build.\n\nLatest official build: %1$s\nPublished: %2$s</string>
+
+    <!-- Initial setup -->
+    <string name="initial_setup_welcome_title">Welcome to Vita3K</string>
+    <string name="initial_setup_welcome_body">Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS, and Android. The emulator is still under active development, so feedback and testing are greatly appreciated.</string>
+    <string name="initial_setup_piracy_notice">Vita3K does not condone piracy. You must dump your own games.</string>
+    <string name="initial_setup_firmware_title">Install Firmware</string>
+    <string name="initial_setup_firmware_body">To get started, install the PS Vita firmware files below.</string>
+    <string name="initial_setup_preinstall_title">Pre-Install Package</string>
+    <string name="initial_setup_main_title">Main Firmware</string>
+    <string name="initial_setup_font_title">Font Package</string>
+    <string name="initial_setup_download">Download</string>
+    <string name="initial_setup_install_pup">Install</string>
+    <string name="initial_setup_select_firmware_language">Select Firmware Language</string>
+    <string name="initial_setup_status_installed">Installed</string>
+    <string name="initial_setup_status_missing">Missing</string>
+    <string name="initial_setup_status_optional">Optional</string>
+    <string name="initial_setup_back">Back</string>
+    <string name="initial_setup_next">Next</string>
+    <string name="initial_setup_skip">Skip for now</string>
+    <string name="initial_setup_open_library">Open Library</string>
+
+    <!-- In-game pause menu -->
+    <string name="emulation_menu_title">Paused</string>
+    <string name="emulation_menu_subtitle">In-game session</string>
+    <string name="emulation_menu_close">Close pause menu</string>
+    <string name="emulation_tab_session">Session</string>
+    <string name="emulation_tab_controls">Controls</string>
+    <string name="emulation_tab_controller">Controller</string>
+    <string name="emulation_tab_settings">Settings</string>
+    <string name="emulation_resume">Resume</string>
+    <string name="emulation_pause">Pause</string>
+    <string name="emulation_exit">Exit</string>
+    <string name="emulation_exit_title">Exit Game?</string>
+    <string name="emulation_exit_message">Any unsaved in-game progress will be lost.</string>
+    <string name="emulation_custom_config">Custom Config</string>
+    <string name="emulation_custom_config_active">This game has a saved custom config.</string>
+    <string name="emulation_custom_config_inactive">This game is using global settings.</string>
+    <string name="emulation_create_config_short">Create</string>
+    <string name="emulation_save_config_short">Save</string>
+    <string name="emulation_reset_config_short">Reset</string>
+    <string name="emulation_open_settings_short">All Settings</string>
+    <string name="emulation_settings_saved">Settings saved.</string>
+    <string name="emulation_controls_show">Show Controls</string>
+    <string name="emulation_controls_l2r2">Show L2 / R2</string>
+    <string name="emulation_controls_l3r3">Show L3 / R3</string>
+    <string name="emulation_controls_touch_switch">Touchscreen Switch</string>
+    <string name="emulation_controls_hide_toggle">Hide Toggle</string>
+    <string name="emulation_controls_scale">Overlay Scale</string>
+    <string name="emulation_controls_opacity">Overlay Opacity</string>
+    <string name="emulation_controls_edit">Edit Layout</string>
+    <string name="emulation_controls_done">Done</string>
+    <string name="emulation_controls_reset_layout">Reset Layout</string>
+    <string name="emulation_controls_editor_title">Edit Controls</string>
+    <string name="emulation_runtime_note">Some settings take effect after restarting the game.</string>
+    <string name="settings_restart_required_title">Restart Required</string>
+    <string name="settings_restart_required_summary">Some changes need an app restart to fully take effect.</string>
+    <string name="settings_restart_required_message">These changed settings will apply after restart:\n- %1$s</string>
+    <string name="settings_restart_app">Restart App</string>
+    <string name="settings_restart_later">Restart Later</string>
+    <string name="settings_restart_in_progress_title">Restarting App</string>
+    <string name="settings_restart_in_progress_message">Please wait while Vita3K restarts the game.</string>
+    <string name="settings_restart_game">Restart Game</string>
+    <string name="settings_continue_playing">Continue Playing</string>
+    <string name="emulation_ime_placeholder">Start typing…</string>
+
+    <!-- Install bottom sheet -->
+    <string name="install_sheet_title">Install Content</string>
+    <string name="install_firmware_title">Firmware (PUP)</string>
+    <string name="install_firmware_desc">Install PS Vita firmware</string>
+    <string name="install_pkg_title">Package (PKG)</string>
+    <string name="install_pkg_desc">Install a .pkg app or DLC</string>
+    <string name="install_archive_title">Archive (ZIP/VPK)</string>
+    <string name="install_archive_desc">Install from .zip or .vpk file</string>
+    <string name="install_license_title">License</string>
+    <string name="install_license_desc">Install a .rif or .bin license file</string>
+    <string name="install_progress_title">Installing</string>
+    <string name="install_result_success_title">Install Successful</string>
+    <string name="install_result_partial_title">Install Complete</string>
+    <string name="install_result_failed_title">Install Failed</string>
+    <string name="install_notification_channel_name">Install progress</string>
+    <string name="install_notification_channel_desc">Keeps content installs running while Vita3K is backgrounded.</string>
+    <string name="install_archive_source_title">Install Archive</string>
+    <string name="install_archive_source_message">Choose a single archive file or a folder containing multiple .zip and .vpk archives.</string>
+    <string name="install_archive_source_file">Select archive file</string>
+    <string name="install_archive_source_folder">Select archive folder</string>
+    <string name="install_license_source_title">Install License</string>
+    <string name="install_license_source_message">Choose a license file or enter a zRIF key manually.</string>
+    <string name="install_delete_firmware_file">Delete firmware file after install</string>
+    <string name="install_delete_package_file">Delete package file after install</string>
+    <string name="install_delete_archive_files">Delete archive files after install</string>
+    <string name="install_delete_license_file">Delete license file after install</string>
+
+    <!-- zRIF / license dialogs -->
+    <string name="zrif_dialog_title">Enter zRIF Key</string>
+    <string name="zrif_dialog_hint">zRIF</string>
+    <string name="license_required_title">License Required</string>
+    <string name="license_required_message">No license was found automatically.\nHow would you like to provide it?</string>
+    <string name="license_select_file">Select .bin / .rif file</string>
+    <string name="license_enter_zrif">Enter zRIF key manually</string>
+
+    <!-- Install status messages (ViewModel) -->
+    <string name="install_status_firmware">Installing firmware\u2026</string>
+    <string name="install_status_preparing">Preparing\u2026</string>
+    <string name="install_status_package">Installing package\u2026</string>
+    <string name="install_status_archive">Installing archive\u2026</string>
+    <string name="install_status_archive_batch">Installing archive %1$d of %2$d: %3$s\u2026</string>
+    <string name="install_status_license">Installing license\u2026</string>
+    <string name="install_success_firmware">Firmware %1$s installed successfully.</string>
+    <string name="install_failed_firmware">Firmware installation failed.</string>
+    <string name="install_success_package">Package installed successfully.</string>
+    <string name="install_failed_package">Package installation failed.</string>
+    <string name="install_success_archive">Archive installed successfully.</string>
+    <string name="install_failed_archive">Archive installation failed.</string>
+    <string name="install_success_archive_batch">%1$d archive(s) installed successfully.</string>
+    <string name="install_partial_archive_batch">Archive install complete. %1$d succeeded, %2$d failed.</string>
+    <string name="install_failed_archive_batch">Archive installation failed for %1$d file(s).</string>
+    <string name="install_success_license">License installed successfully.</string>
+    <string name="install_failed_license">License installation failed.</string>
+    <string name="install_failed_license_zrif">Failed to create license from zRIF key.</string>
+    <string name="install_error_archive_folder_empty">The selected folder contains no .zip or .vpk archives.</string>
+    <string name="install_error_read_license">Failed to read license file.</string>
+    <string name="install_error_pkg_path_lost">Internal error: PKG path lost.</string>
+    <string name="install_error_generic">Error: %1$s</string>
+
+    <!-- Filter / sort sheet -->
+    <string name="filter_title">Filter &amp; View</string>
+    <string name="filter_section_sort">Sort By</string>
+    <string name="filter_section_view">View Mode</string>
+    <string name="filter_view_list">List</string>
+    <string name="filter_view_grid">Grid</string>
+    <string name="filter_cd_open">Filter</string>
+
+    <!-- Settings screen — general -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_cd_open">Open Settings</string>
+    <string name="settings_custom_config_label">Settings - %1$s</string>
+    <string name="settings_custom_config_banner">Using custom config for this app</string>
+    <string name="settings_delete_custom_config">Delete Custom Config</string>
+    <string name="settings_clear_all_custom_configs">Clear All Custom Configs</string>
+    <string name="settings_confirm_delete_custom_config_title">Delete Custom Config?</string>
+    <string name="settings_confirm_delete_custom_config_message">This will remove the custom configuration for %1$s and revert to global settings.</string>
+    <string name="settings_confirm_clear_all_title">Clear All Custom Configs?</string>
+    <string name="settings_confirm_clear_all_message">This will remove all per-app custom configuration files. This action cannot be undone.</string>
+    <string name="settings_clear_all_custom_configs_success">Cleared %1$d custom configs.</string>
+    <string name="settings_unsaved_title">Unsaved Changes</string>
+    <string name="settings_unsaved_message">You have unsaved changes. What would you like to do?</string>
+    <string name="settings_discard">Discard</string>
+    <string name="settings_reset_defaults">Reset to Defaults</string>
+    <string name="settings_confirm_reset_defaults_title">Reset Settings to Defaults?</string>
+    <string name="settings_confirm_reset_defaults_message">This resets the current settings form to the emulator defaults. Storage folder changes are not included until you change them separately.</string>
+    <string name="settings_reset_defaults_done">Settings reset to defaults.</string>
+    <string name="settings_save_and_exit">Save and Exit</string>
+    <string name="settings_save_cd">Save settings</string>
+    <string name="settings_more_options">More options</string>
+    <string name="settings_search_placeholder">Search settings\u2026</string>
+    <string name="settings_search_results">Search Results</string>
+    <string name="settings_search_no_results">No matching settings.</string>
+    <string name="settings_success_title">Success</string>
+    <string name="settings_scope_global">Global only</string>
+    <string name="settings_scope_per_app">Per-app only</string>
+    <string name="settings_value_enabled">Enabled</string>
+    <string name="settings_value_disabled">Disabled</string>
+    <string name="settings_cd_show_info">Show setting details</string>
+
+    <!-- Settings tabs -->
+    <string name="settings_tab_core">Core</string>
+    <string name="settings_tab_cpu">CPU</string>
+    <string name="settings_tab_gpu">Graphics</string>
+    <string name="settings_tab_audio">Audio</string>
+    <string name="settings_tab_system">System</string>
+    <string name="settings_tab_controls">Controls</string>
+    <string name="settings_tab_interface">Interface</string>
+    <string name="settings_tab_network">Network</string>
+    <string name="settings_tab_debug">Debug</string>
+    <string name="settings_tab_emulator">Emulator</string>
+
+    <!-- Settings — Core tab -->
+    <string name="settings_modules_mode">Module Loading Mode</string>
+    <string name="settings_modules_automatic">Automatic</string>
+    <string name="settings_modules_automatic_desc">Automatically select modules to load. Recommended for most apps.</string>
+    <string name="settings_modules_auto_manual">Auto &amp; Manual</string>
+    <string name="settings_modules_auto_manual_desc">Select this mode to load modules automatically in addition to selected modules from the list on the right.</string>
+    <string name="settings_modules_manual">Manual</string>
+    <string name="settings_modules_manual_desc">Only load the modules selected from the list. Advanced users only.</string>
+    <string name="settings_modules_list_title">LLE Modules List</string>
+    <string name="settings_modules_search">Search modules\u2026</string>
+    <string name="settings_modules_no_firmware">No modules available. Install firmware first.</string>
+    <string name="settings_modules_firmware_language">Firmware Language</string>
+    <string name="settings_modules_firmware_language_desc">Pick the PlayStation firmware page locale to open in your browser.</string>
+    <string name="settings_modules_download_firmware">Download Firmware</string>
+    <string name="settings_core_module_management">Module Management</string>
+
+    <!-- Settings — CPU tab -->
+    <string name="settings_cpu_opt">Enable CPU Optimizations</string>
+    <string name="settings_cpu_opt_desc">Enable Dynarmic JIT optimizations. Improves performance.</string>
+    <string name="settings_cpu_dynarmic_settings">Dynarmic Settings</string>
+
+    <!-- Settings — GPU tab -->
+    <string name="settings_gpu_renderer_section">Renderer</string>
+    <string name="settings_gpu_image_quality">Image Quality</string>
+    <string name="settings_gpu_textures_shaders">Textures and Shaders</string>
+    <string name="settings_gpu_shaders">Shaders</string>
+    <string name="settings_gpu_hacks">Hacks</string>
+    <string name="settings_gpu_android_driver_section">Custom GPU Driver</string>
+    <string name="settings_gpu_backend">Backend Renderer</string>
+    <string name="settings_gpu_backend_desc">Select the preferred backend renderer. Vulkan is recommended for most systems.</string>
+    <string name="settings_gpu_graphics_device">Graphics Device</string>
+    <string name="settings_gpu_accuracy">Rendering Accuracy</string>
+    <string name="settings_gpu_accuracy_desc">Set the renderer accuracy level for Vulkan. High accuracy may improve visuals but reduce performance.</string>
+    <string name="settings_gpu_accuracy_standard">Standard</string>
+    <string name="settings_gpu_accuracy_high">High</string>
+    <string name="settings_gpu_vsync">V-Sync</string>
+    <string name="settings_gpu_vsync_desc">Enable V-Sync for OpenGL. Reduces screen tearing.</string>
+    <string name="settings_gpu_disable_surface_sync">Disable Surface Sync</string>
+    <string name="settings_gpu_disable_surface_sync_desc">Speed hack, disabling turns off surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on).</string>
+    <string name="settings_gpu_async_pipeline">Asynchronous Pipeline Compilation</string>
+    <string name="settings_gpu_async_pipeline_desc">Allow pipelines to be compiled concurrently on multiple concurrent threads.\nThis decreases pipeline compilation stutter at the cost of temporary graphical glitches.</string>
+    <string name="settings_gpu_screen_filter">Screen Filter</string>
+    <string name="settings_gpu_screen_filter_desc">Select the final image filter to apply.</string>
+    <string name="settings_gpu_resolution">Internal Resolution Upscaling</string>
+    <string name="settings_gpu_resolution_desc">Scale the games resolution by a multiplier.\nExperimental: apps are not guaranteed to render properly at more than 1x.</string>
+    <string name="settings_gpu_resolution_val">%1$d\u00D7%2$d (%3$s\u00D7)</string>
+    <string name="settings_gpu_anisotropic">Anisotropic Filtering</string>
+    <string name="settings_gpu_anisotropic_desc">Technique to increase the sharpness of textures which are sloped relative to the viewer.\nIt has no drawbacks but can impact performance on older GPUs.</string>
+    <string name="settings_gpu_textures">Textures</string>
+    <string name="settings_gpu_export_textures">Export Textures</string>
+    <string name="settings_gpu_export_textures_desc">Export textures used by the app to the textures folder.</string>
+    <string name="settings_gpu_import_textures">Import Textures</string>
+    <string name="settings_gpu_import_textures_desc">Import replacement textures from the textures folder.</string>
+    <string name="settings_gpu_texture_format">Texture Exporting Format</string>
+    <string name="settings_gpu_texture_format_desc">Format to export textures in</string>
+    <string name="settings_gpu_fps_hack">FPS Hack</string>
+    <string name="settings_gpu_fps_hack_desc">Game hack. May double the framerate from 30 FPS to 60 FPS in some games,\nbut can cause some games to run twice as fast.</string>
+    <string name="settings_gpu_turbo_mode">Turbo Mode</string>
+    <string name="settings_gpu_turbo_mode_desc">Provides a way to force the GPU to run at the maximum possible clocks. Thermal constraints will still be applied.</string>
+    <string name="settings_gpu_shader_cache">Enable Shader Cache</string>
+    <string name="settings_gpu_shader_cache_desc">Enable shader caching. Reduces stuttering on subsequent runs.</string>
+    <string name="settings_gpu_spirv_shader">Use SPIR-V Shader (deprecated)</string>
+    <string name="settings_gpu_spirv_shader_desc">Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, and not all GPUs are compatible with this.</string>
+    <string name="settings_gpu_memory_mapping">Memory Mapping</string>
+    <string name="settings_gpu_memory_mapping_desc">Memory mapping improved performance, reduces memory usage and fixes many graphical issues. However, it may be unstable on some GPUs.</string>
+    <string name="settings_gpu_custom_driver">Custom GPU Driver</string>
+    <string name="settings_gpu_custom_driver_desc">Choose which installed custom GPU driver to inject. Installing drivers requires a compatible Android GPU driver ZIP and a supported Qualcomm Vulkan stack.</string>
+    <string name="settings_gpu_custom_driver_default">Default</string>
+    <string name="settings_gpu_custom_driver_missing">%1$s (missing)</string>
+    <string name="settings_gpu_custom_driver_missing_desc">The selected custom driver is no longer installed. Choose Default, reinstall it, or select another installed driver before launching an app.</string>
+    <string name="settings_gpu_custom_driver_active_desc">The selected custom driver is loaded and active.</string>
+    <string name="settings_gpu_custom_driver_fallback_desc">The selected custom driver could not be loaded, so Vita3K is using the default system driver instead.</string>
+    <string name="settings_gpu_download_custom_driver">Download Drivers</string>
+    <string name="settings_gpu_install_custom_driver">Install Driver</string>
+    <string name="settings_gpu_remove_custom_driver">Remove Selected Driver</string>
+    <string name="settings_gpu_memory_mapping_unsupported">No memory mapping support for current device.</string>
+    <string name="settings_gpu_custom_driver_resolve_failed">Failed to resolve custom driver archive path.</string>
+    <string name="settings_gpu_custom_driver_install_success">Installed and loaded custom driver %1$s.</string>
+    <string name="settings_gpu_custom_driver_install_fallback">Installed custom driver %1$s, but it could not be loaded. Vita3K fell back to the default system driver.</string>
+    <string name="settings_gpu_custom_driver_install_failed">Failed to install the selected custom driver archive.</string>
+    <string name="settings_gpu_custom_driver_selected_success">Loaded custom driver %1$s successfully.</string>
+    <string name="settings_gpu_custom_driver_selected_fallback">Failed to load custom driver %1$s. Vita3K fell back to the default system driver.</string>
+    <string name="settings_gpu_custom_driver_remove_success">Removed custom driver %1$s.</string>
+    <string name="settings_gpu_custom_driver_remove_failed">Failed to remove custom driver %1$s.</string>
+    <string name="settings_confirm_remove_custom_driver_title">Remove Custom Driver?</string>
+    <string name="settings_confirm_remove_custom_driver_message">This will permanently remove the installed custom driver %1$s from device storage.</string>
+
+    <!-- Settings — Audio tab -->
+    <string name="settings_audio_output">Audio Output</string>
+    <string name="settings_audio_features">Features</string>
+    <string name="settings_audio_settings_section">Audio Settings</string>
+    <string name="settings_audio_backend">Audio Backend</string>
+    <string name="settings_audio_backend_desc">Select the audio backend.\nCubeb is recommended for most systems.</string>
+    <string name="settings_audio_volume">Volume</string>
+    <string name="settings_audio_volume_desc">Set the in-game audio volume.</string>
+    <string name="settings_audio_volume_value">Current volume: %1$d%%</string>
+    <string name="settings_audio_ngs">Enable NGS Support</string>
+    <string name="settings_audio_ngs_desc">Enable advanced audio library NGS support.</string>
+
+    <!-- Settings — Camera tab -->
+    <string name="settings_tab_camera">Camera</string>
+    <string name="settings_camera_sources_section">Camera Sources</string>
+    <string name="settings_camera_front">Front Camera</string>
+    <string name="settings_camera_front_desc">Select the front camera source. Solid Color or Static Image can be used as substitutes.</string>
+    <string name="settings_camera_back">Back Camera</string>
+    <string name="settings_camera_back_desc">Select the back camera source. Solid Color or Static Image can be used as substitutes.</string>
+    <string name="settings_camera_source">Camera Source</string>
+    <string name="settings_camera_solid_color">Solid Color</string>
+    <string name="settings_camera_static_image">Static Image</string>
+    <string name="settings_camera_color">Camera Color</string>
+    <string name="settings_camera_color_desc">Choose the fallback color used when the camera source is Solid Color.</string>
+    <string name="settings_camera_image">Camera Image</string>
+    <string name="settings_camera_image_desc">Pick the fallback image used when the camera source is Static Image.</string>
+    <string name="settings_camera_no_devices">No camera devices detected.</string>
+    <string name="settings_camera_no_image">No image selected</string>
+    <string name="settings_camera_image_resolve_failed">Failed to resolve the selected camera image path.</string>
+
+    <!-- Settings — System tab -->
+    <string name="settings_system_console_settings">Console Settings</string>
+    <string name="settings_system_system_modes">System Modes</string>
+    <string name="settings_system_region_language">Region and Language</string>
+    <string name="settings_system_system_settings_section">System Settings</string>
+    <string name="settings_system_enter_button">Enter Button Assignment</string>
+    <string name="settings_system_enter_button_desc">Select which button acts as the Enter/Confirm button. Some apps ignore this setting.</string>
+    <string name="settings_system_enter_circle">Circle</string>
+    <string name="settings_system_enter_cross">Cross</string>
+    <string name="settings_system_pstv_mode">PlayStation TV Mode (PSTV)</string>
+    <string name="settings_system_pstv_mode_desc">Enable PlayStation TV mode.</string>
+    <string name="settings_system_show_mode">Show Mode</string>
+    <string name="settings_system_show_mode_desc">Enable Show Mode.</string>
+    <string name="settings_system_demo_mode">Demo Mode</string>
+    <string name="settings_system_demo_mode_desc">Enable Demo Mode.</string>
+    <string name="settings_system_language">System Language</string>
+    <string name="settings_system_language_desc">Set the system language reported to applications.</string>
+    <string name="settings_system_date_format">Date Format</string>
+    <string name="settings_system_date_format_desc">Set the date format used by the emulated system.</string>
+    <string name="settings_system_time_format">Time Format</string>
+    <string name="settings_system_time_format_desc">Set the time format used by the emulated system.</string>
+    <string name="settings_system_ime_langs">IME Languages</string>
+    <string name="settings_system_ime_langs_desc">Select which IME keyboard languages are available to applications.</string>
+
+    <!-- Settings — Network tab -->
+    <string name="settings_network_connection">Connection</string>
+    <string name="settings_network_playstation_network">PlayStation Network</string>
+    <string name="settings_network_http_networking">HTTP Networking</string>
+    <string name="settings_network_timeout_retry">Timeout and Retry</string>
+    <string name="settings_network_psn_signed_in">PSN Signed In</string>
+    <string name="settings_network_psn_signed_in_desc">Pretend to be signed in to PlayStation Network (but offline).</string>
+    <string name="settings_network_http_enable">Enable HTTP Networking</string>
+    <string name="settings_network_http_enable_desc">Enable HTTP networking support for apps that use it.</string>
+    <string name="settings_network_http_timeout_attempts">Timeout Attempts</string>
+    <string name="settings_network_http_timeout_attempts_desc">How many times to retry connecting when the server doesn\'t respond.  Could be useful if you have very unstable or VERY SLOW internet.</string>
+    <string name="settings_network_http_timeout_sleep">Timeout Sleep</string>
+    <string name="settings_network_http_timeout_sleep_desc">How long to wait between connection retries. Could be useful if you have very unstable or VERY SLOW internet.</string>
+    <string name="settings_network_http_read_end_attempts">Read End Attempts</string>
+    <string name="settings_network_http_read_end_attempts_desc">How many retries to attempt when there isn\'t more data to read, lower can improve performance but can make games unstable if you have bad enough internet.</string>
+    <string name="settings_network_http_read_end_sleep">Read End Sleep</string>
+    <string name="settings_network_http_read_end_sleep_desc">How long to wait between read attempt retries, lower can improve performance but can make games unstable if you have bad enough internet</string>
+    <string name="settings_network_http_attempts_value">%1$d attempts</string>
+    <string name="settings_network_http_sleep_value">%1$d ms</string>
+    <string name="settings_network_adhoc_address">Ad-Hoc Address</string>
+    <string name="settings_network_adhoc_address_desc">Select the IP address to be used in adhoc networking.</string>
+    <string name="settings_network_subnet_mask_value">Subnet Mask: %1$s</string>
+
+    <!-- Settings — Controls tab -->
+    <string name="settings_controls_show">Show On-Screen Controls</string>
+    <string name="settings_controls_show_desc">Show the touch control overlay while a game is running.</string>
+    <string name="settings_controls_hide_on_controller">Hide Overlay When Controller Is Connected</string>
+    <string name="settings_controls_hide_on_controller_desc">Automatically hide the touch overlay whenever a physical controller is connected.</string>
+    <string name="settings_controls_l2r2">Show L2 / R2 Buttons</string>
+    <string name="settings_controls_l2r2_desc">Add the extra trigger buttons to the touch overlay.</string>
+    <string name="settings_controls_l3r3">Show L3 / R3 Buttons</string>
+    <string name="settings_controls_l3r3_desc">Add the stick-click buttons to the touch overlay.</string>
+    <string name="settings_controls_touch_switch">Show Touchscreen Switch</string>
+    <string name="settings_controls_touch_switch_desc">Show the button that switches between front and rear touch input.</string>
+    <string name="settings_controls_hide_toggle">Show Hide Toggle</string>
+    <string name="settings_controls_hide_toggle_desc">Show the button that temporarily hides the on-screen controls.</string>
+    <string name="settings_controls_scale">Overlay Scale</string>
+    <string name="settings_controls_scale_desc">Resize the touch controls to better fit your hands and screen.</string>
+    <string name="settings_controls_opacity">Overlay Opacity</string>
+    <string name="settings_controls_opacity_desc">Adjust how transparent the touch controls appear over the game.</string>
+    <string name="settings_controls_percent_value">%1$d%%</string>
+    <string name="settings_controls_controller_connected">Controller connected</string>
+    <string name="settings_controls_controller_disconnected">No controller connected</string>
+
+    <!-- Settings — Debug tab -->
+    <string name="settings_debug_diagnostics">Diagnostics</string>
+    <string name="settings_debug_logging_section">Logging</string>
+    <string name="settings_debug_graphics_section">Graphics</string>
+    <string name="settings_debug_misc_section">Miscellaneous</string>
+    <string name="settings_controls_connected_title">Connected Controllers</string>
+    <string name="settings_controls_connected_desc">Shows the physical controllers Android currently reports to the frontend. Button labels follow the first connected controller when possible.</string>
+    <string name="settings_controls_connected_none">No physical controller detected.</string>
+    <string name="settings_controls_manual_available">You can still choose mappings manually even if no controller is currently connected.</string>
+    <string name="settings_controls_mapping_buttons_title">Controller Button Mapping</string>
+    <string name="settings_controls_mapping_buttons_desc">Choose which physical controller button is used for each input.</string>
+    <string name="settings_controls_mapping_buttons_help">Tap a row, then press a controller button or choose one manually from the list.</string>
+    <string name="settings_controls_mapping_axes_title">Stick and Trigger Mapping</string>
+    <string name="settings_controls_mapping_axes_desc">Choose which controller axes drive the analog sticks and PSTV triggers.</string>
+    <string name="settings_controls_mapping_axes_help">Tap a row, then move a stick or trigger or choose an axis manually from the list.</string>
+    <string name="settings_controls_mapping_axes_note">Up and Down share one vertical axis. Left and Right share one horizontal axis.</string>
+    <string name="settings_controls_behavior_title">Controller Behavior</string>
+    <string name="settings_controls_analog_multiplier">Analog Stick Multiplier</string>
+    <string name="settings_controls_analog_multiplier_desc">Scale analog stick input before it reaches the emulator. Higher values make sticks feel more aggressive.</string>
+    <string name="settings_controls_multiplier_value">%1$.1fx</string>
+    <string name="settings_controls_disable_motion">Disable Motion Controls</string>
+    <string name="settings_controls_disable_motion_desc">Ignore controller and device motion sensors for games that expect gyro or accelerometer input.</string>
+    <string name="settings_controls_capture_button_prompt">Press a controller button now, or choose a mapping from the list below.</string>
+    <string name="settings_controls_capture_axis_prompt">Move a controller stick or trigger now, or choose a mapping from the list below.</string>
+    <string name="settings_controls_capture_listening">Listening for controller input...</string>
+    <string name="settings_controls_capture_waiting_for_controller">Connect a controller to use live capture.</string>
+    <string name="settings_controls_manual_selection">Manual Selection</string>
+    <string name="settings_controls_bind_dpad_up">D-Pad Up</string>
+    <string name="settings_controls_bind_dpad_down">D-Pad Down</string>
+    <string name="settings_controls_bind_dpad_left">D-Pad Left</string>
+    <string name="settings_controls_bind_dpad_right">D-Pad Right</string>
+    <string name="settings_controls_bind_triangle">Triangle</string>
+    <string name="settings_controls_bind_circle">Circle</string>
+    <string name="settings_controls_bind_cross">Cross</string>
+    <string name="settings_controls_bind_square">Square</string>
+    <string name="settings_controls_bind_l1">L1</string>
+    <string name="settings_controls_bind_r1">R1</string>
+    <string name="settings_controls_bind_l2">L2</string>
+    <string name="settings_controls_bind_r2">R2</string>
+    <string name="settings_controls_bind_l3">L3</string>
+    <string name="settings_controls_bind_r3">R3</string>
+    <string name="settings_controls_bind_select">Select</string>
+    <string name="settings_controls_bind_start">Start</string>
+    <string name="settings_controls_bind_ps_button">PS Button</string>
+    <string name="settings_controls_bind_left_stick_up">Left Stick Up</string>
+    <string name="settings_controls_bind_left_stick_down">Left Stick Down</string>
+    <string name="settings_controls_bind_left_stick_left">Left Stick Left</string>
+    <string name="settings_controls_bind_left_stick_right">Left Stick Right</string>
+    <string name="settings_controls_bind_right_stick_up">Right Stick Up</string>
+    <string name="settings_controls_bind_right_stick_down">Right Stick Down</string>
+    <string name="settings_controls_bind_right_stick_left">Right Stick Left</string>
+    <string name="settings_controls_bind_right_stick_right">Right Stick Right</string>
+    <string name="settings_debug_log_imports">Import Logging</string>
+    <string name="settings_debug_log_imports_desc">Log module import symbols.</string>
+    <string name="settings_debug_log_exports">Export Logging</string>
+    <string name="settings_debug_log_exports_desc">Log module export symbols.</string>
+    <string name="settings_debug_log_active_shaders">Log Active Shaders</string>
+    <string name="settings_debug_log_active_shaders_desc">Log active shader programs.</string>
+    <string name="settings_debug_log_uniforms">Log Shader Uniforms</string>
+    <string name="settings_debug_log_uniforms_desc">Log shader uniform values.</string>
+    <string name="settings_debug_color_surface">Save color surfaces</string>
+    <string name="settings_debug_color_surface_desc">Save color surfaces to files.</string>
+    <string name="settings_debug_dump_elfs">ELF Dumping</string>
+    <string name="settings_debug_dump_elfs_desc">Dump loaded code as ELFs.</string>
+    <string name="settings_debug_validation_layer">Vulkan Validation Layer</string>
+    <string name="settings_debug_validation_layer_desc">Enable Vulkan validation layers.\nUseful for debugging but reduces performance.</string>
+
+    <!-- Settings — Emulator tab -->
+    <string name="settings_interface_appearance">Appearance</string>
+    <string name="settings_interface_ui_options">UI Options</string>
+    <string name="settings_emulator_behavior">Behavior</string>
+    <string name="settings_emulator_general">General</string>
+    <string name="settings_emulator_logging">Logging</string>
+    <string name="settings_emulator_display_overlay">Display and Overlay</string>
+    <string name="settings_emulator_storage_capture">Storage and Capture</string>
+    <string name="settings_emulator_texture_cache">Enable Texture Cache</string>
+    <string name="settings_emulator_texture_cache_desc">Enable the texture cache. Improves performance in games at the cost of additional VRAM usage.</string>
+    <string name="settings_emulator_ui_language">Interface Language</string>
+    <string name="settings_emulator_ui_language_desc">Select the interface language used by the Android frontend.\nUse System Default to follow the operating system language.</string>
+    <string name="settings_emulator_storage_folder">Emulated System Storage Folder</string>
+    <string name="settings_emulator_storage_folder_desc">Change the location of the emulated system storage folder.\nIf you move to a different folder, move your existing data there manually.</string>
+    <string name="settings_emulator_share_log">Share vita3k.log</string>
+    <string name="settings_emulator_share_log_desc">Open Android’s share sheet for the current Vita3K log file so it can be sent to Discord or another app.</string>
+    <string name="settings_emulator_storage_folder_resolve_failed">Failed to resolve the selected storage folder.</string>
+    <string name="settings_emulator_storage_folder_change_failed">Failed to switch the emulator storage folder.</string>
+    <string name="settings_emulator_storage_folder_change_success">Switched emulator storage folder to %1$s.</string>
+    <string name="settings_emulator_stretch_display">Stretch the Display Area</string>
+    <string name="settings_emulator_stretch_display_desc">Stretch the display area to fill the entire window, ignoring the original aspect ratio.</string>
+    <string name="settings_emulator_pixel_perfect">Fullscreen HD Pixel Perfect</string>
+    <string name="settings_emulator_pixel_perfect_desc">Check the box to get a pixel perfect rendering with HD resolutions (1080p, 4K) in fullscreen on a 16:9 aspect ratio monitor at the price of slight cropping at the top and the bottom of the screen.</string>
+    <string name="settings_emulator_file_loading_delay">File Loading Delay: %1$d ms</string>
+    <string name="settings_emulator_file_loading_delay_desc">Add an artificial delay to file loading. This is required for some games that load files too quickly compared to real hardware (e.g., Silent Hill).</string>
+    <string name="settings_emulator_show_compile_shaders">Show Shader Compilation Hint</string>
+    <string name="settings_emulator_show_compile_shaders_desc">Show a hint when shaders are being compiled during gameplay.</string>
+    <string name="settings_emulator_check_updates">Update Check Mode</string>
+    <string name="settings_emulator_check_updates_desc">Choose whether Vita3K checks for updates at startup.\n&quot;Check&quot; notifies you when a newer build is available, and &quot;Don\'t Check&quot; disables startup checks.</string>
+    <string name="settings_emulator_check_updates_check">Check</string>
+    <string name="settings_emulator_check_updates_dont_check">Don\'t Check</string>
+    <string name="settings_emulator_archive_log">Archive Log</string>
+    <string name="settings_emulator_archive_log_desc">Keep a duplicate of the log file named after the current title when an app runs.</string>
+    <string name="settings_emulator_log_compat_warn">Log Compatibility Warnings</string>
+    <string name="settings_emulator_log_compat_warn_desc">Log compatibility database related warnings.</string>
+    <string name="settings_emulator_log_level">Log Level</string>
+    <string name="settings_emulator_log_level_desc">Select the verbosity of the logging system.</string>
+    <string name="settings_emulator_perf_overlay">Performance Overlay</string>
+    <string name="settings_emulator_perf_overlay_desc">Show a performance overlay with FPS and other statistics.</string>
+    <string name="settings_emulator_perf_overlay_detail">Overlay Detail</string>
+    <string name="settings_emulator_perf_overlay_detail_desc">Select the detail level for the performance overlay.</string>
+    <string name="settings_emulator_perf_overlay_position">Overlay Position</string>
+    <string name="settings_emulator_perf_overlay_position_desc">Select the location to display the performance overlay in.</string>
+    <string name="settings_emulator_screenshot_format">Screenshot Format</string>
+    <string name="settings_emulator_screenshot_format_desc">Select image format to select screenshots in.</string>
+
+    <!-- Settings option values -->
+    <string name="settings_opt_trace">Trace</string>
+    <string name="settings_opt_debug">Debug</string>
+    <string name="settings_opt_info">Info</string>
+    <string name="settings_opt_warning">Warning</string>
+    <string name="settings_opt_error">Error</string>
+    <string name="settings_opt_critical">Critical</string>
+    <string name="settings_opt_off">Off</string>
+    <string name="settings_opt_minimum">Minimum</string>
+    <string name="settings_opt_low">Low</string>
+    <string name="settings_opt_medium">Medium</string>
+    <string name="settings_opt_maximum">Maximum</string>
+    <string name="settings_opt_top_left">Top Left</string>
+    <string name="settings_opt_top_center">Top Center</string>
+    <string name="settings_opt_top_right">Top Right</string>
+    <string name="settings_opt_bottom_left">Bottom Left</string>
+    <string name="settings_opt_bottom_center">Bottom Center</string>
+    <string name="settings_opt_bottom_right">Bottom Right</string>
+    <string name="settings_opt_none">None</string>
+    <string name="settings_opt_12h">12-Hour</string>
+    <string name="settings_opt_24h">24-Hour</string>
+    <string name="settings_opt_date_ymd">YYYY/MM/DD</string>
+    <string name="settings_opt_date_dmy">DD/MM/YYYY</string>
+    <string name="settings_opt_date_mdy">MM/DD/YYYY</string>
+
+    <!-- System language options -->
+    <string name="settings_lang_japanese">Japanese</string>
+    <string name="settings_lang_english_us">English (US)</string>
+    <string name="settings_lang_french">French</string>
+    <string name="settings_lang_spanish">Spanish</string>
+    <string name="settings_lang_german">German</string>
+    <string name="settings_lang_italian">Italian</string>
+    <string name="settings_lang_dutch">Dutch</string>
+    <string name="settings_lang_portuguese_pt">Portuguese (PT)</string>
+    <string name="settings_lang_russian">Russian</string>
+    <string name="settings_lang_korean">Korean</string>
+    <string name="settings_lang_chinese_trad">Chinese (Traditional)</string>
+    <string name="settings_lang_chinese_simp">Chinese (Simplified)</string>
+    <string name="settings_lang_finnish">Finnish</string>
+    <string name="settings_lang_swedish">Swedish</string>
+    <string name="settings_lang_danish">Danish</string>
+    <string name="settings_lang_norwegian">Norwegian</string>
+    <string name="settings_lang_polish">Polish</string>
+    <string name="settings_lang_portuguese_br">Portuguese (BR)</string>
+    <string name="settings_lang_english_gb">English (GB)</string>
+    <string name="settings_lang_turkish">Turkish</string>
+
+    <!-- IME language options -->
+    <string name="settings_ime_danish">Danish</string>
+    <string name="settings_ime_german">German</string>
+    <string name="settings_ime_english_us">English (US)</string>
+    <string name="settings_ime_spanish">Spanish</string>
+    <string name="settings_ime_french">French</string>
+    <string name="settings_ime_italian">Italian</string>
+    <string name="settings_ime_dutch">Dutch</string>
+    <string name="settings_ime_norwegian">Norwegian</string>
+    <string name="settings_ime_polish">Polish</string>
+    <string name="settings_ime_portuguese_pt">Portuguese (PT)</string>
+    <string name="settings_ime_russian">Russian</string>
+    <string name="settings_ime_finnish">Finnish</string>
+    <string name="settings_ime_swedish">Swedish</string>
+    <string name="settings_ime_japanese">Japanese</string>
+    <string name="settings_ime_korean">Korean</string>
+    <string name="settings_ime_chinese_simp">Simplified Chinese</string>
+    <string name="settings_ime_chinese_trad">Traditional Chinese</string>
+    <string name="settings_ime_portuguese_br">Portuguese (BR)</string>
+    <string name="settings_ime_english_gb">English (GB)</string>
+    <string name="settings_ime_turkish">Turkish</string>
+
+    <!-- Trophy viewer -->
+    <string name="trophy_back_short">Back</string>
+    <string name="trophy_progress_percent_format">%1$d%%</string>
+    <string name="trophy_unlocked_count_format">%1$d / %2$d unlocked</string>
+    <string name="trophy_error_title">Unable to load trophies</string>
+    <string name="trophy_empty_title">No trophy collections found</string>
+    <string name="trophy_empty_body">Install a trophy-enabled app and launch it once to populate the collection list.</string>
+    <string name="trophy_not_found_title">Trophy data unavailable</string>
+    <string name="trophy_not_found_body">This trophy collection could not be loaded from the emulator storage.</string>
+    <string name="trophy_detail_not_found_body">This trophy detail entry could not be loaded from the emulator storage.</string>
+    <string name="trophy_hidden_title">Hidden Trophy</string>
+    <string name="trophy_hidden_detail">Continue playing to reveal this trophy.</string>
+    <string name="trophy_filter_all">All</string>
+    <string name="trophy_filter_earned">Earned</string>
+    <string name="trophy_filter_locked">Locked</string>
+    <string name="trophy_filter_show_hidden">Show hidden</string>
+    <string name="trophy_filter_empty_title">No trophies match the current filters</string>
+    <string name="trophy_filter_empty_body">Adjust the state or grade filters to show more trophies.</string>
+    <string name="trophy_status_earned">Earned</string>
+    <string name="trophy_status_locked">Locked</string>
+    <string name="trophy_grade_platinum">Platinum</string>
+    <string name="trophy_grade_gold">Gold</string>
+    <string name="trophy_grade_silver">Silver</string>
+    <string name="trophy_grade_bronze">Bronze</string>
+    <string name="trophy_grade_unknown">Unknown</string>
+    <string name="trophy_detail_grade_label">Grade</string>
+    <string name="trophy_detail_earned_label">Earned</string>
+    <string name="trophy_detail_description_label">Details</string>
+    <string name="trophy_not_yet_earned">Not yet earned</string>
+</resources>

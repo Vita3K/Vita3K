@@ -834,7 +834,7 @@ EXPORT(int, _sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, uint32_t t
     return CALL_EXPORT(_sceKernelWaitSignal, unknown, delay, timeout);
 }
 
-static int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
+static int wait_thread_end(KernelState &kernel, ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
     std::unique_lock<std::mutex> waiter_lock(waiter->mutex);
     {
         const std::unique_lock<std::mutex> thread_lock(target->mutex);
@@ -848,7 +848,9 @@ static int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *
         waiter->update_status(ThreadStatus::wait);
         target->waiting_threads.push_back(waiter);
     }
-    waiter->status_cond.wait(waiter_lock, [&]() { return waiter->status == ThreadStatus::run; });
+    waiter->status_cond.wait(waiter_lock, [&]() {
+        return waiter->status == ThreadStatus::run;
+    });
     return 0;
 }
 
@@ -859,7 +861,7 @@ EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     if (!target) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
-    return wait_thread_end(waiter, target, stat);
+    return wait_thread_end(emuenv.kernel, waiter, target, stat);
 }
 
 EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout) {
@@ -870,7 +872,7 @@ EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
     process_callbacks(emuenv.kernel, thread_id);
-    return wait_thread_end(waiter, target, stat);
+    return wait_thread_end(emuenv.kernel, waiter, target, stat);
 }
 
 EXPORT(SceInt32, sceKernelCancelCallback, SceUID callbackId) {
@@ -1028,7 +1030,7 @@ EXPORT(SceUID, sceKernelCreateCallback, char *name, SceUInt32 attr, Ptr<SceKerne
 
     ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
     std::string cb_name = name;
-    auto cb = std::make_shared<Callback>(thread_id, thread, cb_name, callbackFunc, pCommon);
+    auto cb = std::make_shared<Callback>(thread_id, cb_name, callbackFunc, pCommon);
     std::lock_guard lock(emuenv.kernel.mutex);
     SceUID cb_uid = emuenv.kernel.get_next_uid();
     emuenv.kernel.callbacks.emplace(cb_uid, cb);
@@ -1048,12 +1050,17 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
     return thread->id;
 }
 
-static int delay_thread(SceUInt delay_us) {
+static int delay_thread(KernelState &kernel, SceUID thread_id, SceUInt delay_us) {
     if (delay_us == 0)
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
 
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us));
-
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
+    std::unique_lock<std::mutex> lock(thread->mutex);
+    thread->update_status(ThreadStatus::wait);
+    thread->status_cond.wait_for(lock, std::chrono::microseconds(delay_us),
+        [&] { return thread->status == ThreadStatus::run; });
+    if (thread->status != ThreadStatus::run)
+        thread->update_status(ThreadStatus::run);
     return SCE_KERNEL_OK;
 }
 
@@ -1064,21 +1071,21 @@ static int delay_thread_cb(EmuEnvState &emuenv, SceUID thread_id, SceUInt delay_
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
     if (delay_us > elapsed.count()) // If we spent less time than requested processing callbacks, sleep the remaining time
-        return delay_thread(delay_us - elapsed.count());
+        return delay_thread(emuenv.kernel, thread_id, delay_us - elapsed.count());
     else // Else return directly
         return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelDelayThread, SceUInt delay) {
     TRACY_FUNC(sceKernelDelayThread, delay);
-    return delay_thread(delay);
+    return delay_thread(emuenv.kernel, thread_id, delay);
 }
 
 EXPORT(int, sceKernelDelayThread200, SceUInt delay) {
     TRACY_FUNC(sceKernelDelayThread200, delay);
     if (delay < 201)
         delay = 201;
-    return delay_thread(delay);
+    return delay_thread(emuenv.kernel, thread_id, delay);
 }
 
 EXPORT(int, sceKernelDelayThreadCB, SceUInt delay) {

@@ -1,0 +1,101 @@
+{
+  "common.cancel": {
+    "message": "Avbryt"
+  },
+  "common.yes": {
+    "message": "Ja"
+  },
+  "common.no": {
+    "message": "Nei"
+  },
+  "common.delete": {
+    "message": "Slett"
+  },
+  "common.please_wait": {
+    "message": "Vennligst vent..."
+  },
+  "common.an_error_occurred": {
+    "message": "Det har oppstått en feil.\nFeilkode: {}"
+  },
+  "common.could_not_load": {
+    "message": "Kunne ikke lagre filen."
+  },
+  "common.could_not_save": {
+    "message": "Kunne ikke lagre filen."
+  },
+  "common.file_corrupted": {
+    "message": "Filen er korrupt."
+  },
+  "common.microphone_disabled": {
+    "message": "Aktiver mikrofonen."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Lagre"
+  },
+  "dialog.save_data.load.title": {
+    "message": "Last"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Lagrer..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Laster..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Lagring fullført."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Lasting fullført."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Sletting fullført."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "Nylagret data"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "Det finnes ingen lagret data."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "Vil du lagre dataene?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "Vil du laste disse lagrede dataene?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "Vil du slette disse lagrede dataene?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "Vil du overskrive disse lagrede dataene?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "Vil du avbryte lagringen?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "Vil du avbryte lastingen?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "Vil du avbryte slettingen?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Lagrer...\nSlå ikke av systemet og lukk ikke programmet."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "Kunne ikke lagre filen.\nDet er ikke nok ledig plass på minnekortet.  For å lagre arbeidet ditt i programmet, må du frigjøre minimum {} ledig plass.\n\nFor å opprette denne ledige plassen må du trykke på PS-knappen for å stoppe dette programmet, og deretter slette andre programmer eller innhold."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "Det er ikke nok ledig plass på minnekortet.\nFor å fortsette å bruke programmet, må du frigjøre minst {} ledig plass.\n\nTrykk på PS-knappen for å stoppe dette programmet og deretter slette andre programmer eller innhold."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Detaljer"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Oppdatert"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Forbereder oppstart av programmet..."
+  },
+  "overlay.trophy_earned": {
+    "message": "Du har oppnådd et trophy!"
+  }
+}

@@ -20,10 +20,13 @@
 #include <renderer/commands.h>
 #include <renderer/types.h>
 
+#include <string>
+
 struct MemState;
 struct FeatureState;
 struct Config;
-struct SDL_Window;
+struct DisplayState;
+struct GxmState;
 
 namespace renderer {
 struct Context;
@@ -31,6 +34,8 @@ struct FragmentProgram;
 struct RenderTarget;
 struct State;
 struct VertexProgram;
+struct WindowCallbacks;
+struct YUVConversionCache;
 
 bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map);
 bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const std::vector<SceGxmVertexAttribute> &attributes);
@@ -57,8 +62,10 @@ void reset_command_list(CommandList &command_list);
 void submit_command_list(State &state, renderer::Context *context, CommandList &command_list);
 bool is_cmd_ready(MemState &mem, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list);
-void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config);
-bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
+void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms = 500);
+void start_render_thread(State &state, DisplayState &display, GxmState &gxm, MemState &mem, Config &config);
+void stop_render_thread(State &state);
+bool init(const WindowCallbacks &callbacks, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
 
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units);
 void set_depth_func(State &state, Context *ctx, bool is_front, SceGxmDepthFunc depth_func);
@@ -89,11 +96,14 @@ void sync_surface_data(State &state, Context *ctx, const SceGxmNotification vert
 
 bool create_context(State &state, std::unique_ptr<Context> &context);
 void destroy_context(State &state, std::unique_ptr<Context> &context);
+void destroy_context_during_shutdown(State &state, std::unique_ptr<Context> &context);
 bool create_render_target(State &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams *params);
 void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt);
+void destroy_render_target_during_shutdown(State &state, std::unique_ptr<RenderTarget> &rt);
 
 Command *generic_command_allocate();
 void generic_command_free(Command *cmd);
+void destroy_command_payload(Command &cmd);
 
 template <typename... Args>
 bool add_command(Context *ctx, const CommandOpcode opcode, int *status, Args... arguments) {
@@ -145,12 +155,21 @@ int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, 
         return 0;
 }
 
+struct VulkanDeviceInfo {
+    std::vector<std::string> gpu_names;
+    std::vector<int> mapping_method_masks;
+    bool custom_driver_requested = false;
+    bool custom_driver_loaded = false;
+};
+
+VulkanDeviceInfo enumerate_vulkan_devices(const std::string &custom_driver_name = {});
+
 namespace texture {
 
 // Paletted textures.
 void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, uint32_t width, uint32_t height, const uint32_t *palette);
 void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, uint32_t width, uint32_t height, const uint32_t *palette);
-void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, uint32_t layout_width, uint32_t layout_height, bool is_p3);
+void yuv420_texture_to_rgb(YUVConversionCache &cache, uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, uint32_t layout_width, uint32_t layout_height, bool is_p3);
 const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem);
 
 // Assume fmt is a bcn format

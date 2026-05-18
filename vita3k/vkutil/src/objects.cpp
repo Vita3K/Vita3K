@@ -30,6 +30,10 @@ void init(vma::Allocator vma_allocator) {
     allocator = vma_allocator;
 }
 
+void deinit() {
+    allocator = nullptr;
+}
+
 Image::Image() = default;
 
 Image::Image(Image &&other) noexcept {

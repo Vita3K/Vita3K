@@ -119,6 +119,7 @@ public:
     virtual uint32_t get_buffer_parameter_size() const = 0;
     virtual void on_state_change(const MemState &mem, ModuleData &v, const VoiceState previous) {}
     virtual void on_param_change(const MemState &mem, ModuleData &data) {}
+    virtual void cleanup_voice_state(ModuleData &data) {}
 };
 
 static constexpr uint32_t MAX_VOICE_OUTPUT = 4;

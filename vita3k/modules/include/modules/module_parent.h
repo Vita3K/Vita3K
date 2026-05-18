@@ -29,6 +29,10 @@ void init_libraries(EmuEnvState &emuenv);
 void init_exported_vars(EmuEnvState &emuenv);
 void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id);
 
+// Returns true if the NID has an HLE (C++) implementation in nids.inc.
+// Used to determine if an LLE export should be overridden with HLE dispatch.
+bool has_hle_implementation(uint32_t nid);
+
 /**
  * \brief Loads a dynamic module into memory if it wasn't already loaded. If it was, find it and return it.
  * \param emuenv PlayStation Vita emulated environment
@@ -51,5 +55,7 @@ bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
 int unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
 bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int *retcode);
 
+void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &titleid);
+
 Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem);
-Ptr<void> get_client_vtable(MemState &mem);
+Ptr<void> get_client_vtable(KernelState &kernel, MemState &mem);

@@ -30,10 +30,15 @@
 #include <display/state.h>
 #include <shader/spirv_recompiler.h>
 #include <util/align.h>
+#include <util/android_driver.h>
 #include <util/log.h>
 #include <vkutil/vkutil.h>
 
-#include <SDL3/SDL_vulkan.h>
+#include <overlay/display_manager.h>
+
+#include <algorithm>
+#include <mutex>
+#include <unordered_set>
 
 #ifdef __APPLE__
 #include <MoltenVK/mvk_vulkan.h>
@@ -41,13 +46,14 @@
 
 #ifdef __ANDROID__
 #include <SDL3/SDL_system.h>
-#include <adrenotools/bcenabler.h>
-#include <adrenotools/driver.h>
-#include <boost/range/iterator_range.hpp>
 #include <dlfcn.h>
-#include <jni.h>
 #include <sys/mman.h>
 #include <util/float_to_half.h>
+
+#ifdef USE_ADRENO_TOOLS
+#include <adrenotools/bcenabler.h>
+#include <adrenotools/driver.h>
+#endif
 
 #include <android/hardware_buffer.h>
 
@@ -150,7 +156,23 @@ const static std::vector<const char *> required_device_extensions = {
 
 namespace renderer::vulkan {
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(USE_ADRENO_TOOLS)
+// need to avoid patching bcn per custom driver more than once
+static bool patch_bcn_once(void *function_to_patch) {
+    static std::unordered_set<void *> patched_functions;
+
+    if (patched_functions.find(function_to_patch) != patched_functions.end()) {
+        LOG_INFO("BCeNabler patch already applied");
+        return true;
+    }
+
+    if (!adrenotools_patch_bcn(function_to_patch))
+        return false;
+
+    patched_functions.insert(function_to_patch);
+    return true;
+}
+
 static bool detect_patch_bcn(bool *support_dxt) {
     // some Adreno GPUs support BCn textures even though they say they don't
     // and we might need to patch a function for it to work
@@ -176,7 +198,7 @@ static bool detect_patch_bcn(bool *support_dxt) {
     const auto type = adrenotools_get_bcn_type(VK_VERSION_MAJOR(properties.driverVersion), VK_VERSION_MINOR(properties.driverVersion), properties.vendorID);
     if (type == ADRENOTOOLS_BCN_PATCH) {
         void *function_to_patch = reinterpret_cast<void *>(VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(instance.get(), "vkGetPhysicalDeviceFormatProperties"));
-        if (adrenotools_patch_bcn(function_to_patch)) {
+        if (patch_bcn_once(function_to_patch)) {
             LOG_INFO("Applied BCeNabler patch");
         } else {
             LOG_INFO("Failed to apply BCeNabler");
@@ -189,6 +211,69 @@ static bool detect_patch_bcn(bool *support_dxt) {
     }
 
     return true;
+}
+#endif
+
+#if defined(__linux__) && !defined(__ANDROID__)
+static bool has_instance_extension(const std::vector<vk::ExtensionProperties> &available_extensions, const std::string_view target_name) {
+    return std::find_if(available_extensions.begin(), available_extensions.end(), [&](const vk::ExtensionProperties &ext) {
+        return std::string_view(ext.extensionName.data()) == target_name;
+    }) != available_extensions.end();
+}
+
+static bool select_linux_surface_extension(renderer::WindowCallbacks &window_callbacks, std::vector<const char *> &instance_extensions) {
+    const auto available_extensions = vk::enumerateInstanceExtensionProperties();
+
+    switch (window_callbacks.display_protocol) {
+#if defined(HAVE_WAYLAND)
+    case renderer::DisplayProtocol::Wayland:
+        if (!has_instance_extension(available_extensions, vk::KHRWaylandSurfaceExtensionName)) {
+            LOG_ERROR("Could not find Vulkan instance extension {}", vk::KHRWaylandSurfaceExtensionName);
+            return false;
+        }
+        instance_extensions.push_back(vk::KHRWaylandSurfaceExtensionName);
+        return true;
+#endif
+
+#if defined(HAVE_X11)
+    case renderer::DisplayProtocol::X11:
+        if (has_instance_extension(available_extensions, vk::KHRXlibSurfaceExtensionName)) {
+            instance_extensions.push_back(vk::KHRXlibSurfaceExtensionName);
+            return true;
+        }
+#if defined(VK_USE_PLATFORM_XCB_KHR)
+        if (window_callbacks.native_connection && has_instance_extension(available_extensions, "VK_KHR_xcb_surface")) {
+            window_callbacks.display_protocol = renderer::DisplayProtocol::Xcb;
+            instance_extensions.push_back("VK_KHR_xcb_surface");
+            LOG_INFO("Falling back to XCB Vulkan surface extension");
+            return true;
+        }
+#endif
+        LOG_ERROR("Could not find a supported Vulkan surface extension for X11 (tried xlib then xcb)");
+        return false;
+
+    case renderer::DisplayProtocol::Xcb:
+#if !defined(VK_USE_PLATFORM_XCB_KHR)
+        LOG_ERROR("XCB surface requested but Vulkan XCB platform support is not available");
+        return false;
+#else
+        if (!window_callbacks.native_connection) {
+            LOG_ERROR("XCB surface requested without an XCB connection");
+            return false;
+        }
+        if (!has_instance_extension(available_extensions, "VK_KHR_xcb_surface")) {
+            LOG_ERROR("Could not find Vulkan instance extension {}", "VK_KHR_xcb_surface");
+            return false;
+        }
+        instance_extensions.push_back("VK_KHR_xcb_surface");
+        return true;
+#endif
+#endif
+
+    default:
+        LOG_ERROR("Unsupported display protocol on Linux");
+        return false;
+    }
 }
 #endif
 
@@ -277,10 +362,10 @@ static std::string get_driver_version(uint32_t vendor_id, uint32_t version_raw) 
     return fmt::format("{}.{}.{}", (version_raw >> 22) & 0x3ff, (version_raw >> 12) & 0x3ff, version_raw & 0xfff);
 }
 
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config) {
+bool create(std::unique_ptr<renderer::State> &state, const Config &config) {
     auto &vk_state = dynamic_cast<VKState &>(*state);
 
-    return vk_state.create(window, state, config);
+    return vk_state.create(state, config);
 }
 
 VKState::VKState(int gpu_idx)
@@ -297,100 +382,24 @@ bool VKState::init() {
     return true;
 }
 
+bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &config) {
 #ifdef __ANDROID__
-static void *load_custom_adreno_driver(const std::string &driver_name) {
-    const fs::path driver_path = fs::path(SDL_GetAndroidInternalStoragePath()) / "driver" / driver_name / "/";
-
-    if (!fs::exists(driver_path)) {
-        LOG_ERROR("Could not find driver {}", driver_name);
-        return nullptr;
-    }
-
-    std::string main_so_name;
-    {
-        fs::path driver_name_file = driver_path / "driver_name.txt";
-        if (!fs::exists(driver_name_file)) {
-            LOG_ERROR("Could not find driver driver_name.txt");
-            return nullptr;
-        }
-
-        fs::ifstream name_file(driver_name_file, std::ios_base::in);
-        name_file >> main_so_name;
-        name_file.close();
-    }
-
-    const char *temp_dir = nullptr;
-    fs::path temp_dir_path;
-    if (SDL_GetAndroidSDKVersion() < 29) {
-        temp_dir_path = driver_path / "tmp/";
-        fs::create_directory(temp_dir_path);
-        temp_dir = temp_dir_path.c_str();
-    }
-
-    fs::path lib_dir;
-    // retrieve the app lib dir using jni
-    {
-        // retrieve the JNI environment.
-        JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
-        env->PushLocalFrame(10);
-        // retrieve the Java instance of the SDLActivity
-        jobject activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
-        // the following calls activity.getApplicationInfo().nativeLibraryDir
-        jclass actibity_class = env->GetObjectClass(activity);
-        jmethodID getApplicationInfo_method = env->GetMethodID(actibity_class, "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
-        jobject app_info = env->CallObjectMethod(activity, getApplicationInfo_method);
-        jclass app_info_class = env->GetObjectClass(app_info);
-        jfieldID app_info_field = env->GetFieldID(app_info_class, "nativeLibraryDir", "Ljava/lang/String;");
-        jstring lib_dir_java = reinterpret_cast<jstring>(env->GetObjectField(app_info, app_info_field));
-        const char *lib_dir_ptr = env->GetStringUTFChars(lib_dir_java, nullptr);
-
-        // copy the dir path in our local object
-        lib_dir = fs::path(lib_dir_ptr) / "/";
-
-        env->ReleaseStringUTFChars(lib_dir_java, lib_dir_ptr);
-        // remove all local references
-        env->PopLocalFrame(nullptr);
-    }
-
-    fs::create_directory(driver_path / "file_redirect");
-
-    void *vulkan_handle = adrenotools_open_libvulkan(
-        RTLD_NOW,
-        ADRENOTOOLS_DRIVER_FILE_REDIRECT | ADRENOTOOLS_DRIVER_CUSTOM,
-        temp_dir,
-        lib_dir.c_str(),
-        driver_path.c_str(),
-        main_so_name.c_str(),
-        (driver_path / "file_redirect/").c_str(),
-        nullptr);
-
-    if (!vulkan_handle) {
-        LOG_ERROR("Could not open handle for custom driver {}", driver_name);
-        return nullptr;
-    }
-
-    return vulkan_handle;
-}
+    const bool custom_driver_requested = !config.current_config.custom_driver_name.empty();
 #endif
 
-bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config) {
     // Create Instance
     {
-        PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
-        VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+#if defined(__ANDROID__) && defined(USE_ADRENO_TOOLS)
+        PFN_vkGetInstanceProcAddr vk_get_instance_proc_addr = android_driver::resolve_vk_get_instance_proc_addr(config.current_config.custom_driver_name);
+        if (!vk_get_instance_proc_addr)
+            return false;
 
-#ifdef __ANDROID__
-        if (!config.current_config.custom_driver_name.empty()) {
-            void *vulkan_handle = load_custom_adreno_driver(config.current_config.custom_driver_name);
-            if (vulkan_handle) {
-                vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(dlsym(vulkan_handle, "vkGetInstanceProcAddr"));
-                VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-                LOG_INFO("Custom Adreno driver {} injected successfully", config.current_config.custom_driver_name);
-            }
-        }
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(vk_get_instance_proc_addr);
 
         if (!detect_patch_bcn(&texture_cache.support_dxt))
             return false;
+#else
+        VULKAN_HPP_DEFAULT_DISPATCHER.init();
 #endif
 
         vk::ApplicationInfo app_info{
@@ -401,19 +410,18 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .apiVersion = VK_API_VERSION_1_0
         };
 
-        unsigned int instance_req_ext_count;
-        auto instance_extensions_str = SDL_Vulkan_GetInstanceExtensions(&instance_req_ext_count);
         std::vector<const char *> instance_extensions;
-        instance_extensions.reserve(instance_req_ext_count + 6);
-        for (size_t i = 0; i < instance_req_ext_count; i++) {
-            instance_extensions.push_back(instance_extensions_str[i]);
-        }
-
-#ifdef __APPLE__
-        // VK_KHR_portability_enumeration is a Vulkan Loader extension automatically added by SDL_Vulkan_GetInstanceExtensions.
-        // When using MoltenVK directly without the Vulkan Loader, this extension causes an instant crash on startup.
-        // Remove it from the default instance_extensions and handle it separately in the optional extensions.
-        std::erase(instance_extensions, vk::KHRPortabilityEnumerationExtensionName);
+        instance_extensions.reserve(8);
+        instance_extensions.push_back(vk::KHRSurfaceExtensionName);
+#ifdef _WIN32
+        instance_extensions.push_back(vk::KHRWin32SurfaceExtensionName);
+#elif defined(__APPLE__)
+        instance_extensions.push_back(vk::EXTMetalSurfaceExtensionName);
+#elif defined(__ANDROID__)
+        instance_extensions.push_back(vk::KHRAndroidSurfaceExtensionName);
+#else
+        if (!select_linux_surface_extension(window_callbacks, instance_extensions))
+            return false;
 #endif
 
         const std::set<std::string> optional_instance_extensions = {
@@ -466,6 +474,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
 #ifdef __APPLE__
         const VkBool32 full_image_swizzle = VK_TRUE;
+        const VkBool32 resume_lost_device = VK_TRUE;
 #ifndef NDEBUG
         const VkBool32 debug = VK_TRUE;
         const int32_t log_level = 4;
@@ -473,6 +482,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         vk::LayerSettingEXT layer_settings[] = {
             { kMVKMoltenVKDriverLayerName, "MVK_CONFIG_FULL_IMAGE_VIEW_SWIZZLE", vk::LayerSettingTypeEXT::eBool32, 1,
                 &full_image_swizzle },
+            { kMVKMoltenVKDriverLayerName, "MVK_CONFIG_RESUME_LOST_DEVICE", vk::LayerSettingTypeEXT::eBool32, 1,
+                &resume_lost_device },
 #ifndef NDEBUG
             { kMVKMoltenVKDriverLayerName, "MVK_CONFIG_DEBUG", vk::LayerSettingTypeEXT::eBool32, 1, &debug },
             { kMVKMoltenVKDriverLayerName, "MVK_CONFIG_LOG_LEVEL", vk::LayerSettingTypeEXT::eInt32, 1, &log_level },
@@ -522,7 +533,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     }
 
     // Create Surface
-    if (!screen_renderer.create(window))
+    if (!screen_renderer.create())
         return false;
 
     // Select Physical Device
@@ -563,6 +574,19 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         physical_device_memory = physical_device.getMemoryProperties();
         physical_device_queue_families = physical_device.getQueueFamilyProperties();
 
+#ifdef __ANDROID__
+        if (custom_driver_requested) {
+            if (android_driver::is_custom_driver_loaded(
+                    config.current_config.custom_driver_name,
+                    physical_device_properties.vendorID,
+                    physical_device_properties.driverVersion,
+                    physical_device_properties.deviceName.data()))
+                LOG_INFO("Custom Adreno driver {} injected successfully", config.current_config.custom_driver_name);
+            else
+                LOG_WARN("Custom Adreno driver {} fell back to the system Vulkan loader", config.current_config.custom_driver_name);
+        }
+#endif
+
         LOG_INFO("Vulkan device: {}", physical_device_properties.deviceName.data());
         LOG_INFO("Driver version: {}", get_driver_version(physical_device_properties.vendorID, physical_device_properties.driverVersion));
     }
@@ -595,7 +619,6 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         // use these features (because they are used by the vita GPU) if they are available
         vk::PhysicalDeviceFeatures enabled_features{
-            .depthClamp = physical_device_features.depthClamp,
             .fillModeNonSolid = physical_device_features.fillModeNonSolid,
             .wideLines = physical_device_features.wideLines,
             .samplerAnisotropy = physical_device_features.samplerAnisotropy,
@@ -897,6 +920,12 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     if (!screen_renderer.setup())
         return false;
 
+    init_overlay_font_dirs();
+
+    if (!overlay_renderer.init(*this)) {
+        LOG_WARN("Failed to initialize Vulkan overlay renderer, overlays will be disabled");
+    }
+
     support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);
 
     return true;
@@ -966,21 +995,106 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
 }
 
 void VKState::cleanup() {
+    const auto release_descriptor_sets = [](FrameDescriptor &descriptor) {
+        std::vector<vk::DescriptorSet>().swap(descriptor.sets);
+        descriptor.descriptors_idx = 0;
+    };
+
     device.waitIdle();
+
+    request_queue.abort();
+
+    context = nullptr;
+
+    for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
+        frames[i].rendered_fences.clear();
+        for (auto &descriptor : frames[i].vert_descriptors)
+            release_descriptor_sets(descriptor);
+        for (auto &descriptor : frames[i].frag_descriptors)
+            release_descriptor_sets(descriptor);
+        release_descriptor_sets(frames[i].color_descriptor);
+    }
+
+    pipeline_cache.cleanup();
+
+    for (int i = 0; i < MAX_FRAMES_RENDERING; i++)
+        frames[i].destroy_queue.destroy_objects();
 
     screen_renderer.cleanup();
 
-    allocator.destroy();
+    overlay_renderer.destroy();
+
+    surface_cache.cleanup();
+
+    texture_cache.cleanup();
+
+    for (auto &[addr, mapping] : mapped_memories) {
+        if (auto *ext = std::get_if<ExternalBuffer>(&mapping.buffer_impl)) {
+            device.destroyBuffer(mapping.buffer);
+            device.freeMemory(ext->memory);
+#ifdef __ANDROID__
+            if (mapping_method == MappingMethod::NativeBuffer && ext->extra) {
+                AHardwareBuffer *hardware_buffer = reinterpret_cast<AHardwareBuffer *>(ext->extra);
+                _AHardwareBuffer_unlock(hardware_buffer, nullptr);
+                if (support_android_buffer_import)
+                    _AHardwareBuffer_release(hardware_buffer);
+            }
+#endif
+        }
+    }
+    mapped_memories.clear();
+    buffer_trapping.trapped_buffers.clear();
+
+    default_image.destroy();
+    default_buffer.destroy();
+
+    for (auto &pool : frame_descriptor_pools)
+        device.destroy(pool);
+    frame_descriptor_pools.clear();
+
+    for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
+        device.destroy(frames[i].render_pool);
+        frames[i].render_pool = nullptr;
+        device.destroy(frames[i].prerender_pool);
+        frames[i].prerender_pool = nullptr;
+    }
 
     device.destroy(general_command_pool);
+    general_command_pool = nullptr;
     device.destroy(transfer_command_pool);
+    transfer_command_pool = nullptr;
+    device.destroy(multithread_command_pool);
+    multithread_command_pool = nullptr;
+
+    allocator.destroy();
+
+    vkutil::deinit();
 
     device.destroy();
+
+    if (debug_messenger) {
+        instance.destroyDebugUtilsMessengerEXT(debug_messenger);
+        debug_messenger = nullptr;
+    }
+    if (debug_report) {
+        instance.destroyDebugReportCallbackEXT(debug_report);
+        debug_report = nullptr;
+    }
+
     instance.destroy();
+
+    gxp_ptr_map.clear();
+    shaders_cache_hashs.clear();
+    request_queue.reset();
+    current_frame_idx = 1;
+    last_scene_id = 0;
+    shaders_count_compiled = 0;
+    programs_count_pre_compiled = 0;
+    should_display = false;
+    render_abort = false;
 }
 
-void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, DisplayState &display,
-    const GxmState &gxm, MemState &mem) {
+void VKState::render_frame(DisplayState &display, const GxmState &gxm, MemState &mem) {
     // we are displaying this frame, wait for a new one
     should_display = false;
 
@@ -990,65 +1104,123 @@ void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         frame = display.next_rendered_frame;
     }
 
-    if (!frame.base)
+    update_overlays();
+    bool has_overlays = false;
+    if (overlay_manager) {
+        overlay_manager->lock_shared();
+        has_overlays = overlay_manager->has_visible();
+        overlay_manager->unlock_shared();
+    }
+
+    if (!frame.base && !has_overlays)
         return;
 
     if (!screen_renderer.acquire_swapchain_image())
         return;
 
-    // Check if the surface exists
-    Viewport viewport;
-    viewport.width = static_cast<uint32_t>(frame.image_size.x * res_multiplier);
-    viewport.height = static_cast<uint32_t>(frame.image_size.y * res_multiplier);
-
-    vk::ImageLayout layout = vk::ImageLayout::eGeneral;
-    vk::ImageView surface_handle = surface_cache.sourcing_color_surface_for_presentation(
-        frame.base, frame.pitch, viewport);
-
-    if (!surface_handle) {
-        vkutil::Image &vita_surface = screen_renderer.vita_surface[screen_renderer.swapchain_image_idx];
-        if (frame.image_size.x != vita_surface.width || frame.image_size.y != vita_surface.height) {
-            // re-create the image
-            vita_surface.destroy();
-            vita_surface = vkutil::Image(frame.image_size.x, frame.image_size.y, vk::Format::eR8G8B8A8Unorm);
-            vita_surface.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+    // store viewport for touch
+    {
+        const float fb_w = static_cast<float>(screen_renderer.extent.width);
+        const float fb_h = static_cast<float>(screen_renderer.extent.height);
+        display.viewport_drawable_w = static_cast<int>(fb_w);
+        display.viewport_drawable_h = static_cast<int>(fb_h);
+        if (fb_h > 0.0f) {
+            const float window_aspect = fb_w / fb_h;
+            constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+            const bool pixel_perfect = fullscreen_hd_res_pixel_perfect && fullscreen
+                && !(screen_renderer.extent.width % DEFAULT_RES_WIDTH)
+                && !(screen_renderer.extent.height % (DEFAULT_RES_HEIGHT - 4));
+            if (stretch_the_display_area && !pixel_perfect) {
+                display.viewport_x = 0.0f;
+                display.viewport_y = 0.0f;
+                display.viewport_w = fb_w;
+                display.viewport_h = fb_h;
+            } else if ((window_aspect > vita_aspect) && !pixel_perfect) {
+                display.viewport_w = fb_h * vita_aspect;
+                display.viewport_h = fb_h;
+                display.viewport_x = (fb_w - display.viewport_w) / 2.0f;
+                display.viewport_y = 0.0f;
+            } else {
+                display.viewport_w = fb_w;
+                display.viewport_h = fb_w / vita_aspect;
+                display.viewport_x = 0.0f;
+                display.viewport_y = (fb_h - display.viewport_h) / 2.0f;
+            }
         }
-
-        // copy surface to staging buffer
-        const vk::DeviceSize texture_data_size = frame.pitch * frame.image_size.y * 4;
-        memcpy(screen_renderer.vita_surface_staging_info.pMappedData, frame.base.get(mem), texture_data_size);
-
-        // copy staging buffer to image
-        auto &cmd_buffer = screen_renderer.current_cmd_buffer;
-        vita_surface.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
-        vk::BufferImageCopy region{
-            .bufferOffset = 0,
-            .bufferRowLength = frame.pitch,
-            .bufferImageHeight = static_cast<uint32_t>(frame.image_size.y),
-            .imageSubresource = vkutil::color_subresource_layer,
-            .imageOffset = { 0, 0, 0 },
-            .imageExtent = { static_cast<uint32_t>(frame.image_size.x), static_cast<uint32_t>(frame.image_size.y), 1 }
-        };
-        cmd_buffer.copyBufferToImage(screen_renderer.vita_surface_staging, vita_surface.image, vk::ImageLayout::eTransferDstOptimal, region);
-
-        vita_surface.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
-
-        surface_handle = vita_surface.view;
-        viewport = {
-            .offset_x = 0,
-            .offset_y = 0,
-            .width = static_cast<uint32_t>(frame.image_size.x),
-            .height = static_cast<uint32_t>(frame.image_size.y),
-            .texture_width = static_cast<uint32_t>(frame.image_size.x),
-            .texture_height = static_cast<uint32_t>(frame.image_size.y)
-        };
-        layout = vk::ImageLayout::eShaderReadOnlyOptimal;
     }
 
-    screen_renderer.render(surface_handle, layout, viewport);
+    if (has_overlays && screen_renderer.current_cmd_buffer) {
+        overlay_renderer.prepare(screen_renderer.current_cmd_buffer,
+            *overlay_manager,
+            display.viewport_w, display.viewport_h,
+            screen_renderer.swapchain_image_idx);
+    }
+
+    if (frame.base) {
+        // Check if the surface exists
+        Viewport viewport;
+        viewport.width = static_cast<uint32_t>(frame.image_size.x * res_multiplier);
+        viewport.height = static_cast<uint32_t>(frame.image_size.y * res_multiplier);
+
+        vk::ImageLayout layout = vk::ImageLayout::eGeneral;
+        vk::ImageView surface_handle = surface_cache.sourcing_color_surface_for_presentation(
+            frame.base, frame.pitch, viewport);
+
+        if (!surface_handle) {
+            vkutil::Image &vita_surface = screen_renderer.vita_surface[screen_renderer.swapchain_image_idx];
+            if (frame.image_size.x != vita_surface.width || frame.image_size.y != vita_surface.height) {
+                // re-create the image
+                vita_surface.destroy();
+                vita_surface = vkutil::Image(frame.image_size.x, frame.image_size.y, vk::Format::eR8G8B8A8Unorm);
+                vita_surface.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+            }
+
+            // copy surface to staging buffer
+            const vk::DeviceSize texture_data_size = frame.pitch * frame.image_size.y * 4;
+            memcpy(screen_renderer.vita_surface_staging_info.pMappedData, frame.base.get(mem), texture_data_size);
+
+            // copy staging buffer to image
+            auto &cmd_buffer = screen_renderer.current_cmd_buffer;
+            vita_surface.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
+            vk::BufferImageCopy region{
+                .bufferOffset = 0,
+                .bufferRowLength = frame.pitch,
+                .bufferImageHeight = static_cast<uint32_t>(frame.image_size.y),
+                .imageSubresource = vkutil::color_subresource_layer,
+                .imageOffset = { 0, 0, 0 },
+                .imageExtent = { static_cast<uint32_t>(frame.image_size.x), static_cast<uint32_t>(frame.image_size.y), 1 }
+            };
+            cmd_buffer.copyBufferToImage(screen_renderer.vita_surface_staging, vita_surface.image, vk::ImageLayout::eTransferDstOptimal, region);
+
+            vita_surface.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
+
+            surface_handle = vita_surface.view;
+            viewport = {
+                .offset_x = 0,
+                .offset_y = 0,
+                .width = static_cast<uint32_t>(frame.image_size.x),
+                .height = static_cast<uint32_t>(frame.image_size.y),
+                .texture_width = static_cast<uint32_t>(frame.image_size.x),
+                .texture_height = static_cast<uint32_t>(frame.image_size.y)
+            };
+            layout = vk::ImageLayout::eShaderReadOnlyOptimal;
+        }
+
+        screen_renderer.render(surface_handle, layout, viewport);
+    } else if (has_overlays) {
+        screen_renderer.begin_default_render_pass();
+    }
+
+    if (has_overlays && screen_renderer.current_cmd_buffer) {
+        overlay_renderer.render(screen_renderer.current_cmd_buffer,
+            screen_renderer.default_render_pass,
+            screen_renderer.extent,
+            display.viewport_x, display.viewport_y,
+            display.viewport_w, display.viewport_h);
+    }
 }
 
-void VKState::swap_window(SDL_Window *window) {
+void VKState::swap_window() {
     screen_renderer.swap_window();
 
     // look once a frame if we need to save the pipeline cache
@@ -1105,10 +1277,11 @@ int VKState::get_supported_filters() {
 void VKState::set_screen_filter(const std::string_view &filter) {
     if (filter == "FSR" && !support_fsr) {
         LOG_WARN("Trying to enable FSR but the GPU does not support it");
-        screen_renderer.set_filter("");
-    } else {
-        screen_renderer.set_filter(filter);
+        renderer::send_single_command(*this, nullptr, renderer::CommandOpcode::SetScreenFilter, false, new std::string());
+        return;
     }
+
+    renderer::send_single_command(*this, nullptr, renderer::CommandOpcode::SetScreenFilter, false, new std::string(filter));
 }
 
 bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
@@ -1431,39 +1604,6 @@ void VKState::set_async_compilation(bool enable) {
     pipeline_cache.set_async_compilation(enable);
 }
 
-#ifdef __ANDROID__
-std::vector<std::string> VKState::get_gpu_list() {
-    if (!support_custom_drivers())
-        return { physical_device_properties.deviceName.data() };
-
-    // get the stock name
-    std::vector<std::string> gpu_list = { "Default" };
-
-    // First value is the stock driver
-    fs::path driver_path = fs::path(SDL_GetAndroidInternalStoragePath()) / "driver";
-    fs::create_directories(driver_path);
-
-    for (const auto &entry : boost::make_iterator_range(fs::directory_iterator(driver_path), {})) {
-        if (fs::is_directory(entry.path()))
-            gpu_list.push_back(entry.path().filename().c_str());
-    }
-
-    return gpu_list;
-}
-#else
-std::vector<std::string> VKState::get_gpu_list() {
-    const std::vector<vk::PhysicalDevice> gpus = instance.enumeratePhysicalDevices();
-
-    std::vector<std::string> gpu_list;
-    // First value is always automatic
-    gpu_list.emplace_back("Automatic");
-    for (const vk::PhysicalDevice gpu : gpus)
-        gpu_list.emplace_back(gpu.getProperties().deviceName.data());
-
-    return gpu_list;
-}
-#endif
-
 uint32_t VKState::get_gpu_version() {
     return physical_device_properties.driverVersion;
 }
@@ -1471,6 +1611,148 @@ uint32_t VKState::get_gpu_version() {
 std::string_view VKState::get_gpu_name() {
     return physical_device_properties.deviceName.data();
 }
+
+} // namespace renderer::vulkan
+
+static int get_supported_mapping_methods_mask(const vk::PhysicalDevice &gpu, const bool has_properties2, const vk::detail::DispatchLoaderDynamic &dispatch) {
+    int mask = (1 << static_cast<int>(MappingMethod::Disabled));
+
+#ifndef __APPLE__
+    if (has_properties2) {
+        bool support_buffer_device_address = false;
+        bool support_standard_layout = false;
+        bool support_external_memory = false;
+#ifdef __ANDROID__
+        bool support_android_buffer_import = false;
+        bool support_unix_fd_import = false;
+#endif
+        for (const vk::ExtensionProperties &ext : gpu.enumerateDeviceExtensionProperties(nullptr, dispatch)) {
+            const std::string_view name(ext.extensionName.data());
+            if (name == vk::KHRBufferDeviceAddressExtensionName)
+                support_buffer_device_address = true;
+            else if (name == vk::KHRUniformBufferStandardLayoutExtensionName)
+                support_standard_layout = true;
+            else if (name == vk::EXTExternalMemoryHostExtensionName)
+                support_external_memory = true;
+#ifdef __ANDROID__
+            else if (name == VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME)
+                support_android_buffer_import = true;
+            else if (name == VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME)
+                support_unix_fd_import = true;
+#endif
+        }
+
+        bool support_memory_mapping = true;
+        if (support_buffer_device_address) {
+            auto features = gpu.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceBufferDeviceAddressFeatures>(dispatch);
+            support_buffer_device_address = static_cast<bool>(features.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress);
+        }
+        support_memory_mapping &= support_buffer_device_address;
+
+        if (support_standard_layout) {
+            auto features = gpu.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>(dispatch);
+            support_standard_layout = static_cast<bool>(features.get<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>().uniformBufferStandardLayout);
+        }
+        support_memory_mapping &= support_standard_layout;
+
+#ifdef __ANDROID__
+        support_android_buffer_import &= SDL_GetAndroidSDKVersion() >= 26;
+        support_unix_fd_import &= SDL_GetAndroidSDKVersion() >= 26;
+#endif
+
+        if (support_memory_mapping) {
+            mask |= (1 << static_cast<int>(MappingMethod::DoubleBuffer));
+            mask |= (1 << static_cast<int>(MappingMethod::PageTable));
+
+            if (support_external_memory) {
+                auto props = gpu.getProperties2KHR<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>(dispatch);
+                support_external_memory = (props.get<vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>().minImportedHostPointerAlignment <= 4096);
+            }
+
+            if (support_external_memory)
+                mask |= (1 << static_cast<int>(MappingMethod::ExernalHost));
+
+#ifdef __ANDROID__
+            if (support_android_buffer_import || support_unix_fd_import)
+                mask |= (1 << static_cast<int>(MappingMethod::NativeBuffer));
+#endif
+        }
+    }
+#endif // !__APPLE__
+
+    return mask;
+}
+
+renderer::VulkanDeviceInfo renderer::enumerate_vulkan_devices(const std::string &custom_driver_name) {
+    VulkanDeviceInfo info;
+    info.gpu_names.emplace_back("Automatic");
+    info.custom_driver_requested = !custom_driver_name.empty();
+
+    try {
+        vk::detail::DispatchLoaderDynamic dispatch;
+#ifdef __ANDROID__
+        PFN_vkGetInstanceProcAddr vk_get_instance_proc_addr = android_driver::resolve_vk_get_instance_proc_addr(custom_driver_name);
+        if (!vk_get_instance_proc_addr)
+            return info;
+
+        dispatch.init(vk_get_instance_proc_addr);
+#else
+        dispatch.init();
+#endif
+
+        vk::ApplicationInfo app_info{
+            .apiVersion = VK_API_VERSION_1_0
+        };
+
+        std::vector<const char *> instance_extensions;
+        bool has_properties2 = false;
+        for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties(nullptr, dispatch)) {
+            const std::string_view name(prop.extensionName.data());
+            if (name == vk::KHRGetPhysicalDeviceProperties2ExtensionName) {
+                instance_extensions.push_back(vk::KHRGetPhysicalDeviceProperties2ExtensionName);
+                has_properties2 = true;
+            }
+#ifdef __APPLE__
+            else if (name == vk::KHRPortabilityEnumerationExtensionName) {
+                instance_extensions.push_back(vk::KHRPortabilityEnumerationExtensionName);
+            }
+#endif
+        }
+
+        vk::InstanceCreateInfo instance_info{
+#ifdef __APPLE__
+            .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
+#endif
+            .pApplicationInfo = &app_info,
+        };
+        instance_info.setPEnabledExtensionNames(instance_extensions);
+
+        vk::UniqueInstance instance = vk::createInstanceUnique(instance_info, nullptr, dispatch);
+        dispatch.init(instance.get(), dispatch.vkGetInstanceProcAddr);
+        std::vector<vk::PhysicalDevice> physical_devices = instance->enumeratePhysicalDevices(dispatch);
+
+        for (const vk::PhysicalDevice &gpu : physical_devices) {
+            const vk::PhysicalDeviceProperties properties = gpu.getProperties(dispatch);
+            info.gpu_names.emplace_back(properties.deviceName.data());
+            info.mapping_method_masks.push_back(get_supported_mapping_methods_mask(gpu, has_properties2, dispatch));
+        }
+
+#ifdef __ANDROID__
+        if (info.custom_driver_requested && !physical_devices.empty())
+            info.custom_driver_loaded = android_driver::is_custom_driver_loaded(
+                custom_driver_name,
+                physical_devices.front().getProperties(dispatch).vendorID,
+                physical_devices.front().getProperties(dispatch).driverVersion,
+                physical_devices.front().getProperties(dispatch).deviceName.data());
+#endif
+    } catch (const std::exception &e) {
+        LOG_WARN("Vulkan device enumeration failed: {}", e.what());
+    }
+
+    return info;
+}
+
+namespace renderer::vulkan {
 
 void VKState::precompile_shader(const ShadersHash &hash) {
     Sha256Hash empty_hash{};
@@ -1489,12 +1771,6 @@ void VKState::preclose_action() {
     // Stop the GPU request wait thread before destruction begins.
     // VKState (owns the queue) is destroyed before VKContext (owns the thread).
     request_queue.abort();
-    if (context) {
-        VKContext *vk_context = static_cast<VKContext *>(context);
-        if (vk_context->gpu_request_wait_thread.joinable()) {
-            vk_context->gpu_request_wait_thread.join();
-        }
-    }
 
     // make sure we are in a game
     if (shaders_path.empty())
@@ -1510,10 +1786,12 @@ bool VKState::support_custom_drivers() {
 }
 
 void VKState::set_turbo_mode(bool set) {
+#ifdef USE_ADRENO_TOOLS
     if (!support_custom_drivers())
         return;
 
     adrenotools_set_turbo(set);
+#endif
 }
 #endif
 

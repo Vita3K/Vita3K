@@ -535,7 +535,7 @@ EXPORT(int, sceIoDevctl, const char *dev, SceInt cmd, const void *indata, SceSiz
             return RET_ERROR(SCE_ERROR_ERRNO_ENOENT);
         }
 
-        fs::path dev_path = device._to_string();
+        fs::path dev_path = boost::describe::enum_to_string(device, "");
         fs::path path = emuenv.pref_path / dev_path;
         fs::space_info space = fs::space(path);
 
@@ -1290,9 +1290,7 @@ EXPORT(int, sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
 
 EXPORT(int, sceKernelExitProcess, int res) {
     TRACY_FUNC(sceKernelExitProcess, res);
-    // TODO Handle exit code?
-    emuenv.kernel.exit_delete_all_threads();
-
+    emuenv.kernel.request_process_exit(res);
     return SCE_KERNEL_OK;
 }
 

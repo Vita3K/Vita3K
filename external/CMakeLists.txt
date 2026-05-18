@@ -56,6 +56,8 @@ set(SPDLOG_NO_THREAD_ID ON CACHE BOOL "")
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "")
 add_subdirectory(spdlog EXCLUDE_FROM_ALL)
 
+add_subdirectory(substitute EXCLUDE_FROM_ALL)
+
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
 
@@ -68,10 +70,6 @@ target_include_directories(cppcommon PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/CppComm
 add_library(glad STATIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c")
 target_include_directories(glad PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/include")
 
-add_library(better-enums INTERFACE)
-target_include_directories(better-enums INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/better-enums")
-target_compile_definitions(better-enums INTERFACE BETTER_ENUMS_STRICT_CONVERSION=1)
-
 add_library(googletest STATIC googletest/googletest/src/gtest_main.cc googletest/googletest/src/gtest-all.cc)
 target_include_directories(googletest PUBLIC googletest/googletest/include)
 target_include_directories(googletest PRIVATE googletest/googletest)
@@ -81,12 +79,6 @@ add_library(concurrentqueue INTERFACE)
 target_include_directories(concurrentqueue INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/concurrentqueue")
 
 add_subdirectory(libfat16)
-
-# The imgui target is including both imgui and imgui_club.
-add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/misc/cpp/imgui_stdlib.cpp)
-target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_DEMO_WINDOWS)
-target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
-	"${CMAKE_CURRENT_SOURCE_DIR}/imgui_club/imgui_memory_editor/")
 
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
 target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniz")
@@ -116,7 +108,12 @@ elseif (ARCHITECTURE STREQUAL "x86_64")
 endif ()
 
 if(ANDROID)
-	add_subdirectory(libadrenotools)
+	if(ARCHITECTURE STREQUAL "arm64")
+		add_subdirectory(libadrenotools)
+		target_compile_definitions(adrenotools INTERFACE USE_ADRENO_TOOLS)
+	else()
+		add_library(adrenotools INTERFACE)
+	endif()
 endif()
 
 if(WIN32)

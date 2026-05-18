@@ -29,7 +29,7 @@ public:
     ~ScreenRenderer();
 
     bool init(const fs::path &static_assets);
-    void render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size);
+    void render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size, GLuint default_fbo = 0);
 
     void destroy();
 

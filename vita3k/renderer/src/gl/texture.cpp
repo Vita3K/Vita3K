@@ -74,6 +74,24 @@ bool GLTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     return textures.init(glGenTextures, glDeleteTextures);
 }
 
+void GLTextureCache::cleanup() {
+    textures.cleanup();
+    texture_lookup.clear();
+    texture_queue.items.clear();
+    texture_queue.head = nullptr;
+    sampler_lookup.clear();
+    sampler_queue.items.clear();
+    sampler_queue.head = nullptr;
+    available_textures_hash.clear();
+    exported_textures_hash.clear();
+    current_info = nullptr;
+    exporting_texture = false;
+    importing_texture = false;
+    imported_texture_raw_data.clear();
+    imported_texture_decoded = nullptr;
+    dds_descriptor = nullptr;
+}
+
 void GLTextureCache::select(size_t index, const SceGxmTexture &texture) {
     const GLuint gl_texture = textures[index];
     glBindTexture(get_gl_texture_type(texture), gl_texture);

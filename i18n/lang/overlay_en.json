@@ -1,0 +1,158 @@
+{
+  "common.ok": {
+    "message": "OK",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Generic OK button."
+  },
+  "common.cancel": {
+    "message": "Cancel",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Generic cancel button."
+  },
+  "common.yes": {
+    "message": "Yes",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Generic yes button."
+  },
+  "common.no": {
+    "message": "No",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Generic no button."
+  },
+  "common.delete": {
+    "message": "Delete",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Generic delete action label."
+  },
+  "common.submit": {
+    "message": "Submit",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Generic submit action label."
+  },
+  "common.please_wait": {
+    "message": "Please wait...",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Progress text while waiting."
+  },
+  "common.an_error_occurred": {
+    "message": "An error occurred.\nError code: {}",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Error body with one format placeholder for the error code."
+  },
+  "common.could_not_load": {
+    "message": "Could not load the file.",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. File load failure message."
+  },
+  "common.could_not_save": {
+    "message": "Could not save the file.",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. File save failure message."
+  },
+  "common.file_corrupted": {
+    "message": "The file is corrupt.",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Corrupt file message."
+  },
+  "common.microphone_disabled": {
+    "message": "Enable the microphone.",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Message shown when microphone access is unavailable."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Save",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Title for the save-data save list dialog."
+  },
+  "dialog.save_data.load.title": {
+    "message": "Load",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Title for the save-data load list dialog."
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Saving...",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Progress message while saving save data."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Loading...",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Progress message while loading save data."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Saving complete.",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Completion message after save data finishes saving."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Loading complete.",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Completion message after save data finishes loading."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Deletion complete.",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Completion message after save data finishes deleting."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "New Saved Data",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Label for a brand new save slot."
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "There is no saved data.",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Message shown when there is no saved data to load."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "Do you want to save the data?",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Confirmation prompt before saving data."
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "Do you want to load this saved data?",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Confirmation prompt before loading saved data."
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "Do you want to delete this saved data?",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Confirmation prompt before deleting saved data."
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "Do you want to overwrite this saved data?",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Confirmation prompt before overwriting saved data."
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "Do you want to cancel saving?",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Confirmation prompt before cancelling a save operation."
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "Do you want to cancel loading?",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Confirmation prompt before cancelling a load operation."
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "Do you want to cancel deleting?",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Confirmation prompt before cancelling a delete operation."
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Saving...\nDo not power off the system or close the application.",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Progress warning while save data is being written."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "Could not save the file.\nThere is not enough free space on the memory card. To save your progress in the application, you must create at least {} of free space.\n\nTo create the free space, press PS button to pause this application, and then delete other applications or content.",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Save-data dialog error with one format placeholder for required free space."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "There is not enough free space on the memory card. \nTo continue using the application, you must create at least {} of free space.\n\nPress the PS button to pause this application, and then delete other applications or content.",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Not-enough-free-space message with one format placeholder for required free space."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Details",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Save-data details label."
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Updated",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Save-data updated label."
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Preparing to start the application...",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Trophy startup progress message shown before launching an app."
+  },
+  "overlay.trophy_earned": {
+    "message": "You have earned a trophy!",
+    "description": "Firmware-derived string. Do Not Edit Unless Translation Missing. Trophy-earned renderer notification text."
+  },
+  "message.load_app_failed": {
+    "message": "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Have you installed the firmware?\n2. Re-dump your own PS Vita app/game and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported.",
+    "description": "Detailed app-load failure message with one format placeholder for the path or title."
+  },
+  "overlay.emulation_paused": {
+    "message": "Emulation Paused",
+    "description": "Pause overlay title."
+  },
+  "overlay.press_ps_to_continue": {
+    "message": "Press PS BUTTON to continue",
+    "description": "Pause overlay subtitle prompting the user to resume emulation."
+  },
+  "overlay.compiling_shaders": {
+    "message": "Please wait, compiling shaders...",
+    "description": "Overlay hint shown while shaders compile."
+  }
+}

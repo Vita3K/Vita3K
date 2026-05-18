@@ -38,19 +38,10 @@ SceUID get_thread_id(CPUState &state) {
     return state.thread_id;
 }
 
-CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol) {
+CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
-    state->protocol = protocol;
     state->thread_id = thread_id;
-
-    // TODO: we can move this to kernel after we drop unicorn
-    // unicorn is unable to detect whether the exit was because of halt or not
-    state->halt_instruction = alloc_block(mem, 4, "halt_instruction");
-    const auto halt_ptr = state->halt_instruction.get_ptr<uint16_t>();
-    *halt_ptr.get(mem) = 0xBF00; // NOP
-    *(halt_ptr.get(mem) + 1) = 0xBF30; // WFI
-    state->halt_instruction_pc = state->halt_instruction.get() | 1;
 
     if (!init(state->disasm)) {
         return CPUStatePtr();
@@ -207,4 +198,14 @@ uint32_t stack_free(CPUState &state, size_t size) {
     const uint32_t new_sp = read_sp(state) + size;
     write_sp(state, new_sp);
     return new_sp;
+}
+
+static thread_local CPUState *current_cpu_state = nullptr;
+
+void set_current_cpu_state(CPUState *state) {
+    current_cpu_state = state;
+}
+
+CPUState *get_current_cpu_state() {
+    return current_cpu_state;
 }

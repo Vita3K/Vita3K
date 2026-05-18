@@ -16,6 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 #include <io.h>
 #else
 #define _FILE_OFFSET_BITS 64
