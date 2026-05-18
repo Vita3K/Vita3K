@@ -161,6 +161,7 @@ if(ANDROID)
 		android/jni/native_drivers.cpp
 		android/jni/native_users.cpp
 		android/jni/native_apps.cpp
+		android/jni/native_trophies.cpp
 		android/jni/native_install.cpp
 		android/jni/native_session.cpp
 		android/jni/input_overlay.cpp

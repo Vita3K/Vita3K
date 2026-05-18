@@ -604,6 +604,7 @@ private fun SessionTab(
             saving = settingsViewModel.saving,
             onSave = {
                 settingsViewModel.save(forceCustomConfig = true) { restartRequired ->
+                    sessionViewModel.promoteOverlayToGameOverride(activity)
                     if (restartRequired.isEmpty()) {
                         sessionViewModel.showStatusMessage(activity.getString(R.string.emulation_settings_saved))
                     } else {
@@ -613,6 +614,7 @@ private fun SessionTab(
             },
             onReset = {
                 settingsViewModel.deleteCustomConfig { restartRequired ->
+                    sessionViewModel.clearGameOverlayOverride(activity)
                     if (restartRequired.isEmpty()) {
                         sessionViewModel.showStatusMessage(activity.getString(R.string.emulation_settings_saved))
                     } else {
@@ -966,7 +968,7 @@ private fun EmbeddedSettingsTab(
             onPickCameraImage = { isFront ->
                 activity.requestImagePath { path ->
                     if (path != null) {
-                        globalSettingsViewModel.setCameraImage(isFront, path)
+                        activeViewModel.setCameraImage(isFront, path)
                     }
                 }
             },

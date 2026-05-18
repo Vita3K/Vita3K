@@ -113,7 +113,7 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
     // Request focus for the overlay so it has priority on presses.
     requestFocus();
 
-    mLayout = OverlayStore.defaultLayout(getContext());
+    applyResolvedState(OverlayStore.loadGlobalState(getContext()), false);
 
     refreshControls();
     resetHideTimer();
@@ -907,16 +907,19 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
 
   public void setLayout(OverlayLayout layout)
   {
-    if (layout == null)
-      return;
-
-    mLayout = layout.normalized();
-    refreshControls();
+    setLayout(layout, true);
   }
 
   public OverlayLayout captureLayout()
   {
     return mLayout.normalized();
+  }
+
+  public void refreshOverlayScope(String scopeId)
+  {
+    boolean allowGameOverride = OverlayStore.hasGameOverride(getContext(), scopeId);
+    OverlayState state = OverlayStore.resolveState(getContext(), scopeId, allowGameOverride);
+    applyResolvedState(state, true);
   }
 
   public void rebindController()
@@ -970,9 +973,31 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   {
     OverlayLayout normalizedLayout = layout != null ? layout.normalized()
             : OverlayStore.defaultLayout(getContext());
+    if (normalizedLayout.equals(mLayout))
+      return;
+
     mLayout = normalizedLayout;
 
     if (refresh)
+      refreshControls();
+  }
+
+  private void applyResolvedState(OverlayState state, boolean refresh)
+  {
+    OverlayState resolvedState = state != null ? state : OverlayStore.defaultState(getContext());
+    OverlayLayout normalizedLayout = resolvedState.getLayout().normalized();
+    OverlayConfig normalizedConfig = resolvedState.getConfig().normalized();
+    float resolvedScale = normalizedConfig.getOverlayScale() / 100f;
+    int resolvedOpacity = normalizedConfig.getOverlayOpacity();
+    boolean changed = !normalizedLayout.equals(mLayout)
+            || Float.compare(mScale, resolvedScale) != 0
+            || mOpacity != resolvedOpacity;
+
+    mLayout = normalizedLayout;
+    mScale = resolvedScale;
+    mOpacity = resolvedOpacity;
+
+    if (refresh && changed)
       refreshControls();
   }
 

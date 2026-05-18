@@ -7,5 +7,7 @@
 -keep class org.vita3k.emulator.data.EmulatorConfig { *; }
 -keep class org.vita3k.emulator.data.NativeAppInfo { *; }
 -keep class org.vita3k.emulator.data.NativeImeState { *; }
+-keep class org.vita3k.emulator.data.NativeTrophy { *; }
+-keep class org.vita3k.emulator.data.NativeTrophyCollection { *; }
 -keep class org.vita3k.emulator.data.NativeUser { *; }
 -keep interface org.vita3k.emulator.data.InstallCallback { *; }

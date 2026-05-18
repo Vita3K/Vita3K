@@ -17,9 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import org.vita3k.emulator.MainActivity
@@ -35,6 +37,9 @@ import org.vita3k.emulator.ui.screens.InstallResultDialog
 import org.vita3k.emulator.ui.screens.LicenseSourceDialog
 import org.vita3k.emulator.ui.screens.UserManagementScreen
 import org.vita3k.emulator.ui.screens.settings.SettingsRoute
+import org.vita3k.emulator.trophies.ui.screen.TrophyBrowserRoute
+import org.vita3k.emulator.trophies.ui.viewmodel.TrophyViewerViewModel
+import org.vita3k.emulator.ui.common.ImmersiveLandscapeEffect
 import org.vita3k.emulator.ui.viewmodel.AppsListViewModel
 import org.vita3k.emulator.ui.viewmodel.InstallViewModel
 import org.vita3k.emulator.ui.viewmodel.InstallType
@@ -46,6 +51,7 @@ private const val ROUTE_INITIAL_SETUP_MANUAL = "initial_setup/manual"
 private const val ROUTE_APPS_LIST = "apps_list"
 private const val ROUTE_SETTINGS = "settings"
 private const val ROUTE_USER_MANAGEMENT = "users"
+private const val ROUTE_TROPHIES = "trophies"
 private const val ROUTE_CUSTOM_CONFIG = "settings/custom/{titleId}?appName={appName}"
 private const val ARG_TITLE_ID = "titleId"
 private const val ARG_APP_NAME = "appName"
@@ -58,6 +64,8 @@ private fun customConfigRoute(titleId: String, appName: String): String {
     return "settings/custom/${Uri.encode(titleId)}?appName=${Uri.encode(appName)}"
 }
 
+private fun isTrophyRoute(route: String?): Boolean = route == ROUTE_TROPHIES
+
 @Composable
 fun AppNavigation(
     appsListViewModel: AppsListViewModel,
@@ -67,13 +75,17 @@ fun AppNavigation(
     onAppLaunch: (AppInfo) -> Unit
 ) {
     val navController = rememberNavController()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val context = LocalContext.current
     val activity = context as? MainActivity
+    val trophyRouteActive = isTrophyRoute(currentBackStackEntry?.destination?.route)
     var showArchiveSourceDialog by remember { mutableStateOf(false) }
     var showStandaloneLicenseDialog by remember { mutableStateOf(false) }
     val startDestination by produceState<String?>(initialValue = null, key1 = context) {
         value = if (AppStorage.isInitialSetupCompleted(context)) ROUTE_APPS_LIST else ROUTE_INITIAL_SETUP
     }
+
+    ImmersiveLandscapeEffect(activity = activity, enabled = trophyRouteActive)
 
     LaunchedEffect(appsListViewModel.initialized) {
         if (appsListViewModel.initialized) {
@@ -282,6 +294,11 @@ fun AppNavigation(
                         launchSingleTop = true
                     }
                 },
+                onOpenTrophyManager = {
+                    navController.navigate(ROUTE_TROPHIES) {
+                        launchSingleTop = true
+                    }
+                },
                 onOpenUserManagement = {
                     navController.navigate(ROUTE_USER_MANAGEMENT) {
                         launchSingleTop = true
@@ -297,6 +314,17 @@ fun AppNavigation(
                         launchSingleTop = true
                     }
                 }
+            )
+        }
+
+        composable(route = ROUTE_TROPHIES) {
+            val trophyViewerViewModel: TrophyViewerViewModel = viewModel(
+                factory = TrophyViewerViewModel.factory()
+            )
+
+            TrophyBrowserRoute(
+                viewModel = trophyViewerViewModel,
+                onExit = { navController.popBackStack() }
             )
         }
 
