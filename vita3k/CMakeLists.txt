@@ -264,23 +264,39 @@ if(NOT ANDROID)
 endif()
 
 if(APPLE)
-	add_custom_command(
-		OUTPUT Vita3K.icns
-		COMMAND mkdir -p Vita3K.iconset
-		COMMAND sips -z 16 16     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_16x16.png
-		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_16x16@2x.png
-		COMMAND sips -z 32 32     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_32x32.png
-		COMMAND sips -z 64 64     "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_32x32@2x.png
-		COMMAND sips -z 128 128   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_128x128.png
-		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_128x128@2x.png
-		COMMAND sips -z 256 256   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_256x256.png
-		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_256x256@2x.png
-		COMMAND sips -z 512 512   "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" --out Vita3K.iconset/icon_512x512.png
-		COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" Vita3K.iconset/icon_512x512@2x.png
-		COMMAND iconutil -c icns Vita3K.iconset
-		COMMAND rm -r Vita3K.iconset
-		DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png")
-	set_source_files_properties(Vita3K.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+	if(CMAKE_GENERATOR STREQUAL "Xcode")
+		set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon" PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+		target_sources(vita3k PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon")
+		set(MACOSX_BUNDLE_ICON_FILE Vita3K.icon)
+	else()
+		set(ACTOOL_OUT "${CMAKE_CURRENT_BINARY_DIR}/AssetsCompiled")
+		add_custom_command(
+			OUTPUT "${ACTOOL_OUT}/Assets.car" "${ACTOOL_OUT}/Vita3K.icns" "${ACTOOL_OUT}/assetcatalog_generated_info.plist"
+			COMMAND xcrun actool
+				"${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon"
+				--app-icon Vita3K
+				--compile "${ACTOOL_OUT}"
+				--output-partial-info-plist "${ACTOOL_OUT}/assetcatalog_generated_info.plist"
+				--platform macosx
+				--target-device mac
+				--minimum-deployment-target 11.0
+				--enable-on-demand-resources NO
+				--include-all-app-icons
+			DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.icon/icon.json"
+			VERBATIM)
+		add_custom_target(vita3k_assets DEPENDS "${ACTOOL_OUT}/Assets.car" "${ACTOOL_OUT}/Vita3K.icns")
+		add_dependencies(vita3k vita3k_assets)
+		set_source_files_properties("${ACTOOL_OUT}/Assets.car" "${ACTOOL_OUT}/Vita3K.icns"
+			PROPERTIES MACOSX_PACKAGE_LOCATION Resources GENERATED TRUE)
+		target_sources(vita3k PRIVATE "${ACTOOL_OUT}/Assets.car" "${ACTOOL_OUT}/Vita3K.icns")
+		set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
+		add_custom_command(
+			TARGET vita3k POST_BUILD
+			COMMAND /bin/sh -c
+				"/usr/libexec/PlistBuddy -c 'Add :CFBundleIconName string Vita3K' '$<TARGET_FILE_DIR:vita3k>/../Info.plist' 2>/dev/null; \
+				/usr/libexec/PlistBuddy -c 'Set :CFBundleIconName Vita3K' '$<TARGET_FILE_DIR:vita3k>/../Info.plist'"
+			VERBATIM)
+	endif()
 
 	add_custom_command(
 		TARGET vita3k
@@ -302,9 +318,8 @@ if(APPLE)
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${discord_dylib}" "$<TARGET_FILE_DIR:vita3k>/../Resources")
 	endif()
-	set_target_properties(vita3k PROPERTIES LINK_FLAGS "-rpath @loader_path/../Frameworks/ -rpath @loader_path/../Resources/ -ld64")
-	target_sources(vita3k PRIVATE Vita3K.icns)
-	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
+	set_target_properties(vita3k PROPERTIES LINK_FLAGS "-rpath @loader_path/../Frameworks/ -rpath @loader_path/../Resources/ -ld64"
+		XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "Vita3K")
 	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.Vita3K.Vita3K")
 	set(MACOSX_BUNDLE_BUNDLE_NAME "Vita3K")
 
