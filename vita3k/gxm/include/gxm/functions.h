@@ -44,6 +44,7 @@ uint32_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 uint32_t texture_size_first_mip(const SceGxmTexture &texture);
 bool is_bcn_format(SceGxmTextureBaseFormat base_format);
 bool is_pvrt_format(SceGxmTextureBaseFormat base_format);
+bool is_etc_format(SceGxmTextureBaseFormat base_format);
 bool is_block_compressed_format(SceGxmTextureBaseFormat base_format);
 bool is_paletted_format(SceGxmTextureBaseFormat base_format);
 bool is_yuv_format(SceGxmTextureBaseFormat base_format);
