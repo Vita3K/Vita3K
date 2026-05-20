@@ -1057,9 +1057,6 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         platform.after_render_thread_start = [win = m_game_window]() {
             win->complete_gl_migration();
         };
-        platform.before_renderer_cleanup = [win = m_game_window]() {
-            win->make_current();
-        };
         platform.destroy_render_context = [win = m_game_window]() {
             win->destroy_gl_context();
         };

@@ -24,8 +24,8 @@
 #include <map>
 #include <mutex>
 #include <thread>
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
 
 struct EmuEnvState;
 struct SceGxmContext;

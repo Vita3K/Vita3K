@@ -51,7 +51,6 @@ struct AppSessionPlatform {
     renderer::WindowCallbacks window_callbacks;
     std::function<void()> before_render_thread_start;
     std::function<void()> after_render_thread_start;
-    std::function<void()> before_renderer_cleanup;
     std::function<void()> destroy_render_context;
 };
 

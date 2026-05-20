@@ -185,34 +185,17 @@ void AppSessionController::stop(const AppSessionStopReason reason) {
         set_phase(AppSessionPhase::Stopping);
     }
 
-    const bool has_render_context = static_cast<bool>(active_platform.before_renderer_cleanup)
-        || static_cast<bool>(active_platform.destroy_render_context);
+    const bool has_render_context = static_cast<bool>(active_platform.destroy_render_context);
     const bool needs_renderer_cleanup = renderer_was_initialized || has_render_context;
 
     if (runtime_was_initialized) {
-        if (app_started && emuenv.renderer) {
-            emuenv.display.abort = true;
-            emuenv.renderer->notification_ready.notify_all();
-            emuenv.gxm.display_queue.abort();
-            emuenv.renderer->render_abort = true;
-            gxm::invalidate_sync_objects(emuenv.gxm);
-            emuenv.renderer->command_finish_one.notify_all();
-            renderer::stop_render_thread(*emuenv.renderer);
-        }
-
-        if (needs_renderer_cleanup && active_platform.before_renderer_cleanup)
-            active_platform.before_renderer_cleanup();
-
         if (app_started && reason != AppSessionStopReason::LaunchFailure)
             update_app_time_used(emuenv, emuenv.io.app_path);
 
-        deinit(emuenv);
+        shutdown_app_runtime(emuenv);
+        reset_app_state(emuenv);
         destroy(emuenv);
-        set_current_config(emuenv, "");
     } else if (renderer_was_initialized) {
-        if (needs_renderer_cleanup && active_platform.before_renderer_cleanup)
-            active_platform.before_renderer_cleanup();
-
         if (emuenv.renderer) {
             emuenv.renderer->cleanup();
             emuenv.renderer.reset();

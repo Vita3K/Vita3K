@@ -161,7 +161,6 @@ SyncWaitResult wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp,
         } else if (!sync_object->cond.wait_for(lock, std::chrono::microseconds(timeout_micros), pred)) {
             return SyncWaitResult::TimedOut;
         }
-
     }
     if (sync_object->being_deleted)
         return SyncWaitResult::Shutdown;

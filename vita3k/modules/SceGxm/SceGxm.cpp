@@ -1329,6 +1329,18 @@ void invalidate_sync_objects(GxmState &gxm) {
     }
 }
 
+void shutdown(EmuEnvState &emuenv) {
+    emuenv.display.abort = true;
+    emuenv.renderer->notification_ready.notify_all();
+    emuenv.gxm.display_queue.abort();
+    emuenv.renderer->render_abort = true;
+    invalidate_sync_objects(emuenv.gxm);
+    emuenv.renderer->command_finish_one.notify_all();
+
+    // wait for any deferred GXM callback to finish before continuing shutdown
+    const std::lock_guard<std::mutex> callback_guard(emuenv.gxm.callback_lock);
+}
+
 } // namespace gxm
 
 struct SceGxmRenderTarget {
