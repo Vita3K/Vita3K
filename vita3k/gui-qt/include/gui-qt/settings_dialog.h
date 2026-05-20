@@ -30,6 +30,7 @@
 struct EmuEnvState;
 class GuiSettings;
 class SettingsDialogTooltips;
+class ThemeManager;
 
 enum class SettingsTab : int {
     Core = 0,
@@ -54,6 +55,7 @@ class SettingsDialog final : public QDialog {
 public:
     explicit SettingsDialog(EmuEnvState &emuenv,
         std::shared_ptr<GuiSettings> gui_settings,
+        ThemeManager &theme_manager,
         const std::string &app_path = {},
         int initial_tab = 0);
     ~SettingsDialog();
@@ -69,6 +71,7 @@ public:
 
 Q_SIGNALS:
     void gui_stylesheet_request();
+    void gui_theme_music_settings_request();
     void gui_log_settings_request();
     void storage_path_changed();
     void ui_language_request(const QString &locale_tag);
@@ -78,6 +81,7 @@ private slots:
     void on_save_clicked();
     void on_apply_clicked();
     void on_close_clicked();
+    void refresh_themes();
 
 private:
     bool apply_pending_storage_path();
@@ -103,7 +107,7 @@ private:
     void mark_dirty();
     void set_pending_pref_path(const fs::path &pref_path);
     void set_description(QWidget *tab, const QString &title, const QString &text);
-    void add_stylesheets();
+    void add_stylesheets(const QString &preferred_name = {});
     void apply_stylesheet(bool reset = false);
 
     void closeEvent(QCloseEvent *event) override;
@@ -114,6 +118,7 @@ private:
 
     EmuEnvState &emuenv;
     std::shared_ptr<GuiSettings> m_gui_settings;
+    ThemeManager &m_theme_manager;
     std::unique_ptr<SettingsDialogTooltips> m_tooltips;
     std::string m_app_path;
     int m_initial_tab;

@@ -226,6 +226,8 @@ if(NOT ANDROID)
 		"${CMAKE_SOURCE_DIR}/i18n/qt/*.ts")
 	set(VITA3K_QT_QM_DIR "${CMAKE_BINARY_DIR}/qt_translations")
 	set(VITA3K_QT_QM_FILES "")
+	set(VITA3K_GUI_CONFIG_THEME_QSS "${CMAKE_CURRENT_SOURCE_DIR}/gui-qt/resources/themes/waves/theme.qss")
+	set(VITA3K_GUI_CONFIG_THEME_BG "${CMAKE_CURRENT_SOURCE_DIR}/gui-qt/resources/themes/waves/shell_background.svg")
 
 	foreach(ts_file IN LISTS VITA3K_QT_TS_FILES)
 		get_filename_component(ts_name "${ts_file}" NAME_WE)
@@ -285,9 +287,12 @@ if(APPLE)
 	add_custom_command(
 		TARGET vita3k
 		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:vita3k>/../Resources/gui-configs"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/../Resources/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/../Resources/translations"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:vita3k>/../Resources/shaders-builtin")
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:vita3k>/../Resources/shaders-builtin"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VITA3K_GUI_CONFIG_THEME_QSS}" "$<TARGET_FILE_DIR:vita3k>/../Resources/gui-configs/Waves.qss"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VITA3K_GUI_CONFIG_THEME_BG}" "$<TARGET_FILE_DIR:vita3k>/../Resources/gui-configs/shell_background.svg")
 	if(USE_DISCORD_RICH_PRESENCE)
 		if(ARCHITECTURE STREQUAL "x86_64")
 			set(discord_dylib "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dylib")
@@ -352,10 +357,13 @@ elseif(LINUX)
 	add_custom_command(
 	TARGET vita3k
 	POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:vita3k>/gui-configs"
 	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
 	COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations"
 	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
-	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons")
+	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons"
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VITA3K_GUI_CONFIG_THEME_QSS}" "$<TARGET_FILE_DIR:vita3k>/gui-configs/Waves.qss"
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VITA3K_GUI_CONFIG_THEME_BG}" "$<TARGET_FILE_DIR:vita3k>/gui-configs/shell_background.svg")
 	if(USE_DISCORD_RICH_PRESENCE)
 		add_custom_command(
 		TARGET vita3k
@@ -370,10 +378,13 @@ elseif(WIN32)
 	add_custom_command(
 		TARGET vita3k
 		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:vita3k>/gui-configs"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons")
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VITA3K_GUI_CONFIG_THEME_QSS}" "$<TARGET_FILE_DIR:vita3k>/gui-configs/Waves.qss"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VITA3K_GUI_CONFIG_THEME_BG}" "$<TARGET_FILE_DIR:vita3k>/gui-configs/shell_background.svg")
 	if(USE_DISCORD_RICH_PRESENCE)
 		add_custom_command(
 		TARGET vita3k

@@ -15,16 +15,23 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <gui-qt/gui_settings.h>
+#include <gui-qt/theme_surface.h>
 
-#include <QDir>
-GuiSettings::GuiSettings(const QString &settings_dir, QObject *parent)
-    : GuiSettingsBase(parent) {
-    m_settings_dir = QDir(settings_dir);
-    if (!m_settings_dir.exists())
-        m_settings_dir.mkpath(QStringLiteral("."));
+#include <QPainter>
+#include <QStyle>
+#include <QStyleOption>
 
-    m_settings = std::make_unique<QSettings>(
-        m_settings_dir.filePath(gui::Settings + QStringLiteral(".ini")),
-        QSettings::IniFormat, parent);
+ThemeSurface::ThemeSurface(QWidget *parent)
+    : QWidget(parent) {
+    setAttribute(Qt::WA_StyledBackground, true);
+}
+
+void ThemeSurface::paintEvent(QPaintEvent *event) {
+    Q_UNUSED(event);
+
+    QStyleOption opt;
+    opt.initFrom(this);
+
+    QPainter painter(this);
+    style()->drawPrimitive(QStyle::PE_Widget, &opt, &painter, this);
 }

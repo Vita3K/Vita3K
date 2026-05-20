@@ -4,7 +4,7 @@ add_library(vita3k_qt6 INTERFACE)
 
 set(VITA3K_QT_MIN_VER 6.7.0)
 
-set(VITA3K_QT_COMPONENTS Core Gui Widgets Network Concurrent Svg LinguistTools)
+set(VITA3K_QT_COMPONENTS Core Gui Widgets Network Concurrent Svg Multimedia LinguistTools)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	list(APPEND VITA3K_QT_COMPONENTS GuiPrivate)
 endif()
@@ -39,6 +39,7 @@ target_link_libraries(vita3k_qt6 INTERFACE
 	Qt6::Network
 	Qt6::Concurrent
 	Qt6::Svg
+	Qt6::Multimedia
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND TARGET Qt6::GuiPrivate)

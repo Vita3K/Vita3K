@@ -53,6 +53,20 @@ std::string wide_to_utf(const std::wstring &str) {
     return myconv.to_bytes(str);
 }
 
+std::string trim_copy(const std::string &str) {
+    const auto begin = std::find_if_not(str.begin(), str.end(), [](const unsigned char ch) {
+        return std::isspace(ch) != 0;
+    });
+    const auto end = std::find_if_not(str.rbegin(), str.rend(), [](const unsigned char ch) {
+        return std::isspace(ch) != 0;
+    }).base();
+
+    if (begin >= end)
+        return {};
+
+    return std::string(begin, end);
+}
+
 std::string remove_special_chars(std::string str) {
     for (char &c : str) {
         switch (c) {
