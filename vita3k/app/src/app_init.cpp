@@ -61,8 +61,6 @@
 #include <app/discord.h>
 #endif
 
-#include <gdbstub/functions.h>
-
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_gamepad.h>
 
@@ -748,8 +746,10 @@ SettingsCommitResult delete_custom_settings(EmuEnvState &emuenv, const std::stri
 
 // need to remove this function completely, waiting for gdb refactor
 void destroy(EmuEnvState &emuenv) {
-    if (emuenv.cfg.gdbstub)
-        server_close(emuenv);
+    // The gdb server intentionally outlives a per-session destroy so a
+    // client can stay attached across LoadExec/relaunch boundaries.
+    // Its lifetime is bound to the gdbstub thread's own server_die /
+    // server_close path, not to this teardown hook.
 }
 
 } // namespace app
