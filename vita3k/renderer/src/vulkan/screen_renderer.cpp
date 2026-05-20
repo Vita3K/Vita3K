@@ -48,7 +48,7 @@ extern "C" void *get_metal_layer_from_view(void *nsview);
 static std::atomic<bool> has_surface{ false };
 
 extern "C" JNIEXPORT void JNICALL
-Java_org_vita3k_emulator_EmuSurface_setSurfaceStatus(JNIEnv *, jobject, bool surface_present) {
+Java_org_vita3k_emulator_EmuSurface_setSurfaceStatus(JNIEnv *, jobject, jboolean surface_present) {
     has_surface.store(surface_present, std::memory_order_release);
 }
 #endif

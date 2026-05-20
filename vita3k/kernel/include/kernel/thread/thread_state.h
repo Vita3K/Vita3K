@@ -52,21 +52,10 @@ struct ThreadSignal {
     void wait();
     bool send();
 
-    std::atomic<bool> *shutting_down = nullptr;
-
 private:
     std::mutex mutex;
     std::condition_variable recv_cond;
     bool signaled = false;
-};
-
-// Internal
-enum class ThreadToDo {
-    remove,
-    run,
-    step,
-    suspend,
-    wait,
 };
 
 struct ThreadState {
@@ -106,7 +95,7 @@ struct ThreadState {
     void update_status(ThreadStatus status, std::optional<ThreadStatus> expected = std::nullopt);
     Address stack_top() const;
 
-    bool run_loop();
+    void run_loop();
     void raise_waiting_threads();
 
     // this function must be called from the thread itself (inside a svc call)
@@ -120,9 +109,10 @@ struct ThreadState {
     void suspend();
     void resume(bool step = false);
     // Resume for a single instruction and block until the step has
-    // actually completed (the run loop re-parks) or the thread is no
-    // longer running. resume(true) only flips to_do (not status), so
-    // callers cannot reliably detect step completion via status alone.
+    // actually completed (the run loop re-parks at suspend) or the
+    // thread is no longer running. Wraps resume(true) + a status_cond
+    // wait, so callers don't have to race the run_loop to observe the
+    // suspend->run->suspend transition.
     void step_and_wait();
     std::string log_stack_traceback() const;
 
@@ -133,14 +123,17 @@ private:
     KernelState &kernel;
 
     CPUContext init_cpu_ctx;
-    ThreadToDo to_do = ThreadToDo::wait;
-    std::condition_variable something_to_do;
+    // sceKernelExitThread (or top-level guest function return): park at dormant, thread reusable via start() / run_guest_function().
+    bool exit_requested = false;
+    // sceKernelExitDeleteThread (or external kill): will return from top-level run_loop(), then host thread joins.
+    bool delete_requested = false;
+    // Set by suspend(), consumed in run_loop() to transition to ThreadStatus::suspend.
+    bool suspend_requested = false;
+    // Single stepping mode.
+    bool single_stepping = false;
 
-    // if looking at the thread stack, the number of times run_loop appear
-    // if the thread is dormant, call_level is 0
-    // most of the time the thread is running, call_level is 1
-    // if running a callback inside a callback (possible for exemple by allocating
-    // gxm callbacked memory inside a kernel callback), call_level is 2
+    // Number of active run_loop frames. The top-level host thread keeps one
+    // frame alive (run_loop()) while parked dormant; callbacks add nested frames.
     int call_level = 0;
 
     // when calling sceKernelStartThread

@@ -159,7 +159,7 @@ fun SettingsRoute(
             val loaded = OverlayStore.resolveState(
                 context = context,
                 scopeId = overlayScopeId,
-                allowGameOverride = isPerApp && viewModel.hasCustomConfig
+                allowGameOverride = isPerApp && OverlayStore.hasGameOverride(context, overlayScopeId)
             )
             overlayState = loaded
             originalOverlayState = loaded
@@ -170,7 +170,7 @@ fun SettingsRoute(
         val loaded = OverlayStore.resolveState(
             context = context,
             scopeId = overlayScopeId,
-            allowGameOverride = isPerApp && viewModel.hasCustomConfig
+            allowGameOverride = isPerApp && OverlayStore.hasGameOverride(context, overlayScopeId)
         )
         overlayState = loaded
         originalOverlayState = loaded
@@ -191,11 +191,10 @@ fun SettingsRoute(
     }
 
     fun saveSettings(onSaved: (List<RestartRequiredSetting>) -> Unit) {
-        val needsCustomConfigForOverlay = isPerApp && overlayDirty && !viewModel.hasCustomConfig
         if (overlayDirty) {
             persistOverlayStateChanges()
         }
-        if (viewModel.isDirty || needsCustomConfigForOverlay) {
+        if (viewModel.isDirty) {
             viewModel.save(forceCustomConfig = isPerApp, onSaved = onSaved)
         } else {
             onSaved(emptyList())

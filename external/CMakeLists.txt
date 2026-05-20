@@ -108,7 +108,12 @@ elseif (ARCHITECTURE STREQUAL "x86_64")
 endif ()
 
 if(ANDROID)
-	add_subdirectory(libadrenotools)
+	if(ARCHITECTURE STREQUAL "arm64")
+		add_subdirectory(libadrenotools)
+		target_compile_definitions(adrenotools INTERFACE USE_ADRENO_TOOLS)
+	else()
+		add_library(adrenotools INTERFACE)
+	endif()
 endif()
 
 if(WIN32)

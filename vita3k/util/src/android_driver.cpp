@@ -6,10 +6,13 @@
 #include <util/log.h>
 
 #include <SDL3/SDL_system.h>
-#include <adrenotools/driver.h>
 #include <android/api-level.h>
 #include <dlfcn.h>
 #include <jni.h>
+
+#ifdef USE_ADRENO_TOOLS
+#include <adrenotools/driver.h>
+#endif
 
 #include <algorithm>
 #include <fstream>
@@ -408,6 +411,7 @@ bool is_custom_driver_loaded(const std::string &driver_name, uint32_t vendor_id,
 
 } // namespace android_driver
 
+#ifdef USE_ADRENO_TOOLS
 void *open_custom_vulkan_driver(const std::string &driver_name) {
     JNIEnv *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
     const auto files_dir = get_android_files_dir(env);
@@ -466,12 +470,12 @@ void *open_custom_vulkan_driver(const std::string &driver_name) {
 
     return vulkan_handle;
 }
+#endif
 
 namespace android_driver {
 
 PFN_vkGetInstanceProcAddr resolve_vk_get_instance_proc_addr(const std::string &driver_name) {
-    const PFN_vkGetInstanceProcAddr system_vk_get_instance_proc_addr = load_system_vk_get_instance_proc_addr();
-
+#ifdef USE_ADRENO_TOOLS
     if (!driver_name.empty()) {
         void *vulkan_handle = open_custom_vulkan_driver(driver_name);
         if (!vulkan_handle) {
@@ -485,8 +489,8 @@ PFN_vkGetInstanceProcAddr resolve_vk_get_instance_proc_addr(const std::string &d
             }
         }
     }
-
-    return system_vk_get_instance_proc_addr;
+#endif
+    return load_system_vk_get_instance_proc_addr();
 }
 
 } // namespace android_driver

@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <np/trophy/context.h>
+#include <np/trophy/collection.h>
 
 #include <emuenv/state.h>
 
@@ -39,30 +39,8 @@ class QSlider;
 class QWidget;
 class QResizeEvent;
 
-struct TrophyEntry {
-    int id = 0;
-    QString name;
-    QString detail;
-    int grade = 0;
-    bool hidden = false;
-    bool earned = false;
-    quint64 timestamp = 0;
-};
-
-struct TrophyAppData {
-    TrophyAppData() { grade_unlocked.fill(0); }
-
-    std::string np_com_id;
-    QString title;
-    QString icon_path;
-    int total = 0;
-    int unlocked = 0;
-    std::array<int, 5> grade_unlocked;
-
-    std::vector<TrophyEntry> trophies;
-
-    np::trophy::Context context;
-};
+using TrophyEntry = np::trophy::TrophyRecord;
+using TrophyAppData = np::trophy::CollectionSnapshot;
 
 class GuiSettings;
 class TrophyFilterProxy : public QSortFilterProxyModel {
@@ -109,6 +87,7 @@ private Q_SLOTS:
 private:
     void load_all_apps();
     bool load_app_data(const QString &np_com_id_dir);
+    std::unique_ptr<TrophyAppData> load_app_data_entry(const QString &np_com_id_dir) const;
     void populate_app_table();
     void populate_trophy_table(int app_index);
 

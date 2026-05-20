@@ -81,17 +81,7 @@ typedef int SceUID;
 
 using NIDSet = std::set<uint32_t>;
 
-enum class AppLaunchReason {
-    User,
-    LoadExec
-};
-
-struct AppLaunchRequest {
-    std::string app_path{};
-    std::string self_path{};
-    std::vector<std::string> argv{};
-    AppLaunchReason reason = AppLaunchReason::User;
-};
+#include <emuenv/app_launch_request.h>
 
 /**
  * @brief State of the emulated PlayStation Vita environment

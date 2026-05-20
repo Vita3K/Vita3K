@@ -58,6 +58,7 @@
     <string name="apps_list_menu_welcome">Welcome Screen</string>
     <string name="apps_list_menu_check_updates">Check for Updates</string>
     <string name="apps_list_menu_about">About</string>
+    <string name="apps_list_menu_trophies">Trophy Collection</string>
     <string name="apps_list_search_placeholder">Search apps\u2026</string>
     <string name="apps_list_sort_title">Title</string>
     <string name="apps_list_sort_last_played">Last Played</string>
@@ -712,4 +713,34 @@
     <string name="settings_ime_portuguese_br">Portuguese (BR)</string>
     <string name="settings_ime_english_gb">English (GB)</string>
     <string name="settings_ime_turkish">Turkish</string>
+
+    <!-- Trophy viewer -->
+    <string name="trophy_back_short">Back</string>
+    <string name="trophy_progress_percent_format">%1$d%%</string>
+    <string name="trophy_unlocked_count_format">%1$d / %2$d unlocked</string>
+    <string name="trophy_error_title">Unable to load trophies</string>
+    <string name="trophy_empty_title">No trophy collections found</string>
+    <string name="trophy_empty_body">Install a trophy-enabled app and launch it once to populate the collection list.</string>
+    <string name="trophy_not_found_title">Trophy data unavailable</string>
+    <string name="trophy_not_found_body">This trophy collection could not be loaded from the emulator storage.</string>
+    <string name="trophy_detail_not_found_body">This trophy detail entry could not be loaded from the emulator storage.</string>
+    <string name="trophy_hidden_title">Hidden Trophy</string>
+    <string name="trophy_hidden_detail">Continue playing to reveal this trophy.</string>
+    <string name="trophy_filter_all">All</string>
+    <string name="trophy_filter_earned">Earned</string>
+    <string name="trophy_filter_locked">Locked</string>
+    <string name="trophy_filter_show_hidden">Show hidden</string>
+    <string name="trophy_filter_empty_title">No trophies match the current filters</string>
+    <string name="trophy_filter_empty_body">Adjust the state or grade filters to show more trophies.</string>
+    <string name="trophy_status_earned">Earned</string>
+    <string name="trophy_status_locked">Locked</string>
+    <string name="trophy_grade_platinum">Platinum</string>
+    <string name="trophy_grade_gold">Gold</string>
+    <string name="trophy_grade_silver">Silver</string>
+    <string name="trophy_grade_bronze">Bronze</string>
+    <string name="trophy_grade_unknown">Unknown</string>
+    <string name="trophy_detail_grade_label">Grade</string>
+    <string name="trophy_detail_earned_label">Earned</string>
+    <string name="trophy_detail_description_label">Details</string>
+    <string name="trophy_not_yet_earned">Not yet earned</string>
 </resources>

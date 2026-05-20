@@ -749,10 +749,9 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
         // inner loop of vCont;r.
         const auto single_step_inferior = [&](const ThreadStatePtr &thread) {
             // step_and_wait() blocks until the step has actually
-            // completed. A plain resume(true) only flips to_do, not
-            // status, so waiting on status here would return immediately
-            // (the thread is still parked at suspend from the prior stop)
-            // and the step would never run.
+            // completed. A plain resume(true) returns as soon as the
+            // run_loop has been kicked, leaving us racing the cpu
+            // thread to observe the suspend->run->suspend cycle.
             thread->step_and_wait();
         };
 

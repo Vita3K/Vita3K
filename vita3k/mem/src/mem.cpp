@@ -158,7 +158,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
     int page_num;
     if (force) {
         if (state.allocator.allocate_at(start_page, page_count) < 0) {
-            LOG_CRITICAL("Failed to allocate at specific page");
+            return 0;
         }
         page_num = start_page;
     } else {
@@ -461,23 +461,18 @@ Address alloc(MemState &state, uint32_t size, const char *name, Address start_ad
 }
 
 Address alloc_at(MemState &state, Address address, uint32_t size, const char *name) {
+    auto addr = try_alloc_at(state, address, size, name);
+    LOG_CRITICAL_IF(addr == 0, "Failed to allocate at specific page. Memory address:{}, size:{}, name:{}", log_hex(address), log_hex(size), name);
+    return addr;
+}
+
+Address try_alloc_at(MemState &state, Address address, uint32_t size, const char *name) {
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const uint32_t wanted_page = address / STANDARD_PAGE_SIZE;
     size += address % STANDARD_PAGE_SIZE;
     const uint32_t page_count = align(size, STANDARD_PAGE_SIZE) / STANDARD_PAGE_SIZE;
-    alloc_inner(state, wanted_page, page_count, name, true);
-    return address;
-}
-
-Address try_alloc_at(MemState &state, Address address, uint32_t size, const char *name) {
-    const uint32_t wanted_page = address / STANDARD_PAGE_SIZE;
-    size += address % STANDARD_PAGE_SIZE;
-    const uint32_t page_count = align(size, STANDARD_PAGE_SIZE) / STANDARD_PAGE_SIZE;
-    if (state.allocator.free_slot_count(wanted_page, wanted_page + page_count) != page_count) {
-        return 0;
-    }
-    (void)alloc_inner(state, wanted_page, page_count, name, true);
-    return address;
+    const Address addr = alloc_inner(state, wanted_page, page_count, name, true);
+    return addr ? address : 0;
 }
 
 Block alloc_block(MemState &mem, uint32_t size, const char *name, Address start_addr) {

@@ -1,6 +1,6 @@
 # Build Vita3K
 
-Vita3K uses CMake for its project configuration and generation. In theory, it should be compatible with any project generator supported by CMake, C++17 compatible compiler and an IDE with CMake support. 
+Vita3K uses CMake for its project configuration and generation. In theory, it should be compatible with any project generator supported by CMake, C++20 compatible compiler and an IDE with CMake support. 
 
 The project provides [CMake presets](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html) to allow configuring and building Vita3K without having to deal with adding the needed arguments through a command-line interface or using the user interface of your IDE. As long as your IDE or code editor supports CMake, the software should immediately detect the presets and let you choose which configuration settings you want to use to generate the program. Reference on how to use CMake presets with various IDEs and code editors can be found here:
 
@@ -26,6 +26,8 @@ For convenience, the following building instructions are given as examples:
   ![Required tools for VS 2022](https://i.imgur.com/bkY15Oh.png)
 
 - Install `git` to `clone` the project. Download and install `git` from [here](https://git-scm.com).
+
+- Install [Qt](https://www.qt.io/download) (6.7 or later), and select the `MSVC 2022 64-bit` component during installation.
 
 - Clone this repo.
 
@@ -60,6 +62,7 @@ If you aren't satisfied with the way the Visual Studio integrates CMake projects
 
 - Generate the project:
   ```cmd
+  set CMAKE_PREFIX_PATH=C:\Qt\6.x.x\msvc2022_64
   cmake --preset windows-vs2022
   ```
   The line above will generate a Visual Studio 2022 project inside a folder called `build/windows-vs2022`.
@@ -78,7 +81,7 @@ If you aren't satisfied with the way the Visual Studio integrates CMake projects
 - Install dependencies with `brew`.
 
   ```sh
-  brew install git cmake molten-vk openssl
+  brew install git cmake molten-vk openssl qt
   ```
 
 - Clone this repo.
@@ -111,13 +114,13 @@ If you aren't satisfied with the way the Visual Studio integrates CMake projects
 ### Ubuntu/Debian
 
   ```sh
-  sudo apt install git cmake ninja-build libsdl2-dev pkg-config libgtk-3-dev clang lld xdg-desktop-portal openssl libssl-dev
+  sudo apt install git cmake ninja-build libsdl2-dev pkg-config libgtk-3-dev clang lld xdg-desktop-portal openssl libssl-dev qt6-base-dev
   ```
 
 ### Fedora
 
   ```sh
-  sudo dnf install git cmake ninja-build SDL2-devel pkg-config gtk3-devel clang lld xdg-desktop-portal openssl openssl-devel libstdc++-static
+  sudo dnf install git cmake ninja-build SDL2-devel pkg-config gtk3-devel clang lld xdg-desktop-portal openssl openssl-devel libstdc++-static qt6-base-devel
   ```
 
 Note: The CMake preset `linux-ninja-clang` makes use of the LLD linker, which will need to be installed in your system along with Clang.
@@ -139,6 +142,21 @@ Note: The CMake preset `linux-ninja-clang` makes use of the LLD linker, which wi
 - Build the project:
   ```sh
   cmake --build build/linux-ninja-clang
+  ```
+
+## Android
+
+- Building the Android version requires both the [Android SDK](https://developer.android.com/ndk/downloads) and [Android NDK](https://developer.android.com/ndk/downloads), both can be installed from Android Studio. You will need to set the environment variable ANDROID_NDK_HOME (and ANDROID_SDK_HOME when not using Android Studio) to their proper location.
+
+- The Android version of Vita3K relies on [vcpkg](https://vcpkg.io/en/) to build some of its dependencies.
+  ```sh
+  vcpkg install boost-system:arm64-android boost-filesystem:arm64-android boost-program-options:arm64-android boost-icl:arm64-android boost-variant:arm64-android openssl:arm64-android zlib:arm64-android
+  ```
+  You will also need to set the environment variable VCPKG_ROOT to its proper location.
+
+- Building can be done with Android studio: select the Vita3K Android folder and click on the build icon or by command line:
+  ```sh
+  ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleReldebug
   ```
 
 ## Note
