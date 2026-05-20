@@ -40,6 +40,8 @@ DECL_EXPORT(int, _sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea);
 DECL_EXPORT(int, _sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout);
 DECL_EXPORT(int, _sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKernelLwMutexInfo> info, SceSize size);
 DECL_EXPORT(SceUID, _sceKernelCreateRWLock, const char *name, SceUInt32 attr, SceKernelMutexOptParam *opt_param);
+DECL_EXPORT(int, _sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param);
+DECL_EXPORT(SceInt32, _sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *timeout);
 DECL_EXPORT(SceInt32, _sceKernelLockMutexCB, SceUID mutexId, SceInt32 lockCount, SceUInt32 *pTimeout);
 DECL_EXPORT(SceInt32, _sceKernelLockReadRWLock, SceUID lock_id, SceUInt32 *timeout);
 DECL_EXPORT(SceInt32, _sceKernelLockReadRWLockCB, SceUID lock_id, SceUInt32 *timeout);
@@ -77,3 +79,4 @@ DECL_EXPORT(int, _sceKernelSetThreadContextForVM, SceUID threadId, Ptr<SceKernel
 DECL_EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo);
 DECL_EXPORT(int, sceKernelResumeThreadForVM, SceUID threadId);
 DECL_EXPORT(int, sceKernelSuspendThreadForVM, SceUID threadId);
+DECL_EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count);

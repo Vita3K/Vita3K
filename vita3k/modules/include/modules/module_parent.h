@@ -19,6 +19,7 @@
 
 #include <kernel/types.h>
 #include <module/bridge.h>
+#include <patch/patch.h>
 #include <util/types.h>
 
 struct CPUState;
@@ -39,7 +40,7 @@ bool has_hle_implementation(uint32_t nid);
  * \param module_path Full path of module file (with device)
  * \return UID of the loaded module object or SCE_ERROR on failure
  */
-SceUID load_module(EmuEnvState &emuenv, const std::string &module_path);
+SceUID load_module(EmuEnvState &emuenv, const std::string &module_path, const Patches *patches = nullptr);
 int unload_module(EmuEnvState &emuenv, SceUID module_id);
 
 uint32_t start_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});

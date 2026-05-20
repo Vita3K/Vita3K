@@ -23,9 +23,9 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const std::string &bin) {
+Patches get_patches(fs::path &path, const std::string &titleid, const std::string &bin) {
     // Find a file in the path with the titleid
-    std::vector<Patch> patches;
+    Patches patches;
 
     for (auto &entry : fs::directory_iterator(path)) {
         auto filename = fs_utils::path_to_utf8(entry.path().filename());
