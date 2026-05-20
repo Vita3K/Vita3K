@@ -577,6 +577,7 @@ void apply_renderer_config(EmuEnvState &emuenv) {
     r.common_dialog = &emuenv.common_dialog;
     r.sys_date_format = cc.sys_date_format;
     r.sys_lang = cc.sys_lang;
+    r.sys_button = cc.sys_button;
 
     r.show_compile_shaders = emuenv.cfg.show_compile_shaders;
     app::sync_perf_overlay_config(emuenv);
@@ -592,8 +593,6 @@ void apply_renderer_config(EmuEnvState &emuenv) {
                 ctrl.overlay_input_intercepted.store(true, std::memory_order_relaxed);
             } else {
                 ctrl.overlay_input_intercepted.store(false, std::memory_order_relaxed);
-                std::lock_guard<std::mutex> lock(ctrl.mutex);
-                ctrl.ignore_input = true;
             }
         },
         [&emuenv]() -> overlay::overlay_touch_state {
@@ -662,6 +661,7 @@ void apply_runtime_settings(EmuEnvState &emuenv) {
     emuenv.display.fps_hack = cc.fps_hack;
     r.sys_date_format = cc.sys_date_format;
     r.sys_lang = cc.sys_lang;
+    r.sys_button = cc.sys_button;
     r.show_compile_shaders = emuenv.cfg.show_compile_shaders;
     app::sync_perf_overlay_config(emuenv);
 }

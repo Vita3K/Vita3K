@@ -41,7 +41,7 @@ public:
     void on_button_pressed(pad_button button_press, bool is_auto_repeat) override;
     void on_touch_pressed(float vx, float vy) override;
 
-    bool poll_dialog(DialogState &dialog, int date_format);
+    bool poll_dialog(DialogState &dialog, int date_format, int sys_button);
 
 private:
     int m_active_type = 0;
@@ -169,6 +169,10 @@ private:
 
     DialogState *m_dialog = nullptr;
     int m_date_format = 0;
+    int m_sys_button = 0;
+
+    bool is_confirm_button(pad_button button) const;
+    bool is_cancel_button(pad_button button) const;
 
     static constexpr uint16_t k_vw = 960;
     static constexpr uint16_t k_vh = 544;

@@ -183,6 +183,7 @@ struct State {
     DialogState *common_dialog = nullptr;
     int sys_date_format = 0;
     int sys_lang = 0;
+    int sys_button = 0;
 
     PerformanceOverlayState perf_overlay;
 
