@@ -248,10 +248,6 @@ void AppSessionController::apply_runtime_state_locked() {
 
     const bool overlay_intercepted = paused || input_intercepted;
     emuenv.ctrl.overlay_input_intercepted.store(overlay_intercepted, std::memory_order_relaxed);
-    if (overlay_intercepted || currently_paused != paused) {
-        std::lock_guard<std::mutex> ctrl_lock(emuenv.ctrl.mutex);
-        emuenv.ctrl.ignore_input = true;
-    }
 
     emuenv.renderer->paused.store(paused, std::memory_order_relaxed);
 }

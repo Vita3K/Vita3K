@@ -173,9 +173,10 @@ std::string common_dialog_overlay::format_date_time(int date_format, const void 
     return date_str + fmt::format(" {}:{:02d}", dt->hour, dt->minute);
 }
 
-bool common_dialog_overlay::poll_dialog(DialogState &dialog, int date_format) {
+bool common_dialog_overlay::poll_dialog(DialogState &dialog, int date_format, int sys_button) {
     m_dialog = &dialog;
     m_date_format = date_format;
+    m_sys_button = sys_button;
 
     std::lock_guard<std::recursive_mutex> lock(dialog.mutex);
 
@@ -413,6 +414,18 @@ bool common_dialog_overlay::poll_dialog(DialogState &dialog, int date_format) {
     }
 
     return true;
+}
+
+bool common_dialog_overlay::is_confirm_button(pad_button button) const {
+    if (m_sys_button == SCE_SYSTEM_PARAM_ENTER_BUTTON_CIRCLE)
+        return button == pad_button::circle;
+    return button == pad_button::cross;
+}
+
+bool common_dialog_overlay::is_cancel_button(pad_button button) const {
+    if (m_sys_button == SCE_SYSTEM_PARAM_ENTER_BUTTON_CIRCLE)
+        return button == pad_button::cross;
+    return button == pad_button::circle;
 }
 
 void common_dialog_overlay::update(uint64_t timestamp_us) {
@@ -1519,6 +1532,27 @@ void common_dialog_overlay::handle_message_input(pad_button btn, DialogState &di
     if (m_buttons.empty())
         return;
 
+    if (is_confirm_button(btn)) {
+        const auto &selected = m_buttons[m_selected_button];
+        dialog.msg.status = selected.value;
+        dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+        dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        m_stop_input_loop.store(true);
+        m_stop_pad_interception.store(true);
+        return;
+    }
+
+    if (is_cancel_button(btn)) {
+        if (m_buttons.size() > 1) {
+            dialog.msg.status = m_buttons.back().value;
+            dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+            dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+            m_stop_input_loop.store(true);
+            m_stop_pad_interception.store(true);
+        }
+        return;
+    }
+
     switch (btn) {
     case pad_button::dpad_left:
     case pad_button::ls_left:
@@ -1530,30 +1564,45 @@ void common_dialog_overlay::handle_message_input(pad_button btn, DialogState &di
         if (m_selected_button < static_cast<int>(m_buttons.size()) - 1)
             m_selected_button++;
         break;
-    case pad_button::cross: {
-        const auto &selected = m_buttons[m_selected_button];
-        dialog.msg.status = selected.value;
-        dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-        dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-        m_stop_input_loop.store(true);
-        m_stop_pad_interception.store(true);
-        break;
-    }
-    case pad_button::circle:
-        if (m_buttons.size() > 1) {
-            dialog.msg.status = m_buttons.back().value;
-            dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-            dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-            m_stop_input_loop.store(true);
-            m_stop_pad_interception.store(true);
-        }
-        break;
     default:
         break;
     }
 }
 
 void common_dialog_overlay::handle_savedata_list_input(pad_button btn, DialogState &dialog) {
+    if (is_confirm_button(btn)) {
+        if (m_cancel_btn_focused) {
+            dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+            dialog.savedata.draw_info_window = false;
+            dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+            dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+            m_stop_input_loop.store(true);
+            m_stop_pad_interception.store(true);
+            return;
+        }
+
+        if (!m_save_slots.empty()) {
+            const uint32_t slot_index = m_save_slots[m_selected_slot]->slot_index;
+            dialog.savedata.selected_save = slot_index;
+            dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+            dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+            m_stop_input_loop.store(true);
+            m_stop_pad_interception.store(true);
+            dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
+        }
+        return;
+    }
+
+    if (is_cancel_button(btn)) {
+        dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+        dialog.savedata.draw_info_window = false;
+        dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+        dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        m_stop_input_loop.store(true);
+        m_stop_pad_interception.store(true);
+        return;
+    }
+
     switch (btn) {
     case pad_button::dpad_up:
     case pad_button::ls_up:
@@ -1580,39 +1629,11 @@ void common_dialog_overlay::handle_savedata_list_input(pad_button btn, DialogSta
                 m_scroll_offset = m_selected_slot - k_max_visible_slots + 1;
         }
         break;
-    case pad_button::cross:
-        if (m_cancel_btn_focused) {
-            dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
-            dialog.savedata.draw_info_window = false;
-            dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
-            dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
-            m_stop_input_loop.store(true);
-            m_stop_pad_interception.store(true);
-            break;
-        }
-        if (!m_save_slots.empty()) {
-            const uint32_t slot_index = m_save_slots[m_selected_slot]->slot_index;
-            dialog.savedata.selected_save = slot_index;
-            dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-            dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
-            m_stop_input_loop.store(true);
-            m_stop_pad_interception.store(true);
-            dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
-        }
-        break;
     case pad_button::triangle:
         if (!m_cancel_btn_focused && !m_save_slots.empty() && m_save_slots[m_selected_slot]->has_data) {
             dialog.savedata.draw_info_window = true;
             dialog.savedata.selected_save = m_save_slots[m_selected_slot]->slot_index;
         }
-        break;
-    case pad_button::circle:
-        dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
-        dialog.savedata.draw_info_window = false;
-        dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
-        dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
-        m_stop_input_loop.store(true);
-        m_stop_pad_interception.store(true);
         break;
     default:
         break;
@@ -1622,6 +1643,25 @@ void common_dialog_overlay::handle_savedata_list_input(pad_button btn, DialogSta
 void common_dialog_overlay::handle_savedata_fixed_input(pad_button btn, DialogState &dialog) {
     if (m_buttons.empty())
         return;
+
+    if (is_confirm_button(btn)) {
+        const auto &selected = m_buttons[m_selected_button];
+        dialog.savedata.button_id = selected.value;
+        dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+        dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        m_stop_input_loop.store(true);
+        m_stop_pad_interception.store(true);
+        return;
+    }
+
+    if (is_cancel_button(btn)) {
+        dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+        dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+        dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        m_stop_input_loop.store(true);
+        m_stop_pad_interception.store(true);
+        return;
+    }
 
     switch (btn) {
     case pad_button::dpad_left:
@@ -1633,22 +1673,6 @@ void common_dialog_overlay::handle_savedata_fixed_input(pad_button btn, DialogSt
     case pad_button::ls_right:
         if (m_selected_button < static_cast<int>(m_buttons.size()) - 1)
             m_selected_button++;
-        break;
-    case pad_button::cross: {
-        const auto &selected = m_buttons[m_selected_button];
-        dialog.savedata.button_id = selected.value;
-        dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-        dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
-        m_stop_input_loop.store(true);
-        m_stop_pad_interception.store(true);
-        break;
-    }
-    case pad_button::circle:
-        dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
-        dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
-        dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
-        m_stop_input_loop.store(true);
-        m_stop_pad_interception.store(true);
         break;
     default:
         break;
@@ -1667,6 +1691,28 @@ void common_dialog_overlay::handle_savedata_info_input(pad_button btn, DialogSta
 }
 
 void common_dialog_overlay::handle_ime_input(pad_button btn, DialogState &dialog) {
+    if (is_confirm_button(btn)) {
+        if (m_selected_button == 0) {
+            submit_ime_dialog(dialog);
+            m_stop_input_loop.store(true);
+            m_stop_pad_interception.store(true);
+        } else {
+            cancel_ime_dialog(dialog);
+            m_stop_input_loop.store(true);
+            m_stop_pad_interception.store(true);
+        }
+        return;
+    }
+
+    if (is_cancel_button(btn)) {
+        if (m_ime_cancelable) {
+            cancel_ime_dialog(dialog);
+            m_stop_input_loop.store(true);
+            m_stop_pad_interception.store(true);
+        }
+        return;
+    }
+
     switch (btn) {
     case pad_button::dpad_left:
     case pad_button::ls_left:
@@ -1678,25 +1724,6 @@ void common_dialog_overlay::handle_ime_input(pad_button btn, DialogState &dialog
         if (m_selected_button < static_cast<int>(m_buttons.size()) - 1)
             m_selected_button++;
         break;
-    case pad_button::cross: {
-        if (m_selected_button == 0) {
-            submit_ime_dialog(dialog);
-            m_stop_input_loop.store(true);
-            m_stop_pad_interception.store(true);
-        } else {
-            cancel_ime_dialog(dialog);
-            m_stop_input_loop.store(true);
-            m_stop_pad_interception.store(true);
-        }
-        break;
-    }
-    case pad_button::circle:
-        if (m_ime_cancelable) {
-            cancel_ime_dialog(dialog);
-            m_stop_input_loop.store(true);
-            m_stop_pad_interception.store(true);
-        }
-        break;
     default:
         break;
     }
@@ -1707,6 +1734,8 @@ void common_dialog_overlay::on_touch_pressed(float vx, float vy) {
         return;
 
     std::lock_guard<std::recursive_mutex> lock(m_dialog->mutex);
+    const auto confirm_button = (m_sys_button == SCE_SYSTEM_PARAM_ENTER_BUTTON_CIRCLE) ? pad_button::circle : pad_button::cross;
+    const auto cancel_button = (m_sys_button == SCE_SYSTEM_PARAM_ENTER_BUTTON_CIRCLE) ? pad_button::cross : pad_button::circle;
 
     switch (m_active_type) {
     case MESSAGE_DIALOG:
@@ -1716,7 +1745,7 @@ void common_dialog_overlay::on_touch_pressed(float vx, float vy) {
             if (vx >= btn.bg.x && vx <= btn.bg.x + btn.bg.w
                 && vy >= btn.bg.y && vy <= btn.bg.y + btn.bg.h) {
                 m_selected_button = static_cast<int>(i);
-                on_button_pressed(pad_button::cross, false);
+                on_button_pressed(confirm_button, false);
                 return;
             }
         }
@@ -1724,7 +1753,7 @@ void common_dialog_overlay::on_touch_pressed(float vx, float vy) {
     }
     case SAVEDATA_DIALOG: {
         if (m_savedata_info_mode) {
-            on_button_pressed(pad_button::circle, false);
+            on_button_pressed(cancel_button, false);
             return;
         }
         if (m_savedata_list_mode) {
@@ -1732,7 +1761,7 @@ void common_dialog_overlay::on_touch_pressed(float vx, float vy) {
             const uint16_t cancel_w = 46, cancel_h = 46;
             if (vx >= cancel_x && vx <= cancel_x + cancel_w
                 && vy >= cancel_y && vy <= cancel_y + cancel_h) {
-                on_button_pressed(pad_button::circle, false);
+                on_button_pressed(cancel_button, false);
                 return;
             }
             const int16_t list_start_y = 96;
@@ -1759,7 +1788,7 @@ void common_dialog_overlay::on_touch_pressed(float vx, float vy) {
 
                     m_selected_slot = i;
                     m_cancel_btn_focused = false;
-                    on_button_pressed(pad_button::cross, false);
+                    on_button_pressed(confirm_button, false);
                     return;
                 }
             }
@@ -1769,7 +1798,7 @@ void common_dialog_overlay::on_touch_pressed(float vx, float vy) {
                 if (vx >= btn.bg.x && vx <= btn.bg.x + btn.bg.w
                     && vy >= btn.bg.y && vy <= btn.bg.y + btn.bg.h) {
                     m_selected_button = static_cast<int>(i);
-                    on_button_pressed(pad_button::cross, false);
+                    on_button_pressed(confirm_button, false);
                     return;
                 }
             }

@@ -148,31 +148,35 @@ int32_t user_interface::run_input_loop(overlay_input_handler *input, std::functi
         input->set_intercepted(false);
     }
 
+    m_interactive.store(false);
     m_input_loop_exited.store(true);
     m_input_loop_exited.notify_all();
 
     return result;
 }
 
-void user_interface::close(bool use_callback, bool stop_pad_interception) {
+void user_interface::stop_input_processing(bool stop_pad_interception) {
     m_stop_pad_interception.store(stop_pad_interception);
     m_stop_input_loop.store(true);
+
+    const bool interactive = m_interactive.load();
+    const bool same_thread = interactive && std::this_thread::get_id() == m_input_loop_thread_id;
+    if (interactive && !same_thread) {
+        m_input_loop_exited.wait(false);
+    }
+
+    if (stop_pad_interception && release_intercept && (!same_thread) && !m_interactive.load()) {
+        release_intercept();
+    }
+}
+
+void user_interface::close(bool use_callback, bool stop_pad_interception) {
+    stop_input_processing(stop_pad_interception);
 
     // If the input loop is running on a different thread, wait for it to fully
     // exit before firing callbacks.  When close() is called from within
     // on_button_pressed (same thread as run_input_loop), the loop will exit
     // naturally after the callback returns — no wait needed.
-    if (m_interactive.load() && std::this_thread::get_id() != m_input_loop_thread_id) {
-        m_input_loop_exited.wait(false);
-    }
-
-    // Only disable pad interception if this user interface is not interactive.
-    // Interactive user interfaces handle this in run_input_loop in order to
-    // prevent potential mutex issues.
-    if (!m_interactive.load() && m_stop_pad_interception.load() && release_intercept) {
-        release_intercept();
-    }
-
     if (on_close && use_callback) {
         on_close(return_code);
     }

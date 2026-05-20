@@ -97,7 +97,7 @@ void State::update_overlays() {
                 dlg = overlay_manager->create<overlay::common_dialog_overlay>();
                 just_created = true;
             }
-            if (dlg->poll_dialog(*common_dialog, sys_date_format)
+            if (dlg->poll_dialog(*common_dialog, sys_date_format, sys_button)
                 && common_dialog->type != TROPHY_SETUP_DIALOG) {
                 if (just_created || dlg->input_loop_exited()) {
                     dlg->reset_input_loop();

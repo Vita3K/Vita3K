@@ -88,6 +88,7 @@ public:
         m_stop_input_loop.store(false);
         m_stop_pad_interception.store(false);
     }
+    void stop_input_processing(bool stop_pad_interception);
 
     compiled_resource get_compiled() override = 0;
 

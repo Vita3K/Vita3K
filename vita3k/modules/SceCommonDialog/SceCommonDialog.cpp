@@ -41,6 +41,20 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceCommonDialog);
 
+namespace {
+void complete_trophy_setup_dialog(DialogState &dialog) {
+    std::lock_guard<std::recursive_mutex> lock(dialog.mutex);
+    if (dialog.type != TROPHY_SETUP_DIALOG || dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING)
+        return;
+
+    if (SDL_GetTicks() < dialog.trophy.tick)
+        return;
+
+    dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+}
+} // namespace
+
 template <>
 std::string to_debug_str<SceMsgDialogProgressBarTarget>(const MemState &mem, SceMsgDialogProgressBarTarget type) {
     switch (type) {
@@ -740,6 +754,7 @@ EXPORT(int, sceNpTrophySetupDialogAbort) {
 
 EXPORT(int, sceNpTrophySetupDialogGetResult, Ptr<SceNpTrophySetupDialogResult> result) {
     TRACY_FUNC(sceNpTrophySetupDialogGetResult, result);
+    complete_trophy_setup_dialog(emuenv.common_dialog);
     if (emuenv.common_dialog.type != TROPHY_SETUP_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
@@ -749,6 +764,7 @@ EXPORT(int, sceNpTrophySetupDialogGetResult, Ptr<SceNpTrophySetupDialogResult> r
 
 EXPORT(int, sceNpTrophySetupDialogGetStatus) {
     TRACY_FUNC(sceNpTrophySetupDialogGetStatus);
+    complete_trophy_setup_dialog(emuenv.common_dialog);
     return emuenv.common_dialog.status;
 }
 
@@ -765,6 +781,7 @@ EXPORT(int, sceNpTrophySetupDialogInit, const Ptr<SceNpTrophySetupDialogParam> p
 
 EXPORT(int, sceNpTrophySetupDialogTerm) {
     TRACY_FUNC(sceNpTrophySetupDialogTerm);
+    complete_trophy_setup_dialog(emuenv.common_dialog);
     if (emuenv.common_dialog.type != TROPHY_SETUP_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
