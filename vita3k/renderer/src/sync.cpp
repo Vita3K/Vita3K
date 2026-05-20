@@ -149,20 +149,23 @@ int wait_for_status(State &state, int *status, int signal, bool wake_on_equal) {
     return *status;
 }
 
-bool wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros) {
+SyncWaitResult wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros) {
     std::unique_lock<std::mutex> lock(sync_object->lock);
     if (sync_object->timestamp_current < timestamp) {
-        const auto &pred = [&]() { return sync_object->timestamp_current >= timestamp; };
+        const auto &pred = [&]() {
+            return sync_object->being_deleted || sync_object->timestamp_current >= timestamp;
+        };
 
         if (timeout_micros == -1) {
             sync_object->cond.wait(lock, pred);
-            return true;
-        } else {
-            return sync_object->cond.wait_for(lock, std::chrono::microseconds(timeout_micros), pred);
+        } else if (!sync_object->cond.wait_for(lock, std::chrono::microseconds(timeout_micros), pred)) {
+            return SyncWaitResult::TimedOut;
         }
-    } else {
-        return true;
+
     }
+    if (sync_object->being_deleted)
+        return SyncWaitResult::Shutdown;
+    return SyncWaitResult::Ready;
 }
 
 void subject_done(SceGxmSyncObject *sync_object, const uint32_t timestamp) {

@@ -438,6 +438,7 @@ void deinit(EmuEnvState &state) {
     state.gxm.display_queue.abort();
 
     state.renderer->render_abort = true;
+    gxm::invalidate_sync_objects(state.gxm);
     state.renderer->command_finish_one.notify_all();
 
     state.net.abort_all();

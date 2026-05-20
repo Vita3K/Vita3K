@@ -910,15 +910,12 @@ static void display_entry_thread(EmuEnvState &emuenv) {
         SceGxmSyncObject *new_sync = display_callback->new_sync.get(emuenv.mem);
 
         // sceGxmDisplayQueueAddEntry waits for both buffers to complete
-        // bit ugly but needed to avoid deadlocking during deinit
-        while (!renderer::wishlist(old_sync, display_callback->old_sync_timestamp, 100000)) {
-            if (emuenv.display.abort.load())
-                return;
+        if (renderer::wishlist(old_sync, display_callback->old_sync_timestamp) == renderer::SyncWaitResult::Shutdown) {
+            return;
         }
         if (old_sync != new_sync) {
-            while (!renderer::wishlist(new_sync, display_callback->new_sync_timestamp, 100000)) {
-                if (emuenv.display.abort.load())
-                    return;
+            if (renderer::wishlist(new_sync, display_callback->new_sync_timestamp) == renderer::SyncWaitResult::Shutdown) {
+                return;
             }
         }
 
@@ -1318,6 +1315,17 @@ void destroy_all_contexts(EmuEnvState &emuenv, const bool force_backend_destroy)
             LOG_WARN("Failed to destroy deferred GXM context during cleanup: {}", log_hex(result));
             emuenv.gxm.deferred_contexts.erase(context);
         }
+    }
+}
+
+void invalidate_sync_objects(GxmState &gxm) {
+    std::lock_guard<std::mutex> lock(gxm.sync_objects_mutex);
+    for (SceGxmSyncObject *sync_object : gxm.sync_objects) {
+        {
+            std::lock_guard<std::mutex> sync_lock(sync_object->lock);
+            sync_object->being_deleted = true;
+        }
+        sync_object->cond.notify_all();
     }
 }
 
@@ -4831,6 +4839,10 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
     }
 
     renderer::create(syncObject->get(emuenv.mem), *emuenv.renderer);
+    {
+        std::lock_guard<std::mutex> lock(emuenv.gxm.sync_objects_mutex);
+        emuenv.gxm.sync_objects.emplace(syncObject->get(emuenv.mem));
+    }
 
     return 0;
 }
@@ -4840,6 +4852,10 @@ EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
     if (!syncObject)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
+    {
+        std::lock_guard<std::mutex> lock(emuenv.gxm.sync_objects_mutex);
+        emuenv.gxm.sync_objects.erase(syncObject.get(emuenv.mem));
+    }
     renderer::destroy(syncObject.get(emuenv.mem), *emuenv.renderer);
     free(emuenv.mem, syncObject);
 

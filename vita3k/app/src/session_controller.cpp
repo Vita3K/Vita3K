@@ -21,6 +21,7 @@
 #include <audio/state.h>
 #include <ctrl/state.h>
 #include <display/state.h>
+#include <gxm/functions.h>
 #include <gxm/state.h>
 #include <interface.h>
 #include <io/state.h>
@@ -194,6 +195,7 @@ void AppSessionController::stop(const AppSessionStopReason reason) {
             emuenv.renderer->notification_ready.notify_all();
             emuenv.gxm.display_queue.abort();
             emuenv.renderer->render_abort = true;
+            gxm::invalidate_sync_objects(emuenv.gxm);
             emuenv.renderer->command_finish_one.notify_all();
             renderer::stop_render_thread(*emuenv.renderer);
         }
