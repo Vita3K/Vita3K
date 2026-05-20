@@ -429,16 +429,10 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     return true;
 }
 
-void deinit(EmuEnvState &state) {
+void shutdown_app_runtime(EmuEnvState &state) {
     state.audio.stop_all_ports();
 
-    state.display.abort = true;
-    state.renderer->notification_ready.notify_all();
-
-    state.gxm.display_queue.abort();
-
-    state.renderer->render_abort = true;
-    state.renderer->command_finish_one.notify_all();
+    gxm::shutdown(state);
 
     state.net.abort_all();
     state.http.shutdown_connections();
@@ -494,12 +488,14 @@ void deinit(EmuEnvState &state) {
 
     state.kernel.deinit(state.mem);
 
-    app::reset_perf_metrics(state);
-
     state.renderer->cleanup();
     state.renderer.reset();
 
     deinit_mem(state.mem);
+}
+
+void reset_app_state(EmuEnvState &state) {
+    app::reset_perf_metrics(state);
 
     state.app_path.clear();
     state.current_app_title.clear();
@@ -511,6 +507,7 @@ void deinit(EmuEnvState &state) {
     state.clear_app_launch_request();
 
     state.ctrl.reset_runtime();
+    set_current_config(state, "");
 
 #if USE_DISCORD
     if (state.cfg.discord_rich_presence)

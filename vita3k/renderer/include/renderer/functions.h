@@ -43,12 +43,18 @@ void create(SceGxmSyncObject *sync, State &state);
 void destroy(SceGxmSyncObject *sync, State &state);
 void finish(State &state, Context *context);
 
+enum class SyncWaitResult {
+    Ready,
+    TimedOut,
+    Shutdown
+};
+
 /**
  * \brief Wait for all subjects to be done with the given sync object.
  *
- * Return true if the wait didn't timeout
+ * Return the reason the wait completed.
  */
-bool wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros = -1);
+SyncWaitResult wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros = -1);
 
 /**
  * \brief Set list of subject with sync object to done.

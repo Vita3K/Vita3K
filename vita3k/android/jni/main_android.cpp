@@ -386,9 +386,6 @@ SDLMAIN_DECLSPEC int SDL_main(int argc, char *argv[]) {
                 if (gl_context)
                     SDL_GL_MakeCurrent(window, nullptr); },
             .after_render_thread_start = {},
-            .before_renderer_cleanup = [window, gl_context]() {
-                if (gl_context)
-                    SDL_GL_MakeCurrent(window, gl_context); },
             .destroy_render_context = [&gl_context]() {
                 if (!gl_context)
                     return;
