@@ -60,6 +60,7 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.2'
+          modules: 'qtmultimedia'
           cache: true
           install-deps: 'true'
 

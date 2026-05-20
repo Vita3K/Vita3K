@@ -65,6 +65,7 @@ public:
     bool handle_sdl_event(const SDL_Event &event);
 
 protected:
+    void changeEvent(QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void done(int result) override;
     void keyPressEvent(QKeyEvent *event) override;
@@ -216,6 +217,7 @@ private:
 
     void refresh_controller_tabs();
     void refresh_controller_page_labels(int index);
+    void refresh_controller_art();
     void set_controller_page_enabled(int index, bool enabled);
     void set_controller_page_view(int index, bool show_bindings);
     void start_controller_capture(int tab_index, int binding_index);

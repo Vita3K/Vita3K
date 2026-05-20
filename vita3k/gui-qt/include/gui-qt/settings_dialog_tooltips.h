@@ -60,6 +60,8 @@ public:
     QString memory_mapping;
     QString audio_backend;
     QString audio_volume;
+    QString theme_music_enable;
+    QString theme_music_volume;
     QString ngs_enable;
     QString front_camera;
     QString back_camera;

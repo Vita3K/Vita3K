@@ -28,7 +28,6 @@ const QString Settings = QStringLiteral("CurrentSettings");
 
 const QString LightStylesheet = QStringLiteral("light");
 const QString DarkStylesheet = QStringLiteral("dark");
-const QString NoStylesheet = QStringLiteral("none");
 
 const QString main_window = QStringLiteral("MainWindow");
 const QString apps_list = QStringLiteral("GameList");
@@ -38,6 +37,7 @@ const QString trophy = QStringLiteral("Trophy");
 const QString controls = QStringLiteral("Controls");
 const QString settings = QStringLiteral("Settings");
 const QString user_mgmt = QStringLiteral("UserManagement");
+const QString vita_themes = QStringLiteral("VitaThemes");
 const QString meta = QStringLiteral("Meta");
 
 const GuiSave m_currentStylesheet = GuiSave(meta, QStringLiteral("currentStylesheet"), DarkStylesheet);
@@ -86,6 +86,11 @@ const GuiSave sd_lastTab = GuiSave(settings, QStringLiteral("lastTab"), 0);
 
 const GuiSave um_geometry = GuiSave(user_mgmt, QStringLiteral("geometry"), QByteArray());
 
+const GuiSave vt_geometry = GuiSave(vita_themes, QStringLiteral("geometry"), QByteArray());
+const GuiSave vt_appliedSelection = GuiSave(vita_themes, QStringLiteral("appliedSelection"), QString());
+const GuiSave vt_bgmEnabled = GuiSave(vita_themes, QStringLiteral("bgmEnabled"), false);
+const GuiSave vt_bgmVolume = GuiSave(vita_themes, QStringLiteral("bgmVolume"), 50);
+
 } // namespace gui
 
 class GuiSettings : public GuiSettingsBase {
@@ -93,6 +98,4 @@ class GuiSettings : public GuiSettingsBase {
 
 public:
     explicit GuiSettings(const QString &settings_dir, QObject *parent = nullptr);
-
-    QStringList get_stylesheet_entries() const;
 };

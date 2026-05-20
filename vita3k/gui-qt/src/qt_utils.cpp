@@ -20,6 +20,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QDesktopServices>
+#include <QHash>
 #include <QIcon>
 #include <QImage>
 #include <QLabel>
@@ -29,6 +30,7 @@
 #include <QPixmap>
 #include <QPushButton>
 #include <QRgb>
+#include <QStyle>
 #include <QStyleHints>
 #include <QUrl>
 #include <QWidget>
@@ -36,6 +38,22 @@
 #include <map>
 
 namespace gui::utils {
+
+namespace {
+
+QColor default_label_color(QPalette::ColorRole color_role) {
+    QLabel dummy;
+    dummy.ensurePolished();
+    return dummy.palette().color(color_role);
+}
+
+QHash<QString, QColor> s_theme_role_colors;
+
+QString theme_role_cache_key(const QString &role, QPalette::ColorRole color_role) {
+    return role + QLatin1Char(':') + QString::number(static_cast<int>(color_role));
+}
+
+} // namespace
 
 void open_dir(const fs::path &path) {
     QDesktopServices::openUrl(QUrl::fromLocalFile(to_qt_path(path)));
@@ -49,38 +67,62 @@ QString to_qt_path(const fs::path &path) {
     return QString::fromStdWString(path.wstring());
 }
 
-QColor get_foreground_color(QWidget *widget) {
+QColor foreground_color(QWidget *widget) {
     if (widget) {
         widget->ensurePolished();
         return widget->palette().color(QPalette::ColorRole::WindowText);
     }
+    return default_label_color(QPalette::ColorRole::WindowText);
+}
+
+QColor theme_role_color(
+    const QString &role,
+    QPalette::ColorRole color_role) {
+    const QString cache_key = theme_role_cache_key(role, color_role);
+    if (const auto it = s_theme_role_colors.constFind(cache_key); it != s_theme_role_colors.cend())
+        return *it;
+
     QLabel dummy;
+    dummy.setProperty("themeRole", role);
     dummy.ensurePolished();
-    return dummy.palette().color(QPalette::ColorRole::WindowText);
+    const QColor color = dummy.palette().color(color_role);
+    s_theme_role_colors.insert(cache_key, color);
+    return color;
+}
+
+QString format_help_html(const QString &title, const QString &body) {
+    QString escaped = body.toHtmlEscaped();
+    escaped.replace(QLatin1Char('\n'), QStringLiteral("<br>"));
+    return QStringLiteral(
+        "<div style=\"margin:0;\"><strong>%1</strong></div>"
+        "<hr style=\"margin:1px 0 3px 0; border:0; border-top:1px solid rgba(255,255,255,0.28);\">"
+        "<div style=\"margin:0;\">%2</div>")
+        .arg(title.toHtmlEscaped(), escaped);
+}
+
+void invalidate_theme_cache() {
+    s_theme_role_colors.clear();
+}
+
+QColor muted_text_color() {
+    return theme_role_color(QStringLiteral("mutedText"));
+}
+
+QColor toolbar_icon_tint() {
+    return theme_role_color(QStringLiteral("toolbarIconTint"));
+}
+
+void refresh_theme_state(QWidget *widget) {
+    if (!widget)
+        return;
+
+    widget->style()->unpolish(widget);
+    widget->style()->polish(widget);
+    widget->update();
 }
 
 bool dark_mode_active() {
     return QApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
-}
-
-QColor get_label_color(
-    const QString &object_name,
-    const QColor &fallback_light,
-    const QColor &fallback_dark,
-    QPalette::ColorRole color_role) {
-    if (!qApp || qApp->styleSheet().isEmpty() || !qApp->styleSheet().contains(object_name))
-        return dark_mode_active() ? fallback_dark : fallback_light;
-
-    QLabel dummy;
-    dummy.setObjectName(object_name);
-    dummy.ensurePolished();
-    return dummy.palette().color(color_role);
-}
-
-QColor get_label_color(
-    const QColor &fallback_light,
-    const QColor &fallback_dark) {
-    return dark_mode_active() ? fallback_dark : fallback_light;
 }
 
 QIcon get_colorized_icon(const QIcon &icon,

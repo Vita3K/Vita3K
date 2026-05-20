@@ -17,11 +17,13 @@
 
 #include <gui-qt/log_widget.h>
 #include <gui-qt/qt_utils.h>
+#include <gui-qt/theme_surface.h>
 
 #include <util/log.h>
 
 #include <spdlog/common.h>
 
+#include <QElapsedTimer>
 #include <QEvent>
 #include <QFont>
 #include <QFontDatabase>
@@ -34,8 +36,11 @@
 #include <QShortcut>
 #include <QSize>
 #include <QStyle>
+#include <QTextBlock>
+#include <QTextBlockUserData>
 #include <QTextDocument>
 #include <QTextEdit>
+#include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -47,7 +52,9 @@
 namespace {
 
 constexpr int SAFE_UNBOUNDED_LOG_BUFFER_SIZE = 50000;
-constexpr size_t MAX_LOG_DRAIN_BATCH = 256;
+constexpr int LOG_DRAIN_INTERVAL_MS = 10;
+constexpr qint64 LOG_DRAIN_TIME_BUDGET_MS = 4;
+constexpr size_t MAX_LOG_DRAIN_BATCH = 64;
 constexpr size_t MIN_PENDING_LOG_LINES = 512;
 constexpr size_t MAX_PENDING_LOG_LINES = 8192;
 
@@ -56,6 +63,84 @@ struct PendingLogMessage {
     int level = 0;
     size_t repeat_count = 1;
 };
+
+class LogBlockData final : public QTextBlockUserData {
+public:
+    explicit LogBlockData(int level_value)
+        : level(level_value) {
+    }
+
+    int level = 0;
+};
+
+struct RenderedLogMessage {
+    QString msg;
+    int level = 0;
+};
+
+QColor log_level_color(int level) {
+    using L = spdlog::level::level_enum;
+
+    switch (static_cast<L>(level)) {
+    case L::critical:
+        return gui::utils::theme_role_color(QStringLiteral("logFatal"));
+    case L::err:
+        return gui::utils::theme_role_color(QStringLiteral("logError"));
+    case L::warn:
+        return gui::utils::theme_role_color(QStringLiteral("logWarning"));
+    case L::info:
+        return gui::utils::theme_role_color(QStringLiteral("logNotice"));
+    case L::debug:
+        return gui::utils::theme_role_color(QStringLiteral("logDebug"));
+    case L::trace:
+    default:
+        return gui::utils::theme_role_color(QStringLiteral("logTrace"));
+    }
+}
+
+void apply_block_color(const QTextBlock &block, int level) {
+    if (!block.isValid())
+        return;
+
+    QTextCursor cursor(block);
+    cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+
+    QTextCharFormat format;
+    format.setForeground(log_level_color(level));
+    cursor.mergeCharFormat(format);
+}
+
+void append_log_entries(QPlainTextEdit *log, const std::vector<RenderedLogMessage> &entries, bool preserve_scroll = true) {
+    if (!log || entries.empty())
+        return;
+
+    QScrollBar *bar = log->verticalScrollBar();
+    const bool at_bottom = !preserve_scroll || bar->value() == bar->maximum();
+
+    QTextCursor cursor(log->document());
+    cursor.movePosition(QTextCursor::End);
+    cursor.beginEditBlock();
+
+    for (const RenderedLogMessage &entry : entries) {
+        const QString normalized = entry.msg;
+        const QStringList lines = normalized.split(QLatin1Char('\n'), Qt::KeepEmptyParts);
+
+        QTextCharFormat format;
+        format.setForeground(log_level_color(entry.level));
+
+        for (const QString &line : lines) {
+            cursor.insertText(line, format);
+            if (QTextBlock block = cursor.block(); block.isValid())
+                block.setUserData(new LogBlockData(entry.level));
+            cursor.insertBlock();
+        }
+    }
+
+    cursor.endEditBlock();
+
+    if (at_bottom)
+        bar->setValue(bar->maximum());
+}
 
 QFont make_log_font(const QString &family = {}) {
     QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
@@ -83,7 +168,10 @@ static struct {
 
 LogWidget::LogWidget(QWidget *parent)
     : custom_dock_widget(tr("Log"), parent) {
-    auto *container = new QWidget(this);
+    setObjectName(QStringLiteral("logger"));
+
+    auto *container = new ThemeSurface(this);
+    container->setObjectName(QStringLiteral("log_surface"));
     auto *layout = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
@@ -93,10 +181,11 @@ LogWidget::LogWidget(QWidget *parent)
     m_log->setFont(make_log_font());
     m_log->document()->setMaximumBlockCount(effective_buffer_size(1000));
     m_log->setObjectName(QStringLiteral("log_frame"));
+    m_log->viewport()->setObjectName(QStringLiteral("log_frame_viewport"));
     layout->addWidget(m_log);
     setWidget(container);
 
-    m_search_container = new QWidget(m_log);
+    m_search_container = new ThemeSurface(m_log);
     m_search_container->setObjectName(QStringLiteral("log_search_container"));
     auto *search_layout = new QHBoxLayout(m_search_container);
     search_layout->setContentsMargins(6, 6, 6, 6);
@@ -146,6 +235,10 @@ LogWidget::LogWidget(QWidget *parent)
     connect(m_search_prev_button, &QToolButton::clicked, this, [this]() { find_text(true); });
     connect(m_search_next_button, &QToolButton::clicked, this, [this]() { find_text(false); });
     connect(m_search_close_button, &QToolButton::clicked, this, &LogWidget::hide_search_bar);
+
+    m_drain_timer = new QTimer(this);
+    m_drain_timer->setSingleShot(true);
+    connect(m_drain_timer, &QTimer::timeout, this, &LogWidget::drain_pending_messages);
 
     update_search_ui_text();
 }
@@ -209,15 +302,15 @@ void LogWidget::attach() {
 }
 
 void LogWidget::on_log_message(const QString &msg, int level) {
-    m_entries.emplace_back(msg, level);
-    trim_entries();
     append_log_entry(msg, level);
 }
 
 void LogWidget::drain_pending_messages() {
+    if (m_drain_timer && m_drain_timer->isActive())
+        m_drain_timer->stop();
+
     std::deque<PendingLogMessage> batch;
     size_t dropped_lines = 0;
-    bool should_schedule_next = false;
 
     {
         const std::lock_guard<std::mutex> lock(s_log_state.mutex);
@@ -228,95 +321,76 @@ void LogWidget::drain_pending_messages() {
             batch.push_back(std::move(s_log_state.backlog.front()));
             s_log_state.backlog.pop_front();
         }
-
-        should_schedule_next = !s_log_state.backlog.empty();
-        s_log_state.drain_posted = should_schedule_next;
+        s_log_state.drain_posted = false;
     }
+
+    std::vector<RenderedLogMessage> rendered_entries;
+    rendered_entries.reserve(batch.size() + (dropped_lines > 0 ? 1 : 0));
 
     if (dropped_lines > 0) {
-        on_log_message(
-            QStringLiteral("[Qt log] Dropped %1 queued log lines before they could be rendered.")
-                .arg(static_cast<qulonglong>(dropped_lines)),
-            static_cast<int>(spdlog::level::warn));
+        rendered_entries.push_back({ QStringLiteral("[Qt log] Dropped %1 queued log lines before they could be rendered.")
+                                         .arg(static_cast<qulonglong>(dropped_lines)),
+            static_cast<int>(spdlog::level::warn) });
     }
 
-    if (!batch.empty()) {
+    QElapsedTimer timer;
+    timer.start();
+
+    size_t consumed = 0;
+    for (; consumed < batch.size(); ++consumed) {
+        if (consumed > 0 && timer.elapsed() >= LOG_DRAIN_TIME_BUDGET_MS)
+            break;
+
+        QString qmsg = QString::fromStdString(batch[consumed].msg).trimmed();
+        if (qmsg.isEmpty())
+            continue;
+
+        qmsg.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        qmsg.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+
+        if (batch[consumed].repeat_count > 1)
+            qmsg += QStringLiteral(" [x%1]").arg(static_cast<qulonglong>(batch[consumed].repeat_count));
+
+        rendered_entries.push_back({ std::move(qmsg), batch[consumed].level });
+    }
+
+    if (consumed < batch.size()) {
+        const std::lock_guard<std::mutex> lock(s_log_state.mutex);
+        for (auto it = batch.rbegin(); it != batch.rbegin() + static_cast<std::ptrdiff_t>(batch.size() - consumed); ++it)
+            s_log_state.backlog.push_front(std::move(*it));
+    }
+
+    if (!rendered_entries.empty()) {
         m_log->setUpdatesEnabled(false);
-        for (const auto &entry : batch) {
-            QString qmsg = QString::fromStdString(entry.msg).trimmed();
-            if (qmsg.isEmpty())
-                continue;
-
-            if (entry.repeat_count > 1) {
-                qmsg += QStringLiteral(" [x%1]").arg(static_cast<qulonglong>(entry.repeat_count));
-            }
-
-            on_log_message(qmsg, entry.level);
-        }
-
+        append_log_entries(m_log, rendered_entries);
         m_log->setUpdatesEnabled(true);
         m_log->viewport()->update();
+    }
+
+    bool should_schedule_next = false;
+    {
+        const std::lock_guard<std::mutex> lock(s_log_state.mutex);
+        should_schedule_next = !s_log_state.backlog.empty();
+        s_log_state.drain_posted = should_schedule_next;
     }
 
     if (m_search_container && m_search_container->isVisible() && m_search_edit && !m_search_edit->text().isEmpty())
         update_search_highlights();
 
-    if (should_schedule_next)
-        QMetaObject::invokeMethod(this, &LogWidget::drain_pending_messages, Qt::QueuedConnection);
-}
-
-void LogWidget::append_log_entry(const QString &msg, int level, bool preserve_scroll) {
-    QScrollBar *bar = m_log->verticalScrollBar();
-    const bool at_bottom = !preserve_scroll || bar->value() == bar->maximum();
-
-    QTextCursor cursor = m_log->textCursor();
-    cursor.movePosition(QTextCursor::End);
-
-    QTextCharFormat fmt;
-    fmt.setForeground(color_for_level(level));
-
-    cursor.insertText(msg + "\n", fmt);
-
-    if (at_bottom)
-        bar->setValue(bar->maximum());
-}
-
-QColor LogWidget::color_for_level(int level) const {
-    using L = spdlog::level::level_enum;
-
-    switch (static_cast<L>(level)) {
-    case L::critical:
-        return gui::utils::get_label_color(
-            QStringLiteral("log_level_fatal"),
-            QColor(QStringLiteral("#ff00ff")),
-            QColor(QStringLiteral("#ff66ff")));
-    case L::err:
-        return gui::utils::get_label_color(
-            QStringLiteral("log_level_error"),
-            QColor(QStringLiteral("#C02F1D")),
-            QColor(QStringLiteral("#ff8080")));
-    case L::warn:
-        return gui::utils::get_label_color(
-            QStringLiteral("log_level_warning"),
-            QColor(QStringLiteral("#BA8745")),
-            QColor(QStringLiteral("#ffd27f")));
-    case L::info:
-        return gui::utils::get_label_color(
-            QStringLiteral("log_level_notice"),
-            QColor(Qt::black),
-            QColor(Qt::white));
-    default:
-        return gui::utils::get_label_color(
-            QStringLiteral("log_level_trace"),
-            QColor(QStringLiteral("#808080")),
-            QColor(Qt::white));
+    if (should_schedule_next && m_drain_timer) {
+        m_drain_timer->start(LOG_DRAIN_INTERVAL_MS);
     }
 }
 
-void LogWidget::trim_entries() {
-    const int max_blocks = m_log->document()->maximumBlockCount();
-    while (max_blocks > 0 && static_cast<int>(m_entries.size()) > max_blocks)
-        m_entries.pop_front();
+void LogWidget::append_log_entry(const QString &msg, int level, bool preserve_scroll) {
+    QString normalized = msg.trimmed();
+    if (normalized.isEmpty())
+        return;
+
+    normalized.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    normalized.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+
+    append_log_entries(m_log, { RenderedLogMessage{ std::move(normalized), level } }, preserve_scroll);
 }
 
 void LogWidget::set_log_buffer_size(int size) {
@@ -329,7 +403,6 @@ void LogWidget::set_log_buffer_size(int size) {
             s_log_state.backlog.pop_front();
         }
     }
-    trim_entries();
     if (m_search_edit && !m_search_edit->text().isEmpty())
         update_search_highlights();
 }
@@ -354,14 +427,23 @@ QString LogWidget::log_font_family() const {
 }
 
 void LogWidget::repaint_text_colors() {
+    if (!m_log)
+        return;
+
     const QScrollBar *bar = m_log->verticalScrollBar();
     const int old_value = bar->value();
     const bool at_bottom = old_value == bar->maximum();
 
-    m_log->clear();
+    m_log->setUpdatesEnabled(false);
+    for (QTextBlock block = m_log->document()->begin(); block.isValid(); block = block.next()) {
+        const auto *data = static_cast<const LogBlockData *>(block.userData());
+        if (!data)
+            continue;
 
-    for (const auto &[msg, level] : m_entries)
-        append_log_entry(msg, level, false);
+        apply_block_color(block, data->level);
+    }
+    m_log->setUpdatesEnabled(true);
+    m_log->viewport()->update();
 
     if (!at_bottom)
         m_log->verticalScrollBar()->setValue(old_value);
@@ -521,7 +603,7 @@ void LogWidget::update_search_ui_icons() {
     if (!m_search_prev_button || !m_search_next_button || !m_search_close_button)
         return;
 
-    const QColor foreground = gui::utils::get_foreground_color(m_search_container);
+    const QColor foreground = gui::utils::foreground_color(m_search_container);
     const QString theme_suffix = foreground.lightnessF() > 0.5f
         ? QStringLiteral("light")
         : QStringLiteral("dark");
