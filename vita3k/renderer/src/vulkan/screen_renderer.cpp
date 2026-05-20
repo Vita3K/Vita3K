@@ -232,6 +232,12 @@ bool ScreenRenderer::setup() {
     create_render_pass();
 
     create_swapchain();
+    if (!swapchain || swapchain_size == 0) {
+        const renderer::WindowSize size = state.window_callbacks.get_size();
+        LOG_ERROR("Failed to create Vulkan swapchain. Window size: {}x{}, surface extent: {}x{}",
+            size.width, size.height, extent.width, extent.height);
+        return false;
+    }
 
     // these functions do not need to be called when the swapchain is resized
     create_surface_image();
@@ -253,8 +259,12 @@ void ScreenRenderer::create_swapchain() {
         extent.height = std::clamp<uint32_t>(static_cast<uint32_t>(size.height), surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
     }
 
-    if (extent.width == 0 || extent.height == 0)
+    if (extent.width == 0 || extent.height == 0) {
+        const renderer::WindowSize size = state.window_callbacks.get_size();
+        LOG_WARN("Skipping Vulkan swapchain creation for zero-sized surface. Window size: {}x{}, surface extent: {}x{}",
+            size.width, size.height, extent.width, extent.height);
         return;
+    }
 
     swapchain_size = surface_capabilities.minImageCount + 1;
     if (surface_capabilities.maxImageCount != 0)
