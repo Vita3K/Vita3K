@@ -234,13 +234,21 @@ jobs:
           restore-keys: |
             cache-android-native-
 
-      - name: Restore Gradle cache
-        uses: actions/cache@v5
+      - name: Set up Java
+        uses: actions/setup-java@v5
         with:
-          path: ~/.gradle/
-          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle', 'android/**/*.properties', 'android/**/*.xml', 'android/**/*.java', 'android/**/*.kt') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          add-job-summary: on-failure
+          cache-provider: basic
+          validate-wrappers: false
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@v4
 
       - name: Set up Android build environment
         env:
@@ -270,9 +278,12 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-          JVM_OPTS: -Xmx6G
           VCPKG_ROOT: /usr/local/share/vcpkg
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
         run: bash ./.ci/build-android.sh "${{ env.ARTIFACT_DIR }}"
+
+      - name: Print Android ccache statistics
+        run: ccache -s
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v7
