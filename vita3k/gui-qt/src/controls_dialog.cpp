@@ -148,7 +148,7 @@ void style_mode_button(QToolButton *button) {
         " }"
         "QToolButton:hover { background-color: %1; }"
         "QToolButton:checked { background-color: %2; }")
-                              .arg(hover.name(QColor::HexArgb), checked.name(QColor::HexArgb)));
+            .arg(hover.name(QColor::HexArgb), checked.name(QColor::HexArgb)));
 }
 
 void style_binding_button(QPushButton *button, bool capturing = false) {

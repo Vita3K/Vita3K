@@ -120,7 +120,7 @@ static std::vector<FrameItemData::TextEntry> parse_text_entries(const pugi::xml_
 static uint64_t current_time_secs() {
     return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::seconds>(
         std::chrono::steady_clock::now().time_since_epoch())
-                                     .count());
+            .count());
 }
 
 static std::string strip_whitespace(const std::string &s) {

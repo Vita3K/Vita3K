@@ -9,7 +9,7 @@ class ByteRingBuffer {
 public:
     ByteRingBuffer(std::size_t size)
         : buffer(new char[size])
-        , capacity(size){
+        , capacity(size) {
 
         };
 

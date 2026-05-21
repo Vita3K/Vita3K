@@ -912,9 +912,9 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
 
     m_game_window = new GameWindow(emuenv, m_gui_settings, emuenv.backend_renderer, screen());
     m_game_window->setTitle(tr("%1 | %2 (%3) | Loading...")
-                                .arg(QString::fromStdString(window_title),
-                                    QString::fromStdString(emuenv.current_app_title),
-                                    QString::fromStdString(emuenv.io.title_id)));
+            .arg(QString::fromStdString(window_title),
+                QString::fromStdString(emuenv.current_app_title),
+                QString::fromStdString(emuenv.io.title_id)));
     m_game_window->setIcon(windowIcon());
     if (m_live_area_widget)
         m_game_window->setGeometry(m_live_area_widget->geometry());
@@ -1068,9 +1068,9 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     }
 
     m_game_window->setTitle(tr("%1 | %2 (%3) | Initializing...")
-                                .arg(QString::fromStdString(window_title),
-                                    QString::fromStdString(emuenv.current_app_title),
-                                    QString::fromStdString(emuenv.io.title_id)));
+            .arg(QString::fromStdString(window_title),
+                QString::fromStdString(emuenv.current_app_title),
+                QString::fromStdString(emuenv.io.title_id)));
 
     if (!m_app_session.initialize_runtime()) {
         abort_boot(tr("Failed to initialize emulator state."));
@@ -1078,9 +1078,9 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     }
 
     m_game_window->setTitle(tr("%1 | %2 (%3) | Loading modules...")
-                                .arg(QString::fromStdString(window_title),
-                                    QString::fromStdString(emuenv.current_app_title),
-                                    QString::fromStdString(emuenv.io.title_id)));
+            .arg(QString::fromStdString(window_title),
+                QString::fromStdString(emuenv.current_app_title),
+                QString::fromStdString(emuenv.io.title_id)));
 
     if (!m_app_session.load_and_run()) {
         abort_boot(tr("Failed to start game threads."));
@@ -1114,9 +1114,9 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     m_game_window->start_ui_updates();
 
     m_game_window->setTitle(tr("%1 | %2 (%3) | Please wait, loading...")
-                                .arg(QString::fromStdString(window_title),
-                                    QString::fromStdString(emuenv.current_app_title),
-                                    QString::fromStdString(emuenv.io.title_id)));
+            .arg(QString::fromStdString(window_title),
+                QString::fromStdString(emuenv.current_app_title),
+                QString::fromStdString(emuenv.io.title_id)));
 
     LOG_INFO("Game started: {} ({})", emuenv.current_app_title, launch_request.app_path);
 
@@ -1272,9 +1272,9 @@ void MainWindow::show_live_area(const std::string &title_id) {
     m_game_container = m_live_area_widget;
 
     m_live_area_widget->setTitle(tr("%1 | %2 (%3)")
-                                     .arg(QString::fromStdString(window_title),
-                                         QString::fromStdString(emuenv.current_app_title),
-                                         QString::fromStdString(emuenv.io.title_id)));
+            .arg(QString::fromStdString(window_title),
+                QString::fromStdString(emuenv.current_app_title),
+                QString::fromStdString(emuenv.io.title_id)));
     m_live_area_widget->setIcon(windowIcon());
     m_live_area_widget->installEventFilter(this);
     m_live_area_widget->show();
