@@ -29,6 +29,7 @@
 #include <gui-qt/qt_utils.h>
 #include <gui-qt/settings_dialog.h>
 #include <gui-qt/settings_dialog_tooltips.h>
+#include <gui-qt/theme_manager.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <renderer/functions.h>
@@ -59,18 +60,11 @@
 #include <QTabBar>
 #include <QTextDocument>
 #include <QVBoxLayout>
+#include <QtGlobal>
+
+#include <algorithm>
 
 namespace {
-
-QString format_help_html(const QString &title, const QString &body) {
-    QString escaped = body.toHtmlEscaped();
-    escaped.replace(QLatin1Char('\n'), QStringLiteral("<br>"));
-    return QStringLiteral(
-        "<div style=\"margin:0;\"><strong>%1</strong></div>"
-        "<hr style=\"margin:1px 0 3px 0; border:0; border-top:1px solid rgba(255,255,255,0.28);\">"
-        "<div style=\"margin:0;\">%2</div>")
-        .arg(title.toHtmlEscaped(), escaped);
-}
 
 int first_visible_category(const QListWidget *list, int preferred) {
     const int count = list->count();
@@ -91,11 +85,13 @@ int first_visible_category(const QListWidget *list, int preferred) {
 
 SettingsDialog::SettingsDialog(EmuEnvState &emuenv,
     std::shared_ptr<GuiSettings> gui_settings,
+    ThemeManager &theme_manager,
     const std::string &app_path,
     int initial_tab)
     : QDialog(nullptr)
     , emuenv(emuenv)
     , m_gui_settings(std::move(gui_settings))
+    , m_theme_manager(theme_manager)
     , m_tooltips(std::make_unique<SettingsDialogTooltips>(this))
     , m_app_path(app_path)
     , m_initial_tab(initial_tab)
@@ -123,7 +119,12 @@ SettingsDialog::SettingsDialog(EmuEnvState &emuenv,
     }
     if (!m_gui_settings || !restoreGeometry(m_gui_settings->get_value(gui::sd_geometry).toByteArray()))
         resize(780, 676);
+    connect(&m_theme_manager, &ThemeManager::theme_state_changed, this, &SettingsDialog::refresh_themes);
+    connect(&m_theme_manager, &ThemeManager::theme_catalog_changed, this, &SettingsDialog::refresh_themes);
     m_ui->settingsCategory->setSpacing(0);
+    m_ui->modules_list->setSelectionMode(QAbstractItemView::NoSelection);
+    m_ui->modules_list->setFocusPolicy(Qt::NoFocus);
+    m_ui->modules_list->setAlternatingRowColors(true);
 
     for (int i = 0; i < m_ui->tab_widget_settings->count(); ++i) {
         auto *item = new QListWidgetItem(m_ui->tab_widget_settings->tabText(i), m_ui->settingsCategory);
@@ -169,6 +170,7 @@ SettingsDialog::SettingsDialog(EmuEnvState &emuenv,
         m_ui->show_mode->setVisible(false);
         m_ui->demo_mode->setVisible(false);
 
+        m_ui->gb_theme_music_section->setVisible(false);
         m_ui->boot_apps_fullscreen->setVisible(false);
         m_ui->show_live_area_screen->setVisible(false);
         m_ui->show_compile_shaders->setVisible(false);
@@ -196,6 +198,13 @@ SettingsDialog::SettingsDialog(EmuEnvState &emuenv,
 
     for (auto *bb : m_button_boxes)
         bb->button(QDialogButtonBox::Apply)->setEnabled(false);
+}
+
+void SettingsDialog::refresh_themes() {
+    const QString preferred_name = m_ui->combo_stylesheets
+        ? m_ui->combo_stylesheets->currentData().toString()
+        : m_current_stylesheet;
+    add_stylesheets(preferred_name);
 }
 
 SettingsDialog::~SettingsDialog() {
@@ -360,6 +369,17 @@ void SettingsDialog::load_config() {
 
     m_ui->audio_volume->setValue(m_config.audio_volume);
     m_ui->audio_volume_label->setText(tr("Current volume: %1%").arg(m_config.audio_volume));
+    const bool theme_music_enabled = m_gui_settings
+        ? m_gui_settings->get_value(gui::vt_bgmEnabled).toBool()
+        : gui::vt_bgmEnabled.def.toBool();
+    const int theme_music_volume = std::clamp(
+        m_gui_settings
+            ? m_gui_settings->get_value(gui::vt_bgmVolume).toInt()
+            : gui::vt_bgmVolume.def.toInt(),
+        0, 100);
+    m_ui->theme_music_enable->setChecked(theme_music_enabled);
+    m_ui->theme_music_volume->setValue(theme_music_volume);
+    m_ui->theme_music_volume_label->setText(tr("Theme music volume: %1%").arg(theme_music_volume));
 
     m_ui->ngs_enable->setChecked(m_config.ngs_enable);
 
@@ -707,6 +727,12 @@ bool SettingsDialog::commit_changes(bool close_after) {
     const bool previous_windows_rounded_corners = update_gui_settings
         ? m_gui_settings->get_value(gui::gw_roundedCorners).toBool()
         : false;
+    const bool previous_theme_music_enabled = update_gui_settings
+        ? m_gui_settings->get_value(gui::vt_bgmEnabled).toBool()
+        : gui::vt_bgmEnabled.def.toBool();
+    const int previous_theme_music_volume = update_gui_settings
+        ? m_gui_settings->get_value(gui::vt_bgmVolume).toInt()
+        : gui::vt_bgmVolume.def.toInt();
 
     if (storage_path_changed && !apply_pending_storage_path())
         return false;
@@ -737,8 +763,19 @@ bool SettingsDialog::commit_changes(bool close_after) {
         m_gui_settings->set_value(gui::mw_warnAdminPrivileges, m_ui->warn_admin_privileges->isChecked());
     if (update_gui_settings && previous_windows_rounded_corners != m_ui->windows_rounded_corners->isChecked())
         m_gui_settings->set_value(gui::gw_roundedCorners, m_ui->windows_rounded_corners->isChecked());
+    bool theme_music_settings_changed = false;
+    if (update_gui_settings && previous_theme_music_enabled != m_ui->theme_music_enable->isChecked()) {
+        m_gui_settings->set_value(gui::vt_bgmEnabled, m_ui->theme_music_enable->isChecked(), false);
+        theme_music_settings_changed = true;
+    }
+    if (update_gui_settings && previous_theme_music_volume != m_ui->theme_music_volume->value()) {
+        m_gui_settings->set_value(gui::vt_bgmVolume, m_ui->theme_music_volume->value(), false);
+        theme_music_settings_changed = true;
+    }
     if (log_settings_changed)
         Q_EMIT gui_log_settings_request();
+    if (theme_music_settings_changed)
+        Q_EMIT gui_theme_music_settings_request();
 
     emuenv.kernel.debugger.log_imports = m_ui->log_imports->isChecked();
     emuenv.kernel.debugger.log_exports = m_ui->log_exports->isChecked();
@@ -756,7 +793,7 @@ void SettingsDialog::populate_modules_list() {
     const auto modules = config::get_modules_list(emuenv.pref_path, m_config.lle_modules);
     for (const auto &[name, enabled] : modules) {
         auto *item = new QListWidgetItem(QString::fromStdString(name), m_ui->modules_list);
-        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+        item->setFlags((item->flags() | Qt::ItemIsUserCheckable) & ~Qt::ItemIsSelectable);
         item->setCheckState(enabled ? Qt::Checked : Qt::Unchecked);
     }
     update_modules_list_enabled();
@@ -951,6 +988,9 @@ void SettingsDialog::setup_connections() {
     connect(m_ui->audio_volume, &QSlider::valueChanged, this, [this](int val) {
         m_ui->audio_volume_label->setText(tr("Current volume: %1%").arg(val));
     });
+    connect(m_ui->theme_music_volume, &QSlider::valueChanged, this, [this](int val) {
+        m_ui->theme_music_volume_label->setText(tr("Theme music volume: %1%").arg(val));
+    });
 
     connect(m_ui->perf_overlay_enabled, &QCheckBox::toggled, this, [this](bool on) {
         m_ui->label_perf_detail->setEnabled(on);
@@ -1122,6 +1162,8 @@ void SettingsDialog::setup_connections() {
         // Audio
         { m_ui->audio_backend_box, tr("Audio Backend"), m_tooltips->audio_backend },
         { m_ui->audio_volume, tr("Volume"), m_tooltips->audio_volume },
+        { m_ui->theme_music_enable, tr("Enable Vita Theme Background Music"), m_tooltips->theme_music_enable },
+        { m_ui->theme_music_volume, tr("Theme Music Volume"), m_tooltips->theme_music_volume },
         { m_ui->ngs_enable, tr("Enable NGS Support"), m_tooltips->ngs_enable },
         // Camera
         { m_ui->front_camera_box, tr("Front Camera Source"), m_tooltips->front_camera },
@@ -1243,9 +1285,9 @@ void SettingsDialog::set_description(QWidget *tab, const QString &title_override
     }();
 
     if (text == m_tooltips->default_description) {
-        m_ui->helpText->setHtml(format_help_html(title, m_tooltips->category_summary(static_cast<SettingsTab>(index))));
+        m_ui->helpText->setHtml(gui::utils::format_help_html(title, m_tooltips->category_summary(static_cast<SettingsTab>(index))));
     } else {
-        m_ui->helpText->setHtml(format_help_html(title, text));
+        m_ui->helpText->setHtml(gui::utils::format_help_html(title, text));
     }
 }
 
@@ -1392,30 +1434,27 @@ void SettingsDialog::update_gpu_visibility() {
     }
 }
 
-void SettingsDialog::add_stylesheets() {
+void SettingsDialog::add_stylesheets(const QString &preferred_name) {
     m_ui->combo_stylesheets->blockSignals(true);
     m_ui->combo_stylesheets->clear();
 
-    m_ui->combo_stylesheets->addItem(tr("None", "Stylesheets"), gui::NoStylesheet);
+    const auto themes = m_theme_manager.available_themes();
+    for (const auto &theme : themes)
+        m_ui->combo_stylesheets->addItem(theme.display_name, theme.name);
 
-    m_ui->combo_stylesheets->addItem(tr("Light", "Stylesheets"), gui::LightStylesheet);
-    m_ui->combo_stylesheets->addItem(tr("Dark", "Stylesheets"), gui::DarkStylesheet);
-
-    if (m_gui_settings) {
-        for (const QString &entry : m_gui_settings->get_stylesheet_entries()) {
-            if (entry != gui::LightStylesheet && entry != gui::DarkStylesheet) {
-                m_ui->combo_stylesheets->addItem(entry, entry);
-            }
-        }
-    }
-
-    m_current_stylesheet = m_gui_settings
-        ? m_gui_settings->get_value(gui::m_currentStylesheet).toString()
-        : gui::DarkStylesheet;
+    if (!preferred_name.isEmpty())
+        m_current_stylesheet = preferred_name;
+    else if (m_gui_settings)
+        m_current_stylesheet = m_gui_settings->get_value(gui::m_currentStylesheet).toString();
+    else
+        m_current_stylesheet.clear();
 
     const int index = m_ui->combo_stylesheets->findData(m_current_stylesheet);
     if (index >= 0) {
         m_ui->combo_stylesheets->setCurrentIndex(index);
+    } else if (m_ui->combo_stylesheets->count() > 0) {
+        m_ui->combo_stylesheets->setCurrentIndex(0);
+        m_current_stylesheet = m_ui->combo_stylesheets->currentData().toString();
     }
     m_ui->combo_stylesheets->blockSignals(false);
 }

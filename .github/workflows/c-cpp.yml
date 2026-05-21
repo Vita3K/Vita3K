@@ -134,6 +134,7 @@ jobs:
             curl:p
             zlib:p
             qt6-base:p
+            qt6-multimedia:p
             qt6-svg:p
             qt6-tools:p
 
@@ -146,6 +147,7 @@ jobs:
         if: matrix.platform == 'windows-x64'
         with:
           version: ${{ env.QT_VERSION }}
+          modules: qtmultimedia
           host: windows
           target: desktop
           arch: win64_msvc2022_64
@@ -158,6 +160,7 @@ jobs:
         if: matrix.platform != 'windows-arm64' && matrix.platform != 'windows-x64'
         with:
           version: ${{ env.QT_VERSION }}
+          modules: qtmultimedia
           cache: true
           install-deps: ${{ matrix.qt_install_deps }}
 

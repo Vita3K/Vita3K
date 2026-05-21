@@ -58,7 +58,6 @@
 #include <SDL3/SDL_gamepad.h>
 
 #include <algorithm>
-#include <cmath>
 
 namespace {
 
@@ -66,22 +65,6 @@ constexpr int BIND_BUTTON_WIDTH = 100;
 constexpr int STACK_PAGE_MIN_WIDTH = 980;
 constexpr int CAPTURE_TIMEOUT_MS = 5'000;
 constexpr int16_t AXIS_DEADZONE = 16000;
-
-QColor mix_colors(const QColor &a, const QColor &b, float amount_b) {
-    const float amount_a = 1.0f - amount_b;
-    return QColor(
-        std::lround(a.red() * amount_a + b.red() * amount_b),
-        std::lround(a.green() * amount_a + b.green() * amount_b),
-        std::lround(a.blue() * amount_a + b.blue() * amount_b),
-        std::lround(a.alpha() * amount_a + b.alpha() * amount_b));
-}
-
-QIcon theme_icon(QWidget *widget, const QString &theme_name, QStyle::StandardPixmap fallback) {
-    QIcon icon = QIcon::fromTheme(theme_name);
-    if (icon.isNull() && widget)
-        icon = widget->style()->standardIcon(fallback);
-    return icon;
-}
 
 QPixmap render_vita_svg(const QColor &color) {
     QSvgRenderer renderer(QStringLiteral(":/icons/PSV_Layout.svg"));
@@ -112,43 +95,14 @@ QLabel *make_wrapped_label(const QString &text, QWidget *parent = nullptr) {
     return label;
 }
 
-QToolButton *make_header_tool_button(QWidget *parent, const QString &text, const QString &theme_name,
-    QStyle::StandardPixmap fallback) {
-    Q_UNUSED(theme_name);
-    Q_UNUSED(fallback);
+QToolButton *make_header_tool_button(QWidget *parent, const QString &text) {
     auto *button = new QToolButton(parent);
     button->setText(text);
     button->setCheckable(true);
     button->setToolButtonStyle(Qt::ToolButtonTextOnly);
     button->setAutoRaise(true);
+    button->setProperty("modeButton", true);
     return button;
-}
-
-void refresh_widget_style(QWidget *widget) {
-    if (!widget)
-        return;
-    widget->style()->unpolish(widget);
-    widget->style()->polish(widget);
-    widget->update();
-}
-
-void style_mode_button(QToolButton *button) {
-    if (!button)
-        return;
-    const QPalette pal = button->palette();
-    const QColor base = pal.color(QPalette::Base);
-    const QColor hover = mix_colors(base, pal.color(QPalette::Highlight), 0.10f);
-    const QColor checked = mix_colors(base, pal.color(QPalette::Highlight), 0.18f);
-    button->setStyleSheet(QStringLiteral(
-        "QToolButton {"
-        " background: transparent;"
-        " border: none;"
-        " border-radius: 10px;"
-        " padding: 6px 12px;"
-        " }"
-        "QToolButton:hover { background-color: %1; }"
-        "QToolButton:checked { background-color: %2; }")
-            .arg(hover.name(QColor::HexArgb), checked.name(QColor::HexArgb)));
 }
 
 void style_binding_button(QPushButton *button, bool capturing = false) {
@@ -156,7 +110,7 @@ void style_binding_button(QPushButton *button, bool capturing = false) {
         return;
     button->setProperty("bindButton", true);
     button->setProperty("captureActive", capturing);
-    refresh_widget_style(button);
+    gui::utils::refresh_theme_state(button);
 }
 
 QPushButton *make_bind_button() {
@@ -375,6 +329,7 @@ ControlsDialog::ControlsDialog(EmuEnvState &emuenv,
     , m_gui_settings(std::move(gui_settings))
     , m_ui(std::make_unique<Ui::ControlsDialog>()) {
     m_ui->setupUi(this);
+    setObjectName(QStringLiteral("controls_dialog"));
     setWindowTitle(tr("Controls"));
     setWindowModality(Qt::NonModal);
     setWindowFlag(Qt::Window, true);
@@ -423,6 +378,13 @@ ControlsDialog::~ControlsDialog() {
     m_capture_countdown_timer->stop();
     cancel_keyboard_capture();
     cancel_controller_capture();
+}
+
+void ControlsDialog::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::PaletteChange || event->type() == QEvent::StyleChange)
+        refresh_controller_art();
+
+    QDialog::changeEvent(event);
 }
 
 void ControlsDialog::closeEvent(QCloseEvent *event) {
@@ -542,12 +504,8 @@ void ControlsDialog::build_keyboard_page() {
     header_layout->addWidget(m_keyboard_page.lbl_summary, 1);
 
     auto *view_layout = new QHBoxLayout();
-    m_keyboard_page.btn_primary = make_header_tool_button(header_group, tr("Primary"),
-        QStringLiteral("input-keyboard"), QStyle::SP_ArrowRight);
-    m_keyboard_page.btn_alt = make_header_tool_button(header_group, tr("Alternate"),
-        QStringLiteral("input-keyboard-shortcut"), QStyle::SP_FileDialogDetailedView);
-    style_mode_button(m_keyboard_page.btn_primary);
-    style_mode_button(m_keyboard_page.btn_alt);
+    m_keyboard_page.btn_primary = make_header_tool_button(header_group, tr("Primary"));
+    m_keyboard_page.btn_alt = make_header_tool_button(header_group, tr("Alternate"));
     view_layout->addWidget(m_keyboard_page.btn_primary);
     view_layout->addWidget(m_keyboard_page.btn_alt);
     header_layout->addLayout(view_layout);
@@ -561,7 +519,7 @@ void ControlsDialog::build_keyboard_page() {
     m_keyboard_page.stack = new QStackedWidget(m_keyboard_page.page);
     root_layout->addWidget(m_keyboard_page.stack, 1);
 
-    const QPixmap vita_pixmap = render_vita_svg(gui::utils::get_foreground_color(this));
+    const QPixmap vita_pixmap = render_vita_svg(gui::utils::foreground_color(this));
 
     {
         QWidget *content_widget = nullptr;
@@ -705,10 +663,8 @@ void ControlsDialog::build_controller_page(int index) {
     header_layout->addWidget(t.lbl_summary, 1);
 
     auto *view_layout = new QHBoxLayout();
-    t.btn_bindings = make_header_tool_button(header_group, tr("Bindings"), QStringLiteral("controller-digital-line"), QStyle::SP_ArrowRight);
-    t.btn_settings = make_header_tool_button(header_group, tr("Settings"), QStringLiteral("settings-3-line"), QStyle::SP_FileDialogDetailedView);
-    style_mode_button(t.btn_bindings);
-    style_mode_button(t.btn_settings);
+    t.btn_bindings = make_header_tool_button(header_group, tr("Bindings"));
+    t.btn_settings = make_header_tool_button(header_group, tr("Settings"));
     view_layout->addWidget(t.btn_bindings);
     view_layout->addWidget(t.btn_settings);
     header_layout->addLayout(view_layout);
@@ -750,7 +706,7 @@ void ControlsDialog::build_controller_page(int index) {
     top_grid->addWidget(make_button_group(tr("R1"), t.btn_r1), 0, 3);
     center_column->addLayout(top_grid);
 
-    t.l_controller_image = make_vita_image_label(this, render_vita_svg(gui::utils::get_foreground_color(this)));
+    t.l_controller_image = make_vita_image_label(this, render_vita_svg(gui::utils::foreground_color(this)));
     center_column->addWidget(make_centered_widget(t.l_controller_image));
     center_column->addStretch();
 
@@ -1187,6 +1143,18 @@ void ControlsDialog::refresh_controller_page_labels(int index) {
         if (axis_index >= 0 && axis_index < static_cast<int>(axis_binds.size()))
             mapped = static_cast<SDL_GamepadAxis>(axis_binds[axis_index]);
         axis_binding.button->setText(controller_axis_name(tab.type, mapped));
+    }
+}
+
+void ControlsDialog::refresh_controller_art() {
+    const QPixmap vita_pixmap = render_vita_svg(gui::utils::foreground_color(this));
+
+    if (m_keyboard_page.l_controller_image)
+        m_keyboard_page.l_controller_image->setPixmap(vita_pixmap);
+
+    for (auto &tab : m_ctrl_tabs) {
+        if (tab.l_controller_image)
+            tab.l_controller_image->setPixmap(vita_pixmap);
     }
 }
 

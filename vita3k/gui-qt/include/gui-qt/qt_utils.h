@@ -50,24 +50,24 @@ void open_dir(const fs::path &path);
 
 fs::path to_fs_path(const QString &path);
 QString to_qt_path(const fs::path &path);
+QString sanitize_relative_path_reference(const QString &path);
+QString resolve_relative_path_in_root(const QString &relative_path, const QString &root_path);
 
-QColor get_foreground_color(QWidget *widget = nullptr);
+QColor foreground_color(QWidget *widget = nullptr);
+QColor muted_text_color();
+QColor toolbar_icon_tint();
+QColor theme_role_color(
+    const QString &role,
+    QPalette::ColorRole color_role = QPalette::WindowText);
+QString format_help_html(const QString &title, const QString &body);
+void invalidate_theme_cache();
+void refresh_theme_state(QWidget *widget);
 
 QIcon get_colorized_icon(const QIcon &icon,
     const QColor &source_color,
     const std::map<QIcon::Mode, QColor> &new_colors);
 
 bool dark_mode_active();
-
-QColor get_label_color(
-    const QString &object_name,
-    const QColor &fallback_light,
-    const QColor &fallback_dark,
-    QPalette::ColorRole color_role = QPalette::WindowText);
-
-QColor get_label_color(
-    const QColor &fallback_light,
-    const QColor &fallback_dark);
 
 MessageDialogResult show_message_box(
     QWidget *parent,

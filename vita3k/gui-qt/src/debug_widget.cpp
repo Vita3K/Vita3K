@@ -399,7 +399,7 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
     layout->addLayout(form);
 
     auto *reg_label = new QLabel(tr("Registers"), dlg);
-    reg_label->setStyleSheet(QStringLiteral("font-weight: bold; margin-top: 8px;"));
+    reg_label->setProperty("themeRole", QStringLiteral("sectionHeader"));
     layout->addWidget(reg_label);
 
     auto *reg_tree = new QTreeWidget(dlg);
@@ -432,7 +432,7 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
     layout->addWidget(reg_tree);
 
     auto *stack_label = new QLabel(tr("Stack"), dlg);
-    stack_label->setStyleSheet(QStringLiteral("font-weight: bold; margin-top: 8px;"));
+    stack_label->setProperty("themeRole", QStringLiteral("sectionHeader"));
     layout->addWidget(stack_label);
 
     auto *stack_tree = new QTreeWidget(dlg);

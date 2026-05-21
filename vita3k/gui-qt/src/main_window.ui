@@ -72,6 +72,7 @@
     <property name="title">
      <string>Manage</string>
     </property>
+    <addaction name="vita_themes_action"/>
     <addaction name="trophy_collection_action"/>
     <addaction name="user_management_action"/>
    </widget>
@@ -239,6 +240,11 @@
   <action name="trophy_collection_action">
    <property name="text">
     <string>Trophy Collection</string>
+   </property>
+  </action>
+  <action name="vita_themes_action">
+   <property name="text">
+    <string>Vita Themes</string>
    </property>
   </action>
   <action name="user_management_action">

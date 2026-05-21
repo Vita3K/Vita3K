@@ -72,10 +72,7 @@ QLabel *make_muted_label(const QString &text, QWidget *parent, Qt::Alignment ali
     auto *label = new QLabel(text, parent);
     label->setAlignment(alignment);
     label->setWordWrap(true);
-    const QColor color = gui::utils::get_label_color(QColor(0x5b, 0x5b, 0x5b), QColor(0xa8, 0xa8, 0xa8));
-    QPalette palette = label->palette();
-    palette.setColor(QPalette::WindowText, color);
-    label->setPalette(palette);
+    label->setProperty("themeRole", QStringLiteral("mutedText"));
     return label;
 }
 
@@ -109,13 +106,7 @@ QFrame *make_result_row(const ArchiveInstallResult &result, QWidget *parent) {
     status->setAlignment(Qt::AlignCenter);
     status->setMinimumWidth(84);
     status->setMargin(6);
-    const QColor status_bg = result.success
-        ? gui::utils::get_label_color(QColor(0xd9, 0xf2, 0xdd), QColor(0x25, 0x5a, 0x2e))
-        : gui::utils::get_label_color(QColor(0xf7, 0xdc, 0xd9), QColor(0x6d, 0x2a, 0x25));
-    const QColor status_fg = result.success
-        ? gui::utils::get_label_color(QColor(0x1f, 0x7a, 0x1f), QColor(0xb9, 0xf5, 0xbf))
-        : gui::utils::get_label_color(QColor(0xa3, 0x2a, 0x1c), QColor(0xff, 0xb1, 0xaa));
-    status->setStyleSheet(QStringLiteral("border-radius: 10px; padding: 4px 10px; background-color: %1; color: %2;").arg(status_bg.name(), status_fg.name()));
+    status->setProperty("severity", result.success ? QStringLiteral("success") : QStringLiteral("error"));
     layout->addWidget(status, 0, Qt::AlignTop);
 
     return row;

@@ -18,6 +18,7 @@
 #include <gui-qt/apps_list.h>
 #include <gui-qt/apps_list_table.h>
 #include <gui-qt/gui_settings.h>
+#include <gui-qt/theme_surface.h>
 
 #include <app/functions.h>
 #include <emuenv/state.h>
@@ -33,15 +34,17 @@
 AppsList::AppsList(EmuEnvState &emuenv, QWidget *parent)
     : custom_dock_widget(tr("App Library"), parent)
     , m_emuenv(emuenv) {
-    setObjectName(QStringLiteral("AppsList"));
+    setObjectName(QStringLiteral("apps_list"));
     setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
 
-    auto *central = new QWidget(this);
+    auto *central = new ThemeSurface(this);
+    central->setObjectName(QStringLiteral("apps_list_frame"));
     auto *vbox = new QVBoxLayout(central);
     vbox->setContentsMargins(0, 4, 0, 0);
     vbox->setSpacing(4);
 
     m_table = new AppsListTable(central);
+    m_table->viewport()->setObjectName(QStringLiteral("apps_list_viewport"));
     vbox->addWidget(m_table);
 
     setWidget(central);

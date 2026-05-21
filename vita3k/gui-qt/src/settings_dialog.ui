@@ -1267,6 +1267,78 @@ QGroupBox[flat=&quot;true&quot;]::title {
               </widget>
              </item>
              <item>
+              <widget class="QGroupBox" name="gb_theme_music_section">
+               <property name="title">
+                <string>Theme Music</string>
+               </property>
+               <layout class="QVBoxLayout" name="gb_theme_music_section_layout">
+                <item>
+                 <widget class="QGroupBox" name="gb_theme_music_controls">
+                  <property name="title">
+                   <string>Vita Theme Music</string>
+                  </property>
+                  <property name="flat">
+                   <bool>true</bool>
+                  </property>
+                  <layout class="QVBoxLayout" name="gb_theme_music_controls_layout">
+                   <property name="spacing">
+                    <number>8</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>6</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QCheckBox" name="theme_music_enable">
+                     <property name="text">
+                      <string>Enable Vita theme background music</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="theme_music_volume_label">
+                     <property name="text">
+                      <string>Theme music volume: 50%</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSlider" name="theme_music_volume">
+                     <property name="minimum">
+                      <number>0</number>
+                     </property>
+                     <property name="maximum">
+                      <number>100</number>
+                     </property>
+                     <property name="value">
+                      <number>50</number>
+                     </property>
+                     <property name="orientation">
+                      <enum>Qt::Orientation::Horizontal</enum>
+                     </property>
+                     <property name="tickPosition">
+                      <enum>QSlider::TickPosition::TicksBelow</enum>
+                     </property>
+                     <property name="tickInterval">
+                      <number>25</number>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
               <spacer name="audio_tab_content_spacer">
                <property name="orientation">
                 <enum>Qt::Orientation::Vertical</enum>
