@@ -122,8 +122,11 @@ void FirmwareInstallDialog::run_install(const QString &path) {
         layout()->addWidget(buttons);
 
         connect(buttons, &QDialogButtonBox::accepted, this, [this, del_check, path]() {
-            if (del_check->isChecked())
-                QFile::remove(path);
+            // QFile::remove returns false silently when the firmware file is locked, so surface that to the user
+            if (del_check->isChecked() && !QFile::remove(path)) {
+                QMessageBox::warning(this, tr("Could Not Delete Firmware"),
+                    tr("The firmware file could not be deleted. It may still be open in another program:\n\n%1").arg(path));
+            }
             Q_EMIT install_complete();
             accept();
         });

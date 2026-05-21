@@ -431,9 +431,20 @@ void ArchiveInstallDialog::run_install(const std::vector<fs::path> &archives) {
                 [this, del_check, results]() {
                     if (del_check->isChecked()) {
                         std::set<fs::path> deleted;
+                        QStringList failed;
                         for (const auto &r : results) {
-                            if (!r.archive_full_path.empty() && deleted.insert(r.archive_full_path).second)
-                                fs::remove(r.archive_full_path);
+                            if (r.archive_full_path.empty() || !deleted.insert(r.archive_full_path).second)
+                                continue;
+                            // fs::remove throws and crashes the app when the archive is locked so use the non throwing overload
+                            boost::system::error_code error;
+                            fs::remove(r.archive_full_path, error);
+                            if (error)
+                                failed.push_back(r.archive_name);
+                        }
+
+                        if (!failed.isEmpty()) {
+                            QMessageBox::warning(this, tr("Could Not Delete Archives"),
+                                tr("The following archive files could not be deleted. They may still be open in another program:\n\n%1").arg(failed.join(QStringLiteral("\n"))));
                         }
                     }
                     Q_EMIT install_complete(results);
