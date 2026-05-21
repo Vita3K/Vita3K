@@ -375,8 +375,8 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
 
     auto *dlg = new QDialog(this);
     dlg->setWindowTitle(tr("Thread: %1 (0x%2)")
-                            .arg(QString::fromStdString(thread->name))
-                            .arg(thread_id, 8, 16, QLatin1Char('0')));
+            .arg(QString::fromStdString(thread->name))
+            .arg(thread_id, 8, 16, QLatin1Char('0')));
     dlg->setAttribute(Qt::WA_DeleteOnClose);
     dlg->setMinimumSize(420, 480);
 

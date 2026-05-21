@@ -35,7 +35,7 @@
 
 CtrlKeyboardFilter::CtrlKeyboardFilter(EmuEnvState &emuenv, QObject *parent)
     : QObject(parent)
-    , m_emuenv(emuenv){};
+    , m_emuenv(emuenv) {};
 
 bool CtrlKeyboardFilter::eventFilter(QObject *watched, QEvent *event) {
     switch (event->type()) {
