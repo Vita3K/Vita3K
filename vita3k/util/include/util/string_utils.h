@@ -29,6 +29,7 @@ std::wstring utf_to_wide(const std::string &str);
 std::string wide_to_utf(const std::wstring &str);
 std::string utf16_to_utf8(const std::u16string &str);
 std::u16string utf8_to_utf16(const std::string &str);
+std::string trim_copy(const std::string &str);
 std::string remove_special_chars(std::string str);
 void replace(std::string &str, const std::string &in, const std::string &out);
 std::vector<uint8_t> string_to_byte_array(const std::string &string);

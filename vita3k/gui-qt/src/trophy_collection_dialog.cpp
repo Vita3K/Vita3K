@@ -128,7 +128,7 @@ TrophyCollectionDialog::TrophyCollectionDialog(EmuEnvState &emuenv,
     , m_emuenv(emuenv)
     , m_gui_settings(std::move(gui_settings)) {
     setWindowTitle(tr("Trophy Collection"));
-    setObjectName(QStringLiteral("TrophyCollectionDialog"));
+    setObjectName(QStringLiteral("trophy_collection_dialog"));
     setWindowModality(Qt::NonModal);
     setWindowFlag(Qt::WindowSystemMenuHint, true);
     setWindowFlag(Qt::WindowMinMaxButtonsHint, true);

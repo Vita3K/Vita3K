@@ -22,6 +22,7 @@
 #include <emuenv/state.h>
 
 #include <QMainWindow>
+#include <QPixmap>
 #include <QPointer>
 #include <QTimer>
 
@@ -43,9 +44,11 @@ class GameCompatibility;
 class QWindow;
 class QWidget;
 class QLineEdit;
+class QPaintEvent;
 class QPushButton;
 class QSlider;
 class QToolBar;
+class QVariantAnimation;
 class TrophyCollectionDialog;
 class CtrlKeyboardFilter;
 class DebugWidget;
@@ -54,6 +57,8 @@ class UserManagementDialog;
 class UpdateManager;
 class ControlsDialog;
 class SettingsDialog;
+class ThemeManager;
+class VitaThemesDialog;
 namespace app {
 struct SettingsCommitResult;
 }
@@ -77,6 +82,7 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
 
 private slots:
     void on_about_action_triggered();
@@ -91,6 +97,7 @@ private slots:
     void pump_sdl_events();
     void open_trophy_collection();
     void open_user_management();
+    void open_vita_themes();
     void show_live_area(const std::string &title_id);
     void on_live_area_play();
     void on_live_area_closed();
@@ -155,15 +162,19 @@ private:
     void open_debug_widget(int tab);
     void apply_log_gui_settings();
     void repaint_gui();
-    void init_default_style();
     void init_first_run_stylesheet();
     void apply_stylesheet();
+    void apply_theme_background_presentation();
+    void clear_theme_background_presentation();
+    void rescale_theme_background_pixmaps();
+    void advance_theme_background_presentation();
 
     EmuEnvState &emuenv;
     app::AppSessionController m_app_session;
     std::unique_ptr<Ui::MainWindow> m_ui;
     std::shared_ptr<GuiSettings> m_gui_settings;
     std::shared_ptr<PersistentSettings> m_persistent_settings;
+    std::unique_ptr<ThemeManager> m_theme_manager;
 
     QMainWindow *m_dock_host = nullptr;
     AppsList *m_apps_list_widget = nullptr;
@@ -173,25 +184,34 @@ private:
     QWindow *m_game_container = nullptr;
     QTimer *m_sdl_pump_timer = nullptr;
 
-    TrophyCollectionDialog *m_trophy_dialog = nullptr;
-    UserManagementDialog *m_user_mgmt_dialog = nullptr;
+    QPointer<TrophyCollectionDialog> m_trophy_dialog;
+    QPointer<UserManagementDialog> m_user_mgmt_dialog;
     CtrlKeyboardFilter *m_kb_filter = nullptr;
-    DebugWidget *m_debug_widget = nullptr;
+    QPointer<DebugWidget> m_debug_widget;
     LiveAreaWidget *m_live_area_widget = nullptr;
     UpdateManager *m_update_manager = nullptr;
-    ControlsDialog *m_controls_dialog = nullptr;
-    SettingsDialog *m_settings_dialog = nullptr;
+    QPointer<ControlsDialog> m_controls_dialog;
+    QPointer<SettingsDialog> m_settings_dialog;
+    QPointer<VitaThemesDialog> m_vita_themes_dialog;
     std::string m_live_area_title_id;
 
     QLineEdit *m_search_bar = nullptr;
     QSlider *m_icon_size_slider = nullptr;
     QWidget *m_slider_container = nullptr;
     std::vector<QPointer<QWidget>> m_auxiliary_windows;
+    QTimer *m_theme_background_cycle_timer = nullptr;
+    QVariantAnimation *m_theme_background_fade_animation = nullptr;
+    std::vector<QPixmap> m_theme_background_original_pixmaps;
+    std::vector<QPixmap> m_theme_background_scaled_pixmaps;
+    QSize m_theme_background_scaled_size;
+    int m_theme_background_cycle_interval_ms = 15000;
+    int m_theme_background_current_index = 0;
+    int m_theme_background_next_index = -1;
+    qreal m_theme_background_fade_progress = 0.0;
     bool m_is_app_closing = false;
     bool m_fullscreen = false;
     bool m_app_selected = false;
     bool m_admin_privileged = false;
-    QString m_default_style;
 #if USE_DISCORD
     bool m_discord_rich_presence_old = false;
 #endif
