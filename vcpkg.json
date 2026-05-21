@@ -1,0 +1,14 @@
+{
+  "name": "vita3k",
+  "version-string": "0.0.0",
+  "dependencies": [
+    "boost-filesystem",
+    "boost-icl",
+    "boost-program-options",
+    "boost-system",
+    "boost-variant",
+    "curl",
+    "openssl",
+    "zlib"
+  ]
+}

@@ -65,6 +65,28 @@
       }
     },
     {
+      "name": "ci-windows-msvc",
+      "inherits": "windows-ninja",
+      "description": "CI preset for Windows MSVC builds",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER_LAUNCHER": "sccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "sccache",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
+      }
+    },
+    {
+      "name": "ci-windows-msys2-clang",
+      "inherits": "windows-ninja",
+      "description": "CI preset for Windows MSYS2 Clang builds",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+      }
+    },
+    {
       "name": "linux",
       "inherits": "base",
       "displayName": "Linux default",
@@ -109,6 +131,25 @@
       }
     },
     {
+      "name": "ci-linux-clang",
+      "inherits": "linux-ninja-clang",
+      "description": "CI preset for Linux Clang builds",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER_LAUNCHER": "sccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "sccache"
+      }
+    },
+    {
+      "name": "ci-linux-clang-appimage",
+      "inherits": "ci-linux-clang",
+      "description": "CI preset for Linux Clang AppImage builds",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "/usr",
+        "BUILD_APPIMAGE": true,
+        "LINUXDEPLOY_COMMAND": "$env{VITA3K_LINUXDEPLOY_COMMAND}"
+      }
+    },
+    {
       "name": "linux-ninja-gnu",
       "inherits": "linux-ninja",
       "displayName": "Linux with Ninja and GNU GCC",
@@ -135,6 +176,30 @@
       "displayName": "macOS with Ninja",
       "description": "Linux native build using Ninja Multi-Config generator and default compiler",
       "generator": "Ninja Multi-Config"
+    },
+    {
+      "name": "ci-macos-x64",
+      "inherits": "macos-ninja",
+      "description": "CI preset for macOS x86_64 builds",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_OSX_ARCHITECTURES": "x86_64",
+        "FORCE_BUILD_OPENSSL_MAC": true,
+        "VITA3K_FORCE_CUSTOM_BOOST": true
+      }
+    },
+    {
+      "name": "ci-macos-arm64",
+      "inherits": "macos-ninja",
+      "description": "CI preset for macOS arm64 builds",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "FORCE_BUILD_OPENSSL_MAC": true,
+        "VITA3K_FORCE_CUSTOM_BOOST": true
+      }
     },
     {
       "name": "macos-xcode",

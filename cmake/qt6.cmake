@@ -2,7 +2,7 @@
 # Provides the vita3k::qt6 INTERFACE target.
 add_library(vita3k_qt6 INTERFACE)
 
-set(VITA3K_QT_MIN_VER 6.7.0)
+set(VITA3K_QT_MIN_VER 6.11.0)
 
 set(VITA3K_QT_COMPONENTS Core Gui Widgets Network Concurrent Svg LinguistTools)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
