@@ -50,7 +50,7 @@ You can download the latest builds from [here](https://github.com/Vita3K/Vita3K/
     * [vita3k-git](https://aur.archlinux.org/packages/vita3k-git)<sup><small>AUR</small></sup>
   * Requirements:
     * xdg-desktop-portal
-* [Android](https://github.com/Vita3K/Vita3K-Android/releases/)
+* Android
     * [Adreno drivers](https://github.com/K11MCH1/AdrenoToolsDrivers/releases/)
 * Others
   * [Download Artifact](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
