@@ -12,7 +12,6 @@ rm -rf android/app/assets/data android/app/assets/shaders-builtin
 cp -r data android/app/assets/data
 cp -r vita3k/shaders-builtin android/app/assets/shaders-builtin
 
-export JAVA_HOME="${JAVA_HOME_17_X64}"
 chmod +x android/gradlew
 
 if [[ -e "${SIGNING_STORE_PATH:-}" ]]; then
@@ -22,7 +21,7 @@ else
 fi
 
 pushd android > /dev/null
-./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand ":app:assemble${BUILD_TYPE}"
+./gradlew --stacktrace ":app:assemble${BUILD_TYPE}"
 popd > /dev/null
 
 APK_PATH="android/app/build/outputs/apk/${BUILD_TYPE,,}/app-${BUILD_TYPE,,}.apk"

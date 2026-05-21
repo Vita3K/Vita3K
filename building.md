@@ -161,7 +161,7 @@ Note: The CMake preset `linux-ninja-clang` makes use of the LLD linker, which wi
 
 - Building can be done with Android studio: select the Vita3K Android folder and click on the build icon or by command line:
   ```sh
-  ./gradlew --stacktrace --configuration-cache --build-cache --parallel --configure-on-demand assembleReldebug
+  ./gradlew --stacktrace assembleReldebug
   ```
 
 ## Note
