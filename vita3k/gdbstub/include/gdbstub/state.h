@@ -20,8 +20,11 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <string>
 #include <thread>
 #include <vector>
+
+#include <util/types.h>
 
 #ifdef _WIN32
 #include <winsock.h>
@@ -38,8 +41,11 @@ constexpr socket_t BAD_SOCK = -1;
 constexpr uint32_t GDB_SERVER_PORT = 2159;
 
 struct GDBState {
+    ~GDBState();
+
 #ifdef _WIN32
     WSADATA wsaData;
+    bool winsock_started = false;
 #endif
 
     socket_t listen_socket = BAD_SOCK;

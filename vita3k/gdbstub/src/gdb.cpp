@@ -54,6 +54,51 @@
 
 // Credit to jfhs for their GDB stub for RPCS3 which this stub is based on.
 
+static void close_socket(socket_t &socket) {
+    if (socket == BAD_SOCK)
+        return;
+
+#ifdef _WIN32
+    closesocket(socket);
+#else
+    close(socket);
+#endif
+    socket = BAD_SOCK;
+}
+
+static void close_gdb_sockets(GDBState &gdb) {
+    close_socket(gdb.client_socket);
+    close_socket(gdb.listen_socket);
+}
+
+static void cleanup_gdb_platform(GDBState &gdb) {
+#ifdef _WIN32
+    if (gdb.winsock_started) {
+        WSACleanup();
+        gdb.winsock_started = false;
+    }
+#endif
+}
+
+static void join_server_thread(GDBState &gdb) {
+    if (!gdb.server_thread || !gdb.server_thread->joinable())
+        return;
+
+    if (gdb.server_thread->get_id() == std::this_thread::get_id()) {
+        gdb.server_thread->detach();
+    } else {
+        gdb.server_thread->join();
+    }
+    gdb.server_thread.reset();
+}
+
+GDBState::~GDBState() {
+    server_die = true;
+    close_gdb_sockets(*this);
+    join_server_thread(*this);
+    cleanup_gdb_platform(*this);
+}
+
 // Must match the PacketSize advertised in qSupported.
 typedef char PacketData[16384];
 
@@ -1522,6 +1567,17 @@ static void server_listen(EmuEnvState &state) {
 }
 
 void server_open(EmuEnvState &state) {
+    if (state.gdb.server_thread) {
+        if (!state.gdb.server_die && state.gdb.listen_socket != BAD_SOCK) {
+            LOG_INFO("GDB Server is already listening on port {}", GDB_SERVER_PORT);
+            return;
+        }
+
+        join_server_thread(state.gdb);
+    }
+
+    state.gdb.server_die = false;
+
     LOG_INFO("Starting GDB Server...");
 
 #ifdef _WIN32
@@ -1530,11 +1586,13 @@ void server_open(EmuEnvState &state) {
         LOG_ERROR("GDB Server Failed: Could not start WSA service.");
         return;
     }
+    state.gdb.winsock_started = true;
 #endif
 
     state.gdb.listen_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (state.gdb.listen_socket == -1) {
         LOG_ERROR("GDB Server Failed: Could not create socket.");
+        cleanup_gdb_platform(state.gdb);
         return;
     }
 
@@ -1549,11 +1607,15 @@ void server_open(EmuEnvState &state) {
 
     if (bind(state.gdb.listen_socket, (sockaddr *)&socket_address, sizeof(socket_address)) == -1) {
         LOG_ERROR("GDB Server Failed: Could not bind socket.");
+        close_socket(state.gdb.listen_socket);
+        cleanup_gdb_platform(state.gdb);
         return;
     }
 
     if (listen(state.gdb.listen_socket, 1) == -1) {
         LOG_ERROR("GDB Server Failed: Could not listen on socket.");
+        close_socket(state.gdb.listen_socket);
+        cleanup_gdb_platform(state.gdb);
         return;
     }
 
@@ -1563,14 +1625,8 @@ void server_open(EmuEnvState &state) {
 }
 
 void server_close(EmuEnvState &state) {
-#ifdef _WIN32
-    closesocket(state.gdb.listen_socket);
-    WSACleanup();
-#else
-    close(state.gdb.listen_socket);
-#endif
-
     state.gdb.server_die = true;
-    if (state.gdb.server_thread && state.gdb.server_thread->get_id() != std::this_thread::get_id())
-        state.gdb.server_thread->join();
+    close_gdb_sockets(state.gdb);
+    join_server_thread(state.gdb);
+    cleanup_gdb_platform(state.gdb);
 }

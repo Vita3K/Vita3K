@@ -22,6 +22,8 @@
 #include <config/functions.h>
 #include <config/version.h>
 #include <emuenv/state.h>
+#include <gdbstub/functions.h>
+#include <gdbstub/state.h>
 #include <gui-qt/gui_language.h>
 #include <gui-qt/gui_settings.h>
 #include <gui-qt/log_widget.h>
@@ -256,6 +258,15 @@ int main(int argc, char *argv[]) {
     mainwindow.show();
     if (mainwindow.prompt_startup_warnings())
         app.exec();
+
+    // Process exit: app::destroy() intentionally leaves the gdbstub thread
+    // alive across per-session teardown (LoadExec/relaunch) so a client can
+    // stay attached. The thread lives in emuenv.gdb.server_thread and is
+    // still joinable at this point; letting EmuEnvState destruct without
+    // joining it would invoke ~std::thread on a joinable thread, which
+    // calls std::terminate (CRT fast-fail 0xC0000409).
+    if (emuenv.gdb.server_thread)
+        server_close(emuenv);
 
 #ifdef _WIN32
     CoUninitialize();
