@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -52,6 +53,7 @@ struct GDBState {
     socket_t client_socket = BAD_SOCK;
 
     std::shared_ptr<std::thread> server_thread = nullptr;
+    std::mutex server_thread_mutex;
     bool server_die = false;
 
     std::string last_reply = "";

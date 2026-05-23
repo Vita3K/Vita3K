@@ -19,6 +19,8 @@
 #include <string>
 #include <thread>
 
+#include <emuenv/state.h>
+#include <gdbstub/functions.h>
 #include <util/types.h>
 
 #include <gdbstub/state.h>
@@ -31,6 +33,21 @@ TEST(gdb_state, destructor_joins_completed_server_thread) {
             {
                 GDBState state;
                 state.server_thread = std::make_shared<std::thread>([] {});
+            }
+            std::exit(0);
+        },
+        testing::ExitedWithCode(0), "");
+}
+
+TEST(gdb_state, server_close_is_safe_when_server_thread_also_closes) {
+    EXPECT_EXIT(
+        {
+            for (int i = 0; i < 1000; ++i) {
+                EmuEnvState state;
+                state.gdb.server_thread = std::make_shared<std::thread>([&state] {
+                    server_close(state);
+                });
+                server_close(state);
             }
             std::exit(0);
         },

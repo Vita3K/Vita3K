@@ -81,15 +81,20 @@ static void cleanup_gdb_platform(GDBState &gdb) {
 }
 
 static void join_server_thread(GDBState &gdb) {
-    if (!gdb.server_thread || !gdb.server_thread->joinable())
+    std::shared_ptr<std::thread> server_thread;
+    {
+        const auto guard = std::lock_guard(gdb.server_thread_mutex);
+        server_thread = std::move(gdb.server_thread);
+    }
+
+    if (!server_thread || !server_thread->joinable())
         return;
 
-    if (gdb.server_thread->get_id() == std::this_thread::get_id()) {
-        gdb.server_thread->detach();
+    if (server_thread->get_id() == std::this_thread::get_id()) {
+        server_thread->detach();
     } else {
-        gdb.server_thread->join();
+        server_thread->join();
     }
-    gdb.server_thread.reset();
 }
 
 GDBState::~GDBState() {
@@ -1563,7 +1568,9 @@ static void server_listen(EmuEnvState &state) {
             LOG_INFO("GDB Server Client Disconnected, waiting for new connection...");
     }
 
-    server_close(state);
+    // The owning thread handles server_close(); doing it here would race
+    // join/detach against process shutdown.
+    close_socket(state.gdb.listen_socket);
 }
 
 void server_open(EmuEnvState &state) {
