@@ -83,7 +83,7 @@ void load_from(const std::vector<std::string> &active_modules_str) {
 void cleanup(std::vector<std::string> &active_modules_str) {
     // remove if not found in tracy_available_advanced_profiling_modules
     std::erase_if(active_modules_str, [](const std::string &module) {
-        return !vector_utils::contains(get_tracy_available_advanced_profiling_modules(), module);
+        return !std::ranges::contains(get_tracy_available_advanced_profiling_modules(), module);
     });
 }
 

@@ -23,7 +23,6 @@
 #include <gxm/functions.h>
 #include <mem/ptr.h>
 #include <util/align.h>
-#include <util/bit_cast.h>
 #include <util/log.h>
 
 #include <algorithm>

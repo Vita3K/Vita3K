@@ -411,7 +411,7 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
 
     // Create exec path
     auto exec_path = static_cast<std::string>(appPath);
-    if (exec_path.find("app0:/") != std::string::npos)
+    if (exec_path.contains("app0:/"))
         exec_path.erase(0, 6);
     else
         exec_path.erase(0, 5);

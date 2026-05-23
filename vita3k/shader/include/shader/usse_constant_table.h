@@ -17,8 +17,7 @@
 
 #pragma once
 
-#include <util/bit_cast.h>
-
+#include <bit>
 #include <cstdint>
 
 namespace shader::usse {

@@ -689,7 +689,7 @@ void LiveAreaWidget::mousePressEvent(QMouseEvent *e) {
             continue;
 
         const auto &target = item_it->second.target;
-        if (target.empty() || target.find("psts:") != std::string::npos)
+        if (target.empty() || target.contains("psts:"))
             continue;
 
         const auto &fl = fl_it->second;
@@ -736,7 +736,7 @@ void LiveAreaWidget::mouseMoveEvent(QMouseEvent *e) {
             auto item_it = m_frame_items.find(frame.id);
             if (item_it == m_frame_items.end() || item_it->second.target.empty())
                 continue;
-            if (item_it->second.target.find("psts:") != std::string::npos)
+            if (item_it->second.target.contains("psts:"))
                 continue;
 
             const auto &fl = fl_it->second;
