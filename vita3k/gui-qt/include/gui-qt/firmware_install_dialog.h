@@ -52,6 +52,7 @@ class FirmwareInstallDialog : public QDialog {
     Q_OBJECT
 public:
     explicit FirmwareInstallDialog(EmuEnvState &emuenv, QWidget *parent = nullptr);
+    FirmwareInstallDialog(EmuEnvState &emuenv, const QString &path, QWidget *parent = nullptr);
 
 Q_SIGNALS:
     void install_complete();

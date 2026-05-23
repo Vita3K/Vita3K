@@ -322,10 +322,25 @@ void PkgInstallDialog::run_install(const fs::path &pkg_path,
 
             connect(buttons, &QDialogButtonBox::accepted, this,
                 [this, del_pkg, del_bin, pkg_path, title_id]() {
-                    if (del_pkg->isChecked())
-                        fs::remove(pkg_path);
-                    if (del_bin->isChecked() && !m_license_path.empty())
-                        fs::remove(m_license_path);
+                    QStringList failed;
+                    // fs::remove throws and crashes the app when the file is locked so use the non throwing overload
+                    if (del_pkg->isChecked()) {
+                        boost::system::error_code error;
+                        fs::remove(pkg_path, error);
+                        if (error)
+                            failed.push_back(QString::fromStdString(pkg_path.filename().string()));
+                    }
+                    if (del_bin->isChecked() && !m_license_path.empty()) {
+                        boost::system::error_code error;
+                        fs::remove(m_license_path, error);
+                        if (error)
+                            failed.push_back(QString::fromStdString(m_license_path.filename().string()));
+                    }
+
+                    if (!failed.isEmpty()) {
+                        QMessageBox::warning(this, tr("Could Not Delete Files"),
+                            tr("The following files could not be deleted. They may still be open in another program:\n\n%1").arg(failed.join(QStringLiteral("\n"))));
+                    }
 
                     Q_EMIT install_complete(title_id);
                     accept();

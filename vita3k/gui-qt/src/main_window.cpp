@@ -93,7 +93,6 @@
 #include <QMimeData>
 #include <QOpenGLContext>
 #include <QPainter>
-#include <QProgressDialog>
 #include <QPushButton>
 #include <QSlider>
 #include <QStandardPaths>
@@ -715,31 +714,11 @@ void MainWindow::handle_drop(const QString &path) {
     const std::string ext = string_utils::tolower(drop_path.extension().string());
 
     if (ext == ".pup") {
-        QProgressDialog prog(tr("Installing firmware\u2026"),
-            /*cancel=*/QString(), 0, 100, this);
-        prog.setWindowTitle(tr("Install Firmware"));
-        prog.setWindowModality(Qt::WindowModal);
-        prog.setMinimumDuration(0);
-        prog.setValue(0);
-
-        const std::string fw_version = install_pup(
-            emuenv.pref_path,
-            drop_path,
-            [&prog](uint32_t pct) {
-                prog.setValue(static_cast<int>(pct));
-                QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-            });
-
-        prog.setValue(100);
-
-        if (!fw_version.empty()) {
-            LOG_INFO("Firmware {} installed successfully via drop!", fw_version);
-            on_install_finished();
-        } else {
-            QMessageBox::critical(this, tr("Install Failed"),
-                tr("Failed to install the dropped firmware file.\n"
-                   "Check the log for details."));
-        }
+        auto *dlg = new FirmwareInstallDialog(emuenv, path, this);
+        connect(dlg, &FirmwareInstallDialog::install_complete,
+            this, &MainWindow::on_install_finished);
+        connect(dlg, &QDialog::finished, dlg, &QObject::deleteLater);
+        dlg->exec();
 
     } else if (ext == ".vpk" || ext == ".zip") {
         auto *dlg = new ArchiveInstallDialog(emuenv, { drop_path }, this);

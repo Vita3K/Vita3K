@@ -60,6 +60,20 @@ FirmwareInstallDialog::FirmwareInstallDialog(EmuEnvState &emuenv, QWidget *paren
     run_install(path);
 }
 
+FirmwareInstallDialog::FirmwareInstallDialog(EmuEnvState &emuenv, const QString &path, QWidget *parent)
+    : QDialog(parent)
+    , m_emuenv(emuenv) {
+    setWindowTitle(tr("Install Firmware"));
+    setModal(true);
+
+    if (path.isEmpty()) {
+        QMetaObject::invokeMethod(this, &QDialog::reject, Qt::QueuedConnection);
+        return;
+    }
+
+    run_install(path);
+}
+
 void FirmwareInstallDialog::run_install(const QString &path) {
     auto *main_layout = new QVBoxLayout(this);
 
@@ -122,8 +136,11 @@ void FirmwareInstallDialog::run_install(const QString &path) {
         layout()->addWidget(buttons);
 
         connect(buttons, &QDialogButtonBox::accepted, this, [this, del_check, path]() {
-            if (del_check->isChecked())
-                QFile::remove(path);
+            // QFile::remove returns false silently when the firmware file is locked, so surface that to the user
+            if (del_check->isChecked() && !QFile::remove(path)) {
+                QMessageBox::warning(this, tr("Could Not Delete Firmware"),
+                    tr("The firmware file could not be deleted. It may still be open in another program:\n\n%1").arg(path));
+            }
             Q_EMIT install_complete();
             accept();
         });
