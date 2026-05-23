@@ -1,6 +1,7 @@
 add_library(
 	vkutil
 	STATIC
+	include/vkutil/native_surface.h
 	include/vkutil/objects.h
 	include/vkutil/vkutil.h
 

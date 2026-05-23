@@ -114,8 +114,8 @@ void State::update_overlays() {
 void State::init_overlay_font_dirs() {
     overlay::fontmgr::set_system_lang(sys_lang);
 
-    if (window_callbacks.get_font_dirs) {
-        overlay::fontmgr::set_system_font_dirs(window_callbacks.get_font_dirs());
+    if (frame) {
+        overlay::fontmgr::set_system_font_dirs(frame->font_dirs());
     }
 
     if (!pref_path.empty()) {

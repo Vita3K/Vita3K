@@ -26,10 +26,6 @@
 #include <unordered_map>
 #include <vector>
 
-namespace renderer {
-struct WindowCallbacks;
-}
-
 namespace renderer::gl {
 
 class OverlayRenderer {
@@ -37,8 +33,7 @@ public:
     OverlayRenderer() = default;
     ~OverlayRenderer();
 
-    bool init(const fs::path &static_assets, const fs::path &pref_path,
-        const renderer::WindowCallbacks &callbacks, int sys_lang);
+    bool init(const fs::path &static_assets, const fs::path &pref_path, int sys_lang);
     void destroy();
 
     void render(const overlay::display_manager &manager,

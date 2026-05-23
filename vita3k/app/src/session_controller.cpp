@@ -69,7 +69,7 @@ bool AppSessionController::begin_launch(const AppLaunchRequest &launch_request, 
     return true;
 }
 
-bool AppSessionController::initialize_renderer(const AppSessionPlatform &next_platform) {
+bool AppSessionController::initialize_renderer(renderer::FrameHost &frame) {
     std::lock_guard<std::mutex> lock(mutex);
     const AppSessionPhase phase = current_phase.load(std::memory_order_relaxed);
     if (phase != AppSessionPhase::Launching || renderer_initialized) {
@@ -77,8 +77,9 @@ bool AppSessionController::initialize_renderer(const AppSessionPlatform &next_pl
         return false;
     }
 
-    platform = next_platform;
-    if (!renderer::init(platform.window_callbacks, emuenv.renderer,
+    frame_host = frame;
+
+    if (!renderer::init(frame, emuenv.renderer,
             emuenv.backend_renderer, emuenv.cfg, emuenv.get_root_paths())) {
         return false;
     }
@@ -123,13 +124,11 @@ bool AppSessionController::load_and_run() {
     if (run_app(emuenv, main_module_id, active_launch_request) != Success)
         return false;
 
-    if (platform.before_render_thread_start)
-        platform.before_render_thread_start();
+    frame_host->get().prepare_for_render_thread();
 
     renderer::start_render_thread(*emuenv.renderer, emuenv.display, emuenv.gxm, emuenv.mem, emuenv.cfg);
 
-    if (platform.after_render_thread_start)
-        platform.after_render_thread_start();
+    frame_host->get().finalize_render_thread_start();
 
     set_phase(AppSessionPhase::Running);
     return true;
@@ -167,7 +166,7 @@ bool AppSessionController::set_input_intercepted(const bool enabled) {
 }
 
 void AppSessionController::stop(const AppSessionStopReason reason) {
-    AppSessionPlatform active_platform;
+    std::optional<std::reference_wrapper<renderer::FrameHost>> active_frame_host;
     bool renderer_was_initialized = false;
     bool runtime_was_initialized = false;
     bool app_started = false;
@@ -178,15 +177,14 @@ void AppSessionController::stop(const AppSessionStopReason reason) {
         if (phase == AppSessionPhase::Idle || phase == AppSessionPhase::Stopping)
             return;
 
-        active_platform = platform;
+        active_frame_host = frame_host;
         renderer_was_initialized = renderer_initialized || static_cast<bool>(emuenv.renderer);
         runtime_was_initialized = runtime_initialized;
         app_started = phase == AppSessionPhase::Running;
         set_phase(AppSessionPhase::Stopping);
     }
 
-    const bool has_render_context = static_cast<bool>(active_platform.destroy_render_context);
-    const bool needs_renderer_cleanup = renderer_was_initialized || has_render_context;
+    const bool needs_renderer_cleanup = renderer_was_initialized || active_frame_host.has_value();
 
     if (runtime_was_initialized) {
         if (app_started && reason != AppSessionStopReason::LaunchFailure)
@@ -205,8 +203,8 @@ void AppSessionController::stop(const AppSessionStopReason reason) {
         abort_game_launch(emuenv);
     }
 
-    if (needs_renderer_cleanup && active_platform.destroy_render_context)
-        active_platform.destroy_render_context();
+    if (needs_renderer_cleanup && active_frame_host)
+        active_frame_host->get().destroy_render_context();
 
     emuenv.motion.clear_device_motion_support();
 
@@ -247,7 +245,7 @@ void AppSessionController::set_phase(const AppSessionPhase next_phase) {
 }
 
 void AppSessionController::reset_session_tracking() {
-    platform = {};
+    frame_host.reset();
     active_launch_request = {};
     active_pause_reasons.store(0, std::memory_order_release);
     renderer_initialized = false;
