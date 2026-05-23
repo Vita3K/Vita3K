@@ -957,9 +957,8 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     }
 
     m_game_window = new GameWindow(emuenv, m_gui_settings, emuenv.backend_renderer, screen());
-    m_game_window->setTitle(tr("%1 | %2 (%3) | Loading...")
-            .arg(QString::fromStdString(window_title),
-                QString::fromStdString(emuenv.current_app_title),
+    m_game_window->setTitle(tr("%1 (%2) | Loading...")
+            .arg(QString::fromStdString(emuenv.current_app_title),
                 QString::fromStdString(emuenv.io.title_id)));
     m_game_window->setIcon(windowIcon());
     if (m_live_area_widget)
@@ -970,6 +969,8 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         m_live_area_widget->deleteLater();
         m_live_area_widget = nullptr;
     }
+
+    m_game_window->create();
 
     m_game_container = m_game_window;
     m_game_window->show();
@@ -997,78 +998,6 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         m_game_container = nullptr;
     };
 
-    renderer::WindowCallbacks callbacks;
-#ifdef _WIN32
-    callbacks.get_native_handle = [win = m_game_window]() -> void * {
-        return reinterpret_cast<void *>(win->winId());
-    };
-    callbacks.native_handle = reinterpret_cast<void *>(m_game_window->winId());
-    callbacks.display_protocol = renderer::DisplayProtocol::Win32;
-#elif defined(__APPLE__)
-    callbacks.get_native_handle = [win = m_game_window]() -> void * {
-        return reinterpret_cast<void *>(win->winId());
-    };
-    callbacks.native_handle = reinterpret_cast<void *>(m_game_window->winId());
-    callbacks.display_protocol = renderer::DisplayProtocol::MacOS;
-#elif defined(HAVE_X11) || defined(HAVE_WAYLAND)
-    {
-        QPlatformNativeInterface *native = QGuiApplication::platformNativeInterface();
-        if (native) {
-#if defined(HAVE_WAYLAND)
-            auto *wl_dpy = native->nativeResourceForWindow("display", nullptr);
-            auto *wl_surf = native->nativeResourceForWindow("surface",
-                const_cast<QWindow *>(static_cast<const QWindow *>(m_game_window)));
-            if (wl_dpy && wl_surf) {
-                callbacks.get_native_handle = [native, win = m_game_window]() -> void * {
-                    return native->nativeResourceForWindow("surface",
-                        const_cast<QWindow *>(static_cast<const QWindow *>(win)));
-                };
-                callbacks.native_handle = wl_surf;
-                callbacks.native_display = wl_dpy;
-                callbacks.display_protocol = renderer::DisplayProtocol::Wayland;
-                LOG_INFO("Using Wayland display protocol for Vulkan surface");
-            } else
-#endif
-#if defined(HAVE_X11)
-            {
-                void *x11_display = native->nativeResourceForIntegration("display");
-                void *xcb_connection = native->nativeResourceForIntegration("connection");
-                callbacks.get_native_handle = [win = m_game_window]() -> void * {
-                    return reinterpret_cast<void *>(win->winId());
-                };
-                callbacks.native_handle = reinterpret_cast<void *>(m_game_window->winId());
-                callbacks.native_display = x11_display;
-                callbacks.native_connection = xcb_connection;
-                callbacks.display_protocol = renderer::DisplayProtocol::X11;
-                LOG_INFO("Using X11 display protocol for Vulkan surface");
-            }
-#endif
-        } else {
-            LOG_ERROR("Could not get QPlatformNativeInterface, display protocol unknown");
-        }
-    }
-#endif
-    callbacks.get_size = [win = m_game_window]() -> renderer::WindowSize {
-        return {
-            .width = win->client_width_px(),
-            .height = win->client_height_px()
-        };
-    };
-    callbacks.get_font_dirs = []() -> std::vector<std::string> {
-        const QStringList locations = QStandardPaths::standardLocations(QStandardPaths::FontsLocation);
-        std::vector<std::string> font_dirs;
-        for (const QString &location : locations) {
-            std::string font_dir = location.toUtf8().constData();
-            if (!font_dir.ends_with('/') && !font_dir.ends_with('\\'))
-                font_dir += '/';
-            font_dirs.push_back(font_dir);
-        }
-        return font_dirs;
-    };
-
-    app::AppSessionPlatform platform;
-    platform.window_callbacks = callbacks;
-
     if (emuenv.backend_renderer == renderer::Backend::OpenGL) {
         if (!m_game_window->create_gl_context()) {
             abort_boot(tr("Could not create OpenGL context.\nDoes your GPU support at least OpenGL 4.4?"));
@@ -1078,46 +1007,15 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
             abort_boot(tr("Could not make OpenGL context current."));
             return {};
         }
-        auto *gl_ctx = m_game_window->gl_context();
-        platform.window_callbacks.get_proc_address = [gl_ctx](const char *name) -> void * {
-            return reinterpret_cast<void *>(
-                reinterpret_cast<uintptr_t>(gl_ctx->getProcAddress(name)));
-        };
-        platform.window_callbacks.default_fbo = [gl_ctx]() -> unsigned int {
-            return gl_ctx->defaultFramebufferObject();
-        };
-        platform.window_callbacks.swap = [win = m_game_window]() {
-            win->swap_buffers();
-        };
-        platform.window_callbacks.set_vsync = [win = m_game_window](bool enabled) -> bool {
-            return win->set_vsync_enabled(enabled);
-        };
-        platform.window_callbacks.set_current = [win = m_game_window]() -> bool {
-            return win->make_current();
-        };
-        platform.window_callbacks.done_current = [win = m_game_window]() {
-            win->done_current();
-        };
-        platform.before_render_thread_start = [win = m_game_window]() {
-            win->done_current();
-            win->prepare_gl_for_render_thread();
-        };
-        platform.after_render_thread_start = [win = m_game_window]() {
-            win->complete_gl_migration();
-        };
-        platform.destroy_render_context = [win = m_game_window]() {
-            win->destroy_gl_context();
-        };
     }
 
-    if (!m_app_session.initialize_renderer(platform)) {
+    if (!m_app_session.initialize_renderer(*m_game_window)) {
         abort_boot(tr("Failed to initialise the renderer."));
         return {};
     }
 
-    m_game_window->setTitle(tr("%1 | %2 (%3) | Initializing...")
-            .arg(QString::fromStdString(window_title),
-                QString::fromStdString(emuenv.current_app_title),
+    m_game_window->setTitle(tr("%1 (%2) | Initializing...")
+            .arg(QString::fromStdString(emuenv.current_app_title),
                 QString::fromStdString(emuenv.io.title_id)));
 
     if (!m_app_session.initialize_runtime()) {
@@ -1125,9 +1023,8 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         return {};
     }
 
-    m_game_window->setTitle(tr("%1 | %2 (%3) | Loading modules...")
-            .arg(QString::fromStdString(window_title),
-                QString::fromStdString(emuenv.current_app_title),
+    m_game_window->setTitle(tr("%1 (%2) | Loading modules...")
+            .arg(QString::fromStdString(emuenv.current_app_title),
                 QString::fromStdString(emuenv.io.title_id)));
 
     if (!m_app_session.load_and_run()) {
@@ -1161,9 +1058,8 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
 
     m_game_window->start_ui_updates();
 
-    m_game_window->setTitle(tr("%1 | %2 (%3) | Please wait, loading...")
-            .arg(QString::fromStdString(window_title),
-                QString::fromStdString(emuenv.current_app_title),
+    m_game_window->setTitle(tr("%1 (%2) | Please wait, loading...")
+            .arg(QString::fromStdString(emuenv.current_app_title),
                 QString::fromStdString(emuenv.io.title_id)));
 
     LOG_INFO("Game started: {} ({})", emuenv.current_app_title, launch_request.app_path);

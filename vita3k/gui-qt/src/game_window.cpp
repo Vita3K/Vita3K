@@ -40,10 +40,18 @@
 #include <QMouseEvent>
 #include <QOpenGLContext>
 #include <QScreen>
+#include <QStandardPaths>
 #include <QThread>
 #include <QTimer>
 
 #include <QtGui/qopenglcontext_platform.h>
+
+#include <cstdint>
+
+#if defined(HAVE_X11) || defined(HAVE_WAYLAND)
+#include <QGuiApplication>
+#include <qpa/qplatformnativeinterface.h>
+#endif
 
 #if QT_CONFIG(xcb_glx_plugin)
 #include <GL/glx.h>
@@ -157,7 +165,7 @@ GameWindow::GameWindow(EmuEnvState &emuenv, std::shared_ptr<GuiSettings> gui_set
 
 GameWindow::~GameWindow() {
     stop_ui_updates();
-    destroy_gl_context();
+    destroy_render_context();
 }
 
 bool GameWindow::create_gl_context() {
@@ -217,6 +225,86 @@ bool GameWindow::make_current() {
     return true;
 }
 
+renderer::DisplayHandle GameWindow::handle() const {
+#ifdef _WIN32
+    return renderer::Win32DisplayHandle{ reinterpret_cast<void *>(winId()) };
+#elif defined(__APPLE__)
+    return renderer::MacOSDisplayHandle{ reinterpret_cast<void *>(winId()) };
+#elif defined(HAVE_X11) || defined(HAVE_WAYLAND)
+    QPlatformNativeInterface *native = QGuiApplication::platformNativeInterface();
+    if (!native) {
+        LOG_ERROR("Could not get QPlatformNativeInterface, display protocol unknown");
+        return {};
+    }
+
+#if defined(HAVE_WAYLAND)
+    if (void *wl_display = native->nativeResourceForWindow("display", nullptr)) {
+        if (void *wl_surface = native->nativeResourceForWindow("surface", const_cast<GameWindow *>(this))) {
+            return renderer::WaylandDisplayHandle{ wl_display, wl_surface };
+        }
+    }
+#endif
+
+#if defined(HAVE_X11)
+    void *display = native->nativeResourceForIntegration("display");
+    void *connection = native->nativeResourceForIntegration("connection");
+    return renderer::X11DisplayHandle{
+        .display = display,
+        .window = static_cast<std::uintptr_t>(winId()),
+        .connection = connection,
+    };
+#else
+    return {};
+#endif
+#else
+    return {};
+#endif
+}
+
+int GameWindow::drawable_width() const {
+#ifdef _WIN32
+    RECT rect;
+    if (GetClientRect(reinterpret_cast<HWND>(winId()), &rect))
+        return rect.right - rect.left;
+#endif
+    return static_cast<int>(width() * devicePixelRatio());
+}
+
+int GameWindow::drawable_height() const {
+#ifdef _WIN32
+    RECT rect;
+    if (GetClientRect(reinterpret_cast<HWND>(winId()), &rect))
+        return rect.bottom - rect.top;
+#endif
+    return static_cast<int>(height() * devicePixelRatio());
+}
+
+std::vector<std::string> GameWindow::font_dirs() const {
+    const QStringList locations = QStandardPaths::standardLocations(QStandardPaths::FontsLocation);
+    std::vector<std::string> dirs;
+    dirs.reserve(locations.size());
+
+    for (const QString &location : locations) {
+        std::string font_dir = location.toUtf8().constData();
+        if (!font_dir.ends_with('/') && !font_dir.ends_with('\\'))
+            font_dir += '/';
+        dirs.push_back(std::move(font_dir));
+    }
+
+    return dirs;
+}
+
+void *GameWindow::get_proc_address(const char *name) const {
+    if (!m_gl_context)
+        return nullptr;
+
+    return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(m_gl_context->getProcAddress(name)));
+}
+
+unsigned int GameWindow::default_fbo() const {
+    return m_gl_context ? m_gl_context->defaultFramebufferObject() : 0;
+}
+
 void GameWindow::swap_buffers() {
     if (m_gl_context && isExposed()) {
         m_gl_context->swapBuffers(this);
@@ -232,12 +320,35 @@ void GameWindow::done_current() {
     }
 }
 
-void GameWindow::destroy_gl_context() {
+bool GameWindow::set_vsync(bool enabled) {
+    QOpenGLContext *context = QOpenGLContext::currentContext();
+    if (!context)
+        context = m_gl_context;
+
+    return set_swap_interval(context, enabled ? 1 : 0);
+}
+
+void GameWindow::destroy_render_context() {
     if (m_gl_context) {
         m_gl_context->doneCurrent();
         delete m_gl_context;
         m_gl_context = nullptr;
     }
+}
+
+void GameWindow::prepare_for_render_thread() {
+    if (m_backend != renderer::Backend::OpenGL || !m_gl_context)
+        return;
+
+    done_current();
+    prepare_gl_for_render_thread();
+}
+
+void GameWindow::finalize_render_thread_start() {
+    if (m_backend != renderer::Backend::OpenGL || !m_gl_context)
+        return;
+
+    complete_gl_migration();
 }
 
 void GameWindow::prepare_gl_for_render_thread() {
@@ -373,8 +484,8 @@ void GameWindow::keyReleaseEvent(QKeyEvent *e) {
 
 void GameWindow::update_mouse_position(QMouseEvent *e) {
     auto &touch = m_emuenv.touch;
-    const float scale_x = (width() > 0) ? static_cast<float>(client_width_px()) / width() : 1.0f;
-    const float scale_y = (height() > 0) ? static_cast<float>(client_height_px()) / height() : 1.0f;
+    const float scale_x = (width() > 0) ? static_cast<float>(drawable_width()) / width() : 1.0f;
+    const float scale_y = (height() > 0) ? static_cast<float>(drawable_height()) / height() : 1.0f;
     touch.mouse_x = static_cast<float>(e->position().x()) * scale_x;
     touch.mouse_y = static_cast<float>(e->position().y()) * scale_y;
 }
@@ -411,38 +522,12 @@ void GameWindow::focusOutEvent(QFocusEvent *) {
     m_emuenv.touch.mouse_button_right = false;
 }
 
-int GameWindow::client_width_px() const {
-#ifdef _WIN32
-    RECT rect;
-    if (GetClientRect(reinterpret_cast<HWND>(winId()), &rect))
-        return rect.right - rect.left;
-#endif
-    return static_cast<int>(width() * devicePixelRatio());
-}
-
-int GameWindow::client_height_px() const {
-#ifdef _WIN32
-    RECT rect;
-    if (GetClientRect(reinterpret_cast<HWND>(winId()), &rect))
-        return rect.bottom - rect.top;
-#endif
-    return static_cast<int>(height() * devicePixelRatio());
-}
-
 void GameWindow::toggle_fullscreen() {
     if (visibility() == QWindow::FullScreen) {
         showNormal();
     } else {
         showFullScreen();
     }
-}
-
-bool GameWindow::set_vsync_enabled(bool enabled) {
-    QOpenGLContext *context = QOpenGLContext::currentContext();
-    if (!context)
-        context = m_gl_context;
-
-    return set_swap_interval(context, enabled ? 1 : 0);
 }
 
 void GameWindow::update_window_title() {
@@ -455,8 +540,7 @@ void GameWindow::update_window_title() {
         : "";
     const auto x = m_emuenv.display.next_rendered_frame.image_size.x * cc.resolution_multiplier;
     const auto y = m_emuenv.display.next_rendered_frame.image_size.y * cc.resolution_multiplier;
-    const std::string title = fmt::format("{} | {} ({}) | {} | {} FPS ({} ms) | {}x{}{} | {}",
-        window_title,
+    const std::string title = fmt::format("{} ({}) | {} | {} FPS ({} ms) | {}x{}{} | {}",
         m_emuenv.current_app_title, m_emuenv.io.title_id,
         m_title_backend_renderer,
         m_emuenv.fps, m_emuenv.ms_per_frame,

@@ -221,29 +221,31 @@ static bool has_instance_extension(const std::vector<vk::ExtensionProperties> &a
     }) != available_extensions.end();
 }
 
-static bool select_linux_surface_extension(renderer::WindowCallbacks &window_callbacks, std::vector<const char *> &instance_extensions) {
+static bool select_linux_surface_extension(VKState &vk_state, const renderer::DisplayHandle &display_handle, std::vector<const char *> &instance_extensions) {
     const auto available_extensions = vk::enumerateInstanceExtensionProperties();
 
-    switch (window_callbacks.display_protocol) {
 #if defined(HAVE_WAYLAND)
-    case renderer::DisplayProtocol::Wayland:
+    if (std::holds_alternative<renderer::WaylandDisplayHandle>(display_handle)) {
         if (!has_instance_extension(available_extensions, vk::KHRWaylandSurfaceExtensionName)) {
             LOG_ERROR("Could not find Vulkan instance extension {}", vk::KHRWaylandSurfaceExtensionName);
             return false;
         }
+        vk_state.linux_surface_type = LinuxSurfaceType::Wayland;
         instance_extensions.push_back(vk::KHRWaylandSurfaceExtensionName);
         return true;
+    }
 #endif
 
 #if defined(HAVE_X11)
-    case renderer::DisplayProtocol::X11:
+    if (const auto *x11 = std::get_if<renderer::X11DisplayHandle>(&display_handle)) {
         if (has_instance_extension(available_extensions, vk::KHRXlibSurfaceExtensionName)) {
+            vk_state.linux_surface_type = LinuxSurfaceType::Xlib;
             instance_extensions.push_back(vk::KHRXlibSurfaceExtensionName);
             return true;
         }
 #if defined(VK_USE_PLATFORM_XCB_KHR)
-        if (window_callbacks.native_connection && has_instance_extension(available_extensions, "VK_KHR_xcb_surface")) {
-            window_callbacks.display_protocol = renderer::DisplayProtocol::Xcb;
+        if (x11->connection && has_instance_extension(available_extensions, "VK_KHR_xcb_surface")) {
+            vk_state.linux_surface_type = LinuxSurfaceType::Xcb;
             instance_extensions.push_back("VK_KHR_xcb_surface");
             LOG_INFO("Falling back to XCB Vulkan surface extension");
             return true;
@@ -251,29 +253,11 @@ static bool select_linux_surface_extension(renderer::WindowCallbacks &window_cal
 #endif
         LOG_ERROR("Could not find a supported Vulkan surface extension for X11 (tried xlib then xcb)");
         return false;
-
-    case renderer::DisplayProtocol::Xcb:
-#if !defined(VK_USE_PLATFORM_XCB_KHR)
-        LOG_ERROR("XCB surface requested but Vulkan XCB platform support is not available");
-        return false;
-#else
-        if (!window_callbacks.native_connection) {
-            LOG_ERROR("XCB surface requested without an XCB connection");
-            return false;
-        }
-        if (!has_instance_extension(available_extensions, "VK_KHR_xcb_surface")) {
-            LOG_ERROR("Could not find Vulkan instance extension {}", "VK_KHR_xcb_surface");
-            return false;
-        }
-        instance_extensions.push_back("VK_KHR_xcb_surface");
-        return true;
-#endif
-#endif
-
-    default:
-        LOG_ERROR("Unsupported display protocol on Linux");
-        return false;
     }
+#endif
+
+    LOG_ERROR("Unsupported display handle on Linux");
+    return false;
 }
 #endif
 
@@ -420,7 +404,8 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 #elif defined(__ANDROID__)
         instance_extensions.push_back(vk::KHRAndroidSurfaceExtensionName);
 #else
-        if (!select_linux_surface_extension(window_callbacks, instance_extensions))
+        auto *frame_host = this->renderer::State::frame;
+        if (!select_linux_surface_extension(*this, frame_host->handle(), instance_extensions))
             return false;
 #endif
 
@@ -433,10 +418,15 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
             vk::EXTLayerSettingsExtensionName,
 #endif
         };
+        bool has_layer_settings_extension = false;
         for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties()) {
             auto ite = optional_instance_extensions.find(prop.extensionName);
             if (ite != optional_instance_extensions.end()) {
                 instance_extensions.push_back(ite->c_str());
+#ifdef __APPLE__
+                if (*ite == vk::EXTLayerSettingsExtensionName)
+                    has_layer_settings_extension = true;
+#endif
             }
         }
 
@@ -495,12 +485,13 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
             .settingCount = static_cast<uint32_t>(std::size(layer_settings)),
             .pSettings = layer_settings,
         };
+        const void *instance_create_pnext = has_layer_settings_extension ? &layer_settings_info : nullptr;
 #endif
 
         vk::InstanceCreateInfo instance_info{
 #ifdef __APPLE__
             .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
-            .pNext = &layer_settings_info,
+            .pNext = instance_create_pnext,
 #endif
             .pApplicationInfo = &app_info,
         };

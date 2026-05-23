@@ -43,8 +43,6 @@ struct GLState : public renderer::State {
 
     bool context_is_current = false;
 
-    renderer::WindowSize client_size() const;
-
     bool init() override;
     void cleanup() override;
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;

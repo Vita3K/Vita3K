@@ -172,14 +172,14 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
 bool create(std::unique_ptr<State> &state, const Config &config) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
 
-    static std::function<void *(const char *)> *s_proc_addr;
-    s_proc_addr = &gl_state.window_callbacks.get_proc_address;
+    static renderer::FrameHost *s_frame = nullptr;
+    s_frame = gl_state.frame;
 #ifdef __ANDROID__
     gladLoadGLES2Loader([](const char *name) -> void * {
 #else
     gladLoadGLLoader([](const char *name) -> void * {
 #endif
-        return (*s_proc_addr)(name);
+        return s_frame->get_proc_address(name);
     });
 
     // glad_set_post_callback(after_callback);
@@ -251,7 +251,7 @@ bool GLState::init() {
 
     init_overlay_font_dirs();
 
-    if (!overlay_renderer.init(static_assets, pref_path, window_callbacks, sys_lang)) {
+    if (!overlay_renderer.init(static_assets, pref_path, sys_lang)) {
         LOG_WARN("Failed to initialize overlay renderer, overlays will be disabled");
     }
 
@@ -262,10 +262,6 @@ bool GLState::init() {
 
 void GLState::late_init(const Config &cfg, const std::string_view game_id, MemState &mem) {
     texture_cache.init(true, texture_folder(), game_id);
-}
-
-renderer::WindowSize GLState::client_size() const {
-    return window_callbacks.get_size();
 }
 
 bool create(std::unique_ptr<Context> &context) {
@@ -647,24 +643,23 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
 void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState &mem) {
     should_display = false;
 
-    DisplayFrameInfo frame;
+    DisplayFrameInfo display_frame;
     {
         std::lock_guard<std::mutex> guard(display.display_info_mutex);
-        frame = display.next_rendered_frame;
+        display_frame = display.next_rendered_frame;
     }
 
     const bool has_overlays = overlay_manager && overlay_manager->has_visible();
-    if (!frame.base && !has_overlays)
+    if (!display_frame.base && !has_overlays)
         return;
 
     SceFVector2 vp_pos = { 0.0f, 0.0f };
     SceFVector2 vp_size = { 0.0f, 0.0f };
 
-    GLuint default_fbo = window_callbacks.default_fbo();
-
-    const renderer::WindowSize fb_size = client_size();
-    const float fb_w = static_cast<float>(fb_size.width);
-    const float fb_h = static_cast<float>(fb_size.height);
+    auto *frame_host = this->frame;
+    const GLuint default_fbo = frame_host->default_fbo();
+    const float fb_w = static_cast<float>(frame_host->drawable_width());
+    const float fb_h = static_cast<float>(frame_host->drawable_height());
 
     if (fb_h > 0.0f) {
         const float window_aspect = fb_w / fb_h;
@@ -697,17 +692,17 @@ void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
     display.viewport_w = vp_size.x;
     display.viewport_h = vp_size.y;
 
-    if (frame.base) {
+    if (display_frame.base) {
         // Check if the surface exists
         float uvs[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
         bool need_uv = true;
 
-        const std::size_t texture_data_size = static_cast<size_t>(frame.pitch) * static_cast<size_t>(frame.image_size.y) * sizeof(uint32_t);
+        const std::size_t texture_data_size = static_cast<size_t>(display_frame.pitch) * static_cast<size_t>(display_frame.image_size.y) * sizeof(uint32_t);
 
         SceFVector2 texture_size;
 
         uint64_t surface_handle = surface_cache.sourcing_color_surface_for_presentation(
-            frame.base, frame.image_size.x, frame.image_size.y, frame.pitch, uvs, this->res_multiplier, texture_size);
+            display_frame.base, display_frame.image_size.x, display_frame.image_size.y, display_frame.pitch, uvs, this->res_multiplier, texture_size);
 
         GLint last_texture = 0;
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
@@ -718,16 +713,16 @@ void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
             glBindTexture(GL_TEXTURE_2D, screen_renderer.get_resident_texture());
 
             // Maybe a victim of surface locking (early from client GXM) when no frame yet renders!
-            const auto pixels = frame.base.cast<void>().get(mem);
+            const auto pixels = display_frame.base.cast<void>().get(mem);
 
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.pitch);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frame.image_size.x, frame.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, display_frame.pitch);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display_frame.image_size.x, display_frame.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
-            texture_size.x = static_cast<float>(frame.image_size.x);
-            texture_size.y = static_cast<float>(frame.image_size.y);
+            texture_size.x = static_cast<float>(display_frame.image_size.x);
+            texture_size.y = static_cast<float>(display_frame.image_size.y);
 
             surface_handle = screen_renderer.get_resident_texture();
         } else {
@@ -758,23 +753,20 @@ void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
 
 void GLState::swap_window() {
     const int pending_vsync = this->pending_vsync.exchange(-1, std::memory_order_relaxed);
-    if (pending_vsync >= 0) {
-        if (!window_callbacks.set_vsync(pending_vsync != 0))
-            LOG_WARN("Failed to update OpenGL swap interval");
-    }
-    window_callbacks.swap();
+    if (pending_vsync >= 0 && !frame->set_vsync(pending_vsync != 0))
+        LOG_WARN("Failed to update OpenGL swap interval");
+
+    frame->swap_buffers();
 }
 
 bool GLState::set_current() {
-#ifdef __ANDROID__
-    if (context_is_current && !window_callbacks.has_surface())
+    if (context_is_current && (frame->drawable_width() <= 0 || frame->drawable_height() <= 0))
         done_current();
-#endif
 
     if (context_is_current)
         return true;
 
-    if (!window_callbacks.set_current()) {
+    if (!frame->make_current()) {
         LOG_ERROR("set_current failed");
         context_is_current = false;
         return false;
@@ -785,7 +777,7 @@ bool GLState::set_current() {
 }
 
 void GLState::done_current() {
-    window_callbacks.done_current();
+    frame->done_current();
     context_is_current = false;
 }
 
@@ -866,7 +858,7 @@ void GLState::cleanup() {
     should_display = false;
     render_abort = false;
 
-    window_callbacks = {};
+    frame = nullptr;
 }
 
 } // namespace renderer::gl

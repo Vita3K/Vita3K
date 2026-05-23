@@ -23,6 +23,7 @@
 #include <atomic>
 #include <functional>
 #include <mutex>
+#include <optional>
 
 namespace app {
 
@@ -47,13 +48,6 @@ enum class AppSessionStopReason {
     LaunchFailure
 };
 
-struct AppSessionPlatform {
-    renderer::WindowCallbacks window_callbacks;
-    std::function<void()> before_render_thread_start;
-    std::function<void()> after_render_thread_start;
-    std::function<void()> destroy_render_context;
-};
-
 class AppSessionController {
 public:
     explicit AppSessionController(EmuEnvState &emuenv);
@@ -63,7 +57,7 @@ public:
     bool is_paused() const;
 
     bool begin_launch(const AppLaunchRequest &launch_request, bool update_last_time_used = true);
-    bool initialize_renderer(const AppSessionPlatform &platform);
+    bool initialize_renderer(renderer::FrameHost &frame);
     bool initialize_runtime();
     bool load_and_run();
     bool set_pause_reason(AppSessionPauseReason reason, bool enabled);
@@ -78,7 +72,7 @@ private:
     EmuEnvState &emuenv;
     mutable std::mutex mutex;
     std::atomic<AppSessionPhase> current_phase{ AppSessionPhase::Idle };
-    AppSessionPlatform platform;
+    std::optional<std::reference_wrapper<renderer::FrameHost>> frame_host;
     AppLaunchRequest active_launch_request;
     std::atomic<uint32_t> active_pause_reasons{ 0 };
     bool renderer_initialized = false;
