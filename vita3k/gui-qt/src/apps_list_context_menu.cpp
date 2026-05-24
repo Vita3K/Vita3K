@@ -242,6 +242,32 @@ void AppsListContextMenu::add_compat_actions(const app::AppEntry &app) {
                     m_emuenv.cfg.backend_renderer);
                 QApplication::clipboard()->setText(QString::fromStdString(summary));
             });
+
+            auto *copy_env = compat_menu->addAction(tr("Copy Test Environment Summary"));
+            connect(copy_env, &QAction::triggered, this, [this] {
+#ifdef _WIN32
+                const auto user = std::getenv("USERNAME");
+#else
+                const auto user = std::getenv("USER");
+#endif
+                std::string gpu_name = "Unknown";
+                if (m_emuenv.renderer)
+                    gpu_name = std::string(m_emuenv.renderer->get_gpu_name());
+
+                const auto summary = fmt::format(
+                    "# Test environment summary\n"
+                    "- Tested by: {}\n"
+                    "- OS: {}\n"
+                    "- CPU: {}\n"
+                    "- GPU: {}\n"
+                    "- RAM: {} GB",
+                    user ? user : "?",
+                    CppCommon::Environment::OSVersion(),
+                    CppCommon::CPU::Architecture(),
+                    gpu_name,
+                    SDL_GetSystemRAM() / 1000);
+                QApplication::clipboard()->setText(QString::fromStdString(summary));
+            });
         } else {
             auto *create_report = compat_menu->addAction(tr("Create State Report"));
             connect(create_report, &QAction::triggered, this, [this, &app, title_id] {
