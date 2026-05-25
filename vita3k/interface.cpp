@@ -356,7 +356,7 @@ static bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
         return false;
     }
 
-    if (!copy_directories(content_path, dst_path)) {
+    if (!fs_utils::copy_directory_contents(content_path, dst_path)) {
         LOG_ERROR("Failed to copy directory to: {}", dst_path);
         return false;
     }

@@ -90,4 +90,29 @@ bool read_data(const fs::path &path, std::vector<uint8_t> &data) { return read_d
 bool read_data(const fs::path &path, std::vector<int8_t> &data) { return read_data<int8_t>(path, data); }
 bool read_data(const fs::path &path, std::vector<char> &data) { return read_data<char>(path, data); }
 
+bool copy_directory_contents(const fs::path &src_path, const fs::path &dst_path, const fs::copy_options options) {
+    try {
+        if (!fs::is_directory(src_path))
+            return false;
+
+        fs::create_directories(dst_path);
+
+        for (const auto &src : fs::recursive_directory_iterator(src_path)) {
+            const auto relative_path = fs::relative(src.path(), src_path);
+            const auto output_path = dst_path / relative_path;
+
+            if (fs::is_directory(src)) {
+                fs::create_directories(output_path);
+            } else if (fs::is_regular_file(src)) {
+                fs::create_directories(output_path.parent_path());
+                fs::copy_file(src.path(), output_path, options);
+            }
+        }
+
+        return true;
+    } catch (const std::exception &) {
+        return false;
+    }
+}
+
 } // namespace fs_utils

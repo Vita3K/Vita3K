@@ -45,16 +45,6 @@ fs::path expand_path(IOState &io, const char *path, const fs::path &pref_path);
 std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths);
 
 /**
- * @brief Copy all directories and files from one location into another
- *
- * @param src_path Source path to copy directories and files from
- * @param dst_path Destination path where the directories and files contained in `src_path` are going to be copied
- * @return true Success
- * @return false Error
- */
-bool copy_directories(const fs::path &src_path, const fs::path &dst_path);
-
-/**
  * @brief Copy all files from a source path to the corresponding path in the emulated PS Vita filesystem
  * (Vita3K pref path) and delete the source path
  *
