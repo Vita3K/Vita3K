@@ -530,7 +530,8 @@ void SettingsDialog::load_config() {
             : false);
     m_ui->ui_language_box->clear();
     m_ui->ui_language_box->addItem(tr("System Default"), QStringLiteral(""));
-    for (const auto &language : gui::i18n::ui_language_options()) {
+
+    for (const auto &language : gui::i18n::ui_language_options(emuenv.static_assets_path)) {
         const QString tag = QString::fromUtf8(language.tag.data(), static_cast<int>(language.tag.size()));
         const QString native_name = QString::fromUtf8(language.native_name.data(), static_cast<int>(language.native_name.size()));
         m_ui->ui_language_box->addItem(native_name, tag);

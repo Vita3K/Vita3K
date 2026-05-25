@@ -156,7 +156,7 @@ int main(int argc, char *argv[]) {
         return InitConfigFailed;
     }
 
-    gui::i18n::apply_ui_language(app, cfg.user_lang);
+    gui::i18n::apply_ui_language(app, cfg.user_lang, emuenv.static_assets_path);
 
 #ifdef _WIN32
     {
