@@ -193,11 +193,6 @@ static std::string resolve_existing_path(const EmuEnvState &emuenv, const fs::pa
     const std::array<fs::path, 7> roots = {
         emuenv.pref_path,
         emuenv.default_path,
-        emuenv.shared_path,
-        emuenv.static_assets_path,
-        emuenv.base_path,
-        emuenv.config_path,
-        emuenv.cache_path,
     };
 
     for (const auto &root : roots) {
