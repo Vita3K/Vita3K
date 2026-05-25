@@ -19,6 +19,7 @@
 
 #include <app/functions.h>
 #include <emuenv/state.h>
+#include <renderer/frame_host.h>
 #include <renderer/types.h>
 
 #include <QWindow>
@@ -33,7 +34,7 @@ class QSurfaceFormat;
 class QThread;
 class QTimer;
 class GuiSettings;
-class GameWindow : public QWindow {
+class GameWindow : public QWindow, public renderer::FrameHost {
     Q_OBJECT
 
 public:
@@ -47,18 +48,23 @@ public:
 
     const QSurfaceFormat &surface_format() const { return m_format; }
     bool create_gl_context();
-    bool make_current();
-    void swap_buffers();
-    void done_current();
-    void destroy_gl_context();
-    void prepare_gl_for_render_thread();
-    void complete_gl_migration();
+    bool make_current() override;
+    void swap_buffers() override;
+    void done_current() override;
+    void prepare_for_render_thread() override;
+    void finalize_render_thread_start() override;
+    void destroy_render_context() override;
 
     QOpenGLContext *gl_context() const { return m_gl_context; }
 
-    int client_width_px() const;
-    int client_height_px() const;
-    bool set_vsync_enabled(bool enabled);
+    renderer::DisplayHandle handle() const override;
+    int drawable_width() const override;
+    int drawable_height() const override;
+    std::vector<std::string> font_dirs() const override;
+    void *get_proc_address(const char *name) const override;
+    unsigned int default_fbo() const override;
+    bool set_vsync(bool enabled) override;
+
     void toggle_fullscreen();
 
 signals:
@@ -80,6 +86,8 @@ private slots:
     void ui_tick();
 
 private:
+    void prepare_gl_for_render_thread();
+    void complete_gl_migration();
     void sync_native_window_preferences();
     void update_window_title();
 

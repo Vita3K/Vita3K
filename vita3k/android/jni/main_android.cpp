@@ -147,14 +147,86 @@ void handle_ime_text_input(EmuEnvState &emuenv, const char *text) {
     ime::notify_ime_state_changed();
 }
 
-renderer::WindowSize get_window_size_in_pixels(SDL_Window *window) {
-    renderer::WindowSize size{
-        .width = 960,
-        .height = 544
-    };
-    SDL_GetWindowSizeInPixels(window, &size.width, &size.height);
-    return size;
-}
+class AndroidFrameHost final : public renderer::FrameHost {
+public:
+    explicit AndroidFrameHost(SDL_Window *window, SDL_GLContext *gl_context)
+        : m_window(window)
+        , m_gl_context(gl_context) {
+    }
+
+    renderer::DisplayHandle handle() const override {
+        return renderer::AndroidDisplayHandle{ m_window };
+    }
+
+    int drawable_width() const override {
+#ifdef __ANDROID__
+        if (!renderer::vulkan::has_android_surface())
+            return 0;
+#endif
+        int width = 960;
+        int height = 544;
+        SDL_GetWindowSizeInPixels(m_window, &width, &height);
+        return width;
+    }
+
+    int drawable_height() const override {
+#ifdef __ANDROID__
+        if (!renderer::vulkan::has_android_surface())
+            return 0;
+#endif
+        int width = 960;
+        int height = 544;
+        SDL_GetWindowSizeInPixels(m_window, &width, &height);
+        return height;
+    }
+
+    std::vector<std::string> font_dirs() const override {
+        return { "/system/fonts/" };
+    }
+
+    void *get_proc_address(const char *name) const override {
+        return reinterpret_cast<void *>(SDL_GL_GetProcAddress(name));
+    }
+
+    unsigned int default_fbo() const override {
+        return 0;
+    }
+
+    bool make_current() override {
+        if (!m_gl_context || !*m_gl_context)
+            return false;
+        return SDL_GL_MakeCurrent(m_window, *m_gl_context);
+    }
+
+    void done_current() override {
+        SDL_GL_MakeCurrent(m_window, nullptr);
+    }
+
+    void swap_buffers() override {
+        SDL_GL_SwapWindow(m_window);
+    }
+
+    bool set_vsync(bool enabled) override {
+        return SDL_GL_SetSwapInterval(enabled ? 1 : 0);
+    }
+
+    void prepare_for_render_thread() override {
+        if (m_gl_context && *m_gl_context)
+            SDL_GL_MakeCurrent(m_window, nullptr);
+    }
+
+    void destroy_render_context() override {
+        if (!m_gl_context || !*m_gl_context)
+            return;
+
+        SDL_GL_DestroyContext(*m_gl_context);
+        *m_gl_context = nullptr;
+    }
+
+private:
+    SDL_Window *m_window = nullptr;
+    SDL_GLContext *m_gl_context = nullptr;
+};
 
 } // namespace
 
@@ -231,6 +303,7 @@ SDLMAIN_DECLSPEC int SDL_main(int argc, char *argv[]) {
 
         SDL_Window *window = nullptr;
         SDL_GLContext gl_context = nullptr;
+        AndroidFrameHost frame_host(nullptr, &gl_context);
         std::optional<AppLaunchRequest> pending_launch_request;
 
         const auto cleanup_launch = [&](const app::AppSessionStopReason reason) {
@@ -320,26 +393,7 @@ SDLMAIN_DECLSPEC int SDL_main(int argc, char *argv[]) {
             break;
         }
         ime::set_sdl_window(window);
-
-        renderer::WindowCallbacks callbacks;
-        callbacks.native_handle = window;
-        callbacks.display_protocol = renderer::DisplayProtocol::Android;
-        callbacks.has_surface = []() -> bool {
-#ifdef __ANDROID__
-            return renderer::vulkan::has_android_surface();
-#else
-            return true;
-#endif
-        };
-        callbacks.get_native_handle = [window]() -> void * {
-            return window;
-        };
-        callbacks.get_size = [window]() -> renderer::WindowSize {
-            return get_window_size_in_pixels(window);
-        };
-        callbacks.get_font_dirs = []() -> std::vector<std::string> {
-            return { "/system/fonts/" };
-        };
+        frame_host = AndroidFrameHost(window, &gl_context);
 
         if (emuenv->backend_renderer == renderer::Backend::OpenGL) {
             gl_context = SDL_GL_CreateContext(window);
@@ -359,42 +413,9 @@ SDLMAIN_DECLSPEC int SDL_main(int argc, char *argv[]) {
 
             if (!SDL_GL_SetSwapInterval(static_cast<int>(emuenv->cfg.current_config.v_sync)))
                 LOG_WARN("Failed to set OpenGL ES swap interval: {}", SDL_GetError());
-
-            callbacks.get_proc_address = [](const char *name) -> void * {
-                return reinterpret_cast<void *>(SDL_GL_GetProcAddress(name));
-            };
-            callbacks.default_fbo = []() -> unsigned int {
-                return 0;
-            };
-            callbacks.swap = [window]() {
-                SDL_GL_SwapWindow(window);
-            };
-            callbacks.set_vsync = [](bool enabled) -> bool {
-                return SDL_GL_SetSwapInterval(enabled ? 1 : 0);
-            };
-            callbacks.set_current = [window, gl_context]() -> bool {
-                return SDL_GL_MakeCurrent(window, gl_context);
-            };
-            callbacks.done_current = [window]() {
-                SDL_GL_MakeCurrent(window, nullptr);
-            };
         }
 
-        app::AppSessionPlatform platform{
-            .window_callbacks = callbacks,
-            .before_render_thread_start = [window, &gl_context]() {
-                if (gl_context)
-                    SDL_GL_MakeCurrent(window, nullptr); },
-            .after_render_thread_start = {},
-            .destroy_render_context = [&gl_context]() {
-                if (!gl_context)
-                    return;
-
-                SDL_GL_DestroyContext(gl_context);
-                gl_context = nullptr; }
-        };
-
-        if (!session_controller->initialize_renderer(platform)) {
+        if (!session_controller->initialize_renderer(frame_host)) {
             LOG_ERROR("Failed to initialise renderer.");
             exit_code = -1;
             cleanup_launch(app::AppSessionStopReason::LaunchFailure);

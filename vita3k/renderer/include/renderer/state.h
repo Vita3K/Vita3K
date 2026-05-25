@@ -19,6 +19,7 @@
 
 #include <features/state.h>
 #include <renderer/commands.h>
+#include <renderer/frame_host.h>
 #include <renderer/types.h>
 #include <threads/queue.h>
 
@@ -51,38 +52,6 @@ enum struct MappingMethod : int {
 };
 
 namespace renderer {
-
-enum struct DisplayProtocol {
-    Unknown,
-    Win32,
-    MacOS,
-    X11,
-    Xcb,
-    Wayland,
-    Android
-};
-
-struct WindowSize {
-    int width = 0;
-    int height = 0;
-};
-
-struct WindowCallbacks {
-    std::function<void *(const char *)> get_proc_address;
-    std::function<unsigned int()> default_fbo;
-    std::function<void()> swap;
-    std::function<bool()> set_current;
-    std::function<void()> done_current;
-    std::function<bool(bool)> set_vsync;
-    std::function<WindowSize()> get_size;
-    std::function<std::vector<std::string>()> get_font_dirs;
-    std::function<bool()> has_surface;
-    std::function<void *()> get_native_handle;
-    void *native_handle = nullptr;
-    void *native_display = nullptr;
-    void *native_connection = nullptr;
-    DisplayProtocol display_protocol = DisplayProtocol::Unknown;
-};
 
 struct PerformanceOverlayState {
     bool enabled = false;
@@ -118,7 +87,7 @@ struct State {
     fs::path shaders_path;
     fs::path shaders_log_path;
 
-    WindowCallbacks window_callbacks;
+    FrameHost *frame = nullptr;
 
     Backend current_backend;
     FeatureState features;

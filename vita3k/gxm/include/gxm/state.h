@@ -81,6 +81,11 @@ struct GxmState {
         if (display_host_thread.joinable())
             display_host_thread.join();
 
+        {
+            const std::lock_guard<std::mutex> lock(sync_objects_mutex);
+            sync_objects.clear();
+        }
+
         memory_mapped_regions.clear();
         display_queue.reset();
         params = {};

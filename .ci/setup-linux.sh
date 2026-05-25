@@ -54,4 +54,8 @@ if [[ "$APPIMAGE_MODE" == "with-appimage" ]]; then
     curl -sLO "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/latest/download/linuxdeploy-plugin-qt-${ARCH}.AppImage"
     sudo cp -f "linuxdeploy-plugin-qt-${ARCH}.AppImage" "/usr/local/bin/"
     sudo chmod +x "/usr/local/bin/linuxdeploy-plugin-qt-${ARCH}.AppImage"
+
+    curl -sLO "https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/latest/download/linuxdeploy-plugin-appimage-${ARCH}.AppImage"
+    sudo cp -f "linuxdeploy-plugin-appimage-${ARCH}.AppImage" "/usr/local/bin/"
+    sudo chmod +x "/usr/local/bin/linuxdeploy-plugin-appimage-${ARCH}.AppImage"
 fi
