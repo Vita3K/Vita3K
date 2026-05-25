@@ -840,7 +840,7 @@ bool MainWindow::handle_pending_app_launch_request() {
 }
 
 void MainWindow::apply_ui_language(const QString &locale_tag) {
-    gui::i18n::apply_ui_language(*qApp, locale_tag.toStdString());
+    gui::i18n::apply_ui_language(*qApp, locale_tag.toStdString(), emuenv.static_assets_path);
 }
 
 void MainWindow::init_current_user() {
