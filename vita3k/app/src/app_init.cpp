@@ -70,6 +70,10 @@
 #include <SDL3/SDL_system.h>
 #endif
 
+#ifdef __linux__
+#include <pwd.h>
+#endif
+
 #include <algorithm>
 #include <fstream>
 
@@ -236,6 +240,7 @@ void set_current_config(EmuEnvState &emuenv, const std::string &app_path) {
     lang::set_locale(emuenv.cfg.current_config.sys_lang);
 }
 
+// Initializes paths to their respective defaults, to be changed later by settings or CLI
 void init_paths(Root &root_paths) {
 #ifdef __ANDROID__
     fs::path internal_storage_path = fs::path(SDL_GetAndroidExternalStoragePath()) / "";
@@ -311,61 +316,62 @@ void init_paths(Root &root_paths) {
 
 #if defined(__linux__)
         // XDG Data Dirs.
+        char home_path[PATH_MAX] = {};
         auto env_home = getenv("HOME");
-        auto XDG_DATA_DIRS = getenv("XDG_DATA_DIRS");
+        if (env_home != NULL)
+            strncpy(home_path, env_home, PATH_MAX - 1);
+        else {
+            struct passwd *pw = getpwuid(getuid());
+            if (pw) {
+                strncpy(home_path, pw->pw_dir, PATH_MAX - 1);
+            } else {
+                LOG_CRITICAL("Failed to get home directory path");
+            }
+        }
+
         auto XDG_DATA_HOME = getenv("XDG_DATA_HOME");
         auto XDG_CACHE_HOME = getenv("XDG_CACHE_HOME");
         auto XDG_CONFIG_HOME = getenv("XDG_CONFIG_HOME");
         auto APPDIR = getenv("APPDIR"); // Used in AppImage
 
-        if (XDG_DATA_HOME != NULL)
-            root_paths.set_pref_path(fs::path(XDG_DATA_HOME) / app_name / app_name / "");
-
+        // Config and game-specific configs
         if (XDG_CONFIG_HOME != NULL)
             root_paths.set_config_path(fs::path(XDG_CONFIG_HOME) / app_name / "");
-        else if (env_home != NULL)
-            root_paths.set_config_path(fs::path(env_home) / ".config" / app_name / "");
+        else if (home_path[0] != '\0')
+            root_paths.set_config_path(fs::path(home_path) / ".config" / app_name / "");
 
+        // Logs, cache and dumps
         if (XDG_CACHE_HOME != NULL) {
             root_paths.set_cache_path(fs::path(XDG_CACHE_HOME) / app_name / "");
             root_paths.set_log_path(fs::path(XDG_CACHE_HOME) / app_name / "");
-        } else if (env_home != NULL) {
-            root_paths.set_cache_path(fs::path(env_home) / ".cache" / app_name / "");
-            root_paths.set_log_path(fs::path(env_home) / ".cache" / app_name / "");
+        } else if (home_path[0] != '\0') {
+            root_paths.set_cache_path(fs::path(home_path) / ".cache" / app_name / "");
+            root_paths.set_log_path(fs::path(home_path) / ".cache" / app_name / "");
         }
 
-        // Don't assume that base_path is portable.
-        if (fs::exists(root_paths.get_base_path() / "data") && fs::exists(root_paths.get_base_path() / "shaders-builtin"))
+        // Static assets sorted by least to most priority, so that higher priority ones can override lower priority ones.
+        if (fs::exists("/usr/share/Vita3K")) {
+            root_paths.set_static_assets_path("/usr/share/Vita3K");
+        } else if (fs::exists("/usr/local/share/Vita3K")) {
+            root_paths.set_static_assets_path("/usr/local/share/Vita3K");
+        }
+
+        // Only really used in standalone (rare) or development
+        if (fs::exists(root_paths.get_base_path() / "shaders-builtin"))
             root_paths.set_static_assets_path(root_paths.get_base_path());
-        else if (env_home != NULL)
-            root_paths.set_static_assets_path(fs::path(env_home) / ".local/share" / app_name / "");
 
-        if (XDG_DATA_DIRS != NULL) {
-            auto env_paths = string_utils::split_string(XDG_DATA_DIRS, ':');
-            for (auto &i : env_paths) {
-                if (fs::exists(fs::path(i) / app_name)) {
-                    root_paths.set_static_assets_path(fs::path(i) / app_name / "");
-                    break;
-                }
-            }
-        } else if (XDG_DATA_HOME != NULL) {
-            if (fs::exists(fs::path(XDG_DATA_HOME) / app_name / "data") && fs::exists(fs::path(XDG_DATA_HOME) / app_name / "shaders-builtin"))
-                root_paths.set_static_assets_path(fs::path(XDG_DATA_HOME) / app_name / "");
-        }
-
-        if (APPDIR != NULL && fs::exists(fs::path(APPDIR) / "usr/share/Vita3K")) {
+        // AppImage root
+        if (APPDIR != NULL && fs::exists(fs::path(APPDIR) / "usr/share/Vita3K"))
             root_paths.set_static_assets_path(fs::path(APPDIR) / "usr/share/Vita3K");
-        }
 
         // shared path
-        if (env_home != NULL)
-            root_paths.set_shared_path(fs::path(env_home) / ".local/share" / app_name / "");
-
-        if (XDG_DATA_HOME != NULL) {
+        if (XDG_DATA_HOME != NULL)
             root_paths.set_shared_path(fs::path(XDG_DATA_HOME) / app_name / "");
-        }
+        else if (home_path[0] != '\0')
+            root_paths.set_shared_path(fs::path(home_path) / ".local/share" / app_name / "");
 
-        // patch path should be in shared path
+        // These default to being in shared path
+        root_paths.set_pref_path(root_paths.get_shared_path() / app_name / "");
         root_paths.set_patch_path(root_paths.get_shared_path() / "patch" / "");
 #endif
     }

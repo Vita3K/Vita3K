@@ -124,15 +124,15 @@ public:
     std::string license_content_id{};
     std::string license_title_id{};
     std::string current_app_title{};
-    fs::path base_path{};
+    fs::path base_path{}; // Base for the path of binaries/executable
     fs::path default_path{};
-    fs::path config_path{};
-    fs::path log_path{};
-    fs::path cache_path{};
-    fs::path pref_path{};
-    fs::path static_assets_path{};
-    fs::path shared_path{};
-    fs::path patch_path{};
+    fs::path config_path{}; // Path for config files
+    fs::path log_path{}; // Path for log file
+    fs::path cache_path{}; // Path for cache files (shaders, elf/texture dumps, and compat cache)
+    fs::path pref_path{}; // Path for VitaFS (TODO: rename to vita_path)
+    fs::path static_assets_path{}; // Path for static assets (shaders, icons, etc)
+    fs::path shared_path{}; // Path for files (UI themes, textures, etc)
+    fs::path patch_path{}; // Path for patch files
     std::string self_name{};
     std::string self_path{};
     Config &cfg;
