@@ -128,15 +128,6 @@ void State::init_overlay_font_dirs() {
     }
 
     {
-        auto dir = fs_utils::path_to_utf8(static_assets / "data" / "fonts");
-        if (!dir.empty()) {
-            if (dir.back() != '/' && dir.back() != '\\')
-                dir += '/';
-            overlay::fontmgr::set_fallback_font_dir(dir);
-        }
-    }
-
-    {
         auto icons_dir = fs_utils::path_to_utf8(static_assets / "icons");
         if (!icons_dir.empty()) {
             if (icons_dir.back() != '/' && icons_dir.back() != '\\')
@@ -149,7 +140,6 @@ void State::init_overlay_font_dirs() {
     LOG_INFO("Overlay font system dirs: {} entries", overlay::fontmgr::get_system_font_dirs().size());
     for (const auto &d : overlay::fontmgr::get_system_font_dirs())
         LOG_DEBUG("  system font dir: {}", d);
-    LOG_INFO("Overlay font fallback dir: {}", overlay::fontmgr::get_fallback_font_dir().empty() ? "(none)" : overlay::fontmgr::get_fallback_font_dir());
 }
 
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units) {
