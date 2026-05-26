@@ -30,114 +30,14 @@ Rack::Rack(System *mama, const Ptr<void> memspace, const uint32_t memspace_size)
     : MempoolObject(memspace, memspace_size)
     , system(mama) {}
 
-int32_t Rack::index_of_voice(const MemState &mem, const Voice *voice) const {
-    for (size_t i = 0; i < voices.size(); i++) {
-        if (voices[i].get(mem) == voice) {
-            return static_cast<int32_t>(i);
-        }
-    }
-
-    return -1;
-}
-
 System::System(const Ptr<void> memspace, const uint32_t memspace_size)
     : MempoolObject(memspace, memspace_size)
     , max_voices(0)
     , granularity(0)
     , sample_rate(0) {}
 
-int32_t System::index_of_rack(const Rack *rack) const {
-    for (size_t i = 0; i < racks.size(); i++) {
-        if (racks[i] == rack) {
-            return static_cast<int32_t>(i);
-        }
-    }
-
-    return -1;
-}
-
-Voice *System::find_voice(const MemState &mem, const VoiceAddress &address) const {
-    if (!address) {
-        return nullptr;
-    }
-
-    if (address.rack_index < 0 || address.rack_index >= static_cast<int32_t>(racks.size())) {
-        return nullptr;
-    }
-
-    const Rack *rack = racks[address.rack_index];
-    if (!rack) {
-        return nullptr;
-    }
-
-    if (address.voice_index < 0 || address.voice_index >= static_cast<int32_t>(rack->voices.size())) {
-        return nullptr;
-    }
-
-    return rack->voices[address.voice_index].get(mem);
-}
-
-VoiceAddress System::address_of(const MemState &mem, const Voice *voice) const {
-    if (!voice || !voice->rack) {
-        return {};
-    }
-
-    VoiceAddress result;
-    result.rack_index = index_of_rack(voice->rack);
-    if (result.rack_index < 0) {
-        return {};
-    }
-
-    result.voice_index = voice->rack->index_of_voice(mem, voice);
-    if (result.voice_index < 0) {
-        return {};
-    }
-
-    return result;
-}
-
 bool Patch::is_active() const {
     return output_sub_index != -1;
-}
-
-Voice *Patch::resolve_source(const MemState &mem) const {
-    if (system && source_address) {
-        return system->find_voice(mem, source_address);
-    }
-
-    return source;
-}
-
-Voice *Patch::resolve_dest(const MemState &mem) const {
-    if (system && dest_address) {
-        return system->find_voice(mem, dest_address);
-    }
-
-    return dest;
-}
-
-void Patch::refresh_endpoints(const MemState &mem) {
-    if (!system) {
-        if (source && source->rack) {
-            system = source->rack->system;
-        } else if (dest && dest->rack) {
-            system = dest->rack->system;
-        }
-    }
-
-    if (source) {
-        source_address = source->address(mem);
-    }
-    if (system && source_address) {
-        source = system->find_voice(mem, source_address);
-    }
-
-    if (dest) {
-        dest_address = dest->address(mem);
-    }
-    if (system && dest_address) {
-        dest = system->find_voice(mem, dest_address);
-    }
 }
 
 void VoiceInputManager::init(const uint32_t granularity, const uint16_t total_input) {
@@ -166,9 +66,8 @@ VoiceInputManager::PCMInput *VoiceInputManager::get_input_buffer_queue(const int
 }
 
 int32_t VoiceInputManager::receive(const MemState &mem, ngs::Patch *patch, const VoiceProduct &product) {
-    patch->refresh_endpoints(mem);
-    Voice *source = patch->resolve_source(mem);
-    Voice *dest = patch->resolve_dest(mem);
+    Voice *source = patch->source.get(mem);
+    Voice *dest = patch->dest.get(mem);
     if (!source || !dest) {
         return -1;
     }
@@ -267,7 +166,7 @@ void Voice::init(Rack *mama) {
     voice_mutex = std::make_unique<std::mutex>();
 }
 
-Ptr<Patch> Voice::patch(const MemState &mem, const int32_t index, int32_t subindex, int32_t dest_index, Voice *dest) {
+Ptr<Patch> Voice::patch(const MemState &mem, const int32_t index, int32_t subindex, int32_t dest_index, Ptr<Voice> source, Ptr<Voice> dest) {
     const std::lock_guard<std::mutex> guard(*voice_mutex);
 
     if (index >= MAX_OUTPUT_PORT) {
@@ -304,11 +203,8 @@ Ptr<Patch> Voice::patch(const MemState &mem, const int32_t index, int32_t subind
     patch->output_sub_index = subindex;
     patch->output_index = index;
     patch->dest_index = dest_index;
-    patch->system = rack->system;
     patch->dest = dest;
-    patch->source = this;
-    patch->dest_address = dest ? dest->address(mem) : VoiceAddress();
-    patch->source_address = address(mem);
+    patch->source = source;
 
     // Initialize the matrix
     memset(patch->volume_matrix, 0, sizeof(patch->volume_matrix));
@@ -440,10 +336,6 @@ void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceU
 
     thread->run_callback(callback.address(), { callback_info_addr });
     stack_free(*thread->cpu, sizeof(SceNgsCallbackInfo));
-}
-
-VoiceAddress Voice::address(const MemState &mem) const {
-    return rack->system->address_of(mem, this);
 }
 
 uint32_t System::get_required_memspace_size(SceNgsSystemInitParams *parameters) {

@@ -218,9 +218,8 @@ EXPORT(SceInt32, sceNgsPatchGetInfo, ngs::Patch *patch, SceNgsPatchAudioPropInfo
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    patch->refresh_endpoints(emuenv.mem);
-    ngs::Voice *source = patch->resolve_source(emuenv.mem);
-    ngs::Voice *dest = patch->resolve_dest(emuenv.mem);
+    ngs::Voice *source = patch->source.get(emuenv.mem);
+    ngs::Voice *dest = patch->dest.get(emuenv.mem);
     if (!source || !dest) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
@@ -235,8 +234,8 @@ EXPORT(SceInt32, sceNgsPatchGetInfo, ngs::Patch *patch, SceNgsPatchAudioPropInfo
         deli_info->input_index = patch->dest_index;
         deli_info->output_index = patch->output_index;
         deli_info->output_subindex = patch->output_sub_index;
-        deli_info->source_voice_handle = Ptr<ngs::Voice>(source, emuenv.mem);
-        deli_info->dest_voice_handle = Ptr<ngs::Voice>(dest, emuenv.mem);
+        deli_info->source_voice_handle = patch->source;
+        deli_info->dest_voice_handle = patch->dest;
     }
 
     return SCE_NGS_OK;
@@ -252,8 +251,7 @@ EXPORT(int, sceNgsPatchRemoveRouting, Ptr<ngs::Patch> patch) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    patch.get(emuenv.mem)->refresh_endpoints(emuenv.mem);
-    ngs::Voice *source = patch.get(emuenv.mem)->resolve_source(emuenv.mem);
+    ngs::Voice *source = patch.get(emuenv.mem)->source.get(emuenv.mem);
     if (!source || !source->remove_patch(emuenv.mem, patch)) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
