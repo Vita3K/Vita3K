@@ -32,8 +32,8 @@ struct UiLanguageOption {
     std::string_view native_name;
 };
 
-std::span<const UiLanguageOption> ui_language_options(fs::path &static_assets_path);
-bool apply_ui_language(QApplication &app, std::string_view configured_tag, fs::path &static_assets_path);
+std::span<const UiLanguageOption> ui_language_options(const fs::path &static_assets_path);
+bool apply_ui_language(QApplication &app, std::string_view configured_tag, const fs::path &static_assets_path);
 QString language_name(std::string_view tag);
 
 } // namespace gui::i18n
