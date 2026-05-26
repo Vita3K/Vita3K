@@ -218,18 +218,25 @@ EXPORT(SceInt32, sceNgsPatchGetInfo, ngs::Patch *patch, SceNgsPatchAudioPropInfo
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
+    patch->refresh_endpoints(emuenv.mem);
+    ngs::Voice *source = patch->resolve_source(emuenv.mem);
+    ngs::Voice *dest = patch->resolve_dest(emuenv.mem);
+    if (!source || !dest) {
+        return RET_ERROR(SCE_NGS_ERROR);
+    }
+
     if (prop_info) {
         memcpy(prop_info->volume_matrix.matrix, patch->volume_matrix, sizeof(patch->volume_matrix));
-        prop_info->in_channels = patch->dest->rack->channels_per_voice;
-        prop_info->out_channels = patch->source->rack->channels_per_voice;
+        prop_info->in_channels = dest->rack->channels_per_voice;
+        prop_info->out_channels = source->rack->channels_per_voice;
     }
 
     if (deli_info) {
         deli_info->input_index = patch->dest_index;
         deli_info->output_index = patch->output_index;
         deli_info->output_subindex = patch->output_sub_index;
-        deli_info->source_voice_handle = Ptr<ngs::Voice>(patch->source, emuenv.mem);
-        deli_info->dest_voice_handle = Ptr<ngs::Voice>(patch->dest, emuenv.mem);
+        deli_info->source_voice_handle = Ptr<ngs::Voice>(source, emuenv.mem);
+        deli_info->dest_voice_handle = Ptr<ngs::Voice>(dest, emuenv.mem);
     }
 
     return SCE_NGS_OK;
@@ -245,7 +252,9 @@ EXPORT(int, sceNgsPatchRemoveRouting, Ptr<ngs::Patch> patch) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    if (!patch.get(emuenv.mem)->source->remove_patch(emuenv.mem, patch)) {
+    patch.get(emuenv.mem)->refresh_endpoints(emuenv.mem);
+    ngs::Voice *source = patch.get(emuenv.mem)->resolve_source(emuenv.mem);
+    if (!source || !source->remove_patch(emuenv.mem, patch)) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
 
@@ -749,7 +758,7 @@ EXPORT(SceInt32, sceNgsVoiceGetStateData, ngs::Voice *voice, const SceUInt32 mod
 
     if (mem) {
         memset(mem, 0, mem_size);
-        memcpy(mem, storage->voice_state_data.data(), std::min<std::size_t>(mem_size, storage->voice_state_data.size()));
+        memcpy(mem, storage->guest_state_data.data(), std::min<std::size_t>(mem_size, storage->guest_state_data.size()));
     }
 
     return SCE_NGS_OK;

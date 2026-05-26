@@ -24,8 +24,12 @@
 #include <ngs/types.h>
 #include <util/types.h>
 
+#include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <memory>
 #include <mutex>
 #include <vector>
 
@@ -39,6 +43,7 @@ constexpr uint32_t default_normal_parameter_size = 100;
 
 struct State;
 struct Voice;
+struct System;
 
 enum VoiceState {
     VOICE_STATE_AVAILABLE,
@@ -47,14 +52,117 @@ enum VoiceState {
     VOICE_STATE_UNLOADING,
 };
 
+struct VoiceAddress {
+    int32_t rack_index = -1;
+    int32_t voice_index = -1;
+
+    explicit operator bool() const {
+        return rack_index >= 0 && voice_index >= 0;
+    }
+};
+
 struct Patch {
     int32_t output_index;
     int32_t output_sub_index;
     int32_t dest_index;
+    // runtime-only caches
+    ngs::System *system;
     ngs::Voice *dest;
     ngs::Voice *source;
 
+    VoiceAddress dest_address;
+    VoiceAddress source_address;
+
     float volume_matrix[2][2];
+
+    bool is_active() const;
+    Voice *resolve_source(const MemState &mem) const;
+    Voice *resolve_dest(const MemState &mem) const;
+    void refresh_endpoints(const MemState &mem);
+};
+
+struct ModuleLogicalState {
+    virtual ~ModuleLogicalState() = default;
+};
+
+struct ModuleRuntimeState {
+    virtual ~ModuleRuntimeState() = default;
+};
+
+struct PCMFrameQueue {
+    std::vector<float> samples;
+    uint32_t read_offset_frames = 0;
+
+    void clear() {
+        samples.clear();
+        read_offset_frames = 0;
+    }
+
+    bool empty() const {
+        return available_frames() == 0;
+    }
+
+    uint32_t total_frames() const {
+        return static_cast<uint32_t>(samples.size() / 2);
+    }
+
+    uint32_t available_frames() const {
+        const uint32_t total = total_frames();
+        return (read_offset_frames >= total) ? 0 : (total - read_offset_frames);
+    }
+
+    void compact() {
+        if (read_offset_frames == 0) {
+            return;
+        }
+
+        if (read_offset_frames >= total_frames()) {
+            clear();
+            return;
+        }
+
+        samples.erase(samples.begin(), samples.begin() + static_cast<std::ptrdiff_t>(read_offset_frames) * 2);
+        read_offset_frames = 0;
+    }
+
+    uint8_t *append_uninitialized_bytes(const uint32_t frames) {
+        const size_t old_samples = samples.size();
+        samples.resize(old_samples + static_cast<size_t>(frames) * 2);
+        return reinterpret_cast<uint8_t *>(samples.data() + old_samples);
+    }
+
+    void append_bytes(const uint8_t *source, const uint32_t frames) {
+        if (frames == 0) {
+            return;
+        }
+
+        uint8_t *dest = append_uninitialized_bytes(frames);
+        std::memcpy(dest, source, static_cast<size_t>(frames) * sizeof(float) * 2);
+    }
+
+    void append_frame(const float left, const float right) {
+        samples.push_back(left);
+        samples.push_back(right);
+    }
+
+    uint8_t *read_bytes() {
+        if (samples.empty()) {
+            return nullptr;
+        }
+
+        return reinterpret_cast<uint8_t *>(samples.data() + static_cast<size_t>(read_offset_frames) * 2);
+    }
+
+    void ensure_available_frames(const uint32_t frames) {
+        const size_t required_samples = static_cast<size_t>(read_offset_frames + frames) * 2;
+        if (samples.size() < required_samples) {
+            samples.resize(required_samples, 0.0f);
+        }
+    }
+
+    void consume_frames(const uint32_t frames) {
+        read_offset_frames += std::min(frames, available_frames());
+    }
 };
 
 struct ModuleData {
@@ -66,8 +174,10 @@ struct ModuleData {
 
     bool is_bypassed;
 
-    std::vector<uint8_t> voice_state_data; ///< Voice state.
-    std::vector<uint8_t> extra_storage; ///< Local data storage for module.
+    std::vector<uint8_t> guest_state_data; ///< guest-visible voice state
+    std::vector<uint8_t> scratch_data; ///< temp local data storage for module
+    std::unique_ptr<ModuleLogicalState> logical_state; ///< non-guest state needed to resume processing later
+    std::unique_ptr<ModuleRuntimeState> runtime_state; ///< host runtime objects rebuilt from logical state
 
     SceNgsBufferInfo info;
     std::vector<uint8_t> last_info;
@@ -82,12 +192,30 @@ struct ModuleData {
 
     template <typename T>
     T *get_state() {
-        if (voice_state_data.empty()) {
-            voice_state_data.resize(sizeof(T));
-            new (&voice_state_data[0]) T();
+        if (guest_state_data.empty()) {
+            guest_state_data.resize(sizeof(T));
+            new (&guest_state_data[0]) T();
         }
 
-        return reinterpret_cast<T *>(&voice_state_data[0]);
+        return reinterpret_cast<T *>(&guest_state_data[0]);
+    }
+
+    template <typename T>
+    T *get_logical_state() {
+        if (!logical_state) {
+            logical_state = std::make_unique<T>();
+        }
+
+        return static_cast<T *>(logical_state.get());
+    }
+
+    template <typename T>
+    T *get_runtime_state() {
+        if (!runtime_state) {
+            runtime_state = std::make_unique<T>();
+        }
+
+        return static_cast<T *>(runtime_state.get());
     }
 
     template <typename T>
@@ -100,13 +228,17 @@ struct ModuleData {
         return info.data.cast<T>().get(mem);
     }
 
-    void fill_to_fit_granularity();
-
     void invoke_callback(KernelState &kern, const MemState &mem, const SceUID thread_id, const uint32_t reason1,
         const uint32_t reason2, Address reason_ptr);
 
     SceNgsBufferInfo *lock_params(const MemState &mem);
     bool unlock_params(const MemState &mem);
+
+    void ensure_scratch_size(const size_t size) {
+        if (scratch_data.size() < size) {
+            scratch_data.resize(size);
+        }
+    }
 };
 
 class Module {
@@ -117,9 +249,25 @@ public:
     virtual bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) = 0;
     virtual uint32_t module_id() const { return 0; }
     virtual uint32_t get_buffer_parameter_size() const = 0;
+    virtual uint32_t get_guest_state_size() const { return 0; }
+    virtual std::unique_ptr<ModuleLogicalState> create_logical_state() const { return nullptr; }
+    virtual std::unique_ptr<ModuleRuntimeState> create_runtime_state() const { return nullptr; }
     virtual void on_state_change(const MemState &mem, ModuleData &v, const VoiceState previous) {}
     virtual void on_param_change(const MemState &mem, ModuleData &data) {}
     virtual void cleanup_voice_state(ModuleData &data) {}
+
+    virtual void initialize_voice_data(ModuleData &data) const {
+        const uint32_t guest_state_size = get_guest_state_size();
+        if (guest_state_size != 0) {
+            data.guest_state_data.assign(guest_state_size, 0);
+        } else {
+            data.guest_state_data.clear();
+        }
+
+        data.scratch_data.clear();
+        data.logical_state = create_logical_state();
+        data.runtime_state = create_runtime_state();
+    }
 };
 
 static constexpr uint32_t MAX_VOICE_OUTPUT = 4;
@@ -144,7 +292,7 @@ struct VoiceInputManager {
     void reset_inputs();
 
     PCMInput *get_input_buffer_queue(const int32_t index);
-    int32_t receive(Patch *patch, const VoiceProduct &data);
+    int32_t receive(const MemState &mem, Patch *patch, const VoiceProduct &data);
 };
 
 struct Voice {
@@ -184,6 +332,8 @@ struct Voice {
 
     void invoke_callback(KernelState &kernel, const MemState &mem, const SceUID thread_id, Ptr<void> callback, Ptr<void> user_data,
         const uint32_t module_id, const uint32_t reason = 0, const uint32_t reason2 = 0, Address reason_ptr = 0);
+
+    VoiceAddress address(const MemState &mem) const;
 };
 
 struct System;
@@ -201,6 +351,8 @@ struct Rack : public MempoolObject {
 
     explicit Rack(System *mama, const Ptr<void> memspace, const uint32_t memspace_size);
 
+    int32_t index_of_voice(const MemState &mem, const Voice *voice) const;
+
     static uint32_t get_required_memspace_size(MemState &mem, SceNgsRackDescription *description);
 };
 
@@ -213,6 +365,9 @@ struct System : public MempoolObject {
     VoiceScheduler voice_scheduler;
 
     explicit System(const Ptr<void> memspace, const uint32_t memspace_size);
+    int32_t index_of_rack(const Rack *rack) const;
+    VoiceAddress address_of(const MemState &mem, const Voice *voice) const;
+    Voice *find_voice(const MemState &mem, const VoiceAddress &address) const;
     static uint32_t get_required_memspace_size(SceNgsSystemInitParams *parameters);
 };
 
