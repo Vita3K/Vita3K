@@ -1,6 +1,7 @@
 #!/bin/sh
 
 export LDAI_VERBOSE=1
+export NO_STRIP=1
 
 # Try to detect the target architecture from environment or fallback to host
 if [ -n "$ARCH" ]; then
