@@ -190,7 +190,7 @@ static std::string resolve_existing_path(const EmuEnvState &emuenv, const fs::pa
         return {};
     }
 
-    const std::array<fs::path, 7> roots = {
+    const std::array<fs::path, 2> roots = {
         emuenv.pref_path,
         emuenv.default_path,
     };

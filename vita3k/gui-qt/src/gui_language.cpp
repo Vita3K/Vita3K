@@ -61,14 +61,14 @@ const std::array<UiLanguageOption, 23> k_ui_languages = { {
 
 std::unique_ptr<QTranslator> s_translator;
 
-QStringList translation_search_paths(fs::path &static_assets_path) {
+static QStringList translation_search_paths(const fs::path &static_assets_path) {
     return {
         QString::fromUtf8((static_assets_path / "translations").string().c_str()),
         QString::fromUtf8((static_assets_path / "../Resources/translations").string().c_str()),
     };
 }
 
-QSet<QString> available_translation_tags(fs::path &static_assets_path) {
+static QSet<QString> available_translation_tags(const fs::path &static_assets_path) {
     const QString prefix = QStringLiteral("vita3k_");
 
     QSet<QString> tags;
@@ -91,7 +91,7 @@ QSet<QString> available_translation_tags(fs::path &static_assets_path) {
 
 } // namespace
 
-std::span<const UiLanguageOption> ui_language_options(fs::path &static_assets_path) {
+std::span<const UiLanguageOption> ui_language_options(const fs::path &static_assets_path) {
     static std::vector<UiLanguageOption> available_languages;
 
     available_languages.clear();
@@ -123,7 +123,7 @@ QString language_name(std::string_view tag) {
     return QString::fromUtf8(tag.data(), static_cast<int>(tag.size()));
 }
 
-bool apply_ui_language(QApplication &app, std::string_view configured_tag, fs::path &static_assets_path) {
+bool apply_ui_language(QApplication &app, std::string_view configured_tag, const fs::path &static_assets_path) {
     if (s_translator)
         app.removeTranslator(s_translator.get());
 
