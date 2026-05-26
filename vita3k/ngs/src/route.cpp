@@ -29,14 +29,16 @@ bool deliver_data(const MemState &mem, const std::vector<Voice *> &voice_queue, 
     for (auto &patch_ptr : source->patches[output_port]) {
         Patch *patch = patch_ptr.get(mem);
 
-        if (!patch || patch->output_sub_index == -1)
+        if (!patch || !patch->is_active())
             continue;
 
-        if (!vector_utils::contains(voice_queue, patch->dest))
+        patch->refresh_endpoints(mem);
+        Voice *dest = patch->resolve_dest(mem);
+        if (!dest || !vector_utils::contains(voice_queue, dest))
             continue;
 
-        const std::lock_guard<std::mutex> guard(*patch->dest->voice_mutex);
-        patch->dest->inputs.receive(patch, data_to_deliver);
+        const std::lock_guard<std::mutex> guard(*dest->voice_mutex);
+        dest->inputs.receive(mem, patch, data_to_deliver);
     }
 
     return true;

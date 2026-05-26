@@ -43,7 +43,11 @@ void VoiceScheduler::deque_insert(const MemState &mem, Voice *voice) {
                 continue;
             }
 
-            Voice *dest = patch.get(mem)->dest;
+            patch.get(mem)->refresh_endpoints(mem);
+            Voice *dest = patch.get(mem)->resolve_dest(mem);
+            if (!dest) {
+                continue;
+            }
             const int32_t pos = get_position(dest);
 
             if (pos == -1) {
@@ -204,11 +208,15 @@ bool VoiceScheduler::resort_to_respect_dependencies(const MemState &mem, Voice *
     // Check all dependencies, could be optimized- @sunho suggested dfs topological sort
     for (size_t i = 0; i < source->patches.size(); i++) {
         for (const auto &patch : source->patches[i]) {
-            if (!patch || patch.get(mem)->output_sub_index == -1) {
+            if (!patch || !patch.get(mem)->is_active()) {
                 continue;
             }
 
-            Voice *dest = patch.get(mem)->dest;
+            patch.get(mem)->refresh_endpoints(mem);
+            Voice *dest = patch.get(mem)->resolve_dest(mem);
+            if (!dest) {
+                continue;
+            }
             const int32_t dest_pos = get_position(dest);
 
             if (dest_pos == -1) {
