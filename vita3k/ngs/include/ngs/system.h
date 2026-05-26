@@ -43,8 +43,6 @@ constexpr uint32_t default_normal_parameter_size = 100;
 
 struct State;
 struct Voice;
-struct System;
-
 enum VoiceState {
     VOICE_STATE_AVAILABLE,
     VOICE_STATE_ACTIVE,
@@ -52,33 +50,16 @@ enum VoiceState {
     VOICE_STATE_UNLOADING,
 };
 
-struct VoiceAddress {
-    int32_t rack_index = -1;
-    int32_t voice_index = -1;
-
-    explicit operator bool() const {
-        return rack_index >= 0 && voice_index >= 0;
-    }
-};
-
 struct Patch {
     int32_t output_index;
     int32_t output_sub_index;
     int32_t dest_index;
-    // runtime-only caches
-    ngs::System *system;
-    ngs::Voice *dest;
-    ngs::Voice *source;
-
-    VoiceAddress dest_address;
-    VoiceAddress source_address;
+    Ptr<ngs::Voice> dest;
+    Ptr<ngs::Voice> source;
 
     float volume_matrix[2][2];
 
     bool is_active() const;
-    Voice *resolve_source(const MemState &mem) const;
-    Voice *resolve_dest(const MemState &mem) const;
-    void refresh_endpoints(const MemState &mem);
 };
 
 struct ModuleLogicalState {
@@ -322,7 +303,7 @@ struct Voice {
     ModuleData *module_storage(const uint32_t index);
 
     bool remove_patch(const MemState &mem, const Ptr<Patch> patch);
-    Ptr<Patch> patch(const MemState &mem, const int32_t index, int32_t subindex, int32_t dest_index, Voice *dest);
+    Ptr<Patch> patch(const MemState &mem, const int32_t index, int32_t subindex, int32_t dest_index, Ptr<Voice> source, Ptr<Voice> dest);
 
     void transition(const MemState &mem, const VoiceState new_state);
     bool parse_params(const MemState &mem, const SceNgsModuleParamHeader *header);
@@ -332,8 +313,6 @@ struct Voice {
 
     void invoke_callback(KernelState &kernel, const MemState &mem, const SceUID thread_id, Ptr<void> callback, Ptr<void> user_data,
         const uint32_t module_id, const uint32_t reason = 0, const uint32_t reason2 = 0, Address reason_ptr = 0);
-
-    VoiceAddress address(const MemState &mem) const;
 };
 
 struct System;
@@ -351,8 +330,6 @@ struct Rack : public MempoolObject {
 
     explicit Rack(System *mama, const Ptr<void> memspace, const uint32_t memspace_size);
 
-    int32_t index_of_voice(const MemState &mem, const Voice *voice) const;
-
     static uint32_t get_required_memspace_size(MemState &mem, SceNgsRackDescription *description);
 };
 
@@ -365,9 +342,6 @@ struct System : public MempoolObject {
     VoiceScheduler voice_scheduler;
 
     explicit System(const Ptr<void> memspace, const uint32_t memspace_size);
-    int32_t index_of_rack(const Rack *rack) const;
-    VoiceAddress address_of(const MemState &mem, const Voice *voice) const;
-    Voice *find_voice(const MemState &mem, const VoiceAddress &address) const;
     static uint32_t get_required_memspace_size(SceNgsSystemInitParams *parameters);
 };
 

@@ -32,8 +32,7 @@ bool deliver_data(const MemState &mem, const std::vector<Voice *> &voice_queue, 
         if (!patch || !patch->is_active())
             continue;
 
-        patch->refresh_endpoints(mem);
-        Voice *dest = patch->resolve_dest(mem);
+        Voice *dest = patch->dest.get(mem);
         if (!dest || !vector_utils::contains(voice_queue, dest))
             continue;
 

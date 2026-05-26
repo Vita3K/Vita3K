@@ -43,8 +43,7 @@ void VoiceScheduler::deque_insert(const MemState &mem, Voice *voice) {
                 continue;
             }
 
-            patch.get(mem)->refresh_endpoints(mem);
-            Voice *dest = patch.get(mem)->resolve_dest(mem);
+            Voice *dest = patch.get(mem)->dest.get(mem);
             if (!dest) {
                 continue;
             }
@@ -212,8 +211,7 @@ bool VoiceScheduler::resort_to_respect_dependencies(const MemState &mem, Voice *
                 continue;
             }
 
-            patch.get(mem)->refresh_endpoints(mem);
-            Voice *dest = patch.get(mem)->resolve_dest(mem);
+            Voice *dest = patch.get(mem)->dest.get(mem);
             if (!dest) {
                 continue;
             }
@@ -242,7 +240,7 @@ Ptr<Patch> VoiceScheduler::patch(const MemState &mem, SceNgsPatchSetupInfo *info
     Voice *source = info->source.get(mem);
     Voice *dest = info->dest.get(mem);
 
-    Ptr<Patch> patch = source->patch(mem, info->source_output_index, info->source_output_subindex, info->dest_input_index, dest);
+    Ptr<Patch> patch = source->patch(mem, info->source_output_index, info->source_output_subindex, info->dest_input_index, info->source, info->dest);
 
     if (!patch) {
         return patch;
