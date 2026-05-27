@@ -33,7 +33,7 @@ bool deliver_data(const MemState &mem, const std::vector<Voice *> &voice_queue, 
             continue;
 
         Voice *dest = patch->dest.get(mem);
-        if (!dest || !vector_utils::contains(voice_queue, dest))
+        if (!dest || !std::ranges::contains(voice_queue, dest))
             continue;
 
         const std::lock_guard<std::mutex> guard(*dest->voice_mutex);

@@ -64,7 +64,7 @@ static int kernel_stop_module(EmuEnvState &emuenv, SceUID module_id, SceSize arg
 EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
     TRACY_FUNC(_sceKernelLoadStartModule, moduleFileName, args, argp, flags, pOpt, pRes);
     // Is workaround for fix crash on loading "rgpluginsgm_psvita" module, relate issue #1095 on github, delete this after fix it.
-    if (std::string_view(moduleFileName).find("rgpluginsgm_psvita") != std::string::npos) {
+    if (std::string_view(moduleFileName).contains("rgpluginsgm_psvita")) {
         LOG_WARN("Bypass load this module: {}", moduleFileName);
         return SCE_KERNEL_ERROR_MODULEMGR_INVALID_TYPE;
     }

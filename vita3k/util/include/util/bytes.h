@@ -18,18 +18,20 @@
 #pragma once
 
 #include <bit>
-#include <cstdint>
+#include <concepts>
 
-template <typename T>
-T byte_swap(T val);
+template <std::integral T>
+T byte_swap(T val) {
+    return std::byteswap(val);
+}
 
-template <typename T>
+template <std::integral T>
 T network_to_host_order(T val) {
     static_assert(((std::endian::native == std::endian::big) || (std::endian::native == std::endian::little)), "Mixed endian is unsupported");
     if constexpr (std::endian::native == std::endian::big) {
         return val;
     } else {
-        return byte_swap(val);
+        return std::byteswap(val);
     }
 }
 

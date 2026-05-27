@@ -20,9 +20,9 @@
 // original source:https://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion
 // public domain
 
-#include "util/bit_cast.h"
 #include "util/warning.h"
 
+#include <bit> // bit_cast
 #include <climits> // CHAR_BIT
 #include <cstdint> // uint32_t, uint64_t, etc.
 #include <limits> // numeric_limits

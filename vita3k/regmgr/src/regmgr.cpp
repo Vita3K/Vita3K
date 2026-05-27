@@ -67,7 +67,7 @@ static void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
             continue;
 
         // Found the base register
-        if (line.find("[BASE") != std::string::npos) {
+        if (line.contains("[BASE")) {
             // Register the names with their numbers
             while (std::getline(iss, line) && (line != "[REG-BAS")) {
                 if (line.empty())

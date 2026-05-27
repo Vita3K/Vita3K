@@ -186,7 +186,7 @@ EXPORT(int, sceSysmoduleIsLoadedInternal, SceSysmoduleInternalModuleId module_id
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
 
     std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-    if (vector_utils::contains(emuenv.kernel.loaded_internal_sysmodules, module_id))
+    if (std::ranges::contains(emuenv.kernel.loaded_internal_sysmodules, module_id))
         return SCE_SYSMODULE_LOADED;
     else
         return RET_ERROR(SCE_SYSMODULE_ERROR_UNLOADED);

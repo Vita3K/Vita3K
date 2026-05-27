@@ -16,7 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <net/socket.h>
-#include <util/bit_cast.h>
+
+#include <bit>
 
 static SceNetSockaddr convertP2PToPosix(const SceNetSockaddr *addr) {
     if (!addr) {

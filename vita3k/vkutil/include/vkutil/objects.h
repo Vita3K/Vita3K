@@ -17,8 +17,9 @@
 
 #pragma once
 
-#include <util/bit_cast.h>
 #include <vkutil/vkutil.h>
+
+#include <bit>
 
 namespace vkutil {
 
