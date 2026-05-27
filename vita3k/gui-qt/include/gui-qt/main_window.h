@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <app/session_controller.h>
 #include <app/state.h>
 #include <emuenv/state.h>
 
@@ -30,6 +29,7 @@
 #include <optional>
 #include <vector>
 
+class GuiApplication;
 class GuiSettings;
 class PersistentSettings;
 
@@ -69,6 +69,7 @@ public:
     explicit MainWindow(EmuEnvState &emuenv,
         std::shared_ptr<GuiSettings> gui_settings,
         std::shared_ptr<PersistentSettings> persistent_settings,
+        GuiApplication *gui_app,
         bool admin_privileged = false);
     ~MainWindow();
 
@@ -92,9 +93,11 @@ private slots:
     void on_app_selected(const app::AppEntry &app);
     void open_settings(int tab_index = 0);
     void apply_ui_language(const QString &locale_tag);
-    void on_game_closed();
+    void on_game_started();
+    void on_game_stopped();
+    void on_boot_failed(const QString &message);
+    void on_controller_changed();
     void restart_running_app();
-    void pump_sdl_events();
     void open_trophy_collection();
     void open_user_management();
     void open_vita_themes();
@@ -123,19 +126,11 @@ private:
     void refresh_emulation_actions();
     void initialize();
     void init_current_user();
-    void boot_game(const std::string &title_id);
-    void boot_game(const AppLaunchRequest &launch_request, bool prompt_before_closing_existing = true);
-    std::optional<AppLaunchRequest> boot_game_once(const AppLaunchRequest &launch_request, bool prompt_before_closing_existing);
-    std::optional<AppLaunchRequest> take_pending_app_launch_request();
-    bool handle_pending_app_launch_request();
+    bool confirm_missing_firmware_warning();
     static QImage load_app_background(const std::string &app_path,
         const std::string &pref_path);
 
     void handle_drop(const QString &path);
-
-    void init_discord();
-    void sync_discord_presence();
-    void shutdown_discord();
 
     void setup_toolbar();
     void repaint_toolbar_icons();
@@ -153,7 +148,6 @@ private:
     void save_config(const Config &desired_cfg);
     void prompt_restart_if_needed(const app::SettingsCommitResult &result);
     bool prompt_admin_privileges_warning_if_needed();
-    bool confirm_missing_firmware_warning();
     void register_auxiliary_window(QWidget *window);
     bool close_auxiliary_windows();
     void prune_auxiliary_windows();
@@ -170,7 +164,7 @@ private:
     void advance_theme_background_presentation();
 
     EmuEnvState &emuenv;
-    app::AppSessionController m_app_session;
+    GuiApplication *m_gui_app = nullptr;
     std::unique_ptr<Ui::MainWindow> m_ui;
     std::shared_ptr<GuiSettings> m_gui_settings;
     std::shared_ptr<PersistentSettings> m_persistent_settings;
@@ -179,14 +173,11 @@ private:
     QMainWindow *m_dock_host = nullptr;
     AppsList *m_apps_list_widget = nullptr;
     LogWidget *m_log_widget = nullptr;
-    GameWindow *m_game_window = nullptr;
     GameCompatibility *m_game_compat = nullptr;
     QWindow *m_game_container = nullptr;
-    QTimer *m_sdl_pump_timer = nullptr;
 
     QPointer<TrophyCollectionDialog> m_trophy_dialog;
     QPointer<UserManagementDialog> m_user_mgmt_dialog;
-    CtrlKeyboardFilter *m_kb_filter = nullptr;
     QPointer<DebugWidget> m_debug_widget;
     LiveAreaWidget *m_live_area_widget = nullptr;
     UpdateManager *m_update_manager = nullptr;
@@ -212,9 +203,6 @@ private:
     bool m_fullscreen = false;
     bool m_app_selected = false;
     bool m_admin_privileged = false;
-#if USE_DISCORD
-    bool m_discord_rich_presence_old = false;
-#endif
 
     QIcon m_icon_play;
     QIcon m_icon_pause;

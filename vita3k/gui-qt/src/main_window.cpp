@@ -27,9 +27,9 @@
 #include <gui-qt/firmware_install_dialog.h>
 #include <gui-qt/game_compatibility.h>
 #include <gui-qt/game_window.h>
+#include <gui-qt/gui_application.h>
 #include <gui-qt/gui_language.h>
 #include <gui-qt/gui_settings.h>
-#include <gui-qt/ime_keyboard_filter.h>
 #include <gui-qt/license_install_dialog.h>
 #include <gui-qt/live_area_widget.h>
 #include <gui-qt/log_widget.h>
@@ -60,25 +60,15 @@
 #include <interface.h>
 #include <io/state.h>
 #include <kernel/state.h>
-#include <motion/event_handler.h>
 #include <np/state.h>
 #include <packages/functions.h>
 #include <packages/license.h>
 #include <renderer/functions.h>
 #include <renderer/shaders.h>
 #include <renderer/state.h>
-#include <touch/functions.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
-
-#if USE_DISCORD
-#include <app/discord.h>
-#endif
-
-#include <SDL3/SDL_events.h>
-#include <SDL3/SDL_gamepad.h>
-#include <SDL3/SDL_sensor.h>
 
 #include <QApplication>
 #include <QCheckBox>
@@ -105,10 +95,6 @@
 #include <QtResource>
 
 #include <optional>
-
-#if defined(HAVE_X11) || defined(HAVE_WAYLAND)
-#include <qpa/qplatformnativeinterface.h>
-#endif
 
 namespace {
 
@@ -147,10 +133,11 @@ void update_status_button_accent(QPushButton *button, const QString &accent) {
 MainWindow::MainWindow(EmuEnvState &emuenv,
     std::shared_ptr<GuiSettings> gui_settings,
     std::shared_ptr<PersistentSettings> persistent_settings,
+    GuiApplication *gui_app,
     bool admin_privileged)
     : QMainWindow(nullptr)
     , emuenv{ emuenv }
-    , m_app_session(emuenv)
+    , m_gui_app(gui_app)
     , m_ui(std::make_unique<Ui::MainWindow>())
     , m_gui_settings(std::move(gui_settings))
     , m_persistent_settings(std::move(persistent_settings))
@@ -159,7 +146,6 @@ MainWindow::MainWindow(EmuEnvState &emuenv,
 }
 
 MainWindow::~MainWindow() {
-    shutdown_discord();
 }
 
 void MainWindow::changeEvent(QEvent *event) {
@@ -218,7 +204,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
         ? m_gui_settings->get_value(gui::mw_confirmExitApp).toBool()
         : true;
 
-    if (m_game_window && confirm_exit_app) {
+    if (m_gui_app->game_window() && confirm_exit_app) {
         QMessageBox box(this);
         box.setIcon(QMessageBox::Question);
         box.setWindowTitle(tr("Exit App?"));
@@ -247,8 +233,8 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     if (m_live_area_widget)
         on_live_area_closed();
 
-    if (m_game_window)
-        on_game_closed();
+    if (m_gui_app->game_window())
+        m_gui_app->stop_game();
 
     save_window_state();
     QMainWindow::closeEvent(event);
@@ -417,10 +403,30 @@ void MainWindow::initialize() {
     connect(m_apps_list_widget, &AppsList::context_menu_requested,
         this, &MainWindow::on_context_menu_requested);
 
-    m_sdl_pump_timer = new QTimer(this);
-    m_sdl_pump_timer->setInterval(4);
-    connect(m_sdl_pump_timer, &QTimer::timeout, this, &MainWindow::pump_sdl_events);
-    m_sdl_pump_timer->start();
+    connect(m_gui_app, &GuiApplication::game_started, this, &MainWindow::on_game_started);
+    connect(m_gui_app, &GuiApplication::game_stopped, this, &MainWindow::on_game_stopped);
+    connect(m_gui_app, &GuiApplication::boot_failed, this, &MainWindow::on_boot_failed);
+    connect(m_gui_app, &GuiApplication::controller_changed, this, &MainWindow::on_controller_changed);
+    connect(m_gui_app, &GuiApplication::pause_state_changed, this, [this](bool) {
+        refresh_emulation_actions();
+    });
+
+    m_gui_app->set_confirm_switch_callback([this]() -> bool {
+        const int result = QMessageBox::question(this, tr("Switch App?"),
+            tr("An app is already running.\n"
+               "Do you want to close it and launch another app?\n\n"
+               "Any unsaved progress will be lost!"),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        return result == QMessageBox::Yes;
+    });
+    m_gui_app->set_confirm_firmware_callback([this]() -> bool {
+        return confirm_missing_firmware_warning();
+    });
+    m_gui_app->set_sdl_event_filter([this](const SDL_Event &event) -> bool {
+        if (m_controls_dialog)
+            return m_controls_dialog->handle_sdl_event(event);
+        return false;
+    });
 
     setup_toolbar();
 
@@ -576,16 +582,6 @@ void MainWindow::initialize() {
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this]() {
         apply_stylesheet();
     });
-
-    init_discord();
-
-    if (emuenv.cfg.run_app_path.has_value()) {
-        QTimer::singleShot(0, this, [this]() {
-            const std::string title_id = *emuenv.cfg.run_app_path;
-            emuenv.cfg.run_app_path.reset();
-            boot_game(title_id);
-        });
-    }
 }
 
 void MainWindow::on_install_firmware_triggered() {
@@ -798,13 +794,12 @@ void MainWindow::open_settings(int tab_index) {
         connect(m_settings_dialog, &SettingsDialog::ui_language_request, this, &MainWindow::apply_ui_language);
         connect(m_settings_dialog, &SettingsDialog::restart_game_requested, this, &MainWindow::restart_running_app);
         connect(m_settings_dialog, &QDialog::finished, this, [this](int) {
-            sync_discord_presence();
             refresh_status_bar();
             apply_log_gui_settings();
         });
     }
 
-    m_settings_dialog->set_storage_path_locked(m_game_window != nullptr);
+    m_settings_dialog->set_storage_path_locked(m_gui_app->is_game_running());
     m_settings_dialog->show_tab(tab_index);
     present_tool_window(m_settings_dialog);
 }
@@ -815,28 +810,6 @@ void MainWindow::apply_log_gui_settings() {
 
     m_log_widget->set_log_buffer_size(m_gui_settings->get_value(gui::l_bufferSize).toInt());
     m_log_widget->set_log_font_family(m_gui_settings->get_value(gui::l_fontFamily).toString());
-}
-
-std::optional<AppLaunchRequest> MainWindow::take_pending_app_launch_request() {
-    auto request = emuenv.take_app_launch_request();
-    if (request)
-        LOG_INFO("Handling in-process app relaunch for {} ({})", request->self_path, request->app_path);
-
-    return request;
-}
-
-bool MainWindow::handle_pending_app_launch_request() {
-    if (!m_game_window)
-        return false;
-
-    auto request = take_pending_app_launch_request();
-    if (!request)
-        return false;
-
-    on_game_closed();
-    if (request->reason != AppLaunchReason::ProcessExit)
-        boot_game(*request, false);
-    return true;
 }
 
 void MainWindow::apply_ui_language(const QString &locale_tag) {
@@ -866,82 +839,20 @@ void MainWindow::init_current_user() {
 }
 
 void MainWindow::on_app_selected(const app::AppEntry &app) {
-    if (emuenv.cfg.show_live_area_screen && !m_game_window)
+    if (emuenv.cfg.show_live_area_screen && !m_gui_app->game_window())
         show_live_area(app.title_id);
     else
-        boot_game(app.title_id);
+        m_gui_app->boot_game(app.title_id);
 }
 
-void MainWindow::boot_game(const std::string &title_id) {
-    boot_game(AppLaunchRequest{
-        .app_path = title_id,
-    });
-}
+void MainWindow::on_game_started() {
+    m_game_container = m_gui_app->game_window();
+    m_fullscreen = m_game_container && m_game_container->visibility() == QWindow::FullScreen;
+    m_ui->toolbar_fullscreen->setIcon(m_fullscreen ? m_icon_fullscreen_off : m_icon_fullscreen_on);
+    m_ui->toolbar_fullscreen->setText(m_fullscreen ? tr("Exit Fullscreen") : tr("Fullscreen"));
 
-void MainWindow::boot_game(const AppLaunchRequest &launch_request, const bool prompt_before_closing_existing) {
-    if (m_sdl_pump_timer)
-        m_sdl_pump_timer->stop();
-
-    AppLaunchRequest current_request = launch_request;
-    bool should_prompt_before_closing = prompt_before_closing_existing;
-
-    while (true) {
-        auto next_request = boot_game_once(current_request, should_prompt_before_closing);
-        if (!next_request)
-            break;
-
-        current_request = std::move(*next_request);
-        should_prompt_before_closing = false;
-    }
-
-    if (m_sdl_pump_timer)
-        m_sdl_pump_timer->start();
-}
-
-std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchRequest &launch_request, const bool prompt_before_closing_existing) {
-    if (m_game_window) {
-        if (prompt_before_closing_existing) {
-            const int result = QMessageBox::question(this, tr("Switch App?"),
-                tr("An app is already running.\n"
-                   "Do you want to close it and launch another app?\n\n"
-                   "Any unsaved progress will be lost!"),
-                QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
-
-            if (result != QMessageBox::Yes)
-                return std::nullopt;
-        }
-
-        on_game_closed();
-    }
-
-    if (launch_request.reason != AppLaunchReason::LoadExec && !confirm_missing_firmware_warning())
-        return std::nullopt;
-
-    refresh_controllers(emuenv.ctrl, emuenv);
-    if (m_controls_dialog)
-        m_controls_dialog->sync_controller_state();
-
-    const bool update_last_time_used = launch_request.reason != AppLaunchReason::LoadExec && !m_live_area_widget;
-    if (!m_app_session.begin_launch(launch_request, update_last_time_used)) {
-        QMessageBox::critical(this, tr("Error"),
-            tr("Could not find app '%1' in apps list.").arg(QString::fromStdString(launch_request.app_path)));
-        return std::nullopt;
-    }
     if (m_theme_manager)
         m_theme_manager->set_vita_theme_bgm_blocked(true);
-
-    bool launch_fullscreen = emuenv.cfg.boot_apps_full_screen;
-    if (m_game_container) {
-        launch_fullscreen = m_game_container->visibility() == QWindow::FullScreen;
-    }
-
-    m_game_window = new GameWindow(emuenv, m_gui_settings, emuenv.backend_renderer, screen());
-    m_game_window->setTitle(tr("%1 (%2) | Loading...")
-            .arg(QString::fromStdString(emuenv.current_app_title),
-                QString::fromStdString(emuenv.io.title_id)));
-    m_game_window->setIcon(windowIcon());
-    if (m_live_area_widget)
-        m_game_window->setGeometry(m_live_area_widget->geometry());
 
     if (m_live_area_widget) {
         m_live_area_widget->removeEventFilter(this);
@@ -949,133 +860,30 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         m_live_area_widget = nullptr;
     }
 
-    m_game_window->create();
-
-    m_game_container = m_game_window;
-    m_game_window->show();
-
-    if (launch_fullscreen)
-        m_game_window->showFullScreen();
-
-    m_fullscreen = launch_fullscreen;
-    m_ui->toolbar_fullscreen->setIcon(m_fullscreen ? m_icon_fullscreen_off : m_icon_fullscreen_on);
-    m_ui->toolbar_fullscreen->setText(m_fullscreen ? tr("Exit Fullscreen") : tr("Fullscreen"));
-
-    connect(m_game_window, &GameWindow::closed,
-        this, &MainWindow::on_game_closed);
-
-    const auto abort_boot = [&](const QString &msg) {
-        QMessageBox::critical(this, tr("Error"), msg);
-        m_app_session.stop(app::AppSessionStopReason::LaunchFailure);
-        if (m_theme_manager)
-            m_theme_manager->set_vita_theme_bgm_blocked(false);
-
-        if (m_game_window) {
-            delete m_game_window;
-            m_game_window = nullptr;
-        }
-        m_game_container = nullptr;
-    };
-
-    if (emuenv.backend_renderer == renderer::Backend::OpenGL) {
-        if (!m_game_window->create_gl_context()) {
-            abort_boot(tr("Could not create OpenGL context.\nDoes your GPU support at least OpenGL 4.4?"));
-            return {};
-        }
-        if (!m_game_window->make_current()) {
-            abort_boot(tr("Could not make OpenGL context current."));
-            return {};
-        }
+    auto *kb_filter = m_gui_app->keyboard_filter();
+    if (kb_filter) {
+        connect(kb_filter, &CtrlKeyboardFilter::fullscreen_toggled,
+            this, [this]() { on_toolbar_fullscreen(); });
+        connect(kb_filter, &CtrlKeyboardFilter::texture_replacement_toggled,
+            this, [this]() { toggle_texture_replacement(emuenv); });
+        connect(kb_filter, &CtrlKeyboardFilter::screenshot_requested,
+            this, [this]() { take_screenshot(emuenv); });
     }
-
-    if (!m_app_session.initialize_renderer(*m_game_window)) {
-        abort_boot(tr("Failed to initialise the renderer."));
-        return {};
-    }
-
-    m_game_window->setTitle(tr("%1 (%2) | Initializing...")
-            .arg(QString::fromStdString(emuenv.current_app_title),
-                QString::fromStdString(emuenv.io.title_id)));
-
-    if (!m_app_session.initialize_runtime()) {
-        abort_boot(tr("Failed to initialize emulator state."));
-        return {};
-    }
-
-    m_game_window->setTitle(tr("%1 (%2) | Loading modules...")
-            .arg(QString::fromStdString(emuenv.current_app_title),
-                QString::fromStdString(emuenv.io.title_id)));
-
-    if (!m_app_session.load_and_run()) {
-        abort_boot(tr("Failed to start game threads."));
-        return {};
-    }
-
-    auto *kb_filter = new CtrlKeyboardFilter(emuenv, m_game_window);
-    m_game_window->installEventFilter(kb_filter);
-    m_kb_filter = kb_filter;
-
-    auto *ime_filter = new ImeKeyboardFilter(emuenv, m_game_window);
-    m_game_window->installEventFilter(ime_filter);
-
-    connect(m_kb_filter, &CtrlKeyboardFilter::ps_button_pressed,
-        this, &MainWindow::on_ps_button);
-
-    connect(m_kb_filter, &CtrlKeyboardFilter::fullscreen_toggled,
-        this, [this]() { on_toolbar_fullscreen(); });
-
-    connect(m_kb_filter, &CtrlKeyboardFilter::texture_replacement_toggled,
-        this, [this]() { toggle_texture_replacement(emuenv); });
-
-    connect(m_kb_filter, &CtrlKeyboardFilter::screenshot_requested,
-        this, [this]() { take_screenshot(emuenv); });
-
-    if (auto next_request = take_pending_app_launch_request()) {
-        on_game_closed();
-        return next_request;
-    }
-
-    m_game_window->start_ui_updates();
-
-    m_game_window->setTitle(tr("%1 (%2) | Please wait, loading...")
-            .arg(QString::fromStdString(emuenv.current_app_title),
-                QString::fromStdString(emuenv.io.title_id)));
-
-    LOG_INFO("Game started: {} ({})", emuenv.current_app_title, launch_request.app_path);
 
     if (m_settings_dialog)
         m_settings_dialog->set_storage_path_locked(true);
     refresh_emulation_actions();
     refresh_status_bar();
-    return std::nullopt;
 }
 
-void MainWindow::on_game_closed() {
-    if (!m_game_window)
-        return;
-
-    LOG_INFO("Game closed: {}", emuenv.current_app_title);
-
-    m_game_window->stop_ui_updates();
-    m_app_session.stop(m_is_app_closing
-            ? app::AppSessionStopReason::FrontendShutdown
-            : app::AppSessionStopReason::UserRequest);
-    refresh_controllers(emuenv.ctrl, emuenv);
-    if (m_controls_dialog)
-        m_controls_dialog->sync_controller_state();
-
-    QWindow *closed_window = m_game_container;
-
-    m_game_window = nullptr;
+void MainWindow::on_game_stopped() {
     m_game_container = nullptr;
-
-    if (closed_window)
-        delete closed_window;
-
-    m_kb_filter = nullptr;
     m_fullscreen = false;
     m_ui->toolbar_fullscreen->setIcon(m_icon_fullscreen_on);
     m_ui->toolbar_fullscreen->setText(tr("Fullscreen"));
+
+    if (m_controls_dialog)
+        m_controls_dialog->sync_controller_state();
 
     if (m_settings_dialog)
         m_settings_dialog->set_storage_path_locked(false);
@@ -1091,17 +899,22 @@ void MainWindow::on_game_closed() {
         raise();
         activateWindow();
     }
+
+    if (!m_is_app_closing && emuenv.cfg.no_gui)
+        close();
+}
+
+void MainWindow::on_boot_failed(const QString &message) {
+    QMessageBox::critical(this, tr("Error"), message);
+}
+
+void MainWindow::on_controller_changed() {
+    if (m_controls_dialog)
+        m_controls_dialog->sync_controller_state();
 }
 
 void MainWindow::restart_running_app() {
-    if (!m_game_window)
-        return;
-
-    AppLaunchRequest relaunch_request{
-        .app_path = emuenv.io.app_path,
-    };
-    on_game_closed();
-    boot_game(relaunch_request, false);
+    m_gui_app->restart_game();
 }
 
 bool MainWindow::confirm_missing_firmware_warning() {
@@ -1179,7 +992,7 @@ bool MainWindow::prompt_admin_privileges_warning_if_needed() {
 }
 
 void MainWindow::show_live_area(const std::string &title_id) {
-    if (m_live_area_widget || m_game_window)
+    if (m_live_area_widget || m_gui_app->game_window())
         return;
 
     if (!app::set_app_info(emuenv, title_id)) {
@@ -1218,7 +1031,7 @@ void MainWindow::show_live_area(const std::string &title_id) {
 void MainWindow::on_live_area_play() {
     const auto title_id = m_live_area_title_id;
     m_live_area_title_id.clear();
-    boot_game(title_id);
+    m_gui_app->boot_game(title_id);
 }
 
 void MainWindow::on_live_area_closed() {
@@ -1257,81 +1070,19 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
     return QMainWindow::eventFilter(watched, event);
 }
 
-void MainWindow::pump_sdl_events() {
-#if USE_DISCORD
-    discordrpc::run_callbacks();
-#endif
-
-    if (handle_pending_app_launch_request())
-        return;
-
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        switch (event.type) {
-        case SDL_EVENT_GAMEPAD_ADDED:
-        case SDL_EVENT_GAMEPAD_REMOVED:
-            refresh_controllers(emuenv.ctrl, emuenv);
-            if (m_controls_dialog)
-                m_controls_dialog->sync_controller_state();
-            break;
-
-        case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-            if (m_controls_dialog && m_controls_dialog->handle_sdl_event(event))
-                break;
-            break;
-
-        case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-        case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-        case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
-            handle_touchpad_event(emuenv.touch, event.gtouchpad);
-            break;
-
-        case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
-            handle_motion_event(emuenv, event.gsensor.sensor, event.gsensor);
-            break;
-
-        case SDL_EVENT_SENSOR_UPDATE:
-            handle_motion_event(emuenv, SDL_GetSensorTypeForID(event.sensor.which), event.sensor);
-            break;
-
-        case SDL_EVENT_FINGER_DOWN:
-        case SDL_EVENT_FINGER_MOTION:
-        case SDL_EVENT_FINGER_UP:
-            handle_touch_event(emuenv.touch, event.tfinger);
-            break;
-
-        case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-            if (m_controls_dialog && m_controls_dialog->handle_sdl_event(event))
-                break;
-            if (event.gbutton.button == SDL_GAMEPAD_BUTTON_GUIDE)
-                on_ps_button();
-            if (m_game_window && !emuenv.kernel.is_threads_paused()
-                && event.gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD)
-                toggle_touchscreen(emuenv.touch);
-            break;
-
-        default:
-            break;
-        }
-    }
-}
-
 void MainWindow::on_pause_triggered() {
-    if (!m_game_window)
+    if (!m_gui_app->game_window())
         return;
 
-    const bool is_paused = m_app_session.is_paused();
-    m_app_session.set_pause_reason(app::AppSessionPauseReason::User, !is_paused);
+    m_gui_app->set_pause_reason(app::AppSessionPauseReason::User, !m_gui_app->is_paused());
     refresh_emulation_actions();
 }
 
 void MainWindow::on_stop_triggered() {
-    if (!m_game_window)
+    if (!m_gui_app->game_window())
         return;
 
-    m_app_session.set_pause_reason(app::AppSessionPauseReason::User, false);
-
-    on_game_closed();
+    m_gui_app->stop_game();
 }
 
 void MainWindow::on_ps_button() {
@@ -1339,8 +1090,8 @@ void MainWindow::on_ps_button() {
 }
 
 void MainWindow::refresh_emulation_actions() {
-    const bool running = m_game_window != nullptr;
-    const bool paused = running && m_app_session.is_paused();
+    const bool running = m_gui_app->is_game_running();
+    const bool paused = running && m_gui_app->is_paused();
 
     m_ui->stop_action->setEnabled(running);
     m_ui->stop_action->setIcon(m_icon_stop);
@@ -1390,7 +1141,7 @@ void MainWindow::open_vita_themes() {
 }
 
 void MainWindow::open_user_management() {
-    if (m_game_window) {
+    if (m_gui_app->game_window()) {
         return;
     }
 
@@ -1657,7 +1408,7 @@ void MainWindow::repaint_toolbar_icons() {
     m_ui->toolbar_config->setIcon(icon(QStringLiteral(":/icons/configure.png")));
     m_ui->toolbar_controls->setIcon(icon(QStringLiteral(":/icons/controllers.png")));
 
-    const bool running = m_game_window != nullptr;
+    const bool running = m_gui_app->is_game_running();
     const bool paused = running && emuenv.kernel.is_threads_paused();
     if (running && !paused)
         m_ui->toolbar_start->setIcon(m_icon_pause);
@@ -1704,7 +1455,7 @@ void MainWindow::on_toolbar_fullscreen() {
 }
 
 void MainWindow::on_toolbar_start() {
-    if (m_game_window) {
+    if (m_gui_app->game_window()) {
         on_pause_triggered();
     } else {
         const app::AppEntry *app = m_apps_list_widget->selected_app();
@@ -1712,7 +1463,7 @@ void MainWindow::on_toolbar_start() {
             if (emuenv.cfg.show_live_area_screen && !m_live_area_widget)
                 show_live_area(app->title_id);
             else
-                boot_game(app->title_id);
+                m_gui_app->boot_game(app->title_id);
         }
     }
 }
@@ -1723,11 +1474,11 @@ void MainWindow::on_app_selection_changed(const app::AppEntry *app) {
 }
 
 void MainWindow::on_context_menu_requested(const QPoint &global_pos, const std::vector<const app::AppEntry *> &apps) {
-    AppsListContextMenu menu(emuenv, apps, m_game_compat, m_game_window != nullptr, this);
+    AppsListContextMenu menu(emuenv, apps, m_game_compat, m_gui_app->is_game_running(), this);
 
     connect(&menu, &AppsListContextMenu::boot_requested,
         this, [this](const app::AppEntry &app) {
-            boot_game(app.title_id);
+            m_gui_app->boot_game(app.title_id);
         });
     connect(&menu, &AppsListContextMenu::view_live_area_requested,
         this, [this](const app::AppEntry &app) {
@@ -1746,7 +1497,7 @@ void MainWindow::on_context_menu_requested(const QPoint &global_pos, const std::
             connect(dlg, &SettingsDialog::ui_language_request, this, &MainWindow::apply_ui_language);
             connect(dlg, &SettingsDialog::restart_game_requested, this, &MainWindow::restart_running_app);
             connect(dlg, &QDialog::finished, this, [this, dlg, app_path](int) {
-                if (!app_path.empty() && !m_game_window)
+                if (!app_path.empty() && !m_gui_app->game_window())
                     app::set_current_config(emuenv, "");
                 refresh_status_bar();
                 m_apps_list_widget->refresh();
@@ -2075,7 +1826,7 @@ void MainWindow::update_update_available_button() {
 }
 
 void MainWindow::refresh_status_bar() {
-    const bool running = m_game_window != nullptr;
+    const bool running = m_gui_app->is_game_running();
 
     update_renderer_button();
     update_accuracy_button();
@@ -2096,7 +1847,7 @@ void MainWindow::save_config() {
 }
 
 void MainWindow::save_config(const Config &desired_cfg) {
-    const std::string scope_app_path = (m_game_window && config::has_custom_config(emuenv.config_path, emuenv.io.app_path))
+    const std::string scope_app_path = (m_gui_app->game_window() && config::has_custom_config(emuenv.config_path, emuenv.io.app_path))
         ? emuenv.io.app_path
         : std::string();
     const auto result = app::commit_settings(emuenv, desired_cfg, scope_app_path);
@@ -2106,41 +1857,4 @@ void MainWindow::save_config(const Config &desired_cfg) {
 void MainWindow::prompt_restart_if_needed(const app::SettingsCommitResult &result) {
     if (prompt_restart_required_dialog(this, result.restart_required_settings))
         restart_running_app();
-}
-
-void MainWindow::init_discord() {
-#if USE_DISCORD
-    m_discord_rich_presence_old = emuenv.cfg.discord_rich_presence;
-#endif
-}
-
-void MainWindow::sync_discord_presence() {
-#if USE_DISCORD
-    if (!emuenv.cfg.discord_rich_presence) {
-        if (m_discord_rich_presence_old)
-            discordrpc::clear_presence();
-        m_discord_rich_presence_old = false;
-        return;
-    }
-
-    if (!discordrpc::init()) {
-        m_discord_rich_presence_old = false;
-        return;
-    }
-
-    if (m_game_window)
-        discordrpc::update_presence(emuenv.io.title_id, emuenv.current_app_title);
-    else
-        discordrpc::update_presence();
-
-    m_discord_rich_presence_old = true;
-#endif
-}
-
-void MainWindow::shutdown_discord() {
-#if USE_DISCORD
-    if (discordrpc::is_running())
-        discordrpc::shutdown();
-    m_discord_rich_presence_old = false;
-#endif
 }

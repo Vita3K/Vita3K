@@ -1,4 +1,5 @@
 add_library(gui-qt STATIC
+    src/gui_application.cpp
     src/main_window.cpp
     src/about_dialog.cpp
     src/archive_install_dialog.cpp
@@ -40,6 +41,7 @@ add_library(gui-qt STATIC
     src/settings_dialog.ui
     src/welcome_dialog.ui
 
+    include/gui-qt/gui_application.h
     include/gui-qt/main_window.h
     include/gui-qt/about_dialog.h
     include/gui-qt/archive_install_dialog.h

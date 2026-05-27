@@ -164,6 +164,7 @@ static void check_members(Config &self, const Config &rhs) {
     self.load_config = rhs.load_config;
     self.fullscreen = rhs.fullscreen;
     self.console = rhs.console;
+    self.no_gui = rhs.no_gui;
     self.app_args = rhs.app_args;
     self.load_app_list = rhs.load_app_list;
     self.self_path = rhs.self_path;
@@ -344,6 +345,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     // Grouped options
     auto input = app.add_option_group("Input", "Special options for Vita3K");
     input->add_flag("--console,-z", command_line.console, "Start the emulator in console mode.")
+       ->default_val(false)->group("Input");
+    input->add_flag("--no-gui", command_line.no_gui, "Skip the main window and exit when the game closes. Requires --installed-path or content-path.")
        ->default_val(false)->group("Input");
     input->add_option("--app-args,-Z", command_line.app_args, "Argument for app, use ', ' to separate arguments.")
         ->default_str("")->group("Input");

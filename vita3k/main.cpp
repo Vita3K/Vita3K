@@ -19,9 +19,11 @@
 #include "interface.h"
 
 #include <app/functions.h>
+#include <compat/state.h>
 #include <config/functions.h>
 #include <config/version.h>
 #include <emuenv/state.h>
+#include <gui-qt/gui_application.h>
 #include <gui-qt/gui_language.h>
 #include <gui-qt/gui_settings.h>
 #include <gui-qt/log_widget.h>
@@ -35,12 +37,14 @@
 #include <packages/license.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
+#include <renderer/functions.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
 #include <QApplication>
 #include <QMessageBox>
+#include <QTimer>
 
 #if USE_DISCORD
 #include <app/discord.h>
@@ -213,6 +217,26 @@ int main(int argc, char *argv[]) {
 
     app::load_users(emuenv);
 
+    {
+        const auto &users = emuenv.app.user_list.users;
+        if (users.empty()) {
+            const std::string id = app::create_user(emuenv, "Vita3K");
+            app::activate_user(emuenv, id);
+            emuenv.cfg.user_id = id;
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        } else if (!emuenv.cfg.user_id.empty() && users.contains(emuenv.cfg.user_id)) {
+            app::activate_user(emuenv, emuenv.cfg.user_id);
+        } else {
+            const auto &first = users.begin();
+            app::activate_user(emuenv, first->first);
+            emuenv.cfg.user_id = first->first;
+            config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+        }
+    }
+
+    emuenv.compat.log_compat_warn = emuenv.cfg.log_compat_warn;
+    emuenv.vulkan_device_info = std::make_unique<renderer::VulkanDeviceInfo>(renderer::enumerate_vulkan_devices());
+
     if (cfg.content_path.has_value()) {
         const auto extension = string_utils::tolower(cfg.content_path->extension().string());
         const auto is_archive = (extension == ".vpk") || (extension == ".zip");
@@ -256,11 +280,39 @@ int main(int argc, char *argv[]) {
     auto gui_settings = std::make_shared<GuiSettings>(gui_configs_dir);
     auto persistent_settings = std::make_shared<PersistentSettings>(gui_configs_dir);
 
-    MainWindow mainwindow(emuenv, gui_settings, persistent_settings, admin_priv);
+    GuiApplication gui_app(emuenv, gui_settings);
 
-    mainwindow.show();
-    if (mainwindow.prompt_startup_warnings())
+    if (!cfg.no_gui) {
+        MainWindow mainwindow(emuenv, gui_settings, persistent_settings, &gui_app, admin_priv);
+        mainwindow.show();
+        if (mainwindow.prompt_startup_warnings()) {
+            if (cfg.run_app_path) {
+                QTimer::singleShot(0, &gui_app, [&gui_app, &cfg]() {
+                    const std::string title_id = *cfg.run_app_path;
+                    cfg.run_app_path.reset();
+                    gui_app.boot_game(title_id);
+                });
+            }
+            app.exec();
+        }
+    } else {
+        if (!cfg.run_app_path) {
+            LOG_ERROR("--no-gui requires --installed-path or a content-path to boot.");
+            return InitConfigFailed;
+        }
+        QObject::connect(&gui_app, &GuiApplication::boot_failed, &app, [&app](const QString &msg) {
+            LOG_ERROR("Boot failed: {}", msg.toStdString());
+            app.quit();
+        });
+        QObject::connect(&gui_app, &GuiApplication::game_stopped, &app, &QCoreApplication::quit);
+
+        QTimer::singleShot(0, &gui_app, [&gui_app, &cfg]() {
+            const std::string title_id = *cfg.run_app_path;
+            cfg.run_app_path.reset();
+            gui_app.boot_game(title_id);
+        });
         app.exec();
+    }
 
 #ifdef _WIN32
     CoUninitialize();
