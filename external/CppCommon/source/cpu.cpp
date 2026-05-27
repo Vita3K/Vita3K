@@ -16,6 +16,7 @@
 #include <regex>
 #include <unistd.h>
 #elif defined(_WIN32) || defined(_WIN64)
+#include <cstdlib>
 #include <windows.h>
 #endif
 

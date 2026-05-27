@@ -25,6 +25,7 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 
 struct EmuEnvState;
 struct SceGxmContext;
@@ -67,6 +68,9 @@ struct GxmState {
 
     Ptr<uint32_t> notification_region;
 
+    std::mutex sync_objects_mutex;
+    std::unordered_set<SceGxmSyncObject *> sync_objects;
+
     std::map<Address, MemoryMapInfo> memory_mapped_regions;
     std::mutex callback_lock;
     Address immediate_context = 0;
@@ -76,6 +80,11 @@ struct GxmState {
     void deinit() {
         if (display_host_thread.joinable())
             display_host_thread.join();
+
+        {
+            const std::lock_guard<std::mutex> lock(sync_objects_mutex);
+            sync_objects.clear();
+        }
 
         memory_mapped_regions.clear();
         display_queue.reset();

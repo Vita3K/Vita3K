@@ -38,7 +38,6 @@ namespace overlay {
 fontmgr *fontmgr::m_instance = nullptr;
 std::vector<std::string> fontmgr::s_system_font_dirs;
 std::string fontmgr::s_firmware_font_dir;
-std::string fontmgr::s_fallback_font_dir;
 int fontmgr::s_system_lang = 0;
 
 static bool file_exists(const std::string &path) {
@@ -165,12 +164,6 @@ glyph_load_setup font::get_glyph_files(language_class class_) const {
 #endif
     }
 
-    // Bundled fallback font directorylast resort
-    const auto &fallback_dir = fontmgr::get_fallback_font_dir();
-    if (!fallback_dir.empty()) {
-        result.lookup_font_dirs.push_back(fallback_dir);
-    }
-
     switch (class_) {
     case language_class::default_: {
         result.font_names.clear();
@@ -196,8 +189,6 @@ glyph_load_setup font::get_glyph_files(language_class class_) const {
         result.font_names.emplace_back("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
         result.font_names.emplace_back("/usr/share/fonts/TTF/DejaVuSans.ttf");
 #endif
-        // Bundled font as absolute last resort
-        result.font_names.emplace_back("mplus-1mn-bold.ttf");
         break;
     }
     case language_class::cjk_base: {
@@ -231,9 +222,6 @@ glyph_load_setup font::get_glyph_files(language_class class_) const {
         result.font_names.emplace_back("NotoSansSC-Regular.otf");
         result.font_names.emplace_back("wqy-microhei.ttc");
 #endif
-        // Bundled fallback as last resort
-        result.font_names.emplace_back("SourceHanSansSC-Bold-Min.ttf");
-        break;
     }
     case language_class::hangul: {
         result.font_names.clear();
@@ -256,8 +244,6 @@ glyph_load_setup font::get_glyph_files(language_class class_) const {
         result.font_names.emplace_back("NotoSansKR-Regular.otf");
         result.font_names.emplace_back("NotoSansCJK-Regular.ttc");
 #endif
-        // Bundled fallback as last resort
-        result.font_names.emplace_back("neodgm.ttf");
         break;
     }
     }

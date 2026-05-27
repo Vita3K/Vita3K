@@ -97,7 +97,7 @@ void State::update_overlays() {
                 dlg = overlay_manager->create<overlay::common_dialog_overlay>();
                 just_created = true;
             }
-            if (dlg->poll_dialog(*common_dialog, sys_date_format)
+            if (dlg->poll_dialog(*common_dialog, sys_date_format, sys_button)
                 && common_dialog->type != TROPHY_SETUP_DIALOG) {
                 if (just_created || dlg->input_loop_exited()) {
                     dlg->reset_input_loop();
@@ -114,8 +114,8 @@ void State::update_overlays() {
 void State::init_overlay_font_dirs() {
     overlay::fontmgr::set_system_lang(sys_lang);
 
-    if (window_callbacks.get_font_dirs) {
-        overlay::fontmgr::set_system_font_dirs(window_callbacks.get_font_dirs());
+    if (frame) {
+        overlay::fontmgr::set_system_font_dirs(frame->font_dirs());
     }
 
     if (!pref_path.empty()) {
@@ -124,15 +124,6 @@ void State::init_overlay_font_dirs() {
             if (fw_dir.back() != '/' && fw_dir.back() != '\\')
                 fw_dir += '/';
             overlay::fontmgr::set_firmware_font_dir(fw_dir);
-        }
-    }
-
-    {
-        auto dir = fs_utils::path_to_utf8(static_assets / "data" / "fonts");
-        if (!dir.empty()) {
-            if (dir.back() != '/' && dir.back() != '\\')
-                dir += '/';
-            overlay::fontmgr::set_fallback_font_dir(dir);
         }
     }
 
@@ -149,7 +140,6 @@ void State::init_overlay_font_dirs() {
     LOG_INFO("Overlay font system dirs: {} entries", overlay::fontmgr::get_system_font_dirs().size());
     for (const auto &d : overlay::fontmgr::get_system_font_dirs())
         LOG_DEBUG("  system font dir: {}", d);
-    LOG_INFO("Overlay font fallback dir: {}", overlay::fontmgr::get_fallback_font_dir().empty() ? "(none)" : overlay::fontmgr::get_fallback_font_dir());
 }
 
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units) {

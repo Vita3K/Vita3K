@@ -24,11 +24,13 @@
 #include <QEvent>
 #include <QLineEdit>
 #include <QPlainTextEdit>
+#include <QPointer>
 #include <QTextCursor>
+#include <QTimer>
 #include <QToolButton>
 #include <QWidget>
 
-#include <deque>
+class ThemeSurface;
 
 class LogWidget : public custom_dock_widget {
     Q_OBJECT
@@ -51,8 +53,6 @@ private:
     void on_log_message(const QString &msg, int level);
     void drain_pending_messages();
     void append_log_entry(const QString &msg, int level, bool preserve_scroll = true);
-    QColor color_for_level(int level) const;
-    void trim_entries();
     void show_search_bar();
     void hide_search_bar();
     void find_text(bool backwards = false);
@@ -63,11 +63,11 @@ private:
     int effective_buffer_size(int requested_size) const;
 
     QPlainTextEdit *m_log;
-    QWidget *m_search_container = nullptr;
+    QPointer<ThemeSurface> m_search_container;
     QLineEdit *m_search_edit = nullptr;
     QToolButton *m_search_prev_button = nullptr;
     QToolButton *m_search_next_button = nullptr;
     QToolButton *m_search_close_button = nullptr;
     QTextCursor m_current_search_cursor;
-    std::deque<std::pair<QString, int>> m_entries;
+    QTimer *m_drain_timer = nullptr;
 };

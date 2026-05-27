@@ -17,6 +17,7 @@ add_library(
 	src/modules/reverb.cpp
 	src/definitions.cpp
 	src/ngs.cpp
+	src/rate_resampler.cpp
 	src/route.cpp
 	src/scheduler.cpp)
 

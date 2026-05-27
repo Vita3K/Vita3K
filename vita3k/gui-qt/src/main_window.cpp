@@ -39,10 +39,12 @@
 #include <gui-qt/qt_utils.h>
 #include <gui-qt/settings_dialog.h>
 #include <gui-qt/settings_dialog_tooltips.h>
-#include <gui-qt/stylesheets.h>
+#include <gui-qt/theme_manager.h>
+#include <gui-qt/theme_surface.h>
 #include <gui-qt/trophy_collection_dialog.h>
 #include <gui-qt/update_manager.h>
 #include <gui-qt/user_management_dialog.h>
+#include <gui-qt/vita_themes_dialog.h>
 #include <gui-qt/welcome_dialog.h>
 
 #include <app/functions.h>
@@ -90,8 +92,7 @@
 #include <QMessageBox>
 #include <QMimeData>
 #include <QOpenGLContext>
-#include <QPalette>
-#include <QProgressDialog>
+#include <QPainter>
 #include <QPushButton>
 #include <QSlider>
 #include <QStandardPaths>
@@ -99,6 +100,7 @@
 #include <QStyleFactory>
 #include <QStyleHints>
 #include <QToolBar>
+#include <QVariantAnimation>
 #include <QWidgetAction>
 #include <QtResource>
 
@@ -127,35 +129,6 @@ void copy_config_for_edit(Config &dst, const Config &src) {
     dst.current_config = src.current_config;
 }
 
-QPalette make_dark_palette() {
-    QPalette palette;
-    const QColor selection_highlight(255, 255, 255, 33);
-    const QColor disabled_selection_highlight(255, 255, 255, 20);
-
-    palette.setColor(QPalette::Window, QColor(45, 45, 48));
-    palette.setColor(QPalette::WindowText, QColor(243, 243, 243));
-    palette.setColor(QPalette::Base, QColor(30, 30, 30));
-    palette.setColor(QPalette::AlternateBase, QColor(38, 38, 41));
-    palette.setColor(QPalette::ToolTipBase, QColor(45, 45, 48));
-    palette.setColor(QPalette::ToolTipText, QColor(243, 243, 243));
-    palette.setColor(QPalette::Text, QColor(243, 243, 243));
-    palette.setColor(QPalette::Button, QColor(45, 45, 48));
-    palette.setColor(QPalette::ButtonText, QColor(243, 243, 243));
-    palette.setColor(QPalette::BrightText, Qt::white);
-    palette.setColor(QPalette::Link, QColor(66, 156, 255));
-    palette.setColor(QPalette::Highlight, selection_highlight);
-    palette.setColor(QPalette::Inactive, QPalette::Highlight, selection_highlight);
-    palette.setColor(QPalette::Disabled, QPalette::Highlight, disabled_selection_highlight);
-    palette.setColor(QPalette::HighlightedText, Qt::white);
-    palette.setColor(QPalette::Inactive, QPalette::HighlightedText, Qt::white);
-    palette.setColor(QPalette::Disabled, QPalette::HighlightedText, QColor(200, 200, 200));
-    palette.setColor(QPalette::PlaceholderText, QColor(160, 160, 160));
-    palette.setColor(QPalette::Disabled, QPalette::Text, QColor(115, 115, 115));
-    palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(115, 115, 115));
-    palette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(115, 115, 115));
-    return palette;
-}
-
 void update_status_button_accent(QPushButton *button, const QString &accent) {
     if (!button)
         return;
@@ -165,11 +138,8 @@ void update_status_button_accent(QPushButton *button, const QString &accent) {
 
     if (button->property("accent").toString() != accent) {
         button->setProperty("accent", accent);
-        button->style()->unpolish(button);
-        button->style()->polish(button);
+        gui::utils::refresh_theme_state(button);
     }
-
-    button->update();
 }
 
 } // namespace
@@ -212,9 +182,6 @@ void MainWindow::register_auxiliary_window(QWidget *window) {
         return;
 
     m_auxiliary_windows.push_back(window);
-    connect(window, &QObject::destroyed, this, [this](QObject *) {
-        prune_auxiliary_windows();
-    });
 }
 
 void MainWindow::prune_auxiliary_windows() {
@@ -285,6 +252,39 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
     save_window_state();
     QMainWindow::closeEvent(event);
+}
+
+void MainWindow::paintEvent(QPaintEvent *event) {
+    QMainWindow::paintEvent(event);
+
+    if (m_theme_background_scaled_pixmaps.empty())
+        return;
+
+    if (m_theme_background_scaled_size != size())
+        rescale_theme_background_pixmaps();
+    if (m_theme_background_scaled_pixmaps.empty())
+        return;
+
+    const int current_index = std::clamp(m_theme_background_current_index, 0,
+        static_cast<int>(m_theme_background_scaled_pixmaps.size()) - 1);
+
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+
+    const auto draw_index = [this, &painter](const int index, const qreal opacity) {
+        if (index < 0 || index >= static_cast<int>(m_theme_background_scaled_pixmaps.size()) || opacity <= 0.0)
+            return;
+
+        painter.setOpacity(opacity);
+        painter.drawPixmap(rect(), m_theme_background_scaled_pixmaps[static_cast<std::size_t>(index)]);
+    };
+
+    if (m_theme_background_next_index >= 0 && m_theme_background_next_index < static_cast<int>(m_theme_background_scaled_pixmaps.size())) {
+        draw_index(current_index, 1.0 - m_theme_background_fade_progress);
+        draw_index(m_theme_background_next_index, m_theme_background_fade_progress);
+    } else {
+        draw_index(current_index, 1.0);
+    }
 }
 
 void MainWindow::save_window_state() {
@@ -374,6 +374,7 @@ void MainWindow::restore_window_state() {
 void MainWindow::initialize() {
     Q_INIT_RESOURCE(resources);
     m_ui->setupUi(this);
+    setObjectName(QStringLiteral("main_window"));
 
     this->resize(1280, 720);
     this->setWindowIcon(QIcon(":/Vita3K.png"));
@@ -386,11 +387,19 @@ void MainWindow::initialize() {
 
     init_current_user();
 
-    m_dock_host = new QMainWindow(this);
+    auto *shell_frame = new ThemeSurface(this);
+    shell_frame->setObjectName(QStringLiteral("mw_frame"));
+    auto *shell_layout = new QVBoxLayout(shell_frame);
+    shell_layout->setContentsMargins(0, 0, 0, 0);
+    shell_layout->setSpacing(0);
+    setCentralWidget(shell_frame);
+
+    m_dock_host = new QMainWindow(shell_frame);
+    m_dock_host->setObjectName(QStringLiteral("mw_dock_host"));
     m_dock_host->setWindowFlags(Qt::Widget);
     m_dock_host->setContextMenuPolicy(Qt::PreventContextMenu);
     m_dock_host->setDockNestingEnabled(true);
-    setCentralWidget(m_dock_host);
+    shell_layout->addWidget(m_dock_host);
 
     m_apps_list_widget = new AppsList(emuenv, m_dock_host);
     m_apps_list_widget->refresh();
@@ -422,6 +431,9 @@ void MainWindow::initialize() {
 
     connect(m_ui->trophy_collection_action, &QAction::triggered,
         this, &MainWindow::open_trophy_collection);
+
+    connect(m_ui->vita_themes_action, &QAction::triggered,
+        this, &MainWindow::open_vita_themes);
 
     connect(m_ui->user_management_action, &QAction::triggered,
         this, &MainWindow::open_user_management);
@@ -500,7 +512,35 @@ void MainWindow::initialize() {
 
     apply_log_gui_settings();
 
-    init_default_style();
+    m_theme_manager = std::make_unique<ThemeManager>(m_gui_settings);
+    m_theme_manager->set_pref_path(emuenv.pref_path);
+    m_theme_manager->set_vita_themes_root(emuenv.pref_path / "ux0/theme");
+    connect(m_theme_manager.get(), &ThemeManager::theme_state_changed, this, &MainWindow::repaint_gui);
+    connect(m_theme_manager.get(), &ThemeManager::theme_state_changed, this, &MainWindow::apply_theme_background_presentation);
+
+    m_theme_background_cycle_timer = new QTimer(this);
+    connect(m_theme_background_cycle_timer, &QTimer::timeout, this, &MainWindow::advance_theme_background_presentation);
+
+    m_theme_background_fade_animation = new QVariantAnimation(this);
+    m_theme_background_fade_animation->setDuration(900);
+    m_theme_background_fade_animation->setStartValue(0.0);
+    m_theme_background_fade_animation->setEndValue(1.0);
+    m_theme_background_fade_animation->setEasingCurve(QEasingCurve::InOutSine);
+    connect(m_theme_background_fade_animation, &QVariantAnimation::valueChanged, this, [this](const QVariant &value) {
+        m_theme_background_fade_progress = value.toReal();
+        update();
+    });
+    connect(m_theme_background_fade_animation, &QVariantAnimation::finished, this, [this] {
+        if (m_theme_background_next_index >= 0)
+            m_theme_background_current_index = m_theme_background_next_index;
+
+        m_theme_background_next_index = -1;
+        m_theme_background_fade_progress = 0.0;
+        if (m_theme_background_cycle_timer && m_theme_background_scaled_pixmaps.size() > 1)
+            m_theme_background_cycle_timer->start(m_theme_background_cycle_interval_ms);
+        update();
+    });
+
     init_first_run_stylesheet();
     apply_stylesheet();
 
@@ -580,6 +620,10 @@ void MainWindow::on_install_license_triggered() {
 
 void MainWindow::on_install_finished() {
     m_apps_list_widget->refresh(true);
+    if (m_theme_manager)
+        m_theme_manager->refresh_vita_theme_catalog();
+    if (m_vita_themes_dialog)
+        m_vita_themes_dialog->reload();
 }
 
 bool MainWindow::prompt_startup_warnings() {
@@ -670,31 +714,11 @@ void MainWindow::handle_drop(const QString &path) {
     const std::string ext = string_utils::tolower(drop_path.extension().string());
 
     if (ext == ".pup") {
-        QProgressDialog prog(tr("Installing firmware\u2026"),
-            /*cancel=*/QString(), 0, 100, this);
-        prog.setWindowTitle(tr("Install Firmware"));
-        prog.setWindowModality(Qt::WindowModal);
-        prog.setMinimumDuration(0);
-        prog.setValue(0);
-
-        const std::string fw_version = install_pup(
-            emuenv.pref_path,
-            drop_path,
-            [&prog](uint32_t pct) {
-                prog.setValue(static_cast<int>(pct));
-                QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-            });
-
-        prog.setValue(100);
-
-        if (!fw_version.empty()) {
-            LOG_INFO("Firmware {} installed successfully via drop!", fw_version);
-            on_install_finished();
-        } else {
-            QMessageBox::critical(this, tr("Install Failed"),
-                tr("Failed to install the dropped firmware file.\n"
-                   "Check the log for details."));
-        }
+        auto *dlg = new FirmwareInstallDialog(emuenv, path, this);
+        connect(dlg, &FirmwareInstallDialog::install_complete,
+            this, &MainWindow::on_install_finished);
+        connect(dlg, &QDialog::finished, dlg, &QObject::deleteLater);
+        dlg->exec();
 
     } else if (ext == ".vpk" || ext == ".zip") {
         auto *dlg = new ArchiveInstallDialog(emuenv, { drop_path }, this);
@@ -747,9 +771,6 @@ void MainWindow::on_controls_action_triggered() {
     if (!m_controls_dialog) {
         m_controls_dialog = new ControlsDialog(emuenv, m_gui_settings);
         register_auxiliary_window(m_controls_dialog);
-        connect(m_controls_dialog, &QObject::destroyed, this, [this] {
-            m_controls_dialog = nullptr;
-        });
     }
     present_tool_window(m_controls_dialog);
 }
@@ -761,13 +782,18 @@ void MainWindow::on_check_for_updates_action_triggered() {
 
 void MainWindow::open_settings(int tab_index) {
     if (!m_settings_dialog) {
-        m_settings_dialog = new SettingsDialog(emuenv, m_gui_settings, {}, tab_index);
+        m_settings_dialog = new SettingsDialog(emuenv, m_gui_settings, *m_theme_manager, {}, tab_index);
         register_auxiliary_window(m_settings_dialog);
         connect(m_settings_dialog, &SettingsDialog::gui_stylesheet_request, this, &MainWindow::apply_stylesheet);
+        connect(m_settings_dialog, &SettingsDialog::gui_theme_music_settings_request, this, [this] {
+            if (m_theme_manager)
+                m_theme_manager->refresh_vita_theme_bgm();
+        });
         connect(m_settings_dialog, &SettingsDialog::gui_log_settings_request, this, &MainWindow::apply_log_gui_settings);
         connect(m_settings_dialog, &SettingsDialog::storage_path_changed, this, [this] {
             if (m_apps_list_widget)
                 m_apps_list_widget->refresh(true);
+            apply_stylesheet();
         });
         connect(m_settings_dialog, &SettingsDialog::ui_language_request, this, &MainWindow::apply_ui_language);
         connect(m_settings_dialog, &SettingsDialog::restart_game_requested, this, &MainWindow::restart_running_app);
@@ -775,9 +801,6 @@ void MainWindow::open_settings(int tab_index) {
             sync_discord_presence();
             refresh_status_bar();
             apply_log_gui_settings();
-        });
-        connect(m_settings_dialog, &QObject::destroyed, this, [this] {
-            m_settings_dialog = nullptr;
         });
     }
 
@@ -817,7 +840,7 @@ bool MainWindow::handle_pending_app_launch_request() {
 }
 
 void MainWindow::apply_ui_language(const QString &locale_tag) {
-    gui::i18n::apply_ui_language(*qApp, locale_tag.toStdString());
+    gui::i18n::apply_ui_language(*qApp, locale_tag.toStdString(), emuenv.static_assets_path);
 }
 
 void MainWindow::init_current_user() {
@@ -904,6 +927,8 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
             tr("Could not find app '%1' in apps list.").arg(QString::fromStdString(launch_request.app_path)));
         return std::nullopt;
     }
+    if (m_theme_manager)
+        m_theme_manager->set_vita_theme_bgm_blocked(true);
 
     bool launch_fullscreen = emuenv.cfg.boot_apps_full_screen;
     if (m_game_container) {
@@ -911,10 +936,9 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     }
 
     m_game_window = new GameWindow(emuenv, m_gui_settings, emuenv.backend_renderer, screen());
-    m_game_window->setTitle(tr("%1 | %2 (%3) | Loading...")
-                                .arg(QString::fromStdString(window_title),
-                                    QString::fromStdString(emuenv.current_app_title),
-                                    QString::fromStdString(emuenv.io.title_id)));
+    m_game_window->setTitle(tr("%1 (%2) | Loading...")
+            .arg(QString::fromStdString(emuenv.current_app_title),
+                QString::fromStdString(emuenv.io.title_id)));
     m_game_window->setIcon(windowIcon());
     if (m_live_area_widget)
         m_game_window->setGeometry(m_live_area_widget->geometry());
@@ -924,6 +948,8 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         m_live_area_widget->deleteLater();
         m_live_area_widget = nullptr;
     }
+
+    m_game_window->create();
 
     m_game_container = m_game_window;
     m_game_window->show();
@@ -941,6 +967,8 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     const auto abort_boot = [&](const QString &msg) {
         QMessageBox::critical(this, tr("Error"), msg);
         m_app_session.stop(app::AppSessionStopReason::LaunchFailure);
+        if (m_theme_manager)
+            m_theme_manager->set_vita_theme_bgm_blocked(false);
 
         if (m_game_window) {
             delete m_game_window;
@@ -948,78 +976,6 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         }
         m_game_container = nullptr;
     };
-
-    renderer::WindowCallbacks callbacks;
-#ifdef _WIN32
-    callbacks.get_native_handle = [win = m_game_window]() -> void * {
-        return reinterpret_cast<void *>(win->winId());
-    };
-    callbacks.native_handle = reinterpret_cast<void *>(m_game_window->winId());
-    callbacks.display_protocol = renderer::DisplayProtocol::Win32;
-#elif defined(__APPLE__)
-    callbacks.get_native_handle = [win = m_game_window]() -> void * {
-        return reinterpret_cast<void *>(win->winId());
-    };
-    callbacks.native_handle = reinterpret_cast<void *>(m_game_window->winId());
-    callbacks.display_protocol = renderer::DisplayProtocol::MacOS;
-#elif defined(HAVE_X11) || defined(HAVE_WAYLAND)
-    {
-        QPlatformNativeInterface *native = QGuiApplication::platformNativeInterface();
-        if (native) {
-#if defined(HAVE_WAYLAND)
-            auto *wl_dpy = native->nativeResourceForWindow("display", nullptr);
-            auto *wl_surf = native->nativeResourceForWindow("surface",
-                const_cast<QWindow *>(static_cast<const QWindow *>(m_game_window)));
-            if (wl_dpy && wl_surf) {
-                callbacks.get_native_handle = [native, win = m_game_window]() -> void * {
-                    return native->nativeResourceForWindow("surface",
-                        const_cast<QWindow *>(static_cast<const QWindow *>(win)));
-                };
-                callbacks.native_handle = wl_surf;
-                callbacks.native_display = wl_dpy;
-                callbacks.display_protocol = renderer::DisplayProtocol::Wayland;
-                LOG_INFO("Using Wayland display protocol for Vulkan surface");
-            } else
-#endif
-#if defined(HAVE_X11)
-            {
-                void *x11_display = native->nativeResourceForIntegration("display");
-                void *xcb_connection = native->nativeResourceForIntegration("connection");
-                callbacks.get_native_handle = [win = m_game_window]() -> void * {
-                    return reinterpret_cast<void *>(win->winId());
-                };
-                callbacks.native_handle = reinterpret_cast<void *>(m_game_window->winId());
-                callbacks.native_display = x11_display;
-                callbacks.native_connection = xcb_connection;
-                callbacks.display_protocol = renderer::DisplayProtocol::X11;
-                LOG_INFO("Using X11 display protocol for Vulkan surface");
-            }
-#endif
-        } else {
-            LOG_ERROR("Could not get QPlatformNativeInterface, display protocol unknown");
-        }
-    }
-#endif
-    callbacks.get_size = [win = m_game_window]() -> renderer::WindowSize {
-        return {
-            .width = win->client_width_px(),
-            .height = win->client_height_px()
-        };
-    };
-    callbacks.get_font_dirs = []() -> std::vector<std::string> {
-        const QStringList locations = QStandardPaths::standardLocations(QStandardPaths::FontsLocation);
-        std::vector<std::string> font_dirs;
-        for (const QString &location : locations) {
-            std::string font_dir = location.toUtf8().constData();
-            if (!font_dir.ends_with('/') && !font_dir.ends_with('\\'))
-                font_dir += '/';
-            font_dirs.push_back(font_dir);
-        }
-        return font_dirs;
-    };
-
-    app::AppSessionPlatform platform;
-    platform.window_callbacks = callbacks;
 
     if (emuenv.backend_renderer == renderer::Backend::OpenGL) {
         if (!m_game_window->create_gl_context()) {
@@ -1030,60 +986,25 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
             abort_boot(tr("Could not make OpenGL context current."));
             return {};
         }
-        auto *gl_ctx = m_game_window->gl_context();
-        platform.window_callbacks.get_proc_address = [gl_ctx](const char *name) -> void * {
-            return reinterpret_cast<void *>(
-                reinterpret_cast<uintptr_t>(gl_ctx->getProcAddress(name)));
-        };
-        platform.window_callbacks.default_fbo = [gl_ctx]() -> unsigned int {
-            return gl_ctx->defaultFramebufferObject();
-        };
-        platform.window_callbacks.swap = [win = m_game_window]() {
-            win->swap_buffers();
-        };
-        platform.window_callbacks.set_vsync = [win = m_game_window](bool enabled) -> bool {
-            return win->set_vsync_enabled(enabled);
-        };
-        platform.window_callbacks.set_current = [win = m_game_window]() -> bool {
-            return win->make_current();
-        };
-        platform.window_callbacks.done_current = [win = m_game_window]() {
-            win->done_current();
-        };
-        platform.before_render_thread_start = [win = m_game_window]() {
-            win->done_current();
-            win->prepare_gl_for_render_thread();
-        };
-        platform.after_render_thread_start = [win = m_game_window]() {
-            win->complete_gl_migration();
-        };
-        platform.before_renderer_cleanup = [win = m_game_window]() {
-            win->make_current();
-        };
-        platform.destroy_render_context = [win = m_game_window]() {
-            win->destroy_gl_context();
-        };
     }
 
-    if (!m_app_session.initialize_renderer(platform)) {
+    if (!m_app_session.initialize_renderer(*m_game_window)) {
         abort_boot(tr("Failed to initialise the renderer."));
         return {};
     }
 
-    m_game_window->setTitle(tr("%1 | %2 (%3) | Initializing...")
-                                .arg(QString::fromStdString(window_title),
-                                    QString::fromStdString(emuenv.current_app_title),
-                                    QString::fromStdString(emuenv.io.title_id)));
+    m_game_window->setTitle(tr("%1 (%2) | Initializing...")
+            .arg(QString::fromStdString(emuenv.current_app_title),
+                QString::fromStdString(emuenv.io.title_id)));
 
     if (!m_app_session.initialize_runtime()) {
         abort_boot(tr("Failed to initialize emulator state."));
         return {};
     }
 
-    m_game_window->setTitle(tr("%1 | %2 (%3) | Loading modules...")
-                                .arg(QString::fromStdString(window_title),
-                                    QString::fromStdString(emuenv.current_app_title),
-                                    QString::fromStdString(emuenv.io.title_id)));
+    m_game_window->setTitle(tr("%1 (%2) | Loading modules...")
+            .arg(QString::fromStdString(emuenv.current_app_title),
+                QString::fromStdString(emuenv.io.title_id)));
 
     if (!m_app_session.load_and_run()) {
         abort_boot(tr("Failed to start game threads."));
@@ -1116,10 +1037,9 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
 
     m_game_window->start_ui_updates();
 
-    m_game_window->setTitle(tr("%1 | %2 (%3) | Please wait, loading...")
-                                .arg(QString::fromStdString(window_title),
-                                    QString::fromStdString(emuenv.current_app_title),
-                                    QString::fromStdString(emuenv.io.title_id)));
+    m_game_window->setTitle(tr("%1 (%2) | Please wait, loading...")
+            .arg(QString::fromStdString(emuenv.current_app_title),
+                QString::fromStdString(emuenv.io.title_id)));
 
     LOG_INFO("Game started: {} ({})", emuenv.current_app_title, launch_request.app_path);
 
@@ -1159,6 +1079,8 @@ void MainWindow::on_game_closed() {
 
     if (m_settings_dialog)
         m_settings_dialog->set_storage_path_locked(false);
+    if (m_theme_manager && !m_is_app_closing)
+        m_theme_manager->set_vita_theme_bgm_blocked(false);
     refresh_emulation_actions();
 
     if (!m_is_app_closing && m_apps_list_widget)
@@ -1275,9 +1197,9 @@ void MainWindow::show_live_area(const std::string &title_id) {
     m_game_container = m_live_area_widget;
 
     m_live_area_widget->setTitle(tr("%1 | %2 (%3)")
-                                     .arg(QString::fromStdString(window_title),
-                                         QString::fromStdString(emuenv.current_app_title),
-                                         QString::fromStdString(emuenv.io.title_id)));
+            .arg(QString::fromStdString(window_title),
+                QString::fromStdString(emuenv.current_app_title),
+                QString::fromStdString(emuenv.io.title_id)));
     m_live_area_widget->setIcon(windowIcon());
     m_live_area_widget->installEventFilter(this);
     m_live_area_widget->show();
@@ -1454,11 +1376,17 @@ void MainWindow::open_trophy_collection() {
     if (!m_trophy_dialog) {
         m_trophy_dialog = new TrophyCollectionDialog(emuenv, m_gui_settings);
         register_auxiliary_window(m_trophy_dialog);
-        connect(m_trophy_dialog, &QObject::destroyed, this, [this] {
-            m_trophy_dialog = nullptr;
-        });
     }
     present_tool_window(m_trophy_dialog);
+}
+
+void MainWindow::open_vita_themes() {
+    if (!m_vita_themes_dialog) {
+        m_vita_themes_dialog = new VitaThemesDialog(m_gui_settings, *m_theme_manager, this);
+        register_auxiliary_window(m_vita_themes_dialog);
+    }
+
+    present_tool_window(m_vita_themes_dialog);
 }
 
 void MainWindow::open_user_management() {
@@ -1475,9 +1403,6 @@ void MainWindow::open_user_management() {
                 if (m_trophy_dialog)
                     m_trophy_dialog->reload();
             });
-        connect(m_user_mgmt_dialog, &QObject::destroyed, this, [this] {
-            m_user_mgmt_dialog = nullptr;
-        });
     }
     present_tool_window(m_user_mgmt_dialog);
 }
@@ -1486,9 +1411,6 @@ void MainWindow::open_debug_widget(int tab) {
     if (!m_debug_widget) {
         m_debug_widget = new DebugWidget(emuenv, this);
         m_debug_widget->setFloating(true);
-        connect(m_debug_widget, &QObject::destroyed, this, [this] {
-            m_debug_widget = nullptr;
-        });
     }
     m_debug_widget->show_tab(tab);
 }
@@ -1540,7 +1462,7 @@ void MainWindow::setup_toolbar() {
     connect(m_ui->toolbar_controls, &QAction::triggered,
         this, &MainWindow::on_controls_action_triggered);
 
-    m_slider_container = new QWidget(this);
+    m_slider_container = new ThemeSurface(this);
     m_slider_container->setObjectName(QStringLiteral("toolbar_icon_size_container"));
     auto *slider_layout = new QHBoxLayout(m_slider_container);
     slider_layout->setContentsMargins(14, 0, 14, 0);
@@ -1561,6 +1483,7 @@ void MainWindow::setup_toolbar() {
         this, &MainWindow::resize_icons);
 
     m_search_bar = new QLineEdit(this);
+    m_search_bar->setObjectName(QStringLiteral("mw_searchbar"));
     m_search_bar->setPlaceholderText(tr("Search..."));
     m_search_bar->setFocusPolicy(Qt::ClickFocus);
     m_search_bar->setClearButtonEnabled(true);
@@ -1594,20 +1517,6 @@ void MainWindow::repaint_gui() {
     update();
 }
 
-void MainWindow::init_default_style() {
-    if (QStyleFactory::keys().contains(QStringLiteral("Fusion"), Qt::CaseInsensitive))
-        m_default_style = QStringLiteral("Fusion");
-
-    if (m_default_style.isEmpty()) {
-        if (const QStyle *style = QApplication::style())
-            m_default_style = style->name();
-    }
-    if (m_default_style.isEmpty()) {
-        if (const QStringList styles = QStyleFactory::keys(); !styles.empty())
-            m_default_style = styles.front();
-    }
-}
-
 void MainWindow::init_first_run_stylesheet() {
     if (!m_gui_settings || m_gui_settings->contains_value(gui::m_currentStylesheet))
         return;
@@ -1620,69 +1529,116 @@ void MainWindow::init_first_run_stylesheet() {
 }
 
 void MainWindow::apply_stylesheet() {
-    if (!m_gui_settings)
+    if (!m_theme_manager)
+        return;
+    m_theme_manager->ensure_generated_theme_ready(emuenv.pref_path / "ux0/theme");
+    m_theme_manager->apply_theme({}, true);
+}
+
+void MainWindow::apply_theme_background_presentation() {
+    if (!m_theme_manager) {
+        clear_theme_background_presentation();
+        return;
+    }
+
+    const auto state = m_theme_manager->current_applied_theme_state();
+    if (!state || state->background.image_paths.isEmpty()) {
+        clear_theme_background_presentation();
+        return;
+    }
+
+    std::vector<QPixmap> next_pixmaps;
+    next_pixmaps.reserve(static_cast<std::size_t>(state->background.image_paths.size()));
+    for (const QString &path : state->background.image_paths) {
+        QPixmap pixmap(path);
+        if (!pixmap.isNull())
+            next_pixmaps.push_back(std::move(pixmap));
+    }
+
+    if (next_pixmaps.empty()) {
+        clear_theme_background_presentation();
+        return;
+    }
+
+    if (m_theme_background_cycle_timer)
+        m_theme_background_cycle_timer->stop();
+    if (m_theme_background_fade_animation)
+        m_theme_background_fade_animation->stop();
+
+    m_theme_background_original_pixmaps = std::move(next_pixmaps);
+    m_theme_background_scaled_pixmaps.clear();
+    m_theme_background_scaled_size = {};
+    m_theme_background_cycle_interval_ms = state->background.interval_ms;
+    m_theme_background_current_index = 0;
+    m_theme_background_next_index = -1;
+    m_theme_background_fade_progress = 0.0;
+    rescale_theme_background_pixmaps();
+
+    if (m_theme_background_cycle_timer && state->background.animated && m_theme_background_scaled_pixmaps.size() > 1)
+        m_theme_background_cycle_timer->start(m_theme_background_cycle_interval_ms);
+    update();
+}
+
+void MainWindow::clear_theme_background_presentation() {
+    if (m_theme_background_cycle_timer)
+        m_theme_background_cycle_timer->stop();
+    if (m_theme_background_fade_animation)
+        m_theme_background_fade_animation->stop();
+
+    m_theme_background_original_pixmaps.clear();
+    m_theme_background_scaled_pixmaps.clear();
+    m_theme_background_scaled_size = {};
+    m_theme_background_current_index = 0;
+    m_theme_background_next_index = -1;
+    m_theme_background_fade_progress = 0.0;
+    update();
+}
+
+void MainWindow::rescale_theme_background_pixmaps() {
+    m_theme_background_scaled_pixmaps.clear();
+    if (m_theme_background_original_pixmaps.empty() || size().isEmpty()) {
+        m_theme_background_scaled_size = {};
+        return;
+    }
+
+    m_theme_background_scaled_size = size();
+    m_theme_background_scaled_pixmaps.reserve(m_theme_background_original_pixmaps.size());
+    for (const QPixmap &pixmap : m_theme_background_original_pixmaps) {
+        m_theme_background_scaled_pixmaps.push_back(pixmap.scaled(
+            m_theme_background_scaled_size,
+            Qt::IgnoreAspectRatio,
+            Qt::SmoothTransformation));
+    }
+}
+
+void MainWindow::advance_theme_background_presentation() {
+    if (!m_theme_background_fade_animation || m_theme_background_scaled_pixmaps.size() < 2)
         return;
 
-    const QString stylesheet_name = m_gui_settings->get_value(gui::m_currentStylesheet).toString();
-
-    if (QStyle *style = QStyleFactory::create(m_default_style)) {
-        QApplication::setStyle(style);
-        QApplication::setPalette(style->standardPalette());
+    if (!isVisible() || isMinimized()) {
+        if (m_theme_background_cycle_timer)
+            m_theme_background_cycle_timer->start(1000);
+        return;
     }
 
-    if (stylesheet_name.isEmpty() || stylesheet_name == gui::LightStylesheet) {
-        LOG_INFO("Using light stylesheet");
-        if (QStyle *fusion = QStyleFactory::create(QStringLiteral("Fusion"))) {
-            QApplication::setStyle(fusion);
-            QApplication::setPalette(fusion->standardPalette());
-        }
-        qApp->setStyleSheet(gui::stylesheets::light_style_sheet);
-    } else if (stylesheet_name == gui::DarkStylesheet) {
-        LOG_INFO("Using dark stylesheet");
-        if (QStyle *fusion = QStyleFactory::create(QStringLiteral("Fusion"))) {
-            QApplication::setStyle(fusion);
-            QApplication::setPalette(fusion->standardPalette());
-        }
-        QApplication::setPalette(make_dark_palette());
-        qApp->setStyleSheet(gui::stylesheets::dark_style_sheet);
-    } else if (stylesheet_name == gui::NoStylesheet) {
-        LOG_INFO("Using empty stylesheet");
-        qApp->setStyleSheet(QStringLiteral("/* none */"));
-    } else {
-        const QString settings_dir = m_gui_settings->get_settings_dir();
-        const QString stylesheet_path = settings_dir + QStringLiteral("/") + stylesheet_name + QStringLiteral(".qss");
+    if (m_theme_background_fade_animation->state() == QAbstractAnimation::Running)
+        return;
 
-        if (QFile file(stylesheet_path); file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QString qss = file.readAll();
-            file.close();
-
-            qss.replace(
-                QStringLiteral("url(\"gui-configs/"),
-                QStringLiteral("url(\"") + settings_dir + QStringLiteral("/"));
-
-            LOG_INFO("Loaded stylesheet '{}' from {}", stylesheet_name.toUtf8().constData(), stylesheet_path.toUtf8().constData());
-            qApp->setStyleSheet(qss);
-        } else {
-            LOG_ERROR("Could not find stylesheet '{}', falling back to light", stylesheet_name.toUtf8().constData());
-            qApp->setStyleSheet(gui::stylesheets::light_style_sheet);
-        }
-    }
-
-    repaint_gui();
+    m_theme_background_next_index = (m_theme_background_current_index + 1)
+        % static_cast<int>(m_theme_background_scaled_pixmaps.size());
+    m_theme_background_fade_progress = 0.0;
+    m_theme_background_fade_animation->start();
 }
 
 void MainWindow::repaint_toolbar_icons() {
     auto *tb = m_ui->toolBar;
-    const QColor fg = gui::utils::get_label_color(
-        QStringLiteral("toolbar_icon_color"),
-        QColor(QStringLiteral("#5b5b5b")),
-        QColor(QStringLiteral("#f3f3f3")));
+    const QColor fg = gui::utils::toolbar_icon_tint();
 
     std::map<QIcon::Mode, QColor> new_colors;
-    new_colors[QIcon::Normal] = gui::utils::get_label_color(fg, fg);
-    new_colors[QIcon::Disabled] = gui::utils::get_label_color(Qt::gray, Qt::darkGray);
-    new_colors[QIcon::Active] = gui::utils::get_label_color(fg, fg);
-    new_colors[QIcon::Selected] = gui::utils::get_label_color(fg, fg);
+    new_colors[QIcon::Normal] = fg;
+    new_colors[QIcon::Disabled] = gui::utils::muted_text_color();
+    new_colors[QIcon::Active] = fg;
+    new_colors[QIcon::Selected] = fg;
 
     const auto icon = [&new_colors](const QString &path) {
         return gui::utils::get_colorized_icon(QIcon(path), Qt::black, new_colors);
@@ -1779,9 +1735,13 @@ void MainWindow::on_context_menu_requested(const QPoint &global_pos, const std::
         });
     connect(&menu, &AppsListContextMenu::open_settings_requested,
         this, [this](const std::string &app_path, int tab) {
-            auto *dlg = new SettingsDialog(emuenv, m_gui_settings, app_path, tab);
+            auto *dlg = new SettingsDialog(emuenv, m_gui_settings, *m_theme_manager, app_path, tab);
             register_auxiliary_window(dlg);
             connect(dlg, &SettingsDialog::gui_stylesheet_request, this, &MainWindow::apply_stylesheet);
+            connect(dlg, &SettingsDialog::gui_theme_music_settings_request, this, [this] {
+                if (m_theme_manager)
+                    m_theme_manager->refresh_vita_theme_bgm();
+            });
             connect(dlg, &SettingsDialog::gui_log_settings_request, this, &MainWindow::apply_log_gui_settings);
             connect(dlg, &SettingsDialog::ui_language_request, this, &MainWindow::apply_ui_language);
             connect(dlg, &SettingsDialog::restart_game_requested, this, &MainWindow::restart_running_app);
@@ -1810,7 +1770,7 @@ void MainWindow::resize_icons(int index) {
 
 void MainWindow::setup_status_bar() {
     auto *sb = statusBar();
-    sb->setObjectName(QStringLiteral("emulatorStatusBar"));
+    sb->setObjectName(QStringLiteral("emulator_status_bar"));
 
     m_renderer_button = new QPushButton(this);
     m_renderer_button->setObjectName(QStringLiteral("status_button"));

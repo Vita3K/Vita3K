@@ -22,6 +22,7 @@ namespace ngs {
 
 class OutputModule : public Module {
 public:
+    void initialize_voice_data(ModuleData &data) const override;
     bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) override;
 
     static constexpr uint32_t get_max_parameter_size() {

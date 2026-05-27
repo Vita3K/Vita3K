@@ -117,7 +117,6 @@ private:
     static fontmgr *m_instance;
     static std::vector<std::string> s_system_font_dirs;
     static std::string s_firmware_font_dir;
-    static std::string s_fallback_font_dir;
     static int s_system_lang;
 
     font *find(std::string_view name, int size, bool bold) {
@@ -161,14 +160,6 @@ public:
         return s_firmware_font_dir;
     }
 
-    static void set_fallback_font_dir(const std::string &dir) {
-        s_fallback_font_dir = dir;
-    }
-
-    static const std::string &get_fallback_font_dir() {
-        return s_fallback_font_dir;
-    }
-
     // System language (SceSystemParamLang value) for language-aware font selection
     static void set_system_lang(int lang) {
         s_system_lang = lang;
@@ -183,7 +174,6 @@ public:
         m_instance = nullptr;
         s_system_font_dirs.clear();
         s_firmware_font_dir.clear();
-        s_fallback_font_dir.clear();
         s_system_lang = 0;
     }
 };

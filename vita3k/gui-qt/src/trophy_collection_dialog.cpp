@@ -128,7 +128,7 @@ TrophyCollectionDialog::TrophyCollectionDialog(EmuEnvState &emuenv,
     , m_emuenv(emuenv)
     , m_gui_settings(std::move(gui_settings)) {
     setWindowTitle(tr("Trophy Collection"));
-    setObjectName(QStringLiteral("TrophyCollectionDialog"));
+    setObjectName(QStringLiteral("trophy_collection_dialog"));
     setWindowModality(Qt::NonModal);
     setWindowFlag(Qt::WindowSystemMenuHint, true);
     setWindowFlag(Qt::WindowMinMaxButtonsHint, true);
@@ -568,10 +568,10 @@ void TrophyCollectionDialog::update_summary_progress() {
     }
     const int pct = total_trophies > 0 ? (total_unlocked * 100 / total_trophies) : 0;
     m_progress_label->setText(tr("Total: %1% (%2/%3 trophies across %4 apps)")
-                                  .arg(pct)
-                                  .arg(total_unlocked)
-                                  .arg(total_trophies)
-                                  .arg(m_db.size()));
+            .arg(pct)
+            .arg(total_unlocked)
+            .arg(total_trophies)
+            .arg(m_db.size()));
 }
 
 void TrophyCollectionDialog::update_page_controls() {

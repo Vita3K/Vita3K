@@ -44,6 +44,7 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 #include <util/vector_utils.h>
+#include <util/vita_theme_utils.h>
 
 #include <gdbstub/functions.h>
 #include <stb_image_write.h>
@@ -74,6 +75,18 @@ static size_t write_to_buffer(void *pOpaque, mz_uint64 file_ofs, const void *pBu
 
 static const char *miniz_get_error(const ZipPtr &zip) {
     return mz_zip_get_error_string(mz_zip_get_last_error(zip.get()));
+}
+
+static std::string fallback_theme_root_name(const std::string &content_path) {
+    std::string trimmed = content_path;
+    while (!trimmed.empty() && ((trimmed.back() == '/') || (trimmed.back() == '\\')))
+        trimmed.pop_back();
+
+    if (trimmed.empty())
+        return {};
+
+    const auto separator = trimmed.find_last_of("/\\");
+    return (separator == std::string::npos) ? trimmed : trimmed.substr(separator + 1);
 }
 
 static bool is_nonpdrm(EmuEnvState &emuenv, const fs::path &output_path) {
@@ -120,18 +133,32 @@ static bool set_content_path(EmuEnvState &emuenv, const bool is_theme, fs::path 
     return true;
 }
 
-static void set_theme_name(EmuEnvState &emuenv, const vfs::FileBuffer &buffer) {
+static void set_theme_name(EmuEnvState &emuenv, const vfs::FileBuffer &buffer, const std::string &fallback_id_hint = {}) {
+    std::string content_id;
+    std::string title;
+
     pugi::xml_document doc;
     if (doc.load_buffer(buffer.data(), buffer.size())) {
         const auto info = doc.child("theme").child("InfomationProperty");
-        const char *content_id = info.child("m_contentId").text().as_string();
-        const char *title = info.child("m_title").child("m_default").text().as_string();
-        if (content_id[0] != '\0') {
-            emuenv.app_info.app_content_id = content_id;
-            emuenv.app_info.app_title_id = content_id;
-        }
-        if (title[0] != '\0')
-            emuenv.app_info.app_title = title;
+        content_id = info.child("m_contentId").text().as_string();
+        title = info.child("m_title").child("m_default").text().as_string();
+    } else {
+        LOG_WARN("Unable to parse theme.xml metadata during install, falling back to folder/title-derived theme identity");
+    }
+
+    const std::string resolved_id = vita_theme_utils::resolve_theme_id(
+        content_id,
+        fallback_id_hint,
+        title,
+        buffer.empty() ? nullptr : buffer.data(),
+        buffer.size());
+    emuenv.app_info.app_content_id = resolved_id;
+    emuenv.app_info.app_title_id = resolved_id;
+
+    if (!title.empty()) {
+        emuenv.app_info.app_title = title;
+    } else if (emuenv.app_info.app_title.empty()) {
+        emuenv.app_info.app_title = resolved_id;
     }
 }
 
@@ -141,6 +168,7 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
     vfs::FileBuffer buffer, theme;
 
     const auto is_theme = mz_zip_reader_extract_file_to_callback(zip.get(), (content_path + theme_path).c_str(), &write_to_buffer, &theme, 0);
+    const std::string theme_root_name = fallback_theme_root_name(content_path);
 
     auto output_path{ emuenv.pref_path / "ux0" };
     if (mz_zip_reader_extract_file_to_callback(zip.get(), (content_path + sfo_path).c_str(), &write_to_buffer, &buffer, 0)) {
@@ -148,7 +176,7 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
         if (!set_content_path(emuenv, is_theme, output_path))
             return false;
     } else if (is_theme) {
-        set_theme_name(emuenv, theme);
+        set_theme_name(emuenv, theme, theme_root_name);
         output_path /= fs::path("theme") / emuenv.app_info.app_content_id;
     } else {
         LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), sfo_path);
@@ -321,14 +349,14 @@ static bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
             fs::remove_all(dst_path);
 
     } else if (fs_utils::read_data(theme_path, buffer)) {
-        set_theme_name(emuenv, buffer);
+        set_theme_name(emuenv, buffer, fs_utils::path_to_utf8(content_path.filename()));
         dst_path /= fs::path("theme") / fs_utils::utf8_to_path(emuenv.app_info.app_title_id);
     } else {
         LOG_ERROR("Param.sfo file is missing in path", sfo_path);
         return false;
     }
 
-    if (!copy_directories(content_path, dst_path)) {
+    if (!fs_utils::copy_directory_contents(content_path, dst_path)) {
         LOG_ERROR("Failed to copy directory to: {}", dst_path);
         return false;
     }
@@ -434,7 +462,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     } else
         return FileNotFound;
     // Set self name from self path, can contain folder, get file name only
-    emuenv.self_name = fs::path(emuenv.self_path).filename().string();
+    emuenv.self_name = fs_utils::path_to_utf8(fs::path(emuenv.self_path).filename());
 
     // get list of preload modules
     SceUInt32 process_preload_disabled = 0;

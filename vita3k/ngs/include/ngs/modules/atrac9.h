@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <ngs/rate_resampler.h>
 #include <ngs/system.h>
 #include <ngs/types.h>
 
@@ -62,35 +63,44 @@ struct SceNgsAT9States {
     SceInt32 bytes_consumed_since_key_on = 0;
     SceInt32 samples_generated_total = 0;
     SceInt32 total_bytes_consumed = 0;
-
-    // INTERNAL
-    uint32_t decoded_samples_pending = 0;
-    uint32_t decoded_passed = 0;
-    uint32_t nb_channels = 0;
-    // used if the input must be resampled
-    SwrContext *swr = nullptr;
-    int8_t current_loop_count = 0;
-    // necessary if the decoder is using multiple states
-    Atrac9DecoderSavedState saved_state{};
 };
 
 namespace ngs {
+
+struct Atrac9LogicalState : public ModuleLogicalState {
+    PCMFrameQueue decoded_pcm;
+    // preserve enough recent resampler input to rebuild the swresample state later
+    StereoRateResamplerLogicalState rate_resampler;
+    std::vector<uint8_t> superframe_staging;
+    // INTERNAL
+    int8_t current_loop_count = 0;
+    // tracks which config the saved decoder history belongs to
+    uint32_t decoder_config = 0;
+    // preserve the decoder's MDCT history so the runtime decoder can be rebuilt
+    Atrac9DecoderSavedState saved_state{};
+};
+
+struct Atrac9RuntimeState : public ModuleRuntimeState {
+    std::unique_ptr<Atrac9DecoderState> decoder;
+    StereoRateResamplerRuntimeState rate_resampler;
+    std::vector<uint8_t> decoded_superframe_samples;
+    std::vector<uint8_t> temporary_bytes;
+};
+
 class Atrac9Module : public Module {
 private:
-    std::unique_ptr<Atrac9DecoderState> decoder;
-    uint32_t last_config = 0;
-    std::vector<uint8_t> temp_buffer;
-    SceNgsAT9States *last_state = nullptr;
-
     static SwrContext *swr_mono_to_stereo;
     static SwrContext *swr_stereo;
 
     // return false if data could not be decoded (error or no more data available)
-    bool decode_more_data(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, const SceNgsAT9Params *params, SceNgsAT9States *state, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock);
+    bool decode_more_data(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, const SceNgsAT9Params *params, SceNgsAT9States *state, Atrac9LogicalState *logical, Atrac9RuntimeState *runtime, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock);
 
 public:
     bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) override;
     uint32_t module_id() const override { return 0x5CAA; }
+    uint32_t get_guest_state_size() const override { return sizeof(SceNgsAT9States); }
+    std::unique_ptr<ModuleLogicalState> create_logical_state() const override;
+    std::unique_ptr<ModuleRuntimeState> create_runtime_state() const override;
     void on_state_change(const MemState &mem, ModuleData &v, const VoiceState previous) override;
     void on_param_change(const MemState &mem, ModuleData &data) override;
     void cleanup_voice_state(ModuleData &data) override;

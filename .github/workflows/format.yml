@@ -1,0 +1,29 @@
+name: Format Check
+
+on:
+  push:
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+
+jobs:
+  format-check:
+    name: Format Check (${{ matrix.path }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        path:
+          - vita3k
+          - tools
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Format check
+        uses: jidicula/clang-format-action@v4.18.0
+        with:
+          clang-format-version: '22'
+          check-path: ${{ matrix.path }}

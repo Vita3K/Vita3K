@@ -80,6 +80,7 @@ void dump_data(const fs::path &path, const void *data, const std::streamsize siz
 bool read_data(const fs::path &path, std::vector<uint8_t> &data);
 bool read_data(const fs::path &path, std::vector<int8_t> &data);
 bool read_data(const fs::path &path, std::vector<char> &data);
+bool copy_directory_contents(const fs::path &src_path, const fs::path &dst_path, fs::copy_options options = fs::copy_options::overwrite_existing);
 
 } // namespace fs_utils
 

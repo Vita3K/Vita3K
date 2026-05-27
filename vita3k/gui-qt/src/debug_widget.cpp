@@ -375,8 +375,8 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
 
     auto *dlg = new QDialog(this);
     dlg->setWindowTitle(tr("Thread: %1 (0x%2)")
-                            .arg(QString::fromStdString(thread->name))
-                            .arg(thread_id, 8, 16, QLatin1Char('0')));
+            .arg(QString::fromStdString(thread->name))
+            .arg(thread_id, 8, 16, QLatin1Char('0')));
     dlg->setAttribute(Qt::WA_DeleteOnClose);
     dlg->setMinimumSize(420, 480);
 
@@ -399,7 +399,7 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
     layout->addLayout(form);
 
     auto *reg_label = new QLabel(tr("Registers"), dlg);
-    reg_label->setStyleSheet(QStringLiteral("font-weight: bold; margin-top: 8px;"));
+    reg_label->setProperty("themeRole", QStringLiteral("sectionHeader"));
     layout->addWidget(reg_label);
 
     auto *reg_tree = new QTreeWidget(dlg);
@@ -432,7 +432,7 @@ void DebugWidget::on_thread_double_clicked(QTreeWidgetItem *item, int /*column*/
     layout->addWidget(reg_tree);
 
     auto *stack_label = new QLabel(tr("Stack"), dlg);
-    stack_label->setStyleSheet(QStringLiteral("font-weight: bold; margin-top: 8px;"));
+    stack_label->setProperty("themeRole", QStringLiteral("sectionHeader"));
     layout->addWidget(stack_label);
 
     auto *stack_tree = new QTreeWidget(dlg);

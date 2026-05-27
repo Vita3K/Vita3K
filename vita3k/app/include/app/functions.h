@@ -68,7 +68,8 @@ enum class AppRunType {
 
 void init_paths(Root &root_paths);
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths);
-void deinit(EmuEnvState &state);
+void shutdown_app_runtime(EmuEnvState &state);
+void reset_app_state(EmuEnvState &state);
 bool late_init(EmuEnvState &state);
 void apply_renderer_config(EmuEnvState &emuenv);
 void apply_runtime_settings(EmuEnvState &emuenv);

@@ -69,6 +69,11 @@
 #include <optional>
 
 int main(int argc, char *argv[]) {
+#ifdef __APPLE__
+    qputenv("QT_MTL_NO_TRANSACTION", "1");
+    qputenv("QT_MAC_NO_CONTAINER_LAYER", "1");
+#endif
+
     QApplication app(argc, argv);
     QCoreApplication::setOrganizationName(QStringLiteral("Vita3K"));
     QCoreApplication::setApplicationName(QStringLiteral("Vita3K"));
@@ -153,7 +158,7 @@ int main(int argc, char *argv[]) {
         return InitConfigFailed;
     }
 
-    gui::i18n::apply_ui_language(app, cfg.user_lang);
+    gui::i18n::apply_ui_language(app, cfg.user_lang, emuenv.static_assets_path);
 
 #ifdef _WIN32
     {

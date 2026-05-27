@@ -174,6 +174,7 @@ void display_manager::on_overlay_removed(const std::shared_ptr<overlay> &item) {
         return;
     }
 
+    iface->stop_input_processing(true);
     iface->detach_input();
 }
 

@@ -76,7 +76,6 @@ struct CtrlState {
     VirtualKeyboardState keyboard_state;
 
     std::atomic<bool> overlay_input_intercepted{ false };
-    bool ignore_input = false;
 
     struct OverlayMouseState {
         std::atomic<float> x{ 0.f };
@@ -95,7 +94,6 @@ struct CtrlState {
         std::fill_n(last_vcount, 5, 0);
         keyboard_state = {};
         overlay_input_intercepted.store(false, std::memory_order_relaxed);
-        ignore_input = false;
         overlay_mouse.x.store(0.f, std::memory_order_relaxed);
         overlay_mouse.y.store(0.f, std::memory_order_relaxed);
         overlay_mouse.pressed.store(false, std::memory_order_relaxed);

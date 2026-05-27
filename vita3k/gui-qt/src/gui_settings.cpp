@@ -18,8 +18,6 @@
 #include <gui-qt/gui_settings.h>
 
 #include <QDir>
-#include <QDirIterator>
-
 GuiSettings::GuiSettings(const QString &settings_dir, QObject *parent)
     : GuiSettingsBase(parent) {
     m_settings_dir = QDir(settings_dir);
@@ -29,21 +27,4 @@ GuiSettings::GuiSettings(const QString &settings_dir, QObject *parent)
     m_settings = std::make_unique<QSettings>(
         m_settings_dir.filePath(gui::Settings + QStringLiteral(".ini")),
         QSettings::IniFormat, parent);
-}
-
-QStringList GuiSettings::get_stylesheet_entries() const {
-    const QStringList name_filter = QStringList(QStringLiteral("*.qss"));
-    QStringList res;
-
-    {
-        QDirIterator it(m_settings_dir.absolutePath(), name_filter, QDir::Files);
-        while (it.hasNext()) {
-            it.next();
-            res.append(it.fileInfo().completeBaseName());
-        }
-    }
-
-    res.removeDuplicates();
-    res.sort();
-    return res;
 }

@@ -73,8 +73,8 @@ void LicenseInstallDialog::install_from_file() {
     info.setWindowTitle(tr("License Installed"));
     info.setIcon(QMessageBox::Information);
     info.setText(tr("License installed successfully!\n\nContent ID: %1\nTitle ID:   %2")
-                     .arg(QString::fromStdString(m_emuenv.license_content_id),
-                         QString::fromStdString(m_emuenv.license_title_id)));
+            .arg(QString::fromStdString(m_emuenv.license_content_id),
+                QString::fromStdString(m_emuenv.license_title_id)));
     info.exec();
     accept();
 }
@@ -104,8 +104,8 @@ void LicenseInstallDialog::install_from_zrif() {
     info.setWindowTitle(tr("License Installed"));
     info.setIcon(QMessageBox::Information);
     info.setText(tr("License installed successfully!\n\nContent ID: %1\nTitle ID:   %2")
-                     .arg(QString::fromStdString(m_emuenv.license_content_id),
-                         QString::fromStdString(m_emuenv.license_title_id)));
+            .arg(QString::fromStdString(m_emuenv.license_content_id),
+                QString::fromStdString(m_emuenv.license_title_id)));
     info.exec();
     accept();
 }

@@ -17,11 +17,18 @@
 
 #pragma once
 
-#include <QString>
+#include <cstddef>
+#include <cstdint>
+#include <string>
 
-namespace gui::stylesheets {
+namespace vita_theme_utils {
 
-extern const QString light_style_sheet;
-extern const QString dark_style_sheet;
+std::string sanitize_theme_id(std::string value);
+std::string resolve_theme_id(
+    const std::string &content_id,
+    const std::string &folder_name,
+    const std::string &title,
+    const std::uint8_t *fallback_hash_data = nullptr,
+    std::size_t fallback_hash_size = 0);
 
-} // namespace gui::stylesheets
+} // namespace vita_theme_utils

@@ -32,6 +32,13 @@ struct Config;
 
 namespace renderer::vulkan {
 
+enum class LinuxSurfaceType {
+    Unknown,
+    Wayland,
+    Xlib,
+    Xcb
+};
+
 struct Viewport {
     uint32_t offset_x;
     uint32_t offset_y;
@@ -108,6 +115,7 @@ struct VKState : public renderer::State {
     // support for the VK_KHR_uniform_buffer_standard_layout extension, needed for memory mapping and texture viewport
     bool support_standard_layout = false;
     bool support_rasterized_order_access = false;
+    LinuxSurfaceType linux_surface_type = LinuxSurfaceType::Unknown;
 
 #ifdef __ANDROID__
     bool support_android_buffer_import = false;
