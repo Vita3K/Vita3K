@@ -205,7 +205,6 @@ void AppSessionController::stop(const AppSessionStopReason reason) {
             update_app_time_used(emuenv, emuenv.io.app_path);
 
         deinit(emuenv);
-        destroy(emuenv);
         set_current_config(emuenv, "");
     } else if (renderer_was_initialized) {
         if (needs_renderer_cleanup && active_platform.before_renderer_cleanup)

@@ -744,12 +744,4 @@ SettingsCommitResult delete_custom_settings(EmuEnvState &emuenv, const std::stri
     return commit_settings(emuenv, desired_cfg, {});
 }
 
-// need to remove this function completely, waiting for gdb refactor
-void destroy(EmuEnvState &emuenv) {
-    // The gdb server intentionally outlives a per-session destroy so a
-    // client can stay attached across LoadExec/relaunch boundaries.
-    // Its lifetime is bound to the gdbstub thread's own server_die /
-    // server_close path, not to this teardown hook.
-}
-
 } // namespace app

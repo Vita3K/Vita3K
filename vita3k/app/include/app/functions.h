@@ -75,8 +75,6 @@ void apply_runtime_settings(EmuEnvState &emuenv);
 SettingsCommitResult commit_settings(EmuEnvState &emuenv, const Config &desired_cfg, const std::string &scope_app_path = {});
 SettingsCommitResult delete_custom_settings(EmuEnvState &emuenv, const std::string &scope_app_path);
 void set_current_config(EmuEnvState &emuenv, const std::string &app_path);
-void destroy(EmuEnvState &emuenv);
-
 bool init_apps_list(EmuEnvState &emuenv);
 bool scan_apps(EmuEnvState &emuenv);
 bool load_cached_apps(EmuEnvState &emuenv);
