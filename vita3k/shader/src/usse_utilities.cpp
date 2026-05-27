@@ -20,7 +20,6 @@
 #include <shader/usse_program_analyzer.h>
 #include <shader/usse_utilities.h>
 
-#include <util/bit_cast.h>
 #include <util/float_to_half.h>
 #include <util/log.h>
 

@@ -287,7 +287,7 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
         return std::string{};
     }
     default: {
-        LOG_CRITICAL_IF(relative_path.find(':') != std::string::npos, "Unknown device with path {} used. Report this to the developers!", relative_path);
+        LOG_CRITICAL_IF(relative_path.contains(':'), "Unknown device with path {} used. Report this to the developers!", relative_path);
         return std::string{};
     }
     }
@@ -783,7 +783,7 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const fs::path 
 
 bool copy_path(const fs::path &src_path, const fs::path &pref_path, const std::string &app_title_id, const std::string &app_category) {
     // Check if is path
-    if (app_category.find("gp") != std::string::npos) {
+    if (app_category.contains("gp")) {
         const auto app_path{ pref_path / "ux0/app" / app_title_id };
         const auto result = fs_utils::copy_directory_contents(src_path, app_path);
 

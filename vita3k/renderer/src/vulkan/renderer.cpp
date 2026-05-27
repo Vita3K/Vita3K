@@ -98,7 +98,7 @@ static void debug_log_message(std::string_view msg) {
 
     bool log_error = true;
     for (auto ignored_error : ignored_errors) {
-        if (msg.find(ignored_error) != std::string_view::npos) {
+        if (msg.contains(ignored_error)) {
             log_error = false;
             break;
         }
@@ -977,7 +977,7 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
 
 #if defined(__linux__) && !defined(__ANDROID__) // According to my tests (Macdu), mprotect on buffers (mapped with external memory host) only works with Nvidia drivers
     surface_cache.can_mprotect_mapped_memory = mapping_method == MappingMethod::DoubleBuffer
-        || std::string_view(physical_device_properties.deviceName).find("NVIDIA") != std::string_view::npos;
+        || std::string_view(physical_device_properties.deviceName).contains("NVIDIA");
 #endif
 
     pipeline_cache.init(support_rasterized_order_access);

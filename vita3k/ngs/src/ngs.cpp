@@ -219,7 +219,7 @@ bool Voice::remove_patch(const MemState &mem, const Ptr<Patch> patch) {
     const std::lock_guard<std::mutex> guard(*voice_mutex);
     bool found = false;
     for (auto &patches_1 : patches) {
-        if (vector_utils::contains(patches_1, patch)) {
+        if (std::ranges::contains(patches_1, patch)) {
             found = true;
             break;
         }

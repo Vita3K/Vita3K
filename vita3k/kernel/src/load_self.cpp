@@ -632,7 +632,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 
                 for (auto &patch : patches) {
                     // TODO patches should maybe be able to specify the path/file to patch?
-                    if (seg_index == patch.seg && self_path.find("eboot.bin") != std::string::npos) {
+                    if (seg_index == patch.seg && self_path.contains("eboot.bin")) {
                         LOG_INFO("Patching segment {} at offset 0x{:X} with {} values", seg_index, patch.offset, patch.values.size());
                         memcpy(seg_ptr.get(mem) + patch.offset, patch.values.data(), patch.values.size());
                     }
@@ -749,7 +749,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     sceKernelModuleInfo->state = module_info->type;
 
     LOG_INFO("Linking SELF {}...", self_path);
-    if (self_path.find("eboot.bin") != std::string::npos)
+    if (self_path.contains("eboot.bin"))
         LOG_INFO("eboot.bin module NID: {}", log_hex(module_info->module_nid));
 
     if (!load_exports(sceKernelModuleInfo, *module_info, module_info_segment_address, kernel, mem)) {

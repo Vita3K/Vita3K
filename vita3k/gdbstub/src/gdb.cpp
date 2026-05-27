@@ -22,7 +22,6 @@
 #include <config/state.h>
 #include <emuenv/state.h>
 #include <util/align.h>
-#include <util/bit_cast.h>
 #include <util/log.h>
 
 #include <gdbstub/functions.h>

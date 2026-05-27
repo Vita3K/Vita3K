@@ -398,7 +398,7 @@ std::vector<std::pair<std::string, bool>> get_modules_list(
         }
 
         for (auto &m : modules)
-            m.second = vector_utils::contains(lle_modules, m.first);
+            m.second = std::ranges::contains(lle_modules, m.first);
 
         std::sort(modules.begin(), modules.end(), [](const auto &a, const auto &b) {
             if (a.second == b.second)

@@ -76,7 +76,7 @@ static bool parse_xml(CompatState &state, const uint8_t *data, size_t size) {
         const std::string title_id = app.attribute("title_id").as_string();
         const uint32_t issue_id = app.child("issue_id").text().as_uint();
 
-        if ((title_id.find("PCS") == std::string::npos) && (title_id != "NPXS10007")) {
+        if (!title_id.contains("PCS") && (title_id != "NPXS10007")) {
             LOG_WARN_IF(state.log_compat_warn, "Title ID {} is invalid. Please check GitHub issue {} and verify it!", title_id, issue_id);
             continue;
         }

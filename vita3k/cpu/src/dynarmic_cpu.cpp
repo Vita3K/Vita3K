@@ -18,7 +18,6 @@
 #include "cpu/common.h"
 #include <cpu/impl/dynarmic_cpu.h>
 #include <cpu/state.h>
-#include <util/bit_cast.h>
 #include <util/log.h>
 
 #include <mem/ptr.h>
@@ -27,6 +26,7 @@
 #include <dynarmic/interface/A32/coprocessor.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
+#include <bit>
 #include <memory>
 #include <optional>
 #include <string>

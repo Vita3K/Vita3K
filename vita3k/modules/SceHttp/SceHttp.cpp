@@ -838,7 +838,7 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
     *httpMajorVer = string_utils::stoi_def(version.substr(0, version.find('.'))); // we know this wont fail because parseStatusLine returned true :)
-    if (version.find('.') != std::string::npos) {
+    if (version.contains('.')) {
         auto minorVer = version.substr(version.find('.') + 1);
         *httpMinorVer = string_utils::stoi_def(minorVer);
     } else {
@@ -1098,15 +1098,15 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         }
 
         totalReceived += bytes;
-    } while (std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos || totalReceived == resHeadersMaxSize); // receive headers until we start receiving body
+    } while (!std::string_view(resHeaders).contains("\r\n\r\n") || totalReceived == resHeadersMaxSize); // receive headers until we start receiving body
 
-    if (totalReceived != resHeadersMaxSize && std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos) {
+    if (totalReceived != resHeadersMaxSize && !std::string_view(resHeaders).contains("\r\n\r\n")) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_TIMEOUT);
     }
 
     // Headers are too big
-    if (totalReceived == resHeadersMaxSize && std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos) {
+    if (totalReceived == resHeadersMaxSize && !std::string_view(resHeaders).contains("\r\n\r\n")) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_TOO_LARGE_RESPONSE_HEADER);
     }

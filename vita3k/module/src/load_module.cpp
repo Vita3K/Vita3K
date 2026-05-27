@@ -168,13 +168,13 @@ bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv) {
 
     if (have_paths) {
         if (emuenv.cfg.current_config.modules_mode != ModulesMode::MANUAL) {
-            if (vector_utils::contains(auto_lle_modules, module_id))
+            if (std::ranges::contains(auto_lle_modules, module_id))
                 return true;
         }
 
         if (emuenv.cfg.current_config.modules_mode != ModulesMode::AUTOMATIC) {
             for (auto path : paths) {
-                if (vector_utils::contains(emuenv.cfg.current_config.lle_modules, path))
+                if (std::ranges::contains(emuenv.cfg.current_config.lle_modules, path))
                     return true;
             }
         }
@@ -198,11 +198,11 @@ bool is_lle_module(const std::string &module_name, EmuEnvState &emuenv) {
     if (auto_lle_module_names.empty())
         auto_lle_module_names = init_auto_lle_module_names();
     if (emuenv.cfg.current_config.modules_mode != ModulesMode::AUTOMATIC) {
-        if (vector_utils::contains(emuenv.cfg.current_config.lle_modules, module_name))
+        if (std::ranges::contains(emuenv.cfg.current_config.lle_modules, module_name))
             return true;
     }
     if (emuenv.cfg.current_config.modules_mode != ModulesMode::MANUAL) {
-        if (vector_utils::contains(auto_lle_module_names, module_name))
+        if (std::ranges::contains(auto_lle_module_names, module_name))
             return true;
     }
     return false;

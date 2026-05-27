@@ -118,7 +118,7 @@ static bool set_content_path(EmuEnvState &emuenv, const bool is_theme, fs::path 
             dest_path /= fs::path("addcont") / emuenv.app_info.app_title_id / emuenv.app_info.app_content_id;
             emuenv.app_info.app_title += " (DLC)";
         }
-    } else if (emuenv.app_info.app_category.find("gp") != std::string::npos) {
+    } else if (emuenv.app_info.app_category.contains("gp")) {
         if (!fs::exists(app_path) || fs::is_empty(app_path)) {
             LOG_ERROR("Install app before patch");
             return false;
@@ -209,7 +209,7 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
             continue;
         }
         const std::string m_filename = file_stat.m_filename;
-        if (m_filename.find(content_path) != std::string::npos) {
+        if (m_filename.contains(content_path)) {
             file_progress = static_cast<float>(i) / num_files * 100.0f;
             update_progress();
 
@@ -254,7 +254,7 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
             continue;
 
         std::string m_filename = std::string(file_stat.m_filename);
-        if (m_filename.find("sce_module/steroid.suprx") != std::string::npos) {
+        if (m_filename.contains("sce_module/steroid.suprx")) {
             LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
 #ifdef __ANDROID__
             // SDL_ShowAndroidToast("Vitamin dumps are not supported!", 1, -1, 0, 0);
@@ -263,9 +263,9 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
             break;
         }
 
-        const auto is_content = (m_filename.find(sfo_path) != std::string::npos) || (m_filename.find(theme_path) != std::string::npos);
+        const auto is_content = m_filename.contains(sfo_path) || m_filename.contains(theme_path);
         if (is_content) {
-            const auto content_type = (m_filename.find(sfo_path) != std::string::npos) ? sfo_path : theme_path;
+            const auto content_type = m_filename.contains(sfo_path) ? sfo_path : theme_path;
             m_filename.erase(m_filename.find(content_type));
             vector_utils::push_if_not_exists(content_path, m_filename);
         }

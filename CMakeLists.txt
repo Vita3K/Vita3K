@@ -21,7 +21,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 11.0)
 
-# workaround for SDL due to cmake bug 
+# workaround for SDL due to cmake bug
 # https://github.com/libsdl-org/SDL/issues/6454
 # https://gitlab.kitware.com/cmake/cmake/-/issues/24104
 if(APPLE)

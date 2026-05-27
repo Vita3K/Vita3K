@@ -32,9 +32,9 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const
         // Just in case users decide to use lowercase filenames
         std::transform(filename.begin(), filename.end(), filename.begin(), ::toupper);
 
-        bool is_patchlist = filename.find("PATCHLIST.TXT") != std::string::npos;
+        bool is_patchlist = filename.contains("PATCHLIST.TXT");
 
-        if ((filename.find(titleid) != std::string::npos && filename.ends_with(".TXT")) || is_patchlist) {
+        if ((filename.contains(titleid) && filename.ends_with(".TXT")) || is_patchlist) {
             // Read the file
             std::ifstream file(entry.path().c_str());
             PatchHeader patch_header = PatchHeader{
@@ -56,7 +56,7 @@ std::vector<Patch> get_patches(fs::path &path, const std::string &titleid, const
 
                 // Ignore comments and patches for other binaries
                 // And @ lines for now
-                if (line.empty() || line[0] == '#' || line[0] == '@' || bin.find(patch_header.bin) == std::string::npos || (is_patchlist && patch_header.titleid != titleid))
+                if (line.empty() || line[0] == '#' || line[0] == '@' || !bin.contains(patch_header.bin) || (is_patchlist && patch_header.titleid != titleid))
                     continue;
 
                 try {
