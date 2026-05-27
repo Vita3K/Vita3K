@@ -61,8 +61,6 @@
 #include <app/discord.h>
 #endif
 
-#include <gdbstub/functions.h>
-
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_gamepad.h>
 
@@ -754,12 +752,6 @@ SettingsCommitResult delete_custom_settings(EmuEnvState &emuenv, const std::stri
     desired_cfg = emuenv.cfg;
     config::set_current_config(desired_cfg, emuenv.config_path, {});
     return commit_settings(emuenv, desired_cfg, {});
-}
-
-// need to remove this function completely, waiting for gdb refactor
-void destroy(EmuEnvState &emuenv) {
-    if (emuenv.cfg.gdbstub)
-        server_close(emuenv);
 }
 
 } // namespace app

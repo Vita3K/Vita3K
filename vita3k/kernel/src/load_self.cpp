@@ -696,7 +696,6 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     }
 
     const SceKernelModulePtr kernelModuleInfo = std::make_shared<KernelModule>();
-    memset(kernelModuleInfo.get(), 0, sizeof(KernelModule));
 
     kernelModuleInfo->info_segment_address = module_info_segment_address;
     kernelModuleInfo->info_offset = module_info_offset;
@@ -744,6 +743,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         segment.vaddr = it->second.addr;
         segment.memsz = segments[segment_index].p_memsz;
         segment.filesz = segments[segment_index].p_filesz;
+        kernelModuleInfo->segment_p_vaddr[segment_index] = it->second.p_vaddr;
     }
 
     sceKernelModuleInfo->state = module_info->type;
@@ -761,6 +761,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     }
     const SceUID uid = kernel.get_next_uid();
     sceKernelModuleInfo->modid = uid;
+    kernelModuleInfo->vita_path = self_path;
     {
         const std::lock_guard<std::mutex> lock(kernel.mutex);
         kernel.loaded_modules[uid] = kernelModuleInfo;

@@ -657,3 +657,10 @@ std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader
 std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, const uint8_t *klic = 0);
 std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint8_t *klic);
 void decrypt_selfs(const fs::path &input_path, const fs::path &cache_path, const uint8_t *klic);
+
+// Extract the inner ELF from a (decrypted) SELF buffer and rewrite
+// SCE-specific e_type values (ET_SCE_EXEC, ET_SCE_RELEXEC) to the
+// closest standard equivalents (ET_EXEC, ET_DYN). Returns an empty
+// vector if the buffer is malformed. Used by the gdb stub to feed BFD
+// an image it actually knows how to parse.
+std::vector<uint8_t> extract_elf_from_self(const std::vector<uint8_t> &self_buffer);

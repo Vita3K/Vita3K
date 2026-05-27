@@ -23,6 +23,7 @@
 #include <util/types.h>
 
 #include <atomic>
+#include <functional>
 
 struct CPUState {
     CPUState() = default;
@@ -30,6 +31,12 @@ struct CPUState {
     SceUID thread_id = 0;
     MemState *mem = nullptr;
     DisasmState disasm;
+
+    // GDB data-watchpoint hook. Set by the kernel to forward into
+    // Debugger::check_watchpoint from the Dynarmic memory callbacks
+    // (replaces the old CPUProtocol bridge). Returns the watched base
+    // address on a hit, 0 on a miss; empty when no debugger is attached.
+    std::function<Address(Address addr, bool is_write)> check_watchpoint;
 
     CPUInterfacePtr cpu;
     bool svc_called;

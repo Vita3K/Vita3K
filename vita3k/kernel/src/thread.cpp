@@ -75,6 +75,9 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     if (!cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
+    cpu->check_watchpoint = [this](Address addr, bool is_write) {
+        return kernel.debugger.check_watchpoint(addr, is_write);
+    };
     if (kernel.debugger.watch_code) {
         set_log_code(*cpu, true);
     }
@@ -107,6 +110,12 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
         assert(kernel.tls_psize <= kernel.tls_msize);
         memcpy(user_tls_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
     }
+
+    // Seed PC and SP on the CPU so tools (gdbstub) that inspect the
+    // thread between create and start see its real entry point rather
+    // than zeros. start() reloads the full context and overwrites these.
+    write_pc(*cpu, entry_point.address());
+    write_sp(*cpu, stack_top());
 
     CPUContext ctx;
     ctx.set_sp(stack_top());
@@ -284,9 +293,12 @@ void ThreadState::run_loop() {
 
             lock.lock();
 
-            if (do_step || suspend_requested || hit_breakpoint(*cpu)) {
+            const bool bp = hit_breakpoint(*cpu);
+            if (do_step || suspend_requested || bp) {
                 suspend_requested = false;
                 update_status(ThreadStatus::suspend);
+                if (bp)
+                    kernel.debugger.notify_breakpoint(id);
             }
 
             // Guest function for this run_loop returned (or errored).
@@ -427,9 +439,15 @@ Address ThreadState::stack_top() const {
 }
 
 void ThreadState::suspend() {
-    assert(status == ThreadStatus::run);
     {
         const std::lock_guard<std::mutex> lock(mutex);
+        // Threads already parked in wait/suspend/dormant (or being deleted)
+        // are halted from the debugger's perspective. Only force-stop one
+        // that is actively running user code. Several gdbstub paths and the
+        // stubbed sceKernelSuspendThreadForVM call this without first
+        // verifying the thread is runnable.
+        if (status != ThreadStatus::run || delete_requested)
+            return;
         suspend_requested = true;
     }
     stop(*cpu);
@@ -442,6 +460,20 @@ void ThreadState::resume(bool step) {
         single_stepping = step;
         update_status(ThreadStatus::run);
     }
+}
+
+void ThreadState::step_and_wait() {
+    resume(true);
+
+    std::unique_lock<std::mutex> lock(mutex);
+    // resume(true) sets status=run and single_stepping=true. The run
+    // loop completes one instruction, then transitions status back to
+    // suspend. Bail out also if the step took the thread out of run
+    // state entirely (exited or blocked in a syscall), or if the
+    // thread is being deleted.
+    status_cond.wait(lock, [this]() {
+        return status != ThreadStatus::run || delete_requested;
+    });
 }
 
 std::string ThreadState::log_stack_traceback() const {

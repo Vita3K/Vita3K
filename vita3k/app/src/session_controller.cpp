@@ -192,7 +192,6 @@ void AppSessionController::stop(const AppSessionStopReason reason) {
 
         shutdown_app_runtime(emuenv);
         reset_app_state(emuenv);
-        destroy(emuenv);
     } else if (renderer_was_initialized) {
         if (emuenv.renderer) {
             emuenv.renderer->cleanup();

@@ -50,9 +50,27 @@ Debugger::Debugger(KernelState &kernel)
     : parent(kernel) {
 }
 
-void Debugger::add_watch_memory_addr(Address addr, size_t size) {
+void Debugger::remove_all_breakpoints(MemState &mem) {
+    const auto lock = std::lock_guard(mutex);
+    for (const auto &[addr, bk] : breakpoints) {
+        std::memcpy(Ptr<uint8_t>(addr).get(mem), &bk.data, bk.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT));
+        parent.invalidate_jit_cache(addr, 4);
+    }
+    breakpoints.clear();
+}
+
+void Debugger::notify_breakpoint(SceUID thread_id) {
+    {
+        std::lock_guard<std::mutex> lock(break_mutex);
+        break_thread_id = thread_id;
+        has_break = true;
+    }
+    break_cv.notify_one();
+}
+
+void Debugger::add_watch_memory_addr(Address addr, size_t size, WatchType type) {
     std::lock_guard<std::mutex> lock(mutex);
-    watch_memory_addrs.emplace(addr, WatchMemory{ addr, size });
+    watch_memory_addrs.emplace(addr, WatchMemory{ addr, size, type });
 }
 
 void Debugger::remove_watch_memory_addr(KernelState &state, Address addr) {
@@ -66,6 +84,22 @@ Address Debugger::get_watch_memory_addr(Address addr) {
     for (const auto &item : watch_memory_addrs) {
         if (item.second.start <= addr && addr < item.second.start + item.second.size) {
             return item.second.start;
+        }
+    }
+    return 0;
+}
+
+Address Debugger::check_watchpoint(Address addr, bool is_write) {
+    for (const auto &item : watch_memory_addrs) {
+        if (item.second.start <= addr && addr < item.second.start + item.second.size) {
+            const auto t = item.second.type;
+            if (t == WatchType::ACCESS
+                || (t == WatchType::WRITE && is_write)
+                || (t == WatchType::READ && !is_write)) {
+                break_watch_addr = item.second.start;
+                break_watch_type = t;
+                return item.second.start;
+            }
         }
     }
     return 0;
