@@ -327,12 +327,14 @@ elseif(LINUX)
 	if(BUILD_APPIMAGE)
 		set(APPDIR "${CMAKE_BINARY_DIR}/AppImage")
 		add_custom_command(
-		TARGET vita3k
-		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/Vita3K"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "${APPDIR}/usr/share/Vita3K/data"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${APPDIR}/usr/share/Vita3K/shaders-builtin"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "${APPDIR}/usr/share/Vita3K/icons")
+			TARGET vita3k
+			POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/Vita3K"
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "${APPDIR}/usr/share/Vita3K/data"
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "${APPDIR}/usr/share/Vita3K/translations"
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${APPDIR}/usr/share/Vita3K/shaders-builtin"
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "${APPDIR}/usr/share/Vita3K/icons"
+        )
 		set(LINUXDEPLOY_WRAPPER "${CMAKE_SOURCE_DIR}/appimage/build.sh")
 		if(USE_DISCORD_RICH_PRESENCE)
 			set(DISCORD_LIB_APPIMAGE "-l \"${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so\"")
@@ -350,12 +352,15 @@ elseif(LINUX)
 		COMMAND ${CMAKE_COMMAND} -E rm "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*")
 	endif()
 	add_custom_command(
-	TARGET vita3k
-	POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
-	COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations"
-	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
-	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons")
+		TARGET vita3k
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/COPYING.txt" "$<TARGET_FILE_DIR:vita3k>/COPYING.txt"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/README.md" "$<TARGET_FILE_DIR:vita3k>/README.md"
+	)
 	if(USE_DISCORD_RICH_PRESENCE)
 		add_custom_command(
 		TARGET vita3k
@@ -373,7 +378,9 @@ elseif(WIN32)
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons")
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/COPYING.txt" "$<TARGET_FILE_DIR:vita3k>/COPYING.txt"
+	)
 	if(USE_DISCORD_RICH_PRESENCE)
 		add_custom_command(
 		TARGET vita3k
