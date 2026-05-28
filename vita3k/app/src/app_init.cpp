@@ -349,11 +349,21 @@ void init_paths(Root &root_paths) {
             root_paths.set_log_path(fs::path(home_path) / ".cache" / app_name / "");
         }
 
-        // Static assets sorted by least to most priority, so that higher priority ones can override lower priority ones.
-        if (fs::exists("/usr/share/Vita3K")) {
-            root_paths.set_static_assets_path("/usr/share/Vita3K");
-        } else if (fs::exists("/usr/local/share/Vita3K")) {
-            root_paths.set_static_assets_path("/usr/local/share/Vita3K");
+        const constexpr char *static_asset_paths[] = {
+            "/usr/local/share/Vita3K",
+            "/usr/share/Vita3K",
+        };
+
+        // Check both normal case and all lowercase paths
+        for (const auto &path : static_asset_paths) {
+            if (fs::exists(path)) {
+                root_paths.set_static_assets_path(path);
+                break;
+            }
+            if (fs::exists(string_utils::tolower(path))) {
+                root_paths.set_static_assets_path(string_utils::tolower(path));
+                break;
+            }
         }
 
         // Only really used in standalone (rare) or development
