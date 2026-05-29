@@ -21,7 +21,6 @@
 #undef st_ctime
 #undef st_mtime
 
-#include <mem/ptr.h>
 #include <util/tracy.h>
 #include <util/types.h>
 
@@ -111,7 +110,7 @@ struct SceIoStat {
 struct SceIoDirent {
     SceIoStat d_stat;
     char d_name[256];
-    Ptr<void> d_private;
+    SceUIntPtr d_private;
     int dummy;
 };
 
