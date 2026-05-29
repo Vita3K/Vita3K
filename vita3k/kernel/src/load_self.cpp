@@ -658,25 +658,27 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
             ? (image_bytes + self_header.self_filesize)
             : (elf_bytes + elf.e_shoff + (elf.e_shnum * elf.e_shentsize));
 
-        std::vector<uint8_t> dump_elf(dump_begin, dump_end);
-        if (is_self) {
-            dump_elf.resize(self_header.elf_filesize);
-        }
+        if (dump_begin != dump_end) {
+            std::vector<uint8_t> dump_elf(dump_begin, dump_end);
+            if (is_self) {
+                dump_elf.resize(self_header.elf_filesize);
+            }
 
-        Elf32_Phdr *dump_segments = reinterpret_cast<Elf32_Phdr *>(dump_elf.data() + elf.e_phoff);
-        uint16_t last_index = 0;
-        for (const auto &[seg_index, segment] : segment_reloc_info) {
-            uint8_t *seg_bytes = Ptr<uint8_t>(segment.addr).get(mem);
-            memcpy(dump_elf.data() + dump_segments[seg_index].p_offset, seg_bytes, dump_segments[seg_index].p_filesz);
-            dump_segments[seg_index].p_vaddr = segment.addr;
-            last_index = std::max(seg_index, last_index);
+            Elf32_Phdr *dump_segments = reinterpret_cast<Elf32_Phdr *>(dump_elf.data() + elf.e_phoff);
+            uint16_t last_index = 0;
+            for (const auto &[seg_index, segment] : segment_reloc_info) {
+                uint8_t *seg_bytes = Ptr<uint8_t>(segment.addr).get(mem);
+                memcpy(dump_elf.data() + dump_segments[seg_index].p_offset, seg_bytes, dump_segments[seg_index].p_filesz);
+                dump_segments[seg_index].p_vaddr = segment.addr;
+                last_index = std::max(seg_index, last_index);
+            }
+            fs::create_directories(dump_path);
+            const auto start = dump_segments[0].p_vaddr;
+            const auto end = dump_segments[last_index].p_vaddr + dump_segments[last_index].p_filesz;
+            const auto elf_name = fs::path(self_path).filename().stem().string();
+            const auto filename = dump_path / fmt::format("{}-{}_{}.elf", log_hex_full(start), log_hex_full(end), elf_name);
+            fs_utils::dump_data(filename, dump_elf.data(), dump_elf.size());
         }
-        fs::create_directories(dump_path);
-        const auto start = dump_segments[0].p_vaddr;
-        const auto end = dump_segments[last_index].p_vaddr + dump_segments[last_index].p_filesz;
-        const auto elf_name = fs::path(self_path).filename().stem().string();
-        const auto filename = dump_path / fmt::format("{}-{}_{}.elf", log_hex_full(start), log_hex_full(end), elf_name);
-        fs_utils::dump_data(filename, dump_elf.data(), dump_elf.size());
     }
 
     const unsigned int module_info_segment_index = elf.e_entry >> 30;
