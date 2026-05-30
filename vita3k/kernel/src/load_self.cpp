@@ -532,6 +532,10 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         return SCE_KERNEL_ERROR_ILLEGAL_ELF_HEADER;
     }
 
+    // log elf header
+    LOG_TRACE("ELF Header: e_type: {}, e_machine: {}, e_version: {}, e_entry: {}, e_phoff: {}, e_shoff: {}, e_flags: {}, e_ehsize: {}, e_phentsize: {}, e_phnum: {}, e_shentsize: {}, e_shnum: {}, e_shstrndx: {}",
+        log_hex(elf.e_type), log_hex(elf.e_machine), log_hex(elf.e_version), log_hex(elf.e_entry), log_hex(elf.e_phoff), log_hex(elf.e_shoff), log_hex(elf.e_flags), log_hex(elf.e_ehsize), log_hex(elf.e_phentsize), log_hex(elf.e_phnum), log_hex(elf.e_shentsize), log_hex(elf.e_shnum), log_hex(elf.e_shstrndx));
+
     bool isRelocatable;
     if (elf.e_type == ET_SCE_EXEC) {
         isRelocatable = false;
@@ -654,9 +658,19 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 
     if (kernel.debugger.dump_elfs) {
         const uint8_t *dump_begin = is_self ? (image_bytes + self_header.header_len) : elf_bytes;
-        const uint8_t *dump_end = is_self
-            ? (image_bytes + self_header.self_filesize)
-            : (elf_bytes + elf.e_shoff + (elf.e_shnum * elf.e_shentsize));
+        const uint8_t *dump_end;
+
+        if (is_self) {
+            dump_end = image_bytes + self_header.self_filesize;
+        } else {
+            size_t elf_size = 0;
+            auto dump_segments = reinterpret_cast<const Elf32_Phdr const *>(elf_bytes + elf.e_phoff);
+            for (const auto &[seg_index, segment] : segment_reloc_info) {
+                uint8_t *seg_bytes = Ptr<uint8_t>(segment.addr).get(mem);
+                elf_size = std::max(elf_size, static_cast<size_t>(dump_segments[seg_index].p_offset) + static_cast<size_t>(dump_segments[seg_index].p_filesz));
+            }
+            dump_end = elf_bytes + elf_size;
+        }
 
         std::vector<uint8_t> dump_elf(dump_begin, dump_end);
         if (is_self) {
@@ -741,7 +755,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 
     sceKernelModuleInfo->state = module_info->type;
 
-    LOG_INFO("Linking {} {}...", (is_self ? "SELF" : "ELF"), self_path);
+    LOG_INFO("Linking {} {}...", is_self ? "SELF" : "ELF", self_path);
     if (self_path.contains("eboot.bin"))
         LOG_INFO("eboot.bin module NID: {}", log_hex(module_info->module_nid));
 
