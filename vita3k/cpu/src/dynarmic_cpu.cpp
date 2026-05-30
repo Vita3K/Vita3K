@@ -22,7 +22,6 @@
 
 #include <mem/ptr.h>
 
-#include <dynarmic/frontend/A32/a32_ir_emitter.h>
 #include <dynarmic/interface/A32/coprocessor.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
@@ -141,21 +140,15 @@ public:
         return MemoryRead32(addr);
     }
 
-    static void TraceInstruction(uint64_t self_, uint64_t address, uint64_t is_thumb) {
-        ArmDynarmicCallback &self = *reinterpret_cast<ArmDynarmicCallback *>(self_);
-
-        std::string disassembly = [&]() -> std::string {
-            if (!address || !Ptr<uint32_t>{ (uint32_t)address }.valid(*self.parent->mem)) {
-                return "invalid address";
-            }
-            return disassemble(*self.parent, address);
-        }();
-        LOG_TRACE("{} ({}): {} {}", log_hex(self_), self.parent->thread_id, log_hex(address), disassembly);
-    }
-
     void PreCodeTranslationHook(bool is_thumb, Dynarmic::A32::VAddr pc, Dynarmic::A32::IREmitter &ir) override {
         if (cpu->log_code) {
-            ir.CallHostFunction(&TraceInstruction, ir.Imm64((uint64_t)this), ir.Imm64(pc), ir.Imm64(is_thumb));
+            std::string disassembly = "invalid address";
+            if (!pc || !Ptr<uint32_t>{ pc }.valid(*parent->mem)) {
+                disassembly = "invalid address";
+            } else {
+                disassembly = disassemble(*parent, pc);
+            }
+            LOG_TRACE("T:{} {} {}", parent->thread_id, log_hex(pc), disassembly);
         }
     }
 
