@@ -125,6 +125,9 @@ SettingsDialog::SettingsDialog(EmuEnvState &emuenv,
     m_ui->modules_list->setSelectionMode(QAbstractItemView::NoSelection);
     m_ui->modules_list->setFocusPolicy(Qt::NoFocus);
     m_ui->modules_list->setAlternatingRowColors(true);
+    m_ui->tracy_modules_list->setSelectionMode(QAbstractItemView::NoSelection);
+    m_ui->tracy_modules_list->setFocusPolicy(Qt::NoFocus);
+    m_ui->tracy_modules_list->setAlternatingRowColors(true);
 
     for (int i = 0; i < m_ui->tab_widget_settings->count(); ++i) {
         auto *item = new QListWidgetItem(m_ui->tab_widget_settings->tabText(i), m_ui->settingsCategory);
@@ -215,6 +218,19 @@ void SettingsDialog::set_storage_path_locked(bool locked) {
     if (m_app_path.empty())
         m_ui->gb_storage->setEnabled(!locked);
 }
+
+#ifdef TRACY_ENABLE
+void SettingsDialog::populate_tracy_modules_list() {
+    m_ui->tracy_modules_list->clear();
+    const auto enabled_modules = m_config.tracy_advanced_profiling_modules;
+    for (const auto &name : tracy_module_utils::get_available_module_names()) {
+        const bool enabled = std::ranges::contains(enabled_modules.begin(), enabled_modules.end(), name);
+        auto *item = new QListWidgetItem(QString::fromStdString(name), m_ui->tracy_modules_list);
+        item->setFlags((item->flags() | Qt::ItemIsUserCheckable) & ~Qt::ItemIsSelectable);
+        item->setCheckState(enabled ? Qt::Checked : Qt::Unchecked);
+    }
+}
+#endif
 
 void SettingsDialog::closeEvent(QCloseEvent *event) {
     if (m_gui_settings) {
@@ -559,6 +575,14 @@ void SettingsDialog::load_config() {
     m_ui->color_surface_debug->setChecked(m_config.color_surface_debug);
     m_ui->validation_layer->setChecked(m_config.validation_layer);
     m_ui->dump_elfs->setChecked(emuenv.kernel.debugger.dump_elfs);
+
+#ifdef TRACY_ENABLE
+    m_ui->gb_debug_tracy_section->setEnabled(true);
+    m_ui->tracy_primitive_impl->setChecked(m_config.tracy_primitive_impl);
+    populate_tracy_modules_list();
+#else
+    m_ui->gb_debug_tracy_section->setEnabled(false);
+#endif
 }
 
 void SettingsDialog::build_desired_config(Config &desired) const {
@@ -676,6 +700,21 @@ void SettingsDialog::build_desired_config(Config &desired) const {
     current.log_uniforms = m_ui->log_uniforms->isChecked();
     current.color_surface_debug = m_ui->color_surface_debug->isChecked();
     current.validation_layer = m_ui->validation_layer->isChecked();
+
+#ifdef TRACY_ENABLE
+    current.tracy_primitive_impl = m_ui->tracy_primitive_impl->isChecked();
+    current.tracy_advanced_profiling_modules.clear();
+    for (int i = 0; i < m_ui->tracy_modules_list->count(); ++i) {
+        const auto item = m_ui->tracy_modules_list->item(i);
+        const auto name = item->text().toStdString();
+        if (item->checkState() == Qt::Checked) {
+            tracy_module_utils::set_tracy_active(name, true);
+            current.tracy_advanced_profiling_modules.push_back(name);
+        } else {
+            tracy_module_utils::set_tracy_active(name, false);
+        }
+    }
+#endif
 }
 
 bool SettingsDialog::prompt_restart_if_needed(const app::SettingsCommitResult &result, bool close_after) {
@@ -1128,6 +1167,18 @@ void SettingsDialog::setup_connections() {
     m_ui->watch_memory->setText(emuenv.kernel.debugger.watch_memory ? tr("Unwatch Memory") : tr("Watch Memory"));
     m_ui->watch_import_calls->setText(emuenv.kernel.debugger.watch_import_calls ? tr("Unwatch Import Calls") : tr("Watch Import Calls"));
 
+#ifdef TRACY_ENABLE
+    connect(m_ui->tracy_select_none, &QPushButton::clicked, this, [this] {
+        for (int i = 0; i < m_ui->tracy_modules_list->count(); ++i)
+            m_ui->tracy_modules_list->item(i)->setCheckState(Qt::Unchecked);
+    });
+
+    connect(m_ui->tracy_select_all, &QPushButton::clicked, this, [this] {
+        for (int i = 0; i < m_ui->tracy_modules_list->count(); ++i)
+            m_ui->tracy_modules_list->item(i)->setCheckState(Qt::Checked);
+    });
+#endif
+
     struct DescEntry {
         QWidget *widget;
         QString title;
@@ -1236,6 +1287,9 @@ void SettingsDialog::setup_connections() {
         { m_ui->color_surface_debug, tr("Save color surfaces"), m_tooltips->color_surface_debug },
         { m_ui->validation_layer, tr("Vulkan Validation Layer"), m_tooltips->validation_layer },
         { m_ui->dump_elfs, tr("ELF Dumping"), m_tooltips->dump_elfs },
+        { m_ui->gb_debug_tracy_section, tr("Tracy Profiler"), m_tooltips->gb_debug_tracy_section },
+        { m_ui->tracy_primitive_impl, tr("Primitive Implementation"), m_tooltips->tracy_primitive_impl },
+        { m_ui->tracy_modules_list, tr("Tracy modules list"), m_tooltips->tracy_modules_list },
     };
 
     for (const auto &[widget, title, description] : desc_widgets) {
@@ -1245,6 +1299,7 @@ void SettingsDialog::setup_connections() {
     }
 }
 
+// TODO: Allow this to go from enter to another enter without leaving (widget to widget without setting the default title and description)
 bool SettingsDialog::eventFilter(QObject *watched, QEvent *event) {
     if (event->type() == QEvent::Enter) {
         auto *w = qobject_cast<QWidget *>(watched);
