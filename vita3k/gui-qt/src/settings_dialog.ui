@@ -168,7 +168,7 @@ QGroupBox[flat=&quot;true&quot;]::title {
               <x>0</x>
               <y>0</y>
               <width>586</width>
-              <height>492</height>
+              <height>490</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="core_tab_content_layout">
@@ -355,7 +355,7 @@ QGroupBox[flat=&quot;true&quot;]::title {
               <x>0</x>
               <y>0</y>
               <width>586</width>
-              <height>492</height>
+              <height>490</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="cpu_tab_content_layout">
@@ -467,7 +467,7 @@ QGroupBox[flat=&quot;true&quot;]::title {
               <x>0</x>
               <y>0</y>
               <width>572</width>
-              <height>698</height>
+              <height>706</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="gpu_tab_content_layout">
@@ -1109,7 +1109,7 @@ QGroupBox[flat=&quot;true&quot;]::title {
               <x>0</x>
               <y>0</y>
               <width>586</width>
-              <height>492</height>
+              <height>490</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="audio_tab_content_layout">
@@ -1388,7 +1388,7 @@ QGroupBox[flat=&quot;true&quot;]::title {
               <x>0</x>
               <y>0</y>
               <width>586</width>
-              <height>492</height>
+              <height>490</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="camera_tab_content_layout">
@@ -1659,7 +1659,7 @@ QGroupBox[flat=&quot;true&quot;]::title {
               <x>0</x>
               <y>0</y>
               <width>572</width>
-              <height>506</height>
+              <height>515</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="system_tab_content_layout">
@@ -1905,7 +1905,7 @@ QGroupBox[flat=&quot;true&quot;]::title {
               <x>0</x>
               <y>0</y>
               <width>572</width>
-              <height>778</height>
+              <height>726</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="emulator_tab_content_layout">
@@ -2434,7 +2434,7 @@ QGroupBox[flat=&quot;true&quot;]::title {
               <x>0</x>
               <y>0</y>
               <width>586</width>
-              <height>492</height>
+              <height>490</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="gui_tab_content_layout">
@@ -2504,35 +2504,35 @@ QGroupBox[flat=&quot;true&quot;]::title {
                     </widget>
                    </item>
                    <item>
-                   <widget class="QCheckBox" name="warn_missing_firmware">
-                    <property name="text">
-                     <string>Warn when firmware is missing</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QCheckBox" name="confirm_exit_app">
-                    <property name="text">
-                     <string>Show exit app confirmation</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QCheckBox" name="warn_admin_privileges">
-                    <property name="text">
-                     <string>Warn when running with administrator privileges</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QCheckBox" name="windows_rounded_corners">
-                    <property name="text">
-                     <string>Enable rounded corners for the game window</string>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
+                    <widget class="QCheckBox" name="warn_missing_firmware">
+                     <property name="text">
+                      <string>Warn when firmware is missing</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="confirm_exit_app">
+                     <property name="text">
+                      <string>Show exit app confirmation</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="warn_admin_privileges">
+                     <property name="text">
+                      <string>Warn when running with administrator privileges</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QCheckBox" name="windows_rounded_corners">
+                     <property name="text">
+                      <string>Enable rounded corners for the game window</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
                 </item>
                 <item alignment="Qt::AlignmentFlag::AlignTop">
                  <widget class="QGroupBox" name="gb_stylesheet">
@@ -2685,7 +2685,7 @@ QGroupBox[flat=&quot;true&quot;]::title {
               <x>0</x>
               <y>0</y>
               <width>572</width>
-              <height>504</height>
+              <height>514</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="network_tab_content_layout">
@@ -2989,9 +2989,9 @@ QGroupBox[flat=&quot;true&quot;]::title {
             <property name="geometry">
              <rect>
               <x>0</x>
-              <y>0</y>
-              <width>586</width>
-              <height>492</height>
+              <y>-34</y>
+              <width>572</width>
+              <height>524</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="debug_tab_content_layout">
@@ -3213,17 +3213,140 @@ QGroupBox[flat=&quot;true&quot;]::title {
               </widget>
              </item>
              <item>
-              <spacer name="debug_tab_content_spacer">
-               <property name="orientation">
-                <enum>Qt::Orientation::Vertical</enum>
+              <widget class="QGroupBox" name="gb_debug_tracy_section">
+               <property name="enabled">
+                <bool>true</bool>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
+               <property name="mouseTracking">
+                <bool>true</bool>
                </property>
-              </spacer>
+               <property name="title">
+                <string>Tracy Profiler</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+               </property>
+               <property name="flat">
+                <bool>false</bool>
+               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout">
+                <item>
+                 <widget class="QGroupBox" name="gb_debug_tracy_options">
+                  <property name="enabled">
+                   <bool>true</bool>
+                  </property>
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="autoFillBackground">
+                   <bool>false</bool>
+                  </property>
+                  <property name="title">
+                   <string/>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+                  </property>
+                  <property name="flat">
+                   <bool>true</bool>
+                  </property>
+                  <property name="checkable">
+                   <bool>false</bool>
+                  </property>
+                  <layout class="QVBoxLayout" name="_2">
+                   <item>
+                    <widget class="QCheckBox" name="tracy_primitive_impl">
+                     <property name="text">
+                      <string>Primitive implementation</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="gb_debug_tracy_modules">
+                  <property name="title">
+                   <string/>
+                  </property>
+                  <property name="flat">
+                   <bool>true</bool>
+                  </property>
+                  <property name="checkable">
+                   <bool>false</bool>
+                  </property>
+                  <layout class="QVBoxLayout" name="verticalLayout_2">
+                   <property name="spacing">
+                    <number>0</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QListWidget" name="tracy_modules_list">
+                     <property name="selectionMode">
+                      <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QGroupBox" name="gb_debug_tracy_modules_buttons">
+                     <property name="title">
+                      <string/>
+                     </property>
+                     <property name="flat">
+                      <bool>true</bool>
+                     </property>
+                     <layout class="QHBoxLayout" name="horizontalLayout_2">
+                      <property name="spacing">
+                       <number>2</number>
+                      </property>
+                      <property name="leftMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="topMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="rightMargin">
+                       <number>0</number>
+                      </property>
+                      <property name="bottomMargin">
+                       <number>0</number>
+                      </property>
+                      <item>
+                       <widget class="QPushButton" name="tracy_select_all">
+                        <property name="text">
+                         <string>Select all</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QPushButton" name="tracy_select_none">
+                        <property name="text">
+                         <string>None</string>
+                        </property>
+                       </widget>
+                      </item>
+                     </layout>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
              </item>
             </layout>
            </widget>

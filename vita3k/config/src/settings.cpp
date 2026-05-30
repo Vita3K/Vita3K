@@ -71,6 +71,8 @@ void copy_global_to_current(Config::CurrentConfig &current, const Config &cfg) {
     current.log_uniforms = cfg.log_uniforms;
     current.color_surface_debug = cfg.color_surface_debug;
     current.validation_layer = cfg.validation_layer;
+    current.tracy_primitive_impl = cfg.tracy_primitive_impl;
+    current.tracy_advanced_profiling_modules = cfg.tracy_advanced_profiling_modules;
 }
 
 void copy_current_to_global(Config &cfg, const Config::CurrentConfig &current) {
@@ -114,6 +116,8 @@ void copy_current_to_global(Config &cfg, const Config::CurrentConfig &current) {
     cfg.log_uniforms = current.log_uniforms;
     cfg.color_surface_debug = current.color_surface_debug;
     cfg.validation_layer = current.validation_layer;
+    cfg.tracy_primitive_impl = current.tracy_primitive_impl;
+    cfg.tracy_advanced_profiling_modules = current.tracy_advanced_profiling_modules;
 }
 
 } // namespace

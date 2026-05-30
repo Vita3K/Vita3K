@@ -343,7 +343,6 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
         config.fastmem_pointer = std::bit_cast<uintptr_t>(parent->mem->memory.get());
     }
     config.hook_hint_instructions = true;
-    config.enable_cycle_counting = false;
     config.global_monitor = &shared_monitor;
     config.coprocessors[15] = cp15;
     config.processor_id = core_id;

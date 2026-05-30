@@ -101,6 +101,9 @@ public:
     QString color_surface_debug;
     QString validation_layer;
     QString dump_elfs;
+    QString gb_debug_tracy_section;
+    QString tracy_primitive_impl;
+    QString tracy_modules_list;
     QString sys_lang;
     QString sys_date_format;
     QString sys_time_format;

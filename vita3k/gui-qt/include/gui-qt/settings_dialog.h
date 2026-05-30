@@ -91,6 +91,7 @@ private:
     void load_config();
     void build_desired_config(Config &desired) const;
     void populate_modules_list();
+    void populate_tracy_modules_list();
     void populate_cameras_list();
     void populate_adhoc_list();
     void setup_connections();
