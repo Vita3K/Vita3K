@@ -664,7 +664,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
             dump_end = image_bytes + self_header.self_filesize;
         } else {
             size_t elf_size = 0;
-            auto dump_segments = reinterpret_cast<const Elf32_Phdr const *>(elf_bytes + elf.e_phoff);
+            auto dump_segments = reinterpret_cast<const Elf32_Phdr *>(elf_bytes + elf.e_phoff);
             for (const auto &[seg_index, segment] : segment_reloc_info) {
                 uint8_t *seg_bytes = Ptr<uint8_t>(segment.addr).get(mem);
                 elf_size = std::max(elf_size, static_cast<size_t>(dump_segments[seg_index].p_offset) + static_cast<size_t>(dump_segments[seg_index].p_filesz));
