@@ -426,6 +426,9 @@ if(NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
 	# Disable Tracy automated data collection in order to prevent Tracy-related code from being profiled
 	target_compile_definitions(tracy PUBLIC TRACY_NO_SYSTEM_TRACING)
 
+	# Disable Tracy crash handler. Don't stop tracing on first AV.
+	target_compile_definitions(tracy PUBLIC TRACY_NO_CRASH_HANDLER)
+
 	# Defining TRACY_ENABLE for both compiling Tracy and compiling the project that links
 	# against it is needed for Tracy to work
 	#
