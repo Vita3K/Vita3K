@@ -280,6 +280,9 @@ int main(int argc, char *argv[]) {
     auto gui_settings = std::make_shared<GuiSettings>(gui_configs_dir);
     auto persistent_settings = std::make_shared<PersistentSettings>(gui_configs_dir);
 
+    if (cfg.fullscreen)
+        emuenv.cfg.boot_apps_full_screen = true;
+
     GuiApplication gui_app(emuenv, gui_settings);
 
     if (!cfg.no_gui) {

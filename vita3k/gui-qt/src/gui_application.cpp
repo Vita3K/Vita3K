@@ -235,6 +235,8 @@ void GuiApplication::install_event_filters(GameWindow *window) {
         this, [this]() {
             set_pause_reason(app::AppSessionPauseReason::User, !m_app_session.is_paused());
         });
+    connect(m_kb_filter, &CtrlKeyboardFilter::fullscreen_toggled,
+        window, &GameWindow::toggle_fullscreen);
 }
 
 void GuiApplication::on_game_closed_internal(bool emit_stopped) {
@@ -325,6 +327,11 @@ void GuiApplication::pump_sdl_events() {
 
     if (handle_pending_app_launch_request())
         return;
+
+    if (m_game_window && !m_app_session.has_active_session()) {
+        on_game_closed_internal();
+        return;
+    }
 
     SDL_Event event;
     while (SDL_PollEvent(&event)) {

@@ -860,10 +860,16 @@ void MainWindow::on_game_started() {
         m_live_area_widget = nullptr;
     }
 
+    if (m_game_container) {
+        connect(m_game_container, &QWindow::visibilityChanged, this, [this](QWindow::Visibility v) {
+            m_fullscreen = (v == QWindow::FullScreen);
+            m_ui->toolbar_fullscreen->setIcon(m_fullscreen ? m_icon_fullscreen_off : m_icon_fullscreen_on);
+            m_ui->toolbar_fullscreen->setText(m_fullscreen ? tr("Exit Fullscreen") : tr("Fullscreen"));
+        });
+    }
+
     auto *kb_filter = m_gui_app->keyboard_filter();
     if (kb_filter) {
-        connect(kb_filter, &CtrlKeyboardFilter::fullscreen_toggled,
-            this, [this]() { on_toolbar_fullscreen(); });
         connect(kb_filter, &CtrlKeyboardFilter::texture_replacement_toggled,
             this, [this]() { toggle_texture_replacement(emuenv); });
         connect(kb_filter, &CtrlKeyboardFilter::screenshot_requested,
