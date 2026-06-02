@@ -326,8 +326,10 @@ void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceU
     const Address callback_info_addr = stack_alloc(*thread->cpu, sizeof(SceNgsCallbackInfo));
 
     SceNgsCallbackInfo *info = Ptr<SceNgsCallbackInfo>(callback_info_addr).get(mem);
-    info->rack_handle = Ptr<void>(rack, mem);
-    info->voice_handle = Ptr<void>(this, mem);
+    const auto rack_base = reinterpret_cast<std::uintptr_t>(rack->memspace.get(mem));
+    const auto voice_addr = rack->memspace.address() + static_cast<Address>(reinterpret_cast<std::uintptr_t>(this) - rack_base);
+    info->rack_handle = rack->memspace;
+    info->voice_handle = Ptr<void>(voice_addr);
     info->module_id = module_id;
     info->callback_reason = reason1;
     info->callback_reason_2 = reason2;

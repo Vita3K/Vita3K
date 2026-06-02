@@ -36,15 +36,6 @@ public:
         static_assert(std::is_convertible_v<U *, T *>, "Ptr is not convertible.");
     }
 
-    Ptr(T *pointer, const MemState &mem) {
-        const uint8_t *const pointer_bytes = reinterpret_cast<const uint8_t *>(pointer);
-        if (pointer_bytes == 0) {
-            addr = 0;
-        } else {
-            addr = static_cast<Address>(pointer_bytes - &mem.memory[0]);
-        }
-    }
-
     Address address() const {
         return addr;
     }

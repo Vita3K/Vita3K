@@ -591,8 +591,7 @@ void apply_renderer_config(EmuEnvState &emuenv) {
         emuenv.overlay_manager = std::make_unique<overlay::display_manager>();
     r.overlay_manager = emuenv.overlay_manager.get();
     emuenv.overlay_manager->set_flip_request_callback([&r]() {
-        r.async_flip_requested.store(true, std::memory_order_relaxed);
-        r.command_buffer_queue.wake();
+        r.request_async_flip();
     });
     r.common_dialog = &emuenv.common_dialog;
     r.sys_date_format = cc.sys_date_format;

@@ -41,6 +41,8 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
+#include <optional>
 
 enum class TimerFlags : uint32_t {
     FIFO_THREAD = 0x00000000,
@@ -55,10 +57,216 @@ enum class TimerFlags : uint32_t {
 
 TRACY_MODULE_NAME(SceLibKernel);
 
-inline static uint64_t get_current_time() {
-    return std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::high_resolution_clock::now().time_since_epoch())
-        .count();
+namespace {
+class Mspace {
+public:
+    using Info = KernelState::LibKernelMspaceInfo;
+
+    Mspace(Mspace &&) noexcept = default;
+    Mspace &operator=(Mspace &&) noexcept = default;
+
+    static std::optional<Mspace> get(EmuEnvState &emuenv, const char *op, const Ptr<void> space) {
+        auto info = find(emuenv.kernel, space);
+        if (!info) {
+            LOG_ERROR("{} called with unknown mspace handle {}", op, log_hex(space.address()));
+            return std::nullopt;
+        }
+
+        return lock(emuenv, op, space, std::move(info));
+    }
+
+    static std::optional<Mspace> get(EmuEnvState &emuenv, const char *op, const Ptr<void> space, const Ptr<void> address) {
+        auto info = find(emuenv.kernel, space, address);
+        if (!info) {
+            LOG_ERROR("{} could not resolve mspace for handle {} address {}", op, log_hex(space.address()), log_hex(address.address()));
+            return std::nullopt;
+        }
+
+        return lock(emuenv, op, space, std::move(info));
+    }
+
+    static Ptr<void> create(EmuEnvState &emuenv, const char *op, const Ptr<void> base, const uint32_t capacity) {
+        mspace raw = create_mspace_with_base(base.get(emuenv.mem), capacity, 1);
+        if (!raw) {
+            return Ptr<void>();
+        }
+
+        auto info = std::make_shared<Info>();
+        info->host_handle = raw;
+        info->base = base;
+        info->capacity = capacity;
+
+        const auto handle = to_guest(emuenv.mem, *info, op, raw);
+        if (!handle) {
+            destroy_mspace(raw);
+            return Ptr<void>();
+        }
+
+        mspace_track_large_chunks(raw, 1);
+
+        {
+            const std::lock_guard<std::mutex> lock(emuenv.kernel.libkernel_mspace_mutex);
+            emuenv.kernel.libkernel_mspaces[handle.address()] = info;
+        }
+
+        return handle;
+    }
+
+    static uint32_t destroy(EmuEnvState &emuenv, const char *op, const Ptr<void> space) {
+        auto info = find(emuenv.kernel, space);
+        if (!info) {
+            LOG_ERROR("{} called with unknown mspace handle {}", op, log_hex(space.address()));
+            return 0;
+        }
+
+        {
+            const std::lock_guard<std::mutex> lock(emuenv.kernel.libkernel_mspace_mutex);
+            emuenv.kernel.libkernel_mspaces.erase(space.address());
+        }
+
+        auto mspace = lock(emuenv, op, space, std::move(info));
+        if (!mspace) {
+            return 0;
+        }
+
+        const auto raw = mspace->raw();
+        mspace->info_->destroyed = true;
+        mspace->info_->host_handle = nullptr;
+        return static_cast<uint32_t>(destroy_mspace(raw));
+    }
+
+    Ptr<void> calloc(const char *op, const uint32_t count, const uint32_t size) const {
+        return to_guest_alloc(op, mspace_calloc(raw(), count, size));
+    }
+
+    Ptr<void> malloc(const char *op, const uint32_t size) const {
+        return to_guest_alloc(op, mspace_malloc(raw(), size));
+    }
+
+    Ptr<void> memalign(const char *op, const uint32_t alignment, const uint32_t size) const {
+        return to_guest_alloc(op, mspace_memalign(raw(), alignment, size));
+    }
+
+    Ptr<void> realloc(const char *op, const Ptr<void> address, const uint32_t size) const {
+        void *const old_address = address.get(emuenv_->mem);
+        void *const new_address = mspace_realloc(raw(), old_address, size);
+        if (!new_address) {
+            return Ptr<void>();
+        }
+
+        const auto guest = to_guest(op, new_address);
+        if (!guest && (new_address != old_address)) {
+            mspace_free(raw(), new_address);
+        }
+
+        return guest;
+    }
+
+    void free(const Ptr<void> address) const {
+        mspace_free(raw(), address.get(emuenv_->mem));
+    }
+
+private:
+    explicit Mspace(EmuEnvState &emuenv, std::shared_ptr<Info> info, std::unique_lock<std::mutex> &&lock)
+        : emuenv_(&emuenv)
+        , info_(std::move(info))
+        , lock_(std::move(lock)) {
+    }
+
+    static bool contains(const Info &info, const Ptr<void> address) {
+        if (!address) {
+            return false;
+        }
+
+        const uint64_t base = info.base.address();
+        const uint64_t guest = address.address();
+        const uint64_t end = base + info.capacity;
+        return base <= guest && guest < end;
+    }
+
+    static std::shared_ptr<Info> find(KernelState &kernel, const Ptr<void> space, const Ptr<void> address = Ptr<void>()) {
+        const std::lock_guard<std::mutex> lock(kernel.libkernel_mspace_mutex);
+
+        if (space) {
+            const auto it = kernel.libkernel_mspaces.find(space.address());
+            if (it != kernel.libkernel_mspaces.end()) {
+                return it->second;
+            }
+        }
+
+        if (address) {
+            for (const auto &[unused_handle, info] : kernel.libkernel_mspaces) {
+                if (contains(*info, address)) {
+                    return info;
+                }
+            }
+        }
+
+        return nullptr;
+    }
+
+    static std::optional<Mspace> lock(EmuEnvState &emuenv, const char *op, const Ptr<void> space, std::shared_ptr<Info> info) {
+        std::unique_lock<std::mutex> lock(info->mutex);
+        if (info->destroyed) {
+            LOG_ERROR("{} called on destroyed mspace handle {}", op, log_hex(space.address()));
+            return std::nullopt;
+        }
+
+        return Mspace(emuenv, std::move(info), std::move(lock));
+    }
+
+    static Ptr<void> to_guest(const MemState &mem, const Info &info, const char *op, const void *host_ptr) {
+        if (!host_ptr) {
+            return Ptr<void>();
+        }
+
+        const auto host_base = reinterpret_cast<std::uintptr_t>(info.base.get(mem));
+        const auto host = reinterpret_cast<std::uintptr_t>(host_ptr);
+        if (host < host_base) {
+            LOG_ERROR("{} returned host memory before the guest base", op);
+            return Ptr<void>();
+        }
+
+        const auto guest = Ptr<void>(info.base.address() + static_cast<Address>(host - host_base));
+        const std::uintptr_t offset = guest.address() - info.base.address();
+        if (info.capacity != 0 && offset >= info.capacity) {
+            LOG_ERROR("{} returned host memory outside the guest mspace window", op);
+            return Ptr<void>();
+        }
+
+        return guest;
+    }
+
+    Ptr<void> to_guest(const char *op, const void *host_ptr) const {
+        return Mspace::to_guest(emuenv_->mem, *info_, op, host_ptr);
+    }
+
+    Ptr<void> to_guest_alloc(const char *op, void *host_ptr) const {
+        const auto guest = to_guest(op, host_ptr);
+        if (guest || !host_ptr) {
+            return guest;
+        }
+
+        mspace_free(raw(), host_ptr);
+        return Ptr<void>();
+    }
+
+    mspace raw() const {
+        return static_cast<mspace>(info_->host_handle);
+    }
+
+    EmuEnvState *emuenv_ = nullptr;
+    std::shared_ptr<Info> info_;
+    std::unique_lock<std::mutex> lock_;
+};
+} // namespace
+
+static Ptr<char> guest_ptr_from_string_result(const Ptr<const char> base, const char *host_base, const char *host_ptr) {
+    if (!host_ptr) {
+        return Ptr<char>();
+    }
+
+    return Ptr<char>(base.address() + static_cast<Address>(reinterpret_cast<std::uintptr_t>(host_ptr) - reinterpret_cast<std::uintptr_t>(host_base)));
 }
 
 VAR_EXPORT(__sce_libcparam) {
@@ -216,32 +424,31 @@ EXPORT(int, sceClibMemsetChk) {
 
 EXPORT(Ptr<void>, sceClibMspaceCalloc, Ptr<void> space, uint32_t elements, uint32_t size) {
     TRACY_FUNC(sceClibMspaceCalloc, space, elements, size);
-    const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-
-    void *address = mspace_calloc(space.get(emuenv.mem), elements, size);
-    return Ptr<void>(address, emuenv.mem);
+    const auto mspace = Mspace::get(emuenv, export_name, space);
+    return mspace ? mspace->calloc(export_name, elements, size) : Ptr<void>();
 }
 
 EXPORT(Ptr<void>, sceClibMspaceCreate, Ptr<void> base, uint32_t capacity) {
     TRACY_FUNC(sceClibMspaceCreate, base, capacity);
-    const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-
-    mspace space = create_mspace_with_base(base.get(emuenv.mem), capacity, 0);
-    return Ptr<void>(space, emuenv.mem);
+    return Mspace::create(emuenv, export_name, base, capacity);
 }
 
 EXPORT(uint32_t, sceClibMspaceDestroy, Ptr<void> space) {
     TRACY_FUNC(sceClibMspaceDestroy, space);
-    const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-
-    return static_cast<uint32_t>(destroy_mspace(space.get(emuenv.mem)));
+    return Mspace::destroy(emuenv, export_name, space);
 }
 
 EXPORT(void, sceClibMspaceFree, Ptr<void> space, Ptr<void> address) {
     TRACY_FUNC(sceClibMspaceFree, space, address);
-    const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
 
-    mspace_free(space.get(emuenv.mem), address.get(emuenv.mem));
+    if (!address) {
+        return;
+    }
+
+    const auto mspace = Mspace::get(emuenv, export_name, space, address);
+    if (mspace) {
+        mspace->free(address);
+    }
 }
 
 EXPORT(int, sceClibMspaceIsHeapEmpty) {
@@ -251,10 +458,8 @@ EXPORT(int, sceClibMspaceIsHeapEmpty) {
 
 EXPORT(Ptr<void>, sceClibMspaceMalloc, Ptr<void> space, uint32_t size) {
     TRACY_FUNC(sceClibMspaceMalloc, space, size);
-    const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-
-    void *address = mspace_malloc(space.get(emuenv.mem), size);
-    return Ptr<void>(address, emuenv.mem);
+    const auto mspace = Mspace::get(emuenv, export_name, space);
+    return mspace ? mspace->malloc(export_name, size) : Ptr<void>();
 }
 
 EXPORT(int, sceClibMspaceMallocStats) {
@@ -274,18 +479,19 @@ EXPORT(int, sceClibMspaceMallocUsableSize) {
 
 EXPORT(Ptr<void>, sceClibMspaceMemalign, Ptr<void> space, uint32_t alignment, uint32_t size) {
     TRACY_FUNC(sceClibMspaceMemalign, space, alignment, size);
-    const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-
-    void *address = mspace_memalign(space.get(emuenv.mem), alignment, size);
-    return Ptr<void>(address, emuenv.mem);
+    const auto mspace = Mspace::get(emuenv, export_name, space);
+    return mspace ? mspace->memalign(export_name, alignment, size) : Ptr<void>();
 }
 
 EXPORT(Ptr<void>, sceClibMspaceRealloc, Ptr<void> space, Ptr<void> address, uint32_t size) {
     TRACY_FUNC(sceClibMspaceRealloc, space, address, size);
-    const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
 
-    void *new_address = mspace_realloc(space.get(emuenv.mem), address.get(emuenv.mem), size);
-    return Ptr<void>(new_address, emuenv.mem);
+    if (!address) {
+        return CALL_EXPORT(sceClibMspaceMalloc, space, size);
+    }
+
+    const auto mspace = Mspace::get(emuenv, export_name, space, address);
+    return mspace ? mspace->realloc(export_name, address, size) : Ptr<void>();
 }
 
 EXPORT(int, sceClibMspaceReallocalign) {
@@ -341,10 +547,10 @@ EXPORT(int, sceClibStrcatChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, sceClibStrchr, const char *str, int c) {
+EXPORT(Ptr<char>, sceClibStrchr, Ptr<const char> str, int c) {
     TRACY_FUNC(sceClibStrchr, str, c);
-    char *res = const_cast<char *>(strchr(str, c));
-    return Ptr<char>(res, emuenv.mem);
+    const char *const host_str = str.get(emuenv.mem);
+    return guest_ptr_from_string_result(str, host_str, strchr(host_str, c));
 }
 
 EXPORT(int, sceClibStrcmp, const char *s1, const char *s2) {
@@ -357,10 +563,10 @@ EXPORT(int, sceClibStrcpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, sceClibStrlcat, char *dst, const char *src, SceSize len) {
+EXPORT(Ptr<char>, sceClibStrlcat, Ptr<char> dst, const char *src, SceSize len) {
     TRACY_FUNC(sceClibStrlcat, dst, src, len);
-    char *res = strncat(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    strncat(dst.get(emuenv.mem), src, len);
+    return dst;
 }
 
 EXPORT(int, sceClibStrlcatChk) {
@@ -368,10 +574,10 @@ EXPORT(int, sceClibStrlcatChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<char>, sceClibStrlcpy, char *dst, const char *src, SceSize len) {
+EXPORT(Ptr<char>, sceClibStrlcpy, Ptr<char> dst, const char *src, SceSize len) {
     TRACY_FUNC(sceClibStrlcpy, dst, src, len);
-    char *res = strncpy(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    strncpy(dst.get(emuenv.mem), src, len);
+    return dst;
 }
 
 EXPORT(int, sceClibStrlcpyChk) {
@@ -388,10 +594,10 @@ EXPORT(int, sceClibStrncasecmp, const char *s1, const char *s2, SceSize len) {
 #endif
 }
 
-EXPORT(Ptr<char>, sceClibStrncat, char *dst, const char *src, SceSize len) {
+EXPORT(Ptr<char>, sceClibStrncat, Ptr<char> dst, const char *src, SceSize len) {
     TRACY_FUNC(sceClibStrncat, dst, src, len);
-    char *res = strncat(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    strncat(dst.get(emuenv.mem), src, len);
+    return dst;
 }
 
 EXPORT(int, sceClibStrncatChk) {
@@ -404,10 +610,10 @@ EXPORT(int, sceClibStrncmp, const char *s1, const char *s2, SceSize len) {
     return strncmp(s1, s2, len);
 }
 
-EXPORT(Ptr<char>, sceClibStrncpy, char *dst, const char *src, SceSize len) {
+EXPORT(Ptr<char>, sceClibStrncpy, Ptr<char> dst, const char *src, SceSize len) {
     TRACY_FUNC(sceClibStrncpy, dst, src, len);
-    char *res = strncpy(dst, src, len);
-    return Ptr<char>(res, emuenv.mem);
+    strncpy(dst.get(emuenv.mem), src, len);
+    return dst;
 }
 
 EXPORT(int, sceClibStrncpyChk) {
@@ -420,16 +626,16 @@ EXPORT(uint32_t, sceClibStrnlen, const char *s1, SceSize maxlen) {
     return static_cast<uint32_t>(strnlen(s1, maxlen));
 }
 
-EXPORT(Ptr<char>, sceClibStrrchr, const char *src, int ch) {
+EXPORT(Ptr<char>, sceClibStrrchr, Ptr<const char> src, int ch) {
     TRACY_FUNC(sceClibStrrchr, src, ch);
-    char *res = const_cast<char *>(strrchr(src, ch));
-    return Ptr<char>(res, emuenv.mem);
+    const char *const host_src = src.get(emuenv.mem);
+    return guest_ptr_from_string_result(src, host_src, strrchr(host_src, ch));
 }
 
-EXPORT(Ptr<char>, sceClibStrstr, const char *s1, const char *s2) {
+EXPORT(Ptr<char>, sceClibStrstr, Ptr<const char> s1, const char *s2) {
     TRACY_FUNC(sceClibStrstr, s1, s2);
-    char *res = const_cast<char *>(strstr(s1, s2));
-    return Ptr<char>(res, emuenv.mem);
+    const char *const host_s1 = s1.get(emuenv.mem);
+    return guest_ptr_from_string_result(s1, host_s1, strstr(host_s1, s2));
 }
 
 EXPORT(int64_t, sceClibStrtoll, const char *str, char **endptr, int base) {
@@ -1278,9 +1484,7 @@ EXPORT(SceUID, sceKernelCreateTimer, const char *name, SceUInt32 attr, const uin
 
 EXPORT(int, sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea) {
     TRACY_FUNC(sceKernelDeleteLwCond, workarea);
-    SceUID lightweight_condition_id = workarea.get(emuenv.mem)->uid;
-
-    return condvar_delete(emuenv.kernel, export_name, thread_id, lightweight_condition_id, SyncWeight::Light);
+    return CALL_EXPORT(_sceKernelDeleteLwCond, workarea);
 }
 
 EXPORT(int, sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
@@ -1462,7 +1666,7 @@ EXPORT(int, sceKernelGetThreadExitStatus, SceUID thid, SceInt32 *pExitStatus) {
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
-    if (thread->status != ThreadStatus::dormant) {
+    if (!thread->is_dormant()) {
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     }
     if (pExitStatus) {
@@ -1515,7 +1719,7 @@ EXPORT(int, sceKernelGetTimerTime, SceUID timer_handle, SceKernelSysClock *time)
     if (!timer_info)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
-    *time = get_current_time() - timer_info->time;
+    *time = emuenv.kernel.core_timing.now_us() - timer_info->time;
 
     return 0;
 }
@@ -1542,8 +1746,11 @@ EXPORT(int, sceKernelLockLwMutex_0, Ptr<SceKernelLwMutexWork> workarea, int lock
 
 EXPORT(int, sceKernelLockLwMutexCB, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
     TRACY_FUNC(sceKernelLockLwMutexCB, workarea, lock_count, ptimeout);
-    process_callbacks(emuenv.kernel, thread_id);
-    return CALL_EXPORT(_sceKernelLockLwMutex, workarea, lock_count, ptimeout);
+    if (!workarea)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+
+    const auto lwmutexid = workarea.get(emuenv.mem)->uid;
+    return mutex_lock(emuenv.kernel, emuenv.mem, export_name, thread_id, lwmutexid, lock_count, ptimeout, SyncWeight::Light, true);
 }
 
 EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *timeout) {
@@ -1606,32 +1813,36 @@ EXPORT(int, sceKernelPulseEventWithNotifyCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, sceKernelReceiveMsgPipe, SceUID msgPipeId, void *pRecvBuf, SceSize recvSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+EXPORT(SceInt32, sceKernelReceiveMsgPipe, SceUID msgPipeId, Ptr<void> pRecvBuf, SceSize recvSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelReceiveMsgPipe, msgPipeId, pRecvBuf, recvSize, waitMode, pResult, pTimeout);
-    const auto ret = msgpipe_recv(emuenv.kernel, export_name, thread_id, msgPipeId, waitMode, pRecvBuf, recvSize, pTimeout);
-    if (static_cast<int>(ret) < 0) {
-        return ret;
-    }
-    if (pResult) {
-        *pResult = ret;
-    }
-    return SCE_KERNEL_OK;
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    const auto recv_vector = Ptr<SceKernelMsgPipeVector>(stack_alloc(*thread->cpu, sizeof(SceKernelMsgPipeVector)));
+    recv_vector.get(emuenv.mem)->base = pRecvBuf.address();
+    recv_vector.get(emuenv.mem)->size = recvSize;
+    const auto ret = CALL_EXPORT(sceKernelReceiveMsgPipeVector, msgPipeId, recv_vector.cast<const SceKernelMsgPipeVector>(), 1, waitMode, pResult, pTimeout);
+    stack_free(*thread->cpu, sizeof(SceKernelMsgPipeVector));
+    return ret;
 }
 
-EXPORT(SceInt32, sceKernelReceiveMsgPipeCB, SceUID msgPipeId, void *pRecvBuf, SceSize recvSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+EXPORT(SceInt32, sceKernelReceiveMsgPipeCB, SceUID msgPipeId, Ptr<void> pRecvBuf, SceSize recvSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelReceiveMsgPipeCB, msgPipeId, pRecvBuf, recvSize, waitMode, pResult, pTimeout);
-    process_callbacks(emuenv.kernel, thread_id);
-    return CALL_EXPORT(sceKernelReceiveMsgPipe, msgPipeId, pRecvBuf, recvSize, waitMode, pResult, pTimeout);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    const auto recv_vector = Ptr<SceKernelMsgPipeVector>(stack_alloc(*thread->cpu, sizeof(SceKernelMsgPipeVector)));
+    recv_vector.get(emuenv.mem)->base = pRecvBuf.address();
+    recv_vector.get(emuenv.mem)->size = recvSize;
+    const auto ret = CALL_EXPORT(sceKernelReceiveMsgPipeVectorCB, msgPipeId, recv_vector.cast<const SceKernelMsgPipeVector>(), 1, waitMode, pResult, pTimeout);
+    stack_free(*thread->cpu, sizeof(SceKernelMsgPipeVector));
+    return ret;
 }
 
-EXPORT(int, sceKernelReceiveMsgPipeVector) {
-    TRACY_FUNC(sceKernelReceiveMsgPipeVector);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelReceiveMsgPipeVector, SceUID msgPipeId, Ptr<const SceKernelMsgPipeVector> recvVectors, SceUInt32 vectorCount, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+    TRACY_FUNC(sceKernelReceiveMsgPipeVector, msgPipeId, recvVectors, vectorCount, waitMode, pResult, pTimeout);
+    return msgpipe_recv_vector(emuenv.kernel, emuenv.mem, export_name, thread_id, msgPipeId, recvVectors, vectorCount, waitMode, pResult, pTimeout, false);
 }
 
-EXPORT(int, sceKernelReceiveMsgPipeVectorCB) {
-    TRACY_FUNC(sceKernelReceiveMsgPipeVectorCB);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelReceiveMsgPipeVectorCB, SceUID msgPipeId, Ptr<const SceKernelMsgPipeVector> recvVectors, SceUInt32 vectorCount, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+    TRACY_FUNC(sceKernelReceiveMsgPipeVectorCB, msgPipeId, recvVectors, vectorCount, waitMode, pResult, pTimeout);
+    return msgpipe_recv_vector(emuenv.kernel, emuenv.mem, export_name, thread_id, msgPipeId, recvVectors, vectorCount, waitMode, pResult, pTimeout, true);
 }
 
 EXPORT(int, sceKernelRegisterThreadEventHandler, const char *name, SceUID thread_mask, SceUInt32 mask, Ptr<const void> handler, Address common) {
@@ -1643,32 +1854,36 @@ EXPORT(int, sceKernelRegisterThreadEventHandler, const char *name, SceUID thread
     return CALL_EXPORT(_sceKernelRegisterThreadEventHandler, name, thread_mask, mask, &handler_opt);
 }
 
-EXPORT(SceInt32, sceKernelSendMsgPipe, SceUID msgPipeId, const void *pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+EXPORT(SceInt32, sceKernelSendMsgPipe, SceUID msgPipeId, Ptr<const void> pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelSendMsgPipe, msgPipeId, pSendBuf, sendSize, waitMode, pResult, pTimeout);
-    const auto ret = msgpipe_send(emuenv.kernel, export_name, thread_id, msgPipeId, waitMode, pSendBuf, sendSize, pTimeout);
-    if (static_cast<int>(ret) < 0) {
-        return ret;
-    }
-    if (pResult) {
-        *pResult = ret;
-    }
-    return SCE_KERNEL_OK;
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    const auto send_vector = Ptr<SceKernelMsgPipeVector>(stack_alloc(*thread->cpu, sizeof(SceKernelMsgPipeVector)));
+    send_vector.get(emuenv.mem)->base = pSendBuf.address();
+    send_vector.get(emuenv.mem)->size = sendSize;
+    const auto ret = CALL_EXPORT(sceKernelSendMsgPipeVector, msgPipeId, send_vector.cast<const SceKernelMsgPipeVector>(), 1, waitMode, pResult, pTimeout);
+    stack_free(*thread->cpu, sizeof(SceKernelMsgPipeVector));
+    return ret;
 }
 
-EXPORT(SceInt32, sceKernelSendMsgPipeCB, SceUID msgPipeId, const void *pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+EXPORT(SceInt32, sceKernelSendMsgPipeCB, SceUID msgPipeId, Ptr<const void> pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelSendMsgPipeCB, msgPipeId, pSendBuf, sendSize, waitMode, pResult, pTimeout);
-    process_callbacks(emuenv.kernel, thread_id);
-    return CALL_EXPORT(sceKernelSendMsgPipe, msgPipeId, pSendBuf, sendSize, waitMode, pResult, pTimeout);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    const auto send_vector = Ptr<SceKernelMsgPipeVector>(stack_alloc(*thread->cpu, sizeof(SceKernelMsgPipeVector)));
+    send_vector.get(emuenv.mem)->base = pSendBuf.address();
+    send_vector.get(emuenv.mem)->size = sendSize;
+    const auto ret = CALL_EXPORT(sceKernelSendMsgPipeVectorCB, msgPipeId, send_vector.cast<const SceKernelMsgPipeVector>(), 1, waitMode, pResult, pTimeout);
+    stack_free(*thread->cpu, sizeof(SceKernelMsgPipeVector));
+    return ret;
 }
 
-EXPORT(int, sceKernelSendMsgPipeVector) {
-    TRACY_FUNC(sceKernelSendMsgPipeVector);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelSendMsgPipeVector, SceUID msgPipeId, Ptr<const SceKernelMsgPipeVector> sendVectors, SceUInt32 vectorCount, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+    TRACY_FUNC(sceKernelSendMsgPipeVector, msgPipeId, sendVectors, vectorCount, waitMode, pResult, pTimeout);
+    return msgpipe_send_vector(emuenv.kernel, emuenv.mem, export_name, thread_id, msgPipeId, sendVectors, vectorCount, waitMode, pResult, pTimeout, false);
 }
 
-EXPORT(int, sceKernelSendMsgPipeVectorCB) {
-    TRACY_FUNC(sceKernelSendMsgPipeVectorCB);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelSendMsgPipeVectorCB, SceUID msgPipeId, Ptr<const SceKernelMsgPipeVector> sendVectors, SceUInt32 vectorCount, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+    TRACY_FUNC(sceKernelSendMsgPipeVectorCB, msgPipeId, sendVectors, vectorCount, waitMode, pResult, pTimeout);
+    return msgpipe_send_vector(emuenv.kernel, emuenv.mem, export_name, thread_id, msgPipeId, sendVectors, vectorCount, waitMode, pResult, pTimeout, true);
 }
 
 EXPORT(int, sceKernelSetEventWithNotifyCallback) {
@@ -1749,9 +1964,9 @@ EXPORT(int, sceKernelTryLockLwMutex_16XX, Ptr<SceKernelLwMutexWork> workarea, in
     return CALL_EXPORT(sceKernelTryLockLwMutex, workarea, lock_count);
 }
 
-EXPORT(int, sceKernelTryReceiveMsgPipe, SceUID msgpipe_id, char *recv_buf, SceSize msg_size, SceUInt32 wait_mode, SceSize *result) {
+EXPORT(int, sceKernelTryReceiveMsgPipe, SceUID msgpipe_id, Ptr<char> recv_buf, SceSize msg_size, SceUInt32 wait_mode, SceSize *result) {
     TRACY_FUNC(sceKernelTryReceiveMsgPipe, msgpipe_id, recv_buf, msg_size, wait_mode, result);
-    const auto ret = msgpipe_recv(emuenv.kernel, export_name, thread_id, msgpipe_id, wait_mode | SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT, recv_buf, msg_size, 0);
+    const auto ret = msgpipe_recv(emuenv.kernel, emuenv.mem, export_name, thread_id, msgpipe_id, wait_mode | SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT, recv_buf, msg_size, 0);
     if (ret == 0) {
         return SCE_KERNEL_ERROR_MPP_EMPTY;
     }
@@ -1766,12 +1981,12 @@ EXPORT(int, sceKernelTryReceiveMsgPipeVector) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelTrySendMsgPipe, SceUID msgPipeId, const void *pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult) {
+EXPORT(int, sceKernelTrySendMsgPipe, SceUID msgPipeId, Ptr<const void> pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult) {
     TRACY_FUNC(sceKernelTrySendMsgPipe, msgPipeId, pSendBuf, sendSize, waitMode, pResult);
     STUBBED("");
     waitMode |= SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT;
     SceUInt32 pTimeout = 0;
-    const auto ret = msgpipe_send(emuenv.kernel, export_name, thread_id, msgPipeId, waitMode, pSendBuf, sendSize, &pTimeout);
+    const auto ret = msgpipe_send(emuenv.kernel, emuenv.mem, export_name, thread_id, msgPipeId, waitMode, pSendBuf, sendSize, &pTimeout);
     if (static_cast<int>(ret) < 0) {
         return ret;
     }
@@ -1795,7 +2010,7 @@ EXPORT(int, sceKernelUnloadModule, SceUID uid, SceUInt32 flags, const void *pOpt
 EXPORT(int, sceKernelUnlockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int unlock_count) {
     TRACY_FUNC(sceKernelUnlockLwMutex, workarea, unlock_count);
     const auto lwmutexid = workarea.get(emuenv.mem)->uid;
-    return mutex_unlock(emuenv.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
+    return mutex_unlock(emuenv.kernel, emuenv.mem, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
 }
 
 EXPORT(int, sceKernelUnlockLwMutex_0, Ptr<SceKernelLwMutexWork> workarea, int unlock_count) {
@@ -1806,7 +2021,7 @@ EXPORT(int, sceKernelUnlockLwMutex_0, Ptr<SceKernelLwMutexWork> workarea, int un
 EXPORT(int, sceKernelUnlockLwMutex2, Ptr<SceKernelLwMutexWork> workarea, int unlock_count) {
     TRACY_FUNC(sceKernelUnlockLwMutex2, workarea, unlock_count);
     const auto lwmutexid = workarea.get(emuenv.mem)->uid;
-    return mutex_unlock(emuenv.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
+    return mutex_unlock(emuenv.kernel, emuenv.mem, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
 }
 
 EXPORT(SceInt32, sceKernelWaitCond, SceUID condId, SceUInt32 *pTimeout) {
@@ -1819,22 +2034,22 @@ EXPORT(SceInt32, sceKernelWaitCondCB, SceUID condId, SceUInt32 *pTimeout) {
     return CALL_EXPORT(_sceKernelWaitCondCB, condId, pTimeout);
 }
 
-EXPORT(SceInt32, sceKernelWaitEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout) {
+EXPORT(SceInt32, sceKernelWaitEvent, SceUID event_id, SceUInt32 bit_pattern, Ptr<SceUInt32> result_pattern, Ptr<SceUInt64> user_data, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelWaitEvent, event_id, bit_pattern, result_pattern, user_data, timeout);
     return CALL_EXPORT(_sceKernelWaitEvent, event_id, bit_pattern, result_pattern, user_data, timeout);
 }
 
-EXPORT(SceInt32, sceKernelWaitEventCB, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout) {
+EXPORT(SceInt32, sceKernelWaitEventCB, SceUID event_id, SceUInt32 bit_pattern, Ptr<SceUInt32> result_pattern, Ptr<SceUInt64> user_data, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelWaitEventCB, event_id, bit_pattern, result_pattern, user_data, timeout);
     return CALL_EXPORT(_sceKernelWaitEventCB, event_id, bit_pattern, result_pattern, user_data, timeout);
 }
 
-EXPORT(SceInt32, sceKernelWaitEventFlag, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
+EXPORT(SceInt32, sceKernelWaitEventFlag, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, Ptr<SceUInt32> pResultPat, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelWaitEventFlag, evfId, bitPattern, waitMode, pResultPat, pTimeout);
-    return eventflag_wait(emuenv.kernel, export_name, thread_id, evfId, bitPattern, waitMode, pResultPat, pTimeout);
+    return CALL_EXPORT(_sceKernelWaitEventFlag, evfId, bitPattern, waitMode, pResultPat, pTimeout);
 }
 
-EXPORT(SceInt32, sceKernelWaitEventFlagCB, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
+EXPORT(SceInt32, sceKernelWaitEventFlagCB, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, Ptr<SceUInt32> pResultPat, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelWaitEventFlagCB, evfId, bitPattern, waitMode, pResultPat, pTimeout);
     return CALL_EXPORT(_sceKernelWaitEventFlagCB, evfId, bitPattern, waitMode, pResultPat, pTimeout);
 }
@@ -1851,8 +2066,7 @@ EXPORT(int, sceKernelWaitExceptionCB) {
 
 EXPORT(int, sceKernelWaitLwCond, Ptr<SceKernelLwCondWork> workarea, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelWaitLwCond, workarea, timeout);
-    const auto cond_id = workarea.get(emuenv.mem)->uid;
-    return condvar_wait(emuenv.kernel, emuenv.mem, export_name, thread_id, cond_id, timeout, SyncWeight::Light);
+    return CALL_EXPORT(_sceKernelWaitLwCond, workarea, timeout);
 }
 
 EXPORT(SceInt32, sceKernelWaitLwCondCB, Ptr<SceKernelLwCondWork> pWork, SceUInt32 *pTimeout) {
@@ -1890,12 +2104,12 @@ EXPORT(int, sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, uint32_t ti
     return CALL_EXPORT(_sceKernelWaitSignalCB, unknown, delay, timeout);
 }
 
-EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
+EXPORT(int, sceKernelWaitThreadEnd, SceUID thid, Ptr<int> stat, SceUInt *timeout) {
     TRACY_FUNC(sceKernelWaitThreadEnd, thid, stat, timeout);
     return CALL_EXPORT(_sceKernelWaitThreadEnd, thid, stat, timeout);
 }
 
-EXPORT(int, sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout) {
+EXPORT(int, sceKernelWaitThreadEndCB, SceUID thid, Ptr<int> stat, SceUInt *timeout) {
     TRACY_FUNC(sceKernelWaitThreadEndCB, thid, stat, timeout);
     return CALL_EXPORT(_sceKernelWaitThreadEndCB, thid, stat, timeout);
 }

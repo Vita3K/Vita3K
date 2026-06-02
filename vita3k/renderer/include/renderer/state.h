@@ -188,6 +188,10 @@ struct State {
     void set_vsync_state(bool enable) {
         pending_vsync.store(enable ? 1 : 0, std::memory_order_relaxed);
     }
+    void request_async_flip() {
+        async_flip_requested.store(true, std::memory_order_relaxed);
+        command_buffer_queue.wake();
+    }
     void set_stretch_display(bool enable) {
         stretch_the_display_area = enable;
     }
