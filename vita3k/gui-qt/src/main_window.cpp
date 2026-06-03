@@ -1441,6 +1441,13 @@ void MainWindow::setup_toolbar() {
             gui::utils::open_dir(textures_path);
         });
 
+        const auto elfdumps_path = emuenv.log_path / "elfdumps"; // TODO: change elfdumps path to not be log, its ugly
+        menu.addAction(tr("Open ELF Dumps Path"), this, [elfdumps_path] {
+            if (!fs::exists(elfdumps_path))
+                fs::create_directories(elfdumps_path);
+            gui::utils::open_dir(elfdumps_path);
+        });
+
         menu.exec(pos);
     });
 
