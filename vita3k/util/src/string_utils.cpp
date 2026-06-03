@@ -20,28 +20,12 @@
 #include <util/log.h>
 
 #include <algorithm>
+#include <charconv>
 #include <codecvt>
 #include <locale>
-#include <sstream>
+#include <ranges>
 
 namespace string_utils {
-
-std::vector<std::string> split_string(const std::string &str, char delimiter) {
-    std::istringstream str_stream(str);
-    std::string segment;
-    std::vector<std::string> seglist;
-
-    const size_t num_segments = std::count_if(str.begin(), str.end(), [&](char c) {
-        return c == delimiter;
-    }) + (str.empty() ? 1 : 0);
-
-    seglist.reserve(num_segments);
-
-    while (std::getline(str_stream, segment, delimiter)) {
-        seglist.push_back(segment);
-    }
-    return seglist;
-}
 
 std::wstring utf_to_wide(const std::string &str) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
@@ -53,18 +37,13 @@ std::string wide_to_utf(const std::wstring &str) {
     return myconv.to_bytes(str);
 }
 
-std::string trim_copy(const std::string &str) {
-    const auto begin = std::find_if_not(str.begin(), str.end(), [](const unsigned char ch) {
-        return std::isspace(ch) != 0;
-    });
-    const auto end = std::find_if_not(str.rbegin(), str.rend(), [](const unsigned char ch) {
-        return std::isspace(ch) != 0;
-    }).base();
-
-    if (begin >= end)
-        return {};
-
-    return std::string(begin, end);
+std::string trim_copy(std::string_view str) {
+    return str
+        | std::views::drop_while([](unsigned char ch) { return std::isspace(ch); })
+        | std::views::reverse
+        | std::views::drop_while([](unsigned char ch) { return std::isspace(ch); })
+        | std::views::reverse
+        | std::ranges::to<std::string>();
 }
 
 std::string remove_special_chars(std::string str) {
@@ -90,7 +69,7 @@ std::string remove_special_chars(std::string str) {
 
 // Based on: https://stackoverflow.com/a/23135441
 // Search and replace "in" with "out" in the given string
-void replace(std::string &str, const std::string &in, const std::string &out) {
+void replace(std::string &str, std::string_view in, std::string_view out) {
     size_t pos = 0;
     while ((pos = str.find(in, pos)) != std::string::npos) {
         str.replace(pos, in.length(), out);
@@ -98,16 +77,18 @@ void replace(std::string &str, const std::string &in, const std::string &out) {
     }
 }
 
-std::vector<uint8_t> string_to_byte_array(const std::string &string) {
+std::vector<uint8_t> string_to_byte_array(std::string_view string) {
+    if (string.length() % 2 != 0) {
+        LOG_ERROR("Invalid hex string: {:?}", string);
+        return {};
+    }
+
     std::vector<uint8_t> hex_bytes;
     hex_bytes.reserve(string.length() / 2);
-
-    if (string.length() % 2 != 0)
-        LOG_WARN("Hex string length ({}) is not even", string.length());
-
-    for (size_t i = 0; i < string.length(); i += 2) {
-        std::string byte = string.substr(i, 2);
-        hex_bytes.push_back(static_cast<uint8_t>(std::strtoul(byte.c_str(), nullptr, 16)));
+    for (const char *p = string.data(); p < std::to_address(string.end()); p += 2) {
+        uint8_t byte = 0;
+        std::from_chars(p, p + 2, byte, 16);
+        hex_bytes.push_back(byte);
     }
     return hex_bytes;
 }
@@ -140,18 +121,14 @@ std::u16string utf8_to_utf16(const std::string &str) {
 }
 #endif
 
-std::string toupper(const std::string &s) {
-    std::string r = s;
-    std::transform(r.begin(), r.end(), r.begin(),
-        [](unsigned char c) { return std::toupper(c); });
-    return r;
+std::string toupper(std::string s) {
+    std::ranges::transform(s, s.begin(), [](unsigned char c) { return std::toupper(c); });
+    return s;
 }
 
-std::string tolower(const std::string &s) {
-    std::string r = s;
-    std::transform(r.begin(), r.end(), r.begin(),
-        [](unsigned char c) { return std::tolower(c); });
-    return r;
+std::string tolower(std::string s) {
+    std::ranges::transform(s, s.begin(), [](unsigned char c) { return std::tolower(c); });
+    return s;
 }
 
 int stoi_def(const std::string &str, int default_value, const char *name) {
