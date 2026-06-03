@@ -43,7 +43,7 @@ std::string lowercase_copy(std::string value) {
 }
 
 std::string normalize_locale(std::string locale) {
-    locale = string_utils::trim_copy(std::move(locale));
+    locale = string_utils::trim_copy(locale);
     std::replace(locale.begin(), locale.end(), '_', '-');
     return lowercase_copy(std::move(locale));
 }
@@ -99,7 +99,7 @@ std::string localized_text(const pugi::xml_node &node, const std::string &prefer
 
 fs::path resolve_asset_path(const fs::path &theme_dir, std::string asset_value) {
     const QString relative_path = gui::utils::sanitize_relative_path_reference(
-        QString::fromStdString(string_utils::trim_copy(std::move(asset_value))));
+        QString::fromStdString(string_utils::trim_copy(asset_value)));
     if (relative_path.isEmpty())
         return {};
 
@@ -107,7 +107,7 @@ fs::path resolve_asset_path(const fs::path &theme_dir, std::string asset_value) 
 }
 
 std::optional<VitaThemeColor> parse_theme_color(std::string raw_value) {
-    raw_value = string_utils::trim_copy(std::move(raw_value));
+    raw_value = string_utils::trim_copy(raw_value);
     if (raw_value.empty())
         return std::nullopt;
 
