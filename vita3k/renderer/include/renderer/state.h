@@ -48,7 +48,7 @@ enum struct MappingMethod : int {
     DoubleBuffer,
     ExernalHost,
     PageTable,
-    NativeBuffer
+    NativeBuffer // Only available in android
 };
 
 namespace renderer {

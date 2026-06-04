@@ -33,6 +33,7 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <renderer/functions.h>
+#include <renderer/state.h>
 #include <util/log.h>
 #include <util/system.h>
 
@@ -332,11 +333,11 @@ void SettingsDialog::load_config() {
             int bit;
         };
         static const MappingEntry all_methods[] = {
-            { "Disabled", "disabled", 0 },
-            { "Double Buffer", "double-buffer", 1 },
-            { "External Host", "external-host", 2 },
-            { "Page Table", "page-table", 3 },
-            { "Native Buffer", "native-buffer", 4 },
+            { "Disabled", "disabled", static_cast<int>(MappingMethod::Disabled) },
+            { "Double Buffer", "double-buffer", static_cast<int>(MappingMethod::DoubleBuffer) },
+            { "External Host", "external-host", static_cast<int>(MappingMethod::ExernalHost) },
+            { "Page Table", "page-table", static_cast<int>(MappingMethod::PageTable) },
+            { "Native Buffer", "native-buffer", static_cast<int>(MappingMethod::NativeBuffer) },
         };
 
         const int gpu_idx = m_config.gpu_idx;
