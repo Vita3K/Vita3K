@@ -221,8 +221,8 @@ glyph_load_setup font::get_glyph_files(language_class class_) const {
         result.font_names.emplace_back("NotoSansCJK-Regular.ttc");
         result.font_names.emplace_back("NotoSansSC-Regular.otf");
         result.font_names.emplace_back("wqy-microhei.ttc");
-        break;
 #endif
+        break;
     }
     case language_class::hangul: {
         result.font_names.clear();
