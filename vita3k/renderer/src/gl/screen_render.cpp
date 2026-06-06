@@ -21,6 +21,18 @@
 
 namespace renderer::gl {
 
+const SharedGLObject &ScreenRenderer::current_shader() const {
+    switch (filter) {
+    case Filter::FXAA: return m_render_shader_fxaa;
+    case Filter::Bicubic: return m_render_shader_bicubic;
+    default: return m_render_shader_nofilter; // Bilinear / Nearest
+    }
+}
+
+GLuint ScreenRenderer::current_sampler() const {
+    return (filter == Filter::Nearest) ? m_sampler_nearest : m_sampler_linear;
+}
+
 bool ScreenRenderer::init(const fs::path &static_assets) {
     glGenTextures(1, &m_screen_texture);
 
@@ -29,13 +41,27 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
     const auto render_main_path_vert = builtin_shaders_path / "render_main.vert";
     const auto render_main_path_frag = builtin_shaders_path / "render_main.frag";
     const auto render_main_path_fxaa_frag = builtin_shaders_path / "render_main_fxaa.frag";
+    const auto render_main_path_bicubic_frag = builtin_shaders_path / "render_main_bicubic.frag";
 
     m_render_shader_nofilter = ::gl::load_shaders(render_main_path_vert, render_main_path_frag);
     m_render_shader_fxaa = ::gl::load_shaders(render_main_path_vert, render_main_path_fxaa_frag);
-    if (!m_render_shader_nofilter || !m_render_shader_fxaa) {
+    m_render_shader_bicubic = ::gl::load_shaders(render_main_path_vert, render_main_path_bicubic_frag);
+    if (!m_render_shader_nofilter || !m_render_shader_fxaa || !m_render_shader_bicubic) {
         LOG_CRITICAL("Couldn't compile essential shaders for rendering. Exiting");
         return false;
     }
+
+    glGenSamplers(1, &m_sampler_linear);
+    glSamplerParameteri(m_sampler_linear, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glSamplerParameteri(m_sampler_linear, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glSamplerParameteri(m_sampler_linear, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(m_sampler_linear, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glGenSamplers(1, &m_sampler_nearest);
+    glSamplerParameteri(m_sampler_nearest, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glSamplerParameteri(m_sampler_nearest, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glSamplerParameteri(m_sampler_nearest, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(m_sampler_nearest, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glGenVertexArrays(1, &m_vao);
     glBindVertexArray(m_vao);
@@ -51,7 +77,7 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), vertex_buffer_data, GL_DYNAMIC_DRAW);
 
-    const auto &shader = enable_fxaa ? m_render_shader_fxaa : m_render_shader_nofilter;
+    const auto &shader = current_shader();
 
     GLint posAttrib = glGetAttribLocation(*shader, "position_vertex");
     GLint uvAttrib = glGetAttribLocation(*shader, "uv_vertex");
@@ -133,7 +159,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     // should not be needed, but just in case
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-    const auto &shader = enable_fxaa ? m_render_shader_fxaa : m_render_shader_nofilter;
+    const auto &shader = current_shader();
 
     const GLint posAttrib = glGetAttribLocation(*shader, "position_vertex");
     const GLint uvAttrib = glGetAttribLocation(*shader, "uv_vertex");
@@ -201,12 +227,13 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     );
     glEnableVertexAttribArray(uvAttrib);
 
-    if (enable_fxaa) {
+    if (filter == Filter::FXAA) {
         const GLint invScreenLocation = glGetUniformLocation(*shader, "inv_frame_size");
         glUniform2f(invScreenLocation, 1 / texture_size.x, 1 / texture_size.y);
     }
 
     glBindTexture(GL_TEXTURE_2D, texture);
+    glBindSampler(0, current_sampler());
 #ifndef __ANDROID__
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
@@ -245,6 +272,15 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
 }
 
 void ScreenRenderer::destroy() {
+    m_render_shader_nofilter.reset();
+    m_render_shader_fxaa.reset();
+    m_render_shader_bicubic.reset();
+
+    glDeleteSamplers(1, &m_sampler_linear);
+    m_sampler_linear = 0;
+    glDeleteSamplers(1, &m_sampler_nearest);
+    m_sampler_nearest = 0;
+
     glDeleteBuffers(1, &m_vbo);
     m_vbo = 0;
 
