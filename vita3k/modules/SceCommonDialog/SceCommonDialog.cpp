@@ -1038,10 +1038,10 @@ static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message,
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_CONFIRM_CANCEL:
         switch (emuenv.common_dialog.savedata.display_type) {
         case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-            emuenv.common_dialog.savedata.msg = lang::get(lang::str::cancel_loading);
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::cancel_saving);
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-            emuenv.common_dialog.savedata.msg = lang::get(lang::str::cancel_saving);
+            emuenv.common_dialog.savedata.msg = lang::get(lang::str::cancel_loading);
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
             emuenv.common_dialog.savedata.msg = lang::get(lang::str::cancel_deleting);

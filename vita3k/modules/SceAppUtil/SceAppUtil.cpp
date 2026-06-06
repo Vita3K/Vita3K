@@ -298,10 +298,20 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         }
     }
 
-    if (slot && slot->slotParam) {
+    if (slot) {
+        SceAppUtilSaveDataSlotParam param{};
+        auto *slot_param = slot->slotParam ? slot->slotParam.get(emuenv.mem) : &param;
         SceDateTime modified_time;
         std::time_t time = std::time(0);
         tm local = {};
+
+        if (!slot->slotParam) {
+            fd = open_file(emuenv.io, construct_slotparam_path(slot->id).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
+            if (fd < 0)
+                return 0;
+            read_file(slot_param, emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
+            close_file(emuenv.io, fd, export_name);
+        }
 
         SAFE_LOCALTIME(&time, &local);
         modified_time.year = local.tm_year + 1900;
@@ -310,9 +320,9 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         modified_time.hour = local.tm_hour;
         modified_time.minute = local.tm_min;
         modified_time.second = local.tm_sec;
-        slot->slotParam.get(emuenv.mem)->modifiedTime = modified_time;
+        slot_param->modifiedTime = modified_time;
         fd = open_file(emuenv.io, construct_slotparam_path(slot->id).c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.pref_path, export_name);
-        write_file(fd, slot->slotParam.get(emuenv.mem), sizeof(SceAppUtilSaveDataSlotParam), emuenv.io, export_name);
+        write_file(fd, slot_param, sizeof(SceAppUtilSaveDataSlotParam), emuenv.io, export_name);
         close_file(emuenv.io, fd, export_name);
     }
 
