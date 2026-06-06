@@ -67,6 +67,12 @@ private:
     GLuint m_sampler_linear{ 0 };
     GLuint m_sampler_nearest{ 0 };
 
+    // Intermediate target for running FXAA at the rendering resolution
+    GLuint m_fxaa_fbo{ 0 };
+    GLuint m_fxaa_texture{ 0 };
+    int m_fxaa_width{ 0 };
+    int m_fxaa_height{ 0 };
+
     const SharedGLObject &current_shader() const;
     GLuint current_sampler() const;
 

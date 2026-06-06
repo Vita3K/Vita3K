@@ -153,6 +153,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     glViewport(static_cast<GLint>(viewport_pos.x), static_cast<GLint>(viewport_pos.y), static_cast<GLsizei>(viewport_size.x),
         static_cast<GLsizei>(viewport_size.y));
 
+    // Clear the whole default framebuffer (covers the letterbox area as well).
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClearDepthf(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -227,17 +228,61 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     );
     glEnableVertexAttribArray(uvAttrib);
 
-    if (filter == Filter::FXAA) {
-        const GLint invScreenLocation = glGetUniformLocation(*shader, "inv_frame_size");
-        glUniform2f(invScreenLocation, 1 / texture_size.x, 1 / texture_size.y);
-    }
-
     glBindTexture(GL_TEXTURE_2D, texture);
     glBindSampler(0, current_sampler());
 #ifndef __ANDROID__
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    if (filter == Filter::FXAA) {
+        // FXAA must run at the input (render) resolution, 1:1 with the source texture,
+        // otherwise it operates on an already upscaled (blurred) image.
+        // Pass 1: run FXAA into an intermediate FBO sized to the render resolution.
+        // Pass 2: blit that result to the screen with GL_NEAREST (no bilinear upscale).
+        const int fxaa_w = static_cast<int>(texture_size.x);
+        const int fxaa_h = static_cast<int>(texture_size.y);
+
+        // (Re)create the intermediate target when the render resolution changes.
+        if (fxaa_w != m_fxaa_width || fxaa_h != m_fxaa_height) {
+            if (!m_fxaa_fbo) {
+                glGenFramebuffers(1, &m_fxaa_fbo);
+                glGenTextures(1, &m_fxaa_texture);
+            }
+            glBindTexture(GL_TEXTURE_2D, m_fxaa_texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, fxaa_w, fxaa_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            glBindFramebuffer(GL_FRAMEBUFFER, m_fxaa_fbo);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fxaa_texture, 0);
+            m_fxaa_width = fxaa_w;
+            m_fxaa_height = fxaa_h;
+
+            // restore the source texture binding for the FXAA pass below
+            glBindTexture(GL_TEXTURE_2D, texture);
+        }
+
+        // Pass 1: FXAA at render resolution
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fxaa_fbo);
+        glViewport(0, 0, fxaa_w, fxaa_h);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        const GLint invScreenLocation = glGetUniformLocation(*shader, "inv_frame_size");
+        glUniform2f(invScreenLocation, 1.0f / texture_size.x, 1.0f / texture_size.y);
+
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+        // Pass 2: nearest-blit to the screen (no bilinear)
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fxaa_fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, default_fbo);
+        glBlitFramebuffer(
+            0, 0, fxaa_w, fxaa_h,
+            static_cast<GLint>(viewport_pos.x), static_cast<GLint>(viewport_pos.y),
+            static_cast<GLint>(viewport_pos.x + viewport_size.x),
+            static_cast<GLint>(viewport_pos.y + viewport_size.y),
+            GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    } else {
+        // Bilinear / Nearest / Bicubic draw directly to the screen.
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    }
 
     // Restore modified GL state
     glUseProgram(last_program);
@@ -281,6 +326,17 @@ void ScreenRenderer::destroy() {
     glDeleteSamplers(1, &m_sampler_nearest);
     m_sampler_nearest = 0;
 
+    if (m_fxaa_fbo) {
+        glDeleteFramebuffers(1, &m_fxaa_fbo);
+        m_fxaa_fbo = 0;
+    }
+    if (m_fxaa_texture) {
+        glDeleteTextures(1, &m_fxaa_texture);
+        m_fxaa_texture = 0;
+    }
+    m_fxaa_width = 0;
+    m_fxaa_height = 0;
+
     glDeleteBuffers(1, &m_vbo);
     m_vbo = 0;
 
@@ -289,9 +345,6 @@ void ScreenRenderer::destroy() {
 
     glDeleteTextures(1, &m_screen_texture);
     m_screen_texture = 0;
-
-    m_render_shader_nofilter.reset();
-    m_render_shader_fxaa.reset();
 }
 
 ScreenRenderer::~ScreenRenderer() {
