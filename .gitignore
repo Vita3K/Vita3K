@@ -16,7 +16,7 @@ build
 CMakeUserPresets.json
 compile_commands.json
 # AppImage builder
-appimage/linuxdeploy.AppImage
+appimage/linuxdeploy*.AppImage
 /.gdbinit
 
 # Built application files
