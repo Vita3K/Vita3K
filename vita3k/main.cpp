@@ -26,6 +26,7 @@
 #include <gui-qt/gui_settings.h>
 #include <gui-qt/log_widget.h>
 #include <gui-qt/main_window.h>
+#include <gui-qt/no_gui_runner.h>
 #include <gui-qt/persistent_settings.h>
 #include <include/cpu.h>
 #include <include/environment.h>
@@ -256,11 +257,26 @@ int main(int argc, char *argv[]) {
     auto gui_settings = std::make_shared<GuiSettings>(gui_configs_dir);
     auto persistent_settings = std::make_shared<PersistentSettings>(gui_configs_dir);
 
-    MainWindow mainwindow(emuenv, gui_settings, persistent_settings, admin_priv);
+    if (cfg.no_gui) {
+        if (!emuenv.cfg.run_app_path.has_value()) {
+            LOG_ERROR("--no-gui requires an app to run (pass --installed-path or a content path)");
+            return InitConfigFailed;
+        }
 
-    mainwindow.show();
-    if (mainwindow.prompt_startup_warnings())
-        app.exec();
+        QApplication::setQuitOnLastWindowClosed(false);
+
+        NoGuiRunner runner(emuenv, gui_settings);
+        const AppLaunchRequest request{ .app_path = *emuenv.cfg.run_app_path };
+        emuenv.cfg.run_app_path.reset();
+        if (runner.start(request))
+            app.exec();
+    } else {
+        MainWindow mainwindow(emuenv, gui_settings, persistent_settings, admin_priv);
+
+        mainwindow.show();
+        if (mainwindow.prompt_startup_warnings())
+            app.exec();
+    }
 
 #ifdef _WIN32
     CoUninitialize();

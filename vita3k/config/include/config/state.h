@@ -43,6 +43,7 @@ struct Config {
     bool load_config = false;
     bool fullscreen = false;
     bool console = false;
+    bool no_gui = false;
     bool load_app_list = false;
 
     fs::path get_pref_path() const {

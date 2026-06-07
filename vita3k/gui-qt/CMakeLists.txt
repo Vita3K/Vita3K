@@ -18,6 +18,7 @@ add_library(gui-qt STATIC
     src/license_install_dialog.cpp
     src/live_area_widget.cpp
     src/log_widget.cpp
+    src/no_gui_runner.cpp
     src/persistent_settings.cpp
     src/pkg_install_dialog.cpp
     src/physical_key_qt.cpp
@@ -63,6 +64,7 @@ add_library(gui-qt STATIC
     include/gui-qt/license_install_dialog.h
     include/gui-qt/live_area_widget.h
     include/gui-qt/log_widget.h
+    include/gui-qt/no_gui_runner.h
     include/gui-qt/persistent_settings.h
     include/gui-qt/pkg_install_dialog.h
     include/gui-qt/physical_key_qt.h

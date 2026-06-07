@@ -164,6 +164,7 @@ static void check_members(Config &self, const Config &rhs) {
     self.load_config = rhs.load_config;
     self.fullscreen = rhs.fullscreen;
     self.console = rhs.console;
+    self.no_gui = rhs.no_gui;
     self.app_args = rhs.app_args;
     self.load_app_list = rhs.load_app_list;
     self.self_path = rhs.self_path;
@@ -353,6 +354,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->default_str("eboot.bin")->group("Input");
     input->add_option("--installed-path,-r", command_line.run_app_path, "Path to the installed app to run")
         ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_pref_path() / "ux0/app")))->group("Input");
+    input->add_flag("--no-gui", command_line.no_gui, "Boot the app given by --installed-path without the main window and exit once it closes.")
+        ->default_val(false)->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
