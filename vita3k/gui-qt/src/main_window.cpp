@@ -94,6 +94,7 @@
 #include <QOpenGLContext>
 #include <QPainter>
 #include <QPushButton>
+#include <QScreen>
 #include <QSlider>
 #include <QStandardPaths>
 #include <QStatusBar>
@@ -369,6 +370,25 @@ void MainWindow::restore_window_state() {
     const bool title_bars_visible = m_gui_settings->get_value(gui::mw_titleBarsVisible).toBool();
     m_ui->show_title_bars_action->setChecked(title_bars_visible);
     show_title_bars(title_bars_visible);
+}
+
+void MainWindow::save_render_window_geometry() {
+    if (!m_gui_settings || !m_game_container)
+        return;
+
+    if (m_game_container->visibility() != QWindow::Windowed)
+        return;
+
+    m_gui_settings->set_value(gui::gw_geometry, m_game_container->geometry());
+}
+
+void MainWindow::restore_render_window_geometry(QWindow *window) {
+    if (!window || !m_gui_settings)
+        return;
+
+    const QRect geometry = m_gui_settings->get_value(gui::gw_geometry).toRect();
+    if (geometry.isValid() && QGuiApplication::screenAt(geometry.center()))
+        window->setGeometry(geometry);
 }
 
 void MainWindow::initialize() {
@@ -942,6 +962,8 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     m_game_window->setIcon(windowIcon());
     if (m_live_area_widget)
         m_game_window->setGeometry(m_live_area_widget->geometry());
+    else
+        restore_render_window_geometry(m_game_window);
 
     if (m_live_area_widget) {
         m_live_area_widget->removeEventFilter(this);
@@ -1055,6 +1077,8 @@ void MainWindow::on_game_closed() {
         return;
 
     LOG_INFO("Game closed: {}", emuenv.current_app_title);
+
+    save_render_window_geometry();
 
     m_game_window->stop_ui_updates();
     m_app_session.stop(m_is_app_closing
@@ -1202,6 +1226,7 @@ void MainWindow::show_live_area(const std::string &title_id) {
                 QString::fromStdString(emuenv.io.title_id)));
     m_live_area_widget->setIcon(windowIcon());
     m_live_area_widget->installEventFilter(this);
+    restore_render_window_geometry(m_live_area_widget);
     m_live_area_widget->show();
 
     if (emuenv.cfg.boot_apps_full_screen)
@@ -1222,6 +1247,8 @@ void MainWindow::on_live_area_play() {
 }
 
 void MainWindow::on_live_area_closed() {
+    save_render_window_geometry();
+
     QWindow *closed_window = m_game_container;
     if (closed_window)
         closed_window->removeEventFilter(this);
