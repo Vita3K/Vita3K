@@ -390,11 +390,11 @@ void save_current_config(Config &cfg, const fs::path &config_path, const std::st
 }
 
 std::vector<std::pair<std::string, bool>> get_modules_list(
-    const fs::path &pref_path,
+    const fs::path &vita_fs_path,
     const std::vector<std::string> &lle_modules) {
     std::vector<std::pair<std::string, bool>> modules;
 
-    const auto modules_path = pref_path / "vs0/sys/external/";
+    const auto modules_path = vita_fs_path / "vs0/sys/external/";
     if (fs::exists(modules_path) && !fs::is_empty(modules_path)) {
         for (const auto &entry : fs::directory_iterator(modules_path)) {
             if (entry.path().extension() == ".suprx")

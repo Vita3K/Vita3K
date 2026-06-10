@@ -452,7 +452,7 @@ void SettingsDialog::load_config() {
     m_ui->label_perf_position->setEnabled(emuenv.cfg.performance_overlay);
     m_ui->perf_overlay_position_box->setEnabled(emuenv.cfg.performance_overlay);
 
-    m_pending_pref_path = emuenv.pref_path;
+    m_pending_vita_fs_path = emuenv.vita_fs_path;
     update_current_emu_path_label();
 
     m_ui->screenshot_format->clear();
@@ -589,7 +589,7 @@ void SettingsDialog::build_desired_config(Config &desired) const {
     desired = emuenv.cfg;
     desired.current_config = emuenv.cfg.current_config;
     if (m_app_path.empty())
-        desired.set_pref_path(m_pending_pref_path);
+        desired.set_vita_fs_path(m_pending_vita_fs_path);
     auto &current = desired.current_config;
 
     if (m_ui->rb_modules_automatic->isChecked())
@@ -755,7 +755,7 @@ bool SettingsDialog::commit_changes(bool close_after) {
     const std::string previous_user_lang = emuenv.cfg.user_lang;
     const int previous_log_level = emuenv.cfg.log_level;
     const bool update_gui_settings = m_gui_settings && m_app_path.empty();
-    const bool storage_path_changed = m_app_path.empty() && (m_pending_pref_path != emuenv.pref_path);
+    const bool storage_path_changed = m_app_path.empty() && (m_pending_vita_fs_path != emuenv.vita_fs_path);
     const auto previous_buffer_size = update_gui_settings ? m_gui_settings->get_value(gui::l_bufferSize).toInt() : 0;
     const QString previous_log_font_family = update_gui_settings ? m_gui_settings->get_value(gui::l_fontFamily).toString() : QString();
     const bool previous_confirm_exit_app = update_gui_settings
@@ -830,7 +830,7 @@ bool SettingsDialog::commit_changes(bool close_after) {
 
 void SettingsDialog::populate_modules_list() {
     m_ui->modules_list->clear();
-    const auto modules = config::get_modules_list(emuenv.pref_path, m_config.lle_modules);
+    const auto modules = config::get_modules_list(emuenv.vita_fs_path, m_config.lle_modules);
     for (const auto &[name, enabled] : modules) {
         auto *item = new QListWidgetItem(QString::fromStdString(name), m_ui->modules_list);
         item->setFlags((item->flags() | Qt::ItemIsUserCheckable) & ~Qt::ItemIsSelectable);
@@ -948,23 +948,23 @@ void SettingsDialog::update_file_loading_delay_label() {
 }
 
 bool SettingsDialog::apply_pending_storage_path() {
-    if (m_pending_pref_path == emuenv.pref_path)
+    if (m_pending_vita_fs_path == emuenv.vita_fs_path)
         return true;
 
     if (m_storage_path_locked) {
-        m_pending_pref_path = emuenv.pref_path;
+        m_pending_vita_fs_path = emuenv.vita_fs_path;
         update_current_emu_path_label();
         return true;
     }
 
-    if (!app::switch_emulator_path(emuenv, m_pending_pref_path)) {
+    if (!app::switch_emulator_path(emuenv, m_pending_vita_fs_path)) {
         QMessageBox::critical(this, tr("Error"),
             tr("Failed to switch the emulator storage folder."));
         return false;
     }
 
     m_storage_path_switched = true;
-    m_pending_pref_path = emuenv.pref_path;
+    m_pending_vita_fs_path = emuenv.vita_fs_path;
     update_current_emu_path_label();
     Q_EMIT storage_path_changed();
     return true;
@@ -1114,13 +1114,13 @@ void SettingsDialog::setup_connections() {
     connect(m_ui->change_emu_path, &QPushButton::clicked, this, [this] {
         const QString dir = QFileDialog::getExistingDirectory(
             this, tr("Select Emulator Storage Folder"),
-            gui::utils::to_qt_path(m_pending_pref_path));
+            gui::utils::to_qt_path(m_pending_vita_fs_path));
         if (!dir.isEmpty())
-            set_pending_pref_path(gui::utils::to_fs_path(dir));
+            set_pending_vita_fs_path(gui::utils::to_fs_path(dir));
     });
     connect(m_ui->reset_emu_path, &QPushButton::clicked, this, [this] {
-        if (emuenv.default_path != m_pending_pref_path)
-            set_pending_pref_path(emuenv.default_path);
+        if (emuenv.default_path != m_pending_vita_fs_path)
+            set_pending_vita_fs_path(emuenv.default_path);
     });
 
     connect(m_ui->clear_custom_config, &QPushButton::clicked, this, [this] {
@@ -1425,19 +1425,19 @@ void SettingsDialog::mark_dirty() {
     }
 }
 
-void SettingsDialog::set_pending_pref_path(const fs::path &pref_path) {
-    const fs::path normalized_pref_path = pref_path / "";
-    if (normalized_pref_path.empty() || normalized_pref_path == m_pending_pref_path)
+void SettingsDialog::set_pending_vita_fs_path(const fs::path &vita_fs_path) {
+    const fs::path normalized_vita_fs_path = vita_fs_path / "";
+    if (normalized_vita_fs_path.empty() || normalized_vita_fs_path == m_pending_vita_fs_path)
         return;
 
-    m_pending_pref_path = normalized_pref_path;
+    m_pending_vita_fs_path = normalized_vita_fs_path;
     update_current_emu_path_label();
     mark_dirty();
 }
 
 void SettingsDialog::update_current_emu_path_label() {
     m_ui->current_emu_path->setText(
-        tr("Current emulator path: %1").arg(gui::utils::to_qt_path(m_pending_pref_path)));
+        tr("Current emulator path: %1").arg(gui::utils::to_qt_path(m_pending_vita_fs_path)));
 }
 
 void SettingsDialog::setup_dirty_tracking() {

@@ -313,7 +313,7 @@ void AppsListTable::sort(int column, Qt::SortOrder order) {
 void AppsListTable::populate(const std::vector<app::AppEntry> &apps,
     const std::map<std::string, app::AppTime> &user_times,
     const CompatState &compat,
-    const fs::path &pref_path,
+    const fs::path &vita_fs_path,
     const fs::path &config_path) {
     struct PendingSizeLoad {
         QPersistentModelIndex index;
@@ -340,7 +340,7 @@ void AppsListTable::populate(const std::vector<app::AppEntry> &apps,
         const fs::path icon_path = app.icon_path;
         const std::string resolved_icon = app.icon_path.empty()
             ? std::string()
-            : (icon_path.is_absolute() ? icon_path.generic_string() : (pref_path / icon_path).generic_string());
+            : (icon_path.is_absolute() ? icon_path.generic_string() : (vita_fs_path / icon_path).generic_string());
 
         setItem(row, static_cast<int>(AppsListColumn::Icon), icon_item);
         const QPersistentModelIndex icon_index = model()->index(row, static_cast<int>(AppsListColumn::Icon));
@@ -430,7 +430,7 @@ void AppsListTable::populate(const std::vector<app::AppEntry> &apps,
             new SortableItem(QString::fromStdString(app.parental_level),
                 QVariant(parental_level_sort_key(app.parental_level))));
 
-        const QString app_dir = gui::utils::to_qt_path(pref_path / "ux0/app" / app.path);
+        const QString app_dir = gui::utils::to_qt_path(vita_fs_path / "ux0/app" / app.path);
         const auto size_it = m_size_cache.find(app.path);
         const quint64 cached_size = (size_it != m_size_cache.end()) ? size_it->second : 0;
         auto *size_item = new SortableItem(

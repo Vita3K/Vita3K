@@ -118,8 +118,8 @@ void State::init_overlay_font_dirs() {
         overlay::fontmgr::set_system_font_dirs(frame->font_dirs());
     }
 
-    if (!pref_path.empty()) {
-        auto fw_dir = fs_utils::path_to_utf8(pref_path / "sa0" / "data" / "font" / "pvf");
+    if (!vita_fs_path.empty()) {
+        auto fw_dir = fs_utils::path_to_utf8(vita_fs_path / "sa0" / "data" / "font" / "pvf");
         if (!fw_dir.empty()) {
             if (fw_dir.back() != '/' && fw_dir.back() != '\\')
                 fw_dir += '/';

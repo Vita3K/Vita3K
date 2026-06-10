@@ -80,7 +80,7 @@ public:
 
     QList<gui::ThemeEntry> available_themes() const;
     bool apply_theme(const QString &name = {}, bool force_reload = false);
-    void set_pref_path(const fs::path &pref_path);
+    void set_vita_fs_path(const fs::path &vita_fs_path);
     void set_vita_themes_root(const fs::path &themes_root);
     void refresh_vita_theme_catalog();
     const std::vector<gui::VitaThemeInfo> &installed_vita_themes(bool force_reload = false) const;
@@ -121,7 +121,7 @@ private:
 
     std::shared_ptr<GuiSettings> m_gui_settings;
     QString m_current_theme_name;
-    fs::path m_pref_path;
+    fs::path m_vita_fs_path;
     fs::path m_vita_themes_root;
     QAudioOutput *m_vita_theme_bgm_audio_output = nullptr;
     QMediaPlayer *m_vita_theme_bgm_player = nullptr;

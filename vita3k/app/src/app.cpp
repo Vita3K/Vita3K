@@ -171,14 +171,14 @@ std::vector<AdhocAddressOption> get_available_adhoc_address_options() {
 
 FirmwareState get_firmware_state(const EmuEnvState &emuenv) {
     return FirmwareState{
-        .preinstalled_package = has_installed_firmware_content(emuenv.pref_path / "pd0"),
-        .main_firmware = has_installed_firmware_content(emuenv.pref_path / "vs0"),
-        .font_package = has_installed_firmware_content(emuenv.pref_path / "sa0"),
+        .preinstalled_package = has_installed_firmware_content(emuenv.vita_fs_path / "pd0"),
+        .main_firmware = has_installed_firmware_content(emuenv.vita_fs_path / "vs0"),
+        .font_package = has_installed_firmware_content(emuenv.vita_fs_path / "sa0"),
     };
 }
 
 bool has_firmware_installed(const EmuEnvState &emuenv) {
-    return has_installed_firmware_content(emuenv.pref_path / "vs0");
+    return has_installed_firmware_content(emuenv.vita_fs_path / "vs0");
 }
 
 bool ensure_current_user(EmuEnvState &emuenv) {
@@ -206,17 +206,17 @@ bool ensure_current_user(EmuEnvState &emuenv) {
     return true;
 }
 
-bool switch_emulator_path(EmuEnvState &emuenv, const fs::path &pref_path) {
-    const fs::path normalized_pref_path = pref_path / "";
-    if (normalized_pref_path.empty())
+bool switch_emulator_path(EmuEnvState &emuenv, const fs::path &vita_fs_path) {
+    const fs::path normalized_vita_fs_path = vita_fs_path / "";
+    if (normalized_vita_fs_path.empty())
         return false;
 
-    emuenv.pref_path = normalized_pref_path;
-    emuenv.cfg.set_pref_path(emuenv.pref_path);
+    emuenv.vita_fs_path = normalized_vita_fs_path;
+    emuenv.cfg.set_vita_fs_path(emuenv.vita_fs_path);
 
     ::io_deinit(emuenv.io);
-    if (!::init(emuenv.io, emuenv.cache_path, emuenv.log_path, emuenv.pref_path, emuenv.cfg.console)) {
-        LOG_ERROR("Failed to initialize file system for switched emulator path '{}'.", emuenv.pref_path);
+    if (!::init(emuenv.io, emuenv.cache_path, emuenv.log_path, emuenv.vita_fs_path, emuenv.cfg.console)) {
+        LOG_ERROR("Failed to initialize file system for switched emulator path '{}'.", emuenv.vita_fs_path);
         return false;
     }
 
@@ -239,7 +239,7 @@ bool switch_emulator_path(EmuEnvState &emuenv, const fs::path &pref_path) {
 
     load_app_times(emuenv);
     if (!scan_apps(emuenv)) {
-        LOG_ERROR("Failed to scan apps after switching emulator path to '{}'.", emuenv.pref_path);
+        LOG_ERROR("Failed to scan apps after switching emulator path to '{}'.", emuenv.vita_fs_path);
         return false;
     }
 
@@ -274,7 +274,7 @@ void prepare_game_launch_overlay(EmuEnvState &emuenv) {
     renderer.precompile_requested = false;
     renderer.precompile_complete.store(false, std::memory_order_relaxed);
 
-    const auto bg_path = emuenv.pref_path / "ux0/app" / emuenv.io.app_path / "sce_sys/pic0.png";
+    const auto bg_path = emuenv.vita_fs_path / "ux0/app" / emuenv.io.app_path / "sce_sys/pic0.png";
     if (fs::exists(bg_path))
         renderer.precompile_bg_path = fs_utils::path_to_utf8(bg_path);
 

@@ -56,7 +56,7 @@ struct CollectionSnapshot {
 
 struct CollectionSource {
     IOState *io = nullptr;
-    fs::path pref_path;
+    fs::path vita_fs_path;
     std::string user_id;
     uint32_t lang = 0;
 };

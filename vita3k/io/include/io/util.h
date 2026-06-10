@@ -32,18 +32,12 @@ inline constexpr TtyType TTY_OUT = 0b10;
 inline constexpr TtyType TTY_INOUT = TTY_IN | TTY_OUT;
 
 struct FileInfo {
-    // The actual location on the Vita
-    std::string vita_loc;
-    // The translated location on the Vita
-    std::string translated;
-    // The actual location in the preference path.
-    fs::path sys_loc;
-    // One or more SceIoMode flags
-    int open_mode;
-    // One or more SceIoFileMode flags
-    int file_mode;
-    // One or more SceIoAccessMode flags
-    int access_mode;
+    std::string vita_loc; // The actual location on the Vita
+    std::string translated; // The translated location on the Vita
+    fs::path sys_loc; // The actual location in the Vita emulated fs.
+    int open_mode; // One or more SceIoMode flags
+    int file_mode; // One or more SceIoFileMode flags
+    int access_mode; // One or more SceIoAccessMode flags
 
     FileInfo()
         : open_mode(SCE_O_RDONLY)

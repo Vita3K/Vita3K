@@ -127,7 +127,7 @@ static void traverse_directory(fs::ifstream &img, const uint64_t img_size, std::
     }
 }
 
-void extract_exfat(const fs::path &partition_path, const std::string &partition, const fs::path &pref_path) {
+void extract_exfat(const fs::path &partition_path, const std::string &partition, const fs::path &vita_fs_path) {
     // Open the partition file for reading in binary mode
     fs::ifstream img(partition_path / partition, std::ios::binary);
     if (!img.is_open()) {
@@ -146,7 +146,7 @@ void extract_exfat(const fs::path &partition_path, const std::string &partition,
     img.read(reinterpret_cast<char *>(&super_block), sizeof(ExFATSuperBlock));
 
     // Set output path
-    const fs::path output_path{ pref_path / partition.substr(0, 3) };
+    const fs::path output_path{ vita_fs_path / partition.substr(0, 3) };
 
     // Current directory
     fs::path current_dir;

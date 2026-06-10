@@ -87,7 +87,7 @@ std::optional<fs::path> synthesize_vita_theme_qss(
     const std::vector<fs::path> &background_image_paths,
     int cycle_interval_seconds,
     bool cycle_enabled,
-    const fs::path &pref_path,
+    const fs::path &vita_fs_path,
     const fs::path &gui_settings_dir);
 
 } // namespace gui

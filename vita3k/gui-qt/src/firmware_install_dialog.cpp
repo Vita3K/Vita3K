@@ -30,7 +30,7 @@
 
 void FirmwareWorker::run() {
     const std::string version = install_pup(
-        m_emuenv.pref_path,
+        m_emuenv.vita_fs_path,
         m_pup_path,
         [this](uint32_t pct) {
             Q_EMIT progress(static_cast<float>(pct));

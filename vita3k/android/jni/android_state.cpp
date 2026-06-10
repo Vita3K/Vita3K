@@ -214,17 +214,17 @@ uint32_t get_app_action_availability_mask(const std::string &title_id) {
     if (has_app && (!controller || !controller->has_active_session()))
         mask |= ACTION_DELETE_APPLICATION;
 
-    if (has_app && !app->savedata.empty() && fs::exists(emuenv->pref_path / "ux0/user" / emuenv->io.user_id / "savedata" / app->savedata))
+    if (has_app && !app->savedata.empty() && fs::exists(emuenv->vita_fs_path / "ux0/user" / emuenv->io.user_id / "savedata" / app->savedata))
         mask |= ACTION_DELETE_SAVE_DATA;
 
-    if (fs::exists(emuenv->pref_path / "ux0/patch" / title_id)
+    if (fs::exists(emuenv->vita_fs_path / "ux0/patch" / title_id)
         || fs::exists(emuenv->shared_path / "patch" / title_id))
         mask |= ACTION_DELETE_PATCH;
 
-    if (has_app && !app->addcont.empty() && fs::exists(emuenv->pref_path / "ux0/addcont" / app->addcont))
+    if (has_app && !app->addcont.empty() && fs::exists(emuenv->vita_fs_path / "ux0/addcont" / app->addcont))
         mask |= ACTION_DELETE_DLC;
 
-    if (fs::exists(emuenv->pref_path / "ux0/license" / title_id))
+    if (fs::exists(emuenv->vita_fs_path / "ux0/license" / title_id))
         mask |= ACTION_DELETE_LICENSE;
 
     if (fs::exists(emuenv->cache_path / "shaders" / title_id))

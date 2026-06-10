@@ -56,15 +56,15 @@ bool initialize_session(const fs::path &storage_path, Root &root_paths, std::uni
 
         root_paths.set_base_path(storage_path);
         root_paths.set_static_assets_path({});
-        root_paths.set_pref_path(vita_path);
+        root_paths.set_vita_fs_path(vita_path);
         root_paths.set_log_path(storage_path);
         root_paths.set_config_path(storage_path);
         root_paths.set_shared_path(storage_path);
         root_paths.set_cache_path(storage_path / "cache" / "");
         root_paths.set_patch_path(storage_path / "patch" / "");
 
-        if (!fs::exists(root_paths.get_pref_path()))
-            fs::create_directories(root_paths.get_pref_path());
+        if (!fs::exists(root_paths.get_vita_fs_path()))
+            fs::create_directories(root_paths.get_vita_fs_path());
 
         fs::create_directories(root_paths.get_config_path());
         fs::create_directories(root_paths.get_cache_path());
@@ -89,7 +89,7 @@ bool initialize_session(const fs::path &storage_path, Root &root_paths, std::uni
             return false;
         }
 
-        fs::create_directories(cfg.get_pref_path());
+        fs::create_directories(cfg.get_vita_fs_path());
 
         if (!app::init(*emuenv, cfg, root_paths)) {
             LOG_ERROR("Failed to initialise emulated environment.");

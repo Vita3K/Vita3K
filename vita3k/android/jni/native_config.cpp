@@ -650,8 +650,8 @@ Java_org_vita3k_emulator_NativeLib_getCurrentEmulatorPath(JNIEnv *env, jclass) {
     if (!emuenv)
         return env->NewStringUTF("");
 
-    const std::string pref_path = emuenv->pref_path.generic_string();
-    return env->NewStringUTF(pref_path.c_str());
+    const std::string vita_fs_path = emuenv->vita_fs_path.generic_string();
+    return env->NewStringUTF(vita_fs_path.c_str());
 }
 
 JNIEXPORT jboolean JNICALL
@@ -787,7 +787,7 @@ Java_org_vita3k_emulator_NativeLib_getModulesList(JNIEnv *env, jclass, jobjectAr
         }
     }
 
-    const auto modules = config::get_modules_list(emuenv->pref_path, current_modules);
+    const auto modules = config::get_modules_list(emuenv->vita_fs_path, current_modules);
     jobjectArray result = env->NewObjectArray(static_cast<jsize>(modules.size() * 2), string_class, nullptr);
     for (jsize index = 0; index < static_cast<jsize>(modules.size()); ++index) {
         jstring name = env->NewStringUTF(modules[index].first.c_str());

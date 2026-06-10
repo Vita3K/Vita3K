@@ -33,7 +33,7 @@ public:
     OverlayRenderer() = default;
     ~OverlayRenderer();
 
-    bool init(const fs::path &static_assets, const fs::path &pref_path, int sys_lang);
+    bool init(const fs::path &static_assets, const fs::path &vita_fs_path, int sys_lang);
     void destroy();
 
     void render(const overlay::display_manager &manager,

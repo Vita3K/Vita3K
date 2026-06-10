@@ -109,5 +109,5 @@ enum ExFATEntryType {
 };
 
 namespace exfat {
-void extract_exfat(const fs::path &partition_path, const std::string &partition, const fs::path &pref_path);
+void extract_exfat(const fs::path &partition_path, const std::string &partition, const fs::path &vita_fs_path);
 } // namespace exfat

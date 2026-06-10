@@ -263,7 +263,7 @@ void reset_keyboard_bindings(Config &cfg) {
 #undef RESET_KEYBOARD_BINDING
 }
 
-static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &root_pref_path) {
+static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &root_vita_fs_path) {
     const auto loaded_path = check_path(load_path);
     if (loaded_path.empty() || !fs::exists(loaded_path)) {
         LOG_ERROR("Config file input path invalid (did you name the extension \".yml\"?)");
@@ -280,11 +280,11 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &ro
         return FileNotFound;
     }
 
-    if (cfg.pref_path.empty())
-        cfg.set_pref_path(root_pref_path);
+    if (cfg.vita_fs_path.empty())
+        cfg.set_vita_fs_path(root_vita_fs_path);
     else {
-        if (cfg.get_pref_path() != root_pref_path && !fs::exists(cfg.get_pref_path())) {
-            LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
+        if (cfg.get_vita_fs_path() != root_vita_fs_path && !fs::exists(cfg.get_vita_fs_path())) {
+            LOG_ERROR("Cannot find Vita FS path: {}", cfg.vita_fs_path);
             return InvalidApplicationPath;
         }
     }
@@ -321,7 +321,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     Config command_line{};
     // Load config path configuration by default; otherwise, move the default to the config path
     if (fs::exists(check_path(root_paths.get_config_path()))) {
-        parse(cfg, root_paths.get_config_path(), root_paths.get_pref_path());
+        parse(cfg, root_paths.get_config_path(), root_paths.get_vita_fs_path());
     } else {
         serialize_config(command_line, check_path(root_paths.get_config_path()));
     }
@@ -352,11 +352,11 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
     input->add_option("--installed-path,-r", command_line.run_app_path, "Path to the installed app to run")
-        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_pref_path() / "ux0/app")))->group("Input");
+        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_vita_fs_path() / "ux0/app")))->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
-        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_pref_path() / "ux0/app")))->group("Input");
+        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_vita_fs_path() / "ux0/app")))->group("Input");
     input->add_option("--firmware", command_line.pup_path, "Path to the firmware file (.pup extension) to install");
     auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path to the app file (.pkg extension) to install")
         ->default_str({})->group("Input");
@@ -432,7 +432,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         if (command_line.config_path.empty()) {
             command_line.config_path = root_paths.get_config_path();
         } else {
-            if (parse(command_line, command_line.config_path, root_paths.get_pref_path()) != Success)
+            if (parse(command_line, command_line.config_path, root_paths.get_vita_fs_path()) != Success)
                 return InitConfigFailed;
         }
     }
@@ -453,8 +453,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
     // Merge configurations
     merge(cfg, command_line);
-    if (cfg.pref_path.empty())
-        cfg.set_pref_path(root_paths.get_pref_path());
+    if (cfg.vita_fs_path.empty())
+        cfg.set_vita_fs_path(root_paths.get_vita_fs_path());
 
     if (!cfg.console) {
         LOG_INFO_IF(cfg.load_config, "Custom configuration file loaded successfully.");

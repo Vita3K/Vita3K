@@ -45,12 +45,12 @@ struct Config {
     bool console = false;
     bool load_app_list = false;
 
-    fs::path get_pref_path() const {
-        return fs_utils::utf8_to_path(pref_path);
+    fs::path get_vita_fs_path() const {
+        return fs_utils::utf8_to_path(vita_fs_path);
     }
 
-    void set_pref_path(const fs::path &new_pref_path) {
-        pref_path = fs_utils::path_to_utf8(new_pref_path);
+    void set_vita_fs_path(const fs::path &new_vita_fs_path) {
+        vita_fs_path = fs_utils::path_to_utf8(new_vita_fs_path);
     }
 
     /**

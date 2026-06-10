@@ -132,11 +132,11 @@ void AppsListContextMenu::build_single(const app::AppEntry &app) {
 AppsListContextMenu::AppPaths AppsListContextMenu::make_app_paths(const app::AppEntry &app) const {
     const auto &title_id = app.title_id;
     return {
-        .app = m_emuenv.pref_path / "ux0/app" / app.path,
-        .save_data = m_emuenv.pref_path / "ux0/user" / m_emuenv.io.user_id / "savedata" / app.savedata,
+        .app = m_emuenv.vita_fs_path / "ux0/app" / app.path,
+        .save_data = m_emuenv.vita_fs_path / "ux0/user" / m_emuenv.io.user_id / "savedata" / app.savedata,
         .patch = m_emuenv.shared_path / "patch" / title_id,
-        .addcont = m_emuenv.pref_path / "ux0/addcont" / app.addcont,
-        .license = m_emuenv.pref_path / "ux0/license" / title_id,
+        .addcont = m_emuenv.vita_fs_path / "ux0/addcont" / app.addcont,
+        .license = m_emuenv.vita_fs_path / "ux0/license" / title_id,
         .shader_cache = m_emuenv.cache_path / "shaders" / title_id,
         .shader_log = m_emuenv.cache_path / "shaderlog" / title_id,
         .shader_log_alt = m_emuenv.log_path / "shaderlog" / title_id,
@@ -686,7 +686,7 @@ void AppsListContextMenu::add_misc_actions(const app::AppEntry &app) {
 void AppsListContextMenu::add_information_actions(const app::AppEntry &app) {
     auto *info = addAction(tr("Information"));
     connect(info, &QAction::triggered, this, [this, &app] {
-        const auto APP_PATH = m_emuenv.pref_path / "ux0/app" / app.path;
+        const auto APP_PATH = m_emuenv.vita_fs_path / "ux0/app" / app.path;
         const auto app_dir = gui::utils::to_qt_path(APP_PATH);
 
         const bool has_report = m_emuenv.compat.compat_db_loaded

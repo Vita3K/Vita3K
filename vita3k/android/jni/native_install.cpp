@@ -40,7 +40,7 @@ Java_org_vita3k_emulator_NativeLib_installFirmware(JNIEnv *env, jclass, jstring 
         progress_callback.call_progress(static_cast<int>(percent), "Installing firmware...");
     };
 
-    const std::string version = install_pup(emuenv->pref_path, fs::path(path), progress_fn);
+    const std::string version = install_pup(emuenv->vita_fs_path, fs::path(path), progress_fn);
     if (!version.empty()) {
         LOG_INFO("Firmware {} installed successfully", version);
         app::scan_apps(*emuenv);
@@ -130,7 +130,7 @@ Java_org_vita3k_emulator_NativeLib_findPkgZrif(JNIEnv *env, jclass, jstring pkg_
         return env->NewStringUTF("");
 
     const std::string path = jstring_to_string(env, pkg_path_str);
-    const std::string zrif = find_pkg_zrif(fs::path(path), emuenv->pref_path);
+    const std::string zrif = find_pkg_zrif(fs::path(path), emuenv->vita_fs_path);
     return env->NewStringUTF(zrif.c_str());
 }
 

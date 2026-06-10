@@ -912,7 +912,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
     auto &icon_buf_tmp = emuenv.common_dialog.savedata.icon_buffer[index];
     icon_buf_tmp.clear();
 
-    SceUID fd = open_file(emuenv.io, construct_slotparam_path(emuenv.common_dialog.savedata.slot_id[index]).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
+    SceUID fd = open_file(emuenv.io, construct_slotparam_path(emuenv.common_dialog.savedata.slot_id[index]).c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
     if (fd < 0) {
         auto empty_param = emuenv.common_dialog.savedata.list_empty_param[index];
         if (empty_param) {
@@ -923,7 +923,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
             if (iconPath && (std::strlen(iconPath) > 0)) {
                 auto device = device::get_device(iconPath);
                 const auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
-                vfs::read_file(VitaIoDevice::ux0, icon_buf_tmp, emuenv.pref_path, thumbnail_path);
+                vfs::read_file(VitaIoDevice::ux0, icon_buf_tmp, emuenv.vita_fs_path, thumbnail_path);
             } else if (iconBuf && (iconBufSize > 0)) {
                 icon_buf_tmp.insert(icon_buf_tmp.end(), iconBuf, iconBuf + iconBufSize);
             }
@@ -941,7 +941,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
         emuenv.common_dialog.savedata.has_date[index] = true;
         auto device = device::get_device(slot_param.iconPath);
         auto thumbnail_path = translate_path(slot_param.iconPath, device, emuenv.io.device_paths);
-        vfs::read_file(device, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
+        vfs::read_file(device, thumbnail_buffer, emuenv.vita_fs_path, thumbnail_path);
         icon_buf_tmp = thumbnail_buffer;
     }
 }

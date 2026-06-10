@@ -40,7 +40,7 @@ OverlayRenderer::~OverlayRenderer() {
     destroy();
 }
 
-bool OverlayRenderer::init(const fs::path &static_assets, const fs::path &pref_path, int sys_lang) {
+bool OverlayRenderer::init(const fs::path &static_assets, const fs::path &vita_fs_path, int sys_lang) {
     const auto overlay_shaders_path = static_assets / "shaders-builtin" / "overlay";
     const auto vert_path = overlay_shaders_path / "overlay.vert";
     const auto frag_path = overlay_shaders_path / "overlay.frag";

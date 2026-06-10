@@ -251,7 +251,7 @@ void init_paths(Root &root_paths) {
     // On Android, static assets are bundled inside the APK and accessed via SDL_IOFromFile.
     root_paths.set_static_assets_path({});
 
-    root_paths.set_pref_path(vita_storage_path);
+    root_paths.set_vita_fs_path(vita_storage_path);
     root_paths.set_log_path(internal_storage_path);
     root_paths.set_config_path(internal_storage_path);
     root_paths.set_shared_path(internal_storage_path);
@@ -274,8 +274,8 @@ void init_paths(Root &root_paths) {
 
     if (fs::is_directory(portable_path)) {
         // If a portable directory exists, use it for everything else.
-        // Note that pref_path should not be the same as the other paths.
-        root_paths.set_pref_path(portable_path / "fs" / "");
+        // Note that vita_fs_path should not be the same as the other paths.
+        root_paths.set_vita_fs_path(portable_path / "fs" / "");
         root_paths.set_log_path(portable_path);
         root_paths.set_config_path(portable_path);
         root_paths.set_shared_path(portable_path);
@@ -284,9 +284,9 @@ void init_paths(Root &root_paths) {
     } else {
         // SDL_GetPrefPath is deferred as it creates the directory.
         // When using a portable directory, it is not needed.
-        auto sdl_pref_path = SDL_GetPrefPath(org_name, app_name);
-        auto pref_path = fs_utils::utf8_to_path(sdl_pref_path);
-        SDL_free(sdl_pref_path);
+        auto sdl_vita_fs_path = SDL_GetPrefPath(org_name, app_name);
+        auto vita_fs_path = fs_utils::utf8_to_path(sdl_vita_fs_path);
+        SDL_free(sdl_vita_fs_path);
 
 #if defined(__APPLE__)
         // Store other data in the user-wide path. Otherwise we may end up dumping
@@ -296,18 +296,18 @@ void init_paths(Root &root_paths) {
         // even though storing user data inside the app bundle is not a good idea.
         auto existing_config = base_path / "config.yml";
         if (!fs::exists(existing_config)) {
-            base_path = pref_path;
+            base_path = vita_fs_path;
         }
 
-        // pref_path should not be the same as the other paths.
+        // vita_fs_path should not be the same as the other paths.
         // For backwards compatibility, though, check if ux0 exists first.
-        auto existing_ux0 = pref_path / "ux0";
+        auto existing_ux0 = vita_fs_path / "ux0";
         if (!fs::is_directory(existing_ux0)) {
-            pref_path = pref_path / "fs" / "";
+            vita_fs_path = vita_fs_path / "fs" / "";
         }
 #endif
 
-        root_paths.set_pref_path(pref_path);
+        root_paths.set_vita_fs_path(vita_fs_path);
         root_paths.set_log_path(base_path);
         root_paths.set_config_path(base_path);
         root_paths.set_shared_path(base_path);
@@ -381,13 +381,13 @@ void init_paths(Root &root_paths) {
             root_paths.set_shared_path(fs::path(home_path) / ".local/share" / app_name / "");
 
         // These default to being in shared path
-        root_paths.set_pref_path(root_paths.get_shared_path() / app_name / "");
+        root_paths.set_vita_fs_path(root_paths.get_shared_path() / app_name / "");
         root_paths.set_patch_path(root_paths.get_shared_path() / "patch" / "");
 #endif
     }
 #endif
 
-    // Create default preference and cache path for safety
+    // Create paths for safety
     fs::create_directories(root_paths.get_config_path());
     fs::create_directories(root_paths.get_cache_path());
     fs::create_directories(root_paths.get_log_path() / "shaderlog");
@@ -406,7 +406,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     state.cfg = std::move(cfg);
 
     state.base_path = root_paths.get_base_path();
-    state.default_path = root_paths.get_pref_path();
+    state.default_path = root_paths.get_vita_fs_path();
     state.log_path = root_paths.get_log_path();
     state.config_path = root_paths.get_config_path();
     state.cache_path = root_paths.get_cache_path();
@@ -414,14 +414,14 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     state.static_assets_path = root_paths.get_static_assets_path();
     state.patch_path = root_paths.get_patch_path();
 
-    // If configuration does not provide a preference path, use SDL's default
-    if (state.cfg.pref_path == root_paths.get_pref_path() || state.cfg.pref_path.empty()) {
-        state.pref_path = root_paths.get_pref_path();
+    // If configuration does not provide a VitaFS path, use SDL's default
+    if (state.cfg.vita_fs_path == root_paths.get_vita_fs_path() || state.cfg.vita_fs_path.empty()) {
+        state.vita_fs_path = root_paths.get_vita_fs_path();
     } else {
-        auto last_char = state.cfg.pref_path.back();
+        auto last_char = state.cfg.vita_fs_path.back();
         if (last_char != fs::path::preferred_separator && last_char != '/')
-            state.cfg.pref_path += fs::path::preferred_separator;
-        state.pref_path = state.cfg.get_pref_path();
+            state.cfg.vita_fs_path += fs::path::preferred_separator;
+        state.vita_fs_path = state.cfg.get_vita_fs_path();
     }
 
     set_current_config(state, state.cfg.run_app_path.has_value() ? *state.cfg.run_app_path : "");
@@ -434,9 +434,9 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     LOG_INFO("User config path: {}", state.config_path);
     LOG_INFO("User cache path: {}", state.cache_path);
 #endif
-    LOG_INFO("User pref path: {}", state.pref_path);
+    LOG_INFO("VitaFS path: {}", state.vita_fs_path);
 
-    if (!init(state.io, state.cache_path, state.log_path, state.pref_path, state.cfg.console)) {
+    if (!init(state.io, state.cache_path, state.log_path, state.vita_fs_path, state.cfg.console)) {
         LOG_ERROR("Failed to initialize file system for the emulator!");
         return false;
     }
@@ -540,7 +540,7 @@ void reset_app_state(EmuEnvState &state) {
     // re-init
     init_libraries(state);
 
-    if (!init(state.io, state.cache_path, state.log_path, state.pref_path, state.cfg.console)) {
+    if (!init(state.io, state.cache_path, state.log_path, state.vita_fs_path, state.cfg.console)) {
         LOG_ERROR("Failed to re-initialize file system after deinit!");
     }
 }

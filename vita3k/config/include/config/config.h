@@ -175,7 +175,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(float, "background-alpha", .300f, background_alpha)                                            \
     code(int, "log-level", 0 /*SPDLOG_LEVEL_TRACE*/, log_level)                                         \
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
-    code(std::string, "pref-path", std::string{}, pref_path)                                            \
+    code(std::string, "pref-path", std::string{}, vita_fs_path)                                         \
     code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
     code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
     code(bool, "color-surface-debug", false, color_surface_debug)                                       \
