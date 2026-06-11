@@ -529,8 +529,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
 
     for (const auto &module_path : lib_load_list) {
         auto res = load_module(emuenv, module_path);
-        if (res < 0)
-            return FileNotFound;
+        LOG_ERROR_IF(res < 0, "Failed to load preloaded module: {}. Ignoring this error.", module_path);
     }
 
     // Load taiHEN plugins configured for this title
