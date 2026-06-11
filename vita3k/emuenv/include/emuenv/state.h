@@ -129,7 +129,7 @@ public:
     fs::path config_path{}; // Path for config files
     fs::path log_path{}; // Path for log file
     fs::path cache_path{}; // Path for cache files (shaders, elf/texture dumps, and compat cache)
-    fs::path pref_path{}; // Path for VitaFS (TODO: rename to vita_path)
+    fs::path vita_fs_path{}; // Path for VitaFS
     fs::path static_assets_path{}; // Path for static assets (shaders, icons, etc)
     fs::path shared_path{}; // Path for files (UI themes, textures, etc)
     fs::path patch_path{}; // Path for patch files
@@ -204,7 +204,7 @@ public:
     Root get_root_paths() const {
         Root r;
         r.set_base_path(base_path);
-        r.set_pref_path(pref_path);
+        r.set_vita_fs_path(vita_fs_path);
         r.set_patch_path(patch_path);
         r.set_log_path(log_path);
         r.set_config_path(config_path);

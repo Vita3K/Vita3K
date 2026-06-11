@@ -67,7 +67,7 @@ bool copy_license(EmuEnvState &emuenv, const fs::path &license_path) {
     if (open_license(license_path, license_buf)) {
         emuenv.license_content_id = license_buf.content_id;
         emuenv.license_title_id = emuenv.license_content_id.substr(7, 9);
-        const auto dst_path{ emuenv.pref_path / "ux0/license" / emuenv.license_title_id };
+        const auto dst_path{ emuenv.vita_fs_path / "ux0/license" / emuenv.license_title_id };
         fs::create_directories(dst_path);
 
         const auto license_dst_path{ dst_path / fmt::format("{}.rif", emuenv.license_content_id) };
@@ -96,13 +96,13 @@ void get_license(EmuEnvState &emuenv, const std::string &title_id, const std::st
     license_buf = {};
 
     // Open license file
-    const auto license_path{ emuenv.pref_path / "ux0/license" / title_id / fmt::format("{}.rif", content_id) };
+    const auto license_path{ emuenv.vita_fs_path / "ux0/license" / title_id / fmt::format("{}.rif", content_id) };
     if (!open_license(license_path, license_buf)) {
         if (fs::exists(license_path))
             fs::remove(license_path);
 
         LOG_WARN("License file is corrupted or missing at: {}, using default value.", license_path);
-        const auto RETAIL_APP_PATH{ emuenv.pref_path / "ux0/app" / title_id / "sce_sys/retail/livearea" };
+        const auto RETAIL_APP_PATH{ emuenv.vita_fs_path / "ux0/app" / title_id / "sce_sys/retail/livearea" };
         if (fs::exists(RETAIL_APP_PATH))
             license_buf.sku_flag = 1;
         else

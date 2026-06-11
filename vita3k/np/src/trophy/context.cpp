@@ -161,7 +161,7 @@ static constexpr std::uint32_t TROPHY_USR_MAGIC = 0x12D5819A;
 
 void Context::save_trophy_progress_file() {
     // Open the file
-    const SceUID output = open_file(*io, trophy_progress_output_file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, pref_path, "save_trophy_progress");
+    const SceUID output = open_file(*io, trophy_progress_output_file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, vita_fs_path, "save_trophy_progress");
 
     auto write_stuff = [&](const void *data, std::uint32_t amount) -> int {
         return write_file(output, data, amount, *io, "save_trophy_progress_file");
@@ -353,10 +353,10 @@ bool Context::get_trophy_set(std::string &name, std::string &detail) {
     return !name.empty() && !detail.empty();
 }
 
-int Context::install_trophy_conf(IOState *io, const fs::path &pref_path, const std::string &np_com_id) {
+int Context::install_trophy_conf(IOState *io, const fs::path &vita_fs_path, const std::string &np_com_id) {
     auto trophy_conf_path = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + io->user_id + "/trophy/conf/" + np_com_id);
 
-    create_dir(*io, trophy_conf_path.c_str(), 0, pref_path, "create_trophy_context", true);
+    create_dir(*io, trophy_conf_path.c_str(), 0, vita_fs_path, "create_trophy_context", true);
 
     for (const auto &file : trophy_file.entries) {
         std::vector<uint8_t> buf;
@@ -367,7 +367,7 @@ int Context::install_trophy_conf(IOState *io, const fs::path &pref_path, const s
         copy_file_data_from_trophy_file(file.filename.c_str(), &buf[0], &size);
 
         auto trophy_conf_file = trophy_conf_path + file.filename;
-        const SceUID trophy_conf_id = open_file(*io, trophy_conf_file.c_str(), SCE_O_WRONLY | SCE_O_CREAT, pref_path, "install_trophy_context");
+        const SceUID trophy_conf_id = open_file(*io, trophy_conf_file.c_str(), SCE_O_WRONLY | SCE_O_CREAT, vita_fs_path, "install_trophy_context");
 
         write_file(trophy_conf_id, buf.data(), size, *io, "install_trophy_context");
 
@@ -379,7 +379,7 @@ int Context::install_trophy_conf(IOState *io, const fs::path &pref_path, const s
 
 } // namespace np::trophy
 
-np::trophy::ContextHandle create_trophy_context(NpState &np, IOState *io, const fs::path &pref_path,
+np::trophy::ContextHandle create_trophy_context(NpState &np, IOState *io, const fs::path &vita_fs_path,
     const np::CommunicationID *custom_comm, const std::uint32_t lang, np::NpTrophyError *error) {
     if (!custom_comm) {
         custom_comm = &np.comm_id;
@@ -405,7 +405,7 @@ np::trophy::ContextHandle create_trophy_context(NpState &np, IOState *io, const 
     const auto trophy_file_path = device::construct_normalized_path(VitaIoDevice::app0, "sce_sys/trophy/" + unique_trophy_folder + "TROPHY.TRP");
 
     // Try to open the file
-    const SceUID trophy_file = open_file(*io, trophy_file_path.c_str(), SCE_O_RDONLY, pref_path, "create_trophy_context");
+    const SceUID trophy_file = open_file(*io, trophy_file_path.c_str(), SCE_O_RDONLY, vita_fs_path, "create_trophy_context");
     if (trophy_file < 0) {
         TROPHY_RET_ERROR(TROPHY_CONTEXT_FILE_NON_EXIST);
     }
@@ -414,9 +414,9 @@ np::trophy::ContextHandle create_trophy_context(NpState &np, IOState *io, const 
     // operations on.
     auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + io->user_id + "/trophy/data/" + unique_trophy_folder);
 
-    create_dir(*io, trophy_progress_save_file.c_str(), 0, pref_path, "create_trophy_context", true);
+    create_dir(*io, trophy_progress_save_file.c_str(), 0, vita_fs_path, "create_trophy_context", true);
     trophy_progress_save_file += "TROPUSR.DAT";
-    const SceUID trophy_progress_file_inp = open_file(*io, trophy_progress_save_file.c_str(), SCE_O_RDONLY, pref_path, "create_trophy_context");
+    const SceUID trophy_progress_file_inp = open_file(*io, trophy_progress_save_file.c_str(), SCE_O_RDONLY, vita_fs_path, "create_trophy_context");
 
     np::trophy::Context *new_context = nullptr;
 
@@ -439,13 +439,13 @@ np::trophy::ContextHandle create_trophy_context(NpState &np, IOState *io, const 
         np.trophy_state.contexts.back().id = static_cast<np::trophy::ContextHandle>(np.trophy_state.contexts.size());
 
         new_context = &np.trophy_state.contexts.back();
-        new_context->pref_path = pref_path;
+        new_context->vita_fs_path = vita_fs_path;
     }
 
     new_context->lang = lang;
     new_context->trophy_file.header_parse();
 
-    new_context->install_trophy_conf(io, pref_path, unique_trophy_folder);
+    new_context->install_trophy_conf(io, vita_fs_path, unique_trophy_folder);
 
     if (trophy_progress_file_inp > 0) {
         new_context->load_trophy_progress_file(trophy_progress_file_inp);

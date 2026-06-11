@@ -652,7 +652,7 @@ static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, const fs::pa
     }
 }
 
-void extract_fat(const fs::path &partition_path, const std::string &partition, const fs::path &pref_path) {
+void extract_fat(const fs::path &partition_path, const std::string &partition, const fs::path &vita_fs_path) {
     FILE *f = FOPEN((partition_path / partition).native().c_str(), "rb");
     Fat16::Image img(
         f,
@@ -668,7 +668,7 @@ void extract_fat(const fs::path &partition_path, const std::string &partition, c
         });
 
     Fat16::Entry first;
-    traverse_directory(img, first, pref_path / partition.substr(0, 3));
+    traverse_directory(img, first, vita_fs_path / partition.substr(0, 3));
 
     fclose(f);
 }

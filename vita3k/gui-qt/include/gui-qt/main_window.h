@@ -129,7 +129,7 @@ private:
     std::optional<AppLaunchRequest> take_pending_app_launch_request();
     bool handle_pending_app_launch_request();
     static QImage load_app_background(const std::string &app_path,
-        const std::string &pref_path);
+        const std::string &vita_fs_path);
 
     void handle_drop(const QString &path);
 

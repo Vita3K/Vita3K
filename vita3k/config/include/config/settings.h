@@ -51,7 +51,7 @@ void set_current_config(Config &cfg, const fs::path &config_path, const std::str
 void copy_current_config_to_global(Config &cfg);
 void save_current_config(Config &cfg, const fs::path &config_path, const std::string &app_path, bool create_custom_if_missing = false);
 std::vector<std::pair<std::string, bool>> get_modules_list(
-    const fs::path &pref_path,
+    const fs::path &vita_fs_path,
     const std::vector<std::string> &lle_modules);
 
 } // namespace config

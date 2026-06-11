@@ -25,4 +25,4 @@
 #include <functional>
 #include <util/fs.h>
 
-std::string install_pup(const fs::path &pref_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback = nullptr);
+std::string install_pup(const fs::path &vita_fs_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback = nullptr);

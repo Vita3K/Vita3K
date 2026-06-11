@@ -71,7 +71,7 @@ void AppsList::refresh(bool from_disk) {
 
     m_apps = app::get_apps(m_emuenv);
     const auto user_times = app::get_user_app_times(m_emuenv);
-    m_table->populate(m_apps, user_times, m_emuenv.compat, m_emuenv.pref_path, m_emuenv.config_path);
+    m_table->populate(m_apps, user_times, m_emuenv.compat, m_emuenv.vita_fs_path, m_emuenv.config_path);
 
     if (!m_search_text.isEmpty())
         set_search_text(m_search_text);

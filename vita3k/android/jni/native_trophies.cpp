@@ -32,7 +32,7 @@ void clear_pending_exception(JNIEnv *env) {
 np::trophy::CollectionSource make_collection_source(EmuEnvState &emuenv) {
     np::trophy::CollectionSource source;
     source.io = &emuenv.io;
-    source.pref_path = emuenv.pref_path;
+    source.vita_fs_path = emuenv.vita_fs_path;
     source.user_id = emuenv.io.user_id;
     source.lang = static_cast<uint32_t>(emuenv.cfg.sys_lang);
     return source;

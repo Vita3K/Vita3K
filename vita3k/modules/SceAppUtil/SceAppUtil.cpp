@@ -162,7 +162,7 @@ EXPORT(int, sceAppUtilBgdlGetStatus) {
 }
 
 static bool is_addcont_exist(EmuEnvState &emuenv, const SceChar8 *path) {
-    const auto drm_content_id_path{ emuenv.pref_path / "ux0" / emuenv.io.device_paths.addcont0 / reinterpret_cast<const char *>(path) };
+    const auto drm_content_id_path{ emuenv.vita_fs_path / "ux0" / emuenv.io.device_paths.addcont0 / reinterpret_cast<const char *>(path) };
     return (fs::exists(drm_content_id_path) && (!fs::is_empty(drm_content_id_path)));
 }
 
@@ -251,13 +251,13 @@ EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceA
     for (unsigned int i = 0; i < fileNum; i++) {
         const auto file = fs::path(construct_savedata0_path(files[i].dataPath.get(emuenv.mem)));
         if (fs::is_regular_file(file)) {
-            remove_file(emuenv.io, file.string().c_str(), emuenv.pref_path, export_name);
+            remove_file(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name);
         } else
-            remove_dir(emuenv.io, file.string().c_str(), emuenv.pref_path, export_name);
+            remove_dir(emuenv.io, file.string().c_str(), emuenv.vita_fs_path, export_name);
     }
 
     if (slot && files[0].mode == SCE_APPUTIL_SAVEDATA_DATA_REMOVE_MODE_DEFAULT) {
-        remove_file(emuenv.io, construct_slotparam_path(slot->id).c_str(), emuenv.pref_path, export_name);
+        remove_file(emuenv.io, construct_slotparam_path(slot->id).c_str(), emuenv.vita_fs_path, export_name);
     }
 
     return 0;
@@ -275,22 +275,22 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         const auto file_path = construct_savedata0_path(files[i].dataPath.get(emuenv.mem));
         switch (files[i].mode) {
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_DIRECTORY:
-            create_dir(emuenv.io, file_path.c_str(), 0777, emuenv.pref_path, export_name);
+            create_dir(emuenv.io, file_path.c_str(), 0777, emuenv.vita_fs_path, export_name);
             break;
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE_TRUNCATE:
             if (files[i].buf) {
-                fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.pref_path, export_name);
+                fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.vita_fs_path, export_name);
                 seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, emuenv.io, export_name);
                 write_file(fd, files[i].buf.get(emuenv.mem), files[i].bufSize, emuenv.io, export_name);
                 close_file(emuenv.io, fd, export_name);
             }
-            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_APPEND | SCE_O_TRUNC, emuenv.pref_path, export_name);
+            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_APPEND | SCE_O_TRUNC, emuenv.vita_fs_path, export_name);
             truncate_file(fd, files[i].bufSize + files[i].offset, emuenv.io, export_name);
             close_file(emuenv.io, fd, export_name);
             break;
         case SCE_APPUTIL_SAVEDATA_DATA_SAVE_MODE_FILE:
         default:
-            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.pref_path, export_name);
+            fd = open_file(emuenv.io, file_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.vita_fs_path, export_name);
             seek_file(fd, static_cast<int>(files[i].offset), SCE_SEEK_SET, emuenv.io, export_name);
             write_file(fd, files[i].buf.get(emuenv.mem), files[i].bufSize, emuenv.io, export_name);
             close_file(emuenv.io, fd, export_name);
@@ -306,7 +306,7 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         tm local = {};
 
         if (!slot->slotParam) {
-            fd = open_file(emuenv.io, construct_slotparam_path(slot->id).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
+            fd = open_file(emuenv.io, construct_slotparam_path(slot->id).c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
             if (fd < 0)
                 return 0;
             read_file(slot_param, emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
@@ -321,7 +321,7 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
         modified_time.minute = local.tm_min;
         modified_time.second = local.tm_sec;
         slot_param->modifiedTime = modified_time;
-        fd = open_file(emuenv.io, construct_slotparam_path(slot->id).c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.pref_path, export_name);
+        fd = open_file(emuenv.io, construct_slotparam_path(slot->id).c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.vita_fs_path, export_name);
         write_file(fd, slot_param, sizeof(SceAppUtilSaveDataSlotParam), emuenv.io, export_name);
         close_file(emuenv.io, fd, export_name);
     }
@@ -347,7 +347,7 @@ EXPORT(int, sceAppUtilSaveDataGetQuota, SceSize *quotaSizeKiB, SceSize *usedSize
 
     // Used size from VFS
     if (usedSizeKiB) {
-        *usedSizeKiB = vfs::get_directory_used_size(VitaIoDevice::ux0, emuenv.io.device_paths.savedata0, emuenv.pref_path) / KiB(1);
+        *usedSizeKiB = vfs::get_directory_used_size(VitaIoDevice::ux0, emuenv.io.device_paths.savedata0, emuenv.vita_fs_path) / KiB(1);
 
         // Clamp used size to quota
         if (quotaSizeKiB && (*quotaSizeKiB > 0) && (*usedSizeKiB > *quotaSizeKiB))
@@ -364,7 +364,7 @@ EXPORT(int, sceAppUtilSaveDataMount) {
 
 EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataSlotCreate, slotId, param, mountPoint);
-    const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.pref_path, export_name);
+    const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.vita_fs_path, export_name);
     write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), emuenv.io, export_name);
     close_file(emuenv.io, fd, export_name);
     return 0;
@@ -372,13 +372,13 @@ EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDat
 
 EXPORT(int, sceAppUtilSaveDataSlotDelete, unsigned int slotId, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataSlotDelete, slotId, mountPoint);
-    remove_file(emuenv.io, construct_slotparam_path(slotId).c_str(), emuenv.pref_path, export_name);
+    remove_file(emuenv.io, construct_slotparam_path(slotId).c_str(), emuenv.vita_fs_path, export_name);
     return 0;
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataSlotGetParam, slotId, param, mountPoint);
-    const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
+    const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
     read_file(param, emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
@@ -408,7 +408,7 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, co
             slotList[i].emptyParam = Ptr<SceAppUtilSaveDataSlotEmptyParam>(0);
         }
 
-        const auto fd = open_file(emuenv.io, construct_slotparam_path(i).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
+        const auto fd = open_file(emuenv.io, construct_slotparam_path(i).c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
         switch (cond->type) {
         case SCE_APPUTIL_SAVEDATA_SLOT_SEARCH_TYPE_EXIST_SLOT:
             if (fd > 0) {
@@ -441,7 +441,7 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, co
 
 EXPORT(SceInt32, sceAppUtilSaveDataSlotSetParam, SceAppUtilSaveDataSlotId slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataSlotSetParam, slotId, param, mountPoint);
-    const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY, emuenv.pref_path, export_name);
+    const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY, emuenv.vita_fs_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
     write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), emuenv.io, export_name);
@@ -460,7 +460,7 @@ static SceInt32 SafeMemory(EmuEnvState &emuenv, void *buf, SceSize bufSize, SceO
     SceInt32 res = 0;
 
     // Open file when it exist
-    const auto fd = open_file(emuenv.io, safe_mem_path.c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
+    const auto fd = open_file(emuenv.io, safe_mem_path.c_str(), SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
     if (fd > 0) {
         // Read file for set data inside safe mem when it exist
         res = read_file(safe_mem.data(), emuenv.io, fd, SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE, export_name);
@@ -469,7 +469,7 @@ static SceInt32 SafeMemory(EmuEnvState &emuenv, void *buf, SceSize bufSize, SceO
 
     if ((fd < 0) || save) {
         // When safe mem no exist or in save mode, write it with set buffer inside data
-        const auto fd = open_file(emuenv.io, safe_mem_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.pref_path, export_name);
+        const auto fd = open_file(emuenv.io, safe_mem_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.vita_fs_path, export_name);
         memcpy(&safe_mem[offset], buf, bufSize);
         write_file(fd, safe_mem.data(), SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE, emuenv.io, export_name);
         close_file(emuenv.io, fd, export_name);

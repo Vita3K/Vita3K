@@ -34,46 +34,46 @@ struct IOState;
 inline SceUID invalid_fd = -1;
 
 void init_device_paths(IOState &io);
-bool init_savedata_app_path(IOState &io, const fs::path &pref_path);
-bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, const fs::path &pref_path, bool redirect_stdio);
+bool init_savedata_app_path(IOState &io, const fs::path &vita_fs_path);
+bool init(IOState &io, const fs::path &cache_path, const fs::path &log_path, const fs::path &vita_fs_path, bool redirect_stdio);
 void io_deinit(IOState &io);
 
 bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &translated_path, const fs::path &system_path);
 fs::path find_in_cache(IOState &io, const std::string &system_path);
 
-fs::path expand_path(IOState &io, const char *path, const fs::path &pref_path);
+fs::path expand_path(IOState &io, const char *path, const fs::path &vita_fs_path);
 std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths);
 
 /**
  * @brief Copy all files from a source path to the corresponding path in the emulated PS Vita filesystem
- * (Vita3K pref path) and delete the source path
+ * and delete the source path
  *
  * @param src_path Path from the host filesystem
- * @param pref_path Vita3K pref path
+ * @param vita_fs_path Vita emulated filesystem
  * @param app_title_id App title ID (`PCSXXXXXX`)
  * @param app_category Content type ID as specified by `param.sfo` file
  * @return true Success
  * @return false Error
  */
-bool copy_path(const fs::path &src_path, const fs::path &pref_path, const std::string &app_title_id, const std::string &app_category);
+bool copy_path(const fs::path &src_path, const fs::path &vita_fs_path, const std::string &app_title_id, const std::string &app_category);
 
-SceUID open_file(IOState &io, const char *path, const int flags, const fs::path &pref_path, const char *export_name);
+SceUID open_file(IOState &io, const char *path, const int flags, const fs::path &vita_fs_path, const char *export_name);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name);
 int truncate_file(SceUID fd, unsigned long long length, const IOState &io, const char *export_name);
 SceOff seek_file(SceUID fd, SceOff offset, SceIoSeekMode whence, IOState &io, const char *export_name);
 SceOff tell_file(IOState &io, const SceUID fd, const char *export_name);
-int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &pref_path, const char *export_name, SceUID fd = invalid_fd);
-int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const fs::path &pref_path, const char *export_name);
+int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &vita_fs_path, const char *export_name, SceUID fd = invalid_fd);
+int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const fs::path &vita_fs_path, const char *export_name);
 int close_file(IOState &io, SceUID fd, const char *export_name);
-int remove_file(IOState &io, const char *file, const fs::path &pref_path, const char *export_name);
-int rename(IOState &io, const char *old_name, const char *new_name, const fs::path &pref_path, const char *export_name);
+int remove_file(IOState &io, const char *file, const fs::path &vita_fs_path, const char *export_name);
+int rename(IOState &io, const char *old_name, const char *new_name, const fs::path &vita_fs_path, const char *export_name);
 
-SceUID open_dir(IOState &io, const char *path, const fs::path &pref_path, const char *export_name);
-SceUID read_dir(IOState &io, SceUID fd, SceIoDirent *dent, const fs::path &pref_path, const char *export_name);
-int create_dir(IOState &io, const char *dir, int mode, const fs::path &pref_path, const char *export_name, const bool recursive = false);
+SceUID open_dir(IOState &io, const char *path, const fs::path &vita_fs_path, const char *export_name);
+SceUID read_dir(IOState &io, SceUID fd, SceIoDirent *dent, const fs::path &vita_fs_path, const char *export_name);
+int create_dir(IOState &io, const char *dir, int mode, const fs::path &vita_fs_path, const char *export_name, const bool recursive = false);
 int close_dir(IOState &io, SceUID fd, const char *export_name);
-int remove_dir(IOState &io, const char *dir, const fs::path &pref_path, const char *export_name);
+int remove_dir(IOState &io, const char *dir, const fs::path &vita_fs_path, const char *export_name);
 
 // SceFios functions
 SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay);

@@ -1257,8 +1257,8 @@ void load_taihen_config(EmuEnvState &emuenv) {
 
     // Try ux0:tai/config.txt first, then ur0:tai/config.txt
     vfs::FileBuffer buf;
-    if (!vfs::read_file(VitaIoDevice::ux0, buf, emuenv.pref_path, "tai/config.txt")) {
-        vfs::read_file(VitaIoDevice::ur0, buf, emuenv.pref_path, "tai/config.txt");
+    if (!vfs::read_file(VitaIoDevice::ux0, buf, emuenv.vita_fs_path, "tai/config.txt")) {
+        vfs::read_file(VitaIoDevice::ur0, buf, emuenv.vita_fs_path, "tai/config.txt");
     }
 
     if (buf.empty()) {

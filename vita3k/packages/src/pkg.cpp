@@ -211,7 +211,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         type = PkgType::PKG_TYPE_VITA_PATCH;
     }
 
-    auto path{ emuenv.pref_path / "ux0" };
+    auto path{ emuenv.vita_fs_path / "ux0" };
 
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
@@ -344,7 +344,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         break;
     }
 
-    if (!copy_path(title_id_src, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
+    if (!copy_path(title_id_src, emuenv.vita_fs_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
     create_license(emuenv, zRIF);
@@ -353,7 +353,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     return true;
 }
 
-std::string find_pkg_zrif(const fs::path &pkg_path, const fs::path &pref_path) {
+std::string find_pkg_zrif(const fs::path &pkg_path, const fs::path &vita_fs_path) {
     FILE *infile = FOPEN(pkg_path.c_str(), "rb");
     if (!infile)
         return {};
@@ -367,7 +367,7 @@ std::string find_pkg_zrif(const fs::path &pkg_path, const fs::path &pref_path) {
         return {};
 
     const std::string title_id = content_id.substr(7, 9);
-    const auto rif_path = pref_path / "ux0/license" / title_id / (content_id + ".rif");
+    const auto rif_path = vita_fs_path / "ux0/license" / title_id / (content_id + ".rif");
 
     if (!fs::exists(rif_path))
         return {};

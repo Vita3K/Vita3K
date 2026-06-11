@@ -58,7 +58,7 @@ namespace {
 np::trophy::CollectionSource make_collection_source(const EmuEnvState &emuenv) {
     np::trophy::CollectionSource source;
     source.io = const_cast<IOState *>(&emuenv.io);
-    source.pref_path = emuenv.pref_path;
+    source.vita_fs_path = emuenv.vita_fs_path;
     source.user_id = emuenv.io.user_id;
     source.lang = static_cast<uint32_t>(emuenv.cfg.sys_lang);
     return source;
@@ -736,9 +736,9 @@ void TrophyCollectionDialog::show_app_context_menu(const QPoint &pos) {
         return;
 
     const QString name = QString::fromStdString(m_db[db_idx]->title);
-    const fs::path conf = m_emuenv.pref_path / "ux0/user"
+    const fs::path conf = m_emuenv.vita_fs_path / "ux0/user"
         / m_emuenv.io.user_id / "trophy/conf" / m_db[db_idx]->np_com_id;
-    const fs::path data_dir = m_emuenv.pref_path / "ux0/user"
+    const fs::path data_dir = m_emuenv.vita_fs_path / "ux0/user"
         / m_emuenv.io.user_id / "trophy/data" / m_db[db_idx]->np_com_id;
 
     QMenu menu(this);

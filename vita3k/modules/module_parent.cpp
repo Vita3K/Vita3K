@@ -245,7 +245,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     VitaIoDevice device = device::get_device(module_path);
     auto device_for_icase = device;
     fs::path translated_module_path = translate_path(module_path.c_str(), device, emuenv.io.device_paths);
-    auto system_path = device::construct_emulated_path(device, translated_module_path, emuenv.pref_path, emuenv.io.redirect_stdio);
+    auto system_path = device::construct_emulated_path(device, translated_module_path, emuenv.vita_fs_path, emuenv.io.redirect_stdio);
 
     if (module_path.starts_with("os0:kd/")) {
         if (!fs::exists(system_path)) {
@@ -276,7 +276,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
             translated_module_path = find_in_cache(emuenv.io, string_utils::tolower(system_path.string()));
             if (!translated_module_path.empty() && path_found) {
                 LOG_TRACE("Found file on case-sensitive filesystem at {}", translated_module_path);
-                translated_module_path = translated_module_path.string().substr(emuenv.pref_path.string().length());
+                translated_module_path = translated_module_path.string().substr(emuenv.vita_fs_path.string().length());
                 translated_module_path = translated_module_path.string().substr(translated_module_path.string().find('/') + 1);
             } else {
                 LOG_ERROR("Missing file at {} (target path: {})", original_translated_module_path.string(), module_path);
@@ -288,9 +288,9 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     vfs::FileBuffer module_buffer;
     bool res;
     if (device == VitaIoDevice::app0)
-        res = vfs::read_app_file(module_buffer, emuenv.pref_path, emuenv.io.app_path, translated_module_path);
+        res = vfs::read_app_file(module_buffer, emuenv.vita_fs_path, emuenv.io.app_path, translated_module_path);
     else
-        res = vfs::read_file(device, module_buffer, emuenv.pref_path, translated_module_path);
+        res = vfs::read_file(device, module_buffer, emuenv.vita_fs_path, translated_module_path);
     if (!res) {
         LOG_ERROR("Failed to read module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
