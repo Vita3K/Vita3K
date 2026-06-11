@@ -246,8 +246,6 @@ void init_paths(Root &root_paths) {
     fs::path internal_storage_path = fs::path(SDL_GetAndroidExternalStoragePath()) / "";
     fs::path vita_storage_path = internal_storage_path / "vita/";
 
-    root_paths.set_base_path(internal_storage_path);
-
     // On Android, static assets are bundled inside the APK and accessed via SDL_IOFromFile.
     root_paths.set_static_assets_path({});
 
@@ -258,18 +256,17 @@ void init_paths(Root &root_paths) {
     root_paths.set_cache_path(internal_storage_path / "cache" / "");
     root_paths.set_patch_path(internal_storage_path / "patch" / "");
 #else
-    auto sdl_base_path = SDL_GetBasePath();
-    auto base_path = fs_utils::utf8_to_path(sdl_base_path);
+    auto sdl_exe_path = SDL_GetBasePath();
+    auto exe_path = fs_utils::utf8_to_path(sdl_exe_path);
 
-    root_paths.set_base_path(base_path);
-    root_paths.set_static_assets_path(base_path);
+    root_paths.set_static_assets_path(exe_path);
 
 #if defined(__APPLE__)
-    // On Apple platforms, base_path is "Contents/Resources/" inside the app bundle.
+    // On Apple platforms, exe_path is "Contents/Resources/" inside the app bundle.
     // An extra parent_path is apparently needed because of the trailing slash.
-    auto portable_path = base_path.parent_path().parent_path().parent_path().parent_path() / "portable" / "";
+    auto portable_path = exe_path.parent_path().parent_path().parent_path().parent_path() / "portable" / "";
 #else
-    auto portable_path = base_path / "portable" / "";
+    auto portable_path = exe_path / "portable" / "";
 #endif
 
     if (fs::is_directory(portable_path)) {
@@ -294,9 +291,9 @@ void init_paths(Root &root_paths) {
         // This will typically be "~/Library/Application Support/Vita3K/Vita3K/".
         // Check for config.yml first, though, to maintain backwards compatibility,
         // even though storing user data inside the app bundle is not a good idea.
-        auto existing_config = base_path / "config.yml";
+        auto existing_config = exe_path / "config.yml";
         if (!fs::exists(existing_config)) {
-            base_path = vita_fs_path;
+            exe_path = vita_fs_path;
         }
 
         // vita_fs_path should not be the same as the other paths.
@@ -308,11 +305,11 @@ void init_paths(Root &root_paths) {
 #endif
 
         root_paths.set_vita_fs_path(vita_fs_path);
-        root_paths.set_log_path(base_path);
-        root_paths.set_config_path(base_path);
-        root_paths.set_shared_path(base_path);
-        root_paths.set_cache_path(base_path / "cache" / "");
-        root_paths.set_patch_path(base_path / "patch" / "");
+        root_paths.set_log_path(exe_path);
+        root_paths.set_config_path(exe_path);
+        root_paths.set_shared_path(exe_path);
+        root_paths.set_cache_path(exe_path / "cache" / "");
+        root_paths.set_patch_path(exe_path / "patch" / "");
 
 #if defined(__linux__)
         // XDG Data Dirs.
@@ -367,8 +364,8 @@ void init_paths(Root &root_paths) {
         }
 
         // Only really used in standalone (rare) or development
-        if (fs::exists(root_paths.get_base_path() / "shaders-builtin"))
-            root_paths.set_static_assets_path(root_paths.get_base_path());
+        if (fs::exists(exe_path / "shaders-builtin"))
+            root_paths.set_static_assets_path(exe_path);
 
         // AppImage root
         if (APPDIR != NULL && fs::exists(fs::path(APPDIR) / "usr/share/Vita3K"))
@@ -405,7 +402,6 @@ void init_paths(Root &root_paths) {
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     state.cfg = std::move(cfg);
 
-    state.base_path = root_paths.get_base_path();
     state.default_path = root_paths.get_vita_fs_path();
     state.log_path = root_paths.get_log_path();
     state.config_path = root_paths.get_config_path();
@@ -426,7 +422,8 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 
     set_current_config(state, state.cfg.run_app_path.has_value() ? *state.cfg.run_app_path : "");
 
-    LOG_INFO("Base path: {}", state.base_path);
+    // Here any path can be used since they are all the same in windows/macos
+    LOG_INFO("Base path: {}", state.static_assets_path);
 #if defined(__linux__) && !defined(__ANDROID__)
     LOG_INFO("Static assets path: {}", state.static_assets_path);
     LOG_INFO("Shared path: {}", state.shared_path);

@@ -88,7 +88,6 @@ template <>
 struct fmt::formatter<boost::filesystem::path> : ostream_formatter {};
 
 class Root {
-    fs::path base_path;
     fs::path vita_fs_path;
     fs::path patch_path;
     fs::path log_path;
@@ -98,13 +97,6 @@ class Root {
     fs::path static_assets_path;
 
 public:
-    void set_base_path(const fs::path &p) {
-        base_path = p;
-    }
-    fs::path get_base_path() const {
-        return base_path;
-    }
-
     void set_vita_fs_path(const fs::path &p) {
         vita_fs_path = p;
     }
