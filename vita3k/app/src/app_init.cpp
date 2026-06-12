@@ -261,12 +261,21 @@ void init_paths(Root &root_paths) {
 
     root_paths.set_static_assets_path(exe_path);
 
-#if defined(__APPLE__)
+#ifdef _WIN32
+    auto portable_path = exe_path / "portable" / "";
+#elif defined(__APPLE__)
     // On Apple platforms, exe_path is "Contents/Resources/" inside the app bundle.
     // An extra parent_path is apparently needed because of the trailing slash.
     auto portable_path = exe_path.parent_path().parent_path().parent_path().parent_path() / "portable" / "";
-#else
-    auto portable_path = exe_path / "portable" / "";
+#elif defined(__linux__)
+    fs::path portable_path = "";
+    auto APPIMAGE = getenv("APPIMAGE"); // Used in AppImage
+    if (APPIMAGE) {
+        fs::path appimage_path = fs::path(APPIMAGE).remove_filename() / "";
+        portable_path = appimage_path / "portable" / "";
+    } else {
+        portable_path = exe_path / "portable" / "";
+    }
 #endif
 
     if (fs::is_directory(portable_path)) {
@@ -329,7 +338,7 @@ void init_paths(Root &root_paths) {
         auto XDG_DATA_HOME = getenv("XDG_DATA_HOME");
         auto XDG_CACHE_HOME = getenv("XDG_CACHE_HOME");
         auto XDG_CONFIG_HOME = getenv("XDG_CONFIG_HOME");
-        auto APPDIR = getenv("APPDIR"); // Used in AppImage
+        auto APPDIR = getenv("APPDIR"); // Used by AppImage
 
         // Config and game-specific configs
         if (XDG_CONFIG_HOME != NULL)
