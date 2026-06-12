@@ -83,6 +83,28 @@ add_subdirectory(libfat16)
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
 target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniz")
 
+add_library(7zip STATIC
+	7zip/C/7zAlloc.c
+	7zip/C/7zArcIn.c
+	7zip/C/7zBuf.c
+	7zip/C/7zCrc.c
+	7zip/C/7zCrcOpt.c
+	7zip/C/7zDec.c
+	7zip/C/7zStream.c
+	7zip/C/Bcj2.c
+	7zip/C/Bra.c
+	7zip/C/Bra86.c
+	7zip/C/BraIA64.c
+	7zip/C/CpuArch.c
+	7zip/C/Delta.c
+	7zip/C/Lzma2Dec.c
+	7zip/C/LzmaDec.c
+	7zip/C/Ppmd7.c
+	7zip/C/Ppmd7Dec.c
+)
+target_include_directories(7zip PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/7zip/C")
+target_compile_definitions(7zip PRIVATE Z7_ST)
+
 add_subdirectory(sdl)
 
 # Cubeb setup, from https://github.com/RPCS3/rpcs3/blob/master/3rdparty/cubeb/CMakeLists.txt
@@ -232,7 +254,7 @@ if(APPLE)
 			"${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" SHOW_PROGRESS)
 	endif()
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK")
-		execute_process(COMMAND tar xf "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" --strip-components=1 MoltenVK/MoltenVK 
+		execute_process(COMMAND tar xf "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" --strip-components=1 MoltenVK/MoltenVK
 			WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external")
 	endif()
 	target_include_directories(vulkan INTERFACE "${CMAKE_BINARY_DIR}/external/MoltenVK/include")
@@ -326,7 +348,7 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 				if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/arm64")
 					file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/arm64")
 					execute_process(COMMAND perl ../Configure darwin64-arm64 -mmacosx-version-min=11 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/arm64")
-					execute_process(COMMAND make -j${CPU_COUNT} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/arm64" OUTPUT_QUIET)	
+					execute_process(COMMAND make -j${CPU_COUNT} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/arm64" OUTPUT_QUIET)
 				endif()
 				if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/x86_64")
 					file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl/x86_64")
