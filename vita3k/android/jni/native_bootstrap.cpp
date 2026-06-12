@@ -54,7 +54,6 @@ bool initialize_session(const fs::path &storage_path, Root &root_paths, std::uni
     try {
         const fs::path vita_path = storage_path / "vita" / "";
 
-        root_paths.set_base_path(storage_path);
         root_paths.set_static_assets_path({});
         root_paths.set_vita_fs_path(vita_path);
         root_paths.set_log_path(storage_path);

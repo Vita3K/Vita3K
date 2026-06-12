@@ -124,7 +124,6 @@ public:
     std::string license_content_id{};
     std::string license_title_id{};
     std::string current_app_title{};
-    fs::path base_path{}; // Base for the path of binaries/executable
     fs::path default_path{};
     fs::path config_path{}; // Path for config files
     fs::path log_path{}; // Path for log file
@@ -203,7 +202,6 @@ public:
 
     Root get_root_paths() const {
         Root r;
-        r.set_base_path(base_path);
         r.set_vita_fs_path(vita_fs_path);
         r.set_patch_path(patch_path);
         r.set_log_path(log_path);
