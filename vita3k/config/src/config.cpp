@@ -316,7 +316,7 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
     return Success;
 }
 
-ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths) {
+ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths, bool portable) {
     // Always generate the default configuration file
     Config command_line{};
     // Load config path configuration by default; otherwise, move the default to the config path
@@ -453,7 +453,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
     // Merge configurations
     merge(cfg, command_line);
-    if (cfg.vita_fs_path.empty())
+    // In portable mode, override the VitaFS path to be within the portable directory
+    if (portable || cfg.vita_fs_path.empty())
         cfg.set_vita_fs_path(root_paths.get_vita_fs_path());
 
     if (!cfg.console) {
