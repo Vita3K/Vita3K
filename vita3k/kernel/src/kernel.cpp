@@ -74,6 +74,9 @@ static int SDLCALL thread_function(void *data) {
     thread->run_loop();
     const uint32_t r0 = read_reg(*thread->cpu, 0);
 
+    thread->tls.reset();
+    thread->stack.reset();
+
     {
         std::lock_guard<std::mutex> lock(params.kernel->mutex);
         params.kernel->threads.erase(thread->id);
@@ -85,7 +88,8 @@ static int SDLCALL thread_function(void *data) {
 }
 
 KernelState::KernelState()
-    : debugger(*this) {
+    : thread_manager(*this)
+    , debugger(*this) {
 }
 
 bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cpu_opt) {
@@ -96,13 +100,13 @@ bool KernelState::init(MemState &mem, const CallImportFunc &call_import, bool cp
     this->cpu_opt = cpu_opt;
 
     // Generate halt instruction (NOP + WFI)
-    halt_instruction = alloc_block(mem, 4, "halt_instruction");
+    halt_instruction = Block::allocate(mem, 4, "halt_instruction", user_main_memory_start);
     const auto halt_ptr = halt_instruction.get_ptr<uint16_t>().get(mem);
     halt_ptr[0] = 0xBF00; // NOP
     halt_ptr[1] = 0xBF30; // WFI
     halt_instruction_pc = halt_instruction.get() | 1; // thumb mode pc
 
-    return true;
+    return core_timing.init();
 }
 
 void KernelState::load_process_param(MemState &mem, Ptr<uint32_t> ptr) {
@@ -188,8 +192,6 @@ void KernelState::request_process_exit(int res, std::optional<AppLaunchRequest> 
 void KernelState::process_exit() {
     {
         std::lock_guard<std::mutex> lock(mutex);
-        for (auto &[_, timer] : timers)
-            timer->condvar.notify_all();
         for (auto &[_, thread] : threads)
             thread->exit_delete(false);
     }
@@ -199,25 +201,18 @@ void KernelState::process_exit() {
 }
 
 void KernelState::pause_threads() {
-    const std::lock_guard<std::mutex> lock(mutex);
-    for (auto &[_, thread] : threads) {
-        paused_threads_status[thread->id] = thread->status;
-        if (thread->status == ThreadStatus::run)
-            thread->suspend();
-    }
+    thread_manager.pause_threads();
+    core_timing.pause(true);
 }
 
 void KernelState::resume_threads() {
-    const std::lock_guard<std::mutex> lock(mutex);
-    for (auto &[_, thread] : threads) {
-        if (paused_threads_status[thread->id] == ThreadStatus::run)
-            thread->resume();
-    }
-    paused_threads_status.clear();
+    thread_manager.resume_threads();
+    core_timing.pause(false);
 }
 
 void KernelState::deinit(MemState &mem) {
     process_exit();
+    core_timing.shutdown();
     threads.clear();
 
     simple_events.clear();
@@ -271,8 +266,6 @@ void KernelState::deinit(MemState &mem) {
     debugger.deinit();
 
     next_uid = 1;
-
-    paused_threads_status.clear();
 }
 
 SceKernelModuleInfo *KernelState::find_module_by_addr(Address address) {
