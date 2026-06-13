@@ -226,7 +226,7 @@ endif()
 add_library(modules STATIC ${SOURCE_LIST})
 target_include_directories(modules PUBLIC include)
 target_include_directories(modules PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/taiHEN)
-target_link_libraries(modules PRIVATE app audio camera codec ctrl dialog lang display dlmalloc gxm ime kernel mem motion net ngs np patch regmgr ssl packages printf renderer rtc SDL3::SDL3 substitute touch xxHash::xxhash)
+target_link_libraries(modules PRIVATE app audio camera codec ctrl dialog lang display dlmalloc gxm ime kernel mem motion net ngs np patch regmgr ssl packages patch printf renderer rtc SDL3::SDL3 substitute touch xxHash::xxhash vita-toolchain)
 target_link_libraries(modules PUBLIC module)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})
 

@@ -527,6 +527,9 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     add_preload_module(0x01000000, SCE_SYSMODULE_INVALID, "libpvf", false);
     add_preload_module(0x02000000, SCE_SYSMODULE_PERF, "libperf", false); // if DEVELOPMENT_MODE dipsw is set
 
+    load_virtual_module(emuenv, "kubridge");
+    load_virtual_module(emuenv, "fd_fix");
+
     for (const auto &module_path : lib_load_list) {
         auto res = load_module(emuenv, module_path);
         LOG_ERROR_IF(res < 0, "Failed to load preloaded module: {}. Ignoring this error.", module_path);
