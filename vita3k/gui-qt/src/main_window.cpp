@@ -513,8 +513,8 @@ void MainWindow::initialize() {
     apply_log_gui_settings();
 
     m_theme_manager = std::make_unique<ThemeManager>(m_gui_settings);
-    m_theme_manager->set_pref_path(emuenv.pref_path);
-    m_theme_manager->set_vita_themes_root(emuenv.pref_path / "ux0/theme");
+    m_theme_manager->set_vita_fs_path(emuenv.vita_fs_path);
+    m_theme_manager->set_vita_themes_root(emuenv.vita_fs_path / "ux0/theme");
     connect(m_theme_manager.get(), &ThemeManager::theme_state_changed, this, &MainWindow::repaint_gui);
     connect(m_theme_manager.get(), &ThemeManager::theme_state_changed, this, &MainWindow::apply_theme_background_presentation);
 
@@ -1426,7 +1426,7 @@ void MainWindow::setup_toolbar() {
 
         QMenu menu(this);
         menu.addAction(tr("Open Emulated Storage Path"), this, [this] {
-            gui::utils::open_dir(emuenv.pref_path);
+            gui::utils::open_dir(emuenv.vita_fs_path);
         });
 
         const auto patch_path = emuenv.shared_path / "patch";
@@ -1538,7 +1538,7 @@ void MainWindow::init_first_run_stylesheet() {
 void MainWindow::apply_stylesheet() {
     if (!m_theme_manager)
         return;
-    m_theme_manager->ensure_generated_theme_ready(emuenv.pref_path / "ux0/theme");
+    m_theme_manager->ensure_generated_theme_ready(emuenv.vita_fs_path / "ux0/theme");
     m_theme_manager->apply_theme({}, true);
 }
 

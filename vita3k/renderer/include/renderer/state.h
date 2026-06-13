@@ -48,7 +48,7 @@ enum struct MappingMethod : int {
     DoubleBuffer,
     ExernalHost,
     PageTable,
-    NativeBuffer
+    NativeBuffer // Only available in android
 };
 
 namespace renderer {
@@ -83,7 +83,7 @@ struct State {
     fs::path log_path;
     fs::path shared_path;
     fs::path static_assets;
-    fs::path pref_path;
+    fs::path vita_fs_path;
     fs::path shaders_path;
     fs::path shaders_log_path;
 
@@ -227,7 +227,7 @@ struct State {
         log_path = root_paths.get_log_path();
         shared_path = root_paths.get_shared_path();
         static_assets = root_paths.get_static_assets_path();
-        pref_path = root_paths.get_pref_path();
+        vita_fs_path = root_paths.get_vita_fs_path();
     }
 
     void set_app(const char *title_id, const char *self_name) {

@@ -242,7 +242,7 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
 
     const auto thread = emuenv.kernel.get_thread(thread_id);
 
-    auto file_path = expand_path(emuenv.io, path.get(emuenv.mem), emuenv.pref_path);
+    auto file_path = expand_path(emuenv.io, path.get(emuenv.mem), emuenv.vita_fs_path);
     if (!fs::exists(file_path) && player_info->file_manager.open_file && player_info->file_manager.close_file && player_info->file_manager.read_file && player_info->file_manager.file_size) {
         fs::create_directories(emuenv.cache_path);
 

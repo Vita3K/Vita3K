@@ -106,7 +106,7 @@ private:
     void update_file_loading_delay_label();
     void update_http_retry_labels();
     void mark_dirty();
-    void set_pending_pref_path(const fs::path &pref_path);
+    void set_pending_vita_fs_path(const fs::path &vita_fs_path);
     void set_description(QWidget *tab, const QString &title, const QString &text);
     void add_stylesheets(const QString &preferred_name = {});
     void apply_stylesheet(bool reset = false);
@@ -127,7 +127,7 @@ private:
     bool m_storage_path_locked = false;
     bool m_storage_path_switched = false;
     Config::CurrentConfig m_config;
-    fs::path m_pending_pref_path{};
+    fs::path m_pending_vita_fs_path{};
     std::vector<config::RestartRequiredSetting> m_deferred_restart_settings;
     std::unique_ptr<Ui::vita3k_settings_dialog> m_ui;
     QString m_current_stylesheet;

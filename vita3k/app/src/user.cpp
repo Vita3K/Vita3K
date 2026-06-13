@@ -54,7 +54,7 @@ void load_users(EmuEnvState &emuenv) {
     auto &user_list = emuenv.app.user_list;
     user_list.users.clear();
 
-    const auto user_path = emuenv.pref_path / "ux0/user";
+    const auto user_path = emuenv.vita_fs_path / "ux0/user";
     if (!fs::exists(user_path) || fs::is_empty(user_path))
         return;
 
@@ -106,7 +106,7 @@ void save_user(EmuEnvState &emuenv, const std::string &user_id) {
         return;
     }
 
-    const auto user_path = emuenv.pref_path / "ux0/user" / user_id;
+    const auto user_path = emuenv.vita_fs_path / "ux0/user" / user_id;
     fs::create_directories(user_path);
 
     const auto &user = it->second;
@@ -157,7 +157,7 @@ std::string create_user(EmuEnvState &emuenv, const std::string &name) {
 void delete_user(EmuEnvState &emuenv, const std::string &user_id) {
     auto &user_list = emuenv.app.user_list;
 
-    const auto user_path = emuenv.pref_path / "ux0/user" / user_id;
+    const auto user_path = emuenv.vita_fs_path / "ux0/user" / user_id;
     if (fs::exists(user_path))
         fs::remove_all(user_path);
 

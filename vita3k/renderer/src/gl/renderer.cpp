@@ -251,7 +251,7 @@ bool GLState::init() {
 
     init_overlay_font_dirs();
 
-    if (!overlay_renderer.init(static_assets, pref_path, sys_lang)) {
+    if (!overlay_renderer.init(static_assets, vita_fs_path, sys_lang)) {
         LOG_WARN("Failed to initialize overlay renderer, overlays will be disabled");
     }
 

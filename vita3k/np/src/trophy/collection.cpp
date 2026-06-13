@@ -27,7 +27,7 @@ namespace np::trophy {
 namespace {
 
 fs::path trophy_base_path(const CollectionSource &source) {
-    return source.pref_path / "ux0/user" / source.user_id / "trophy";
+    return source.vita_fs_path / "ux0/user" / source.user_id / "trophy";
 }
 
 void initialize_locked_progress(Context &context) {
@@ -90,7 +90,7 @@ bool load_collection(const CollectionSource &source, const std::string &np_com_i
     CollectionSnapshot loaded;
     loaded.np_com_id = np_com_id;
     loaded.context.io = source.io;
-    loaded.context.pref_path = source.pref_path;
+    loaded.context.vita_fs_path = source.vita_fs_path;
     loaded.context.trophy_progress_output_file_path = "ux0:user/" + source.user_id
         + "/trophy/data/" + np_com_id + "/TROPUSR.DAT";
 
@@ -99,7 +99,7 @@ bool load_collection(const CollectionSource &source, const std::string &np_com_i
     if (fs::exists(dat_path)) {
         const SceUID fh = open_file(*source.io,
             loaded.context.trophy_progress_output_file_path.c_str(),
-            SCE_O_RDONLY, source.pref_path, "trophy_collection");
+            SCE_O_RDONLY, source.vita_fs_path, "trophy_collection");
         if (fh < 0) {
             LOG_WARN("Failed to open TROPUSR.DAT for {}; showing all trophies as locked", np_com_id);
         } else {

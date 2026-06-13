@@ -92,7 +92,7 @@ static std::string fallback_theme_root_name(const std::string &content_path) {
 }
 
 static bool is_nonpdrm(EmuEnvState &emuenv, const fs::path &output_path) {
-    const auto app_license_path{ emuenv.pref_path / "ux0/license" / emuenv.app_info.app_title_id / fmt::format("{}.rif", emuenv.app_info.app_content_id) };
+    const auto app_license_path{ emuenv.vita_fs_path / "ux0/license" / emuenv.app_info.app_title_id / fmt::format("{}.rif", emuenv.app_info.app_content_id) };
     const auto is_patch_found_app_license = (emuenv.app_info.app_category == "gp") && fs::exists(app_license_path);
     if (fs::exists(output_path / "sce_sys/package/work.bin") || is_patch_found_app_license) {
         fs::path licpath = is_patch_found_app_license ? app_license_path : output_path / "sce_sys/package/work.bin";
@@ -172,7 +172,7 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
     const auto is_theme = mz_zip_reader_extract_file_to_callback(zip.get(), (content_path + theme_path).c_str(), &write_to_buffer, &theme, 0);
     const std::string theme_root_name = fallback_theme_root_name(content_path);
 
-    auto output_path{ emuenv.pref_path / "ux0" };
+    auto output_path{ emuenv.vita_fs_path / "ux0" };
     if (mz_zip_reader_extract_file_to_callback(zip.get(), (content_path + sfo_path).c_str(), &write_to_buffer, &buffer, 0)) {
         sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang);
         if (!set_content_path(emuenv, is_theme, output_path))
@@ -234,7 +234,7 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
         else
             return false;
     }
-    if (!copy_path(output_path, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
+    if (!copy_path(output_path, emuenv.vita_fs_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
     update_progress();
@@ -341,7 +341,7 @@ static bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
     vfs::FileBuffer buffer;
 
     const auto is_theme = fs::exists(theme_path);
-    auto dst_path{ emuenv.pref_path / "ux0" };
+    auto dst_path{ emuenv.vita_fs_path / "ux0" };
     if (fs_utils::read_data(sfo_path, buffer)) {
         sfo::get_param_info(emuenv.app_info, buffer, emuenv.cfg.sys_lang);
         if (!set_content_path(emuenv, is_theme, dst_path))
@@ -352,7 +352,7 @@ static bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
 
     } else if (fs_utils::read_data(theme_path, buffer)) {
         set_theme_name(emuenv, buffer, fs_utils::path_to_utf8(content_path.filename()));
-        dst_path /= fs::path("theme") / fs_utils::utf8_to_path(emuenv.app_info.app_title_id);
+        dst_path /= fs::path("theme") / emuenv.app_info.app_title_id;
     } else {
         LOG_ERROR("Param.sfo file is missing in path", sfo_path);
         return false;
@@ -366,7 +366,7 @@ static bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
     if (fs::exists(dst_path / "sce_sys/package/") && !is_nonpdrm(emuenv, dst_path))
         return false;
 
-    if (!copy_path(dst_path, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
+    if (!copy_path(dst_path, emuenv.vita_fs_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
     LOG_INFO("{} [{}] installed successfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
@@ -459,11 +459,11 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     LOG_INFO("Category: {}", emuenv.app_info.app_category);
 
     init_device_paths(emuenv.io);
-    init_savedata_app_path(emuenv.io, emuenv.pref_path);
+    init_savedata_app_path(emuenv.io, emuenv.vita_fs_path);
 
     // Load param.sfo
     vfs::FileBuffer param_sfo;
-    if (vfs::read_app_file(param_sfo, emuenv.pref_path, emuenv.io.app_path, "sce_sys/param.sfo"))
+    if (vfs::read_app_file(param_sfo, emuenv.vita_fs_path, emuenv.io.app_path, "sce_sys/param.sfo"))
         sfo::load(emuenv.sfo_handle, param_sfo);
 
     init_exported_vars(emuenv);
@@ -497,7 +497,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
             process_preload_disabled = *preload_disabled_ptr.get(emuenv.mem);
         }
     }
-    const auto module_app_path{ emuenv.pref_path / "ux0/app" / emuenv.io.app_path / "sce_module" };
+    const auto module_app_path{ emuenv.vita_fs_path / "ux0/app" / emuenv.io.app_path / "sce_module" };
 
     std::vector<std::string> lib_load_list = {};
     // todo: check if module is imported
@@ -507,7 +507,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
                 const auto module_name_file = fmt::format("{}.suprx", name);
                 if (load_from_app && fs::exists(module_app_path / module_name_file))
                     lib_load_list.emplace_back(fmt::format("app0:sce_module/{}", module_name_file));
-                else if (fs::exists(emuenv.pref_path / "vs0/sys/external" / module_name_file))
+                else if (fs::exists(emuenv.vita_fs_path / "vs0/sys/external" / module_name_file))
                     lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}", module_name_file));
             }
 
@@ -529,8 +529,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
 
     for (const auto &module_path : lib_load_list) {
         auto res = load_module(emuenv, module_path);
-        if (res < 0)
-            return FileNotFound;
+        LOG_ERROR_IF(res < 0, "Failed to load preloaded module: {}. Ignoring this error.", module_path);
     }
 
     // Load taiHEN plugins configured for this title
@@ -610,7 +609,7 @@ ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv) {
 
 ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const AppLaunchRequest &launch_request) {
     if (load_app_impl(main_module_id, emuenv, launch_request) != Success) {
-        std::string message = fmt::format(fmt::runtime(lang::get(lang::str::load_app_failed_msg)), emuenv.pref_path / "ux0/app" / emuenv.io.app_path / emuenv.self_path);
+        std::string message = fmt::format(fmt::runtime(lang::get(lang::str::load_app_failed_msg)), emuenv.vita_fs_path / "ux0/app" / emuenv.io.app_path / emuenv.self_path);
         LOG_ERROR(message);
         return ModuleLoadFailed;
     }

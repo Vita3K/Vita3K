@@ -59,7 +59,7 @@ Java_org_vita3k_emulator_NativeLib_getAppListDetailed(JNIEnv *env, jclass) {
         const fs::path icon_path = app.icon_path;
         const std::string icon_full = app.icon_path.empty()
             ? std::string()
-            : (icon_path.is_absolute() ? icon_path.generic_string() : (emuenv->pref_path / icon_path).generic_string());
+            : (icon_path.is_absolute() ? icon_path.generic_string() : (emuenv->vita_fs_path / icon_path).generic_string());
 
         jstring title_id = env->NewStringUTF(app.title_id.c_str());
         jstring title = env->NewStringUTF(app.title.c_str());
@@ -113,13 +113,13 @@ Java_org_vita3k_emulator_NativeLib_performAppAction(JNIEnv *env, jclass, jstring
         const auto app = find_app_by_title_id(title_id);
         if (!app.has_value())
             return JNI_FALSE;
-        return remove_path_if_exists(emuenv->pref_path / "ux0/user" / emuenv->io.user_id / "savedata" / app->savedata)
+        return remove_path_if_exists(emuenv->vita_fs_path / "ux0/user" / emuenv->io.user_id / "savedata" / app->savedata)
             ? JNI_TRUE
             : JNI_FALSE;
     }
     case ACTION_DELETE_PATCH: {
         bool removed = false;
-        removed |= remove_path_if_exists(emuenv->pref_path / "ux0/patch" / title_id);
+        removed |= remove_path_if_exists(emuenv->vita_fs_path / "ux0/patch" / title_id);
         removed |= remove_path_if_exists(emuenv->shared_path / "patch" / title_id);
         return removed ? JNI_TRUE : JNI_FALSE;
     }
@@ -127,12 +127,12 @@ Java_org_vita3k_emulator_NativeLib_performAppAction(JNIEnv *env, jclass, jstring
         const auto app = find_app_by_title_id(title_id);
         if (!app.has_value())
             return JNI_FALSE;
-        return remove_path_if_exists(emuenv->pref_path / "ux0/addcont" / app->addcont)
+        return remove_path_if_exists(emuenv->vita_fs_path / "ux0/addcont" / app->addcont)
             ? JNI_TRUE
             : JNI_FALSE;
     }
     case ACTION_DELETE_LICENSE:
-        return remove_path_if_exists(emuenv->pref_path / "ux0/license" / title_id)
+        return remove_path_if_exists(emuenv->vita_fs_path / "ux0/license" / title_id)
             ? JNI_TRUE
             : JNI_FALSE;
     case ACTION_DELETE_SHADER_CACHE:
@@ -186,7 +186,7 @@ Java_org_vita3k_emulator_NativeLib_getAppInstallSize(JNIEnv *env, jclass, jstrin
     if (!app.has_value())
         return 0L;
 
-    const auto app_path = emuenv->pref_path / "ux0/app" / app->path;
+    const auto app_path = emuenv->vita_fs_path / "ux0/app" / app->path;
     if (!fs::exists(app_path))
         return 0L;
 

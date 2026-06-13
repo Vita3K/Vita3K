@@ -64,7 +64,7 @@ static int64_t get_path_write_time(const fs::path &path) {
 }
 
 static std::vector<AppCacheSource> collect_app_cache_sources(const EmuEnvState &emuenv) {
-    const fs::path app_path{ emuenv.pref_path / "ux0/app" };
+    const fs::path app_path{ emuenv.vita_fs_path / "ux0/app" };
     if (!fs::exists(app_path))
         return {};
 
@@ -191,7 +191,7 @@ static std::string resolve_existing_path(const EmuEnvState &emuenv, const fs::pa
     }
 
     const std::array<fs::path, 2> roots = {
-        emuenv.pref_path,
+        emuenv.vita_fs_path,
         emuenv.default_path,
     };
 
@@ -238,7 +238,7 @@ bool init_apps_list(EmuEnvState &emuenv) {
 }
 
 bool scan_apps(EmuEnvState &emuenv) {
-    const fs::path app_path{ emuenv.pref_path / "ux0/app" };
+    const fs::path app_path{ emuenv.vita_fs_path / "ux0/app" };
     if (!fs::exists(app_path))
         return false;
 
@@ -323,7 +323,7 @@ void save_apps_cache(EmuEnvState &emuenv) {
 AppEntry read_app_info(EmuEnvState &emuenv, const std::string &title_id) {
     sfo::SfoAppInfo info;
     vfs::FileBuffer param;
-    if (vfs::read_app_file(param, emuenv.pref_path, title_id, "sce_sys/param.sfo")) {
+    if (vfs::read_app_file(param, emuenv.vita_fs_path, title_id, "sce_sys/param.sfo")) {
         sfo::get_param_info(info, param, emuenv.cfg.sys_lang);
     } else {
         info.app_title_id = title_id;
@@ -356,7 +356,7 @@ void load_app_times(EmuEnvState &emuenv) {
     std::lock_guard<std::mutex> lock(state.mutex);
 
     state.app_times.clear();
-    const auto time_path{ emuenv.pref_path / "ux0/user/time.xml" };
+    const auto time_path{ emuenv.vita_fs_path / "ux0/user/time.xml" };
     if (!fs::exists(time_path))
         return;
 
@@ -409,7 +409,7 @@ void save_app_times(EmuEnvState &emuenv) {
         }
     }
 
-    const auto time_path{ emuenv.pref_path / "ux0/user/time.xml" };
+    const auto time_path{ emuenv.vita_fs_path / "ux0/user/time.xml" };
     if (!doc.save_file(time_path.c_str()))
         LOG_ERROR("Failed to write {}", time_path);
 }
@@ -479,25 +479,25 @@ void delete_app(EmuEnvState &emuenv, const std::string &app_path) {
     }
 
     try {
-        fs::remove_all(emuenv.pref_path / "ux0/app" / app_path);
+        fs::remove_all(emuenv.vita_fs_path / "ux0/app" / app_path);
 
         const auto custom_cfg{ emuenv.config_path / "config" / fmt::format("config_{}.xml", app_path) };
         if (fs::exists(custom_cfg))
             fs::remove_all(custom_cfg);
 
-        const auto addcont{ emuenv.pref_path / "ux0/addcont" / app_entry.addcont };
+        const auto addcont{ emuenv.vita_fs_path / "ux0/addcont" / app_entry.addcont };
         if (fs::exists(addcont))
             fs::remove_all(addcont);
 
-        const auto license{ emuenv.pref_path / "ux0/license" / app_entry.title_id };
+        const auto license{ emuenv.vita_fs_path / "ux0/license" / app_entry.title_id };
         if (fs::exists(license))
             fs::remove_all(license);
 
-        const auto patch{ emuenv.pref_path / "ux0/patch" / app_entry.title_id };
+        const auto patch{ emuenv.vita_fs_path / "ux0/patch" / app_entry.title_id };
         if (fs::exists(patch))
             fs::remove_all(patch);
 
-        const auto savedata{ emuenv.pref_path / "ux0/user" / emuenv.io.user_id / "savedata" / app_entry.savedata };
+        const auto savedata{ emuenv.vita_fs_path / "ux0/user" / emuenv.io.user_id / "savedata" / app_entry.savedata };
         if (fs::exists(savedata))
             fs::remove_all(savedata);
 

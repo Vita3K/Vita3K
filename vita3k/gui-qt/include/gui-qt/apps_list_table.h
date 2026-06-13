@@ -38,7 +38,7 @@ public:
     void populate(const std::vector<app::AppEntry> &apps,
         const std::map<std::string, app::AppTime> &user_times,
         const CompatState &compat,
-        const fs::path &pref_path,
+        const fs::path &vita_fs_path,
         const fs::path &config_path);
 
     void adjust_icon_column();

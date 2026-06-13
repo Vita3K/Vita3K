@@ -426,8 +426,8 @@ ThemeManager::ThemeManager(std::shared_ptr<GuiSettings> gui_settings,
     m_vita_theme_bgm_player->setLoops(QMediaPlayer::Infinite);
 }
 
-void ThemeManager::set_pref_path(const fs::path &pref_path) {
-    m_pref_path = pref_path;
+void ThemeManager::set_vita_fs_path(const fs::path &vita_fs_path) {
+    m_vita_fs_path = vita_fs_path;
 }
 
 QList<gui::ThemeEntry> ThemeManager::available_themes() const {
@@ -541,7 +541,7 @@ void ThemeManager::ensure_generated_theme_ready(const fs::path &themes_root) {
         to_fs_paths(background_presentation.image_paths),
         std::clamp(background_presentation.interval_ms / 1000, 5, 120),
         background_presentation.animated,
-        m_pref_path,
+        m_vita_fs_path,
         gui::utils::to_fs_path(m_gui_settings->get_settings_dir()));
     if (!synthesized) {
         switch_to_fallback_theme(tr("the generated Vita theme stylesheet could not be rebuilt"));
@@ -598,7 +598,7 @@ bool ThemeManager::apply_vita_theme_selection(
         to_fs_paths(background_presentation.image_paths),
         std::clamp(background_presentation.interval_ms / 1000, 5, 120),
         background_presentation.animated,
-        m_pref_path,
+        m_vita_fs_path,
         gui::utils::to_fs_path(m_gui_settings->get_settings_dir()));
     if (!synthesized)
         return false;
@@ -1027,12 +1027,12 @@ QString ThemeManager::resolve_stylesheet_url(const QString &url, const gui::Them
     const QString theme_relative = gui::utils::resolve_relative_path_in_root(relative_url, theme.base_path);
     if (theme_relative.isEmpty())
         return {};
-    if (QFileInfo(theme_relative).exists() || m_pref_path.empty())
+    if (QFileInfo(theme_relative).exists() || m_vita_fs_path.empty())
         return theme_relative;
 
     const QString pref_relative = gui::utils::resolve_relative_path_in_root(
         relative_url,
-        gui::utils::to_qt_path(m_pref_path));
+        gui::utils::to_qt_path(m_vita_fs_path));
     if (!pref_relative.isEmpty() && QFileInfo(pref_relative).exists())
         return pref_relative;
 

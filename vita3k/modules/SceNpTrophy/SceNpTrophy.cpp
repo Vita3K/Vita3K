@@ -155,7 +155,7 @@ EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const 
     }
 
     np::NpTrophyError err = np::NpTrophyError::TROPHY_ERROR_NONE;
-    *context = create_trophy_context(emuenv.np, &emuenv.io, emuenv.pref_path, comm_id, static_cast<uint32_t>(emuenv.cfg.sys_lang),
+    *context = create_trophy_context(emuenv.np, &emuenv.io, emuenv.vita_fs_path, comm_id, static_cast<uint32_t>(emuenv.cfg.sys_lang),
         &err);
 
     if (*context == np::trophy::INVALID_CONTEXT_HANDLE) {

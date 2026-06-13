@@ -181,7 +181,7 @@ QString PkgInstallDialog::acquire_zrif(const fs::path &pkg_path, const std::opti
         return zrif;
     }
 
-    const std::string auto_zrif = find_pkg_zrif(pkg_path, m_emuenv.pref_path);
+    const std::string auto_zrif = find_pkg_zrif(pkg_path, m_emuenv.vita_fs_path);
     if (!auto_zrif.empty())
         return QString::fromStdString(auto_zrif);
 

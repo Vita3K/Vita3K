@@ -43,7 +43,7 @@ std::string lowercase_copy(std::string value) {
 }
 
 std::string normalize_locale(std::string locale) {
-    locale = string_utils::trim_copy(std::move(locale));
+    locale = string_utils::trim_copy(locale);
     std::replace(locale.begin(), locale.end(), '_', '-');
     return lowercase_copy(std::move(locale));
 }
@@ -99,7 +99,7 @@ std::string localized_text(const pugi::xml_node &node, const std::string &prefer
 
 fs::path resolve_asset_path(const fs::path &theme_dir, std::string asset_value) {
     const QString relative_path = gui::utils::sanitize_relative_path_reference(
-        QString::fromStdString(string_utils::trim_copy(std::move(asset_value))));
+        QString::fromStdString(string_utils::trim_copy(asset_value)));
     if (relative_path.isEmpty())
         return {};
 
@@ -107,7 +107,7 @@ fs::path resolve_asset_path(const fs::path &theme_dir, std::string asset_value) 
 }
 
 std::optional<VitaThemeColor> parse_theme_color(std::string raw_value) {
-    raw_value = string_utils::trim_copy(std::move(raw_value));
+    raw_value = string_utils::trim_copy(raw_value);
     if (raw_value.empty())
         return std::nullopt;
 
@@ -215,10 +215,10 @@ std::uint8_t readability_alpha(const int readability_percent, const std::uint8_t
     return static_cast<std::uint8_t>(std::lround((minimum * (1.0 - amount)) + (maximum * amount)));
 }
 
-std::string stylesheet_path_url(const fs::path &path, const fs::path &pref_path) {
+std::string stylesheet_path_url(const fs::path &path, const fs::path &vita_fs_path) {
     fs::path normalized_path = path.lexically_normal();
-    if (!pref_path.empty()) {
-        const fs::path relative = normalized_path.lexically_relative(pref_path);
+    if (!vita_fs_path.empty()) {
+        const fs::path relative = normalized_path.lexically_relative(vita_fs_path);
         if (!relative.empty() && relative != normalized_path)
             normalized_path = relative;
     }
@@ -228,7 +228,7 @@ std::string stylesheet_path_url(const fs::path &path, const fs::path &pref_path)
     return normalized;
 }
 
-std::string join_stylesheet_path_urls(const std::vector<fs::path> &paths, const fs::path &pref_path) {
+std::string join_stylesheet_path_urls(const std::vector<fs::path> &paths, const fs::path &vita_fs_path) {
     std::string joined;
     bool first = true;
     for (const fs::path &path : paths) {
@@ -237,7 +237,7 @@ std::string join_stylesheet_path_urls(const std::vector<fs::path> &paths, const 
 
         if (!first)
             joined += ", ";
-        joined += stylesheet_path_url(path, pref_path);
+        joined += stylesheet_path_url(path, vita_fs_path);
         first = false;
     }
     return joined;
@@ -376,7 +376,7 @@ std::string build_stylesheet(
     const std::vector<fs::path> &background_image_paths,
     const int cycle_interval_seconds,
     const bool cycle_enabled,
-    const fs::path &pref_path) {
+    const fs::path &vita_fs_path) {
     const VitaThemeColor window = theme.palette.information_bar_color.value_or(VitaThemeColor{ 18, 26, 34, 255 });
     const bool dark_theme = luminance(window) < 0.5;
     const VitaThemeColor base = darken(window, 0.18);
@@ -496,7 +496,7 @@ std::string build_stylesheet(
 
     const std::string icon_suffix = dark_theme ? "light" : "dark";
     const std::string check_icon_suffix = luminance(highlight_text) > 0.5 ? "light" : "dark";
-    const std::string background_url = stylesheet_path_url(background_option.asset_path, pref_path);
+    const std::string background_url = stylesheet_path_url(background_option.asset_path, vita_fs_path);
     ThemeTemplateContext context;
     const auto put = [&context](const std::string &key, std::string value) {
         context.strings[key] = std::move(value);
@@ -511,7 +511,7 @@ std::string build_stylesheet(
         put(key, css_argb(color, static_cast<std::uint8_t>(std::clamp(alpha, 0, 255))));
     };
 
-    put("generated_background_images", join_stylesheet_path_urls(background_image_paths, pref_path));
+    put("generated_background_images", join_stylesheet_path_urls(background_image_paths, vita_fs_path));
     put("generated_background_interval_seconds", std::to_string(std::clamp(cycle_interval_seconds, 5, 120)));
     put("generated_background_animated", cycle_enabled ? "true" : "false");
 
@@ -867,7 +867,7 @@ std::optional<fs::path> synthesize_vita_theme_qss(
     const std::vector<fs::path> &background_image_paths,
     const int cycle_interval_seconds,
     const bool cycle_enabled,
-    const fs::path &pref_path,
+    const fs::path &vita_fs_path,
     const fs::path &gui_settings_dir) {
     const auto *selected_background = find_background_option(theme, background_option_id);
     if (!selected_background) {
@@ -892,7 +892,7 @@ std::optional<fs::path> synthesize_vita_theme_qss(
         background_image_paths.empty() ? std::vector<fs::path>{ selected_background->asset_path } : background_image_paths,
         cycle_interval_seconds,
         cycle_enabled,
-        pref_path);
+        vita_fs_path);
 
     boost::system::error_code error_code;
     fs::create_directories(output_directory, error_code);

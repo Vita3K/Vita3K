@@ -31,6 +31,7 @@
 #include <QCheckBox>
 #include <QCloseEvent>
 #include <QDialogButtonBox>
+#include <QFontMetrics>
 #include <QFrame>
 #include <QGridLayout>
 #include <QGroupBox>
@@ -61,7 +62,7 @@
 
 namespace {
 
-constexpr int BIND_BUTTON_WIDTH = 100;
+constexpr int BIND_BUTTON_MIN_WIDTH = 100;
 constexpr int STACK_PAGE_MIN_WIDTH = 980;
 constexpr int CAPTURE_TIMEOUT_MS = 5'000;
 constexpr int16_t AXIS_DEADZONE = 16000;
@@ -117,8 +118,11 @@ QPushButton *make_bind_button() {
     auto *btn = new QPushButton();
     btn->setAutoDefault(false);
     btn->setFocusPolicy(Qt::ClickFocus);
-    btn->setMinimumWidth(BIND_BUTTON_WIDTH);
-    btn->setMaximumWidth(BIND_BUTTON_WIDTH);
+    const QFontMetrics metrics(QApplication::font());
+    const int text_width = metrics.horizontalAdvance(QObject::tr("Capturing...(%1)").arg(CAPTURE_TIMEOUT_MS / 1000));
+    const int width = std::max(BIND_BUTTON_MIN_WIDTH, text_width + 32);
+    btn->setMinimumWidth(width);
+    btn->setMaximumWidth(width);
     style_binding_button(btn);
     return btn;
 }

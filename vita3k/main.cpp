@@ -84,8 +84,8 @@ int main(int argc, char *argv[]) {
     Root root_paths;
     app::init_paths(root_paths);
 
-    if (!fs::exists(root_paths.get_pref_path())) {
-        fs::create_directories(root_paths.get_pref_path());
+    if (!fs::exists(root_paths.get_vita_fs_path())) {
+        fs::create_directories(root_paths.get_vita_fs_path());
     }
 
     LogWidget::register_callback();
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
     EmuEnvState emuenv;
     const auto config_err = config::init_config(cfg, argc, argv, root_paths);
 
-    fs::create_directories(cfg.get_pref_path());
+    fs::create_directories(cfg.get_vita_fs_path());
 
     if (config_err != Success) {
         if (config_err == QuitRequested) {
@@ -133,21 +133,21 @@ int main(int argc, char *argv[]) {
             }
             if (cfg.delete_title_id.has_value()) {
                 LOG_INFO("Deleting title id {}", *cfg.delete_title_id);
-                fs::remove_all(cfg.get_pref_path() / "ux0/app" / *cfg.delete_title_id);
-                fs::remove_all(cfg.get_pref_path() / "ux0/addcont" / *cfg.delete_title_id);
-                fs::remove_all(cfg.get_pref_path() / "ux0/user/00/savedata" / *cfg.delete_title_id);
+                fs::remove_all(cfg.get_vita_fs_path() / "ux0/app" / *cfg.delete_title_id);
+                fs::remove_all(cfg.get_vita_fs_path() / "ux0/addcont" / *cfg.delete_title_id);
+                fs::remove_all(cfg.get_vita_fs_path() / "ux0/user/00/savedata" / *cfg.delete_title_id);
                 fs::remove_all(root_paths.get_cache_path() / "shaders" / *cfg.delete_title_id);
             }
             if (cfg.pup_path.has_value()) {
                 LOG_INFO("Installing firmware file {}", *cfg.pup_path);
-                install_pup(cfg.get_pref_path(), *cfg.pup_path, [](uint32_t progress) {
+                install_pup(cfg.get_vita_fs_path(), *cfg.pup_path, [](uint32_t progress) {
                     LOG_INFO("Firmware installation progress: {}%", progress);
                 });
             }
             if (cfg.pkg_path.has_value() && cfg.pkg_zrif.has_value()) {
                 LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
                 emuenv.cache_path = root_paths.get_cache_path().generic_path();
-                emuenv.pref_path = cfg.get_pref_path();
+                emuenv.vita_fs_path = cfg.get_vita_fs_path();
                 auto pkg_path = fs_utils::utf8_to_path(*cfg.pkg_path);
                 install_pkg(pkg_path, emuenv, *cfg.pkg_zrif, [](float) {});
             }

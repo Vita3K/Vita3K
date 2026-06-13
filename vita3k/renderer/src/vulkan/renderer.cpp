@@ -951,8 +951,10 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
         request_mapping = MappingMethod::ExernalHost;
     else if (config_mapping == "page-table")
         request_mapping = MappingMethod::PageTable;
+#ifdef __ANDROID__
     else if (config_mapping == "native-buffer")
         request_mapping = MappingMethod::NativeBuffer;
+#endif
     const std::string_view mapping_string[] = { "Disabled", "Double buffer", "External Host", "Page Table", "Native Buffer" };
 
     if ((1 << static_cast<int>(request_mapping)) & supported_mapping_methods_mask)
@@ -1392,7 +1394,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(mapped_location));
         mapped_memories[address.address()] = { address.address(), ExternalBuffer{ device_memory, buffer }, mapped_buffer, size, buffer_address };
 #else
-        LOG_ERROR("Native buffer is only supported on Android!\n");
+        LOG_CRITICAL("Native buffer is only supported on Android!\n");
 #endif
         break;
     }

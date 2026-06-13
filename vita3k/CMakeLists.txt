@@ -217,10 +217,6 @@ if(USE_DISCORD_RICH_PRESENCE)
 	target_link_libraries(vita3k PRIVATE discord-rpc)
 endif()
 
-if(LINUX)
-	target_link_libraries(vita3k PRIVATE -static-libgcc -static-libstdc++)
-endif()
-
 if(NOT ANDROID)
 	file(GLOB VITA3K_QT_TS_FILES CONFIGURE_DEPENDS
 		"${CMAKE_SOURCE_DIR}/i18n/qt/*.ts")
