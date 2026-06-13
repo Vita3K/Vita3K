@@ -342,7 +342,7 @@ elseif(LINUX)
 		POST_BUILD
 		COMMAND ${LINUXDEPLOY_WRAPPER} ${LINUXDEPLOY_COMMAND} --appdir="${APPDIR}"
 			-e "$<TARGET_FILE:vita3k>" --icon-filename="vita3k"
-			-i "${CMAKE_CURRENT_SOURCE_DIR}/../data/image/icon.png" -d "${CMAKE_CURRENT_SOURCE_DIR}/../appimage/vita3k.desktop"
+			-i "${CMAKE_CURRENT_SOURCE_DIR}/Vita3K.png" -d "${CMAKE_CURRENT_SOURCE_DIR}/../appimage/vita3k.desktop"
 			--custom-apprun="${CMAKE_CURRENT_SOURCE_DIR}/../appimage/apprun.sh" --plugin qt --output=appimage ${DISCORD_LIB_APPIMAGE}
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*" "$<TARGET_FILE_DIR:vita3k>/"
 		COMMAND ${CMAKE_COMMAND} -E rm "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*")
