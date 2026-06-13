@@ -241,7 +241,9 @@ void set_current_config(EmuEnvState &emuenv, const std::string &app_path) {
 }
 
 // Initializes paths to their respective defaults, to be changed later by settings or CLI
-void init_paths(Root &root_paths) {
+// Returns true if in portable mode, false otherwise
+bool init_paths(Root &root_paths) {
+    bool portable = false;
 #ifdef __ANDROID__
     fs::path internal_storage_path = fs::path(SDL_GetAndroidExternalStoragePath()) / "";
     fs::path vita_storage_path = internal_storage_path / "vita/";
@@ -279,6 +281,7 @@ void init_paths(Root &root_paths) {
 #endif
 
     if (fs::is_directory(portable_path)) {
+        portable = true;
         // If a portable directory exists, use it for everything else.
         // Note that vita_fs_path should not be the same as the other paths.
         root_paths.set_vita_fs_path(portable_path / "fs" / "");
@@ -406,6 +409,7 @@ void init_paths(Root &root_paths) {
         if (!fs_utils::copy_directory_contents(gui_configs_source_path, gui_configs_destination_path, fs::copy_options::overwrite_existing))
             LOG_WARN("Failed to copy GUI configs from {} to {}", gui_configs_source_path, gui_configs_destination_path);
     }
+    return portable;
 }
 
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
