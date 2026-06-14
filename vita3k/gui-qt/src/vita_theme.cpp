@@ -243,10 +243,6 @@ std::string join_stylesheet_path_urls(const std::vector<fs::path> &paths, const 
     return joined;
 }
 
-struct ThemeTemplateContext {
-    std::unordered_map<std::string, std::string> strings;
-};
-
 std::optional<std::string> load_vita_theme_stylesheet_template() {
     static const std::optional<std::string> stylesheet_template = []() -> std::optional<std::string> {
         QFile file(QStringLiteral(":/themes/vita/generated.qss.in"));
@@ -260,6 +256,10 @@ std::optional<std::string> load_vita_theme_stylesheet_template() {
 
     return stylesheet_template;
 }
+
+struct ThemeTemplateContext {
+    std::unordered_map<std::string, std::string> strings;
+};
 
 std::optional<std::string> render_template_token(
     const ThemeTemplateContext &context,
