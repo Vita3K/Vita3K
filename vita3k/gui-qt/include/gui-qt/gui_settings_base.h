@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gui-qt/gui_save.h>
+#include <util/fs.h>
 
 #include <QDir>
 #include <QObject>
@@ -36,7 +37,8 @@ public:
 
     void sync();
 
-    QString get_settings_dir() const;
+    fs::path get_settings_dir() const;
+    fs::path get_static_themes_path() const;
 
     QVariant get_value(const QString &key, const QString &name, const QVariant &def) const;
     QVariant get_value(const GuiSave &entry) const;
@@ -57,4 +59,5 @@ public Q_SLOTS:
 protected:
     std::unique_ptr<QSettings> m_settings;
     QDir m_settings_dir;
+    fs::path m_static_themes_path;
 };
