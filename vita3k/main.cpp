@@ -253,7 +253,7 @@ int main(int argc, char *argv[]) {
     }
 
     const QString gui_configs_dir = gui::utils::to_qt_path(emuenv.config_path / "gui-configs");
-    auto gui_settings = std::make_shared<GuiSettings>(gui_configs_dir);
+    auto gui_settings = std::make_shared<GuiSettings>(gui_configs_dir, emuenv.static_assets_path / "data" / "gui-configs" / "custom-themes");
     auto persistent_settings = std::make_shared<PersistentSettings>(gui_configs_dir);
 
     MainWindow mainwindow(emuenv, gui_settings, persistent_settings, admin_priv);

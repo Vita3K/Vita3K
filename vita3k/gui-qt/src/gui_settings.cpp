@@ -18,11 +18,12 @@
 #include <gui-qt/gui_settings.h>
 
 #include <QDir>
-GuiSettings::GuiSettings(const QString &settings_dir, QObject *parent)
+GuiSettings::GuiSettings(const QString &settings_dir, const fs::path &static_themes_path, QObject *parent)
     : GuiSettingsBase(parent) {
     m_settings_dir = QDir(settings_dir);
     if (!m_settings_dir.exists())
         m_settings_dir.mkpath(QStringLiteral("."));
+    m_static_themes_path = static_themes_path;
 
     m_settings = std::make_unique<QSettings>(
         m_settings_dir.filePath(gui::Settings + QStringLiteral(".ini")),

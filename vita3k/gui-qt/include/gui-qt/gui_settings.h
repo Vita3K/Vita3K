@@ -97,5 +97,5 @@ class GuiSettings : public GuiSettingsBase {
     Q_OBJECT
 
 public:
-    explicit GuiSettings(const QString &settings_dir, QObject *parent = nullptr);
+    explicit GuiSettings(const QString &settings_dir, const fs::path &static_themes_path, QObject *parent = nullptr);
 };
