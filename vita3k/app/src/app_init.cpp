@@ -403,12 +403,6 @@ bool init_paths(Root &root_paths) {
     fs::create_directories(root_paths.get_log_path() / "texturelog");
     fs::create_directories(root_paths.get_patch_path());
 
-    const auto gui_configs_source_path = root_paths.get_static_assets_path() / "data" / "gui-configs";
-    if (fs::is_directory(gui_configs_source_path)) {
-        const auto gui_configs_destination_path = root_paths.get_config_path() / "gui-configs";
-        if (!fs_utils::copy_directory_contents(gui_configs_source_path, gui_configs_destination_path, fs::copy_options::overwrite_existing))
-            LOG_WARN("Failed to copy GUI configs from {} to {}", gui_configs_source_path, gui_configs_destination_path);
-    }
     return portable;
 }
 
