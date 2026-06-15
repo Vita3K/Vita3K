@@ -1119,7 +1119,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     }
 
     // TODO: does a HEAD/OPTIONS request need content-length to exist?
-    if (req->second.res.headers.find("content-length") == req->second.headers.end()) {
+    if (req->second.res.headers.find("content-length") == req->second.res.headers.end()) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
     }
