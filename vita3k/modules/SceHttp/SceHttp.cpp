@@ -733,10 +733,7 @@ EXPORT(SceInt, sceHttpGetResponseContentLength, SceInt reqId, SceULong64 *conten
     if (length_it == req->second.res.headers.end())
         return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
 
-    SceULong64 length = string_utils::stoi_def(length_it->second);
-    *contentLength = length;
-
-    req->second.res.contentLength = length;
+    *contentLength = req->second.res.contentLength;
 
     return 0;
 }
@@ -745,6 +742,9 @@ EXPORT(SceInt, sceHttpGetStatusCode, SceInt reqId, SceInt *statusCode) {
     TRACY_FUNC(sceHttpGetStatusCode, reqId, statusCode);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
+
+    if (!statusCode)
+        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
     if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
@@ -786,7 +786,7 @@ EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize head
 
     *valueLen = 0; // reset to 0 to check after
 
-    std::string headerStr = std::string(headers.get(emuenv.mem));
+    std::string headerStr(headers.get(emuenv.mem), headersLen);
     HeadersMapType parsedHeaders;
     if (!net_utils::parseHeaders(headerStr, parsedHeaders))
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
@@ -824,10 +824,7 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
     if (lineLen < 8)
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
-    STUBBED("Ignore lineLen");
-
-    // TODO: test
-    auto line = std::string(statusLine);
+    auto line = std::string(statusLine, lineLen);
     auto cleanLine = line.substr(0, line.find("\r\n"));
     // even if there is no \r\n, the result will still be the whole string
 
@@ -845,10 +842,9 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
         *httpMinorVer = 0;
     }
 
-    auto statusCodeLine = cleanLine.substr(cleanLine.find(' ') + 1, 3);
     *responseCode = code;
 
-    auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "reasonPhrase"));
+    auto h = Ptr<char>(alloc(emuenv.mem, reason.length() + 1, "reasonPhrase"));
     memcpy(h.get(emuenv.mem), reason.data(), reason.length() + 1);
     emuenv.http.guestPointers.emplace_back(h);
     *reasonPhrase = h;
@@ -863,6 +859,9 @@ EXPORT(SceInt, sceHttpReadData, SceInt reqId, void *data, SceSize size) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
+    if (!data && size != 0)
+        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+
     if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
@@ -870,6 +869,9 @@ EXPORT(SceInt, sceHttpReadData, SceInt reqId, void *data, SceSize size) {
 
     // These methods have no body
     if (req->second.method == SCE_HTTP_METHOD_HEAD || req->second.method == SCE_HTTP_METHOD_OPTIONS)
+        return 0;
+
+    if (size == 0)
         return 0;
 
     // If the game wants to read more than whats available, change the read ammount to what is available
@@ -920,6 +922,9 @@ EXPORT(SceInt, sceHttpRequestGetAllHeaders, SceInt reqId, Ptr<char> *header, Sce
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
+    if (!header || !headerSize)
+        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+
     if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
@@ -927,7 +932,7 @@ EXPORT(SceInt, sceHttpRequestGetAllHeaders, SceInt reqId, Ptr<char> *header, Sce
 
     auto headers = net_utils::constructHeaders(req->second.headers);
 
-    auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "headers"));
+    auto h = Ptr<char>(alloc(emuenv.mem, headers.length() + 1, "headers"));
     memcpy(h.get(emuenv.mem), headers.data(), headers.length() + 1);
     req->second.guestPointers.emplace_back(h);
     *header = h;
