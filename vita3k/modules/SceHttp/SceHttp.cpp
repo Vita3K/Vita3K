@@ -17,6 +17,7 @@
 
 #include <module/module.h>
 
+#include <algorithm>
 #include <cstring>
 #include <filesystem>
 #include <http/state.h>
@@ -42,6 +43,7 @@
 #include <util/tracy.h>
 
 #include <string>
+#include <string_view>
 #include <thread>
 
 TRACY_MODULE_NAME(SceHttp);
@@ -624,6 +626,9 @@ EXPORT(SceInt, sceHttpGetAllResponseHeaders, SceInt reqId, Ptr<char> *header, Sc
     TRACY_FUNC(sceHttpGetAllResponseHeaders, reqId, header, headerSize);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
+
+    if (!header || !headerSize)
+        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
     if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
@@ -1469,7 +1474,7 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<
     if (require) {
         *require = internal_require;
     }
-    if (prepare < internal_require)
+    if (pool && out && prepare < internal_require)
         return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_MEMORY);
 
     if (pool && out) {
@@ -1503,17 +1508,16 @@ EXPORT(SceInt, sceHttpUriSweepPath, char *dst, const char *src, SceSize srcSize)
     if (!dst || !src)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
-    auto srcStr = std::string(src);
-
-    unsigned int srcStrLen = srcSize - 1;
+    const std::string_view srcStr(src, srcSize - 1);
     if (srcStr[0] == '/') {
-        auto lex = std::filesystem::path(src).lexically_normal();
+        auto lex = std::filesystem::path(std::string(srcStr)).lexically_normal();
         const std::string lexStr = lex.string();
-        const char *realPath = lexStr.c_str();
-        strcpy(dst, realPath);
+        const auto copyLen = std::min<std::size_t>(lexStr.length(), srcSize - 1);
+        memcpy(dst, lexStr.data(), copyLen);
+        dst[copyLen] = 0;
     } else {
         // Nicely copy the contents of src into dst
-        memcpy(dst, src, srcStrLen);
+        memcpy(dst, srcStr.data(), srcStr.length());
         dst[srcSize - 1] = 0;
     }
 
