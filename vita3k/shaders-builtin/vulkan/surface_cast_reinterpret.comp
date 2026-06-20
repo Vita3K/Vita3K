@@ -1,0 +1,54 @@
+// Vita3K emulator project
+// Copyright (C) 2026 Vita3K team
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(push_constant) uniform PushConstants {
+    uint out_width;      // scaled cast width  (== ratio * store-texels-per-row)
+    uint out_height;     // scaled cast height
+    uint scaled_store_w; // store texels per row of the dumped source
+    uint scaled_store_h; // rows in the dumped source
+    uint ratio;          // bppStore / bppReq  (words per store texel)
+    uint half_index;     // which word of each store texel this view reads
+} pc;
+
+layout(set = 0, binding = 0, std430) readonly buffer SrcBuffer { uint src[]; };
+layout(set = 0, binding = 1, std430) writeonly buffer DstBuffer { uint dst[]; };
+
+void main() {
+    const uint x = gl_GlobalInvocationID.x;
+    const uint y = gl_GlobalInvocationID.y;
+    if (x >= pc.out_width || y >= pc.out_height)
+        return;
+
+    // Output column x belongs to store texel s; every `ratio` columns share the
+    // same store texel, so the wanted word is duplicated across them.
+    uint s = x / pc.ratio;
+    if (s >= pc.scaled_store_w)
+        s = pc.scaled_store_w - 1u;
+
+    uint ys = y;
+    if (ys >= pc.scaled_store_h)
+        ys = pc.scaled_store_h - 1u;
+
+    // Source row pitch in 32-bit words (each store texel is `ratio` words).
+    const uint src_row_words = pc.scaled_store_w * pc.ratio;
+
+    dst[y * pc.out_width + x] = src[ys * src_row_words + s * pc.ratio + pc.half_index];
+}

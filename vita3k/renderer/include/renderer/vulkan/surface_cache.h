@@ -66,6 +66,11 @@ struct CastedTexture {
     vkutil::Image texture;
     // only used if an image to image copy is not possible
     vkutil::Buffer transition_buffer;
+    // regrouped output of the reinterpret compute pass (typeless casts only)
+    vkutil::Buffer reinterpret_buffer;
+    // native-resolution intermediates for the resolution-correct typeless path
+    std::unique_ptr<vkutil::Image> native_store_image;
+    std::unique_ptr<vkutil::Image> native_cast_image;
     uint64_t scene_timestamp = 0;
     uint32_t cropped_x = 0;
     uint32_t cropped_y = 0;
@@ -156,6 +161,16 @@ struct SurfaceRetrieveResult {
     vkutil::Image *base_image;
 };
 
+// for use with the surface_cast_reinterpret shader
+struct ReinterpretPushConstants {
+    uint32_t out_width;
+    uint32_t out_height;
+    uint32_t scaled_store_w;
+    uint32_t scaled_store_h;
+    uint32_t ratio;
+    uint32_t half_index;
+};
+
 class VKSurfaceCache {
 private:
     VKState &state;
@@ -188,6 +203,20 @@ private:
 
     void destroy_surface(ColorSurfaceCacheInfo &info);
     void destroy_surface(DepthStencilSurfaceCacheInfo &info);
+
+    // compute pipeline that re-groups a typeless byte-reinterpret so it
+    // reinterprets at native resolution, then upscales instead of reinterpreting
+    // the already upscaled surface (which would misorders the  halves at higher resolutions)
+    vk::ShaderModule reinterpret_shader = nullptr;
+    vk::DescriptorSetLayout reinterpret_desc_layout = nullptr;
+    vk::PipelineLayout reinterpret_pipeline_layout = nullptr;
+    vk::Pipeline reinterpret_pipeline = nullptr;
+    vk::DescriptorPool reinterpret_desc_pool = nullptr;
+    std::vector<vk::DescriptorSet> reinterpret_desc_sets;
+    uint32_t reinterpret_desc_idx = 0;
+
+    // lazily build the reinterpret compute pipeline (no-op once built)
+    void ensure_reinterpret_pipeline();
 
 public:
     // when creating a mutable image, can we pass as an argument
