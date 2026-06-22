@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -104,6 +104,14 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     // pointer to decoder used for surface sync (if necessary)
     SwsContext *sws_context = nullptr;
 
+    // do we need some CPU convert/unswizzling part for surface sync
+    bool need_post_surface_sync = false;
+
+    // only for double buffer, do we need to sync the two views?
+    bool need_buffer_sync = false;
+
+    std::shared_ptr<bool> dirty = std::make_shared<bool>(false);
+
     ColorSurfaceCacheInfo() = default;
     ~ColorSurfaceCacheInfo();
 };
@@ -192,6 +200,7 @@ public:
     bool can_mprotect_mapped_memory = true;
 
     explicit VKSurfaceCache(VKState &state);
+    void cleanup();
 
     SurfaceRetrieveResult retrieve_color_surface_for_framebuffer(MemState &mem, SceGxmColorSurface *color);
     std::optional<TextureLookupResult> retrieve_color_surface_as_texture(const SceGxmTexture &texture, const SceGxmColorBaseFormat base_format, TextureViewport *texture_viewport);

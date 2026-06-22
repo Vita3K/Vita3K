@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,12 +30,15 @@
 #include <features/state.h>
 #include <gxm/state.h>
 
+#include <overlay/display_manager.h>
+
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <util/log.h>
 
-#include <SDL.h>
-#include <SDL_video.h>
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 #include <array>
 #include <mutex>
@@ -111,15 +114,9 @@ void bind_fundamental(GLContext &context) {
     glBindVertexArray(context.vertex_array[0]);
 }
 
-static void after_callback(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...) {
-    GLAD_UNUSED(ret);
-    GLAD_UNUSED(apiproc);
-    GLAD_UNUSED(len_args);
-
-    GLenum error_code = glad_glGetError();
-
-    if (error_code != GL_NO_ERROR) {
-        LOG_ERROR("OpenGL: {} set error {}.", name, error_code);
+static void after_callback(const char *name, void *funcptr, int len_args, ...) {
+    for (GLenum error = glad_glGetError(); error != GL_NO_ERROR; error = glad_glGetError()) {
+        LOG_ERROR("OpenGL: {} set error {}.", name, error);
     }
 }
 
@@ -172,47 +169,31 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
 }
 #endif
 
-bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &config) {
+bool create(std::unique_ptr<State> &state, const Config &config) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
 
-    // Recursively create GL version until one accepts
-    // Major 4 is mandatory
-    // We use glBufferStorage which needs OpenGL 4.4
-    constexpr std::array accept_gl_minor_versions = {
-        6, // OpenGL 4.6
-        5, // OpenGL 4.5
-        4, // OpenGL 4.4
-    };
-
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-#ifndef NDEBUG
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+    static renderer::FrameHost *s_frame = nullptr;
+    s_frame = gl_state.frame;
+#ifdef __ANDROID__
+    gladLoadGLES2Loader([](const char *name) -> void * {
+#else
+    gladLoadGLLoader([](const char *name) -> void * {
 #endif
+        return s_frame->get_proc_address(name);
+    });
 
-    for (int minor_version : accept_gl_minor_versions) {
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor_version);
-        gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
-        if (gl_state.context) {
-            break;
-        }
-    }
-
-    if (!gl_state.context)
-        return false;
-
-    if (!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress))
-        return false;
-
-    gladSetGLPostCallback(after_callback);
-
+    // glad_set_post_callback(after_callback);
     // Detect GPU and features
-    const std::string gpu_name = reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
-    const std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    LOG_INFO("GPU = {}", gpu_name);
-    LOG_INFO("GL_VERSION = {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
-    LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
+    const char *gl_version = reinterpret_cast<const char *>(glGetString(GL_VERSION));
+    gl_version = gl_version ? gl_version : "Unknown";
+
+    const char *gl_shading_language_version = reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+    gl_shading_language_version = gl_shading_language_version ? gl_shading_language_version : "Unknown";
+
+    LOG_INFO("GPU = {}", state->get_gpu_name());
+    LOG_INFO("GL_VERSION = {}", gl_version);
+    LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", gl_shading_language_version);
 
 #ifndef NDEBUG
     glDebugMessageCallback(reinterpret_cast<GLDEBUGPROC>(debug_output_callback), nullptr);
@@ -253,7 +234,11 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const Config &con
     }
 
     // always enabled in the opengl renderer
+#ifdef __ANDROID__
+    gl_state.features.use_mask_bit = false;
+#else
     gl_state.features.use_mask_bit = true;
+#endif
 
     return gl_state.init();
 }
@@ -264,13 +249,19 @@ bool GLState::init() {
         return false;
     }
 
+    init_overlay_font_dirs();
+
+    if (!overlay_renderer.init(static_assets, vita_fs_path, sys_lang)) {
+        LOG_WARN("Failed to initialize overlay renderer, overlays will be disabled");
+    }
+
     shader_version = fmt::format("v{}", shader::CURRENT_VERSION);
 
     return true;
 }
 
 void GLState::late_init(const Config &cfg, const std::string_view game_id, MemState &mem) {
-    texture_cache.init(cfg.hashless_texture_cache, texture_folder(), game_id);
+    texture_cache.init(true, texture_folder(), game_id);
 }
 
 bool create(std::unique_ptr<Context> &context) {
@@ -294,7 +285,7 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
     rt = std::make_unique<GLRenderTarget>();
     GLRenderTarget *render_target = reinterpret_cast<GLRenderTarget *>(rt.get());
 
-    if (!render_target->maskbuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
+    if (state.features.use_mask_bit && !render_target->maskbuffer.init(glGenFramebuffers, glDeleteFramebuffers)) {
         return false;
     }
 
@@ -311,18 +302,20 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
     glBindTexture(GL_TEXTURE_2D, render_target->attachments[1]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, render_target->width, render_target->height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
 
-    render_target->masktexture.init(glGenTextures, glDeleteTextures);
-    glBindTexture(GL_TEXTURE_2D, render_target->masktexture[0]);
-    // we need to make the masktexture format immutable, otherwise image load operations
-    // won't work on mesa drivers
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, render_target->width, render_target->height);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindFramebuffer(GL_FRAMEBUFFER, render_target->maskbuffer[0]);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, render_target->masktexture[0], 0);
-    GLenum drawbuffers[1] = { GL_COLOR_ATTACHMENT0 };
-    glDrawBuffers(1, drawbuffers);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if (state.features.use_mask_bit) {
+        render_target->masktexture.init(glGenTextures, glDeleteTextures);
+        glBindTexture(GL_TEXTURE_2D, render_target->masktexture[0]);
+        // we need to make the masktexture format immutable, otherwise image load operations
+        // won't work on mesa drivers
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, render_target->width, render_target->height);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindFramebuffer(GL_FRAMEBUFFER, render_target->maskbuffer[0]);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, render_target->masktexture[0], 0);
+        GLenum drawbuffers[1] = { GL_COLOR_ATTACHMENT0 };
+        glDrawBuffers(1, drawbuffers);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 
     return true;
 }
@@ -388,6 +381,7 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
         state, mem, color_surface_fin, ds_surface_fin, &current_color_attachment_handle, nullptr, &current_framebuffer_height);
     context.current_color_attachment = current_color_attachment_handle;
     context.current_framebuffer_height = current_framebuffer_height;
+    context.self_sampling_indices.clear();
 
     glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
 
@@ -395,7 +389,8 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
         glDisable(GL_SCISSOR_TEST);
     }
 
-    sync_mask(state, context, mem);
+    if (state.features.use_mask_bit)
+        sync_mask(state, context, mem);
 
     // TODO: Take request to force load from given memory
     // Sync depth/stencil based on depth stencil surface.
@@ -488,9 +483,9 @@ static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, s
                 } else {
                     const uint16_t *temp_bytes = reinterpret_cast<uint16_t *>(curr_input);
                     uint32_t pixel = 0;
-                    pixel |= (uint32_t(temp_bytes[0] << 17) & (0x3FFFF << 18)); // Exp + 9 bits
-                    pixel |= (uint32_t(temp_bytes[1] << 8) & (0x1FF << 9));
-                    pixel |= (uint32_t(temp_bytes[2] >> 1) & (0x1FF << 0));
+                    pixel |= static_cast<uint32_t>(temp_bytes[0] << 17) & (0x3FFF << 18); // Exp + 9 bits
+                    pixel |= static_cast<uint32_t>(temp_bytes[1] << 8) & (0x1FF << 9);
+                    pixel |= static_cast<uint32_t>(temp_bytes[2] >> 1) & (0x1FF << 0);
                     *reinterpret_cast<uint32_t *>(curr_output) = pixel;
                 }
 
@@ -645,74 +640,145 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 }
 
-void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, DisplayState &display,
-    const GxmState &gxm, MemState &mem) {
+void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState &mem) {
     should_display = false;
 
-    DisplayFrameInfo frame;
+    DisplayFrameInfo display_frame;
     {
         std::lock_guard<std::mutex> guard(display.display_info_mutex);
-        frame = display.next_rendered_frame;
+        display_frame = display.next_rendered_frame;
     }
 
-    if (!frame.base)
+    const bool has_overlays = overlay_manager && overlay_manager->has_visible();
+    if (!display_frame.base && !has_overlays)
         return;
 
-    // Check if the surface exists
-    float uvs[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-    bool need_uv = true;
+    SceFVector2 vp_pos = { 0.0f, 0.0f };
+    SceFVector2 vp_size = { 0.0f, 0.0f };
 
-    const std::size_t texture_data_size = static_cast<size_t>(frame.pitch) * static_cast<size_t>(frame.image_size.y) * sizeof(uint32_t);
+    auto *frame_host = this->frame;
+    const GLuint default_fbo = frame_host->default_fbo();
+    const float fb_w = static_cast<float>(frame_host->drawable_width());
+    const float fb_h = static_cast<float>(frame_host->drawable_height());
 
-    SceFVector2 texture_size;
+    if (fb_h > 0.0f) {
+        const float window_aspect = fb_w / fb_h;
+        constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+        const bool pixel_perfect = fullscreen_hd_res_pixel_perfect && fullscreen
+            && !(static_cast<int>(fb_w) % DEFAULT_RES_WIDTH)
+            && !(static_cast<int>(fb_h) % (DEFAULT_RES_HEIGHT - 4));
 
-    uint64_t surface_handle = surface_cache.sourcing_color_surface_for_presentation(
-        frame.base, frame.image_size.x, frame.image_size.y, frame.pitch, uvs, this->res_multiplier, texture_size);
-
-    GLint last_texture = 0;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-
-    if (!surface_handle) {
-        // Fallback to a manual upload (likely a black !!!)
-        need_uv = false;
-        glBindTexture(GL_TEXTURE_2D, screen_renderer.get_resident_texture());
-
-        // Maybe a victim of surface locking (early from client GXM) when no frame yet renders!
-        const auto pixels = frame.base.cast<void>().get(mem);
-
-        if (pixels) {
-            open_access_parent_protect_segment(mem, frame.base.address());
-            unprotect_inner(mem, frame.base.address(), texture_data_size);
+        if (stretch_the_display_area && !pixel_perfect) {
+            vp_pos = { 0.0f, 0.0f };
+            vp_size = { fb_w, fb_h };
+        } else if ((window_aspect > vita_aspect) && !pixel_perfect) {
+            vp_size.x = fb_h * vita_aspect;
+            vp_size.y = fb_h;
+            vp_pos.x = (fb_w - vp_size.x) / 2.0f;
+            vp_pos.y = 0.0f;
+        } else {
+            vp_size.x = fb_w;
+            vp_size.y = fb_w / vita_aspect;
+            vp_pos.x = 0.0f;
+            vp_pos.y = (fb_h - vp_size.y) / 2.0f;
         }
-
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, frame.pitch);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frame.image_size.x, frame.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-        if (pixels) {
-            close_access_parent_protect_segment(mem, frame.base.address());
-        }
-
-        texture_size.x = static_cast<float>(frame.image_size.x);
-        texture_size.y = static_cast<float>(frame.image_size.y);
-
-        surface_handle = screen_renderer.get_resident_texture();
-    } else {
-        const GLint standard_swizzle[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
-
-        glBindTexture(GL_TEXTURE_2D, surface_handle);
-        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, standard_swizzle);
     }
 
-    glBindTexture(GL_TEXTURE_2D, last_texture);
+    // store viewport for touch
+    display.viewport_drawable_w = static_cast<int>(fb_w);
+    display.viewport_drawable_h = static_cast<int>(fb_h);
+    display.viewport_x = vp_pos.x;
+    display.viewport_y = vp_pos.y;
+    display.viewport_w = vp_size.x;
+    display.viewport_h = vp_size.y;
 
-    screen_renderer.render(viewport_pos, viewport_size, need_uv ? uvs : nullptr, static_cast<GLuint>(surface_handle), texture_size);
+    if (display_frame.base) {
+        // Check if the surface exists
+        float uvs[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+        bool need_uv = true;
+
+        const std::size_t texture_data_size = static_cast<size_t>(display_frame.pitch) * static_cast<size_t>(display_frame.image_size.y) * sizeof(uint32_t);
+
+        SceFVector2 texture_size;
+
+        uint64_t surface_handle = surface_cache.sourcing_color_surface_for_presentation(
+            display_frame.base, display_frame.image_size.x, display_frame.image_size.y, display_frame.pitch, uvs, this->res_multiplier, texture_size);
+
+        GLint last_texture = 0;
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+
+        if (!surface_handle) {
+            // Fallback to a manual upload (likely a black !!!)
+            need_uv = false;
+            glBindTexture(GL_TEXTURE_2D, screen_renderer.get_resident_texture());
+
+            // Maybe a victim of surface locking (early from client GXM) when no frame yet renders!
+            const auto pixels = display_frame.base.cast<void>().get(mem);
+
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, display_frame.pitch);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display_frame.image_size.x, display_frame.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+            texture_size.x = static_cast<float>(display_frame.image_size.x);
+            texture_size.y = static_cast<float>(display_frame.image_size.y);
+
+            surface_handle = screen_renderer.get_resident_texture();
+        } else {
+            const GLint standard_swizzle[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+
+            glBindTexture(GL_TEXTURE_2D, surface_handle);
+#ifdef __ANDROID__
+            for (int i = 0; i < 4; i++) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, standard_swizzle[i]);
+            }
+#else
+            glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, standard_swizzle);
+#endif
+        }
+
+        glBindTexture(GL_TEXTURE_2D, last_texture);
+
+        screen_renderer.render(vp_pos, vp_size, need_uv ? uvs : nullptr, static_cast<GLuint>(surface_handle), texture_size, default_fbo);
+    }
+
+    update_overlays();
+    if (overlay_manager && overlay_manager->has_visible()) {
+        overlay_renderer.render(*overlay_manager,
+            vp_pos.x, vp_pos.y, vp_size.x, vp_size.y,
+            fb_w, fb_h, default_fbo);
+    }
 }
 
-void GLState::swap_window(SDL_Window *window) {
-    SDL_GL_SwapWindow(window);
+void GLState::swap_window() {
+    const int pending_vsync = this->pending_vsync.exchange(-1, std::memory_order_relaxed);
+    if (pending_vsync >= 0 && !frame->set_vsync(pending_vsync != 0))
+        LOG_WARN("Failed to update OpenGL swap interval");
+
+    frame->swap_buffers();
+}
+
+bool GLState::set_current() {
+    if (context_is_current && (frame->drawable_width() <= 0 || frame->drawable_height() <= 0))
+        done_current();
+
+    if (context_is_current)
+        return true;
+
+    if (!frame->make_current()) {
+        LOG_ERROR("set_current failed");
+        context_is_current = false;
+        return false;
+    }
+
+    context_is_current = true;
+    return true;
+}
+
+void GLState::done_current() {
+    frame->done_current();
+    context_is_current = false;
 }
 
 std::vector<uint32_t> GLState::dump_frame(DisplayState &display, uint32_t &width, uint32_t &height) {
@@ -755,7 +821,9 @@ int GLState::get_max_2d_texture_width() {
 }
 
 std::string_view GLState::get_gpu_name() {
-    return reinterpret_cast<const GLchar *>(glGetString(GL_RENDERER));
+    const char *gl_renderer = reinterpret_cast<const char *>(glGetString(GL_RENDERER));
+    gl_renderer = gl_renderer ? gl_renderer : "Unknown";
+    return gl_renderer;
 }
 
 void GLState::precompile_shader(const ShadersHash &hash) {
@@ -763,5 +831,34 @@ void GLState::precompile_shader(const ShadersHash &hash) {
 }
 
 void GLState::preclose_action() {}
+
+void GLState::cleanup() {
+    set_current();
+
+    context = nullptr;
+
+    program_cache.clear();
+    fragment_shader_cache.clear();
+    vertex_shader_cache.clear();
+
+    texture_cache.cleanup();
+
+    surface_cache.cleanup();
+
+    screen_renderer.destroy();
+
+    overlay_renderer.destroy();
+
+    gxp_ptr_map.clear();
+    shaders_cache_hashs.clear();
+    command_buffer_queue.reset();
+    last_scene_id = 0;
+    shaders_count_compiled = 0;
+    programs_count_pre_compiled = 0;
+    should_display = false;
+    render_abort = false;
+
+    frame = nullptr;
+}
 
 } // namespace renderer::gl

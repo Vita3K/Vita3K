@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,8 +15,22 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <kernel/state.h>
 #include <module/module.h>
+#include <modules/module_parent.h>
+
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(SceShellSvc)
 
 EXPORT(int, sceShellSvcGetSvcObj) {
-    return UNIMPLEMENTED();
+    TRACY_FUNC(sceShellSvcGetSvcObj);
+    auto &svc_client = emuenv.kernel.shellsvc_client;
+    if (!svc_client) {
+        svc_client = Ptr<Address>(alloc(emuenv.mem, sizeof(int), "ShellSvc"));
+        *svc_client.get(emuenv.mem) = get_client_vtable(emuenv.kernel, emuenv.mem).address();
+    }
+
+    STUBBED("STUBBED");
+    return svc_client.address();
 }

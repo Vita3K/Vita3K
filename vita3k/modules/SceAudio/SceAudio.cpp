@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 #include <audio/state.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_state.h>
 #include <util/lock_and_find.h>
 #include <util/tracy.h>
 
@@ -194,12 +195,20 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    // Empty "buf" variable is valid. It mean wait until sound output is completed.
+    // Because this function always returns when all sound is out, then on empty buf it returns immediately.
+    // Return value is the number of samples (value of 0 or greater) registered to the audio driver for normal termination.
+    if (!buf)
+        return 0;
+
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
     if (!thread) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
-
-    emuenv.audio.audio_output(*thread, *prt, buf);
+    // is it really useful to update the thread status?
+    thread->update_status(ThreadStatus::wait);
+    emuenv.audio.audio_output(*prt, buf);
+    thread->update_status(ThreadStatus::run);
 
     return prt->len;
 }
@@ -210,11 +219,17 @@ EXPORT(int, sceAudioOutGetRestSample, int port) {
     if (!prt) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
-
-    const int bytes_available = SDL_AudioStreamAvailable(prt->stream.get());
-
-    // we have the number of bytes left, we can convert it back to the number of samples left
-    return bytes_available / (2 * sizeof(int16_t));
+    int samples_available = emuenv.audio.get_rest_sample(*prt);
+    if (prt->type == SCE_AUDIO_OUT_PORT_TYPE_MAIN) {
+        samples_available = std::clamp(samples_available, 0, prt->len);
+    } else {
+        // for other port types only the granularity value set for the len argument or 0 can be returned.
+        if (samples_available < prt->len / 2)
+            samples_available = 0;
+        else
+            samples_available = prt->len;
+    }
+    return samples_available;
 }
 
 EXPORT(int, sceAudioOutOpenExtPort) {

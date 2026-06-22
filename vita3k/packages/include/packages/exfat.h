@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -109,5 +109,5 @@ enum ExFATEntryType {
 };
 
 namespace exfat {
-void extract_exfat(const fs::path &partition_path, const std::string &partition, const fs::path &pref_path);
+void extract_exfat(const fs::path &partition_path, const std::string &partition, const fs::path &vita_fs_path);
 } // namespace exfat

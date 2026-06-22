@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 #include <gxm/functions.h>
 #include <mem/ptr.h>
 #include <util/align.h>
-#include <util/bit_cast.h>
 #include <util/log.h>
 
 #include <algorithm>
@@ -34,9 +33,6 @@
 #else
 #define XXH_INLINE_ALL
 #include <xxhash.h>
-#endif
-#ifdef _WIN32
-#include <execution>
 #endif
 
 namespace renderer {
@@ -330,7 +326,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
 
     if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422) {
-        LOG_ERROR_ONCE("Unimplemented YUV format {}, please report it to the developers.", log_hex(fmt::underlying(base_format)));
+        LOG_ERROR_ONCE("Unimplemented YUV format 0x{:0X}, please report it to the developers.", fmt::underlying(base_format));
         return;
     }
 
@@ -461,6 +457,10 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+            if (support_pvrt) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_PVRT");
+                break;
+            }
             if (!is_swizzled)
                 LOG_ERROR_ONCE("Unhandled non-swizzled PVRT format, please report it to the developers");
 
@@ -482,16 +482,20 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
             // this format is supported on all GPUs with vulkan
-            if (is_vulkan)
+            if (is_vulkan && support_e5rgb9) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9");
                 break;
+            }
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 6);
             decompress_packed_float_e5m9m9m9(base_format, texture_data_decompressed.data(), pixels, width, memory_height);
             pixels = texture_data_decompressed.data();
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
             // don't change what openGL is doing (which is completely wrong)
-            if (!is_vulkan)
+            if (!is_vulkan || support_a2rgb10) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10");
                 break;
+            }
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 8);
             convert_u2f10f10f10_to_f16f16f16f16(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height, fmt);
             pixels = texture_data_decompressed.data();
@@ -499,7 +503,10 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
-            if (is_vulkan) {
+            if (is_vulkan && support_x8d24) {
+                LOG_INFO_ONCE("Your device support SCE_GXM_TEXTURE_BASE_FORMAT_X8U24");
+                break;
+            } else if (is_vulkan) {
                 // d24_u8 or x8_d24 is not supported on all GPUs (thanks AMD)
                 convert_x8u24_to_f32(texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height, fmt);
                 upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_F32;
@@ -521,7 +528,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
         case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
             texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
-            yuv420_texture_to_rgb(texture_data_decompressed.data(),
+            yuv420_texture_to_rgb(yuv_conversion_cache, texture_data_decompressed.data(),
                 static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height,
                 base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3);
             pixels = texture_data_decompressed.data();
@@ -547,6 +554,16 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
                     static_cast<std::uint8_t>(bpp));
 
             pixels = texture_pixels_lineared.data();
+        }
+
+        if (!support_dxt && gxm::is_bcn_format(base_format)) {
+            // decompress the texture
+            const int num_comp = gxm::get_num_components(base_format);
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * num_comp);
+            decompress_compressed_texture(base_format, texture_data_decompressed.data(), pixels, pixels_per_stride, memory_height);
+            pixels = texture_data_decompressed.data();
+            bpp = num_comp * 8;
+            upload_format = get_matching_decompressed_format(base_format);
         }
 
         upload_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
@@ -659,11 +676,11 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         // This works under the assumption that once this big enough texture decided to modify. It will have to modify either all of its data,
         // or replace with an entire new texture.
         bool should_use_hash = true;
-        if (use_protect && info->texture_size >= mem.page_size * 4) {
-            range_protect_begin = align(gxm_texture.data_addr << 2, mem.page_size);
-            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.page_size);
+        if (use_protect && info->texture_size >= mem.host_page_size * 4) {
+            range_protect_begin = align(gxm_texture.data_addr << 2, mem.host_page_size);
+            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.host_page_size);
 
-            if (range_protect_end - range_protect_begin >= mem.page_size * 4) {
+            if (range_protect_end - range_protect_begin >= mem.host_page_size * 4) {
                 should_use_hash = false;
             }
         }
@@ -690,6 +707,8 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
             upload = previous_hash != info->hash;
         } else {
+            range_protect_begin = align(gxm_texture.data_addr << 2, mem.host_page_size);
+            range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.host_page_size);
             upload = info->dirty;
         }
     }
@@ -705,8 +724,6 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
     }
 
     importing_texture = false;
-    // to restore the state, in case for whatever reason we could not load the replacement texture
-    bool previous_configure = configure;
     if (upload && import_textures) {
         auto it = available_textures_hash.find(info->hash);
         if (it != available_textures_hash.end()) {
@@ -747,8 +764,8 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
 
         if (!info->use_hash) {
             info->dirty = false;
-            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MemPerm::ReadOnly, [info, gxm_texture](Address, bool) {
-                if (memcmp(&info->texture, &gxm_texture, sizeof(SceGxmTexture)) == 0) {
+            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MemPerm::ReadOnly, [info, texture_repr](Address, bool) {
+                if (memcmp(&info->texture, &texture_repr, sizeof(SceGxmTexture)) == 0) {
                     info->dirty = true;
                 }
 
@@ -772,7 +789,7 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         cache_and_bind_sampler(gxm_texture);
 }
 
-int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture) {
+int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth) {
     uint32_t compact_repr = 0;
     if (gxm_texture.texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         compact_repr = 0b01
@@ -792,6 +809,10 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture) {
             | (gxm_texture.mag_filter << 8);
     }
 
+    // the depth part only matters if we can't apply linear filtering to it
+    is_depth &= !support_depth_linear_filtering;
+    compact_repr |= (static_cast<uint32_t>(is_depth) << 23);
+
     auto it = sampler_lookup.find(compact_repr);
     if (it != sampler_lookup.end()) {
         sampler_queue.set_as_mru(it->second);
@@ -810,7 +831,7 @@ int TextureCache::cache_and_bind_sampler(const SceGxmTexture &gxm_texture) {
     sampler_lookup[compact_repr] = info;
 
     info->value = compact_repr;
-    configure_sampler(info->index, gxm_texture);
+    configure_sampler(info->index, gxm_texture, is_depth);
     last_bound_sampler_index = info->index;
     return last_bound_sampler_index;
 }

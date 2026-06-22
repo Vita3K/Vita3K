@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -107,12 +107,18 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype) {
 static void extract_pup_files(const fs::path &pup, const fs::path &output) {
     constexpr int SCEUF_HEADER_SIZE = 0x80;
     constexpr int SCEUF_FILEREC_SIZE = 0x20;
-    fs::ifstream infile(pup, std::ios::binary);
+    FILE *infile = FOPEN(pup.c_str(), "rb");
+    if (!infile) {
+        LOG_CRITICAL("Failed to load pup file in path: {}", fs_utils::path_to_utf8(pup));
+        return;
+    }
+
     char header[SCEUF_HEADER_SIZE];
-    infile.read(header, SCEUF_HEADER_SIZE);
+    fread(header, SCEUF_HEADER_SIZE, 1, infile);
 
     if (strncmp(header, "SCEUF", 5) != 0) {
         LOG_ERROR("Invalid PUP");
+        fclose(infile);
         return;
     }
 
@@ -131,9 +137,9 @@ static void extract_pup_files(const fs::path &pup, const fs::path &output) {
     LOG_INFO("Number Of Files: {}", cnt);
 
     for (uint32_t x = 0; x < cnt; x++) {
-        infile.seekg(SCEUF_HEADER_SIZE + x * SCEUF_FILEREC_SIZE);
+        fseek(infile, SCEUF_HEADER_SIZE + x * SCEUF_FILEREC_SIZE, SEEK_SET);
         char rec[SCEUF_FILEREC_SIZE];
-        infile.read(rec, SCEUF_FILEREC_SIZE);
+        fread(rec, SCEUF_FILEREC_SIZE, 1, infile);
 
         uint64_t filetype = 0;
         uint64_t offset = 0;
@@ -149,21 +155,21 @@ static void extract_pup_files(const fs::path &pup, const fs::path &output) {
         if (PUP_TYPES.contains(filetype)) {
             filename = PUP_TYPES.at(filetype);
         } else {
-            infile.seekg(offset);
+            fseek(infile, offset, SEEK_SET);
             char hdr[HEADER_LENGTH];
-            infile.read(hdr, HEADER_LENGTH);
+            fread(hdr, HEADER_LENGTH, 1, infile);
             filename = make_filename((unsigned char *)hdr, filetype);
         }
 
         fs::ofstream outfile(output / filename, std::ios::binary);
-        infile.seekg(offset);
+        fseek(infile, offset, SEEK_SET);
         std::vector<char> buffer(length);
-        infile.read(&buffer[0], length);
+        fread(buffer.data(), length, 1, infile);
         outfile.write(&buffer[0], length);
 
         outfile.close();
     }
-    infile.close();
+    fclose(infile);
 }
 
 static void decrypt_segments(std::ifstream &infile, const fs::path &outdir, const fs::path &filename, KeyStore &SCE_KEYS) {
@@ -222,11 +228,9 @@ static void join_files(const fs::path &path, const std::string &filename, const 
 
     fs::ofstream fileout(output, std::ios::binary);
     for (const auto &file : files) {
-        fs::ifstream filein(file, std::ios::binary);
-        std::vector<char> buffer(fs::file_size(file));
-        filein.read(&buffer[0], fs::file_size(file));
-        fileout.write(&buffer[0], fs::file_size(file));
-        filein.close();
+        std::vector<char> buffer(0);
+        fs_utils::read_data(file, buffer);
+        fileout.write(buffer.data(), buffer.size());
         fs::remove(file);
     }
     fileout.close();
@@ -253,8 +257,8 @@ static void decrypt_pup_packages(const fs::path &src, const fs::path &dest, KeyS
     join_files(dest, "sa0-", dest / "sa0.img");
 }
 
-std::string install_pup(const fs::path &pref_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback) {
-    fs::path pup_dec_root = pref_path / "PUP_DEC";
+std::string install_pup(const fs::path &vita_fs_path, const fs::path &pup_path, const std::function<void(uint32_t)> &progress_callback) {
+    fs::path pup_dec_root = vita_fs_path / "PUP_DEC";
     if (fs::exists(pup_dec_root)) {
         LOG_WARN("Path already exists, deleting it and reinstalling");
         fs::remove_all(pup_dec_root);
@@ -286,13 +290,13 @@ std::string install_pup(const fs::path &pref_path, const fs::path &pup_path, con
 
     update_progress(70);
     if (fs::file_size(pup_dec / "os0.img") > 0)
-        extract_fat(pup_dec, "os0.img", pref_path);
+        extract_fat(pup_dec, "os0.img", vita_fs_path);
     if (fs::file_size(pup_dec / "pd0.img") > 0)
-        exfat::extract_exfat(pup_dec, "pd0.img", pref_path);
+        exfat::extract_exfat(pup_dec, "pd0.img", vita_fs_path);
     if (fs::file_size(pup_dec / "sa0.img") > 0)
-        extract_fat(pup_dec, "sa0.img", pref_path);
+        extract_fat(pup_dec, "sa0.img", vita_fs_path);
     if (fs::file_size(pup_dec / "vs0.img") > 0)
-        extract_fat(pup_dec, "vs0.img", pref_path);
+        extract_fat(pup_dec, "vs0.img", vita_fs_path);
     update_progress(100);
 
     // get firmware version

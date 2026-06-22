@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,14 +29,15 @@ bool deliver_data(const MemState &mem, const std::vector<Voice *> &voice_queue, 
     for (auto &patch_ptr : source->patches[output_port]) {
         Patch *patch = patch_ptr.get(mem);
 
-        if (!patch || patch->output_sub_index == -1)
+        if (!patch || !patch->is_active())
             continue;
 
-        if (!vector_utils::contains(voice_queue, patch->dest))
+        Voice *dest = patch->dest.get(mem);
+        if (!dest || !std::ranges::contains(voice_queue, dest))
             continue;
 
-        const std::lock_guard<std::mutex> guard(*patch->dest->voice_mutex);
-        patch->dest->inputs.receive(patch, data_to_deliver);
+        const std::lock_guard<std::mutex> guard(*dest->voice_mutex);
+        dest->inputs.receive(mem, patch, data_to_deliver);
     }
 
     return true;

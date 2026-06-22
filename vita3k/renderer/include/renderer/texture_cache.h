@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -35,6 +35,13 @@ struct MemState;
 enum SceGxmTextureBaseFormat : uint32_t;
 
 namespace renderer {
+struct YUVConversionCache {
+    void *sws_context = nullptr;
+    size_t width = 0;
+    size_t height = 0;
+    bool is_p3 = false;
+};
+
 enum class Backend : uint32_t;
 static constexpr size_t TextureCacheSize = 1024;
 
@@ -45,6 +52,7 @@ struct TextureCacheInfo {
     int index = 0;
     uint32_t texture_size = 0;
     bool use_hash = false;
+    // no need for it to be atomic
     bool dirty = false;
     // used for texture importation
     bool is_imported = false;
@@ -97,6 +105,7 @@ protected:
 public:
     Backend backend;
     bool use_protect = false;
+    YUVConversionCache yuv_conversion_cache;
     // use a separate sampler cache
     bool use_sampler_cache = false;
     int anisotropic_filtering = 1;
@@ -120,6 +129,19 @@ public:
     // hash of the textures that have already been exported
     unordered_set_fast<uint64_t> exported_textures_hash;
 
+    // smartphone GPUs do not support DXT (BC1/2/3/4/5) textures, they must be decompressed on the GPU
+    bool support_dxt = false;
+    // format for replaced texture, supported mostly by smartphone GPUs
+    bool support_astc = false;
+    // some smartphone GPUs do not support linear filtering on depth surfaces
+    bool support_depth_linear_filtering = true;
+    // powerVR only
+    bool support_pvrt = false;
+    // other color format
+    bool support_x8d24 = false;
+    bool support_e5rgb9 = false;
+    bool support_a2rgb10 = false;
+
     bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id, const size_t sampler_cache_size = 0);
     void set_replacement_state(bool import_textures, bool export_textures, bool export_as_png);
 
@@ -128,13 +150,13 @@ public:
     virtual void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) = 0;
     virtual void upload_done() {}
 
-    virtual void configure_sampler(size_t index, const SceGxmTexture &texture) {}
+    virtual void configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) {}
 
     void upload_texture(const SceGxmTexture &gxm_texture, MemState &mem);
     void cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemState &mem);
 
     // is called by cache_and_bind_texture if use_sampler_cache is set to true
-    int cache_and_bind_sampler(const SceGxmTexture &gxm_texture);
+    int cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth = false);
 
     // look at the texture folder and update the available imported / exported hashes
     void refresh_available_textures();
@@ -149,5 +171,7 @@ public:
     virtual void import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) = 0;
     void import_upload_texture();
     void import_done();
+
+    virtual ~TextureCache();
 };
 } // namespace renderer

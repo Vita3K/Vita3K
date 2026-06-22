@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <chrono>
+#include <future>
 #include <renderer/commands.h>
 #include <renderer/driver_functions.h>
 #include <renderer/state.h>
@@ -23,7 +24,9 @@
 
 #include <display/state.h>
 #include <renderer/gl/functions.h>
+#include <renderer/gl/state.h>
 #include <renderer/vulkan/functions.h>
+#include <renderer/vulkan/state.h>
 #include <renderer/vulkan/types.h>
 
 #include <renderer/functions.h>
@@ -42,7 +45,7 @@ COMMAND(handle_signal_sync_object) {
     SceGxmSyncObject *sync = helper.pop<Ptr<SceGxmSyncObject>>().get(mem);
     const uint32_t timestamp = helper.pop<uint32_t>();
 
-    if (features.support_memory_mapping && config.current_config.high_accuracy) {
+    if (features.enable_memory_mapping && config.current_config.high_accuracy) {
         assert(renderer.current_backend == renderer::Backend::Vulkan);
         vulkan::signal_sync_object(dynamic_cast<vulkan::VKState &>(renderer), sync, timestamp);
     } else {
@@ -71,13 +74,28 @@ COMMAND(handle_notification) {
     renderer.notification_ready.notify_all();
 }
 
+COMMAND(handle_set_screen_filter) {
+    TRACY_FUNC_COMMANDS(handle_set_screen_filter);
+    std::unique_ptr<std::string> filter(helper.pop<std::string *>());
+
+    switch (renderer.current_backend) {
+    case Backend::OpenGL:
+        dynamic_cast<gl::GLState &>(renderer).set_screen_filter(*filter);
+        break;
+
+    case Backend::Vulkan:
+        dynamic_cast<vulkan::VKState &>(renderer).screen_renderer.set_filter(*filter);
+        break;
+    }
+}
+
 COMMAND(new_frame) {
     TRACY_FUNC_COMMANDS(new_frame);
     DisplayFrameInfo *next_frame = helper.pop<DisplayFrameInfo *>();
+    DisplayState *display = helper.pop<DisplayState *>();
 
     if (next_frame) {
         // set the predicted frame as the next one to render
-        DisplayState *display = helper.pop<DisplayState *>();
         std::lock_guard<std::mutex> guard(display->display_info_mutex);
         display->next_rendered_frame = *next_frame;
         delete next_frame;
@@ -86,7 +104,10 @@ COMMAND(new_frame) {
     }
 
     if (renderer.current_backend == Backend::Vulkan) {
-        vulkan::new_frame(*reinterpret_cast<vulkan::VKContext *>(renderer.context));
+        renderer::Context *active_context = helper.pop<renderer::Context *>();
+        if (active_context) {
+            vulkan::new_frame(*reinterpret_cast<vulkan::VKContext *>(active_context));
+        }
     }
 }
 
@@ -94,6 +115,22 @@ COMMAND(new_frame) {
 void finish(State &state, Context *context) {
     // Add NOP then wait for it
     renderer::send_single_command(state, context, renderer::CommandOpcode::Nop, true, 1);
+
+    // unblock game threads if shutting down
+    if (state.render_abort.load(std::memory_order_relaxed))
+        return;
+
+    // Wait for the VK wait thread to finish processing all pending requests.
+    // Push a callback request on the queue and wait for it to be treated
+    if (state.current_backend == Backend::Vulkan && state.features.enable_memory_mapping) {
+        auto &vk_state = static_cast<vulkan::VKState &>(state);
+        std::promise<void> promise;
+        auto callback = [&]() {
+            promise.set_value();
+        };
+        vk_state.request_queue.push(vulkan::CallbackRequest{ new vulkan::CallbackRequestFunction(callback) });
+        promise.get_future().wait();
+    }
 }
 
 int wait_for_status(State &state, int *status, int signal, bool wake_on_equal) {
@@ -104,25 +141,30 @@ int wait_for_status(State &state, int *status, int signal, bool wake_on_equal) {
         return *status;
     }
 
-    // Wait for it to get signaled
-    state.command_finish_one.wait(lock, [&]() { return (*status == signal) ^ wake_on_unequal; });
+    // unblock threads if shutting down
+    state.command_finish_one.wait(lock, [&]() {
+        return state.render_abort.load(std::memory_order_relaxed)
+            || ((*status == signal) ^ wake_on_unequal);
+    });
     return *status;
 }
 
-bool wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros) {
+SyncWaitResult wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros) {
     std::unique_lock<std::mutex> lock(sync_object->lock);
     if (sync_object->timestamp_current < timestamp) {
-        const auto &pred = [&]() { return sync_object->timestamp_current >= timestamp; };
+        const auto &pred = [&]() {
+            return sync_object->being_deleted || sync_object->timestamp_current >= timestamp;
+        };
 
         if (timeout_micros == -1) {
             sync_object->cond.wait(lock, pred);
-            return true;
-        } else {
-            return sync_object->cond.wait_for(lock, std::chrono::microseconds(timeout_micros), pred);
+        } else if (!sync_object->cond.wait_for(lock, std::chrono::microseconds(timeout_micros), pred)) {
+            return SyncWaitResult::TimedOut;
         }
-    } else {
-        return true;
     }
+    if (sync_object->being_deleted)
+        return SyncWaitResult::Shutdown;
+    return SyncWaitResult::Ready;
 }
 
 void subject_done(SceGxmSyncObject *sync_object, const uint32_t timestamp) {

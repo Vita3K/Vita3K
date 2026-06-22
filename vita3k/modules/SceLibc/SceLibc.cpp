@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,8 +27,6 @@
 #include <v3kprintf.h>
 
 TRACY_MODULE_NAME(SceLibc);
-
-Ptr<void> g_dso;
 
 EXPORT(int, _Assert) {
     TRACY_FUNC(_Assert);
@@ -228,7 +226,7 @@ EXPORT(int, __cxa_guard_release) {
 EXPORT(void, __cxa_set_dso_handle_main, Ptr<void> dso) {
     TRACY_FUNC(__cxa_set_dso_handle_main, dso);
     // LOG_WARN("__cxa_set_dso_handle_main(dso=*0x%x)", dso);
-    g_dso = dso;
+    emuenv.kernel.libc_dso_handle_main = dso;
     // return UNIMPLEMENTED();
 }
 
@@ -432,7 +430,7 @@ EXPORT(int, fileno) {
 EXPORT(int, fopen, const char *filename, const char *mode) {
     TRACY_FUNC(fopen, filename, mode);
     LOG_WARN_IF(mode[0] != 'r', "fopen({}, {})", filename, *mode);
-    return open_file(emuenv.io, filename, SCE_O_RDONLY, emuenv.pref_path, export_name);
+    return open_file(emuenv.io, filename, SCE_O_RDONLY, emuenv.vita_fs_path, export_name);
 }
 
 EXPORT(int, fopen_s) {
@@ -500,6 +498,9 @@ EXPORT(int, fscanf_s) {
     return UNIMPLEMENTED();
 }
 
+#ifdef fseek
+#undef fseek
+#endif
 EXPORT(int, fseek) {
     TRACY_FUNC(fseek);
     return UNIMPLEMENTED();
@@ -510,6 +511,9 @@ EXPORT(int, fsetpos) {
     return UNIMPLEMENTED();
 }
 
+#ifdef ftell
+#undef ftell
+#endif
 EXPORT(int, ftell) {
     TRACY_FUNC(ftell);
     return UNIMPLEMENTED();
@@ -962,7 +966,7 @@ EXPORT(int, printf, const char *format, module::vargs args) {
     // TODO: add args to tracy func
     std::vector<char> buffer(1024);
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;

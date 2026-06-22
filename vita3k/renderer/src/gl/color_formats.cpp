@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -132,6 +132,10 @@ GLenum translate_internal_format(SceGxmColorBaseFormat base_format) {
 
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8:
         return GL_RG8;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
+        LOG_WARN_ONCE("Unsupported OpenGL color base format {}", log_hex(base_format));
+        return GL_RGBA8;
 
     default:
         LOG_ERROR("Unknown base format {}", log_hex(base_format));

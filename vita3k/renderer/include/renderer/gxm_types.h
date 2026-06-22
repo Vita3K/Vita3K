@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This file contains internal types used by Vita3K, and the
 // internal Vita3K's implementation of SceGxm's opaque types.
@@ -177,6 +177,9 @@ struct SceGxmSyncObject {
 
     // last signal operation done, given using the global timestamp
     uint32_t last_operation_global = 0;
+
+    // Set during emulated app shutdown to release any waiters blocked on this sync object.
+    bool being_deleted = false;
 
     std::mutex lock;
     std::condition_variable cond;

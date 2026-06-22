@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 
 #include <config/state.h>
 #include <emuenv/state.h>
+
 #include <packages/functions.h>
 #include <packages/license.h>
 #include <packages/pkg.h>
@@ -49,7 +50,7 @@ static void ctr_init(uint8_t *counter, uint8_t *iv, uint64_t n) {
     }
 }
 
-int execute(std::string &zrif, fs::path &title_src, fs::path &title_dst, F00DEncryptorTypes type, std::string &f00d_arg) {
+static int execute(std::string &zrif, fs::path &title_src, fs::path &title_dst, F00DEncryptorTypes type, std::string &f00d_arg) {
     std::string title_src_str = title_src.string();
     std::string title_dst_str = title_dst.string();
     return execute(zrif, title_src_str, title_dst_str, type, f00d_arg);
@@ -66,7 +67,7 @@ bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, co
     if ((execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) && (title_path.string().find("theme") == std::string::npos))
         return false;
 
-    if (emuenv.app_info.app_category.find("gp") == std::string::npos)
+    if (!emuenv.app_info.app_category.contains("gp"))
         copy_license(emuenv, drmlicpath);
 
     fs::remove_all(title_id_src);
@@ -76,12 +77,21 @@ bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, co
 }
 
 bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback) {
-    fs::ifstream infile(pkg_path, std::ios::binary);
+    FILE *infile = FOPEN(pkg_path.c_str(), "rb");
+    if (!infile) {
+        LOG_CRITICAL("Failed to load pkg file in path: {}", fs_utils::path_to_utf8(pkg_path));
+        return false;
+    }
+
+    fseek(infile, 0, SEEK_END);
+    const uint64_t pkg_size = ftell(infile);
+
     PkgHeader pkg_header;
     PkgExtHeader ext_header;
-    infile.read(reinterpret_cast<char *>(&pkg_header), sizeof(PkgHeader));
-    infile.seekg(sizeof(PkgHeader));
-    infile.read(reinterpret_cast<char *>(&ext_header), sizeof(PkgExtHeader));
+    fseek(infile, 0, SEEK_SET);
+    fread(reinterpret_cast<void *>(&pkg_header), sizeof(PkgHeader), 1, infile);
+    fseek(infile, sizeof(PkgHeader), SEEK_SET);
+    fread(reinterpret_cast<char *>(&ext_header), sizeof(PkgExtHeader), 1, infile);
 
     progress_callback(0);
 
@@ -90,12 +100,12 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         return false;
     }
 
-    if (fs::file_size(pkg_path) < byte_swap(pkg_header.total_size)) {
+    if (pkg_size < byte_swap(pkg_header.total_size)) {
         LOG_ERROR("The pkg file is too small");
         return false;
     }
 
-    if (fs::file_size(pkg_path) < byte_swap(pkg_header.data_offset) + byte_swap(pkg_header.file_count) * 32) {
+    if (pkg_size < byte_swap(pkg_header.data_offset) + byte_swap(pkg_header.file_count) * 32) {
         LOG_ERROR("The pkg file is too small");
         return false;
     }
@@ -108,8 +118,8 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
 
     for (uint32_t i = 0; i < byte_swap(pkg_header.info_count); i++) {
         uint32_t block[4];
-        infile.seekg(info_offset);
-        infile.read((char *)block, sizeof(block));
+        fseek(infile, info_offset, SEEK_SET);
+        fread(block, sizeof(block), 1, infile);
 
         auto type = byte_swap(block[0]);
         auto size = byte_swap(block[1]);
@@ -189,8 +199,8 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
 
     std::vector<uint8_t> sfo_buffer(sfo_size);
     SfoFile sfo_file;
-    infile.seekg(sfo_offset);
-    infile.read((char *)&sfo_buffer[0], sfo_size);
+    fseek(infile, sfo_offset, SEEK_SET);
+    fread(sfo_buffer.data(), sfo_buffer.size(), 1, infile);
     sfo::load(sfo_file, sfo_buffer);
     sfo::get_param_info(emuenv.app_info, sfo_buffer, emuenv.cfg.sys_lang);
 
@@ -201,7 +211,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         type = PkgType::PKG_TYPE_VITA_PATCH;
     }
 
-    auto path{ emuenv.pref_path / "ux0" };
+    auto path{ emuenv.vita_fs_path / "ux0" };
 
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
@@ -234,15 +244,16 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         EVP_DecryptFinal_ex(cipher_ctx, data + dec_len, &dec_len);
     };
 
+    std::vector<uint8_t> buffer(0x10000);
     for (uint32_t i = 0; i < byte_swap(pkg_header.file_count); i++) {
         PkgEntry entry;
         uint64_t file_offset = items_offset + i * 32;
-        infile.seekg(byte_swap(pkg_header.data_offset) + file_offset, std::ios_base::beg);
-        infile.read(reinterpret_cast<char *>(&entry), sizeof(PkgEntry));
+        fseek(infile, byte_swap(pkg_header.data_offset) + file_offset, SEEK_SET);
+        fread(&entry, sizeof(PkgEntry), 1, infile);
 
         decrypt_aes_ctr(file_offset / 16, reinterpret_cast<unsigned char *>(&entry), sizeof(PkgEntry));
 
-        if (fs::file_size(pkg_path) < byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset) + byte_swap(entry.name_size) || fs::file_size(pkg_path) < byte_swap(pkg_header.data_offset) + byte_swap(entry.data_offset) + byte_swap(entry.data_size)) {
+        if (pkg_size < byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset) + byte_swap(entry.name_size) || pkg_size < byte_swap(pkg_header.data_offset) + byte_swap(entry.data_offset) + byte_swap(entry.data_size)) {
             LOG_ERROR("The pkg file size is too small, possibly corrupted");
             evp_cleanup();
             return false;
@@ -250,8 +261,8 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         const auto file_count = (float)byte_swap(pkg_header.file_count);
         progress_callback(i / file_count * 100.f * 0.6f);
         std::vector<unsigned char> name(byte_swap(entry.name_size));
-        infile.seekg(byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset));
-        infile.read((char *)&name[0], byte_swap(entry.name_size));
+        fseek(infile, byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset), SEEK_SET);
+        fread(name.data(), byte_swap(entry.name_size), 1, infile);
 
         decrypt_aes_ctr(byte_swap(entry.name_offset) / 16, name.data(), byte_swap(entry.name_size));
 
@@ -271,16 +282,14 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
             EVP_DecryptInit_ex(cipher_ctx, cipher_CTR, nullptr, main_key, counter);
             EVP_CIPHER_CTX_set_padding(cipher_ctx, 0);
 
-            std::vector<uint8_t> buffer(0x10000);
+            fseek(infile, byte_swap(pkg_header.data_offset) + offset, SEEK_SET);
             while (data_size != 0) {
-                int size = data_size < buffer.size() ? data_size : buffer.size();
-                infile.seekg(byte_swap(pkg_header.data_offset) + offset);
-                infile.read(reinterpret_cast<char *>(buffer.data()), size);
+                size_t size = data_size < buffer.size() ? data_size : buffer.size();
+                fread(buffer.data(), size, 1, infile);
 
                 EVP_DecryptUpdate(cipher_ctx, buffer.data(), &dec_len, buffer.data(), size);
 
                 outfile.write(reinterpret_cast<char *>(buffer.data()), dec_len);
-                offset += size;
                 data_size -= size;
             }
 
@@ -289,7 +298,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
             outfile.close();
         }
     }
-    infile.close();
+    fclose(infile);
 
     evp_cleanup();
     fs::path title_id_src = path;
@@ -298,16 +307,14 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     F00DEncryptorTypes f00d_enc_type = F00DEncryptorTypes::native;
     std::string f00d_arg = std::string();
 
-    KeyStore SCE_KEYS;
-    register_keys(SCE_KEYS, 1);
-    std::vector<uint8_t> temp_klicensee = get_temp_klicensee(zRIF);
-
     progress_callback(80);
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
     case PkgType::PKG_TYPE_VITA_PATCH:
 
         if (execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) {
+            fs::remove_all(fs::path(title_id_src));
+            fs::remove_all(fs::path(title_id_dst));
             return false;
         }
         fs::remove_all(title_id_src);
@@ -317,6 +324,8 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
     case PkgType::PKG_TYPE_VITA_DLC:
 
         if (execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) {
+            fs::remove_all(fs::path(title_id_src));
+            fs::remove_all(fs::path(title_id_dst));
             return false;
         } else {
             fs::remove_all(title_id_src);
@@ -335,10 +344,38 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         break;
     }
 
-    if (!copy_path(title_id_src, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
+    if (!copy_path(title_id_src, emuenv.vita_fs_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
     create_license(emuenv, zRIF);
+
     progress_callback(100);
     return true;
+}
+
+std::string find_pkg_zrif(const fs::path &pkg_path, const fs::path &vita_fs_path) {
+    FILE *infile = FOPEN(pkg_path.c_str(), "rb");
+    if (!infile)
+        return {};
+
+    PkgHeader pkg_header{};
+    fread(&pkg_header, sizeof(PkgHeader), 1, infile);
+    fclose(infile);
+
+    const std::string content_id(pkg_header.content_id);
+    if (content_id.size() < 16)
+        return {};
+
+    const std::string title_id = content_id.substr(7, 9);
+    const auto rif_path = vita_fs_path / "ux0/license" / title_id / (content_id + ".rif");
+
+    if (!fs::exists(rif_path))
+        return {};
+
+    LOG_INFO("Found license file: {}", rif_path);
+    fs::ifstream binfile(rif_path, std::ios::in | std::ios::binary | std::ios::ate);
+    if (!binfile)
+        return {};
+
+    return rif2zrif(binfile);
 }

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,7 @@
 
 #include <util/types.h>
 
-#include <SDL_audio.h>
-
+#include <atomic>
 #include <functional>
 #include <map>
 #include <memory>
@@ -30,10 +29,11 @@
 #define SCE_AUDIO_OUT_MAX_VOL 32768 //!< Maximum output port volume
 #define SCE_AUDIO_VOLUME_0DB SCE_AUDIO_OUT_MAX_VOL //!< Maximum output port volume
 
-typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
-typedef std::function<void(SceUID)> ResumeAudioThread;
-
 struct AudioOutPort {
+    virtual ~AudioOutPort() = default;
+
+    // shutdown flag
+    std::atomic<bool> stopping{ false };
     // Channel range from 0 - 32768
     int left_channel_volume = SCE_AUDIO_VOLUME_0DB;
     int right_channel_volume = SCE_AUDIO_VOLUME_0DB;
@@ -51,29 +51,15 @@ struct AudioOutPort {
     int len = 0;
     int freq = 0;
     int mode = 0;
-
-    std::mutex mutex;
-    // stream to get the data
-    AudioStreamPtr stream;
-    // thread currently waiting for the audio to be processed
-    SceUID thread = -1;
 };
 
 typedef std::shared_ptr<AudioOutPort> AudioOutPortPtr;
 typedef std::map<int, AudioOutPortPtr> AudioOutPortPtrs;
 
 struct AudioInPort {
-    SDL_AudioDeviceID id;
+    void *id = nullptr;
     bool running = false;
     int len_bytes = 0;
-};
-
-struct AudioSpec {
-    int freq;
-    // number of samples to be processed per callback per channel
-    int nb_samples = 0;
-    // value for silence
-    uint8_t silence;
 };
 
 struct ThreadState;
@@ -81,19 +67,8 @@ struct AudioState;
 
 // abstract class that need to be overloaded with an audio implementation
 class AudioAdapter {
-private:
-    // buffer used to mix audio
-    std::vector<uint8_t> temp_buffer;
-
-protected:
-    AudioState &state;
-    // are we using a single stream and mixing everything inside or multiple streams?
-    bool single_stream = true;
-
 public:
-    // called by subclasses once they get called by their implementation callback
-    // stream points to the location where we need to write state.ro.len_bytes bytes
-    void audio_callback(uint8_t *stream, int len_bytes);
+    AudioState &state;
 
     AudioAdapter(AudioState &audio_state)
         : state(audio_state) {}
@@ -101,30 +76,33 @@ public:
 
     virtual bool init() = 0;
     virtual AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample) { return nullptr; }
-    virtual void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) {}
+    virtual void audio_output(AudioOutPort &out_port, const void *buffer) {}
     virtual void set_volume(AudioOutPort &out_port, float volume) {}
     virtual void switch_state(const bool pause) {}
-
+    virtual int get_rest_sample(AudioOutPort &out_port) { return 0; };
+    virtual void wake_all_ports() {}
     friend struct AudioState;
 };
 
 struct AudioState {
-    AudioSpec spec;
-    // the adapter must be before out_ports for the destructors to work correctly
+    //  the adapter must be before out_ports for the destructors to work correctly
     std::unique_ptr<AudioAdapter> adapter;
     std::mutex mutex;
     int next_port_id = 1;
     AudioOutPortPtrs out_ports;
     AudioInPort in_port;
-    ResumeAudioThread resume_thread;
     std::string audio_backend;
-    float global_volume;
+    float global_volume = 1;
 
-    bool init(const ResumeAudioThread &resume_thread, const std::string &adapter_name);
+    bool init(const std::string &adapter_name);
+    void deinit();
+    void stop_all_ports();
     void set_backend(const std::string &adapter_name);
     AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample);
-    void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer);
+    void audio_output(AudioOutPort &out_port, const void *buffer);
     void set_volume(AudioOutPort &out_port, float volume);
     void set_global_volume(float volume);
     void switch_state(const bool pause);
+    int get_rest_sample(AudioOutPort &out_port);
+    void wake_all_ports();
 };

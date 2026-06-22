@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -57,18 +57,12 @@ size_t find_index(const T &v, const V &value) {
 
 template <typename T, typename V>
 bool push_if_not_exists(T &v, const V &value) {
-    auto it = std::find(v.begin(), v.end(), value);
-    if (it == v.end()) {
+    if (!std::ranges::contains(v, value)) {
         v.push_back(value);
         return false;
     } else {
         return true;
     }
-}
-
-template <typename T, typename V>
-bool contains(const T &v, const V &value) {
-    return std::find(v.begin(), v.end(), value) != v.end();
 }
 
 template <typename T, typename V>

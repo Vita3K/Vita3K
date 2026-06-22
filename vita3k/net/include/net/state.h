@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,8 +22,11 @@
 #include <net/types.h>
 
 #include <array>
+#include <atomic>
+#include <condition_variable>
 #include <map>
 #include <mutex>
+#include <thread>
 
 typedef std::map<int, SocketPtr> NetSockets;
 typedef std::map<int, EpollPtr> NetEpolls;
@@ -36,11 +39,48 @@ struct NetState {
     NetEpolls epolls;
     int state = -1;
     int resolver_id = 0;
+    int current_addr_index = 0;
+    uint32_t broadcastAddr = 0xFFFFFFFF;
+    uint32_t netAddr = 0xFFFFFFFF;
+
+    void abort_all();
+    void deinit();
 };
 
 struct NetCtlState {
     std::array<SceNetCtlCallback, 8> adhocCallbacks;
     std::array<SceNetCtlCallback, 8> callbacks;
+    std::vector<SceNetCtlAdhocPeerInfo> adhocPeers;
     bool inited = false;
+    std::thread adhocThread;
+    std::atomic<bool> adhocCondVarReady = false;
+    std::condition_variable adhocCondVar;
+    SceNetCtlState adhocState = SCE_NET_CTL_STATE_DISCONNECTED;
+    SceNetCtlEventType adhocEvent = SCE_NET_CTL_EVENT_TYPE_NONE;
+    SceNetCtlEventType lastNotifiedAdhocEvent = SCE_NET_CTL_EVENT_TYPE_NONE;
+    std::atomic<bool> adhocThreadRun = false;
     std::mutex mutex;
+
+    void deinit() {
+        {
+            const std::lock_guard<std::mutex> lock(mutex);
+            adhocThreadRun = false;
+            adhocCondVarReady = false;
+        }
+        adhocCondVar.notify_all();
+        if (adhocThread.joinable())
+            adhocThread.join();
+
+        adhocCallbacks.fill({ 0, 0 });
+        callbacks.fill({ 0, 0 });
+        adhocPeers.clear();
+        adhocState = SCE_NET_CTL_STATE_DISCONNECTED;
+        adhocEvent = SCE_NET_CTL_EVENT_TYPE_NONE;
+        lastNotifiedAdhocEvent = SCE_NET_CTL_EVENT_TYPE_NONE;
+        inited = false;
+    }
+
+    ~NetCtlState() {
+        deinit();
+    }
 };

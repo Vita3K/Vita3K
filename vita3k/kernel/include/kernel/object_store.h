@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,12 +72,18 @@ public:
         objs.emplace(TypeInfo::registered<T>::index, ptr);
         return true;
     }
+
     template <typename T>
     void erase() {
         auto it = objs.find(TypeInfo::registered<T>::index);
         if (it == objs.end())
             return;
         objs.erase(it);
+    }
+
+    void clear() {
+        std::lock_guard<std::mutex> lock(mutex);
+        objs.clear();
     }
 
 private:

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,6 +32,12 @@ namespace config {
  * \return Success on saving the config file, otherwise Error.
  */
 ExitCode serialize_config(Config &cfg, const fs::path &output_path);
+
+/**
+ * \brief Reset all keyboard bindings to the current default physical key values.
+ * \param cfg Config object to update.
+ */
+void reset_keyboard_bindings(Config &cfg);
 
 /**
  * \brief Initializes config system, parsing command-line args and handling some basic ones:

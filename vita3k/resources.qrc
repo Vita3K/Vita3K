@@ -1,0 +1,37 @@
+<RCC>
+	<qresource prefix="/">
+		<file>icons/PSV_Layout.svg</file>
+		<file>Vita3K.ico</file>
+		<file>Vita3K.png</file>
+		<file>icons/bronze.png</file>
+		<file>icons/silver.png</file>
+		<file>icons/gold.png</file>
+		<file>icons/platinum.png</file>
+		<file alias="themes/light/light.qss">gui-qt/resources/themes/light/light.qss</file>
+		<file alias="themes/light/chevron_down_dark.svg">icons/chevron_down_dark.svg</file>
+		<file alias="themes/light/chevron_up_dark.svg">icons/chevron_up_dark.svg</file>
+		<file alias="themes/dark/dark.qss">gui-qt/resources/themes/dark/dark.qss</file>
+		<file alias="themes/dark/chevron_down_light.svg">icons/chevron_down_light.svg</file>
+		<file alias="themes/dark/chevron_up_light.svg">icons/chevron_up_light.svg</file>
+		<file alias="themes/vita/generated.qss.in">gui-qt/resources/themes/vita/generated.qss.in</file>
+		<file>icons/configure.png</file>
+		<file>icons/controllers.png</file>
+		<file>icons/chevron_down_dark.svg</file>
+		<file>icons/chevron_down_light.svg</file>
+		<file>icons/check_dark.svg</file>
+		<file>icons/check_light.svg</file>
+		<file>icons/radio_dot_dark.svg</file>
+		<file>icons/radio_dot_light.svg</file>
+		<file>icons/cross_dark.svg</file>
+		<file>icons/cross_light.svg</file>
+		<file>icons/chevron_up_dark.svg</file>
+		<file>icons/chevron_up_light.svg</file>
+		<file>icons/exit_fullscreen.png</file>
+		<file>icons/fullscreen.png</file>
+		<file>icons/open.png</file>
+		<file>icons/pause.png</file>
+		<file>icons/play.png</file>
+		<file>icons/refresh.png</file>
+		<file>icons/stop.png</file>
+	</qresource>
+</RCC>

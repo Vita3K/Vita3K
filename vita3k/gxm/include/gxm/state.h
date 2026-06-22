@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,13 @@
 
 #include <map>
 #include <mutex>
+#include <thread>
+#include <unordered_map>
+#include <unordered_set>
+
+struct EmuEnvState;
+struct SceGxmContext;
+struct SceGxmRenderTarget;
 
 struct SceGxmInitializeParams {
     uint32_t flags = 0;
@@ -52,6 +59,7 @@ struct GxmState {
 
     Queue<DisplayCallback> display_queue;
     SceUID display_queue_thread;
+    std::thread display_host_thread;
 
     // global timestamp used by sync objects
     std::atomic<uint32_t> global_timestamp{ 1 };
@@ -60,6 +68,33 @@ struct GxmState {
 
     Ptr<uint32_t> notification_region;
 
+    std::mutex sync_objects_mutex;
+    std::unordered_set<SceGxmSyncObject *> sync_objects;
+
     std::map<Address, MemoryMapInfo> memory_mapped_regions;
     std::mutex callback_lock;
+    Address immediate_context = 0;
+    std::unordered_map<SceGxmContext *, Address> deferred_contexts;
+    std::unordered_map<SceGxmRenderTarget *, Address> render_targets;
+
+    void deinit() {
+        if (display_host_thread.joinable())
+            display_host_thread.join();
+
+        {
+            const std::lock_guard<std::mutex> lock(sync_objects_mutex);
+            sync_objects.clear();
+        }
+
+        memory_mapped_regions.clear();
+        display_queue.reset();
+        params = {};
+        display_queue_thread = 0;
+        global_timestamp = 1;
+        last_display_global = 0;
+        notification_region = Ptr<uint32_t>(0);
+        immediate_context = 0;
+        deferred_contexts.clear();
+        render_targets.clear();
+    }
 };

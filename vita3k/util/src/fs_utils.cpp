@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2023 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 
 #include <util/fs.h>
 #include <util/string_utils.h>
+
+#include <SDL3/SDL_iostream.h>
 
 namespace fs_utils {
 
@@ -53,6 +55,63 @@ void dump_data(const fs::path &path, const void *data, const std::streamsize siz
     if (!of.fail()) {
         of.write(static_cast<const char *>(data), size);
         of.close();
+    }
+}
+template <typename T>
+static bool read_data(const fs::path &path, std::vector<T> &data) {
+    data.clear();
+    SDL_IOStream *file = SDL_IOFromFile(fs_utils::path_to_utf8(path).c_str(), "rb");
+    if (!file) {
+        return false;
+    }
+
+    // Get the size of the file
+    const Sint64 size = SDL_GetIOSize(file);
+    if (size <= 0) {
+        SDL_CloseIO(file);
+        return false;
+    }
+
+    // Resize the vector to fit the file content
+    data.resize(size);
+
+    // Read the content of the file
+    if (SDL_ReadIO(file, data.data(), size) != size) {
+        SDL_CloseIO(file);
+        data.clear();
+        return false;
+    }
+
+    SDL_CloseIO(file);
+    return true;
+}
+
+bool read_data(const fs::path &path, std::vector<uint8_t> &data) { return read_data<uint8_t>(path, data); }
+bool read_data(const fs::path &path, std::vector<int8_t> &data) { return read_data<int8_t>(path, data); }
+bool read_data(const fs::path &path, std::vector<char> &data) { return read_data<char>(path, data); }
+
+bool copy_directory_contents(const fs::path &src_path, const fs::path &dst_path, const fs::copy_options options) {
+    try {
+        if (!fs::is_directory(src_path))
+            return false;
+
+        fs::create_directories(dst_path);
+
+        for (const auto &src : fs::recursive_directory_iterator(src_path)) {
+            const auto relative_path = fs::relative(src.path(), src_path);
+            const auto output_path = dst_path / relative_path;
+
+            if (fs::is_directory(src)) {
+                fs::create_directories(output_path);
+            } else if (fs::is_regular_file(src)) {
+                fs::create_directories(output_path.parent_path());
+                fs::copy_file(src.path(), output_path, options);
+            }
+        }
+
+        return true;
+    } catch (const std::exception &) {
+        return false;
     }
 }
 

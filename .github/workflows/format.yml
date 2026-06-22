@@ -1,0 +1,37 @@
+name: Format Check
+
+on:
+  push:
+    paths:
+      - .clang-format
+      - vita3k/**
+      - tools/**
+
+  pull_request:
+    paths:
+      - .clang-format
+      - vita3k/**
+      - tools/**
+
+jobs:
+  format-check:
+    name: Format Check (${{ matrix.path }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        path:
+          - vita3k
+          - tools
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: ${{ matrix.path }}
+
+      - name: Format check
+        uses: jidicula/clang-format-action@v4.18.0
+        with:
+          check-path: ${{ matrix.path }}

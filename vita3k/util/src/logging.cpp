@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,26 +22,79 @@
 #include <Windows.h>
 #endif
 
+#include <spdlog/async.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/dup_filter_sink.h>
 #include <spdlog/sinks/msvc_sink.h>
+#ifdef __ANDROID__
+#include <spdlog/sinks/android_sink.h>
+#else
 #include <spdlog/sinks/stdout_color_sinks.h>
+#endif
+
+#include <functional>
+#include <iostream>
+#include <mutex>
+#include <vector>
 
 namespace logging {
 
 static const fs::path &LOG_FILE_NAME = "vita3k.log";
 static const char *LOG_PATTERN = "%^[%H:%M:%S.%e] |%L| [%!]: %v%$";
-std::vector<spdlog::sink_ptr> sinks;
+static constexpr size_t ASYNC_LOG_QUEUE_SIZE = 65536;
+static std::vector<spdlog::sink_ptr> sinks;
+static std::once_flag s_async_logging_once;
 
-void register_log_exception_handler();
+static std::function<void(std::string, int)> s_log_callback;
+static std::mutex s_log_callback_mutex;
 
-void flush() {
+static void register_log_exception_handler();
+static void rebuild_default_logger();
+
+static void flush() {
     spdlog::details::registry::instance().flush_all();
+}
+
+template <typename Mutex>
+class callback_sink final : public spdlog::sinks::base_sink<Mutex> {
+protected:
+    void sink_it_(const spdlog::details::log_msg &msg) override {
+        std::function<void(std::string, int)> callback;
+        {
+            const std::lock_guard<std::mutex> lock(s_log_callback_mutex);
+            callback = s_log_callback;
+        }
+
+        if (!callback)
+            return;
+
+        spdlog::memory_buf_t formatted;
+        spdlog::sinks::base_sink<Mutex>::formatter_->format(msg, formatted);
+        callback(fmt::to_string(formatted), static_cast<int>(msg.level));
+    }
+
+    void flush_() override {};
+};
+
+using callback_sink_mt = callback_sink<std::mutex>;
+
+void set_log_callback(std::function<void(std::string, int)> cb) {
+    const std::lock_guard<std::mutex> lock(s_log_callback_mutex);
+    s_log_callback = std::move(cb);
 }
 
 ExitCode init(const Root &root_paths, bool use_stdout) {
     sinks.clear();
     if (use_stdout)
+#ifdef __ANDROID__
+        sinks.push_back(std::make_shared<spdlog::sinks::android_sink_mt>());
+#else
         sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+#endif
+
+#ifndef __ANDROID__
+    sinks.push_back(std::make_shared<callback_sink_mt>());
+#endif
 
     if (add_sink(root_paths.get_log_path() / LOG_FILE_NAME) != Success)
         return InitConfigFailed;
@@ -57,12 +110,22 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
     SetConsoleTitle("Vita3K PSVita Emulator");
 #endif
 
+#ifdef __ANDROID__
+    // needed, otherwise the log file contains nothing
+    spdlog::flush_on(spdlog::level::trace);
+#endif
+
     register_log_exception_handler();
 
     static std::terminate_handler old_terminate = nullptr;
     old_terminate = std::set_terminate([]() {
         try {
-            std::rethrow_exception(std::current_exception());
+            auto eptr = std::current_exception();
+            if (eptr) {
+                std::rethrow_exception(eptr);
+            } else {
+                LOG_CRITICAL("Unhandled 'std::terminate()' call");
+            }
         } catch (const std::exception &e) {
             LOG_CRITICAL("Unhandled C++ exception. {}", e.what());
         } catch (...) {
@@ -88,14 +151,29 @@ ExitCode add_sink(const fs::path &log_path) {
     }
 
 #ifdef _MSC_VER
-    if (sinks.size() == 2) { // spdlog is being initialized
-        sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
-    }
+    sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
 #endif
 
-    spdlog::set_default_logger(std::make_shared<spdlog::logger>("vita3k logger", begin(sinks), end(sinks)));
-    spdlog::set_pattern(LOG_PATTERN);
+    rebuild_default_logger();
     return Success;
+}
+
+void rebuild_default_logger() {
+    std::call_once(s_async_logging_once, []() {
+        spdlog::init_thread_pool(ASYNC_LOG_QUEUE_SIZE, 1);
+    });
+
+    auto duplicate_filter = std::make_shared<spdlog::sinks::dup_filter_sink_mt>(std::chrono::seconds(2), spdlog::level::info);
+    for (const auto &sink : sinks)
+        duplicate_filter->add_sink(sink);
+
+    auto logger = std::make_shared<spdlog::async_logger>(
+        "vita3k logger",
+        duplicate_filter,
+        spdlog::thread_pool(),
+        spdlog::async_overflow_policy::overrun_oldest);
+    spdlog::set_default_logger(std::move(logger));
+    spdlog::set_pattern(LOG_PATTERN);
 }
 
 // log exceptions and flush log file on exceptions

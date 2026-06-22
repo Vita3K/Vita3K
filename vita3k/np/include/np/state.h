@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ struct NpTrophyUnlockCallbackData {
     std::string trophy_id;
     std::string trophy_name;
     std::string trophy_detail;
-    np::trophy::SceNpTrophyGrade trophy_kind;
+    np::trophy::SceNpTrophyGrade trophy_kind{};
     std::vector<std::uint8_t> icon_buf;
 };
 
@@ -49,7 +49,18 @@ struct NpTrophyState {
     std::mutex access_mutex;
 
     std::vector<np::trophy::Context> contexts;
-    NpTrophyUnlockCallback trophy_unlock_callback;
+    std::mutex callback_mutex;
+    std::vector<NpTrophyUnlockCallback> trophy_unlock_callbacks;
+
+    void add_trophy_unlock_callback(NpTrophyUnlockCallback cb) {
+        std::lock_guard lock(callback_mutex);
+        trophy_unlock_callbacks.push_back(std::move(cb));
+    }
+
+    void clear_trophy_unlock_callbacks() {
+        std::lock_guard lock(callback_mutex);
+        trophy_unlock_callbacks.clear();
+    }
 };
 
 enum SceNpServiceState : uint32_t {
@@ -62,7 +73,7 @@ enum SceNpServiceState : uint32_t {
 struct NpState {
     bool inited = false;
     np_callbacks cbs;
-    int state_cb_id;
+    SceUID state_cb_id;
 
     NpTrophyState trophy_state;
     np::CommunicationID comm_id;

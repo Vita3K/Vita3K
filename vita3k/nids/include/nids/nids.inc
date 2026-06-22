@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -2199,6 +2199,21 @@ NID(sceKernelGetModuleList, 0x2EF2581F)
 NID(sceKernelGetSystemSwVersion, 0x5182E212)
 NID(sceKernelInhibitLoadingModule, 0x6CED1F63)
 NID(sceKernelIsCalledFromSysModule, 0x85E6D2BB)
+// Library "SceModulemgrForDriver"
+NID(ksceKernelGetModuleInfoByAddr, 0x1D9E0F7E)
+NID(ksceKernelLoadModule, 0x86D8D634)
+NID(ksceKernelLoadStartModule, 0x189BFBBB)
+NID(ksceKernelLoadStartModuleForPid, 0x9D953C22)
+NID(ksceKernelLoadStartSharedModuleForPid, 0xE2ADEF8D)
+NID(ksceKernelRegisterLibary, 0x861638AD)
+NID(ksceKernelReleaseLibary, 0x0975B104)
+NID(ksceKernelSearchModuleByName, 0xBBE1771C)
+NID(ksceKernelStartModule, 0x0675B682)
+NID(ksceKernelStopModule, 0x100DAEB9)
+NID(ksceKernelStopUnloadModule, 0x03B30B7E)
+NID(ksceKernelStopUnloadModuleForPid, 0x49A3EDC7)
+NID(ksceKernelStopUnloadSharedModuleForPid, 0x02D3D0C1)
+NID(ksceKernelUnloadModule, 0x728E72A6)
 // Module "SceKernelThreadMgr"
 // Library "SceThreadmgr"
 NID(__sceKernelCreateLwMutex, 0x4BB3154A)
@@ -2474,8 +2489,17 @@ NID(ksceKernelWaitEventFlagCB, 0x8A35F714)
 NID(ksceKernelWaitSema, 0x3C8B55A9)
 NID(ksceKernelWaitThreadEnd, 0x3E20216F)
 NID(ksceKernelWaitThreadEndCB, 0x9EF4F62C)
+NID(SceThreadmgrForDriver_20C228E4, 0x20C228E4)
 // Library "SceThreadmgrForKernel"
 NID(ksceKernelGetFaultingProcess, 0xD8B9AC8D)
+// Module "SceKubridge"
+// Library "SceKubridge"
+NID(kuKernelMemProtect, 0x566D2AF1)
+NID(kuKernelMemReserve, 0xCED3608C)
+NID(kuKernelMemCommit, 0x9C0CD758)
+NID(kuKernelMemDecommit, 0x9BDF5881)
+NID(kuKernelRegisterExceptionHandler, 0xF9025D19)
+NID(kuKernelReleaseExceptionHandler, 0xDF9F3BED)
 // Module "SceLibc"
 // Library "SceLibc"
 NID(_Assert, 0xE4531F85)
@@ -4204,6 +4228,7 @@ NID(sceKernelStartThread, 0xF08DE149)
 NID(sceKernelStopModule, 0x3B2CBA09)
 NID(sceKernelStopUnloadModule, 0x2415F8A4)
 NID(sceKernelTryLockLwMutex, 0xA6A2C915)
+NID(sceKernelTryLockLwMutex_16XX, 0x9EF798C1)
 NID(sceKernelTryReceiveMsgPipe, 0x5615B006)
 NID(sceKernelTryReceiveMsgPipeVector, 0x86ECC0FF)
 NID(sceKernelTrySendMsgPipe, 0xDFC670E0)
@@ -4286,6 +4311,44 @@ NID(__rtabi_uidivmod, 0xC33391D1)
 NID(__rtabi_llsr, 0xCBDA815C)
 NID(__rtabi_uldivmod, 0xCDF7708E)
 NID(__rtabi_uidiv, 0xFB311F87)
+// Module "taihen"
+// Library "taihen"
+NID(taiHookFunctionExportForUser, 0x8746A1CE)
+NID(taiHookFunctionImportForUser, 0x53636E5D)
+NID(taiHookFunctionOffsetForUser, 0x0535225A)
+NID(taiGetModuleInfo, 0xA5899384)
+NID(taiHookRelease, 0x1C30E799)
+NID(taiInjectAbs, 0x4A588904)
+NID(taiInjectDataForUser, 0xCE25B9BC)
+NID(taiInjectRelease, 0x21A4C8A6)
+NID(taiGetModuleExportFunc, 0x6231AAD1)
+// Library "taihenUnsafe"
+NID(taiLoadKernelModule, 0xD6D086E4)
+NID(taiStartKernelModuleForUser, 0xA9EB128E)
+NID(taiLoadStartKernelModuleForUser, 0x9890A8D3)
+NID(taiLoadStartModuleForPidForUser, 0xE853ABCB)
+NID(taiStopKernelModuleForUser, 0x1CB59A88)
+NID(taiUnloadKernelModule, 0x4C099402)
+NID(taiStopUnloadKernelModuleForUser, 0x4C1DF0F8)
+NID(taiMemcpyUserToKernel, 0xF6B202EE)
+NID(taiMemcpyKernelToUser, 0x89BB6025)
+NID(taiReloadConfig, 0x1873C71B)
+// Library "taihenForKernel"
+NID(taiHookFunctionExportForKernel, 0x45CCFFC0)
+NID(taiHookFunctionImportForKernel, 0x4519D882)
+NID(taiHookFunctionOffsetForKernel, 0x8F319D77)
+NID(taiGetModuleInfoForKernel, 0x6E931197)
+NID(taiHookReleaseForKernel, 0xD22678CA)
+NID(taiInjectAbsForKernel, 0xFC2F926F)
+NID(taiInjectDataForKernel, 0x9FA50038)
+NID(taiInjectReleaseForKernel, 0x51BB3EC9)
+NID(taiLoadPluginsForTitleForKernel, 0x9C4228EA)
+NID(taiReloadConfigForKernel, 0x6A549E56)
+// Library "taihenModuleUtils"
+NID(module_get_by_name_nid, 0x87E73973)
+NID(module_get_offset, 0x85FDDCB0)
+NID(module_get_export_func, 0xF28E9A36)
+NID(module_get_import_func, 0xF2AA3654)
 // Module "SceLibMono"
 // Library "SceLibMono"
 NID(mono_security_enable_core_clr, 0x02A867BC)
@@ -5205,7 +5268,7 @@ NID(sceNgsVoiceDefGetEqBussInternal, 0x251F58F5)
 NID(sceNgsVoiceDefGetMasterBussInternal, 0xE204946B)
 NID(sceNgsVoiceDefGetMixerBussInternal, 0xB8636646)
 NID(sceNgsVoiceDefGetPauserBussInternal, 0x96FE3B3C)
-NID(sceNgsVoiceDefGetPitchshiftBussInternal, 0x1876116F)
+NID(sceNgsVoiceDefGetPitchShiftBussInternal, 0x1876116F)
 NID(sceNgsVoiceDefGetReverbBussInternal, 0x6A637E1C)
 NID(sceNgsVoiceDefGetSasEmuVoiceInternal, 0x3051D319)
 NID(sceNgsVoiceDefGetScreamVoiceAT9Internal, 0x10457017)
@@ -6026,6 +6089,9 @@ NID(scePowerSetGpuXbarClockFrequency, 0xA7739DBE)
 NID(scePowerSetIdleTimerCount, 0xB11EF149)
 NID(scePowerSetUsingWireless, 0x4D695C1F)
 NID(scePowerUnregisterCallback, 0xDFA8BAF8)
+// Library "ScePowerForDriver"
+NID(kscePowerGetSysClockFrequency, 0xC63DACD5)
+NID(kscePowerSetSysClockFrequency, 0x0E333BEC)
 // Module "SceProcessmgr"
 // Library "SceProcessmgr"
 NID(_sceKernelExitProcessForUser, 0xC053DC6B)
@@ -6071,6 +6137,12 @@ NID(ksceKernelGetProcessTimeWideCore, 0x82D94BE9)
 NID(ksceKernelGetRemoteProcessTime, 0xC074EB31)
 NID(ksceKernelIsCDialogAvailable, 0x2F6020B7)
 NID(ksceKernelIsGameBudget, 0xF7A8BB25)
+// kubridge-required NIDs (SceProcessmgrForDriver)
+NID(ksceKernelAllocRemoteProcessHeap, 0x00B1CA0F)
+NID(ksceKernelFreeRemoteProcessHeap, 0x9C28EA9A)
+// Library "SceExcpmgrForKernel" (kubridge-required)
+NID(sceKernelRegisterExceptionHandler, 0x03499636)
+NID(sceKernelReturnFromException, 0xD17EEE40)
 // Module "ScePromoterUtil"
 // Library "ScePromoterUtil"
 NID(scePromoterUtilityCheckExist, 0xBA9871E5)
@@ -6917,6 +6989,11 @@ NID(ksceKernelCpuTrySpinLockSuspendIntrStoreLR, 0xF02467D1)
 NID(ksceKernelCpuUnlockResumeIntrStoreFlag, 0x9EC91017)
 NID(ksceKernelCpuUnlockStoreFlag, 0xCB8ABDF0)
 NID(ksceKernelCpuUnlockStoreLR, 0xD6ED0C46)
+// kubridge-required NIDs (SceSysmemForDriver 3.60 cache ops)
+NID(ksceKernelCpuDcacheWritebackInvalidateRange, 0x6BA2E51C)
+NID(ksceKernelCpuIcacheInvalidateRange, 0xF4C7F578)
+NID(ksceKernelCpuIcacheAndL2WritebackInvalidateRange, 0x19F17BD0)
+NID(ksceKernelCpuUnrestrictedMemcpy, 0x8C683DEC)
 // Library "SceDebugForDriver"
 NID(ksceDebugPrintKernelAssertion, 0x35A35322)
 NID(ksceDebugPrintKernelPanic, 0x391B5B74)
@@ -6945,6 +7022,8 @@ NID(ksceKernelSetDipsw, 0x82E45FBF)
 NID(ksceKernelInvokeProcEventHandler, 0x414CC813)
 NID(ksceKernelRegisterProcEventHandler, 0x2A43912D)
 NID(ksceKernelUnregisterProcEventHandler, 0x3DED57CC)
+// Library "SceQafMgrForDriver"
+NID(SceQafMgrForDriver_B9770A13, 0xB9770A13)
 // Library "SceSysclibForDriver"
 NID(__aeabi_idiv, 0x2518CD9E)
 NID(__aeabi_lcmp, 0x709077A1)

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ struct SpirvUtilFunctions {
     std::map<DataType, spv::Function *> pack_funcs;
     spv::Function *fetch_memory{ nullptr };
     spv::Function *unpack_fx10{ nullptr };
+    spv::Function *pack_fx10{ nullptr };
 
     // buffer_address_vec[i][1] contains the buffer pointer with an array of vec_i and stride 16 bytes
     // 0 in the last index is for the read buffer, 1 is for the write buffer
@@ -94,7 +95,7 @@ template <typename F>
 void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite, spv::Id iterator_limit, F body) {
     auto blocks = b.makeNewLoop();
     b.createStore(initial_value_ite, iterator);
-    b.createBranch(&blocks.head);
+    b.createBranch(true, &blocks.head);
 
     b.setBuildPoint(&blocks.head);
 
@@ -110,10 +111,10 @@ void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite,
     spv::Id add_to_me = b.createBinOp(spv::OpIAdd, b.makeIntegerType(32, true), b.createLoad(iterator, spv::NoPrecision), b.makeIntConstant(1));
     b.createStore(add_to_me, iterator);
 
-    b.createBranch(&blocks.continue_target);
+    b.createBranch(true, &blocks.continue_target);
 
     b.setBuildPoint(&blocks.continue_target);
-    b.createBranch(&blocks.head);
+    b.createBranch(true, &blocks.head);
 
     b.setBuildPoint(&blocks.merge);
     b.closeLoop();

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,10 @@ static vma::Allocator allocator = nullptr;
 
 void init(vma::Allocator vma_allocator) {
     allocator = vma_allocator;
+}
+
+void deinit() {
+    allocator = nullptr;
 }
 
 Image::Image() = default;
@@ -103,7 +107,15 @@ void Image::init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping, 
     if (!(usage & view_usages))
         return;
 
-    vk::ImageSubresourceRange range = (format == vk::Format::eD32SfloatS8Uint) ? vkutil::ds_subresource_range : vkutil::color_subresource_range;
+    vk::ImageSubresourceRange range;
+    if (format == vk::Format::eD16UnormS8Uint || format == vk::Format::eD24UnormS8Uint || format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eX8D24UnormPack32) {
+        range = vkutil::ds_subresource_range;
+    } else if (format == vk::Format::eS8Uint || format == vk::Format::eD16Unorm || format == vk::Format::eD32Sfloat) {
+        range = vkutil::d_subresource_range;
+    } else {
+        range = vkutil::color_subresource_range;
+    }
+
     vk::ImageViewCreateInfo view_info{
         .image = image,
         .viewType = vk::ImageViewType::e2D,

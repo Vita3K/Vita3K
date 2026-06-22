@@ -3,16 +3,19 @@ add_library(
 	STATIC
 	include/config/config.h
 	include/config/functions.h
+	include/config/settings.h
 	include/config/state.h
 	include/config/version.h
-	include/config/yaml.h
 	src/config.cpp
+	src/settings.cpp
 	version.cpp
 )
 
 configure_file(src/version.cpp.in version.cpp)
 
 target_include_directories(config PUBLIC include)
-target_link_libraries(config PUBLIC util yaml-cpp)
-target_link_libraries(config PRIVATE CLI11)
-target_link_libraries(config PRIVATE tracy)
+target_link_libraries(config PUBLIC input util)
+target_link_libraries(config PRIVATE CLI11 pugixml::pugixml yaml-cpp)
+if(TRACY_ENABLE_ON_CORE_COMPONENTS)
+	target_link_libraries(config PRIVATE tracy)
+endif()

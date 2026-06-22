@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ enum struct Target {
 // or the format / number of components of the sampled images, but we can't
 struct Hints {
     // used when symbols are stripped
+    // also used when scaled attribute formats are not supported and conversion must be done in the shader
     const std::vector<SceGxmVertexAttribute> *attributes;
     // color format of the surface, used for the opengl renderer when the GPU does not support features.support_unknown_format
     // I'm asking for the format instead of the base format as the swizzle might be used in future updates for surfaces with only 1 or 2 components
@@ -72,6 +73,6 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, const Target target, const Hints &hints, bool maskupdate = false,
     bool force_shader_debug = false, const std::function<bool(const std::string &ext, const std::string &dump)> &dumper = nullptr);
 
-void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath);
+void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath_utf8);
 
 } // namespace shader

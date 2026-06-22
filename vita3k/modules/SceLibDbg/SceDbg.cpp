@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ TRACY_MODULE_NAME(SceDbg);
 
 EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop, const char *component, module::vargs messages) {
     TRACY_FUNC(sceDbgAssertionHandler, filename, line, do_stop, component);
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
@@ -40,20 +40,18 @@ EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop
     LOG_INFO("file {}, line {}, {}", filename, line, buffer.data());
 
     if (do_stop)
-        emuenv.kernel.exit_delete_all_threads();
+        emuenv.kernel.request_process_exit(0);
 
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
     }
-
-    assert(!do_stop);
 
     return 0;
 }
 
 EXPORT(int, sceDbgLoggingHandler, const char *pFile, int line, int severity, const char *pComponent, module::vargs messages) {
     TRACY_FUNC(sceDbgLoggingHandler, pFile, line, severity, pComponent);
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;

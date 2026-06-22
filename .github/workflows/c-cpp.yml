@@ -1,194 +1,302 @@
-name: C/C++ CI
+name: Build CI
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
+env:
+  BUILD_CONFIG: Release
+  QT_VERSION: '6.11.0'
+  SCCACHE_GHA_ENABLED: "true"
 
 jobs:
-  format-check:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Format check
-        run: .github/format-check.sh
-
-  build:
-    needs: [format-check]
-    runs-on: ${{ matrix.os }}
+  desktop-build:
+    name: Desktop (${{ matrix.platform }})
+    runs-on: ${{ matrix.runs_on }}
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-latest, macos-latest]
-        config: [Release]
-        version: [zip, appimage]
         include:
-          - os: ubuntu-22.04
-            version: appimage
-            cache_path: ~/.ccache
-            extra_cmake_args: -DLINUXDEPLOY_COMMAND=/usr/local/bin/linuxdeploy-x86_64.AppImage
-            cmake_preset: linux-ninja-clang-appimage
-          - os: ubuntu-22.04
-            version: zip
-            cache_path: ~/.ccache
-            cmake_preset: linux-ninja-clang
+          - os: ubuntu-latest
+            runs_on: ubuntu-latest
+            platform: linux-x64
+            arch: x86_64
+            cmake_preset: ci-linux-clang-appimage
+            linuxdeploy_command: /usr/local/bin/linuxdeploy-x86_64.AppImage
+            cache_path: ''
+            qt_install_deps: 'true'
+
+          - os: ubuntu-24.04-arm
+            runs_on: ubuntu-24.04-arm
+            platform: linux-arm64
+            arch: aarch64
+            cmake_preset: ci-linux-clang-appimage
+            linuxdeploy_command: /usr/local/bin/linuxdeploy-aarch64.AppImage
+            cache_path: ''
+            qt_install_deps: 'true'
+
           - os: windows-latest
-            version: zip
+            runs_on: windows-latest
+            platform: windows-x64
+            arch: x86_64
+            cmake_preset: ci-windows-msvc
+            vcpkg_root: C:\vcpkg
+            vcpkg_triplet: x64-windows-static-md
             cache_path: |
-                C:\vcpkg\installed
-                C:\vcpkg\packages
-                C:\Users\runneradmin\AppData\Local\ccache
-            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
-            cmake_preset: windows-ninja
-          - os: macos-latest
-            version: zip
+              C:\vcpkg\installed
+              C:\vcpkg\packages
+            qt_install_deps: 'false'
+
+          - os: windows-11-arm
+            runs_on: windows-11-arm
+            platform: windows-arm64
+            cmake_preset: ci-windows-msys2-clang
+            msys2_env: CLANGARM64
+            cache_path: C:\msys2-ccache
+            qt_install_deps: 'false'
+
+          - os: macos-intel
+            platform: macos-x64
+            runs_on: macos-latest
+            cmake_preset: ci-macos-x64
             cache_path: ~/Library/Caches/ccache
-            extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="x86_64" -DFORCE_BUILD_OPENSSL_MAC=ON -DVITA3K_FORCE_CUSTOM_BOOST=ON
-            cmake_preset: macos-ninja
-        exclude:
-          - os: macos-latest
-            version: appimage
-          - os: windows-latest
-            version: appimage
+            qt_install_deps: 'false'
+
+          - os: macos-arm64
+            platform: macos-arm64
+            runs_on: macos-latest
+            cmake_preset: ci-macos-arm64
+            cache_path: ~/Library/Caches/ccache
+            qt_install_deps: 'false'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Set up build environment (macos-latest)
-        run: |
-          brew install ccache ninja create-dmg
-          echo "$(brew --prefix ccache)/libexec" >> $GITHUB_PATH
-          ccache --set-config=compiler_check=content
-        if: matrix.os == 'macos-latest'
-
-      - name: Set up build environment (ubuntu-22.04)
-        run: |
-          sudo add-apt-repository -y ppa:mhier/libboost-latest
-          sudo add-apt-repository universe
-          sudo apt update
-          sudo apt -y install ccache libboost-filesystem1.83-dev libboost-program-options1.83-dev libboost-system1.83-dev libgtk-3-dev libsdl2-dev ninja-build libfuse2
-        if: matrix.os == 'ubuntu-22.04'
-
-      - uses: ilammy/msvc-dev-cmd@v1
-        if: matrix.os == 'windows-latest'
- 
-      - uses: actions/cache@v4
+      - name: Restore cache
+        uses: actions/cache@v5
+        if: ${{ matrix.cache_path != '' }}
         with:
           path: ${{ matrix.cache_path }}
-          key: cache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
+          key: cache-${{ matrix.platform }}-${{ env.BUILD_CONFIG }}-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'cmake/**', '.ci/**', '.github/workflows/c-cpp.yml', 'vcpkg.json') }}
           restore-keys: |
-            cache-${{ matrix.os }}-${{ matrix.config }}-
+            cache-${{ matrix.platform }}-${{ env.BUILD_CONFIG }}-
 
-      - name: Set up build environment (windows-latest)
-        run: |
-          vcpkg install zlib:x64-windows-static-md boost-system:x64-windows-static-md boost-filesystem:x64-windows-static-md boost-program-options:x64-windows-static-md boost-icl:x64-windows-static-md boost-variant:x64-windows-static-md curl:x64-windows-static-md openssl:x64-windows-static-md
-          choco install ccache
-        if: matrix.os == 'windows-latest'
+      - name: Set up build environment (Linux)
+        run: bash ./.ci/setup-linux.sh ${{ matrix.arch }} with-appimage
+        if: startsWith(matrix.platform, 'linux-')
 
-      - name: Set up SDL 2.30.11 (ubuntu-22.04)
-        run: |
-          SDL2VER=2.30.11
-          if [[ ! -e ~/.ccache ]]; then
-            mkdir ~/.ccache
-          fi  
-          cd ~/.ccache
-          if [[ ! -e SDL2-${SDL2VER} ]]; then
-            curl -sLO https://libsdl.org/release/SDL2-${SDL2VER}.tar.gz
-            tar -xzf SDL2-${SDL2VER}.tar.gz
-            cd SDL2-${SDL2VER}
-            ./configure --prefix=/usr/local
-            make && cd ../
-            rm SDL2-${SDL2VER}.tar.gz
-          fi
-          sudo make -C SDL2-${SDL2VER} install
-        if: matrix.os == 'ubuntu-22.04'
+      - name: Set up build environment (macOS)
+        run: bash ./.ci/setup-macos.sh
+        if: startsWith(matrix.platform, 'macos-')
 
-      - name: Set up linuxdeploy (ubuntu-22.04, appimage)
-        run: |
-          if [[ ! -e linuxdeploy-x86_64.AppImage ]]; then
-            curl -sLO https://github.com/linuxdeploy/linuxdeploy/releases/latest/download/linuxdeploy-x86_64.AppImage
-          fi
-          sudo cp -f linuxdeploy-x86_64.AppImage /usr/local/bin/
-          sudo chmod +x /usr/local/bin/linuxdeploy-x86_64.AppImage
-        if: matrix.os == 'ubuntu-22.04' && matrix.version == 'appimage'
+      - name: Set up build environment (Windows MSVC)
+        shell: pwsh
+        env:
+          VCPKG_ROOT: ${{ matrix.vcpkg_root }}
+        run: .\.ci\setup-windows-msvc.ps1 -VcpkgTriplet '${{ matrix.vcpkg_triplet }}'
+        if: matrix.platform == 'windows-x64'
 
-      - name: Ccache setup
-        run: ccache -z
-
-      - name: CMake
-        run: |
-          cmake ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
-          cmake --build build/${{ matrix.cmake_preset }} --config ${{ matrix.config }}
-
-      - name: CTest
-        working-directory: build/${{ matrix.cmake_preset }}
-        run: ctest --build-config ${{ matrix.config }} --output-on-failure
-
-      - name: Compute git short sha
-        shell: bash
-        run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
-      - name: Set Build Variable
-        shell: bash
-        run: echo "build_variable=$(git rev-list HEAD --count)" >> $GITHUB_ENV
-        if: matrix.os == 'ubuntu-22.04'
-
-      - name: Bundle Shared Objects
-        id: bundle_shared_objects
-        run: |
-            cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
-            cp /usr/lib/x86_64-linux-gnu/libssl.so.3 ./libssl.so.3
-            cp /usr/lib/x86_64-linux-gnu/libcrypto.so.3 ./libcrypto.so.3
-        if: matrix.os == 'ubuntu-22.04'
-
-      - name: Ccache statistics
-        run: ccache -s  
-        
-      - name: Create DMG (macos-latest)
-        run: |
-          cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
-          create-dmg \
-            --volname "Vita3K Installer" \
-            --volicon Vita3K.app/Contents/Resources/Vita3K.icns \
-            --window-size 500 300 \
-            --icon-size 100 \
-            --icon Vita3K.app 120 115 \
-            --app-drop-link 360 115 \
-            vita3k-${{ env.git_short_sha }}-${{ matrix.version }}-${{ matrix.os }}.dmg \
-            Vita3K.app
-          rm -rf Vita3K.app
-        if: matrix.os == 'macos-latest'
-
-      - name: Clean appimage build (ubuntu-22.04, appimage)
-        run: |
-          cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
-          cp -f *AppImage* ../
-          rm -rf ./*
-          cp -f ../*AppImage* ./
-          rm -f ../*AppImage*
-        if: matrix.os == 'ubuntu-22.04' && matrix.version == 'appimage'
-
-      - uses: actions/upload-artifact@v4
+      - uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
-          name: vita3k-${{ env.git_short_sha }}-${{ matrix.version }}-${{ matrix.os }}
-          # path is set up to be <binary_dir>/bin/<config_type> since that's how multi-config
-          # generators work on CMake
-          path: build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
+          arch: ${{ matrix.arch }}
+        if: matrix.platform == 'windows-x64'
 
-    outputs:
-      BuildTag: ${{ env.build_variable }}
-      ShortSHA: ${{ env.git_short_sha }}
+      - uses: mozilla-actions/sccache-action@v0.0.10
+        if: startsWith(matrix.platform, 'linux-') || matrix.platform == 'windows-x64'
+        with:
+          disable_annotations: true
+
+      - name: Set up MSYS2 (Windows ARM)
+        uses: msys2/setup-msys2@v2
+        if: matrix.platform == 'windows-arm64'
+        with:
+          msystem: ${{ matrix.msys2_env }}
+          update: true
+          cache: true
+          install: |
+            git
+          pacboy: |
+            clang:p
+            ccache:p
+            cmake:p
+            lld:p
+            ninja:p
+            boost:p
+            openssl:p
+            curl:p
+            zlib:p
+            qt6-base:p
+            qt6-multimedia:p
+            qt6-svg:p
+            qt6-tools:p
+
+      - name: Reset ccache statistics
+        run: ccache -z
+        if: startsWith(matrix.platform, 'macos-')
+
+      - name: Install Qt 6.11.0 (Windows MSVC)
+        uses: jurplel/install-qt-action@v4
+        if: matrix.platform == 'windows-x64'
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtmultimedia
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          cache: true
+          install-deps: ${{ matrix.qt_install_deps }}
+          aqtsource: git+https://github.com/miurahr/aqtinstall.git@f383b3c7d9658e881bd8ce8810057393bd934ee1
+
+      - name: Install Qt 6.11.0
+        uses: jurplel/install-qt-action@v4
+        if: matrix.platform != 'windows-arm64' && matrix.platform != 'windows-x64'
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtmultimedia
+          cache: true
+          install-deps: ${{ matrix.qt_install_deps }}
+
+      - name: Build desktop target (Linux/macOS)
+        env:
+          VITA3K_LINUXDEPLOY_COMMAND: ${{ matrix.linuxdeploy_command }}
+        run: bash ./.ci/build-desktop.sh --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
+        if: startsWith(matrix.platform, 'linux-') || startsWith(matrix.platform, 'macos-')
+
+      - name: Build desktop target (Windows MSVC)
+        shell: bash
+        env:
+          VCPKG_ROOT: ${{ matrix.vcpkg_root }}
+        run: bash ./.ci/build-desktop.sh --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
+        if: matrix.platform == 'windows-x64'
+
+      - name: Build desktop target (Windows ARM MSYS2)
+        shell: msys2 {0}
+        run: bash ./.ci/build-windows-msys2.sh --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
+        if: matrix.platform == 'windows-arm64'
+
+      - name: Compute artifact paths
+        shell: bash
+        run: |
+          echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=vita3k-$(git rev-parse --short HEAD)-${{ matrix.platform }}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_DIR=artifacts/vita3k-$(git rev-parse --short HEAD)-${{ matrix.platform }}" >> "$GITHUB_ENV"
+
+      - name: Stage desktop artifact (Linux/macOS)
+        run: bash ./.ci/package-desktop.sh --platform ${{ matrix.platform }} --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }} --output-dir "${{ env.ARTIFACT_DIR }}"
+        if: startsWith(matrix.platform, 'linux-') || startsWith(matrix.platform, 'macos-')
+
+      - name: Stage desktop artifact (Windows MSVC)
+        shell: bash
+        run: bash ./.ci/package-desktop.sh --platform ${{ matrix.platform }} --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }} --output-dir "${{ env.ARTIFACT_DIR }}"
+        if: matrix.platform == 'windows-x64'
+
+      - name: Stage desktop artifact (Windows ARM MSYS2)
+        shell: msys2 {0}
+        run: bash ./.ci/package-desktop.sh --platform ${{ matrix.platform }} --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }} --output-dir "${{ env.ARTIFACT_DIR }}"
+        if: matrix.platform == 'windows-arm64'
+
+      - name: Print ccache statistics
+        run: ccache -s
+        if: startsWith(matrix.platform, 'macos-')
+
+      - name: Print sccache statistics
+        run: sccache --show-stats
+        if: startsWith(matrix.platform, 'linux-') || matrix.platform == 'windows-x64'
+
+      - name: Upload desktop artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_DIR }}
+
+  android-build:
+    name: Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Restore native dependency cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            /usr/local/share/vcpkg/installed
+            /usr/local/share/vcpkg/packages
+          key: cache-android-native-${{ hashFiles('CMakeLists.txt', 'cmake/**', '.ci/**', 'android/app/build.gradle', 'vcpkg.json') }}
+          restore-keys: |
+            cache-android-native-
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          add-job-summary: on-failure
+          cache-provider: basic
+          validate-wrappers: false
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@v4
+
+      - name: Set up Android build environment
+        env:
+          VCPKG_ROOT: /usr/local/share/vcpkg
+        run: bash ./.ci/setup-android.sh
+
+      - uses: hendrikmuhs/ccache-action@v1.2.23
+
+      - name: Decode Android keystore
+        env:
+          KEYSTORE_ENCODED: ${{ secrets.KEYSTORE }}
+        run: |
+          if [ -n "$KEYSTORE_ENCODED" ]; then
+            echo "$KEYSTORE_ENCODED" | base64 --decode > /home/runner/keystore.jks
+          fi
+
+      - name: Compute artifact paths
+        shell: bash
+        run: |
+          echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=vita3k-$(git rev-parse --short HEAD)-android" >> "$GITHUB_ENV"
+          echo "ARTIFACT_DIR=artifacts/vita3k-$(git rev-parse --short HEAD)-android" >> "$GITHUB_ENV"
+
+      - name: Build Android target
+        env:
+          SIGNING_STORE_PATH: /home/runner/keystore.jks
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          VCPKG_ROOT: /usr/local/share/vcpkg
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+        run: bash ./.ci/build-android.sh "${{ env.ARTIFACT_DIR }}"
+
+      - name: Print Android ccache statistics
+        run: ccache -s
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_DIR }}
 
   create-release:
-    needs: [build]
-    strategy:
-      fail-fast: false
-      matrix:
-        repo: [master, store]
-    runs-on: ubuntu-22.04
+    needs: [desktop-build, android-build]
+    runs-on: ubuntu-latest
     concurrency:
       group: create-release
       cancel-in-progress: false
@@ -196,91 +304,49 @@ jobs:
       github.ref == 'refs/heads/master' &&
       github.repository == 'Vita3K/Vita3K'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
 
-      - name: Get Build Variable
-        run: echo "Build_Variable=${{ needs.build.outputs.BuildTag }}" >> $GITHUB_ENV
-
-      - name: Get Git Short SHA
-        run: echo "Short_SHA=${{ needs.build.outputs.ShortSHA }}" >> $GITHUB_ENV
-
-      - name: Get latest commit message
-        run: echo "Latest_Commit_Message=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
+      - name: Get commit info
+        run: |
+          echo "GIT_SHORT_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "BUILD_VARIABLE=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+          echo "LAST_COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')" >> "$GITHUB_ENV"
 
       - name: Get last committer
-        run: |
-          COMMITTER_NAME=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          https://api.github.com/repos/Vita3K/Vita3K/commits/${{ github.sha }} \
-          | jq -r '.commit.author.name')
-          echo "Commiter_Name=$COMMITTER_NAME" >> $GITHUB_ENV
-
-      - name: Upload
-        shell: bash
-        run: |
-          mkdir artifacts/
-          files=$(find . \( -name "*latest" -o -name "*22.04" \))
-          for f in $files; do
-            if [[ $f == *macos-latest ]]
-            then
-              cp $(basename $f)/$(basename $f).dmg artifacts/macos-latest.dmg
-            else
-              if [[ $f == *ubuntu-22.04 ]]
-              then
-                if [[ $f == *appimage* ]]
-                then
-                  cp $(basename $f)/*.AppImage* artifacts/
-                else
-                  rm -f $(basename $f)/*.AppImage*
-                  echo "Compressing $f"
-                  (cd $(basename $f) && zip -r ../artifacts/$(basename $f  | cut -d "-" -f 4)-latest.zip *)
-                fi
-              else
-                echo "Compressing $f"
-                (cd $(basename $f) && zip -r ../artifacts/$(basename $f  | cut -d "-" -f 4)-latest.zip *)
-              fi
-            fi
-          done
-          ls -al artifacts/
-          wget -c https://github.com/tcnksm/ghr/releases/download/v0.17.0/ghr_v0.17.0_linux_amd64.tar.gz
-          tar xfv ghr_v0.17.0_linux_amd64.tar.gz
-          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate -n 'Automatic CI builds' -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" continuous artifacts/
-        if: matrix.repo == 'master'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Make release on store repository
-        shell: bash
         run: |
-          mkdir artifacts/
-          files=$(find . \( -name "*latest" -o -name "*22.04" \))
-          for f in $files; do
-            if [[ $f == *macos-latest ]]
-            then
-              cp $(basename $f)/$(basename $f).dmg artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_macos.dmg
-            else
-              if [[ $f == *ubuntu-22.04 ]]
-              then
-                if [[ $f == *appimage* ]]
-                then
-                  cp $(basename $f)/*.AppImage* artifacts/
-                else
-                  rm -f $(basename $f)/*.AppImage*
-                  echo "Compressing $f"
-                  7z a -mx=9 artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_ubuntu.7z $(basename $f)
-                fi
-              else
-                echo "Compressing $f"
-                7z a -mx=9 artifacts/vita3k-${{ env.Build_Variable }}-${{ env.Short_SHA }}_windows.7z $(basename $f)
-              fi
-            fi
-          done
-          ls -al artifacts/
-          wget -c https://github.com/tcnksm/ghr/releases/download/v0.17.0/ghr_v0.17.0_linux_amd64.tar.gz
-          tar xfv ghr_v0.17.0_linux_amd64.tar.gz
-          ghr_v0.17.0_linux_amd64/ghr -u Vita3K -r Vita3K-builds  -n "Build: ${{ env.Build_Variable }}" -b "$(printf "Corresponding commit: [${{ env.Latest_Commit_Message }}](https://github.com/Vita3K/Vita3K/commit/${{ github.sha }}) (${{ env.Commiter_Name }})")" ${{ env.Build_Variable }} artifacts/
-        if: matrix.repo == 'store'
-        env:
-          GITHUB_TOKEN: ${{ secrets.STORE_TOKEN }}
+          COMMITTER=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }} \
+          | jq -r '.commit.author.name')
+          echo "COMMITTER_NAME=$COMMITTER" >> "$GITHUB_ENV"
+
+      - name: Prepare release artifacts
+        run: bash ./.ci/release-collect.sh
+
+      - name: Upload to store repository
+        uses: tcnksm/ghr@v0
+        with:
+          tag: ${{ env.BUILD_VARIABLE }}
+          path: artifacts-store/
+          owner: ${{ github.repository_owner }}
+          repository: Vita3K-builds
+          name: "Build: ${{ env.BUILD_VARIABLE }}"
+          body: "Corresponding commit: [${{ env.LAST_COMMIT_MESSAGE }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) (${{ env.COMMITTER_NAME }})"
+          token: ${{ secrets.STORE_TOKEN }}
+
+      - name: Upload to master repository
+        uses: tcnksm/ghr@v0
+        with:
+          tag: continuous
+          path: artifacts-master/
+          delete: "true"
+          owner: ${{ github.repository_owner }}
+          repository: Vita3K
+          name: "Automatic CI builds"
+          body: "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.BUILD_VARIABLE }}"

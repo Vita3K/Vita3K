@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,7 +17,11 @@
 
 #include <module/module.h>
 
+#include <kernel/state.h>
+
 #include "../SceDisplay/SceDisplay.h"
+
+TRACY_MODULE_NAME(SceVshBridge);
 
 EXPORT(int, _vshAppMgrAcInstGetAcdirParam) {
     return UNIMPLEMENTED();
@@ -163,8 +167,17 @@ EXPORT(int, _vshKernelGetCompiledSdkVersionByPid) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _vshKernelSearchModuleByName) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, _vshKernelSearchModuleByName, const char *module_name, const void *buffer) {
+    TRACY_FUNC(_vshKernelSearchModuleByName, module_name, buffer);
+    if (!module_name)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+    for (const auto &[uid, mod] : emuenv.kernel.loaded_modules) {
+        if (strcmp(mod->info.module_name, module_name) == 0)
+            return uid;
+    }
+    return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
 }
 
 EXPORT(int, _vshKernelShutdownSystem) {

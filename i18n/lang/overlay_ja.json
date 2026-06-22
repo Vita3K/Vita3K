@@ -1,0 +1,104 @@
+{
+  "common.cancel": {
+    "message": "キャンセル"
+  },
+  "common.yes": {
+    "message": "はい"
+  },
+  "common.no": {
+    "message": "いいえ"
+  },
+  "common.delete": {
+    "message": "削除"
+  },
+  "common.submit": {
+    "message": "確認"
+  },
+  "common.please_wait": {
+    "message": "しばらくお待ちください..."
+  },
+  "common.an_error_occurred": {
+    "message": "エラーが起きました。\nエラーコード：{}"
+  },
+  "common.could_not_load": {
+    "message": "ロードできませんでした。"
+  },
+  "common.could_not_save": {
+    "message": "セーブできませんでした。"
+  },
+  "common.file_corrupted": {
+    "message": "ファイルが壊れています。"
+  },
+  "common.microphone_disabled": {
+    "message": "マイクを有効にしてください。"
+  },
+  "dialog.save_data.save.title": {
+    "message": "セーブ"
+  },
+  "dialog.save_data.load.title": {
+    "message": "ロード"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "セーブ中です..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "ロード中です..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "セーブしました。"
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "ロードしました。"
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "削除しました。"
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "新しいセーブデータ"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "セーブデータがありません。"
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "データをセーブしますか？"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "このセーブデータをロードしますか？"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "このセーブデータを削除しますか？"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "このセーブデータを上書きしますか？"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "セーブをキャンセルしますか？"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "ロードをキャンセルしますか？"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "削除をキャンセルしますか？"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "セーブ中です...\n電源を切ったり、アプリケーションを終了したりしないでください。"
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "セーブできませんでした。\nメモリーカードの空き容量が不足しています。アプリケーションの進み具合をセーブするには、{}以上の空き容量を用意する必要があります。\n\n空き容量を用意するには、PSボタンを押してこのアプリケーションを一時停止し、他のアプリケーションやコンテンツを削除してください。"
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "メモリーカードの空き容量が不足しています。\nアプリケーションを続けるには、{}以上の空き容量を用意する必要があります。\n\nPSボタンを押してこのアプリケーションを一時停止し、他のアプリケーションやコンテンツを削除してください。"
+  },
+  "dialog.save_data.info.details": {
+    "message": "詳細"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "更新日"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "アプリケーションを始める準備中です..."
+  },
+  "overlay.trophy_earned": {
+    "message": "トロフィーを獲得しました！"
+  }
+}

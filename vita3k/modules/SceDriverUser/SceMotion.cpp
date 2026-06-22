@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,7 +39,6 @@ EXPORT(int, sceMotionGetBasicOrientation, SceFVector3 *basicOrientation) {
     }
 
     std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
-    SceFVector3 accelerometer = get_acceleration(emuenv.motion);
 
     *basicOrientation = get_basic_orientation(emuenv.motion);
 
@@ -83,7 +82,7 @@ EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numR
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
     }
 
-    if (emuenv.ctrl.has_motion_support && !emuenv.cfg.disable_motion) {
+    if ((emuenv.ctrl.has_motion_support || emuenv.motion.has_device_motion_support) && !emuenv.cfg.disable_motion) {
         std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
         sensorState->accelerometer = get_acceleration(emuenv.motion);
         sensorState->gyro = get_gyroscope(emuenv.motion);
@@ -120,7 +119,7 @@ EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
     }
 
-    if (emuenv.ctrl.has_motion_support && !emuenv.cfg.disable_motion) {
+    if ((emuenv.ctrl.has_motion_support || emuenv.motion.has_device_motion_support) && !emuenv.cfg.disable_motion) {
         std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
         motionState->timestamp = emuenv.motion.last_accel_timestamp;
 
@@ -264,7 +263,7 @@ EXPORT(int, sceMotionStartSampling) {
         return SCE_MOTION_ERROR_ALREADY_SAMPLING;
     }
 
-    emuenv.motion.is_sampling = true;
+    emuenv.motion.start_sensor_sampling();
     return SCE_MOTION_OK;
 }
 
@@ -279,7 +278,7 @@ EXPORT(int, sceMotionStopSampling) {
         return SCE_MOTION_ERROR_NOT_SAMPLING;
     }
 
-    emuenv.motion.is_sampling = false;
+    emuenv.motion.stop_sensor_sampling();
     return SCE_MOTION_OK;
 }
 

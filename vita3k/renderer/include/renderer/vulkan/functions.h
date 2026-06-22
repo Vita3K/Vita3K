@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,14 +17,14 @@
 
 #pragma once
 
-#include "state.h"
+#include "renderer/vulkan/state.h"
 
 struct Config;
 struct MemState;
 
 namespace renderer::vulkan {
 
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
+bool create(std::unique_ptr<renderer::State> &state, const Config &config);
 
 bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem);
 bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
@@ -40,7 +40,7 @@ void new_frame(VKContext &context);
 void signal_sync_object(VKState &state, SceGxmSyncObject *sync_object, uint32_t timestamp);
 
 void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const FeatureState &features);
-void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, Ptr<uint8_t> data);
+void set_uniform_buffer(VKContext &context, MemState &mem, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, Ptr<uint8_t> data);
 
 void sync_clipping(VKContext &context);
 void sync_stencil_func(VKContext &context, const bool is_back);

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <renderer/gl/overlay_renderer.h>
 #include <renderer/gl/screen_render.h>
 #include <renderer/gl/surface_cache.h>
 #include <renderer/state.h>
@@ -24,15 +25,12 @@
 
 #include "types.h"
 
-#include <SDL.h>
-
+#include <chrono>
 #include <string_view>
 #include <vector>
 
 namespace renderer::gl {
 struct GLState : public renderer::State {
-    GLContextPtr context;
-
     ShaderCache fragment_shader_cache;
     ShaderCache vertex_shader_cache;
     ProgramCache program_cache;
@@ -41,17 +39,22 @@ struct GLState : public renderer::State {
     GLSurfaceCache surface_cache;
 
     ScreenRenderer screen_renderer;
+    OverlayRenderer overlay_renderer;
+
+    bool context_is_current = false;
 
     bool init() override;
+    void cleanup() override;
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
 
     TextureCache *get_texture_cache() override {
         return &texture_cache;
     }
 
-    void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, DisplayState &display,
-        const GxmState &gxm, MemState &mem) override;
-    void swap_window(SDL_Window *window) override;
+    void render_frame(DisplayState &display, const GxmState &gxm, MemState &mem) override;
+    void swap_window() override;
+    bool set_current() override;
+    void done_current() override;
     std::vector<uint32_t> dump_frame(DisplayState &display, uint32_t &width, uint32_t &height) override;
 
     int get_supported_filters() override;

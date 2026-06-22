@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -151,7 +151,7 @@ bool USSETranslatorVisitor::vmov(
 
     // Recompile
 
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     if ((move_data_type == DataType::F16) || (move_data_type == DataType::F32)) {
         set_repeat_multiplier(2, 2, 2, 2);
@@ -463,7 +463,7 @@ bool USSETranslatorVisitor::vpck(
     }
 
     // Recompile
-    m_b.setLine(m_recompiler.cur_pc);
+    m_b.setDebugSourceLocation(m_recompiler.cur_pc, nullptr);
 
     // Doing this extra dest type check for future change in case I'm wrong (pent0)
     if (is_integer_data_type(inst.opr.dest.type)) {
@@ -617,7 +617,7 @@ bool USSETranslatorVisitor::vldst(
         }
 
         to_store.num = dest_n;
-        if (m_features.support_memory_mapping)
+        if (m_features.enable_memory_mapping)
             to_store.type = type_to_ldst;
         else
             to_store.type = DataType::F32;
@@ -755,7 +755,7 @@ bool USSETranslatorVisitor::vldst(
 
     spv::Id base = m_b.createBinOp(spv::OpIAdd, i32_type, source_0, source_1);
 
-    if (m_features.support_memory_mapping) {
+    if (m_features.enable_memory_mapping) {
         utils::buffer_address_access(m_b, m_spirv_params, m_util_funcs, m_features, to_store, to_store_offset, base, get_data_type_size(type_to_ldst), current_number_to_fetch, -1, is_store);
     } else {
         if (is_store) {

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 #include <util/tracy.h>
 #include <util/types.h>
 
-#include <SDL_power.h>
+#include <SDL3/SDL_power.h>
 
 #include <climits>
 

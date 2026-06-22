@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ namespace renderer::gl {
 bool ScreenRenderer::init(const fs::path &static_assets) {
     glGenTextures(1, &m_screen_texture);
 
-    fs::path builtin_shaders_path = static_assets / "shaders-builtin/opengl";
+    const auto builtin_shaders_path = static_assets / "shaders-builtin/opengl";
 
     const auto render_main_path_vert = builtin_shaders_path / "render_main.vert";
     const auto render_main_path_frag = builtin_shaders_path / "render_main.frag";
@@ -78,13 +78,13 @@ bool ScreenRenderer::init(const fs::path &static_assets) {
     );
     glEnableVertexAttribArray(uvAttrib);
 
-    glClearColor(0.125490203f, 0.698039234f, 0.666666687f, 1.0f);
-    glClearDepth(1.0);
+    glClearColor(32.0f / 255.0f, 178.0f / 255.0f, 170.0f / 255.0f, 1.0f);
+    glClearDepthf(1.0f);
 
     return true;
 }
 
-void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size) {
+void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size, GLuint default_fbo) {
     // Code for backup and restore is taken from ImGui project ImGui_ImplSdlGL3_RenderDrawData
     // Backup GL state
     GLint last_framebuffer;
@@ -104,8 +104,10 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_element_array_buffer);
     GLint last_vertex_array;
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
+#ifndef __ANDROID__
     GLint last_polygon_mode[2];
     glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
+#endif
     GLint last_viewport[4];
     glGetIntegerv(GL_VIEWPORT, last_viewport);
     GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
@@ -115,7 +117,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     GLboolean last_color_mask[4];
     glGetBooleanv(GL_COLOR_WRITEMASK, last_color_mask);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, default_fbo);
     glDisable(GL_SCISSOR_TEST);
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
@@ -126,7 +128,7 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
         static_cast<GLsizei>(viewport_size.y));
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClearDepth(1.0);
+    glClearDepthf(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // should not be needed, but just in case
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -205,7 +207,9 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     }
 
     glBindTexture(GL_TEXTURE_2D, texture);
+#ifndef __ANDROID__
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     // Restore modified GL state
@@ -233,8 +237,10 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
         glEnable(GL_SCISSOR_TEST);
     else
         glDisable(GL_SCISSOR_TEST);
+#ifndef __ANDROID__
     glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
-    glViewport(last_viewport[0], last_viewport[1], last_viewport[2], last_viewport[3]);
+#endif
+    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
     glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
 }
 
@@ -247,6 +253,9 @@ void ScreenRenderer::destroy() {
 
     glDeleteTextures(1, &m_screen_texture);
     m_screen_texture = 0;
+
+    m_render_shader_nofilter.reset();
+    m_render_shader_fxaa.reset();
 }
 
 ScreenRenderer::~ScreenRenderer() {

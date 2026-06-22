@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,14 +15,12 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#version 410 core
-
 in vec2 uv_frag;
 
 uniform sampler2D fb;
 
-out vec3 color_frag;
+out vec4 color_frag;
 
 void main() {
-	color_frag = texture(fb, uv_frag).rgb;
+	color_frag = vec4(texture(fb, uv_frag).rgb, 1.0);
 }

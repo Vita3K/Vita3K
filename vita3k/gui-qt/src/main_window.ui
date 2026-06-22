@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="install_firmware_action"/>
+    <addaction name="install_pkg_action"/>
+    <addaction name="install_zip_action"/>
+    <addaction name="install_license_action"/>
+    <addaction name="separator"/>
+   </widget>
+   <widget class="QMenu" name="menuEmulation">
+    <property name="title">
+     <string>Emulation</string>
+    </property>
+    <addaction name="pause_action"/>
+    <addaction name="stop_action"/>
+   </widget>
+   <widget class="QMenu" name="menuConfiguration">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="settings_core_action"/>
+    <addaction name="settings_cpu_action"/>
+    <addaction name="settings_gpu_action"/>
+    <addaction name="settings_audio_action"/>
+    <addaction name="settings_camera_action"/>
+    <addaction name="settings_system_action"/>
+    <addaction name="settings_emulator_action"/>
+    <addaction name="settings_gui_action"/>
+    <addaction name="settings_network_action"/>
+    <addaction name="settings_debug_action"/>
+    <addaction name="separator"/>
+    <addaction name="controls_action"/>
+   </widget>
+   <widget class="QMenu" name="menuDebug">
+    <property name="title">
+     <string>Debug</string>
+    </property>
+    <addaction name="debug_threads_action"/>
+    <addaction name="debug_mutexes_action"/>
+    <addaction name="debug_lw_mutexes_action"/>
+    <addaction name="debug_condvars_action"/>
+    <addaction name="debug_lw_condvars_action"/>
+    <addaction name="debug_semaphores_action"/>
+    <addaction name="debug_event_flags_action"/>
+    <addaction name="debug_allocations_action"/>
+    <addaction name="debug_disassembly_action"/>
+   </widget>
+   <widget class="QMenu" name="menuManage">
+    <property name="title">
+     <string>Manage</string>
+    </property>
+    <addaction name="vita_themes_action"/>
+    <addaction name="trophy_collection_action"/>
+    <addaction name="user_management_action"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="show_apps_list_action"/>
+    <addaction name="show_log_action"/>
+    <addaction name="separator"/>
+    <addaction name="show_title_bars_action"/>
+    <addaction name="show_toolbar_action"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="welcome_dialog_action"/>
+    <addaction name="separator"/>
+    <addaction name="check_for_updates_action"/>
+    <addaction name="separator"/>
+    <addaction name="about_qt_action"/>
+    <addaction name="about_action"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEmulation"/>
+   <addaction name="menuConfiguration"/>
+   <addaction name="menuDebug"/>
+   <addaction name="menuManage"/>
+   <addaction name="menuView"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="contextMenuPolicy">
+    <enum>Qt::ContextMenuPolicy::PreventContextMenu</enum>
+   </property>
+   <property name="windowTitle">
+    <string>Tool Bar</string>
+   </property>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::ToolBarArea::TopToolBarArea</set>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>30</width>
+     <height>30</height>
+    </size>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonStyle::ToolButtonTextUnderIcon</enum>
+   </property>
+   <property name="floatable">
+    <bool>false</bool>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="toolbar_open"/>
+   <addaction name="toolbar_refresh"/>
+   <addaction name="toolbar_fullscreen"/>
+   <addaction name="toolbar_stop"/>
+   <addaction name="toolbar_start"/>
+   <addaction name="toolbar_config"/>
+   <addaction name="toolbar_controls"/>
+  </widget>
+  <action name="toolbar_open">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="toolbar_refresh">
+   <property name="text">
+    <string>Refresh</string>
+   </property>
+  </action>
+  <action name="toolbar_stop">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Stop</string>
+   </property>
+  </action>
+  <action name="toolbar_start">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Play</string>
+   </property>
+  </action>
+  <action name="toolbar_config">
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="toolbar_fullscreen">
+   <property name="text">
+    <string>Fullscreen</string>
+   </property>
+  </action>
+  <action name="toolbar_controls">
+   <property name="text">
+    <string>Controls</string>
+   </property>
+  </action>
+  <action name="check_for_updates_action">
+   <property name="text">
+    <string>Check for updates</string>
+   </property>
+  </action>
+  <action name="about_action">
+   <property name="text">
+    <string>About Vita3k</string>
+   </property>
+  </action>
+  <action name="about_qt_action">
+   <property name="text">
+    <string>About Qt</string>
+   </property>
+  </action>
+  <action name="install_firmware_action">
+   <property name="text">
+    <string>Install Firmware (.PUP)</string>
+   </property>
+  </action>
+  <action name="install_pkg_action">
+   <property name="text">
+    <string>Install Package (.pkg)</string>
+   </property>
+  </action>
+  <action name="install_zip_action">
+   <property name="text">
+    <string>Install Archive (.zip / .vpk)</string>
+   </property>
+  </action>
+  <action name="install_license_action">
+   <property name="text">
+    <string>Install License (.rif / work.bin)</string>
+   </property>
+  </action>
+  <action name="pause_action">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Pause</string>
+   </property>
+  </action>
+  <action name="stop_action">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Stop</string>
+   </property>
+  </action>
+  <action name="trophy_collection_action">
+   <property name="text">
+    <string>Trophy Collection</string>
+   </property>
+  </action>
+  <action name="vita_themes_action">
+   <property name="text">
+    <string>Vita Themes</string>
+   </property>
+  </action>
+  <action name="user_management_action">
+   <property name="text">
+    <string>User Management</string>
+   </property>
+  </action>
+  <action name="settings_core_action">
+   <property name="text">
+    <string>Core</string>
+   </property>
+  </action>
+  <action name="settings_cpu_action">
+   <property name="text">
+    <string>CPU</string>
+   </property>
+  </action>
+  <action name="settings_gpu_action">
+   <property name="text">
+    <string>Graphics</string>
+   </property>
+  </action>
+  <action name="settings_audio_action">
+   <property name="text">
+    <string>Audio</string>
+   </property>
+  </action>
+  <action name="settings_camera_action">
+   <property name="text">
+    <string>Camera</string>
+   </property>
+  </action>
+  <action name="settings_system_action">
+   <property name="text">
+    <string>System</string>
+   </property>
+  </action>
+  <action name="settings_emulator_action">
+   <property name="text">
+    <string>Emulator</string>
+   </property>
+  </action>
+  <action name="settings_gui_action">
+   <property name="text">
+    <string>Interface</string>
+   </property>
+  </action>
+  <action name="settings_network_action">
+   <property name="text">
+    <string>Network</string>
+   </property>
+  </action>
+  <action name="settings_debug_action">
+   <property name="text">
+    <string>Debug</string>
+   </property>
+  </action>
+  <action name="controls_action">
+   <property name="text">
+    <string>Controls</string>
+   </property>
+  </action>
+  <action name="show_toolbar_action">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Tool Bar</string>
+   </property>
+  </action>
+  <action name="show_title_bars_action">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Title Bars</string>
+   </property>
+  </action>
+  <action name="show_apps_list_action">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Apps List</string>
+   </property>
+  </action>
+  <action name="show_log_action">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Log</string>
+   </property>
+  </action>
+  <action name="welcome_dialog_action">
+   <property name="text">
+    <string>View Welcome Dialog</string>
+   </property>
+  </action>
+  <action name="debug_threads_action">
+   <property name="text">
+    <string>Threads</string>
+   </property>
+  </action>
+  <action name="debug_mutexes_action">
+   <property name="text">
+    <string>Mutexes</string>
+   </property>
+  </action>
+  <action name="debug_lw_mutexes_action">
+   <property name="text">
+    <string>Lightweight Mutexes</string>
+   </property>
+  </action>
+  <action name="debug_condvars_action">
+   <property name="text">
+    <string>Condition Variables</string>
+   </property>
+  </action>
+  <action name="debug_lw_condvars_action">
+   <property name="text">
+    <string>Lightweight Condition Variables</string>
+   </property>
+  </action>
+  <action name="debug_semaphores_action">
+   <property name="text">
+    <string>Semaphores</string>
+   </property>
+  </action>
+  <action name="debug_event_flags_action">
+   <property name="text">
+    <string>Event Flags</string>
+   </property>
+  </action>
+  <action name="debug_allocations_action">
+   <property name="text">
+    <string>Memory Allocations</string>
+   </property>
+  </action>
+  <action name="debug_disassembly_action">
+   <property name="text">
+    <string>Disassembly</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

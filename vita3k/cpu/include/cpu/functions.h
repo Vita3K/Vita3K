@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 
 struct MemState;
 
-CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol);
+CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem);
 int run(CPUState &state);
 int step(CPUState &state);
 void stop(CPUState &state);
@@ -58,9 +58,7 @@ void write_cpsr(CPUState &state, uint32_t value);
 uint32_t stack_alloc(CPUState &state, size_t size);
 uint32_t stack_free(CPUState &state, size_t size);
 
-ExclusiveMonitorPtr new_exclusive_monitor(int max_num_cores);
-void free_exclusive_monitor(ExclusiveMonitorPtr monitor);
-void clear_exclusive(ExclusiveMonitorPtr monitor, std::size_t core_num);
+void clear_exclusive(CPUState &state);
 
 // Debugging helpers
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size = nullptr);
@@ -68,6 +66,10 @@ std::string disassemble(CPUState &state, uint64_t at, uint16_t *insn_size = null
 bool hit_breakpoint(CPUState &state);
 void trigger_breakpoint(CPUState &state);
 void set_log_code(CPUState &state, bool log);
+
+// Thread-local CPU state for signal handler access (exception handlers)
+void set_current_cpu_state(CPUState *state);
+CPUState *get_current_cpu_state();
 void set_log_mem(CPUState &state, bool log);
 bool get_log_code(CPUState &state);
 bool get_log_mem(CPUState &state);

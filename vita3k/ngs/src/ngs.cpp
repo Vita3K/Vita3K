@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 #include <cpu/functions.h>
 #include <kernel/state.h>
 
+#include <ngs/modules/atrac9.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/lock_and_find.h>
@@ -34,6 +35,10 @@ System::System(const Ptr<void> memspace, const uint32_t memspace_size)
     , max_voices(0)
     , granularity(0)
     , sample_rate(0) {}
+
+bool Patch::is_active() const {
+    return output_sub_index != -1;
+}
 
 void VoiceInputManager::init(const uint32_t granularity, const uint16_t total_input) {
     inputs.resize(total_input);
@@ -60,7 +65,13 @@ VoiceInputManager::PCMInput *VoiceInputManager::get_input_buffer_queue(const int
     return &inputs[index];
 }
 
-int32_t VoiceInputManager::receive(ngs::Patch *patch, const VoiceProduct &product) {
+int32_t VoiceInputManager::receive(const MemState &mem, ngs::Patch *patch, const VoiceProduct &product) {
+    Voice *source = patch->source.get(mem);
+    Voice *dest = patch->dest.get(mem);
+    if (!source || !dest) {
+        return -1;
+    }
+
     PCMInput *input = get_input_buffer_queue(patch->dest_index);
 
     if (!input) {
@@ -74,19 +85,19 @@ int32_t VoiceInputManager::receive(ngs::Patch *patch, const VoiceProduct &produc
     memcpy(volume_matrix, patch->volume_matrix, sizeof(volume_matrix));
 
     // we always use stereo internally, so make sure not to add too many channels
-    if (patch->source->rack->channels_per_voice == 1) {
+    if (source->rack->channels_per_voice == 1) {
         volume_matrix[1][0] = 0.0f;
         volume_matrix[1][1] = 0.0f;
     }
 
-    if (patch->dest->rack->channels_per_voice == 1) {
+    if (dest->rack->channels_per_voice == 1) {
         volume_matrix[0][1] = 0.0f;
         volume_matrix[1][1] = 0.0f;
     }
 
     // Try mixing, also with the use of this volume matrix
     // Dest is our voice to receive this data.
-    for (int32_t k = 0; k < patch->dest->rack->system->granularity; k++) {
+    for (int32_t k = 0; k < dest->rack->system->granularity; k++) {
         dest_buffer[k * 2] = std::clamp(dest_buffer[k * 2] + data_to_mix_in[k * 2] * volume_matrix[0][0]
                 + data_to_mix_in[k * 2 + 1] * volume_matrix[1][0],
             -1.0f, 1.0f);
@@ -139,16 +150,6 @@ void ModuleData::invoke_callback(KernelState &kernel, const MemState &mem, const
         reason1, reason2, reason_ptr);
 }
 
-void ModuleData::fill_to_fit_granularity() {
-    const int start_fill = extra_storage.size();
-    const int to_fill = parent->rack->system->granularity * 2 * sizeof(float) - start_fill;
-
-    if (to_fill > 0) {
-        extra_storage.resize(start_fill + to_fill);
-        std::fill(extra_storage.begin() + start_fill, extra_storage.end(), 0);
-    }
-}
-
 void Voice::init(Rack *mama) {
     rack = mama;
     state = VoiceState::VOICE_STATE_AVAILABLE;
@@ -165,7 +166,7 @@ void Voice::init(Rack *mama) {
     voice_mutex = std::make_unique<std::mutex>();
 }
 
-Ptr<Patch> Voice::patch(const MemState &mem, const int32_t index, int32_t subindex, int32_t dest_index, Voice *dest) {
+Ptr<Patch> Voice::patch(const MemState &mem, const int32_t index, int32_t subindex, int32_t dest_index, Ptr<Voice> source, Ptr<Voice> dest) {
     const std::lock_guard<std::mutex> guard(*voice_mutex);
 
     if (index >= MAX_OUTPUT_PORT) {
@@ -203,7 +204,7 @@ Ptr<Patch> Voice::patch(const MemState &mem, const int32_t index, int32_t subind
     patch->output_index = index;
     patch->dest_index = dest_index;
     patch->dest = dest;
-    patch->source = this;
+    patch->source = source;
 
     // Initialize the matrix
     memset(patch->volume_matrix, 0, sizeof(patch->volume_matrix));
@@ -212,13 +213,13 @@ Ptr<Patch> Voice::patch(const MemState &mem, const int32_t index, int32_t subind
 }
 
 bool Voice::remove_patch(const MemState &mem, const Ptr<Patch> patch) {
-    if (!patch) {
+    if (!patch || !voice_mutex) {
         return false;
     }
     const std::lock_guard<std::mutex> guard(*voice_mutex);
     bool found = false;
     for (auto &patches_1 : patches) {
-        if (vector_utils::contains(patches_1, patch)) {
+        if (std::ranges::contains(patches_1, patch)) {
             found = true;
             break;
         }
@@ -321,7 +322,7 @@ void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceU
         return;
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
     const Address callback_info_addr = stack_alloc(*thread->cpu, sizeof(SceNgsCallbackInfo));
 
     SceNgsCallbackInfo *info = Ptr<SceNgsCallbackInfo>(callback_info_addr).get(mem);
@@ -356,6 +357,16 @@ bool init(State &ngs, MemState &mem) {
     return true;
 }
 
+void deinit(State &ngs, MemState &mem) {
+    while (!ngs.systems.empty()) {
+        release_system(ngs, mem, ngs.systems.back());
+    }
+
+    Atrac9Module::free_swr_contexts();
+
+    ngs.definitions = Ptr<VoiceDefinition>(0);
+}
+
 bool init_system(State &ngs, const MemState &mem, SceNgsSystemInitParams *parameters, Ptr<void> memspace, const uint32_t memspace_size) {
     // Reserve first memory allocation for our System struct
     System *sys = memspace.cast<System>().get(mem);
@@ -378,13 +389,19 @@ bool init_system(State &ngs, const MemState &mem, SceNgsSystemInitParams *parame
 
 void release_system(State &ngs, const MemState &mem, System *system) {
     // this function assumes no ngs mutex is being held
+    for (Rack *rack : system->racks) {
+        if (!rack)
+            continue;
+        for (const auto &voice : rack->voices) {
+            system->voice_scheduler.deque_voice(voice.get(mem));
+            voice.get(mem)->~Voice();
+        }
+        rack->~Rack();
+    }
 
-    // release all the racks first
-    for (size_t i = 0; i < system->racks.size(); i++)
-        release_rack(ngs, mem, system, system->racks[i]);
+    system->racks.clear();
 
     vector_utils::erase_first(ngs.systems, system);
-
     system->~System();
 }
 
@@ -432,6 +449,7 @@ bool init_rack(State &ngs, const MemState &mem, System *system, SceNgsBufferInfo
 
             v->datas[i].parent = v;
             v->datas[i].index = static_cast<uint32_t>(i);
+            rack->modules[i]->initialize_voice_data(v->datas[i]);
         }
     }
 
@@ -447,9 +465,15 @@ void release_rack(State &ngs, const MemState &mem, System *system, Rack *rack) {
 
     // remove all queued voices
     for (const auto &voice : rack->voices) {
+        Voice *v = voice.get(mem);
         system->voice_scheduler.deque_voice(voice.get(mem));
-        voice.get(mem)->~Voice();
+        // clean up host resources per voice before destroying
+        for (size_t i = 0; i < rack->modules.size() && i < v->datas.size(); i++) {
+            if (rack->modules[i])
+                rack->modules[i]->cleanup_voice_state(v->datas[i]);
+        }
         // no need to free the voice from the rack
+        v->~Voice();
     }
 
     // remove from system

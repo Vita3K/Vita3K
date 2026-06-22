@@ -1,0 +1,107 @@
+{
+  "common.cancel": {
+    "message": "取消"
+  },
+  "common.yes": {
+    "message": "是"
+  },
+  "common.no": {
+    "message": "否"
+  },
+  "common.delete": {
+    "message": "刪除"
+  },
+  "common.submit": {
+    "message": "提交"
+  },
+  "common.please_wait": {
+    "message": "請稍候……"
+  },
+  "common.an_error_occurred": {
+    "message": "發生錯誤。\n錯誤編號：{}"
+  },
+  "common.could_not_load": {
+    "message": "無法載入。"
+  },
+  "common.could_not_save": {
+    "message": "無法保存。"
+  },
+  "common.file_corrupted": {
+    "message": "檔案已毀損。"
+  },
+  "common.microphone_disabled": {
+    "message": "請啟用麥克風。"
+  },
+  "dialog.save_data.save.title": {
+    "message": "保存"
+  },
+  "dialog.save_data.load.title": {
+    "message": "載入"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "保存中……"
+  },
+  "dialog.save_data.load.loading": {
+    "message": "載入中……"
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "已保存。"
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "已載入。"
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "已刪除。"
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "新的保存資料"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "找不到保存資料。"
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "確定要保存資料嗎？"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "確定要載入此保存資料嗎？"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "確定要刪除此保存資料嗎？"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "確定要覆寫此保存資料嗎？"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "確定要取消保存嗎？"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "確定要取消載入嗎？"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "確定要取消刪除嗎？"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "保存中……\n請勿關閉電源或結束應用程式。"
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "無法保存。\n記憶卡的可用容量不足。若要保存應用程式的進度，需準備{}以上的可用容量。\n\n若要準備可用容量，請按下PS按鈕暫停此應用程式，並刪除其他應用程式或內容。"
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "記憶卡的可用容量不足。\n若要繼續執行應用程式，請準備{}以上的可用容量。\n\n請按下PS按鈕暫停此應用程式，並刪除其他應用程式或內容。"
+  },
+  "dialog.save_data.info.details": {
+    "message": "詳細內容"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "更新日"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "正在準備啟動應用程式……"
+  },
+  "overlay.trophy_earned": {
+    "message": "已獲得獎盃！"
+  },
+  "message.load_app_failed": {
+    "message": "無法讀取“{}”，\n請檢查vita3k.log查閲控制臺輸出的詳細資訊。\n1、您是否安裝了韌體？\n2、重新傾印您已擁有的PS Vita應用程式/遊戲，並在Vita3K中安裝。\n3、如果您想要安裝/執行Vitamin是不支援的。"
+  }
+}

@@ -1,7 +1,7 @@
 #include <memory>
 
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <emuenv/state.h>
-#include <util/bit_cast.h>
 #include <util/log.h>
 
 #include <gdbstub/functions.h>
@@ -101,11 +100,7 @@ static std::string to_hex(SceUID value) {
 }
 
 static uint32_t parse_hex(const std::string &hex) {
-    std::stringstream stream;
-    uint32_t value;
-    stream << std::hex << hex;
-    stream >> value;
-    return value;
+    return static_cast<uint32_t>(std::strtoul(hex.c_str(), nullptr, 16));
 }
 
 static uint8_t make_checksum(const char *data, int64_t length) {
@@ -278,12 +273,14 @@ static std::string cmd_read_registers(EmuEnvState &state, PacketCommand &command
 
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
-    std::stringstream stream;
-    for (uint32_t a = 0; a <= 15; a++) {
-        stream << be_hex(fetch_reg(cpu, a));
+    std::string str;
+    str.reserve(16 * 8);
+
+    for (uint32_t a = 0; a < 16; a++) {
+        str += be_hex(fetch_reg(cpu, a));
     }
 
-    return stream.str();
+    return str;
 }
 
 static std::string cmd_write_registers(EmuEnvState &state, PacketCommand &command) {
@@ -342,7 +339,7 @@ static bool check_memory_region(Address address, Address length, MemState &mem) 
 
     Address it = address;
     bool valid = true;
-    for (; it < address + length; it += mem.page_size) {
+    for (; it < address + length; it += mem.host_page_size) {
         if (!is_valid_addr(mem, it)) {
             valid = false;
             break;
@@ -363,13 +360,14 @@ static std::string cmd_read_memory(EmuEnvState &state, PacketCommand &command) {
     if (!check_memory_region(address, length, state.mem))
         return "EAA";
 
-    std::stringstream stream;
+    std::string str;
+    str.reserve(length * 2);
 
     for (uint32_t a = 0; a < length; a++) {
-        stream << fmt::format("{:0>2x}", *Ptr<uint8_t>(address + a).get(state.mem));
+        fmt::format_to(std::back_inserter(str), "{:02x}", *Ptr<uint8_t>(address + a).get(state.mem));
     }
 
-    return stream.str();
+    return str;
 }
 
 static std::string cmd_write_memory(EmuEnvState &state, PacketCommand &command) {
@@ -552,32 +550,27 @@ static std::string cmd_reason(EmuEnvState &state, PacketCommand &command) { retu
 
 static std::string cmd_get_first_thread(EmuEnvState &state, PacketCommand &command) {
     const auto guard = std::lock_guard(state.kernel.mutex);
-    std::stringstream stream;
-
-    stream << "m";
-    stream << to_hex(state.kernel.threads.begin()->first);
-
     state.gdb.thread_info_index = 0;
 
-    return stream.str();
+    return 'm' + to_hex(state.kernel.threads.begin()->first);
 }
 
 static std::string cmd_get_next_thread(EmuEnvState &state, PacketCommand &command) {
     const auto guard = std::lock_guard(state.kernel.mutex);
-    std::stringstream stream;
+    std::string str;
 
     ++state.gdb.thread_info_index;
     if (state.gdb.thread_info_index == state.kernel.threads.size()) {
-        stream << "l";
+        str += 'l';
     } else {
         auto iter = state.kernel.threads.begin();
         std::advance(iter, state.gdb.thread_info_index);
 
-        stream << "m";
-        stream << to_hex(iter->first);
+        str += 'm';
+        str += to_hex(iter->first);
     }
 
-    return stream.str();
+    return str;
 }
 
 static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command) {
@@ -682,18 +675,6 @@ const static PacketFunctionBundle functions[] = {
     { "s", cmd_deprecated },
     { "S", cmd_deprecated },
 };
-
-template <class T, class U>
-constexpr bool cmp_less(T t, U u) noexcept {
-    using UT = std::make_unsigned_t<T>;
-    using UU = std::make_unsigned_t<U>;
-    if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
-        return t < u;
-    else if constexpr (std::is_signed_v<T>)
-        return t < 0 || UT(t) < u;
-    else
-        return u > 0 && t < UU(u);
-}
 
 static bool command_begins_with(PacketCommand &command, const std::string_view small_str) {
     // If the command's content is shorter than small_str, it can't match

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <renderer/types.h>
 
 #include <renderer/gl/functions.h>
+#include <renderer/gl/state.h>
 #include <renderer/vulkan/functions.h>
 #include <renderer/vulkan/state.h>
 
@@ -87,7 +88,9 @@ COMMAND(handle_create_context) {
 COMMAND(handle_destroy_context) {
     TRACY_FUNC_COMMANDS(handle_destroy_context);
     std::unique_ptr<Context> *ctx = helper.pop<std::unique_ptr<Context> *>();
+
     ctx->reset();
+    renderer.context = nullptr;
 
     complete_command(renderer, helper, 0);
 }
@@ -133,7 +136,6 @@ COMMAND(handle_destroy_render_target) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
-        // nothing to do
         break;
 
     case Backend::Vulkan:
@@ -244,25 +246,28 @@ void create(SceGxmSyncObject *sync, State &state) {
     sync->last_display = 0;
     sync->timestamp_current = 0;
     sync->timestamp_ahead = 0;
+    sync->being_deleted = false;
 }
 
 void destroy(SceGxmSyncObject *sync, State &state) {
     // nothing to do right now
 }
 
-bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths) {
+bool init(FrameHost &frame, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths) {
     switch (backend) {
     case Backend::OpenGL:
         state = std::make_unique<gl::GLState>();
+        state->frame = &frame;
         state->init_paths(root_paths);
-        if (!gl::create(window, state, config))
+        if (!gl::create(state, config))
             return false;
         break;
 
     case Backend::Vulkan:
-        state = std::make_unique<vulkan::VKState>(config.gpu_idx);
+        state = std::make_unique<vulkan::VKState>(config.current_config.gpu_idx);
+        state->frame = &frame;
         state->init_paths(root_paths);
-        if (!vulkan::create(window, state, config))
+        if (!vulkan::create(state, config))
             return false;
         break;
 

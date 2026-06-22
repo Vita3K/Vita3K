@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,14 +20,24 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 
+#include <renderer/vulkan/overlay_renderer.h>
 #include <renderer/vulkan/pipeline_cache.h>
 #include <renderer/vulkan/screen_renderer.h>
 #include <renderer/vulkan/surface_cache.h>
 #include <renderer/vulkan/types.h>
 
+#include <chrono>
+
 struct Config;
 
 namespace renderer::vulkan {
+
+enum class LinuxSurfaceType {
+    Unknown,
+    Wayland,
+    Xlib,
+    Xcb
+};
 
 struct Viewport {
     uint32_t offset_x;
@@ -52,6 +62,7 @@ struct VKState : public renderer::State {
     vk::Device device;
 
     ScreenRenderer screen_renderer;
+    OverlayRenderer overlay_renderer;
 
     // Used for memory allocation and general query later.
     vk::PhysicalDevice physical_device;
@@ -59,6 +70,7 @@ struct VKState : public renderer::State {
     vk::PhysicalDeviceFeatures physical_device_features;
     vk::PhysicalDeviceMemoryProperties physical_device_memory;
     std::vector<vk::QueueFamilyProperties> physical_device_queue_families;
+    vk::Format deep_stencil_use;
 
     vma::Allocator allocator;
 
@@ -88,6 +100,10 @@ struct VKState : public renderer::State {
 
     // only used when memory mapping is enabled
     std::map<Address, MappedMemory, std::greater<Address>> mapped_memories;
+    // used with double buffer memory trapping
+    BufferTrapping buffer_trapping;
+    // modify the behavior of trapping on vertex buffers if there are shader stores
+    bool has_shader_store = false;
 
     // queue where we put requests that need to wait for the GPU
     Queue<WaitThreadRequest> request_queue;
@@ -98,21 +114,27 @@ struct VKState : public renderer::State {
     bool support_fsr = false;
     // support for the VK_KHR_uniform_buffer_standard_layout extension, needed for memory mapping and texture viewport
     bool support_standard_layout = false;
+    bool support_rasterized_order_access = false;
+    LinuxSurfaceType linux_surface_type = LinuxSurfaceType::Unknown;
+
+#ifdef __ANDROID__
+    bool support_android_buffer_import = false;
+    bool support_unix_fd_import = false;
+#endif
 
     VKState(int gpu_idx);
 
     bool init() override;
-    bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
+    bool create(std::unique_ptr<renderer::State> &state, const Config &config);
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
-    void cleanup();
+    void cleanup() override;
 
     TextureCache *get_texture_cache() override {
         return &texture_cache;
     }
 
-    void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, DisplayState &display,
-        const GxmState &gxm, MemState &mem) override;
-    void swap_window(SDL_Window *window) override;
+    void render_frame(DisplayState &display, const GxmState &gxm, MemState &mem) override;
+    void swap_window() override;
     std::vector<uint32_t> dump_frame(DisplayState &display, uint32_t &width, uint32_t &height) override;
 
     uint32_t get_features_mask() override;
@@ -129,8 +151,12 @@ struct VKState : public renderer::State {
     std::tuple<vk::Buffer, uint32_t> get_matching_mapping(const Ptr<void> address);
     // return the GPU buffer device address matching this one
     uint64_t get_matching_device_address(const Address address);
-    std::vector<std::string> get_gpu_list() override;
+#ifdef __ANDROID__
+    bool support_custom_drivers() override;
+    void set_turbo_mode(bool set) override;
+#endif
     std::string_view get_gpu_name() override;
+    uint32_t get_gpu_version() override;
 
     void precompile_shader(const ShadersHash &hash) override;
     void preclose_action() override;

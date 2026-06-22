@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,13 +72,13 @@ struct Context {
     uint32_t lang{ 1 };
 
     IOState *io;
-    fs::path pref_path;
+    fs::path vita_fs_path;
 
     void save_trophy_progress_file();
     bool load_trophy_progress_file(const SceUID &progress_input_file);
 
     int copy_file_data_from_trophy_file(const char *filename, void *buffer, SceSize *size);
-    int install_trophy_conf(IOState *io, const fs::path &pref_path, const std::string &np_com_id);
+    int install_trophy_conf(IOState *io, const fs::path &vita_fs_path, const std::string &np_com_id);
     bool init_info_from_trp();
     bool unlock_trophy(int32_t id, np::NpTrophyError *err, const bool force_unlock = false);
 

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,17 +20,22 @@
 #include <renderer/commands.h>
 #include <renderer/types.h>
 
+#include <string>
+
 struct MemState;
 struct FeatureState;
 struct Config;
-struct SDL_Window;
+struct DisplayState;
+struct GxmState;
 
 namespace renderer {
 struct Context;
+class FrameHost;
 struct FragmentProgram;
 struct RenderTarget;
 struct State;
 struct VertexProgram;
+struct YUVConversionCache;
 
 bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map);
 bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const std::vector<SceGxmVertexAttribute> &attributes);
@@ -38,12 +43,18 @@ void create(SceGxmSyncObject *sync, State &state);
 void destroy(SceGxmSyncObject *sync, State &state);
 void finish(State &state, Context *context);
 
+enum class SyncWaitResult {
+    Ready,
+    TimedOut,
+    Shutdown
+};
+
 /**
  * \brief Wait for all subjects to be done with the given sync object.
  *
- * Return true if the wait didn't timeout
+ * Return the reason the wait completed.
  */
-bool wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros = -1);
+SyncWaitResult wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros = -1);
 
 /**
  * \brief Set list of subject with sync object to done.
@@ -57,8 +68,10 @@ void reset_command_list(CommandList &command_list);
 void submit_command_list(State &state, renderer::Context *context, CommandList &command_list);
 bool is_cmd_ready(MemState &mem, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list);
-void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config);
-bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
+void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms = 500);
+void start_render_thread(State &state, DisplayState &display, GxmState &gxm, MemState &mem, Config &config);
+void stop_render_thread(State &state);
+bool init(FrameHost &frame, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
 
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units);
 void set_depth_func(State &state, Context *ctx, bool is_front, SceGxmDepthFunc depth_func);
@@ -89,11 +102,14 @@ void sync_surface_data(State &state, Context *ctx, const SceGxmNotification vert
 
 bool create_context(State &state, std::unique_ptr<Context> &context);
 void destroy_context(State &state, std::unique_ptr<Context> &context);
+void destroy_context_during_shutdown(State &state, std::unique_ptr<Context> &context);
 bool create_render_target(State &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams *params);
 void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt);
+void destroy_render_target_during_shutdown(State &state, std::unique_ptr<RenderTarget> &rt);
 
 Command *generic_command_allocate();
 void generic_command_free(Command *cmd);
+void destroy_command_payload(Command &cmd);
 
 template <typename... Args>
 bool add_command(Context *ctx, const CommandOpcode opcode, int *status, Args... arguments) {
@@ -145,13 +161,27 @@ int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, 
         return 0;
 }
 
+struct VulkanDeviceInfo {
+    std::vector<std::string> gpu_names;
+    std::vector<int> mapping_method_masks;
+    bool custom_driver_requested = false;
+    bool custom_driver_loaded = false;
+};
+
+VulkanDeviceInfo enumerate_vulkan_devices(const std::string &custom_driver_name = {});
+
 namespace texture {
 
 // Paletted textures.
 void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, uint32_t width, uint32_t height, const uint32_t *palette);
 void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, uint32_t width, uint32_t height, const uint32_t *palette);
-void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, uint32_t layout_width, uint32_t layout_height, bool is_p3);
+void yuv420_texture_to_rgb(YUVConversionCache &cache, uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, uint32_t layout_width, uint32_t layout_height, bool is_p3);
 const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem);
+
+// Assume fmt is a bcn format
+SceGxmTextureBaseFormat get_matching_decompressed_format(SceGxmTextureBaseFormat fmt);
+
+bool is_astc_format(SceGxmTextureBaseFormat base_format);
 
 /**
  * \brief Try to resolve Z-order of block compressed texture

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -39,20 +39,6 @@ VitaIoDevice get_device(const std::string &path);
  * \return A string version of the Vita device.
  */
 std::string get_device_string(const VitaIoDevice dev, const bool with_colon = false);
-
-/**
- * \brief Check if the device is a valid output path.
- * \param device Input device to be checked.
- * \return True if valid, False otherwise.
- */
-bool is_valid_output_path(const VitaIoDevice device);
-
-/**
- * \brief Check if the device string is valid.
- * \param device Input device to be checked.
- * \return True if valid, False otherwise.
- */
-bool is_valid_output_path(const std::string &device);
 
 /**
  * \brief Construct a normalized path (optionally with an extension) to be outputted onto the Vita.

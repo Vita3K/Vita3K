@@ -1,0 +1,101 @@
+{
+  "common.ok": {
+    "message": "Tamam"
+  },
+  "common.cancel": {
+    "message": "İptal"
+  },
+  "common.yes": {
+    "message": "Evet"
+  },
+  "common.no": {
+    "message": "Hayır"
+  },
+  "common.delete": {
+    "message": "Sil"
+  },
+  "common.please_wait": {
+    "message": "Lütfen bekleyin..."
+  },
+  "common.an_error_occurred": {
+    "message": "Bir hata oluştu.\nHata Kodu: {}"
+  },
+  "common.could_not_load": {
+    "message": "Dosya yüklenemedi."
+  },
+  "common.could_not_save": {
+    "message": "Dosya kaydedilemedi."
+  },
+  "common.file_corrupted": {
+    "message": "Dosya bozuk."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Kaydet"
+  },
+  "dialog.save_data.load.title": {
+    "message": "Yükle"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Kaydediliyor..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Yükleniyor..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Kaydetme tamamlandı."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Yükleme tamamlandı."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Silme tamamlandı."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "Yeni Kaydedilmiş Veriler"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "Kayıtlı veri yok."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "Verileri kaydetmek istiyor musunuz?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "Bu kayıtlı verileri yüklemek istiyor musunuz?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "Bu kayıtlı verileri silmek istiyor musunuz?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "Bu kayıtlı verilerin üzerine yazmak istiyor musunuz?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "Kaydetmeyi iptal etmek istiyor musunuz?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "Yüklemeyi iptal etmek istiyor musunuz?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "Silmeyi iptal etmek istiyor musunuz?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Kaydediliyor...\nSistemi veya uygulamayı kapatmayın."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "Dosya kaydedilemedi.\nHafıza kartında yeterli boş alan yok. Uygulamadaki ilerlemenizi kaydetmek için en az {} daha boş alan oluşturmanız gerekiyor.\n\nBoş alan oluşturmak için PS düğmesine basarak uygulamayı duraklatın ve ardından başka uygulamaları ya da içerikleri silin."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "Hafıza kartında yeterli boş alan yok.\nUygulamayı kullanmaya devam etmek için en az {} daha boş alan oluşturmanız gerekiyor.\n\nUygulamayı duraklatmak için PS düğmesine basın ve ardından başka uygulamaları ya da içerikleri silin."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Ayrıntılı Bilgi"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Güncelleme Tarihi"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Uygulama başlatma için hazırlanıyor..."
+  },
+  "overlay.trophy_earned": {
+    "message": "Kupa kazandınız!"
+  }
+}

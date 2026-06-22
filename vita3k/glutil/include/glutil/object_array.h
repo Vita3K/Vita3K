@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -62,6 +62,14 @@ public:
 
     size_t size() const {
         return names.size();
+    }
+
+    void cleanup() {
+        if (deleter) {
+            deleter(static_cast<GLsizei>(names.size()), &names[0]);
+            names.fill(0);
+            deleter = nullptr;
+        }
     }
 
 private:

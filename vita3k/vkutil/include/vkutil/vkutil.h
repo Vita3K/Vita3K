@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,14 +17,79 @@
 
 #pragma once
 
-#ifdef __APPLE__
+#ifdef __ANDROID__
+#define VK_USE_PLATFORM_ANDROID_KHR
+#elif defined(__APPLE__)
 #define VK_ENABLE_BETA_EXTENSIONS
+#define VK_USE_PLATFORM_METAL_EXT
+#elif defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#define VK_USE_PLATFORM_WIN32_KHR
+#else
+#if defined(HAVE_X11)
+#define VK_USE_PLATFORM_XLIB_KHR
+#endif
+#if defined(HAVE_WAYLAND)
+#define VK_USE_PLATFORM_WAYLAND_KHR
+#endif
 #endif
 #define VK_NO_PROTOTYPES
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #define VULKAN_HPP_NO_SPACESHIP_OPERATOR
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
+
+#undef VK_USE_PLATFORM_ANDROID_KHR
+#undef VK_USE_PLATFORM_METAL_EXT
+#undef VK_USE_PLATFORM_WIN32_KHR
+#undef VK_USE_PLATFORM_XLIB_KHR
+#undef VK_USE_PLATFORM_WAYLAND_KHR
+#undef VK_ENABLE_BETA_EXTENSIONS
+
+#ifdef None
+#undef None
+#endif
+#ifdef Bool
+#undef Bool
+#endif
+#ifdef Status
+#undef Status
+#endif
+#ifdef Success
+#undef Success
+#endif
+#ifdef True
+#undef True
+#endif
+#ifdef False
+#undef False
+#endif
+#ifdef KeyPress
+#undef KeyPress
+#endif
+#ifdef KeyRelease
+#undef KeyRelease
+#endif
+#ifdef FocusIn
+#undef FocusIn
+#endif
+#ifdef FocusOut
+#undef FocusOut
+#endif
+#ifdef Expose
+#undef Expose
+#endif
+#ifdef GrayScale
+#undef GrayScale
+#endif
+#ifdef CursorShape
+#undef CursorShape
+#endif
+
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 
@@ -53,6 +118,14 @@ static constexpr vk::ImageSubresourceRange color_subresource_range = {
 
 static constexpr vk::ImageSubresourceRange ds_subresource_range = {
     .aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil,
+    .baseMipLevel = 0,
+    .levelCount = 1,
+    .baseArrayLayer = 0,
+    .layerCount = 1
+};
+
+static constexpr vk::ImageSubresourceRange d_subresource_range = {
+    .aspectMask = vk::ImageAspectFlagBits::eDepth,
     .baseMipLevel = 0,
     .levelCount = 1,
     .baseArrayLayer = 0,
@@ -92,6 +165,7 @@ static constexpr vma::AllocationCreateInfo vma_auto_alloc = {
 static constexpr vma::AllocationCreateInfo vma_mapped_alloc = {
     .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite | vma::AllocationCreateFlagBits::eMapped,
     .usage = vma::MemoryUsage::eAuto,
+    .preferredFlags = vk::MemoryPropertyFlagBits::eHostCoherent
 };
 
 static constexpr vma::AllocationCreateInfo vma_host_visible = {

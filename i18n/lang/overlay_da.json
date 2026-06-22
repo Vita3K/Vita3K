@@ -1,0 +1,101 @@
+{
+  "common.cancel": {
+    "message": "Afbryd"
+  },
+  "common.yes": {
+    "message": "Ja"
+  },
+  "common.no": {
+    "message": "Nej"
+  },
+  "common.delete": {
+    "message": "Slet"
+  },
+  "common.please_wait": {
+    "message": "Vent venligst..."
+  },
+  "common.an_error_occurred": {
+    "message": "Der er opstået en fejl.\nFejlkode: {}"
+  },
+  "common.could_not_load": {
+    "message": "Kunne ikke indlæse filen."
+  },
+  "common.could_not_save": {
+    "message": "Kunne ikke gemme filen."
+  },
+  "common.file_corrupted": {
+    "message": "Filen er defekt."
+  },
+  "common.microphone_disabled": {
+    "message": "Aktivér mikrofonen."
+  },
+  "dialog.save_data.save.title": {
+    "message": "Gem"
+  },
+  "dialog.save_data.load.title": {
+    "message": "Indlæs"
+  },
+  "dialog.save_data.save.saving": {
+    "message": "Gemmer..."
+  },
+  "dialog.save_data.load.loading": {
+    "message": "Indlæser..."
+  },
+  "dialog.save_data.save.saving_complete": {
+    "message": "Lagring udført."
+  },
+  "dialog.save_data.load.load_complete": {
+    "message": "Indlæsning udført."
+  },
+  "dialog.save_data.delete.deletion_complete": {
+    "message": "Sletning udført."
+  },
+  "dialog.save_data.save.new_saved_data": {
+    "message": "Nye gemte data"
+  },
+  "dialog.save_data.load.no_saved_data": {
+    "message": "Der er ingen gemte data."
+  },
+  "dialog.save_data.save.save_the_data": {
+    "message": "Ønsker du at gemme dataene?"
+  },
+  "dialog.save_data.load.load_saved_data": {
+    "message": "Ønsker du at indlæse disse gemte data?"
+  },
+  "dialog.save_data.delete.delete_saved_data": {
+    "message": "Ønsker du at slette disse gemte data?"
+  },
+  "dialog.save_data.save.overwrite_saved_data": {
+    "message": "Ønsker du at overskrive disse gemte data?"
+  },
+  "dialog.save_data.save.cancel_saving": {
+    "message": "Ønsker du at afbryde lagringen?"
+  },
+  "dialog.save_data.load.cancel_loading": {
+    "message": "Ønsker du at afbryde indlæsningen?"
+  },
+  "dialog.save_data.delete.cancel_deleting": {
+    "message": "Ønsker du at afbryde sletningen?"
+  },
+  "dialog.save_data.save.warning_saving": {
+    "message": "Gemmer...\nUndlad at slukke for systemet eller lukke programmet."
+  },
+  "dialog.save_data.save.could_not_save": {
+    "message": "Kunne ikke gemme filen.\nDer er ikke nok ledig plads på hukommelseskortet. Du skal skabe mindst {} ledig plads for at gemme dit forløb i programmet.\n\nTryk på PS-knappen for at sætte programmet på pause, og slet derefter de andre programmer eller indhold for at skabe den ledige plads."
+  },
+  "dialog.save_data.save.not_free_space": {
+    "message": "Der er ikke nok ledig plads på hukommelseskortet.\nDu skal skabe mindst {} ledig plads for at fortsætte med at bruge programmet.\n\nTryk på PS-knappen for at sætte programmet på pause, og slet derefter de andre programmer eller indhold."
+  },
+  "dialog.save_data.info.details": {
+    "message": "Detaljer"
+  },
+  "dialog.save_data.info.updated": {
+    "message": "Opdateret"
+  },
+  "dialog.trophy.preparing_start_app": {
+    "message": "Forbereder start af programmet..."
+  },
+  "overlay.trophy_earned": {
+    "message": "Du har opnået et trophy!"
+  }
+}

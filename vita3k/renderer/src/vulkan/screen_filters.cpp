@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -42,10 +42,8 @@ SinglePassScreenFilter::~SinglePassScreenFilter() {
     vk::Device device = screen.state.device;
     // this will only happen when the user changes the option in the GUI, we can afford to waitIdle
     device.waitIdle();
-    vao.destroy();
     device.destroy(pipeline);
     device.destroy(pipeline_layout);
-    device.freeDescriptorSets(descriptor_pool, descriptor_sets);
     device.destroy(descriptor_pool);
     device.destroy(descriptor_set_layout);
     device.destroy(fragment_shader);
@@ -268,38 +266,39 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
         screen.state.device.updateDescriptorSets(write_descr, {});
 
         // set viewport and scissor
-        vk::Rect2D scissor{
+        vk::Rect2D vk_scissor{
             .offset = { 0, 0 },
             .extent = screen.extent
         };
-        screen.current_cmd_buffer.setScissor(0, scissor);
-        vk::Viewport viewport{
+        screen.current_cmd_buffer.setScissor(0, vk_scissor);
+        vk::Viewport vk_viewport{
             .minDepth = 0.0f,
             .maxDepth = 1.0f
         };
         // compute viewport now
         const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
-        const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-        if (screen.state.stretch_the_display_area) {
+        constexpr float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+        const bool fullscreen_hd_res_pixel_perfect_en = screen.state.fullscreen_hd_res_pixel_perfect && screen.state.fullscreen && !(screen.extent.width % DEFAULT_RES_WIDTH) && !(screen.extent.height % (DEFAULT_RES_HEIGHT - 4));
+        if (screen.state.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
             // Match the aspect ratio to the screen size.
-            viewport.width = static_cast<float>(screen.extent.width);
-            viewport.height = static_cast<float>(screen.extent.height);
-            viewport.x = 0.0f;
-            viewport.y = 0.0f;
-        } else if (window_aspect > vita_aspect) {
+            vk_viewport.width = static_cast<float>(screen.extent.width);
+            vk_viewport.height = static_cast<float>(screen.extent.height);
+            vk_viewport.x = 0.0f;
+            vk_viewport.y = 0.0f;
+        } else if ((window_aspect > vita_aspect) && !fullscreen_hd_res_pixel_perfect_en) {
             // Window is wide. Pin top and bottom.
-            viewport.width = screen.extent.height * vita_aspect;
-            viewport.height = static_cast<float>(screen.extent.height);
-            viewport.x = (screen.extent.width - viewport.width) / 2.0f;
-            viewport.y = 0.0f;
+            vk_viewport.width = screen.extent.height * vita_aspect;
+            vk_viewport.height = static_cast<float>(screen.extent.height);
+            vk_viewport.x = (screen.extent.width - vk_viewport.width) / 2.0f;
+            vk_viewport.y = 0.0f;
         } else {
             // Window is tall. Pin left and right.
-            viewport.width = static_cast<float>(screen.extent.width);
-            viewport.height = screen.extent.width / vita_aspect;
-            viewport.x = 0.0f;
-            viewport.y = (screen.extent.height - viewport.height) / 2;
+            vk_viewport.width = static_cast<float>(screen.extent.width);
+            vk_viewport.height = screen.extent.width / vita_aspect;
+            vk_viewport.x = 0.0f;
+            vk_viewport.y = (screen.extent.height - vk_viewport.height) / 2;
         }
-        screen.current_cmd_buffer.setViewport(0, viewport);
+        screen.current_cmd_buffer.setViewport(0, vk_viewport);
     }
 
     {
@@ -388,7 +387,6 @@ FSRScreenFilter::~FSRScreenFilter() {
     device.destroy(pipeline_rcas);
     device.destroy(pipeline_layout_easu);
     device.destroy(pipeline_layout_rcas);
-    device.freeDescriptorSets(descriptor_pool, descriptor_sets);
     device.destroy(descriptor_pool);
     device.destroy(descriptor_set_layout);
 
@@ -512,13 +510,14 @@ void FSRScreenFilter::on_resize() {
     // compute the extent
     const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
     const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-    if (screen.state.stretch_the_display_area) {
+    const bool fullscreen_hd_res_pixel_perfect_en = screen.state.fullscreen_hd_res_pixel_perfect & screen.state.fullscreen & !(screen.extent.width % DEFAULT_RES_WIDTH) & !(screen.extent.height % (DEFAULT_RES_HEIGHT - 4));
+    if (screen.state.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
         // Match the aspect ratio to the screen size.
         output_size.width = static_cast<float>(screen.extent.width);
         output_size.height = static_cast<float>(screen.extent.height);
         output_offset.width = 0.0f;
         output_offset.height = 0.0f;
-    } else if (window_aspect > vita_aspect) {
+    } else if ((window_aspect > vita_aspect) && !fullscreen_hd_res_pixel_perfect_en) {
         // Window is wide. Pin top and bottom.
         output_size.width = static_cast<uint32_t>(std::round(screen.extent.height * vita_aspect));
         output_size.height = screen.extent.height;

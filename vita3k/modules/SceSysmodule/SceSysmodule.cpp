@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <module/load_module.h>
 #include <modules/module_parent.h>
 #include <util/tracy.h>
+#include <util/vector_utils.h>
 
 TRACY_MODULE_NAME(SceSysmodule);
 
@@ -185,7 +186,7 @@ EXPORT(int, sceSysmoduleIsLoadedInternal, SceSysmoduleInternalModuleId module_id
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
 
     std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
-    if (vector_utils::contains(emuenv.kernel.loaded_internal_sysmodules, module_id))
+    if (std::ranges::contains(emuenv.kernel.loaded_internal_sysmodules, module_id))
         return SCE_SYSMODULE_LOADED;
     else
         return RET_ERROR(SCE_SYSMODULE_ERROR_UNLOADED);
@@ -197,6 +198,8 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
 
     LOG_INFO("Loading module ID: {}", to_debug_str(emuenv.mem, module_id));
+    if (is_module_loaded(emuenv.kernel, module_id))
+        return SCE_SYSMODULE_LOADED;
     if (is_module_enabled(emuenv, module_id)) {
         if (load_sys_module(emuenv, module_id))
             return SCE_SYSMODULE_LOADED;
@@ -218,7 +221,7 @@ EXPORT(int, sceSysmoduleLoadModuleInternal, SceSysmoduleInternalModuleId module_
         return CALL_EXPORT(sceSysmoduleLoadModule, static_cast<SceSysmoduleModuleId>(module_id));
     }
 
-    const bool loaded = load_sys_module_internal_with_arg(emuenv, thread_id, module_id, 0, Ptr<void>(), nullptr);
+    const bool loaded = load_sys_module_internal_with_arg(emuenv, module_id, 0, Ptr<void>(), nullptr);
     return loaded ? SCE_SYSMODULE_LOADED : RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);
 }
 
@@ -227,7 +230,7 @@ EXPORT(int, sceSysmoduleLoadModuleInternalWithArg, SceSysmoduleInternalModuleId 
     LOG_TRACE("sceSysmoduleLoadModuleInternalWithArg(module_id:{}, args:{}, argp:{},option:{})", to_debug_str(emuenv.mem, module_id),
         to_debug_str(emuenv.mem, args), to_debug_str(emuenv.mem, argp), to_debug_str(emuenv.mem, option));
 
-    const bool loaded = load_sys_module_internal_with_arg(emuenv, thread_id, module_id, args, argp, option ? option->result.get(emuenv.mem) : nullptr);
+    const bool loaded = load_sys_module_internal_with_arg(emuenv, module_id, args, argp, option ? option->result.get(emuenv.mem) : nullptr);
     return loaded ? SCE_SYSMODULE_LOADED : RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);
 }
 

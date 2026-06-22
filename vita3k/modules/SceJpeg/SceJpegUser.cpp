@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ typedef std::shared_ptr<MjpegDecoderState> DecoderPtr;
 
 struct MJpegState {
     bool initialized = false;
+    std::mutex decoderMutex;
     DecoderPtr decoder;
 };
 
@@ -50,6 +51,7 @@ enum SceJpegColorSpace : int {
     SCE_JPEG_COLORSPACE_YUV420 = 0x20202,
     SCE_JPEG_COLORSPACE_YUV411 = 0x20401,
 };
+BOOST_DESCRIBE_ENUM(SceJpegColorSpace, SCE_JPEG_COLORSPACE_UNKNOWN, SCE_JPEG_COLORSPACE_GRAYSCALE, SCE_JPEG_COLORSPACE_YUV, SCE_JPEG_COLORSPACE_YUV444, SCE_JPEG_COLORSPACE_YUV440, SCE_JPEG_COLORSPACE_YUV441, SCE_JPEG_COLORSPACE_YUV422, SCE_JPEG_COLORSPACE_YUV420, SCE_JPEG_COLORSPACE_YUV411)
 
 enum SceJpegDHTMode : int {
     SCE_JPEG_MJPEG_WITH_DHT,
@@ -57,6 +59,7 @@ enum SceJpegDHTMode : int {
     SCE_JPEG_MJPEG_ANY_SAMPLING_WITHOUT_DHT,
     SCE_JPEG_MJPEG_ANY_SAMPLING
 };
+BOOST_DESCRIBE_ENUM(SceJpegDHTMode, SCE_JPEG_MJPEG_WITH_DHT, SCE_JPEG_MJPEG_WITHOUT_DHT, SCE_JPEG_MJPEG_ANY_SAMPLING_WITHOUT_DHT, SCE_JPEG_MJPEG_ANY_SAMPLING)
 
 enum SceJpegDownscaleMode : int {
     SCE_JPEG_MJPEG_DOWNSCALE_1_2 = 1 << 4,
@@ -64,6 +67,7 @@ enum SceJpegDownscaleMode : int {
     SCE_JPEG_MJPEG_DOWNSCALE_1_8 = 1 << 6,
     SCE_JPEG_MJPEG_DOWNSCALE_ANY = 0b111 << 4
 };
+BOOST_DESCRIBE_ENUM(SceJpegDownscaleMode, SCE_JPEG_MJPEG_DOWNSCALE_1_2, SCE_JPEG_MJPEG_DOWNSCALE_1_4, SCE_JPEG_MJPEG_DOWNSCALE_1_8, SCE_JPEG_MJPEG_DOWNSCALE_ANY)
 
 enum SceJpegFormat : int {
     // YUV format
@@ -71,11 +75,13 @@ enum SceJpegFormat : int {
     SCE_JPEG_PIXEL_RGBA8888 = 0,
     SCE_JPEG_PIXEL_BGRA8888 = 4
 };
+BOOST_DESCRIBE_ENUM(SceJpegFormat, SCE_JPEG_NO_CSC_OUTPUT, SCE_JPEG_PIXEL_RGBA8888, SCE_JPEG_PIXEL_BGRA8888)
 
 enum SceJpegColorConversion : int {
     SCE_JPEG_COLORSPACE_JFIF = 0,
     SCE_JPEG_COLORSPACE_BT601 = 0x10
 };
+BOOST_DESCRIBE_ENUM(SceJpegColorConversion, SCE_JPEG_COLORSPACE_JFIF, SCE_JPEG_COLORSPACE_BT601)
 
 struct SceJpegOutputInfo {
     SceJpegColorSpace color_space;
@@ -87,7 +93,7 @@ struct SceJpegOutputInfo {
     SceJpegPitch pitch[4];
 };
 
-SceJpegColorSpace convert_color_space_decoder_to_jpeg(DecoderColorSpace color_space) {
+static SceJpegColorSpace convert_color_space_decoder_to_jpeg(DecoderColorSpace color_space) {
     switch (color_space) {
     case COLORSPACE_GRAYSCALE:
         return SCE_JPEG_COLORSPACE_GRAYSCALE;
@@ -108,7 +114,7 @@ SceJpegColorSpace convert_color_space_decoder_to_jpeg(DecoderColorSpace color_sp
     }
 }
 
-DecoderColorSpace convert_color_space_jpeg_to_decoder(SceJpegColorSpace color_space) {
+static DecoderColorSpace convert_color_space_jpeg_to_decoder(SceJpegColorSpace color_space) {
     switch (color_space) {
     case SCE_JPEG_COLORSPACE_GRAYSCALE:
         return COLORSPACE_GRAYSCALE;
@@ -130,19 +136,19 @@ DecoderColorSpace convert_color_space_jpeg_to_decoder(SceJpegColorSpace color_sp
 }
 
 // Helper functions
-SceJpegDHTMode get_DHT_mode(int decodeMode) {
+static SceJpegDHTMode get_DHT_mode(int decodeMode) {
     return static_cast<SceJpegDHTMode>(decodeMode & 0b111);
 }
 
-SceJpegDownscaleMode get_downscale_mode(int decodeMode) {
+static SceJpegDownscaleMode get_downscale_mode(int decodeMode) {
     return static_cast<SceJpegDownscaleMode>(decodeMode & (0b111 << 4));
 }
 
-int get_downscale_ratio(SceJpegDownscaleMode downscaleMode) {
-    return downscaleMode ? downscaleMode / 8 : 1;
+static int get_downscale_ratio(SceJpegDownscaleMode downscaleMode) {
+    return downscaleMode != 0 ? downscaleMode / 8 : 1;
 }
 
-bool is_standard_decoding(SceJpegDHTMode dhtMode) {
+static bool is_standard_decoding(SceJpegDHTMode dhtMode) {
     return dhtMode == SCE_JPEG_MJPEG_WITH_DHT || dhtMode == SCE_JPEG_MJPEG_WITHOUT_DHT;
 }
 
@@ -156,7 +162,7 @@ static bool is_unsupported_image_size(uint32_t width, uint32_t height) {
 }
 
 // Common decoder configuration
-void configure_decoder(MJpegState *state, int decodeMode) {
+static void configure_decoder(MJpegState *state, int decodeMode) {
     SceJpegDHTMode dhtMode = get_DHT_mode(decodeMode);
     SceJpegDownscaleMode downscaleMode = get_downscale_mode(decodeMode);
 
@@ -208,6 +214,7 @@ EXPORT(int, sceJpegDecodeMJpeg, const unsigned char *pJpeg, SceSize isize, uint8
     TRACY_FUNC(sceJpegDecodeMJpeg, pJpeg, isize, pRGBA, osize, decodeMode, pTempBuffer, tempBufferSize, pCoefBuffer, coefBufferSize);
 
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
+    std::lock_guard<std::mutex> guard(state->decoderMutex);
     configure_decoder(state, decodeMode);
 
     // the yuv data will always be smaller than the rgba data, so osize is an upper bound
@@ -235,6 +242,7 @@ EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *pJpeg, SceSize isize,
     TRACY_FUNC(sceJpegDecodeMJpegYCbCr, pJpeg, isize, pYCbCr, osize, decodeMode, pCoefBuffer, coefBufferSize);
 
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
+    std::lock_guard<std::mutex> guard(state->decoderMutex);
     configure_decoder(state, decodeMode);
 
     DecoderSize size = {};
@@ -280,6 +288,7 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *pJpeg, SceSize isize,
         return RET_ERROR(SCE_JPEG_ERROR_INVALID_COLOR_FORMAT);
 
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
+    std::lock_guard<std::mutex> guard(state->decoderMutex);
     configure_decoder(state, decodeMode);
 
     DecoderSize size = {};

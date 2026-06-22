@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,9 +17,11 @@
 
 #pragma once
 
-#include <enum.h>
+#include <boost/describe/enum.hpp>
+#include <boost/describe/enum_from_string.hpp>
+#include <boost/describe/enum_to_string.hpp>
 
-BETTER_ENUM(VitaIoDevice, int,
+enum class VitaIoDevice : int {
     addcont0 = 0,
     app0,
     host0,
@@ -47,4 +49,34 @@ BETTER_ENUM(VitaIoDevice, int,
     video0,
     vs0,
     xmc0,
-    _INVALID = -1)
+    _INVALID = -1
+};
+
+BOOST_DESCRIBE_ENUM(VitaIoDevice,
+    addcont0,
+    app0,
+    host0,
+    grw0,
+    imc0,
+    music0,
+    os0,
+    pd0,
+    photo0,
+    sa0,
+    savedata0,
+    savedata1,
+    sd0,
+    tm0,
+    tty0,
+    tty1,
+    tty2,
+    tty3,
+    ud0,
+    uma0,
+    ur0,
+    ux0,
+    vd0,
+    video0,
+    vs0,
+    xmc0,
+    _INVALID)

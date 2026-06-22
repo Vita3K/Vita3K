@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,7 +15,11 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "../SceLibKernel/SceLibKernel.h"
 #include <module/module.h>
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(SceDebugForDriver)
 
 EXPORT(int, ksceDebugPrintKernelAssertion) {
     return UNIMPLEMENTED();
@@ -25,8 +29,9 @@ EXPORT(int, ksceDebugPrintKernelPanic) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceDebugPrintf) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceDebugPrintf, const char *fmt, module::vargs args) {
+    TRACY_FUNC(ksceDebugPrintf, fmt);
+    return CALL_EXPORT(sceClibPrintf, fmt, args);
 }
 
 EXPORT(int, ksceDebugPrintf2) {

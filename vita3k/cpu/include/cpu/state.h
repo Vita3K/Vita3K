@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,22 +19,26 @@
 
 #include <cpu/common.h>
 #include <cpu/disasm/state.h>
-#include <mem/block.h>
 #include <mem/state.h>
 #include <util/types.h>
+
+#include <atomic>
 
 struct CPUState {
     CPUState() = default;
 
     SceUID thread_id = 0;
     MemState *mem = nullptr;
-    CPUProtocolBase *protocol = nullptr;
     DisasmState disasm;
-
-    Block halt_instruction;
-    Address halt_instruction_pc; // thumb mode pc
 
     CPUInterfacePtr cpu;
     bool svc_called;
     uint32_t svc;
+
+    // Exception handler support (kubridge abort handlers)
+    // These are set by the page fault callback (signal-safe atomics)
+    // and consumed by run_loop after HaltExecution returns.
+    std::atomic<bool> abort_pending{ false };
+    std::atomic<uint32_t> abort_fault_addr{ 0 };
+    std::atomic<bool> abort_is_write{ false };
 };

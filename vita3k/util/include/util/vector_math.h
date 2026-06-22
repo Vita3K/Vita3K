@@ -61,7 +61,7 @@ public:
         return Vec3(f, f, f);
     }
 
-    [[nodiscard]] constexpr Vec3<decltype(T{} + T{})> operator+(const Vec3 &other) const {
+    [[nodiscard]] constexpr Vec3<decltype(T{} + T{})> operator+(const Vec3 & other) const {
         return { x + other.x, y + other.y, z + other.z };
     }
 
@@ -72,7 +72,7 @@ public:
         return *this;
     }
 
-    [[nodiscard]] constexpr Vec3<decltype(T{} - T{})> operator-(const Vec3 &other) const {
+    [[nodiscard]] constexpr Vec3<decltype(T{} - T{})> operator-(const Vec3 & other) const {
         return { x - other.x, y - other.y, z - other.z };
     }
 
@@ -88,12 +88,12 @@ public:
         return { -x, -y, -z };
     }
 
-    [[nodiscard]] constexpr Vec3<decltype(T{} * T{})> operator*(const Vec3 &other) const {
+    [[nodiscard]] constexpr Vec3<decltype(T{} * T{})> operator*(const Vec3 & other) const {
         return { x * other.x, y * other.y, z * other.z };
     }
 
     template <typename V>
-    [[nodiscard]] constexpr Vec3<decltype(T{} * V{})> operator*(const V &f) const {
+    [[nodiscard]] constexpr Vec3<decltype(T{} * V{})> operator*(const V & f) const {
         using TV = decltype(T{} * V{});
         using C = std::common_type_t<T, V>;
 
@@ -110,7 +110,7 @@ public:
         return *this;
     }
     template <typename V>
-    [[nodiscard]] constexpr Vec3<decltype(T{} / V{})> operator/(const V &f) const {
+    [[nodiscard]] constexpr Vec3<decltype(T{} / V{})> operator/(const V & f) const {
         using TV = decltype(T{} / V{});
         using C = std::common_type_t<T, V>;
 
@@ -254,7 +254,7 @@ template <typename T>
 // linear interpolation via SceFloat: 0.0=begin, 1.0=end
 template <typename X>
 [[nodiscard]] constexpr decltype(X{} * SceFloat{} + X{} * SceFloat{})
-Lerp(const X &begin, const X &end, const SceFloat t) {
+    Lerp(const X &begin, const X &end, const SceFloat t) {
     return begin * (1.f - t) + end * t;
 }
 

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,8 +21,12 @@
 #include <util/fs.h>
 
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <set>
 #include <string>
+#include <utility>
+#include <vector>
 
 // forward declare everything used in EmuEnvState
 namespace sfo {
@@ -32,6 +36,7 @@ struct SfoAppInfo;
 namespace renderer {
 enum class Backend : uint32_t;
 struct State;
+struct VulkanDeviceInfo;
 } // namespace renderer
 
 namespace ngs {
@@ -39,11 +44,12 @@ struct State;
 };
 
 struct Config;
-struct CPUProtocolBase;
+struct CompatState;
 struct MemState;
 struct CtrlState;
 struct TouchState;
 struct KernelState;
+struct AppState;
 struct AudioState;
 struct GxmState;
 struct IOState;
@@ -59,12 +65,11 @@ struct RegMgrState;
 struct SfoFile;
 struct GDBState;
 struct HTTPState;
+struct CameraState;
 
-typedef int32_t SceInt;
-struct IVector2 {
-    SceInt x;
-    SceInt y;
-};
+namespace overlay {
+class display_manager;
+}
 
 typedef float SceFloat;
 struct FVector2 {
@@ -75,6 +80,8 @@ struct FVector2 {
 typedef int SceUID;
 
 using NIDSet = std::set<uint32_t>;
+
+#include <emuenv/app_launch_request.h>
 
 /**
  * @brief State of the emulated PlayStation Vita environment
@@ -88,6 +95,7 @@ private:
     std::unique_ptr<CtrlState> _ctrl;
     std::unique_ptr<TouchState> _touch;
     std::unique_ptr<KernelState> _kernel;
+    std::unique_ptr<AppState> _app;
     std::unique_ptr<AudioState> _audio;
     std::unique_ptr<GxmState> _gxm;
     std::unique_ptr<IOState> _io;
@@ -104,6 +112,10 @@ private:
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
     std::unique_ptr<HTTPState> _http;
+    std::unique_ptr<CameraState> _camera;
+    std::unique_ptr<CompatState> _compat;
+    mutable std::mutex _launch_request_mutex;
+    std::optional<AppLaunchRequest> _pending_launch_request;
 
 public:
     // App info contained in its `param.sfo` file
@@ -112,26 +124,19 @@ public:
     std::string license_content_id{};
     std::string license_title_id{};
     std::string current_app_title{};
-    fs::path base_path{};
     fs::path default_path{};
-    fs::path config_path{};
-    fs::path log_path{};
-    fs::path cache_path{};
-    fs::path pref_path{};
-    fs::path static_assets_path{};
-    fs::path shared_path{};
-    fs::path patch_path{};
-    bool load_exec{};
-    std::string load_app_path{};
-    std::string load_exec_argv{};
-    std::string load_exec_path{};
+    fs::path config_path{}; // Path for config files
+    fs::path log_path{}; // Path for log file
+    fs::path cache_path{}; // Path for cache files (shaders, elf/texture dumps, and compat cache)
+    fs::path vita_fs_path{}; // Path for VitaFS
+    fs::path static_assets_path{}; // Path for static assets (shaders, icons, etc)
+    fs::path shared_path{}; // Path for files (UI themes, textures, etc)
+    fs::path patch_path{}; // Path for patch files
     std::string self_name{};
     std::string self_path{};
     Config &cfg;
-    std::unique_ptr<CPUProtocolBase> cpu_protocol{};
     SceUID main_thread_id{};
     size_t frame_count = 0;
-    uint32_t sdl_ticks = 0;
     uint32_t fps = 0;
     uint32_t avg_fps = 0;
     uint32_t min_fps = 0;
@@ -139,23 +144,17 @@ public:
     float fps_values[20] = {};
     uint32_t current_fps_offset = 0;
     uint32_t ms_per_frame = 0;
-    WindowPtr window = WindowPtr(nullptr, nullptr);
     renderer::Backend backend_renderer{};
     RendererPtr renderer{};
-    IVector2 drawable_size = { 0, 0 };
-    IVector2 window_size = { 0, 0 }; // Logical size of the window
-    FVector2 logical_viewport_pos = { 0, 0 }; // Position of the logical viewport in the window. For ImGui
-    FVector2 logical_viewport_size = { 0, 0 }; // Size of the logical viewport in the window. For ImGui
-    FVector2 drawable_viewport_pos = { 0, 0 }; // Position of the drawable viewport in the window. For OpenGL/Vulkan
-    FVector2 drawable_viewport_size = { 0, 0 }; // Size of the drawable viewport in the window. For OpenGL/Vulkan
+    std::unique_ptr<renderer::VulkanDeviceInfo> vulkan_device_info;
     bool drop_inputs{};
     MemState &mem;
     CtrlState &ctrl;
     TouchState &touch;
     KernelState &kernel;
+    AppState &app;
     AudioState &audio;
     GxmState &gxm;
-    bool renderer_focused{};
     IOState &io;
     MotionState &motion;
     NetState &net;
@@ -174,8 +173,44 @@ public:
     FVector2 gui_scale = { 1.f, 1.f };
     GDBState &gdb;
     HTTPState &http;
+    CameraState &camera;
+    CompatState &compat;
     int max_font_level = 0;
     int current_font_level = 0;
+
+    std::unique_ptr<overlay::display_manager> overlay_manager;
+
+    void post_app_launch_request(AppLaunchRequest request) {
+        std::scoped_lock lock(_launch_request_mutex);
+        _pending_launch_request = std::move(request);
+    }
+
+    std::optional<AppLaunchRequest> take_app_launch_request() {
+        std::scoped_lock lock(_launch_request_mutex);
+        if (!_pending_launch_request)
+            return std::nullopt;
+
+        auto request = std::move(_pending_launch_request);
+        _pending_launch_request.reset();
+        return request;
+    }
+
+    void clear_app_launch_request() {
+        std::scoped_lock lock(_launch_request_mutex);
+        _pending_launch_request.reset();
+    }
+
+    Root get_root_paths() const {
+        Root r;
+        r.set_vita_fs_path(vita_fs_path);
+        r.set_patch_path(patch_path);
+        r.set_log_path(log_path);
+        r.set_config_path(config_path);
+        r.set_shared_path(shared_path);
+        r.set_cache_path(cache_path);
+        r.set_static_assets_path(static_assets_path);
+        return r;
+    }
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs

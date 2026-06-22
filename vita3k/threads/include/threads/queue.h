@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -95,10 +95,18 @@ public:
         return queue_.size();
     }
 
+    void wake() {
+        condempty_.notify_all();
+    }
+
     void abort() {
         aborted = true;
         condempty_.notify_all();
         cond_.notify_all();
+    }
+
+    bool is_aborted() const {
+        return aborted.load(std::memory_order_relaxed);
     }
 
     void reset() {
@@ -115,6 +123,10 @@ public:
     Queue() = default;
     Queue(const Queue &) = delete; // disable copying
     Queue &operator=(const Queue &) = delete; // disable assignment
+
+    std::mutex &get_mutex() {
+        return mutex_;
+    }
 
 private:
     std::condition_variable cond_;

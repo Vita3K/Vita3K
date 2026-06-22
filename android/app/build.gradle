@@ -1,0 +1,134 @@
+plugins {
+	id 'com.android.application'
+	id 'org.jetbrains.kotlin.plugin.compose'
+}
+
+def signingStorePath = System.getenv("SIGNING_STORE_PATH")
+def signingStorePassword = System.getenv("SIGNING_STORE_PASSWORD")
+def signingKeyAlias = System.getenv("SIGNING_KEY_ALIAS")
+def signingKeyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+def hasCiSigning = signingStorePath && signingStorePassword && signingKeyAlias && signingKeyPassword
+
+android {
+	namespace = "org.vita3k.emulator"
+	compileSdk = 35
+	ndkVersion = "29.0.14206865"
+	buildFeatures {
+		buildConfig = true
+		compose = true
+	}
+
+	defaultConfig {
+		applicationId = "org.vita3k.emulator"
+		minSdk = 28
+		targetSdk = 35
+		versionCode = 21
+		versionName = "0.2.1"
+
+		ndk {
+			abiFilters "arm64-v8a", "x86_64"
+		}
+	}
+
+	signingConfigs {
+		ci {
+			if (hasCiSigning) {
+				storeFile = file(signingStorePath)
+				storePassword = signingStorePassword
+				keyAlias = signingKeyAlias
+				keyPassword = signingKeyPassword
+			}
+		}
+	}
+
+	buildTypes {
+		debug {
+			debuggable = true
+			jniDebuggable = true
+			applicationIdSuffix = '.debug'
+		}
+
+		reldebug {
+			debuggable = true
+			jniDebuggable = true
+			externalNativeBuild {
+				cmake {
+					arguments "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+				}
+			}
+			minifyEnabled = false
+			shrinkResources = false
+			applicationIdSuffix = '.debug'
+			signingConfig = signingConfigs.debug
+		}
+
+		release {
+			debuggable = false
+			jniDebuggable = false
+			externalNativeBuild {
+				cmake {
+					arguments "-DCMAKE_BUILD_TYPE=Release"
+				}
+			}
+			minifyEnabled = true
+			shrinkResources = true
+			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+			signingConfig = hasCiSigning ? signingConfigs.ci : signingConfigs.debug
+		}
+	}
+
+	compileOptions {
+		sourceCompatibility JavaVersion.VERSION_17
+		targetCompatibility JavaVersion.VERSION_17
+	}
+
+	sourceSets {
+		main {
+			jniLibs.srcDirs = ['../prebuilt']
+			assets {
+				srcDirs 'assets'
+			}
+			java {
+				srcDirs += ['../../external/sdl/android-project/app/src/main/java']
+			}
+		}
+	}
+
+	externalNativeBuild {
+		cmake {
+			path = '../../CMakeLists.txt'
+			version = '3.22.1+'
+		}
+	}
+
+	lint {
+		abortOnError = false
+		checkReleaseBuilds = false
+	}
+	packaging {
+		jniLibs {
+			useLegacyPackaging = true
+		}
+	}
+}
+
+dependencies {
+	implementation 'androidx.appcompat:appcompat:1.6.1'
+	implementation "androidx.core:core:1.12.0"
+	implementation 'androidx.core:core-google-shortcuts:1.1.0'
+	implementation 'com.google.android.material:material:1.11.0'
+	implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+	implementation 'com.getkeepsafe.relinker:relinker:1.4.5'
+
+	implementation platform('androidx.compose:compose-bom:2025.04.00')
+	implementation 'androidx.compose.ui:ui'
+	implementation 'androidx.compose.material3:material3'
+	implementation 'androidx.compose.material:material-icons-extended'
+	implementation 'androidx.compose.ui:ui-tooling-preview'
+	implementation 'androidx.activity:activity-compose:1.9.3'
+	implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7'
+	implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.7'
+	implementation 'androidx.navigation:navigation-compose:2.8.5'
+	implementation 'io.coil-kt:coil-compose:2.7.0'
+	debugImplementation 'androidx.compose.ui:ui-tooling'
+}

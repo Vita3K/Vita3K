@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ void pre_compile_program(GLState &renderer, const ShadersHash &hashs);
 // Uniforms.
 bool set_uniform_buffer(GLContext &context, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, const uint8_t *data);
 
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config);
+bool create(std::unique_ptr<renderer::State> &state, const Config &config);
 bool create(std::unique_ptr<Context> &context);
 bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend);

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <config/state.h>
 #include <emuenv/state.h>
 #include <kernel/state.h>
+#include <util/vector_utils.h>
 
 static SysmodulePaths init_sysmodule_paths() {
     SysmodulePaths p;
@@ -33,7 +34,7 @@ static SysmodulePaths init_sysmodule_paths() {
     p[SCE_SYSMODULE_HTTPS] = { "libhttp", "libssl" };
     p[SCE_SYSMODULE_PERF] = { "libperf" };
     p[SCE_SYSMODULE_FIBER] = { "libfiber" };
-    p[SCE_SYSMODULE_ULT] = { "libult" };
+    p[SCE_SYSMODULE_ULT] = { "libfiber", "libult" };
     p[SCE_SYSMODULE_DBG] = { "librazorcapture_es4", "librazorhud_es4" };
     p[SCE_SYSMODULE_RAZOR_CAPTURE] = { "librazorcapture_es4" };
     p[SCE_SYSMODULE_RAZOR_HUD] = { "librazorhud_es4" };
@@ -139,21 +140,25 @@ extern const SysmoduleInternalPaths sysmodule_internal_paths = init_sysmodule_in
 
 // Current modules works for loading
 static constexpr auto auto_lle_modules = {
-    SCE_SYSMODULE_SAS,
-    SCE_SYSMODULE_PGF,
-    SCE_SYSMODULE_SYSTEM_GESTURE,
-    SCE_SYSMODULE_XML,
-    SCE_SYSMODULE_MP4,
-    SCE_SYSMODULE_ATRAC,
-    SCE_SYSMODULE_AVPLAYER,
-    SCE_SYSMODULE_JSON,
     SCE_SYSMODULE_HTTP,
     SCE_SYSMODULE_SSL,
     SCE_SYSMODULE_HTTPS,
-    SCE_SYSMODULE_SMART,
-    SCE_SYSMODULE_FACE,
+    SCE_SYSMODULE_FIBER,
     SCE_SYSMODULE_ULT,
-    SCE_SYSMODULE_FIOS2
+    SCE_SYSMODULE_SAS,
+    SCE_SYSMODULE_PGF,
+    SCE_SYSMODULE_FIOS2,
+    SCE_SYSMODULE_SYSTEM_GESTURE,
+    SCE_SYSMODULE_XML,
+    SCE_SYSMODULE_SQLITE,
+    SCE_SYSMODULE_RUDP,
+    SCE_SYSMODULE_NET_ADHOC_MATCHING,
+    SCE_SYSMODULE_MP4,
+    SCE_SYSMODULE_ATRAC,
+    SCE_SYSMODULE_FACE,
+    SCE_SYSMODULE_SMART,
+    SCE_SYSMODULE_AVPLAYER,
+    SCE_SYSMODULE_JSON
 };
 
 bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv) {
@@ -164,13 +169,13 @@ bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv) {
 
     if (have_paths) {
         if (emuenv.cfg.current_config.modules_mode != ModulesMode::MANUAL) {
-            if (vector_utils::contains(auto_lle_modules, module_id))
+            if (std::ranges::contains(auto_lle_modules, module_id))
                 return true;
         }
 
         if (emuenv.cfg.current_config.modules_mode != ModulesMode::AUTOMATIC) {
             for (auto path : paths) {
-                if (vector_utils::contains(emuenv.cfg.current_config.lle_modules, path))
+                if (std::ranges::contains(emuenv.cfg.current_config.lle_modules, path))
                     return true;
             }
         }
@@ -179,8 +184,8 @@ bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv) {
     return false;
 }
 
-std::vector<std::string> init_auto_lle_module_names() {
-    std::vector<std::string> auto_lle_module_names = { "libc", "libSceFt2", "libpvf" };
+static std::vector<std::string> init_auto_lle_module_names() {
+    std::vector<std::string> auto_lle_module_names = { "libc", "libSceFt2", "libpvf", "libfiber" };
     for (const auto module_id : auto_lle_modules) {
         for (const auto module : sysmodule_paths[module_id]) {
             auto_lle_module_names.emplace_back(module);
@@ -194,11 +199,11 @@ bool is_lle_module(const std::string &module_name, EmuEnvState &emuenv) {
     if (auto_lle_module_names.empty())
         auto_lle_module_names = init_auto_lle_module_names();
     if (emuenv.cfg.current_config.modules_mode != ModulesMode::AUTOMATIC) {
-        if (vector_utils::contains(emuenv.cfg.current_config.lle_modules, module_name))
+        if (std::ranges::contains(emuenv.cfg.current_config.lle_modules, module_name))
             return true;
     }
     if (emuenv.cfg.current_config.modules_mode != ModulesMode::MANUAL) {
-        if (vector_utils::contains(auto_lle_module_names, module_name))
+        if (std::ranges::contains(auto_lle_module_names, module_name))
             return true;
     }
     return false;
@@ -206,6 +211,5 @@ bool is_lle_module(const std::string &module_name, EmuEnvState &emuenv) {
 
 bool is_module_loaded(KernelState &kernel, SceSysmoduleModuleId module_id) {
     std::lock_guard<std::mutex> guard(kernel.mutex);
-    auto it = kernel.loaded_sysmodules.find(module_id);
-    return it != kernel.loaded_sysmodules.end();
+    return kernel.loaded_sysmodules.contains(module_id);
 }

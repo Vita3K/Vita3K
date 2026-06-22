@@ -5,15 +5,15 @@
 struct EpollSocket {
     unsigned int events;
     SceNetEpollData data;
-    abs_socket sock;
+    std::weak_ptr<Socket> sock;
 };
 
 struct Epoll {
     std::map<int, EpollSocket> eventEntries;
 
-    int add(int id, abs_socket sock, SceNetEpollEvent *ev);
-    int del(int id, abs_socket sock, SceNetEpollEvent *ev);
-    int mod(int id, abs_socket sock, SceNetEpollEvent *ev);
+    int add(int id, std::weak_ptr<Socket> sock, SceNetEpollEvent *ev);
+    int del(int id);
+    int mod(int id, SceNetEpollEvent *ev);
     int wait(SceNetEpollEvent *events, int maxevents, int timeout);
 };
 

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,11 +17,19 @@
 
 #pragma once
 
+#include <emuenv/app_util.h>
 #include <mem/ptr.h>
+#include <np/common.h>
+
+#define SCE_NET_ADHOC_PORT 3658
+
+#define SCE_NET_AF_INET 2
 
 // Define our own htonll and ntohll because its not available in some systems/platforms
-#define HTONLL(x) (((uint64_t)htonl((x)&0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32))
-#define NTOHLL(x) (((uint64_t)ntohl((x)&0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32))
+#define HTONLL(x) ((((uint64_t)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32)))
+#define NTOHLL(x) ((((uint64_t)ntohl((x) & 0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32)))
+
+typedef SceUInt32 SceNetSocklen_t;
 
 enum SceNetProtocol : uint32_t {
     SCE_NET_IPPROTO_IP = 0,
@@ -30,6 +38,20 @@ enum SceNetProtocol : uint32_t {
     SCE_NET_IPPROTO_TCP = 6,
     SCE_NET_IPPROTO_UDP = 17,
     SCE_NET_SOL_SOCKET = 0xFFFF
+};
+
+enum SceNetMsgFlag : uint32_t {
+    SCE_NET_MSG_PEEK = 0x00000002,
+    SCE_NET_MSG_WAITALL = 0x00000040,
+    SCE_NET_MSG_DONTWAIT = 0x00000080,
+    SCE_NET_MSG_USECRYPTO = 0x00000400,
+    SCE_NET_MSG_USESIGNATURE = 0x00000800,
+    SCE_NET_MSG_PEEKLEN = (0x00001000 | SCE_NET_MSG_PEEK)
+};
+
+enum SceNetSocketAbortFlag : uint32_t {
+    SCE_NET_SOCKET_ABORT_FLAG_RCV_PRESERVATION = 0x00000001,
+    SCE_NET_SOCKET_ABORT_FLAG_SND_PRESERVATION = 0x00000002
 };
 
 enum SceNetSocketType : uint32_t {
@@ -335,11 +357,28 @@ struct SceNetSockaddrIn {
     unsigned short int sin_vport;
     char sin_zero[6];
 };
+static_assert(sizeof(SceNetSockaddrIn) == 16, "SceNetSockaddrIn has incorrect size");
 
 struct SceNetSockaddr {
     unsigned char sa_len;
     unsigned char sa_family;
     char sa_data[14];
+};
+static_assert(sizeof(SceNetSockaddr) == 16, "SceNetSockaddr has incorrect size");
+
+struct SceNetIovec {
+    Ptr<void> iov_base; // Base address (pointer)
+    SceSize iov_len; // Size of area (in bytes) indicated by iov_base
+};
+
+struct SceNetMsghdr {
+    Ptr<SceNetSockaddr> msg_name; // Pointer to address structure
+    SceNetSocklen_t msg_namelen; // Size of address structure
+    Ptr<SceNetIovec> msg_iov; // Pointer to scatter/gather array
+    int msg_iovlen; // Number of elements in msg_iov array
+    Ptr<void> msg_control; // (unsupported)
+    SceNetSocklen_t msg_controllen; // (unsupported)
+    int msg_flags; // (unsupported)
 };
 
 struct SceNetInitParam {
@@ -359,8 +398,26 @@ struct SceNetEpollEvent {
     SceNetEpollData data;
 };
 
-enum SceNetCtlEventType {
+struct SceNetCtlAdhocPeerInfo {
+    SceNetInAddr addr;
+    np::SceNpId npId;
+    SceUInt64 lastRecv;
+    int appVer;
+    SceBool isValidNpId;
+    char username[SCE_SYSTEM_PARAM_USERNAME_MAXSIZE];
+    uint8_t padding[7];
+};
+
+enum SceNetCtlEventType : uint32_t {
+    SCE_NET_CTL_EVENT_TYPE_NONE = 0,
     SCE_NET_CTL_EVENT_TYPE_DISCONNECTED = 1,
     SCE_NET_CTL_EVENT_TYPE_DISCONNECT_REQ_FINISHED = 2,
     SCE_NET_CTL_EVENT_TYPE_IPOBTAINED = 3,
+};
+
+enum SceNetCtlState : uint32_t {
+    SCE_NET_CTL_STATE_DISCONNECTED,
+    SCE_NET_CTL_STATE_CONNECTING,
+    SCE_NET_CTL_STATE_IPOBTAINING,
+    SCE_NET_CTL_STATE_IPOBTAINED
 };

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,4 +19,8 @@
 
 #include <module/module.h>
 
+struct SceKernelModuleInfo;
+
 DECL_EXPORT(SceInt32, sceKernelGetThreadCurrentPriority);
+DECL_EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, SceKernelModuleInfo *info);
+DECL_EXPORT(int, sceClibPrintf, const char *fmt, module::vargs args);

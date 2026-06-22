@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,11 +22,11 @@
 #include <renderer/gl/state.h>
 #include <renderer/gl/types.h>
 
-#include <gxm/types.h>
 #include <util/log.h>
 
 #include <shader/spirv_recompiler.h>
 
+#include <iomanip>
 #include <vector>
 
 namespace renderer::gl {
@@ -106,13 +106,14 @@ static SharedGLObject compile_spirv(GLenum type, const std::vector<std::uint32_t
 }
 
 static std::string convert_hash_to_hex(const Sha256Hash &hash) {
-    std::stringstream ss;
-    ss << std::hex << std::setfill('0');
-    for (size_t i = 0; hash.size() > i; ++i) {
-        ss << std::setw(2) << static_cast<uint32_t>(hash[i]);
+    std::string str;
+    str.reserve(hash.size() * 2);
+
+    for (size_t i = 0; i < hash.size(); ++i) {
+        fmt::format_to(std::back_inserter(str), "{:02x}", hash[i]);
     }
 
-    return ss.str();
+    return str;
 }
 
 static SharedGLObject compile_program(ProgramCache &program_cache, const SharedGLObject &frag_shader, const SharedGLObject &vert_shader, const ProgramHashes &hashes) {

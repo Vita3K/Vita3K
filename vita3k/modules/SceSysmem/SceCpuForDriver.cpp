@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,6 +16,12 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <module/module.h>
+
+#include <cpu/functions.h>
+#include <kernel/state.h>
+#include <kernel/types.h>
+
+#include <cstring>
 
 EXPORT(int, ksceKernelCpuAtomicAddAndGet16) {
     return UNIMPLEMENTED();
@@ -341,6 +347,29 @@ EXPORT(int, ksceKernelCpuDcacheWritebackRange) {
     return UNIMPLEMENTED();
 }
 
+// Cache ops used by kubridge (3.60 SceSysmemForDriver NIDs)
+EXPORT(int, ksceKernelCpuDcacheWritebackInvalidateRange) {
+    // No-op in emulator — no real CPU cache
+    return 0;
+}
+
+EXPORT(int, ksceKernelCpuIcacheInvalidateRange, Address addr, uint32_t size) {
+    emuenv.kernel.invalidate_jit_cache(addr, size);
+    return 0;
+}
+
+EXPORT(int, ksceKernelCpuIcacheAndL2WritebackInvalidateRange, Address addr, uint32_t size) {
+    emuenv.kernel.invalidate_jit_cache(addr, size);
+    return 0;
+}
+
+EXPORT(int, ksceKernelCpuUnrestrictedMemcpy, Ptr<void> dst, Ptr<const void> src, uint32_t len) {
+    if (!dst || !src)
+        return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+    std::memcpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    return 0;
+}
+
 EXPORT(int, ksceKernelCpuDisableInterrupts) {
     return UNIMPLEMENTED();
 }
@@ -427,4 +456,15 @@ EXPORT(int, ksceKernelCpuUnlockStoreFlag) {
 
 EXPORT(int, ksceKernelCpuUnlockStoreLR) {
     return UNIMPLEMENTED();
+}
+
+// SceExcpmgrForKernel stubs (kubridge-required)
+EXPORT(int, sceKernelRegisterExceptionHandler, int excpKind, int prio, Ptr<void> handler) {
+    LOG_WARN("sceKernelRegisterExceptionHandler: excpKind={} prio={} (no-op in emulator)", excpKind, prio);
+    return 0;
+}
+
+EXPORT(int, sceKernelReturnFromException, Ptr<void> context) {
+    LOG_WARN("sceKernelReturnFromException: no-op in emulator");
+    return 0;
 }

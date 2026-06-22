@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ EXPORT(int, sceTouchDisableTouchForce, SceUInt32 port) {
     if (port >= SCE_TOUCH_PORT_MAX_NUM) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-    touch_set_force_mode(port, false);
+    touch_set_force_mode(emuenv.touch, port, false);
     return SCE_TOUCH_OK;
 }
 
@@ -69,7 +69,7 @@ EXPORT(int, sceTouchEnableTouchForce, SceUInt32 port) {
     if (port >= SCE_TOUCH_PORT_MAX_NUM) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-    touch_set_force_mode(port, true);
+    touch_set_force_mode(emuenv.touch, port, true);
     return SCE_TOUCH_OK;
 }
 

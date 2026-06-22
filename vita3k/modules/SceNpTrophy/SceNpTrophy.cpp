@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,40 +30,42 @@ using SceNpTrophyHandle = int32_t;
 using SceNpTrophyID = int32_t;
 using SceNpTrophyGroupId = int32_t;
 
-#define SCE_NP_TROPHY_ERROR_UNKNOWN 0x80551600
-#define SCE_NP_TROPHY_ERROR_NOT_INITIALIZED 0x80551601
-#define SCE_NP_TROPHY_ERROR_ALREADY_INITIALIZED 0x80551602
-#define SCE_NP_TROPHY_ERROR_NO_MEMORY 0x80551603
-#define SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT 0x80551604
-#define SCE_NP_TROPHY_ERROR_INSUFFICIENT_BUFFER 0x80551605
-#define SCE_NP_TROPHY_ERROR_EXCEEDS_MAX 0x80551606
-#define SCE_NP_TROPHY_ERROR_ABORT 0x80551607
-#define SCE_NP_TROPHY_ERROR_INVALID_HANDLE 0x80551608
-#define SCE_NP_TROPHY_ERROR_INVALID_CONTEXT 0x80551609
-#define SCE_NP_TROPHY_ERROR_INVALID_NPCOMMID 0x8055160a
-#define SCE_NP_TROPHY_ERROR_INVALID_NPCOMMSIGN 0x8055160b
-#define SCE_NP_TROPHY_ERROR_NPCOMMSIGN_VERIFICATION_FAILURE 0x8055160c
-#define SCE_NP_TROPHY_ERROR_INVALID_GROUP_ID 0x8055160d
-#define SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID 0x8055160e
-#define SCE_NP_TROPHY_ERROR_TROPHY_ALREADY_UNLOCKED 0x8055160f
-#define SCE_NP_TROPHY_ERROR_PLATINUM_CANNOT_UNLOCK 0x80551610
-#define SCE_NP_TROPHY_ERROR_ACCOUNTID_NOT_MATCH 0x80551611
-#define SCE_NP_TROPHY_ERROR_SETUP_REQUIRED 0x80551612
-#define SCE_NP_TROPHY_ERROR_ALREADY_SETUP 0x80551613
-#define SCE_NP_TROPHY_ERROR_BROKEN_DATA 0x80551614
-#define SCE_NP_TROPHY_ERROR_INSUFFICIENT_EM_SPACE 0x80551615
-#define SCE_NP_TROPHY_ERROR_CONTEXT_ALREADY_EXISTS 0x80551616
-#define SCE_NP_TROPHY_ERROR_TRP_FILE_VERIFICATION_FAILURE 0x80551617
-#define SCE_NP_TROPHY_ERROR_ICON_FILE_NOT_FOUND 0x80551618
-#define SCE_NP_TROPHY_ERROR_TRP_FILE_NOT_FOUND 0x80551619
-#define SCE_NP_TROPHY_ERROR_INVALID_TRP_FILE_FORMAT 0x8055161a
-#define SCE_NP_TROPHY_ERROR_UNSUPPORTED_TRP_FILE 0x8055161b
-#define SCE_NP_TROPHY_ERROR_INVALID_TROPHY_CONF_FORMAT 0x8055161c
-#define SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF 0x8055161d
-#define SCE_NP_TROPHY_ERROR_TROPHY_NOT_UNLOCKED 0x8055161e
-#define SCE_NP_TROPHY_ERROR_UNLOCK_DENIED 0x8055161f
-#define SCE_NP_TROPHY_ERROR_INSUFFICIENT_MC_SPACE 0x80551620
-#define SCE_NP_TROPHY_ERROR_DEBUG_FAILURE 0x80551621
+enum SceNpTrophyErrorCode {
+    SCE_NP_TROPHY_ERROR_UNKNOWN = 0x80551600,
+    SCE_NP_TROPHY_ERROR_NOT_INITIALIZED = 0x80551601,
+    SCE_NP_TROPHY_ERROR_ALREADY_INITIALIZED = 0x80551602,
+    SCE_NP_TROPHY_ERROR_NO_MEMORY = 0x80551603,
+    SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT = 0x80551604,
+    SCE_NP_TROPHY_ERROR_INSUFFICIENT_BUFFER = 0x80551605,
+    SCE_NP_TROPHY_ERROR_EXCEEDS_MAX = 0x80551606,
+    SCE_NP_TROPHY_ERROR_ABORT = 0x80551607,
+    SCE_NP_TROPHY_ERROR_INVALID_HANDLE = 0x80551608,
+    SCE_NP_TROPHY_ERROR_INVALID_CONTEXT = 0x80551609,
+    SCE_NP_TROPHY_ERROR_INVALID_NPCOMMID = 0x8055160a,
+    SCE_NP_TROPHY_ERROR_INVALID_NPCOMMSIGN = 0x8055160b,
+    SCE_NP_TROPHY_ERROR_NPCOMMSIGN_VERIFICATION_FAILURE = 0x8055160c,
+    SCE_NP_TROPHY_ERROR_INVALID_GROUP_ID = 0x8055160d,
+    SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID = 0x8055160e,
+    SCE_NP_TROPHY_ERROR_TROPHY_ALREADY_UNLOCKED = 0x8055160f,
+    SCE_NP_TROPHY_ERROR_PLATINUM_CANNOT_UNLOCK = 0x80551610,
+    SCE_NP_TROPHY_ERROR_ACCOUNTID_NOT_MATCH = 0x80551611,
+    SCE_NP_TROPHY_ERROR_SETUP_REQUIRED = 0x80551612,
+    SCE_NP_TROPHY_ERROR_ALREADY_SETUP = 0x80551613,
+    SCE_NP_TROPHY_ERROR_BROKEN_DATA = 0x80551614,
+    SCE_NP_TROPHY_ERROR_INSUFFICIENT_EM_SPACE = 0x80551615,
+    SCE_NP_TROPHY_ERROR_CONTEXT_ALREADY_EXISTS = 0x80551616,
+    SCE_NP_TROPHY_ERROR_TRP_FILE_VERIFICATION_FAILURE = 0x80551617,
+    SCE_NP_TROPHY_ERROR_ICON_FILE_NOT_FOUND = 0x80551618,
+    SCE_NP_TROPHY_ERROR_TRP_FILE_NOT_FOUND = 0x80551619,
+    SCE_NP_TROPHY_ERROR_INVALID_TRP_FILE_FORMAT = 0x8055161a,
+    SCE_NP_TROPHY_ERROR_UNSUPPORTED_TRP_FILE = 0x8055161b,
+    SCE_NP_TROPHY_ERROR_INVALID_TROPHY_CONF_FORMAT = 0x8055161c,
+    SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF = 0x8055161d,
+    SCE_NP_TROPHY_ERROR_TROPHY_NOT_UNLOCKED = 0x8055161e,
+    SCE_NP_TROPHY_ERROR_UNLOCK_DENIED = 0x8055161f,
+    SCE_NP_TROPHY_ERROR_INSUFFICIENT_MC_SPACE = 0x80551620,
+    SCE_NP_TROPHY_ERROR_DEBUG_FAILURE = 0x80551621
+};
 
 #define SCE_NP_TROPHY_GAME_TITLE_MAX_SIZE 128
 #define SCE_NP_TROPHY_GAME_DESCR_MAX_SIZE 1024
@@ -153,7 +155,7 @@ EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const 
     }
 
     np::NpTrophyError err = np::NpTrophyError::TROPHY_ERROR_NONE;
-    *context = create_trophy_context(emuenv.np, &emuenv.io, emuenv.pref_path, comm_id, static_cast<uint32_t>(emuenv.cfg.sys_lang),
+    *context = create_trophy_context(emuenv.np, &emuenv.io, emuenv.vita_fs_path, comm_id, static_cast<uint32_t>(emuenv.cfg.sys_lang),
         &err);
 
     if (*context == np::trophy::INVALID_CONTEXT_HANDLE) {
@@ -524,18 +526,23 @@ static int do_trophy_callback(EmuEnvState &emuenv, np::trophy::Context *context,
 
     LOG_INFO("Trophy unlocked, name: {}, detail: {}, id = {}", callback_data.trophy_name, callback_data.trophy_detail, trophy_id);
 
-    // Call this async.
-    if (emuenv.np.trophy_state.trophy_unlock_callback) {
-        uint32_t buf_size = 0;
+    // Call all registered callbacks.
+    {
+        std::lock_guard lock(emuenv.np.trophy_state.callback_mutex);
+        if (!emuenv.np.trophy_state.trophy_unlock_callbacks.empty()) {
+            uint32_t buf_size = 0;
 
-        // Make filename
-        const std::string trophy_icon_filename = fmt::format("TROP{:0>3d}.PNG", trophy_id);
-        context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), nullptr, &buf_size);
+            // Make filename
+            const std::string trophy_icon_filename = fmt::format("TROP{:0>3d}.PNG", trophy_id);
+            context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), nullptr, &buf_size);
 
-        callback_data.icon_buf.resize(buf_size);
-        context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), &callback_data.icon_buf[0], &buf_size);
+            callback_data.icon_buf.resize(buf_size);
+            context->copy_file_data_from_trophy_file(trophy_icon_filename.c_str(), &callback_data.icon_buf[0], &buf_size);
 
-        emuenv.np.trophy_state.trophy_unlock_callback(callback_data);
+            for (auto &cb : emuenv.np.trophy_state.trophy_unlock_callbacks) {
+                cb(callback_data);
+            }
+        }
     }
 
     return 0;

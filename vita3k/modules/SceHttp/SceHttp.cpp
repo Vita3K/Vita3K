@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,7 +36,6 @@
 #include <net/state.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
-#include <util/lock_and_find.h>
 #include <util/log.h>
 #include <util/net_utils.h>
 #include <util/string_utils.h>
@@ -165,14 +164,12 @@ EXPORT(SceInt, sceHttpAddRequestHeader, SceInt reqId, const char *name, const ch
             // entry doesn't exists, we can insert it
             req.headers.insert({ name, value });
         }
-    } else if (mode == SCE_HTTP_HEADER_ADD) {
+    } else { // mode == SCE_HTTP_HEADER_ADD
         if (req.headers.contains(name))
             return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
         req.headers.insert({ name, value });
-    } else
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
-
+    }
     return 0;
 }
 
@@ -267,7 +264,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
     };
     addrinfo *result = { 0 };
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
 
     auto ret = getaddrinfo(parsed.hostname.c_str(), port.c_str(), &hints, &result);
     if (ret < 0) {
@@ -431,11 +428,11 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceHttpMethods method
     req.url = urlStr;
     req.contentLength = contentLength;
 
-    req.headers.insert({ "Host", parsed.hostname });
-    req.headers.insert({ "User-Agent", tmpl->second.userAgent });
+    req.headers.emplace("Host", parsed.hostname);
+    req.headers.emplace("User-Agent", tmpl->second.userAgent);
 
     if (tmpl->second.httpVersion == SCE_HTTP_VERSION_1_1 && conn->second.keepAlive)
-        req.headers.insert({ "Connection", "Keep-Alive" });
+        req.headers.emplace("Connection", "Keep-Alive");
 
     std::string methodStr;
     switch (method) {
@@ -841,7 +838,7 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
     *httpMajorVer = string_utils::stoi_def(version.substr(0, version.find('.'))); // we know this wont fail because parseStatusLine returned true :)
-    if (version.find('.') != std::string::npos) {
+    if (version.contains('.')) {
         auto minorVer = version.substr(version.find('.') + 1);
         *httpMinorVer = string_utils::stoi_def(minorVer);
     } else {
@@ -1101,15 +1098,15 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         }
 
         totalReceived += bytes;
-    } while (std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos || totalReceived == resHeadersMaxSize); // receive headers until we start receiving body
+    } while (!std::string_view(resHeaders).contains("\r\n\r\n") || totalReceived == resHeadersMaxSize); // receive headers until we start receiving body
 
-    if (totalReceived != resHeadersMaxSize && std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos) {
+    if (totalReceived != resHeadersMaxSize && !std::string_view(resHeaders).contains("\r\n\r\n")) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_TIMEOUT);
     }
 
     // Headers are too big
-    if (totalReceived == resHeadersMaxSize && std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos) {
+    if (totalReceived == resHeadersMaxSize && !std::string_view(resHeaders).contains("\r\n\r\n")) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_TOO_LARGE_RESPONSE_HEADER);
     }
@@ -1131,9 +1128,9 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     // Now we get the body or the rest of the body
     attempts = 1; // Reset attempts
-    const int responseLength = resHeadersStr.find("\r\n\r\n") + strlen("\r\n\r\n") + req->second.res.contentLength;
+    int responseLength = resHeadersStr.find("\r\n\r\n") + strlen("\r\n\r\n") + req->second.res.contentLength;
     if (req->second.method == SCE_HTTP_METHOD_HEAD || req->second.method == SCE_HTTP_METHOD_OPTIONS) // even if we have content-length, there will be no body
-        const int responseLength = resHeadersStr.find("\r\n\r\n") + strlen("\r\n\r\n");
+        responseLength = resHeadersStr.find("\r\n\r\n") + strlen("\r\n\r\n");
 
     // This is the entire response, including headers and everything
     auto reqResponse = new uint8_t[responseLength]();

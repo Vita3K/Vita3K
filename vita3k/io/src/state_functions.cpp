@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,6 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 #include <io.h>
 #else
 #define _FILE_OFFSET_BITS 64
@@ -26,9 +28,31 @@
 
 #include <io/state.h>
 
+static const uint32_t page_size = []() -> uint32_t {
+#ifdef _WIN32
+    SYSTEM_INFO system_info = {};
+    GetSystemInfo(&system_info);
+    return system_info.dwPageSize;
+#else
+    return static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
+#endif
+}();
+
 SceOff FileStats::read(void *input_data, const int element_size, const SceSize element_count) const {
     if (!wrapped_file)
         return -1;
+
+    if (element_size == 0 || element_count == 0)
+        return 0;
+
+    // we are filling this buffer this data, why would we have to set some parts to 0 before ?
+    // that's because host io does not work well with memory trapping and read-only buffer
+    // so set 1 byte to 0 in all pages to trigger all possible pagefaults in this range
+    // todo: call a mem function to check this instead
+    volatile uint8_t *input_addr = reinterpret_cast<volatile uint8_t *>(input_data);
+    for (int i = 0; i < element_size * element_count; i += page_size)
+        input_addr[i] = 0;
+    input_addr[element_size * element_count - 1] = 0;
 
     return fread(input_data, element_size, element_count, wrapped_file.get());
 }

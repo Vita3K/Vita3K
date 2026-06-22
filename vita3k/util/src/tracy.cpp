@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,16 +27,16 @@
 
 namespace tracy_module_utils {
 
-constexpr int max_modules = 64; // If not enough increase to 64*n
+constexpr int max_modules = 128; // If not enough increase to 64*n
 typedef std::bitset<max_modules> tracy_module_flags;
 typedef std::vector<std::string> tracy_module_names;
 
-tracy_module_names &get_tracy_available_advanced_profiling_modules() {
+static tracy_module_names &get_tracy_available_advanced_profiling_modules() {
     static tracy_module_names tracy_available_advanced_profiling_modules{};
     return tracy_available_advanced_profiling_modules;
 }
 
-tracy_module_flags &get_tracy_advanced_profiling_modules() {
+static tracy_module_flags &get_tracy_advanced_profiling_modules() {
     static tracy_module_flags tracy_advanced_profiling_modules{};
     return tracy_advanced_profiling_modules;
 }
@@ -83,7 +83,7 @@ void load_from(const std::vector<std::string> &active_modules_str) {
 void cleanup(std::vector<std::string> &active_modules_str) {
     // remove if not found in tracy_available_advanced_profiling_modules
     std::erase_if(active_modules_str, [](const std::string &module) {
-        return !vector_utils::contains(get_tracy_available_advanced_profiling_modules(), module);
+        return !std::ranges::contains(get_tracy_available_advanced_profiling_modules(), module);
     });
 }
 

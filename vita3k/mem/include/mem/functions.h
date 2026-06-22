@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,7 +37,18 @@ enum struct MemPerm {
     ReadWrite = ReadOnly | WriteOnly
 };
 
+constexpr MemPerm most_restrictive_perm(MemPerm a, MemPerm b) {
+    if (a == MemPerm::None || b == MemPerm::None)
+        return MemPerm::None;
+    if (a == MemPerm::ReadOnly || b == MemPerm::ReadOnly)
+        return MemPerm::ReadOnly;
+    if (a == MemPerm::WriteOnly || b == MemPerm::WriteOnly)
+        return MemPerm::WriteOnly;
+    return MemPerm::ReadWrite;
+}
+
 bool init(MemState &state, const bool use_page_table);
+void deinit_mem(MemState &state);
 Address alloc(MemState &state, uint32_t size, const char *name, Address start_addr = user_main_memory_start);
 Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned int alignment, Address start_addr = user_main_memory_start);
 void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm);
@@ -46,7 +57,7 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
 void open_access_parent_protect_segment(MemState &state, Address addr);
 void close_access_parent_protect_segment(MemState &state, Address addr);
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr);
-void remove_external_mapping(MemState &mem, uint8_t *addr_ptr);
+void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size);
 bool is_protecting(MemState &state, Address addr, MemPerm *perm = nullptr);
 bool is_valid_addr(const MemState &state, Address addr);
 bool is_valid_addr_range(const MemState &state, Address start, Address end);

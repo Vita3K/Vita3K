@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,11 +16,17 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <module/module.h>
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceDmacmgr);
 
-EXPORT(int, sceDmacMemcpy) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceDmacMemcpy, Ptr<void> dst, const void *src, SceSize len) {
+    TRACY_FUNC(sceDmacMemcpy, dst, src, len);
+    memcpy(dst.get(emuenv.mem), src, len);
+    return 0;
 }
 
-EXPORT(int, sceDmacMemset) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceDmacMemset, Ptr<void> dst, int ch, SceSize len) {
+    TRACY_FUNC(sceDmacMemset, dst, ch, len);
+    memset(dst.get(emuenv.mem), ch, len);
+    return 0;
 }

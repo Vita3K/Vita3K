@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -103,7 +103,9 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePt
             display.vblank_wait_infos.push_back({ wait_thread, target_vcount });
         }
 
-        wait_thread->status_cond.wait(thread_lock, [=]() { return wait_thread->status == ThreadStatus::run; });
+        wait_thread->status_cond.wait(thread_lock, [&]() {
+            return wait_thread->status == ThreadStatus::run;
+        });
     }
 
     if (is_cb) {
@@ -214,4 +216,38 @@ void update_prediction(EmuEnvState &emuenv, DisplayFrameInfo &frame) {
 
     // let predict_next_image reset the cycle if necessary
     display.predicted_cycles_seen = std::min(display.predicted_cycles_seen, 1U);
+}
+
+void DisplayState::deinit() {
+    abort = true;
+    if (vblank_thread && vblank_thread->joinable())
+        vblank_thread->join();
+
+    vblank_thread.reset();
+    abort = false;
+
+    {
+        const std::lock_guard<std::mutex> guard(mutex);
+        vblank_wait_infos.clear();
+        vblank_callbacks.clear();
+    }
+
+    {
+        const std::lock_guard<std::mutex> guard(display_info_mutex);
+        sce_frame = {};
+        next_rendered_frame = {};
+    }
+
+    predicted_frames.clear();
+    predicted_frame_position = static_cast<uint32_t>(-1);
+    predicted_cycles_seen = 0;
+    predicting = false;
+    current_sync_object = 0;
+
+    vblank_count = 0;
+    last_setframe_vblank_count = 0;
+
+    fps_hack = false;
+    // pretty sure we set this on game boot
+    fullscreen = false;
 }

@@ -11,9 +11,6 @@
       "hidden": true,
       "description": "Base hidden preset to set general options",
       "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "USE_DISCORD_RICH_PRESENCE": true
-      },
       "environment": {
         "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
       }
@@ -30,12 +27,18 @@
       }
     },
     {
+      "name": "windows-vs2026",
+      "inherits": "windows",
+      "displayName": "Windows with Visual Studio 2026",
+      "description": "Windows native build using Visual Studio 2026 generator and default toolchain/compiler",
+      "generator": "Visual Studio 18 2026"
+    },
+    {
       "name": "windows-vs2022",
       "inherits": "windows",
       "displayName": "Windows with Visual Studio 2022",
       "description": "Windows native build using Visual Studio 2022 generator and default toolchain/compiler",
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x64"
+      "generator": "Visual Studio 17 2022"
     },
     {
       "name": "windows-vs2022-clang",
@@ -59,6 +62,28 @@
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang-cl",
         "CMAKE_CXX_COMPILER": "clang-cl"
+      }
+    },
+    {
+      "name": "ci-windows-msvc",
+      "inherits": "windows-ninja",
+      "description": "CI preset for Windows MSVC builds",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER_LAUNCHER": "sccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "sccache",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
+      }
+    },
+    {
+      "name": "ci-windows-msys2-clang",
+      "inherits": "windows-ninja",
+      "description": "CI preset for Windows MSYS2 Clang builds",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
       }
     },
     {
@@ -106,6 +131,25 @@
       }
     },
     {
+      "name": "ci-linux-clang",
+      "inherits": "linux-ninja-clang",
+      "description": "CI preset for Linux Clang builds",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER_LAUNCHER": "sccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "sccache"
+      }
+    },
+    {
+      "name": "ci-linux-clang-appimage",
+      "inherits": "ci-linux-clang",
+      "description": "CI preset for Linux Clang AppImage builds",
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "/usr",
+        "BUILD_APPIMAGE": true,
+        "LINUXDEPLOY_COMMAND": "$env{VITA3K_LINUXDEPLOY_COMMAND}"
+      }
+    },
+    {
       "name": "linux-ninja-gnu",
       "inherits": "linux-ninja",
       "displayName": "Linux with Ninja and GNU GCC",
@@ -134,6 +178,30 @@
       "generator": "Ninja Multi-Config"
     },
     {
+      "name": "ci-macos-x64",
+      "inherits": "macos-ninja",
+      "description": "CI preset for macOS x86_64 builds",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_OSX_ARCHITECTURES": "x86_64",
+        "FORCE_BUILD_OPENSSL_MAC": true,
+        "VITA3K_FORCE_CUSTOM_BOOST": true
+      }
+    },
+    {
+      "name": "ci-macos-arm64",
+      "inherits": "macos-ninja",
+      "description": "CI preset for macOS arm64 builds",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "FORCE_BUILD_OPENSSL_MAC": true,
+        "VITA3K_FORCE_CUSTOM_BOOST": true
+      }
+    },
+    {
       "name": "macos-xcode",
       "inherits": "macos",
       "displayName": "macOS with Xcode",
@@ -142,6 +210,27 @@
     }
   ],
   "buildPresets": [
+    {
+      "name": "windows-vs2026-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information and no compiler optimizations",
+      "configuration": "Debug",
+      "configurePreset": "windows-vs2026"
+    },
+    {
+      "name": "windows-vs2026-relwithdebinfo",
+      "displayName": "Release with debugging information",
+      "description": "Build with compiler optimizations enabled and limited debugging information",
+      "configuration": "RelWithDebInfo",
+      "configurePreset": "windows-vs2026"
+    },
+    {
+      "name": "windows-vs2026-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information",
+      "configuration": "Release",
+      "configurePreset": "windows-vs2026"
+    },
     {
       "name": "windows-vs2022-debug",
       "displayName": "Debug",

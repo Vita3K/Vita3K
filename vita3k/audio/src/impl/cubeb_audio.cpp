@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,11 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "audio/impl/cubeb_audio.h"
-
-#include <tracy/Tracy.hpp>
-
-#include "kernel/thread/thread_state.h"
-
 #include "util/log.h"
 
 static long impl_cubeb_audio_callback(cubeb_stream *stream, void *user_data, const void *input, void *output, long nframes) {
@@ -71,9 +66,7 @@ CubebAudioOutPort::~CubebAudioOutPort() {
 }
 
 CubebAudioAdapter::CubebAudioAdapter(AudioState &audio_state)
-    : AudioAdapter(audio_state) {
-    this->single_stream = false;
-}
+    : AudioAdapter(audio_state) {}
 
 CubebAudioAdapter::~CubebAudioAdapter() {
     if (cubeb_ctx)
@@ -126,15 +119,18 @@ AudioOutPortPtr CubebAudioAdapter::open_port(int nb_channels, int freq, int nb_s
     return port;
 }
 
-void CubebAudioAdapter::audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) {
+void CubebAudioAdapter::audio_output(AudioOutPort &out_port, const void *buffer) {
     CubebAudioOutPort &port = static_cast<CubebAudioOutPort &>(out_port);
 
     std::unique_lock<std::mutex> lock(port.mutex);
+
+    if (out_port.stopping)
+        return;
+
     if (port.nb_buffers_ready == port.audio_buffers.size()) {
-        // is it really useful to update the thread status?
-        thread.update_status(ThreadStatus::wait);
         port.cond_var.wait(lock);
-        thread.update_status(ThreadStatus::run);
+        if (out_port.stopping)
+            return;
     }
 
     assert(port.nb_buffers_ready < port.audio_buffers.size());
@@ -157,11 +153,21 @@ void CubebAudioAdapter::set_volume(AudioOutPort &out_port, float volume) {
 }
 
 void CubebAudioAdapter::switch_state(const bool pause) {
-    for (auto [_, out_port] : state.out_ports) {
+    for (auto &[_, out_port] : state.out_ports) {
         CubebAudioOutPort &port = static_cast<CubebAudioOutPort &>(*out_port);
         if (pause)
             cubeb_stream_stop(port.out_stream);
         else
             cubeb_stream_start(port.out_stream);
+    }
+}
+
+void CubebAudioAdapter::wake_all_ports() {
+    for (auto &[_, port_ptr] : state.out_ports) {
+        auto &port = static_cast<CubebAudioOutPort &>(*port_ptr);
+        {
+            std::lock_guard<std::mutex> lock(port.mutex);
+        }
+        port.cond_var.notify_all();
     }
 }

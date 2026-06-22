@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,7 +17,10 @@
 
 #include <emuenv/state.h>
 
+#include <app/state.h>
 #include <audio/state.h>
+#include <camera/state.h>
+#include <compat/state.h>
 #include <config/state.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
@@ -32,16 +35,21 @@
 #include <ngs/state.h>
 #include <nids/types.h>
 #include <np/state.h>
+#include <overlay/display_manager.h>
 #include <packages/license.h>
 #include <packages/sfo.h>
 #include <regmgr/state.h>
+#include <renderer/functions.h>
 #include <renderer/state.h>
 #include <touch/state.h>
 
 #include <gdbstub/state.h>
 
+#include <util/warning.h>
+
 // initialize the unique_ptr then the reference each time
 // this is VERY repetitive
+DISABLE_WARNING_BEGIN(5038, "-Wreorder-ctor")
 EmuEnvState::EmuEnvState()
     : _app_info(new sfo::SfoAppInfo)
     , app_info(*_app_info)
@@ -57,6 +65,8 @@ EmuEnvState::EmuEnvState()
     , kernel(*_kernel)
     , _audio(new AudioState)
     , audio(*_audio)
+    , _app(new AppState)
+    , app(*_app)
     , _gxm(new GxmState)
     , gxm(*_gxm)
     , _io(new IOState)
@@ -86,8 +96,13 @@ EmuEnvState::EmuEnvState()
     , _gdb(new GDBState)
     , gdb(*_gdb)
     , _http(new HTTPState)
-    , http(*_http) {
+    , http(*_http)
+    , _camera(new CameraState)
+    , camera(*_camera)
+    , _compat(new CompatState)
+    , compat(*_compat) {
 }
+DISABLE_WARNING_END;
 
 // this is necessary to forward declare unique_ptrs (so that they can call the appropriate destructor)
 EmuEnvState::~EmuEnvState() = default;

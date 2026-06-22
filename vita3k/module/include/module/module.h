@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,9 +36,9 @@
 #define CALL_EXPORT(name, ...) export_##name(emuenv, thread_id, #name, ##__VA_ARGS__)
 
 #define DECL_EXPORT(ret, name, ...) ret export_##name(EmuEnvState &emuenv, SceUID thread_id, const char *export_name, ##__VA_ARGS__)
-#define EXPORT(ret, name, ...)                                           \
-    DECL_EXPORT(ret, name, ##__VA_ARGS__);                               \
-    extern const ImportFn import_##name = bridge(&export_##name, #name); \
+#define EXPORT(ret, name, ...)                                                                \
+    DECL_EXPORT(ret, name, ##__VA_ARGS__);                                                    \
+    extern const ImportFn import_##name = make_bridge<&export_##name>(#name, &export_##name); \
     DECL_EXPORT(ret, name, ##__VA_ARGS__)
 
 #define DECL_VAR_EXPORT(name) Address export_##name(EmuEnvState &emuenv)
@@ -46,3 +46,8 @@
     DECL_VAR_EXPORT(name);                                       \
     extern const ImportVarFactory import_##name = export_##name; \
     DECL_VAR_EXPORT(name)
+
+#define LIBRARY_INIT(name)                                                              \
+    static void export_library_init_##name(EmuEnvState &emuenv);                        \
+    extern const LibraryInitFn import_library_init_##name = export_library_init_##name; \
+    static void export_library_init_##name(EmuEnvState &emuenv)

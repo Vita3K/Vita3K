@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
     TRACY_FUNC(sceCtrlGetControllerPortInfo, info);
     info->port[0] = emuenv.cfg.current_config.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
     for (int i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
-        info->port[i + 1] = (emuenv.cfg.current_config.pstv_mode && !emuenv.ctrl.free_ports[i]) ? get_type_of_controller(i) : SCE_CTRL_TYPE_UNPAIRED;
+        info->port[i + 1] = (emuenv.cfg.current_config.pstv_mode && !emuenv.ctrl.free_ports[i]) ? get_type_of_controller(emuenv.ctrl, i) : SCE_CTRL_TYPE_UNPAIRED;
     }
     return 0;
 }
@@ -196,8 +196,8 @@ EXPORT(int, sceCtrlSetActuator, int port, const SceCtrlActuator *pState) {
     CtrlState &state = emuenv.ctrl;
     for (const auto &controller : state.controllers) {
         if (controller.second.port + 1 == port) {
-            // sceCtrl ports are 1-based and SDL_GameController index is 0-based. Need to convert.
-            SDL_GameControllerRumble(controller.second.controller.get(), pState->small * 655.35f, pState->large * 655.35f, SDL_HAPTIC_INFINITY);
+            // sceCtrl ports are 1-based and SDL_Gamepad index is 0-based. Need to convert.
+            SDL_RumbleGamepad(controller.second.controller.get(), pState->small * 655.35f, pState->large * 655.35f, SDL_HAPTIC_INFINITY);
 
             return 0;
         }

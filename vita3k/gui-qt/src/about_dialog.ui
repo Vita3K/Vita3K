@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+	<class>AboutDialog</class>
+	<widget class="QDialog" name="AboutDialog">
+		<property name="geometry">
+			<rect>
+				<x>0</x>
+				<y>0</y>
+				<width>800</width>
+				<height>550</height>
+			</rect>
+		</property>
+		<property name="windowTitle">
+			<string>About Vita3K</string>
+		</property>
+		<layout class="QVBoxLayout" name="main_layout" stretch="0,1,0">
+			<property name="spacing">
+				<number>6</number>
+			</property>
+			<property name="leftMargin">
+				<number>0</number>
+			</property>
+			<property name="topMargin">
+				<number>0</number>
+			</property>
+			<property name="rightMargin">
+				<number>0</number>
+			</property>
+			<property name="bottomMargin">
+				<number>0</number>
+			</property>
+			<item>
+				<widget class="QWidget" name="header_section" native="true">
+					<property name="sizePolicy">
+						<sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+							<horstretch>0</horstretch>
+							<verstretch>0</verstretch>
+						</sizepolicy>
+					</property>
+					<layout class="QHBoxLayout" name="header_layout" stretch="0,1">
+						<item>
+							<widget class="QWidget" name="icon_widget" native="true">
+								<property name="sizePolicy">
+									<sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+										<horstretch>0</horstretch>
+										<verstretch>0</verstretch>
+									</sizepolicy>
+								</property>
+								<layout class="QVBoxLayout" name="icon_layout">
+									<property name="leftMargin">
+										<number>0</number>
+									</property>
+									<property name="topMargin">
+										<number>0</number>
+									</property>
+									<property name="rightMargin">
+										<number>0</number>
+									</property>
+									<property name="bottomMargin">
+										<number>0</number>
+									</property>
+									<item>
+										<widget class="QLabel" name="icon_label">
+											<property name="minimumSize">
+												<size>
+													<width>128</width>
+													<height>128</height>
+												</size>
+											</property>
+											<property name="maximumSize">
+												<size>
+													<width>128</width>
+													<height>128</height>
+												</size>
+											</property>
+											<property name="text">
+												<string/>
+											</property>
+											<property name="alignment">
+												<set>Qt::AlignmentFlag::AlignCenter</set>
+											</property>
+										</widget>
+									</item>
+									<item>
+										<spacer name="icon_spacer">
+											<property name="orientation">
+												<enum>Qt::Orientation::Vertical</enum>
+											</property>
+											<property name="sizeType">
+												<enum>QSizePolicy::Policy::MinimumExpanding</enum>
+											</property>
+											<property name="sizeHint" stdset="0">
+												<size>
+													<width>20</width>
+													<height>0</height>
+												</size>
+											</property>
+										</spacer>
+									</item>
+								</layout>
+							</widget>
+						</item>
+						<item>
+							<layout class="QVBoxLayout" name="text_layout">
+								<item>
+									<widget class="QLabel" name="title_label">
+										<property name="font">
+											<font>
+												<pointsize>14</pointsize>
+												<bold>false</bold>
+											</font>
+										</property>
+										<property name="text">
+											<string>Vita3K PlayStation Vita Emulator</string>
+										</property>
+										<property name="alignment">
+											<set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+										</property>
+										<property name="textInteractionFlags">
+											<set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+										</property>
+									</widget>
+								</item>
+								<item>
+									<widget class="QLabel" name="version_label">
+										<property name="text">
+											<string/>
+										</property>
+										<property name="alignment">
+											<set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+										</property>
+										<property name="wordWrap">
+											<bool>true</bool>
+										</property>
+										<property name="textInteractionFlags">
+											<set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+										</property>
+									</widget>
+								</item>
+								<item>
+									<widget class="QLabel" name="description_label">
+										<property name="text">
+											<string/>
+										</property>
+										<property name="wordWrap">
+											<bool>true</bool>
+										</property>
+										<property name="alignment">
+											<set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+										</property>
+										<property name="textInteractionFlags">
+											<set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+										</property>
+									</widget>
+								</item>
+								<item>
+									<widget class="QLabel" name="credit_label">
+										<property name="text">
+											<string/>
+										</property>
+										<property name="textFormat">
+											<enum>Qt::TextFormat::RichText</enum>
+										</property>
+										<property name="alignment">
+											<set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+										</property>
+										<property name="openExternalLinks">
+											<bool>true</bool>
+										</property>
+										<property name="textInteractionFlags">
+											<set>Qt::TextInteractionFlag::TextBrowserInteraction</set>
+										</property>
+									</widget>
+								</item>
+							</layout>
+						</item>
+					</layout>
+				</widget>
+			</item>
+			<item>
+				<widget class="QScrollArea" name="staff_scroll_area">
+					<property name="sizePolicy">
+						<sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+							<horstretch>0</horstretch>
+							<verstretch>0</verstretch>
+						</sizepolicy>
+					</property>
+					<property name="minimumSize">
+						<size>
+							<width>0</width>
+							<height>200</height>
+						</size>
+					</property>
+					<property name="frameShape">
+						<enum>QFrame::Shape::NoFrame</enum>
+					</property>
+					<property name="verticalScrollBarPolicy">
+						<enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
+					</property>
+					<property name="sizeAdjustPolicy">
+						<enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
+					</property>
+					<property name="widgetResizable">
+						<bool>true</bool>
+					</property>
+					<widget class="QWidget" name="staff_widget">
+						<property name="geometry">
+							<rect>
+								<x>0</x>
+								<y>0</y>
+								<width>780</width>
+								<height>400</height>
+							</rect>
+						</property>
+						<layout class="QHBoxLayout" name="staff_layout" stretch="1,1,1">
+							<property name="sizeConstraint">
+								<enum>QLayout::SizeConstraint::SetMinimumSize</enum>
+							</property>
+							<property name="leftMargin">
+								<number>24</number>
+							</property>
+							<item>
+								<layout class="QVBoxLayout" name="developers_column" stretch="0,1">
+									<property name="spacing">
+										<number>10</number>
+									</property>
+									<item>
+										<widget class="QLabel" name="developers_title">
+											<property name="font">
+												<font>
+													<bold>true</bold>
+												</font>
+											</property>
+											<property name="text">
+												<string>Developers:</string>
+											</property>
+										</widget>
+									</item>
+									<item>
+										<widget class="QLabel" name="developers_list">
+											<property name="text">
+												<string notr="true">&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=1whatleytay&quot;&gt;1whatleytay&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=bookmist&quot;&gt;bookmist&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=EXtremeExploit&quot;&gt;EXtremeExploit&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=frangarcj&quot;&gt;frangarcj&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=IllusionMan1212&quot;&gt;IllusionMan1212&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=imWatchful&quot;&gt;imWatchful&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Macdu&quot;&gt;Macdu&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=pent0&quot;&gt;pent0&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=petmac&quot;&gt;petmac&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Rinnegatamante&quot;&gt;Rinnegatamante&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=sunho&quot;&gt;sunho&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=VelocityRa&quot;&gt;VelocityRa&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Zangetsu38&quot;&gt;Zangetsu38&lt;/a&gt;</string>
+											</property>
+											<property name="textFormat">
+												<enum>Qt::TextFormat::RichText</enum>
+											</property>
+											<property name="alignment">
+												<set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+											</property>
+											<property name="openExternalLinks">
+												<bool>true</bool>
+											</property>
+											<property name="textInteractionFlags">
+												<set>Qt::TextInteractionFlag::TextBrowserInteraction</set>
+											</property>
+										</widget>
+									</item>
+								</layout>
+							</item>
+							<item>
+								<layout class="QVBoxLayout" name="contributors_column" stretch="0,1">
+									<property name="spacing">
+										<number>10</number>
+									</property>
+									<item>
+										<widget class="QLabel" name="contributors_title">
+											<property name="font">
+												<font>
+													<bold>true</bold>
+												</font>
+											</property>
+											<property name="text">
+												<string>Contributors:</string>
+											</property>
+										</widget>
+									</item>
+									<item>
+										<widget class="QLabel" name="contributors_list">
+											<property name="text">
+												<string notr="true">&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=0nza1101&quot;&gt;0nza1101&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=0x8080&quot;&gt;0x8080&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=AtticFinder65536&quot;&gt;AtticFinder65536&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Avellea&quot;&gt;Avellea&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=blackbird806&quot;&gt;blackbird806&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=BogdanTheGeek&quot;&gt;BogdanTheGeek&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=bsinky&quot;&gt;bsinky&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=bythos14&quot;&gt;bythos14&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=cobalt2727&quot;&gt;cobalt2727&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=CoffeeBrewer64&quot;&gt;CoffeeBrewer64&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Cpasjuste&quot;&gt;Cpasjuste&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Creeot&quot;&gt;Creeot&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=CreepNT&quot;&gt;CreepNT&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Croden1999&quot;&gt;Croden1999&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=d3m3vilurr&quot;&gt;d3m3vilurr&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Danik2343&quot;&gt;Danik2343&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=darkash&quot;&gt;darkash&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=DerRM&quot;&gt;DerRM&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=devnoname120&quot;&gt;devnoname120&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=dima-xd&quot;&gt;dima-xd&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=dracc&quot;&gt;dracc&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=edwinr&quot;&gt;edwinr&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=FantasyGmm&quot;&gt;FantasyGmm&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Felipefpl&quot;&gt;Felipefpl&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=FlotterCodername&quot;&gt;FlotterCodername&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Frain-Breeze&quot;&gt;Frain-Breeze&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=francois-berder&quot;&gt;francois-berder&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=FromAlaska&quot;&gt;FromAlaska&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Ghabry&quot;&gt;Ghabry&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=hobyst&quot;&gt;hobyst&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=HuanJiCanShang&quot;&gt;HuanJiCanShang&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=ichisadashioko&quot;&gt;ichisadashioko&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=illusion0001&quot;&gt;illusion0001&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=isJuhn&quot;&gt;isJuhn&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=jdoe0000000&quot;&gt;jdoe0000000&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=jlachniet&quot;&gt;jlachniet&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Johnnynator&quot;&gt;Johnnynator&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=johnothwolo&quot;&gt;johnothwolo&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Kaitul&quot;&gt;Kaitul&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=KaneDbD&quot;&gt;KaneDbD&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=kd-11&quot;&gt;kd-11&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=KhoraLee&quot;&gt;KhoraLee&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Kitakatarashima&quot;&gt;Kitakatarashima&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=lephilousophe&quot;&gt;lephilousophe&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Lupiax&quot;&gt;Lupiax&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=lybxlpsv&quot;&gt;lybxlpsv&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=MaddTheSane&quot;&gt;MaddTheSane&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Margen67&quot;&gt;Margen67&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=mavethee&quot;&gt;mavethee&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=merryhime&quot;&gt;merryhime&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=mirusu400&quot;&gt;mirusu400&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=mkersey&quot;&gt;mkersey&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=mrcmunir&quot;&gt;mrcmunir&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=muemart&quot;&gt;muemart&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=NeveHanter&quot;&gt;NeveHanter&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=ngeojiajun&quot;&gt;ngeojiajun&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Nicba1010&quot;&gt;Nicba1010&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=nishinji&quot;&gt;nishinji&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=nn9dev&quot;&gt;nn9dev&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Nyabsi&quot;&gt;Nyabsi&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=oltolm&quot;&gt;oltolm&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=pedrozzz0&quot;&gt;pedrozzz0&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Princess-of-Sleeping&quot;&gt;Princess-of-Sleeping&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=qurious-pixel&quot;&gt;qurious-pixel&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=redpolline&quot;&gt;redpolline&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Ristellise&quot;&gt;Ristellise&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=saturnsky&quot;&gt;saturnsky&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=scribam&quot;&gt;scribam&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=sitiom&quot;&gt;sitiom&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=slipcounter&quot;&gt;slipcounter&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=smitdylan2001&quot;&gt;smitdylan2001&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=SonicMastr&quot;&gt;SonicMastr&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Talkashie&quot;&gt;Talkashie&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Tarik366&quot;&gt;Tarik366&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=tcoyvwac&quot;&gt;tcoyvwac&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=thp&quot;&gt;thp&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=TingPing&quot;&gt;TingPing&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=TomasKralCZ&quot;&gt;TomasKralCZ&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=totlmstr&quot;&gt;totlmstr&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Valeriy-Lednikov&quot;&gt;Valeriy-Lednikov&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=wfscans&quot;&gt;wfscans&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=xero-lib&quot;&gt;xero-lib&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=xerpi&quot;&gt;xerpi&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=xperia64&quot;&gt;xperia64&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=xsamueljr&quot;&gt;xsamueljr&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=xyzz&quot;&gt;xyzz&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=yousifd&quot;&gt;yousifd&lt;/a&gt;&lt;br&gt;&lt;a href=&quot;https://github.com/Vita3K/Vita3K/commits?author=Yunotchi&quot;&gt;Yunotchi&lt;/a&gt;</string>
+											</property>
+											<property name="textFormat">
+												<enum>Qt::TextFormat::RichText</enum>
+											</property>
+											<property name="alignment">
+												<set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+											</property>
+											<property name="openExternalLinks">
+												<bool>true</bool>
+											</property>
+											<property name="textInteractionFlags">
+												<set>Qt::TextInteractionFlag::TextBrowserInteraction</set>
+											</property>
+										</widget>
+									</item>
+								</layout>
+							</item>
+							<item>
+								<layout class="QVBoxLayout" name="supporters_column" stretch="0,1">
+									<property name="spacing">
+										<number>10</number>
+									</property>
+									<item>
+										<widget class="QLabel" name="supporters_title">
+											<property name="font">
+												<font>
+													<bold>true</bold>
+												</font>
+											</property>
+											<property name="text">
+												<string>Supporters:</string>
+											</property>
+										</widget>
+									</item>
+									<item>
+										<widget class="QLabel" name="supporters_list">
+											<property name="text">
+												<string notr="true">j0hnnybrav0&lt;br&gt;TacoOblivion&lt;br&gt;Undeadbob&lt;br&gt;uplush</string>
+											</property>
+											<property name="alignment">
+												<set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+											</property>
+											<property name="textInteractionFlags">
+												<set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+											</property>
+										</widget>
+									</item>
+								</layout>
+							</item>
+						</layout>
+					</widget>
+				</widget>
+			</item>
+			<item>
+				<layout class="QHBoxLayout" name="button_layout">
+					<property name="leftMargin">
+						<number>9</number>
+					</property>
+					<property name="topMargin">
+						<number>9</number>
+					</property>
+					<property name="rightMargin">
+						<number>9</number>
+					</property>
+					<property name="bottomMargin">
+						<number>9</number>
+					</property>
+					<item>
+						<widget class="QPushButton" name="github_button">
+							<property name="text">
+								<string>GitHub</string>
+							</property>
+						</widget>
+					</item>
+					<item>
+						<widget class="QPushButton" name="website_button">
+							<property name="text">
+								<string>Website</string>
+							</property>
+						</widget>
+					</item>
+					<item>
+						<widget class="QPushButton" name="kofi_button">
+							<property name="text">
+								<string>Ko-fi</string>
+							</property>
+						</widget>
+					</item>
+					<item>
+						<widget class="QPushButton" name="discord_button">
+							<property name="text">
+								<string>Discord</string>
+							</property>
+						</widget>
+					</item>
+					<item>
+						<spacer name="button_spacer">
+							<property name="orientation">
+								<enum>Qt::Orientation::Horizontal</enum>
+							</property>
+							<property name="sizeHint" stdset="0">
+								<size>
+									<width>40</width>
+									<height>20</height>
+								</size>
+							</property>
+						</spacer>
+					</item>
+					<item>
+						<widget class="QPushButton" name="close_button">
+							<property name="text">
+								<string>Close</string>
+							</property>
+						</widget>
+					</item>
+				</layout>
+			</item>
+		</layout>
+	</widget>
+	<resources/>
+	<connections/>
+</ui>

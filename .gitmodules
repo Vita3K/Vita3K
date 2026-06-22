@@ -1,6 +1,3 @@
-[submodule "external/better-enums"]
-	path = external/better-enums
-	url = https://github.com/aantron/better-enums
 [submodule "external/boost"]
 	path = external/boost
 	url = https://github.com/Vita3K/ext-boost
@@ -23,12 +20,6 @@
 [submodule "external/googletest"]
 	path = external/googletest
 	url = https://github.com/google/googletest
-[submodule "external/imgui"]
-	path = external/imgui
-	url = https://github.com/ocornut/imgui
-[submodule "external/imgui_club"]
-	path = external/imgui_club
-	url = https://github.com/ocornut/imgui_club
 [submodule "external/libfat16"]
 	path = external/libfat16
 	url = https://github.com/Vita3K/libfat16
@@ -40,10 +31,7 @@
 	url = https://github.com/zeux/pugixml
 [submodule "external/sdl"]
 	path = external/sdl
-	url = https://github.com/Vita3K/sdl
-[submodule "external/sdl2-cmake-scripts"]
-	path = external/sdl2-cmake-scripts
-	url = https://github.com/tcbrindle/sdl2-cmake-scripts
+	url = https://github.com/libsdl-org/SDL.git
 [submodule "external/spdlog"]
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog
@@ -54,9 +42,6 @@
 [submodule "external/stb"]
 	path = external/stb
 	url = https://github.com/nothings/stb
-[submodule "external/unicorn"]
-	path = external/unicorn
-	url = https://github.com/Vita3K/unicorn.git
 [submodule "external/vita-toolchain"]
 	path = external/vita-toolchain
 	url = https://github.com/vitasdk/vita-toolchain.git
@@ -93,3 +78,9 @@
 [submodule "external/concurrentqueue"]
 	path = external/concurrentqueue
 	url = https://github.com/cameron314/concurrentqueue.git
+[submodule "external/libadrenotools"]
+	path = external/libadrenotools
+	url = https://github.com/bylaws/libadrenotools
+[submodule "external/substitute"]
+	path = external/substitute
+	url = https://github.com/Vita3K/substitute.git

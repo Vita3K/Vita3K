@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -130,7 +130,7 @@ Atrac9DecoderState::Atrac9DecoderState(uint32_t config_data)
     const int err = Atrac9InitDecoder(decoder_handle, reinterpret_cast<uint8_t *>(&config_data));
 
     if (err != At9Status::ERR_SUCCESS) {
-        LOG_ERROR("Error initializing decoder");
+        LOG_ERROR("Error initializing decoder. Error code: {}", log_hex(err));
     }
 
     Atrac9CodecInfo *info = new Atrac9CodecInfo;

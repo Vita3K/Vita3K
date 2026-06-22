@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -829,6 +829,13 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
         return vk::Format::eBc7UnormBlock;
+
+#define ASTC_FMT(b_x, b_y)                              \
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ASTC##b_x##x##b_y: \
+        return vk::Format::eAstc##b_x##x##b_y##UnormBlock;
+
+#include "../texture/astc_formats.inc"
+#undef ASTC_FMT
 
     default:
         LOG_ERROR("Unknown format {}", log_hex(base_format));

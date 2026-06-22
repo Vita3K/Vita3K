@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 
 #include <string>
 #include <util/fs.h>
-#include <util/types.h>
 #include <vector>
 
 struct Patch {
@@ -28,5 +27,12 @@ struct Patch {
     std::vector<uint8_t> values;
 };
 
-std::vector<Patch> get_patches(fs::path &path, const std::string &titleid);
+struct PatchHeader {
+    std::string titleid;
+    std::string bin;
+};
+
+using Patches = std::vector<Patch>;
+
+Patches get_patches(fs::path &path, const std::string &titleid, const std::string &bin);
 Patch parse_patch(const std::string &patch);

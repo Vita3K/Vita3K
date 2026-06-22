@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
 #include <queue>
 #include <string>
 
@@ -69,6 +70,8 @@ enum class DecoderQuery {
 
 struct DecoderState {
     AVCodecContext *context{};
+
+    std::mutex codec_mutex;
 
     virtual uint32_t get(DecoderQuery query);
 
@@ -164,7 +167,7 @@ struct Atrac9DecoderState : public DecoderState {
     uint32_t get(DecoderQuery query) override;
     uint32_t get_es_size() override;
 
-    bool send(const uint8_t *data, uint32_t size) override;
+    bool send(const uint8_t *data, uint32_t size = 0) override;
     bool receive(uint8_t *data, DecoderSize *size) override;
     void flush() override;
 

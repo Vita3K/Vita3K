@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ public:
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(destroy_time - init_time).count();
 
         LOG_TRACE("{} took {} ns | {} μs | {} ms", _name, nanos, micros, millis);
-    };
+    }
 
     inline TimeLogger(std::string name) {
         _name = name;

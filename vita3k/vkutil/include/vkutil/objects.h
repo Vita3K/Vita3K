@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,12 +17,14 @@
 
 #pragma once
 
-#include <util/bit_cast.h>
 #include <vkutil/vkutil.h>
+
+#include <bit>
 
 namespace vkutil {
 
 void init(vma::Allocator vma_allocator);
+void deinit();
 
 struct Image {
     vma::Allocation allocation;

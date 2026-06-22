@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,7 +26,12 @@ struct EmuEnvState;
 struct KernelState;
 
 void init_libraries(EmuEnvState &emuenv);
+void init_exported_vars(EmuEnvState &emuenv);
 void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id);
+
+// Returns true if the NID has an HLE (C++) implementation in nids.inc.
+// Used to determine if an LLE export should be overridden with HLE dispatch.
+bool has_hle_implementation(uint32_t nid);
 
 /**
  * \brief Loads a dynamic module into memory if it wasn't already loaded. If it was, find it and return it.
@@ -48,31 +53,9 @@ uint32_t stop_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, Sce
  */
 bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
 int unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
-bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int *retcode);
+bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int *retcode);
 
-Address resolve_export(KernelState &kernel, uint32_t nid);
-uint32_t resolve_nid(KernelState &kernel, Address addr);
+void load_taihen_plugins_for_title(EmuEnvState &emuenv, const std::string &titleid);
+
 Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem);
-
-struct VarExport {
-    uint32_t nid;
-    ImportVarFactory factory;
-    const char *name;
-};
-
-constexpr int var_exports_size =
-#define NID(name, nid)
-#define VAR_NID(name, nid) 1 +
-#include <nids/nids.inc>
-    0;
-#undef VAR_NID
-#undef NID
-
-const std::array<VarExport, var_exports_size> &get_var_exports();
-
-using LibraryInitFn = std::function<void(EmuEnvState &emuenv)>;
-
-#define LIBRARY_INIT(name)                                                              \
-    void export_library_init_##name(EmuEnvState &emuenv);                               \
-    extern const LibraryInitFn import_library_init_##name = export_library_init_##name; \
-    void export_library_init_##name(EmuEnvState &emuenv)
+Ptr<void> get_client_vtable(KernelState &kernel, MemState &mem);

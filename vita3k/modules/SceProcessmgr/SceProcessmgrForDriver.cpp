@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,10 +15,20 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <module/module.h>
+#include "kernel/state.h"
 
-EXPORT(int, ksceKernelCreateProcessLocalStorage) {
-    return UNIMPLEMENTED();
+#include <module/module.h>
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(SceProcessmgrForDriver)
+
+EXPORT(int, ksceKernelCreateProcessLocalStorage, const char *name, SceSize size) {
+    TRACY_FUNC(ksceKernelCreateProcessLocalStorage, name, size);
+    // >> 1 to make result positive (not error).
+    // result of memory allocation is always aligned (I think), so lowest bite is always 0
+    // kubridge uses this for per-process exception handler context.
+    auto pls_data = alloc(emuenv.mem, size, name) >> 1;
+    return pls_data;
 }
 
 EXPORT(int, ksceKernelGetProcessInfo) {
@@ -29,8 +39,11 @@ EXPORT(int, ksceKernelGetProcessLocalStorageAddr) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelGetProcessLocalStorageAddrForPid) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelGetProcessLocalStorageAddrForPid, SceUID pid, int key, Ptr<void> *out_addr, int create_if_doesnt_exist) {
+    TRACY_FUNC(ksceKernelGetProcessLocalStorageAddrForPid, pid, key, out_addr, create_if_doesnt_exist);
+    // See ksceKernelCreateProcessLocalStorage
+    *out_addr = key << 1;
+    return 0;
 }
 
 EXPORT(int, ksceKernelGetProcessStatus) {
@@ -59,4 +72,17 @@ EXPORT(int, ksceKernelIsCDialogAvailable) {
 
 EXPORT(int, ksceKernelIsGameBudget) {
     return UNIMPLEMENTED();
+}
+
+// kubridge-required stubs
+EXPORT(SceUID, ksceKernelAllocRemoteProcessHeap, SceUID pid, uint32_t size, Ptr<void> opt) {
+    TRACY_FUNC(ksceKernelAllocRemoteProcessHeap, pid, size, opt);
+    STUBBED("ksceKernelAllocRemoteProcessHeap");
+    return emuenv.kernel.get_next_uid();
+}
+
+EXPORT(int, ksceKernelFreeRemoteProcessHeap, SceUID pid, Ptr<void> ptr) {
+    TRACY_FUNC(ksceKernelFreeRemoteProcessHeap, pid, ptr);
+    STUBBED("ksceKernelFreeRemoteProcessHeap");
+    return 0;
 }

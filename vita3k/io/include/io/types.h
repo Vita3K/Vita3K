@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 #undef st_ctime
 #undef st_mtime
 
-#include <mem/ptr.h>
 #include <util/tracy.h>
 #include <util/types.h>
 
@@ -111,7 +110,7 @@ struct SceIoStat {
 struct SceIoDirent {
     SceIoStat d_stat;
     char d_name[256];
-    Ptr<void> d_private;
+    SceUIntPtr d_private;
     int dummy;
 };
 

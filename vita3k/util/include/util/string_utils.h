@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,17 +23,16 @@
 
 namespace string_utils {
 
-std::vector<std::string> split_string(const std::string &str, char delimiter);
-
 std::wstring utf_to_wide(const std::string &str);
 std::string wide_to_utf(const std::wstring &str);
 std::string utf16_to_utf8(const std::u16string &str);
 std::u16string utf8_to_utf16(const std::string &str);
+std::string trim_copy(std::string_view str);
 std::string remove_special_chars(std::string str);
-void replace(std::string &str, const std::string &in, const std::string &out);
-std::vector<uint8_t> string_to_byte_array(const std::string &string);
-std::string toupper(const std::string &s);
-std::string tolower(const std::string &s);
+void replace(std::string &str, std::string_view in, std::string_view out);
+std::vector<uint8_t> string_to_byte_array(std::string_view string);
+std::string toupper(std::string s);
+std::string tolower(std::string s);
 int stoi_def(const std::string &str, int default_value = 0, const char *name = "value");
 
 } // namespace string_utils

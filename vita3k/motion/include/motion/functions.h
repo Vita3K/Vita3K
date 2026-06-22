@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,6 +28,9 @@ void set_gyro_bias_correction(MotionState &state, SceBool setValue);
 SceBool get_tilt_correction(MotionState &state);
 void set_tilt_correction(MotionState &state, SceBool setValue);
 SceBool get_deadband(MotionState &state);
+#ifdef __ANDROID__
+void set_display_rotation(MotionState &state, int rotation);
+#endif
 void set_deadband(MotionState &state, SceBool setValue);
 SceFloat get_angle_threshold(const MotionState &state);
 void set_angle_threshold(MotionState &state, SceFloat setValue);

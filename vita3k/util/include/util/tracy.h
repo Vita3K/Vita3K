@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,30 +26,31 @@
 // universal to string converters for module specific types (usually enums)
 template <typename T>
 std::string to_debug_str(const MemState &mem, T type) {
-    std::stringstream datass;
+    std::ostringstream datass;
     datass << type;
-    return datass.str();
+    return std::move(datass).str();
+}
+
+template <fmt::formattable T>
+std::string to_debug_str(const MemState &mem, T type) {
+    return fmt::format("{}", type);
 }
 
 // Override pointers, we want to print the address in hex
 template <typename U>
 std::string to_debug_str(const MemState &mem, U *type) {
-    std::stringstream datass;
-    datass << log_hex(Ptr<U>(type, mem).address()); // Convert host ptr to guest
-    return datass.str();
+    return log_hex(Ptr<U>(type, mem).address()); // Convert host ptr to guest
 }
 
 // Override for guest pointers, we want to print the guest address
 template <typename U>
 std::string to_debug_str(const MemState &mem, Ptr<U> type) {
-    std::stringstream datass;
-    datass << log_hex(type.address());
-    return datass.str();
+    return log_hex(type.address());
 }
 
 template <>
 inline std::string to_debug_str(const MemState &mem, Ptr<char> type) {
-    return std::string(type.address() ? log_hex(type.address()) + " " + type.get(mem) : "0x0 NULLPTR");
+    return type.address() ? fmt::format("0x{:X} {}", type.address(), type.get(mem)) : "0x0 NULLPTR";
 }
 
 // Override for char pointers as the contents are readable
@@ -57,13 +58,13 @@ template <>
 inline std::string to_debug_str(const MemState &mem, char *type) {
     // Format for correct char* should be "(address in hex (0x12345)) (string)", this is just in the
     // extreme case that the string is actually "0x0 NULLPTR" and be confusing
-    return std::string(type ? log_hex(Ptr<char *>(type, mem).address()) + " " + type : "0x0 NULLPTR");
+    return type ? fmt::format("0x{:X} {}", Ptr<char>(type, mem).address(), type) : "0x0 NULLPTR";
 }
 
 // Override for char pointers as the contents are readable
 template <>
 inline std::string to_debug_str(const MemState &mem, const char *type) {
-    return std::string(type ? log_hex(Ptr<const char *>(type, mem).address()) + " " + type : "0x0 NULLPTR");
+    return type ? fmt::format("0x{:X} {}", Ptr<const char>(type, mem).address(), type) : "0x0 NULLPTR";
 }
 
 template <>
@@ -115,7 +116,7 @@ inline std::string to_debug_str(const MemState &mem) {
     }
 
 #define TRACY_MODULE_NAME_N(var_name, module_name) \
-    const tracy_module_utils::tracy_module_helper var_name(#module_name);
+    static const tracy_module_utils::tracy_module_helper var_name(#module_name);
 
 #define TRACY_MODULE_NAME(module_name) TRACY_MODULE_NAME_N(tracy_module_id, module_name)
 

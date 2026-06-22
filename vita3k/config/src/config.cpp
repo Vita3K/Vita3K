@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,19 +18,208 @@
 #include <config/functions.h>
 #include <config/state.h>
 #include <config/version.h>
+#include <input/physical_key.h>
+#include <yaml-cpp/yaml.h>
 
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
+#ifdef TRACY_ENABLE
+#include <util/tracy_module_utils.h>
+#endif
+#include <util/vector_utils.h>
 
 #include <CLI11.hpp>
 
 #include <algorithm>
+#include <cctype>
 #include <exception>
 #include <iostream>
 #include <vector>
 
 namespace config {
+static bool is_numeric_scalar(const YAML::Node &node) {
+    if (!node.IsScalar())
+        return false;
+
+    const std::string value = node.Scalar();
+    if (value.empty())
+        return false;
+
+    return std::all_of(value.begin(), value.end(), [](const unsigned char c) {
+        return std::isdigit(c) != 0;
+    });
+}
+} // namespace config
+
+namespace YAML {
+
+template <>
+struct convert<input::PhysicalKeyCode> {
+    static Node encode(const input::PhysicalKeyCode &rhs) {
+        Node node;
+        node = rhs == input::PhysicalKeyCode::Unbound
+            ? std::string("Unbound")
+            : std::string(input::physical_key_code_name(rhs));
+        return node;
+    }
+
+    static bool decode(const Node &node, input::PhysicalKeyCode &rhs) {
+        if (!node.IsScalar())
+            return false;
+
+        const std::string value = node.Scalar();
+        if (value.empty() || value == "Unbound" || config::is_numeric_scalar(node)) {
+            rhs = input::PhysicalKeyCode::Unbound;
+            return true;
+        }
+
+        rhs = input::physical_key_from_code_name(value);
+        if (rhs == input::PhysicalKeyCode::Unbound)
+            LOG_WARN("Unknown physical keyboard binding '{}'; falling back to Unbound.", value);
+
+        return true;
+    }
+};
+
+} // namespace YAML
+
+namespace config {
+
+static void sync_update_preferences(Config &self) {
+    self.check_for_updates = self.check_for_updates_mode != static_cast<int>(UPDATE_STARTUP_OFF);
+}
+
+// Update the members of the Config object based on the YAML node.
+// Use this function when the YAML file is updated before the members.
+static void update_members(Config &self, const YAML::Node &p_yaml_node) {
+#define UPDATE_MEMBERS(option_type, option_name, option_default, member_name) \
+    if (p_yaml_node[option_name].IsDefined()) {                               \
+        self.member_name = p_yaml_node[option_name].as<option_type>();        \
+    } else {                                                                  \
+        self.member_name = option_default;                                    \
+    }
+
+    CONFIG_LIST(UPDATE_MEMBERS)
+#undef UPDATE_MEMBERS
+
+    if (!p_yaml_node["check-for-updates-mode"].IsDefined() && p_yaml_node["check-for-updates"].IsDefined()) {
+        self.check_for_updates_mode = p_yaml_node["check-for-updates"].as<bool>()
+            ? static_cast<int>(UPDATE_STARTUP_PROMPT)
+            : static_cast<int>(UPDATE_STARTUP_OFF);
+    }
+
+    sync_update_preferences(self);
+#ifdef TRACY_ENABLE
+    tracy_module_utils::cleanup(self.tracy_advanced_profiling_modules);
+    tracy_module_utils::load_from(self.tracy_advanced_profiling_modules);
+#endif
+}
+
+static bool has_legacy_keyboard_bindings(const YAML::Node &yaml_node) {
+    bool legacy_keyboard_bindings = false;
+
+#define CHECK_LEGACY_KEYBOARD_BINDINGS(option_type, option_name, option_default, member_name) \
+    if (is_numeric_scalar(yaml_node[option_name]))                                            \
+        legacy_keyboard_bindings = true;
+
+    CONFIG_KEYBOARD(CHECK_LEGACY_KEYBOARD_BINDINGS)
+#undef CHECK_LEGACY_KEYBOARD_BINDINGS
+
+    return legacy_keyboard_bindings;
+}
+
+static void update_members(Config &self, const Config &rhs) {
+#define UPDATE_MEMBERS(option_type, option_name, option_default, member_name) \
+    self.member_name = rhs.member_name;
+
+    CONFIG_LIST(UPDATE_MEMBERS)
+#undef UPDATE_MEMBERS
+    sync_update_preferences(self);
+#ifdef TRACY_ENABLE
+    tracy_module_utils::cleanup(self.tracy_advanced_profiling_modules);
+    tracy_module_utils::load_from(self.tracy_advanced_profiling_modules);
+#endif
+}
+
+// Perform comparisons with optional settings
+static void check_members(Config &self, const Config &rhs) {
+    if (rhs.content_path.has_value())
+        self.content_path = rhs.content_path;
+    if (rhs.run_app_path.has_value())
+        self.run_app_path = rhs.run_app_path;
+    if (rhs.recompile_shader_path.has_value())
+        self.recompile_shader_path = rhs.recompile_shader_path;
+    if (rhs.delete_title_id.has_value())
+        self.delete_title_id = rhs.delete_title_id;
+    if (rhs.pkg_path.has_value())
+        self.pkg_path = rhs.pkg_path;
+    if (rhs.pkg_zrif.has_value())
+        self.pkg_zrif = rhs.pkg_zrif;
+
+    if (!rhs.config_path.empty())
+        self.config_path = rhs.config_path;
+
+    self.overwrite_config = rhs.overwrite_config;
+    self.load_config = rhs.load_config;
+    self.fullscreen = rhs.fullscreen;
+    self.console = rhs.console;
+    self.app_args = rhs.app_args;
+    self.load_app_list = rhs.load_app_list;
+    self.self_path = rhs.self_path;
+}
+
+static YAML::Node get(const Config &self);
+
+// Merge two Config nodes, respecting both options and preferring the left-hand side
+static void merge(Config &self, const Config &rhs) {
+    bool init = false;
+    if (get(rhs) == get(Config{})) {
+        init = true;
+    }
+
+    // if (log_imports != rhs.log_imports && (init || rhs.log_imports != false))
+#define COMBINE_INDIVIDUAL(option_type, option_name, option_default, member_name)           \
+    if (self.member_name != rhs.member_name && (init || rhs.member_name != option_default)) \
+        self.member_name = rhs.member_name;
+
+    CONFIG_INDIVIDUAL(COMBINE_INDIVIDUAL)
+#undef COMBINE_INDIVIDUAL
+
+#define COMBINE_VECTOR(option_type, option_name, option_default, member_name)      \
+    if (self.member_name != rhs.member_name && (init || !rhs.member_name.empty())) \
+        vector_utils::merge_vectors(self.member_name, rhs.member_name);
+
+    CONFIG_VECTOR(COMBINE_VECTOR)
+#undef COMBINE_VECTOR
+
+    check_members(self, rhs);
+    sync_update_preferences(self);
+}
+
+// Generate a YAML node based on the current values of the members.
+static YAML::Node get(const Config &self) {
+    YAML::Node out;
+
+#define GEN_VALUES(option_type, option_name, option_default, member_name) \
+    out[option_name] = self.member_name;
+
+    CONFIG_LIST(GEN_VALUES)
+#undef GEN_VALUES
+
+    out.remove("check-for-updates");
+
+    return out;
+}
+
+// Load a function to the node network, and then update the members
+static bool load_new_config(Config &self, const fs::path &path) {
+    fs::ifstream fin(path);
+    YAML::Node yaml_node = YAML::Load(fin);
+    const bool legacy_keyboard_bindings = has_legacy_keyboard_bindings(yaml_node);
+    update_members(self, yaml_node);
+    return legacy_keyboard_bindings;
+}
 
 static std::set<std::string> get_file_set(const fs::path &loc, bool dirs_only = true) {
     std::set<std::string> cur_set{};
@@ -64,7 +253,17 @@ static fs::path check_path(const fs::path &output_path) {
     return output_path;
 }
 
-static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &root_pref_path) {
+void reset_keyboard_bindings(Config &cfg) {
+    const Config defaults{};
+
+#define RESET_KEYBOARD_BINDING(option_type, option_name, option_default, member_name) \
+    cfg.member_name = defaults.member_name;
+
+    CONFIG_KEYBOARD(RESET_KEYBOARD_BINDING)
+#undef RESET_KEYBOARD_BINDING
+}
+
+static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &root_vita_fs_path) {
     const auto loaded_path = check_path(load_path);
     if (loaded_path.empty() || !fs::exists(loaded_path)) {
         LOG_ERROR("Config file input path invalid (did you name the extension \".yml\"?)");
@@ -72,17 +271,20 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &ro
     }
 
     try {
-        cfg.load_new_config(loaded_path);
+        if (load_new_config(cfg, loaded_path)) {
+            reset_keyboard_bindings(cfg);
+            LOG_INFO("Legacy numeric keyboard binding config detected; keyboard bindings were reset to physical defaults.");
+        }
     } catch (YAML::Exception &exception) {
         LOG_ERROR("Config file can't be loaded: Error: {}", exception.what());
         return FileNotFound;
     }
 
-    if (cfg.pref_path.empty())
-        cfg.set_pref_path(root_pref_path);
+    if (cfg.vita_fs_path.empty())
+        cfg.set_vita_fs_path(root_vita_fs_path);
     else {
-        if (cfg.get_pref_path() != root_pref_path && !fs::exists(cfg.get_pref_path())) {
-            LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
+        if (cfg.get_vita_fs_path() != root_vita_fs_path && !fs::exists(cfg.get_vita_fs_path())) {
+            LOG_ERROR("Cannot find Vita FS path: {}", cfg.vita_fs_path);
             return InvalidApplicationPath;
         }
     }
@@ -96,11 +298,11 @@ ExitCode serialize_config(Config &cfg, const fs::path &output_path) {
         return InvalidApplicationPath;
     fs::create_directories(output.parent_path());
 
-    cfg.update_yaml();
+    auto out_node = get(cfg);
 
     YAML::Emitter emitter;
     emitter << YAML::BeginDoc;
-    emitter << cfg.yaml_node;
+    emitter << out_node;
     emitter << YAML::EndDoc;
 
     fs::ofstream fo(output);
@@ -119,7 +321,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     Config command_line{};
     // Load config path configuration by default; otherwise, move the default to the config path
     if (fs::exists(check_path(root_paths.get_config_path()))) {
-        parse(cfg, root_paths.get_config_path(), root_paths.get_pref_path());
+        parse(cfg, root_paths.get_config_path(), root_paths.get_vita_fs_path());
     } else {
         serialize_config(command_line, check_path(root_paths.get_config_path()));
     }
@@ -150,11 +352,11 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
     input->add_option("--installed-path,-r", command_line.run_app_path, "Path to the installed app to run")
-        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_pref_path() / "ux0/app")))->group("Input");
+        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_vita_fs_path() / "ux0/app")))->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
-        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_pref_path() / "ux0/app")))->group("Input");
+        ->default_str({})->check(CLI::IsMember(get_file_set(cfg.get_vita_fs_path() / "ux0/app")))->group("Input");
     input->add_option("--firmware", command_line.pup_path, "Path to the firmware file (.pup extension) to install");
     auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path to the app file (.pkg extension) to install")
         ->default_str({})->group("Input");
@@ -164,11 +366,11 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     input_zrif->needs(input_pkg);
 
     auto config = app.add_option_group("Configuration", "Modify Vita3K's config.yml file");
-    config->add_flag("--" + cfg[e_archive_log] + ",-A", command_line.archive_log, "Make a duplicate of the log file with TITLE_ID and Game ID as title")
+    config->add_flag("--archive-log,-A", command_line.archive_log, "Make a duplicate of the log file with TITLE_ID and Game ID as title")
         ->group("Logging");
-    config->add_option("--" + cfg[e_backend_renderer] + ",-B", command_line.backend_renderer, "Renderer backend to use")
+    config->add_option("--backend-renderer,-B", command_line.backend_renderer, "Renderer backend to use")
         ->ignore_case()->check(CLI::IsMember(std::set<std::string>{ "OpenGL", "Vulkan" }))->group("Vita Emulation");
-    config->add_flag("--" + cfg[e_color_surface_debug] + ",-C", command_line.color_surface_debug, "Save color surfaces")
+    config->add_flag("--color-surface-debug,-C", command_line.color_surface_debug, "Save color surfaces")
         ->group("Vita Emulation");
     config->add_option("--config-location,-c", command_line.config_path, "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault loaded: <Vita3K>/config.yml \nDefaults: <Vita3K>/data/config/default.yml")
         ->group("YML");
@@ -180,13 +382,13 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->group("YML");
 
     std::vector<std::string> lle_modules{};
-    config->add_option("--" + cfg[e_lle_modules] + ",-m", lle_modules, "Load given (decrypted) OS modules from disk.\nSeparate by commas to specify multiple modules. Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
+    config->add_option("--lle-modules,-m", lle_modules, "Load given (decrypted) OS modules from disk.\nSeparate by commas to specify multiple modules. Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
         ->group("Modules");
-    config->add_option("--" + cfg[e_log_level] + ",-l", command_line.log_level, "Logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
+    config->add_option("--log-level,-l", command_line.log_level, "Logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
         ->check(CLI::Range( 0, 6 ))->group("Logging");
-    config->add_flag("--" + cfg[e_log_active_shaders] + ",-S", command_line.log_active_shaders, "Log Active Shaders")
+    config->add_flag("--log-active-shaders,-S", command_line.log_active_shaders, "Log Active Shaders")
         ->group("Logging");
-    config->add_flag("--" + cfg[e_log_uniforms] + ",-U", command_line.log_uniforms, "Log Uniforms")
+    config->add_flag("--log-uniforms,-U", command_line.log_uniforms, "Log Uniforms")
         ->group("Logging");
     // clang-format on
 
@@ -230,7 +432,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         if (command_line.config_path.empty()) {
             command_line.config_path = root_paths.get_config_path();
         } else {
-            if (parse(command_line, command_line.config_path, root_paths.get_pref_path()) != Success)
+            if (parse(command_line, command_line.config_path, root_paths.get_vita_fs_path()) != Success)
                 return InitConfigFailed;
         }
     }
@@ -250,23 +452,21 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     }
 
     // Merge configurations
-    command_line.update_yaml();
-    cfg += command_line;
-    if (cfg.pref_path.empty())
-        cfg.set_pref_path(root_paths.get_pref_path());
+    merge(cfg, command_line);
+    if (cfg.vita_fs_path.empty())
+        cfg.set_vita_fs_path(root_paths.get_vita_fs_path());
 
     if (!cfg.console) {
         LOG_INFO_IF(cfg.load_config, "Custom configuration file loaded successfully.");
 
         logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
-        static constexpr std::array<const char *, 7> LIST_LOG_LEVEL = { "Trace", "Debug", "Info", "Warning", "Error", "Critical", "Off" };
+        static constexpr std::array LIST_LOG_LEVEL = SPDLOG_LEVEL_NAMES;
 
         LOG_INFO_IF(cfg.content_path, "input-content-path: {}", cfg.content_path->string());
         LOG_INFO_IF(cfg.run_app_path, "input-installed-path: {}", *cfg.run_app_path);
-        LOG_INFO("{}: {}", cfg[e_backend_renderer], cfg.backend_renderer);
-        LOG_INFO("{}: {}", cfg[e_log_level], LIST_LOG_LEVEL[cfg.log_level]);
-        LOG_INFO_IF(cfg.log_active_shaders, "{}: enabled", cfg[e_log_active_shaders]);
-        LOG_INFO_IF(cfg.log_uniforms, "{}: enabled", cfg[e_log_uniforms]);
+        LOG_INFO("log-level: {}", LIST_LOG_LEVEL[cfg.log_level]);
+        LOG_INFO_IF(cfg.log_active_shaders, "log-active-shaders: enabled");
+        LOG_INFO_IF(cfg.log_uniforms, "log-uniforms: enabled");
     }
     // Save any changes made in command-line arguments
     if (cfg.overwrite_config || !fs::exists(check_path(cfg.config_path))) {
@@ -278,3 +478,17 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 }
 
 } // namespace config
+
+Config &Config::operator=(Config &&rhs) noexcept {
+    config::check_members(*this, rhs);
+    config::update_members(*this, rhs);
+    return *this;
+}
+
+Config &Config::operator=(const Config &rhs) noexcept {
+    if (this != &rhs) {
+        config::check_members(*this, rhs);
+        config::update_members(*this, rhs);
+    }
+    return *this;
+}

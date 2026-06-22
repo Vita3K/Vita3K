@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,42 +21,49 @@
 
 #include "screen_filters.h"
 
+#include <atomic>
 #include <memory>
-
-struct SDL_Window;
+#include <mutex>
+#include <string>
 
 namespace renderer::vulkan {
 
 struct VKState;
 
+#ifdef __ANDROID__
+bool has_android_surface();
+#endif
+
 class ScreenRenderer {
 public:
     VKState &state;
-    SDL_Window *window;
 
     vk::SurfaceKHR surface;
     vk::SwapchainKHR swapchain;
 
     vk::SurfaceCapabilitiesKHR surface_capabilities;
     vk::SurfaceFormatKHR surface_format;
-    vk::PresentModeKHR present_mode;
-
+    vk::PresentModeKHR present_mode{};
     vk::Extent2D extent;
-    uint32_t swapchain_size;
+    uint32_t swapchain_size{};
     std::vector<vk::Image> swapchain_images;
     std::vector<vk::ImageView> swapchain_views;
     std::vector<vk::Framebuffer> swapchain_framebuffers;
     std::vector<vk::CommandBuffer> command_buffers;
     std::vector<vk::Fence> fences;
+    std::vector<vk::Semaphore> image_acquired_semaphores;
+    std::vector<vk::Semaphore> image_ready_semaphores;
 
     // renderpass used when no effect is done previously (clear the swapchain content)
     vk::RenderPass default_render_pass;
     // renderpass used after a post-processing pass clearing the swapchain, compatible with the default render pass
     vk::RenderPass post_filter_render_pass;
+#ifdef __ANDROID__
+    // renderpass used to (partially) prevent a driver bug using stock adreno drivers
+    vk::RenderPass stock_adreno_pass;
+#endif
 
     std::unique_ptr<ScreenFilter> filter;
-    std::vector<vk::Semaphore> image_acquired_semaphores;
-    std::vector<vk::Semaphore> image_ready_semaphores;
 
     std::vector<vkutil::Image> vita_surface;
     vma::Allocation vita_surface_staging_alloc;
@@ -69,17 +76,20 @@ public:
     uint32_t swapchain_image_idx = ~0;
     // between 0 and swapchain_size - 1, used as the index for semaphores
     int current_frame = 0;
-    // set to true after a window resize, in this case the pipeline needs to be rebuilt
+    // set when the swapchain needs to be rebuilt before the next acquire
     bool need_rebuild = false;
+    // set when we also need to recreate the surface before rebuilding swapchain
+    bool need_surface_recreate = false;
 
     ScreenRenderer(VKState &state);
 
-    bool create(SDL_Window *window);
+    bool create();
     // called after the logical device has been created
     bool setup();
     void cleanup();
 
-    bool acquire_swapchain_image(bool start_render_pass = false);
+    bool acquire_swapchain_image();
+    void begin_default_render_pass();
     void render(vk::ImageView image_view, vk::ImageLayout layout, const Viewport &viewport);
     void swap_window();
     void set_filter(const std::string_view &filter);
@@ -93,5 +103,8 @@ private:
     void copy_to_vao(const void *data);
     void create_surface_image();
     void destroy_swapchain();
+    bool ensure_swapchain();
+    bool rebuild_swapchain_if_visible();
+    bool surface_matches_window_size();
 };
 } // namespace renderer::vulkan

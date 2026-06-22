@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -64,7 +64,7 @@ static int kernel_stop_module(EmuEnvState &emuenv, SceUID module_id, SceSize arg
 EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, Ptr<const void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
     TRACY_FUNC(_sceKernelLoadStartModule, moduleFileName, args, argp, flags, pOpt, pRes);
     // Is workaround for fix crash on loading "rgpluginsgm_psvita" module, relate issue #1095 on github, delete this after fix it.
-    if (std::string_view(moduleFileName).find("rgpluginsgm_psvita") != std::string::npos) {
+    if (std::string_view(moduleFileName).contains("rgpluginsgm_psvita")) {
         LOG_WARN("Bypass load this module: {}", moduleFileName);
         return SCE_KERNEL_ERROR_MODULEMGR_INVALID_TYPE;
     }
@@ -152,7 +152,7 @@ EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
     // for Maidump main module should be the last module
     int i = 0;
     SceUID main_module_id = 0;
-    for (auto [module_id, module] : emuenv.kernel.loaded_modules) {
+    for (auto &[module_id, module] : emuenv.kernel.loaded_modules) {
         if (module->info.path == "app0:" + emuenv.self_path) {
             main_module_id = module_id;
         } else {

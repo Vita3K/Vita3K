@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 #include <cpu/functions.h>
 #include <cpu/impl/dynarmic_cpu.h>
 #include <cpu/impl/interface.h>
-#include <cpu/impl/unicorn_cpu.h>
 #include <cpu/state.h>
 #include <mem/ptr.h>
 #include <util/types.h>
@@ -39,37 +38,16 @@ SceUID get_thread_id(CPUState &state) {
     return state.thread_id;
 }
 
-CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol) {
+CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
-    state->protocol = protocol;
     state->thread_id = thread_id;
-
-    // TODO: we can move this to kernel after we drop unicorn
-    // unicorn is unable to detect whether the exit was because of halt or not
-    state->halt_instruction = alloc_block(mem, 4, "halt_instruction");
-    const auto halt_ptr = state->halt_instruction.get_ptr<uint16_t>();
-    *halt_ptr.get(mem) = 0xBF00; // NOP
-    *(halt_ptr.get(mem) + 1) = 0xBF30; // WFI
-    state->halt_instruction_pc = state->halt_instruction.get() | 1;
 
     if (!init(state->disasm)) {
         return CPUStatePtr();
     }
 
-    switch (backend) {
-    case CPUBackend::Dynarmic: {
-        Dynarmic::ExclusiveMonitor *monitor = static_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exclusive_monitor());
-        state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt);
-        break;
-    }
-    case CPUBackend::Unicorn: {
-        state->cpu = std::make_unique<UnicornCPU>(state.get());
-        break;
-    }
-    default:
-        return nullptr;
-    }
+    state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, cpu_opt);
 
     return state;
 }
@@ -178,6 +156,10 @@ bool get_log_mem(CPUState &state) {
     return state.cpu->get_log_mem();
 }
 
+void clear_exclusive(CPUState &state) {
+    state.cpu->clear_exclusive();
+}
+
 std::size_t get_processor_id(CPUState &state) {
     return state.cpu->processor_id();
 }
@@ -216,4 +198,14 @@ uint32_t stack_free(CPUState &state, size_t size) {
     const uint32_t new_sp = read_sp(state) + size;
     write_sp(state, new_sp);
     return new_sp;
+}
+
+static thread_local CPUState *current_cpu_state = nullptr;
+
+void set_current_cpu_state(CPUState *state) {
+    current_cpu_state = state;
+}
+
+CPUState *get_current_cpu_state() {
+    return current_cpu_state;
 }

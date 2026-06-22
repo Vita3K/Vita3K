@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,7 +15,16 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <module/module.h>
+#include "SceSysmemForDriver.h"
+#include <modules/sysmem_state.h>
+
+#include <kernel/state.h>
+#include <mem/functions.h>
+#include <util/align.h>
+
+#include <util/log.h>
+
+#include <cstring>
 
 EXPORT(int, ksceGUIDClose) {
     return UNIMPLEMENTED();
@@ -61,8 +70,107 @@ EXPORT(int, ksceKernelAllocHeapMemoryWithOption) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelAllocMemBlock) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockKernelOpt *opt) {
+    MemState &mem = emuenv.mem;
+
+    if (!name || !size) {
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    }
+
+    int min_alignment;
+    switch (type) {
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
+        min_alignment = 0x1000;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
+        min_alignment = 0x40000;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
+        min_alignment = 0x100000;
+        break;
+    default:
+        min_alignment = 0x1000;
+        break;
+    }
+
+    SceSize alignment = min_alignment;
+    Address base_address = 0;
+
+    if (opt) {
+        if (opt->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_VBASE) {
+            base_address = opt->field_C;
+        }
+        if (opt->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT) {
+            if (opt->alignment & (opt->alignment - 1))
+                return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+            alignment = std::max(alignment, opt->alignment);
+        }
+    }
+
+    alignment = std::max(alignment, size & -size);
+
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    const auto guard = std::lock_guard<std::mutex>(state->mutex);
+
+    Ptr<void> address;
+    if (base_address) {
+        Address addr = alloc_at(mem, base_address, size, name);
+        if (!addr) {
+            return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+        }
+        address = Ptr<void>(addr);
+    } else {
+        // Pick start address based on type
+        Address start_address;
+        switch (type) {
+        case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
+        case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
+            start_address = 0x70000000U;
+            break;
+        case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
+            start_address = 0x60000000U;
+            break;
+        default:
+            start_address = 0x80000000U;
+            break;
+        }
+        address = Ptr<void>(alloc_aligned(mem, size, name, alignment, start_address));
+        if (!address) {
+            return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+        }
+    }
+
+    const SceUID uid = state->get_next_uid();
+    const auto block = std::make_shared<KernelMemBlock>();
+    block->type = type;
+    block->mappedBase = address;
+    block->mappedSize = size;
+    block->size = sizeof(SceKernelMemBlockInfo);
+    std::strncpy(block->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
+    state->blocks.emplace(uid, block);
+
+    switch (type) {
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
+        state->allocated_user += size;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
+        state->allocated_cdram += size;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
+        state->allocated_phycont += size;
+        break;
+    default:
+        state->allocated_user += size;
+        break;
+    }
+
+    return uid;
 }
 
 EXPORT(int, ksceKernelAllocMemBlockWithInfo) {
@@ -145,8 +253,36 @@ EXPORT(int, ksceKernelFreeHeapMemoryFromGlobalHeap) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelFreeMemBlock) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelFreeMemBlock, SceUID uid) {
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    const auto guard = std::lock_guard<std::mutex>(state->mutex);
+
+    const Blocks::const_iterator block = state->blocks.find(uid);
+    if (block == state->blocks.end())
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
+
+    free(emuenv.mem, block->second->mappedBase.address());
+
+    switch (block->second->type) {
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
+        state->allocated_user -= block->second->size;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
+        state->allocated_cdram -= block->second->size;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
+        state->allocated_phycont -= block->second->size;
+        break;
+    default:
+        state->allocated_user -= block->second->size;
+        break;
+    }
+
+    state->blocks.erase(block);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, ksceKernelGUIDGetObject) {
@@ -161,8 +297,16 @@ EXPORT(int, ksceKernelGetClassForUid) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelGetMemBlockBase) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    const auto guard = std::lock_guard<std::mutex>(state->mutex);
+
+    const Blocks::const_iterator block = state->blocks.find(uid);
+    if (block == state->blocks.end())
+        return SCE_KERNEL_ERROR_INVALID_UID;
+
+    *basep = block->second->mappedBase.address();
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, ksceKernelGetMemBlockMappedBase) {
@@ -325,8 +469,9 @@ EXPORT(int, ksceKernelMemcpyKernelToUserForPidUnchecked) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelMemcpyUserToKernel) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelMemcpyUserToKernel, Ptr<void> dst, Ptr<const void> src, SceSize len) {
+    memcpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    return 0;
 }
 
 EXPORT(int, ksceKernelMemcpyUserToKernelForPid) {
@@ -377,8 +522,9 @@ EXPORT(int, ksceKernelStrncpyUserForPid) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelStrncpyUserToKernel) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, ksceKernelStrncpyUserToKernel, Ptr<char> dst, Ptr<const char> src, SceSize len) {
+    strncpy(dst.get(emuenv.mem), src.get(emuenv.mem), len);
+    return static_cast<SceInt32>(strnlen(dst.get(emuenv.mem), len));
 }
 
 EXPORT(int, ksceKernelStrnlenUser) {
@@ -417,8 +563,10 @@ EXPORT(int, kscePUIDClose) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, kscePUIDOpenByGUID) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, kscePUIDOpenByGUID, SceUID pid, SceUID guid) {
+    // In the emulator there is no user/kernel UID separation.
+    // Return the same UID (GUID == PUID).
+    return guid;
 }
 
 EXPORT(int, kscePUIDtoGUID) {

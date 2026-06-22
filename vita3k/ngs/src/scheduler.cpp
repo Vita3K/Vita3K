@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,7 +43,10 @@ void VoiceScheduler::deque_insert(const MemState &mem, Voice *voice) {
                 continue;
             }
 
-            Voice *dest = patch.get(mem)->dest;
+            Voice *dest = patch.get(mem)->dest.get(mem);
+            if (!dest) {
+                continue;
+            }
             const int32_t pos = get_position(dest);
 
             if (pos == -1) {
@@ -204,11 +207,14 @@ bool VoiceScheduler::resort_to_respect_dependencies(const MemState &mem, Voice *
     // Check all dependencies, could be optimized- @sunho suggested dfs topological sort
     for (size_t i = 0; i < source->patches.size(); i++) {
         for (const auto &patch : source->patches[i]) {
-            if (!patch || patch.get(mem)->output_sub_index == -1) {
+            if (!patch || !patch.get(mem)->is_active()) {
                 continue;
             }
 
-            Voice *dest = patch.get(mem)->dest;
+            Voice *dest = patch.get(mem)->dest.get(mem);
+            if (!dest) {
+                continue;
+            }
             const int32_t dest_pos = get_position(dest);
 
             if (dest_pos == -1) {
@@ -234,7 +240,7 @@ Ptr<Patch> VoiceScheduler::patch(const MemState &mem, SceNgsPatchSetupInfo *info
     Voice *source = info->source.get(mem);
     Voice *dest = info->dest.get(mem);
 
-    Ptr<Patch> patch = source->patch(mem, info->source_output_index, info->source_output_subindex, info->dest_input_index, dest);
+    Ptr<Patch> patch = source->patch(mem, info->source_output_index, info->source_output_subindex, info->dest_input_index, info->source, info->dest);
 
     if (!patch) {
         return patch;

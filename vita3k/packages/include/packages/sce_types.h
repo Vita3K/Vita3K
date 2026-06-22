@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -651,8 +651,9 @@ public:
 };
 
 void register_keys(KeyStore &SCE_KEYS, int type);
-void extract_fat(const fs::path &partition_path, const std::string &partition, const fs::path &pref_path);
+void extract_fat(const fs::path &partition_path, const std::string &partition, const fs::path &vita_fs_path);
 std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, const uint64_t &size);
 std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader &sce_hdr);
 std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, const uint8_t *klic = 0);
-std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> fself, const uint8_t *klic);
+std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint8_t *klic);
+void decrypt_selfs(const fs::path &input_path, const fs::path &cache_path, const uint8_t *klic);

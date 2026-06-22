@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -77,14 +77,10 @@ typedef std::unique_ptr<ThreadDataQueue<WaitingThreadData>> WaitingThreadQueuePt
 // NOTE: uid is copied to sync primitives here for debugging,
 //       not really needed since they are put in std::map's
 struct SyncPrimitive {
-    SceUID uid;
-
-    uint32_t attr;
-
+    SceUID uid{};
+    uint32_t attr{};
     std::mutex mutex;
-
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
-
     virtual ~SyncPrimitive() = default;
 };
 
@@ -196,7 +192,9 @@ struct MsgPipe : SyncPrimitive {
     ByteRingBuffer data_buffer;
 
     bool beingDeleted = false;
-    std::atomic<std::size_t> remainingThreads = 0;
+    std::atomic<std::size_t> remainingThreads = { 0 };
+
+    ~MsgPipe() override = default;
 };
 
 typedef std::shared_ptr<MsgPipe> MsgPipePtr;

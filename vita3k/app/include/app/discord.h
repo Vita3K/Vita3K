@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,9 +26,13 @@
 namespace discordrpc {
 bool init();
 
-void shutdown();
+bool is_running();
 
-void update_init_status(bool discord_rich_presence, bool *discord_rich_presence_old);
+void run_callbacks();
+
+void clear_presence();
+
+void shutdown();
 
 void update_presence(const std::string &state = "", const std::string &details = "Idle", bool reset_timer = true);
 } // namespace discordrpc

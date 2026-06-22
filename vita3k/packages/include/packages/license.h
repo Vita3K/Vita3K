@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2024 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -57,6 +57,7 @@ struct License {
     std::map<std::string, SceNpDrmLicense> rif;
 };
 
+bool validate_zrif(const std::string &zRIF);
 bool copy_license(EmuEnvState &emuenv, const fs::path &license_path);
 bool create_license(EmuEnvState &emuenv, const std::string &zRIF);
 void get_license(EmuEnvState &emuenv, const std::string &title_id, const std::string &content_id);

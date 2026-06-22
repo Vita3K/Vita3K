@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
     // for the index buffer, we only have 16 or 32bit types
     index_stream_ring_buffer.alignment = sizeof(uint32_t);
     // for the vertex buffer, nothing should need more alignment than a vec4
-    index_stream_ring_buffer.alignment = 4 * sizeof(float);
+    vertex_stream_ring_buffer.alignment = 4 * sizeof(float);
 
     const uint32_t uniform_alignment = static_cast<uint32_t>(state.physical_device_properties.limits.minUniformBufferOffsetAlignment);
     const uint32_t storage_alignment = static_cast<uint32_t>(state.physical_device_properties.limits.minStorageBufferOffsetAlignment);
@@ -53,7 +53,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
     vertex_info_uniform_buffer.alignment = uniform_alignment;
     fragment_info_uniform_buffer.alignment = uniform_alignment;
 
-    if (state.features.support_memory_mapping) {
+    if (state.features.enable_memory_mapping) {
         // use the default buffer
         std::fill_n(vertex_stream_buffers, SCE_GXM_MAX_VERTEX_STREAMS, state.default_buffer.buffer);
 
@@ -88,7 +88,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
 
     // allocate descriptor pools
     {
-        const uint32_t nb_descriptor = state.features.support_memory_mapping ? 2U : 4U;
+        const uint32_t nb_descriptor = state.features.enable_memory_mapping ? 2U : 4U;
 
         std::array<vk::DescriptorPoolSize, 2> pool_sizes = {
             vk::DescriptorPoolSize{ vk::DescriptorType::eUniformBufferDynamic, 2 },
@@ -149,15 +149,30 @@ VKContext::VKContext(VKState &state, MemState &mem)
     }
 }
 
+VKContext::~VKContext() {
+    if (gpu_request_wait_thread.joinable())
+        gpu_request_wait_thread.join();
+
+    for (auto &[addr, vb] : visibility_buffers)
+        state.device.destroy(vb.query_pool);
+    visibility_buffers.clear();
+
+    state.device.destroy(global_descriptor_pool);
+    global_descriptor_pool = nullptr;
+}
+
 VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params)
-    : color(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR8G8B8A8Unorm)
-    , depthstencil(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eD32SfloatS8Uint) {
+    : device(state.device)
+    , color(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR8G8B8A8Unorm)
+    , depthstencil(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), state.deep_stencil_use) {
     width = static_cast<uint32_t>(params.width * state.res_multiplier);
     height = static_cast<uint32_t>(params.height * state.res_multiplier);
 
-    vk::ImageUsageFlags color_usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment;
+    vk::ImageUsageFlags color_usage = vk::ImageUsageFlagBits::eColorAttachment;
     if (state.features.support_shader_interlock)
-        color_usage |= vk::ImageUsageFlagBits::eStorage;
+        color_usage |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage;
+    else
+        color_usage |= vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransientAttachment;
     color.init_image(color_usage);
     if (params.multisampleMode == SCE_GXM_MULTISAMPLE_4X) {
         // the depth buffer may need to be 4x bigger if we use a texture without downscale
@@ -165,28 +180,14 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
         depthstencil.height *= 2;
     }
 
-    depthstencil.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+    depthstencil.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment);
 
     // transition images to their right state
     vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
     // color
-    {
-        color.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
-
-        vk::ClearColorValue clear_color{ std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 0.0f }) };
-        cmd_buffer.clearColorImage(color.image, vk::ImageLayout::eTransferDstOptimal, clear_color, vkutil::color_subresource_range);
-        color.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
-    }
+    color.transition_to_discard(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
     // depth stencil
-    {
-        depthstencil.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst, vkutil::ds_subresource_range);
-        vk::ClearDepthStencilValue clear_value{
-            .depth = 1.0,
-            .stencil = 0
-        };
-        cmd_buffer.clearDepthStencilImage(depthstencil.image, vk::ImageLayout::eTransferDstOptimal, clear_value, vkutil::ds_subresource_range);
-        depthstencil.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
-    }
+    depthstencil.transition_to_discard(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
     vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
 
     constexpr uint16_t SCE_GXM_MAX_SCENES_PER_RENDERTARGET = 8;
@@ -211,9 +212,14 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
     }
 }
 
+VKRenderTarget::~VKRenderTarget() {
+    for (auto &fence : fences)
+        device.destroy(fence);
+    fences.clear();
+}
+
 bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem) {
     context = std::make_unique<VKContext>(state, mem);
-
     return true;
 }
 
@@ -223,8 +229,10 @@ bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
 }
 
 void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
-    VKRenderTarget &render_target = *reinterpret_cast<VKRenderTarget *>(rt.get());
+    if (!rt)
+        return;
 
+    VKRenderTarget &render_target = *reinterpret_cast<VKRenderTarget *>(rt.get());
     // don't forget to destroy the framebuffers
     state.surface_cache.destroy_associated_framebuffers(&render_target);
 
@@ -233,7 +241,7 @@ void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
     frame.destroy_queue.add_image(render_target.color);
     frame.destroy_queue.add_image(render_target.depthstencil);
 
-    for (auto fence : render_target.fences)
+    for (auto &fence : render_target.fences)
         frame.destroy_queue.add(fence);
     for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
         for (auto cmd_buffer : render_target.cmd_buffers[i])
@@ -246,6 +254,9 @@ void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
 
 bool create(std::unique_ptr<VertexProgram> &vp, VKState &state, const SceGxmProgram &program) {
     vp = std::make_unique<VertexProgram>();
+
+    if (program.program_flags & SCE_GXM_PROGRAM_FLAG_BUFFER_STORE)
+        state.has_shader_store = true;
 
     return true;
 }

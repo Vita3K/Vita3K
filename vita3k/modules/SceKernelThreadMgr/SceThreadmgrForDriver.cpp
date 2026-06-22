@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,7 +16,13 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "../SceLibKernel/SceLibKernel.h"
+#include "SceThreadmgr.h"
 #include <module/module.h>
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(SceThreadmgrForDriver);
+
+#include <kernel/state.h>
 
 EXPORT(int, ksceKernelCancelCallback) {
     return UNIMPLEMENTED();
@@ -70,8 +76,9 @@ EXPORT(int, ksceKernelCreateMsgPipe) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelCreateMutex) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
+    TRACY_FUNC(ksceKernelCreateMutex, name, attr, init_count, opt_param);
+    return CALL_EXPORT(_sceKernelCreateMutex, name, attr, init_count, opt_param);
 }
 
 EXPORT(int, ksceKernelCreateSema) {
@@ -82,8 +89,11 @@ EXPORT(int, ksceKernelCreateSimpleEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelCreateThread) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, ksceKernelCreateThread, const char *name, SceKernelThreadEntry entry, int initPriority, SceSize stackSize, SceUInt attr, int cpuAffinityMask, void *pOptParam) {
+    const ThreadStatePtr thread = emuenv.kernel.create_thread(emuenv.mem, name, entry.cast<void>(), initPriority, cpuAffinityMask, stackSize, nullptr);
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_ERROR);
+    return thread->id;
 }
 
 EXPORT(int, ksceKernelDeleteCallback) {
@@ -151,6 +161,7 @@ EXPORT(int, ksceKernelGetThreadCpuRegisters) {
 }
 
 EXPORT(int, ksceKernelGetThreadCurrentPriority) {
+    TRACY_FUNC(ksceKernelGetThreadCurrentPriority);
     return CALL_EXPORT(sceKernelGetThreadCurrentPriority);
 }
 
@@ -194,8 +205,9 @@ EXPORT(int, ksceKernelLockFastMutex) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelLockMutex) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *timeout) {
+    TRACY_FUNC(ksceKernelLockMutex, mutexid, lock_count, timeout);
+    return CALL_EXPORT(_sceKernelLockMutex, mutexid, lock_count, timeout);
 }
 
 EXPORT(int, ksceKernelLockMutexCB_089) {
@@ -282,8 +294,8 @@ EXPORT(int, ksceKernelSignalSema) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelStartThread) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
+    return CALL_EXPORT(_sceKernelStartThread, thid, arglen, argp);
 }
 
 EXPORT(int, ksceKernelStartTimer) {
@@ -318,8 +330,9 @@ EXPORT(int, ksceKernelUnlockFastMutex) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelUnlockMutex) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
+    TRACY_FUNC(ksceKernelUnlockMutex, mutexid, unlock_count);
+    return CALL_EXPORT(sceKernelUnlockMutex, mutexid, unlock_count);
 }
 
 EXPORT(int, ksceKernelUnlockReadRWLock) {
@@ -362,10 +375,14 @@ EXPORT(int, ksceKernelWaitSema) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelWaitThreadEnd) {
-    return UNIMPLEMENTED();
+EXPORT(int, ksceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
+    return CALL_EXPORT(_sceKernelWaitThreadEnd, thid, stat, timeout);
 }
 
 EXPORT(int, ksceKernelWaitThreadEndCB) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, SceThreadmgrForDriver_20C228E4) {
     return UNIMPLEMENTED();
 }

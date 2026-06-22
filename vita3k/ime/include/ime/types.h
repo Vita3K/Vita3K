@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -139,6 +139,18 @@ struct SceImePreeditGeometry {
     SceUInt32 x;
     SceUInt32 y;
     SceUInt32 height;
+};
+
+enum ImeCapsLevel {
+    IME_CAPS_NONE = 0,
+    IME_CAPS_SHIFT = 1,
+    IME_CAPS_LOCK = 2
+};
+
+enum ImeRow {
+    IME_ROW_FIRST = 1,
+    IME_ROW_SECOND = 2,
+    IME_ROW_THIRD = 3
 };
 
 typedef void (*SceImeEventHandler)(void *arg, const SceImeEvent *e);

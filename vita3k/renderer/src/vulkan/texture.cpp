@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,11 +33,8 @@ namespace renderer::vulkan {
 // Only return the formats we support and make sense for now
 // (technically we can read a D24S8 or D32 as R8R8R8R8, but it is not implemented
 // yet and no game I am aware of does it)
-static bool is_depth_stencil_compatible_format(SceGxmTextureBaseFormat format) {
+static bool is_depth_stencil_compatible_format(SceGxmTextureBaseFormat format, bool &can_be_depth) {
     switch (format) {
-        // 8bit stencil
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
         // D16 format
     case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
         // D32 format
@@ -46,6 +43,11 @@ static bool is_depth_stencil_compatible_format(SceGxmTextureBaseFormat format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
         // D24S8 format
     case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+        can_be_depth = true;
+        [[fallthrough]];
+        // 8bit stencil
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
         return true;
     default:
         return false;
@@ -54,6 +56,31 @@ static bool is_depth_stencil_compatible_format(SceGxmTextureBaseFormat format) {
 
 VKTextureCache::VKTextureCache(VKState &state)
     : state(state) {}
+
+void VKTextureCache::cleanup() {
+    for (auto &entry : textures) {
+        if (entry.texture.image)
+            entry.texture.destroy();
+    }
+
+    for (auto &sampler : samplers)
+        state.device.destroy(sampler);
+    samplers.clear();
+
+    for (auto &staging : staging_buffers) {
+        staging.buffer.destroy();
+        staging.waiting_fence = nullptr;
+        staging.scene_timestamp = ~0;
+        staging.frame_timestamp = ~0;
+    }
+
+    staging_idx = 0;
+    last_waited_scene = 0;
+    current_texture = nullptr;
+    gxm_texture = nullptr;
+    cmd_buffer = nullptr;
+    is_texture_transfer_ready = false;
+}
 
 void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config) {
     // why are we doing this here?
@@ -90,14 +117,15 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         lookup_result = context.state.surface_cache.retrieve_color_surface_as_texture(texture, format_target_of_texture, &texture_viewport);
     }
 
-    if (!lookup_result.has_value() && is_depth_stencil_compatible_format(base_format)) {
+    bool is_depth_surface = false;
+    if (!lookup_result.has_value() && is_depth_stencil_compatible_format(base_format, is_depth_surface)) {
         // Try to retrieve depth/stencil cache
         lookup_result = context.state.surface_cache.retrieve_depth_stencil_as_texture(texture, &texture_viewport);
     }
 
     if (lookup_result.has_value()) {
         // get the sampler now
-        context.state.texture_cache.cache_and_bind_sampler(texture);
+        context.state.texture_cache.cache_and_bind_sampler(texture, is_depth_surface);
     } else {
         context.state.texture_cache.cache_and_bind_texture(texture, mem);
         auto &image = context.state.texture_cache.current_texture->texture;
@@ -250,6 +278,31 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
 
     samplers.resize(max_sampler_used);
 
+    // check for linear filtering on depth support
+    const vk::FormatProperties depth_linear = state.physical_device.getFormatProperties(state.deep_stencil_use);
+    const vk::FormatProperties x8d24_support = state.physical_device.getFormatProperties(vk::Format::eX8D24UnormPack32);
+    support_depth_linear_filtering = static_cast<bool>(depth_linear.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+    support_x8d24 = static_cast<bool>(x8d24_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+
+    // other format
+    const vk::FormatProperties e5rgb9_support = state.physical_device.getFormatProperties(vk::Format::eE5B9G9R9UfloatPack32);
+    const vk::FormatProperties a2rgb10_support = state.physical_device.getFormatProperties(vk::Format::eA2R10G10B10UnormPack32);
+    support_e5rgb9 = static_cast<bool>(e5rgb9_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+    support_a2rgb10 = static_cast<bool>(a2rgb10_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+
+    // powerVR only
+    const vk::FormatProperties pvrt_support = state.physical_device.getFormatProperties(vk::Format::ePvrtc12BppUnormBlockIMG);
+    support_pvrt = static_cast<bool>(pvrt_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+
+    // check for dxt support
+    const vk::FormatProperties dxt_support = state.physical_device.getFormatProperties(vk::Format::eBc1RgbaSrgbBlock);
+    // support_dxt might have already been set by the bcn patch on android
+    support_dxt |= static_cast<bool>(dxt_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+
+    // check for astc support
+    const vk::FormatProperties astc_support = state.physical_device.getFormatProperties(vk::Format::eAstc4x4SrgbBlock);
+    support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
+
     return true;
 }
 
@@ -278,6 +331,22 @@ static vk::Format linear_to_srgb(const vk::Format format) {
         LOG_WARN_ONCE("Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
         return format;
     }
+    }
+}
+
+static vk::Format bcn_to_rgba8(const vk::Format format) {
+    switch (format) {
+    case vk::Format::eBc4UnormBlock:
+        return vk::Format::eR8Unorm;
+    case vk::Format::eBc4SnormBlock:
+        return vk::Format::eR8Snorm;
+    case vk::Format::eBc5UnormBlock:
+        return vk::Format::eR8G8Unorm;
+    case vk::Format::eBc5SnormBlock:
+        return vk::Format::eR8G8Snorm;
+    default:
+        // BC1/2/3
+        return vk::Format::eR8G8B8A8Unorm;
     }
 }
 
@@ -312,9 +381,11 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     const uint16_t mip_count = renderer::texture::get_upload_mip(gxm_texture.true_mip_count(), width, height);
 
     vk::Format vk_format = texture::translate_format(base_format);
-    if (gxm_texture.gamma_mode) {
+    if (gxm::is_bcn_format(base_format) && !support_dxt)
+        // texture will be decompressed
+        vk_format = bcn_to_rgba8(vk_format);
+    if (gxm_texture.gamma_mode)
         vk_format = linear_to_srgb(vk_format);
-    }
 
     current_texture->mip_count = mip_count;
     current_texture->is_cube = is_cube;
@@ -431,6 +502,11 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         upload_size = renderer::texture::get_compressed_size(base_format, pixels_per_stride, height);
         pixels_per_stride = align(pixels_per_stride, 4);
         buffer_height = align(buffer_height, 4);
+    } else if (renderer::texture::is_astc_format(base_format)) {
+        upload_size = renderer::texture::get_compressed_size(base_format, pixels_per_stride, height);
+        const uint32_t block_height = gxm::get_block_size(base_format).second;
+        // align can only be used with powers of 2 (not necessarily the case here)
+        buffer_height = (buffer_height + block_height - 1) / block_height * block_height;
     } else {
         size_t bpp = gxm::bits_per_pixel(base_format);
         size_t bytes_per_pixel = (bpp + 7) >> 3;
@@ -478,7 +554,7 @@ void VKTextureCache::upload_done() {
     is_texture_transfer_ready = false;
 }
 
-void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &texture) {
+void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) {
     vk::Sampler &sampler = samplers[index];
     if (sampler) {
         // the previous one has not been used for a while, we can destroy it
@@ -491,8 +567,13 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
     const SceGxmTextureAddrMode uaddr = static_cast<SceGxmTextureAddrMode>(texture.uaddr_mode);
     const SceGxmTextureAddrMode vaddr = static_cast<SceGxmTextureAddrMode>(texture.vaddr_mode);
     // Note: I don't know what to do with the MIPMAP version of SceGxmTextureFilter
-    const SceGxmTextureFilter mag_filter = static_cast<SceGxmTextureFilter>(texture.mag_filter);
-    const SceGxmTextureFilter min_filter = is_linear_strided ? mag_filter : static_cast<SceGxmTextureFilter>(texture.min_filter);
+    SceGxmTextureFilter mag_filter = static_cast<SceGxmTextureFilter>(texture.mag_filter);
+    SceGxmTextureFilter min_filter = is_linear_strided ? mag_filter : static_cast<SceGxmTextureFilter>(texture.min_filter);
+
+    if (no_linear) {
+        min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+        mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+    }
 
     // create sampler
     vk::SamplerCreateInfo sampler_info{
@@ -517,8 +598,13 @@ void VKTextureCache::configure_sampler(size_t index, const SceGxmTexture &textur
 }
 
 void VKTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, bool is_srgb, uint16_t nb_components, uint16_t mipcount, bool swap_rb) {
-    const size_t bpp = gxm::bits_per_pixel(base_format);
-    const uint32_t texture_size = align(width, 4) * align(height, 4) * bpp / 8;
+    uint32_t texture_size;
+    if (renderer::texture::is_astc_format(base_format)) {
+        texture_size = renderer::texture::get_compressed_size(base_format, width, height);
+    } else {
+        const size_t bpp = gxm::bits_per_pixel(base_format);
+        texture_size = static_cast<uint32_t>((align(width, 4) * align(height, 4) * bpp) / 8);
+    }
     current_texture->memory_needed = align(texture_size, 16);
 
     current_texture->mip_count = mipcount;

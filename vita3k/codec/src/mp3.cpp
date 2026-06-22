@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ const uint16_t mpeg_frame_samples[4][4] = {
 // Slot size (MPEG unit of measurement) - use [layer]
 const uint8_t mpeg_slot_size[4] = { 0, 1, 1, 4 }; // Rsvd, 3, 2, 1
 
-uint32_t get_mp3_data_size(const uint8_t *data) {
+static uint32_t get_mp3_data_size(const uint8_t *data) {
     // Quick validity check
     if (((data[0] & 0xFF) != 0xFF)
         || ((data[1] & 0xE0) != 0xE0) // 3 sync bits

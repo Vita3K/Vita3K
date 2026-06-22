@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2025 Vita3K team
+// Copyright (C) 2026 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -65,6 +65,8 @@ struct CPUInterface {
     virtual void set_log_mem(bool log) = 0;
     virtual bool get_log_code() = 0;
     virtual bool get_log_mem() = 0;
+
+    virtual void clear_exclusive() = 0;
 
     virtual std::size_t processor_id() const {
         return 0;

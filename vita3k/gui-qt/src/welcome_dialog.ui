@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+	<class>welcome_dialog</class>
+	<widget class="QDialog" name="welcome_dialog">
+		<property name="geometry">
+			<rect>
+				<x>0</x>
+				<y>0</y>
+				<width>640</width>
+				<height>420</height>
+			</rect>
+		</property>
+		<property name="windowTitle">
+			<string>Welcome to Vita3K</string>
+		</property>
+		<property name="windowIcon">
+			<iconset>
+				<normaloff>:/Vita3K.ico</normaloff>:/Vita3K.ico
+			</iconset>
+		</property>
+		<layout class="QVBoxLayout" name="welcome_dialog_layout" stretch="0,0,0">
+			<property name="spacing">
+				<number>8</number>
+			</property>
+			<property name="leftMargin">
+				<number>12</number>
+			</property>
+			<property name="topMargin">
+				<number>12</number>
+			</property>
+			<property name="rightMargin">
+				<number>12</number>
+			</property>
+			<property name="bottomMargin">
+				<number>12</number>
+			</property>
+			<item>
+				<widget class="QWidget" name="header_section" native="true">
+					<property name="sizePolicy">
+						<sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+							<horstretch>0</horstretch>
+							<verstretch>0</verstretch>
+						</sizepolicy>
+					</property>
+					<layout class="QHBoxLayout" name="header_layout" stretch="0,1">
+						<item>
+							<widget class="QWidget" name="icon_widget" native="true">
+								<property name="sizePolicy">
+									<sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+										<horstretch>0</horstretch>
+										<verstretch>0</verstretch>
+									</sizepolicy>
+								</property>
+								<layout class="QVBoxLayout" name="icon_layout">
+									<property name="leftMargin">
+										<number>0</number>
+									</property>
+									<property name="topMargin">
+										<number>0</number>
+									</property>
+									<property name="rightMargin">
+										<number>0</number>
+									</property>
+									<property name="bottomMargin">
+										<number>0</number>
+									</property>
+									<item>
+										<widget class="QLabel" name="icon_label">
+											<property name="minimumSize">
+												<size>
+													<width>72</width>
+													<height>72</height>
+												</size>
+											</property>
+											<property name="maximumSize">
+												<size>
+													<width>72</width>
+													<height>72</height>
+												</size>
+											</property>
+											<property name="text">
+												<string/>
+											</property>
+											<property name="alignment">
+												<set>Qt::AlignmentFlag::AlignCenter</set>
+											</property>
+										</widget>
+									</item>
+								</layout>
+							</widget>
+						</item>
+						<item>
+							<layout class="QVBoxLayout" name="header_text_layout">
+								<item>
+									<widget class="QLabel" name="label">
+										<property name="maximumSize">
+											<size>
+												<width>16777215</width>
+												<height>30</height>
+											</size>
+										</property>
+										<property name="font">
+											<font>
+												<pointsize>14</pointsize>
+												<bold>false</bold>
+											</font>
+										</property>
+										<property name="text">
+											<string>Vita3K PlayStation Vita Emulator</string>
+										</property>
+										<property name="alignment">
+											<set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
+										</property>
+									</widget>
+								</item>
+								<item>
+									<widget class="QLabel" name="label_desc">
+										<property name="textFormat">
+											<enum>Qt::TextFormat::RichText</enum>
+										</property>
+										<property name="alignment">
+											<set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+										</property>
+										<property name="wordWrap">
+											<bool>true</bool>
+										</property>
+									</widget>
+								</item>
+							</layout>
+						</item>
+					</layout>
+				</widget>
+			</item>
+			<item>
+				<layout class="QVBoxLayout" name="layout_bottom">
+					<property name="leftMargin">
+						<number>0</number>
+					</property>
+					<property name="topMargin">
+						<number>2</number>
+					</property>
+					<property name="rightMargin">
+						<number>0</number>
+					</property>
+					<property name="bottomMargin">
+						<number>0</number>
+					</property>
+					<item>
+						<widget class="QLabel" name="label_info">
+							<property name="textFormat">
+								<enum>Qt::TextFormat::RichText</enum>
+							</property>
+							<property name="alignment">
+								<set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
+							</property>
+							<property name="wordWrap">
+								<bool>true</bool>
+							</property>
+							<property name="openExternalLinks">
+								<bool>true</bool>
+							</property>
+						</widget>
+					</item>
+					<item>
+						<widget class="QLabel" name="label_piracy">
+							<property name="text">
+								<string/>
+							</property>
+							<property name="textFormat">
+								<enum>Qt::TextFormat::RichText</enum>
+							</property>
+							<property name="alignment">
+								<set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
+							</property>
+						</widget>
+					</item>
+					<item>
+						<layout class="QHBoxLayout" name="firmware_layout">
+							<item>
+								<spacer name="firmware_layout_spacer">
+									<property name="orientation">
+										<enum>Qt::Orientation::Horizontal</enum>
+									</property>
+									<property name="sizeHint" stdset="0">
+										<size>
+											<width>40</width>
+											<height>20</height>
+										</size>
+									</property>
+								</spacer>
+							</item>
+						</layout>
+					</item>
+					<item>
+						<layout class="QHBoxLayout" name="compatibility_layout">
+							<item>
+								<widget class="QPushButton" name="commercial_compatibility_list">
+									<property name="text">
+										<string>Commercial Compatibility List</string>
+									</property>
+								</widget>
+							</item>
+							<item>
+								<widget class="QPushButton" name="homebrew_compatibility_list">
+									<property name="text">
+										<string>Homebrew Compatibility List</string>
+									</property>
+								</widget>
+							</item>
+							<item>
+								<spacer name="compatibility_layout_spacer">
+									<property name="orientation">
+										<enum>Qt::Orientation::Horizontal</enum>
+									</property>
+									<property name="sizeHint" stdset="0">
+										<size>
+											<width>40</width>
+											<height>20</height>
+										</size>
+									</property>
+								</spacer>
+							</item>
+						</layout>
+					</item>
+				</layout>
+			</item>
+			<item>
+				<layout class="QHBoxLayout" name="button_layout">
+					<property name="leftMargin">
+						<number>0</number>
+					</property>
+					<property name="topMargin">
+						<number>9</number>
+					</property>
+					<property name="rightMargin">
+						<number>0</number>
+					</property>
+					<property name="bottomMargin">
+						<number>9</number>
+					</property>
+					<item>
+						<widget class="QPushButton" name="accept">
+							<property name="text">
+								<string>Ok</string>
+							</property>
+							<property name="autoDefault">
+								<bool>true</bool>
+							</property>
+						</widget>
+					</item>
+					<item>
+						<spacer name="button_spacer">
+							<property name="orientation">
+								<enum>Qt::Orientation::Horizontal</enum>
+							</property>
+							<property name="sizeHint" stdset="0">
+								<size>
+									<width>40</width>
+									<height>20</height>
+								</size>
+							</property>
+						</spacer>
+					</item>
+					<item>
+						<widget class="QCheckBox" name="show_at_startup">
+							<property name="text">
+								<string>Show next time</string>
+							</property>
+						</widget>
+					</item>
+				</layout>
+			</item>
+		</layout>
+	</widget>
+	<resources>
+		<include location="../resources.qrc"/>
+	</resources>
+	<connections/>
+</ui>
