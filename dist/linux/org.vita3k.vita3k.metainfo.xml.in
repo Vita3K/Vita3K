@@ -70,7 +70,7 @@
     <keyword>retro</keyword>
   </keywords>
   <releases>
-    <release version="3737" date="2025-02-15" />
+    @@FREEDESKTOP_RELEASE_INFO@@
   </releases>
   <content_rating type="oars-1.1"/>
 </component>

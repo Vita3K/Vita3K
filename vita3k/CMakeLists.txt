@@ -319,6 +319,7 @@ if(APPLE)
 		POST_BUILD
 		COMMAND codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - "$<TARGET_FILE_DIR:vita3k>/../..")
 elseif(LINUX)
+	include("cmake/generate_metainfo.cmake")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath='$ORIGIN'")
 	if(BUILD_APPIMAGE)
 		set(APPDIR "${CMAKE_BINARY_DIR}/AppImage")
@@ -326,65 +327,62 @@ elseif(LINUX)
 			TARGET vita3k
 			POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/Vita3K"
-			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "${APPDIR}/usr/share/Vita3K/data"
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "${APPDIR}/usr/share/Vita3K/data"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "${APPDIR}/usr/share/Vita3K/translations"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${APPDIR}/usr/share/Vita3K/shaders-builtin"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "${APPDIR}/usr/share/Vita3K/icons"
   		COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/metainfo"
-	  	COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/../data/org.vita3k.vita3k.metainfo.xml" "${APPDIR}/usr/share/metainfo/"
+	  	COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.metainfo.xml" "${APPDIR}/usr/share/metainfo/"
     )
-		set(LINUXDEPLOY_WRAPPER "${CMAKE_SOURCE_DIR}/appimage/build.sh")
+		set(LINUXDEPLOY_WRAPPER "${CMAKE_SOURCE_DIR}/dist/linux/build.sh")
 		if(USE_DISCORD_RICH_PRESENCE)
 			set(DISCORD_LIB_APPIMAGE "-l \"${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so\"")
 		else()
 			set(DISCORD_LIB_APPIMAGE "")
 		endif()
-		add_custom_command(
-		TARGET vita3k
-		POST_BUILD
-		COMMAND ${LINUXDEPLOY_WRAPPER} ${LINUXDEPLOY_COMMAND} --appdir="${APPDIR}"
-			-e "$<TARGET_FILE:vita3k>" --icon-filename="org.vita3k.vita3k"
-			-i "${CMAKE_CURRENT_SOURCE_DIR}/../data/image/org.vita3k.vita3k.svg" -d "${CMAKE_CURRENT_SOURCE_DIR}/../data/org.vita3k.vita3k.desktop"
-			--custom-apprun="${CMAKE_CURRENT_SOURCE_DIR}/../appimage/apprun.sh" --plugin qt --output=appimage ${DISCORD_LIB_APPIMAGE}
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*" "$<TARGET_FILE_DIR:vita3k>/"
-		COMMAND ${CMAKE_COMMAND} -E rm "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*")
+		add_custom_command(TARGET vita3k POST_BUILD
+			COMMAND ${LINUXDEPLOY_WRAPPER} ${LINUXDEPLOY_COMMAND} --appdir="${APPDIR}"
+				-e "$<TARGET_FILE:vita3k>" --icon-filename="org.vita3k.vita3k"
+				-i "${CMAKE_SOURCE_DIR}/dist/image/org.vita3k.vita3k.svg" -d "${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.desktop"
+				--custom-apprun="${CMAKE_SOURCE_DIR}/dist/linux/apprun.sh" --plugin qt --output=appimage ${DISCORD_LIB_APPIMAGE}
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*" "$<TARGET_FILE_DIR:vita3k>/"
+			COMMAND ${CMAKE_COMMAND} -E rm "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*"
+		)
 	else()
 		include(GNUInstallDirs)
 		install(TARGETS vita3k BUNDLE RUNTIME
-			PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
-		)
+			PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 		install(DIRECTORY
-			${CMAKE_CURRENT_SOURCE_DIR}/../lang
 			${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin
-			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/"
-		)
+			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/")
 		install(DIRECTORY
-			${CMAKE_CURRENT_SOURCE_DIR}/../data/fonts
-			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/data/"
-		)
+			${CMAKE_SOURCE_DIR}/data
+			"${CMAKE_INSTALL_DATADIR}/Vita3K/data/")
+		install(DIRECTORY
+			${VITA3K_QT_QM_DIR}
+			"${CMAKE_INSTALL_DATADIR}/Vita3K/translations")		
 		install(FILES
-			"${CMAKE_CURRENT_SOURCE_DIR}/../data/image/org.vita3k.vita3k.svg"
+			"${CMAKE_SOURCE_DIR}/dist/image/org.vita3k.vita3k.svg"
 			PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps/")
 		install(FILES
-			"${CMAKE_CURRENT_SOURCE_DIR}/../data/org.vita3k.vita3k.metainfo.xml"
+			"${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.metainfo.xml"
 			PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo/")
 		install(FILES
-			"${CMAKE_CURRENT_SOURCE_DIR}/../data/org.vita3k.vita3k.desktop"
+			"${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.desktop"
 			PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/applications/")
 		if(USE_DISCORD_RICH_PRESENCE AND ARCHITECTURE STREQUAL "x86_64")
 			install(LIBRARY
 				${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so
-				PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
-			)
+				PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 		endif()
 	endif()
 	add_custom_command(
 		TARGET vita3k
 		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:vita3k>/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/translations"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons"
