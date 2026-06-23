@@ -1,6 +1,6 @@
 string(TIMESTAMP BUILD_DATE "%Y-%m-%d")
 LIST(APPEND FREEDESKTOP_RELEASE_INFO
-    "<release version=\"${VITA3K_GIT_REV}\" date=\"${BUILD_DATE}\" />"
+    "<release version=\"${GIT_COUNT}-${VITA3K_GIT_REV}\" date=\"${BUILD_DATE}\" />"
 )
 
 configure_file(
