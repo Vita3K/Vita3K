@@ -328,14 +328,14 @@ elseif(LINUX)
 			POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/Vita3K"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/metainfo"
-			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/doc/org.vita3k.vita3k"
+			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/doc/Vita3K"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/licenses/org.vita3k.vita3k"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "${APPDIR}/usr/share/Vita3K/"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "${APPDIR}/usr/share/Vita3K/translations"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${APPDIR}/usr/share/Vita3K/shaders-builtin"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "${APPDIR}/usr/share/Vita3K/icons"
 			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/COPYING.txt" "${APPDIR}/usr/share/licenses/org.vita3k.vita3k/"
-			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/README.md" "${APPDIR}/usr/share/doc/org.vita3k.vita3k/"
+			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/README.md" "${APPDIR}/usr/share/doc/Vita3K/"
 			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.metainfo.xml" "${APPDIR}/usr/share/metainfo/"
 		)
 		set(LINUXDEPLOY_WRAPPER "${CMAKE_SOURCE_DIR}/dist/linux/build.sh")
@@ -388,7 +388,7 @@ elseif(LINUX)
 		install(FILES
 			"${CMAKE_SOURCE_DIR}/README.md"
 			PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
-			DESTINATION "${CMAKE_INSTALL_DOCDIR}/org.vita3k.vita3k/")
+			DESTINATION "${CMAKE_INSTALL_DOCDIR}/")
 
 		if(USE_DISCORD_RICH_PRESENCE AND ARCHITECTURE STREQUAL "x86_64")
 			install(LIBRARY
