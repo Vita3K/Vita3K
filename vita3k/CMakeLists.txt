@@ -319,7 +319,7 @@ if(APPLE)
 		POST_BUILD
 		COMMAND codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - "$<TARGET_FILE_DIR:vita3k>/../..")
 elseif(LINUX)
-	include("cmake/generate_metainfo.cmake")
+	include("${CMAKE_SOURCE_DIR}/cmake/generate_metainfo.cmake")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath='$ORIGIN'")
 	if(BUILD_APPIMAGE)
 		set(APPDIR "${CMAKE_BINARY_DIR}/AppImage")
