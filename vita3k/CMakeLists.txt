@@ -331,19 +331,22 @@ elseif(LINUX)
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "${APPDIR}/usr/share/Vita3K/translations"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${APPDIR}/usr/share/Vita3K/shaders-builtin"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "${APPDIR}/usr/share/Vita3K/icons"
-  		COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/metainfo"
-	  	COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.metainfo.xml" "${APPDIR}/usr/share/metainfo/"
-    )
+			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/metainfo"
+			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.metainfo.xml" "${APPDIR}/usr/share/metainfo/"
+	    )
 		set(LINUXDEPLOY_WRAPPER "${CMAKE_SOURCE_DIR}/dist/linux/build.sh")
 		if(USE_DISCORD_RICH_PRESENCE)
 			set(DISCORD_LIB_APPIMAGE "-l \"${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so\"")
 		else()
 			set(DISCORD_LIB_APPIMAGE "")
 		endif()
-		add_custom_command(TARGET vita3k POST_BUILD
+		add_custom_command(
+			TARGET vita3k
+			POST_BUILD
 			COMMAND ${LINUXDEPLOY_WRAPPER} ${LINUXDEPLOY_COMMAND} --appdir="${APPDIR}"
 				-e "$<TARGET_FILE:vita3k>" --icon-filename="org.vita3k.vita3k"
-				-i "${CMAKE_SOURCE_DIR}/dist/image/org.vita3k.vita3k.svg" -d "${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.desktop"
+				-i "${CMAKE_SOURCE_DIR}/dist/image/org.vita3k.vita3k.svg"
+				-d "${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.desktop"
 				--custom-apprun="${CMAKE_SOURCE_DIR}/dist/linux/apprun.sh" --plugin qt --output=appimage ${DISCORD_LIB_APPIMAGE}
 			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*" "$<TARGET_FILE_DIR:vita3k>/"
 			COMMAND ${CMAKE_COMMAND} -E rm "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*"
