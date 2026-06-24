@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     Root root_paths;
-    app::init_paths(root_paths);
+    bool portable = app::init_paths(root_paths);
 
     if (!fs::exists(root_paths.get_vita_fs_path())) {
         fs::create_directories(root_paths.get_vita_fs_path());
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
 
     Config cfg{};
     EmuEnvState emuenv;
-    const auto config_err = config::init_config(cfg, argc, argv, root_paths);
+    const auto config_err = config::init_config(cfg, argc, argv, root_paths, portable);
 
     fs::create_directories(cfg.get_vita_fs_path());
 
