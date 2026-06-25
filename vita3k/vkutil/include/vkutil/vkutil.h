@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "util/warning.h"
+
 #ifdef __ANDROID__
 #define VK_USE_PLATFORM_ANDROID_KHR
 #elif defined(__APPLE__)
@@ -93,16 +95,9 @@
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wnullability-completeness"
-#endif
-
+DISABLE_CLANG_WARNING_BEGIN("-Wnullability-completeness")
 #include <vk_mem_alloc.hpp>
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+DISABLE_CLANG_WARNING_END
 
 #include <util/fs.h>
 

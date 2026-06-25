@@ -17,12 +17,11 @@
 
 #pragma once
 
+#include "util/preprocessor.h"
+
 #include "gitver.h"
 
 #define IDI_ICON1 101
-
-#define STRINGIZE2(s) #s
-#define STRINGIZE(s) STRINGIZE2(s)
 
 #define FILE_VERSION APP_VER_HI, APP_VER_MID, APP_VER_LO, APP_NUMBER
 #define FILE_VERSION_STR STRINGIZE(APP_VER_HI) "." STRINGIZE(APP_VER_MID) "." STRINGIZE(APP_VER_LO) "." STRINGIZE(APP_NUMBER)
