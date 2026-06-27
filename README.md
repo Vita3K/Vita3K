@@ -23,3 +23,5 @@ Vitra-iOS is a non-profit, open-source project created for educational purposes.
  * "PlayStation" and "PS Vita" are registered trademarks of Sony.
  * No proprietary Sony code, firmware, or BIOS files are hosted in this repository.
  * This project does not promote or facilitate piracy; users are expected to provide their own legally dumped software backups.
+
+Project Status: This project is stable and actively maintained as of June 2026.
