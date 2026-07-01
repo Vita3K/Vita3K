@@ -29,6 +29,7 @@
 #include <condition_variable>
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -41,6 +42,10 @@ struct Config;
 
 namespace overlay {
 class display_manager;
+}
+
+namespace app {
+class AppSessionController;
 }
 
 enum struct MappingMethod : int {
@@ -147,6 +152,7 @@ struct State {
     std::chrono::steady_clock::time_point m_shaders_compiled_time{};
 
     std::atomic<bool> paused{ false };
+    std::optional<std::reference_wrapper<app::AppSessionController>> app_session_controller;
 
     // Non-owning pointer to dialog state for native common dialog overlays.
     DialogState *common_dialog = nullptr;
