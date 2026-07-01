@@ -143,13 +143,13 @@
     "message": "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Have you installed the firmware?\n2. Re-dump your own PS Vita app/game and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported.",
     "description": "Detailed app-load failure message with one format placeholder for the path or title."
   },
-  "overlay.emulation_paused": {
-    "message": "Emulation Paused",
-    "description": "Pause overlay title."
+  "overlay.resume": {
+    "message": "Resume",
+    "description": "Pause overlay resume button."
   },
-  "overlay.press_ps_to_continue": {
-    "message": "Press PS BUTTON to continue",
-    "description": "Pause overlay subtitle prompting the user to resume emulation."
+  "overlay.exit": {
+    "message": "Exit",
+    "description": "Pause overlay exit button."
   },
   "overlay.compiling_shaders": {
     "message": "Please wait, compiling shaders...",
