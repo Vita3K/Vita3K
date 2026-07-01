@@ -39,6 +39,7 @@ namespace overlay {
 struct input_thread_context_t {
     std::string_view name;
     std::shared_ptr<user_interface> target;
+    uint32_t priority;
     std::function<void()> input_loop_prologue;
     std::function<void(int32_t)> input_loop_epilogue;
     std::function<int32_t()> input_loop_override;
@@ -99,10 +100,11 @@ public:
     void set_paused(bool paused) { m_paused.store(paused, std::memory_order_relaxed); }
     bool is_paused() const { return m_paused.load(std::memory_order_relaxed); }
 
-    // Push an interactive overlay onto the input thread for processing.
+    // Push an interactive overlay onto the input thread for processing. The less the priority number the more priority it has
     void attach_thread_input(
         const std::string_view &name,
         std::shared_ptr<user_interface> target,
+        uint32_t priority,
         std::function<void()> on_input_loop_enter = nullptr,
         std::function<void(int32_t)> on_input_loop_exit = nullptr,
         std::function<int32_t()> input_loop_override = nullptr);
