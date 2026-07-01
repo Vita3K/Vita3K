@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <cstdint>
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <renderer/types.h>
@@ -34,6 +35,21 @@
 #include <util/log.h>
 
 namespace renderer {
+
+// The higher on this list the higher the priority of input
+constexpr auto overlay_input_priorities = std::to_array<std::string_view>({
+    "pause_overlay",
+    "common_dialog",
+});
+
+constexpr static int get_overlay_input_priority(std::string_view key) {
+    for (size_t i = 0; i < overlay_input_priorities.size(); ++i) {
+        if (overlay_input_priorities[i] == key)
+            return static_cast<uint32_t>(i);
+    }
+    assert(false && "Overlay input priority not found");
+    return UINT32_MAX; // Not found
+}
 
 void State::update_overlays() {
     if (!overlay_manager)
@@ -60,38 +76,58 @@ void State::update_overlays() {
         }
     }
 
+    // Performance overlay
     {
-        const bool is_paused = paused.load(std::memory_order_relaxed);
-        overlay_manager->set_paused(is_paused);
-        if (is_paused) {
-            if (!overlay_manager->get<overlay::pause_overlay>())
-                overlay_manager->create<overlay::pause_overlay>();
+        if (perf_overlay.enabled && perf_overlay.fps > 0) {
+            auto perf = overlay_manager->get<overlay::perf_overlay>();
+            if (!perf)
+                perf = overlay_manager->create<overlay::perf_overlay>();
+
+            perf->set_position(static_cast<overlay::screen_quadrant>(perf_overlay.position));
+            perf->set_detail_level(static_cast<overlay::perf_detail_level>(perf_overlay.detail));
+            perf->set_fps_data(perf_overlay.fps, perf_overlay.avg_fps, perf_overlay.min_fps,
+                perf_overlay.max_fps, perf_overlay.ms_per_frame,
+                perf_overlay.fps_values.data(), perf_overlay.fps_values_count,
+                perf_overlay.current_fps_offset);
         } else {
-            if (overlay_manager->get<overlay::pause_overlay>())
-                overlay_manager->remove<overlay::pause_overlay>();
+            auto perf = overlay_manager->get<overlay::perf_overlay>();
+            if (perf)
+                overlay_manager->remove<overlay::perf_overlay>();
         }
     }
 
-    if (perf_overlay.enabled && perf_overlay.fps > 0) {
-        auto perf = overlay_manager->get<overlay::perf_overlay>();
-        if (!perf)
-            perf = overlay_manager->create<overlay::perf_overlay>();
+    const bool is_paused = paused.load(std::memory_order_relaxed);
+    overlay_manager->set_paused(is_paused);
+    if (is_paused) {
+        bool just_created = false;
+        auto pause_overlay = overlay_manager->get<overlay::pause_overlay>();
+        if (!pause_overlay) {
+            if (!app_session_controller.has_value()) {
+                LOG_ERROR_ONCE("Pause overlay requested while app session controller is unavailable.");
+                return;
+            }
 
-        perf->set_position(static_cast<overlay::screen_quadrant>(perf_overlay.position));
-        perf->set_detail_level(static_cast<overlay::perf_detail_level>(perf_overlay.detail));
-        perf->set_fps_data(perf_overlay.fps, perf_overlay.avg_fps, perf_overlay.min_fps,
-            perf_overlay.max_fps, perf_overlay.ms_per_frame,
-            perf_overlay.fps_values.data(), perf_overlay.fps_values_count,
-            perf_overlay.current_fps_offset);
+            auto &session_controller = app_session_controller.value().get();
+            pause_overlay = overlay_manager->create<overlay::pause_overlay>(session_controller);
+            just_created = true;
+        }
+        if (pause_overlay->poll_dialog(*common_dialog, sys_date_format, sys_button)) {
+            if ((just_created || pause_overlay->input_loop_exited())) {
+                pause_overlay->reset_input_loop();
+                constexpr auto priority = get_overlay_input_priority("pause_overlay");
+                overlay_manager->attach_thread_input("pause_overlay", pause_overlay, priority);
+            }
+        }
     } else {
-        auto perf = overlay_manager->get<overlay::perf_overlay>();
-        if (perf)
-            overlay_manager->remove<overlay::perf_overlay>();
+        auto pause_overlay = overlay_manager->get<overlay::pause_overlay>();
+        if (pause_overlay) {
+            overlay_manager->remove<overlay::pause_overlay>();
+        }
     }
 
-    if (common_dialog) {
+    if (!is_paused) {
         auto dlg = overlay_manager->get<overlay::common_dialog_overlay>();
-        if (common_dialog->type != NO_DIALOG && common_dialog->status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
+        if (common_dialog && common_dialog->type != NO_DIALOG && common_dialog->status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
             bool just_created = false;
             if (!dlg) {
                 dlg = overlay_manager->create<overlay::common_dialog_overlay>();
@@ -99,14 +135,16 @@ void State::update_overlays() {
             }
             if (dlg->poll_dialog(*common_dialog, sys_date_format, sys_button)
                 && common_dialog->type != TROPHY_SETUP_DIALOG) {
-                if (just_created || dlg->input_loop_exited()) {
+                if ((just_created || dlg->input_loop_exited())) {
                     dlg->reset_input_loop();
-                    overlay_manager->attach_thread_input("common_dialog", dlg);
+                    constexpr auto priority = get_overlay_input_priority("common_dialog");
+                    overlay_manager->attach_thread_input("common_dialog", dlg, priority);
                 }
             }
         } else {
-            if (dlg)
+            if (dlg) {
                 overlay_manager->remove<overlay::common_dialog_overlay>();
+            }
         }
     }
 }

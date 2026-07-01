@@ -502,6 +502,12 @@ SDLMAIN_DECLSPEC int SDL_main(int argc, char *argv[]) {
                 default:
                     break;
                 }
+                // Stop requested by overlay/ingame
+                auto session_controller = get_app_session_controller();
+                if (session_controller->stop_requested()) {
+                    running = false;
+                    session_controller->reset_stop_request();
+                }
             }
 
             if (!pending_launch_request) {
