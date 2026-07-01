@@ -67,7 +67,6 @@ protected:
     bool m_start_pad_interception = true;
     std::atomic<bool> m_stop_pad_interception{ false };
     std::atomic<bool> m_input_thread_detached{ false };
-    bool m_allow_input_on_pause = false;
 
     std::thread::id m_input_loop_thread_id;
     std::atomic<bool> m_input_loop_exited{ true };
