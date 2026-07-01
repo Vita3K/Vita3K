@@ -56,7 +56,9 @@ int32_t user_interface::run_input_loop(overlay_input_handler *input, std::functi
     auto initial_timestamp = timestamp;
     pad_button last_auto_repeat_button = pad_button::pad_button_max_enum;
 
-    bool last_touch_pressed = false;
+    // Seed as already-pressed so a touch/mouse button held from before the overlay opened
+    // isn't mistaken for a new press on the first poll.
+    bool last_touch_pressed = true;
 
     const auto handle_button_press = [&](pad_button button_id, bool pressed) {
         if (button_id >= pad_button::pad_button_max_enum)
@@ -118,12 +120,6 @@ int32_t user_interface::run_input_loop(overlay_input_handler *input, std::functi
 
         // Poll actual input when an input handler is available.
         if (input) {
-            // When emulation is paused, skip all input polling and dispatch
-            if (input->is_paused && input->is_paused() && !m_allow_input_on_pause) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                continue;
-            }
-
             const auto current = input->poll();
             for (uint32_t i = 0; i < static_cast<uint32_t>(pad_button::pad_button_max_enum); i++) {
                 handle_button_press(static_cast<pad_button>(i), current[i]);
