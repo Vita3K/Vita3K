@@ -47,9 +47,7 @@ jobs:
             cmake_preset: ci-windows-msvc
             vcpkg_root: C:\vcpkg
             vcpkg_triplet: x64-windows-static-md
-            cache_path: |
-              C:\vcpkg\installed
-              C:\vcpkg\packages
+            cache_path: C:\vcpkg-binary-cache
             qt_install_deps: 'false'
 
           - os: windows-11-arm
@@ -101,7 +99,10 @@ jobs:
         shell: pwsh
         env:
           VCPKG_ROOT: ${{ matrix.vcpkg_root }}
-        run: .\.ci\setup-windows-msvc.ps1 -VcpkgTriplet '${{ matrix.vcpkg_triplet }}'
+          VCPKG_BINARY_CACHE: ${{ matrix.cache_path }}
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_BINARY_CACHE | Out-Null
+          .\.ci\setup-windows-msvc.ps1 -VcpkgTriplet '${{ matrix.vcpkg_triplet }}'
         if: matrix.platform == 'windows-x64'
 
       - uses: TheMrMilchmann/setup-msvc-dev@v4
@@ -174,6 +175,7 @@ jobs:
         shell: bash
         env:
           VCPKG_ROOT: ${{ matrix.vcpkg_root }}
+          VCPKG_BINARY_CACHE: ${{ matrix.cache_path }}
         run: bash ./.ci/build-desktop.sh --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
         if: matrix.platform == 'windows-x64'
 
@@ -220,6 +222,8 @@ jobs:
   android-build:
     name: Android
     runs-on: ubuntu-latest
+    env:
+      VCPKG_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-binary-cache
 
     steps:
       - uses: actions/checkout@v6
@@ -227,15 +231,13 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Restore native dependency cache
+      - name: Restore vcpkg binary cache
         uses: actions/cache@v5
         with:
-          path: |
-            /usr/local/share/vcpkg/installed
-            /usr/local/share/vcpkg/packages
-          key: cache-android-native-${{ hashFiles('CMakeLists.txt', 'cmake/**', '.ci/**', 'android/app/build.gradle', 'vcpkg.json') }}
+          path: ${{ env.VCPKG_BINARY_CACHE }}
+          key: vcpkg-bincache-android-${{ hashFiles('vcpkg.json', 'CMakeLists.txt', 'cmake/**', '.ci/**', 'android/app/build.gradle') }}
           restore-keys: |
-            cache-android-native-
+            vcpkg-bincache-android-
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -256,7 +258,9 @@ jobs:
       - name: Set up Android build environment
         env:
           VCPKG_ROOT: /usr/local/share/vcpkg
-        run: bash ./.ci/setup-android.sh
+        run: |
+          mkdir -p "$VCPKG_BINARY_CACHE"
+          bash ./.ci/setup-android.sh
 
       - uses: hendrikmuhs/ccache-action@v1.2.23
 
