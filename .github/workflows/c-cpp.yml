@@ -73,13 +73,13 @@ jobs:
             qt_install_deps: 'false'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Restore cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         if: ${{ matrix.cache_path != '' }}
         with:
           path: ${{ matrix.cache_path }}
@@ -226,13 +226,13 @@ jobs:
       VCPKG_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-binary-cache
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Restore vcpkg binary cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.VCPKG_BINARY_CACHE }}
           key: vcpkg-bincache-android-${{ hashFiles('vcpkg.json', 'CMakeLists.txt', 'cmake/**', '.ci/**', 'android/app/build.gradle') }}
@@ -308,7 +308,7 @@ jobs:
       github.ref == 'refs/heads/master' &&
       github.repository == 'Vita3K/Vita3K'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
