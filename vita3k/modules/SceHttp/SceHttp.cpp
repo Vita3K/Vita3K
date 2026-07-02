@@ -17,6 +17,7 @@
 
 #include <module/module.h>
 
+#include <algorithm>
 #include <cstring>
 #include <filesystem>
 #include <http/state.h>
@@ -42,6 +43,7 @@
 #include <util/tracy.h>
 
 #include <string>
+#include <string_view>
 #include <thread>
 
 TRACY_MODULE_NAME(SceHttp);
@@ -625,6 +627,9 @@ EXPORT(SceInt, sceHttpGetAllResponseHeaders, SceInt reqId, Ptr<char> *header, Sc
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
+    if (!header || !headerSize)
+        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+
     if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
@@ -733,10 +738,7 @@ EXPORT(SceInt, sceHttpGetResponseContentLength, SceInt reqId, SceULong64 *conten
     if (length_it == req->second.res.headers.end())
         return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
 
-    SceULong64 length = string_utils::stoi_def(length_it->second);
-    *contentLength = length;
-
-    req->second.res.contentLength = length;
+    *contentLength = req->second.res.contentLength;
 
     return 0;
 }
@@ -745,6 +747,9 @@ EXPORT(SceInt, sceHttpGetStatusCode, SceInt reqId, SceInt *statusCode) {
     TRACY_FUNC(sceHttpGetStatusCode, reqId, statusCode);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
+
+    if (!statusCode)
+        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
     if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
@@ -786,7 +791,7 @@ EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize head
 
     *valueLen = 0; // reset to 0 to check after
 
-    std::string headerStr = std::string(headers.get(emuenv.mem));
+    std::string headerStr(headers.get(emuenv.mem), headersLen);
     HeadersMapType parsedHeaders;
     if (!net_utils::parseHeaders(headerStr, parsedHeaders))
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
@@ -824,10 +829,7 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
     if (lineLen < 8)
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
-    STUBBED("Ignore lineLen");
-
-    // TODO: test
-    auto line = std::string(statusLine);
+    auto line = std::string(statusLine, lineLen);
     auto cleanLine = line.substr(0, line.find("\r\n"));
     // even if there is no \r\n, the result will still be the whole string
 
@@ -845,10 +847,9 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
         *httpMinorVer = 0;
     }
 
-    auto statusCodeLine = cleanLine.substr(cleanLine.find(' ') + 1, 3);
     *responseCode = code;
 
-    auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "reasonPhrase"));
+    auto h = Ptr<char>(alloc(emuenv.mem, reason.length() + 1, "reasonPhrase"));
     memcpy(h.get(emuenv.mem), reason.data(), reason.length() + 1);
     emuenv.http.guestPointers.emplace_back(h);
     *reasonPhrase = h;
@@ -863,6 +864,9 @@ EXPORT(SceInt, sceHttpReadData, SceInt reqId, void *data, SceSize size) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
+    if (!data && size != 0)
+        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+
     if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
@@ -870,6 +874,9 @@ EXPORT(SceInt, sceHttpReadData, SceInt reqId, void *data, SceSize size) {
 
     // These methods have no body
     if (req->second.method == SCE_HTTP_METHOD_HEAD || req->second.method == SCE_HTTP_METHOD_OPTIONS)
+        return 0;
+
+    if (size == 0)
         return 0;
 
     // If the game wants to read more than whats available, change the read ammount to what is available
@@ -920,6 +927,9 @@ EXPORT(SceInt, sceHttpRequestGetAllHeaders, SceInt reqId, Ptr<char> *header, Sce
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
+    if (!header || !headerSize)
+        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+
     if (!emuenv.http.requests.contains(reqId))
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
@@ -927,7 +937,7 @@ EXPORT(SceInt, sceHttpRequestGetAllHeaders, SceInt reqId, Ptr<char> *header, Sce
 
     auto headers = net_utils::constructHeaders(req->second.headers);
 
-    auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "headers"));
+    auto h = Ptr<char>(alloc(emuenv.mem, headers.length() + 1, "headers"));
     memcpy(h.get(emuenv.mem), headers.data(), headers.length() + 1);
     req->second.guestPointers.emplace_back(h);
     *header = h;
@@ -1119,7 +1129,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     }
 
     // TODO: does a HEAD/OPTIONS request need content-length to exist?
-    if (req->second.res.headers.find("content-length") == req->second.headers.end()) {
+    if (req->second.res.headers.find("content-length") == req->second.res.headers.end()) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
     }
@@ -1464,7 +1474,7 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<
     if (require) {
         *require = internal_require;
     }
-    if (prepare < internal_require)
+    if (pool && out && prepare < internal_require)
         return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_MEMORY);
 
     if (pool && out) {
@@ -1498,17 +1508,16 @@ EXPORT(SceInt, sceHttpUriSweepPath, char *dst, const char *src, SceSize srcSize)
     if (!dst || !src)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
-    auto srcStr = std::string(src);
-
-    unsigned int srcStrLen = srcSize - 1;
+    const std::string_view srcStr(src, srcSize - 1);
     if (srcStr[0] == '/') {
-        auto lex = std::filesystem::path(src).lexically_normal();
+        auto lex = std::filesystem::path(std::string(srcStr)).lexically_normal();
         const std::string lexStr = lex.string();
-        const char *realPath = lexStr.c_str();
-        strcpy(dst, realPath);
+        const auto copyLen = std::min<std::size_t>(lexStr.length(), srcSize - 1);
+        memcpy(dst, lexStr.data(), copyLen);
+        dst[copyLen] = 0;
     } else {
         // Nicely copy the contents of src into dst
-        memcpy(dst, src, srcStrLen);
+        memcpy(dst, srcStr.data(), srcStr.length());
         dst[srcSize - 1] = 0;
     }
 
