@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Vita3K
+Comment=Experimental Playstation Vita emulator
+Exec=Vita3K
+Icon=org.vita3k.vita3k
+Categories=Game;Emulator
