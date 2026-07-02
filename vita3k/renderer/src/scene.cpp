@@ -225,16 +225,17 @@ COMMAND(handle_draw) {
     Ptr<const void> indices = helper.pop<Ptr<const void>>();
     const std::uint32_t count = helper.pop<const std::uint32_t>();
     const std::uint32_t instance_count = helper.pop<const std::uint32_t>();
+    const std::int32_t base_vertex = helper.pop<const std::int32_t>();
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
         gl::draw(dynamic_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context),
-            features, type, format, indices.cast<void>().get(mem), count, instance_count, mem, config);
+            features, type, format, indices.cast<void>().get(mem), count, instance_count, mem, config, base_vertex);
         break;
 
     case Backend::Vulkan:
         vulkan::draw(*reinterpret_cast<vulkan::VKContext *>(render_context), type, format, indices.cast<void>(),
-            count, instance_count, mem, config);
+            count, instance_count, mem, config, base_vertex);
         break;
 
     default:
