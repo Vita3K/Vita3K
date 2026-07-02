@@ -41,6 +41,7 @@ bool has_hle_implementation(uint32_t nid);
  */
 SceUID load_module(EmuEnvState &emuenv, const std::string &module_path);
 int unload_module(EmuEnvState &emuenv, SceUID module_id);
+SceUID load_virtual_module(EmuEnvState &emuenv, const std::string &module_name);
 
 uint32_t start_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
 uint32_t stop_module(EmuEnvState &emuenv, const SceKernelModuleInfo &module, SceSize args = 0, Ptr<const void> argp = Ptr<const void>{});
