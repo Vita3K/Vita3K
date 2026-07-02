@@ -2,6 +2,7 @@ add_library(
 	util
 	STATIC
 	src/android_driver.cpp
+	src/archive_utils.cpp
 	src/arm.cpp
 	src/float_to_half.cpp
 	src/fs_utils.cpp
@@ -18,7 +19,7 @@ add_library(
 
 target_include_directories(util PUBLIC include)
 target_link_libraries(util PUBLIC ${Boost_LIBRARIES} fmt spdlog http mem)
-target_link_libraries(util PRIVATE libcurl crypto SDL3::SDL3)
+target_link_libraries(util PRIVATE libcurl crypto SDL3::SDL3 7zip)
 if(ANDROID)
 	target_link_libraries(util PUBLIC emuenv android xxHash::xxhash)
 	target_link_libraries(util PRIVATE adrenotools)
