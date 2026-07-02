@@ -266,12 +266,12 @@ get_boost()
 
 if(WIN32)
 	add_compile_definitions("_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "_CRT_SECURE_NO_WARNINGS" "NOMINMAX")
+endif()
 
-	# Disable inclusion of timestamps in PCH files on Windows
-	if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-		string(APPEND CMAKE_C_FLAGS " -Xclang -fno-pch-timestamp")
-		string(APPEND CMAKE_CXX_FLAGS " -Xclang -fno-pch-timestamp")
-	endif()
+# Disable inclusion of timestamps in precompiled headers on Windows
+if(CMAKE_HOST_WIN32 AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
+	string(APPEND CMAKE_C_FLAGS " -Xclang -fno-pch-timestamp")
+	string(APPEND CMAKE_CXX_FLAGS " -Xclang -fno-pch-timestamp")
 endif()
 
 # Allow per-translation-unit parallel builds when using MSVC
