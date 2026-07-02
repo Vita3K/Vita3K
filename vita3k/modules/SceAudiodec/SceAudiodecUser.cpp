@@ -30,6 +30,7 @@ enum {
     SCE_AUDIODEC_ERROR_NOT_INITIALIZED = 0x807F0005,
     SCE_AUDIODEC_ERROR_INVALID_HANDLE = 0x807F0009,
     SCE_AUDIODEC_ERROR_NOT_HANDLE_IN_USE = 0x807F000A,
+    SCE_AUDIODEC_AT9_ERROR_INVALID_CONFIG = 0x807F2000,
     SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION = 0x807F2801,
 };
 
@@ -149,7 +150,13 @@ static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiode
     switch (codec) {
     case SCE_AUDIODEC_TYPE_AT9: {
         SceAudiodecInfoAt9 &info = ctrl->info.get(emuenv.mem)->at9;
-        DecoderPtr decoder = std::make_shared<Atrac9DecoderState>(info.config_data);
+        auto decoder = std::make_shared<Atrac9DecoderState>(info.config_data);
+        if (!decoder->is_initialized()) {
+            state->codecs[codec].erase(handle);
+            ctrl->handle = 0;
+            return SCE_AUDIODEC_AT9_ERROR_INVALID_CONFIG;
+        }
+
         state->decoders[handle] = decoder;
 
         info.channels = decoder->get(DecoderQuery::CHANNELS);

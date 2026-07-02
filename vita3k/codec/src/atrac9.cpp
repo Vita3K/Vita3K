@@ -39,11 +39,22 @@ struct FFMPEGAtrac9Info {
 
 uint32_t Atrac9DecoderState::get(DecoderQuery query) {
     Atrac9CodecInfo *info = static_cast<Atrac9CodecInfo *>(atrac9_info);
+    if (!info) {
+        return 0;
+    }
 
     switch (query) {
     case DecoderQuery::CHANNELS: return info->channels;
     // The bit rate is the size of a superframe times the number of superframes per second (times 8)
-    case DecoderQuery::BIT_RATE: return static_cast<uint32_t>((info->superframeSize * 8ULL * info->samplingRate) / (info->frameSamples * info->framesInSuperframe));
+    case DecoderQuery::BIT_RATE: {
+        const int samples_per_superframe = info->frameSamples * info->framesInSuperframe;
+        if (samples_per_superframe <= 0) {
+            LOG_ERROR("Invalid Atrac9 codec info when querying bitrate.");
+            return 0;
+        }
+
+        return static_cast<uint32_t>((info->superframeSize * 8ULL * info->samplingRate) / samples_per_superframe);
+    }
     case DecoderQuery::SAMPLE_RATE: return info->samplingRate;
     case DecoderQuery::AT9_SAMPLE_PER_FRAME: return info->frameSamples;
     case DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME: return info->frameSamples * info->framesInSuperframe;
@@ -57,7 +68,15 @@ uint32_t Atrac9DecoderState::get_es_size() {
     return es_size_used;
 }
 
+bool Atrac9DecoderState::is_initialized() const {
+    return initialized;
+}
+
 void Atrac9DecoderState::flush() {
+    if (!initialized) {
+        return;
+    }
+
     Atrac9CodecInfo *info = static_cast<Atrac9CodecInfo *>(atrac9_info);
     superframe_frame_idx = 0;
     superframe_data_left = info->superframeSize;
@@ -71,6 +90,10 @@ void Atrac9DecoderState::flush() {
 }
 
 void Atrac9DecoderState::export_state(Atrac9DecoderSavedState *dest) {
+    if (!initialized) {
+        return;
+    }
+
     Frame &frame = static_cast<Atrac9Handle *>(decoder_handle)->Frame;
     if (frame.Channels[0])
         std::copy_n(frame.Channels[0]->Mdct.ImdctPrevious, 256, dest->prev_values[0]);
@@ -79,6 +102,10 @@ void Atrac9DecoderState::export_state(Atrac9DecoderSavedState *dest) {
 }
 
 void Atrac9DecoderState::load_state(const Atrac9DecoderSavedState *src) {
+    if (!initialized) {
+        return;
+    }
+
     Frame &frame = static_cast<Atrac9Handle *>(decoder_handle)->Frame;
     if (frame.Channels[0])
         std::copy_n(src->prev_values[0], 256, frame.Channels[0]->Mdct.ImdctPrevious);
@@ -87,6 +114,10 @@ void Atrac9DecoderState::load_state(const Atrac9DecoderSavedState *src) {
 }
 
 bool Atrac9DecoderState::send(const uint8_t *data, uint32_t size) {
+    if (!initialized) {
+        return false;
+    }
+
     Atrac9CodecInfo *info = static_cast<Atrac9CodecInfo *>(atrac9_info);
 
     int decode_used = 0;
@@ -111,6 +142,10 @@ bool Atrac9DecoderState::send(const uint8_t *data, uint32_t size) {
 }
 
 bool Atrac9DecoderState::receive(uint8_t *data, DecoderSize *size) {
+    if (!initialized) {
+        return false;
+    }
+
     Atrac9CodecInfo *info = static_cast<Atrac9CodecInfo *>(atrac9_info);
 
     if (data) {
@@ -125,26 +160,35 @@ bool Atrac9DecoderState::receive(uint8_t *data, DecoderSize *size) {
 }
 
 Atrac9DecoderState::Atrac9DecoderState(uint32_t config_data)
-    : config_data(config_data) {
-    decoder_handle = Atrac9GetHandle();
+    : config_data(config_data)
+    , decoder_handle(Atrac9GetHandle())
+    , atrac9_info(new Atrac9CodecInfo{}) {
     const int err = Atrac9InitDecoder(decoder_handle, reinterpret_cast<uint8_t *>(&config_data));
 
     if (err != At9Status::ERR_SUCCESS) {
         LOG_ERROR("Error initializing decoder. Error code: {}", log_hex(err));
+        return;
     }
 
-    Atrac9CodecInfo *info = new Atrac9CodecInfo;
-    atrac9_info = info;
+    Atrac9CodecInfo *info = static_cast<Atrac9CodecInfo *>(atrac9_info);
     Atrac9GetCodecInfo(decoder_handle, info);
+    if (info->frameSamples <= 0 || info->framesInSuperframe <= 0 || info->channels <= 0
+        || info->superframeSize <= 0 || info->samplingRate <= 0) {
+        LOG_ERROR("Invalid Atrac9 codec info.");
+        return;
+    }
 
     result.resize(info->frameSamples * info->channels * sizeof(uint16_t));
 
     superframe_frame_idx = 0;
     superframe_data_left = info->superframeSize;
+    initialized = true;
 }
 
 Atrac9DecoderState::~Atrac9DecoderState() {
-    Atrac9ReleaseHandle(decoder_handle);
+    if (decoder_handle) {
+        Atrac9ReleaseHandle(decoder_handle);
+    }
     delete static_cast<Atrac9CodecInfo *>(atrac9_info);
     context = nullptr;
 }
