@@ -375,7 +375,7 @@ EXPORT(int, ksceKernelWaitSema) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
+EXPORT(int, ksceKernelWaitThreadEnd, SceUID thid, Ptr<int> stat, SceUInt *timeout) {
     return CALL_EXPORT(_sceKernelWaitThreadEnd, thid, stat, timeout);
 }
 

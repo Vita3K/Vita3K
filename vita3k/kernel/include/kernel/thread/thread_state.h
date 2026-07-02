@@ -19,46 +19,50 @@
 
 #include <cpu/state.h>
 #include <kernel/callback.h>
+#include <kernel/thread/wait_state.h>
 #include <kernel/types.h>
 #include <mem/block.h>
 #include <mem/ptr.h>
 
+#include <atomic>
 #include <condition_variable>
+#include <functional>
+#include <memory>
 #include <mutex>
-#include <optional>
 #include <string>
+#include <vector>
 
 struct CPUContext;
 
 struct ThreadState;
 struct ThreadParams;
 struct KernelState;
+struct MemState;
 
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::function<void(CPUState &, uint32_t, SceUID)> CallImport;
 typedef std::function<std::string(Address)> ResolveNIDName;
 
-enum class ThreadStatus {
-    run, // Running
-    dormant, // Waiting for a job
-    suspend, // Suspended by debugger
-    wait, // Waiting to be awaken by sync object or operation
+class KernelThreadManager;
+
+enum class SuspendType {
+    Process,
+    Thread,
+    Debug,
+    Init,
+    System,
 };
 
-struct ThreadSignal {
-    ThreadSignal() = default;
-    ~ThreadSignal() = default;
-
-    void wait();
-    bool send();
-
-private:
-    std::mutex mutex;
-    std::condition_variable recv_cond;
-    bool signaled = false;
+enum class RunState {
+    Initialized,
+    Waiting,
+    Runnable,
+    Terminated,
 };
 
 struct ThreadState {
+    friend class KernelThreadManager;
+
     std::mutex mutex;
     std::string name;
     SceUID id;
@@ -73,15 +77,22 @@ struct ThreadState {
     uint64_t start_tick;
     uint64_t last_vblank_waited;
     // set to true if thread is processing kernel callbacks
-    bool is_processing_callbacks = false;
+    std::atomic_bool is_processing_callbacks = false;
 
     CPUStatePtr cpu;
-    ThreadStatus status = ThreadStatus::dormant;
+    RunState state = RunState::Initialized;
+    WaitReason wait_reason = WaitReason::None;
+    WaitState wait;
+    InterruptedWaitState interrupted_wait;
+    uint64_t wait_sequence = 0;
+    uint64_t wait_sequence_counter = 0;
+    uint32_t suspend_flags = 0;
 
-    ThreadSignal signal;
+    bool signal_pending = false;
+    bool callback_wakeup_pending = false;
+    std::vector<ThreadEndWaiterRef> thread_end_waiters;
     std::vector<CallbackPtr> callbacks;
-    std::condition_variable status_cond;
-    std::vector<std::shared_ptr<ThreadState>> waiting_threads;
+    std::condition_variable state_cond;
     uint32_t returned_value = 0;
 
     ThreadState() = delete;
@@ -91,12 +102,10 @@ struct ThreadState {
     int start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback = false);
     void exit(SceInt32 status);
     void exit_delete(bool exit = true);
-
-    void update_status(ThreadStatus status, std::optional<ThreadStatus> expected = std::nullopt);
     Address stack_top() const;
 
     void run_loop();
-    void raise_waiting_threads();
+    void complete_thread_end_waiters();
 
     // this function must be called from the thread itself (inside a svc call)
     uint32_t run_callback(Address callback_address, const std::vector<uint32_t> &args);
@@ -106,9 +115,22 @@ struct ThreadState {
     // args and argp are passed to thread->start as is
     uint32_t run_guest_function(Address callback_address, SceSize args = 0, const Ptr<void> argp = Ptr<void>{});
 
+    void suspend(SuspendType type);
     void suspend();
+    void resume(SuspendType type, bool step = false);
     void resume(bool step = false);
     std::string log_stack_traceback() const;
+
+    bool is_executing() const { return is_executing_guest; }
+    bool has_wait_state() const { return wait.type != WaitType::None; }
+    bool has_interrupted_wait_state() const { return interrupted_wait.valid && interrupted_wait.wait.type != WaitType::None; }
+    bool is_dormant() const { return state == RunState::Initialized; }
+    bool is_waiting() const { return state == RunState::Waiting; }
+    bool can_dispatch_guest() const { return state == RunState::Runnable && suspend_flags == 0; }
+    bool is_suspend_requested(SuspendType type) const;
+    WaitState *find_wait_state_by_sequence(uint64_t sequence);
+    const WaitState *find_wait_state_by_sequence(uint64_t sequence) const;
+    bool is_interrupted_wait_sequence(uint64_t sequence) const;
 
 private:
     void push_arguments(const std::vector<uint32_t> &args);
@@ -121,10 +143,11 @@ private:
     bool exit_requested = false;
     // sceKernelExitDeleteThread (or external kill): will return from top-level run_loop(), then host thread joins.
     bool delete_requested = false;
-    // Set by suspend(), consumed in run_loop() to transition to ThreadStatus::suspend.
+    // Set by suspend(), consumed in run_loop() after the current guest slice stops.
     bool suspend_requested = false;
     // Single stepping mode.
     bool single_stepping = false;
+    bool is_executing_guest = false;
 
     // Number of active run_loop frames. The top-level host thread keeps one
     // frame alive (run_loop()) while parked dormant; callbacks add nested frames.
