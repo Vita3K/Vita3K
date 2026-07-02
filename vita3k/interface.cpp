@@ -33,6 +33,7 @@
 #include <lang/state.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
+#include <packages/vci.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
 
@@ -277,6 +278,17 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
 }
 
 std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, const fs::path &archive_path, const std::function<void(ArchiveContents)> &progress_callback, const ReinstallCallback &reinstall_callback) {
+    if (string_utils::tolower(archive_path.extension().string()) == ".vci") {
+        const auto vci_progress = [&](float pct) {
+            if (progress_callback)
+                progress_callback({ 1.f, 1.f, pct });
+        };
+        const bool state = install_vci(archive_path, emuenv, vci_progress);
+        std::vector<ContentInfo> content_installed{};
+        content_installed.push_back({ emuenv.app_info.app_title, emuenv.app_info.app_title_id, emuenv.app_info.app_category, emuenv.app_info.app_content_id, archive_path.string(), state });
+        return content_installed;
+    }
+
     FILE *vpk_fp = FOPEN(archive_path.c_str(), "rb");
     if (!vpk_fp) {
         LOG_CRITICAL("Failed to load archive file in path: {}", fs_utils::path_to_utf8(archive_path));

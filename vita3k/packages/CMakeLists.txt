@@ -5,12 +5,14 @@ add_library(packages STATIC
             src/pup.cpp
             src/sce_utils.cpp
             src/sfo.cpp
+            src/vci.cpp
             include/packages/exfat.h
             include/packages/license.h
             include/packages/functions.h
             include/packages/pkg.h
             include/packages/sce_types.h
             include/packages/sfo.h
+            include/packages/vci.h
 )
 target_include_directories(packages PUBLIC include)
 target_link_libraries(packages PUBLIC emuenv util)

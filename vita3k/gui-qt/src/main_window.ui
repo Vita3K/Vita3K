@@ -213,7 +213,7 @@
   </action>
   <action name="install_zip_action">
    <property name="text">
-    <string>Install Archive (.zip / .vpk)</string>
+    <string>Install Archive (.zip / .vpk / .vci)</string>
    </property>
   </action>
   <action name="install_license_action">
