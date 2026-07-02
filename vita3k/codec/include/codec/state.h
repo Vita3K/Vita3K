@@ -156,16 +156,18 @@ struct Atrac9DecoderSavedState {
 };
 
 struct Atrac9DecoderState : public DecoderState {
-    uint32_t config_data;
-    void *decoder_handle;
-    void *atrac9_info;
-    uint32_t es_size_used;
+    uint32_t config_data = 0;
+    void *decoder_handle = nullptr;
+    void *atrac9_info = nullptr;
+    uint32_t es_size_used = 0;
     std::vector<uint8_t> result;
-    int superframe_frame_idx;
-    int superframe_data_left;
+    int superframe_frame_idx = 0;
+    int superframe_data_left = 0;
+    bool initialized = false;
 
     uint32_t get(DecoderQuery query) override;
     uint32_t get_es_size() override;
+    bool is_initialized() const;
 
     bool send(const uint8_t *data, uint32_t size = 0) override;
     bool receive(uint8_t *data, DecoderSize *size) override;

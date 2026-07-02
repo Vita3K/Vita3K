@@ -15,3 +15,14 @@ add_library(
 
 target_include_directories(codec PUBLIC include)
 target_link_libraries(codec PRIVATE ffmpeg libatrac9 util) 
+
+if(NOT ANDROID)
+	add_executable(
+		codec-tests
+		tests/atrac9_tests.cpp
+	)
+
+	target_include_directories(codec-tests PRIVATE include)
+	target_link_libraries(codec-tests PRIVATE codec googletest util)
+	add_test(NAME codec COMMAND codec-tests)
+endif()
