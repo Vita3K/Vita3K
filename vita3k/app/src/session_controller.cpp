@@ -84,6 +84,8 @@ bool AppSessionController::initialize_renderer(renderer::FrameHost &frame) {
         return false;
     }
 
+    emuenv.renderer->app_session_controller = *this;
+
     apply_renderer_config(emuenv);
     renderer_initialized = true;
     return true;
@@ -165,6 +167,17 @@ bool AppSessionController::set_input_intercepted(const bool enabled) {
     return true;
 }
 
+bool AppSessionController::stop_requested() {
+    std::lock_guard<std::mutex> lock(mutex);
+    return stop_requested_flag.load(std::memory_order_relaxed);
+}
+
+void AppSessionController::request_stop() {
+    std::lock_guard<std::mutex> lock(mutex);
+    stop_requested_flag.store(true, std::memory_order_relaxed);
+}
+
+// Has to be called from the main thread
 void AppSessionController::stop(const AppSessionStopReason reason) {
     std::optional<std::reference_wrapper<renderer::FrameHost>> active_frame_host;
     bool renderer_was_initialized = false;
@@ -181,6 +194,7 @@ void AppSessionController::stop(const AppSessionStopReason reason) {
         renderer_was_initialized = renderer_initialized || static_cast<bool>(emuenv.renderer);
         runtime_was_initialized = runtime_initialized;
         app_started = phase == AppSessionPhase::Running;
+        stop_requested_flag.store(false, std::memory_order_relaxed);
         set_phase(AppSessionPhase::Stopping);
     }
 
@@ -212,6 +226,11 @@ void AppSessionController::stop(const AppSessionStopReason reason) {
         std::lock_guard<std::mutex> lock(mutex);
         reset_session_tracking();
     }
+}
+
+const std::string_view AppSessionController::get_active_app_title() {
+    std::lock_guard<std::mutex> lock(mutex);
+    return emuenv.current_app_title;
 }
 
 void AppSessionController::apply_runtime_state_locked() {

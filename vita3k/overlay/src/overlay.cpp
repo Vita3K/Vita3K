@@ -118,12 +118,6 @@ int32_t user_interface::run_input_loop(overlay_input_handler *input, std::functi
 
         // Poll actual input when an input handler is available.
         if (input) {
-            // When emulation is paused, skip all input polling and dispatch
-            if (input->is_paused && input->is_paused() && !m_allow_input_on_pause) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                continue;
-            }
-
             const auto current = input->poll();
             for (uint32_t i = 0; i < static_cast<uint32_t>(pad_button::pad_button_max_enum); i++) {
                 handle_button_press(static_cast<pad_button>(i), current[i]);

@@ -1314,6 +1314,11 @@ void MainWindow::pump_sdl_events() {
             break;
         }
     }
+
+    // Stop requested by overlay/ingame
+    if (m_app_session.stop_requested()) {
+        on_game_closed();
+    }
 }
 
 void MainWindow::on_pause_triggered() {
