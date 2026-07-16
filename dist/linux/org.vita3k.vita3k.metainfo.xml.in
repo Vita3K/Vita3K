@@ -70,7 +70,7 @@
     <keyword>retro</keyword>
   </keywords>
   <releases>
-    @@FREEDESKTOP_RELEASE_INFO@@
+    @FREEDESKTOP_RELEASE_INFO@
   </releases>
   <content_rating type="oars-1.1"/>
 </component>
