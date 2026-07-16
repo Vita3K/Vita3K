@@ -1,5 +1,7 @@
 set(VITA3K_ORG_NAME "Vita3K")
 set(VITA3K_APP_NAME "Vita3K")
+string(TOLOWER ${VITA3K_APP_NAME} VITA3K_APP_NAME_LOWER)
+set(VITA3K_APP_ID "org.vita3k.vita3k")
 set(VITA3K_APP_VER_HI 0)
 set(VITA3K_APP_VER_MID 2)
 set(VITA3K_APP_VER_LO 1)
@@ -326,17 +328,17 @@ elseif(LINUX)
 		add_custom_command(
 			TARGET vita3k
 			POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/Vita3K"
+			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/${VITA3K_APP_NAME}"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/metainfo"
-			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/doc/Vita3K"
-			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/licenses/org.vita3k.vita3k"
-			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "${APPDIR}/usr/share/Vita3K/"
-			COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "${APPDIR}/usr/share/Vita3K/translations"
-			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${APPDIR}/usr/share/Vita3K/shaders-builtin"
-			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "${APPDIR}/usr/share/Vita3K/icons"
-			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/COPYING.txt" "${APPDIR}/usr/share/licenses/org.vita3k.vita3k/"
-			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/README.md" "${APPDIR}/usr/share/doc/Vita3K/"
-			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.metainfo.xml" "${APPDIR}/usr/share/metainfo/"
+			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/doc/${VITA3K_APP_NAME}"
+			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/licenses/${VITA3K_APP_NAME_LOWER}"
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "${APPDIR}/usr/share/${VITA3K_APP_NAME}/"
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "${APPDIR}/usr/share/${VITA3K_APP_NAME}/translations"
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${APPDIR}/usr/share/${VITA3K_APP_NAME}/shaders-builtin"
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "${APPDIR}/usr/share/VITA3K_APP_NAME/icons"
+			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/COPYING.txt" "${APPDIR}/usr/share/licenses/${VITA3K_APP_NAME_LOWER}/"
+			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/README.md" "${APPDIR}/usr/share/doc/${VITA3K_APP_NAME}/"
+			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dist/linux/${VITA3K_APP_ID}.metainfo.xml" "${APPDIR}/usr/share/metainfo/"
 		)
 		set(LINUXDEPLOY_WRAPPER "${CMAKE_SOURCE_DIR}/dist/linux/build.sh")
 		if(USE_DISCORD_RICH_PRESENCE)
@@ -348,9 +350,9 @@ elseif(LINUX)
 			TARGET vita3k
 			POST_BUILD
 			COMMAND ${LINUXDEPLOY_WRAPPER} ${LINUXDEPLOY_COMMAND} --appdir="${APPDIR}"
-				-e "$<TARGET_FILE:vita3k>" --icon-filename="org.vita3k.vita3k"
-				-i "${CMAKE_SOURCE_DIR}/dist/image/org.vita3k.vita3k.svg"
-				-d "${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.desktop"
+				-e "$<TARGET_FILE:vita3k>" --icon-filename="${VITA3K_APP_ID}"
+				-i "${CMAKE_SOURCE_DIR}/dist/image/${VITA3K_APP_ID}.svg"
+				-d "${CMAKE_SOURCE_DIR}/dist/linux/${VITA3K_APP_ID}.desktop"
 				--custom-apprun="${CMAKE_SOURCE_DIR}/dist/linux/apprun.sh" --plugin qt --output=appimage ${DISCORD_LIB_APPIMAGE}
 			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*" "$<TARGET_FILE_DIR:vita3k>/"
 			COMMAND ${CMAKE_COMMAND} -E rm "${CMAKE_CURRENT_BINARY_DIR}/*.AppImage*"
@@ -361,29 +363,30 @@ elseif(LINUX)
 			PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 		install(DIRECTORY
 			${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin
-			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/")
-		install(DIRECTORY
+			${CMAKE_CURRENT_SOURCE_DIR}/icons
 			${CMAKE_SOURCE_DIR}/data
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/")
 		install(DIRECTORY
 			${VITA3K_QT_QM_DIR}
-			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/translations")		
+			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/"
+			RENAME "translations"
+		)
 		install(FILES
-			"${CMAKE_SOURCE_DIR}/dist/image/org.vita3k.vita3k.svg"
+			"${CMAKE_SOURCE_DIR}/dist/image/${VITA3K_APP_ID}.svg"
 			PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps/")
 		install(FILES
-			"${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.metainfo.xml"
+			"${CMAKE_SOURCE_DIR}/dist/linux/${VITA3K_APP_ID}.metainfo.xml"
 			PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo/")
 		install(FILES
-			"${CMAKE_SOURCE_DIR}/dist/linux/org.vita3k.vita3k.desktop"
+			"${CMAKE_SOURCE_DIR}/dist/linux/${VITA3K_APP_ID}.desktop"
 			PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/applications/")
 		install(FILES
 			"${CMAKE_SOURCE_DIR}/COPYING.txt"
 			PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
-			DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/org.vita3k.vita3k/"
+			DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/${VITA3K_APP_NAME_LOWER}/"
 			RENAME "LICENSE")
 		install(FILES
 			"${CMAKE_SOURCE_DIR}/README.md"
@@ -405,6 +408,8 @@ elseif(LINUX)
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/COPYING.txt" "$<TARGET_FILE_DIR:vita3k>/COPYING.txt"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/README.md" "$<TARGET_FILE_DIR:vita3k>/README.md"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/dist/linux/${VITA3K_APP_ID}.metainfo.xml" "$<TARGET_FILE_DIR:vita3k>/${VITA3K_APP_ID}.metainfo.xml"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/dist/image/${VITA3K_APP_ID}.svg" "$<TARGET_FILE_DIR:vita3k>/${VITA3K_APP_ID}.svg"
 	)
 	if(USE_DISCORD_RICH_PRESENCE)
 		add_custom_command(
