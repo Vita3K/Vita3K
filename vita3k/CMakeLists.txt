@@ -366,10 +366,9 @@ elseif(LINUX)
 			${CMAKE_CURRENT_SOURCE_DIR}/icons
 			${CMAKE_SOURCE_DIR}/data
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/")
-		install(DIRECTORY
-			${VITA3K_QT_QM_DIR}
-			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/"
-			RENAME "translations"
+		install(FILES
+			${VITA3K_QT_QM_DIR}/*
+			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/translations/"
 		)
 		install(FILES
 			"${CMAKE_SOURCE_DIR}/dist/image/${VITA3K_APP_ID}.svg"
