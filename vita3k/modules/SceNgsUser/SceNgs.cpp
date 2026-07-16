@@ -968,7 +968,7 @@ EXPORT(int, sceNgsVoiceResume, ngs::Voice *voice) {
     }
 
     if (!voice->is_paused)
-        return RET_ERROR(SCE_NGS_ERROR_INVALID_STATE);
+        return SCE_NGS_OK;
 
     if (!voice->rack->system->voice_scheduler.resume(emuenv.mem, voice)) {
         return RET_ERROR(SCE_NGS_ERROR);

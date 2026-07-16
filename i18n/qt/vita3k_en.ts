@@ -446,7 +446,7 @@ This action cannot be undone.</source>
     </message>
     <message>
         <location filename="../../vita3k/gui-qt/src/archive_install_dialog.cpp" line="126"/>
-        <source>Select a file (.zip / .vpk)...</source>
+        <source>Select a file (.zip / .vpk / .vci)...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -466,7 +466,7 @@ This action cannot be undone.</source>
     </message>
     <message>
         <location filename="../../vita3k/gui-qt/src/archive_install_dialog.cpp" line="156"/>
-        <source>PlayStation Vita commercial software package (NoNpDrm/FAGDec) / PlayStation Vita homebrew software package (*zip, *.vpk);;PlayStation Vita commercial software package (NoNpDrm/FAGDec) (*.zip);;PlayStation Vita homebrew software package (*.vpk)</source>
+  <source>PlayStation Vita commercial software package(NoNpDrm / FAGDec) / PlayStation Vita homebrew software package(* zip, *.vpk, *.vci);;PlayStation Vita commercial software package(NoNpDrm / FAGDec)(*.zip);;PlayStation Vita homebrew software package(*.vpk);;Vita Cartridge Image(VCI) File(*.vci)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -481,7 +481,7 @@ This action cannot be undone.</source>
     </message>
     <message>
         <location filename="../../vita3k/gui-qt/src/archive_install_dialog.cpp" line="171"/>
-        <source>The selected directory contains no .zip or .vpk files.</source>
+        <source>The selected directory contains no .zip, .vpk, or .vci files.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1343,7 +1343,7 @@ The key may be invalid.</source>
     </message>
     <message>
         <location filename="../../vita3k/gui-qt/src/main_window.ui" line="209"/>
-        <source>Install Archive (.zip / .vpk)</source>
+        <source>Install Archive (.zip / .vpk / .vci)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

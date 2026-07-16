@@ -47,7 +47,7 @@ std::vector<fs::path> archives_in_dir(const fs::path &dir) {
         if (!entry.is_regular_file())
             continue;
         const auto ext = string_utils::tolower(entry.path().extension().string());
-        if (ext == ".zip" || ext == ".vpk")
+        if (ext == ".zip" || ext == ".vpk" || ext == ".vci")
             result.push_back(entry.path());
     }
     return result;
@@ -201,7 +201,7 @@ std::vector<fs::path> ArchiveInstallDialog::pick_archives() {
     auto *layout = new QVBoxLayout(&type_picker);
     layout->addWidget(new QLabel(tr("What would you like to install?"), &type_picker));
 
-    auto *btn_file = new QPushButton(tr("Select a file (.zip / .vpk)..."), &type_picker);
+    auto *btn_file = new QPushButton(tr("Select a file (.zip / .vpk / .vci)..."), &type_picker);
     auto *btn_dir = new QPushButton(tr("Select a directory (installs all archives inside)..."), &type_picker);
     auto *btn_cancel = new QPushButton(tr("Cancel"), &type_picker);
     layout->addWidget(btn_file);
@@ -231,7 +231,7 @@ std::vector<fs::path> ArchiveInstallDialog::pick_archives() {
             this,
             tr("Select Archive"),
             QString(),
-            tr("PlayStation Vita commercial software package (NoNpDrm/FAGDec) / PlayStation Vita homebrew software package (*.zip *.vpk);;PlayStation Vita commercial software package (NoNpDrm/FAGDec) (*.zip);;PlayStation Vita homebrew software package (*.vpk)"));
+            tr("PlayStation Vita commercial software package (NoNpDrm/FAGDec) / PlayStation Vita homebrew software package (*.zip *.vpk *.vci);;PlayStation Vita commercial software package (NoNpDrm/FAGDec) (*.zip);;PlayStation Vita homebrew software package (*.vpk);;Vita Cartridge Image (VCI) File (*.vci)"));
         if (path.isEmpty())
             return {};
         return { gui::utils::to_fs_path(path) };
@@ -246,7 +246,7 @@ std::vector<fs::path> ArchiveInstallDialog::pick_archives() {
     auto archives = archives_in_dir(gui::utils::to_fs_path(dir));
     if (archives.empty()) {
         QMessageBox::information(this, tr("No Archives Found"),
-            tr("The selected directory contains no .zip or .vpk files."));
+            tr("The selected directory contains no .zip, .vpk, or .vci files."));
         return {};
     }
     return archives;
