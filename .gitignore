@@ -19,6 +19,9 @@ compile_commands.json
 appimage/linuxdeploy*.AppImage
 /.gdbinit
 
+# generated linux metainfo.xml
+dist/linux/*.metainfo.xml
+
 # Built application files
 *.apk
 *.ap_

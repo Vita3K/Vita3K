@@ -367,7 +367,7 @@ elseif(LINUX)
 			${CMAKE_SOURCE_DIR}/data
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/")
 		install(FILES
-			${VITA3K_QT_QM_DIR}/*
+			${VITA3K_QT_QM_FILES}
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/translations/"
 		)
 		install(FILES
