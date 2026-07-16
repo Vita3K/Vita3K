@@ -341,10 +341,9 @@ elseif(LINUX)
 			COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dist/linux/${VITA3K_APP_ID}.metainfo.xml" "${APPDIR}/usr/share/metainfo/"
 		)
 		set(LINUXDEPLOY_WRAPPER "${CMAKE_SOURCE_DIR}/dist/linux/build.sh")
+		set(DISCORD_LIB_APPIMAGE "")
 		if(USE_DISCORD_RICH_PRESENCE)
 			set(DISCORD_LIB_APPIMAGE "-l \"${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so\"")
-		else()
-			set(DISCORD_LIB_APPIMAGE "")
 		endif()
 		add_custom_command(
 			TARGET vita3k
