@@ -31,6 +31,7 @@
 #include <module/load_module.h>
 #include <nids/functions.h>
 #include <packages/license.h>
+#include <packages/pkg.h>
 #include <packages/sce_types.h>
 #include <util/find.h>
 #include <util/lock_and_find.h>
@@ -286,24 +287,57 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     }
 
     vfs::FileBuffer module_buffer;
-    bool res;
-    if (device == VitaIoDevice::app0)
-        res = vfs::read_app_file(module_buffer, emuenv.vita_fs_path, emuenv.io.app_path, translated_module_path);
-    else
-        res = vfs::read_file(device, module_buffer, emuenv.vita_fs_path, translated_module_path);
+    bool res = vfs::read_file(device, module_buffer, emuenv.vita_fs_path, translated_module_path);
     if (!res) {
         LOG_ERROR("Failed to read module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
     }
 
     // Decrypt module file if necessary
-    module_buffer = decrypt_fself(module_buffer, emuenv.license.rif[emuenv.io.title_id].key);
-    if (module_buffer.empty()) {
+    auto decrypted_buffer = decrypt_fself(module_buffer, emuenv.license.rif[emuenv.io.title_id].key);
+    if (decrypted_buffer.empty()) {
+        const auto device_str = device::get_device_string(device, true);
+        LOG_INFO("Decryption failed for {} (device: {}). Checking for auto-decryption...", module_path, device_str);
+
+        // Attempt auto-decryption for NoNpDrm
+        if (device_for_icase == VitaIoDevice::app0) {
+            const std::string app_id = !emuenv.io.app_path.empty() ? emuenv.io.app_path : emuenv.io.title_id;
+            const fs::path app_path = emuenv.vita_fs_path / "ux0" / "app" / app_id;
+            const fs::path work_bin = app_path / "sce_sys" / "package" / "work.bin";
+
+            LOG_INFO("Checking for NoNpDrm license at: {}", fs_utils::path_to_utf8(work_bin));
+
+            if (fs::exists(work_bin)) {
+                LOG_INFO("PFS-encrypted app detected ({}). Attempting automatic decryption...", app_id);
+                if (decrypt_install_nonpdrm(emuenv, work_bin, app_path, nullptr)) {
+                    LOG_INFO("App decrypted successfully. Retrying module load...");
+
+                    // Refresh license in memory
+                    const std::string content_id = !emuenv.io.content_id.empty() ? emuenv.io.content_id : emuenv.license_content_id;
+                    emuenv.license.rif.erase(emuenv.io.title_id);
+                    get_license(emuenv, emuenv.io.title_id, content_id);
+
+                    // Re-read and re-decrypt
+                    if (vfs::read_file(device, module_buffer, emuenv.vita_fs_path, translated_module_path)) {
+                        decrypted_buffer = decrypt_fself(module_buffer, emuenv.license.rif[emuenv.io.title_id].key);
+                    }
+                } else {
+                    LOG_ERROR("Automatic decryption failed for {}", app_id);
+                }
+            } else {
+                LOG_INFO("No NoNpDrm work.bin found at {}", fs_utils::path_to_utf8(work_bin));
+            }
+        } else {
+            LOG_INFO("Not an app0 device, skipping auto-decryption check.");
+        }
+    }
+
+    if (decrypted_buffer.empty()) {
         LOG_ERROR("Failed to decrypt module file {}", module_path);
         return SCE_ERROR_ERRNO_ENOENT;
     }
 
-    return load_module_data(module_buffer.data());
+    return load_module_data(decrypted_buffer.data());
 }
 
 int unload_module(EmuEnvState &emuenv, SceUID module_id) {
