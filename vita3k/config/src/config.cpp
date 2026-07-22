@@ -386,7 +386,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
         ->group("Modules");
     config->add_option("--log-level,-l", command_line.log_level, "Logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
         ->check(CLI::Range( 0, 6 ))->group("Logging");
-    config->add_flag("--log-active-shaders,-S", command_line.log_active_shaders, "Log Active Shaders")
+    config->add_flag("--log-active-shaders", command_line.log_active_shaders, "Log Active Shaders")
         ->group("Logging");
     config->add_flag("--log-uniforms,-U", command_line.log_uniforms, "Log Uniforms")
         ->group("Logging");
