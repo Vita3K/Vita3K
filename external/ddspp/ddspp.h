@@ -6,7 +6,7 @@
 // https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header-dxt10
 // https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-pixelformat
 
-#if (__cpp_constexpr == 201304) || (_MSC_VER > 1900)
+#if (__cpp_constexpr >= 201304) || (_MSC_VER > 1900)
 #define ddspp_constexpr constexpr
 #else
 #define ddspp_constexpr const
@@ -28,6 +28,7 @@ namespace ddspp
 		static ddspp_constexpr unsigned int DDS_LUMINANCEA  = 0x00020001; // DDPF_LUMINANCE | DDPF_ALPHAPIXELS
 		
 		static ddspp_constexpr unsigned int DDS_PAL8       = 0x00000020; // DDPF_PALETTEINDEXED8
+		static ddspp_constexpr unsigned int DDS_PAL8A      = 0x00000020; // DDPF_PALETTEINDEXED8 | DDPF_ALPHAPIXELS
 		static ddspp_constexpr unsigned int DDS_BUMPDUDV   = 0x00080000; // DDPF_BUMPDUDV
 
 		static ddspp_constexpr unsigned int DDS_HEADER_FLAGS_CAPS        = 0x00000001; // DDSD_CAPS
@@ -55,8 +56,17 @@ namespace ddspp
 			DDS_HEADER_CAPS2_CUBEMAP_POSITIVEX | DDS_HEADER_CAPS2_CUBEMAP_NEGATIVEX | DDS_HEADER_CAPS2_CUBEMAP_POSITIVEY | 
 			DDS_HEADER_CAPS2_CUBEMAP_NEGATIVEY | DDS_HEADER_CAPS2_CUBEMAP_POSITIVEZ | DDS_HEADER_CAPS2_CUBEMAP_NEGATIVEZ;
 
-		static ddspp_constexpr unsigned int DXGI_MISC_FLAG_CUBEMAP = 0x2; // https://learn.microsoft.com/en-us/windows/win32/api/d3d11/ne-d3d11-d3d11_resource_misc_flag
+		static ddspp_constexpr unsigned int DXGI_MISC_FLAG_CUBEMAP = 0x4; // https://learn.microsoft.com/en-us/windows/win32/api/d3d11/ne-d3d11-d3d11_resource_misc_flag
 		static ddspp_constexpr unsigned int DDS_MISC_FLAGS2_ALPHA_MODE_MASK = 0x7;
+
+		enum DXGIAlphaMode : unsigned int
+		{
+			DDS_ALPHA_MODE_UNKNOWN       = 0,
+			DDS_ALPHA_MODE_STRAIGHT      = 1,
+			DDS_ALPHA_MODE_PREMULTIPLIED = 2,
+			DDS_ALPHA_MODE_OPAQUE        = 3,
+			DDS_ALPHA_MODE_CUSTOM        = 4
+		};
 
 		#define ddspp_make_fourcc(a, b, c, d) ((a) + ((b) << 8) + ((c) << 16) + ((d) << 24))
 
@@ -75,6 +85,7 @@ namespace ddspp
 		static ddspp_constexpr unsigned int FOURCC_RGBG = ddspp_make_fourcc('R', 'G', 'B', 'G'); // R8G8_B8G8_UNORM
 		static ddspp_constexpr unsigned int FOURCC_GRBG = ddspp_make_fourcc('G', 'R', 'G', 'B'); // G8R8_G8B8_UNORM
 		static ddspp_constexpr unsigned int FOURCC_YUY2 = ddspp_make_fourcc('Y', 'U', 'Y', '2'); // YUY2
+		static ddspp_constexpr unsigned int FOURCC_UYVY = ddspp_make_fourcc('U', 'Y', 'V', 'Y'); // UYVY
 		static ddspp_constexpr unsigned int FOURCC_DXT10 = ddspp_make_fourcc('D', 'X', '1', '0'); // DDS extension header
 
 		// These values come from the original D3D9 D3DFORMAT values https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dformat
@@ -131,13 +142,13 @@ namespace ddspp
 	using namespace internal;
 
 	// https://docs.microsoft.com/en-us/windows/desktop/api/d3d11/ne-d3d11-d3d11_resource_dimension
-	enum DXGIResourceDimension : unsigned char
+	enum DXGIResourceDimension : unsigned int
 	{
-		DXGI_Unknown,
-		DXGI_Buffer,
-		DXGI_Texture1D,
-		DXGI_Texture2D,
-		DXGI_Texture3D
+		DXGI_Unknown   = 0,
+		DXGI_Buffer    = 1,
+		DXGI_Texture1D = 2,
+		DXGI_Texture2D = 3,
+		DXGI_Texture3D = 4
 	};
 
 	// Matches DXGI_FORMAT https://docs.microsoft.com/en-us/windows/desktop/api/dxgiformat/ne-dxgiformat-dxgi_format
@@ -317,6 +328,8 @@ namespace ddspp
 		ASTC_12X12_UNORM            = 186,
 		ASTC_12X12_UNORM_SRGB       = 187,
 
+		A4B4G4R4_UNORM              = 191,
+
 		FORCE_UINT                  = 0xffffffff
 	};
 
@@ -346,7 +359,7 @@ namespace ddspp
 		DXGIResourceDimension resourceDimension;
 		unsigned int miscFlag;
 		unsigned int arraySize;
-		unsigned int reserved;
+		unsigned int miscFlags2;
 	};
 
 	static_assert(sizeof(HeaderDXT10) == 20, "DDS DX10 Extended Header size mismatch");
@@ -370,8 +383,8 @@ namespace ddspp
 
 	struct Descriptor
 	{
-		DXGIFormat format;
-		TextureType type;
+		DXGIFormat   format;
+		TextureType  type;
 		unsigned int width;
 		unsigned int height;
 		unsigned int depth;
@@ -382,8 +395,8 @@ namespace ddspp
 		unsigned int bitsPerPixelOrBlock; // If compressed bits per block, else bits per pixel
 		unsigned int blockWidth; // Width of block in pixels (1 if uncompressed)
 		unsigned int blockHeight;// Height of block in pixels (1 if uncompressed)
-		bool compressed;
-		bool srgb;
+		bool         compressed;
+		bool         srgb;
 		unsigned int headerSize; // Actual size of header, use this to get to image data
 	};
 
@@ -617,23 +630,89 @@ namespace ddspp
 		return;
 	}
 
+	bool has_alpha_channel(DXGIFormat format)
+	{
+		switch(format)
+		{
+			case R32G32B32A32_TYPELESS:
+			case R32G32B32A32_FLOAT:
+			case R32G32B32A32_UINT:
+			case R32G32B32A32_SINT:
+			case R16G16B16A16_TYPELESS:
+			case R16G16B16A16_FLOAT:
+			case R16G16B16A16_UNORM:
+			case R16G16B16A16_UINT:
+			case R16G16B16A16_SNORM:
+			case R16G16B16A16_SINT:
+			case R10G10B10A2_TYPELESS:
+			case R10G10B10A2_UNORM:
+			case R10G10B10A2_UINT:
+			case R8G8B8A8_TYPELESS:
+			case R8G8B8A8_UNORM:
+			case R8G8B8A8_UNORM_SRGB:
+			case R8G8B8A8_UINT:
+			case R8G8B8A8_SNORM:
+			case R8G8B8A8_SINT:
+			case A8_UNORM:
+			case BC1_TYPELESS:
+			case BC1_UNORM:
+			case BC1_UNORM_SRGB:
+			case BC2_TYPELESS:
+			case BC2_UNORM:
+			case BC2_UNORM_SRGB:
+			case BC3_TYPELESS:
+			case BC3_UNORM:
+			case BC3_UNORM_SRGB:
+			case B5G5R5A1_UNORM:
+			case B8G8R8A8_UNORM:
+			case R10G10B10_XR_BIAS_A2_UNORM:
+			case B8G8R8A8_TYPELESS:
+			case B8G8R8A8_UNORM_SRGB:
+			case BC7_TYPELESS:
+			case BC7_UNORM:
+			case BC7_UNORM_SRGB:
+			case AYUV:
+			case Y410:
+			case Y416:
+			case AI44:
+			case IA44:
+			case A8P8:
+			case B4G4R4A4_UNORM:
+			case A4B4G4R4_UNORM:
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	// Returns number of bytes for each row of a given mip. Valid range is [0, desc.numMips)
 	inline ddspp_constexpr unsigned int get_row_pitch(unsigned int width, unsigned int bitsPerPixelOrBlock, unsigned int blockWidth, unsigned int mip)
 	{
 		// Shift width by mipmap index, round to next block size and round to next byte (for the rare less than 1 byte per pixel formats)
 		// E.g. width = 119, mip = 3, BC1 compression
 		// ((((119 >> 2) + 4 - 1) / 4) * 64) / 8 = 64 bytes
-		return ((((width >> mip) + blockWidth - 1) / blockWidth) * bitsPerPixelOrBlock + 7) / 8;
+		return ((((((width >> mip) > 1) ? (width >> mip) : 1) + blockWidth - 1) / blockWidth) * bitsPerPixelOrBlock + 7) / 8;
 	}
 
-	// Returns number of bytes for each row of a given mip. Valid range is [0, desc.numMips)
 	inline ddspp_constexpr unsigned int get_row_pitch(const Descriptor& desc, unsigned int mip)
 	{
 		return get_row_pitch(desc.width, desc.bitsPerPixelOrBlock, desc.blockWidth, mip);
 	}
 
-	inline Result decode_header(unsigned char* sourceData, Descriptor& desc)
+	// Return the height for a given mip in either pixels or blocks depending on whether the format is compressed
+	inline ddspp_constexpr unsigned int get_height_pixels_blocks(const unsigned int height, const unsigned int blockHeight, const unsigned int mip)
 	{
-		unsigned int magic = *reinterpret_cast<unsigned int*>(sourceData); // First 4 bytes are the magic DDS number
+		return ((height / blockHeight) >> mip) ? ((height / blockHeight) >> mip) : 1;
+	}
+
+	inline ddspp_constexpr unsigned int get_height_pixels_blocks(const Descriptor& desc, const unsigned int mip)
+	{
+		return get_height_pixels_blocks(desc.height, desc.blockHeight, mip);
+	}
+
+	inline Result decode_header(const unsigned char* sourceData, Descriptor& desc)
+	{
+		unsigned int magic = *reinterpret_cast<const unsigned int*>(sourceData); // First 4 bytes are the magic DDS number
 
 		if (magic != DDS_MAGIC)
 		{
@@ -739,98 +818,98 @@ namespace ddspp
 			{
 				switch(ddspf.RGBBitCount)
 				{
-				case 32:
-					if(is_rgba_mask(ddspf, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000))
-					{
-						desc.format = R8G8B8A8_UNORM;
-					}
-					else if(is_rgba_mask(ddspf, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000))
-					{
-						desc.format = B8G8R8A8_UNORM;
-					}
-					else if(is_rgba_mask(ddspf, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000))
-					{
-						desc.format = B8G8R8X8_UNORM;
-					}
+					case 32:
+						if(is_rgba_mask(ddspf, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000))
+						{
+							desc.format = R8G8B8A8_UNORM;
+						}
+						else if(is_rgba_mask(ddspf, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000))
+						{
+							desc.format = B8G8R8A8_UNORM;
+						}
+						else if(is_rgba_mask(ddspf, 0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000))
+						{
+							desc.format = B8G8R8X8_UNORM;
+						}
 
-					// No DXGI format maps to (0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000) aka D3DFMT_X8B8G8R8
-					// No DXGI format maps to (0x000003ff, 0x000ffc00, 0x3ff00000, 0xc0000000) aka D3DFMT_A2R10G10B10
+						// No DXGI format maps to (0x000000ff, 0x0000ff00, 0x00ff0000, 0x00000000) aka D3DFMT_X8B8G8R8
+						// No DXGI format maps to (0x000003ff, 0x000ffc00, 0x3ff00000, 0xc0000000) aka D3DFMT_A2R10G10B10
 
-					// Note that many common DDS reader/writers (including D3DX) swap the
-					// the RED/BLUE masks for 10:10:10:2 formats. We assume
-					// below that the 'backwards' header mask is being used since it is most
-					// likely written by D3DX. The more robust solution is to use the 'DX10'
-					// header extension and specify the DXGI_FORMAT_R10G10B10A2_UNORM format directly
+						// Note that many common DDS reader/writers (including D3DX) swap the
+						// the RED/BLUE masks for 10:10:10:2 formats. We assume
+						// below that the 'backwards' header mask is being used since it is most
+						// likely written by D3DX. The more robust solution is to use the 'DX10'
+						// header extension and specify the DXGI_FORMAT_R10G10B10A2_UNORM format directly
 
-					// For 'correct' writers, this should be 0x000003ff, 0x000ffc00, 0x3ff00000 for RGB data
-					else if (is_rgba_mask(ddspf, 0x3ff00000, 0x000ffc00, 0x000003ff, 0xc0000000))
-					{
-						desc.format = R10G10B10A2_UNORM;
-					}
-					else if (is_rgba_mask(ddspf, 0x0000ffff, 0xffff0000, 0x00000000, 0x00000000))
-					{
-						desc.format = R16G16_UNORM;
-					}
-					else if (is_rgba_mask(ddspf, 0xffffffff, 0x00000000, 0x00000000, 0x00000000))
-					{
-						// The only 32-bit color channel format in D3D9 was R32F
-						desc.format = R32_FLOAT; // D3DX writes this out as a FourCC of 114
-					}
-					break;
-				case 24:
-					if(is_rgb_mask(ddspf, 0x00ff0000, 0x0000ff00, 0x000000ff))
-					{
-						desc.format = B8G8R8X8_UNORM;
-					}
-					break;
-				case 16:
-					if (is_rgba_mask(ddspf, 0x7c00, 0x03e0, 0x001f, 0x8000))
-					{
-						desc.format = B5G5R5A1_UNORM;
-					}
-					else if (is_rgba_mask(ddspf, 0xf800, 0x07e0, 0x001f, 0x0000))
-					{
-						desc.format = B5G6R5_UNORM;
-					}
-					else if (is_rgba_mask(ddspf, 0x0f00, 0x00f0, 0x000f, 0xf000))
-					{
-						desc.format = B4G4R4A4_UNORM;
-					}
-					// No DXGI format maps to (0x7c00, 0x03e0, 0x001f, 0x0000) aka D3DFMT_X1R5G5B5.
-					// No DXGI format maps to (0x0f00, 0x00f0, 0x000f, 0x0000) aka D3DFMT_X4R4G4B4.
-					// No 3:3:2, 3:3:2:8, or paletted DXGI formats aka D3DFMT_A8R3G3B2, D3DFMT_R3G3B2, D3DFMT_P8, D3DFMT_A8P8, etc.
-					break;
-				default:
-					break;
+						// For 'correct' writers, this should be 0x000003ff, 0x000ffc00, 0x3ff00000 for RGB data
+						else if (is_rgba_mask(ddspf, 0x3ff00000, 0x000ffc00, 0x000003ff, 0xc0000000))
+						{
+							desc.format = R10G10B10A2_UNORM;
+						}
+						else if (is_rgba_mask(ddspf, 0x0000ffff, 0xffff0000, 0x00000000, 0x00000000))
+						{
+							desc.format = R16G16_UNORM;
+						}
+						else if (is_rgba_mask(ddspf, 0xffffffff, 0x00000000, 0x00000000, 0x00000000))
+						{
+							// The only 32-bit color channel format in D3D9 was R32F
+							desc.format = R32_FLOAT; // D3DX writes this out as a FourCC of 114
+						}
+						break;
+					case 24:
+						if(is_rgb_mask(ddspf, 0x00ff0000, 0x0000ff00, 0x000000ff))
+						{
+							desc.format = B8G8R8X8_UNORM;
+						}
+						break;
+					case 16:
+						if (is_rgba_mask(ddspf, 0x7c00, 0x03e0, 0x001f, 0x8000))
+						{
+							desc.format = B5G5R5A1_UNORM;
+						}
+						else if (is_rgba_mask(ddspf, 0xf800, 0x07e0, 0x001f, 0x0000))
+						{
+							desc.format = B5G6R5_UNORM;
+						}
+						else if (is_rgba_mask(ddspf, 0x0f00, 0x00f0, 0x000f, 0xf000))
+						{
+							desc.format = B4G4R4A4_UNORM;
+						}
+						// No DXGI format maps to (0x7c00, 0x03e0, 0x001f, 0x0000) aka D3DFMT_X1R5G5B5.
+						// No DXGI format maps to (0x0f00, 0x00f0, 0x000f, 0x0000) aka D3DFMT_X4R4G4B4.
+						// No 3:3:2, 3:3:2:8, or paletted DXGI formats aka D3DFMT_A8R3G3B2, D3DFMT_R3G3B2, D3DFMT_P8, D3DFMT_A8P8, etc.
+						break;
+					default:
+						break;
 				}
 			}
 			else if (ddspf.flags & DDS_LUMINANCE)
 			{
 				switch(ddspf.RGBBitCount)
 				{
-				case 16:
-					if (is_rgba_mask(ddspf, 0x0000ffff, 0x00000000, 0x00000000, 0x00000000))
-					{
-						desc.format = R16_UNORM; // D3DX10/11 writes this out as DX10 extension.
-					}
-					if (is_rgba_mask(ddspf, 0x000000ff, 0x00000000, 0x00000000, 0x0000ff00))
-					{
-						desc.format = R8G8_UNORM; // D3DX10/11 writes this out as DX10 extension.
-					}
-					break;
-				case 8:
-					if (is_rgba_mask(ddspf, 0x000000ff, 0x00000000, 0x00000000, 0x00000000))
-					{
-						desc.format = R8_UNORM; // D3DX10/11 writes this out as DX10 extension
-					}
+					case 16:
+						if (is_rgba_mask(ddspf, 0x0000ffff, 0x00000000, 0x00000000, 0x00000000))
+						{
+							desc.format = R16_UNORM; // D3DX10/11 writes this out as DX10 extension.
+						}
+						if (is_rgba_mask(ddspf, 0x000000ff, 0x00000000, 0x00000000, 0x0000ff00))
+						{
+							desc.format = R8G8_UNORM; // D3DX10/11 writes this out as DX10 extension.
+						}
+						break;
+					case 8:
+						if (is_rgba_mask(ddspf, 0x000000ff, 0x00000000, 0x00000000, 0x00000000))
+						{
+							desc.format = R8_UNORM; // D3DX10/11 writes this out as DX10 extension
+						}
 
-					// No DXGI format maps to (0x0f, 0x00, 0x00, 0xf0) aka D3DFMT_A4L4
+						// No DXGI format maps to (0x0f, 0x00, 0x00, 0xf0) aka D3DFMT_A4L4
 
-					if (is_rgba_mask(ddspf, 0x000000ff, 0x00000000, 0x00000000, 0x0000ff00))
-					{
-						desc.format = R8G8_UNORM; // Some DDS writers assume the bitcount should be 8 instead of 16
-					}
-					break;
+						if (is_rgba_mask(ddspf, 0x000000ff, 0x00000000, 0x00000000, 0x0000ff00))
+						{
+							desc.format = R8G8_UNORM; // Some DDS writers assume the bitcount should be 8 instead of 16
+						}
+						break;
 				}
 			}
 			else if (ddspf.flags & DDS_ALPHA)
@@ -897,7 +976,7 @@ namespace ddspp
 		return ddspp::Success;
 	}
 
-	inline void encode_header(const DXGIFormat format, const unsigned int width, const unsigned int height, const unsigned int depth,
+	inline void encode_header(const DXGIFormat dxgiFormat, const unsigned int width, const unsigned int height, const unsigned int depth,
 	                          const TextureType type, const unsigned int mipCount, const unsigned int arraySize, 
 	                          Header& header, HeaderDXT10& dxt10Header)
 	{
@@ -914,13 +993,13 @@ namespace ddspp
 			header.caps |= DDS_HEADER_CAPS_COMPLEX | DDS_HEADER_CAPS_MIPMAP;
 		}
 
-		unsigned int bitsPerPixelOrBlock = get_bits_per_pixel_or_block(format);
+		unsigned int bitsPerPixelOrBlock = get_bits_per_pixel_or_block(dxgiFormat);
 
-		if (is_compressed(format))
+		if (is_compressed(dxgiFormat))
 		{
 			header.flags |= DDS_HEADER_FLAGS_LINEARSIZE;
 			unsigned int blockWidth, blockHeight;
-			get_block_size(format, blockWidth, blockHeight);
+			get_block_size(dxgiFormat, blockWidth, blockHeight);
 			header.pitchOrLinearSize = width * height * bitsPerPixelOrBlock / (8 * blockWidth * blockHeight);
 		}
 		else
@@ -945,7 +1024,7 @@ namespace ddspp
 		ddspf.flags = 0;
 		ddspf.flags |= DDS_FOURCC;
 
-		dxt10Header.dxgiFormat = format;
+		dxt10Header.dxgiFormat = dxgiFormat;
 		dxt10Header.arraySize = arraySize;
 		dxt10Header.miscFlag = 0;
 		
@@ -971,7 +1050,10 @@ namespace ddspp
 			header.caps2 |= DDS_HEADER_CAPS2_VOLUME;
 		}
 
-		// dxt10Header.miscFlag TODO Alpha Mode
+		// I don't think this gives us a lot of information unless we can supply it externally. It's metadata related to how the alpha
+		// channel has been factored into the texture. The format already gives us a lot to go on; the situations where this is ambiguous
+		// are BC1_UNORM (1-bit alpha) and premultiplied. None of them can be deduced from the data we are being supplied currently
+		dxt10Header.miscFlags2 = DDS_ALPHA_MODE_UNKNOWN;
 
 		// Unused
 		header.caps3 = 0;
@@ -1001,50 +1083,41 @@ namespace ddspp
 		//
 
 		unsigned long long offset = 0;
-		unsigned long long mip0Size = desc.depthPitch * 8; // Work in bits
 
 		if (desc.type == Texture3D)
 		{
-			for (unsigned int m = 0; m < mip; ++m)
+			for (unsigned int m = 0; m <= mip; ++m)
 			{
-				unsigned long long mipSize = mip0Size >> 2 * m;
-				offset += mipSize * desc.numMips;
+				unsigned int mipWidth = (desc.width >> m) > 1 ? (desc.width >> m) : 1;
+				unsigned int mipHeight = (desc.height >> m) > 1 ? (desc.height >> m) : 1;
+				unsigned int mipBlocksWidth = (mipWidth + desc.blockWidth - 1) / desc.blockWidth;
+				unsigned int mipBlocksHeight = (mipHeight + desc.blockHeight - 1) / desc.blockHeight;
+				unsigned long long mipSize = mipBlocksWidth * mipBlocksHeight * desc.bitsPerPixelOrBlock;
+				offset += mipSize * ((m == mip) ? slice : desc.numMips);
 			}
-
-			unsigned long long lastMip = mip0Size >> 2 * mip;
-
-			offset += lastMip * slice;
 		}
 		else
 		{
 			unsigned long long mipChainSize = 0;
-			unsigned int width = desc.width;
-			unsigned int height = desc.height;
 
 			for (unsigned int m = 0; m < desc.numMips; ++m)
 			{
-				unsigned long long blocksX = (width + desc.blockWidth - 1) / desc.blockWidth;
-				unsigned long long blocksY = (height + desc.blockHeight - 1) / desc.blockHeight;
-				unsigned long long mipSize = blocksX * blocksY * desc.bitsPerPixelOrBlock;
-				mipChainSize += mipSize;
-
-				width >>= 1;
-				height >>= 1;
+				unsigned int mipWidth = (desc.width >> m) > 1 ? (desc.width >> m) : 1;
+				unsigned int mipHeight = (desc.height >> m) > 1 ? (desc.height >> m) : 1;
+				unsigned int mipBlocksWidth = (mipWidth + desc.blockWidth - 1) / desc.blockWidth;
+				unsigned int mipBlocksHeight = (mipHeight + desc.blockHeight - 1) / desc.blockHeight;
+				mipChainSize += mipBlocksWidth * mipBlocksHeight * desc.bitsPerPixelOrBlock;
 			}
 
 			offset += mipChainSize * slice;
 
-			width = desc.width;
-			height = desc.height;
 			for (unsigned int m = 0; m < mip; ++m)
 			{
-				unsigned long long blocksX = (width + desc.blockWidth - 1) / desc.blockWidth;
-				unsigned long long blocksY = (height + desc.blockHeight - 1) / desc.blockHeight;
-				unsigned long long mipSize = blocksX * blocksY * desc.bitsPerPixelOrBlock;
-				offset += mipSize > desc.bitsPerPixelOrBlock ? mipSize : desc.bitsPerPixelOrBlock;
-
-				width >>= 1;
-				height >>= 1;
+				unsigned int mipWidth = (desc.width >> m) > 1 ? (desc.width >> m) : 1;
+				unsigned int mipHeight = (desc.height >> m) > 1 ? (desc.height >> m) : 1;
+				unsigned int mipBlocksWidth = (mipWidth + desc.blockWidth - 1) / desc.blockWidth;
+				unsigned int mipBlocksHeight = (mipHeight + desc.blockHeight - 1) / desc.blockHeight;
+				offset += mipBlocksWidth * mipBlocksHeight * desc.bitsPerPixelOrBlock;
 			}
 		}
 
