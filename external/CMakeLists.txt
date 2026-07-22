@@ -148,7 +148,9 @@ if(USE_DISCORD_RICH_PRESENCE)
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip")
 		message(STATUS "Downloading discord gamesdk...")
 		file(DOWNLOAD https://dl-game-sdk.discordapp.net/latest/discord_game_sdk.zip
-			"${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip" SHOW_PROGRESS)
+			"${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip"
+			SHOW_PROGRESS
+			EXPECTED_HASH SHA256=6757bb4a1f5b42aa7b6707cbf2158420278760ac5d80d40ca708bb01d20ae6b4)
 	endif()
 
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/discord_game_sdk")
@@ -229,7 +231,9 @@ if(APPLE)
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar")
 		message(STATUS "Downloading MoltenVK...")
 		file(DOWNLOAD https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.1/MoltenVK-macos.tar
-			"${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" SHOW_PROGRESS)
+			"${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar"
+			SHOW_PROGRESS
+			EXPECTED_HASH SHA256=5ea0c259df7ded9a275444820f09cced54d6e5a7c7a31d262de62a5cdb7e15cf)
 	endif()
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK")
 		execute_process(COMMAND tar xf "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" --strip-components=1 MoltenVK/MoltenVK 
@@ -246,7 +250,9 @@ elseif(ANDROID AND NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers.zip")
 			message(STATUS "Downloading validation layer...")
 			file(DOWNLOAD https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/vulkan-sdk-1.4.341.0/${VALIDATION_BINARY}.zip
-				"${CMAKE_BINARY_DIR}/external/validation_layers.zip" SHOW_PROGRESS)
+				"${CMAKE_BINARY_DIR}/external/validation_layers.zip"
+				SHOW_PROGRESS
+				EXPECTED_HASH SHA256=b47aa5c4a65d9787ef051276587f50cfd70dcd822a8c1b7d4d4a92e28e993459)
 		endif()
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers")
@@ -293,7 +299,9 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.zip")
 			message(STATUS "Downloading openssl...")
 			file(DOWNLOAD https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-4.0.1.zip
-				"${CMAKE_BINARY_DIR}/external/openssl.zip" SHOW_PROGRESS)
+				"${CMAKE_BINARY_DIR}/external/openssl.zip"
+				SHOW_PROGRESS
+				EXPECTED_HASH SHA256=b83e202841fc163f9fe18bbbd1e90e69117bf37cc41e1116701729c0c3bcd0b3)
 		endif()
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl")
@@ -308,7 +316,9 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.tar.gz")
 			message(STATUS "Downloading OpenSSL@4 from source...")
 			file(DOWNLOAD https://github.com/openssl/openssl/releases/download/openssl-4.0.1/openssl-4.0.1.tar.gz
-				"${CMAKE_BINARY_DIR}/external/openssl.tar.gz" SHOW_PROGRESS)
+				"${CMAKE_BINARY_DIR}/external/openssl.tar.gz"
+				SHOW_PROGRESS
+				EXPECTED_HASH SHA256=2db3f3a0d6ea4b59e1f094ace2c8cd536dffb87cdc39084c5afa1e6f7f37dd09)
 		endif()
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl")
