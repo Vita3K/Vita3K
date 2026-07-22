@@ -292,7 +292,7 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.zip")
 			message(STATUS "Downloading openssl...")
-			file(DOWNLOAD https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.6.1.zip
+			file(DOWNLOAD https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-4.0.1.zip
 				"${CMAKE_BINARY_DIR}/external/openssl.zip" SHOW_PROGRESS)
 		endif()
 
@@ -306,8 +306,8 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 	elseif(APPLE)
 		message(STATUS "OpenSSL not found.")
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.tar.gz")
-			message(STATUS "Downloading OpenSSL@3 from source...")
-			file(DOWNLOAD https://github.com/openssl/openssl/releases/download/openssl-3.3.2/openssl-3.3.2.tar.gz
+			message(STATUS "Downloading OpenSSL@4 from source...")
+			file(DOWNLOAD https://github.com/openssl/openssl/releases/download/openssl-4.0.1/openssl-4.0.1.tar.gz
 				"${CMAKE_BINARY_DIR}/external/openssl.tar.gz" SHOW_PROGRESS)
 		endif()
 
@@ -318,7 +318,7 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 		endif()
 
 		if (NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/libssl.a" OR NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/libcrypto.a")
-			message(STATUS "Building OpenSSL@3...")
+			message(STATUS "Building OpenSSL@4...")
 			if (ARCHITECTURE STREQUAL "x86_64" OR ARCHITECTURE STREQUAL "arm64")
 				execute_process(COMMAND perl Configure darwin64-${ARCHITECTURE} -mmacosx-version-min=11 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
 				execute_process(COMMAND make -j${CPU_COUNT} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl" OUTPUT_QUIET)
