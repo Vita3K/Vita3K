@@ -163,7 +163,7 @@ void rebuild_default_logger() {
         spdlog::init_thread_pool(ASYNC_LOG_QUEUE_SIZE, 1);
     });
 
-    auto duplicate_filter = std::make_shared<spdlog::sinks::dup_filter_sink_mt>(std::chrono::seconds(2), spdlog::level::info);
+    auto duplicate_filter = std::make_shared<spdlog::sinks::dup_filter_sink_mt>(std::chrono::seconds(2));
     for (const auto &sink : sinks)
         duplicate_filter->add_sink(sink);
 

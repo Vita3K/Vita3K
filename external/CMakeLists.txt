@@ -148,7 +148,9 @@ if(USE_DISCORD_RICH_PRESENCE)
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip")
 		message(STATUS "Downloading discord gamesdk...")
 		file(DOWNLOAD https://dl-game-sdk.discordapp.net/latest/discord_game_sdk.zip
-			"${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip" SHOW_PROGRESS)
+			"${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip"
+			SHOW_PROGRESS
+			EXPECTED_HASH SHA256=6757bb4a1f5b42aa7b6707cbf2158420278760ac5d80d40ca708bb01d20ae6b4)
 	endif()
 
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/discord_game_sdk")
@@ -228,8 +230,10 @@ target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/VulkanM
 if(APPLE)
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar")
 		message(STATUS "Downloading MoltenVK...")
-		file(DOWNLOAD https://github.com/KhronosGroup/MoltenVK/releases/download/v1.2.11-artifacts/MoltenVK-macos.tar
-			"${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" SHOW_PROGRESS)
+		file(DOWNLOAD https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.1/MoltenVK-macos.tar
+			"${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar"
+			SHOW_PROGRESS
+			EXPECTED_HASH SHA256=5ea0c259df7ded9a275444820f09cced54d6e5a7c7a31d262de62a5cdb7e15cf)
 	endif()
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK")
 		execute_process(COMMAND tar xf "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" --strip-components=1 MoltenVK/MoltenVK 
@@ -246,7 +250,9 @@ elseif(ANDROID AND NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers.zip")
 			message(STATUS "Downloading validation layer...")
 			file(DOWNLOAD https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/vulkan-sdk-1.4.341.0/${VALIDATION_BINARY}.zip
-				"${CMAKE_BINARY_DIR}/external/validation_layers.zip" SHOW_PROGRESS)
+				"${CMAKE_BINARY_DIR}/external/validation_layers.zip"
+				SHOW_PROGRESS
+				EXPECTED_HASH SHA256=b47aa5c4a65d9787ef051276587f50cfd70dcd822a8c1b7d4d4a92e28e993459)
 		endif()
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/validation_layers")
@@ -292,8 +298,10 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.zip")
 			message(STATUS "Downloading openssl...")
-			file(DOWNLOAD https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.6.1.zip
-				"${CMAKE_BINARY_DIR}/external/openssl.zip" SHOW_PROGRESS)
+			file(DOWNLOAD https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-4.0.1.zip
+				"${CMAKE_BINARY_DIR}/external/openssl.zip"
+				SHOW_PROGRESS
+				EXPECTED_HASH SHA256=b83e202841fc163f9fe18bbbd1e90e69117bf37cc41e1116701729c0c3bcd0b3)
 		endif()
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl")
@@ -306,9 +314,11 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 	elseif(APPLE)
 		message(STATUS "OpenSSL not found.")
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.tar.gz")
-			message(STATUS "Downloading OpenSSL@3 from source...")
-			file(DOWNLOAD https://github.com/openssl/openssl/releases/download/openssl-3.3.2/openssl-3.3.2.tar.gz
-				"${CMAKE_BINARY_DIR}/external/openssl.tar.gz" SHOW_PROGRESS)
+			message(STATUS "Downloading OpenSSL@4 from source...")
+			file(DOWNLOAD https://github.com/openssl/openssl/releases/download/openssl-4.0.1/openssl-4.0.1.tar.gz
+				"${CMAKE_BINARY_DIR}/external/openssl.tar.gz"
+				SHOW_PROGRESS
+				EXPECTED_HASH SHA256=2db3f3a0d6ea4b59e1f094ace2c8cd536dffb87cdc39084c5afa1e6f7f37dd09)
 		endif()
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl")
@@ -318,7 +328,7 @@ if(NOT OPENSSL_FOUND OR FORCE_BUILD_OPENSSL_MAC)
 		endif()
 
 		if (NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/libssl.a" OR NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl/libcrypto.a")
-			message(STATUS "Building OpenSSL@3...")
+			message(STATUS "Building OpenSSL@4...")
 			if (ARCHITECTURE STREQUAL "x86_64" OR ARCHITECTURE STREQUAL "arm64")
 				execute_process(COMMAND perl Configure darwin64-${ARCHITECTURE} -mmacosx-version-min=11 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
 				execute_process(COMMAND make -j${CPU_COUNT} WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl" OUTPUT_QUIET)
@@ -359,22 +369,24 @@ find_package(CURL QUIET)
 if(NOT CURL_FOUND)
 	message("System curl not found, compiling curl from source")
 	include(FetchContent)
-	option(BUILD_CURL_EXE "Set to ON to build curl executable." OFF)
-	option(CURL_DISABLE_INSTALL "Set to ON to disable installation targets" ON)
-	option(HTTP_ONLY "disables all protocols except HTTP (This overrides all CURL_DISABLE_* options)" ON)
-	option(BUILD_LIBCURL_DOCS "to build libcurl man pages" OFF)
-	option(BUILD_MISC_DOCS "to build misc man pages (e.g. curl-config and mk-ca-bundle)" OFF)
-	option(ENABLE_CURL_MANUAL "to build the man page for curl and enable its -M/--manual option" OFF)
+	option(BUILD_CURL_EXE "Build curl executable" OFF)
+	option(CURL_DISABLE_INSTALL "Disable installation targets" ON)
+	option(HTTP_ONLY "Disable all protocols except HTTP (This overrides all CURL_DISABLE_* options)" ON)
+	option(BUILD_LIBCURL_DOCS "Build libcurl man pages" OFF)
+	option(BUILD_MISC_DOCS "Build misc man pages (e.g. curl-config and mk-ca-bundle)" OFF)
+	option(ENABLE_CURL_MANUAL "Build the man page for curl and enable its -M/--manual option" OFF)
 	if(WIN32)
-		option(CURL_USE_SCHANNEL "Enable Windows native SSL/TLS" ON)
+		option(CURL_USE_SCHANNEL "Enable Windows native SSL/TLS (Schannel)" ON)
 	endif()
-	option(CURL_CA_FALLBACK "Set ON to use built-in CA store of TLS backend. Defaults to OFF" ON)
+	option(CURL_CA_FALLBACK "Use built-in CA store of OpenSSL. Defaults to OFF" ON)
 	option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 	option(BUILD_STATIC_LIBS "Build static libraries" ON)
-	set(CURL_DISABLE_TESTS ON)
+	option(BUILD_TESTING "Build tests" OFF)
+	option(BUILD_EXAMPLES "Build libcurl examples" OFF)
+	option(CURL_USE_LIBPSL "Use libpsl" OFF)
 	FetchContent_Declare(curl
 		GIT_REPOSITORY https://github.com/curl/curl.git
-		GIT_TAG        fd567d4f06857f4fc8e2f64ea727b1318f76ad33 # release 8.8.0
+		GIT_TAG        68720b4837284335b2d63cb358f8f6ce65f5bc55 # release 8.21.0
 	)
 	FetchContent_MakeAvailable(curl)
 else()
