@@ -2407,6 +2407,43 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
         }
     }
 
+    // Headless draw dump: creating <shared-path>/drawlog.trigger arms logging of
+    // the next 80 draws at the GXM level -- ground truth of what the guest
+    // submitted regardless of renderer backend.
+    {
+        static int drawlog_armed = 0;
+        static int drawlog_check = 0;
+        if (drawlog_armed <= 0 && (++drawlog_check & 0x3ff) == 0) {
+            boost::system::error_code ec;
+            const fs::path trigger = emuenv.shared_path / "drawlog.trigger";
+            if (fs::exists(trigger, ec)) {
+                fs::remove(trigger, ec);
+                drawlog_armed = 80;
+            }
+        }
+        if (drawlog_armed > 0) {
+            drawlog_armed--;
+            const float *v = static_cast<const float *>(context->state.stream_data[0].cast<const void>().get(emuenv.mem));
+            const float *u = static_cast<const float *>(context->state.vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX].cast<const void>().get(emuenv.mem));
+            const auto &vp = context->state.viewport;
+            LOG_INFO("[drawlog] prim={} n={} clip=({},{})-({},{}) mode={} vp_off=({:.1f},{:.1f},{:.3f}) vp_scl=({:.1f},{:.1f},{:.3f}) v0=({:.2f},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f}) u0=({:.3f},{:.3f},{:.3f},{:.3f})",
+                (int)primType, indexCount,
+                context->state.region_clip_min.x, context->state.region_clip_min.y,
+                context->state.region_clip_max.x, context->state.region_clip_max.y,
+                (int)context->state.region_clip_mode,
+                vp.offset.x, vp.offset.y, vp.offset.z, vp.scale.x, vp.scale.y, vp.scale.z,
+                v ? v[0] : -9999.f, v ? v[1] : -9999.f, v ? v[2] : -9999.f,
+                v ? v[3] : -9999.f, v ? v[4] : -9999.f, v ? v[5] : -9999.f,
+                u ? u[0] : -9999.f, u ? u[1] : -9999.f, u ? u[2] : -9999.f, u ? u[3] : -9999.f);
+            LOG_INFO("[drawlog2] fragmode={} maskmode={} writingmask={} fragprog={:#x} texdata0={:#x}",
+                (int)context->state.front_side_fragment_program_mode,
+                (int)context->state.back_side_fragment_program_mode,
+                (int)context->state.writing_mask,
+                context->state.fragment_program.address(),
+                (uint32_t)context->state.textures[0].data_addr << 2);
+        }
+    }
+
     renderer::draw(*emuenv.renderer, context->renderer.get(), primType, indexType, indexData, indexCount, instanceCount);
 
     // increase the ringbuffer position if a default vertex or fragment buffer was reserved, we know the new position will fit in the ringbuffer

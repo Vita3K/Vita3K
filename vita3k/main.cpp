@@ -39,6 +39,9 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
+#include <chrono>
+#include <thread>
+
 #include <QApplication>
 #include <QMessageBox>
 
@@ -257,6 +260,22 @@ int main(int argc, char *argv[]) {
     auto persistent_settings = std::make_shared<PersistentSettings>(gui_configs_dir);
 
     MainWindow mainwindow(emuenv, gui_settings, persistent_settings, admin_priv);
+
+    // Headless control channel: creating <pref-path>/screenshot.trigger makes
+    // the emulator save a screenshot of the current app frame through the
+    // regular take_screenshot() path, so external tooling can grab frames
+    // without touching the GUI.
+    std::thread([&emuenv]() {
+        const fs::path trigger = emuenv.shared_path / "screenshot.trigger";
+        while (true) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+            boost::system::error_code ec;
+            if (fs::exists(trigger, ec)) {
+                fs::remove(trigger, ec);
+                take_screenshot(emuenv);
+            }
+        }
+    }).detach();
 
     mainwindow.show();
     if (mainwindow.prompt_startup_warnings())

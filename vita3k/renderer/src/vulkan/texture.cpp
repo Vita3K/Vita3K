@@ -115,6 +115,26 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
         // try to retrieve it from the color surface cache
         lookup_result = context.state.surface_cache.retrieve_color_surface_as_texture(texture, format_target_of_texture, &texture_viewport);
+        // DEBUG: FF6 black-screen hunt -- log and optionally ignore these
+        // redirects (VITA3K_NO_SURFACE_TEX=1) to prove/disprove that game
+        // textures are being wrongly matched to cached colour surfaces.
+        if (lookup_result.has_value()) {
+            static int logged = 0;
+            if (logged < 40) {
+                logged++;
+                LOG_INFO("[surftex] texture at {:#x} redirected to cached colour surface (ratio {},{} offset {},{})",
+                    (uint32_t)texture.data_addr << 2, texture_viewport.ratio.first, texture_viewport.ratio.second,
+                    texture_viewport.offset.first, texture_viewport.offset.second);
+            }
+            static const bool no_surface_tex = []() {
+                const char *env = getenv("VITA3K_NO_SURFACE_TEX");
+                return env && env[0] == '1';
+            }();
+            if (no_surface_tex) {
+                lookup_result.reset();
+                texture_viewport = {};
+            }
+        }
     }
 
     bool is_depth_surface = false;
