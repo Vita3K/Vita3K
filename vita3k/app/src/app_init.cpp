@@ -361,6 +361,7 @@ bool init_paths(Root &root_paths) {
         const constexpr char *static_asset_paths[] = {
             "/usr/local/share/Vita3K",
             "/usr/share/Vita3K",
+            "/app/share/Vita3K",
         };
 
         // Check both normal case and all lowercase paths
