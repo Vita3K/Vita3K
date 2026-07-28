@@ -22,6 +22,7 @@
 #include <gui-qt/apps_list_table.h>
 
 #include <config/settings.h>
+#include <tracy/Tracy.hpp>
 #include <util/log.h>
 
 #include <QActionGroup>
@@ -277,6 +278,8 @@ void AppsListTable::restore_visible_columns(const QStringList &column_keys) {
 }
 
 void AppsListTable::sort(int column, Qt::SortOrder order) {
+    ZoneScopedN("AppsListTable::sort");
+
     m_sort_column = column;
     m_sort_order = order;
 
@@ -315,6 +318,7 @@ void AppsListTable::populate(const std::vector<app::AppEntry> &apps,
     const CompatState &compat,
     const fs::path &vita_fs_path,
     const fs::path &config_path) {
+    ZoneScopedN("AppsListTable::populate");
     struct PendingSizeLoad {
         QPersistentModelIndex index;
         QString app_dir;

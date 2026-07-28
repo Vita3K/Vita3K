@@ -21,6 +21,7 @@
 #include <emuenv/state.h>
 #include <io/state.h>
 #include <packages/sfo.h>
+#include <tracy/Tracy.hpp>
 #include <util/fs.h>
 #include <util/log.h>
 
@@ -64,6 +65,7 @@ static int64_t get_path_write_time(const fs::path &path) {
 }
 
 static std::vector<AppCacheSource> collect_app_cache_sources(const EmuEnvState &emuenv) {
+    ZoneScopedN("app::collect_app_cache_sources");
     const fs::path app_path{ emuenv.vita_fs_path / "ux0/app" };
     if (!fs::exists(app_path))
         return {};
@@ -232,12 +234,14 @@ static std::vector<AppTime>::iterator find_app_time(
 } // namespace
 
 bool init_apps_list(EmuEnvState &emuenv) {
+    ZoneScopedN("app::init_apps_list");
     if (!load_cached_apps(emuenv))
         return scan_apps(emuenv);
     return true;
 }
 
 bool scan_apps(EmuEnvState &emuenv) {
+    ZoneScopedN("app::scan_apps");
     const fs::path app_path{ emuenv.vita_fs_path / "ux0/app" };
     if (!fs::exists(app_path))
         return false;
@@ -261,6 +265,7 @@ bool scan_apps(EmuEnvState &emuenv) {
 }
 
 bool load_cached_apps(EmuEnvState &emuenv) {
+    ZoneScopedN("app::load_cached_apps");
     const fs::path cache_path = get_apps_cache_path(emuenv);
     if (!fs::exists(cache_path))
         return false;
@@ -309,6 +314,7 @@ bool load_cached_apps(EmuEnvState &emuenv) {
 }
 
 void save_apps_cache(EmuEnvState &emuenv) {
+    ZoneScopedN("app::save_apps_cache");
     std::vector<AppEntry> apps;
     {
         auto &state = emuenv.app.apps_list;
@@ -321,6 +327,7 @@ void save_apps_cache(EmuEnvState &emuenv) {
 }
 
 AppEntry read_app_info(EmuEnvState &emuenv, const std::string &title_id) {
+    ZoneScopedN("app::read_app_info");
     sfo::SfoAppInfo info;
     vfs::FileBuffer param;
     if (vfs::read_app_file(param, emuenv.vita_fs_path, title_id, "sce_sys/param.sfo")) {

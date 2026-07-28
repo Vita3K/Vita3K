@@ -15,7 +15,7 @@ configure_file(src/version.cpp.in version.cpp)
 
 target_include_directories(config PUBLIC include)
 target_link_libraries(config PUBLIC input util)
-target_link_libraries(config PRIVATE CLI11 pugixml::pugixml yaml-cpp)
+target_link_libraries(config PRIVATE CLI11 pugixml::pugixml tracy yaml-cpp)
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)
 	target_link_libraries(config PRIVATE tracy)
 endif()

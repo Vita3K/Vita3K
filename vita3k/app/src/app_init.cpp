@@ -52,6 +52,7 @@
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
 #include <touch/state.h>
+#include <tracy/Tracy.hpp>
 
 #include <util/fs.h>
 #include <util/log.h>
@@ -234,6 +235,7 @@ static Config::CurrentConfig get_runtime_current_config_after_save(
 }
 
 void set_current_config(EmuEnvState &emuenv, const std::string &app_path) {
+    ZoneScopedN("app::set_current_config");
     config::set_current_config(emuenv.cfg, emuenv.config_path, app_path);
     set_backend_renderer(emuenv, emuenv.cfg.current_config.backend_renderer);
     emuenv.audio.set_global_volume(emuenv.cfg.current_config.audio_volume / 100.f);
@@ -243,6 +245,7 @@ void set_current_config(EmuEnvState &emuenv, const std::string &app_path) {
 // Initializes paths to their respective defaults, to be changed later by settings or CLI
 // Returns true if in portable mode, false otherwise
 bool init_paths(Root &root_paths) {
+    ZoneScopedN("init_paths");
     bool portable = false;
 #ifdef __ANDROID__
     fs::path internal_storage_path = fs::path(SDL_GetAndroidExternalStoragePath()) / "";
@@ -413,6 +416,7 @@ bool init_paths(Root &root_paths) {
 }
 
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
+    ZoneScopedN("app::init");
     state.cfg = std::move(cfg);
 
     state.default_path = root_paths.get_vita_fs_path();
