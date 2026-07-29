@@ -188,6 +188,7 @@ EXPORT(int, sceCameraRead, SceCameraDevice devnum, SceCameraRead *pRead) {
         return RET_ERROR(SCE_CAMERA_ERROR_PARAM);
     }
     SceCameraRead read{};
+    SceCameraRead *pOriginalRead = pRead;
     if (pRead->size != sizeof(SceCameraRead)) {
         memcpy(&read, pRead, std::min<size_t>(pRead->size, sizeof(SceCameraRead)));
         pRead = &read;
@@ -225,6 +226,9 @@ EXPORT(int, sceCameraRead, SceCameraDevice devnum, SceCameraRead *pRead) {
         sizeVBase = camera.info.sizeVBase;
     }
     auto res = camera.read(pRead, pIBase, pUBase, pVBase, sizeIBase, sizeUBase, sizeVBase);
+    if (pOriginalRead != pRead) {
+        memcpy(pOriginalRead, pRead, std::min<size_t>(pOriginalRead->size, sizeof(SceCameraRead)));
+    }
     return res;
 }
 
