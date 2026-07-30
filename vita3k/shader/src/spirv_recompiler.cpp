@@ -847,17 +847,17 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
         } else {
             dest_friend = utils::create_access_chain(builder, spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, ite_type, ite_loaded, builder.makeIntConstant(start_in_vec4_granularity + 1)) });
 
-            std::vector<spv::Id> ops_copy_1 = { builder.createLoad(dest, spv::NoPrecision), to_copy };
-            std::vector<spv::Id> ops_copy_2 = { builder.createLoad(dest_friend, spv::NoPrecision), to_copy };
+            std::vector<spv::IdImmediate> ops_copy_1 = { { true, builder.createLoad(dest, spv::NoPrecision) }, { true, to_copy } };
+            std::vector<spv::IdImmediate> ops_copy_2 = { { true, builder.createLoad(dest_friend, spv::NoPrecision) }, { true, to_copy } };
 
             for (int i = 0; i < start % 4; i++) {
-                ops_copy_1.push_back(i);
-                ops_copy_2.push_back(4 + (4 - start % 4) + i);
+                ops_copy_1.push_back({ false, (unsigned)i });
+                ops_copy_2.push_back({ false, (unsigned)(4 + (4 - start % 4) + i) });
             }
 
             for (int i = 0; i < (4 - start % 4); i++) {
-                ops_copy_1.push_back(4 + i);
-                ops_copy_2.push_back((start % 4) + i);
+                ops_copy_1.push_back({ false, (unsigned)(4 + i) });
+                ops_copy_2.push_back({ false, (unsigned)((start % 4) + i) });
             }
 
             to_copy = builder.createOp(spv::OpVectorShuffle, builder.getTypeId(to_copy), ops_copy_1);
