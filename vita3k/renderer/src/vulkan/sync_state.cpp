@@ -24,7 +24,27 @@
 
 #include <util/log.h>
 
+#include <algorithm>
+#include <cstdint>
+
 namespace renderer::vulkan {
+
+static void clamp_scissor_to_render_target(vk::Rect2D &scissor, const uint32_t width, const uint32_t height) {
+    const int64_t target_width = width;
+    const int64_t target_height = height;
+    const int64_t left = std::clamp<int64_t>(scissor.offset.x, 0, target_width);
+    const int64_t top = std::clamp<int64_t>(scissor.offset.y, 0, target_height);
+    const int64_t right = std::clamp<int64_t>(static_cast<int64_t>(scissor.offset.x) + scissor.extent.width, 0, target_width);
+    const int64_t bottom = std::clamp<int64_t>(static_cast<int64_t>(scissor.offset.y) + scissor.extent.height, 0, target_height);
+
+    if ((right <= left) || (bottom <= top)) {
+        scissor = vk::Rect2D{};
+        return;
+    }
+
+    scissor.offset = vk::Offset2D{ static_cast<int32_t>(left), static_cast<int32_t>(top) };
+    scissor.extent = vk::Extent2D{ static_cast<uint32_t>(right - left), static_cast<uint32_t>(bottom - top) };
+}
 
 void sync_clipping(VKContext &context) {
     if (!context.render_target)
@@ -59,16 +79,7 @@ void sync_clipping(VKContext &context) {
         break;
     }
 
-    // Vulkan does not allow the offset to be negative
-    if (context.scissor.offset.x < 0) {
-        context.scissor.extent.width = std::max(context.scissor.extent.width - context.scissor.offset.x, 0U);
-        context.scissor.offset.x = 0;
-    }
-
-    if (context.scissor.offset.y < 0) {
-        context.scissor.extent.height = std::max(context.scissor.extent.height - context.scissor.offset.y, 0U);
-        context.scissor.offset.y = 0;
-    }
+    clamp_scissor_to_render_target(context.scissor, context.render_target->width, context.render_target->height);
 
     if (!context.is_recording)
         return;

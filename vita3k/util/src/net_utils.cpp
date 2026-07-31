@@ -31,152 +31,133 @@
 #include <netinet/in.h>
 #endif
 
+#include <algorithm>
+#include <cctype>
+#include <charconv>
 #include <condition_variable>
+#include <cstdlib>
+#include <cstring>
+#include <limits>
 #include <mutex>
+#include <string_view>
+#include <system_error>
 
 namespace net_utils {
 
+namespace {
+
+bool parse_decimal(std::string_view str, SceULong64 &out) {
+    if (str.empty())
+        return false;
+
+    SceULong64 value = 0;
+    const auto *begin = str.data();
+    const auto *end = begin + str.size();
+    const auto [ptr, ec] = std::from_chars(begin, end, value);
+    if (ec != std::errc() || ptr != end)
+        return false;
+
+    out = value;
+    return true;
+}
+
+bool is_digit(char ch) {
+    return std::isdigit(static_cast<unsigned char>(ch)) != 0;
+}
+
+} // namespace
+
 // 0 is ok, negative is bad
 SceHttpErrorCode parse_url(const std::string &url, parsedUrl &out) {
-    out.scheme = url.substr(0, url.find(':'));
+    out = {};
 
+    const auto scheme_end = url.find(':');
+    if (scheme_end == std::string::npos) {
+        out.scheme = url;
+        if (out.scheme == "http" || out.scheme == "https") {
+            out.invalid = true;
+            return (SceHttpErrorCode)0;
+        }
+        return SCE_HTTP_ERROR_UNKNOWN_SCHEME;
+    }
+
+    out.scheme = url.substr(0, scheme_end);
     if (out.scheme != "http" && out.scheme != "https")
         return SCE_HTTP_ERROR_UNKNOWN_SCHEME;
 
-    // Check if URL is opaque, if it is opaque then its invalid
-    // http://
-    //+    012
-    //      ^^ Check these 2
-    char url1Slash = *(url.c_str() + (out.scheme.length() + 1)); // get uint8 value
-    char url2Slash = *(url.c_str() + (out.scheme.length() + 2)); // get next uint8 value
-    // Compare the 2 characters that are supposed to be slahses
-    if (url1Slash != '/' || url2Slash != '/') {
+    // Check if URL is opaque. HTTP URLs accepted by this parser must use //.
+    if (url.size() < scheme_end + 3 || url[scheme_end + 1] != '/' || url[scheme_end + 2] != '/') {
         out.invalid = true;
         return (SceHttpErrorCode)0;
     }
 
-    auto end_scheme_pos = url.find(':');
-    auto has_path = url.find('/', end_scheme_pos + 3) != std::string::npos;
+    const auto authority_start = scheme_end + strlen("://");
+    const auto path_start = url.find_first_of("/?#", authority_start);
+    const std::string_view authority(url.data() + authority_start,
+        (path_start == std::string::npos ? url.size() : path_start) - authority_start);
+    if (authority.empty()) {
+        out.invalid = true;
+        return (SceHttpErrorCode)0;
+    }
 
-    auto full_wo_scheme = url.substr(end_scheme_pos + 3);
+    std::string_view host_port = authority;
+    const auto userinfo_end = authority.rfind('@');
+    if (userinfo_end != std::string_view::npos) {
+        const auto userinfo = authority.substr(0, userinfo_end);
+        host_port = authority.substr(userinfo_end + 1);
 
-    if (has_path) {
-        // username:password@lttstore.com:727/wysi/cookie.php?pog=gers#extremeexploit
+        const auto password_start = userinfo.find(':');
+        const auto username = userinfo.substr(0, password_start);
+        const auto password = password_start == std::string_view::npos
+            ? std::string_view()
+            : userinfo.substr(password_start + 1);
 
-        {
-            auto path_pos = std::string(full_wo_scheme).find('/');
-            auto full_no_scheme_path = full_wo_scheme.substr(0, path_pos);
-            // full_no_scheme_path = username:password@lttstore.com:727
-            auto c = full_no_scheme_path.find('@');
-            if (c != std::string::npos) { // we have credentials
-                auto credentials = full_no_scheme_path.substr(0, c);
-                // credentials = username:password
-                auto semicolon_pos = credentials.find(':');
+        if (username.length() >= SCE_HTTP_USERNAME_MAX_SIZE)
+            return SCE_HTTP_ERROR_OUT_OF_SIZE;
+        if (password.length() >= SCE_HTTP_PASSWORD_MAX_SIZE)
+            return SCE_HTTP_ERROR_OUT_OF_SIZE;
 
-                if (semicolon_pos != std::string::npos) { // we have password?
-                    auto username = credentials.substr(0, semicolon_pos);
-                    auto password = credentials.substr(semicolon_pos + 1);
+        out.username = std::string(username);
+        out.password = std::string(password);
+    }
 
-                    if (username.length() >= SCE_HTTP_USERNAME_MAX_SIZE)
-                        return SCE_HTTP_ERROR_OUT_OF_SIZE;
-                    if (password.length() >= SCE_HTTP_USERNAME_MAX_SIZE)
-                        return SCE_HTTP_ERROR_OUT_OF_SIZE;
+    if (host_port.empty()) {
+        out.invalid = true;
+        return (SceHttpErrorCode)0;
+    }
 
-                    out.username = username;
-                    out.password = password;
-                } else { // we don't have password
-                    out.username = credentials;
-                }
-            } else { // no credentials
-                // lttstore.com:727
-                auto semicolon_pos = full_no_scheme_path.find(':');
-
-                if (semicolon_pos != std::string::npos) { // we have port
-                    auto hostname = full_no_scheme_path.substr(0, semicolon_pos);
-                    auto port = full_no_scheme_path.substr(semicolon_pos + 1);
-
-                    out.hostname = hostname;
-                    out.port = port;
-                } else { // no port
-                    out.hostname = full_no_scheme_path;
-                }
-            }
-        }
-        {
-            auto path_pos = std::string(full_wo_scheme).find('/');
-            auto full_no_scheme_hostname = full_wo_scheme.substr(path_pos);
-            // /wysi/cookie.php?pog=gers#extremeexploit
-
-            auto query_pos = full_no_scheme_hostname.find('?');
-            if (query_pos != std::string::npos) { // we have query
-                auto path = full_no_scheme_hostname.substr(0, query_pos);
-                out.path = path;
-
-                auto query_frag = full_no_scheme_hostname.substr(query_pos);
-
-                auto frag_pos = query_frag.find('#');
-                if (frag_pos != std::string::npos) {
-                    // query and fragment
-
-                    auto query = query_frag.substr(0, frag_pos);
-                    auto fragment = query_frag.substr(frag_pos);
-
-                    out.query = query;
-                    out.fragment = fragment;
-                } else { // no fragment
-                    out.query = query_frag;
-                }
-
-            } else { // no query, dunno about fragment
-                auto frag_pos = full_no_scheme_hostname.find('#');
-
-                if (frag_pos != std::string::npos) { // we have fragment
-                    auto path = full_no_scheme_hostname.substr(0, frag_pos);
-                    auto fragment = full_no_scheme_hostname.substr(frag_pos);
-
-                    out.path = path;
-                    out.fragment = fragment;
-                } else { // no fragment, only path
-                    out.path = full_no_scheme_hostname;
-                }
-            }
-        }
+    const auto port_start = host_port.rfind(':');
+    if (port_start != std::string_view::npos) {
+        out.hostname = std::string(host_port.substr(0, port_start));
+        out.port = std::string(host_port.substr(port_start + 1));
     } else {
-        // username:password@lttstore.com:727
-        auto c = full_wo_scheme.find('@');
-        if (c != std::string::npos) { // we have credentials
-            auto credentials = full_wo_scheme.substr(0, c);
-            // credentials = username:password
-            auto semicolon_pos = credentials.find(':');
+        out.hostname = std::string(host_port);
+    }
 
-            if (semicolon_pos != std::string::npos) { // we have password?
-                auto username = credentials.substr(0, semicolon_pos);
-                auto password = credentials.substr(semicolon_pos + 1);
+    if (out.hostname.empty()) {
+        out.invalid = true;
+        return (SceHttpErrorCode)0;
+    }
 
-                if (username.length() >= SCE_HTTP_USERNAME_MAX_SIZE)
-                    return SCE_HTTP_ERROR_OUT_OF_SIZE;
-                if (password.length() >= SCE_HTTP_USERNAME_MAX_SIZE)
-                    return SCE_HTTP_ERROR_OUT_OF_SIZE;
+    if (path_start != std::string::npos) {
+        auto query_start = url.find('?', path_start);
+        const auto fragment_start = url.find('#', path_start);
+        if (query_start != std::string::npos && fragment_start != std::string::npos && fragment_start < query_start)
+            query_start = std::string::npos;
 
-                out.username = username;
-                out.password = password;
-            } else { // we don't have password
-                out.username = credentials;
-            }
-        } else { // no credentials
-            // lttstore.com:727
-            auto semicolon_pos = full_wo_scheme.find(':');
+        const auto path_end = std::min(query_start == std::string::npos ? url.size() : query_start,
+            fragment_start == std::string::npos ? url.size() : fragment_start);
 
-            if (semicolon_pos != std::string::npos) { // we have port
-                auto hostname = full_wo_scheme.substr(0, semicolon_pos);
-                auto port = full_wo_scheme.substr(semicolon_pos + 1);
+        if (url[path_start] == '/')
+            out.path = url.substr(path_start, path_end - path_start);
 
-                out.hostname = hostname;
-                out.port = port;
-            } else { // no port
-                out.hostname = full_wo_scheme;
-            }
+        if (query_start != std::string::npos) {
+            const auto query_end = fragment_start == std::string::npos ? url.size() : fragment_start;
+            out.query = url.substr(query_start, query_end - query_start);
         }
+
+        if (fragment_start != std::string::npos)
+            out.fragment = url.substr(fragment_start);
     }
 
     return (SceHttpErrorCode)0;
@@ -236,9 +217,9 @@ std::string constructHeaders(const HeadersMapType &headers) {
 bool parseStatusLine(const std::string &line, std::string &httpVer, int &statusCode, std::string &reason) {
     auto lineClean = line.substr(0, line.find("\r\n"));
 
-    // do this check just in case the server is drunk or retarded, would be nice to do more checks with some regex
+    // Do a light sanity check before parsing the status line fields.
     if (!lineClean.starts_with("HTTP/"))
-        return false; // what
+        return false;
 
     const auto firstSpace = lineClean.find(' ');
     if (firstSpace == std::string::npos)
@@ -247,18 +228,21 @@ bool parseStatusLine(const std::string &line, std::string &httpVer, int &statusC
     const std::string fullHttpVerStr = lineClean.substr(0, firstSpace);
     const std::string httpVerStr = fullHttpVerStr.substr(strlen("HTTP/"));
 
-    if (!std::isdigit(httpVerStr[0]))
+    if (httpVerStr.empty() || !is_digit(httpVerStr[0]))
         return false;
 
     if (lineClean.length() < fullHttpVerStr.length() + strlen(" XXX"))
-        return false; // the rest of the line is less than 3 characters in length, what the fuck happened also abort
+        return false; // the rest of the line is shorter than a 3-digit status code
 
     const auto codeAndReason = lineClean.substr(firstSpace + 1);
     const auto statusCodeStr = codeAndReason.substr(0, 3);
-    if (!std::isdigit(statusCodeStr[0]) || !std::isdigit(statusCodeStr[1]) || !std::isdigit(statusCodeStr[2]))
+    if (!is_digit(statusCodeStr[0]) || !is_digit(statusCodeStr[1]) || !is_digit(statusCodeStr[2]))
         return false; // status code contains non digit characters, abort
 
-    const int statusCodeInt = std::stoi(statusCodeStr);
+    SceULong64 parsedStatusCode = 0;
+    if (!parse_decimal(statusCodeStr, parsedStatusCode) || parsedStatusCode > std::numeric_limits<int>::max())
+        return false;
+    const int statusCodeInt = static_cast<int>(parsedStatusCode);
 
     std::string reasonStr = "";
     bool hasReason = codeAndReason.find(' ') != std::string::npos;
@@ -299,11 +283,18 @@ bool parseHeaders(std::string &headersRaw, HeadersMapType &headersOut) {
 }
 
 bool parseResponse(const std::string &res, SceRequestResponse &reqres) {
-    auto statusLine = res.substr(0, res.find("\r\n"));
+    const auto status_line_end = res.find("\r\n");
+    if (status_line_end == std::string::npos)
+        return false;
+
+    auto statusLine = res.substr(0, status_line_end);
     if (!parseStatusLine(statusLine, reqres.httpVer, reqres.statusCode, reqres.reasonPhrase))
         return false;
 
-    auto headersRaw = res.substr(res.find("\r\n") + strlen("\r\n"), res.find("\r\n\r\n"));
+    const auto headers_start = status_line_end + strlen("\r\n");
+    const auto headers_end = res.find("\r\n\r\n", headers_start);
+    auto headersRaw = res.substr(headers_start,
+        headers_end == std::string::npos ? std::string::npos : headers_end - headers_start);
 
     if (!parseHeaders(headersRaw, reqres.headers))
         return false;
@@ -312,7 +303,10 @@ bool parseResponse(const std::string &res, SceRequestResponse &reqres) {
     if (contLenIt == reqres.headers.end()) {
         reqres.contentLength = 0;
     } else {
-        reqres.contentLength = std::stoi(contLenIt->second);
+        SceULong64 contentLength = 0;
+        if (!parse_decimal(contLenIt->second, contentLength))
+            return false;
+        reqres.contentLength = contentLength;
     }
 
     return true;
