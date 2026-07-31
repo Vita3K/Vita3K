@@ -17,21 +17,48 @@
 
 #pragma once
 
-#if defined(__GNUC__) || defined(__clang__)
-#define DISABLE_WARNING_PUSH _Pragma("GCC diagnostic push")
-#define DISABLE_WARNING_POP _Pragma("GCC diagnostic pop")
-#define STRINGIZE__(x) #x
-#define DISABLE_WARNING_NO_PUSH(warningNumber, warningName) _Pragma(STRINGIZE__(GCC diagnostic ignored warningName))
-#elif defined(_MSC_VER)
-#define DISABLE_WARNING_PUSH __pragma(warning(push))
-#define DISABLE_WARNING_POP __pragma(warning(pop))
-#define DISABLE_WARNING_NO_PUSH(warningNumber, warningName) __pragma(warning(disable : warningNumber))
+// 'warning' pragma: https://learn.microsoft.com/en-us/cpp/preprocessor/warning
+// MSVC warnings: https://learn.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warnings-c4800-through-c4999
+#if defined(_MSC_VER) && !defined(__clang__)
+#define DISABLE_MSVC_WARNING_BEGIN(warning_number) __pragma(warning(push)) __pragma(warning(disable : warning_number))
+#define DISABLE_MSVC_WARNING_END __pragma(warning(pop))
 #else
-#define DISABLE_WARNING_PUSH
-#define DISABLE_WARNING_POP
-#define DISABLE_WARNING_NO_PUSH(warningNumber, warningName)
+#define DISABLE_MSVC_WARNING_BEGIN(warning_number)
+#define DISABLE_MSVC_WARNING_END
 #endif
-#define DISABLE_WARNING_BEGIN(warningNumber, warningName) \
-    DISABLE_WARNING_PUSH                                  \
-    DISABLE_WARNING_NO_PUSH(warningNumber, warningName)
-#define DISABLE_WARNING_END DISABLE_WARNING_POP
+
+// 'diagnostic' pragma: https://gcc.gnu.org/onlinedocs/gcc/Diagnostic-Pragmas.html
+#if defined(__GNUC__) || defined(__clang__)
+#define PRAGMA_(x) _Pragma(#x)
+#define DISABLE_GNU_LIKE_WARNING_BEGIN(diag_flag) _Pragma("GCC diagnostic push") PRAGMA_(GCC diagnostic ignored diag_flag)
+#define DISABLE_GNU_LIKE_WARNING_END _Pragma("GCC diagnostic pop")
+#else
+#define DISABLE_GNU_LIKE_WARNING_BEGIN(diag_flag)
+#define DISABLE_GNU_LIKE_WARNING_END
+#endif
+
+// GCC warnings: https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html
+#if defined(__GNUC__) && !defined(__clang__)
+#define DISABLE_GCC_WARNING_BEGIN(diag_flag) DISABLE_GNU_LIKE_WARNING_BEGIN(diag_flag)
+#define DISABLE_GCC_WARNING_END DISABLE_GNU_LIKE_WARNING_END
+#else
+#define DISABLE_GCC_WARNING_BEGIN(diag_flag)
+#define DISABLE_GCC_WARNING_END
+#endif
+
+// Clang warnings: https://clang.llvm.org/docs/DiagnosticsReference.html
+#ifdef __clang__
+#define DISABLE_CLANG_WARNING_BEGIN(diag_flag) DISABLE_GNU_LIKE_WARNING_BEGIN(diag_flag)
+#define DISABLE_CLANG_WARNING_END DISABLE_GNU_LIKE_WARNING_END
+#else
+#define DISABLE_CLANG_WARNING_BEGIN(diag_flag)
+#define DISABLE_CLANG_WARNING_END
+#endif
+
+#define DISABLE_WARNING_BEGIN(warning_number, diag_flag) \
+    DISABLE_MSVC_WARNING_BEGIN(warning_number)           \
+    DISABLE_GNU_LIKE_WARNING_BEGIN(diag_flag)
+
+#define DISABLE_WARNING_END      \
+    DISABLE_GNU_LIKE_WARNING_END \
+    DISABLE_MSVC_WARNING_END
