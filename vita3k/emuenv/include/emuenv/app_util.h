@@ -87,6 +87,8 @@ struct SceAppUtilSaveDataRemoveItem {
     uint8_t reserved[36];
 };
 
+#define SCE_APPUTIL_SAVEDATA_SLOT_MAX 0x100
+
 enum SceAppUtilSaveDataSlotSearchType {
     SCE_APPUTIL_SAVEDATA_SLOT_SEARCH_TYPE_EXIST_SLOT = 0,
     SCE_APPUTIL_SAVEDATA_SLOT_SEARCH_TYPE_EMPTY_SLOT = 1
