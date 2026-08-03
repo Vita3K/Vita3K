@@ -25,7 +25,7 @@ if("$ENV{GITHUB_EVENT_NAME}" STREQUAL "pull_request")
 	else()
 		set(CMD bash -c "jq .pull_request.head.repo.html_url $ENV{GITHUB_EVENT_PATH} | tr -d \\\" ")
 	endif()
-else() 
+else()
 	execute_process(
 		COMMAND git rev-parse --abbrev-ref HEAD
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -437,8 +437,8 @@ elseif(WIN32)
 		add_custom_command(
 		TARGET vita3k
 		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libssl-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libcrypto-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>")
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libssl-4-x64.dll" "$<TARGET_FILE_DIR:vita3k>"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENSSL_ROOT_DIR}/bin/libcrypto-4-x64.dll" "$<TARGET_FILE_DIR:vita3k>")
 	endif()
 	if(WINDEPLOYQT_EXECUTABLE)
 		add_custom_command(TARGET vita3k POST_BUILD
