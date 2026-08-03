@@ -68,6 +68,7 @@
 #include <renderer/shaders.h>
 #include <renderer/state.h>
 #include <touch/functions.h>
+#include <tracy/Tracy.hpp>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -372,219 +373,248 @@ void MainWindow::restore_window_state() {
 }
 
 void MainWindow::initialize() {
-    Q_INIT_RESOURCE(resources);
-    m_ui->setupUi(this);
-    setObjectName(QStringLiteral("main_window"));
+    ZoneScopedN("MainWindow::initialize");
 
-    this->resize(1280, 720);
-    this->setWindowIcon(QIcon(":/Vita3K.png"));
-    this->setWindowTitle(QString::fromStdString(window_title));
+    {
+        ZoneScopedN("InitializeUI");
+        Q_INIT_RESOURCE(resources);
+        m_ui->setupUi(this);
+        setObjectName(QStringLiteral("main_window"));
+
+        this->resize(1280, 720);
+        this->setWindowIcon(QIcon(":/Vita3K.png"));
+        this->setWindowTitle(QString::fromStdString(window_title));
+    }
 
     emuenv.compat.log_compat_warn = emuenv.cfg.log_compat_warn;
     m_game_compat = new GameCompatibility(emuenv.compat, emuenv.cache_path.native(), this);
 
-    emuenv.vulkan_device_info = std::make_unique<renderer::VulkanDeviceInfo>(renderer::enumerate_vulkan_devices());
+    {
+        ZoneScopedN("EnumerateVulkanDevices");
+        emuenv.vulkan_device_info = std::make_unique<renderer::VulkanDeviceInfo>(renderer::enumerate_vulkan_devices());
+    }
 
     init_current_user();
 
-    auto *shell_frame = new ThemeSurface(this);
-    shell_frame->setObjectName(QStringLiteral("mw_frame"));
-    auto *shell_layout = new QVBoxLayout(shell_frame);
-    shell_layout->setContentsMargins(0, 0, 0, 0);
-    shell_layout->setSpacing(0);
-    setCentralWidget(shell_frame);
+    {
+        ZoneScopedN("CreateDockHost");
+        auto *shell_frame = new ThemeSurface(this);
+        shell_frame->setObjectName(QStringLiteral("mw_frame"));
+        auto *shell_layout = new QVBoxLayout(shell_frame);
+        shell_layout->setContentsMargins(0, 0, 0, 0);
+        shell_layout->setSpacing(0);
+        setCentralWidget(shell_frame);
 
-    m_dock_host = new QMainWindow(shell_frame);
-    m_dock_host->setObjectName(QStringLiteral("mw_dock_host"));
-    m_dock_host->setWindowFlags(Qt::Widget);
-    m_dock_host->setContextMenuPolicy(Qt::PreventContextMenu);
-    m_dock_host->setDockNestingEnabled(true);
-    shell_layout->addWidget(m_dock_host);
+        m_dock_host = new QMainWindow(shell_frame);
+        m_dock_host->setObjectName(QStringLiteral("mw_dock_host"));
+        m_dock_host->setWindowFlags(Qt::Widget);
+        m_dock_host->setContextMenuPolicy(Qt::PreventContextMenu);
+        m_dock_host->setDockNestingEnabled(true);
+        shell_layout->addWidget(m_dock_host);
+    }
 
-    m_apps_list_widget = new AppsList(emuenv, m_dock_host);
-    m_apps_list_widget->refresh();
-    m_dock_host->addDockWidget(Qt::LeftDockWidgetArea, m_apps_list_widget);
+    {
+        ZoneScopedN("AppsListWidget");
+        m_apps_list_widget = new AppsList(emuenv, m_dock_host);
+        m_apps_list_widget->refresh();
+        m_dock_host->addDockWidget(Qt::LeftDockWidgetArea, m_apps_list_widget);
+    }
 
-    m_log_widget = new LogWidget(m_dock_host);
-    m_log_widget->attach();
-    m_dock_host->addDockWidget(Qt::LeftDockWidgetArea, m_log_widget);
-    m_dock_host->splitDockWidget(m_apps_list_widget, m_log_widget, Qt::Vertical);
-    m_dock_host->resizeDocks({ m_log_widget }, { m_dock_host->sizeHint().height() / 5 }, Qt::Vertical);
+    {
+        ZoneScopedN("LogWidget");
+        m_log_widget = new LogWidget(m_dock_host);
+        m_log_widget->attach();
+        m_dock_host->addDockWidget(Qt::LeftDockWidgetArea, m_log_widget);
+        m_dock_host->splitDockWidget(m_apps_list_widget, m_log_widget, Qt::Vertical);
+        m_dock_host->resizeDocks({ m_log_widget }, { m_dock_host->sizeHint().height() / 5 }, Qt::Vertical);
+    }
 
-    connect(m_apps_list_widget, &AppsList::boot_requested,
-        this, &MainWindow::on_app_selected);
+    {
+        ZoneScopedN("ConnectSignals");
+        connect(m_apps_list_widget, &AppsList::boot_requested,
+            this, &MainWindow::on_app_selected);
 
-    connect(m_apps_list_widget, &AppsList::context_menu_requested,
-        this, &MainWindow::on_context_menu_requested);
+        connect(m_apps_list_widget, &AppsList::context_menu_requested,
+            this, &MainWindow::on_context_menu_requested);
 
-    m_sdl_pump_timer = new QTimer(this);
-    m_sdl_pump_timer->setInterval(4);
-    connect(m_sdl_pump_timer, &QTimer::timeout, this, &MainWindow::pump_sdl_events);
-    m_sdl_pump_timer->start();
+        m_sdl_pump_timer = new QTimer(this);
+        m_sdl_pump_timer->setInterval(4);
+        connect(m_sdl_pump_timer, &QTimer::timeout, this, &MainWindow::pump_sdl_events);
+        m_sdl_pump_timer->start();
 
-    setup_toolbar();
+        setup_toolbar();
 
-    connect(m_ui->welcome_dialog_action, &QAction::triggered, this, [this]() {
-        auto *welcome = new WelcomeDialog(emuenv, true, this);
-        welcome->open();
-    });
+        connect(m_ui->welcome_dialog_action, &QAction::triggered, this, [this]() {
+            auto *welcome = new WelcomeDialog(emuenv, true, this);
+            welcome->open();
+        });
 
-    connect(m_ui->trophy_collection_action, &QAction::triggered,
-        this, &MainWindow::open_trophy_collection);
+        connect(m_ui->trophy_collection_action, &QAction::triggered,
+            this, &MainWindow::open_trophy_collection);
 
-    connect(m_ui->vita_themes_action, &QAction::triggered,
-        this, &MainWindow::open_vita_themes);
+        connect(m_ui->vita_themes_action, &QAction::triggered,
+            this, &MainWindow::open_vita_themes);
 
-    connect(m_ui->user_management_action, &QAction::triggered,
-        this, &MainWindow::open_user_management);
+        connect(m_ui->user_management_action, &QAction::triggered,
+            this, &MainWindow::open_user_management);
 
-    connect(m_ui->settings_core_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Core)); });
-    connect(m_ui->settings_cpu_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::CPU)); });
-    connect(m_ui->settings_gpu_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Graphics)); });
-    connect(m_ui->settings_audio_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Audio)); });
-    connect(m_ui->settings_camera_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Camera)); });
-    connect(m_ui->settings_system_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::System)); });
-    connect(m_ui->settings_emulator_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Emulator)); });
-    connect(m_ui->settings_gui_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Interface)); });
-    connect(m_ui->settings_network_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Network)); });
-    connect(m_ui->settings_debug_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Debug)); });
+        connect(m_ui->settings_core_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Core)); });
+        connect(m_ui->settings_cpu_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::CPU)); });
+        connect(m_ui->settings_gpu_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Graphics)); });
+        connect(m_ui->settings_audio_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Audio)); });
+        connect(m_ui->settings_camera_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Camera)); });
+        connect(m_ui->settings_system_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::System)); });
+        connect(m_ui->settings_emulator_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Emulator)); });
+        connect(m_ui->settings_gui_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Interface)); });
+        connect(m_ui->settings_network_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Network)); });
+        connect(m_ui->settings_debug_action, &QAction::triggered, this, [this] { open_settings(static_cast<int>(SettingsTab::Debug)); });
 
-    connect(m_ui->install_firmware_action, &QAction::triggered,
-        this, &MainWindow::on_install_firmware_triggered);
-    connect(m_ui->install_pkg_action, &QAction::triggered,
-        this, &MainWindow::on_install_pkg_triggered);
-    connect(m_ui->install_zip_action, &QAction::triggered,
-        this, &MainWindow::on_install_zip_triggered);
-    connect(m_ui->install_license_action, &QAction::triggered,
-        this, &MainWindow::on_install_license_triggered);
+        connect(m_ui->install_firmware_action, &QAction::triggered,
+            this, &MainWindow::on_install_firmware_triggered);
+        connect(m_ui->install_pkg_action, &QAction::triggered,
+            this, &MainWindow::on_install_pkg_triggered);
+        connect(m_ui->install_zip_action, &QAction::triggered,
+            this, &MainWindow::on_install_zip_triggered);
+        connect(m_ui->install_license_action, &QAction::triggered,
+            this, &MainWindow::on_install_license_triggered);
 
-    connect(m_ui->debug_threads_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Threads); });
-    connect(m_ui->debug_mutexes_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Mutexes); });
-    connect(m_ui->debug_lw_mutexes_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::LwMutexes); });
-    connect(m_ui->debug_condvars_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Condvars); });
-    connect(m_ui->debug_lw_condvars_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::LwCondvars); });
-    connect(m_ui->debug_semaphores_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Semaphores); });
-    connect(m_ui->debug_event_flags_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::EventFlags); });
-    connect(m_ui->debug_allocations_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Allocations); });
-    connect(m_ui->debug_disassembly_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Disassembly); });
+        connect(m_ui->debug_threads_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Threads); });
+        connect(m_ui->debug_mutexes_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Mutexes); });
+        connect(m_ui->debug_lw_mutexes_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::LwMutexes); });
+        connect(m_ui->debug_condvars_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Condvars); });
+        connect(m_ui->debug_lw_condvars_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::LwCondvars); });
+        connect(m_ui->debug_semaphores_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Semaphores); });
+        connect(m_ui->debug_event_flags_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::EventFlags); });
+        connect(m_ui->debug_allocations_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Allocations); });
+        connect(m_ui->debug_disassembly_action, &QAction::triggered, this, [this] { open_debug_widget(DebugWidget::Disassembly); });
 
-    connect(m_ui->pause_action, &QAction::triggered,
-        this, &MainWindow::on_toolbar_start);
-    connect(m_ui->stop_action, &QAction::triggered,
-        this, &MainWindow::on_stop_triggered);
+        connect(m_ui->pause_action, &QAction::triggered,
+            this, &MainWindow::on_toolbar_start);
+        connect(m_ui->stop_action, &QAction::triggered,
+            this, &MainWindow::on_stop_triggered);
 
-    connect(m_ui->show_apps_list_action, &QAction::triggered, this, [this](bool checked) {
-        m_apps_list_widget->setVisible(checked);
-        m_gui_settings->set_value(gui::mw_appsListVisible, checked);
-    });
-    connect(m_apps_list_widget, &QDockWidget::visibilityChanged,
-        m_ui->show_apps_list_action, &QAction::setChecked);
+        connect(m_ui->show_apps_list_action, &QAction::triggered, this, [this](bool checked) {
+            m_apps_list_widget->setVisible(checked);
+            m_gui_settings->set_value(gui::mw_appsListVisible, checked);
+        });
+        connect(m_apps_list_widget, &QDockWidget::visibilityChanged,
+            m_ui->show_apps_list_action, &QAction::setChecked);
 
-    connect(m_ui->show_log_action, &QAction::triggered, this, [this](bool checked) {
-        m_log_widget->setVisible(checked);
-        m_gui_settings->set_value(gui::mw_loggerVisible, checked);
-    });
-    connect(m_log_widget, &QDockWidget::visibilityChanged,
-        m_ui->show_log_action, &QAction::setChecked);
+        connect(m_ui->show_log_action, &QAction::triggered, this, [this](bool checked) {
+            m_log_widget->setVisible(checked);
+            m_gui_settings->set_value(gui::mw_loggerVisible, checked);
+        });
+        connect(m_log_widget, &QDockWidget::visibilityChanged,
+            m_ui->show_log_action, &QAction::setChecked);
 
-    connect(m_ui->show_toolbar_action, &QAction::triggered, this, [this](bool checked) {
-        m_ui->toolBar->setVisible(checked);
-        m_gui_settings->set_value(gui::mw_toolBarVisible, checked);
-    });
+        connect(m_ui->show_toolbar_action, &QAction::triggered, this, [this](bool checked) {
+            m_ui->toolBar->setVisible(checked);
+            m_gui_settings->set_value(gui::mw_toolBarVisible, checked);
+        });
 
-    connect(m_ui->show_title_bars_action, &QAction::triggered, this, [this](bool checked) {
-        show_title_bars(checked);
-        m_gui_settings->set_value(gui::mw_titleBarsVisible, checked);
-    });
+        connect(m_ui->show_title_bars_action, &QAction::triggered, this, [this](bool checked) {
+            show_title_bars(checked);
+            m_gui_settings->set_value(gui::mw_titleBarsVisible, checked);
+        });
+    }
 
     setAcceptDrops(true);
 
-    setup_status_bar();
-    m_update_manager = new UpdateManager(this);
-    connect(m_update_manager, &UpdateManager::update_available_changed, this, [this](const bool available) {
-        m_update_available = available;
+    {
+        ZoneScopedN("StatusAndWindowState");
+        setup_status_bar();
+        m_update_manager = new UpdateManager(this);
+        connect(m_update_manager, &UpdateManager::update_available_changed, this, [this](const bool available) {
+            m_update_available = available;
+            update_update_available_button();
+        });
         update_update_available_button();
-    });
-    update_update_available_button();
 
-    setMinimumSize(350, minimumSizeHint().height());
-    restore_window_state();
+        setMinimumSize(350, minimumSizeHint().height());
+        restore_window_state();
 
-    apply_log_gui_settings();
+        apply_log_gui_settings();
+    }
 
-    m_theme_manager = std::make_unique<ThemeManager>(m_gui_settings);
-    m_theme_manager->set_vita_fs_path(emuenv.vita_fs_path);
-    m_theme_manager->set_vita_themes_root(emuenv.vita_fs_path / "ux0/theme");
-    connect(m_theme_manager.get(), &ThemeManager::theme_state_changed, this, &MainWindow::repaint_gui);
-    connect(m_theme_manager.get(), &ThemeManager::theme_state_changed, this, &MainWindow::apply_theme_background_presentation);
+    {
+        ZoneScopedN("ThemePresentationSetup");
+        m_theme_manager = std::make_unique<ThemeManager>(m_gui_settings);
+        m_theme_manager->set_vita_fs_path(emuenv.vita_fs_path);
+        m_theme_manager->set_vita_themes_root(emuenv.vita_fs_path / "ux0/theme");
+        connect(m_theme_manager.get(), &ThemeManager::theme_state_changed, this, &MainWindow::repaint_gui);
+        connect(m_theme_manager.get(), &ThemeManager::theme_state_changed, this, &MainWindow::apply_theme_background_presentation);
 
-    m_theme_background_cycle_timer = new QTimer(this);
-    connect(m_theme_background_cycle_timer, &QTimer::timeout, this, &MainWindow::advance_theme_background_presentation);
+        m_theme_background_cycle_timer = new QTimer(this);
+        connect(m_theme_background_cycle_timer, &QTimer::timeout, this, &MainWindow::advance_theme_background_presentation);
 
-    m_theme_background_fade_animation = new QVariantAnimation(this);
-    m_theme_background_fade_animation->setDuration(900);
-    m_theme_background_fade_animation->setStartValue(0.0);
-    m_theme_background_fade_animation->setEndValue(1.0);
-    m_theme_background_fade_animation->setEasingCurve(QEasingCurve::InOutSine);
-    connect(m_theme_background_fade_animation, &QVariantAnimation::valueChanged, this, [this](const QVariant &value) {
-        m_theme_background_fade_progress = value.toReal();
-        update();
-    });
-    connect(m_theme_background_fade_animation, &QVariantAnimation::finished, this, [this] {
-        if (m_theme_background_next_index >= 0)
-            m_theme_background_current_index = m_theme_background_next_index;
+        m_theme_background_fade_animation = new QVariantAnimation(this);
+        m_theme_background_fade_animation->setDuration(900);
+        m_theme_background_fade_animation->setStartValue(0.0);
+        m_theme_background_fade_animation->setEndValue(1.0);
+        m_theme_background_fade_animation->setEasingCurve(QEasingCurve::InOutSine);
+        connect(m_theme_background_fade_animation, &QVariantAnimation::valueChanged, this, [this](const QVariant &value) {
+            m_theme_background_fade_progress = value.toReal();
+            update();
+        });
+        connect(m_theme_background_fade_animation, &QVariantAnimation::finished, this, [this] {
+            if (m_theme_background_next_index >= 0)
+                m_theme_background_current_index = m_theme_background_next_index;
 
-        m_theme_background_next_index = -1;
-        m_theme_background_fade_progress = 0.0;
-        if (m_theme_background_cycle_timer && m_theme_background_scaled_pixmaps.size() > 1)
-            m_theme_background_cycle_timer->start(m_theme_background_cycle_interval_ms);
-        update();
-    });
+            m_theme_background_next_index = -1;
+            m_theme_background_fade_progress = 0.0;
+            if (m_theme_background_cycle_timer && m_theme_background_scaled_pixmaps.size() > 1)
+                m_theme_background_cycle_timer->start(m_theme_background_cycle_interval_ms);
+            update();
+        });
+    }
 
     init_first_run_stylesheet();
     apply_stylesheet();
 
-    if (emuenv.cfg.show_welcome) {
-        WelcomeDialog welcome(emuenv, false, nullptr);
-        welcome.exec();
-    }
+    {
+        ZoneScopedN("StartupTasks");
+        if (emuenv.cfg.show_welcome) {
+            WelcomeDialog welcome(emuenv, false, nullptr);
+            welcome.exec();
+        }
 
-    if (m_update_manager) {
-        const auto startup_mode = static_cast<UpdateStartupMode>(emuenv.cfg.check_for_updates_mode);
-        if (startup_mode != UPDATE_STARTUP_OFF) {
-            QTimer::singleShot(0, this, [this, startup_mode]() {
-                if (!m_update_manager)
-                    return;
+        if (m_update_manager) {
+            const auto startup_mode = static_cast<UpdateStartupMode>(emuenv.cfg.check_for_updates_mode);
+            if (startup_mode != UPDATE_STARTUP_OFF) {
+                QTimer::singleShot(0, this, [this, startup_mode]() {
+                    if (!m_update_manager)
+                        return;
 
-                updater::UpdateCheckMode mode = updater::UpdateCheckMode::StartupPrompt;
-                switch (startup_mode) {
-                case UPDATE_STARTUP_BACKGROUND:
-                    mode = updater::UpdateCheckMode::StartupBackground;
-                    break;
-                case UPDATE_STARTUP_AUTO:
-                case UPDATE_STARTUP_PROMPT:
-                default:
-                    mode = updater::UpdateCheckMode::StartupPrompt;
-                    break;
-                }
+                    updater::UpdateCheckMode mode = updater::UpdateCheckMode::StartupPrompt;
+                    switch (startup_mode) {
+                    case UPDATE_STARTUP_BACKGROUND:
+                        mode = updater::UpdateCheckMode::StartupBackground;
+                        break;
+                    case UPDATE_STARTUP_AUTO:
+                    case UPDATE_STARTUP_PROMPT:
+                    default:
+                        mode = updater::UpdateCheckMode::StartupPrompt;
+                        break;
+                    }
 
-                m_update_manager->check_for_updates(mode, this);
+                    m_update_manager->check_for_updates(mode, this);
+                });
+            }
+        }
+
+        connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this]() {
+            apply_stylesheet();
+        });
+
+        init_discord();
+
+        if (emuenv.cfg.run_app_path.has_value()) {
+            QTimer::singleShot(0, this, [this]() {
+                const std::string title_id = *emuenv.cfg.run_app_path;
+                emuenv.cfg.run_app_path.reset();
+                boot_game(title_id);
             });
         }
-    }
-
-    connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this]() {
-        apply_stylesheet();
-    });
-
-    init_discord();
-
-    if (emuenv.cfg.run_app_path.has_value()) {
-        QTimer::singleShot(0, this, [this]() {
-            const std::string title_id = *emuenv.cfg.run_app_path;
-            emuenv.cfg.run_app_path.reset();
-            boot_game(title_id);
-        });
     }
 }
 
@@ -1339,6 +1369,7 @@ void MainWindow::on_ps_button() {
 }
 
 void MainWindow::refresh_emulation_actions() {
+    ZoneScopedN("MainWindow::refresh_emulation_actions");
     const bool running = m_game_window != nullptr;
     const bool paused = running && m_app_session.is_paused();
 
@@ -1416,6 +1447,8 @@ void MainWindow::open_debug_widget(int tab) {
 }
 
 void MainWindow::setup_toolbar() {
+    ZoneScopedN("MainWindow::setup_toolbar");
+
     auto *tb = m_ui->toolBar;
     tb->setObjectName(QStringLiteral("mw_toolbar"));
 
@@ -1516,6 +1549,8 @@ void MainWindow::show_title_bars(bool show) const {
 }
 
 void MainWindow::repaint_gui() {
+    ZoneScopedN("MainWindow::repaint_gui");
+
     repaint_toolbar_icons();
     if (m_log_widget)
         m_log_widget->repaint_text_colors();
@@ -1525,6 +1560,7 @@ void MainWindow::repaint_gui() {
 }
 
 void MainWindow::init_first_run_stylesheet() {
+    ZoneScopedN("MainWindow::init_first_run_stylesheet");
     if (!m_gui_settings || m_gui_settings->contains_value(gui::m_currentStylesheet))
         return;
 
@@ -1536,6 +1572,8 @@ void MainWindow::init_first_run_stylesheet() {
 }
 
 void MainWindow::apply_stylesheet() {
+    ZoneScopedN("MainWindow::apply_stylesheet");
+
     if (!m_theme_manager)
         return;
     m_theme_manager->ensure_generated_theme_ready(emuenv.vita_fs_path / "ux0/theme");
@@ -1638,6 +1676,7 @@ void MainWindow::advance_theme_background_presentation() {
 }
 
 void MainWindow::repaint_toolbar_icons() {
+    ZoneScopedN("MainWindow::repaint_toolbar_icons");
     auto *tb = m_ui->toolBar;
     const QColor fg = gui::utils::toolbar_icon_tint();
 
@@ -1768,6 +1807,7 @@ void MainWindow::on_context_menu_requested(const QPoint &global_pos, const std::
 }
 
 void MainWindow::resize_icons(int index) {
+    ZoneScopedN("MainWindow::resize_icons");
     if (m_icon_size_slider->value() != index) {
         m_icon_size_slider->setSliderPosition(index);
         return;
