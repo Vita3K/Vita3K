@@ -79,3 +79,13 @@ endif()
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)
 	target_link_libraries(renderer PRIVATE tracy)
 endif()
+
+if(NOT ANDROID)
+	add_executable(
+		renderer-tests
+		tests/command_list_tests.cpp
+	)
+
+	target_link_libraries(renderer-tests PRIVATE renderer googletest)
+	add_test(NAME renderer COMMAND renderer-tests)
+endif()
