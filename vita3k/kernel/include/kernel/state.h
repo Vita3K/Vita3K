@@ -19,9 +19,11 @@
 
 #include <cpu/common.h>
 #include <kernel/callback.h>
+#include <kernel/core_timing.h>
 #include <kernel/debugger.h>
 #include <kernel/object_store.h>
 #include <kernel/sync_primitives.h>
+#include <kernel/thread_manager.h>
 #include <kernel/types.h>
 #include <mem/allocator.h>
 #include <mem/block.h>
@@ -37,8 +39,10 @@
 #include <condition_variable>
 #include <functional>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 struct ThreadState;
@@ -152,6 +156,18 @@ struct KernelState {
     Ptr<Address> shellsvc_client = Ptr<Address>(0);
     Ptr<void> libc_dso_handle_main = Ptr<void>(0);
 
+    struct LibKernelMspaceInfo {
+        void *host_handle = nullptr;
+        Ptr<void> base;
+        uint32_t capacity = 0;
+        std::mutex mutex;
+        bool destroyed = false;
+    };
+    std::mutex libkernel_mspace_mutex;
+    std::unordered_map<Address, std::shared_ptr<LibKernelMspaceInfo>> libkernel_mspaces;
+
+    KernelThreadManager thread_manager;
+    CoreTiming core_timing;
     Debugger debugger;
 
     // kubridge exception handlers (DABT=0, PABT=1, UNDEF=2)
@@ -172,7 +188,7 @@ struct KernelState {
     ThreadStatePtr get_thread(SceUID thread_id);
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
 
-    bool is_threads_paused() { return !paused_threads_status.empty(); }
+    bool is_threads_paused() { return thread_manager.is_paused(); }
     void pause_threads();
     void resume_threads();
 
@@ -189,5 +205,4 @@ struct KernelState {
 
 private:
     std::atomic<SceUID> next_uid{ 1 };
-    std::map<SceUID, ThreadStatus> paused_threads_status;
 };

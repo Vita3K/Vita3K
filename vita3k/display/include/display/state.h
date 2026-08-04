@@ -31,14 +31,6 @@ enum SceDisplayPixelFormat {
     SCE_DISPLAY_PIXELFORMAT_A8B8G8R8 = 0x00000000U
 };
 
-struct ThreadState;
-typedef std::shared_ptr<ThreadState> ThreadStatePtr;
-
-struct DisplayStateVBlankWaitInfo {
-    ThreadStatePtr target_thread;
-    uint64_t target_vcount;
-};
-
 struct DisplayFrameInfo {
     Ptr<const void> base;
     uint32_t pitch = 0;
@@ -69,10 +61,9 @@ struct DisplayState {
     std::mutex mutex;
     std::unique_ptr<std::thread> vblank_thread;
     std::atomic<bool> abort{ false };
-    std::atomic<bool> imgui_render{ true };
     std::atomic<bool> fullscreen{ false };
     std::atomic<std::uint64_t> vblank_count{ 0 };
-    std::vector<DisplayStateVBlankWaitInfo> vblank_wait_infos;
+    std::atomic<uint64_t> vblank_remainder_us{ 0 };
     std::atomic<uint64_t> last_setframe_vblank_count = 0;
     std::map<SceUID, CallbackPtr> vblank_callbacks{};
 

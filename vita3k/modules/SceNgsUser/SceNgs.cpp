@@ -344,6 +344,7 @@ EXPORT(SceInt32, sceNgsRackRelease, ngs::Rack *rack, Ptr<void> callback) {
         op.system = rack->system;
         op.release_data.state = &emuenv.ngs;
         op.release_data.rack = rack;
+        op.release_data.rack_handle = rack->memspace.address();
         op.release_data.callback = callback.address();
         rack->system->voice_scheduler.operations_pending.push(op);
     }

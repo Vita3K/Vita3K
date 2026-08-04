@@ -233,6 +233,7 @@ void AppSessionController::apply_runtime_state_locked() {
     emuenv.ctrl.overlay_input_intercepted.store(overlay_intercepted, std::memory_order_relaxed);
 
     emuenv.renderer->paused.store(paused, std::memory_order_relaxed);
+    emuenv.renderer->request_async_flip();
 }
 
 void AppSessionController::set_phase(const AppSessionPhase next_phase) {
