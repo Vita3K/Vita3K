@@ -26,9 +26,17 @@
 #include <renderer/texture_cache.h>
 #include <shader/uniform_block.h>
 
+#include <glad/glad.h>
+
 #include <map>
 #include <memory>
 #include <vector>
+
+// Our glad build does not expose GL_ARB_parallel_shader_compile / GL_KHR_parallel_shader_compile,
+// so the token is defined manually here. Both extensions use the same value.
+#ifndef GL_COMPLETION_STATUS_ARB
+#define GL_COMPLETION_STATUS_ARB 0x91B1
+#endif
 
 struct SceGxmProgramParameter;
 
@@ -44,7 +52,33 @@ inline bool operator==(const ExcludedUniform &lhs, const ExcludedUniform &rhs) {
 
 using ShaderCache = std::map<Sha256Hash, SharedGLObject>;
 using ProgramHashes = std::tuple<Sha256Hash, Sha256Hash>;
-using ProgramCache = std::map<ProgramHashes, SharedGLObject>;
+
+enum class ProgramStatus {
+    // glLinkProgram has been issued but completion has not been observed yet.
+    // Only reachable when asynchronous compilation is enabled.
+    Compiling,
+    // The program is linked and can be used for drawing.
+    Ready,
+    // Linking failed. The entry is kept so that we do not endlessly retry it.
+    Failed
+};
+
+struct CachedProgram {
+    SharedGLObject program;
+    ProgramStatus status = ProgramStatus::Compiling;
+};
+
+using ProgramCache = std::map<ProgramHashes, CachedProgram>;
+
+// A program whose linking has been issued but not yet completed.
+// The shaders are kept alive here because glDetachShader is deferred until completion.
+struct PendingProgram {
+    ProgramHashes hashes;
+    SharedGLObject program;
+    SharedGLObject frag_shader;
+    SharedGLObject vert_shader;
+};
+
 typedef std::vector<ExcludedUniform> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
 using UniformTypes = std::map<GLuint, GLenum>;
 

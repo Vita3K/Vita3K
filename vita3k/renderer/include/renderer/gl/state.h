@@ -79,6 +79,16 @@ struct GLState : public renderer::State {
     std::vector<uint8_t> readback_scratch;
     std::vector<DownscaleTarget> downscale_targets;
 
+    // Does the driver expose GL_ARB_parallel_shader_compile (or its KHR variant)?
+    bool support_parallel_shader_compile = false;
+    // What the user asked for. Kept separate because set_async_compilation may be
+    // called before the extension has been probed.
+    bool async_compilation_requested = false;
+    // What we actually do: requested && supported.
+    bool use_async_compilation = false;
+    // Programs whose linking is in flight, polled from the render thread.
+    std::vector<PendingProgram> pending_programs;
+
     bool init() override;
     void cleanup() override;
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
@@ -98,6 +108,11 @@ struct GLState : public renderer::State {
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
     int get_max_2d_texture_width() override;
+    void set_async_compilation(bool enable) override;
+
+    // Move every pending program that the driver has finished linking to its final state.
+    // Must be called from the render thread. Cheap when nothing is pending.
+    void poll_pending_programs();
 
     std::string_view get_gpu_name() override;
 

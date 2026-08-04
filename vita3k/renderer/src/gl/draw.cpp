@@ -81,16 +81,26 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         return;
     }
 
+    if (renderer.use_async_compilation)
+        renderer.poll_pending_programs();
+
     // Trying to cache: the last time vs this time shader pair. Does it different somehow?
     // If it's different, we need to switch. Else just stick to it.
     if (context.record.vertex_program.get(mem)->renderer_data->hash != context.last_draw_vertex_program_hash || context.record.fragment_program.get(mem)->renderer_data->hash != context.last_draw_fragment_program_hash) {
         // Need to recompile!
-        SharedGLObject program = gl::compile_program(renderer, context, context.record, features, mem, config.shader_cache, config.spirv_shader, gxm_fragment_program.is_maskupdate);
+        bool is_compiling = false;
+        SharedGLObject program = gl::compile_program(renderer, context, context.record, features, mem, config.shader_cache, config.spirv_shader, gxm_fragment_program.is_maskupdate, &is_compiling);
 
-        LOG_ERROR_IF(!program, "Fail to get program!");
+        if (!program) {
+            // Drop the draw. The last draw hashes are left untouched on purpose, so the next
+            // draw using this pair goes through the cache lookup again and picks the program
+            // up as soon as the driver is done with it.
+            LOG_ERROR_IF(!is_compiling, "Fail to get program!");
+            return;
+        }
 
         // Use it
-        program_id = program ? (*program).get() : 0;
+        program_id = program->get();
         context.last_draw_program = program_id;
     } else {
         program_id = context.last_draw_program;

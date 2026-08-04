@@ -210,7 +210,11 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
         { "GL_ARB_gl_spirv", &gl_state.features.spirv_shader },
         { "GL_ARB_get_texture_sub_image", &gl_state.features.support_get_texture_sub_image },
         { "GL_EXT_shader_image_load_formatted", &gl_state.features.support_unknown_format },
-        { "GL_EXT_texture_sRGB_decode", &gl_state.surface_cache.support_srgb_decode }
+        { "GL_EXT_texture_sRGB_decode", &gl_state.surface_cache.support_srgb_decode },
+        // Deliberately not part of FeatureState: this does not change the shaders we generate,
+        // so it must not end up in get_features_mask() and invalidate the shader cache.
+        { "GL_ARB_parallel_shader_compile", &gl_state.support_parallel_shader_compile },
+        { "GL_KHR_parallel_shader_compile", &gl_state.support_parallel_shader_compile }
     };
 
     for (int i = 0; i < total_extensions; i++) {
@@ -234,6 +238,31 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
         LOG_INFO("Your GPU doesn't support extensions that make programmable blending possible. Some games may have broken graphics.");
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
+
+    if (gl_state.support_parallel_shader_compile) {
+        using MaxShaderCompilerThreadsProc = void(APIENTRYP)(GLuint count);
+
+        // Not available through glad, so resolve it by hand. Android only ships the KHR variant.
+        auto max_shader_compiler_threads = reinterpret_cast<MaxShaderCompilerThreadsProc>(
+            s_frame->get_proc_address("glMaxShaderCompilerThreadsARB"));
+        if (!max_shader_compiler_threads)
+            max_shader_compiler_threads = reinterpret_cast<MaxShaderCompilerThreadsProc>(
+                s_frame->get_proc_address("glMaxShaderCompilerThreadsKHR"));
+
+        if (max_shader_compiler_threads) {
+            // 0xFFFFFFFF asks for the implementation defined maximum, ie let the driver decide.
+            max_shader_compiler_threads(0xFFFFFFFFu);
+            LOG_INFO("Your GPU supports parallel shader compilation.");
+        } else {
+            LOG_WARN("Parallel shader compilation is advertised but glMaxShaderCompilerThreads is missing.");
+            gl_state.support_parallel_shader_compile = false;
+        }
+    } else {
+        LOG_INFO("Your GPU doesn't support parallel shader compilation, shader compilation may cause stutters.");
+    }
+
+    // set_async_compilation may have run before the extension was probed, so settle it now
+    gl_state.set_async_compilation(gl_state.async_compilation_requested);
 
 #ifdef __ANDROID__
     gl_state.features.use_mask_bit = false;
@@ -1006,6 +1035,17 @@ int GLState::get_max_anisotropic_filtering() {
     return static_cast<int>(max_aniso);
 }
 
+void GLState::set_async_compilation(bool enable) {
+    async_compilation_requested = enable;
+
+    const bool new_value = enable && support_parallel_shader_compile;
+    if (new_value == use_async_compilation)
+        return;
+
+    use_async_compilation = new_value;
+    LOG_INFO("Asynchronous shader compilation is now {}", new_value ? "enabled" : "disabled");
+}
+
 void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
 }
@@ -1033,6 +1073,7 @@ void GLState::cleanup() {
 
     context = nullptr;
 
+    pending_programs.clear();
     program_cache.clear();
     fragment_shader_cache.clear();
     vertex_shader_cache.clear();
