@@ -117,6 +117,22 @@ struct TranslationState {
     const Hints *hints = nullptr;
 };
 
+static bool is_alpha_only_color_surface(const TranslationState &state) {
+    return state.hints->color_format == SCE_GXM_COLOR_FORMAT_U8_A
+        || state.hints->color_format == SCE_GXM_COLOR_FORMAT_S8_A;
+}
+
+static spv::Id alpha_surface_to_shader_color(spv::Builder &b, const spv::Id color) {
+    // Host R8 image reads return (R, 0, 0, 1); GXM A8 exposes (0, 0, 0, R).
+    return b.createOp(spv::OpVectorShuffle, b.getTypeId(color), { { true, color }, { true, color }, { false, 1 }, { false, 2 }, { false, 1 }, { false, 0 } });
+}
+
+static spv::Id shader_color_to_alpha_surface(spv::Builder &b, const spv::Id color) {
+    // Host single-component render targets store the red output, so move the
+    // guest alpha value there while retaining alpha for blend factors.
+    return b.createOp(spv::OpVectorShuffle, b.getTypeId(color), { { true, color }, { true, color }, { false, 3 }, { false, 1 }, { false, 2 }, { false, 3 } });
+}
+
 struct VertexProgramOutputProperties {
     std::string name;
     std::uint32_t component_count{};
@@ -718,6 +734,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
         auto store_source_result = [&](const bool direct_store = false) {
             if (source != spv::NoResult) {
+                if (is_alpha_only_color_surface(translation_state))
+                    source = alpha_surface_to_shader_color(b, source);
+
                 if (!direct_store && !is_float_data_type(target_to_store.type)) {
                     source = utils::convert_to_int(b, utils, source, target_to_store.type, true);
                 }
@@ -1492,6 +1511,9 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     if (!is_float_data_type(color_val_operand.type))
         color = utils::convert_to_float(b, utils, color, color_val_operand.type, true);
 
+    if (is_alpha_only_color_surface(translate_state))
+        color = shader_color_to_alpha_surface(b, color);
+
     if (program.is_frag_color_used() && features.should_use_shader_interlock()) {
         spv::Id signed_i32 = b.makeIntType(32);
         spv::Id coord_id = b.createLoad(translate_state.frag_coord_id, spv::NoPrecision);
@@ -1527,6 +1549,9 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
             color_val_operand.type = DataType::UINT16;
             color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
 
+            if (is_alpha_only_color_surface(translate_state))
+                color = shader_color_to_alpha_surface(b, color);
+
             b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_raw_id, spv::NoPrecision), translated_id, color });
         }
     } else {
@@ -1543,6 +1568,9 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
 
             color_val_operand.type = DataType::UINT16;
             color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
+
+            if (is_alpha_only_color_surface(translate_state))
+                color = shader_color_to_alpha_surface(b, color);
 
             b.createStore(color, out_u16_raw);
         }
