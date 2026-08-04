@@ -26,8 +26,11 @@
 #include "types.h"
 
 #include <chrono>
+#include <condition_variable>
 #include <deque>
+#include <mutex>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 namespace renderer::gl {
@@ -84,10 +87,27 @@ struct GLState : public renderer::State {
     // What the user asked for. Kept separate because set_async_compilation may be
     // called before the extension has been probed.
     bool async_compilation_requested = false;
-    // What we actually do: requested && supported.
+    // Translate shaders on worker threads and drop draws whose program is not ready.
+    // Does not need any extension.
     bool use_async_compilation = false;
+    // Skip the GL status queries that would block the render thread. Only possible
+    // with GL_ARB_parallel_shader_compile.
+    bool defer_gl_status_checks = false;
+
     // Programs whose linking is in flight, polled from the render thread.
     std::vector<PendingProgram> pending_programs;
+
+    // gxp -> GLSL/SPIR-V translations in flight. Guarded by shader_translations_mutex.
+    // Entries are shared so that a worker can safely finish writing to one that has
+    // already been dropped from the map.
+    std::mutex shader_translations_mutex;
+    std::map<Sha256Hash, std::shared_ptr<ShaderTranslation>> shader_translations;
+
+    std::vector<std::thread> shader_translate_threads;
+    std::mutex shader_translate_queue_mutex;
+    std::condition_variable shader_translate_queue_cond;
+    std::deque<ShaderTranslateRequest *> shader_translate_queue;
+    bool shader_translate_abort = false;
 
     bool init() override;
     void cleanup() override;
@@ -113,6 +133,13 @@ struct GLState : public renderer::State {
     // Move every pending program that the driver has finished linking to its final state.
     // Must be called from the render thread. Cheap when nothing is pending.
     void poll_pending_programs();
+
+    void start_shader_translate_threads();
+    void stop_shader_translate_threads();
+    // Entry point of each shader translation worker.
+    void shader_translate_thread();
+    // Hand a request over to the workers. Takes ownership of the request.
+    void enqueue_shader_translation(ShaderTranslateRequest *request);
 
     std::string_view get_gpu_name() override;
 

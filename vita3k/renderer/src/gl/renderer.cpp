@@ -36,6 +36,8 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
+#include <SDL3/SDL_cpuinfo.h>
+
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -240,7 +242,7 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
     }
 
     if (gl_state.support_parallel_shader_compile) {
-        using MaxShaderCompilerThreadsProc = void(APIENTRYP)(GLuint count);
+        using MaxShaderCompilerThreadsProc = void (*)(GLuint);
 
         // Not available through glad, so resolve it by hand. Android only ships the KHR variant.
         auto max_shader_compiler_threads = reinterpret_cast<MaxShaderCompilerThreadsProc>(
@@ -1038,12 +1040,95 @@ int GLState::get_max_anisotropic_filtering() {
 void GLState::set_async_compilation(bool enable) {
     async_compilation_requested = enable;
 
-    const bool new_value = enable && support_parallel_shader_compile;
-    if (new_value == use_async_compilation)
+    // Recomputed unconditionally: create() calls us again once the extension has been probed.
+    defer_gl_status_checks = enable && support_parallel_shader_compile;
+
+    if (enable == use_async_compilation)
         return;
 
-    use_async_compilation = new_value;
-    LOG_INFO("Asynchronous shader compilation is now {}", new_value ? "enabled" : "disabled");
+    use_async_compilation = enable;
+
+    if (enable) {
+        start_shader_translate_threads();
+    } else {
+        stop_shader_translate_threads();
+    }
+
+    LOG_INFO("Asynchronous shader compilation is now {}", enable ? "enabled" : "disabled");
+}
+
+void GLState::start_shader_translate_threads() {
+    if (!shader_translate_threads.empty())
+        return;
+
+    const int nb_logical_threads = SDL_GetNumLogicalCPUCores();
+    // same heuristic as the vulkan pipeline cache
+    int nb_threads;
+    if (nb_logical_threads > 12)
+        nb_threads = 6;
+    else if (nb_logical_threads > 8)
+        nb_threads = 4;
+    else if (nb_logical_threads >= 8)
+        nb_threads = 3;
+    else if (nb_logical_threads >= 6)
+        nb_threads = 2;
+    else
+        nb_threads = 1;
+
+    {
+        std::lock_guard<std::mutex> guard(shader_translate_queue_mutex);
+        shader_translate_abort = false;
+    }
+
+    LOG_INFO("Translating shaders on {} worker threads", nb_threads);
+
+    shader_translate_threads.reserve(nb_threads);
+    for (int i = 0; i < nb_threads; i++)
+        shader_translate_threads.emplace_back(&GLState::shader_translate_thread, this);
+}
+
+void GLState::stop_shader_translate_threads() {
+    if (shader_translate_threads.empty())
+        return;
+
+    std::deque<ShaderTranslateRequest *> dropped;
+    {
+        std::lock_guard<std::mutex> guard(shader_translate_queue_mutex);
+        shader_translate_abort = true;
+        dropped.swap(shader_translate_queue);
+    }
+    shader_translate_queue_cond.notify_all();
+
+    for (auto &thread : shader_translate_threads) {
+        if (thread.joinable())
+            thread.join();
+    }
+    shader_translate_threads.clear();
+
+    // Requests that never made it to a worker still hold a reference on their program.
+    for (ShaderTranslateRequest *request : dropped) {
+        request->target->status.store(ShaderStatus::Failed, std::memory_order_release);
+        request->refcount->fetch_sub(1, std::memory_order_release);
+        delete request;
+    }
+
+    // Anything left translating will never complete, so drop it. The shaders are simply
+    // translated again, synchronously this time.
+    std::lock_guard<std::mutex> guard(shader_translations_mutex);
+    for (auto it = shader_translations.begin(); it != shader_translations.end();) {
+        if (it->second->status.load(std::memory_order_acquire) != ShaderStatus::Ready)
+            it = shader_translations.erase(it);
+        else
+            ++it;
+    }
+}
+
+void GLState::enqueue_shader_translation(ShaderTranslateRequest *request) {
+    {
+        std::lock_guard<std::mutex> guard(shader_translate_queue_mutex);
+        shader_translate_queue.push_back(request);
+    }
+    shader_translate_queue_cond.notify_one();
 }
 
 void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
@@ -1066,12 +1151,23 @@ void GLState::precompile_shader(const ShadersHash &hash) {
     pre_compile_program(*this, hash);
 }
 
-void GLState::preclose_action() {}
+void GLState::preclose_action() {
+    // The workers do not touch GL, but they hold references on guest programs
+    // that are about to go away.
+    stop_shader_translate_threads();
+}
 
 void GLState::cleanup() {
+    stop_shader_translate_threads();
+
     set_current();
 
     context = nullptr;
+
+    {
+        std::lock_guard<std::mutex> guard(shader_translations_mutex);
+        shader_translations.clear();
+    }
 
     pending_programs.clear();
     program_cache.clear();
@@ -1108,6 +1204,7 @@ void GLState::cleanup() {
     programs_count_pre_compiled = 0;
     should_display = false;
     render_abort = false;
+    use_async_compilation = false;
 
     frame = nullptr;
 }

@@ -237,6 +237,119 @@ void GLState::poll_pending_programs() {
     }
 }
 
+void GLState::shader_translate_thread() {
+    while (true) {
+        ShaderTranslateRequest *request = nullptr;
+
+        {
+            std::unique_lock<std::mutex> lock(shader_translate_queue_mutex);
+            shader_translate_queue_cond.wait(lock, [this] {
+                return shader_translate_abort || !shader_translate_queue.empty();
+            });
+
+            if (shader_translate_abort)
+                return;
+
+            request = shader_translate_queue.front();
+            shader_translate_queue.pop_front();
+        }
+
+        // Nothing here touches GL: this is the gxp -> GLSL/SPIR-V recompilation only,
+        // which is also what the vulkan backend already runs on its worker threads.
+        bool ok = false;
+        if (request->spirv) {
+            request->target->spirv = load_spirv_shader(*request->program, features, false, request->hints, request->maskupdate,
+                shaders_path, shaders_log_path, shader_version + "spv", request->use_shader_cache);
+            ok = !request->target->spirv.empty();
+        } else {
+            request->target->glsl = load_glsl_shader(*request->program, features, request->hints, request->maskupdate,
+                shaders_path, shaders_log_path, shader_version, request->use_shader_cache);
+            ok = !request->target->glsl.empty();
+        }
+
+        // Publishes the generated source to the render thread.
+        request->target->status.store(ok ? ShaderStatus::Ready : ShaderStatus::Failed, std::memory_order_release);
+
+        request->refcount->fetch_sub(1, std::memory_order_release);
+        delete request;
+    }
+}
+
+// Asynchronous counterpart of get_or_compile_shader. The expensive recompilation is handed
+// to a worker thread, and the GL object is only created here, on the render thread, once the
+// generated source is available.
+static SharedGLObject get_or_translate_shader(GLState &renderer, const SceGxmProgram *program, std::atomic<uint32_t> *refcount,
+    const Sha256Hash &hash, ShaderCache &cache, const GLenum type, const shader::Hints &hints,
+    bool shader_cache, bool spirv, bool maskupdate, bool &is_translating) {
+    is_translating = false;
+
+    const auto cached = cache.find(hash);
+    if (cached != cache.end()) {
+        // A null entry means we already tried and failed.
+        return cached->second;
+    }
+
+    const bool use_spirv = renderer.features.spirv_shader && spirv;
+
+    std::shared_ptr<ShaderTranslation> entry;
+    {
+        // Lock ordering is always shader_translations_mutex then shader_translate_queue_mutex.
+        std::lock_guard<std::mutex> guard(renderer.shader_translations_mutex);
+
+        const auto it = renderer.shader_translations.find(hash);
+        if (it == renderer.shader_translations.end()) {
+            entry = std::make_shared<ShaderTranslation>();
+            renderer.shader_translations.emplace(hash, entry);
+
+            auto *request = new ShaderTranslateRequest();
+            request->target = entry;
+            request->program = program;
+            request->refcount = refcount;
+            request->is_vertex = (type == GL_VERTEX_SHADER);
+            request->maskupdate = maskupdate;
+            request->spirv = use_spirv;
+            request->use_shader_cache = shader_cache;
+            request->hints = hints;
+            if (hints.attributes)
+                request->attributes = *hints.attributes;
+            request->hints.attributes = &request->attributes;
+
+            // Tell SceGxm that it must not destroy the program under our feet.
+            refcount->fetch_add(1, std::memory_order_relaxed);
+            renderer.enqueue_shader_translation(request);
+
+            is_translating = true;
+            return SharedGLObject();
+        }
+
+        entry = it->second;
+    }
+
+    const ShaderStatus status = entry->status.load(std::memory_order_acquire);
+    if (status == ShaderStatus::Translating) {
+        is_translating = true;
+        return SharedGLObject();
+    }
+
+    SharedGLObject obj;
+    if (status == ShaderStatus::Ready) {
+        obj = use_spirv ? compile_spirv(type, entry->spirv, renderer.defer_gl_status_checks)
+                        : compile_glsl(type, entry->glsl, renderer.defer_gl_status_checks);
+        renderer.shaders_count_compiled++;
+    } else {
+        LOG_CRITICAL("Failed to translate shader:\n{}", hex_string(hash));
+    }
+
+    cache.emplace(hash, obj);
+
+    {
+        std::lock_guard<std::mutex> guard(renderer.shader_translations_mutex);
+        renderer.shader_translations.erase(hash);
+    }
+
+    return obj;
+}
+
 static SharedGLObject compile_shader(const fs::path &shader_cache_path, const std::string &shader_version, const std::string &hash_hex,
     const char *type_str, const GLenum type, ShaderCache &cache, const Sha256Hash &hash) {
     // Set Shader version with hash
@@ -332,8 +445,10 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
     assert(state.fragment_program);
     assert(state.vertex_program);
 
-    const SceGxmVertexProgram &vertex_program_gxm = *state.vertex_program.get(mem);
-    const SceGxmFragmentProgram &fragment_program_gxm = *state.fragment_program.get(mem);
+    // Non-const because the asynchronous path takes a reference on compile_threads_on,
+    // which SceGxm waits on before destroying a program. Same as the vulkan backend.
+    SceGxmVertexProgram &vertex_program_gxm = *state.vertex_program.get(mem);
+    SceGxmFragmentProgram &fragment_program_gxm = *state.fragment_program.get(mem);
 
     const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
         fragment_program_gxm.renderer_data.get());
@@ -359,21 +474,50 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
     context.shader_hints.color_format = state.color_surface.colorFormat;
     context.shader_hints.attributes = &vertex_program_gxm.attributes;
 
-    const bool defer_check = renderer.use_async_compilation;
+    const bool defer_check = renderer.defer_gl_status_checks;
 
-    const SharedGLObject fragment_shader = get_or_compile_shader(fragment_program_gxm.program.get(mem), features, fragment_program.hash, renderer.fragment_shader_cache,
-        GL_FRAGMENT_SHADER, context.shader_hints, shader_cache, spirv, maskupdate, renderer.shaders_path, renderer.shaders_log_path, renderer.shader_version, renderer.shaders_count_compiled, defer_check);
+    SharedGLObject fragment_shader;
+    SharedGLObject vertex_shader;
+
+    if (renderer.use_async_compilation) {
+        // Both are requested before bailing out, so that they are translated in parallel
+        // instead of one draw apart.
+        bool frag_translating = false;
+        bool vert_translating = false;
+
+        fragment_shader = get_or_translate_shader(renderer, fragment_program_gxm.program.get(mem), &fragment_program_gxm.compile_threads_on,
+            fragment_program.hash, renderer.fragment_shader_cache, GL_FRAGMENT_SHADER, context.shader_hints,
+            shader_cache, spirv, maskupdate, frag_translating);
+
+        vertex_shader = get_or_translate_shader(renderer, vertex_program_gxm.program.get(mem), &vertex_program_gxm.compile_threads_on,
+            vertex_program.hash, renderer.vertex_shader_cache, GL_VERTEX_SHADER, context.shader_hints,
+            shader_cache, spirv, maskupdate, vert_translating);
+
+        if (frag_translating || vert_translating) {
+            // Deliberately not cached as Compiling: the next draw has to run the lookup above
+            // again to notice that a worker is done.
+            if (is_compiling)
+                *is_compiling = true;
+
+            return SharedGLObject();
+        }
+    } else {
+        fragment_shader = get_or_compile_shader(fragment_program_gxm.program.get(mem), features, fragment_program.hash, renderer.fragment_shader_cache,
+            GL_FRAGMENT_SHADER, context.shader_hints, shader_cache, spirv, maskupdate, renderer.shaders_path, renderer.shaders_log_path, renderer.shader_version, renderer.shaders_count_compiled, defer_check);
+
+        vertex_shader = get_or_compile_shader(vertex_program_gxm.program.get(mem), features, vertex_program.hash, renderer.vertex_shader_cache,
+            GL_VERTEX_SHADER, context.shader_hints, shader_cache, spirv, maskupdate, renderer.shaders_path, renderer.shaders_log_path, renderer.shader_version, renderer.shaders_count_compiled, defer_check);
+    }
 
     if (!fragment_shader) {
         LOG_CRITICAL("Error in get/compile fragment vertex shader:\n{}", hex_string(fragment_program.hash));
+        renderer.program_cache[hashes] = { SharedGLObject(), ProgramStatus::Failed };
         return SharedGLObject();
     }
 
-    const SharedGLObject vertex_shader = get_or_compile_shader(vertex_program_gxm.program.get(mem), features, vertex_program.hash, renderer.vertex_shader_cache,
-        GL_VERTEX_SHADER, context.shader_hints, shader_cache, spirv, maskupdate, renderer.shaders_path, renderer.shaders_log_path, renderer.shader_version, renderer.shaders_count_compiled, defer_check);
-
     if (!vertex_shader) {
         LOG_CRITICAL("Error in get/compiled vertex shader:\n{}", hex_string(vertex_program.hash));
+        renderer.program_cache[hashes] = { SharedGLObject(), ProgramStatus::Failed };
         return SharedGLObject();
     }
 
@@ -384,7 +528,9 @@ SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmR
         save_shaders_cache_hashs(renderer, renderer.shaders_cache_hashs);
     }
 
-    if (!renderer.use_async_compilation) {
+    if (!renderer.defer_gl_status_checks) {
+        // Without GL_ARB_parallel_shader_compile there is no way to poll the link, so it has
+        // to be waited on. The translation was still done off the render thread.
         return link_program_sync(renderer.program_cache, fragment_shader, vertex_shader, hashes);
     }
 
