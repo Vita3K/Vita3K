@@ -482,6 +482,37 @@ QGroupBox[flat=&quot;true&quot;]::title {
                  </widget>
                 </item>
                 <item row="3" column="0" colspan="2">
+                 <widget class="QGroupBox" name="gb_shader_compilation">
+                  <property name="title">
+                   <string>Shader Compilation</string>
+                  </property>
+                  <property name="flat">
+                   <bool>true</bool>
+                  </property>
+                  <layout class="QVBoxLayout" name="gb_shader_compilation_layout">
+                   <property name="leftMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>6</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QCheckBox" name="async_pipeline_compilation">
+                     <property name="text">
+                      <string>Asynchronous Shader Compilation</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item row="4" column="0" colspan="2">
                  <widget class="QGroupBox" name="gb_vulkan_options">
                   <property name="title">
                    <string>Vulkan Options</string>
@@ -505,13 +536,6 @@ QGroupBox[flat=&quot;true&quot;]::title {
                    <property name="bottomMargin">
                     <number>0</number>
                    </property>
-                   <item>
-                    <widget class="QCheckBox" name="async_pipeline_compilation">
-                     <property name="text">
-                      <string>Asynchronous Pipeline Compilation</string>
-                     </property>
-                    </widget>
-                   </item>
                    <item>
                     <layout class="QHBoxLayout" name="memory_mapping_layout">
                      <property name="spacing">

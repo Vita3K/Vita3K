@@ -1208,7 +1208,7 @@ void SettingsDialog::setup_connections() {
         { m_ui->renderer_accuracy_box, tr("Rendering Accuracy"), m_tooltips->renderer_accuracy },
         { m_ui->vsync, tr("V-Sync"), m_tooltips->vsync },
         { m_ui->disable_surface_sync, tr("Disable Surface Sync"), m_tooltips->disable_surface_sync },
-        { m_ui->async_pipeline_compilation, tr("Asynchronous Pipeline Compilation"), m_tooltips->async_pipeline },
+        { m_ui->async_pipeline_compilation, tr("Asynchronous Shader Compilation"), m_tooltips->async_pipeline },
         { m_ui->memory_mapping_box, tr("Memory Mapping"), m_tooltips->memory_mapping },
         { m_ui->screen_filter_box, tr("Screen Filter"), m_tooltips->screen_filter },
         { m_ui->gb_gpu_device, tr("Graphics Device"), m_tooltips->gpu_device },
@@ -1483,6 +1483,12 @@ void SettingsDialog::update_gpu_visibility() {
 
     // OpenGL-only widgets
     m_ui->gb_opengl_options->setVisible(!is_vulkan);
+
+    // Shown for both backends: the OpenGL renderer compiles asynchronously too, using its
+    // own worker threads. The wording follows the backend because OpenGL has no pipelines.
+    m_ui->async_pipeline_compilation->setText(is_vulkan
+            ? tr("Asynchronous Pipeline Compilation")
+            : tr("Asynchronous Shader Compilation"));
 
     {
         const QString previous = m_ui->screen_filter_box->currentText().isEmpty()
