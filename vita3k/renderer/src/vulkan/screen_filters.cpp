@@ -498,9 +498,14 @@ void FSRScreenFilter::init() {
         LOG_ERROR("Failed to create compute pipeline");
     pipeline_rcas = result.value;
 
-    // create intermediate images
+    // Create separate EASU and RCAS images. Writing RCAS directly into a
+    // swapchain image is not portable: the drawable may have a BGRA format
+    // and some presentation implementations do not support storage writes.
     intermediate_images.resize(screen.swapchain_size);
+    rcas_images.resize(screen.swapchain_size);
     for (auto &img : intermediate_images)
+        img.format = vk::Format::eR8G8B8A8Unorm;
+    for (auto &img : rcas_images)
         img.format = vk::Format::eR8G8B8A8Unorm;
 
     on_resize();
@@ -538,6 +543,12 @@ void FSRScreenFilter::on_resize() {
         img.height = output_size.height;
         img.init_image(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
     }
+    for (auto &img : rcas_images) {
+        img.destroy();
+        img.width = output_size.width;
+        img.height = output_size.height;
+        img.init_image(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc);
+    }
 
     // update the descriptor sets (except the first sampler image as it is not fixed)
     std::vector<vk::DescriptorImageInfo> descr_images(screen.swapchain_size * 3);
@@ -562,7 +573,7 @@ void FSRScreenFilter::on_resize() {
             .setDescriptorType(vk::DescriptorType::eSampledImage);
         // rcas dst
         descr_images[i * 3 + 2]
-            .setImageView(screen.swapchain_views[i])
+            .setImageView(rcas_images[i].view)
             .setImageLayout(vk::ImageLayout::eGeneral);
         write_descr[i * 3 + 2]
             .setDstSet(descriptor_sets[i * 2 + 1])
@@ -609,9 +620,28 @@ void FSRScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_img, vk::
     const int dispatch_y = (output_size.height + 15) / 16;
     cmd_buffer.dispatch(dispatch_x, dispatch_y, 1);
 
-    // meanwhile, we need to clear the swapchain surface
+    // then transition the read texture to sampled // wait for the previous compute shader to be done
+    intermediate_images[screen.swapchain_image_idx].transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
+    rcas_images[screen.swapchain_image_idx].transition_to_discard(cmd_buffer, vkutil::ImageLayout::StorageImage);
+
+    // sharpening pass
+    cmd_buffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline_rcas);
+    cmd_buffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipeline_layout_rcas, 0, descriptor_sets[2 * screen.swapchain_image_idx + 1], {});
+    RcasConstant rcas_constant{
+        .offset = { 0, 0 },
+        // some default value for sharpening
+        .sharpening = 0.2f
+    };
+    cmd_buffer.pushConstants(pipeline_layout_rcas, vk::ShaderStageFlagBits::eCompute, 0, sizeof(RcasConstant), &rcas_constant);
+    cmd_buffer.dispatch(dispatch_x, dispatch_y, 1);
+
+    // Copy the finished RGBA image into the acquired drawable. A blit performs
+    // any required RGBA-to-BGRA conversion and avoids storage access to the
+    // presentation image.
+    rcas_images[screen.swapchain_image_idx].transition_to(cmd_buffer, vkutil::ImageLayout::TransferSrc);
+
     vk::ImageMemoryBarrier barrier{
-        .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+        .srcAccessMask = {},
         .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
         .oldLayout = vk::ImageLayout::eUndefined,
         .newLayout = vk::ImageLayout::eTransferDstOptimal,
@@ -620,41 +650,32 @@ void FSRScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_img, vk::
         .image = screen.swapchain_images[screen.swapchain_image_idx],
         .subresourceRange = vkutil::color_subresource_range
     };
-    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eTransfer,
+    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer,
         vk::DependencyFlags(), {}, {}, barrier);
 
-    vk::ClearColorValue clear_color{ std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 0.0f }) };
+    vk::ClearColorValue clear_color{ std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 1.0f }) };
     cmd_buffer.clearColorImage(screen.swapchain_images[screen.swapchain_image_idx], vk::ImageLayout::eTransferDstOptimal, clear_color, vkutil::color_subresource_range);
 
-    // then transition the read texture to sampled // wait for the previous compute shader to be done
-    intermediate_images[screen.swapchain_image_idx].transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
-
-    // also transition the swapchain image to general
-    barrier = {
-        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-        .dstAccessMask = vk::AccessFlagBits::eShaderWrite,
-        .oldLayout = vk::ImageLayout::eTransferDstOptimal,
-        .newLayout = vk::ImageLayout::eGeneral,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = screen.swapchain_images[screen.swapchain_image_idx],
-        .subresourceRange = vkutil::color_subresource_range
+    vk::ImageBlit blit_region{};
+    blit_region.srcSubresource = { vk::ImageAspectFlagBits::eColor, 0, 0, 1 };
+    blit_region.srcOffsets[1] = { static_cast<int32_t>(output_size.width), static_cast<int32_t>(output_size.height), 1 };
+    blit_region.dstSubresource = { vk::ImageAspectFlagBits::eColor, 0, 0, 1 };
+    blit_region.dstOffsets[0] = { static_cast<int32_t>(output_offset.width), static_cast<int32_t>(output_offset.height), 0 };
+    blit_region.dstOffsets[1] = {
+        static_cast<int32_t>(output_offset.width + output_size.width),
+        static_cast<int32_t>(output_offset.height + output_size.height), 1
     };
-    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eComputeShader,
+    cmd_buffer.blitImage(rcas_images[screen.swapchain_image_idx].image, vk::ImageLayout::eTransferSrcOptimal,
+        screen.swapchain_images[screen.swapchain_image_idx], vk::ImageLayout::eTransferDstOptimal,
+        blit_region, vk::Filter::eNearest);
+
+    barrier
+        .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+        .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite)
+        .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
+        .setNewLayout(vk::ImageLayout::eGeneral);
+    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eColorAttachmentOutput,
         vk::DependencyFlags(), {}, {}, barrier);
-
-    // sharpening pass
-    cmd_buffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline_rcas);
-    cmd_buffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipeline_layout_rcas, 0, descriptor_sets[2 * screen.swapchain_image_idx + 1], {});
-    RcasConstant rcas_constant{
-        .offset = output_offset,
-        // some default value for sharpening
-        .sharpening = 0.2f
-    };
-    cmd_buffer.pushConstants(pipeline_layout_rcas, vk::ShaderStageFlagBits::eCompute, 0, sizeof(RcasConstant), &rcas_constant);
-    cmd_buffer.dispatch(dispatch_x, dispatch_y, 1);
-
-    // the barrier for the render pass will be handled by the renderpass external dependencies
 }
 
 } // namespace renderer::vulkan
