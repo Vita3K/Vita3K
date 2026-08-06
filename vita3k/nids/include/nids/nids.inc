@@ -2494,6 +2494,11 @@ NID(SceThreadmgrForDriver_20C228E4, 0x20C228E4)
 NID(ksceKernelGetFaultingProcess, 0xD8B9AC8D)
 // Module "SceKubridge"
 // Library "SceKubridge"
+NID(kuKernelAllocMemBlock, 0x2EF7C290)
+NID(kuKernelFlushCaches, 0x38B70744)
+NID(kuKernelCpuUnrestrictedMemcpy, 0x91D9CABC)
+NID(kuPowerGetSysClockFrequency, 0x13371337)
+NID(kuPowerSetSysClockFrequency, 0x13371338)
 NID(kuKernelMemProtect, 0x566D2AF1)
 NID(kuKernelMemReserve, 0xCED3608C)
 NID(kuKernelMemCommit, 0x9C0CD758)
