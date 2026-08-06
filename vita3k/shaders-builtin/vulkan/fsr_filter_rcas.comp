@@ -34,7 +34,7 @@ uvec4 con0;
 #define A_HALF
 #include "../../../external/GPUOpen/ffx_a.h"
 layout(set=0,binding=1) uniform texture2D InputTexture;
-layout(set=0,binding=2,rgba16f) uniform image2D OutputTexture;
+layout(set=0,binding=2,rgba8) writeonly uniform image2D OutputTexture;
 layout(set=0,binding=3) uniform sampler InputSampler;
 #define FSR_RCAS_H
 AH4 FsrRcasLoadH(ASW2 p) { return AH4(texelFetch(sampler2D(InputTexture,InputSampler), ASU2(p), 0)); }
@@ -44,6 +44,12 @@ void FsrRcasInputH(inout AH1 r,inout AH1 g,inout AH1 b){}
 
 void CurrFilter(AU2 pos)
 {
+	// Each workgroup covers a 16x16 tile, while the dispatch is rounded up.
+	// Avoid out-of-bounds reads and writes at the right and bottom edges.
+	const AU2 input_dim = AU2(textureSize(sampler2D(InputTexture, InputSampler), 0));
+	if (any(greaterThanEqual(pos, input_dim)))
+		return;
+
 	AH3 c;
 	FsrRcasH(c.r, c.g, c.b, pos, con0);
 	imageStore(OutputTexture, ASU2(pos) + ASU2(offset), AH4(c, 1));
@@ -63,4 +69,3 @@ void main()
 	gxy.x -= 8u;
 	CurrFilter(gxy);
 }
-
