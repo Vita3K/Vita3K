@@ -1848,7 +1848,8 @@ void MainWindow::setup_status_bar() {
             return { QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
                 QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("FSR") };
         else
-            return { QStringLiteral("Bilinear"), QStringLiteral("FXAA") };
+            return { QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
+                QStringLiteral("Bicubic"), QStringLiteral("FXAA") };
     };
 
     auto apply_screen_filter = [this](const std::string &filter) {
@@ -2024,7 +2025,8 @@ void MainWindow::update_screen_filter_button() {
     const QStringList valid = (cc.backend_renderer == "Vulkan")
         ? QStringList{ QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
               QStringLiteral("Bicubic"), QStringLiteral("FXAA"), QStringLiteral("FSR") }
-        : QStringList{ QStringLiteral("Bilinear"), QStringLiteral("FXAA") };
+        : QStringList{ QStringLiteral("Nearest"), QStringLiteral("Bilinear"),
+              QStringLiteral("Bicubic"), QStringLiteral("FXAA") };
 
     const QString current = QString::fromStdString(cc.screen_filter);
     if (!valid.contains(current)) {
