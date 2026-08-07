@@ -64,8 +64,8 @@ struct ThreadState {
     SceUID id;
     Address entry_point;
 
-
     CPUStatePtr cpu;
+
     Block stack;
     int stack_size;
     Block tls;
