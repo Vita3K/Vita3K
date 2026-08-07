@@ -64,6 +64,8 @@ struct ThreadState {
     SceUID id;
     Address entry_point;
 
+
+    CPUStatePtr cpu;
     Block stack;
     int stack_size;
     Block tls;
@@ -75,7 +77,6 @@ struct ThreadState {
     // set to true if thread is processing kernel callbacks
     bool is_processing_callbacks = false;
 
-    CPUStatePtr cpu;
     ThreadStatus status = ThreadStatus::dormant;
 
     ThreadSignal signal;
