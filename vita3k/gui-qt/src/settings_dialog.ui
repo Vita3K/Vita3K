@@ -1204,7 +1204,7 @@ QGroupBox[flat=&quot;true&quot;]::title {
                       <number>0</number>
                      </property>
                      <property name="maximum">
-                      <number>100</number>
+                      <number>200</number>
                      </property>
                      <property name="value">
                       <number>100</number>
@@ -1216,7 +1216,7 @@ QGroupBox[flat=&quot;true&quot;]::title {
                       <enum>QSlider::TickPosition::TicksBelow</enum>
                      </property>
                      <property name="tickInterval">
-                      <number>25</number>
+                      <number>50</number>
                      </property>
                     </widget>
                    </item>
