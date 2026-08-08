@@ -18,6 +18,22 @@
 #include "audio/impl/cubeb_audio.h"
 #include "util/log.h"
 
+#include <algorithm>
+#include <cstdint>
+
+// scales S16LE samples in place, used to push the volume past the 1.0 ceiling cubeb enforces natively
+static void apply_extra_gain(uint8_t *buffer, int nb_bytes, float gain) {
+    if (gain == 1.0f)
+        return;
+
+    int16_t *samples = reinterpret_cast<int16_t *>(buffer);
+    const int nb_samples = nb_bytes / sizeof(int16_t);
+    for (int i = 0; i < nb_samples; i++) {
+        const float amplified = samples[i] * gain;
+        samples[i] = static_cast<int16_t>(std::clamp(amplified, static_cast<float>(INT16_MIN), static_cast<float>(INT16_MAX)));
+    }
+}
+
 static long impl_cubeb_audio_callback(cubeb_stream *stream, void *user_data, const void *input, void *output, long nframes) {
     assert(user_data != nullptr);
     assert(stream != nullptr);
@@ -50,6 +66,15 @@ static long impl_cubeb_audio_callback(cubeb_stream *stream, void *user_data, con
 
         bytes_given += bytes_to_copy;
     }
+
+    if (bytes_given < bytes_to_give) {
+        // buffer underrun (e.g. at game startup before any audio has been produced yet):
+        // output silence for the rest instead of leaving stale/uninitialized memory, which
+        // would otherwise be played back as an audible glitch
+        memset(&output_buffer[bytes_given], 0, bytes_to_give - bytes_given);
+    }
+
+    apply_extra_gain(output_buffer, bytes_given, port->extra_gain.load(std::memory_order_relaxed));
 
     return nframes;
 }
@@ -149,7 +174,10 @@ void CubebAudioAdapter::audio_output(AudioOutPort &out_port, const void *buffer)
 
 void CubebAudioAdapter::set_volume(AudioOutPort &out_port, float volume) {
     CubebAudioOutPort &port = static_cast<CubebAudioOutPort &>(out_port);
-    cubeb_stream_set_volume(port.out_stream, volume);
+    // cubeb rejects volumes outside [0.0, 1.0]. Anything past that is instead
+    // applied to the samples in software by the audio callback (extra_gain).
+    cubeb_stream_set_volume(port.out_stream, std::min(volume, 1.0f));
+    port.extra_gain.store(std::max(volume, 1.0f), std::memory_order_relaxed);
 }
 
 void CubebAudioAdapter::switch_state(const bool pause) {
