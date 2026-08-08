@@ -639,31 +639,44 @@ public class Emulator extends SDLActivity
     }
 
     @Keep
-    public boolean createShortcut(String game_id, String game_name){
-        if(!ShortcutManagerCompat.isRequestPinShortcutSupported(getContext()))
+    public static boolean createShortcut(Context context, String game_id, String game_name, File icon_file){
+        if(context == null || game_id == null || game_id.isEmpty())
             return false;
 
+        if(!ShortcutManagerCompat.isRequestPinShortcutSupported(context))
+            return false;
+
+        String shortcut_label = game_name != null && !game_name.isEmpty() ? game_name : game_id;
+
         // first look at the icon, its location should always be the same
-        File src_icon = new File(getExternalFilesDir(null), "cache/icons/" + game_id + ".png");
+        File src_icon = icon_file != null && icon_file.exists()
+                ? icon_file
+                : new File(context.getExternalFilesDir(null), "cache/icons/" + game_id + ".png");
         Bitmap icon;
         if(src_icon.exists())
             icon = BitmapFactory.decodeFile(src_icon.getPath());
         else
-            icon = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+            icon = BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher);
+        if(icon == null)
+            icon = BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher);
 
         // intent to directly start the game
-        Intent game_intent = createLaunchIntent(getContext(), game_id, game_name);
+        Intent game_intent = createLaunchIntent(context, game_id, shortcut_label);
+        game_intent.setAction("LAUNCH_" + game_id);
 
         // now create the pinned shortcut
-        ShortcutInfoCompat shortcut = new ShortcutInfoCompat.Builder(getContext(), game_id)
-                .setShortLabel(game_name)
-                .setLongLabel(game_name)
+        ShortcutInfoCompat shortcut = new ShortcutInfoCompat.Builder(context, game_id)
+                .setShortLabel(shortcut_label)
+                .setLongLabel(shortcut_label)
                 .setIcon(IconCompat.createWithBitmap(icon))
                 .setIntent(game_intent)
                 .build();
-        ShortcutManagerCompat.requestPinShortcut(getContext(), shortcut, null);
+        return ShortcutManagerCompat.requestPinShortcut(context, shortcut, null);
+    }
 
-        return true;
+    @Keep
+    public boolean createShortcut(String game_id, String game_name){
+        return createShortcut(getContext(), game_id, game_name, null);
     }
 
     @Keep
