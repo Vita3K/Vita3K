@@ -57,6 +57,37 @@ struct SceNgsPatchDeliveryInfo {
 
 static_assert(sizeof(SceNgsPatchDeliveryInfo) == 20);
 
+static ngs::Voice *find_patch_source_voice(ngs::State &ngs, const MemState &mem, const Ptr<ngs::Patch> patch) {
+    for (ngs::System *system : ngs.systems) {
+        if (!system) {
+            continue;
+        }
+
+        for (ngs::Rack *rack : system->racks) {
+            if (!rack) {
+                continue;
+            }
+
+            for (const Ptr<ngs::Voice> voice_handle : rack->voices) {
+                ngs::Voice *voice = voice_handle.get(mem);
+                if (!voice) {
+                    continue;
+                }
+
+                for (const auto &patches : voice->patches) {
+                    for (const Ptr<ngs::Patch> owned_patch : patches) {
+                        if (owned_patch == patch) {
+                            return voice;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
 enum SceNgsErrorCode : uint32_t {
     SCE_NGS_OK = 0,
     SCE_NGS_ERROR = 0x804A0001,
@@ -251,7 +282,7 @@ EXPORT(int, sceNgsPatchRemoveRouting, Ptr<ngs::Patch> patch) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    ngs::Voice *source = patch.get(emuenv.mem)->source.get(emuenv.mem);
+    ngs::Voice *source = find_patch_source_voice(emuenv.ngs, emuenv.mem, patch);
     if (!source || !source->remove_patch(emuenv.mem, patch)) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
