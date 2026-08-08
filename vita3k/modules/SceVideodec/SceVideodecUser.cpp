@@ -34,6 +34,7 @@ struct VideodecState {
 
 enum {
     SCE_AVCDEC_ERROR_INVALID_PARAM = 0x80620002,
+    SCE_AVCDEC_ERROR_INVALID_POINTER = 0x80620009,
 };
 
 enum SceVideodecType {
@@ -151,7 +152,16 @@ struct SceAvcdecArrayPicture {
 
 EXPORT(int, sceAvcdecCreateDecoder, uint32_t codec_type, SceAvcdecCtrl *decoder, const SceAvcdecQueryDecoderInfo *query) {
     TRACY_FUNC(sceAvcdecCreateDecoder, codec_type, decoder, query);
-    assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
+
+    if (codec_type != SCE_VIDEODEC_TYPE_HW_AVCDEC)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
+
+    if (!decoder || !query)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_POINTER);
+
+    if (query->horizontal > 1920 || query->vertical > 1088 || query->horizontal * query->vertical > 1280 * 720 || query->numOfRefFrames > 16)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
+
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
 
@@ -185,6 +195,13 @@ EXPORT(int, sceAvcdecCscInternal) {
 
 EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceAvcdecArrayPicture *picture) {
     TRACY_FUNC(sceAvcdecDecode, decoder, au, picture);
+
+    if (!decoder)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_POINTER);
+
+    if (decoder->handle == 0)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
+
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
@@ -244,6 +261,13 @@ EXPORT(int, sceAvcdecDecodeAuNongameapp) {
 
 EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
     TRACY_FUNC(sceAvcdecDecodeAvailableSize, decoder);
+
+    if (!decoder)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_POINTER);
+
+    if (decoder->handle == 0)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
+
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
@@ -255,6 +279,13 @@ EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
 
 EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
     TRACY_FUNC(sceAvcdecDecodeFlush, decoder);
+
+    if (!decoder)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_POINTER);
+
+    if (decoder->handle == 0)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
+
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
@@ -303,6 +334,13 @@ EXPORT(int, sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp) {
 
 EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *picture) {
     TRACY_FUNC(sceAvcdecDecodeStop, decoder, picture);
+
+    if (!decoder)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_POINTER);
+
+    if (decoder->handle == 0)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
+
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
@@ -336,6 +374,13 @@ EXPORT(int, sceAvcdecDecodeWithWorkPicture) {
 
 EXPORT(int, sceAvcdecDeleteDecoder, SceAvcdecCtrl *decoder) {
     TRACY_FUNC(sceAvcdecDeleteDecoder, decoder);
+
+    if (!decoder)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_POINTER);
+
+    if (decoder->handle == 0)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
+
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
     state->decoders.erase(decoder->handle);
@@ -355,9 +400,23 @@ EXPORT(int, sceAvcdecGetSeiUserDataNongameapp) {
 
 EXPORT(int, sceAvcdecQueryDecoderMemSize, uint32_t codec_type, const SceAvcdecQueryDecoderInfo *query_info, SceAvcdecDecoderInfo *decoder_info) {
     TRACY_FUNC(sceAvcdecQueryDecoderMemSize, codec_type, query_info, decoder_info);
-    assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
 
-    decoder_info->frameMemSize = H264DecoderState::buffer_size({ { query_info->horizontal, query_info->vertical } }) * query_info->numOfRefFrames;
+    if (codec_type != SCE_VIDEODEC_TYPE_HW_AVCDEC)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
+
+    if (!query_info || !decoder_info)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_POINTER);
+
+    if (query_info->horizontal > 1920 || query_info->vertical > 1088 || query_info->horizontal * query_info->vertical > 1280 * 720 || query_info->numOfRefFrames > 16)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
+
+    std::uint32_t numOfRefFrames = query_info->numOfRefFrames;
+    if (numOfRefFrames == 0) {
+        numOfRefFrames = 1;
+    }
+
+    decoder_info->frameMemSize = H264DecoderState::buffer_size({ { query_info->horizontal, query_info->vertical } }) * numOfRefFrames;
+    decoder_info->frameMemSize = decoder_info->frameMemSize + 0x3ffffU & 0xfffc0000; // alignment to the next multiple of 0x40000 (256-KiB)
 
     return 0;
 }
