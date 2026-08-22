@@ -248,8 +248,8 @@ bool USSETranslatorVisitor::smp(
     const SamplerInfo &sampler = is_texture_buffer_load ? m_spirv_params.samplers.begin()->second : m_spirv_params.samplers.at(inst.opr.src1.num);
 
     constexpr DataType tb_dest_fmt[] = {
-        DataType::F32,
-        DataType::UNK,
+        DataType::UNK, // The texel stays in the texture's integral format, packed.
+        DataType::UNK, // Never seen in any shader, meaning unknown. Falling back to the sampler type.
         DataType::F16,
         DataType::F32
     };
