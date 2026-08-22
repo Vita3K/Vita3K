@@ -32,9 +32,15 @@ struct VKRenderTarget;
 constexpr int MAX_FRAMES_RENDERING = 3;
 constexpr int NB_TEXTURE_STAGING_BUFFERS = 16;
 
+constexpr bool is_frame_timestamp_in_flight(const uint64_t frame_timestamp, const uint64_t current_frame_timestamp) {
+    return frame_timestamp != ~uint64_t { 0 }
+        && frame_timestamp <= current_frame_timestamp
+        && current_frame_timestamp - frame_timestamp < MAX_FRAMES_RENDERING;
+}
+
 struct TextureStagingBuffer {
     vkutil::Buffer buffer;
-    uint32_t used_so_far;
+    uint32_t used_so_far = 0;
     uint64_t scene_timestamp = ~0;
     uint64_t frame_timestamp = ~0;
     vk::Fence waiting_fence;
