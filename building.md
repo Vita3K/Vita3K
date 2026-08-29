@@ -125,6 +125,12 @@ If you aren't satisfied with the way the Visual Studio integrates CMake projects
   sudo dnf install git cmake ninja-build SDL2-devel pkg-config gtk3-devel clang lld xdg-desktop-portal openssl openssl-devel libstdc++-static qt6-qtbase-devel
   ```
 
+### Arch Linux
+
+  ```sh
+  sudo pacman -Syu --needed dbus python qt6-base qt6-multimedia qt6-svg qt6-tools sdl3 boost boost-libs clang cmake git lld ninja pkgconf openssl which
+  ```
+
 Note: Your Qt packages must provide Qt 6.11 or newer. If your distro ships an older Qt, install the official Qt 6.11 package and set `Qt6_ROOT` before running CMake.
 
 Note: The CMake preset `linux-ninja-clang` makes use of the LLD linker, which will need to be installed in your system along with Clang.
