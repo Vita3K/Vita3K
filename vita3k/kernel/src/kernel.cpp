@@ -239,6 +239,7 @@ void KernelState::deinit(MemState &mem) {
     {
         std::lock_guard<std::mutex> lock(export_nids_mutex);
         export_nids.clear();
+        export_nids_by_lib.clear();
         func_binding_infos.clear();
         var_binding_infos.clear();
         module_uid_by_nid.clear();
