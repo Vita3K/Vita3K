@@ -51,9 +51,8 @@
 #define SDL_MAIN_HANDLED
 #endif
 
-#ifdef TRACY_ENABLE
+// All tracy defines are defined to nothing when TRACY_ENABLE is not defined
 #include <tracy/Tracy.hpp>
-#endif
 
 #include "gui-qt/qt_utils.h"
 
@@ -76,9 +75,7 @@ int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationName(QStringLiteral("Vita3K"));
     QCoreApplication::setApplicationName(QStringLiteral("Vita3K"));
 
-#ifdef TRACY_ENABLE
     ZoneScoped; // Tracy - Track main function scope
-#endif
 
     Root root_paths;
     bool portable = app::init_paths(root_paths);
@@ -87,9 +84,12 @@ int main(int argc, char *argv[]) {
         fs::create_directories(root_paths.get_vita_fs_path());
     }
 
-    LogWidget::register_callback();
-    if (logging::init(root_paths, true) != Success) {
-        return InitConfigFailed;
+    {
+        ZoneScopedN("Init Logging");
+        LogWidget::register_callback();
+        if (logging::init(root_paths, true) != Success) {
+            return InitConfigFailed;
+        }
     }
 
     // Check admin privs before init starts to avoid creating of file as other user by accident
@@ -120,43 +120,48 @@ int main(int argc, char *argv[]) {
 
     Config cfg{};
     EmuEnvState emuenv;
-    const auto config_err = config::init_config(cfg, argc, argv, root_paths, portable);
+    {
+        ZoneScopedN("Init config");
+        const auto config_err = config::init_config(cfg, argc, argv, root_paths, portable);
 
-    fs::create_directories(cfg.get_vita_fs_path());
+        fs::create_directories(cfg.get_vita_fs_path());
 
-    if (config_err != Success) {
-        if (config_err == QuitRequested) {
-            if (cfg.recompile_shader_path.has_value()) {
-                LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
-                shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
+        if (config_err != Success) {
+            if (config_err == QuitRequested) {
+                if (cfg.recompile_shader_path.has_value()) {
+                    LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
+                    shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
+                }
+                if (cfg.delete_title_id.has_value()) {
+                    LOG_INFO("Deleting title id {}", *cfg.delete_title_id);
+                    fs::remove_all(cfg.get_vita_fs_path() / "ux0/app" / *cfg.delete_title_id);
+                    fs::remove_all(cfg.get_vita_fs_path() / "ux0/addcont" / *cfg.delete_title_id);
+                    fs::remove_all(cfg.get_vita_fs_path() / "ux0/user/00/savedata" / *cfg.delete_title_id);
+                    fs::remove_all(root_paths.get_cache_path() / "shaders" / *cfg.delete_title_id);
+                }
+                if (cfg.pup_path.has_value()) {
+                    LOG_INFO("Installing firmware file {}", *cfg.pup_path);
+                    install_pup(cfg.get_vita_fs_path(), *cfg.pup_path, [](uint32_t progress) {
+                        LOG_INFO("Firmware installation progress: {}%", progress);
+                    });
+                }
+                if (cfg.pkg_path.has_value() && cfg.pkg_zrif.has_value()) {
+                    LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
+                    emuenv.cache_path = root_paths.get_cache_path().generic_path();
+                    emuenv.vita_fs_path = cfg.get_vita_fs_path();
+                    auto pkg_path = fs_utils::utf8_to_path(*cfg.pkg_path);
+                    install_pkg(pkg_path, emuenv, *cfg.pkg_zrif, [](float) {});
+                }
+                return Success;
             }
-            if (cfg.delete_title_id.has_value()) {
-                LOG_INFO("Deleting title id {}", *cfg.delete_title_id);
-                fs::remove_all(cfg.get_vita_fs_path() / "ux0/app" / *cfg.delete_title_id);
-                fs::remove_all(cfg.get_vita_fs_path() / "ux0/addcont" / *cfg.delete_title_id);
-                fs::remove_all(cfg.get_vita_fs_path() / "ux0/user/00/savedata" / *cfg.delete_title_id);
-                fs::remove_all(root_paths.get_cache_path() / "shaders" / *cfg.delete_title_id);
-            }
-            if (cfg.pup_path.has_value()) {
-                LOG_INFO("Installing firmware file {}", *cfg.pup_path);
-                install_pup(cfg.get_vita_fs_path(), *cfg.pup_path, [](uint32_t progress) {
-                    LOG_INFO("Firmware installation progress: {}%", progress);
-                });
-            }
-            if (cfg.pkg_path.has_value() && cfg.pkg_zrif.has_value()) {
-                LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
-                emuenv.cache_path = root_paths.get_cache_path().generic_path();
-                emuenv.vita_fs_path = cfg.get_vita_fs_path();
-                auto pkg_path = fs_utils::utf8_to_path(*cfg.pkg_path);
-                install_pkg(pkg_path, emuenv, *cfg.pkg_zrif, [](float) {});
-            }
-            return Success;
+            LOG_ERROR("Failed to initialise config");
+            return InitConfigFailed;
         }
-        LOG_ERROR("Failed to initialise config");
-        return InitConfigFailed;
     }
-
-    gui::i18n::apply_ui_language(app, cfg.user_lang, emuenv.static_assets_path);
+    {
+        ZoneScopedN("Init GUI language");
+        gui::i18n::apply_ui_language(app, cfg.user_lang, emuenv.static_assets_path);
+    }
 
 #ifdef _WIN32
     {
@@ -206,12 +211,18 @@ int main(int argc, char *argv[]) {
 
     init_libraries(emuenv);
 
-    if (!app::init_apps_list(emuenv)) {
-        LOG_ERROR("Failed to initialize apps list.");
-        return 1;
+    {
+        ZoneScopedN("Init apps list");
+        if (!app::init_apps_list(emuenv)) {
+            LOG_ERROR("Failed to initialize apps list.");
+            return 1;
+        }
     }
 
-    app::load_users(emuenv);
+    {
+        ZoneScopedN("Load users");
+        app::load_users(emuenv);
+    }
 
     if (cfg.content_path.has_value()) {
         const auto extension = string_utils::tolower(cfg.content_path->extension().string());
@@ -256,11 +267,13 @@ int main(int argc, char *argv[]) {
     auto gui_settings = std::make_shared<GuiSettings>(gui_configs_dir);
     auto persistent_settings = std::make_shared<PersistentSettings>(gui_configs_dir);
 
-    MainWindow mainwindow(emuenv, gui_settings, persistent_settings, admin_priv);
-
-    mainwindow.show();
-    if (mainwindow.prompt_startup_warnings())
-        app.exec();
+    {
+        ZoneScopedN("MainWindow");
+        MainWindow mainwindow(emuenv, gui_settings, persistent_settings, admin_priv);
+        mainwindow.show();
+        if (mainwindow.prompt_startup_warnings())
+            app.exec();
+    }
 
 #ifdef _WIN32
     CoUninitialize();

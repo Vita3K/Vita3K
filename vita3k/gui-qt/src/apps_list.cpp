@@ -22,6 +22,7 @@
 
 #include <app/functions.h>
 #include <emuenv/state.h>
+#include <tracy/Tracy.hpp>
 #include <util/log.h>
 
 #include <QHBoxLayout>
@@ -34,6 +35,7 @@
 AppsList::AppsList(EmuEnvState &emuenv, QWidget *parent)
     : custom_dock_widget(tr("App Library"), parent)
     , m_emuenv(emuenv) {
+    ZoneScopedN("AppsList::AppsList");
     setObjectName(QStringLiteral("apps_list"));
     setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
 
@@ -62,6 +64,8 @@ AppsList::AppsList(EmuEnvState &emuenv, QWidget *parent)
 AppsList::~AppsList() = default;
 
 void AppsList::refresh(bool from_disk) {
+    ZoneScopedN("AppsList::refresh");
+
     if (from_disk)
         app::scan_apps(m_emuenv);
     else if (!app::load_cached_apps(m_emuenv))
@@ -87,6 +91,7 @@ const app::AppEntry *AppsList::selected_app() const {
 }
 
 void AppsList::set_search_text(const QString &text) {
+    ZoneScopedN("AppsList::set_search_text");
     m_search_text = text.toLower();
     const int rows = m_table->rowCount();
     for (int r = 0; r < rows; ++r) {
