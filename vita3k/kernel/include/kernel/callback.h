@@ -75,19 +75,19 @@ struct Callback {
      * @param notifier_id UID of the notifying event
      * @param notify_arg User-specified notification argument
      */
-    void notify(SceUID notifier_id, SceInt32 notify_arg);
+    void notify(KernelState &kernel, SceUID notifier_id, SceInt32 notify_arg);
 
     /**
      * @brief Notify this callback from an event, without notification argument
      * @param notifier_id UID of the event that notifies this callback
      */
-    void event_notify(SceUID notifier_id);
+    void event_notify(KernelState &kernel, SceUID notifier_id);
 
     /**
      * @brief Notify this callback directly (not from event)
      * @param notify_arg User-specified notification argument
      */
-    void direct_notify(SceInt32 notify_arg);
+    void direct_notify(KernelState &kernel, SceInt32 notify_arg);
 
     /**
      * @brief Cancels every notification sent to this callback

@@ -475,13 +475,6 @@ Address try_alloc_at(MemState &state, Address address, uint32_t size, const char
     return addr ? address : 0;
 }
 
-Block alloc_block(MemState &mem, uint32_t size, const char *name, Address start_addr) {
-    const Address address = alloc(mem, size, name, start_addr);
-    return Block(address, [&mem](Address stack) {
-        free(mem, stack);
-    });
-}
-
 void free(MemState &state, Address address) {
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const uint32_t page_num = address / STANDARD_PAGE_SIZE;
@@ -572,6 +565,94 @@ void deinit_mem(MemState &state) {
     state.external_mapping.clear();
     state.use_page_table = false;
     state.host_page_size = 0;
+}
+
+namespace {
+bool is_valid_block_head(const MemState &mem, const Address addr, const uint32_t committed_size) {
+    if ((addr == 0) || ((addr % STANDARD_PAGE_SIZE) != 0) || (committed_size == 0)) {
+        return false;
+    }
+
+    const uint32_t page_num = addr / STANDARD_PAGE_SIZE;
+    const AllocMemPage &page = mem.alloc_table[page_num];
+
+    if (!page.allocated || (page.size == 0)) {
+        return false;
+    }
+
+    return (page.size * STANDARD_PAGE_SIZE) == committed_size;
+}
+} // namespace
+
+Block::Block(Block &&other) noexcept
+    : mem_(std::exchange(other.mem_, nullptr))
+    , addr_(std::exchange(other.addr_, 0))
+    , requested_size_(std::exchange(other.requested_size_, 0))
+    , committed_size_(std::exchange(other.committed_size_, 0))
+    , owns_(std::exchange(other.owns_, false)) {
+}
+
+Block &Block::operator=(Block &&other) noexcept {
+    if (this != &other) {
+        reset();
+
+        mem_ = std::exchange(other.mem_, nullptr);
+        addr_ = std::exchange(other.addr_, 0);
+        requested_size_ = std::exchange(other.requested_size_, 0);
+        committed_size_ = std::exchange(other.committed_size_, 0);
+        owns_ = std::exchange(other.owns_, false);
+    }
+
+    return *this;
+}
+
+Block::~Block() {
+    reset();
+}
+
+Block Block::allocate(MemState &mem, const uint32_t requested_size, const char *name, const Address start_addr) {
+    if (requested_size == 0) {
+        return {};
+    }
+
+    const Address addr = alloc(mem, requested_size, name, start_addr);
+    if (addr == 0) {
+        return {};
+    }
+
+    return Block(&mem, addr, requested_size, align(requested_size, STANDARD_PAGE_SIZE), true);
+}
+
+Block Block::bind_existing(MemState &mem, const Address addr, const uint32_t requested_size, const uint32_t committed_size) {
+    if ((requested_size == 0) || !is_valid_block_head(mem, addr, committed_size)) {
+        return {};
+    }
+
+    return Block(&mem, addr, requested_size, committed_size, true);
+}
+
+Address Block::release() noexcept {
+    const Address addr = addr_;
+
+    mem_ = nullptr;
+    addr_ = 0;
+    requested_size_ = 0;
+    committed_size_ = 0;
+    owns_ = false;
+
+    return addr;
+}
+
+void Block::reset() noexcept {
+    if (owns_ && mem_ && (addr_ != 0)) {
+        free(*mem_, addr_);
+    }
+
+    mem_ = nullptr;
+    addr_ = 0;
+    requested_size_ = 0;
+    committed_size_ = 0;
+    owns_ = false;
 }
 
 #ifdef _WIN32
