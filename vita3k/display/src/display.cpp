@@ -17,6 +17,7 @@
 
 #include <display/functions.h>
 
+#include <cheat/functions.h>
 #include <dialog/state.h>
 #include <display/state.h>
 #include <emuenv/state.h>
@@ -38,6 +39,10 @@ static constexpr int max_expected_swapchain_size = 6;
 static void vblank_sync_thread(EmuEnvState &emuenv) {
     DisplayState &display = emuenv.display;
 
+    const cheat::JitInvalidate invalidate_jit = [&emuenv](uint32_t address, size_t size) {
+        emuenv.kernel.invalidate_jit_cache(address, size);
+    };
+
     while (!display.abort.load()) {
         {
             const std::lock_guard<std::mutex> guard(display.mutex);
@@ -58,6 +63,9 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
             // maybe we should also use a mutex for this part, but it shouldn't be an issue
             touch_vsync_update(emuenv);
             refresh_motion(emuenv.motion, emuenv.ctrl);
+
+            // Cheat codes are re-applied on every vblank, the same way the Vita cheat plugins do.
+            cheat::apply(emuenv.cheat, emuenv.mem, invalidate_jit);
 
             // Notify Vblank callback in each VBLANK start
             for (auto &[_, cb] : display.vblank_callbacks)
