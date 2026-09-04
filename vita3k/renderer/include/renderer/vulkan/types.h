@@ -33,8 +33,8 @@ constexpr int MAX_FRAMES_RENDERING = 3;
 constexpr int NB_TEXTURE_STAGING_BUFFERS = 16;
 
 constexpr bool is_frame_timestamp_in_flight(const uint64_t frame_timestamp, const uint64_t current_frame_timestamp) {
-    return frame_timestamp != ~uint64_t { 0 }
-        && frame_timestamp <= current_frame_timestamp
+    return frame_timestamp != ~uint64_t{ 0 }
+    && frame_timestamp <= current_frame_timestamp
         && current_frame_timestamp - frame_timestamp < MAX_FRAMES_RENDERING;
 }
 
