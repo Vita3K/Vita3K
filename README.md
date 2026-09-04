@@ -50,7 +50,6 @@ You can download the latest builds from [here](https://github.com/Vita3K/Vita3K/
     * [vita3k-git](https://aur.archlinux.org/packages/vita3k-git)<sup><small>AUR</small></sup>
   * Requirements:
     * xdg-desktop-portal
-    * pipewire-pulse
     * OpenGL or Vulkan runtime libraries
 * Android
     * [Adreno drivers](https://github.com/K11MCH1/AdrenoToolsDrivers/releases/)
