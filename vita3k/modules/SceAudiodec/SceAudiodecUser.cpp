@@ -183,7 +183,7 @@ static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiode
     }
     case SCE_AUDIODEC_TYPE_AAC: {
         SceAudiodecInfoAac &info = ctrl->info.get(emuenv.mem)->aac;
-        DecoderPtr decoder = std::make_shared<AacDecoderState>(info.sample_rate, info.channels);
+        DecoderPtr decoder = std::make_shared<AacDecoderState>(info.sample_rate, info.channels, info.is_sbr != 0);
         state->decoders[handle] = decoder;
 
         ctrl->es_size_max = SCE_AUDIODEC_AAC_MAX_ES_SIZE;
