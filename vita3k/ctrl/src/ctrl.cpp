@@ -19,6 +19,7 @@
 #include <ctrl/functions.h>
 #include <ctrl/state.h>
 
+#include <cheat/functions.h>
 #include <config/state.h>
 #include <display/functions.h>
 #include <display/state.h>
@@ -256,6 +257,7 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
     };
 
     if (state.overlay_input_intercepted.load(std::memory_order_relaxed) || emuenv.drop_inputs) {
+        cheat::set_buttons(emuenv.cheat, 0);
         reset_axes();
         return;
     }
@@ -277,6 +279,10 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
             apply_controller(emuenv, &buttons, axes.data(), controller.controller.get(), is_v2);
         }
     }
+
+    // Hand the pad over in positive logic, the cheat engine needs it to evaluate `$C2` codes.
+    if (port == 1)
+        cheat::set_buttons(emuenv.cheat, buttons);
 
     reset_axes();
 }
