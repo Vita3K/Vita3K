@@ -1110,9 +1110,9 @@ private fun AudioSettingsSection(
         SettingsSliderRow(
             title = stringResource(R.string.settings_audio_volume),
             valueLabel = stringResource(R.string.settings_audio_volume_value, cfg.audioVolume),
-            value = cfg.audioVolume.toFloat().coerceIn(0f, 100f),
-            onValueChange = { onUpdate { audioVolume = it.roundToInt().coerceIn(0, 100) } },
-            valueRange = 0f..100f,
+            value = cfg.audioVolume.toFloat().coerceIn(0f, 200f),
+            onValueChange = { onUpdate { audioVolume = it.roundToInt().coerceIn(0, 200) } },
+            valueRange = 0f..200f,
             steps = 0,
             help = SettingsHelpEntry(
                 title = stringResource(R.string.settings_audio_volume),

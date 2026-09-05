@@ -55,6 +55,7 @@ EXPORT(int, sceJpegEncoderCsc, SceJpegEncoderContext *context, Ptr<uint8_t> outB
     auto outBufferData = outBuffer.get(emuenv.mem);
 
     DecoderColorSpace color_space = COLORSPACE_UNKNOWN;
+    bool is_bgra;
 
     switch (context->pixelFormat & 0xF) {
     case SCE_JPEGENC_PIXEL_YCBCR422:
@@ -67,11 +68,18 @@ EXPORT(int, sceJpegEncoderCsc, SceJpegEncoderContext *context, Ptr<uint8_t> outB
         return SCE_JPEGENC_ERROR_INVALID_PIXELFORMAT;
     }
 
-    if (inPixelFormat != SCE_JPEGENC_PIXEL_RGBA8888) {
-        return STUBBED("Only RGBA8888 to YCbCr is implemented.");
+    switch (inPixelFormat) {
+    case SCE_JPEGENC_PIXEL_RGBA8888:
+        is_bgra = false;
+        break;
+    case SCE_JPEGENC_PIXEL_BGRA8888:
+        is_bgra = true;
+        break;
+    default:
+        return SCE_JPEGENC_ERROR_INVALID_PIXELFORMAT;
     }
 
-    convert_rgb_to_yuv(inBufferData, outBufferData, context->inWidth, context->inHeight, color_space, inPitch);
+    convert_rgb_to_yuv(inBufferData, outBufferData, context->inWidth, context->inHeight, color_space, is_bgra, inPitch);
 
     return 0;
 }

@@ -1944,7 +1944,7 @@ void MainWindow::setup_status_bar() {
         layout->setContentsMargins(12, 8, 12, 8);
 
         auto *slider = new QSlider(Qt::Horizontal, container);
-        slider->setRange(0, 100);
+        slider->setRange(0, 200);
         slider->setValue(emuenv.cfg.current_config.audio_volume);
         slider->setMinimumWidth(180);
 
