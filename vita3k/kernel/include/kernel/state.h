@@ -62,6 +62,8 @@ typedef std::map<SceUID, CallbackPtr> CallbackPtrs;
 typedef unordered_map_fast<uint32_t, Address> ExportNids;
 // A NID hashes the function name alone, so same-named exports from different libraries collide.
 typedef unordered_map_fast<uint64_t, Address> LibExportNids;
+// The plain NID entry outlives taiHEN and HLE redirects, so its owner is tracked apart from its address.
+typedef unordered_map_fast<uint32_t, uint32_t> ExportNidOwners;
 constexpr uint64_t lib_export_key(uint32_t library_nid, uint32_t nid) {
     return (static_cast<uint64_t>(library_nid) << 32) | nid;
 }
@@ -142,6 +144,7 @@ struct KernelState {
     std::mutex export_nids_mutex;
     ExportNids export_nids;
     LibExportNids export_nids_by_lib;
+    ExportNidOwners export_nid_owners;
     FuncBindingInfos func_binding_infos;
     VarBindingInfos var_binding_infos;
     ModuleUidByNid module_uid_by_nid;
