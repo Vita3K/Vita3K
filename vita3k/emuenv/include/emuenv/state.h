@@ -44,6 +44,7 @@ struct State;
 };
 
 struct Config;
+struct CheatState;
 struct CompatState;
 struct MemState;
 struct CtrlState;
@@ -114,6 +115,7 @@ private:
     std::unique_ptr<HTTPState> _http;
     std::unique_ptr<CameraState> _camera;
     std::unique_ptr<CompatState> _compat;
+    std::unique_ptr<CheatState> _cheat;
     mutable std::mutex _launch_request_mutex;
     std::optional<AppLaunchRequest> _pending_launch_request;
 
@@ -132,6 +134,7 @@ public:
     fs::path static_assets_path{}; // Path for static assets (shaders, icons, etc)
     fs::path shared_path{}; // Path for files (UI themes, textures, etc)
     fs::path patch_path{}; // Path for patch files
+    fs::path cheat_path{}; // Path for cheat files
     std::string self_name{};
     std::string self_path{};
     Config &cfg;
@@ -175,6 +178,7 @@ public:
     HTTPState &http;
     CameraState &camera;
     CompatState &compat;
+    CheatState &cheat;
     int max_font_level = 0;
     int current_font_level = 0;
 
@@ -204,6 +208,7 @@ public:
         Root r;
         r.set_vita_fs_path(vita_fs_path);
         r.set_patch_path(patch_path);
+        r.set_cheat_path(cheat_path);
         r.set_log_path(log_path);
         r.set_config_path(config_path);
         r.set_shared_path(shared_path);
