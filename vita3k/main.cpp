@@ -122,8 +122,6 @@ int main(int argc, char *argv[]) {
     EmuEnvState emuenv;
     const auto config_err = config::init_config(cfg, argc, argv, root_paths, portable);
 
-    fs::create_directories(cfg.get_vita_fs_path());
-
     if (config_err != Success) {
         if (config_err == QuitRequested) {
             if (cfg.recompile_shader_path.has_value()) {
@@ -138,12 +136,14 @@ int main(int argc, char *argv[]) {
                 fs::remove_all(root_paths.get_cache_path() / "shaders" / *cfg.delete_title_id);
             }
             if (cfg.pup_path.has_value()) {
+                fs::create_directories(cfg.get_vita_fs_path());
                 LOG_INFO("Installing firmware file {}", *cfg.pup_path);
                 install_pup(cfg.get_vita_fs_path(), *cfg.pup_path, [](uint32_t progress) {
                     LOG_INFO("Firmware installation progress: {}%", progress);
                 });
             }
             if (cfg.pkg_path.has_value() && cfg.pkg_zrif.has_value()) {
+                fs::create_directories(cfg.get_vita_fs_path());
                 LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
                 emuenv.cache_path = root_paths.get_cache_path().generic_path();
                 emuenv.vita_fs_path = cfg.get_vita_fs_path();
@@ -155,6 +155,8 @@ int main(int argc, char *argv[]) {
         LOG_ERROR("Failed to initialise config");
         return InitConfigFailed;
     }
+
+    fs::create_directories(cfg.get_vita_fs_path());
 
     gui::i18n::apply_ui_language(app, cfg.user_lang, emuenv.static_assets_path);
 
