@@ -36,6 +36,14 @@ class ArmDynarmicCP15 : public Dynarmic::A32::Coprocessor {
     uint32_t sctlr;
     uint32_t dacr;
 
+    static uint64_t IgnoreOperation(void *, uint32_t, uint32_t) {
+        return 0;
+    }
+
+    static Callback IgnoreCallback() {
+        return Callback{ IgnoreOperation, std::optional<void *>{ nullptr } };
+    }
+
 public:
     using CoprocReg = Dynarmic::A32::CoprocReg;
 
@@ -55,9 +63,19 @@ public:
 
     CallbackOrAccessOneWord CompileSendOneWord(bool two, unsigned opc1, CoprocReg CRn,
         CoprocReg CRm, unsigned opc2) override {
-        // MCR p15, 0, Rt, c13, c0, 3 — write TPIDRURO
-        if (CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 3) {
+        // MCR p15, 0, Rt, c13, c0, 2/3 — write TPIDRURW/TPIDRURO
+        if (!two && CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && (opc2 == 2 || opc2 == 3)) {
             return &tpidruro;
+        }
+
+        // MCR p15, 0, Rt, c7, c5, 4 — ISB / flush prefetch buffer
+        if (!two && CRn == CoprocReg::C7 && CRm == CoprocReg::C5 && opc1 == 0 && opc2 == 4) {
+            return IgnoreCallback();
+        }
+
+        // MCR p15, 0, Rt, c7, c10, 4/5 — DSB/DMB
+        if (!two && CRn == CoprocReg::C7 && CRm == CoprocReg::C10 && opc1 == 0 && (opc2 == 4 || opc2 == 5)) {
+            return IgnoreCallback();
         }
 
         // MCR p15, 0, Rt, c1, c0, 0 — write SCTLR
@@ -80,8 +98,8 @@ public:
 
     CallbackOrAccessOneWord CompileGetOneWord(bool two, unsigned opc1, CoprocReg CRn, CoprocReg CRm,
         unsigned opc2) override {
-        // MRC p15, 0, Rt, c13, c0, 3 — read TPIDRURO (thread-local storage)
-        if (CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 3) {
+        // MRC p15, 0, Rt, c13, c0, 2/3 — read TPIDRURW/TPIDRURO (thread-local storage)
+        if (!two && CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && (opc2 == 2 || opc2 == 3)) {
             return &tpidruro;
         }
 
