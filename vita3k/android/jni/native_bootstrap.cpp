@@ -125,6 +125,14 @@ bool initialize_session(const fs::path &storage_path, Root &root_paths, std::uni
 bool prepare_frontend_runtime() {
     SDL_SetMainReady();
 
+    // Named before anything initialises, because SDL derives a name when the
+    // app has not given one: SDL_GetAppMetadataProperty falls back to
+    // SDL_GetExeName, which on Android asks Java for the package name -- and
+    // this runs from MainActivity, before SDLActivity has set up the JNI class
+    // references it would need. SDL 3.4 aborts there with "CallStaticObjectMethod
+    // received NULL jclass"; SDL 3.2 never reached it.
+    SDL_SetAppMetadata(window_title, app_version, "org.vita3k.emulator");
+
     if (SDL_WasInit(SDL_INIT_CAMERA) & SDL_INIT_CAMERA)
         return true;
 
