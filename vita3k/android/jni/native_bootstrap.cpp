@@ -125,6 +125,8 @@ bool initialize_session(const fs::path &storage_path, Root &root_paths, std::uni
 bool prepare_frontend_runtime() {
     SDL_SetMainReady();
 
+    SDL_SetAppMetadata(window_title, app_version, "org.vita3k.emulator");
+
     if (SDL_WasInit(SDL_INIT_CAMERA) & SDL_INIT_CAMERA)
         return true;
 
