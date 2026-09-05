@@ -271,7 +271,9 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
             continue;
         }
 
-        kernel.export_nids.emplace(nid, entry.address());
+        // Only the library that actually took the plain NID entry may drop it again.
+        if (kernel.export_nids.emplace(nid, entry.address()).second)
+            kernel.export_nid_owners.insert_or_assign(nid, library_nid);
         kernel.export_nids_by_lib.insert_or_assign(lib_export_key(library_nid, nid), entry.address());
         // substitute supervisor calls to direct function calls in loaded modules
         auto range = kernel.func_binding_infos.equal_range(nid);
@@ -297,7 +299,13 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
     return true;
 }
 
-static bool unload_func_exports(const uint32_t *nids, size_t count, uint32_t library_nid, KernelState &kernel, MemState &mem) {
+// An import stub resolved to an export branches through MOVW/MOVT of its address.
+static bool stub_targets(const uint32_t *stub, Address address) {
+    return stub[0] == encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)address, 12)
+        && stub[1] == encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(address >> 16), 12);
+}
+
+static bool unload_func_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, uint32_t library_nid, KernelState &kernel, MemState &mem) {
     const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
@@ -305,15 +313,23 @@ static bool unload_func_exports(const uint32_t *nids, size_t count, uint32_t lib
         if (nid == NID_MODULE_START || nid == NID_MODULE_STOP || nid == NID_MODULE_EXIT)
             continue;
 
-        kernel.export_nids.erase(nid);
-        kernel.export_nids_by_lib.erase(lib_export_key(library_nid, nid));
+        const Address unloaded_address = entries[i].address();
+        // Another module may have taken this library key since, and its export is still live.
+        if (const auto lib_it = kernel.export_nids_by_lib.find(lib_export_key(library_nid, nid)); lib_it != kernel.export_nids_by_lib.end() && lib_it->second == unloaded_address)
+            kernel.export_nids_by_lib.erase(lib_it);
+        // Redirects move the address but not the ownership, so only the owner may drop the plain entry.
+        if (const auto owner_it = kernel.export_nid_owners.find(nid); owner_it != kernel.export_nid_owners.end() && owner_it->second == library_nid) {
+            kernel.export_nids.erase(nid);
+            kernel.export_nid_owners.erase(owner_it);
+        }
         // invalidate all lle nid calls
         auto range = kernel.func_binding_infos.equal_range(nid);
         for (auto it = range.first; it != range.second; ++it) {
-            if (it->second.library_nid != library_nid)
-                continue;
             Address entry = it->second.entry_address;
             uint32_t *stub = Ptr<uint32_t>(entry).get(mem);
+            // A stub bound through the plain NID fallback names another library but still branches here.
+            if (it->second.library_nid != library_nid && !stub_targets(stub, unloaded_address))
+                continue;
 
             stub[0] = 0xef000000; // svc #0 - Call our interrupt hook.
             stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
@@ -465,7 +481,7 @@ static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_modu
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(exports->entry_table).get(mem);
         if (!is_unload && !load_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, exports->library_nid, kernel, mem))
             return false;
-        if (is_unload && !unload_func_exports(nids, exports->num_syms_funcs, exports->library_nid, kernel, mem))
+        if (is_unload && !unload_func_exports(nids, entries, exports->num_syms_funcs, exports->library_nid, kernel, mem))
             return false;
 
         const auto var_count = exports->num_syms_vars;
