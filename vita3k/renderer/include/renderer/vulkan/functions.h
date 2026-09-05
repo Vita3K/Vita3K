@@ -33,7 +33,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, VKState &state, const SceGxmProg
 bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend);
 
 void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format,
-    Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config);
+    Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config, int32_t base_vertex = 0);
 
 void mid_scene_flush(VKContext &context, const SceGxmNotification notification);
 void new_frame(VKContext &context);

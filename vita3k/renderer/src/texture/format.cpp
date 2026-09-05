@@ -75,8 +75,9 @@ SceGxmTextureBaseFormat get_matching_decompressed_format(SceGxmTextureBaseFormat
         return SCE_GXM_TEXTURE_BASE_FORMAT_U8U8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
         return SCE_GXM_TEXTURE_BASE_FORMAT_S8S8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
     default:
-        // BC1/2/3
+        // BC1/2/3 and ETC1
         return SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
     }
 }
@@ -94,6 +95,7 @@ void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest,
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
         block_size = 8;
         break;
 
@@ -164,6 +166,9 @@ uint32_t decompress_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, 
         const uint32_t num_yword = (height + 3) / 4;
 
         return num_xword * num_yword * 8;
+    } else if (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_ETC1) {
+        pvr::PVRTDecompressETC(data, width, height, dest, 0);
+        return ((width + 3) / 4) * ((height + 3) / 4) * 8;
     } else {
         LOG_ERROR("Trying to decompress and unswizzle unknown format {}", log_hex(fmt));
     }
@@ -396,6 +401,7 @@ uint32_t get_compressed_size(SceGxmTextureBaseFormat base_format, uint32_t width
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
         return ((width + 3) / 4) * ((height + 3) / 4) * 8;
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
