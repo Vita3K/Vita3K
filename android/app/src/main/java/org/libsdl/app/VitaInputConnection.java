@@ -1,10 +1,11 @@
-package org.vita3k.emulator;
+package org.libsdl.app;
 
 import android.content.Context;
 import android.view.KeyEvent;
 import android.view.View;
 
-import org.libsdl.app.SDLInputConnection;
+import org.vita3k.emulator.Emulator;
+import org.vita3k.emulator.NativeLib;
 
 public class VitaInputConnection extends SDLInputConnection {
     public VitaInputConnection(View targetView, boolean fullEditor) {
