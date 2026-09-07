@@ -26,6 +26,7 @@
 #include <dynarmic/interface/A32/coprocessor.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
+#include <atomic>
 #include <bit>
 #include <memory>
 #include <optional>
@@ -159,17 +160,31 @@ public:
         }
     }
 
+    static constexpr uint64_t INVALID_READ_LOG_FULL = 16;
+    static constexpr uint64_t INVALID_READ_LOG_EVERY = 1000000;
+    inline static std::atomic<uint64_t> invalid_read_count{ 0 };
+
     template <typename T>
     T MemoryRead(Dynarmic::A32::VAddr addr) {
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
-            LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x}\n{}", sizeof(T) * 8, addr, this->cpu->save_context().description());
+            const uint64_t n = invalid_read_count.fetch_add(1) + 1;
+            const bool verbose = (n <= INVALID_READ_LOG_FULL);
+            const bool periodic = (n % INVALID_READ_LOG_EVERY) == 0;
 
-            auto pc = this->cpu->get_pc();
-            if (pc < parent->mem->host_page_size)
-                LOG_CRITICAL("PC is 0x{:x}", pc);
-            else
-                LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+            if (verbose) {
+                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x}\n{}", sizeof(T) * 8, addr, this->cpu->save_context().description());
+            } else if (periodic) {
+                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x} (occurrence #{}, further reports suppressed)", sizeof(T) * 8, addr, n);
+            }
+
+            if (verbose || periodic) {
+                auto pc = this->cpu->get_pc();
+                if (pc < parent->mem->host_page_size)
+                    LOG_CRITICAL("PC is 0x{:x}", pc);
+                else
+                    LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+            }
             return 0;
         }
 
