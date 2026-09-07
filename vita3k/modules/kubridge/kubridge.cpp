@@ -23,13 +23,17 @@
 
 #include <module/module.h>
 
+#include <../SceSysmem/SceSysmemForDriver.h>
 #include <cpu/functions.h>
 #include <kernel/state.h>
+#include <kernel/types.h>
 #include <mem/functions.h>
 #include <modules/sysmem_state.h>
 #include <util/align.h>
 #include <util/log.h>
 #include <util/tracy.h>
+
+#include <cstdlib>
 
 TRACY_MODULE_NAME(kubridge);
 
@@ -231,4 +235,34 @@ EXPORT(void, kuKernelReleaseExceptionHandler, uint32_t exceptionType) {
         const Address old = emuenv.kernel.exception_handlers[exceptionType].exchange(0);
         LOG_INFO("kuKernelReleaseExceptionHandler: type={} old=0x{:08X}", exceptionType, old);
     }
+}
+
+EXPORT(void, kuKernelFlushCaches, const void *ptr, SceSize len) {
+    TRACY_FUNC(kuKernelFlushCaches, ptr, len);
+    STUBBED("Emulator has no real CPU caches");
+}
+
+EXPORT(SceUID, kuKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockKernelOpt *opt) {
+    TRACY_FUNC(kuKernelAllocMemBlock, name, type, size, opt);
+    SceUID res = CALL_EXPORT(ksceKernelAllocMemBlock, name, type, size, opt);
+    if (res < 0)
+        return res;
+
+    return CALL_EXPORT(kscePUIDOpenByGUID, 1, res);
+}
+
+EXPORT(int, kuKernelCpuUnrestrictedMemcpy, void *dst, const void *src, SceSize len) {
+    STUBBED("Regular memcpy used");
+    memcpy(dst, src, len);
+    return 0;
+}
+
+EXPORT(int, kuPowerGetSysClockFrequency) {
+    STUBBED("clock freq: 333");
+    return 333;
+}
+
+EXPORT(int, kuPowerSetSysClockFrequency, int freq) {
+    STUBBED("set clock freq success (0)");
+    return 0;
 }
