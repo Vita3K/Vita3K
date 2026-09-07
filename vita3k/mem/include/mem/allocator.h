@@ -36,6 +36,9 @@ public:
     int allocate_from(const std::uint32_t start_offset, std::uint32_t &size, const bool best_fit = false);
     int allocate_at(const std::uint32_t start_offset, std::uint32_t size);
     void free(const std::uint32_t offset, const std::uint32_t size);
+    // Mark [offset, offset+size) allocated regardless of current state:
+    // bitmap repair when a pinned range is found wrongly freed.
+    void force_allocate(const std::uint32_t offset, const std::uint32_t size);
     void reset();
 
     // Count free bits in [offset, offset_end) (exclusive)

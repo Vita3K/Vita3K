@@ -328,6 +328,20 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config) {
     void *indices_ptr = indices.get(mem);
 
+    // FF6 debug: the Vulkan backend has no mask-bit emulation, yet it executes
+    // maskupdate draws as regular draws whose shader writes vec4(writing_mask)
+    // to the COLOR attachment -- a full-screen wipe. Skip them like the GL
+    // backend does when use_mask_bit is off (set VITA3K_KEEP_MASKUPDATE=1 to
+    // restore the old behaviour).
+    if (context.record.is_maskupdate) {
+        static int mucount = 0;
+        if (mucount < 300)
+            printf("[maskdraw %d] writing_mask=%.1f count=%zu\n", mucount++, context.record.writing_mask, count);
+        static const bool keep = getenv("VITA3K_KEEP_MASKUPDATE") != nullptr;
+        if (!keep)
+            return;
+    }
+
     context.check_for_macroblock_change(true);
 
     if (!context.in_renderpass)

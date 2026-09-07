@@ -28,6 +28,7 @@
 #include <io/functions.h>
 #include <kernel/state.h>
 #include <kernel/sync_primitives.h>
+#include <mem/functions.h>
 #include <packages/functions.h>
 
 #include <io/device.h>
@@ -156,6 +157,18 @@ EXPORT(int, sceClibMemcmpConstTime) {
 
 EXPORT(Ptr<void>, sceClibMemcpy, Ptr<void> dst, const void *src, SceSize len) {
     TRACY_FUNC(sceClibMemcpy, dst, src, len);
+    // Guests (libshacccg among them) pass NULL here; real hardware faults the
+    // caller, but a raw host memcpy would kill the whole emulator instead.
+    if (len == 0)
+        return dst;
+    if (!dst.valid(emuenv.mem) || !src) {
+        LOG_ERROR("sceClibMemcpy({}, {}, {}) invalid pointer, call ignored", log_hex_full(dst.address()), fmt::ptr(src), len);
+        return dst;
+    }
+    if (watch_intersects(dst.address(), len)) {
+        const ThreadStatePtr wt = emuenv.kernel.get_thread(thread_id);
+        LOG_CRITICAL("[watch] sceClibMemcpy(0x{:08x}, {}, {}) thread={} lr=0x{:08x}", dst.address(), fmt::ptr(src), len, thread_id, wt ? read_lr(*wt->cpu) : 0);
+    }
     memcpy(dst.get(emuenv.mem), src, len);
     return dst;
 }
@@ -194,6 +207,16 @@ EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> dst, const Ptr<void> src, SceSiz
 
 EXPORT(Ptr<void>, sceClibMemmove, Ptr<void> dst, const void *src, SceSize len) {
     TRACY_FUNC(sceClibMemmove, dst, src, len);
+    if (len == 0)
+        return dst;
+    if (!dst.valid(emuenv.mem) || !src) {
+        LOG_ERROR("sceClibMemmove({}, {}, {}) invalid pointer, call ignored", log_hex_full(dst.address()), fmt::ptr(src), len);
+        return dst;
+    }
+    if (watch_intersects(dst.address(), len)) {
+        const ThreadStatePtr wt = emuenv.kernel.get_thread(thread_id);
+        LOG_CRITICAL("[watch] sceClibMemmove(0x{:08x}, {}, {}) thread={} lr=0x{:08x}", dst.address(), fmt::ptr(src), len, thread_id, wt ? read_lr(*wt->cpu) : 0);
+    }
     memmove(dst.get(emuenv.mem), src, len);
     return dst;
 }
@@ -205,6 +228,16 @@ EXPORT(int, sceClibMemmoveChk) {
 
 EXPORT(Ptr<void>, sceClibMemset, Ptr<void> dst, int ch, SceSize len) {
     TRACY_FUNC(sceClibMemset, dst, ch, len);
+    if (len == 0)
+        return dst;
+    if (!dst.valid(emuenv.mem)) {
+        LOG_ERROR("sceClibMemset({}, {}, {}) invalid dst, call ignored", log_hex_full(dst.address()), ch, len);
+        return dst;
+    }
+    if (watch_intersects(dst.address(), len)) {
+        const ThreadStatePtr wt = emuenv.kernel.get_thread(thread_id);
+        LOG_CRITICAL("[watch] sceClibMemset(0x{:08x}, 0x{:x}, {}) thread={} lr=0x{:08x}", dst.address(), ch, len, thread_id, wt ? read_lr(*wt->cpu) : 0);
+    }
     memset(dst.get(emuenv.mem), ch, len);
     return dst;
 }

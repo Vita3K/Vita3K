@@ -119,6 +119,7 @@ EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType 
     if (base_address) {
         Address addr = alloc_at(mem, base_address, size, name);
         if (!addr) {
+            LOG_ERROR("RBDIAG ksceKernelAllocMemBlock alloc_at FAILED name={} type={} size={}", name, static_cast<int>(type), size);
             return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
         }
         address = Ptr<void>(addr);
@@ -139,6 +140,7 @@ EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType 
         }
         address = Ptr<void>(alloc_aligned(mem, size, name, alignment, start_address));
         if (!address) {
+            LOG_ERROR("RBDIAG ksceKernelAllocMemBlock alloc_aligned FAILED name={} type={} size={}", name, static_cast<int>(type), size);
             return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
         }
     }

@@ -15,6 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <cstdio>
+#include <cstdlib>
 #include <gxm/functions.h>
 #include <shader/gxp_parser.h>
 #include <shader/usse_types.h>
@@ -77,6 +79,16 @@ std::tuple<DataType, std::string> get_parameter_type_store_and_name(const SceGxm
 }
 
 ProgramInput get_program_input(const SceGxmProgram &program) {
+    // VITA3K_GXP_TRACE=1: unbuffered dump of the header before parsing, so a
+    // parser fault on a bad program still leaves its address and tables behind.
+    static const bool gxp_trace = getenv("VITA3K_GXP_TRACE") != nullptr;
+    if (gxp_trace) {
+        fprintf(stderr, "[gxp] program host=%p magic=%08x size=%u params %u@%u ubufs %u@%u containers %u@%u literals %u@%u\n",
+            static_cast<const void *>(&program), program.magic, program.size, program.parameter_count, program.parameters_offset,
+            program.uniform_buffer_count, program.uniform_buffer_offset, program.container_count, program.container_offset,
+            program.literals_count, program.literals_offset);
+        fflush(stderr);
+    }
     ProgramInput program_input;
     std::map<int, UniformBuffer> uniform_buffers;
 

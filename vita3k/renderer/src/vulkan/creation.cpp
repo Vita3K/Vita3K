@@ -279,8 +279,10 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
         if (blend->colorMask & SCE_GXM_COLOR_MASK_A)
             color_mask |= vk::ColorComponentFlagBits::eA;
 
+        // FF6 debug: kill-switch to disable all blending (discriminate alpha-kill vs black-RGB)
+        static const bool no_blend = getenv("VITA3K_NO_BLEND") != nullptr;
         fp_vk->blending = vk::PipelineColorBlendAttachmentState{
-            .blendEnable = (blend->colorFunc != SCE_GXM_BLEND_FUNC_NONE) || (blend->alphaFunc != SCE_GXM_BLEND_FUNC_NONE),
+            .blendEnable = no_blend ? VK_FALSE : ((blend->colorFunc != SCE_GXM_BLEND_FUNC_NONE) || (blend->alphaFunc != SCE_GXM_BLEND_FUNC_NONE)),
             .srcColorBlendFactor = translate_blend_factor(blend->colorSrc),
             .dstColorBlendFactor = translate_blend_factor(blend->colorDst),
             .colorBlendOp = translate_blend_func(blend->colorFunc),

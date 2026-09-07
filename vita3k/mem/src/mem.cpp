@@ -23,6 +23,10 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdlib>
+#include <cstdio>
+#include <execinfo.h>
+#include <unistd.h>
 #include <cstring>
 #include <mutex>
 #include <utility>
@@ -154,6 +158,28 @@ bool is_valid_addr_range(const MemState &state, Address start, Address end) {
     return state.allocator.free_slot_count(start_page, end_page) == 0;
 }
 
+// Find a pinned range overlapping [addr, addr+size). generation_mutex held.
+static const std::pair<const Address, PinnedRange> *find_pinned_overlap(const MemState &state, Address addr, uint32_t size) {
+    for (const auto &entry : state.pinned_ranges) {
+        if (entry.first < addr + size && addr < entry.first + entry.second.size)
+            return &entry;
+    }
+    return nullptr;
+}
+
+// Re-mark as allocated the pages of every pinned range overlapping
+// [addr, addr+size). If the allocator offered them, its bitmap lost track of
+// live memory (stray free); repair it so nothing lands there again.
+static void repair_pinned_pages(MemState &state, Address addr, uint32_t size) {
+    for (const auto &entry : state.pinned_ranges) {
+        if (entry.first < addr + size && addr < entry.first + entry.second.size) {
+            const uint32_t first_page = entry.first / STANDARD_PAGE_SIZE;
+            const uint32_t last_page = (entry.first + entry.second.size + STANDARD_PAGE_SIZE - 1) / STANDARD_PAGE_SIZE;
+            state.allocator.force_allocate(first_page, last_page - first_page);
+        }
+    }
+}
+
 static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_count, const char *name, const bool force) {
     int page_num;
     if (force) {
@@ -161,10 +187,33 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
             return 0;
         }
         page_num = start_page;
-    } else {
-        page_num = state.allocator.allocate_from(start_page, page_count, false);
-        if (page_num < 0)
+        const auto *pinned = find_pinned_overlap(state, page_num * STANDARD_PAGE_SIZE, page_count * STANDARD_PAGE_SIZE);
+        if (pinned) {
+            LOG_CRITICAL("Forced alloc \"{}\" at {} ({} pages) overlaps pinned \"{}\" [{}+{}]: refused, bitmap repaired",
+                name, log_hex(page_num * STANDARD_PAGE_SIZE), page_count,
+                pinned->second.tag, log_hex(pinned->first), log_hex(pinned->second.size));
+            state.allocator.free(page_num, page_count);
+            repair_pinned_pages(state, page_num * STANDARD_PAGE_SIZE, page_count * STANDARD_PAGE_SIZE);
             return 0;
+        }
+    } else {
+        const uint32_t want_pages = page_count;
+        for (int attempt = 0;; attempt++) {
+            page_count = want_pages;
+            page_num = state.allocator.allocate_from(start_page, page_count, false);
+            if (page_num < 0)
+                return 0;
+            const auto *pinned = find_pinned_overlap(state, page_num * STANDARD_PAGE_SIZE, page_count * STANDARD_PAGE_SIZE);
+            if (!pinned)
+                break;
+            LOG_CRITICAL("Alloc \"{}\" at {} ({} pages) overlaps pinned \"{}\" [{}+{}]: bitmap repaired, retrying elsewhere",
+                name, log_hex(page_num * STANDARD_PAGE_SIZE), page_count,
+                pinned->second.tag, log_hex(pinned->first), log_hex(pinned->second.size));
+            state.allocator.free(page_num, page_count);
+            repair_pinned_pages(state, page_num * STANDARD_PAGE_SIZE, page_count * STANDARD_PAGE_SIZE);
+            if (attempt >= 16)
+                return 0;
+        }
     }
 
     const uint32_t size = page_count * STANDARD_PAGE_SIZE;
@@ -483,13 +532,25 @@ Block alloc_block(MemState &mem, uint32_t size, const char *name, Address start_
 }
 
 void free(MemState &state, Address address) {
+    if (!address)
+        return; // Block from a failed alloc; nothing to release
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const uint32_t page_num = address / STANDARD_PAGE_SIZE;
     assert(page_num >= 0);
 
     AllocMemPage &page = state.alloc_table[page_num];
     if (!page.allocated) {
-        LOG_CRITICAL("Freeing unallocated page");
+        // Proceeding would free page.size STALE pages and gut whatever
+        // lives there now (the sleeping-thread bulk-zero killer).
+        LOG_CRITICAL("Freeing unallocated page at {}: ignored", log_hex(address));
+        return;
+    }
+    const auto *pinned = find_pinned_overlap(state, page_num * STANDARD_PAGE_SIZE, page.size * STANDARD_PAGE_SIZE);
+    if (pinned) {
+        LOG_CRITICAL("Free of {} ({} pages) would release pinned \"{}\" [{}+{}]: ignored",
+            log_hex(address), static_cast<uint32_t>(page.size),
+            pinned->second.tag, log_hex(pinned->first), log_hex(pinned->second.size));
+        return;
     }
     page.allocated = 0;
 
@@ -543,6 +604,35 @@ void free(MemState &state, Address address) {
         LOG_CRITICAL_IF(ret == -1, "madvise failed: {}", get_error_msg());
 #endif
     }
+}
+
+bool watch_intersects(Address addr, uint32_t size) {
+    static uint32_t lo = 0, hi = 0;
+    static const bool parsed = [] {
+        if (const char *env = std::getenv("VITA3K_WATCH")) {
+            if (const char *dash = std::strchr(env, '-')) {
+                lo = static_cast<uint32_t>(std::strtoul(env, nullptr, 16));
+                hi = static_cast<uint32_t>(std::strtoul(dash + 1, nullptr, 16));
+            }
+        }
+        return true;
+    }();
+    (void)parsed;
+    return hi != 0 && addr < hi && addr + size > lo;
+}
+
+void pin_range(MemState &state, Address addr, uint32_t size, const char *tag) {
+    if (!addr)
+        return;
+    const std::lock_guard<std::mutex> lock(state.generation_mutex);
+    state.pinned_ranges[addr] = PinnedRange{ size, tag };
+}
+
+void unpin_range(MemState &state, Address addr) {
+    if (!addr)
+        return;
+    const std::lock_guard<std::mutex> lock(state.generation_mutex);
+    state.pinned_ranges.erase(addr);
 }
 
 uint32_t mem_available(MemState &state) {
@@ -644,6 +734,15 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     }
 
     LOG_CRITICAL("Unhandled access to 0x{:X}", reinterpret_cast<uintptr_t>(info->si_addr));
+    {
+        // The report macOS writes for the SIGTRAP below is not always
+        // produced; leave the host stack on stderr while we still can.
+        void *frames[32];
+        const int n = backtrace(frames, 32);
+        fprintf(stderr, "fatal fault at %p (%s):\n", info->si_addr, is_writing ? "write" : "read");
+        backtrace_symbols_fd(frames, n, STDERR_FILENO);
+        fflush(stderr);
+    }
     raise(SIGTRAP);
     return;
 }

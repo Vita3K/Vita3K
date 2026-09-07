@@ -22,6 +22,7 @@
 #include <cpu/functions.h>
 #include <cpu/impl/interface.h>
 
+#include <chrono>
 #include <memory>
 
 class ArmDynarmicCallback;
@@ -40,6 +41,13 @@ class DynarmicCPU : public CPUInterface {
 
     bool halted = false;
     bool break_ = false;
+
+    // Guest CPU rate limiter (VITA3K_CPU_MHZ env var, 0 = off). Paces each
+    // guest thread to roughly `throttle_mhz` million Dynarmic ticks per
+    // wall-clock second so real-hardware CPU bottlenecks reproduce on a fast host.
+    uint64_t throttle_mhz = 0;
+    uint64_t throttle_ticks = 0;
+    std::chrono::steady_clock::time_point throttle_epoch{};
 
     bool log_mem = false;
     bool log_code = false;

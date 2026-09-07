@@ -97,6 +97,14 @@ void BitmapAllocator::free(const std::uint32_t offset, const std::uint32_t size)
     force_fill(offset, size, true);
 }
 
+void BitmapAllocator::force_allocate(const std::uint32_t offset, const std::uint32_t size) {
+    if (static_cast<std::size_t>(offset) >= max_offset) {
+        return;
+    }
+
+    force_fill(offset, size, false);
+}
+
 int BitmapAllocator::allocate_from(const std::uint32_t start_offset, std::uint32_t &size, const bool best_fit) {
     if (words.empty()) {
         return -1;

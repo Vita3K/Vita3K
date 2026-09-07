@@ -19,6 +19,7 @@
 #include <kernel/thread/thread_state.h>
 
 #include <kernel/state.h>
+#include <mem/functions.h>
 #include <mem/ptr.h>
 #include <util/align.h>
 
@@ -84,11 +85,16 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
 
     std::string alloc_name = fmt::format("Stack for thread {} (#{})", name, id);
     stack = alloc_block(mem, stack_size, alloc_name.c_str());
+    pin_range(mem, stack.get(), stack_size, alloc_name.c_str());
     memset(stack.get_ptr<void>().get(mem), 0xcc, stack_size);
 
     alloc_name = fmt::format("TLS for thread {} (#{})", name, id);
     const size_t tls_size = KERNEL_TLS_SIZE + kernel.tls_msize;
     tls = alloc_block(mem, tls_size, alloc_name.c_str());
+    pin_range(mem, tls.get(), tls_size, alloc_name.c_str());
+    LOG_INFO("thread \"{}\" (#{}) stack=[{}..{}) tls=[{}..{})", name, id,
+        log_hex(stack.get()), log_hex(stack.get() + stack_size),
+        log_hex(tls.get()), log_hex(tls.get() + (uint32_t)tls_size));
     const Ptr<uint8_t> base_tls_ptr = tls.get_ptr<uint8_t>();
     memset(base_tls_ptr.get(mem), 0, tls_size);
 
@@ -404,6 +410,13 @@ ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem)
     : id(id)
     , kernel(kernel)
     , mem(mem) {
+}
+
+ThreadState::~ThreadState() {
+    // Unpin before the Block members release the pages (members are
+    // destroyed after this body), so the legitimate frees go through.
+    unpin_range(mem, stack.get());
+    unpin_range(mem, tls.get());
 }
 
 void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus> expected) {

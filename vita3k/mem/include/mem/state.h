@@ -24,6 +24,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <string>
 
 struct AllocMemPage {
     uint32_t allocated : 4;
@@ -62,6 +63,14 @@ struct MemExternalMapping {
     uint32_t size;
 };
 
+// A range that must never be handed out by the allocator or released by a
+// stray free while its owner lives (live thread stacks and TLS blocks).
+// Guards against allocator-state corruption bulk-zeroing a sleeping thread.
+struct PinnedRange {
+    uint32_t size = 0;
+    std::string tag;
+};
+
 struct MemState {
     std::mutex generation_mutex;
     std::mutex protect_mutex;
@@ -77,4 +86,7 @@ struct MemState {
     bool use_page_table = false;
     PageTable page_table;
     std::map<uint64_t, MemExternalMapping, std::greater<>> external_mapping;
+
+    // Guarded by generation_mutex.
+    std::map<Address, PinnedRange> pinned_ranges;
 };

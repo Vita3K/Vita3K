@@ -34,6 +34,8 @@
 #include <gxm/state.h>
 #include <gxm/types.h>
 #include <kernel/state.h>
+#include <cstdio>
+#include <cpu/functions.h>
 #include <mem/state.h>
 
 #include <io/state.h>
@@ -47,6 +49,20 @@
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceGxm);
+
+#include <chrono>
+// RBDIAG: temporary scope timer to locate the readback stall, logs if > 30ms
+struct RbdiagScopeTimer {
+    const char *name;
+    std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+    explicit RbdiagScopeTimer(const char *n)
+        : name(n) {}
+    ~RbdiagScopeTimer() {
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        if (ms > 30.0)
+            LOG_ERROR("RBDIAG {} took {:.1f}ms", name, ms);
+    }
+};
 
 template <>
 std::string to_debug_str<SceGxmColorFormat>(const MemState &mem, SceGxmColorFormat type) {
@@ -2259,7 +2275,10 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     emuenv.gxm.last_display_global = emuenv.gxm.global_timestamp.fetch_add(1, std::memory_order_relaxed);
 
     // function may be blocking here (expected behavior)
-    emuenv.gxm.display_queue.push(display_callback);
+    {
+        RbdiagScopeTimer rbdiag_timer("sceGxmDisplayQueueAddEntry.push");
+        emuenv.gxm.display_queue.push(display_callback);
+    }
 
     // TODO: I do this because the sync function does not have access to the display state, but this is not great
     renderer::Context *active_renderer_context = nullptr;
@@ -2276,6 +2295,7 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
 }
 
 EXPORT(int, sceGxmDisplayQueueFinish) {
+    RbdiagScopeTimer rbdiag_timer("sceGxmDisplayQueueFinish");
     TRACY_FUNC(sceGxmDisplayQueueFinish);
     emuenv.gxm.display_queue.wait_empty();
 
@@ -2441,6 +2461,20 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
                 (int)context->state.writing_mask,
                 context->state.fragment_program.address(),
                 (uint32_t)context->state.textures[0].data_addr << 2);
+            // [drawlog3] one line per vertex attribute: layout + raw bytes of first 2 vertices
+            for (const SceGxmVertexAttribute &a : gxm_vertex_program.attributes) {
+                const SceGxmVertexStream &s = gxm_vertex_program.streams[a.streamIndex];
+                const uint8_t *base = context->state.stream_data[a.streamIndex].cast<const uint8_t>().get(emuenv.mem);
+                const size_t asize = gxm::attribute_format_size(static_cast<SceGxmAttributeFormat>(a.format)) * a.componentCount;
+                std::string raw;
+                for (int vtx = 0; vtx < 2 && base; vtx++) {
+                    for (size_t b = 0; b < asize && b < 16; b++)
+                        raw += fmt::format("{:02x}", base[vtx * s.stride + a.offset + b]);
+                    raw += " ";
+                }
+                LOG_INFO("[drawlog3] attr reg={} stream={} off={} fmt={} ncomp={} stride={} raw={}",
+                    a.regIndex, a.streamIndex, a.offset, (int)a.format, a.componentCount, s.stride, raw);
+            }
         }
     }
 
@@ -2724,7 +2758,11 @@ EXPORT(int, sceGxmFinish, SceGxmContext *context) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
     // Wait on this context's rendering finish code.
+    auto rbdiag_t0 = std::chrono::steady_clock::now();
     renderer::finish(*emuenv.renderer, renderer_context);
+    auto rbdiag_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - rbdiag_t0).count();
+    if (rbdiag_ms > 30.0)
+        LOG_ERROR("RBDIAG sceGxmFinish took {:.1f}ms thread={}", rbdiag_ms, thread_id);
 
     return 0;
 }
@@ -3018,6 +3056,7 @@ EXPORT(int, _sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flag
 }
 
 EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
+    RbdiagScopeTimer rbdiag_timer("sceGxmNotificationWait");
     TRACY_FUNC(sceGxmNotificationWait, notification);
     if (!notification) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
@@ -3478,7 +3517,14 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, Ptr<const SceGxmP
 
 EXPORT(uint32_t, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {
     TRACY_FUNC(sceGxmProgramGetParameterCount, program);
-    assert(program);
+    if (!program) {
+        // vitaGL asks this of a shader whose compile failed; name the caller
+        const ThreadStatePtr wt = emuenv.kernel.get_thread(thread_id);
+        LOG_ERROR("sceGxmProgramGetParameterCount(NULL) from lr=0x{:08x}", wt ? read_lr(*wt->cpu) : 0);
+        fprintf(stderr, "[gxp] GetParameterCount(NULL) lr=0x%08x\n", wt ? read_lr(*wt->cpu) : 0);
+        fflush(stderr);
+        return 0;
+    }
     return program->parameter_count;
 }
 
@@ -4558,6 +4604,45 @@ EXPORT(int, sceGxmShaderPatcherCreate, const SceGxmShaderPatcherParams *params, 
     return 0;
 }
 
+// A program whose tables point outside its own bytes (or outside mapped
+// memory) makes the host-side parser fault instead of the guest failing: refuse
+// it here with a diagnostic naming the address so the guest side can be found.
+static bool gxp_program_is_sane(const MemState &mem, Ptr<const SceGxmProgram> program, const char *who) {
+    const Address base = program.address();
+    if (!is_valid_addr_range(mem, base, base + sizeof(SceGxmProgram))) {
+        LOG_ERROR("{}: program header at {} is not mapped", who, log_hex(base));
+        return false;
+    }
+    const SceGxmProgram &p = *program.get(mem);
+    if (p.magic != 0x00505847 /* "GXP\0" */ || p.size < sizeof(SceGxmProgram) || !is_valid_addr_range(mem, base, base + p.size)) {
+        LOG_ERROR("{}: program at {} has magic {} size {}: rejected", who, log_hex(base), log_hex(p.magic), p.size);
+        // unbuffered: the caller usually crashes right after ignoring the error
+        const uint32_t *w = reinterpret_cast<const uint32_t *>(&p);
+        fprintf(stderr, "[gxp] rejected program at 0x%08x (%s) header:", base, who);
+        for (int i = 0; i < 24; i++)
+            fprintf(stderr, " %08x", w[i]);
+        fprintf(stderr, "\n");
+        fflush(stderr);
+        return false;
+    }
+    const auto in_program = [&](const void *field, uint32_t offset, uint32_t count, uint32_t elem) {
+        const Address field_addr = base + static_cast<uint32_t>(reinterpret_cast<const uint8_t *>(field) - reinterpret_cast<const uint8_t *>(&p));
+        const uint64_t start = static_cast<uint64_t>(field_addr) + offset;
+        const uint64_t end = start + static_cast<uint64_t>(count) * elem;
+        return count == 0 || (start >= base && end <= static_cast<uint64_t>(base) + p.size);
+    };
+    if (!in_program(&p.parameters_offset, p.parameters_offset, p.parameter_count, sizeof(SceGxmProgramParameter))
+        || !in_program(&p.uniform_buffer_offset, p.uniform_buffer_offset, p.uniform_buffer_count, sizeof(SceGxmUniformBufferInfo))
+        || !in_program(&p.container_offset, p.container_offset, p.container_count, sizeof(SceGxmProgramParameterContainer))
+        || !in_program(&p.literals_offset, p.literals_offset, p.literals_count, sizeof(SceGxmProgramLiteral))) {
+        LOG_ERROR("{}: program at {} (size {}) has tables outside its bytes: params {}+{} ubufs {}+{} containers {}+{} literals {}+{}: rejected",
+            who, log_hex(base), p.size, p.parameters_offset, p.parameter_count, p.uniform_buffer_offset, p.uniform_buffer_count,
+            p.container_offset, p.container_count, p.literals_offset, p.literals_count);
+        return false;
+    }
+    return true;
+}
+
 EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, SceGxmOutputRegisterFormat outputFormat, SceGxmMultisampleMode multisampleMode, const SceGxmBlendInfo *blendInfo, Ptr<const SceGxmProgram> vertexProgram, Ptr<SceGxmFragmentProgram> *fragmentProgram) {
     TRACY_FUNC(sceGxmShaderPatcherCreateFragmentProgram, shaderPatcher, programId, outputFormat, multisampleMode, blendInfo, vertexProgram, fragmentProgram);
     MemState &mem = emuenv.mem;
@@ -4594,6 +4679,9 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->is_maskupdate = false;
     fp->program = programId->program;
+
+    if (!gxp_program_is_sane(mem, programId->program, "sceGxmShaderPatcherCreateFragmentProgram"))
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     if (!renderer::create(fp->renderer_data, *emuenv.renderer, *programId->program.get(mem), blendInfo, emuenv.renderer->gxp_ptr_map)) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
@@ -4664,6 +4752,9 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
     vp->program = programId->program;
+
+    if (!gxp_program_is_sane(mem, programId->program, "sceGxmShaderPatcherCreateVertexProgram"))
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     vp->key_hash = key.hash;
 
     if (streams && streamCount > 0) {
@@ -4806,6 +4897,13 @@ EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatch
 
     SceGxmRegisteredProgram *const rp = programId->get(emuenv.mem);
     rp->program = programHeader;
+
+    if (!gxp_program_is_sane(emuenv.mem, programHeader, "sceGxmShaderPatcherRegisterProgram")) {
+        const ThreadStatePtr wt = emuenv.kernel.get_thread(thread_id);
+        fprintf(stderr, "[gxp] registered from lr=0x%08x thread=%d\n", wt ? read_lr(*wt->cpu) : 0, thread_id);
+        fflush(stderr);
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
 
     return 0;
 }
@@ -5501,6 +5599,7 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
     SceGxmTransferFormat srcFormat, SceGxmTransferType srcType, Ptr<void> srcAddress, uint32_t srcX, uint32_t srcY, int32_t srcStride,
     SceGxmTransferFormat destFormat, SceGxmTransferType destType, Ptr<void> destAddress, uint32_t destX, uint32_t destY, int32_t destStride,
     Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const SceGxmNotification *notification) {
+    RbdiagScopeTimer rbdiag_timer("sceGxmTransferCopy");
     TRACY_FUNC(sceGxmTransferCopy, width, height, colorKeyValue, colorKeyMask, colorKeyMode, srcFormat, srcType, srcAddress, srcX);
 #ifdef TRACY_ENABLE
     if (_tracy_activation_state) {
@@ -5679,6 +5778,7 @@ EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFor
 }
 
 EXPORT(int, sceGxmTransferFinish) {
+    RbdiagScopeTimer rbdiag_timer("sceGxmTransferFinish");
     TRACY_FUNC(sceGxmTransferFinish);
     // same as sceGxmFinish
     renderer::finish(*emuenv.renderer, nullptr);

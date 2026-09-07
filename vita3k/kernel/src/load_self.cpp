@@ -759,11 +759,14 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     sceKernelModuleInfo->extab_top = Ptr<const void>(module_info->extab_top);
     sceKernelModuleInfo->extab_btm = Ptr<const void>(module_info->extab_end);
 
-    sceKernelModuleInfo->tlsInit = Ptr<const void>(!module_info->tls_start ? 0 : (module_info_segment_address.address() + module_info->tls_start));
+    // tls_start is a segment-relative offset and 0 is a valid value for it
+    // (.tdata is commonly the first thing in its segment) - tls_memsz is
+    // what actually distinguishes "no TLS" from "TLS at offset 0".
+    sceKernelModuleInfo->tlsInit = Ptr<const void>(!module_info->tls_memsz ? 0 : (module_info_segment_address.address() + module_info->tls_start));
     sceKernelModuleInfo->tlsInitSize = module_info->tls_filesz;
     sceKernelModuleInfo->tlsAreaSize = module_info->tls_memsz;
 
-    if (sceKernelModuleInfo->tlsInit) {
+    if (sceKernelModuleInfo->tlsAreaSize) {
         kernel.tls_address = sceKernelModuleInfo->tlsInit;
         kernel.tls_psize = sceKernelModuleInfo->tlsInitSize;
         kernel.tls_msize = sceKernelModuleInfo->tlsAreaSize;

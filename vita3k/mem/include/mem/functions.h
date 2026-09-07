@@ -66,5 +66,11 @@ Block alloc_block(MemState &mem, uint32_t size, const char *name, Address start_
 Address alloc_at(MemState &state, Address address, uint32_t size, const char *name);
 Address try_alloc_at(MemState &state, Address address, uint32_t size, const char *name);
 void free(MemState &state, Address address);
+void pin_range(MemState &state, Address addr, uint32_t size, const char *tag);
+void unpin_range(MemState &state, Address addr);
+// Diagnostic write watch (VITA3K_WATCH="lo-hi", hex guest addresses):
+// true when [addr, addr+size) intersects the watched range. Callers log
+// their own context (guest PC, thread) to catch a memory corruptor live.
+bool watch_intersects(Address addr, uint32_t size);
 uint32_t mem_available(MemState &state);
 const char *mem_name(Address address, MemState &state);

@@ -86,6 +86,7 @@ struct ThreadState {
 
     ThreadState() = delete;
     explicit ThreadState(SceUID id, KernelState &kernel, MemState &mem);
+    ~ThreadState();
 
     int init(const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
     int start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback = false);

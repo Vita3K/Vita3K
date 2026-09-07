@@ -1088,6 +1088,8 @@ static int delay_thread_cb(EmuEnvState &emuenv, SceUID thread_id, SceUInt delay_
 
 EXPORT(int, sceKernelDelayThread, SceUInt delay) {
     TRACY_FUNC(sceKernelDelayThread, delay);
+    if (delay >= 100000)
+        LOG_ERROR("RBDIAG sceKernelDelayThread delay={}us thread={}", delay, thread_id);
     return delay_thread(emuenv.kernel, thread_id, delay);
 }
 

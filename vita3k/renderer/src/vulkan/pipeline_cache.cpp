@@ -879,6 +879,23 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         color_blending.setAttachments(blending);
     }
 
+    // FF6 debug: correlate guest fragprog address with baked blend state + shader hashes
+    {
+        const auto &bl = fragment_program.blending;
+        printf("[pipelog] fragprog=0x%08x prim=%d fragdis=%d nooutput=%d interlock=%d maskupd=%d "
+               "blendEn=%d colorSrc=%d colorDst=%d colorOp=%d alphaSrc=%d alphaDst=%d alphaOp=%d writeMask=0x%x "
+               "fragHash=%s vertHash=%s\n",
+            record.fragment_program.address(), static_cast<int>(type),
+            static_cast<int>(is_fragment_disabled), static_cast<int>(frag_has_no_output), static_cast<int>(use_shader_interlock),
+            static_cast<int>(fragment_program_gxm.is_maskupdate),
+            static_cast<int>(bl.blendEnable),
+            static_cast<int>(bl.srcColorBlendFactor), static_cast<int>(bl.dstColorBlendFactor), static_cast<int>(bl.colorBlendOp),
+            static_cast<int>(bl.srcAlphaBlendFactor), static_cast<int>(bl.dstAlphaBlendFactor), static_cast<int>(bl.alphaBlendOp),
+            static_cast<uint32_t>(vk::ColorComponentFlags::MaskType(bl.colorWriteMask)),
+            hex_string(fragment_program.hash).c_str(), hex_string(vertex_program.hash).c_str());
+        fflush(stdout);
+    }
+
     vk::PipelineLayout pipeline_layout = pipeline_layouts[vertex_program.texture_count][fragment_program.texture_count];
 
     // all of these can be changed at any time using the vita graphics api (like opengl)

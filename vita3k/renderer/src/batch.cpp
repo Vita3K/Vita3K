@@ -30,6 +30,7 @@
 #include <overlay/shader_precompile_progress.h>
 #include <util/log.h>
 
+#include <chrono>
 #include <memory>
 #include <thread>
 
@@ -242,6 +243,7 @@ static void render_loop(renderer::State &state, DisplayState &display, GxmState 
             state.swap_window();
         }
     }
+    int rbdiag_iter = 0;
     while (!state.render_abort.load(std::memory_order_relaxed)) {
 #ifdef TRACY_ENABLE
         ZoneScopedN("Game rendering");
@@ -249,7 +251,10 @@ static void render_loop(renderer::State &state, DisplayState &display, GxmState 
         if (!state.set_current())
             break;
 
+        // RBDIAG: temporary per-stage timing to locate the ~2s readback stall
+        auto rbdiag_t0 = std::chrono::steady_clock::now();
         process_batches(state, state.features, mem, config, 500);
+        auto rbdiag_t1 = std::chrono::steady_clock::now();
 
         if (state.render_abort.load(std::memory_order_relaxed))
             break;
@@ -269,8 +274,19 @@ static void render_loop(renderer::State &state, DisplayState &display, GxmState 
         }
 
         state.render_frame(display, gxm, mem);
+        auto rbdiag_t2 = std::chrono::steady_clock::now();
         state.swap_window();
+        auto rbdiag_t3 = std::chrono::steady_clock::now();
         state.async_flip_requested.store(false, std::memory_order_relaxed);
+
+        {
+            double pb_ms = std::chrono::duration<double, std::milli>(rbdiag_t1 - rbdiag_t0).count();
+            double rf_ms = std::chrono::duration<double, std::milli>(rbdiag_t2 - rbdiag_t1).count();
+            double sw_ms = std::chrono::duration<double, std::milli>(rbdiag_t3 - rbdiag_t2).count();
+            if (pb_ms > 15.0 || rf_ms > 15.0 || sw_ms > 15.0)
+                LOG_ERROR("RBDIAG iter={} process_batches={:.1f}ms render_frame={:.1f}ms swap_window={:.1f}ms", rbdiag_iter, pb_ms, rf_ms, sw_ms);
+        }
+        rbdiag_iter++;
 
 #ifdef TRACY_ENABLE
         FrameMark;

@@ -40,6 +40,7 @@
 #include <util/string_utils.h>
 
 #include <chrono>
+#include <fstream>
 #include <thread>
 
 #include <QApplication>
@@ -265,14 +266,22 @@ int main(int argc, char *argv[]) {
     // the emulator save a screenshot of the current app frame through the
     // regular take_screenshot() path, so external tooling can grab frames
     // without touching the GUI.
+    // The guest can raise the same trigger through ux0:data/screenshot.trigger;
+    // the file's content (if any) tags the screenshot's name.
     std::thread([&emuenv]() {
-        const fs::path trigger = emuenv.shared_path / "screenshot.trigger";
+        const fs::path triggers[] = { emuenv.shared_path / "screenshot.trigger", emuenv.shared_path / "fs" / "ux0" / "data" / "screenshot.trigger" };
         while (true) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-            boost::system::error_code ec;
-            if (fs::exists(trigger, ec)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            for (const fs::path &trigger : triggers) {
+                boost::system::error_code ec;
+                if (!fs::exists(trigger, ec))
+                    continue;
+                std::string tag;
+                if (std::ifstream in{ trigger.string() }) {
+                    std::getline(in, tag);
+                }
                 fs::remove(trigger, ec);
-                take_screenshot(emuenv);
+                take_screenshot(emuenv, tag);
             }
         }
     }).detach();

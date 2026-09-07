@@ -20,16 +20,21 @@
 #include <cpu/state.h>
 #include <util/log.h>
 
+#include <mem/functions.h>
 #include <mem/ptr.h>
 
 #include <dynarmic/frontend/A32/a32_ir_emitter.h>
 #include <dynarmic/interface/A32/coprocessor.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
+#include <atomic>
 #include <bit>
+#include <chrono>
+#include <cstdlib>
 #include <memory>
 #include <optional>
 #include <string>
+#include <thread>
 
 class ArmDynarmicCP15 : public Dynarmic::A32::Coprocessor {
     uint32_t tpidruro;
@@ -166,10 +171,16 @@ public:
             LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x}\n{}", sizeof(T) * 8, addr, this->cpu->save_context().description());
 
             auto pc = this->cpu->get_pc();
-            if (pc < parent->mem->host_page_size)
-                LOG_CRITICAL("PC is 0x{:x}", pc);
-            else
+            if (pc < parent->mem->host_page_size) {
+                // Executing near NULL (a wiped stack popped 0 into PC): the
+                // thread can only spin on invalid fetches. Park it as if it
+                // returned instead of flooding the log until the host dies.
+                LOG_CRITICAL("PC is 0x{:x}: parking thread {}", pc, parent->thread_id);
+                cpu->halted = true;
+                cpu->jit->HaltExecution();
+            } else {
                 LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+            }
             return 0;
         }
 
@@ -196,17 +207,67 @@ public:
         return MemoryRead<uint64_t>(addr);
     }
 
+    // With cpu-opt off (no fastmem, no page table) every guest store lands
+    // here. Zero-stores into the watched range are folded into contiguous
+    // runs (one line per run, >= 64 bytes) so a boot's worth of small legit
+    // zeroing cannot exhaust the log before the wiper's sweep shows up.
+    uint32_t watch_run_pc = 0, watch_run_lr = 0;
+    uint32_t watch_run_start = 0, watch_run_end = 0;
+
+    void watch_flush() {
+        // 8B threshold: the heap header-zeroer writes 8-16 byte spans; keep
+        // the watched range narrow (a single object header) to compensate.
+        if (watch_run_end - watch_run_start >= 8) {
+            static std::atomic<int> hits{ 0 };
+            if (hits.fetch_add(1) < 20000)
+                LOG_CRITICAL("[watch] zero-run 0x{:08x}..0x{:08x} ({}B) pc=0x{:08x} lr=0x{:08x} thread={}",
+                    watch_run_start, watch_run_end, watch_run_end - watch_run_start,
+                    watch_run_pc, watch_run_lr, parent->thread_id);
+        }
+        watch_run_start = watch_run_end = 0;
+    }
+
+    template <typename T>
+    void watch_store(Dynarmic::A32::VAddr addr, T value) {
+        // VITA3K_WATCH_ALL=1: every store into the watched range, with its PC
+        static const bool watch_all = getenv("VITA3K_WATCH_ALL") != nullptr;
+        if (watch_all && watch_intersects(addr, sizeof(T))) {
+            static std::atomic<int> all_hits{ 0 };
+            if (all_hits.fetch_add(1) < 4000)
+                LOG_CRITICAL("[watch] store 0x{:08x} ({}B) = 0x{:x} pc=0x{:08x} lr=0x{:08x}", addr, sizeof(T), static_cast<uint64_t>(value), cpu->get_pc(), cpu->get_lr());
+        }
+        if (value != 0 || !watch_intersects(addr, sizeof(T))) {
+            if (watch_run_end)
+                watch_flush();
+            return;
+        }
+        if (watch_run_end == addr) {
+            watch_run_end = addr + sizeof(T);
+        } else {
+            if (watch_run_end)
+                watch_flush();
+            watch_run_pc = cpu->get_pc();
+            watch_run_lr = cpu->get_lr();
+            watch_run_start = addr;
+            watch_run_end = addr + sizeof(T);
+        }
+    }
+
     template <typename T>
     void MemoryWrite(Dynarmic::A32::VAddr addr, T value) {
+        watch_store(addr, value);
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
             LOG_ERROR("Invalid write of uint{}_t at addr: 0x{:x}, val = 0x{:x}\n{}", sizeof(T) * 8, addr, value, this->cpu->save_context().description());
 
             auto pc = this->cpu->get_pc();
-            if (pc < parent->mem->host_page_size)
-                LOG_CRITICAL("PC is 0x{:x}", pc);
-            else
+            if (pc < parent->mem->host_page_size) {
+                LOG_CRITICAL("PC is 0x{:x}: parking thread {}", pc, parent->thread_id);
+                cpu->halted = true;
+                cpu->jit->HaltExecution();
+            } else {
                 LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+            }
             return;
         }
 
@@ -234,6 +295,7 @@ public:
 
     template <typename T>
     bool MemoryWriteExclusive(Dynarmic::A32::VAddr addr, T value, T expected) {
+        watch_store(addr, value);
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
             LOG_ERROR("Invalid exclusive write of uint{}_t at addr: 0x{:x}, val = 0x{:x}, expected = 0x{:x}\n{}", sizeof(T) * 8, addr, value, expected, this->cpu->save_context().description());
@@ -323,10 +385,30 @@ public:
         cpu->jit->HaltExecution(Dynarmic::HaltReason::UserDefined8);
     }
 
-    void AddTicks(uint64_t ticks) override {}
+    void AddTicks(uint64_t ticks) override {
+        cpu->throttle_ticks += ticks;
+    }
 
     uint64_t GetTicksRemaining() override {
-        return 1ull << 60;
+        const uint64_t mhz = cpu->throttle_mhz;
+        if (!mhz)
+            return 1ull << 60;
+
+        const auto now = std::chrono::steady_clock::now();
+        const auto expected = std::chrono::microseconds(cpu->throttle_ticks / mhz);
+        const auto elapsed = now - cpu->throttle_epoch;
+        if (elapsed >= expected) {
+            // At or behind the target rate (typically: just resumed after a
+            // host-side wait). Restart the window instead of banking credit,
+            // so the guest never sprints to catch up.
+            cpu->throttle_epoch = now;
+            cpu->throttle_ticks = 0;
+        } else {
+            std::this_thread::sleep_for(expected - elapsed);
+        }
+
+        // One quantum = 1 ms of guest time per JIT entry.
+        return mhz * 1000;
     }
 };
 
@@ -347,7 +429,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.coprocessors[15] = cp15;
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
-    config.enable_cycle_counting = false;
+    config.enable_cycle_counting = throttle_mhz != 0;
 
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
@@ -358,6 +440,17 @@ DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, bool cpu_opt
     , cp15(std::make_shared<ArmDynarmicCP15>())
     , core_id(processor_id)
     , cpu_opt(cpu_opt) {
+    if (const char *env = std::getenv("VITA3K_CPU_MHZ")) {
+        throttle_mhz = std::strtoull(env, nullptr, 10);
+        if (throttle_mhz) {
+            throttle_epoch = std::chrono::steady_clock::now();
+            static bool logged = false;
+            if (!logged) {
+                logged = true;
+                LOG_INFO("[throttle] guest CPU limited to {} MHz (VITA3K_CPU_MHZ)", throttle_mhz);
+            }
+        }
+    }
     jit = make_jit();
 }
 

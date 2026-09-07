@@ -31,4 +31,4 @@ ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const AppLaunchR
 ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id);
 ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchRequest &launch_request);
 void toggle_texture_replacement(EmuEnvState &emuenv);
-void take_screenshot(EmuEnvState &emuenv);
+void take_screenshot(EmuEnvState &emuenv, const std::string &tag = "");

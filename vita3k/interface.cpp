@@ -570,7 +570,7 @@ static std::vector<uint32_t> get_current_app_frame(EmuEnvState &emuenv, uint32_t
     return frame;
 }
 
-void take_screenshot(EmuEnvState &emuenv) {
+void take_screenshot(EmuEnvState &emuenv, const std::string &tag) {
     if (emuenv.cfg.screenshot_format == None)
         return;
 
@@ -598,7 +598,11 @@ void take_screenshot(EmuEnvState &emuenv) {
 #endif
 
     const auto img_format = emuenv.cfg.screenshot_format == JPEG ? ".jpg" : ".png";
-    const fs::path save_file = save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), localtime, img_format);
+    // A tag from the headless trigger names the file after the guest's frame
+    // instead of the wall clock, so runs can be diffed frame by frame.
+    const fs::path save_file = tag.empty()
+        ? save_folder / fmt::format("{}_{:%Y-%m-%d-%H%M%OS}{}", string_utils::remove_special_chars(emuenv.current_app_title), localtime, img_format)
+        : save_folder / fmt::format("{}_{}{}", string_utils::remove_special_chars(emuenv.current_app_title), string_utils::remove_special_chars(tag), img_format);
     constexpr int quality = 85; // google recommended value
     if (emuenv.cfg.screenshot_format == JPEG) {
         if (stbi_write_jpg(fs_utils::path_to_utf8(save_file).c_str(), width, height, 4, frame.data(), quality) == 1)
