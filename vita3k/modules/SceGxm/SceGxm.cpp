@@ -3069,6 +3069,11 @@ EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
     if (*value != target_value) {
         emuenv.renderer->notification_ready.wait(lock, [&]() { return *value == target_value || emuenv.display.abort.load(); });
     }
+    lock.unlock();
+
+    // a notification wait is a CPU sync point: flush the GPU readback of surfaces rendered so far
+    if (emuenv.renderer->gpu_readback && emuenv.renderer->current_backend == renderer::Backend::Vulkan && emuenv.renderer->context)
+        renderer::finish(*emuenv.renderer, emuenv.renderer->context);
 
     return 0;
 }
