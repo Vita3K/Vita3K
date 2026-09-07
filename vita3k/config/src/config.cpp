@@ -39,7 +39,7 @@
 
 namespace config {
 static bool is_numeric_scalar(const YAML::Node &node) {
-    if (!node.IsScalar())
+    if (!node.IsDefined() || !node.IsScalar())
         return false;
 
     const std::string value = node.Scalar();
