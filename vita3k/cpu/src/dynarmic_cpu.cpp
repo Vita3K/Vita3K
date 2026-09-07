@@ -173,9 +173,9 @@ public:
             const bool periodic = (n % INVALID_READ_LOG_EVERY) == 0;
 
             if (verbose) {
-                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x}\n{}", sizeof(T) * 8, addr, this->cpu->save_context().description());
+                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x} (thread {})\n{}", sizeof(T) * 8, addr, parent->thread_id, this->cpu->save_context().description());
             } else if (periodic) {
-                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x} (occurrence #{}, further reports suppressed)", sizeof(T) * 8, addr, n);
+                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x} (thread {}, occurrence #{}, further reports suppressed)", sizeof(T) * 8, addr, parent->thread_id, n);
             }
 
             if (verbose || periodic) {
