@@ -184,6 +184,13 @@ COMMAND(handle_transfer_copy) {
         delete[] images;
     };
 
+    if (renderer.current_backend == Backend::Vulkan && renderer.gpu_readback) {
+        // memory mapping is off (or the surface sync trap did not catch this address): pull the GPU data
+        // for the source surface into guest memory on demand before doing the CPU-side copy
+        const uint32_t src_bytes = (images[0].y + images[0].height) * images[0].stride;
+        dynamic_cast<vulkan::VKState &>(renderer).surface_cache.readback_surface_to_memory(mem, images[0].address.address(), src_bytes);
+    }
+
     if (renderer.current_backend == Backend::Vulkan && renderer.features.enable_memory_mapping && !renderer.disable_surface_sync) {
         if (dynamic_cast<vulkan::VKState &>(renderer).surface_cache.check_for_surface(mem, images[0].address.address(), copy_operation, images[1].address.address()))
             // let the vulkan surface cache handle it
@@ -275,6 +282,12 @@ COMMAND(handle_transfer_downscale) {
         delete src;
         delete dst;
     };
+
+    if (renderer.current_backend == Backend::Vulkan && renderer.gpu_readback) {
+        // src->address already includes the x/y offset applied above
+        const uint32_t src_bytes = src->height * src->stride;
+        dynamic_cast<vulkan::VKState &>(renderer).surface_cache.readback_surface_to_memory(mem, src->address.address(), src_bytes);
+    }
 
     if (renderer.current_backend == Backend::Vulkan && renderer.features.enable_memory_mapping && !renderer.disable_surface_sync) {
         if (dynamic_cast<vulkan::VKState &>(renderer).surface_cache.check_for_surface(mem, src->address.address(), downscale_operation, dst->address.address()))

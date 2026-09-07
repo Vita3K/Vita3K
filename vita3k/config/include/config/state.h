@@ -74,6 +74,7 @@ struct Config {
         bool high_accuracy = false;
         float resolution_multiplier = 1.0f;
         bool disable_surface_sync = false;
+        bool gpu_readback = true;
         std::string screen_filter = "Bilinear";
         std::string memory_mapping = "double-buffer";
         bool v_sync = true;

@@ -37,6 +37,8 @@ COMMAND(handle_nop) {
     TRACY_FUNC_COMMANDS(handle_nop);
     // Signal back to client
     int code_to_finish = helper.pop<int>();
+    if (renderer.current_backend == Backend::Vulkan && renderer.gpu_readback)
+        dynamic_cast<vulkan::VKState &>(renderer).surface_cache.readback_pending_surfaces(mem);
     complete_command(renderer, helper, code_to_finish);
 }
 

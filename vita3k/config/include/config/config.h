@@ -148,6 +148,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(bool, "high-accuracy", false, high_accuracy)                                                   \
     code(float, "resolution-multiplier", 1.0f, resolution_multiplier)                                   \
     code(bool, "disable-surface-sync", true, disable_surface_sync)                                      \
+    code(bool, "gpu-readback", true, gpu_readback)                                                      \
     code(std::string, "screen-filter", "Bilinear", screen_filter)                                       \
     code(bool, "v-sync", true, v_sync)                                                                  \
     code(int, "anisotropic-filtering", 1, anisotropic_filtering)                                        \

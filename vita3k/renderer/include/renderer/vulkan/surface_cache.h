@@ -81,6 +81,10 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     uint16_t original_height;
     uint32_t stride_bytes;
     uint64_t last_frame_rendered;
+    // frame this surface was last read back to guest memory, avoids redoing the same readback
+    // scene counters: skip a GPU readback when nothing was rendered since the last one
+    uint64_t last_scene_rendered = 0;
+    uint64_t last_readback_scene = 0;
 
     SceGxmColorBaseFormat format;
     vk::ComponentMapping swizzle;
@@ -183,6 +187,11 @@ private:
     VKRenderTarget *target = nullptr;
     ColorSurfaceCacheInfo *last_written_surface = nullptr;
 
+    // staging buffer used for on-demand GPU->CPU readback (readback_surface_to_memory)
+    vkutil::Buffer readback_buffer;
+    // colour surfaces rendered since the last sceGxmFinish
+    std::vector<ColorSurfaceCacheInfo *> pending_readback;
+
     // destroy all framebuffers using view as their color or depth-stencil
     void destroy_framebuffers(vk::ImageView view);
 
@@ -220,6 +229,13 @@ public:
 
     // If non-null, the return value must be sent as a PostSurfaceSyncRequest
     ColorSurfaceCacheInfo *perform_surface_sync();
+
+    // On-demand synchronous GPU->CPU readback for the color surface (if any) containing [address, address+bytes)
+    // used when memory mapping is disabled, e.g. by sceGxmTransferCopy/Downscale reading from a render target.
+    // Returns false if no matching surface was found, or the surface data is stale/already read back.
+    bool readback_surface_to_memory(MemState &mem, Address address, uint32_t bytes);
+    void readback_pending_surfaces(MemState &mem);
+    bool readback_surface(MemState &mem, ColorSurfaceCacheInfo &surface);
 
     // Called after the render has been done
     void perform_post_surface_sync(const MemState &mem, ColorSurfaceCacheInfo *surface);

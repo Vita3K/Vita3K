@@ -18,6 +18,7 @@
 #include <renderer/vulkan/surface_cache.h>
 
 #include <gxm/functions.h>
+#include <renderer/functions.h>
 #include <renderer/vulkan/gxm_to_vulkan.h>
 #include <renderer/vulkan/state.h>
 #include <renderer/vulkan/types.h>
@@ -109,6 +110,7 @@ void VKSurfaceCache::destroy_framebuffers(vk::ImageView view) {
 
 void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
     vkutil::DestroyQueue &destroy_queue = state.frame().destroy_queue;
+    std::erase(pending_readback, &info);
 
     // don't forget to destroy in the right order
     for (auto &casted : info.casted_textures) {
@@ -285,6 +287,9 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
             constexpr uint64_t big_delay_between_frames = 60;
             state.pipeline_cache.can_use_deferred_compilation = context->frame_timestamp - info.last_frame_rendered < big_delay_between_frames;
             info.last_frame_rendered = context->frame_timestamp;
+            info.last_scene_rendered = context->scene_timestamp;
+            if (state.gpu_readback && vector_utils::find_index(pending_readback, &info) == -1)
+                pending_readback.push_back(&info);
 
             if (vk_format == info.texture.format) {
                 return { info.texture.view, &info.texture };
@@ -316,6 +321,9 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_color_surface_for_framebuffer(Mem
 
     color_surface_queue.set_as_mru(&info_added);
     info_added.last_frame_rendered = context->frame_timestamp;
+    info_added.last_scene_rendered = context->scene_timestamp;
+    if (state.gpu_readback)
+        pending_readback.push_back(&info_added);
 
     color_address_lookup[address] = &info_added;
 
@@ -1379,6 +1387,181 @@ void VKSurfaceCache::perform_post_surface_sync(const MemState &mem, ColorSurface
         swizzle_text_T<uint32_t>(reinterpret_cast<uint32_t *>(pixels), nb_pixels, surface);
         break;
     }
+}
+
+// sceGxmFinish: guest memory must hold what the GPU rendered since the last finish
+void VKSurfaceCache::readback_pending_surfaces(MemState &mem) {
+    VKContext &context = *static_cast<VKContext *>(state.context);
+    for (ColorSurfaceCacheInfo *surface : pending_readback) {
+        if (surface->last_frame_rendered + MAX_FRAMES_RENDERING <= context.frame_timestamp)
+            continue;
+        if (surface->last_readback_scene != 0 && surface->last_readback_scene == surface->last_scene_rendered)
+            continue;
+        readback_surface(mem, *surface);
+    }
+    pending_readback.clear();
+}
+
+bool VKSurfaceCache::readback_surface_to_memory(MemState &mem, Address address, uint32_t bytes) {
+    // get closest surface with an address below address, same lookup as sourcing_color_surface_for_presentation
+    auto ite = color_address_lookup.upper_bound(address);
+    if (ite == color_address_lookup.begin())
+        return false;
+    --ite;
+
+    ColorSurfaceCacheInfo &surface = *ite->second;
+    if (surface.data.address() + surface.total_bytes <= address)
+        // no overlap
+        return false;
+
+    VKContext &context = *static_cast<VKContext *>(state.context);
+    // the GPU image is stale, don't clobber CPU-written memory with it
+    if (surface.last_frame_rendered + MAX_FRAMES_RENDERING <= context.frame_timestamp)
+        return false;
+
+    return readback_surface(mem, surface);
+}
+
+// copy the GPU image of a cached colour surface back into guest memory (blocking)
+bool VKSurfaceCache::readback_surface(MemState &mem, ColorSurfaceCacheInfo &surface) {
+    if (surface.last_readback_scene != 0 && surface.last_readback_scene == surface.last_scene_rendered)
+        // already read back since the last time this surface was rendered to
+        return true;
+
+    LOG_INFO_ONCE("GPU readback active: surface at 0x{:08x} ({}x{}, format 0x{:X}), {} bytes", surface.data.address(),
+        surface.original_width, surface.original_height, fmt::underlying(surface.format), surface.total_bytes);
+
+    vk::Image image_to_copy = surface.texture.image;
+    vk::ImageLayout image_layout = vk::ImageLayout::eGeneral;
+    const uint32_t pixel_stride = (surface.stride_bytes * 8) / gxm::bits_per_pixel(surface.format);
+
+    vk::CommandBuffer cmd_buffer;
+    vk::Fence fence = state.device.createFence({});
+    {
+        std::lock_guard<std::mutex> lock(state.multithread_pool_mutex);
+        cmd_buffer = vkutil::create_single_time_command(state.device, state.multithread_command_pool);
+
+        if (state.res_multiplier != 1.0f) {
+            // scale back the image to its original size first, same as perform_surface_sync
+            if (!surface.blit_image)
+                surface.blit_image = std::make_unique<vkutil::Image>();
+
+            vkutil::Image &blit_image = *surface.blit_image;
+            if (!blit_image.image) {
+                blit_image.format = surface.texture.format;
+                blit_image.width = surface.original_width;
+                blit_image.height = surface.original_height;
+                blit_image.init_image(vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst);
+                blit_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
+            } else {
+                blit_image.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
+            }
+
+            vk::ImageBlit blit{
+                .srcSubresource = vkutil::color_subresource_layer,
+                .srcOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{ 0, 0, 0 }, vk::Offset3D{ surface.width, surface.height, 1 } },
+                .dstSubresource = vkutil::color_subresource_layer,
+                .dstOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{ 0, 0, 0 }, vk::Offset3D{ surface.original_width, surface.original_height, 1 } },
+            };
+            cmd_buffer.blitImage(image_to_copy, image_layout, blit_image.image, vk::ImageLayout::eTransferDstOptimal, blit, vk::Filter::eNearest);
+
+            blit_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferSrc);
+            image_to_copy = blit_image.image;
+            image_layout = vk::ImageLayout::eTransferSrcOptimal;
+        }
+
+        const vk::DeviceSize needed_size = static_cast<vk::DeviceSize>(surface.stride_bytes) * surface.original_height;
+        if (readback_buffer.size < needed_size) {
+            readback_buffer.destroy();
+            readback_buffer.size = needed_size;
+            readback_buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vkutil::vma_mapped_alloc);
+        }
+
+        vk::BufferImageCopy copy{
+            .bufferOffset = 0,
+            .bufferRowLength = pixel_stride,
+            .bufferImageHeight = surface.original_height,
+            .imageSubresource = vkutil::color_subresource_layer,
+            .imageOffset = { 0, 0, 0 },
+            .imageExtent = { surface.original_width, surface.original_height, 1 }
+        };
+        cmd_buffer.copyImageToBuffer(image_to_copy, image_layout, readback_buffer.buffer, copy);
+
+        cmd_buffer.end();
+    }
+
+    vk::SubmitInfo submit_info{};
+    submit_info.setCommandBuffers(cmd_buffer);
+    state.general_queue.submit(submit_info, fence);
+
+    // synchronous readback: the caller (sceGxmTransferCopy after sceGxmFinish) needs the data right now
+    auto wait_result = state.device.waitForFences(fence, vk::True, std::numeric_limits<uint64_t>::max());
+    if (wait_result != vk::Result::eSuccess)
+        LOG_ERROR("Could not wait for fences.");
+    state.device.destroyFence(fence);
+    {
+        std::lock_guard<std::mutex> lock(state.multithread_pool_mutex);
+        state.device.freeCommandBuffers(state.multithread_command_pool, cmd_buffer);
+    }
+
+    // CPU conversion: component swizzle + un-tiling from the staging buffer into guest memory
+    const uint32_t nb_pixels = pixel_stride * surface.original_height;
+    const uint32_t bpp = gxm::bits_per_pixel(surface.format) / 8;
+    uint8_t *linear_src = static_cast<uint8_t *>(readback_buffer.mapped_data);
+    std::vector<uint8_t> converted;
+
+    if (format_need_additional_memory(surface.format)) {
+        // 24-bit rgb-like formats: the vulkan image is rgba, convert with sws like perform_post_surface_sync
+        const bool is_swizzle_identity = surface.swizzle.r == vk::ComponentSwizzle::eR;
+        if (!surface.sws_context) {
+            const AVPixelFormat dst_fmt = is_swizzle_identity ? AV_PIX_FMT_RGB24 : AV_PIX_FMT_BGR24;
+            surface.sws_context = sws_getContext(surface.original_width, surface.original_height, AV_PIX_FMT_RGB0, surface.original_width, surface.original_height, dst_fmt, 0, nullptr, nullptr, nullptr);
+        }
+
+        converted.resize(static_cast<size_t>(pixel_stride) * 3 * surface.original_height);
+        uint8_t *converted_ptr = converted.data();
+        int src_stride = pixel_stride * 4;
+        int dst_stride = pixel_stride * 3;
+        sws_scale(surface.sws_context, &linear_src, &src_stride, 0, surface.original_height, &converted_ptr, &dst_stride);
+
+        linear_src = converted.data();
+    } else {
+        switch (vk::componentBits(surface.texture.format, 0)) {
+        case 8:
+            swizzle_text_T<uint8_t>(linear_src, nb_pixels, &surface);
+            break;
+        case 16:
+            swizzle_text_T<uint16_t>(reinterpret_cast<uint16_t *>(linear_src), nb_pixels, &surface);
+            break;
+        case 32:
+            swizzle_text_T<uint32_t>(reinterpret_cast<uint32_t *>(linear_src), nb_pixels, &surface);
+            break;
+        }
+    }
+
+    uint8_t *guest_data = surface.data.cast<uint8_t>().get(mem);
+    if (surface.tiling == SurfaceTiling::Linear) {
+        // rows are contiguous on both sides (bytes_per_stride already accounts for bpp)
+        memcpy(guest_data, linear_src, static_cast<size_t>(surface.stride_bytes) * surface.original_height);
+    } else {
+        // same offset formulas as the SCE_GXM_TRANSFER_SWIZZLED/TILED cases in perform_transfer_copy_impl
+        for (uint32_t y = 0; y < surface.original_height; y++) {
+            for (uint32_t x = 0; x < surface.original_width; x++) {
+                uint32_t dst_pixel;
+                if (surface.tiling == SurfaceTiling::Swizzled) {
+                    dst_pixel = ::renderer::texture::encode_morton(x, y, surface.original_width, surface.original_height);
+                } else {
+                    const uint32_t texel_offset_in_tile = ((y % 32) * 32) + (x % 32);
+                    const uint32_t tile_address = (pixel_stride / 32) * (y / 32) + (x / 32);
+                    dst_pixel = tile_address * 1024 + texel_offset_in_tile;
+                }
+                memcpy(guest_data + dst_pixel * bpp, linear_src + (y * pixel_stride + x) * bpp, bpp);
+            }
+        }
+    }
+
+    surface.last_readback_scene = surface.last_scene_rendered;
+    return true;
 }
 
 void VKSurfaceCache::destroy_associated_framebuffers(const VKRenderTarget *render_target) {

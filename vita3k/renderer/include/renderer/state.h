@@ -93,6 +93,8 @@ struct State {
     FeatureState features;
     float res_multiplier;
     bool disable_surface_sync;
+    // on-demand GPU->CPU readback for sceGxmTransferCopy/Downscale when memory mapping is off
+    bool gpu_readback = true;
     bool stretch_the_display_area;
     bool fullscreen_hd_res_pixel_perfect;
     bool fullscreen = false;
