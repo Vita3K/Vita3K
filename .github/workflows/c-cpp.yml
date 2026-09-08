@@ -22,27 +22,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - platform: linux-x64
             runs_on: ubuntu-latest
-            platform: linux-x64
             arch: x86_64
             cmake_preset: ci-linux-clang-appimage
             linuxdeploy_command: /usr/local/bin/linuxdeploy-x86_64.AppImage
             cache_path: ''
             qt_install_deps: 'true'
 
-          - os: ubuntu-24.04-arm
+          - platform: linux-arm64
             runs_on: ubuntu-24.04-arm
-            platform: linux-arm64
             arch: aarch64
             cmake_preset: ci-linux-clang-appimage
             linuxdeploy_command: /usr/local/bin/linuxdeploy-aarch64.AppImage
             cache_path: ''
             qt_install_deps: 'true'
 
-          - os: windows-latest
+          - platform: windows-x64
             runs_on: windows-latest
-            platform: windows-x64
             arch: x86_64
             cmake_preset: ci-windows-msvc
             vcpkg_root: C:\vcpkg
@@ -50,23 +47,20 @@ jobs:
             cache_path: C:\vcpkg-binary-cache
             qt_install_deps: 'false'
 
-          - os: windows-11-arm
+          - platform: windows-arm64
             runs_on: windows-11-arm
-            platform: windows-arm64
             cmake_preset: ci-windows-msys2-clang
             msys2_env: CLANGARM64
             cache_path: C:\msys2-ccache
             qt_install_deps: 'false'
 
-          - os: macos-intel
-            platform: macos-x64
+          - platform: macos-x64
             runs_on: macos-latest
             cmake_preset: ci-macos-x64
             cache_path: ~/Library/Caches/ccache
             qt_install_deps: 'false'
 
-          - os: macos-arm64
-            platform: macos-arm64
+          - platform: macos-arm64
             runs_on: macos-latest
             cmake_preset: ci-macos-arm64
             cache_path: ~/Library/Caches/ccache
