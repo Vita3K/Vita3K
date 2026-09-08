@@ -41,6 +41,7 @@
 #include <io/state.h>
 #include <mem/mempool.h>
 #include <renderer/functions.h>
+#include <renderer/vulkan/types.h>
 #include <renderer/state.h>
 #include <renderer/types.h>
 #include <util/align.h>
@@ -2432,15 +2433,19 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
     // submitted regardless of renderer backend.
     {
         static int drawlog_armed = 0;
+        extern std::atomic<int> g_drawlog_armed_flag;
         static int drawlog_check = 0;
         if (drawlog_armed <= 0 && (++drawlog_check & 0x3ff) == 0) {
             boost::system::error_code ec;
             const fs::path trigger = emuenv.shared_path / "drawlog.trigger";
             if (fs::exists(trigger, ec)) {
+                int n_armed = 80;
+                if (std::ifstream in{ trigger.string() }) { in >> n_armed; if (n_armed <= 0) n_armed = 80; }
                 fs::remove(trigger, ec);
-                drawlog_armed = 80;
+                drawlog_armed = n_armed;
             }
         }
+        g_drawlog_armed_flag = drawlog_armed > 0;
         if (drawlog_armed > 0) {
             drawlog_armed--;
             const float *v = static_cast<const float *>(context->state.stream_data[0].cast<const void>().get(emuenv.mem));
@@ -2455,12 +2460,27 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
                 v ? v[0] : -9999.f, v ? v[1] : -9999.f, v ? v[2] : -9999.f,
                 v ? v[3] : -9999.f, v ? v[4] : -9999.f, v ? v[5] : -9999.f,
                 u ? u[0] : -9999.f, u ? u[1] : -9999.f, u ? u[2] : -9999.f, u ? u[3] : -9999.f);
-            LOG_INFO("[drawlog2] fragmode={} maskmode={} writingmask={} fragprog={:#x} texdata0={:#x}",
+            LOG_INFO("[drawlog2] fragmode={} maskmode={} writingmask={} fragprog={:#x} texdata0={:#x} depthfunc={}/{} depthwrite={}/{} depthreplace={} discard={}",
                 (int)context->state.front_side_fragment_program_mode,
                 (int)context->state.back_side_fragment_program_mode,
                 (int)context->state.writing_mask,
                 context->state.fragment_program.address(),
-                (uint32_t)context->state.textures[0].data_addr << 2);
+                (uint32_t)context->state.textures[0].data_addr << 2,
+                (int)context->state.front_depth_func, (int)context->state.back_depth_func,
+                (int)context->state.front_depth_write_enable, (int)context->state.back_depth_write_enable,
+                gxm_fragment_program.program.get(emuenv.mem)->is_depth_replace_used(),
+                gxm_fragment_program.program.get(emuenv.mem)->is_discard_used());
+            {
+                const auto &cs = context->state.color_surface; const auto &ds = context->state.depth_stencil_surface;
+                const auto &fs_ = context->state.front_stencil; const auto &bs_ = context->state.back_stencil;
+                LOG_INFO("[drawlog4] fragcolor={} blend={:#x} cull={} twosided={} clipmode={} color=({:#x} {}x{} s{} fmt={:#x}) ds=({:#x}/{:#x} tf={:#x} bgd={} fl={} fs={} st={} mask={}) fstencil=({:#x} {:#x}/{:#x}/{:#x} cm={:#x} wm={:#x} ref={}) bstencil=({:#x} {:#x}/{:#x}/{:#x} cm={:#x} wm={:#x} ref={}) ",
+                    gxm_fragment_program.program.get(emuenv.mem)->is_frag_color_used(),
+                    (uint64_t)(gxm_fragment_program.renderer_data ? static_cast<const renderer::vulkan::VKFragmentProgram *>(gxm_fragment_program.renderer_data.get())->blending_hash : 0), (int)context->state.cull_mode, (int)context->state.two_sided, (int)context->state.region_clip_mode,
+                    cs.data.address(), cs.width, cs.height, cs.strideInPixels, (uint32_t)cs.colorFormat,
+                    ds.depth_data.address(), ds.stencil_data.address(), (uint32_t)ds._type_and_format, ds.background_depth, (int)ds.force_load, (int)ds.force_store, (int)ds.stencil, (int)ds.mask,
+                    (int)fs_.func, (int)fs_.stencil_fail, (int)fs_.depth_fail, (int)fs_.depth_pass, (int)fs_.compare_mask, (int)fs_.write_mask, (int)fs_.ref,
+                    (int)bs_.func, (int)bs_.stencil_fail, (int)bs_.depth_fail, (int)bs_.depth_pass, (int)bs_.compare_mask, (int)bs_.write_mask, (int)bs_.ref);
+            }
             // [drawlog3] one line per vertex attribute: layout + raw bytes of first 2 vertices
             for (const SceGxmVertexAttribute &a : gxm_vertex_program.attributes) {
                 const SceGxmVertexStream &s = gxm_vertex_program.streams[a.streamIndex];

@@ -17,6 +17,7 @@
 
 #include <renderer/vulkan/types.h>
 
+#include <atomic>
 #include <renderer/vulkan/functions.h>
 #include <renderer/vulkan/gxm_to_vulkan.h>
 #include <renderer/vulkan/state.h>
@@ -26,6 +27,8 @@
 
 #include <util/log.h>
 #include <util/overloaded.h>
+
+std::atomic<int> g_drawlog_armed_flag{ 0 };
 
 namespace renderer::vulkan {
 
@@ -317,6 +320,8 @@ static vk::DescriptorSet retrieve_color_descriptor(VKState &state, FrameDescript
 }
 
 void VKContext::start_render_pass(bool create_descriptor_set) {
+    if (::g_drawlog_armed_flag)
+        LOG_INFO("[rpstart] scene={} in_rp={} rp={:#x} bgdepth={} force_load={}", scene_timestamp, in_renderpass, (uintptr_t)(VkRenderPass)current_render_pass, record.depth_stencil_surface.background_depth, (int)record.depth_stencil_surface.force_load);
     if (in_renderpass) {
         LOG_ERROR("Starting render pass while already in render pass");
         return;
@@ -387,6 +392,8 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
 }
 
 void VKContext::stop_render_pass() {
+    if (::g_drawlog_armed_flag)
+        LOG_INFO("[rpstop] scene={}", scene_timestamp);
     if (!in_renderpass) {
         LOG_ERROR("Stopping render pass while not in render pass");
         return;
