@@ -328,6 +328,13 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config) {
     void *indices_ptr = indices.get(mem);
 
+    // Uniform uploads for this draw are complete. The next draw needs fresh
+    // allocations even if this one is skipped (mask update or a pending
+    // pipeline). Reusing a smaller allocation can overwrite earlier draws'
+    // uniform data when the following program needs a larger buffer.
+    context.vertex_uniform_storage_allocated = false;
+    context.fragment_uniform_storage_allocated = false;
+
     // FF6 debug: the Vulkan backend has no mask-bit emulation, yet it executes
     // maskupdate draws as regular draws whose shader writes vec4(writing_mask)
     // to the COLOR attachment -- a full-screen wipe. Skip them like the GL
@@ -518,8 +525,6 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
     context.render_cmd.drawIndexed(count, instance_count, 0, 0, 0);
 
-    context.vertex_uniform_storage_allocated = false;
-    context.fragment_uniform_storage_allocated = false;
 }
 
 } // namespace renderer::vulkan
