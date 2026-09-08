@@ -37,6 +37,9 @@ bin/
 gen/
 out/
 
+# vcpkg packages
+vcpkg_installed/
+
 # Gradle files
 .gradle/
 build/
