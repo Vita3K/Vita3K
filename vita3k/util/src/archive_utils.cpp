@@ -27,7 +27,11 @@ extern "C" {
 #include <7zTypes.h>
 }
 
+#include <algorithm>
 #include <cstring>
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
 #include <vector>
 
 namespace {
@@ -124,7 +128,16 @@ bool extract_7z(std::span<const uint8_t> data, const std::filesystem::path &out_
 
             const std::u16string u16(reinterpret_cast<const char16_t *>(name_utf16.data()), name_len > 0 ? name_len - 1 : 0);
             const std::string utf8_name = string_utils::utf16_to_utf8(u16);
-            const fs::path out_path = fs::path(out_dir.native()) / fs_utils::utf8_to_path(utf8_name);
+            const fs::path relative_path = fs_utils::utf8_to_path(utf8_name);
+
+            // A crafted archive could otherwise walk out of the destination and overwrite unrelated files
+            if (relative_path.is_absolute() || std::any_of(relative_path.begin(), relative_path.end(), [](const fs::path &part) { return part == ".."; })) {
+                LOG_ERROR("Refusing to extract {} outside of {}", utf8_name, out_dir.string());
+                success = false;
+                break;
+            }
+
+            const fs::path out_path = fs::path(out_dir.native()) / relative_path;
 
             fs::create_directories(out_path.parent_path());
 
@@ -135,6 +148,17 @@ bool extract_7z(std::span<const uint8_t> data, const std::filesystem::path &out_
                 break;
             }
             out.write(reinterpret_cast<const char *>(out_buffer + offset), static_cast<std::streamsize>(out_size_processed));
+
+#ifndef _WIN32
+            out.close();
+
+            // 7-Zip keeps the Unix mode in the upper attribute bits, and dropping it would leave binaries non-executable
+            if (SzBitWithVals_Check(&db.Attribs, i)) {
+                const UInt32 attrib = db.Attribs.Vals[i];
+                if (attrib & 0x8000)
+                    ::chmod(out_path.c_str(), static_cast<mode_t>((attrib >> 16) & 0777));
+            }
+#endif
         }
 
         ISzAlloc_Free(&alloc_main, out_buffer);
