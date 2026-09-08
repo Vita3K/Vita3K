@@ -87,7 +87,7 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
     sinks.clear();
     if (use_stdout)
 #ifdef __ANDROID__
-        sinks.push_back(std::make_shared<spdlog::sinks::android_sink_mt>());
+        sinks.push_back(std::make_shared<spdlog::sinks::android_sink_mt>("Vita3K"));
 #else
         sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
 #endif

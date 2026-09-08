@@ -37,7 +37,7 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 
-#ifdef ANDROID
+#ifdef __ANDROID__
     const std::string gl_version = "#version 300 es\nprecision highp float;\n";
 #else
     const std::string gl_version = "#version 410 core\n";
