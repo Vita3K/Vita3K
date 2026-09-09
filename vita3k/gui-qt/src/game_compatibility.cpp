@@ -30,7 +30,7 @@
 #include <span>
 
 static constexpr const char *k_version_url = "https://api.github.com/repos/Vita3K/compatibility/releases/latest";
-static constexpr const char *k_db_url = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml.zip";
+static constexpr const char *k_db_url = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml.7z";
 
 GameCompatibility::GameCompatibility(CompatState &state, std::filesystem::path cache_path, QObject *parent)
     : QObject(parent)

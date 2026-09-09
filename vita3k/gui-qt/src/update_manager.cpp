@@ -30,16 +30,25 @@
 #include <QJsonObject>
 #include <QLocale>
 #include <QMessageBox>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QProcess>
 #include <QProgressDialog>
 #include <QRegularExpression>
 #include <QUrl>
 
 #include <algorithm>
+#include <filesystem>
+#include <vector>
 
 namespace {
 
 QString tr_update(const char *source_text) {
     return QCoreApplication::translate("UpdateManager", source_text);
+}
+
+std::filesystem::path install_directory() {
+    return std::filesystem::path(QCoreApplication::applicationDirPath().toStdU16String());
 }
 
 QDateTime parse_published_at(const std::string &published_at) {
@@ -227,6 +236,7 @@ updater::UpdateCheckResult build_check_result() {
 
 UpdateManager::UpdateManager(QObject *parent)
     : QObject(parent) {
+    updater::remove_update_backups(install_directory());
 }
 
 UpdateManager::~UpdateManager() {
@@ -271,6 +281,12 @@ void UpdateManager::close_progress_dialog() {
 }
 
 void UpdateManager::check_for_updates(const updater::UpdateCheckMode mode, QWidget *parent) {
+    if (m_download_reply) {
+        if (mode == updater::UpdateCheckMode::ManualInteractive)
+            QMessageBox::information(parent, tr_update("Check for Updates"), tr_update("An update download is already running."));
+        return;
+    }
+
     if (m_worker_thread) {
         if (mode == updater::UpdateCheckMode::ManualInteractive)
             QMessageBox::information(parent, tr_update("Check for Updates"), tr_update("An update check is already running."));
@@ -370,16 +386,20 @@ void UpdateManager::show_update_message(const updater::UpdateCheckResult &result
         break;
     }
 
+    std::vector<gui::utils::MessageDialogButton> buttons;
+    const bool can_install = updater::can_self_update();
+    if (can_install)
+        buttons.push_back({ QStringLiteral("install"), tr_update("Update Now"), QMessageBox::AcceptRole, true });
+    buttons.push_back({ QStringLiteral("open"), tr_update("Open Download Page"), QMessageBox::ActionRole, !can_install });
+    buttons.push_back({ QStringLiteral("ok"), tr_update("OK"), QMessageBox::AcceptRole, false });
+
     const auto dialog_result = gui::utils::show_message_box(
         m_parent_widget,
         QMessageBox::Information,
         title,
         tr_update("%1<br><br>Download page: <a href=\"%2\">Vita3K GitHub Releases</a>")
             .arg(to_html_with_breaks(summary), download_url.toHtmlEscaped()),
-        {
-            { QStringLiteral("open"), tr_update("Open Download Page"), QMessageBox::ActionRole, true },
-            { QStringLiteral("ok"), tr_update("OK"), QMessageBox::AcceptRole, false },
-        },
+        buttons,
         {},
         {},
         false,
@@ -387,6 +407,144 @@ void UpdateManager::show_update_message(const updater::UpdateCheckResult &result
         Qt::TextBrowserInteraction,
         details_text);
 
-    if (dialog_result.clicked_id == QStringLiteral("open"))
+    if (dialog_result.clicked_id == QStringLiteral("install"))
+        start_update_download();
+    else if (dialog_result.clicked_id == QStringLiteral("open"))
         QDesktopServices::openUrl(QUrl(download_url));
+}
+
+void UpdateManager::close_download_dialog() {
+    if (!m_download_dialog)
+        return;
+
+    m_download_dialog->close();
+    m_download_dialog->deleteLater();
+    m_download_dialog = nullptr;
+}
+
+void UpdateManager::start_update_download() {
+    if (m_download_reply || m_worker_thread)
+        return;
+
+    const std::string asset_url = updater::release_asset_url();
+    if (asset_url.empty()) {
+        QMessageBox::warning(m_parent_widget, tr_update("Update Vita3K"), tr_update("This platform cannot install Vita3K updates by itself."));
+        return;
+    }
+
+    auto *dialog = new QProgressDialog(tr_update("Downloading the latest build..."), tr_update("Cancel"), 0, 100, m_parent_widget);
+    dialog->setWindowTitle(tr_update("Update Vita3K"));
+    dialog->setWindowModality(Qt::WindowModal);
+    dialog->setMinimumDuration(0);
+    dialog->setAutoClose(false);
+    dialog->setAutoReset(false);
+    dialog->setValue(0);
+    dialog->show();
+    m_download_dialog = dialog;
+
+    QNetworkRequest request{ QUrl(QString::fromStdString(asset_url)) };
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+
+    auto *reply = m_network.get(request);
+    m_download_reply = reply;
+
+    connect(dialog, &QProgressDialog::canceled, reply, &QNetworkReply::abort);
+    connect(reply, &QNetworkReply::downloadProgress, this, &UpdateManager::on_download_progress);
+    connect(reply, &QNetworkReply::finished, this, &UpdateManager::on_download_finished);
+}
+
+void UpdateManager::on_download_progress(const qint64 received, const qint64 total) {
+    if (!m_download_dialog)
+        return;
+
+    // GitHub does not always announce a length, and a busy indicator beats a bar stuck at zero
+    if (total <= 0) {
+        m_download_dialog->setRange(0, 0);
+        return;
+    }
+
+    constexpr qint64 bytes_per_mib = 1024 * 1024;
+    m_download_dialog->setRange(0, 100);
+    m_download_dialog->setValue(static_cast<int>(received * 100 / total));
+    m_download_dialog->setLabelText(tr_update("Downloading the latest build... (%1 / %2 MiB)")
+            .arg(received / bytes_per_mib)
+            .arg(total / bytes_per_mib));
+}
+
+void UpdateManager::on_download_finished() {
+    auto *reply = qobject_cast<QNetworkReply *>(sender());
+    if (!reply)
+        return;
+
+    reply->deleteLater();
+    m_download_reply = nullptr;
+
+    if (reply->error() != QNetworkReply::NoError) {
+        const bool canceled = reply->error() == QNetworkReply::OperationCanceledError;
+        const QString error_string = reply->errorString();
+        close_download_dialog();
+        if (!canceled)
+            QMessageBox::warning(m_parent_widget, tr_update("Update Vita3K"), tr_update("The update could not be downloaded: %1").arg(error_string));
+        return;
+    }
+
+    const QByteArray archive = reply->readAll();
+    if (archive.isEmpty()) {
+        close_download_dialog();
+        QMessageBox::warning(m_parent_widget, tr_update("Update Vita3K"), tr_update("The downloaded update is empty."));
+        return;
+    }
+
+    if (m_download_dialog) {
+        // Swapping the files cannot be interrupted safely, so the cancel button has to go
+        m_download_dialog->setCancelButton(nullptr);
+        m_download_dialog->setRange(0, 0);
+        m_download_dialog->setLabelText(tr_update("Installing the update..."));
+    }
+
+    const std::filesystem::path install_dir = install_directory();
+    start_worker([this, archive, install_dir]() {
+        std::string error_message;
+        const bool installed = updater::install_update(
+            std::span<const uint8_t>(reinterpret_cast<const uint8_t *>(archive.constData()), static_cast<size_t>(archive.size())),
+            install_dir, error_message);
+
+        const QString message = QString::fromStdString(error_message);
+        QMetaObject::invokeMethod(
+            this, [this, installed, message]() { finish_update(installed, message); }, Qt::QueuedConnection);
+    });
+}
+
+void UpdateManager::finish_update(const bool installed, const QString &error_message) {
+    close_download_dialog();
+
+    if (!installed) {
+        QMessageBox::warning(m_parent_widget, tr_update("Update Vita3K"),
+            error_message.isEmpty() ? tr_update("The update could not be installed.") : error_message);
+        return;
+    }
+
+    set_pending_update(std::nullopt);
+
+    const auto dialog_result = gui::utils::show_message_box(
+        m_parent_widget,
+        QMessageBox::Information,
+        tr_update("Update Vita3K"),
+        tr_update("The update has been installed. Vita3K must restart to run the new build."),
+        {
+            { QStringLiteral("restart"), tr_update("Restart Now"), QMessageBox::AcceptRole, true },
+            { QStringLiteral("later"), tr_update("Restart Later"), QMessageBox::RejectRole, false },
+        });
+
+    if (dialog_result.clicked_id != QStringLiteral("restart"))
+        return;
+
+    // Inside an AppImage the application path points into the read-only mount, not at the file that was replaced
+    const std::string appimage = updater::appimage_path();
+    const QString program = appimage.empty() ? QCoreApplication::applicationFilePath() : QString::fromStdString(appimage);
+
+    if (QProcess::startDetached(program, {}))
+        QCoreApplication::quit();
+    else
+        QMessageBox::warning(m_parent_widget, tr_update("Update Vita3K"), tr_update("Vita3K could not restart itself, please close and start it again."));
 }
