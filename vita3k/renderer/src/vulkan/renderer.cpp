@@ -913,7 +913,15 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
         LOG_WARN("Failed to initialize Vulkan overlay renderer, overlays will be disabled");
     }
 
-    support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);
+    support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eTransferDst);
+
+    const auto fsr_image_features = physical_device.getFormatProperties(vk::Format::eR8G8B8A8Unorm).optimalTilingFeatures;
+    const auto swapchain_format_features = physical_device.getFormatProperties(screen_renderer.surface_format.format).optimalTilingFeatures;
+    const auto required_fsr_image_features = vk::FormatFeatureFlagBits::eSampledImage
+        | vk::FormatFeatureFlagBits::eStorageImage
+        | vk::FormatFeatureFlagBits::eBlitSrc;
+    support_fsr &= (fsr_image_features & required_fsr_image_features) == required_fsr_image_features;
+    support_fsr &= static_cast<bool>(swapchain_format_features & vk::FormatFeatureFlagBits::eBlitDst);
 
     return true;
 }
