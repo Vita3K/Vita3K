@@ -794,14 +794,19 @@ std::vector<uint32_t> GLState::dump_frame(DisplayState &display, uint32_t &width
 }
 
 int GLState::get_supported_filters() {
-    // actually it's not even bilinear, it's either bilinear or nearest depending on the last use of the texture..
-    // TODO: add bicubic filter and allow disabling bilinear.
-    return static_cast<int>(Filter::BILINEAR) | static_cast<int>(Filter::FXAA);
+    return static_cast<int>(Filter::NEAREST) | static_cast<int>(Filter::BILINEAR)
+        | static_cast<int>(Filter::BICUBIC) | static_cast<int>(Filter::FXAA);
 }
 
 void GLState::set_screen_filter(const std::string_view &filter) {
-    // we only support bilinear and fxaa
-    screen_renderer.enable_fxaa = (filter == "FXAA");
+    if (filter == "Nearest")
+        screen_renderer.filter = ScreenRenderer::Filter::Nearest;
+    else if (filter == "FXAA")
+        screen_renderer.filter = ScreenRenderer::Filter::FXAA;
+    else if (filter == "Bicubic")
+        screen_renderer.filter = ScreenRenderer::Filter::Bicubic;
+    else
+        screen_renderer.filter = ScreenRenderer::Filter::Bilinear;
 }
 
 int GLState::get_max_anisotropic_filtering() {
