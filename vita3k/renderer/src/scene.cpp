@@ -31,6 +31,8 @@
 #include <util/log.h>
 #include <util/tracy.h>
 
+#include <cstring>
+
 #define DEBUG_FRAMEBUFFER 1
 
 #if DEBUG_FRAMEBUFFER
@@ -39,13 +41,74 @@
 #endif
 
 namespace renderer {
+template <typename T>
+static T get_command_data(const Command &command, const std::size_t offset) {
+    T value;
+    std::memcpy(&value, command.data + offset, sizeof(value));
+    return value;
+}
+
+template <typename T>
+static void set_command_data(Command &command, const std::size_t offset, const T value) {
+    std::memcpy(command.data + offset, &value, sizeof(value));
+}
+
+static Command *copy_command(Context &destination, const Command &source) {
+    Command *copy = destination.alloc_func();
+    const auto allocation_flags = copy->flags;
+
+    copy->opcode = source.opcode;
+    copy->flags = allocation_flags;
+    std::memcpy(copy->data, source.data, sizeof(copy->data));
+    copy->status = source.status;
+    copy->next = nullptr;
+
+    if (source.opcode == CommandOpcode::SetContext) {
+        constexpr std::size_t color_offset = sizeof(RenderTarget *);
+        constexpr std::size_t depth_offset = color_offset + sizeof(SceGxmColorSurface *);
+        const auto *color_surface = get_command_data<SceGxmColorSurface *>(source, color_offset);
+        const auto *depth_stencil_surface = get_command_data<SceGxmDepthStencilSurface *>(source, depth_offset);
+        auto *color_surface_copy = color_surface ? new SceGxmColorSurface(*color_surface) : nullptr;
+        auto *depth_stencil_surface_copy = depth_stencil_surface ? new SceGxmDepthStencilSurface(*depth_stencil_surface) : nullptr;
+        set_command_data(*copy, color_offset, color_surface_copy);
+        set_command_data(*copy, depth_offset, depth_stencil_surface_copy);
+    }
+
+    return copy;
+}
+
+void append_command_list(Context &destination, const CommandList &source) {
+    Command *first_copy = nullptr;
+    Command *last_copy = nullptr;
+    for (const Command *command = source.first; command; command = command->next) {
+        Command *copy = copy_command(destination, *command);
+        if (last_copy)
+            last_copy->next = copy;
+        else
+            first_copy = copy;
+        last_copy = copy;
+
+        if (command == source.last)
+            break;
+    }
+
+    if (!first_copy)
+        return;
+
+    if (destination.command_list.last)
+        destination.command_list.last->next = first_copy;
+    else
+        destination.command_list.first = first_copy;
+    destination.command_list.last = last_copy;
+}
+
 void destroy_command_payload(Command &cmd) {
     switch (cmd.opcode) {
     case CommandOpcode::SetContext: {
-        auto *color_surface = reinterpret_cast<SceGxmColorSurface **>(&cmd.data[sizeof(RenderTarget *)]);
-        auto *depth_stencil_surface = reinterpret_cast<SceGxmDepthStencilSurface **>(&cmd.data[sizeof(RenderTarget *) + sizeof(SceGxmColorSurface *)]);
-        delete *color_surface;
-        delete *depth_stencil_surface;
+        const auto *color_surface = get_command_data<SceGxmColorSurface *>(cmd, sizeof(RenderTarget *));
+        const auto *depth_stencil_surface = get_command_data<SceGxmDepthStencilSurface *>(cmd, sizeof(RenderTarget *) + sizeof(SceGxmColorSurface *));
+        delete color_surface;
+        delete depth_stencil_surface;
         break;
     }
 

@@ -2654,17 +2654,8 @@ EXPORT(int, sceGxmExecuteCommandList, SceGxmContext *context, SceGxmCommandList 
     if (!commandList || !commandList->list)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    // Emit a jump to the first command of given command list
-    // Since only one immediate context exists per process, direct linking like this should be fine! (I hope)
-    renderer::CommandList &imm_cmds = context->renderer->command_list;
-
-    if (imm_cmds.last) {
-        imm_cmds.last->next = commandList->list->first;
-        imm_cmds.last = commandList->list->last;
-    } else {
-        imm_cmds.first = commandList->list->first;
-        imm_cmds.last = commandList->list->last;
-    }
+    // Deferred VDM buffers may be reused before the render thread consumes them.
+    renderer::append_command_list(*context->renderer, *commandList->list);
 
     // Restore back our GXM state
     gxmContextStateRestore(*emuenv.renderer, context, true);
