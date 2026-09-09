@@ -204,6 +204,11 @@ GLenum translate_type(SceGxmColorBaseFormat base_format) {
 }
 
 const GLint *translate_swizzle(SceGxmColorFormat fmt) {
+    // U8_A surfaces are canonicalized to the host red channel by the
+    // shader recompiler. Treat their cached storage as an ordinary R surface.
+    if (fmt == SCE_GXM_COLOR_FORMAT_U8_A)
+        return swizzle_r;
+
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(fmt);
     const uint32_t swizzle = fmt & SCE_GXM_COLOR_SWIZZLE_MASK;
     switch (base_format) {
