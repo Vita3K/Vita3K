@@ -35,28 +35,28 @@
 namespace gui {
 namespace {
 
-std::string lowercase_copy(std::string value) {
+static std::string lowercase_copy(std::string value) {
     std::transform(value.begin(), value.end(), value.begin(), [](const unsigned char ch) {
         return static_cast<char>(std::tolower(ch));
     });
     return value;
 }
 
-std::string normalize_locale(std::string locale) {
+static std::string normalize_locale(std::string locale) {
     locale = string_utils::trim_copy(locale);
     std::replace(locale.begin(), locale.end(), '_', '-');
     return lowercase_copy(std::move(locale));
 }
 
-std::string path_leaf_string(const fs::path &path) {
+static std::string path_leaf_string(const fs::path &path) {
     return fs_utils::path_to_utf8(path.filename());
 }
 
-std::string child_text(const pugi::xml_node &parent, const char *name) {
+static std::string child_text(const pugi::xml_node &parent, const char *name) {
     return string_utils::trim_copy(parent.child(name).text().as_string());
 }
 
-std::string localized_text(const pugi::xml_node &node, const std::string &preferred_locale) {
+static std::string localized_text(const pugi::xml_node &node, const std::string &preferred_locale) {
     if (!node)
         return {};
 
@@ -97,7 +97,7 @@ std::string localized_text(const pugi::xml_node &node, const std::string &prefer
     return {};
 }
 
-fs::path resolve_asset_path(const fs::path &theme_dir, std::string asset_value) {
+static fs::path resolve_asset_path(const fs::path &theme_dir, std::string asset_value) {
     const QString relative_path = gui::utils::sanitize_relative_path_reference(
         QString::fromStdString(string_utils::trim_copy(asset_value)));
     if (relative_path.isEmpty())
@@ -106,7 +106,7 @@ fs::path resolve_asset_path(const fs::path &theme_dir, std::string asset_value) 
     return (theme_dir / gui::utils::to_fs_path(relative_path)).lexically_normal();
 }
 
-std::optional<VitaThemeColor> parse_theme_color(std::string raw_value) {
+static std::optional<VitaThemeColor> parse_theme_color(std::string raw_value) {
     raw_value = string_utils::trim_copy(raw_value);
     if (raw_value.empty())
         return std::nullopt;
@@ -145,11 +145,11 @@ std::optional<VitaThemeColor> parse_theme_color(std::string raw_value) {
     };
 }
 
-double luminance(const VitaThemeColor &color) {
+static double luminance(const VitaThemeColor &color) {
     return (0.2126 * color.red + 0.7152 * color.green + 0.0722 * color.blue) / 255.0;
 }
 
-double color_distance(const VitaThemeColor &lhs, const VitaThemeColor &rhs) {
+static double color_distance(const VitaThemeColor &lhs, const VitaThemeColor &rhs) {
     const auto component_delta = [](const std::uint8_t first, const std::uint8_t second) {
         return static_cast<double>(static_cast<int>(first) - static_cast<int>(second)) / 255.0;
     };
@@ -160,7 +160,7 @@ double color_distance(const VitaThemeColor &lhs, const VitaThemeColor &rhs) {
     return std::sqrt((red * red + green * green + blue * blue) / 3.0);
 }
 
-VitaThemeColor mix(const VitaThemeColor &lhs, const VitaThemeColor &rhs, const double ratio) {
+static VitaThemeColor mix(const VitaThemeColor &lhs, const VitaThemeColor &rhs, const double ratio) {
     const double clamped = std::clamp(ratio, 0.0, 1.0);
     const auto blend = [clamped](const std::uint8_t first, const std::uint8_t second) {
         return static_cast<std::uint8_t>(std::lround((first * (1.0 - clamped)) + (second * clamped)));
@@ -174,35 +174,35 @@ VitaThemeColor mix(const VitaThemeColor &lhs, const VitaThemeColor &rhs, const d
     };
 }
 
-VitaThemeColor darken(const VitaThemeColor &color, const double ratio) {
+static VitaThemeColor darken(const VitaThemeColor &color, const double ratio) {
     return mix(color, VitaThemeColor{}, ratio);
 }
 
-VitaThemeColor lighten(const VitaThemeColor &color, const double ratio) {
+static VitaThemeColor lighten(const VitaThemeColor &color, const double ratio) {
     return mix(color, VitaThemeColor{ 255, 255, 255, 255 }, ratio);
 }
 
-VitaThemeColor contrasting_text(const VitaThemeColor &background) {
+static VitaThemeColor contrasting_text(const VitaThemeColor &background) {
     return luminance(background) > 0.55
         ? VitaThemeColor{ 10, 18, 24, 255 }
         : VitaThemeColor{ 245, 247, 250, 255 };
 }
 
-VitaThemeColor ensure_readable(const VitaThemeColor &foreground, const VitaThemeColor &background) {
+static VitaThemeColor ensure_readable(const VitaThemeColor &foreground, const VitaThemeColor &background) {
     return std::abs(luminance(foreground) - luminance(background)) < 0.28
         ? contrasting_text(background)
         : foreground;
 }
 
-std::string css_hex(const VitaThemeColor &color) {
+static std::string css_hex(const VitaThemeColor &color) {
     return fmt::format("#{:02X}{:02X}{:02X}", color.red, color.green, color.blue);
 }
 
-std::string css_argb(const VitaThemeColor &color, const std::uint8_t alpha) {
+static std::string css_argb(const VitaThemeColor &color, const std::uint8_t alpha) {
     return fmt::format("#{:02X}{:02X}{:02X}{:02X}", alpha, color.red, color.green, color.blue);
 }
 
-std::string css_rgba(const VitaThemeColor &color, const std::uint8_t alpha) {
+static std::string css_rgba(const VitaThemeColor &color, const std::uint8_t alpha) {
     return fmt::format("rgba({}, {}, {}, {:.3f})",
         color.red,
         color.green,
@@ -210,12 +210,12 @@ std::string css_rgba(const VitaThemeColor &color, const std::uint8_t alpha) {
         static_cast<double>(alpha) / 255.0);
 }
 
-std::uint8_t readability_alpha(const int readability_percent, const std::uint8_t minimum, const std::uint8_t maximum) {
+static std::uint8_t readability_alpha(const int readability_percent, const std::uint8_t minimum, const std::uint8_t maximum) {
     const double amount = std::clamp(static_cast<double>(readability_percent) / 100.0, 0.0, 1.0);
     return static_cast<std::uint8_t>(std::lround((minimum * (1.0 - amount)) + (maximum * amount)));
 }
 
-std::string stylesheet_path_url(const fs::path &path, const fs::path &vita_fs_path) {
+static std::string stylesheet_path_url(const fs::path &path, const fs::path &vita_fs_path) {
     fs::path normalized_path = path.lexically_normal();
     if (!vita_fs_path.empty()) {
         const fs::path relative = normalized_path.lexically_relative(vita_fs_path);
@@ -228,7 +228,7 @@ std::string stylesheet_path_url(const fs::path &path, const fs::path &vita_fs_pa
     return normalized;
 }
 
-std::string join_stylesheet_path_urls(const std::vector<fs::path> &paths, const fs::path &vita_fs_path) {
+static std::string join_stylesheet_path_urls(const std::vector<fs::path> &paths, const fs::path &vita_fs_path) {
     std::string joined;
     bool first = true;
     for (const fs::path &path : paths) {
@@ -243,11 +243,7 @@ std::string join_stylesheet_path_urls(const std::vector<fs::path> &paths, const 
     return joined;
 }
 
-struct ThemeTemplateContext {
-    std::unordered_map<std::string, std::string> strings;
-};
-
-std::optional<std::string> load_vita_theme_stylesheet_template() {
+static std::optional<std::string> load_vita_theme_stylesheet_template() {
     static const std::optional<std::string> stylesheet_template = []() -> std::optional<std::string> {
         QFile file(QStringLiteral(":/themes/vita/generated.qss.in"));
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -261,14 +257,18 @@ std::optional<std::string> load_vita_theme_stylesheet_template() {
     return stylesheet_template;
 }
 
-std::optional<std::string> render_template_token(
+struct ThemeTemplateContext {
+    std::unordered_map<std::string, std::string> strings;
+};
+
+static std::optional<std::string> render_template_token(
     const ThemeTemplateContext &context,
     const std::string &token) {
     const auto it = context.strings.find(token);
     return (it != context.strings.end()) ? std::optional<std::string>(it->second) : std::nullopt;
 }
 
-std::optional<std::string> render_stylesheet_template(
+static std::optional<std::string> render_stylesheet_template(
     const ThemeTemplateContext &context) {
     auto stylesheet_template = load_vita_theme_stylesheet_template();
     if (!stylesheet_template)
@@ -306,12 +306,12 @@ std::optional<std::string> render_stylesheet_template(
     return rendered;
 }
 
-std::optional<fs::path> existing_asset_path(const fs::path &theme_dir, const std::string &raw_path) {
+static std::optional<fs::path> existing_asset_path(const fs::path &theme_dir, const std::string &raw_path) {
     const fs::path resolved = resolve_asset_path(theme_dir, raw_path);
     return (!resolved.empty() && fs::exists(resolved)) ? std::optional<fs::path>(resolved) : std::nullopt;
 }
 
-std::vector<pugi::xml_node> collect_background_nodes(const pugi::xml_node &home_node) {
+static std::vector<pugi::xml_node> collect_background_nodes(const pugi::xml_node &home_node) {
     std::vector<pugi::xml_node> nodes;
     const auto bg_parent = home_node.child("m_bgParam");
     if (!bg_parent)
@@ -329,7 +329,7 @@ std::vector<pugi::xml_node> collect_background_nodes(const pugi::xml_node &home_
     return nodes;
 }
 
-void collect_directory_metrics(const fs::path &root, std::uintmax_t &total_size, std::time_t &latest_write_time) {
+static void collect_directory_metrics(const fs::path &root, std::uintmax_t &total_size, std::time_t &latest_write_time) {
     if (!fs::exists(root))
         return;
 
@@ -352,7 +352,7 @@ void collect_directory_metrics(const fs::path &root, std::uintmax_t &total_size,
     }
 }
 
-const VitaThemeBackgroundOption *find_background_option(
+static const VitaThemeBackgroundOption *find_background_option(
     const VitaThemeInfo &theme,
     const std::string &background_option_id) {
     if (theme.background_options.empty())
@@ -368,7 +368,7 @@ const VitaThemeBackgroundOption *find_background_option(
     return (it != theme.background_options.end()) ? &(*it) : nullptr;
 }
 
-std::string build_stylesheet(
+static std::string build_stylesheet(
     const VitaThemeInfo &theme,
     const VitaThemeBackgroundOption &background_option,
     const int readability_percent,
