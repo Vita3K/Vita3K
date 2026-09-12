@@ -36,6 +36,8 @@
 #define XXH_INLINE_ALL
 #include <xxhash.h>
 
+#include <algorithm>
+
 namespace renderer::vulkan {
 
 // Size of the record containing what is needed for the pipeline construction (what is after is dynamic state)
@@ -468,6 +470,13 @@ static const vk::SpecializationInfo srgb_info_false = {
     .pData = &srgb_entry_false
 };
 
+static bool manifest_lists(VKState &state, std::mutex &shaders_mutex, const Sha256Hash &hash) {
+    std::lock_guard<std::mutex> guard(shaders_mutex);
+    return std::any_of(state.shaders_cache_hashs.begin(), state.shaders_cache_hashs.end(), [&hash](const ShadersHash &entry) {
+        return entry.vert == hash || entry.frag == hash;
+    });
+}
+
 vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints, bool is_srgb) {
     const vk::ShaderModule shader_compiling = std::bit_cast<vk::ShaderModule>(~0ULL);
     const bool masked_fetch = !is_vertex && hints.masked_framebuffer_fetch;
@@ -499,7 +508,9 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
             *shader_module = shader_compiling;
     }
 
-    if (*shader_module == shader_compiling && !masked_fetch) {
+    const bool listed = manifest_lists(state, shaders_mutex, hash);
+
+    if (*shader_module == shader_compiling && !masked_fetch && listed) {
         precompile_shader(hash, false);
     }
 
@@ -522,7 +533,7 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
     if (masked_fetch)
         features.direct_fragcolor = true;
     const std::string version = masked_fetch ? shader_version + "-masked-fetch1" : shader_version;
-    shader::usse::SpirvCode source = load_spirv_shader(*program, features, true, hints, maskupdate, state.shaders_path, state.shaders_log_path, version, true);
+    shader::usse::SpirvCode source = load_spirv_shader(*program, features, true, hints, maskupdate, state.shaders_path, state.shaders_log_path, version, listed);
 
     vk::ShaderModuleCreateInfo shader_info{
         .codeSize = sizeof(uint32_t) * source.size(),
@@ -1122,6 +1133,9 @@ vk::ShaderModule PipelineCache::precompile_shader(const Sha256Hash &hash, bool s
     }
 
     if (!fs::exists(state.shaders_path) || fs::is_empty(state.shaders_path))
+        return nullptr;
+
+    if (!manifest_lists(state, shaders_mutex, hash))
         return nullptr;
 
     Sha256Hash shader_hash;
