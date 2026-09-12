@@ -878,5 +878,22 @@ vk::Filter translate_filter(SceGxmTextureFilter src) {
         return vk::Filter::eNearest;
     }
 }
+
+vk::SamplerMipmapMode translate_mipmap_mode(SceGxmTextureFilter src, bool mip_filter_enabled) {
+    if (!mip_filter_enabled)
+        return vk::SamplerMipmapMode::eNearest;
+
+    switch (src) {
+    case SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR:
+        return vk::SamplerMipmapMode::eLinear;
+    case SCE_GXM_TEXTURE_FILTER_POINT:
+    case SCE_GXM_TEXTURE_FILTER_LINEAR:
+    case SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT:
+        return vk::SamplerMipmapMode::eNearest;
+    default:
+        LOG_ERROR("Unknown texture filter {}", log_hex(src));
+        return vk::SamplerMipmapMode::eNearest;
+    }
+}
 } // namespace texture
 } // namespace renderer::vulkan
