@@ -80,6 +80,9 @@
     <string name="app_menu_information">Information</string>
     <string name="app_menu_delete">Delete\u2026</string>
     <string name="app_menu_custom_config">Custom Config</string>
+    <string name="app_menu_create_shortcut">Create Home Screen Shortcut</string>
+    <string name="shortcut_create_requested">Shortcut request sent.</string>
+    <string name="shortcut_create_unsupported">Your launcher does not support creating shortcuts.</string>
 
     <!-- User management -->
     <string name="user_management_title">User Management</string>
