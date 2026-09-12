@@ -68,7 +68,7 @@ void reset_command_list(CommandList &command_list);
 void submit_command_list(State &state, renderer::Context *context, CommandList &command_list);
 bool is_cmd_ready(MemState &mem, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list);
-void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms = 500);
+size_t process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms = 500);
 void start_render_thread(State &state, DisplayState &display, GxmState &gxm, MemState &mem, Config &config);
 void stop_render_thread(State &state);
 bool init(FrameHost &frame, std::unique_ptr<State> &state, Backend backend, const Config &config, const Root &root_paths);
