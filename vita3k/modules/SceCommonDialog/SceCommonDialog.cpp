@@ -1350,6 +1350,10 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
 
         for (SceUInt i = 0; i < list_param->slotListSize; i++) {
             slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
+            if (slot_list[i].id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX) {
+                LOG_WARN("Invalid slot id {} in list, skipping slot", log_hex(slot_list[i].id));
+                continue; // TODO: is this the correct behavior for this function?
+            }
             emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
             emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);
             check_save_file(i, emuenv, export_name);
