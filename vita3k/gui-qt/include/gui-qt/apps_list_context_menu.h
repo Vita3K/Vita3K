@@ -41,6 +41,7 @@ Q_SIGNALS:
     void boot_requested(const app::AppEntry &app);
     void view_live_area_requested(const app::AppEntry &app);
     void open_settings_requested(const std::string &app_path, int tab);
+    void manage_cheats_requested(const app::AppEntry &app);
     void refresh_requested();
 
 private:
@@ -48,6 +49,7 @@ private:
         fs::path app;
         fs::path save_data;
         fs::path patch;
+        fs::path cheats;
         fs::path addcont;
         fs::path license;
         fs::path shader_cache;
@@ -66,6 +68,7 @@ private:
     void add_compat_actions(const app::AppEntry &app);
     void add_copy_info_actions(const app::AppEntry &app);
     void add_custom_config_actions(const app::AppEntry &app);
+    void add_cheat_actions(const app::AppEntry &app);
     void add_open_folder_actions(const app::AppEntry &app);
     void add_delete_actions(const app::AppEntry &app);
     void add_misc_actions(const app::AppEntry &app);

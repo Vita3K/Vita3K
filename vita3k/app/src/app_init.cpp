@@ -19,6 +19,7 @@
 
 #include <audio/state.h>
 #include <camera/state.h>
+#include <cheat/functions.h>
 #include <compat/state.h>
 #include <config/settings.h>
 #include <config/state.h>
@@ -257,6 +258,7 @@ bool init_paths(Root &root_paths) {
     root_paths.set_shared_path(internal_storage_path);
     root_paths.set_cache_path(internal_storage_path / "cache" / "");
     root_paths.set_patch_path(internal_storage_path / "patch" / "");
+    root_paths.set_cheat_path(internal_storage_path / "cheats" / "");
 #else
     auto sdl_exe_path = SDL_GetBasePath();
     auto exe_path = fs_utils::utf8_to_path(sdl_exe_path);
@@ -290,6 +292,7 @@ bool init_paths(Root &root_paths) {
         root_paths.set_shared_path(portable_path);
         root_paths.set_cache_path(portable_path / "cache" / "");
         root_paths.set_patch_path(portable_path / "patch" / "");
+        root_paths.set_cheat_path(portable_path / "cheats" / "");
     } else {
         // SDL_GetPrefPath is deferred as it creates the directory.
         // When using a portable directory, it is not needed.
@@ -322,6 +325,7 @@ bool init_paths(Root &root_paths) {
         root_paths.set_shared_path(exe_path);
         root_paths.set_cache_path(exe_path / "cache" / "");
         root_paths.set_patch_path(exe_path / "patch" / "");
+        root_paths.set_cheat_path(exe_path / "cheats" / "");
 
 #if defined(__linux__)
         // XDG Data Dirs.
@@ -393,6 +397,7 @@ bool init_paths(Root &root_paths) {
         // These default to being in shared path
         root_paths.set_vita_fs_path(root_paths.get_shared_path() / app_name / "");
         root_paths.set_patch_path(root_paths.get_shared_path() / "patch" / "");
+        root_paths.set_cheat_path(root_paths.get_shared_path() / "cheats" / "");
 #endif
     }
 #endif
@@ -403,6 +408,7 @@ bool init_paths(Root &root_paths) {
     fs::create_directories(root_paths.get_log_path() / "shaderlog");
     fs::create_directories(root_paths.get_log_path() / "texturelog");
     fs::create_directories(root_paths.get_patch_path());
+    fs::create_directories(root_paths.get_cheat_path());
 
     const auto gui_configs_source_path = root_paths.get_static_assets_path() / "data" / "gui-configs";
     if (fs::is_directory(gui_configs_source_path)) {
@@ -423,6 +429,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     state.shared_path = root_paths.get_shared_path();
     state.static_assets_path = root_paths.get_static_assets_path();
     state.patch_path = root_paths.get_patch_path();
+    state.cheat_path = root_paths.get_cheat_path();
 
     // If configuration does not provide a VitaFS path, use SDL's default
     if (state.cfg.vita_fs_path == root_paths.get_vita_fs_path() || state.cfg.vita_fs_path.empty()) {
@@ -541,6 +548,7 @@ void reset_app_state(EmuEnvState &state) {
     state.clear_app_launch_request();
 
     state.ctrl.reset_runtime();
+    cheat::unload(state.cheat);
     set_current_config(state, "");
 
 #if USE_DISCORD

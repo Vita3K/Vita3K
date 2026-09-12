@@ -20,6 +20,7 @@
 
 #include "module/load_module.h"
 
+#include <cheat/functions.h>
 #include <config/state.h>
 #include <ctime>
 #include <ctrl/state.h>
@@ -421,6 +422,29 @@ static void do_patches(MemState &mem, const Patches &patches, const SceKernelMod
     }
 }
 
+// Registers the modules a `$B2` code can pick from along with the cheat file of the title.
+static void load_cheats(EmuEnvState &emuenv, const SceKernelModuleInfo &module_info) {
+    cheat::unload(emuenv.cheat);
+
+    const cheat::JitInvalidate invalidate_jit = [&emuenv](uint32_t address, size_t size) {
+        emuenv.kernel.invalidate_jit_cache(address, size);
+    };
+    cheat::set_enabled(emuenv.cheat, emuenv.cfg.enable_cheats, emuenv.mem, invalidate_jit);
+
+    // A `$B2` code with module index 0 refers to the main executable.
+    CheatModule main_module;
+    main_module.name = std::string(module_info.module_name, strnlen(module_info.module_name, sizeof(module_info.module_name)));
+    for (size_t i = 0; i < main_module.segments.size(); i++) {
+        main_module.segments[i].address = module_info.segments[i].vaddr.address();
+        main_module.segments[i].size = module_info.segments[i].memsz;
+    }
+    cheat::add_module(emuenv.cheat, main_module);
+
+    if (cheat::load(emuenv.cheat, emuenv.cheat_path, emuenv.io.title_id)) {
+        LOG_INFO("{} cheats are turned on for {}", cheat::enabled_cheat_count(emuenv.cheat), emuenv.io.title_id);
+    }
+}
+
 static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const AppLaunchRequest &launch_request) {
     const auto call_import = [&emuenv](CPUState &cpu, uint32_t nid, SceUID thread_id) {
         ::call_import(emuenv, cpu, nid, thread_id);
@@ -495,6 +519,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
         const Patches patches = get_patches(emuenv.patch_path, emuenv.io.title_id, "app0:" + emuenv.self_path);
         if (!patches.empty())
             do_patches(emuenv.mem, patches, module->info);
+        load_cheats(emuenv, module->info);
     } else
         return FileNotFound;
     // Set self name from self path, can contain folder, get file name only

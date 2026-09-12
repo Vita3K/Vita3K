@@ -21,6 +21,7 @@
 #include <gui-qt/apps_list.h>
 #include <gui-qt/apps_list_context_menu.h>
 #include <gui-qt/archive_install_dialog.h>
+#include <gui-qt/cheats_dialog.h>
 #include <gui-qt/controls_dialog.h>
 #include <gui-qt/ctrl_keyboard_filter.h>
 #include <gui-qt/debug_widget.h>
@@ -1380,6 +1381,16 @@ void MainWindow::open_trophy_collection() {
     present_tool_window(m_trophy_dialog);
 }
 
+void MainWindow::open_cheats_for(const std::string &title_id, const QString &app_title) {
+    if (!m_cheats_dialog) {
+        m_cheats_dialog = new CheatsDialog(emuenv, this);
+        register_auxiliary_window(m_cheats_dialog);
+    }
+
+    m_cheats_dialog->set_app(title_id, app_title);
+    present_tool_window(m_cheats_dialog);
+}
+
 void MainWindow::open_vita_themes() {
     if (!m_vita_themes_dialog) {
         m_vita_themes_dialog = new VitaThemesDialog(m_gui_settings, *m_theme_manager, this);
@@ -1760,6 +1771,10 @@ void MainWindow::on_context_menu_requested(const QPoint &global_pos, const std::
                 apply_log_gui_settings();
             });
             present_tool_window(dlg);
+        });
+    connect(&menu, &AppsListContextMenu::manage_cheats_requested,
+        this, [this](const app::AppEntry &app) {
+            open_cheats_for(app.title_id, QString::fromStdString(app.title));
         });
     connect(&menu, &AppsListContextMenu::refresh_requested,
         this, [this] { m_apps_list_widget->refresh(); });
