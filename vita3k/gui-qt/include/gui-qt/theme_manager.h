@@ -38,10 +38,10 @@ class QMediaPlayer;
 namespace gui {
 
 struct ThemeEntry {
-    QString name;
-    QString display_name;
-    QString qss_source;
-    QString base_path;
+    QString name; // Saved in settings, should be unique for each theme
+    QString display_name; // Shown to users, can be non-unique and localized
+    QString qss_source; // Path to the .qss file
+    QString base_path; // Path for the .qss file's folder
 };
 
 struct VitaThemeSelection {
@@ -105,6 +105,7 @@ private:
     const gui::VitaThemeInfo *find_installed_vita_theme(const QString &theme_id, bool force_reload = false) const;
     std::optional<gui::ThemeEntry> builtin_theme(const QString &name) const;
     std::optional<gui::ThemeEntry> generated_vita_theme() const;
+    QList<gui::ThemeEntry> get_themes_in_path(const fs::path &path) const;
     QList<gui::ThemeEntry> custom_themes() const;
     std::optional<gui::ThemeEntry> resolve_theme(const QString &name) const;
     std::optional<gui::AppliedThemeState> build_applied_theme_state(const gui::ThemeEntry &theme, const QString &stylesheet) const;

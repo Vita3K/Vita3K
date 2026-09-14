@@ -20,7 +20,9 @@
 #include <gui-qt/theme_manager.h>
 #include <gui-qt/vita_theme.h>
 
+#include <qlist.h>
 #include <util/log.h>
+#include <util/string_utils.h>
 
 #include <QApplication>
 #include <QAudioOutput>
@@ -47,7 +49,7 @@ constexpr bool default_vita_theme_normalize_fonts = true;
 constexpr int default_vita_theme_cycle_interval_seconds = 15;
 constexpr int default_theme_bgm_volume = 50;
 
-const QPalette &fusion_palette() {
+static const QPalette &fusion_palette() {
     static const QPalette palette = []() {
         if (QStyle *fusion = QStyleFactory::create(QStringLiteral("Fusion"))) {
             const QPalette result = fusion->standardPalette();
@@ -61,19 +63,15 @@ const QPalette &fusion_palette() {
     return palette;
 }
 
-QString fallback_theme_name() {
+static QString fallback_theme_name() {
     return gui::DarkStylesheet;
 }
 
-QString generated_vita_theme_name_for_id(const QString &theme_id) {
+static QString generated_vita_theme_name_for_id(const QString &theme_id) {
     return QStringLiteral("vita-theme-%1").arg(theme_id);
 }
 
-const gui::VitaThemeBackgroundOption *find_background_option(
-    const gui::VitaThemeInfo &theme,
-    const QString &background_id);
-
-QStringList sanitize_cycle_background_ids(const QStringList &ids, const QString &anchor_background_id) {
+static QStringList sanitize_cycle_background_ids(const QStringList &ids, const QString &anchor_background_id) {
     QStringList sanitized;
     QSet<QString> seen;
 
@@ -91,7 +89,7 @@ QStringList sanitize_cycle_background_ids(const QStringList &ids, const QString 
     return sanitized;
 }
 
-gui::VitaThemeSelection sanitize_vita_theme_selection(gui::VitaThemeSelection selection) {
+static gui::VitaThemeSelection sanitize_vita_theme_selection(gui::VitaThemeSelection selection) {
     selection.readability = std::clamp(selection.readability, 0, 100);
     selection.cycle_interval_seconds = std::clamp(
         selection.cycle_interval_seconds,
@@ -103,7 +101,20 @@ gui::VitaThemeSelection sanitize_vita_theme_selection(gui::VitaThemeSelection se
     return selection;
 }
 
-QString resolve_theme_background_id(
+static const gui::VitaThemeBackgroundOption *find_background_option(
+    const gui::VitaThemeInfo &theme,
+    const QString &background_id) {
+    const auto it = std::find_if(theme.background_options.begin(), theme.background_options.end(),
+        [&background_id](const gui::VitaThemeBackgroundOption &background) {
+            return QString::fromStdString(background.id) == background_id;
+        });
+    if (it == theme.background_options.end())
+        return nullptr;
+
+    return &(*it);
+}
+
+static QString resolve_theme_background_id(
     const gui::VitaThemeInfo &theme,
     const QString &background_id) {
     if (theme.background_options.empty())
@@ -115,7 +126,7 @@ QString resolve_theme_background_id(
     return QString::fromStdString(theme.background_options.front().id);
 }
 
-QStringList canonicalize_cycle_background_ids(
+static QStringList canonicalize_cycle_background_ids(
     const gui::VitaThemeInfo &theme,
     const QStringList &background_ids,
     const QString &primary_background_id) {
@@ -157,7 +168,7 @@ QStringList canonicalize_cycle_background_ids(
     return canonical_ids;
 }
 
-gui::VitaThemeSelection normalize_selection(
+static gui::VitaThemeSelection normalize_selection(
     const gui::VitaThemeInfo &theme,
     gui::VitaThemeSelection selection) {
     selection = sanitize_vita_theme_selection(std::move(selection));
@@ -178,7 +189,7 @@ gui::VitaThemeSelection normalize_selection(
     return selection;
 }
 
-gui::ThemeEntry generated_theme_entry(
+static gui::ThemeEntry generated_theme_entry(
     const QString &theme_id,
     const QString &display_name,
     const fs::path &qss_path) {
@@ -191,7 +202,7 @@ gui::ThemeEntry generated_theme_entry(
     };
 }
 
-gui::ThemeBackgroundPresentation build_background_presentation(
+static gui::ThemeBackgroundPresentation build_background_presentation(
     const gui::VitaThemeInfo &theme,
     const gui::VitaThemeSelection &selection) {
     const gui::VitaThemeSelection canonical_selection = normalize_selection(theme, selection);
@@ -227,7 +238,7 @@ gui::ThemeBackgroundPresentation build_background_presentation(
     return presentation;
 }
 
-std::vector<fs::path> to_fs_paths(const QStringList &paths) {
+static std::vector<fs::path> to_fs_paths(const QStringList &paths) {
     std::vector<fs::path> result;
     result.reserve(static_cast<std::size_t>(paths.size()));
     for (const QString &path : paths) {
@@ -237,12 +248,12 @@ std::vector<fs::path> to_fs_paths(const QStringList &paths) {
     return result;
 }
 
-bool is_qrc_stylesheet_url(const QString &url) {
+static bool is_qrc_stylesheet_url(const QString &url) {
     return url.startsWith(QStringLiteral(":/"))
         || url.startsWith(QStringLiteral("qrc:/"));
 }
 
-QJsonObject serialize_vita_theme_selection(const gui::VitaThemeSelection &selection) {
+static QJsonObject serialize_vita_theme_selection(const gui::VitaThemeSelection &selection) {
     QJsonObject object;
     object.insert(QStringLiteral("themeId"), selection.theme_id);
     object.insert(QStringLiteral("backgroundId"), selection.background_id);
@@ -258,7 +269,7 @@ QJsonObject serialize_vita_theme_selection(const gui::VitaThemeSelection &select
     return object;
 }
 
-std::optional<gui::VitaThemeSelection> deserialize_vita_theme_selection(const QString &serialized) {
+static std::optional<gui::VitaThemeSelection> deserialize_vita_theme_selection(const QString &serialized) {
     if (serialized.isEmpty())
         return std::nullopt;
 
@@ -297,7 +308,7 @@ std::optional<gui::VitaThemeSelection> deserialize_vita_theme_selection(const QS
     return sanitize_vita_theme_selection(std::move(selection));
 }
 
-std::optional<gui::VitaThemeSelection> load_vita_theme_selection(
+static std::optional<gui::VitaThemeSelection> load_vita_theme_selection(
     const std::shared_ptr<GuiSettings> &gui_settings,
     const GuiSave &key) {
     if (!gui_settings)
@@ -306,7 +317,7 @@ std::optional<gui::VitaThemeSelection> load_vita_theme_selection(
     return deserialize_vita_theme_selection(gui_settings->get_value(key).toString());
 }
 
-void save_vita_theme_selection(
+static void save_vita_theme_selection(
     const std::shared_ptr<GuiSettings> &gui_settings,
     const GuiSave &key,
     const gui::VitaThemeSelection &selection,
@@ -321,7 +332,7 @@ void save_vita_theme_selection(
         gui_settings->sync();
 }
 
-void clear_vita_theme_selection(
+static void clear_vita_theme_selection(
     const std::shared_ptr<GuiSettings> &gui_settings,
     const GuiSave &key,
     const bool sync) {
@@ -333,26 +344,13 @@ void clear_vita_theme_selection(
         gui_settings->sync();
 }
 
-const gui::VitaThemeBackgroundOption *find_background_option(
-    const gui::VitaThemeInfo &theme,
-    const QString &background_id) {
-    const auto it = std::find_if(theme.background_options.begin(), theme.background_options.end(),
-        [&background_id](const gui::VitaThemeBackgroundOption &background) {
-            return QString::fromStdString(background.id) == background_id;
-        });
-    if (it == theme.background_options.end())
-        return nullptr;
-
-    return &(*it);
-}
-
 struct ThemeBackgroundMetadata {
     QStringList image_urls;
     int interval_seconds = default_vita_theme_cycle_interval_seconds;
     std::optional<bool> animated;
 };
 
-std::optional<ThemeBackgroundMetadata> parse_theme_background_metadata(const QString &stylesheet) {
+static std::optional<ThemeBackgroundMetadata> parse_theme_background_metadata(const QString &stylesheet) {
     const qsizetype start = stylesheet.indexOf(QStringLiteral("/*!VITA3K_THEME"));
     if (start < 0)
         return std::nullopt;
@@ -542,7 +540,7 @@ void ThemeManager::ensure_generated_theme_ready(const fs::path &themes_root) {
         std::clamp(background_presentation.interval_ms / 1000, 5, 120),
         background_presentation.animated,
         m_vita_fs_path,
-        gui::utils::to_fs_path(m_gui_settings->get_settings_dir()));
+        m_gui_settings->get_settings_dir());
     if (!synthesized) {
         switch_to_fallback_theme(tr("the generated Vita theme stylesheet could not be rebuilt"));
         return;
@@ -599,7 +597,7 @@ bool ThemeManager::apply_vita_theme_selection(
         std::clamp(background_presentation.interval_ms / 1000, 5, 120),
         background_presentation.animated,
         m_vita_fs_path,
-        gui::utils::to_fs_path(m_gui_settings->get_settings_dir()));
+        m_gui_settings->get_settings_dir());
     if (!synthesized)
         return false;
 
@@ -715,29 +713,91 @@ const gui::VitaThemeInfo *ThemeManager::find_installed_vita_theme(
     return (it != themes.end()) ? &(*it) : nullptr;
 }
 
-QList<gui::ThemeEntry> ThemeManager::custom_themes() const {
+QList<gui::ThemeEntry> ThemeManager::get_themes_in_path(const fs::path &path) const {
     QList<gui::ThemeEntry> themes;
-    if (!m_gui_settings)
-        return themes;
-
     const QStringList name_filter = { QStringLiteral("*.qss") };
-    QDirIterator it(m_gui_settings->get_settings_dir(), name_filter, QDir::Files);
-    while (it.hasNext()) {
-        it.next();
+    QDirIterator theme_it(gui::utils::to_qt_path(path), QDir::Dirs);
+    while (theme_it.hasNext()) {
+        theme_it.next();
 
-        const QString base_name = it.fileInfo().completeBaseName();
-        if (base_name == gui::LightStylesheet || base_name == gui::DarkStylesheet)
-            continue;
+        const std::wstring folder_name = theme_it.fileInfo().fileName().toStdWString();
+        QDirIterator it(theme_it.filePath(), name_filter, QDir::Files);
+        while (it.hasNext()) {
+            it.next();
 
-        themes.append({
-            base_name,
-            base_name,
-            it.fileInfo().absoluteFilePath(),
-            it.fileInfo().absolutePath(),
-        });
+            const std::wstring file_name = it.fileInfo().completeBaseName().toStdWString(); // filename without the extension
+
+            const std::wstring theme_key = folder_name + L"/" + file_name;
+
+            const std::wstring display_name = folder_name == file_name
+                ? folder_name
+                : folder_name + L" - " + file_name;
+
+            // Check for themes name collisions
+            for (const auto &existing_theme : themes) {
+                if (existing_theme.name.toStdWString() == theme_key) {
+                    LOG_WARN("Skipping custom theme '{}' from {} because its name collides with another theme",
+                        string_utils::wide_to_utf(theme_key),
+                        it.fileInfo().absoluteFilePath().toUtf8().constData());
+                    continue;
+                }
+            }
+
+            themes.append({
+                QString::fromStdWString(theme_key),
+                QString::fromStdWString(display_name),
+                it.fileInfo().absoluteFilePath(),
+                it.fileInfo().absolutePath(),
+            });
+        }
     }
-
     return themes;
+}
+
+QList<gui::ThemeEntry> ThemeManager::custom_themes() const {
+    if (!m_gui_settings)
+        return {};
+
+    const auto static_themes_path = m_gui_settings->get_static_themes_path();
+    const auto user_settings_dir = m_gui_settings->get_settings_dir() / "custom-themes";
+    auto static_themes = get_themes_in_path(static_themes_path);
+
+    // Paths are the same
+    if (user_settings_dir == static_themes_path) {
+        return static_themes;
+    } else {
+        QList<gui::ThemeEntry> themes;
+
+        const auto user_themes_path = user_settings_dir;
+        const auto user_themes = get_themes_in_path(user_themes_path);
+
+        // Merge both types of themes
+        // There wont be any conflicts inside each theme type
+        // But its possible for there to be conflicts between them
+        // If that happens, replace the static theme in favor of the user one
+        Q_FOREACH (const auto &user_theme, user_themes) {
+            bool static_theme_found = false;
+            qsizetype index = 0;
+            Q_FOREACH (const auto &static_theme, static_themes) {
+                if (user_theme.name == static_theme.name) {
+                    static_theme_found = true;
+                    break;
+                }
+                index++;
+            }
+
+            themes.append(user_theme);
+
+            if (static_theme_found) {
+                static_themes.removeAt(index);
+            }
+        }
+
+        // Add the remaining static themes that didnt have a user override
+        themes.append(static_themes);
+
+        return themes;
+    }
 }
 
 std::optional<gui::ThemeEntry> ThemeManager::resolve_theme(const QString &name) const {
@@ -1043,8 +1103,7 @@ fs::path ThemeManager::generated_vita_theme_path(const QString &theme_id) const 
     if (!m_gui_settings || theme_id.isEmpty())
         return {};
 
-    return gui::utils::to_fs_path(m_gui_settings->get_settings_dir())
-        / "vita-themes" / gui::utils::to_fs_path(theme_id) / "generated.qss";
+    return m_gui_settings->get_settings_dir() / "vita-themes" / gui::utils::to_fs_path(theme_id) / "generated.qss";
 }
 
 QString ThemeManager::generated_vita_theme_display_name(const QString &theme_id) const {
