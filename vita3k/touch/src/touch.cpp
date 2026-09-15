@@ -306,19 +306,20 @@ int toggle_touchscreen(TouchState &state) {
     return 0;
 }
 
-int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count, bool is_peek) {
-    memset(pData, 0, sizeof(SceTouchData) * count);
+int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port, SceTouchData *pData, SceUInt32 nBufs, bool is_peek) {
+    memset(pData, 0, sizeof(SceTouchData) * nBufs);
+    // vitasdk says sceTouchGet/Peek should return 1 thru nBufs or < 0 on error
     if (emuenv.drop_inputs || emuenv.ctrl.overlay_input_intercepted.load(std::memory_order_relaxed))
-        return 0;
+        return 1;
 
     const int port_idx = static_cast<int>(port);
 
     int nb_returned_data = 1;
     if (is_peek) {
         if (emuenv.touch.touch_mode[port])
-            nb_returned_data = count;
+            nb_returned_data = nBufs;
         else
-            nb_returned_data = 0;
+            nb_returned_data = 1;
     } else {
         const uint64_t current_vcount = emuenv.display.vblank_count.load();
         if (current_vcount <= emuenv.touch.last_vcount[port_idx]) {
@@ -328,7 +329,8 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
             wait_vblank(emuenv.display, emuenv.kernel, thread, emuenv.touch.last_vcount[port_idx] + 1, false);
         }
         uint64_t vblank_count = emuenv.display.vblank_count.load();
-        nb_returned_data = std::min<int>(count, vblank_count - emuenv.touch.last_vcount[port_idx]);
+        // clamp to 1 and not 0
+        nb_returned_data = std::max<int>(1, std::min<int>(nBufs, vblank_count - emuenv.touch.last_vcount[port_idx]));
         emuenv.touch.last_vcount[port_idx] = vblank_count;
     }
 
@@ -353,6 +355,7 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
         }
     }
 
+    assert(nb_returned_data != 0);
     return nb_returned_data;
 }
 
