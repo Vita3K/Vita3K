@@ -498,7 +498,7 @@ This action cannot be undone.</source>
     <message>
         <location filename="../../vita3k/gui-qt/src/archive_install_dialog.cpp" line="234"/>
         <source>PlayStation Vita commercial software package (NoNpDrm/FAGDec) / PlayStation Vita homebrew software package (*.zip *.vpk *.vci);;PlayStation Vita commercial software package (NoNpDrm/FAGDec) (*.zip);;PlayStation Vita homebrew software package (*.vpk);;Vita Cartridge Image (VCI) File (*.vci)</source>
-        <translation>PlayStation Vita 商业软件包（NoNpDrm/FAGDec）/ PlayStation Vita 自制软件包（*.zip *.vpk *.vci）;;PlayStation Vita 商业软件包（NoNpDrm/FAGDec）（*.zip）;;PlayStation Vita 自制软件包（*.vpk）;;Vita 卡带镜像（VCI）文件（*.vci）</translation>
+        <translation>PlayStation Vita 商业软件包（NoNpDrm/FAGDec）/ PlayStation Vita 自制软件包 (*.zip *.vpk *.vci);;PlayStation Vita 商业软件包（NoNpDrm/FAGDec）(*.zip);;PlayStation Vita 自制软件包 (*.vpk);;Vita 卡带镜像（VCI）文件 (*.vci)</translation>
     </message>
     <message>
         <location filename="../../vita3k/gui-qt/src/archive_install_dialog.cpp" line="261"/>
@@ -1135,7 +1135,7 @@ Not Connected</source>
     <message>
         <location filename="../../vita3k/gui-qt/src/firmware_install_dialog.cpp" line="53"/>
         <source>PlayStation Vita Firmware Package (*.PUP *.pup)</source>
-        <translation>PlayStation Vita 固件包（*.PUP *.pup）</translation>
+        <translation>PlayStation Vita 固件包 (*.PUP *.pup)</translation>
     </message>
     <message>
         <location filename="../../vita3k/gui-qt/src/firmware_install_dialog.cpp" line="80"/>
@@ -1258,7 +1258,7 @@ Any unsaved progress will be lost!</source>
     <message>
         <location filename="../../vita3k/gui-qt/src/license_install_dialog.cpp" line="59"/>
         <source>PlayStation Vita software license file (*.bin *.rif)</source>
-        <translation>PlayStation Vita 软件许可证文件（*.bin *.rif）</translation>
+        <translation>PlayStation Vita 软件许可证文件 (*.bin *.rif)</translation>
     </message>
     <message>
         <location filename="../../vita3k/gui-qt/src/license_install_dialog.cpp" line="67"/>
@@ -1922,7 +1922,7 @@ Please close Vita3K and relaunch it without elevated privileges.</source>
     <message>
         <location filename="../../vita3k/gui-qt/src/pkg_install_dialog.cpp" line="116"/>
         <source>PlayStation Vita package or license (*.pkg *.bin *.rif);;PlayStation Store Downloaded Package (*.pkg);;PlayStation Vita software license file (*.bin *.rif)</source>
-        <translation>PlayStation Vita 软件包或许可证（*.pkg *.bin *.rif）;;PlayStation Store 下载的软件包（*.pkg）;;PlayStation Vita 软件许可证文件（*.bin *.rif）</translation>
+        <translation>PlayStation Vita 软件包或许可证 (*.pkg *.bin *.rif);;PlayStation Store 下载的软件包 (*.pkg);;PlayStation Vita 软件许可证文件 (*.bin *.rif)</translation>
     </message>
     <message>
         <location filename="../../vita3k/gui-qt/src/pkg_install_dialog.cpp" line="127"/>
@@ -1978,7 +1978,7 @@ How would you like to provide it?</source>
     <message>
         <location filename="../../vita3k/gui-qt/src/pkg_install_dialog.cpp" line="209"/>
         <source>PlayStation Vita software license file (*.bin *.rif)</source>
-        <translation>PlayStation Vita 软件许可证文件（*.bin *.rif）</translation>
+        <translation>PlayStation Vita 软件许可证文件 (*.bin *.rif)</translation>
     </message>
     <message>
         <location filename="../../vita3k/gui-qt/src/pkg_install_dialog.cpp" line="229"/>
@@ -2713,7 +2713,7 @@ Check the log for details.</source>
         <location filename="../../vita3k/gui-qt/src/settings_dialog.cpp" line="1094"/>
         <location filename="../../vita3k/gui-qt/src/settings_dialog.cpp" line="1104"/>
         <source>Images (*.png *.jpg *.jpeg *.bmp)</source>
-        <translation>图片（*.png *.jpg *.jpeg *.bmp）</translation>
+        <translation>图片 (*.png *.jpg *.jpeg *.bmp)</translation>
     </message>
     <message>
         <location filename="../../vita3k/gui-qt/src/settings_dialog.cpp" line="1102"/>
