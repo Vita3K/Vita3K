@@ -248,6 +248,8 @@ jobs:
 
       - name: Set up Android SDK tools
         uses: android-actions/setup-android@v4
+        with:
+          packages: ''
 
       - name: Set up Android build environment
         env:
