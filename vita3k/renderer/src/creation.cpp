@@ -89,8 +89,9 @@ COMMAND(handle_destroy_context) {
     TRACY_FUNC_COMMANDS(handle_destroy_context);
     std::unique_ptr<Context> *ctx = helper.pop<std::unique_ptr<Context> *>();
 
+    if (renderer.context == ctx->get())
+        renderer.context = nullptr;
     ctx->reset();
-    renderer.context = nullptr;
 
     complete_command(renderer, helper, 0);
 }
