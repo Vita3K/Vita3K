@@ -50,3 +50,7 @@ download_translation_archive() {
 download_qt_translations() {
     download_translation_archive "vita3k-qt-translations.zip" "${1:?missing target directory}"
 }
+
+download_android_strings() {
+    download_translation_archive "vita3k-android-translations.zip" "${1:?missing target directory}"
+}
