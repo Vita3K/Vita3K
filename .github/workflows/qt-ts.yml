@@ -1,0 +1,42 @@
+# Publishes the Crowdin source for the Qt UI. The translations themselves live in
+# nishinji/vita3k_translations, which picks this artifact up.
+
+name: Generate Qt translation template
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - 'vita3k/gui-qt/**'
+      - 'vita3k/main.cpp'
+      - '.github/workflows/qt-ts.yml'
+
+jobs:
+  generate-template:
+    name: Generate Qt translation template
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install the Qt linguist tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qt6-l10n-tools
+
+      - name: Generate the template
+        run: |
+          mkdir -p template
+          # Debian keeps lupdate out of PATH, so ask dpkg where the package put it.
+          lupdate=$(dpkg -L qt6-l10n-tools | grep -m1 '/lupdate$')
+          "$lupdate" -no-obsolete -recursive vita3k/main.cpp vita3k/gui-qt/src vita3k/gui-qt/include -ts template/vita3k_template.ts
+
+      - name: Upload the template
+        uses: actions/upload-artifact@v7
+        with:
+          name: vita3k-qt-template
+          path: template/vita3k_template.ts
+          compression-level: 0
