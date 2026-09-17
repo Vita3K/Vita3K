@@ -16,7 +16,7 @@ on:
 jobs:
   generate-template:
     name: Generate Qt translation template
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout

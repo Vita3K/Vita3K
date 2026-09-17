@@ -20,19 +20,9 @@ download_translation_archive() {
     local archive="${1:?missing archive name}"
     local target_dir="${2:?missing target directory}"
     local repo="${VITA3K_TRANSLATIONS_REPO:-nishinji/vita3k_translations}"
-    local url=""
+    local url="https://github.com/$repo/releases/latest/download/$archive"
 
     mkdir -p "$target_dir"
-
-    url=$(curl -fsSL --retry 3 --retry-delay 10 "https://api.github.com/repos/$repo/releases/latest" \
-        | grep "browser_download_url" \
-        | grep "$archive" \
-        | cut -d '"' -f 4) || true
-
-    if [[ -z "$url" ]]; then
-        echo "No $archive in the latest release of $repo. Building without it."
-        return 0
-    fi
 
     echo "Downloading $archive from $url"
     if ! curl -fsSL --retry 3 --retry-delay 10 -o "$target_dir/$archive" "$url"; then
@@ -49,4 +39,8 @@ download_translation_archive() {
 
 download_qt_translations() {
     download_translation_archive "vita3k-qt-translations.zip" "${1:?missing target directory}"
+}
+
+download_android_strings() {
+    download_translation_archive "vita3k-android-translations.zip" "${1:?missing target directory}"
 }
