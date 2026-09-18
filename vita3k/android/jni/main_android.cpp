@@ -513,6 +513,13 @@ SDLMAIN_DECLSPEC int SDL_main(int argc, char *argv[]) {
 
             app::update_runtime_metrics(*emuenv, runtime_metrics);
 
+            // Stop requested by overlay/ingame
+            auto session_controller = get_app_session_controller();
+            if (session_controller->stop_requested()) {
+                running = false;
+                session_controller->reset_stop_request();
+            }
+
             if (!session_controller->is_running())
                 running = false;
 

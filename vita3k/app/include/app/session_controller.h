@@ -39,6 +39,7 @@ enum class AppSessionPauseReason : uint32_t {
     User = 1u << 0,
     Menu = 1u << 1,
     Background = 1u << 2,
+    All = 0xFFFFFFFF
 };
 
 enum class AppSessionStopReason {
@@ -62,7 +63,11 @@ public:
     bool load_and_run();
     bool set_pause_reason(AppSessionPauseReason reason, bool enabled);
     bool set_input_intercepted(bool enabled);
+    bool stop_requested();
+    void reset_stop_request();
+    void request_stop();
     void stop(AppSessionStopReason reason = AppSessionStopReason::UserRequest);
+    const std::string get_active_app_title();
 
 private:
     void apply_runtime_state_locked();
@@ -78,6 +83,7 @@ private:
     bool renderer_initialized = false;
     bool runtime_initialized = false;
     bool input_intercepted = false;
+    std::atomic<bool> stop_requested_flag{ false };
 };
 
 const char *to_string(AppSessionPhase phase);
