@@ -21,6 +21,7 @@
 #include <mem/state.h>
 #include <util/log.h>
 
+#include <cstdint>
 #include <sstream>
 
 // universal to string converters for module specific types (usually enums)
@@ -39,7 +40,7 @@ std::string to_debug_str(const MemState &mem, T type) {
 // Override pointers, we want to print the address in hex
 template <typename U>
 std::string to_debug_str(const MemState &mem, U *type) {
-    return log_hex(Ptr<U>(type, mem).address()); // Convert host ptr to guest
+    return type ? fmt::format("{}", fmt::ptr(type)) : "0x0 NULLPTR";
 }
 
 // Override for guest pointers, we want to print the guest address
@@ -58,13 +59,13 @@ template <>
 inline std::string to_debug_str(const MemState &mem, char *type) {
     // Format for correct char* should be "(address in hex (0x12345)) (string)", this is just in the
     // extreme case that the string is actually "0x0 NULLPTR" and be confusing
-    return type ? fmt::format("0x{:X} {}", Ptr<char>(type, mem).address(), type) : "0x0 NULLPTR";
+    return type ? fmt::format("{} {}", fmt::ptr(type), type) : "0x0 NULLPTR";
 }
 
 // Override for char pointers as the contents are readable
 template <>
 inline std::string to_debug_str(const MemState &mem, const char *type) {
-    return type ? fmt::format("0x{:X} {}", Ptr<const char>(type, mem).address(), type) : "0x0 NULLPTR";
+    return type ? fmt::format("{} {}", fmt::ptr(type), type) : "0x0 NULLPTR";
 }
 
 template <>
