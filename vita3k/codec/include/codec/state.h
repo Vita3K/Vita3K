@@ -234,13 +234,19 @@ struct AacDecoderState : public DecoderState {
     SwrContext *swr = nullptr;
     AVFrame *frame;
     uint32_t es_size_used;
+    uint32_t output_sample_rate;
+    uint32_t output_channels;
+    uint32_t configured_input_sample_rate = 0;
+    uint32_t configured_input_channels = 0;
+    bool is_sbr;
+    bool format_logged = false;
     uint32_t get(DecoderQuery query) override;
 
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size) override;
     uint32_t get_es_size() override;
 
-    explicit AacDecoderState(uint32_t sample_rate, uint32_t channels);
+    explicit AacDecoderState(uint32_t sample_rate, uint32_t channels, bool is_sbr);
     ~AacDecoderState() override;
 };
 
