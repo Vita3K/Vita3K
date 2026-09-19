@@ -26,7 +26,7 @@ class Ptr;
 
 class Block {
 public:
-    typedef std::function<void(Address)> Deleter;
+    using Deleter = std::function<void(Address)>;
 
     explicit Block(Address addr, const Deleter &deleter)
         : addr(addr)

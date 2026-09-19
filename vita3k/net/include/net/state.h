@@ -28,8 +28,8 @@
 #include <mutex>
 #include <thread>
 
-typedef std::map<int, SocketPtr> NetSockets;
-typedef std::map<int, EpollPtr> NetEpolls;
+using NetSockets = std::map<int, SocketPtr>;
+using NetEpolls = std::map<int, EpollPtr>;
 
 struct NetState {
     bool inited = false;

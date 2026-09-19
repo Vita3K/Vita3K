@@ -1368,7 +1368,7 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
         break;
     case SCE_SAVEDATA_DIALOG_MODE_LIST: {
         list_param = p->listParam.get(emuenv.mem);
-        const uint32_t slot_list_size = std::min(list_param->slotListSize, (uint32_t)SCE_SAVEDATA_DIALOG_SLOTLIST_MAXSIZE);
+        const uint32_t slot_list_size = std::min(list_param->slotListSize, static_cast<uint32_t>(SCE_SAVEDATA_DIALOG_SLOTLIST_MAXSIZE));
         emuenv.common_dialog.savedata.slot_list_size = slot_list_size;
         emuenv.common_dialog.savedata.list_style = list_param->itemStyle;
 

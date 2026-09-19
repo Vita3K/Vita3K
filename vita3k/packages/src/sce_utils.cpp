@@ -632,7 +632,7 @@ static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, const fs::pa
     fs::create_directories(dir_path);
 
     while (img.get_next_entry(mee)) {
-        if (mee.entry.file_attributes & (int)Fat16::EntryAttribute::DIRECTORY) {
+        if (mee.entry.file_attributes & static_cast<int>(Fat16::EntryAttribute::DIRECTORY)) {
             // Also check if it's not the back folder (. and ..)
             // This can be done by gathering the name
             if (mee.entry.get_entry_type_from_filename() != Fat16::EntryType::DIRECTORY) {
@@ -646,7 +646,7 @@ static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, const fs::pa
             }
         }
 
-        if (mee.entry.file_attributes & (int)Fat16::EntryAttribute::ARCHIVE) {
+        if (mee.entry.file_attributes & static_cast<int>(Fat16::EntryAttribute::ARCHIVE)) {
             extract_file(img, mee, dir_path);
         }
     }
@@ -761,7 +761,7 @@ std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_
     EVP_DecryptUpdate(cipher_ctx, dec, &dec_len, dec_in, MetadataInfo::Size);
     EVP_DecryptFinal_ex(cipher_ctx, dec + dec_len, &dec_len);
 
-    MetadataInfo metadata_info = MetadataInfo((char *)dec);
+    MetadataInfo metadata_info = MetadataInfo(reinterpret_cast<char *>(dec));
 
     std::vector<unsigned char> dec1(sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
     std::vector<unsigned char> input_data(sce_hdr.header_length - sce_hdr.metadata_offset - 48 - MetadataInfo::Size);
@@ -773,7 +773,7 @@ std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_
 
     unsigned char dec2[MetadataHeader::Size];
     std::copy(dec1.data(), &dec1[MetadataHeader::Size], dec2);
-    MetadataHeader metadata_hdr = MetadataHeader((char *)dec2);
+    MetadataHeader metadata_hdr = MetadataHeader(reinterpret_cast<char *>(dec2));
 
     std::vector<SceSegment> segs;
     const auto start = MetadataHeader::Size + metadata_hdr.section_count * MetadataSection::Size;
@@ -787,7 +787,7 @@ std::vector<SceSegment> get_segments(const uint8_t *input, const SceHeader &sce_
     for (uint32_t i = 0; i < metadata_hdr.section_count; i++) {
         std::vector<unsigned char> dec3((MetadataHeader::Size + i * MetadataSection::Size + MetadataSection::Size) - (MetadataHeader::Size + i * MetadataSection::Size));
         memcpy(dec3.data(), &dec1[MetadataHeader::Size + i * MetadataSection::Size], (MetadataHeader::Size + i * MetadataSection::Size + MetadataSection::Size) - (MetadataHeader::Size + i * MetadataSection::Size));
-        MetadataSection metsec = MetadataSection((char *)dec3.data());
+        MetadataSection metsec = MetadataSection(reinterpret_cast<char *>(dec3.data()));
 
         if (metsec.encryption == EncryptionType::AES128CTR) {
             segs.push_back({ metsec.offset, metsec.seg_idx, metsec.size, metsec.compression == CompressionType::DEFLATE, vault[metsec.key_idx], vault[metsec.iv_idx] });
@@ -899,7 +899,7 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint
 
     // Extract the elf from the encrypted self
     const ElfHeader elf_hdr = ElfHeader(reinterpret_cast<const char *>(&fself[self_hdr.elf_offset]));
-    elf.insert(elf.end(), (const uint8_t *)&elf_hdr, (const uint8_t *)&elf_hdr + ElfHeader::Size);
+    elf.insert(elf.end(), reinterpret_cast<const uint8_t *>(&elf_hdr), reinterpret_cast<const uint8_t *>(&elf_hdr) + ElfHeader::Size);
 
     // Extract the phdrs from the encrypted self
     std::vector<ElfPhdr> elf_phdrs;
@@ -910,7 +910,7 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint
     for (uint16_t i = 0; i < elf_hdr.e_phnum; i++) {
         const ElfPhdr phdr = ElfPhdr(reinterpret_cast<const char *>(&fself[self_hdr.phdr_offset + (i * ElfPhdr::Size)]));
         elf_phdrs.push_back(phdr);
-        elf.insert(elf.end(), (const uint8_t *)&phdr, (const uint8_t *)&phdr + ElfPhdr::Size);
+        elf.insert(elf.end(), reinterpret_cast<const uint8_t *>(&phdr), reinterpret_cast<const uint8_t *>(&phdr) + ElfPhdr::Size);
         at += ElfPhdr::Size;
 
         const SegmentInfo segment_info = SegmentInfo(reinterpret_cast<const char *>(&fself[self_hdr.segment_info_offset + (i * SegmentInfo::Size)]));
@@ -973,7 +973,7 @@ std::vector<uint8_t> decrypt_fself(const std::vector<uint8_t> &fself, const uint
 
     // Create a new self with the extracted elf
     std::vector<uint8_t> decrypted_self(HEADER_LEN + elf.size());
-    ElfHeader ehdr = ElfHeader((char *)elf.data());
+    ElfHeader ehdr = ElfHeader(reinterpret_cast<char *>(elf.data()));
 
     // Create a new header
     SCE_header hdr{

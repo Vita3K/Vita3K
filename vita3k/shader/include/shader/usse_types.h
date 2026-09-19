@@ -24,6 +24,7 @@
 #include <cassert>
 #include <functional>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -243,20 +244,20 @@ enum RegisterFlags : uint32_t {
     GPI = 1 << 2 ///< Register is GPI type.
 };
 
-inline RegisterFlags operator|(RegisterFlags a, RegisterFlags b) {
-    return (RegisterFlags)((uint32_t)a | (uint32_t)b);
+inline constexpr RegisterFlags operator|(RegisterFlags a, RegisterFlags b) {
+    return static_cast<RegisterFlags>(std::to_underlying(a) | std::to_underlying(b));
 }
 
-inline RegisterFlags operator&(RegisterFlags a, RegisterFlags b) {
-    return (RegisterFlags)((uint32_t)a & (uint32_t)b);
+inline constexpr RegisterFlags operator&(RegisterFlags a, RegisterFlags b) {
+    return static_cast<RegisterFlags>(std::to_underlying(a) & std::to_underlying(b));
 }
 
-inline RegisterFlags &operator|=(RegisterFlags &a, RegisterFlags b) {
-    return (RegisterFlags &)((uint32_t &)a |= (uint32_t)b);
+inline constexpr RegisterFlags &operator|=(RegisterFlags &a, RegisterFlags b) {
+    return a = a | b;
 }
 
-inline RegisterFlags &operator&=(RegisterFlags &a, RegisterFlags b) {
-    return (RegisterFlags &)((uint32_t &)a &= (uint32_t)b);
+inline constexpr RegisterFlags &operator&=(RegisterFlags &a, RegisterFlags b) {
+    return a = a & b;
 }
 
 inline std::size_t get_data_type_size(const DataType type) {

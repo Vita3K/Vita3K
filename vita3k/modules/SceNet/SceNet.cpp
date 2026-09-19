@@ -526,7 +526,7 @@ EXPORT(int, sceNetResolverGetError) {
 
 EXPORT(int, sceNetResolverStartAton, int rid, const SceNetInAddr *addr, char *hostname, int len, int timeout, int retry, int flags) {
     TRACY_FUNC(sceNetResolverStartAton, rid, addr, hostname, len, timeout, retry, flags);
-    struct hostent *resolved = gethostbyaddr((const char *)addr, len, AF_INET);
+    struct hostent *resolved = gethostbyaddr(reinterpret_cast<const char *>(addr), len, AF_INET);
     strcpy(hostname, resolved->h_name);
     return 0;
 }

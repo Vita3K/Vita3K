@@ -44,7 +44,7 @@ void layout_container::set_pos(int16_t _x, int16_t _y) {
 }
 
 bool layout_container::is_compiled() {
-    if (m_is_compiled && std::any_of(m_items.cbegin(), m_items.cend(), [](const auto &item) { return item && !item->is_compiled(); })) {
+    if (m_is_compiled && std::ranges::any_of(m_items, [](const auto &item) { return item && !item->is_compiled(); })) {
         m_is_compiled = false;
     }
 

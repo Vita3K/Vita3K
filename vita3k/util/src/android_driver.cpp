@@ -330,9 +330,7 @@ bool is_safe_driver_relative_path(const fs::path &relative_path) {
     if (relative_path.empty() || relative_path == "." || relative_path.is_absolute())
         return false;
 
-    return std::none_of(relative_path.begin(), relative_path.end(), [](const fs::path &part) {
-        return part == "..";
-    });
+    return !std::ranges::contains(relative_path, "..");
 }
 
 std::optional<std::string> read_driver_library_name_from_meta(const fs::path &meta_path) {

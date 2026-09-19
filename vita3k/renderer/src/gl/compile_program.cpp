@@ -180,7 +180,7 @@ static SharedGLObject compile_shader(const fs::path &shader_cache_path, const st
 }
 
 static std::vector<ShadersHash>::iterator get_shaders_hash_index(std::vector<ShadersHash> &shaders_cache_hashs, const Sha256Hash &frag_hash, const Sha256Hash &vert_hash) {
-    const auto shader_hash_index = std::find_if(shaders_cache_hashs.begin(), shaders_cache_hashs.end(), [&](const ShadersHash &h) {
+    const auto shader_hash_index = std::ranges::find_if(shaders_cache_hashs, [&](const ShadersHash &h) {
         return (h.frag == frag_hash) && (h.vert == vert_hash);
     });
 

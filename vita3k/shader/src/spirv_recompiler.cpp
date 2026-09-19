@@ -1117,7 +1117,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             // specialization constant for shader interlock:
             // layout (constant_id = GAMMA_CORRECTION_SPECIALIZATION_ID) const bool is_srgb = false;
             spv_params.is_srgb_constant = b.makeBoolConstant(false, true);
-            b.addDecoration(spv_params.is_srgb_constant, spv::DecorationSpecId, (int)GAMMA_CORRECTION_SPECIALIZATION_ID);
+            b.addDecoration(spv_params.is_srgb_constant, spv::DecorationSpecId, static_cast<int>(GAMMA_CORRECTION_SPECIALIZATION_ID));
             b.addName(spv_params.is_srgb_constant, "is_srgb");
         }
     }
@@ -1320,7 +1320,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                        [&](const LiteralInputSource &s) {
                            literal_pairs.emplace_back(input.offset, b.makeFloatConstant(s.data));
                            // Pair sort automatically sort offset for us
-                           std::sort(literal_pairs.begin(), literal_pairs.end());
+                           std::ranges::sort(literal_pairs);
                        },
                        [&](const UniformBufferInputSource &s) {
                            if (s.index == SCE_GXM_TEXTURE_BUFFER) {
@@ -2107,7 +2107,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     if (DUMP_SPIRV_BINARIES) {
         // TODO: use base path host var
         std::ofstream spirv_dump(shader_hash + ".spv", std::ios::binary);
-        spirv_dump.write((char *)&spirv, spirv.size() * sizeof(uint32_t));
+        spirv_dump.write(reinterpret_cast<char *>(&spirv), spirv.size() * sizeof(uint32_t));
         spirv_dump.close();
     }
 

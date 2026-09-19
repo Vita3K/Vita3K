@@ -26,8 +26,8 @@
 #include <iphlpapi.h>
 #include <winsock2.h>
 #undef s_addr
-typedef SOCKET abs_socket;
-typedef int socklen_t;
+using abs_socket = SOCKET;
+using socklen_t = int;
 #else
 #include <arpa/inet.h>
 #include <cerrno>
@@ -38,12 +38,12 @@ typedef int socklen_t;
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <unistd.h>
-typedef int abs_socket;
+using abs_socket = int;
 #endif
 
 struct Socket;
 
-typedef std::shared_ptr<Socket> SocketPtr;
+using SocketPtr = std::shared_ptr<Socket>;
 
 struct Socket {
     int sockopt_so_onesbcast = 0;

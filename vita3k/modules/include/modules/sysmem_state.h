@@ -33,8 +33,8 @@ struct KernelMemBlock : SceKernelMemBlockInfo {
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
 
-typedef std::shared_ptr<KernelMemBlock> KernelMemBlockPtr;
-typedef std::map<SceUID, KernelMemBlockPtr> Blocks;
+using KernelMemBlockPtr = std::shared_ptr<KernelMemBlock>;
+using Blocks = std::map<SceUID, KernelMemBlockPtr>;
 
 struct SysmemState {
     std::mutex mutex;

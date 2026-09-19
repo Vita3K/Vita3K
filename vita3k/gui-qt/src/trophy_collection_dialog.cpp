@@ -379,7 +379,7 @@ std::unique_ptr<TrophyAppData> TrophyCollectionDialog::load_app_data_entry(const
 void TrophyCollectionDialog::populate_app_table() {
     m_app_model->removeRows(0, m_app_model->rowCount());
 
-    std::sort(m_db.begin(), m_db.end(), [](const auto &a, const auto &b) {
+    std::ranges::sort(m_db, [](const auto &a, const auto &b) {
         return QString::fromStdString(a->title).toLower() < QString::fromStdString(b->title).toLower();
     });
 

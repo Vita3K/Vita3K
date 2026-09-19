@@ -23,7 +23,7 @@
 #include <vector>
 
 namespace spv {
-typedef unsigned int Id;
+using Id = unsigned int;
 } // namespace spv
 
 namespace shader::usse {

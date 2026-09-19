@@ -87,11 +87,11 @@ struct VCRuntimeCheckObject {
             v0, v1, v2, v3, MIN_VERSION_V0, MIN_VERSION_V1, MIN_VERSION_V2, MIN_VERSION_V3, DOWNLOAD_URL);
         message[(fmt_result.size > (sizeof(message) - 1)) ? (sizeof(message) - 1) : fmt_result.size] = 0;
 
-        if (MessageBoxA(NULL, message, "Old Visual C++ Runtime Detected", MB_ICONERROR | MB_YESNO) == IDNO)
+        if (MessageBoxA(nullptr, message, "Old Visual C++ Runtime Detected", MB_ICONERROR | MB_YESNO) == IDNO)
             return;
 
-        if (!ShellExecuteA(NULL, "open", DOWNLOAD_URL, nullptr, nullptr, SW_SHOWNORMAL))
-            MessageBoxA(NULL, "ShellExecuteA() failed, you may need to manually open the URL.", "Error", MB_OK);
+        if (!ShellExecuteA(nullptr, "open", DOWNLOAD_URL, nullptr, nullptr, SW_SHOWNORMAL))
+            MessageBoxA(nullptr, "ShellExecuteA() failed, you may need to manually open the URL.", "Error", MB_OK);
 
         TerminateProcess(GetCurrentProcess(), 0xFFFFFFFF);
     }

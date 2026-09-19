@@ -96,12 +96,9 @@ void display_manager::dispose(const std::vector<uint32_t> &uids) {
         cleanup_internal();
     }
 
-    m_dirty_list.erase(
-        std::remove_if(m_dirty_list.begin(), m_dirty_list.end(),
-            [&uids](const std::shared_ptr<overlay> &e) {
-                return std::find(uids.begin(), uids.end(), e->uid) != uids.end();
-            }),
-        m_dirty_list.end());
+    std::erase_if(m_dirty_list, [&uids](const std::shared_ptr<overlay> &e) {
+        return std::ranges::contains(uids, e->uid);
+    });
 }
 
 bool display_manager::remove_type(uint32_t type_id) {

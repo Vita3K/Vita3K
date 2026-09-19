@@ -54,7 +54,7 @@ bool USSETranslatorVisitor::nop() {
 bool USSETranslatorVisitor::spec(
     bool special,
     SpecialCategory category) {
-    LOG_DISASM("{:016x}: SPEC category: {}, special: {}", m_instr, (uint8_t)category, special);
+    LOG_DISASM("{:016x}: SPEC category: {}, special: {}", m_instr, static_cast<uint8_t>(category), special);
     return true;
 }
 

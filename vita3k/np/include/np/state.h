@@ -33,7 +33,7 @@ struct SceNpServiceStateCallback {
     Address data;
 };
 
-typedef std::map<int, SceNpServiceStateCallback> np_callbacks;
+using np_callbacks = std::map<int, SceNpServiceStateCallback>;
 
 struct NpTrophyUnlockCallbackData {
     std::string np_com_id;

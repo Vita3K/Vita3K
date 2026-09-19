@@ -36,7 +36,7 @@ namespace gui {
 namespace {
 
 std::string lowercase_copy(std::string value) {
-    std::transform(value.begin(), value.end(), value.begin(), [](const unsigned char ch) {
+    std::ranges::transform(value, value.begin(), [](const unsigned char ch) {
         return static_cast<char>(std::tolower(ch));
     });
     return value;
@@ -44,7 +44,7 @@ std::string lowercase_copy(std::string value) {
 
 std::string normalize_locale(std::string locale) {
     locale = string_utils::trim_copy(locale);
-    std::replace(locale.begin(), locale.end(), '_', '-');
+    std::ranges::replace(locale, '_', '-');
     return lowercase_copy(std::move(locale));
 }
 
@@ -224,7 +224,7 @@ std::string stylesheet_path_url(const fs::path &path, const fs::path &vita_fs_pa
     }
 
     std::string normalized = fs_utils::path_to_utf8(normalized_path);
-    std::replace(normalized.begin(), normalized.end(), '\\', '/');
+    std::ranges::replace(normalized, '\\', '/');
     return normalized;
 }
 
@@ -361,7 +361,7 @@ const VitaThemeBackgroundOption *find_background_option(
     if (background_option_id.empty())
         return &theme.background_options.front();
 
-    const auto it = std::find_if(theme.background_options.begin(), theme.background_options.end(),
+    const auto it = std::ranges::find_if(theme.background_options,
         [&background_option_id](const VitaThemeBackgroundOption &option) {
             return option.id == background_option_id;
         });
@@ -847,7 +847,7 @@ std::vector<VitaThemeInfo> enumerate_installed_vita_themes(
             theme_paths.push_back(it->path());
     }
 
-    std::sort(theme_paths.begin(), theme_paths.end(), [](const fs::path &lhs, const fs::path &rhs) {
+    std::ranges::sort(theme_paths, [](const fs::path &lhs, const fs::path &rhs) {
         return fs_utils::path_to_utf8(lhs.filename()) < fs_utils::path_to_utf8(rhs.filename());
     });
 

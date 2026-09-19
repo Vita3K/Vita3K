@@ -80,9 +80,7 @@ struct MemspaceBlockAllocator {
     }
 
     bool free(const std::uint32_t offset) {
-        auto ite = std::lower_bound(blocks.begin(), blocks.end(), offset, [](const Block &lhs, const std::uint32_t rhs) {
-            return lhs.offset < rhs;
-        });
+        auto ite = std::ranges::lower_bound(blocks, offset, {}, &Block::offset);
 
         if (ite != blocks.end() && ite->offset == offset) {
             ite->free = true;

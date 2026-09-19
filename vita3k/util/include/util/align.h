@@ -18,20 +18,20 @@
 #pragma once
 
 #include <bit>
+#include <concepts>
 #include <cstdint>
-#include <type_traits>
 
-template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
-constexpr T align(const T &value, std::uint64_t align) {
-    return static_cast<T>((value + (align - 1)) & ~(align - 1));
+template <std::integral T>
+constexpr T align(T value, std::uint64_t alignment) {
+    return static_cast<T>((value + (alignment - 1)) & ~(alignment - 1));
 }
 
-template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
-constexpr T align_down(const T &value, std::uint64_t align) {
-    return static_cast<T>(value & ~(align - 1));
+template <std::integral T>
+constexpr T align_down(T value, std::uint64_t alignment) {
+    return static_cast<T>(value & ~(alignment - 1));
 }
 
-template <class T>
+template <std::unsigned_integral T>
 constexpr T next_power_of_two(T num) {
     return std::bit_ceil(num);
 }

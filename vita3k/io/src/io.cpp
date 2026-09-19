@@ -582,9 +582,9 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const fs::path &v
         return IO_ERROR_UNK();
 #endif
 
-    last_access_time_ticks = RTC_OFFSET + (uint64_t)sb.st_atime * VITA_CLOCKS_PER_SEC;
-    creation_time_ticks = RTC_OFFSET + (uint64_t)sb.st_ctime * VITA_CLOCKS_PER_SEC;
-    last_modification_time_ticks = RTC_OFFSET + (uint64_t)sb.st_mtime * VITA_CLOCKS_PER_SEC;
+    last_access_time_ticks = RTC_OFFSET + static_cast<uint64_t>(sb.st_atime) * VITA_CLOCKS_PER_SEC;
+    creation_time_ticks = RTC_OFFSET + static_cast<uint64_t>(sb.st_ctime) * VITA_CLOCKS_PER_SEC;
+    last_modification_time_ticks = RTC_OFFSET + static_cast<uint64_t>(sb.st_mtime) * VITA_CLOCKS_PER_SEC;
 
 #ifndef _WIN32
 #undef st_atime

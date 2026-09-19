@@ -51,24 +51,24 @@ struct KernelModule {
     Ptr<const uint8_t> info_segment_address;
     uint32_t info_offset;
 };
-typedef std::shared_ptr<KernelModule> SceKernelModulePtr;
+using SceKernelModulePtr = std::shared_ptr<KernelModule>;
 
-typedef std::shared_ptr<ThreadState> ThreadStatePtr;
-typedef std::map<SceUID, CodecEngineBlock> CodecEngineBlocks;
-typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
-typedef std::map<SceUID, ThreadStatePtr> ThreadStatePtrs;
-typedef std::map<SceUID, SceKernelModulePtr> SceKernelModuleInfoPtrs;
-typedef unordered_map_fast<uint32_t, Address> ExportNids;
+using ThreadStatePtr = std::shared_ptr<ThreadState>;
+using CodecEngineBlocks = std::map<SceUID, CodecEngineBlock>;
+using SlotToAddress = std::map<SceUID, Ptr<Ptr<void>>>;
+using ThreadStatePtrs = std::map<SceUID, ThreadStatePtr>;
+using SceKernelModuleInfoPtrs = std::map<SceUID, SceKernelModulePtr>;
+using ExportNids = unordered_map_fast<uint32_t, Address>;
 // A NID hashes the function name alone, so same-named exports from different libraries collide.
-typedef unordered_map_fast<uint64_t, Address> LibExportNids;
+using LibExportNids = unordered_map_fast<uint64_t, Address>;
 // The plain NID entry outlives taiHEN and HLE redirects, so its owner is tracked apart from its address.
-typedef unordered_map_fast<uint32_t, uint32_t> ExportNidOwners;
+using ExportNidOwners = unordered_map_fast<uint32_t, uint32_t>;
 constexpr uint64_t lib_export_key(uint32_t library_nid, uint32_t nid) {
     return (static_cast<uint64_t>(library_nid) << 32) | nid;
 }
 
-typedef std::map<Address, uint32_t> NotFoundVars;
-typedef std::function<void(CPUState &cpu, uint32_t nid, SceUID thread_id)> CallImportFunc;
+using NotFoundVars = std::map<Address, uint32_t>;
+using CallImportFunc = std::function<void(CPUState &cpu, uint32_t nid, SceUID thread_id)>;
 
 struct CodecEngineBlock {
     uint32_t size;
@@ -99,10 +99,10 @@ struct FuncBindingInfo {
     uint32_t library_nid;
 };
 
-typedef std::multimap<uint32_t, VarBindingInfo> VarBindingInfos;
-typedef std::multimap<uint32_t, FuncBindingInfo> FuncBindingInfos;
+using VarBindingInfos = std::multimap<uint32_t, VarBindingInfo>;
+using FuncBindingInfos = std::multimap<uint32_t, FuncBindingInfo>;
 
-typedef std::map<uint32_t, uint32_t> ModuleUidByNid;
+using ModuleUidByNid = std::map<uint32_t, uint32_t>;
 
 struct KernelState {
     KernelState();

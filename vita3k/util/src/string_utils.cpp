@@ -131,14 +131,25 @@ std::string tolower(std::string s) {
     return s;
 }
 
-int stoi_def(const std::string &str, int default_value, const char *name) {
-    try {
-        return std::stoi(str);
-    } catch (std::invalid_argument &_) {
-        LOG_ERROR("Invalid {}: \"{}\"", name, str);
-    } catch (std::out_of_range &_) {
+int stoi_def(std::string_view str, int default_value, const char *name) {
+    // std::from_chars accepts neither the leading blanks nor the '+' std::stoi used to skip
+    const auto first_digit = str.find_first_not_of(" \t\n\v\f\r");
+    if (first_digit != std::string_view::npos)
+        str.remove_prefix(first_digit);
+    if (str.starts_with('+'))
+        str.remove_prefix(1);
+
+    int value = 0;
+    const auto [_, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
+
+    if (ec == std::errc{})
+        return value;
+
+    if (ec == std::errc::result_out_of_range)
         LOG_ERROR("Out of range {}: \"{}\"", name, str);
-    }
+    else
+        LOG_ERROR("Invalid {}: \"{}\"", name, str);
+
     return default_value;
 }
 

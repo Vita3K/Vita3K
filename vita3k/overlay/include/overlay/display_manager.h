@@ -168,7 +168,7 @@ public:
     // True if any visible elements to draw exist.
     // Caller must ensure synchronization by first locking the list.
     bool has_visible() const {
-        return std::any_of(m_iface_list.begin(), m_iface_list.end(), [](const auto &iface) {
+        return std::ranges::any_of(m_iface_list, [](const auto &iface) {
             return iface && iface->visible.load(std::memory_order_relaxed);
         });
     }

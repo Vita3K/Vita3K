@@ -98,7 +98,7 @@ const char *get_container_name(const std::uint16_t idx);
 
 int get_uniform_buffer_base(const SceGxmProgram &program, const SceGxmProgramParameter &parameter);
 
-typedef std::bitset<SCE_GXM_MAX_TEXTURE_UNITS> TextureInfo;
+using TextureInfo = std::bitset<SCE_GXM_MAX_TEXTURE_UNITS>;
 TextureInfo get_textures_used(const SceGxmProgram &program_gxp);
 
 } // namespace gxp

@@ -104,7 +104,7 @@ gui::VitaThemeSelection sanitize_vita_theme_selection(gui::VitaThemeSelection se
 const gui::VitaThemeBackgroundOption *find_background_option(
     const gui::VitaThemeInfo &theme,
     const QString &background_id) {
-    const auto it = std::find_if(theme.background_options.begin(), theme.background_options.end(),
+    const auto it = std::ranges::find_if(theme.background_options,
         [&background_id](const gui::VitaThemeBackgroundOption &background) {
             return QString::fromStdString(background.id) == background_id;
         });
@@ -706,7 +706,7 @@ const gui::VitaThemeInfo *ThemeManager::find_installed_vita_theme(
     const QString &theme_id,
     const bool force_reload) const {
     const auto &themes = installed_vita_themes(force_reload);
-    const auto it = std::find_if(themes.begin(), themes.end(),
+    const auto it = std::ranges::find_if(themes,
         [&theme_id](const gui::VitaThemeInfo &theme) {
             return QString::fromStdString(theme.theme_id) == theme_id;
         });

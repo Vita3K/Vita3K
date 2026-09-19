@@ -53,8 +53,10 @@
 
 #include <input/physical_key.h>
 
+#include <algorithm>
 #include <array>
 #include <cctype>
+#include <ranges>
 
 namespace input {
 namespace {
@@ -168,20 +170,16 @@ std::string physical_key_display_name(const PhysicalKeyCode code) {
     if (name.empty())
         return "Unknown";
 
-    if (name.size() == 4 && name.rfind("Key", 0) == 0)
+    if (name.size() == 4 && name.starts_with("Key"))
         return std::string(1, name[3]);
 
-    if (name.size() == 6 && name.rfind("Digit", 0) == 0)
+    if (name.size() == 6 && name.starts_with("Digit"))
         return std::string(1, name[5]);
 
     if (name.size() >= 2 && name[0] == 'F') {
-        bool function_key = true;
-        for (size_t i = 1; i < name.size(); ++i) {
-            if (!std::isdigit(static_cast<unsigned char>(name[i]))) {
-                function_key = false;
-                break;
-            }
-        }
+        const bool function_key = std::ranges::all_of(name | std::views::drop(1), [](unsigned char c) {
+            return std::isdigit(c) != 0;
+        });
         if (function_key)
             return std::string(name);
     }

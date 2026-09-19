@@ -293,7 +293,7 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
         data.parent->products[0].data = logical->decoded_pcm.read_bytes();
     } else {
         data.ensure_scratch_size(static_cast<size_t>(granularity) * sizeof(float) * 2);
-        std::fill(data.scratch_data.begin(), data.scratch_data.end(), 0);
+        std::ranges::fill(data.scratch_data, 0);
         if (available_samples > 0) {
             std::memcpy(data.scratch_data.data(), logical->decoded_pcm.read_bytes(), static_cast<size_t>(available_samples) * sizeof(float) * 2);
         }

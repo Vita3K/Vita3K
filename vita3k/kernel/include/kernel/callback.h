@@ -24,7 +24,7 @@
 #include <string>
 
 struct ThreadState;
-typedef std::shared_ptr<ThreadState> ThreadStatePtr;
+using ThreadStatePtr = std::shared_ptr<ThreadState>;
 
 // Lock order: a callback's lock, then its owner thread's mutex. Code that holds a thread's mutex
 // must not take the lock of a callback.
@@ -75,4 +75,4 @@ private:
     SceUID notifier_id = SCE_UID_INVALID_UID; // UID of the last event that notified this thread - SCE_UID_INVALID_UID if not an event
 };
 
-typedef std::shared_ptr<Callback> CallbackPtr;
+using CallbackPtr = std::shared_ptr<Callback>;

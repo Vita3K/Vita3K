@@ -110,9 +110,9 @@ bool Context::init_info_from_trp() {
 
     std::fill_n(trophy_progress, (MAX_TROPHIES >> 5), 0);
     std::fill_n(trophy_availability, (MAX_TROPHIES >> 5), 0);
-    std::fill(trophy_count_by_group.begin(), trophy_count_by_group.end(), 0);
-    std::fill(unlock_timestamps.begin(), unlock_timestamps.end(), 0);
-    std::fill(trophy_kinds.begin(), trophy_kinds.end(), SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_UNKNOWN);
+    std::ranges::fill(trophy_count_by_group, 0);
+    std::ranges::fill(unlock_timestamps, 0);
+    std::ranges::fill(trophy_kinds, SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_UNKNOWN);
     platinum_trophy_id = SCE_NP_TROPHY_INVALID_TROPHY_ID;
 
     group_count = 0;
@@ -174,9 +174,9 @@ void Context::save_trophy_progress_file() {
     write_stuff(&trophy_count, 4);
     write_stuff(&platinum_trophy_id, 4);
 
-    write_stuff(trophy_count_by_group.data(), (std::uint32_t)trophy_count_by_group.size() * 4);
-    write_stuff(unlock_timestamps.data(), (std::uint32_t)unlock_timestamps.size() * 8);
-    write_stuff(trophy_kinds.data(), (std::uint32_t)trophy_kinds.size() * 4);
+    write_stuff(trophy_count_by_group.data(), static_cast<std::uint32_t>(trophy_count_by_group.size()) * 4);
+    write_stuff(unlock_timestamps.data(), static_cast<std::uint32_t>(unlock_timestamps.size()) * 8);
+    write_stuff(trophy_kinds.data(), static_cast<std::uint32_t>(trophy_kinds.size()) * 4);
 
     close_file(*io, output, "save_trophy_progress_file");
 }
@@ -211,15 +211,15 @@ bool Context::load_trophy_progress_file(const SceUID &progress_input_file) {
         return false;
 
     // Read trophy count by group
-    if (read_stuff(trophy_count_by_group.data(), (std::uint32_t)trophy_count_by_group.size() * 4) != (int)trophy_count_by_group.size() * 4)
+    if (read_stuff(trophy_count_by_group.data(), static_cast<std::uint32_t>(trophy_count_by_group.size()) * 4) != static_cast<int>(trophy_count_by_group.size()) * 4)
         return false;
 
     // Read timestamps
-    if (read_stuff(unlock_timestamps.data(), (std::uint32_t)unlock_timestamps.size() * 8) != (int)unlock_timestamps.size() * 8)
+    if (read_stuff(unlock_timestamps.data(), static_cast<std::uint32_t>(unlock_timestamps.size()) * 8) != static_cast<int>(unlock_timestamps.size()) * 8)
         return false;
 
     // Read trophy type (shinyyyy!! *yes this is lord of the ring reference*)
-    if (read_stuff(trophy_kinds.data(), (std::uint32_t)trophy_kinds.size() * 4) != (int)trophy_kinds.size() * 4)
+    if (read_stuff(trophy_kinds.data(), static_cast<std::uint32_t>(trophy_kinds.size()) * 4) != static_cast<int>(trophy_kinds.size()) * 4)
         return false;
 
     return true;
@@ -360,7 +360,7 @@ int Context::install_trophy_conf(IOState *io, const fs::path &vita_fs_path, cons
 
     for (const auto &file : trophy_file.entries) {
         std::vector<uint8_t> buf;
-        uint32_t size = (uint32_t)file.size;
+        uint32_t size = static_cast<uint32_t>(file.size);
 
         buf.resize(size);
 

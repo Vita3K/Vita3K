@@ -195,7 +195,7 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
 
     context->qmin = 1;
 
-    int ret = avcodec_open2(context, codec, NULL);
+    int ret = avcodec_open2(context, codec, nullptr);
     assert(ret >= 0);
 
     AVFrame *frame = av_frame_alloc();
@@ -224,7 +224,7 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
 
     const AVBitStreamFilter *bsf = av_bsf_get_by_name("mjpeg2jpeg");
 
-    AVBSFContext *bsf_ctx = NULL;
+    AVBSFContext *bsf_ctx = nullptr;
     ret = av_bsf_alloc(bsf, &bsf_ctx);
     if (ret < 0) {
         av_packet_unref(pkt);
