@@ -17,6 +17,7 @@
 
 #include <renderer/vulkan/pipeline_cache.h>
 
+#include <renderer/vulkan/crash_isolation.h>
 #include <renderer/vulkan/gxm_to_vulkan.h>
 #include <renderer/vulkan/state.h>
 #include <renderer/vulkan/types.h>
@@ -30,6 +31,8 @@
 #include <util/log.h>
 
 #include <SDL3/SDL_cpuinfo.h>
+
+#include <cstdlib>
 
 // don't use the dispatch version, because we always hash a small amount
 // with a known size
@@ -919,7 +922,12 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
         .subpass = 0
     };
 
-    const auto result = state.device.createGraphicsPipeline(pipeline_cache, pipeline_info);
+    vk::ResultValue<vk::Pipeline> result{ vk::Result::eErrorUnknown, nullptr };
+    const bool completed = crash_isolation::run_guarded([&] { result = state.device.createGraphicsPipeline(pipeline_cache, pipeline_info); });
+    if (!completed) {
+        LOG_CRITICAL("Driver crashed creating pipeline vertex={} fragment={}", hex_string(vertex_program.hash), hex_string(fragment_program.hash));
+        abort();
+    }
     if (result.result != vk::Result::eSuccess) {
         LOG_CRITICAL("Failed to create pipeline.");
         return nullptr;

@@ -22,6 +22,7 @@ add_library(
 	src/vulkan/gxm_to_vulkan.cpp
 	src/vulkan/pipeline_cache.cpp
 	src/vulkan/renderer.cpp
+	src/vulkan/crash_isolation.cpp
 	src/vulkan/scene.cpp
 	src/vulkan/overlay_renderer.cpp
 	src/vulkan/screen_filters.cpp
