@@ -51,6 +51,8 @@ struct Viewport {
 struct VKState : public renderer::State {
     MemState *mem;
 
+    bool adreno_workarounds_active = false;
+
     // 0 = automatic, > 0 = order in instance.enumeratePhysicalDevices
     int gpu_idx;
 

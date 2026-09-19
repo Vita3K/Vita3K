@@ -159,6 +159,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(bool, "export-textures", false, export_textures)                                               \
     code(bool, "export-as-png", true, export_as_png)                                                    \
     code(std::string, "memory-mapping", "double-buffer", memory_mapping)                                \
+    code(std::string, "adreno-workaround", "auto", adreno_workaround)                                   \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
     code(bool, "show-live-area-screen", false, show_live_area_screen)                                   \
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \

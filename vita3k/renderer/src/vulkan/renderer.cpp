@@ -918,6 +918,19 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
     return true;
 }
 
+static bool is_qualcomm_gpu(const vk::PhysicalDeviceProperties &properties) {
+    constexpr uint32_t QUALCOMM_VENDOR_ID = 0x5143;
+    return properties.vendorID == QUALCOMM_VENDOR_ID || std::string_view(properties.deviceName.data()).contains("Adreno");
+}
+
+static bool resolve_adreno_workarounds(const std::string &setting, const vk::PhysicalDeviceProperties &properties) {
+    if (setting == "on")
+        return true;
+    if (setting == "off")
+        return false;
+    return is_qualcomm_gpu(properties);
+}
+
 void VKState::late_init(const Config &cfg, const std::string_view game_id, MemState &mem) {
     this->mem = &mem;
 
@@ -958,6 +971,10 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
         mapping_method = request_mapping;
 
     features.enable_memory_mapping = mapping_method != MappingMethod::Disabled;
+
+    adreno_workarounds_active = resolve_adreno_workarounds(cfg.current_config.adreno_workaround, physical_device_properties);
+    LOG_INFO("Adreno workaround fixes: setting={} device=\"{}\" active={}", cfg.current_config.adreno_workaround,
+        physical_device_properties.deviceName.data(), adreno_workarounds_active);
 
 #ifdef __ANDROID__
     if (mapping_method == MappingMethod::NativeBuffer) {

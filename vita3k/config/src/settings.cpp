@@ -44,6 +44,7 @@ void copy_global_to_current(Config::CurrentConfig &current, const Config &cfg) {
     current.disable_surface_sync = cfg.disable_surface_sync;
     current.screen_filter = cfg.screen_filter;
     current.memory_mapping = cfg.memory_mapping;
+    current.adreno_workaround = cfg.adreno_workaround;
     current.v_sync = cfg.v_sync;
     current.anisotropic_filtering = cfg.anisotropic_filtering;
     current.async_pipeline_compilation = cfg.async_pipeline_compilation;
@@ -89,6 +90,7 @@ void copy_current_to_global(Config &cfg, const Config::CurrentConfig &current) {
     cfg.disable_surface_sync = current.disable_surface_sync;
     cfg.screen_filter = current.screen_filter;
     cfg.memory_mapping = current.memory_mapping;
+    cfg.adreno_workaround = current.adreno_workaround;
     cfg.v_sync = current.v_sync;
     cfg.anisotropic_filtering = current.anisotropic_filtering;
     cfg.async_pipeline_compilation = current.async_pipeline_compilation;
@@ -191,6 +193,7 @@ bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path,
         out.disable_surface_sync = gpu.attribute("disable-surface-sync").as_bool();
         out.screen_filter = gpu.attribute("screen-filter").as_string();
         out.memory_mapping = gpu.attribute("memory-mapping").as_string();
+        out.adreno_workaround = gpu.attribute("adreno-workaround").as_string("auto");
         out.v_sync = gpu.attribute("v-sync").as_bool();
         out.anisotropic_filtering = gpu.attribute("anisotropic-filtering").as_int();
         out.async_pipeline_compilation = gpu.attribute("async-pipeline-compilation").as_bool();
@@ -279,6 +282,7 @@ bool save_custom_config(const Config::CurrentConfig &cc, const fs::path &config_
     gpu_child.append_attribute("disable-surface-sync") = cc.disable_surface_sync;
     gpu_child.append_attribute("screen-filter") = cc.screen_filter.c_str();
     gpu_child.append_attribute("memory-mapping") = cc.memory_mapping.c_str();
+    gpu_child.append_attribute("adreno-workaround") = cc.adreno_workaround.c_str();
     gpu_child.append_attribute("v-sync") = cc.v_sync;
     gpu_child.append_attribute("anisotropic-filtering") = cc.anisotropic_filtering;
     gpu_child.append_attribute("async-pipeline-compilation") = cc.async_pipeline_compilation;
