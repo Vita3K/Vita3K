@@ -975,6 +975,7 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
     adreno_workarounds_active = resolve_adreno_workarounds(cfg.current_config.adreno_workaround, physical_device_properties);
     LOG_INFO("Adreno workaround fixes: setting={} device=\"{}\" active={}", cfg.current_config.adreno_workaround,
         physical_device_properties.deviceName.data(), adreno_workarounds_active);
+    features.avoid_large_output_register_array = adreno_workarounds_active;
 
 #ifdef __ANDROID__
     if (mapping_method == MappingMethod::NativeBuffer) {
@@ -1258,6 +1259,7 @@ uint32_t VKState::get_features_mask() {
             bool use_memory_mapping : 1;
             bool use_rgb_attributes : 1;
             bool use_scaled_attributes : 1;
+            bool avoid_large_output_register_array : 1;
         };
         uint32_t value;
     } features_mask;
@@ -1269,6 +1271,7 @@ uint32_t VKState::get_features_mask() {
     features_mask.use_memory_mapping = features.enable_memory_mapping;
     features_mask.use_rgb_attributes = features.support_rgb_attributes;
     features_mask.use_scaled_attributes = pipeline_cache.support_scaled_vertex_attribute;
+    features_mask.avoid_large_output_register_array = features.avoid_large_output_register_array;
 
     return features_mask.value;
 }
