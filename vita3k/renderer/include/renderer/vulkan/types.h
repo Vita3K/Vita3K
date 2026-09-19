@@ -224,15 +224,14 @@ struct BufferSyncRequest {
 // A parallel thread is handling these request and telling other waiting threads
 // when they are done
 // only used if memory mapping is enabled
-typedef std::variant<
+using WaitThreadRequest = std::variant<
     FenceWaitRequest,
     NotificationRequest,
     FrameDoneRequest,
     BufferSyncRequest,
     PostSurfaceSyncRequest,
     SyncSignalRequest,
-    CallbackRequest>
-    WaitThreadRequest;
+    CallbackRequest>;
 
 struct VKContext : public renderer::Context {
     // GXM Context Info

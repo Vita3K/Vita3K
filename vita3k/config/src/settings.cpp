@@ -353,7 +353,7 @@ int delete_all_custom_configs(const fs::path &config_path) {
         const auto file_name = entry.path().filename().string();
         if (!entry.path().has_extension() || entry.path().extension() != ".xml")
             continue;
-        if (file_name.rfind("config_", 0) != 0)
+        if (!file_name.starts_with("config_"))
             continue;
 
         std::error_code error;
@@ -404,7 +404,7 @@ std::vector<std::pair<std::string, bool>> get_modules_list(
         for (auto &m : modules)
             m.second = std::ranges::contains(lle_modules, m.first);
 
-        std::sort(modules.begin(), modules.end(), [](const auto &a, const auto &b) {
+        std::ranges::sort(modules, [](const auto &a, const auto &b) {
             if (a.second == b.second)
                 return a.first < b.first;
             return a.second;

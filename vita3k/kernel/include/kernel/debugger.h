@@ -34,8 +34,8 @@ struct WatchMemory {
     size_t size;
 };
 
-typedef std::map<Address, WatchMemory> WatchMemoryAddrs;
-typedef std::map<Address, Breakpoint> Breakpoints;
+using WatchMemoryAddrs = std::map<Address, WatchMemory>;
+using Breakpoints = std::map<Address, Breakpoint>;
 
 struct Debugger {
     Debugger() = delete;

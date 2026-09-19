@@ -327,7 +327,7 @@ bool init_paths(Root &root_paths) {
         // XDG Data Dirs.
         char home_path[PATH_MAX] = {};
         auto env_home = getenv("HOME");
-        if (env_home != NULL)
+        if (env_home != nullptr)
             strncpy(home_path, env_home, PATH_MAX - 1);
         else {
             struct passwd *pw = getpwuid(getuid());
@@ -344,13 +344,13 @@ bool init_paths(Root &root_paths) {
         auto APPDIR = getenv("APPDIR"); // Used by AppImage
 
         // Config and game-specific configs
-        if (XDG_CONFIG_HOME != NULL)
+        if (XDG_CONFIG_HOME != nullptr)
             root_paths.set_config_path(fs::path(XDG_CONFIG_HOME) / app_name);
         else if (home_path[0] != '\0')
             root_paths.set_config_path(fs::path(home_path) / ".config" / app_name);
 
         // Logs, cache and dumps
-        if (XDG_CACHE_HOME != NULL) {
+        if (XDG_CACHE_HOME != nullptr) {
             root_paths.set_cache_path(fs::path(XDG_CACHE_HOME) / app_name);
             root_paths.set_log_path(fs::path(XDG_CACHE_HOME) / app_name);
         } else if (home_path[0] != '\0') {
@@ -381,13 +381,13 @@ bool init_paths(Root &root_paths) {
             root_paths.set_static_assets_path(exe_path);
 
         // AppImage data directory (Anylinux layout, then the legacy layout)
-        if (APPDIR != NULL && fs::exists(fs::path(APPDIR) / "share/Vita3K"))
+        if (APPDIR != nullptr && fs::exists(fs::path(APPDIR) / "share/Vita3K"))
             root_paths.set_static_assets_path(fs::path(APPDIR) / "share/Vita3K");
-        else if (APPDIR != NULL && fs::exists(fs::path(APPDIR) / "usr/share/Vita3K"))
+        else if (APPDIR != nullptr && fs::exists(fs::path(APPDIR) / "usr/share/Vita3K"))
             root_paths.set_static_assets_path(fs::path(APPDIR) / "usr/share/Vita3K");
 
         // shared path
-        if (XDG_DATA_HOME != NULL)
+        if (XDG_DATA_HOME != nullptr)
             root_paths.set_shared_path(fs::path(XDG_DATA_HOME) / app_name);
         else if (home_path[0] != '\0')
             root_paths.set_shared_path(fs::path(home_path) / ".local/share" / app_name);

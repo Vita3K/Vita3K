@@ -208,6 +208,22 @@ TEST(bitmap_allocator, best_fit_multiple_fit) {
     ASSERT_EQ(alloc.words[0], 0b10000111100100010101000100000001);
 }
 
+TEST(bitmap_allocator, best_fit_ignores_slots_past_maximum) {
+    BitmapAllocator alloc(30);
+
+    // Bitmap:              1111 1111 1100 0000 0000 0000 0000 11|11
+    //                                              max_offset ^
+    alloc.words[0] = 0b1111'1111'1100'0000'0000'0000'0000'1111;
+
+    uint32_t to_alloc = 3;
+    ASSERT_EQ(alloc.allocate_from(0, to_alloc, true), 0);
+    ASSERT_EQ(to_alloc, 3);
+
+    to_alloc = 2;
+    ASSERT_EQ(alloc.allocate_from(0, to_alloc, true), 28);
+    ASSERT_EQ(to_alloc, 2);
+}
+
 TEST(bitmap_allocator, count_bit_aligned) {
     BitmapAllocator alloc(32 * 3);
 

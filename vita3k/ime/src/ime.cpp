@@ -132,6 +132,6 @@ void ime_backspace(Ime &ime) {
 
 std::vector<std::pair<SceImeLanguage, std::string>>::const_iterator
 get_ime_lang_index(Ime &ime, SceImeLanguage lang) {
-    return std::find_if(ime.lang.ime_keyboards.begin(), ime.lang.ime_keyboards.end(),
+    return std::ranges::find_if(ime.lang.ime_keyboards,
         [&](const auto &l) { return l.first == lang; });
 }

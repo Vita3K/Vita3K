@@ -274,8 +274,8 @@ static SceUID create_hook(EmuEnvState &emuenv, TaihenState *state, SceUID thread
     hook_user->old = original_func; // Original function / trampoline
 
     // Patch the target to jump to hook_func
-    stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)hook_func, 12);
-    stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(hook_func >> 16), 12);
+    stub[0] = encode_arm_inst(INSTRUCTION_MOVW, static_cast<uint16_t>(hook_func), 12);
+    stub[1] = encode_arm_inst(INSTRUCTION_MOVT, static_cast<uint16_t>(hook_func >> 16), 12);
     stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
 
     // Invalidate JIT cache
@@ -304,8 +304,8 @@ static SceUID create_hook(EmuEnvState &emuenv, TaihenState *state, SceUID thread
 
 // Write ARM MOVW/MOVT/BX R12 (12 bytes) for import stub patching
 static void write_arm_stub(uint32_t *dest, Address target) {
-    dest[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)target, 12);
-    dest[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(target >> 16), 12);
+    dest[0] = encode_arm_inst(INSTRUCTION_MOVW, static_cast<uint16_t>(target), 12);
+    dest[1] = encode_arm_inst(INSTRUCTION_MOVT, static_cast<uint16_t>(target >> 16), 12);
     dest[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
 }
 
@@ -360,10 +360,10 @@ static SceUID create_inline_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
 
     // Append jump back to rest of original function
     uint_tptr dpc = is_thumb ? (pc_patch_end | 1) : pc_patch_end;
-    uint_tptr branch_pc = trampoline_addr + ((uint8_t *)rewritten_ptr - (uint8_t *)trampoline_host);
+    uint_tptr branch_pc = trampoline_addr + (reinterpret_cast<uint8_t *>(rewritten_ptr) - reinterpret_cast<uint8_t *>(trampoline_host));
     make_jump_patch(&rewritten_ptr, branch_pc, dpc, arch);
 
-    int trampoline_total = (uint8_t *)rewritten_ptr - (uint8_t *)trampoline_host;
+    int trampoline_total = reinterpret_cast<uint8_t *>(rewritten_ptr) - reinterpret_cast<uint8_t *>(trampoline_host);
 
     // For TAI_CONTINUE: trampoline address (with Thumb bit if needed)
     Address trampoline_entry = is_thumb ? (trampoline_addr | 1) : trampoline_addr;
@@ -392,7 +392,7 @@ static SceUID create_inline_hook(EmuEnvState &emuenv, TaihenState *state, SceUID
     if (is_thumb)
         jp_arch.pc_low_bit = true;
     make_jump_patch(&jp, code_addr, hook_func, jp_arch);
-    int jp_size = (uint8_t *)jp - jump_buf;
+    int jp_size = reinterpret_cast<uint8_t *>(jp) - jump_buf;
 
     // Write jump patch to function start
     uint8_t *target = Ptr<uint8_t>(code_addr).get(emuenv.mem);
@@ -1325,8 +1325,8 @@ static void register_hle_override(EmuEnvState &emuenv, uint32_t nid) {
     for (auto it = range.first; it != range.second; ++it) {
         const Address address = it->second.entry_address;
         uint32_t *caller_stub = Ptr<uint32_t>(address).get(mem);
-        caller_stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)stub_addr, 12);
-        caller_stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(stub_addr >> 16), 12);
+        caller_stub[0] = encode_arm_inst(INSTRUCTION_MOVW, static_cast<uint16_t>(stub_addr), 12);
+        caller_stub[1] = encode_arm_inst(INSTRUCTION_MOVT, static_cast<uint16_t>(stub_addr >> 16), 12);
         caller_stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
         kernel.invalidate_jit_cache(address, 3 * sizeof(uint32_t));
     }

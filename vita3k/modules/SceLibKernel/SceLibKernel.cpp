@@ -178,7 +178,7 @@ EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> dst, const Ptr<void> src, SceSiz
         CALL_EXPORT(sceClibMemcpy, dst, src.get(emuenv.mem), len);
         return dst;
     }
-    const auto diff = std::abs((int)(src.address() - dst.address()));
+    const auto diff = std::abs(static_cast<int>(src.address() - dst.address()));
     if (len > diff) {
         LOG_ERROR("sceClibMemcpy({},{},{}) src/dst overlap", log_hex_full(src.address()), log_hex_full(dst.address()), len);
         assert(false);

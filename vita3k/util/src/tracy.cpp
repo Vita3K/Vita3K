@@ -28,8 +28,8 @@
 namespace tracy_module_utils {
 
 constexpr int max_modules = 128; // If not enough increase to 64*n
-typedef std::bitset<max_modules> tracy_module_flags;
-typedef std::vector<std::string> tracy_module_names;
+using tracy_module_flags = std::bitset<max_modules>;
+using tracy_module_names = std::vector<std::string>;
 
 static tracy_module_names &get_tracy_available_advanced_profiling_modules() {
     static tracy_module_names tracy_available_advanced_profiling_modules{};
@@ -70,7 +70,7 @@ void set_tracy_active(const std::string &module, bool value) {
 
 std::vector<std::string> get_available_module_names() {
     std::vector<std::string> names = get_tracy_available_advanced_profiling_modules();
-    std::sort(names.begin(), names.end());
+    std::ranges::sort(names);
     return names;
 }
 

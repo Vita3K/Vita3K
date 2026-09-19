@@ -91,7 +91,7 @@ std::vector<std::string> list_installed_custom_drivers(const fs::path &driver_ro
             drivers.push_back(entry.path().filename().string());
     }
 
-    std::sort(drivers.begin(), drivers.end());
+    std::ranges::sort(drivers);
     return drivers;
 }
 

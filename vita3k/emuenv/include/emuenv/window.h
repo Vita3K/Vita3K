@@ -24,5 +24,5 @@ namespace renderer {
 struct State;
 }
 
-typedef std::unique_ptr<SDL_Window, void (*)(SDL_Window *)> WindowPtr;
-typedef std::unique_ptr<renderer::State> RendererPtr;
+using WindowPtr = std::unique_ptr<SDL_Window, void (*)(SDL_Window *)>;
+using RendererPtr = std::unique_ptr<renderer::State>;

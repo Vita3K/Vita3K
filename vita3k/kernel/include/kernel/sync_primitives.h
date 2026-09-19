@@ -195,7 +195,7 @@ private:
     SceUInt64 last_user_data = 0;
 };
 
-typedef std::shared_ptr<SimpleEvent> SimpleEventPtr;
+using SimpleEventPtr = std::shared_ptr<SimpleEvent>;
 
 class Timer final : public WithUidClass<SyncPrimitive, UidClass::timer> {
 public:
@@ -251,7 +251,7 @@ private:
     uint64_t event_interval = 0;
 };
 
-typedef std::shared_ptr<Timer> TimerPtr;
+using TimerPtr = std::shared_ptr<Timer>;
 
 class Semaphore final : public WithUidClass<SyncPrimitive, UidClass::semaphore> {
 public:
@@ -287,7 +287,7 @@ private:
     SceInt32 val;
 };
 
-typedef std::shared_ptr<Semaphore> SemaphorePtr;
+using SemaphorePtr = std::shared_ptr<Semaphore>;
 
 class Mutex : public SyncPrimitive {
 public:
@@ -350,7 +350,7 @@ public:
     SceInt32 info(SceKernelMutexInfo &info) const;
 };
 
-typedef std::shared_ptr<Mutex> MutexPtr;
+using MutexPtr = std::shared_ptr<Mutex>;
 
 class RWLock final : public WithUidClass<SyncPrimitive, UidClass::rw_lock> {
 public:
@@ -396,7 +396,7 @@ private:
     WaitQueue<WaitEntry> waiters;
 };
 
-typedef std::shared_ptr<RWLock> RWLockPtr;
+using RWLockPtr = std::shared_ptr<RWLock>;
 
 class EventFlag final : public WithUidClass<SyncPrimitive, UidClass::event_flag> {
 public:
@@ -453,7 +453,7 @@ private:
     int holds = 0;
 };
 
-typedef std::shared_ptr<EventFlag> EventFlagPtr;
+using EventFlagPtr = std::shared_ptr<EventFlag>;
 
 class Condvar : public SyncPrimitive {
 public:
@@ -512,7 +512,7 @@ public:
     SceInt32 info(SceKernelCondInfo &info) const;
 };
 
-typedef std::shared_ptr<Condvar> CondvarPtr;
+using CondvarPtr = std::shared_ptr<Condvar>;
 
 // One piece of a message pipe transfer, a buffer in guest memory
 struct MsgPipeVector {
@@ -605,4 +605,4 @@ private:
     ByteRingBuffer data_buffer;
 };
 
-typedef std::shared_ptr<MsgPipe> MsgPipePtr;
+using MsgPipePtr = std::shared_ptr<MsgPipe>;

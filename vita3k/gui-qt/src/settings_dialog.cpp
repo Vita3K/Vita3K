@@ -728,7 +728,7 @@ bool SettingsDialog::prompt_restart_if_needed(const app::SettingsCommitResult &r
     }
 
     const auto has_setting = [](const std::vector<config::RestartRequiredSetting> &settings, config::RestartRequiredSetting setting) {
-        return std::find(settings.begin(), settings.end(), setting) != settings.end();
+        return std::ranges::contains(settings, setting);
     };
 
     std::vector<config::RestartRequiredSetting> newly_pending_restart_settings;

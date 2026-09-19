@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <algorithm>
+#include <cctype>
 
 #include <io/device.h>
 
@@ -67,7 +68,9 @@ VitaIoDevice get_device(const std::string &path) {
         return VitaIoDevice::_INVALID;
 
     auto p = path.substr(0, colon);
-    std::transform(p.begin(), p.end(), p.begin(), tolower);
+    std::ranges::transform(p, p.begin(), [](unsigned char c) {
+        return std::tolower(c);
+    });
     VitaIoDevice result;
     if (boost::describe::enum_from_string(p.c_str(), result))
         return result;

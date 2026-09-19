@@ -62,7 +62,7 @@ void __RtcTicksToPspTime(SceDateTime *t, std::uint64_t ticks) {
     } else if (ticks < RTC_OFFSET) {
         // Need to get a year past 1970 for gmtime
         // Add enough 400 year to pass over 1970.
-        numYearAdd = (int)((RTC_OFFSET - ticks) / RTC_400_YEAR_TICKS + 1);
+        numYearAdd = static_cast<int>((RTC_OFFSET - ticks) / RTC_400_YEAR_TICKS + 1);
         ticks += RTC_400_YEAR_TICKS * numYearAdd;
     }
 
@@ -103,7 +103,7 @@ std::uint64_t __RtcPspTimeToTicks(const SceDateTime *pt) {
     }
 
     time_t seconds = rtc_timegm(&local);
-    std::uint64_t result = RTC_OFFSET + (std::uint64_t)seconds * VITA_CLOCKS_PER_SEC;
+    std::uint64_t result = RTC_OFFSET + static_cast<std::uint64_t>(seconds) * VITA_CLOCKS_PER_SEC;
     result += pt->microsecond;
     return result + tickOffset;
 }

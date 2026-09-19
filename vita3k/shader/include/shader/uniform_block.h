@@ -137,7 +137,7 @@ struct UniformBlockExtended {
     }
 };
 
-typedef UniformBlockExtended<RenderVertUniformBlock> RenderVertUniformBlockExtended;
-typedef UniformBlockExtended<RenderFragUniformBlock> RenderFragUniformBlockExtended;
+using RenderVertUniformBlockExtended = UniformBlockExtended<RenderVertUniformBlock>;
+using RenderFragUniformBlockExtended = UniformBlockExtended<RenderFragUniformBlock>;
 
 } // namespace shader

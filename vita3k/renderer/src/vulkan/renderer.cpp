@@ -212,7 +212,7 @@ static bool detect_patch_bcn(bool *support_dxt) {
 
 #if defined(__linux__) && !defined(__ANDROID__)
 static bool has_instance_extension(const std::vector<vk::ExtensionProperties> &available_extensions, const std::string_view target_name) {
-    return std::find_if(available_extensions.begin(), available_extensions.end(), [&](const vk::ExtensionProperties &ext) {
+    return std::ranges::find_if(available_extensions, [&](const vk::ExtensionProperties &ext) {
         return std::string_view(ext.extensionName.data()) == target_name;
     }) != available_extensions.end();
 }

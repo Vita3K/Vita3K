@@ -654,13 +654,13 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
     sa.sa_flags = SA_SIGINFO;
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = signal_handler;
-    if (sigaction(SIGSEGV, &sa, NULL) == -1) {
+    if (sigaction(SIGSEGV, &sa, nullptr) == -1) {
         LOG_CRITICAL("Failed to register an exception handler");
     }
 #ifdef __APPLE__
     // When accessing memory region which is PROT_NONE on macOS, it is raising SIGBUS not SIGSEGV.
     // So apply same signal handler to SIGBUS
-    if (sigaction(SIGBUS, &sa, NULL) == -1) {
+    if (sigaction(SIGBUS, &sa, nullptr) == -1) {
         LOG_CRITICAL("Failed to register an exception handler to SIGBUS");
     }
 #endif

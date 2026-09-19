@@ -315,14 +315,9 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
         uint64_t lastSendTicks = rtc_get_ticks(emuenv.kernel.base_tick.tick) - emuenv.kernel.start_tick - SEND_INTERVAL_USEC;
         while (emuenv.netctl.adhocCondVarReady.load()) {
             const uint64_t currentTicks = rtc_get_ticks(emuenv.kernel.base_tick.tick) - emuenv.kernel.start_tick;
-            emuenv.netctl.adhocPeers.erase(
-                std::remove_if(
-                    emuenv.netctl.adhocPeers.begin(),
-                    emuenv.netctl.adhocPeers.end(),
-                    [&](const SceNetCtlAdhocPeerInfo &peer) {
-                        return currentTicks - peer.lastRecv > TIMEOUT_USEC;
-                    }),
-                emuenv.netctl.adhocPeers.end());
+            std::erase_if(emuenv.netctl.adhocPeers, [&](const SceNetCtlAdhocPeerInfo &peer) {
+                return currentTicks - peer.lastRecv > TIMEOUT_USEC;
+            });
 
             // Send the self info to other peers every 1 second
             if ((currentTicks - lastSendTicks) >= SEND_INTERVAL_USEC) {

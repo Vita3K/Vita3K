@@ -103,7 +103,7 @@ std::optional<app::AppEntry> find_app_by_title_id(const std::string &title_id) {
         return std::nullopt;
 
     const auto apps = app::get_apps(*emuenv);
-    const auto it = std::find_if(apps.begin(), apps.end(), [&](const app::AppEntry &app) {
+    const auto it = std::ranges::find_if(apps, [&](const app::AppEntry &app) {
         return app.title_id == title_id;
     });
     if (it == apps.end())

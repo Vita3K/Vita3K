@@ -123,7 +123,7 @@ EXPORT(int, sceAudioInInput, int port, void *destPtr) {
             return RET_ERROR(SCE_AUDIO_IN_ERROR_FATAL);
         }
         to_read -= readed;
-        destPtr = (char *)destPtr + readed;
+        destPtr = reinterpret_cast<char *>(destPtr) + readed;
     } while (to_read > 0);
     return 0;
 }

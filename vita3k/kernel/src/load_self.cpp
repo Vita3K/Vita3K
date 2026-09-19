@@ -150,8 +150,8 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
             stub[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
             stub[2] = nid; // Our interrupt hook will read this.
         } else {
-            stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)func_address, 12);
-            stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(func_address >> 16), 12);
+            stub[0] = encode_arm_inst(INSTRUCTION_MOVW, static_cast<uint16_t>(func_address), 12);
+            stub[1] = encode_arm_inst(INSTRUCTION_MOVT, static_cast<uint16_t>(func_address >> 16), 12);
             stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
         }
         if (stub[3]) { // if function's associated reftable exists
@@ -283,8 +283,8 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
                 continue;
             auto address = it->second.entry_address;
             uint32_t *const stub = Ptr<uint32_t>(address).get(mem);
-            stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)entry.address(), 12);
-            stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(entry.address() >> 16), 12);
+            stub[0] = encode_arm_inst(INSTRUCTION_MOVW, static_cast<uint16_t>(entry.address()), 12);
+            stub[1] = encode_arm_inst(INSTRUCTION_MOVT, static_cast<uint16_t>(entry.address() >> 16), 12);
             stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
             kernel.invalidate_jit_cache(address, 3 * sizeof(uint32_t));
         }
@@ -301,8 +301,8 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
 
 // An import stub resolved to an export branches through MOVW/MOVT of its address.
 static bool stub_targets(const uint32_t *stub, Address address) {
-    return stub[0] == encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)address, 12)
-        && stub[1] == encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(address >> 16), 12);
+    return stub[0] == encode_arm_inst(INSTRUCTION_MOVW, static_cast<uint16_t>(address), 12)
+        && stub[1] == encode_arm_inst(INSTRUCTION_MOVT, static_cast<uint16_t>(address >> 16), 12);
 }
 
 static bool unload_func_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, uint32_t library_nid, KernelState &kernel, MemState &mem) {

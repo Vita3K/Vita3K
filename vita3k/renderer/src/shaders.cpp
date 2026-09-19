@@ -41,13 +41,13 @@ bool get_shaders_cache_hashs(State &renderer) {
     renderer.shaders_cache_hashs.clear();
     // Read size of hashes list
     size_t size;
-    shaders_hashs.read((char *)&size, sizeof(size));
+    shaders_hashs.read(reinterpret_cast<char *>(&size), sizeof(size));
 
     // Check version of cache
     uint32_t versionInFile;
-    shaders_hashs.read((char *)&versionInFile, sizeof(uint32_t));
+    shaders_hashs.read(reinterpret_cast<char *>(&versionInFile), sizeof(uint32_t));
     uint32_t features_mask;
-    shaders_hashs.read((char *)&features_mask, sizeof(uint32_t));
+    shaders_hashs.read(reinterpret_cast<char *>(&features_mask), sizeof(uint32_t));
     if (versionInFile != shader::CURRENT_VERSION || features_mask != renderer.get_features_mask()) {
         shaders_hashs.close();
         fs::remove_all(renderer.shaders_path);
@@ -94,13 +94,13 @@ void save_shaders_cache_hashs(State &renderer, std::vector<ShadersHash> &shaders
     if (shaders_hashs.is_open()) {
         // Write Size of shaders cache hashes list
         const auto size = shaders_cache_hashs.size();
-        shaders_hashs.write((const char *)&size, sizeof(size));
+        shaders_hashs.write(reinterpret_cast<const char *>(&size), sizeof(size));
 
         // Write version of cache
         const uint32_t versionInFile = shader::CURRENT_VERSION;
-        shaders_hashs.write((const char *)&versionInFile, sizeof(uint32_t));
+        shaders_hashs.write(reinterpret_cast<const char *>(&versionInFile), sizeof(uint32_t));
         const uint32_t features_mask = renderer.get_features_mask();
-        shaders_hashs.write((const char *)&features_mask, sizeof(uint32_t));
+        shaders_hashs.write(reinterpret_cast<const char *>(&features_mask), sizeof(uint32_t));
 
         // Write shader hash list
         for (const auto &hash : shaders_cache_hashs) {

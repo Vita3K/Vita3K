@@ -83,7 +83,7 @@ EXPORT(int, scePowerGetBatteryFullCapacity) {
 EXPORT(int, scePowerGetBatteryLifePercent) {
     TRACY_FUNC(scePowerGetBatteryLifePercent);
     int res;
-    SDL_GetPowerInfo(NULL, &res);
+    SDL_GetPowerInfo(nullptr, &res);
     if (res == -1) {
         return 100;
     }
@@ -93,7 +93,7 @@ EXPORT(int, scePowerGetBatteryLifePercent) {
 EXPORT(int, scePowerGetBatteryLifeTime) {
     TRACY_FUNC(scePowerGetBatteryLifeTime);
     int res;
-    SDL_GetPowerInfo(&res, NULL);
+    SDL_GetPowerInfo(&res, nullptr);
     if (res == -1) {
         return INT_MAX;
     }
@@ -108,7 +108,7 @@ EXPORT(int, scePowerGetBatteryRemainCapacity) {
 EXPORT(int, scePowerGetBatteryRemainLevel) {
     TRACY_FUNC(scePowerGetBatteryRemainLevel);
     int res;
-    SDL_GetPowerInfo(NULL, &res);
+    SDL_GetPowerInfo(nullptr, &res);
     if (res >= 0) {
         if (res <= 25)
             return SCE_POWER_BATTERY_REMAIN_LEVEL_0_25_PERCENTS;
@@ -168,20 +168,20 @@ EXPORT(int, scePowerGetUsingWireless) {
 
 EXPORT(int, scePowerIsBatteryCharging) {
     TRACY_FUNC(scePowerIsBatteryCharging);
-    SDL_PowerState info = SDL_GetPowerInfo(NULL, NULL);
+    SDL_PowerState info = SDL_GetPowerInfo(nullptr, nullptr);
     return (info == SDL_POWERSTATE_CHARGING);
 }
 
 EXPORT(int, scePowerIsBatteryExist) {
     TRACY_FUNC(scePowerIsBatteryExist);
-    SDL_PowerState info = SDL_GetPowerInfo(NULL, NULL);
+    SDL_PowerState info = SDL_GetPowerInfo(nullptr, nullptr);
     return (info != SDL_POWERSTATE_NO_BATTERY);
 }
 
 EXPORT(int, scePowerIsLowBattery) {
     TRACY_FUNC(scePowerIsLowBattery);
     int res;
-    SDL_GetPowerInfo(NULL, &res);
+    SDL_GetPowerInfo(nullptr, &res);
     if (res <= LOW_BATTERY_PERCENT) {
         return SCE_TRUE;
     }
@@ -200,7 +200,7 @@ EXPORT(int, scePowerIsLowBatteryInhibitUpdateReboot) {
 
 EXPORT(int, scePowerIsPowerOnline) {
     TRACY_FUNC(scePowerIsPowerOnline);
-    SDL_PowerState info = SDL_GetPowerInfo(NULL, NULL);
+    SDL_PowerState info = SDL_GetPowerInfo(nullptr, nullptr);
     return ((info != SDL_POWERSTATE_UNKNOWN) && (info != SDL_POWERSTATE_ON_BATTERY));
 }
 

@@ -269,7 +269,7 @@ void AppsListTable::restore_visible_columns(const QStringList &column_keys) {
         should_show[static_cast<int>(*column)] = true;
     }
 
-    if (std::none_of(should_show.begin(), should_show.end(), [](const bool visible) { return visible; }))
+    if (!std::ranges::contains(should_show, true))
         should_show[static_cast<int>(AppsListColumn::Title)] = true;
 
     for (int i = 0; i < columnCount(); ++i)

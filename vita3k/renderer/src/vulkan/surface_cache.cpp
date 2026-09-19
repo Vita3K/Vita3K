@@ -1465,7 +1465,7 @@ void VKSurfaceCache::perform_post_surface_sync(const MemState &mem, ColorSurface
         if (!surface->sws_context) {
             const AVPixelFormat dst_fmt = is_swizzle_identity ? AV_PIX_FMT_RGB24 : AV_PIX_FMT_BGR24;
             surface->sws_context = sws_getContext(surface->original_width, surface->original_height, AV_PIX_FMT_RGB0, surface->original_width, surface->original_height, dst_fmt, 0, nullptr, nullptr, nullptr);
-            assert(surface->sws_context != NULL);
+            assert(surface->sws_context != nullptr);
         }
 
         int src_stride = pixel_stride * 4;

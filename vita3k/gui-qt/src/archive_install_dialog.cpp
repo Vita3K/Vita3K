@@ -374,7 +374,7 @@ void ArchiveInstallDialog::run_install(const std::vector<fs::path> &archives) {
             }
 
             auto *summary = new QLabel(this);
-            const int success_count = std::count_if(results.begin(), results.end(), [](const ArchiveInstallResult &r) { return r.success; });
+            const int success_count = std::ranges::count_if(results, [](const ArchiveInstallResult &r) { return r.success; });
             const int failure_count = results.size() - success_count;
             summary->setText(
                 (failure_count == 0)

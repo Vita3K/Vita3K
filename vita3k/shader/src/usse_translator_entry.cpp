@@ -862,7 +862,7 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
 
     const auto matches_instruction = [instruction](const auto &matcher) { return matcher.Matches(instruction); };
 
-    auto iter = std::find_if(table.begin(), table.end(), matches_instruction);
+    auto iter = std::ranges::find_if(table, matches_instruction);
     return iter != table.end() ? std::optional<const USSEMatcher<V>>(*iter) : std::nullopt;
 }
 
@@ -1077,7 +1077,7 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     const uint64_t *secondary_program_start = program.secondary_program_start();
     const uint64_t *secondary_program_end = program.secondary_program_end();
 
-    std::array<std::pair<const std::uint64_t *, std::uint64_t>, (size_t)ShaderPhase::Max> shader_code;
+    std::array<std::pair<const std::uint64_t *, std::uint64_t>, static_cast<size_t>(ShaderPhase::Max)> shader_code;
 
     // Collect instructions of Pixel (primary) phase
     shader_code[static_cast<size_t>(ShaderPhase::Pixel)] = std::make_pair(primary_program, primary_program_instr_count);

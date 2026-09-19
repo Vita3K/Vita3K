@@ -146,7 +146,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         }
 
         // make the byte position negative, will be positive at the end
-        state->current_byte_position_in_buffer = -(int32_t)old_size;
+        state->current_byte_position_in_buffer = -static_cast<int32_t>(old_size);
         input = logical->superframe_staging.data();
     }
 
@@ -324,7 +324,7 @@ bool Atrac9Module::process(KernelState &kern, const MemState &mem, const SceUID 
         data.parent->products[0].data = logical->decoded_pcm.read_bytes();
     } else {
         data.ensure_scratch_size(static_cast<size_t>(granularity) * sizeof(float) * 2);
-        std::fill(data.scratch_data.begin(), data.scratch_data.end(), 0);
+        std::ranges::fill(data.scratch_data, 0);
         if (available_samples > 0) {
             std::memcpy(data.scratch_data.data(), logical->decoded_pcm.read_bytes(), static_cast<size_t>(available_samples) * sizeof(float) * 2);
         }

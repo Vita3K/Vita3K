@@ -54,7 +54,7 @@ static bool open_license(const fs::path &license_path, SceNpDrmLicense &license_
     memset(&license_buf, 0, sizeof(SceNpDrmLicense));
     std::ifstream license(license_path, std::ios::in | std::ios::binary);
     if (license.is_open()) {
-        license.read((char *)&license_buf, sizeof(SceNpDrmLicense));
+        license.read(reinterpret_cast<char *>(&license_buf), sizeof(SceNpDrmLicense));
         license.close();
         return true;
     }

@@ -275,7 +275,7 @@ static int translate_sockopt_level(int level) {
 
 #define CASE_SETSOCKOPT(opt) \
     case SCE_NET_##opt:      \
-        return translate_return_value(setsockopt(sock, level, opt, (const char *)optval, optlen))
+        return translate_return_value(setsockopt(sock, level, opt, reinterpret_cast<const char *>(optval), optlen))
 
 #define CASE_SETSOCKOPT_VALUE(opt, value) \
     case opt:                             \
@@ -310,7 +310,7 @@ int PosixSocket::set_socket_options(int level, int optname, const void *optval, 
             memcpy(&sockopt_so_onesbcast, optval, optlen);
 
             // Sets the option to allow sending broadcast packets on a socket
-            return translate_return_value(setsockopt(sock, level, SO_BROADCAST, (const char *)optval, optlen));
+            return translate_return_value(setsockopt(sock, level, SO_BROADCAST, reinterpret_cast<const char *>(optval), optlen));
         case SCE_NET_SO_SNDTIMEO:
         case SCE_NET_SO_RCVTIMEO: {
             if (optlen != sizeof(int))
@@ -318,17 +318,17 @@ int PosixSocket::set_socket_options(int level, int optname, const void *optval, 
 
             std::vector<char> val;
             const auto optname_nat = (optname == SCE_NET_SO_SNDTIMEO) ? SO_SNDTIMEO : SO_RCVTIMEO;
-            int timeout_us = *(const int *)optval;
+            int timeout_us = *reinterpret_cast<const int *>(optval);
 #ifdef _WIN32
             DWORD timeout = timeout_us / 1000;
-            val.insert(val.end(), (char *)&timeout, (char *)&timeout + sizeof(timeout));
+            val.insert(val.end(), reinterpret_cast<char *>(&timeout), reinterpret_cast<char *>(&timeout) + sizeof(timeout));
             optlen = sizeof(timeout);
 #else
             timeval timeout{
                 .tv_sec = timeout_us / 1000000,
                 .tv_usec = timeout_us % 1000000
             };
-            val.insert(val.end(), (char *)&timeout, (char *)&timeout + sizeof(timeout));
+            val.insert(val.end(), reinterpret_cast<char *>(&timeout), reinterpret_cast<char *>(&timeout) + sizeof(timeout));
             optlen = sizeof(timeout);
 #endif
             return translate_return_value(setsockopt(sock, level, optname_nat, val.data(), optlen));
@@ -371,12 +371,12 @@ int PosixSocket::set_socket_options(int level, int optname, const void *optval, 
     return SCE_NET_ERROR_EINVAL;
 }
 
-#define CASE_GETSOCKOPT(opt)                                                                              \
-    case SCE_NET_##opt: {                                                                                 \
-        socklen_t optlen_temp = *optlen;                                                                  \
-        auto retval = translate_return_value(getsockopt(sock, level, opt, (char *)optval, &optlen_temp)); \
-        *optlen = optlen_temp;                                                                            \
-        return retval;                                                                                    \
+#define CASE_GETSOCKOPT(opt)                                                                                                \
+    case SCE_NET_##opt: {                                                                                                   \
+        socklen_t optlen_temp = *optlen;                                                                                    \
+        auto retval = translate_return_value(getsockopt(sock, level, opt, reinterpret_cast<char *>(optval), &optlen_temp)); \
+        *optlen = optlen_temp;                                                                                              \
+        return retval;                                                                                                      \
     }
 #define CASE_GETSOCKOPT_VALUE(opt, value)   \
     case opt:                               \
@@ -482,11 +482,11 @@ int PosixSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSocka
 #endif
     const auto posix_flags = convertSceFlagsToPosix(sce_type, flags);
     if (from == nullptr) {
-        res = recv(sock, (char *)buf, len, posix_flags);
+        res = recv(sock, reinterpret_cast<char *>(buf), len, posix_flags);
     } else {
         sockaddr addr{};
         socklen_t addrlen = sizeof(addr);
-        res = recvfrom(sock, (char *)buf, len, posix_flags, &addr, (fromlen && *fromlen <= sizeof(addr) ? (socklen_t *)fromlen : &addrlen));
+        res = recvfrom(sock, reinterpret_cast<char *>(buf), len, posix_flags, &addr, (fromlen && *fromlen <= sizeof(addr) ? reinterpret_cast<socklen_t *>(fromlen) : &addrlen));
         if (res > 0)
             convertPosixSockaddrToSce(&addr, from);
     }
@@ -511,11 +511,11 @@ int PosixSocket::send_packet(const void *msg, unsigned int len, int flags, const
 #endif
     const auto posix_flags = convertSceFlagsToPosix(sce_type, flags);
     if (to == nullptr) {
-        res = send(sock, (const char *)msg, len, posix_flags);
+        res = send(sock, reinterpret_cast<const char *>(msg), len, posix_flags);
     } else {
         sockaddr addr{};
         convertSceSockaddrToPosix(to, &addr);
-        res = sendto(sock, (const char *)msg, len, posix_flags, &addr, tolen);
+        res = sendto(sock, reinterpret_cast<const char *>(msg), len, posix_flags, &addr, tolen);
     }
 
     if (abort_pending(is_aborted))

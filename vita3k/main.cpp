@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
     bool admin_priv = false;
 #ifdef _WIN32
     // https://stackoverflow.com/questions/8046097/how-to-check-if-a-process-has-the-administrative-rights
-    HANDLE hToken = NULL;
+    HANDLE hToken = nullptr;
     if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
         TOKEN_ELEVATION Elevation;
         DWORD cbSize = sizeof(TOKEN_ELEVATION);
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef _WIN32
     {
-        auto res = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+        auto res = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
         LOG_ERROR_IF(res == S_FALSE, "Failed to initialize COM Library");
     }
 #endif
@@ -234,7 +234,7 @@ int main(int argc, char *argv[]) {
         if (is_archive) {
             LOG_INFO("Installing archive from CLI: {}", emuenv.cfg.content_path->string());
             std::vector<ContentInfo> contents_info = install_archive(emuenv, *emuenv.cfg.content_path);
-            const auto content_index = std::find_if(contents_info.begin(), contents_info.end(), [](const ContentInfo &c) {
+            const auto content_index = std::ranges::find_if(contents_info, [](const ContentInfo &c) {
                 return c.category == "gd";
             });
             if (content_index != contents_info.end() && content_index->state)

@@ -71,13 +71,13 @@ namespace overlay {
 class display_manager;
 }
 
-typedef float SceFloat;
+using SceFloat = float;
 struct FVector2 {
     SceFloat x;
     SceFloat y;
 };
 
-typedef int SceUID;
+using SceUID = int;
 
 using NIDSet = std::set<uint32_t>;
 

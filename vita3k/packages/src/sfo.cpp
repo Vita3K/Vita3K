@@ -63,7 +63,7 @@ bool get_data_by_id(std::string &out_data, SfoFile &file, int id) {
 }
 
 bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &key) {
-    auto res = std::find_if(file.entries.begin(), file.entries.end(),
+    auto res = std::ranges::find_if(file.entries,
         [key](const auto &et) { return et.data.first == key; });
 
     if (res == file.entries.end()) {
@@ -91,7 +91,7 @@ void get_param_info(sfo::SfoAppInfo &app_info, const vfs::FileBuffer &param, int
         sfo::get_data_by_key(app_info.app_short_title, sfo_handle, "STITLE");
     if (!sfo::get_data_by_key(app_info.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", sys_lang)))
         sfo::get_data_by_key(app_info.app_title, sfo_handle, "TITLE");
-    std::replace(app_info.app_title.begin(), app_info.app_title.end(), '\n', ' ');
+    std::ranges::replace(app_info.app_title, '\n', ' ');
     boost::trim(app_info.app_title);
     sfo::get_data_by_key(app_info.app_title_id, sfo_handle, "TITLE_ID");
 }

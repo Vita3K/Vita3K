@@ -17,22 +17,20 @@
 
 #include <mem/allocator.h>
 
+#include <algorithm>
+#include <bit>
+#include <limits>
+
 BitmapAllocator::BitmapAllocator(const std::size_t total_bits)
     : words((total_bits >> 5) + ((total_bits % 32 != 0) ? 1 : 0), 0xFFFFFFFF)
     , max_offset(total_bits) {
 }
 
 void BitmapAllocator::set_maximum(const std::size_t total_bits) {
-    const std::size_t total_before = words.size();
     const std::size_t total_after = (total_bits >> 5) + ((total_bits % 32 != 0) ? 1 : 0);
 
-    words.resize(total_after);
-
-    if (total_after > total_before) {
-        for (std::size_t i = total_before; i < total_after; i++) {
-            words[i] = 0xFFFFFFFFU;
-        }
-    }
+    // words appended by the resize start out fully free
+    words.resize(total_after, 0xFFFF'FFFFU);
 
     max_offset = total_bits;
 }
@@ -42,20 +40,18 @@ void BitmapAllocator::reset() {
 }
 
 int BitmapAllocator::force_fill(const std::uint32_t offset, const std::uint32_t size, const bool or_mode) {
-    std::uint32_t *word = &words[0] + (offset >> 5);
+    std::uint32_t *word = words.data() + (offset >> 5);
     const std::uint32_t set_bit = offset & 31;
     std::uint32_t end_bit = set_bit + size;
-
-    std::uint32_t wval = *word;
 
     if (end_bit <= 32) {
         // The bit we need to allocate is in single word
         const std::uint32_t mask = size == 32 ? 0xFFFFFFFFU : ((~(0xFFFFFFFFU >> size)) >> set_bit);
 
         if (or_mode) {
-            *word = wval | mask;
+            *word |= mask;
         } else {
-            *word = wval & (~mask);
+            *word &= ~mask;
         }
 
         return std::min<int>(size, (words.size() << 5) - set_bit);
@@ -65,12 +61,10 @@ int BitmapAllocator::force_fill(const std::uint32_t offset, const std::uint32_t 
     std::uint32_t mask = 0xFFFFFFFFU >> set_bit;
 
     while (end_bit > 0 && (word != words.data() + words.size())) {
-        wval = *word;
-
         if (or_mode) {
-            *word = wval | mask;
+            *word |= mask;
         } else {
-            *word = wval & (~mask);
+            *word &= ~mask;
         }
 
         word += 1;
@@ -102,76 +96,74 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, std::uint32
         return -1;
     }
 
-    std::uint32_t *word = &words[0] + (start_offset >> 5);
+    // the tail bits of the last word are set, but the slots past max_offset don't exist
+    const std::uint32_t total_bits = static_cast<std::uint32_t>(std::min(words.size() << 5, max_offset));
 
-    // We have arrived at le word that still have free position (bit 1)
-    std::uint32_t *word_end = &words[words.size() - 1];
+    // start scanning at the word holding start_offset, a free slot is a set bit
+    std::uint32_t cursor = start_offset & ~31U;
 
-    int bflmin = 0xFFFFFF;
-    int bofmin = -1;
-    std::uint32_t *wordmin = nullptr;
+    if (cursor >= total_bits) {
+        return -1;
+    }
 
-    // Keep finding
-    while (word <= word_end) {
-        std::uint32_t wv = *word;
+    std::uint32_t best_offset = 0;
+    std::uint32_t best_length = std::numeric_limits<std::uint32_t>::max();
 
-        if (wv != 0) {
-            // Still have free stuff
-            int bflen = 0;
-            int boff = 0;
-            std::uint32_t *bword = nullptr;
+    // Slots are numbered from the most significant bit, so a run of free slots is a
+    // run of leading ones once the already visited bits have been shifted out.
+    const auto visible_from = [this](const std::uint32_t bit) {
+        return static_cast<std::uint32_t>(words[bit >> 5] << (bit & 31));
+    };
 
-            int cursor = 31;
+    while (cursor < total_bits) {
+        const std::uint32_t remaining = visible_from(cursor);
 
-            while (cursor >= 0) {
-                if (((wv >> cursor) & 1) == 1) {
-                    boff = cursor;
-                    bflen = 0;
-                    bword = word;
+        if (remaining == 0) {
+            // nothing free left in this word
+            cursor += 32 - (cursor & 31);
+            continue;
+        }
 
-                    while (cursor >= 0 && (((wv >> cursor) & 1) == 1)) {
-                        bflen++;
-                        cursor--;
+        // jump over the allocated slots, then measure the free run starting there
+        cursor += std::countl_zero(remaining);
+        if (cursor >= total_bits) {
+            break;
+        }
 
-                        if (cursor < 0 && (word + 1 <= word_end)) {
-                            cursor = 31;
-                            word++;
-                            wv = *word;
-                        }
-                    }
+        const std::uint32_t offset = cursor;
+        std::uint32_t length = 0;
 
-                    if (bflen >= size) {
-                        if (!best_fit) {
-                            // Force allocate and then return
-                            const int offset = static_cast<int>(31 - boff + ((bword - &words[0]) << 5));
-                            if ((static_cast<std::size_t>(offset) + size) <= max_offset) {
-                                size = force_fill(static_cast<const std::uint32_t>(offset), size, false);
-                                return offset;
-                            }
-                        } else {
-                            if (bflen < bflmin) {
-                                bflmin = bflen;
-                                bofmin = boff;
-                                wordmin = bword;
-                            }
-                        }
-                    }
-                }
+        while (cursor < total_bits) {
+            const std::uint32_t run = std::min<std::uint32_t>(std::countl_one(visible_from(cursor)), total_bits - cursor);
+            if (run == 0) {
+                break;
+            }
 
-                cursor--;
+            length += run;
+            cursor += run;
+
+            // the run ended on an allocated slot rather than on a word boundary
+            if ((cursor & 31) != 0) {
+                break;
             }
         }
 
-        word++;
+        if (length >= size) {
+            if (!best_fit) {
+                // Force allocate and then return
+                size = force_fill(offset, size, false);
+                return static_cast<int>(offset);
+            } else if (length < best_length) {
+                best_length = length;
+                best_offset = offset;
+            }
+        }
     }
 
-    if (best_fit && bofmin != -1) {
+    if (best_fit && best_length != std::numeric_limits<std::uint32_t>::max()) {
         // Force allocate and then return
-        const int offset = static_cast<int>(31 - bofmin + ((wordmin - &words[0]) << 5));
-        if ((static_cast<std::size_t>(offset) + size) <= max_offset) {
-            size = force_fill(static_cast<std::uint32_t>(offset), size, false);
-            return offset;
-        }
+        size = force_fill(best_offset, size, false);
+        return static_cast<int>(best_offset);
     }
 
     return -1;
@@ -185,19 +177,6 @@ int BitmapAllocator::allocate_at(const std::uint32_t start_offset, std::uint32_t
     force_fill(start_offset, size, false);
     return 0;
 }
-
-#ifdef __cpp_lib_bitops
-#include <bit>
-static int number_of_set_bits(std::uint32_t i) {
-    return std::popcount(i);
-}
-#else
-static int number_of_set_bits(std::uint32_t i) {
-    i = i - ((i >> 1) & 0x55555555);
-    i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
-    return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
-}
-#endif
 
 int BitmapAllocator::free_slot_count(const std::uint32_t offset, const std::uint32_t offset_end) const {
     if (offset >= offset_end) {
@@ -221,8 +200,8 @@ int BitmapAllocator::free_slot_count(const std::uint32_t offset, const std::uint
 
         const int left_shift = start_bit & 31;
         const int right_shift = (31 - (next_end_bit - 1) & 31);
-        std::uint32_t word_to_scan = words[start_bit >> 5] << left_shift >> right_shift >> left_shift;
-        free_count += number_of_set_bits(word_to_scan);
+        const std::uint32_t word_to_scan = words[start_bit >> 5] << left_shift >> right_shift >> left_shift;
+        free_count += std::popcount(word_to_scan);
 
         start_bit = next_end_bit;
     }

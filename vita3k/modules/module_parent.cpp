@@ -193,7 +193,7 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     {
         const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
         const auto &loaded_modules = emuenv.kernel.loaded_modules;
-        auto module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [&](const auto &p) {
+        auto module_iter = std::ranges::find_if(loaded_modules, [&](const auto &p) {
             return module_path == p.second->info.path;
         });
 
@@ -419,7 +419,7 @@ int unload_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
     }
 
     // unload the modules in the reverse order they were loaded
-    std::reverse(loaded_uids.begin(), loaded_uids.end());
+    std::ranges::reverse(loaded_uids);
 
     // first stop everything, then unload
     for (SceUID uid : loaded_uids) {
