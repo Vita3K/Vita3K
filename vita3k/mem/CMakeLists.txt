@@ -11,6 +11,7 @@ add_library(
 	include/mem/util.h
 	src/allocator.cpp
 	src/mem.cpp
+	src/guest_mapping.cpp
 )
 
 target_include_directories(mem PUBLIC include)
@@ -20,6 +21,7 @@ if(NOT ANDROID)
 	add_executable(
 		mem-tests
 		tests/allocator_tests.cpp
+		tests/guest_mapping_tests.cpp
 	)
 
 	target_include_directories(mem-tests PRIVATE include)

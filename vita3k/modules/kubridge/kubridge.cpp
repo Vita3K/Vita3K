@@ -53,23 +53,37 @@ struct KuKernelExceptionHandlerOpt {
     uint32_t size;
 };
 
-// Page fault callback that triggers an abort handler if one is registered.
-// Called from signal handler context — must be signal-safe.
-// Sets abort_pending on the current thread's CPU and halts execution so
-// run_loop can invoke the ARM exception handler.
-static bool abort_aware_fault_callback(Address fault_addr, bool write, Address range_start, uint32_t range_size) {
-    CPUState *cpu = get_current_cpu_state();
-    if (cpu) {
-        cpu->abort_fault_addr.store(fault_addr);
-        cpu->abort_is_write.store(write);
-        cpu->abort_pending.store(true);
-        stop(*cpu); // HaltExecution — signal-safe (atomic only)
-    }
+namespace {
+bool normalize_range(Address addr, SceSize len, uint32_t &size) {
+    const uint64_t rounded = (uint64_t(len) + 4095) & ~uint64_t(4095);
+    if (addr < 0x40000000u || (addr & 4095) || !rounded || rounded > UINT32_MAX || uint64_t(addr) + rounded > (uint64_t{ 1 } << 32))
+        return false;
+    size = static_cast<uint32_t>(rounded);
     return true;
 }
+bool valid_protection(uint32_t prot) {
+    return !(prot & ~(KU_KERNEL_PROT_READ | KU_KERNEL_PROT_WRITE | KU_KERNEL_PROT_EXEC));
+}
+bool contains_range(const Blocks &blocks, Address addr, uint32_t size) {
+    for (const auto &[_, block] : blocks)
+        if (addr >= block->mappedBase.address() && uint64_t(addr) + size <= uint64_t(block->mappedBase.address()) + block->mappedSize)
+            return true;
+    return false;
+}
+bool owned_range(const SysmemState &state, Address addr, uint32_t size) {
+    return contains_range(state.vm_blocks, addr, size) || contains_range(state.blocks, addr, size);
+}
+KernelMemBlockPtr find_block(const SysmemState &state, SceUID uid) {
+    auto it = state.vm_blocks.find(uid);
+    if (it != state.vm_blocks.end())
+        return it->second;
+    it = state.blocks.find(uid);
+    return it != state.blocks.end() ? it->second : nullptr;
+}
+} // namespace
 
 // Convert kubridge protection flags to Vita3K MemPerm.
-// Note: EXEC is not mapped — dynarmic handles execute permission separately.
+// EXEC is not enforced here; prefetch abort dispatch is not implemented.
 static MemPerm ku_prot_to_memperm(uint32_t prot) {
     if (prot & KU_KERNEL_PROT_WRITE)
         return MemPerm::ReadWrite;
@@ -78,31 +92,21 @@ static MemPerm ku_prot_to_memperm(uint32_t prot) {
     return MemPerm::None;
 }
 
-// kuKernelMemProtect — change memory protection on a range.
-// Uses add_protect for restrictive permissions (so fault handler can catch access),
-// and unprotect_inner to restore access.
+// Software permissions are per guest alias, never mprotect() of its backing.
 EXPORT(int, kuKernelMemProtect, Ptr<void> addr, SceSize len, uint32_t prot) {
     TRACY_FUNC(kuKernelMemProtect, addr, len, prot);
-    if (!addr || len == 0)
+    if (!len)
+        return 0;
+    uint32_t size;
+    if (!normalize_range(addr.address(), len, size) || !valid_protection(prot))
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-
-    const MemPerm perm = ku_prot_to_memperm(prot);
-
-    if (perm == MemPerm::None || perm == MemPerm::ReadOnly) {
-        // Use add_protect so fault handler can catch violations gracefully.
-        // If an exception handler is registered, the fault callback will
-        // halt the CPU and let run_loop invoke the ARM handler.
-        const Address va = addr.address();
-        add_protect(emuenv.mem, va, len, perm, [va, len](Address fault_addr, bool write) {
-            return abort_aware_fault_callback(fault_addr, write, va, len);
-        });
-    } else {
-        // ReadWrite or more permissive — just unprotect
-        unprotect_inner(emuenv.mem, addr.address(), len);
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    {
+        const std::lock_guard guard(state->mutex);
+        if (!owned_range(*state, addr.address(), size) || !protect_guest_memory(emuenv.mem, addr.address(), size, ku_prot_to_memperm(prot)))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
-
-    LOG_DEBUG("kuKernelMemProtect: addr={} len={} prot=0x{:02X} -> perm={}",
-        log_hex(addr.address()), len, prot, (int)perm);
+    emuenv.kernel.invalidate_jit_cache(addr.address(), size);
     return 0;
 }
 
@@ -111,14 +115,18 @@ EXPORT(int, kuKernelMemProtect, Ptr<void> addr, SceSize len, uint32_t prot) {
 // In Vita3K, we allocate real memory immediately (no lazy allocation).
 EXPORT(SceUID, kuKernelMemReserve, Ptr<Ptr<void>> addr, SceSize size, SceKernelMemBlockType memBlockType) {
     TRACY_FUNC(kuKernelMemReserve, addr, size, memBlockType);
-    if (!addr)
+    Address requested_addr = 0;
+    Address fault;
+    if (!addr || !size || (size & 4095) || !access_guest_memory(emuenv.mem, addr.address(), &requested_addr, sizeof(requested_addr), false, fault) || !check_guest_memory_access(emuenv.mem, addr.address(), sizeof(requested_addr), true, fault))
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
     auto &mem = emuenv.mem;
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
-    const auto guard = std::lock_guard<std::mutex>(state->mutex);
+    std::unique_lock guard(state->mutex);
 
-    Address requested_addr = (*addr.get(mem)).address();
+    uint32_t checked_size;
+    if (requested_addr && !normalize_range(requested_addr, size, checked_size))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     Address allocated_addr;
 
     if (requested_addr) {
@@ -131,7 +139,10 @@ EXPORT(SceUID, kuKernelMemReserve, Ptr<Ptr<void>> addr, SceSize size, SceKernelM
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
 
     // Store the allocated address back
-    *addr.get(mem) = Ptr<void>(allocated_addr);
+    if (!access_guest_memory(mem, addr.address(), &allocated_addr, sizeof(allocated_addr), true, fault)) {
+        free(mem, allocated_addr);
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    }
 
     // Track as a vm_block
     const SceUID uid = state->get_next_uid();
@@ -142,65 +153,77 @@ EXPORT(SceUID, kuKernelMemReserve, Ptr<Ptr<void>> addr, SceSize size, SceKernelM
     block->size = sizeof(SceKernelMemBlockInfo);
     std::strncpy(block->name, "kubridge_reserve", KERNELOBJECT_MAX_NAME_LENGTH);
     state->vm_blocks.emplace(uid, block);
+    // Reservation is initially inaccessible, unlike an ordinary allocation.
+    decommit_guest_memory(mem, allocated_addr, size);
+    guard.unlock();
+    emuenv.kernel.invalidate_jit_cache(allocated_addr, size);
 
     LOG_DEBUG("kuKernelMemReserve: addr=0x{:08X} size={} type=0x{:08X} uid=0x{:08X}",
         allocated_addr, size, (uint32_t)memBlockType, uid);
     return uid;
 }
 
-// kuKernelMemCommit — commit physical pages to a reserved range.
-// Memory is already committed at Reserve time. Apply requested protection.
-// When baseBlock mirroring is required, this should use add_external_mapping().
+// HAS_BASE maps shared backing, including offsets, multiple aliases and remaps.
 EXPORT(int, kuKernelMemCommit, Ptr<void> addr, SceSize len, uint32_t prot, Ptr<KuKernelMemCommitOpt> pOpt) {
     TRACY_FUNC(kuKernelMemCommit, addr, len, prot, pOpt);
-    if (!addr || len == 0)
+    if (!len)
+        return 0;
+    uint32_t size;
+    if (!normalize_range(addr.address(), len, size) || !valid_protection(prot))
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-
+    KuKernelMemCommitOpt opt{};
     if (pOpt) {
-        auto *opt = pOpt.get(emuenv.mem);
-        if (opt->attr & KU_KERNEL_MEM_COMMIT_ATTR_HAS_BASE) {
-            LOG_WARN("kuKernelMemCommit: baseBlock mirrors not yet implemented (baseBlock=0x{:08X} offset=0x{:08X})",
-                opt->baseBlock, opt->baseOffset);
+        Address fault;
+        if (!access_guest_memory(emuenv.mem, pOpt.address(), &opt, sizeof(opt), false, fault))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+        if (opt.size != sizeof(opt))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+    }
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    {
+        const std::lock_guard guard(state->mutex);
+        if (!owned_range(*state, addr.address(), size))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+        bool result;
+        if (opt.attr & KU_KERNEL_MEM_COMMIT_ATTR_HAS_BASE) {
+            const auto base = find_block(*state, opt.baseBlock);
+            if (!base)
+                return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
+            if ((opt.baseOffset & 4095) || opt.baseOffset > base->mappedSize || size > base->mappedSize - opt.baseOffset || uint64_t(base->mappedBase.address()) + opt.baseOffset + size > (uint64_t{ 1 } << 32))
+                return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+            result = map_guest_memory(emuenv.mem, addr.address(), size,
+                base->mappedBase.address() + opt.baseOffset, ku_prot_to_memperm(prot));
+        } else {
+            result = commit_guest_memory(emuenv.mem, addr.address(), size, ku_prot_to_memperm(prot));
         }
+        if (!result)
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
-
-    const MemPerm perm = ku_prot_to_memperm(prot);
-    const Address va = addr.address();
-
-    if (perm == MemPerm::None || perm == MemPerm::ReadOnly) {
-        add_protect(emuenv.mem, va, len, perm, [va, len](Address fault_addr, bool write) {
-            return abort_aware_fault_callback(fault_addr, write, va, len);
-        });
-    } else {
-        unprotect_inner(emuenv.mem, va, len);
-    }
-
-    LOG_DEBUG("kuKernelMemCommit: addr={} len={} prot=0x{:02X} -> perm={}",
-        log_hex(va), len, prot, (int)perm);
+    emuenv.kernel.invalidate_jit_cache(addr.address(), size);
     return 0;
 }
 
-// kuKernelMemDecommit — release physical pages from a committed range.
-// Uses add_protect so the fault handler catches accesses gracefully
-// instead of crashing the emulator.
 EXPORT(int, kuKernelMemDecommit, Ptr<void> addr, SceSize len) {
     TRACY_FUNC(kuKernelMemDecommit, addr, len);
-    if (!addr || len == 0)
+    if (!len)
+        return 0;
+    uint32_t size;
+    if (!normalize_range(addr.address(), len, size))
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-
-    const Address va = addr.address();
-    add_protect(emuenv.mem, va, len, MemPerm::None, [va, len](Address fault_addr, bool write) {
-        return abort_aware_fault_callback(fault_addr, write, va, len);
-    });
-
-    LOG_DEBUG("kuKernelMemDecommit: addr={} len={}", log_hex(va), len);
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    {
+        const std::lock_guard guard(state->mutex);
+        if (!owned_range(*state, addr.address(), size) || !decommit_guest_memory(emuenv.mem, addr.address(), size))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    }
+    emuenv.kernel.invalidate_jit_cache(addr.address(), size);
     return 0;
 }
 
 // kuKernelRegisterExceptionHandler — register user-mode exception handler.
 // On real Vita, kubridge hooks ARM exception vectors (DABT/PABT/UNDEF).
 // In Vita3K, we store the handler address and invoke it from run_loop
-// when a page fault triggers an abort via the add_protect callback.
+// when a checked guest memory access triggers a data abort.
 EXPORT(int, kuKernelRegisterExceptionHandler, uint32_t exceptionType,
     Ptr<void> pHandler, Ptr<Ptr<void>> pOldHandler, Ptr<KuKernelExceptionHandlerOpt> pOpt) {
     TRACY_FUNC(kuKernelRegisterExceptionHandler, exceptionType, pHandler, pOldHandler, pOpt);

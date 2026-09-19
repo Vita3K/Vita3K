@@ -23,6 +23,7 @@
 #include <cpu/impl/interface.h>
 
 #include <memory>
+#include <mutex>
 
 class ArmDynarmicCallback;
 class ArmDynarmicCP15;
@@ -33,6 +34,8 @@ class DynarmicCPU : public CPUInterface {
     CPUState *parent;
 
     std::unique_ptr<Dynarmic::A32::Jit> jit;
+    // Synchronize replacement with cross-thread halt/cache invalidation calls.
+    std::mutex jit_replacement_mutex;
     std::unique_ptr<ArmDynarmicCallback> cb;
     std::shared_ptr<ArmDynarmicCP15> cp15;
 
@@ -44,6 +47,8 @@ class DynarmicCPU : public CPUInterface {
     bool log_mem = false;
     bool log_code = false;
     bool cpu_opt;
+    bool checked_memory = false;
+    void refresh_memory_mode();
 
     std::unique_ptr<Dynarmic::A32::Jit> make_jit();
 
