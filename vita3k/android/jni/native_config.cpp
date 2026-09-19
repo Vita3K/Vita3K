@@ -49,6 +49,7 @@ struct EmulatorConfigFields {
     jfieldID disableSurfaceSync = nullptr;
     jfieldID screenFilter = nullptr;
     jfieldID memoryMapping = nullptr;
+    jfieldID adrenoWorkaround = nullptr;
     jfieldID vSync = nullptr;
     jfieldID anisotropicFiltering = nullptr;
     jfieldID asyncPipelineCompilation = nullptr;
@@ -134,6 +135,7 @@ EmulatorConfigFields resolve_config_fields(JNIEnv *env) {
     fields.disableSurfaceSync = env->GetFieldID(fields.cls, "disableSurfaceSync", "Z");
     fields.screenFilter = env->GetFieldID(fields.cls, "screenFilter", "Ljava/lang/String;");
     fields.memoryMapping = env->GetFieldID(fields.cls, "memoryMapping", "Ljava/lang/String;");
+    fields.adrenoWorkaround = env->GetFieldID(fields.cls, "adrenoWorkaround", "Ljava/lang/String;");
     fields.vSync = env->GetFieldID(fields.cls, "vSync", "Z");
     fields.anisotropicFiltering = env->GetFieldID(fields.cls, "anisotropicFiltering", "I");
     fields.asyncPipelineCompilation = env->GetFieldID(fields.cls, "asyncPipelineCompilation", "Z");
@@ -314,6 +316,11 @@ void fill_config_object(JNIEnv *env, jobject obj, const EmulatorConfigFields &fi
         env->SetObjectField(obj, fields.memoryMapping, value);
         env->DeleteLocalRef(value);
     }
+    {
+        jstring value = env->NewStringUTF(current_config.adreno_workaround.c_str());
+        env->SetObjectField(obj, fields.adrenoWorkaround, value);
+        env->DeleteLocalRef(value);
+    }
     env->SetBooleanField(obj, fields.vSync, current_config.v_sync);
     env->SetIntField(obj, fields.anisotropicFiltering, static_cast<jint>(current_config.anisotropic_filtering));
     env->SetBooleanField(obj, fields.asyncPipelineCompilation, current_config.async_pipeline_compilation);
@@ -453,6 +460,13 @@ void read_config_object(JNIEnv *env, jobject obj, const EmulatorConfigFields &fi
         auto *value = reinterpret_cast<jstring>(env->GetObjectField(obj, fields.memoryMapping));
         if (value) {
             current_config.memory_mapping = jstring_to_string(env, value);
+            env->DeleteLocalRef(value);
+        }
+    }
+    {
+        auto *value = reinterpret_cast<jstring>(env->GetObjectField(obj, fields.adrenoWorkaround));
+        if (value) {
+            current_config.adreno_workaround = jstring_to_string(env, value);
             env->DeleteLocalRef(value);
         }
     }

@@ -62,6 +62,12 @@ static constexpr int REG_TEMP_COUNT = 20 * 4;
 static constexpr int REG_INDEX_COUNT = 2 * 4;
 static constexpr int REG_PRED_COUNT = 4 * 4;
 static constexpr int REG_O_COUNT = 20 * 4;
+// shaders write at most 15 output vec4
+static constexpr int REG_O_COUNT_LIMITED = 16 * 4;
+
+static int output_register_count(const FeatureState &features) {
+    return features.avoid_large_output_register_array ? REG_O_COUNT_LIMITED : REG_O_COUNT;
+}
 
 // **************
 // * Prototypes *
@@ -886,7 +892,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv::Id temp_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(REG_TEMP_COUNT / 4), 0);
     spv::Id index_arr_type = b.makeArrayType(i32_type, b.makeIntConstant(REG_INDEX_COUNT / 4), 0);
     spv::Id pred_arr_type = b.makeArrayType(b_type, b.makeIntConstant(REG_PRED_COUNT / 4), 0);
-    spv::Id o_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(REG_O_COUNT / 4), 0);
+    spv::Id o_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(output_register_count(features) / 4), 0);
 
     // Create register banks
     spv_params.ins = b.createVariable(spv::NoPrecision, spv::StorageClassPrivate, pa_arr_type, "pa");
@@ -1943,7 +1949,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
             spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
             spv::Id rezero = b.makeFloatConstant(0.0f);
             spv::Id rezero_v = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
-            utils::make_for_loop(b, ite, b.makeIntConstant(0), b.makeIntConstant(REG_O_COUNT / 4), [&]() {
+            utils::make_for_loop(b, ite, b.makeIntConstant(0), b.makeIntConstant(output_register_count(features) / 4), [&]() {
                 spv::Id dest = utils::create_access_chain(b, spv::StorageClassPrivate, parameters.outs, { b.createLoad(ite, spv::NoPrecision) });
                 b.createStore(rezero_v, dest);
             });

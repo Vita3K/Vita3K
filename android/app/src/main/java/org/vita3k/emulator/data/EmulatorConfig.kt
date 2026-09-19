@@ -20,6 +20,7 @@ class EmulatorConfig {
     @JvmField var disableSurfaceSync: Boolean = true
     @JvmField var screenFilter: String = "Bilinear"
     @JvmField var memoryMapping: String = "double-buffer"
+    @JvmField var adrenoWorkaround: String = "auto"
     @JvmField var vSync: Boolean = true
     @JvmField var anisotropicFiltering: Int = 1
     @JvmField var asyncPipelineCompilation: Boolean = true
@@ -107,6 +108,7 @@ class EmulatorConfig {
         config.disableSurfaceSync = disableSurfaceSync
         config.screenFilter = screenFilter
         config.memoryMapping = memoryMapping
+        config.adrenoWorkaround = adrenoWorkaround
         config.vSync = vSync
         config.anisotropicFiltering = anisotropicFiltering
         config.asyncPipelineCompilation = asyncPipelineCompilation
@@ -186,6 +188,7 @@ class EmulatorConfig {
             disableSurfaceSync == other.disableSurfaceSync &&
             screenFilter == other.screenFilter &&
             memoryMapping == other.memoryMapping &&
+            adrenoWorkaround == other.adrenoWorkaround &&
             vSync == other.vSync &&
             anisotropicFiltering == other.anisotropicFiltering &&
             asyncPipelineCompilation == other.asyncPipelineCompilation &&
@@ -262,6 +265,7 @@ class EmulatorConfig {
         result = 31 * result + disableSurfaceSync.hashCode()
         result = 31 * result + screenFilter.hashCode()
         result = 31 * result + memoryMapping.hashCode()
+        result = 31 * result + adrenoWorkaround.hashCode()
         result = 31 * result + vSync.hashCode()
         result = 31 * result + anisotropicFiltering
         result = 31 * result + asyncPipelineCompilation.hashCode()

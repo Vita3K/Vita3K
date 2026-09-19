@@ -333,6 +333,11 @@
     <string name="settings_scope_per_app">Per-app only</string>
     <string name="settings_value_enabled">Enabled</string>
     <string name="settings_value_disabled">Disabled</string>
+    <string name="settings_value_auto">Auto</string>
+    <string name="settings_value_on">On</string>
+    <string name="settings_value_off">Off</string>
+    <string name="settings_gpu_adreno_workaround">Adreno workaround fixes</string>
+    <string name="settings_gpu_adreno_workaround_desc">Works around Qualcomm Adreno driver shader compiler crashes (for example in Super Stardust Delta). Auto enables it only on Adreno GPUs. Applies to games started after changing it.</string>
     <string name="settings_cd_show_info">Show setting details</string>
 
     <!-- Settings tabs -->

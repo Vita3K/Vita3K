@@ -562,6 +562,21 @@ private fun GpuSettingsSection(
                 if (!hasSupportedMemoryMapping) {
                     SettingsNote(text = stringResource(R.string.settings_gpu_memory_mapping_unsupported))
                 }
+                val adrenoTitle = stringResource(R.string.settings_gpu_adreno_workaround)
+                val adrenoOptions = listOf(
+                    stringResource(R.string.settings_value_auto) to "auto",
+                    stringResource(R.string.settings_value_on) to "on",
+                    stringResource(R.string.settings_value_off) to "off"
+                )
+                SettingsChoiceField(
+                    title = adrenoTitle,
+                    options = adrenoOptions.map { it.first },
+                    selectedIndex = adrenoOptions.indexOfFirst { it.second == cfg.adrenoWorkaround }.takeIf { it >= 0 } ?: 0,
+                    onSelect = { index -> onUpdate { adrenoWorkaround = adrenoOptions[index].second } },
+                    enabled = true,
+                    help = helpEntry(adrenoTitle, stringResource(R.string.settings_gpu_adreno_workaround_desc)),
+                    onShowHelp = onShowHelp
+                )
             }
         }
 
