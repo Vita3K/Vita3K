@@ -61,7 +61,7 @@ static int SDLCALL thread_function(void *data) {
     assert(data != nullptr);
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
     SDL_SignalSemaphore(params.host_may_destroy_params);
-    const ThreadStatePtr thread = params.kernel->get_thread(params.thid);
+    ThreadStatePtr thread = params.kernel->get_thread(params.thid);
 #ifdef TRACY_ENABLE
     if (!thread->name.empty()) {
         tracy::SetThreadName(thread->name.c_str());
@@ -73,11 +73,15 @@ static int SDLCALL thread_function(void *data) {
 
     thread->run_loop();
     const uint32_t r0 = read_reg(*thread->cpu, 0);
+    const SceUID id = thread->id;
+    const int processor_id = get_processor_id(*thread->cpu);
+    // release our reference first so the erase below destroys the ThreadState before process_exit() is woken
+    thread.reset();
 
     {
         std::lock_guard<std::mutex> lock(params.kernel->mutex);
-        params.kernel->threads.erase(thread->id);
-        params.kernel->corenum_allocator.free_corenum(get_processor_id(*thread->cpu));
+        params.kernel->threads.erase(id);
+        params.kernel->corenum_allocator.free_corenum(processor_id);
         params.kernel->thread_deleted_cond.notify_all();
     }
 
