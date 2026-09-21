@@ -404,7 +404,7 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     sync_stencil_func(context.record.back_stencil_state_op, context.record.back_stencil_state_values, mem, true);
     sync_stencil_func(context.record.front_stencil_state_op, context.record.front_stencil_state_values, mem, false);
 
-#ifdef GL_PROGRAM_POINT_SIZE
+#if defined(GL_PROGRAM_POINT_SIZE) && !defined(__ANDROID__)
     glEnable(GL_PROGRAM_POINT_SIZE);
 #endif
 
