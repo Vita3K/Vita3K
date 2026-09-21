@@ -73,7 +73,8 @@ struct GxmState {
 
     std::map<Address, MemoryMapInfo> memory_mapped_regions;
     std::mutex callback_lock;
-    Address immediate_context = 0;
+    std::unordered_map<SceGxmContext *, Address> immediate_contexts;
+    Address last_immediate_context = 0;
     std::unordered_map<SceGxmContext *, Address> deferred_contexts;
     std::unordered_map<SceGxmRenderTarget *, Address> render_targets;
 
@@ -93,7 +94,8 @@ struct GxmState {
         global_timestamp = 1;
         last_display_global = 0;
         notification_region = Ptr<uint32_t>(0);
-        immediate_context = 0;
+        immediate_contexts.clear();
+        last_immediate_context = 0;
         deferred_contexts.clear();
         render_targets.clear();
     }
