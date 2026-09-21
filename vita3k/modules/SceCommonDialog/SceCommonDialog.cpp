@@ -560,6 +560,9 @@ EXPORT(int, sceNetCheckDialogGetPS3ConnectInfo) {
 
 EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
     TRACY_FUNC(sceNetCheckDialogGetResult, result);
+    if (emuenv.common_dialog.type != NETCHECK_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
+
     result->result = emuenv.common_dialog.result;
 
     if (emuenv.common_dialog.netcheck.mode != SCE_NETCHECK_DIALOG_MODE_ADHOC_CONN)

@@ -157,10 +157,13 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
             emuenv.netctl.adhocCondVar.notify_all();
         }
 
-        // Set the common dialog status to finished with user canceled result
-        if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
-            emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-            emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+        {
+            // Set the common dialog status to finished with user canceled result
+            std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
+            if (emuenv.common_dialog.type == NETCHECK_DIALOG && emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
+                emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+                emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+            }
         }
 
         LOG_ERROR("Adhoc thread: error occurred, closing sockets");
@@ -287,9 +290,14 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
         std::strncpy(selfInfo.username, reinterpret_cast<const char *>(username.data()), sizeof(selfInfo.username) - 1);
         selfInfo.username[sizeof(selfInfo.username) - 1] = '\0';
 
-        // Notify the common dialog that the adhoc connection is established
-        emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-        emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+        {
+            // Notify the common dialog that the adhoc connection is established
+            std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
+            if (emuenv.common_dialog.type == NETCHECK_DIALOG && emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
+                emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+                emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+            }
+        }
 
         {
             // Set the adhoc event and state to indicate that the connection is established

@@ -36,6 +36,7 @@
 #include <unistd.h>
 #endif
 
+#include <algorithm>
 #include <cstring>
 
 TRACY_MODULE_NAME(SceAppUtil);
@@ -540,16 +541,30 @@ EXPORT(SceInt32, sceAppUtilSystemParamGetInt, SceSystemParamId paramId, SceInt32
 
 EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf, SceSize bufSize) {
     TRACY_FUNC(sceAppUtilSystemParamGetString, paramId, buf, bufSize);
-    constexpr auto devname_len = SCE_SYSTEM_PARAM_USERNAME_MAXSIZE;
-    char devname[devname_len];
     switch (paramId) {
-    case SCE_SYSTEM_PARAM_ID_USER_NAME:
-        if (gethostname(devname, devname_len)) {
-            // fallback to User Name
-            std::strncpy(devname, emuenv.io.user_name.c_str(), sizeof(devname));
+    case SCE_SYSTEM_PARAM_ID_USER_NAME: {
+        if (bufSize == 0) {
+            return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
         }
-        std::strncpy(reinterpret_cast<char *>(buf), devname, sizeof(devname));
+        // copy user name into buf with size SCE_SYSTEM_PARAM_USERNAME_MAXSIZE or bufSize, whichever is smaller
+        const auto copySize = std::min(bufSize, static_cast<unsigned int>(SCE_SYSTEM_PARAM_USERNAME_MAXSIZE));
+        std::strncpy(reinterpret_cast<char *>(buf), emuenv.io.user_name.c_str(), copySize);
+        buf[copySize - 1] = '\0';
+        // fallback to hostname
+        if (buf[0] == '\0') {
+            char devname[SCE_SYSTEM_PARAM_USERNAME_MAXSIZE];
+            if (gethostname(devname, SCE_SYSTEM_PARAM_USERNAME_MAXSIZE) == 0) {
+                std::strncpy(reinterpret_cast<char *>(buf), devname, copySize);
+                buf[copySize - 1] = '\0';
+            }
+        }
+        // double fallback to "Vita3K"
+        if (buf[0] == '\0') {
+            std::strncpy(reinterpret_cast<char *>(buf), "Vita3K", copySize);
+            buf[copySize - 1] = '\0';
+        }
         break;
+    }
     default:
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
     }
