@@ -50,6 +50,7 @@ struct OperationPending {
         struct {
             State *state;
             Rack *rack;
+            Address rack_handle;
             // can't use a ptr, otherwise the default constructor is deleted
             Address callback;
         } release_data;

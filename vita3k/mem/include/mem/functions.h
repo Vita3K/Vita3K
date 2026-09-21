@@ -62,7 +62,6 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm = nullptr);
 bool is_valid_addr(const MemState &state, Address addr);
 bool is_valid_addr_range(const MemState &state, Address start, Address end);
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept;
-Block alloc_block(MemState &mem, uint32_t size, const char *name, Address start_addr = user_main_memory_start);
 Address alloc_at(MemState &state, Address address, uint32_t size, const char *name);
 Address try_alloc_at(MemState &state, Address address, uint32_t size, const char *name);
 void free(MemState &state, Address address);
