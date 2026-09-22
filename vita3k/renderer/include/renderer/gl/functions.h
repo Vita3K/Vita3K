@@ -47,7 +47,7 @@ void set_context(GLState &state, GLContext &ctx, const MemState &mem, const GLRe
 void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, SceGxmColorSurface &surface);
 void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSurface &surface);
 void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
-    void *indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config);
+    void *indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config, int32_t base_vertex = 0);
 
 // State
 void sync_viewport_flat(const GLState &state, GLContext &context);
