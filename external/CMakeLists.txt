@@ -420,7 +420,7 @@ if(NOT (CMAKE_BUILD_TYPE STREQUAL "Release"))
 		"Enable and require Tracy to compile core components such as the renderer, shader recompiler and
 			HLE modules"
 		ON)
-	option(TRACY_NO_FRAME_IMAGE, ON)
+	option(TRACY_NO_FRAME_IMAGE, OFF)
 
 	add_library(tracy STATIC tracy/public/TracyClient.cpp)
 	target_include_directories(tracy SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tracy/public>)

@@ -27,6 +27,10 @@
 #include <mutex>
 #include <utility>
 
+#ifdef TRACY_ENABLE
+#include <tracy/Tracy.hpp>
+#endif
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -194,6 +198,16 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
         state.page_name_map.emplace(page_num, name);
     }
 
+#ifdef TRACY_ENABLE
+    if (TracyIsConnected) {
+        const char *alloc_name = (name && *name) ? name : "Guest Memory";
+        TracyAllocN(reinterpret_cast<void *>(static_cast<uintptr_t>(addr)), size, alloc_name);
+        const uint64_t total_allocated = (static_cast<uint64_t>(state.allocator.max_offset) * STANDARD_PAGE_SIZE) - mem_available(state);
+        TracyPlotConfig("Game Memory: Total Allocated", tracy::PlotFormatType::Memory, true, true, 0);
+        TracyPlot("Game Memory: Total Allocated", static_cast<int64_t>(total_allocated));
+    }
+#endif
+
     return addr;
 }
 
@@ -216,6 +230,16 @@ Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned
         page.allocated = 0;
         align_page.allocated = 1;
         align_page.size = page.size - remnant_front;
+
+#ifdef TRACY_ENABLE
+        if (TracyIsConnected) {
+            const char *alloc_name = (name && *name) ? name : "Guest Memory";
+            TracyFreeN(reinterpret_cast<void *>(static_cast<uintptr_t>(addr)), alloc_name);
+            TracyAllocN(reinterpret_cast<void *>(static_cast<uintptr_t>(align_addr)), align_page.size * STANDARD_PAGE_SIZE, alloc_name);
+            const uint64_t total_allocated = (static_cast<uint64_t>(state.allocator.max_offset) * STANDARD_PAGE_SIZE) - mem_available(state);
+            TracyPlot("Game Memory: Total Allocated", static_cast<int64_t>(total_allocated));
+        }
+#endif
     }
 
     return align_addr;
@@ -497,6 +521,15 @@ void free(MemState &state, Address address) {
     if (PAGE_NAME_TRACKING) {
         state.page_name_map.erase(page_num);
     }
+
+#ifdef TRACY_ENABLE
+    if (TracyIsConnected) {
+        TracyFreeN(reinterpret_cast<void *>(static_cast<uintptr_t>(address)), "Guest Memory");
+        const uint64_t total_allocated = (static_cast<uint64_t>(state.allocator.max_offset) * STANDARD_PAGE_SIZE) - mem_available(state);
+        TracyPlotConfig("Game Memory: Total Allocated", tracy::PlotFormatType::Memory, true, true, 0);
+        TracyPlot("Game Memory: Total Allocated", static_cast<int64_t>(total_allocated));
+    }
+#endif
 
     assert(!state.use_page_table || state.page_table[address / KiB(4)] == state.memory.get());
     const Address region_start = page_num * STANDARD_PAGE_SIZE;
