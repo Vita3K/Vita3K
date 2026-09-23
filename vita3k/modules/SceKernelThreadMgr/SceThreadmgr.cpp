@@ -40,7 +40,6 @@ inline static uint64_t get_current_time() {
 
 EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, Ptr<SceKernelCreateLwMutex_opt> opt) {
     TRACY_FUNC(__sceKernelCreateLwMutex, workarea, name, attr, opt);
-    assert(name != nullptr);
     assert(opt.get(emuenv.mem)->init_count >= 0);
 
     auto uid_out = &workarea.get(emuenv.mem)->uid;

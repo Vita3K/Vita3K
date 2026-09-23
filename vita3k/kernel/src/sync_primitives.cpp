@@ -29,6 +29,10 @@ static constexpr bool LOG_SYNC_PRIMITIVES = false;
 // * Helpers *
 // ***********
 
+inline static const char *name_or_empty(const char *name) {
+    return name ? name : "";
+}
+
 inline static int unknown_mutex_id(const char *export_name, SyncWeight weight) {
     if (weight == SyncWeight::Light)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
@@ -119,6 +123,7 @@ inline static int handle_timeout(KernelState &kernel, const ThreadStatePtr &thre
 // *****************
 
 SceUID simple_event_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr, SceUInt32 init_pattern) {
+    name = name_or_empty(name);
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -317,6 +322,7 @@ inline uint64_t get_current_time() {
 }
 
 SceUID timer_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr) {
+    name = name_or_empty(name);
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -545,6 +551,7 @@ SceInt32 timer_stop(KernelState &kernel, const char *export_name, SceUID thread_
 // *********
 
 SceUID mutex_create(SceUID *uid_out, KernelState &kernel, MemState &mem, const char *export_name, const char *mutex_name, SceUID thread_id, SceUInt attr, int init_count, Ptr<SceKernelLwMutexWork> workarea, SyncWeight weight) {
+    mutex_name = name_or_empty(mutex_name);
     if ((strlen(mutex_name) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -810,6 +817,7 @@ MutexPtr mutex_get(KernelState &kernel, const char *export_name, SceUID thread_i
 // **************
 
 SceUID rwlock_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr) {
+    name = name_or_empty(name);
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -982,6 +990,7 @@ SceInt32 rwlock_delete(KernelState &kernel, MemState &mem, const char *export_na
 // **************
 
 SceUID semaphore_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, int init_val, int max_val) {
+    name = name_or_empty(name);
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -1194,6 +1203,7 @@ int semaphore_cancel(KernelState &kernel, const char *export_name, SceUID thread
 // **********************
 
 SceUID condvar_create(SceUID *uid_out, KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, SceUID assoc_mutexid, SyncWeight weight) {
+    name = name_or_empty(name);
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -1361,6 +1371,7 @@ SceUID eventflag_clear(KernelState &kernel, const char *export_name, SceUID evfI
 }
 
 SceUID eventflag_create(KernelState &kernel, const char *export_name, SceUID thread_id, const char *pName, SceUInt32 attr, SceUInt32 initPattern) {
+    pName = name_or_empty(pName);
     if (((attr & 0x80) == 0x80) && (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
@@ -1620,6 +1631,7 @@ int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread
 // *************
 
 SceUID msgpipe_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, SceSize bufSize) {
+    name = name_or_empty(name);
     if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
