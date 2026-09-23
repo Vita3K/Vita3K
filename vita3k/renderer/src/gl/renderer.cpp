@@ -261,7 +261,7 @@ bool GLState::init() {
 }
 
 void GLState::late_init(const Config &cfg, const std::string_view game_id, MemState &mem) {
-    texture_cache.init(true, texture_folder(), game_id);
+    texture_cache.init(cfg.hashless_texture_cache, texture_folder(), game_id);
 }
 
 bool create(std::unique_ptr<Context> &context) {
