@@ -21,6 +21,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
+#include <QLibraryInfo>
 #include <QLocale>
 #include <QSet>
 #include <QTranslator>
@@ -60,6 +61,7 @@ const std::array<UiLanguageOption, 23> k_ui_languages = { {
 } };
 
 std::unique_ptr<QTranslator> s_translator;
+std::unique_ptr<QTranslator> s_qt_translator;
 
 static QStringList translation_search_paths(const fs::path &static_assets_path) {
     return {
@@ -87,6 +89,22 @@ static QSet<QString> available_translation_tags(const fs::path &static_assets_pa
     }
 
     return tags;
+}
+
+// Qt draws the standard buttons and dialogs itself, so a translated interface still answers in
+// English unless its own catalog is loaded alongside ours.
+static void install_qt_catalog(QApplication &app, const QLocale &locale, const fs::path &static_assets_path) {
+    QStringList paths = translation_search_paths(static_assets_path);
+    paths.append(QLibraryInfo::path(QLibraryInfo::TranslationsPath));
+
+    auto translator = std::make_unique<QTranslator>();
+    for (const QString &path : paths) {
+        if (translator->load(locale, QStringLiteral("qt"), QStringLiteral("_"), path)) {
+            s_qt_translator = std::move(translator);
+            app.installTranslator(s_qt_translator.get());
+            return;
+        }
+    }
 }
 
 } // namespace
@@ -124,8 +142,12 @@ QString language_name(std::string_view tag) {
 }
 
 bool apply_ui_language(QApplication &app, std::string_view configured_tag, const fs::path &static_assets_path) {
-    if (s_translator)
-        app.removeTranslator(s_translator.get());
+    for (auto *translator : { &s_translator, &s_qt_translator }) {
+        if (*translator) {
+            app.removeTranslator(translator->get());
+            translator->reset();
+        }
+    }
 
     s_translator = std::make_unique<QTranslator>();
 
@@ -136,6 +158,7 @@ bool apply_ui_language(QApplication &app, std::string_view configured_tag, const
     for (const QString &path : translation_search_paths(static_assets_path)) {
         if (s_translator->load(locale, QStringLiteral("vita3k"), QStringLiteral("_"), path)) {
             app.installTranslator(s_translator.get());
+            install_qt_catalog(app, locale, static_assets_path);
             return true;
         }
     }
