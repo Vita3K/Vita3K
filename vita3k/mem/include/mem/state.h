@@ -24,6 +24,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <set>
 
 struct AllocMemPage {
     uint32_t allocated : 4;
@@ -71,6 +72,8 @@ struct MemState {
     AllocPageTable alloc_table;
     BitmapAllocator allocator;
     ProtectSegmentTrees protect_tree;
+    std::mutex protected_pages_mutex;
+    std::set<Address> protected_pages;
 
     PageNameMap page_name_map;
 
