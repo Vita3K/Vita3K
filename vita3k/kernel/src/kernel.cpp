@@ -192,8 +192,6 @@ void KernelState::request_process_exit(int res, std::optional<AppLaunchRequest> 
 void KernelState::process_exit() {
     {
         std::lock_guard<std::mutex> lock(mutex);
-        for (auto &[_, timer] : timers)
-            timer->condvar.notify_all();
         for (auto &[_, thread] : threads)
             thread->exit_delete(false);
     }

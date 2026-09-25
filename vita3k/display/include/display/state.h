@@ -18,6 +18,7 @@
 #pragma once
 
 #include <kernel/callback.h>
+#include <kernel/thread/wait_queue.h>
 #include <mem/ptr.h>
 #include <util/types.h>
 
@@ -31,11 +32,7 @@ enum SceDisplayPixelFormat {
     SCE_DISPLAY_PIXELFORMAT_A8B8G8R8 = 0x00000000U
 };
 
-struct ThreadState;
-typedef std::shared_ptr<ThreadState> ThreadStatePtr;
-
-struct DisplayStateVBlankWaitInfo {
-    ThreadStatePtr target_thread;
+struct VBlankWaitEntry {
     uint64_t target_vcount;
 };
 
@@ -72,7 +69,7 @@ struct DisplayState {
     std::atomic<bool> imgui_render{ true };
     std::atomic<bool> fullscreen{ false };
     std::atomic<std::uint64_t> vblank_count{ 0 };
-    std::vector<DisplayStateVBlankWaitInfo> vblank_wait_infos;
+    WaitQueue<VBlankWaitEntry> vblank_waiters;
     std::atomic<uint64_t> last_setframe_vblank_count = 0;
     std::map<SceUID, CallbackPtr> vblank_callbacks{};
 
