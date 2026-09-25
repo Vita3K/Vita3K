@@ -28,22 +28,7 @@
 #include <cstring>
 #include <memory>
 #include <sstream>
-
-void ThreadSignal::wait() {
-    std::unique_lock<std::mutex> lock(mutex);
-    recv_cond.wait(lock, [&]() { return signaled; });
-    signaled = false;
-}
-
-bool ThreadSignal::send() {
-    std::unique_lock<std::mutex> lock(mutex);
-    if (signaled) {
-        return false;
-    }
-    signaled = true;
-    recv_cond.notify_one();
-    return true;
-}
+#include <utility>
 
 int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option = nullptr) {
     constexpr size_t KERNEL_TLS_SIZE = 0x800;
@@ -119,16 +104,6 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     return 0;
 }
 
-void ThreadState::raise_waiting_threads() {
-    for (const auto &t : waiting_threads) {
-        const std::unique_lock<std::mutex> lock(t->mutex);
-        assert(t->status == ThreadStatus::wait);
-        t->status = ThreadStatus::run;
-        t->status_cond.notify_all();
-    }
-    waiting_threads.clear();
-}
-
 int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback) {
     std::unique_lock<std::mutex> thread_lock(mutex);
     if (status != ThreadStatus::dormant)
@@ -175,16 +150,13 @@ void ThreadState::exit_delete(bool exit) {
 
     if (status == ThreadStatus::run) {
         stop(*cpu);
-    } else if (status == ThreadStatus::wait) {
-        // wake threads blocked in a sync primitive so they can observe delete_requested
-        update_status(ThreadStatus::run);
     } else {
         // dormant or suspend: wake run_loop() so it can observe delete_requested
         status_cond.notify_all();
     }
 
-    // Wake if thread waiting on sceKernelWaitSignal
-    signal.send();
+    // Wake if blocked in a wait
+    wait_cv.notify_all();
 }
 
 void ThreadState::run_loop() {
@@ -410,16 +382,72 @@ void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus>
     if (expected)
         assert(expected.value() == this->status);
 
-    // Don't apply the requested wait transition if being removed to not block deletion
-    if (status == ThreadStatus::wait && delete_requested)
-        return;
-
     this->status = status;
     status_cond.notify_all();
 
     if (status == ThreadStatus::dormant) {
-        raise_waiting_threads();
+        const std::lock_guard<std::mutex> end_lock(end_waiters_mutex);
+        end_waiters.wake_all();
     }
+}
+
+WaitResult ThreadState::wait_until(Deadline deadline, std::predicate auto done) {
+    std::unique_lock<std::mutex> lock(mutex);
+    const auto woken = [&] { return delete_requested || done(); };
+    update_status(ThreadStatus::wait);
+    bool satisfied = true;
+    if (deadline == Deadline::max())
+        wait_cv.wait(lock, woken);
+    else
+        satisfied = wait_cv.wait_until(lock, deadline, woken);
+    update_status(ThreadStatus::run);
+    if (delete_requested)
+        return ThreadExiting{};
+    return satisfied ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+}
+
+WaitResult ThreadState::delay_until(Deadline deadline) {
+    const WaitResult r = wait_until(deadline, [] { return false; });
+    // Reaching the deadline is the expected outcome of a delay
+    if (r && *r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+        return SCE_KERNEL_OK;
+    return r;
+}
+
+WaitResult ThreadState::wait_for_signal() {
+    return wait_until(Deadline::max(), [&] { return std::exchange(signal_pending, false); });
+}
+
+SceInt32 ThreadState::send_signal() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    if (signal_pending)
+        return SCE_KERNEL_ERROR_ALREADY_SENT;
+    signal_pending = true;
+    wait_cv.notify_all();
+    return SCE_KERNEL_OK;
+}
+
+WaitResult ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status) {
+    std::unique_lock<std::mutex> lock(mutex);
+    // The exit status is only read when the thread had already ended
+    if (status == ThreadStatus::dormant) {
+        if (exit_status)
+            *exit_status = static_cast<SceInt32>(returned_value);
+        return SCE_KERNEL_OK;
+    }
+    std::unique_lock<std::mutex> end_lock(end_waiters_mutex);
+    lock.unlock();
+    return end_waiters.wait(end_lock, waiter, {}, Deadline::max());
+}
+
+WaitResult ThreadState::wait(Deadline deadline) {
+    return wait_until(deadline, [&] { return std::exchange(wake_pending, false); });
+}
+
+void ThreadState::wake() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    wake_pending = true;
+    wait_cv.notify_all();
 }
 
 Address ThreadState::stack_top() const {

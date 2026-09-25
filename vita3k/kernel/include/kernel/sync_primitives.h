@@ -17,62 +17,15 @@
 
 #pragma once
 
-#include <kernel/thread/thread_data_queue.h>
+#include <kernel/thread/thread_state.h>
+#include <kernel/thread/wait_queue.h>
 #include <kernel/types.h>
 #include <util/byte_ring_buffer.h>
 
+#include <map>
+#include <variant>
+
 struct KernelState;
-
-struct WaitingThreadData {
-    ThreadStatePtr thread;
-    int32_t priority;
-    bool *was_canceled;
-
-    // additional fields for each primitive
-    union {
-        struct { // mutex
-            int32_t lock_count;
-        };
-        struct { // rwlock
-            bool is_write;
-        };
-        struct { // semaphore
-            int32_t signal;
-        };
-        struct { // simple events
-            int32_t pattern;
-            uint32_t *result_pattern;
-            uint64_t *user_data;
-        };
-        struct { // event flags
-            int32_t wait;
-            int32_t flags;
-            uint32_t *outBits;
-        };
-        // struct { }; // condvar
-        struct { // msgpipe
-            SceSize request_size;
-        } mp;
-    };
-
-    bool operator<(const WaitingThreadData &rhs) const {
-        return priority < rhs.priority;
-    }
-
-    bool operator>(const WaitingThreadData &rhs) const {
-        return priority > rhs.priority;
-    }
-
-    bool operator==(const WaitingThreadData &rhs) const {
-        return thread == rhs.thread;
-    }
-
-    bool operator==(const ThreadStatePtr &rhs) const {
-        return thread == rhs;
-    }
-};
-
-typedef std::unique_ptr<ThreadDataQueue<WaitingThreadData>> WaitingThreadQueuePtr;
 
 // NOTE: uid is copied to sync primitives here for debugging,
 //       not really needed since they are put in std::map's
@@ -80,32 +33,44 @@ struct SyncPrimitive {
     SceUID uid{};
     uint32_t attr{};
     std::mutex mutex;
-    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1]{};
     virtual ~SyncPrimitive() = default;
 };
 
 struct SimpleEvent : SyncPrimitive {
-    WaitingThreadQueuePtr waiting_threads;
-    SceUInt32 pattern;
-    SceUInt64 last_user_data;
+    struct WaitEntry {
+        SceUInt32 pattern;
+        SceUInt32 *result_pattern;
+        SceUInt64 *user_data;
+    };
 
-    bool auto_reset;
-    bool cb_wakeup_only;
+    explicit SimpleEvent(SceUInt32 attr)
+        : waiters(attr) {}
+
+    WaitQueue<WaitEntry> waiters;
+    SceUInt32 pattern = 0;
+    SceUInt64 last_user_data = 0;
+
+    bool auto_reset = false;
+    bool cb_wakeup_only = false;
 };
 
 typedef std::shared_ptr<SimpleEvent> SimpleEventPtr;
 typedef std::map<SceUID, SimpleEventPtr> SimpleEventPtrs;
 
 struct Timer : SyncPrimitive {
-    WaitingThreadQueuePtr waiting_threads;
-    std::condition_variable condvar;
+    explicit Timer(SceUInt32 attr)
+        : waiters(attr) {}
+
+    // Only the first waiter waits for the next event, the others wait for their turn
+    WaitQueue<std::monostate> waiters;
 
     bool is_started = false;
     bool is_repeat = false;
     bool is_pulse = false;
     bool event_set = false;
     uint64_t time = 0;
-    uint64_t next_event;
+    uint64_t next_event = 0;
     uint64_t event_interval = 0;
 };
 
@@ -113,20 +78,34 @@ typedef std::shared_ptr<Timer> TimerPtr;
 typedef std::map<SceUID, TimerPtr> TimerPtrs;
 
 struct Semaphore : SyncPrimitive {
-    WaitingThreadQueuePtr waiting_threads;
-    int max;
-    int val;
-    int init_val;
+    struct WaitEntry {
+        int32_t need_count;
+    };
+
+    explicit Semaphore(SceUInt32 attr)
+        : waiters(attr) {}
+
+    WaitQueue<WaitEntry> waiters;
+    int max = 0;
+    int val = 0;
+    int init_val = 0;
 };
 
 typedef std::shared_ptr<Semaphore> SemaphorePtr;
 typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
 
 struct Mutex : SyncPrimitive {
-    int init_count;
-    int lock_count;
+    struct WaitEntry {
+        int32_t lock_count;
+    };
+
+    explicit Mutex(SceUInt32 attr)
+        : waiters(attr) {}
+
+    int init_count = 0;
+    int lock_count = 0;
     ThreadStatePtr owner;
-    WaitingThreadQueuePtr waiting_threads;
+    WaitQueue<WaitEntry> waiters;
     Ptr<SceKernelLwMutexWork> workarea;
 };
 
@@ -143,17 +122,33 @@ enum class RWLockState {
 typedef std::map<ThreadStatePtr, int> RWLockOwners;
 
 struct RWLock : SyncPrimitive {
-    RWLockState state;
+    struct WaitEntry {
+        bool is_write;
+    };
+
+    explicit RWLock(SceUInt32 attr)
+        : waiters(attr) {}
+
+    RWLockState state = RWLockState::Unlocked;
     RWLockOwners owners;
-    WaitingThreadQueuePtr waiting_threads;
+    WaitQueue<WaitEntry> waiters;
 };
 
 typedef std::shared_ptr<RWLock> RWLockPtr;
 typedef std::map<SceUID, RWLockPtr> RWLockPtrs;
 
 struct EventFlag : SyncPrimitive {
-    WaitingThreadQueuePtr waiting_threads;
-    int flags;
+    struct WaitEntry {
+        SceUInt32 wait_mode;
+        SceUInt32 pattern;
+        SceUInt32 *out_bits;
+    };
+
+    explicit EventFlag(SceUInt32 attr)
+        : waiters(attr) {}
+
+    WaitQueue<WaitEntry> waiters;
+    int flags = 0;
 };
 
 typedef std::shared_ptr<EventFlag> EventFlagPtr;
@@ -177,22 +172,32 @@ struct Condvar : SyncPrimitive {
             , thread_id(thread_id) {}
     };
 
-    WaitingThreadQueuePtr waiting_threads;
+    explicit Condvar(SceUInt32 attr)
+        : waiters(attr) {}
+
+    WaitQueue<std::monostate> waiters;
     MutexPtr associated_mutex;
 };
 typedef std::shared_ptr<Condvar> CondvarPtr;
 typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
 
 struct MsgPipe : SyncPrimitive {
-    MsgPipe(std::size_t bufSize)
-        : data_buffer(bufSize) {}
+    struct WaitEntry {
+        SceSize request_size;
+        // Woken to recheck the buffer and has not done so yet
+        bool notified = false;
+    };
 
-    WaitingThreadQueuePtr senders;
-    WaitingThreadQueuePtr receivers;
+    MsgPipe(SceUInt32 attr, std::size_t bufSize)
+        : receivers(attr)
+        , data_buffer(bufSize) {}
+
+    // TODO do senders respect priority?
+    WaitQueue<WaitEntry> senders;
+    WaitQueue<WaitEntry> receivers;
     ByteRingBuffer data_buffer;
 
     bool beingDeleted = false;
-    std::atomic<std::size_t> remainingThreads = { 0 };
 
     ~MsgPipe() override = default;
 };
