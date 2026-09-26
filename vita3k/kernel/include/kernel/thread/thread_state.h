@@ -29,7 +29,6 @@
 #include <mutex>
 #include <optional>
 #include <string>
-#include <variant>
 
 struct CPUContext;
 
@@ -99,7 +98,7 @@ struct ThreadState {
     WaitResult wait_for_signal();
     // Sends a signal to this thread. Fails if the previous one was not consumed yet.
     SceInt32 send_signal();
-    // Blocks waiter until this thread becomes dormant.
+    // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
     WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status);
 
     // Waits until woken by wake(), deleted, or the deadline passes.
@@ -150,10 +149,15 @@ private:
     // Notified under mutex whenever a condition a wait may be blocked on changes.
     std::condition_variable wait_cv;
 
+    struct EndWaitEntry {
+        // Where to write the exit status, or null
+        SceInt32 *exit_status;
+    };
+
     // Guards end_waiters. Taken after mutex when both are needed.
     std::mutex end_waiters_mutex;
     // Threads blocked in sceKernelWaitThreadEnd on this one.
-    WaitQueue<std::monostate> end_waiters;
+    WaitQueue<EndWaitEntry> end_waiters;
 };
 
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;

@@ -387,7 +387,11 @@ void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus>
 
     if (status == ThreadStatus::dormant) {
         const std::lock_guard<std::mutex> end_lock(end_waiters_mutex);
-        end_waiters.wake_all();
+        end_waiters.wake_if([&](auto &waiter) {
+            if (waiter.entry.exit_status)
+                *waiter.entry.exit_status = static_cast<SceInt32>(returned_value);
+            return true;
+        });
     }
 }
 
@@ -429,7 +433,6 @@ SceInt32 ThreadState::send_signal() {
 
 WaitResult ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status) {
     std::unique_lock<std::mutex> lock(mutex);
-    // The exit status is only read when the thread had already ended
     if (status == ThreadStatus::dormant) {
         if (exit_status)
             *exit_status = static_cast<SceInt32>(returned_value);
@@ -437,7 +440,7 @@ WaitResult ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt
     }
     std::unique_lock<std::mutex> end_lock(end_waiters_mutex);
     lock.unlock();
-    return end_waiters.wait(end_lock, waiter, {}, Deadline::max());
+    return end_waiters.wait(end_lock, waiter, { exit_status }, Deadline::max());
 }
 
 WaitResult ThreadState::wait(Deadline deadline) {

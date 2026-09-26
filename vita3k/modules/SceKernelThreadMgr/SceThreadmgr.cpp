@@ -1153,6 +1153,8 @@ EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
 EXPORT(int, sceKernelExitDeleteThread, int status) {
     TRACY_FUNC(sceKernelExitDeleteThread, status);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    // Record the exit status for sceKernelWaitThreadEnd, then delete
+    thread->exit(status);
     thread->exit_delete();
 
     return status;
