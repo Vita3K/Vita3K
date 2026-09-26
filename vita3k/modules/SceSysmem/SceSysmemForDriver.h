@@ -51,3 +51,6 @@ constexpr SceUInt32 SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT = 4;
 DECL_EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockKernelOpt *opt);
 DECL_EXPORT(int, ksceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep);
 DECL_EXPORT(int, ksceKernelFreeMemBlock, SceUID uid);
+DECL_EXPORT(int, ksceKernelMemcpyUserToKernel, Ptr<void> dst, Ptr<const void> src, SceSize len);
+DECL_EXPORT(SceInt32, ksceKernelStrncpyUserToKernel, Ptr<char> dst, Ptr<const char> src, SceSize len);
+DECL_EXPORT(SceUID, kscePUIDOpenByGUID, SceUID pid, SceUID guid);
