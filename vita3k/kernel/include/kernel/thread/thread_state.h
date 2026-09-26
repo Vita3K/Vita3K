@@ -19,10 +19,12 @@
 
 #include <cpu/state.h>
 #include <kernel/callback.h>
+#include <kernel/thread/wait_queue.h>
 #include <kernel/types.h>
 #include <mem/block.h>
 #include <mem/ptr.h>
 
+#include <concepts>
 #include <condition_variable>
 #include <mutex>
 #include <optional>
@@ -45,19 +47,6 @@ enum class ThreadStatus {
     wait, // Waiting to be awaken by sync object or operation
 };
 
-struct ThreadSignal {
-    ThreadSignal() = default;
-    ~ThreadSignal() = default;
-
-    void wait();
-    bool send();
-
-private:
-    std::mutex mutex;
-    std::condition_variable recv_cond;
-    bool signaled = false;
-};
-
 struct ThreadState {
     std::mutex mutex;
     std::string name;
@@ -78,10 +67,8 @@ struct ThreadState {
     CPUStatePtr cpu;
     ThreadStatus status = ThreadStatus::dormant;
 
-    ThreadSignal signal;
     std::vector<CallbackPtr> callbacks;
     std::condition_variable status_cond;
-    std::vector<std::shared_ptr<ThreadState>> waiting_threads;
     uint32_t returned_value = 0;
 
     ThreadState() = delete;
@@ -96,7 +83,6 @@ struct ThreadState {
     Address stack_top() const;
 
     void run_loop();
-    void raise_waiting_threads();
 
     // this function must be called from the thread itself (inside a svc call)
     uint32_t run_callback(Address callback_address, const std::vector<uint32_t> &args);
@@ -106,11 +92,29 @@ struct ThreadState {
     // args and argp are passed to thread->start as is
     uint32_t run_guest_function(Address callback_address, SceSize args = 0, const Ptr<void> argp = Ptr<void>{});
 
+    // Blocks this thread until the deadline passes.
+    WaitResult delay_until(Deadline deadline);
+    // Blocks this thread until a signal is sent to it.
+    WaitResult wait_for_signal();
+    // Sends a signal to this thread. Fails if the previous one was not consumed yet.
+    SceInt32 send_signal();
+    // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
+    WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status);
+
+    // Waits until woken by wake(), deleted, or the deadline passes.
+    // A stale wake can end it early, so callers must recheck their condition.
+    WaitResult wait(Deadline deadline);
+    // Wakes this thread from wait().
+    void wake();
+
     void suspend();
     void resume(bool step = false);
     std::string log_stack_traceback() const;
 
 private:
+    // Waits until done() holds, the thread is being deleted, or the deadline passes.
+    WaitResult wait_until(Deadline deadline, std::predicate auto done);
+
     void push_arguments(const std::vector<uint32_t> &args);
     void dispatch_abort(CPUState &cpu);
 
@@ -136,6 +140,24 @@ private:
     bool run_end_callback = false;
 
     MemState &mem;
+
+    // A sceKernelSendSignal is pending for this thread.
+    bool signal_pending = false;
+    // Set by wake() and consumed by the next wait().
+    bool wake_pending = false;
+
+    // Notified under mutex whenever a condition a wait may be blocked on changes.
+    std::condition_variable wait_cv;
+
+    struct EndWaitEntry {
+        // Where to write the exit status, or null
+        SceInt32 *exit_status;
+    };
+
+    // Guards end_waiters. Taken after mutex when both are needed.
+    std::mutex end_waiters_mutex;
+    // Threads blocked in sceKernelWaitThreadEnd on this one.
+    WaitQueue<EndWaitEntry> end_waiters;
 };
 
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
