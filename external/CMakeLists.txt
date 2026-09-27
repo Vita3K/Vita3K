@@ -271,6 +271,10 @@ if(ANDROID)
 	set(USE_STATIC_ANDROID_FFMPEG ON)
 endif()
 add_subdirectory(ffmpeg)
+if(MINGW)
+	# libavutil needs bcrypt; Boost.Filesystem used to pull it in
+	target_link_libraries(ffmpeg INTERFACE bcrypt)
+endif()
 
 if(APPLE OR NOT FORCE_BUILD_OPENSSL_MAC)
 	execute_process(
