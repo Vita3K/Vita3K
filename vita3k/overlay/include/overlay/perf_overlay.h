@@ -75,6 +75,8 @@ private:
     uint32_t m_min_fps = 0;
     uint32_t m_max_fps = 0;
     uint32_t m_ms_per_frame = 0;
+    uint64_t m_ram_used = 0;
+    std::chrono::steady_clock::time_point m_last_update{};
 
     bool m_force_repaint = true;
 
@@ -84,6 +86,7 @@ private:
     static constexpr float k_opacity = 0.75f;
     static constexpr uint16_t k_graph_h = 40;
     static constexpr uint32_t k_graph_datapoints = 50;
+    static constexpr std::chrono::milliseconds k_update_interval{ 500 };
 };
 
 } // namespace overlay

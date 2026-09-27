@@ -27,8 +27,6 @@
 #include <gui-qt/log_widget.h>
 #include <gui-qt/main_window.h>
 #include <gui-qt/persistent_settings.h>
-#include <include/cpu.h>
-#include <include/environment.h>
 #include <io/state.h>
 #include <modules/module_parent.h>
 #include <packages/functions.h>
@@ -38,9 +36,11 @@
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
 #include <util/string_utils.h>
+#include <util/sysinfo.h>
 
 #include <QApplication>
 #include <QMessageBox>
+#include <QSysInfo>
 
 #if USE_DISCORD
 #include <app/discord.h>
@@ -191,8 +191,8 @@ int main(int argc, char *argv[]) {
     }
 
     LOG_INFO("{}", window_title);
-    LOG_INFO("OS: {}", CppCommon::Environment::OSVersion());
-    LOG_INFO("CPU: {} | {} Threads | {} GHz", CppCommon::CPU::Architecture(), CppCommon::CPU::LogicalCores(), static_cast<float>(CppCommon::CPU::ClockSpeed()) / 1000.f);
+    LOG_INFO("OS: {}", QSysInfo::prettyProductName().toStdString());
+    LOG_INFO("CPU: {}", util::get_system_info());
     LOG_INFO("Available ram memory: {} MiB", SDL_GetSystemRAM());
 
     app::AppRunType run_type = app::AppRunType::Unknown;

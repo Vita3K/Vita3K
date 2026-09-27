@@ -20,6 +20,9 @@
 
 #include <fmt/format.h>
 
+#include <mem/util.h>
+#include <util/sysinfo.h>
+
 #include <algorithm>
 #include <cmath>
 
@@ -63,25 +66,29 @@ void perf_overlay::set_fps_data(uint32_t fps, uint32_t avg_fps, uint32_t min_fps
     uint32_t max_fps, uint32_t ms_per_frame,
     const float *fps_values, uint32_t fps_values_count,
     uint32_t fps_offset) {
-    const bool changed = (m_fps != fps || m_avg_fps != avg_fps
-        || m_min_fps != min_fps || m_max_fps != max_fps
-        || m_ms_per_frame != ms_per_frame);
-
     m_fps = fps;
     m_avg_fps = avg_fps;
     m_min_fps = min_fps;
     m_max_fps = max_fps;
     m_ms_per_frame = ms_per_frame;
 
-    if (changed || m_force_repaint) {
-        if (m_graph_enabled && fps_values && fps_values_count > 0) {
-            m_fps_graph.record_datapoint(static_cast<float>(fps), true);
-            m_fps_graph.set_title(fmt::format("Framerate: {:04.1f}", static_cast<float>(fps)).c_str());
-        }
+    // Refreshed on a fixed interval rather than on changed values, since a steady
+    // framerate would otherwise leave the RAM line and the graph frozen.
+    const auto now = std::chrono::steady_clock::now();
+    if (!m_force_repaint && now - m_last_update < k_update_interval)
+        return;
+    m_last_update = now;
 
-        update_text();
-        reset_transforms();
+    if (m_detail >= perf_detail_level::medium)
+        m_ram_used = util::get_process_memory_usage();
+
+    if (m_graph_enabled && fps_values && fps_values_count > 0) {
+        m_fps_graph.record_datapoint(static_cast<float>(fps), true);
+        m_fps_graph.set_title(fmt::format("Framerate: {:04.1f}", static_cast<float>(fps)).c_str());
     }
+
+    update_text();
+    reset_transforms();
 }
 
 void perf_overlay::update_text() {
@@ -97,9 +104,11 @@ void perf_overlay::update_text() {
     case perf_detail_level::medium:
     case perf_detail_level::maximum:
         text = fmt::format("FPS: {} ({} ms)\n"
-                           "Avg: {}  Min: {}  Max: {}",
+                           "Avg: {}  Min: {}  Max: {}\n"
+                           "RAM: {} MiB",
             m_fps, m_ms_per_frame,
-            m_avg_fps, m_min_fps, m_max_fps);
+            m_avg_fps, m_min_fps, m_max_fps,
+            m_ram_used / MiB(1));
         break;
     }
 
