@@ -248,7 +248,7 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
 
         // Create temp media file
         const auto temp_file_path = emuenv.cache_path / "temp_vita_media.mp4";
-        fs::ofstream temp_file(temp_file_path, std::ios::out | std::ios::binary);
+        std::ofstream temp_file(temp_file_path, std::ios::out | std::ios::binary);
 
         const Address buf = alloc(emuenv.mem, KiB(512), "AvPlayer buffer");
         const auto buf_ptr = Ptr<char>(buf).get(emuenv.mem);

@@ -59,7 +59,7 @@ static int execute(std::string &zrif, fs::path &title_src, fs::path &title_dst, 
 bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, const fs::path &title_path, const std::function<void(float)> &progress_callback) {
     fs::path title_id_src = title_path;
     fs::path title_id_dst = fs_utils::path_concat(title_path, "_dec");
-    fs::ifstream binfile(drmlicpath, std::ios::in | std::ios::binary | std::ios::ate);
+    std::ifstream binfile(drmlicpath, std::ios::in | std::ios::binary | std::ios::ate);
     std::string zRIF = rif2zrif(binfile);
     F00DEncryptorTypes f00d_enc_type = F00DEncryptorTypes::native;
     std::string f00d_arg = std::string();
@@ -279,7 +279,7 @@ bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_z
         if ((byte_swap(entry.type) & 0xFF) == 4 || (byte_swap(entry.type) & 0xFF) == 18) { // Directory
             fs::create_directories(path / string_name);
         } else { // File
-            fs::ofstream outfile(path / string_name, std::ios::binary);
+            std::ofstream outfile(path / string_name, std::ios::binary);
 
             auto offset = byte_swap(entry.data_offset);
             auto data_size = byte_swap(entry.data_size);
@@ -380,7 +380,7 @@ std::string find_pkg_zrif(const fs::path &pkg_path, const fs::path &vita_fs_path
         return {};
 
     LOG_INFO("Found license file: {}", rif_path);
-    fs::ifstream binfile(rif_path, std::ios::in | std::ios::binary | std::ios::ate);
+    std::ifstream binfile(rif_path, std::ios::in | std::ios::binary | std::ios::ate);
     if (!binfile)
         return {};
 

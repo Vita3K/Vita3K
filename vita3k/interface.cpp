@@ -223,12 +223,12 @@ static bool install_archive_content(EmuEnvState &emuenv, const ZipPtr &zip, cons
             update_progress();
 
             std::string replace_filename = m_filename.substr(content_path.size());
-            const fs::path file_output = (output_path / fs_utils::utf8_to_path(replace_filename)).generic_path();
+            const fs::path file_output = fs_utils::generic_path(output_path / fs_utils::utf8_to_path(replace_filename));
 
             const fs::path normalized_output_path = output_path.lexically_normal();
             const fs::path normalized_file_output = file_output.lexically_normal();
             const fs::path relative_to_output = normalized_file_output.lexically_relative(normalized_output_path);
-            if (relative_to_output.empty() || relative_to_output.string().starts_with("..")) {
+            if (relative_to_output.empty() || *relative_to_output.begin() == "..") {
                 LOG_ERROR("Rejecting archive entry whose path escapes the install directory: {}", m_filename);
                 continue;
             }

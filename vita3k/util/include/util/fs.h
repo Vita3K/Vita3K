@@ -17,17 +17,19 @@
 
 #pragma once
 
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <fmt/std.h>
+
+#include <ctime>
+#include <filesystem>
+#include <fstream>
 
 #ifdef _WIN32
 #define fseek _fseeki64
 #define ftell _ftelli64
 #endif
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 #ifdef _WIN32
 #define FOPEN(filename, params) _wfopen(filename, L##params)
@@ -43,26 +45,30 @@ namespace fs_utils {
  * \param  folder_path The sub-directory/sub-directories to output to.
  * \param  file_name   The name of the file.
  * \param  extension   The extension of the file (optional)
- * \return A complete Boost.Filesystem file path normalized.
+ * \return A complete file path normalized.
  */
+fs::path generic_path(const fs::path &path);
+
+std::time_t to_time_t(fs::file_time_type time);
+
 fs::path construct_file_name(const fs::path &base_path, const fs::path &folder_path, const fs::path &file_name, const fs::path &extension = "");
 
 /**
- * \brief Convert a Boost.Filesystem path to a UTF-8 string.
+ * \brief Convert a path to a UTF-8 string.
  * \param path path to convert
  * \return UTF-8 string
  */
 std::string path_to_utf8(const fs::path &path);
 
 /**
- * \brief Convert a UTF-8 string to a Boost.Filesystem path.
+ * \brief Convert a UTF-8 string to a path.
  * \param str UTF-8 string to convert
- * \return Boost.Filesystem path
+ * \return path
  */
 fs::path utf8_to_path(const std::string &str);
 
 /**
- * \brief Concatenate two Boost.Filesystem paths. Usable to add extension to path.
+ * \brief Concatenate two paths. Usable to add extension to path.
  * \param path1 First path
  * \param path2 Second path
  * \return First path + second path
@@ -83,9 +89,6 @@ bool read_data(const fs::path &path, std::vector<char> &data);
 bool copy_directory_contents(const fs::path &src_path, const fs::path &dst_path, fs::copy_options options = fs::copy_options::overwrite_existing);
 
 } // namespace fs_utils
-
-template <>
-struct fmt::formatter<boost::filesystem::path> : ostream_formatter {};
 
 class Root {
     fs::path vita_fs_path;

@@ -93,7 +93,7 @@ protected:
     // contain the decrypted header when loading dds
     ddspp::Descriptor *dds_descriptor = nullptr;
     // file being written to when exporting dds
-    fs::ofstream output_file;
+    std::ofstream output_file;
     // used when exporting dds
     bool export_dds_swap_rb = false;
 

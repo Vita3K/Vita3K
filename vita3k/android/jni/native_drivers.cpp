@@ -68,7 +68,7 @@ std::optional<fs::path> get_android_files_dir(JNIEnv *env) {
         return std::nullopt;
     }
 
-    const fs::path resolved = fs::path(jstring_to_string(env, files_dir_str)) / "";
+    const fs::path resolved = fs::path(jstring_to_string(env, files_dir_str));
     env->PopLocalFrame(nullptr);
     return resolved;
 }
@@ -78,7 +78,7 @@ std::optional<fs::path> get_custom_driver_root(JNIEnv *env) {
     if (!files_dir)
         return std::nullopt;
 
-    return *files_dir / "driver" / "";
+    return *files_dir / "driver";
 }
 
 std::vector<std::string> list_installed_custom_drivers(const fs::path &driver_root) {
@@ -193,7 +193,7 @@ Java_org_vita3k_emulator_NativeLib_installCustomDriver(JNIEnv *env, jclass, jstr
 
     fs::create_directories(*driver_root);
 
-    const fs::path driver_path = *driver_root / driver_name / "";
+    const fs::path driver_path = *driver_root / driver_name;
     if (fs::exists(driver_path)) {
         if (!fs::is_empty(driver_path)) {
             LOG_ERROR("Custom driver {} already exists", driver_name);
@@ -238,7 +238,7 @@ Java_org_vita3k_emulator_NativeLib_removeCustomDriver(JNIEnv *env, jclass, jstri
         return JNI_FALSE;
     }
 
-    const fs::path driver_path = *driver_root / driver_name / "";
+    const fs::path driver_path = *driver_root / driver_name;
     if (!fs::exists(driver_path)) {
         LOG_ERROR("Custom driver {} does not exist", driver_name);
         return JNI_FALSE;

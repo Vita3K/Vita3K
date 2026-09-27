@@ -43,7 +43,7 @@ bool is_license_file(const fs::path &path) {
 }
 
 QString zrif_from_license(const fs::path &license_path) {
-    fs::ifstream binfile(license_path, std::ios::binary | std::ios::ate);
+    std::ifstream binfile(license_path, std::ios::binary | std::ios::ate);
     if (!binfile)
         return {};
 
@@ -325,13 +325,13 @@ void PkgInstallDialog::run_install(const fs::path &pkg_path,
                     QStringList failed;
                     // fs::remove throws and crashes the app when the file is locked so use the non throwing overload
                     if (del_pkg->isChecked()) {
-                        boost::system::error_code error;
+                        std::error_code error;
                         fs::remove(pkg_path, error);
                         if (error)
                             failed.push_back(QString::fromStdString(pkg_path.filename().string()));
                     }
                     if (del_bin->isChecked() && !m_license_path.empty()) {
-                        boost::system::error_code error;
+                        std::error_code error;
                         fs::remove(m_license_path, error);
                         if (error)
                             failed.push_back(QString::fromStdString(m_license_path.filename().string()));

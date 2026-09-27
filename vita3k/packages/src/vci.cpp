@@ -123,7 +123,7 @@ static void write_nonpdrm_license(const SceNpDrmLicense &old_license, const uint
     memcpy(lic.key, klicensee, sizeof(lic.key));
 
     fs::create_directories(work_bin_path.parent_path());
-    fs::ofstream out(work_bin_path, std::ios::binary);
+    std::ofstream out(work_bin_path, std::ios::binary);
     out.write(reinterpret_cast<const char *>(&lic), sizeof(lic));
 }
 
@@ -131,7 +131,7 @@ bool install_vci(const fs::path &vci_path, EmuEnvState &emuenv, const std::funct
     const auto progress = [&](float v) { if (progress_callback) progress_callback(v); };
 
     // 1) Open the .vci image
-    fs::ifstream img(vci_path, std::ios::binary);
+    std::ifstream img(vci_path, std::ios::binary);
     if (!img) {
         LOG_CRITICAL("Failed to open VCI file: {}", fs_utils::path_to_utf8(vci_path));
         return false;
@@ -165,7 +165,7 @@ bool install_vci(const fs::path &vci_path, EmuEnvState &emuenv, const std::funct
     fs::create_directories(staging);
     const auto gro_img = staging / "gro0.img"; // substr(0,3) -> "gro" output dir
     {
-        fs::ofstream o(gro_img, std::ios::binary);
+        std::ofstream o(gro_img, std::ios::binary);
         img.seekg(VCI_HEADER_SIZE + gro_off, std::ios::beg);
         std::vector<char> buf(1 << 20);
         uint64_t copied = 0;
@@ -237,7 +237,7 @@ bool install_vci(const fs::path &vci_path, EmuEnvState &emuenv, const std::funct
     if (fs::is_directory(lic_dir)) {
         for (const auto &e : fs::directory_iterator(lic_dir)) {
             if (e.is_regular_file()) {
-                fs::ifstream lf(e.path(), std::ios::binary);
+                std::ifstream lf(e.path(), std::ios::binary);
                 lf.read(reinterpret_cast<char *>(&card_license), sizeof(card_license));
                 have_license = lf.gcount() == sizeof(card_license);
                 if (have_license)

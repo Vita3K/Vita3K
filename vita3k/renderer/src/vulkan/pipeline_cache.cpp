@@ -288,13 +288,13 @@ void PipelineCache::read_pipeline_cache() {
     const std::string pipeline_cache_name = fmt::format("pipeline-cache-vk{}.dat", shader::CURRENT_VERSION);
     const fs::path path = state.shaders_path / pipeline_cache_name;
 
-    fs::ifstream pipeline_cache_file(path, std::ios::in | std::ios::binary);
+    std::ifstream pipeline_cache_file(path, std::ios::in | std::ios::binary);
     if (!pipeline_cache_file.is_open())
         return;
 
     LOG_INFO("Found pipeline cache, reading...");
 
-    pipeline_cache_file.seekg(0, fs::ifstream::end);
+    pipeline_cache_file.seekg(0, std::ifstream::end);
     size_t pipeline_size = pipeline_cache_file.tellg();
     pipeline_cache_file.seekg(0);
 
@@ -357,7 +357,7 @@ void PipelineCache::save_pipeline_cache() {
     const std::string pipeline_cache_name = fmt::format("pipeline-cache-vk{}.dat", shader::CURRENT_VERSION);
     const fs::path path = state.shaders_path / pipeline_cache_name;
 
-    fs::ofstream pipeline_cache_file(path, std::ios::out | std::ios::binary | std::ios::trunc);
+    std::ofstream pipeline_cache_file(path, std::ios::out | std::ios::binary | std::ios::trunc);
     if (!pipeline_cache_file.is_open())
         return;
 

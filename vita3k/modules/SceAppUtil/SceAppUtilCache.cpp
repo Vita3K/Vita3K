@@ -27,7 +27,7 @@ EXPORT(int, sceAppUtilCacheGetDevInfo) {
 
 EXPORT(int, sceAppUtilCacheMount) {
     const auto cache_path = "cache/" + emuenv.io.title_id;
-    boost::system::error_code ec;
+    std::error_code ec;
     fs::create_directories(emuenv.vita_fs_path / "ux0" / cache_path, ec);
     if (ec) {
         LOG_ERROR("Failed to create cache directory: {}", ec.message());

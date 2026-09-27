@@ -88,11 +88,6 @@ public:
         return file_info.access_mode;
     }
 
-    // Returning type depends of system
-    auto get_char_path() const {
-        return file_info.sys_loc.generic_path().native().c_str();
-    }
-
     // Modify IO parameters
     void create_io_perms(const int flags) {
         file_info.open_mode = flags;
