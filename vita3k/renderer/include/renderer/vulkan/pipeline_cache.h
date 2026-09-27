@@ -81,7 +81,8 @@ private:
     // first index: 0 if color is backed by memory, 1 otherwise
     // second index: 1 if depth-stencil is force loaded, 0 otherwise
     // third index: 1 if depth-stencil is force stored, 0 otherwise
-    std::map<vk::Format, vk::RenderPass> render_passes[2][2][2];
+    // [is_color_transient][force_load][force_store][keep_mask]
+    std::map<vk::Format, vk::RenderPass> render_passes[2][2][2][2];
     // render passes used along shader interlock
     std::map<vk::Format, vk::RenderPass> shader_interlock_pass;
 
@@ -91,7 +92,7 @@ private:
     unordered_map_stable<Sha256Hash, vk::ShaderModule> shaders;
     unordered_map_stable<uint64_t, vk::Pipeline> pipelines;
 
-    vk::PipelineShaderStageCreateInfo retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints, bool is_srgb = false);
+    vk::PipelineShaderStageCreateInfo retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const shader::Hints &hints, bool is_srgb = false, bool use_mask = false);
     vk::PipelineVertexInputStateCreateInfo get_vertex_input_state(const SceGxmVertexProgram &vertex_program, MemState &mem);
 
     // queue containing request sent by the main thread to the compile threads
@@ -129,7 +130,8 @@ public:
     void read_pipeline_cache();
     void save_pipeline_cache();
 
-    vk::RenderPass retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool is_color_transient, bool no_color = false);
+    // keep_mask: load and store the mask attachment (otherwise its content is not used)
+    vk::RenderPass retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool is_color_transient, bool no_color = false, bool keep_mask = false);
     vk::Pipeline retrieve_pipeline(VKContext &context, SceGxmPrimitiveType &type, bool consider_for_async, MemState &mem);
 
     vk::ShaderModule precompile_shader(const Sha256Hash &hash, bool search_first = true);

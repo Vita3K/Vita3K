@@ -328,6 +328,15 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config) {
     void *indices_ptr = indices.get(mem);
 
+    const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
+    const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
+    const bool is_mask_update = gxm_fragment_program.is_maskupdate;
+    if (is_mask_update && !context.state.features.use_mask_bit) {
+        // do not let the mask value land in the color surface
+        LOG_WARN_ONCE("The GXM mask bit is not emulated on this device, skipping mask updates");
+        return;
+    }
+
     context.check_for_macroblock_change(true);
 
     if (!context.in_renderpass)
@@ -337,12 +346,17 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     // we need to always load the depth-stencil after the first draw
     if (context.is_first_scene_draw && (context.state.features.support_shader_interlock || context.ignore_macroblock)) {
         // update the render pass to load and store the depth and stencil
-        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_format, true, true, !context.record.color_surface.data);
+        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(context.current_color_format, true, true, !context.record.color_surface.data, false, context.current_pass_keeps_mask);
+        context.current_pass_loads_ds = true;
+        context.current_pass_stores_ds = true;
         context.is_first_scene_draw = false;
     }
 
-    const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
-    const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
+    if ((is_mask_update || context.record.is_mask_read)
+        && (!context.current_pass_keeps_mask || (context.mask_updated && !is_mask_update)))
+        // the mask must be kept by the render pass, and a mask test must see the previous mask updates
+        context.restart_render_pass_for_mask();
+
     if (context.state.features.direct_fragcolor && fragment_program_gxp.is_frag_color_used()) {
         // the fragment shader is using programmable blending with a subpass input
         vk::ImageMemoryBarrier barrier{
@@ -372,6 +386,19 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
         context.render_cmd.beginRenderPass(context.curr_renderpass_info, vk::SubpassContents::eInline);
         context.last_draw_was_framebuffer_fetch = fragment_program_gxp.is_frag_color_used();
+    }
+
+    if (is_mask_update || context.record.is_mask_read) {
+        context.prepare_mask();
+        if (is_mask_update) {
+            if (!context.record.is_mask_read) {
+                // from now on, the draws of this scene test the mask
+                context.record.is_mask_read = true;
+                context.refresh_pipeline = true;
+            }
+            // wait for the previous draws testing the mask
+            context.mask_barrier();
+        }
     }
 
     if (context.current_visibility_buffer != nullptr && context.current_query_idx != -1 && !context.is_in_query) {
@@ -503,6 +530,11 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     bind_vertex_streams(context, mem, instance_count, max_index);
 
     context.render_cmd.drawIndexed(count, instance_count, 0, 0, 0);
+
+    if (is_mask_update)
+        context.mask_updated = true;
+    else
+        context.non_mask_draw_in_pass = true;
 
     context.vertex_uniform_storage_allocated = false;
     context.fragment_uniform_storage_allocated = false;

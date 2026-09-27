@@ -97,7 +97,8 @@ void VKSurfaceCache::destroy_framebuffers(vk::ImageView view) {
     vkutil::DestroyQueue &destroy_queue = state.frame().destroy_queue;
     for (auto it = framebuffer_array.begin(); it != framebuffer_array.end();) {
         // if the color of depth-stencil match the one of the render_target, this won't be used anymore
-        if (it->first.first == view || it->first.second == view) {
+        const auto &[color_view, ds_view, mask_view] = it->first;
+        if (color_view == view || ds_view == view || mask_view == view) {
             destroy_queue.add(it->second.standard);
             destroy_queue.add(it->second.shader_interlock);
             it = framebuffer_array.erase(it);
@@ -1077,7 +1078,9 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
     color_view = color_result.view;
     ds_view = ds_result.view;
 
-    std::pair<vk::ImageView, vk::ImageView> key = { color_view, ds_view };
+    // the mask belongs to the render target
+    const vk::ImageView mask_view = target->mask.view;
+    const std::tuple<vk::ImageView, vk::ImageView, vk::ImageView> key = { color_view, ds_view, mask_view };
     auto it = framebuffer_array.find(key);
 
     if (it != framebuffer_array.end()) {
@@ -1095,8 +1098,10 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
         .height = framebuffer_height,
         .layers = 1
     };
-    vk::ImageView attachments[] = { color_result.view, ds_result.view };
+    vk::ImageView attachments[] = { color_result.view, ds_result.view, mask_view };
     fb_info.setAttachments(attachments);
+    if (!state.features.use_mask_bit)
+        fb_info.attachmentCount = 2;
     vk::Framebuffer fb_standard = state.device.createFramebuffer(fb_info);
 
     vk::Framebuffer fb_interlock = nullptr;
@@ -1387,6 +1392,8 @@ void VKSurfaceCache::destroy_associated_framebuffers(const VKRenderTarget *rende
 
     destroy_framebuffers(render_target->color.view);
     destroy_framebuffers(render_target->depthstencil.view);
+    if (render_target->mask.view)
+        destroy_framebuffers(render_target->mask.view);
 }
 
 vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t pitch, Viewport &viewport) {

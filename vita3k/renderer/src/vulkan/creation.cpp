@@ -164,7 +164,8 @@ VKContext::~VKContext() {
 VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params)
     : device(state.device)
     , color(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR8G8B8A8Unorm)
-    , depthstencil(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), state.deep_stencil_use) {
+    , depthstencil(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), state.deep_stencil_use)
+    , mask(static_cast<uint32_t>(params.width * state.res_multiplier), static_cast<uint32_t>(params.height * state.res_multiplier), vk::Format::eR8Unorm) {
     width = static_cast<uint32_t>(params.width * state.res_multiplier);
     height = static_cast<uint32_t>(params.height * state.res_multiplier);
 
@@ -182,12 +183,21 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
 
     depthstencil.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment);
 
+    if (state.features.use_mask_bit) {
+        // second color attachment: written by mask update programs, read as an input attachment by the others
+        mask.width = depthstencil.width;
+        mask.height = depthstencil.height;
+        mask.init_image(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransferDst);
+    }
+
     // transition images to their right state
     vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
     // color
     color.transition_to_discard(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
     // depth stencil
     depthstencil.transition_to_discard(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
+    if (mask.image)
+        mask.transition_to_discard(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
     vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
 
     constexpr uint16_t SCE_GXM_MAX_SCENES_PER_RENDERTARGET = 8;
@@ -240,6 +250,8 @@ void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
     FrameObject &frame = state.frame();
     frame.destroy_queue.add_image(render_target.color);
     frame.destroy_queue.add_image(render_target.depthstencil);
+    if (render_target.mask.image)
+        frame.destroy_queue.add_image(render_target.mask);
 
     for (auto &fence : render_target.fences)
         frame.destroy_queue.add(fence);
