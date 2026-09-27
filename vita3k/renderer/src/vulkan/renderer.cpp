@@ -1788,6 +1788,23 @@ BufferTrapping::BufferTrapping(VKState &state)
     : state(state) {}
 
 TrappedBuffer *BufferTrapping::access_buffer(Address addr, uint32_t size, MemState &mem, bool always_trap, bool cover_everything) {
+    // The declared size is an upper bound, not what the game allocated: copy the part that is
+    // mapped rather than refusing the whole buffer
+    {
+        auto mem_it = state.mapped_memories.lower_bound(addr);
+        if (mem_it == state.mapped_memories.end() || mem_it->first + mem_it->second.size <= addr) {
+            LOG_ERROR("Buffer at address {} is not mapped", log_hex(addr));
+            temp_buffer.size = 0;
+            temp_buffer.extra = ~0;
+            return &temp_buffer;
+        }
+        const uint32_t available = mem_it->first + mem_it->second.size - addr;
+        if (size > available) {
+            LOG_WARN_ONCE("Buffer at address {} ({} bytes) runs past its mapped block, copying the {} bytes that are mapped", log_hex(addr), size, available);
+            size = available;
+        }
+    }
+
     const bool is_buffer_small = (size < 3 * KiB(4));
 
     if (is_buffer_small && always_trap) {

@@ -2304,10 +2304,14 @@ static void gxmSetUniformBuffers(renderer::State &state, GxmState &gxm, SceGxmCo
 
         uint32_t bytes_to_copy = sizes.at(i) * 4;
         if (sizes.at(i) == SCE_GXM_MAX_UB_IN_FLOAT_UNIT) {
-            auto ite = gxm.memory_mapped_regions.lower_bound(buffers[i].address());
-            if ((ite != gxm.memory_mapped_regions.end()) && ((ite->first + ite->second.size) > buffers[i].address())) {
-                // Bound the size
-                bytes_to_copy = std::min<uint32_t>(ite->first + ite->second.size - buffers[i].address(), bytes_to_copy);
+            // The region containing the address is the last one starting at or before it
+            auto ite = gxm.memory_mapped_regions.upper_bound(buffers[i].address());
+            if (ite != gxm.memory_mapped_regions.begin()) {
+                --ite;
+                if ((ite->first + ite->second.size) > buffers[i].address()) {
+                    // Bound the size
+                    bytes_to_copy = std::min<uint32_t>(ite->first + ite->second.size - buffers[i].address(), bytes_to_copy);
+                }
             }
 
             // Check other UB friends and bound the size
