@@ -58,6 +58,8 @@ struct PerformanceOverlayState {
     int position = 0;
     int detail = 0;
 
+    // Set once the first measurement is in; fps itself rounds to 0 during heavy loads.
+    bool has_data = false;
     uint32_t fps = 0;
     uint32_t avg_fps = 0;
     uint32_t min_fps = 0;

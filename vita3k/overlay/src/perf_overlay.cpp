@@ -178,7 +178,7 @@ void perf_overlay::reset_transforms() {
 compiled_resource perf_overlay::get_compiled() {
     compiled_resource result;
 
-    if (!visible || m_fps == 0)
+    if (!visible)
         return result;
 
     auto &body = m_body.get_compiled();
