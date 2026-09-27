@@ -165,6 +165,29 @@ static const GLint *translate_swizzle(SceGxmTextureSwizzle4Mode mode) {
     return swizzle_abgr;
 }
 
+// U1U5U5U5 is uploaded as GL_UNSIGNED_SHORT_5_5_5_1 (red read from bits 11-15, alpha from bit 0).
+// GXM names the fields from the most significant bit: U5U5U5U1_RGBA is R5G5B5A1 and
+// U5U5U5U1_BGRA is B5G5R5A1. The variants keeping their 1-bit field in bit 15 (ABGR, ARGB,
+// 1BGR, 1RGB) have it moved to bit 0 on upload, which turns them into BGRA, RGBA, BGR1 and RGB1.
+static const GLint *translate_swizzle_1555(SceGxmTextureSwizzle4Mode mode) {
+    switch (mode) {
+    case SCE_GXM_TEXTURE_SWIZZLE4_RGBA:
+    case SCE_GXM_TEXTURE_SWIZZLE4_ARGB:
+        return swizzle_abgr; // identity
+    case SCE_GXM_TEXTURE_SWIZZLE4_BGRA:
+    case SCE_GXM_TEXTURE_SWIZZLE4_ABGR:
+        return swizzle_argb; // red and blue swapped
+    case SCE_GXM_TEXTURE_SWIZZLE4_RGB1:
+    case SCE_GXM_TEXTURE_SWIZZLE4_1RGB:
+        return swizzle_1bgr; // identity, alpha = 1
+    case SCE_GXM_TEXTURE_SWIZZLE4_BGR1:
+    case SCE_GXM_TEXTURE_SWIZZLE4_1BGR:
+        return swizzle_1rgb; // red and blue swapped, alpha = 1
+    }
+
+    return swizzle_abgr;
+}
+
 static const GLint *translate_swizzle(SceGxmTextureSwizzleYUV420Mode mode) {
     switch (mode) {
     case SCE_GXM_TEXTURE_SWIZZLE_YUV_CSC0:
@@ -453,6 +476,7 @@ GLenum translate_type(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
         return GL_UNSIGNED_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+        // every variant is uploaded with its 1-bit field in bit 0, see translate_swizzle_1555
         return GL_UNSIGNED_SHORT_5_5_5_1;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
         return GL_UNSIGNED_SHORT_5_6_5;
@@ -584,10 +608,12 @@ const GLint *translate_swizzle(SceGxmTextureFormat fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
         return translate_swizzle(static_cast<SceGxmTextureSwizzle3Mode>(swizzle));
 
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+        return translate_swizzle_1555(static_cast<SceGxmTextureSwizzle4Mode>(swizzle));
+
     // 4 components.
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
