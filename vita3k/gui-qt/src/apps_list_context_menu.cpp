@@ -27,15 +27,12 @@
 #include <config/version.h>
 #include <emuenv/state.h>
 #include <io/state.h>
+#include <mem/util.h>
 #include <packages/license.h>
 #include <packages/sce_types.h>
 #include <renderer/state.h>
 #include <util/log.h>
-
-#include <include/cpu.h>
-#include <include/environment.h>
-
-#include <SDL3/SDL_cpuinfo.h>
+#include <util/sysinfo.h>
 
 #include <QApplication>
 #include <QClipboard>
@@ -49,11 +46,14 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QScrollArea>
+#include <QSysInfo>
 #include <QUrl>
 #include <QVBoxLayout>
 
 #include <fmt/format.h>
 #include <pugixml.hpp>
+
+#include <cmath>
 
 static const char *ISSUES_URL = "https://github.com/Vita3K/compatibility/issues";
 
@@ -262,10 +262,10 @@ void AppsListContextMenu::add_compat_actions(const app::AppEntry &app) {
                     "- GPU: {}\n"
                     "- RAM: {} GB",
                     user ? user : "?",
-                    CppCommon::Environment::OSVersion(),
-                    CppCommon::CPU::Architecture(),
+                    QSysInfo::prettyProductName().toStdString(),
+                    util::get_system_info(),
                     gpu_name,
-                    SDL_GetSystemRAM() / 1000);
+                    std::lround(util::get_total_memory() / static_cast<float>(GiB(1))));
                 QApplication::clipboard()->setText(QString::fromStdString(summary));
             });
         } else {
@@ -306,10 +306,11 @@ void AppsListContextMenu::add_compat_actions(const app::AppEntry &app) {
                     "- GPU: {}%0A"
                     "- RAM: {} GB",
                     user ? user : "?",
-                    CppCommon::Environment::OSVersion(),
-                    CppCommon::CPU::Architecture(),
+                    QSysInfo::prettyProductName().toStdString(),
+                    // Encoded since a feature flag such as "AVX+" would decode as a space.
+                    url_encode(QString::fromStdString(util::get_system_info())).toStdString(),
                     gpu_name,
-                    SDL_GetSystemRAM() / 1000);
+                    std::lround(util::get_total_memory() / static_cast<float>(GiB(1))));
 
                 const auto rest = "%23 Issues%0A<!-- Summary of problems -->%0A%0A"
                                   "%23 Screenshots%0A![image](https://?)%0A%0A"
