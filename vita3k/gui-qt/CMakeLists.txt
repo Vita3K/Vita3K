@@ -118,7 +118,6 @@ target_link_libraries(gui-qt PUBLIC
     libzRIF
     psvpfsparser
     pugixml::pugixml
-    cppcommon
     updater
     input
 )
