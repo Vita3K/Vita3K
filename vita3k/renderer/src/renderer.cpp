@@ -72,7 +72,7 @@ void State::update_overlays() {
         }
     }
 
-    if (perf_overlay.enabled && perf_overlay.fps > 0) {
+    if (perf_overlay.enabled && perf_overlay.has_data) {
         auto perf = overlay_manager->get<overlay::perf_overlay>();
         if (!perf)
             perf = overlay_manager->create<overlay::perf_overlay>();
