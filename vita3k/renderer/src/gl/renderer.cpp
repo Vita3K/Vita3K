@@ -40,7 +40,9 @@
 #include <Windows.h>
 #endif
 
+#include <algorithm>
 #include <array>
+#include <cstring>
 #include <mutex>
 #include <string_view>
 
@@ -590,16 +592,21 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 }
 
-void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, SceGxmColorSurface &surface) {
+void queue_surface_data(GLState &renderer, GLContext &context, MemState &mem, SceGxmColorSurface &surface, const SceGxmNotification &vertex_notification, const SceGxmNotification &fragment_notification) {
     R_PROFILE(__func__);
-
-    if (pixels == nullptr) {
-        return;
-    }
 
     SceGxmColorFormat format = surface.colorFormat;
     uint32_t width = surface.width;
     uint32_t height = surface.height;
+
+    auto format_gl = GXM_COLOR_FORMAT_TO_GL_FORMAT.find(format);
+    if (!surface.data || format_gl == GXM_COLOR_FORMAT_TO_GL_FORMAT.end()) {
+        if (surface.data)
+            LOG_ERROR("Color format not implemented: {}, report this to developer", fmt::underlying(format));
+        renderer.complete_readbacks(mem, true);
+        signal_notifications(renderer, mem, vertex_notification, fragment_notification);
+        return;
+    }
 
     const int res_multiplier = static_cast<int>(renderer.res_multiplier);
     if (res_multiplier == 1) {
@@ -610,17 +617,22 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
         glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(width));
     }
 
-    auto format_gl = GXM_COLOR_FORMAT_TO_GL_FORMAT.find(format);
-    if (format_gl == GXM_COLOR_FORMAT_TO_GL_FORMAT.end()) {
-        LOG_ERROR("Color format not implemented: {}, report this to developer", fmt::underlying(format));
-        return;
-    }
+    std::vector<std::uint8_t> &storage_v = renderer.readback_scratch;
+    const bool use_temp = format_need_temp_storage(renderer, surface, storage_v, width, height);
+    const size_t guest_size = gxm::get_stride_in_bytes(format, surface.strideInPixels) * surface.height;
+    const size_t size = use_temp ? storage_v.size() : guest_size;
 
-    std::uint8_t *temp_store = reinterpret_cast<std::uint8_t *>(pixels);
-    std::vector<std::uint8_t> storage_v;
-
-    if (format_need_temp_storage(renderer, surface, storage_v, width, height)) {
-        temp_store = storage_v.data();
+    ReadbackBuffer buffer{};
+    auto reusable = std::find_if(renderer.free_readback_buffers.begin(), renderer.free_readback_buffers.end(), [&](const ReadbackBuffer &b) { return b.capacity >= size; });
+    if (reusable != renderer.free_readback_buffers.end()) {
+        buffer = *reusable;
+        renderer.free_readback_buffers.erase(reusable);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, buffer.pbo);
+    } else {
+        glGenBuffers(1, &buffer.pbo);
+        buffer.capacity = size;
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, buffer.pbo);
+        glBufferData(GL_PIXEL_PACK_BUFFER, static_cast<GLsizeiptr>(size), nullptr, GL_STREAM_READ);
     }
 
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(format);
@@ -630,14 +642,76 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
 
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
         glBindTexture(GL_TEXTURE_2D, context.current_color_attachment);
-        glGetTexImage(GL_TEXTURE_2D, 0, color::get_raw_store_upload_format_type(base_format), color::get_raw_store_upload_data_type(base_format), temp_store);
+        glGetTexImage(GL_TEXTURE_2D, 0, color::get_raw_store_upload_format_type(base_format), color::get_raw_store_upload_data_type(base_format), nullptr);
         glBindTexture(GL_TEXTURE_2D, last_texture);
     } else {
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), format_gl->second.first, format_gl->second.second, temp_store);
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), format_gl->second.first, format_gl->second.second, nullptr);
     }
-    post_process_pixels_data(renderer, pixels, temp_store, width, height, surface.strideInPixels, surface);
 
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+
+    renderer.pending_readbacks.push_back({ buffer.pbo, buffer.capacity, size, glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0), surface, width, height, use_temp,
+        surface.data.address(), static_cast<Address>(surface.data.address() + guest_size), vertex_notification, fragment_notification });
+}
+
+void GLState::complete_readbacks(MemState &mem, bool wait) {
+    while (!pending_readbacks.empty()) {
+        PendingReadback &readback = pending_readbacks.front();
+
+        GLenum result = glClientWaitSync(readback.fence, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
+        if (result == GL_TIMEOUT_EXPIRED) {
+            if (!wait)
+                return;
+            do {
+                result = glClientWaitSync(readback.fence, GL_SYNC_FLUSH_COMMANDS_BIT, 1'000'000'000);
+            } while (result == GL_TIMEOUT_EXPIRED);
+        }
+        glDeleteSync(readback.fence);
+
+        SceGxmColorSurface &surface = readback.surface;
+        uint32_t *pixels = surface.data.cast<uint32_t>().get(mem);
+
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, readback.pbo);
+        const auto *mapped = static_cast<const uint8_t *>(glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, static_cast<GLsizeiptr>(readback.size), GL_MAP_READ_BIT));
+        if (mapped && pixels) {
+            if (readback.use_temp) {
+                readback_scratch.resize(readback.size);
+                std::memcpy(readback_scratch.data(), mapped, readback.size);
+                post_process_pixels_data(*this, pixels, readback_scratch.data(), readback.width, readback.height, surface.strideInPixels, surface);
+            } else {
+                // only the visible part of each line is written, like glReadPixels would
+                const size_t stride = gxm::get_stride_in_bytes(surface.colorFormat, surface.strideInPixels);
+                const size_t line = gxm::get_stride_in_bytes(surface.colorFormat, surface.width);
+                auto *dst = reinterpret_cast<uint8_t *>(pixels);
+                if (line == stride) {
+                    std::memcpy(dst, mapped, stride * surface.height);
+                } else {
+                    for (uint32_t y = 0; y < surface.height; y++)
+                        std::memcpy(dst + y * stride, mapped + y * stride, line);
+                }
+                post_process_pixels_data(*this, pixels, reinterpret_cast<uint8_t *>(pixels), readback.width, readback.height, surface.strideInPixels, surface);
+            }
+        }
+        if (mapped)
+            glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+        free_readback_buffers.push_back({ readback.pbo, readback.capacity });
+        const SceGxmNotification vertex_notification = readback.vertex_notification;
+        const SceGxmNotification fragment_notification = readback.fragment_notification;
+        pending_readbacks.pop_front();
+
+        signal_notifications(*this, mem, vertex_notification, fragment_notification);
+    }
+}
+
+void GLState::complete_readbacks_overlapping(MemState &mem, Address begin, Address end) {
+    for (const PendingReadback &readback : pending_readbacks) {
+        if (readback.begin < end && begin < readback.end) {
+            complete_readbacks(mem, true);
+            return;
+        }
+    }
 }
 
 void GLState::render_frame(DisplayState &display, const GxmState &gxm, MemState &mem) {
@@ -849,6 +923,15 @@ void GLState::cleanup() {
     texture_cache.cleanup();
 
     surface_cache.cleanup();
+
+    for (const PendingReadback &readback : pending_readbacks) {
+        glDeleteSync(readback.fence);
+        glDeleteBuffers(1, &readback.pbo);
+    }
+    pending_readbacks.clear();
+    for (const ReadbackBuffer &buffer : free_readback_buffers)
+        glDeleteBuffers(1, &buffer.pbo);
+    free_readback_buffers.clear();
 
     screen_renderer.destroy();
 

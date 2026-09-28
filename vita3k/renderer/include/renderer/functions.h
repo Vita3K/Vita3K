@@ -99,6 +99,7 @@ void transfer_copy(State &state, uint32_t colorKeyValue, uint32_t colorKeyMask, 
 void transfer_downscale(State &state, const SceGxmTransferImage *src, const SceGxmTransferImage *dest);
 void transfer_fill(State &state, uint32_t fillColor, const SceGxmTransferImage *dest);
 void sync_surface_data(State &state, Context *ctx, const SceGxmNotification vertex_notification, const SceGxmNotification fragment_notification);
+void signal_notifications(State &state, MemState &mem, const SceGxmNotification &vertex_notification, const SceGxmNotification &fragment_notification);
 
 bool create_context(State &state, std::unique_ptr<Context> &context);
 void destroy_context(State &state, std::unique_ptr<Context> &context);

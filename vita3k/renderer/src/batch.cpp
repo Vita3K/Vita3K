@@ -75,6 +75,22 @@ static renderer::SyncWaitResult wait_cmd(MemState &mem, CommandList &command_lis
     return renderer::wishlist(sync, timestamp, 500);
 }
 
+// commands that neither signal the guest nor read guest memory written by a surface readback
+static bool can_run_before_readbacks(CommandOpcode opcode) {
+    switch (opcode) {
+    case CommandOpcode::Draw:
+    case CommandOpcode::SetState:
+    case CommandOpcode::SetContext:
+    case CommandOpcode::SyncSurfaceData:
+    case CommandOpcode::SignalSyncObject:
+    case CommandOpcode::WaitSyncObject:
+    case CommandOpcode::NewFrame:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list) {
     using CommandHandlerFunc = decltype(cmd_handle_set_context);
 
@@ -112,6 +128,9 @@ static void process_batch(renderer::State &state, const FeatureState &features, 
             break;
         }
 
+        if (state.has_pending_readbacks() && !can_run_before_readbacks(cmd->opcode))
+            state.complete_readbacks(mem, true);
+
         auto handler = handlers.find(cmd->opcode);
         if (handler == handlers.end()) {
             LOG_ERROR("Unimplemented command opcode {}", static_cast<int>(cmd->opcode));
@@ -131,7 +150,7 @@ static void process_batch(renderer::State &state, const FeatureState &features, 
     } while (true);
 }
 
-void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms) {
+static void process_batches_until_display(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms) {
     auto max_time = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() + max_wait_ms;
 
     while (!state.should_display) {
@@ -141,6 +160,14 @@ void process_batches(renderer::State &state, const FeatureState &features, MemSt
         // overlay requested an async present
         if (state.async_flip_requested.load(std::memory_order_relaxed))
             return;
+
+        if (state.has_pending_readbacks()) {
+            state.complete_readbacks(mem, false);
+            // nothing else to do, so waiting for the GPU costs nothing
+            auto next = state.command_buffer_queue.top(1);
+            if (!next || !is_cmd_ready(mem, *next))
+                state.complete_readbacks(mem, true);
+        }
 
         // Try to wait for a batch (about 2 or 3ms, game should be fast for this)
         auto cmd_list = state.command_buffer_queue.top(3);
@@ -177,6 +204,12 @@ void process_batches(renderer::State &state, const FeatureState &features, MemSt
         state.command_buffer_queue.pop();
         process_batch(state, features, mem, config, *cmd_list);
     }
+}
+
+void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, int64_t max_wait_ms) {
+    process_batches_until_display(state, features, mem, config, max_wait_ms);
+    // the game may wait on these notifications while we present
+    state.complete_readbacks(mem, true);
 }
 
 void reset_command_list(CommandList &command_list) {

@@ -417,6 +417,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
             }
         }
     } else {
+        state.complete_readbacks_overlapping(mem, data_addr, data_addr + gxm::texture_size_first_mip(texture));
         if (config.texture_cache) {
             state.texture_cache.cache_and_bind_texture(texture, mem);
         } else {
