@@ -441,11 +441,14 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 const auto guard = std::lock_guard(state.kernel.mutex);
                 auto thread = state.kernel.threads[state.gdb.inferior_thread];
                 auto thread_lock = std::unique_lock(thread->mutex);
-                thread->resume(step);
+                thread->resume(SuspendType::Debug, step);
                 if (step) {
                     // Wait until it finish stepping
                     // TODO if that thread waits for sync primitive, dead lock.
-                    thread->status_cond.wait(thread_lock, [&]() { return thread->status == ThreadStatus::suspend; });
+                    thread->state_cond.wait(thread_lock, [&]() {
+                        return thread->is_dormant()
+                            || (thread->state == RunState::Runnable && thread->wait_reason == WaitReason::Suspended);
+                    });
                 }
             }
 
@@ -455,12 +458,15 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                     auto lock = std::unique_lock(state.kernel.mutex);
                     for (const auto &pair : state.kernel.threads) {
                         auto &thread = pair.second;
-                        if (thread->status == ThreadStatus::suspend) {
+                        if (thread->state == RunState::Runnable && thread->wait_reason == WaitReason::Suspended) {
                             lock.unlock();
-                            thread->resume();
-                            lock.lock();
+                            thread->resume(SuspendType::Debug);
 
-                            thread->status_cond.wait(lock, [&]() { return thread->status != ThreadStatus::suspend; });
+                            auto thread_lock = std::unique_lock(thread->mutex);
+                            thread->state_cond.wait(thread_lock, [&]() {
+                                return thread->state != RunState::Runnable || thread->wait_reason != WaitReason::Suspended;
+                            });
+                            lock.lock();
                         }
                     }
                 }
@@ -473,7 +479,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                         return "";
                     for (const auto &[id, thread] : state.kernel.threads) {
                         const auto thread_guard = std::lock_guard(thread->mutex);
-                        if (thread->status == ThreadStatus::suspend && hit_breakpoint(*thread->cpu)) {
+                        if (thread->state == RunState::Runnable && thread->wait_reason == WaitReason::Suspended && hit_breakpoint(*thread->cpu)) {
                             state.gdb.inferior_thread = id;
                             did_break = true;
                             break;
@@ -495,9 +501,14 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                     auto lock = std::unique_lock(state.kernel.mutex);
                     for (const auto &pair : state.kernel.threads) {
                         auto thread = pair.second;
-                        if (thread->status == ThreadStatus::run) {
-                            thread->suspend();
-                            thread->status_cond.wait(lock, [=]() { return thread->status == ThreadStatus::suspend || thread->status == ThreadStatus::dormant; });
+                        if (thread->can_dispatch_guest()) {
+                            thread->suspend(SuspendType::Debug);
+
+                            auto thread_lock = std::unique_lock(thread->mutex);
+                            thread->state_cond.wait(thread_lock, [=]() {
+                                return thread->is_dormant()
+                                    || (thread->state == RunState::Runnable && thread->wait_reason == WaitReason::Suspended);
+                            });
                         }
                     }
                 }

@@ -19,73 +19,77 @@
 
 #include <mem/util.h>
 
-#include <functional>
+#include <cstdint>
+#include <utility>
 
 template <typename T>
 class Ptr;
 
+struct MemState;
+
 class Block {
 public:
-    typedef std::function<void(Address)> Deleter;
-
-    explicit Block(Address addr, const Deleter &deleter)
-        : addr(addr)
-        , deleter(deleter) {
-    }
-
-    Block()
-        : addr(0)
-        , deleter(nullptr) {
-    }
-
-    Block(std::nullptr_t)
-        : addr(0)
-        , deleter(nullptr) {
-    }
-
-    Block &operator=(std::nullptr_t) {
-        if (deleter) {
-            deleter(addr);
-        }
-        addr = 0;
-        deleter = nullptr;
-        return *this;
+    Block() = default;
+    Block(std::nullptr_t) noexcept {
     }
 
     Block(const Block &) = delete;
-    const Block &operator=(const Block &) = delete;
+    Block &operator=(const Block &) = delete;
 
-    ~Block() {
-        if (deleter) {
-            deleter(addr);
-        }
-    }
+    Block(Block &&other) noexcept;
+    Block &operator=(Block &&other) noexcept;
 
-    operator bool() const {
-        return addr != 0;
-    }
+    ~Block();
 
-    Address get() const {
-        return addr;
-    }
+    static Block allocate(MemState &mem, uint32_t requested_size, const char *name, Address start_addr);
+    static Block bind_existing(MemState &mem, Address addr, uint32_t requested_size, uint32_t committed_size);
 
-    template <class T>
-    Ptr<T> get_ptr() const {
-        return Ptr<T>(addr);
-    }
-
-    Block(Block &&o) noexcept {
-        std::swap(addr, o.addr);
-        std::swap(deleter, o.deleter);
-    }
-
-    Block &operator=(Block &&o) noexcept {
-        std::swap(addr, o.addr);
-        std::swap(deleter, o.deleter);
+    Block &operator=(std::nullptr_t) noexcept {
+        reset();
         return *this;
     }
 
+    [[nodiscard]] explicit operator bool() const noexcept {
+        return addr_ != 0;
+    }
+
+    [[nodiscard]] Address get() const noexcept {
+        return addr_;
+    }
+
+    template <typename T>
+    [[nodiscard]] Ptr<T> get_ptr() const {
+        return Ptr<T>(addr_);
+    }
+
+    [[nodiscard]] uint32_t size() const noexcept {
+        return requested_size_;
+    }
+
+    [[nodiscard]] uint32_t committed_size() const noexcept {
+        return committed_size_;
+    }
+
+    [[nodiscard]] bool owns_memory() const noexcept {
+        return owns_;
+    }
+
+    [[nodiscard]] Address release() noexcept;
+
+    void reset() noexcept;
+
 private:
-    Address addr;
-    Deleter deleter;
+    Block(MemState *mem, Address addr, uint32_t requested_size, uint32_t committed_size, bool owns) noexcept
+        : mem_(mem)
+        , addr_(addr)
+        , requested_size_(requested_size)
+        , committed_size_(committed_size)
+        , owns_(owns) {
+    }
+
+    MemState *mem_ = nullptr;
+    Address addr_ = 0;
+    uint32_t requested_size_ = 0;
+    uint32_t committed_size_ = 0;
+    bool owns_ = false;
 };

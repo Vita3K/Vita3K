@@ -17,10 +17,16 @@
 
 #pragma once
 
+#include <kernel/types.h>
 #include <module/module.h>
 
 struct SceKernelModuleInfo;
+struct SceKernelMsgPipeVector;
 
 DECL_EXPORT(SceInt32, sceKernelGetThreadCurrentPriority);
 DECL_EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, SceKernelModuleInfo *info);
 DECL_EXPORT(int, sceClibPrintf, const char *fmt, module::vargs args);
+DECL_EXPORT(SceInt32, sceKernelReceiveMsgPipeVector, SceUID msgPipeId, Ptr<const SceKernelMsgPipeVector> recvVectors, SceUInt32 vectorCount, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout);
+DECL_EXPORT(SceInt32, sceKernelReceiveMsgPipeVectorCB, SceUID msgPipeId, Ptr<const SceKernelMsgPipeVector> recvVectors, SceUInt32 vectorCount, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout);
+DECL_EXPORT(SceInt32, sceKernelSendMsgPipeVector, SceUID msgPipeId, Ptr<const SceKernelMsgPipeVector> sendVectors, SceUInt32 vectorCount, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout);
+DECL_EXPORT(SceInt32, sceKernelSendMsgPipeVectorCB, SceUID msgPipeId, Ptr<const SceKernelMsgPipeVector> sendVectors, SceUInt32 vectorCount, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout);

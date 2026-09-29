@@ -35,54 +35,94 @@ static constexpr int64_t TARGET_MICRO_PER_FRAME = 1000000LL / TARGET_FPS;
 static constexpr int predict_threshold = 3;
 static constexpr int max_expected_swapchain_size = 6;
 
-static void vblank_sync_thread(EmuEnvState &emuenv) {
+static void run_vblank_tick(EmuEnvState &emuenv) {
     DisplayState &display = emuenv.display;
+    std::vector<CallbackPtr> callbacks_to_notify;
 
-    while (!display.abort.load()) {
-        {
-            const std::lock_guard<std::mutex> guard(display.mutex);
+    {
+        const std::lock_guard<std::mutex> guard_info(display.display_info_mutex);
+        ++display.vblank_count;
 
-            {
-                const std::lock_guard<std::mutex> guard_info(display.display_info_mutex);
-                ++display.vblank_count;
+        // in this case, even though no new game frames are being rendered, we still need to update the screen
+        if (emuenv.kernel.is_threads_paused() || (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING))
+            // only display the UI/common dialog at 30 fps
+            // this is necessary so that the command buffer processing doesn't get starved
+            // with vsync enabled and a screen with a refresh rate of 60Hz or less
+            if (display.vblank_count % 2 == 0)
+                emuenv.renderer->should_display = true;
+    }
 
-                // in this case, even though no new game frames are being rendered, we still need to update the screen
-                if (emuenv.kernel.is_threads_paused() || (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING))
-                    // only display the UI/common dialog at 30 fps
-                    // this is necessary so that the command buffer processing doesn't get starved
-                    // with vsync enabled and a screen with a refresh rate of 60Hz or less
-                    if (display.vblank_count % 2 == 0)
-                        emuenv.renderer->should_display = true;
-            }
+    {
+        const std::lock_guard<std::mutex> guard(display.mutex);
+        callbacks_to_notify.reserve(display.vblank_callbacks.size());
+        for (const auto &[_, cb] : display.vblank_callbacks)
+            callbacks_to_notify.push_back(cb);
+    }
 
-            // maybe we should also use a mutex for this part, but it shouldn't be an issue
-            touch_vsync_update(emuenv);
-            refresh_motion(emuenv.motion, emuenv.ctrl);
+    // maybe we should also use a mutex for this part, but it shouldn't be an issue
+    touch_vsync_update(emuenv);
+    refresh_motion(emuenv.motion, emuenv.ctrl);
 
-            // Notify Vblank callback in each VBLANK start
-            for (auto &[_, cb] : display.vblank_callbacks)
-                cb->event_notify(cb->get_notifier_id());
+    // Notify Vblank callback in each VBLANK start
+    for (const auto &cb : callbacks_to_notify)
+        cb->event_notify(emuenv.kernel, cb->get_notifier_id());
 
-            for (std::size_t i = 0; i < display.vblank_wait_infos.size();) {
-                auto &vblank_wait_info = display.vblank_wait_infos[i];
-                if (vblank_wait_info.target_vcount <= display.vblank_count) {
-                    ThreadStatePtr target_wait = vblank_wait_info.target_thread;
-
-                    target_wait->update_status(ThreadStatus::run);
-                    display.vblank_wait_infos.erase(display.vblank_wait_infos.begin() + i);
-                } else {
-                    i++;
-                }
-            }
+    std::vector<ThreadStatePtr> threads;
+    {
+        const std::lock_guard<std::mutex> kernel_lock(emuenv.kernel.mutex);
+        threads.reserve(emuenv.kernel.threads.size());
+        for (const auto &[_, thread] : emuenv.kernel.threads) {
+            threads.push_back(thread);
         }
-        const auto time_ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        const auto time_left = TARGET_MICRO_PER_FRAME - (time_ms % TARGET_MICRO_PER_FRAME);
-        std::this_thread::sleep_for(std::chrono::microseconds(time_left));
+    }
+
+    const uint64_t vblank_count = display.vblank_count.load(std::memory_order_relaxed);
+    for (const auto &thread : threads) {
+        const std::lock_guard<std::mutex> thread_lock(thread->mutex);
+        if (!thread->has_wait_state() || thread->wait.type != WaitType::VBlank || thread->wait.target_value > vblank_count) {
+            continue;
+        }
+
+        emuenv.kernel.thread_manager.wake_wait_locked(*thread);
+    }
+}
+
+static void vblank_sync_thread(EmuEnvState &emuenv) {
+    auto &display = emuenv.display;
+    auto last_host_tick = std::chrono::steady_clock::now();
+
+    while (!display.abort.load(std::memory_order_relaxed)) {
+        const auto now = std::chrono::steady_clock::now();
+        const auto elapsed_us = std::chrono::duration_cast<std::chrono::microseconds>(now - last_host_tick).count();
+        last_host_tick = now;
+
+        uint64_t accumulated_us = display.vblank_remainder_us.load(std::memory_order_relaxed);
+        if (elapsed_us > 0)
+            accumulated_us += static_cast<uint64_t>(elapsed_us);
+
+        const uint64_t ticks_to_run = accumulated_us / TARGET_MICRO_PER_FRAME;
+        accumulated_us %= TARGET_MICRO_PER_FRAME;
+        display.vblank_remainder_us.store(accumulated_us, std::memory_order_relaxed);
+
+        if (ticks_to_run == 0) {
+            std::this_thread::sleep_for(std::chrono::microseconds(TARGET_MICRO_PER_FRAME - accumulated_us));
+            continue;
+        }
+
+        for (uint64_t i = 0; i < ticks_to_run && !display.abort.load(std::memory_order_relaxed); ++i)
+            run_vblank_tick(emuenv);
     }
 }
 
 void start_sync_thread(EmuEnvState &emuenv) {
-    emuenv.display.vblank_thread = std::make_unique<std::thread>(vblank_sync_thread, std::ref(emuenv));
+    auto &display = emuenv.display;
+    display.abort.store(true, std::memory_order_relaxed);
+    if (display.vblank_thread && display.vblank_thread->joinable()) {
+        display.vblank_thread->join();
+    }
+
+    display.abort.store(false, std::memory_order_relaxed);
+    display.vblank_thread = std::make_unique<std::thread>(vblank_sync_thread, std::ref(emuenv));
 }
 
 void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePtr &wait_thread, const uint64_t target_vcount, const bool is_cb) {
@@ -90,31 +130,36 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePt
         return;
     }
 
+    bool run_callbacks = false;
     {
         auto thread_lock = std::unique_lock(wait_thread->mutex);
+        if (target_vcount <= display.vblank_count)
+            return;
 
-        {
-            const std::lock_guard<std::mutex> guard(display.mutex);
+        kernel.thread_manager.begin_wait_locked(*wait_thread, WaitState::vblank(target_vcount, is_cb));
+        if (target_vcount <= display.vblank_count && wait_thread->wait.end_reason == WaitEndReason::None)
+            kernel.thread_manager.wake_wait_locked(*wait_thread);
 
-            if (target_vcount <= display.vblank_count)
-                return;
-
-            wait_thread->update_status(ThreadStatus::wait);
-            display.vblank_wait_infos.push_back({ wait_thread, target_vcount });
-        }
-
-        wait_thread->status_cond.wait(thread_lock, [&]() {
-            return wait_thread->status == ThreadStatus::run;
+        wait_thread->state_cond.wait(thread_lock, [&]() {
+            return wait_thread->wait.end_reason != WaitEndReason::None;
         });
+        const WaitEndReason end_reason = wait_thread->wait.end_reason;
+        kernel.thread_manager.clear_wait_locked(*wait_thread);
+        run_callbacks = is_cb && end_reason == WaitEndReason::Signaled;
     }
 
-    if (is_cb) {
-        for (auto &[_, cb] : display.vblank_callbacks) {
-            if (cb->get_owner_thread_id() == wait_thread->id) {
-                std::string name = cb->get_name();
-                cb->execute(kernel, [name]() {
-                });
+    if (run_callbacks) {
+        std::vector<CallbackPtr> callbacks_to_execute;
+        {
+            const std::lock_guard<std::mutex> guard(display.mutex);
+            for (const auto &[_, cb] : display.vblank_callbacks) {
+                if (cb->get_owner_thread_id() == wait_thread->id)
+                    callbacks_to_execute.push_back(cb);
             }
+        }
+
+        for (const auto &cb : callbacks_to_execute) {
+            cb->execute(kernel, []() {});
         }
     }
 }
@@ -209,7 +254,6 @@ void update_prediction(EmuEnvState &emuenv, DisplayFrameInfo &frame) {
     }
 
     if (display.predicting) {
-        LOG_TRACE("Mispredicted the next swapchain image");
         display.next_rendered_frame = frame;
         emuenv.renderer->should_display = true;
     }
@@ -219,16 +263,16 @@ void update_prediction(EmuEnvState &emuenv, DisplayFrameInfo &frame) {
 }
 
 void DisplayState::deinit() {
-    abort = true;
-    if (vblank_thread && vblank_thread->joinable())
+    abort.store(true, std::memory_order_relaxed);
+    if (vblank_thread && vblank_thread->joinable()) {
         vblank_thread->join();
+    }
 
     vblank_thread.reset();
     abort = false;
 
     {
         const std::lock_guard<std::mutex> guard(mutex);
-        vblank_wait_infos.clear();
         vblank_callbacks.clear();
     }
 
@@ -245,6 +289,7 @@ void DisplayState::deinit() {
     current_sync_object = 0;
 
     vblank_count = 0;
+    vblank_remainder_us = 0;
     last_setframe_vblank_count = 0;
 
     fps_hack = false;
