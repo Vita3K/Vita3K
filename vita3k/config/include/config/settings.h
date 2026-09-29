@@ -43,7 +43,7 @@ std::vector<RestartRequiredSetting> get_restart_required_settings(
     const Config::CurrentConfig &after);
 
 bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path, const std::string &app_path);
-bool save_custom_config(const Config::CurrentConfig &cc, const fs::path &config_path, const std::string &app_path);
+bool save_custom_config(const Config::CurrentConfig &cc, const Config::CurrentConfig &global, const fs::path &config_path, const std::string &app_path);
 bool delete_custom_config(const fs::path &config_path, const std::string &app_path);
 int delete_all_custom_configs(const fs::path &config_path);
 bool has_custom_config(const fs::path &config_path, const std::string &app_path);
