@@ -33,6 +33,7 @@
 #include <SDL3/SDL_timer.h>
 
 #include <mutex>
+#include <span>
 
 #ifdef __ANDROID__
 #include <ime/keyboard.h>
@@ -1324,7 +1325,7 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
         check_save_file(0, emuenv, export_name);
         emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
         break;
-    case SCE_SAVEDATA_DIALOG_MODE_LIST:
+    case SCE_SAVEDATA_DIALOG_MODE_LIST: {
         list_param = p->listParam.get(emuenv.mem);
         emuenv.common_dialog.savedata.slot_list_size = std::min(list_param->slotListSize, (uint32_t)SCE_SAVEDATA_DIALOG_SLOTLIST_MAXSIZE);
         emuenv.common_dialog.savedata.list_style = list_param->itemStyle;
@@ -1348,13 +1349,28 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
             }
         }
 
+        const std::span slots(list_param->slotList.get(emuenv.mem), list_param->slotListSize);
+        const bool has_invalid_id = std::ranges::any_of(slots, [](const SceAppUtilSaveDataSlot &slot) {
+            return slot.id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX;
+        });
+
+        if (has_invalid_id) {
+            // Hardware finishes the sub status with this error and slot id -1
+            emuenv.common_dialog.savedata.slot_id[0] = 0xFFFFFFFF;
+            emuenv.common_dialog.result = (SceCommonDialogResult)SCE_SAVEDATA_DIALOG_ERROR_PARAM;
+            emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+            break;
+        }
+
         for (SceUInt i = 0; i < list_param->slotListSize; i++) {
             slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
             emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
             emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);
             check_save_file(i, emuenv, export_name);
         }
+
         break;
+    }
     case SCE_SAVEDATA_DIALOG_MODE_USER_MSG:
         user_message = p->userMsgParam.get(emuenv.mem);
         initialize_savedata_vectors(emuenv, 1);

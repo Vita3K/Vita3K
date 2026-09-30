@@ -248,6 +248,10 @@ std::string construct_slotparam_path(const unsigned int data) {
 
 EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceAppUtilSaveDataRemoveItem *files, unsigned int fileNum, SceAppUtilMountPoint *mountPoint) {
     TRACY_FUNC(sceAppUtilSaveDataDataRemove, slot, files, fileNum, mountPoint);
+
+    if (slot && (slot->id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX))
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
+
     for (unsigned int i = 0; i < fileNum; i++) {
         const auto file = fs::path(construct_savedata0_path(files[i].dataPath.get(emuenv.mem)));
         if (fs::is_regular_file(file)) {
@@ -266,6 +270,9 @@ EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceA
 EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceAppUtilSaveDataDataSaveItem *files, unsigned int fileNum, SceAppUtilMountPoint *mountPoint, SceSize *requiredSizeKiB) {
     TRACY_FUNC(sceAppUtilSaveDataDataSave, slot, files, fileNum, mountPoint, requiredSizeKiB);
     SceUID fd;
+
+    if (slot && (slot->id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX))
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
 
     if (requiredSizeKiB)
         // requiredSizeKiB must be set to 0 if there is enough space available
