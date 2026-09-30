@@ -754,10 +754,11 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
     if (module_info->module_stop != 0xffffffff && module_info->module_stop != 0)
         sceKernelModuleInfo->stop_entry = module_info_segment_address + module_info->module_stop;
 
-    sceKernelModuleInfo->exidx_top = Ptr<const void>(module_info->exidx_top);
-    sceKernelModuleInfo->exidx_btm = Ptr<const void>(module_info->exidx_end);
-    sceKernelModuleInfo->extab_top = Ptr<const void>(module_info->extab_top);
-    sceKernelModuleInfo->extab_btm = Ptr<const void>(module_info->extab_end);
+    const auto seg_ptr = [&](uint32_t offset) { return Ptr<const void>(offset ? module_info_segment_address.address() + offset : 0); };
+    sceKernelModuleInfo->exidx_top = seg_ptr(module_info->exidx_top);
+    sceKernelModuleInfo->exidx_btm = seg_ptr(module_info->exidx_end);
+    sceKernelModuleInfo->extab_top = seg_ptr(module_info->extab_top);
+    sceKernelModuleInfo->extab_btm = seg_ptr(module_info->extab_end);
 
     sceKernelModuleInfo->tlsInit = Ptr<const void>(!module_info->tls_start ? 0 : (module_info_segment_address.address() + module_info->tls_start));
     sceKernelModuleInfo->tlsInitSize = module_info->tls_filesz;
@@ -784,6 +785,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
 
         SceKernelSegmentInfo &segment = sceKernelModuleInfo->segments[segment_index];
         segment.size = sizeof(segment);
+        segment.perms = segments[segment_index].p_flags & 0x7; // PF_R | PF_W | PF_X
         segment.vaddr = it->second.addr;
         segment.memsz = segments[segment_index].p_memsz;
         segment.filesz = segments[segment_index].p_filesz;
