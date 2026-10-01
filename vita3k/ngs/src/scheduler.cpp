@@ -108,6 +108,8 @@ bool VoiceScheduler::stop(const MemState &mem, Voice *voice) {
     if (!voice->is_paused)
         deque_voice(voice);
 
+    voice->is_paused = false;
+
     return true;
 }
 
