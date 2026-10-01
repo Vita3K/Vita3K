@@ -111,7 +111,8 @@ fun AppsListScreen(
     onOpenTrophyManager: () -> Unit = {},
     onOpenUserManagement: () -> Unit = {},
     onOpenWelcomeScreen: () -> Unit = {},
-    onOpenCustomConfig: (AppInfo) -> Unit = {}
+    onOpenCustomConfig: (AppInfo) -> Unit = {},
+    onCreateAppShortcut: (AppInfo) -> Unit = {}
 ) {
     var showSearchBar by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
@@ -331,6 +332,10 @@ fun AppsListScreen(
             onCustomConfig = {
                 selectedAppForActions = null
                 onOpenCustomConfig(app)
+            },
+            onCreateShortcut = {
+                selectedAppForActions = null
+                onCreateAppShortcut(app)
             }
         )
     }
@@ -1148,7 +1153,8 @@ private fun AppActionsDialog(
     onDismiss: () -> Unit,
     onActionSelected: (AppAction) -> Unit,
     onShowInfo: () -> Unit,
-    onCustomConfig: () -> Unit = {}
+    onCustomConfig: () -> Unit = {},
+    onCreateShortcut: () -> Unit = {}
 ) {
     var showDeleteSubmenu by remember { mutableStateOf(false) }
 
@@ -1217,6 +1223,18 @@ private fun AppActionsDialog(
                 )
             },
             onClick = { onCustomConfig() }
+        )
+        AppMenuRow(
+            label = stringResource(R.string.app_menu_create_shortcut),
+            icon = {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            },
+            onClick = { onCreateShortcut() }
         )
 
         // Other actions (reset last played, etc.)
