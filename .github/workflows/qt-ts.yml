@@ -1,6 +1,3 @@
-# Publishes the Crowdin source for the Qt UI. The translations themselves live in
-# nishinji/vita3k_translations, which picks this artifact up.
-
 name: Generate Qt translation template
 
 on:
@@ -30,7 +27,6 @@ jobs:
       - name: Generate the template
         run: |
           mkdir -p template
-          # Debian keeps lupdate out of PATH, so ask dpkg where the package put it.
           lupdate=$(dpkg -L qt6-l10n-tools | grep -m1 '/lupdate$')
           "$lupdate" -no-obsolete -recursive vita3k/main.cpp vita3k/gui-qt/src vita3k/gui-qt/include -ts template/vita3k_template.ts
 

@@ -219,13 +219,10 @@ if(USE_DISCORD_RICH_PRESENCE)
 endif()
 
 if(NOT ANDROID)
-	# The shipped .qm files are unpacked here by .ci/common.sh, so this glob only picks up
-	# .ts files a translator drops in locally.
 	file(GLOB VITA3K_QT_TS_FILES CONFIGURE_DEPENDS
 		"${CMAKE_SOURCE_DIR}/i18n/qt/*.ts")
 	set(VITA3K_QT_QM_DIR "${CMAKE_BINARY_DIR}/qt_translations")
 	set(VITA3K_QT_QM_FILES "")
-	# Every packaging step copies this directory, so it has to exist even with no translations at all.
 	file(MAKE_DIRECTORY "${VITA3K_QT_QM_DIR}")
 
 	foreach(ts_file IN LISTS VITA3K_QT_TS_FILES)
@@ -243,8 +240,8 @@ if(NOT ANDROID)
 	add_custom_target(qt_app_translations DEPENDS ${VITA3K_QT_QM_FILES})
 	add_dependencies(vita3k qt_app_translations)
 
-	# Same command the qt-ts workflow runs, so a local template matches the one Crowdin receives.
 	add_custom_target(update_qt_translations
+		COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/template"
 		COMMAND $<TARGET_FILE:Qt6::lupdate>
 			-no-obsolete
 			-recursive

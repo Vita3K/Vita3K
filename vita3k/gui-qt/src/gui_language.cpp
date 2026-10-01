@@ -34,7 +34,7 @@ namespace gui::i18n {
 
 namespace {
 
-const std::array<UiLanguageOption, 23> k_ui_languages = { {
+const std::array<UiLanguageOption, 24> k_ui_languages = { {
     { "en", "English (US)" },
     { "en-GB", "English (UK)" },
     { "ja", "日本語" },
@@ -58,6 +58,7 @@ const std::array<UiLanguageOption, 23> k_ui_languages = { {
     { "uk", "Українська" },
     { "id", "Bahasa Indonesia" },
     { "ms", "Bahasa Melayu" },
+    { "ar", "العربية" },
 } };
 
 std::unique_ptr<QTranslator> s_translator;
@@ -91,8 +92,6 @@ static QSet<QString> available_translation_tags(const fs::path &static_assets_pa
     return tags;
 }
 
-// Qt draws the standard buttons and dialogs itself, so a translated interface still answers in
-// English unless its own catalog is loaded alongside ours.
 static void install_qt_catalog(QApplication &app, const QLocale &locale, const fs::path &static_assets_path) {
     QStringList paths = translation_search_paths(static_assets_path);
     paths.append(QLibraryInfo::path(QLibraryInfo::TranslationsPath));
@@ -115,19 +114,11 @@ std::span<const UiLanguageOption> ui_language_options(const fs::path &static_ass
     available_languages.clear();
 
     const QSet<QString> tags = available_translation_tags(static_assets_path);
-    if (tags.isEmpty()) {
-        available_languages.push_back(k_ui_languages.front());
-        return available_languages;
-    }
-
     for (const auto &language : k_ui_languages) {
         const QString tag = QString::fromUtf8(language.tag.data(), static_cast<int>(language.tag.size()));
-        if (tags.contains(tag))
+        if (language.tag == "en" || tags.contains(tag))
             available_languages.push_back(language);
     }
-
-    if (available_languages.empty())
-        available_languages.push_back(k_ui_languages.front());
 
     return available_languages;
 }
