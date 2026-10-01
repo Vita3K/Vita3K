@@ -108,9 +108,6 @@ bool VoiceScheduler::stop(const MemState &mem, Voice *voice) {
     if (!voice->is_paused)
         deque_voice(voice);
 
-    // A stopped voice must not keep its pause flag. Otherwise the next
-    // sceNgsVoicePlay switches it to ACTIVE without queuing it (silent voice)
-    // and every later sceNgsVoicePause fails with SCE_NGS_ERROR_INVALID_STATE.
     voice->is_paused = false;
 
     return true;
