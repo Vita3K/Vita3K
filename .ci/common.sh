@@ -14,8 +14,6 @@ git_short_sha() {
     git rev-parse --short HEAD
 }
 
-# The interface translations live in their own repository, so CI unpacks the published
-# archives into the directories the build already reads.
 download_translation_archive() {
     local archive="${1:?missing archive name}"
     local target_dir="${2:?missing target directory}"
@@ -26,6 +24,7 @@ download_translation_archive() {
 
     echo "Downloading $archive from $url"
     if ! curl -fsSL --retry 3 --retry-delay 10 -o "$target_dir/$archive" "$url"; then
+        rm -f "$target_dir/$archive"
         echo "Failed to download $archive. Building without it."
         return 0
     fi
