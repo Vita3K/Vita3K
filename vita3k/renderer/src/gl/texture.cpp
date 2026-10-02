@@ -71,11 +71,12 @@ bool GLTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
         }
     }
 
-    return textures.init(glGenTextures, glDeleteTextures);
+    return textures.init(glGenTextures, glDeleteTextures) && upload_pbo.init(glGenBuffers, glDeleteBuffers);
 }
 
 void GLTextureCache::cleanup() {
     textures.cleanup();
+    upload_pbo.cleanup();
     texture_lookup.clear();
     texture_queue.items.clear();
     texture_queue.head = nullptr;
@@ -195,6 +196,34 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     }
 }
 
+static constexpr uint32_t PBO_UPLOAD_MIN_PIXELS = 256 * 256;
+
+static bool is_pbo_upload_format(SceGxmTextureBaseFormat base_format) {
+    switch (base_format) {
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void GLTextureCache::upload_uncompressed_through_pbo(GLenum upload_type, uint32_t mip_index, uint32_t width, uint32_t height, GLenum format, GLenum type, const void *pixels, size_t size) {
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, upload_pbo[0]);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, static_cast<GLsizeiptr>(size), nullptr, GL_STREAM_DRAW);
+    glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, static_cast<GLsizeiptr>(size), pixels);
+    glTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, type, nullptr);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GL_NONE);
+}
+
 void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) {
     R_PROFILE(__func__);
 
@@ -235,7 +264,12 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
 
         const GLenum format = translate_format(base_format);
         const GLenum type = translate_type(base_format);
-        glTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, type, pixels);
+        if (width * height >= PBO_UPLOAD_MIN_PIXELS && is_pbo_upload_format(base_format)) {
+            const size_t size = static_cast<size_t>(pixels_per_stride) * height * ((gxm::bits_per_pixel(base_format) + 7) >> 3);
+            upload_uncompressed_through_pbo(upload_type, mip_index, width, height, format, type, pixels, size);
+        } else {
+            glTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, type, pixels);
+        }
 
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     }
