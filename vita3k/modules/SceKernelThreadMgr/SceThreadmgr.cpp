@@ -42,8 +42,10 @@ EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const 
     TRACY_FUNC(__sceKernelCreateLwMutex, workarea, name, attr, opt);
     assert(opt.get(emuenv.mem)->init_count >= 0);
 
-    auto uid_out = &workarea.get(emuenv.mem)->uid;
-    return mutex_create(uid_out, emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr, opt.get(emuenv.mem)->init_count, workarea, SyncWeight::Light);
+    const SceUID uid = mutex_create(emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr, opt.get(emuenv.mem)->init_count, workarea, SyncWeight::Light);
+    if (uid < 0)
+        return uid;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelCancelEvent) {
@@ -88,13 +90,7 @@ EXPORT(int, _sceKernelCancelTimer) {
 
 EXPORT(SceUID, _sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID mutexId, const SceKernelCondOptParam *pOptParam) {
     TRACY_FUNC(_sceKernelCreateCond, pName, attr, mutexId, pOptParam);
-    SceUID uid;
-
-    if (auto error = condvar_create(&uid, emuenv.kernel, export_name, pName, thread_id, attr, mutexId, SyncWeight::Heavy)) {
-        return error;
-    }
-
-    return uid;
+    return condvar_create(emuenv.kernel, emuenv.mem, export_name, pName, thread_id, attr, mutexId, Ptr<SceKernelLwCondWork>(0), SyncWeight::Heavy);
 }
 
 EXPORT(SceUID, _sceKernelCreateEventFlag, const char *pName, SceUInt32 attr, SceUInt32 initPattern, const SceKernelEventFlagOptParam *pOptParam) {
@@ -104,10 +100,12 @@ EXPORT(SceUID, _sceKernelCreateEventFlag, const char *pName, SceUInt32 attr, Sce
 
 EXPORT(int, _sceKernelCreateLwCond, Ptr<SceKernelLwCondWork> workarea, const char *name, SceUInt attr, Ptr<SceKernelCreateLwCond_opt> opt) {
     TRACY_FUNC(_sceKernelCreateLwCond, workarea, name, attr, opt);
-    const auto uid_out = &workarea.get(emuenv.mem)->uid;
     const auto assoc_mutex_uid = opt.get(emuenv.mem)->workarea_mutex.get(emuenv.mem)->uid;
 
-    return condvar_create(uid_out, emuenv.kernel, export_name, name, thread_id, attr, assoc_mutex_uid, SyncWeight::Light);
+    const SceUID uid = condvar_create(emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr, assoc_mutex_uid, workarea, SyncWeight::Light);
+    if (uid < 0)
+        return uid;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelCreateMsgPipeWithLR) {
@@ -117,12 +115,7 @@ EXPORT(int, _sceKernelCreateMsgPipeWithLR) {
 
 EXPORT(int, _sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
     TRACY_FUNC(_sceKernelCreateMutex, name, attr, init_count, opt_param);
-    SceUID uid;
-
-    if (auto error = mutex_create(&uid, emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr, init_count, Ptr<SceKernelLwMutexWork>(0), SyncWeight::Heavy)) {
-        return error;
-    }
-    return uid;
+    return mutex_create(emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr, init_count, Ptr<SceKernelLwMutexWork>(0), SyncWeight::Heavy);
 }
 
 EXPORT(SceUID, _sceKernelCreateRWLock, const char *name, SceUInt32 attr, SceKernelMutexOptParam *opt_param) {
@@ -300,7 +293,7 @@ EXPORT(int, _sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKe
         }
         return SCE_KERNEL_OK;
     } else {
-        return SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID;
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
     }
 }
 
