@@ -462,7 +462,8 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         context.render_cmd.beginRenderPass(context.curr_renderpass_info, vk::SubpassContents::eInline);
         context.last_draw_was_framebuffer_fetch = uses_interlock;
     }
-    if ((context.state.features.direct_fragcolor || masked_fetch) && uses_framebuffer_fetch)
+    // nothing can observe the color when the previous draws did not write any
+    if (uses_framebuffer_fetch && (masked_fetch || (context.state.features.direct_fragcolor && !context.record.skip_color_output)))
         framebuffer_fetch_barrier(context);
 
     if (!maskupdate && context.current_visibility_buffer != nullptr && context.current_query_idx != -1 && !context.is_in_query) {

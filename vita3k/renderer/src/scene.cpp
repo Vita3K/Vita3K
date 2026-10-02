@@ -240,6 +240,27 @@ COMMAND(handle_draw) {
     const std::uint32_t count = helper.pop<const std::uint32_t>();
     const std::uint32_t instance_count = helper.pop<const std::uint32_t>();
 
+    // Without a color surface the fragment color is never written to memory. It can only matter if
+    // a later draw of the scene reads it back and uses it to discard or to replace the depth.
+    // Until a render target shows such a draw, skip the color output of its color-less scenes:
+    // this lets the host GPU drop the fragment shader of depth only passes altogether.
+    GxmRecordState &record = render_context->record;
+    RenderTarget *target = render_context->current_render_target;
+    const bool has_color_surface = static_cast<bool>(record.color_surface.data);
+    if (!has_color_surface && target && !target->color_observed_without_surface) {
+        const SceGxmProgram &fragment_program = *record.fragment_program.get(mem)->program.get(mem);
+        if (fragment_program.is_frag_color_used() && (fragment_program.is_discard_used() || fragment_program.is_depth_replace_used())) {
+            LOG_INFO_ONCE("A scene without color surface reads back the fragment color, keeping its color output");
+            target->color_observed_without_surface = true;
+        }
+    }
+    const bool skip_color_output = !has_color_surface && !record.is_maskupdate && !(target && target->color_observed_without_surface);
+    if (record.skip_color_output != skip_color_output) {
+        record.skip_color_output = skip_color_output;
+        if (renderer.current_backend == Backend::Vulkan)
+            vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
+    }
+
     switch (renderer.current_backend) {
     case Backend::OpenGL:
         gl::draw(dynamic_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context),
