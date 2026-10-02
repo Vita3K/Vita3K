@@ -410,13 +410,12 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
 
     // TODO: Take request to force load from given memory
     // Sync depth/stencil based on depth stencil surface.
-    sync_depth_data(context.record);
+    sync_depth_stencil_data(context.record);
     sync_depth_func(context.record.front_depth_func, true);
     sync_depth_func(context.record.back_depth_func, false);
     sync_depth_write_enable(context.record.front_depth_write_mode, true);
     sync_depth_write_enable(context.record.back_depth_write_mode, false);
 
-    sync_stencil_data(context.record, mem);
     sync_stencil_func(context.record, true);
     sync_stencil_func(context.record, false);
 

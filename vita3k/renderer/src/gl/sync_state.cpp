@@ -255,6 +255,22 @@ void sync_stencil_data(const GxmRecordState &state, const MemState &mem) {
     }
 }
 
+void sync_depth_stencil_data(const GxmRecordState &state) {
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glDepthMask(GL_TRUE);
+    glStencilMask(0xFF);
+
+    if (state.depth_stencil_surface.force_load)
+        return;
+
+    // clear both aspects with a single call, clearing them separately keeps the
+    // driver from fast clearing the packed depth stencil buffer
+    glClearDepthf(state.depth_stencil_surface.background_depth);
+    glClearStencil(state.depth_stencil_surface.stencil);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+}
+
 void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front) {
     // TODO: Why decap this?
     const GLint face = GL_FRONT_AND_BACK;
