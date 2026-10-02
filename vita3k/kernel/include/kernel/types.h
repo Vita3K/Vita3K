@@ -678,7 +678,6 @@ struct SceKernelLMOption {
     SceSize size;
 };
 
-// We only use workarea for uid
 struct SceKernelLwMutexWork {
     std::uint32_t owner;
     std::uint32_t unknown0;
@@ -687,7 +686,6 @@ struct SceKernelLwMutexWork {
     SceUID uid;
     std::uint32_t unknown1[3];
 };
-
 static_assert(sizeof(SceKernelLwMutexWork) == 32, "Incorrect size");
 
 struct SceKernelLwMutexInfo {
@@ -702,12 +700,11 @@ struct SceKernelLwMutexInfo {
     SceUInt32 numWaitThreads; /**< Number of threads waiting for the lightweight mutex */
 };
 
-// We only use workarea for uid
 struct SceKernelLwCondWork {
     SceUID uid;
-
-    std::uint8_t padding[28];
+    std::uint8_t padding[12];
 };
+static_assert(sizeof(SceKernelLwCondWork) == 16, "Incorrect size");
 
 struct SceKernelCreateLwMutex_opt {
     int init_count;
