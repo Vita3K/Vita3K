@@ -93,17 +93,17 @@ struct ThreadState {
     uint32_t run_guest_function(Address callback_address, SceSize args = 0, const Ptr<void> argp = Ptr<void>{});
 
     // Blocks this thread until the deadline passes.
-    WaitResult delay_until(Deadline deadline);
+    [[nodiscard]] WaitResult delay_until(Deadline deadline);
     // Blocks this thread until a signal is sent to it.
-    WaitResult wait_for_signal();
+    [[nodiscard]] WaitResult wait_for_signal();
     // Sends a signal to this thread. Fails if the previous one was not consumed yet.
     SceInt32 send_signal();
     // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
-    WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status);
+    [[nodiscard]] WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status);
 
     // Waits until woken by wake(), deleted, or the deadline passes.
     // A stale wake can end it early, so callers must recheck their condition.
-    WaitResult wait(Deadline deadline);
+    [[nodiscard]] WaitResult wait(Deadline deadline);
     // Wakes this thread from wait().
     void wake();
 
@@ -113,7 +113,7 @@ struct ThreadState {
 
 private:
     // Waits until done() holds, the thread is being deleted, or the deadline passes.
-    WaitResult wait_until(Deadline deadline, std::predicate auto done);
+    [[nodiscard]] WaitResult wait_until(Deadline deadline, std::predicate auto done);
 
     void push_arguments(const std::vector<uint32_t> &args);
     void dispatch_abort(CPUState &cpu);

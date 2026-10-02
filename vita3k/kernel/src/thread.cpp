@@ -406,7 +406,7 @@ WaitResult ThreadState::wait_until(Deadline deadline, std::predicate auto done) 
         satisfied = wait_cv.wait_until(lock, deadline, woken);
     update_status(ThreadStatus::run);
     if (delete_requested)
-        return ThreadExiting{};
+        return std::unexpected{ ThreadExiting{} };
     return satisfied ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_WAIT_TIMEOUT;
 }
 
