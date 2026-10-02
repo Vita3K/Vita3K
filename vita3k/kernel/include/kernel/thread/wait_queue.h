@@ -52,7 +52,7 @@ public:
 
     // Blocks thread until a waker gives it a result, ready() holds, it is being deleted, or the deadline passes.
     // thread must be the guest thread making this HLE call. ready() is rechecked each time it is woken.
-    WaitResult wait_until_ready(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, Entry entry, Deadline deadline, std::predicate<Waiter &> auto ready) {
+    [[nodiscard]] WaitResult wait_until_ready(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, Entry entry, Deadline deadline, std::predicate<Waiter &> auto ready) {
         Waiter waiter{ .thread = thread, .entry = std::move(entry) };
         waiter.priority = waiter.thread->priority;
         push(waiter);
@@ -80,7 +80,7 @@ public:
 
     // Blocks thread until a waker gives it a result, it is being deleted, or the deadline passes.
     // thread must be the guest thread making this HLE call.
-    WaitResult wait(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, Entry entry, Deadline deadline) {
+    [[nodiscard]] WaitResult wait(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, Entry entry, Deadline deadline) {
         return wait_until_ready(lock, thread, std::move(entry), deadline, [](Waiter &) { return false; });
     }
 
