@@ -122,8 +122,10 @@ struct GxmRecordState {
 
     bool is_maskupdate = false;
     bool is_gamma_corrected = false;
+    // the scene has no color surface and nothing can observe the fragment color, see cmd_handle_draw
+    bool skip_color_output = false;
 
-    uint8_t _padding[6] = {};
+    uint8_t _padding[5] = {};
 
     // Do not put any state not used for the Vulkan pipeline creation before vertex_streams
     std::array<GXMStreamInfo, SCE_GXM_MAX_VERTEX_STREAMS> vertex_streams;
@@ -204,6 +206,8 @@ struct RenderTarget {
     int holder;
     SceGxmMultisampleMode multisample_mode;
     bool has_macroblock_sync;
+    // a scene of this render target without color surface read the fragment color back in a way that can affect depth or stencil
+    bool color_observed_without_surface = false;
     uint16_t macroblock_width;
     uint16_t macroblock_height;
     virtual ~RenderTarget() = default;

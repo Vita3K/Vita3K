@@ -973,8 +973,9 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
             .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
         };
         color_blending.setAttachments(blending);
-    } else if (is_fragment_disabled || frag_has_no_output || use_shader_interlock) {
+    } else if (is_fragment_disabled || frag_has_no_output || use_shader_interlock || record.skip_color_output) {
         // The write mask must be empty as the lack of a fragment shader results in undefined values
+        // (or nothing can observe the color, in which case the fragment shader can be skipped)
         static const vk::PipelineColorBlendAttachmentState blending = {
             .blendEnable = VK_FALSE,
             .colorWriteMask = vk::ColorComponentFlags()
