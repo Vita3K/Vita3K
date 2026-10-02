@@ -59,6 +59,16 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     MemState &mem, const Config &config) {
     R_PROFILE(__func__);
 
+    // a draw whose color nothing observes and which leaves depth and stencil untouched has no effect
+    if (context.record.skip_color_output && !may_write_depth_stencil(context.record)) {
+        for (auto &stream : context.record.vertex_streams) {
+            stream.data = nullptr;
+            stream.size = 0;
+        }
+        clear_previous_uniform_storage(context);
+        return;
+    }
+
     GLuint program_id = context.last_draw_program;
 
     const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
