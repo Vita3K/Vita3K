@@ -19,6 +19,8 @@
 
 #include <mem/ptr.h>
 
+#include <cstdlib>
+
 struct CPUState;
 
 void write_return_value(CPUState &cpu, int32_t ret);

@@ -55,6 +55,7 @@ struct DisplayState {
     float viewport_y = 0;
     float viewport_w = 0;
     float viewport_h = 0;
+    std::mutex viewport_mutex;
 
     // next frame as seen by SceDisplay
     DisplayFrameInfo sce_frame;

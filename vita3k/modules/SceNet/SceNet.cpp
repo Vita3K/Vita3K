@@ -298,13 +298,21 @@ EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
     if (addr == nullptr) {
         RET_NET_ERRNO(SCE_NET_ERROR_EINVAL);
     }
+    const auto selected_addr = net_utils::get_selected_assigned_addr(emuenv.cfg.adhoc_addr);
 #ifdef _WIN32
     IP_ADAPTER_INFO AdapterInfo[16];
     DWORD dwBufLen = sizeof(AdapterInfo);
     if (GetAdaptersInfo(AdapterInfo, &dwBufLen) != ERROR_SUCCESS)
         RET_NET_ERRNO(SCE_NET_ERROR_EINVAL);
-    else
-        memcpy(addr->data, AdapterInfo[0].Address, 6);
+    for (auto adapter = AdapterInfo; adapter != nullptr; adapter = adapter->Next) {
+        for (auto ip = &adapter->IpAddressList; ip != nullptr; ip = ip->Next) {
+            if (selected_addr.addr == ip->IpAddress.String && adapter->AddressLength >= sizeof(addr->data)) {
+                memcpy(addr->data, adapter->Address, sizeof(addr->data));
+                return 0;
+            }
+        }
+    }
+    RET_NET_ERRNO(SCE_NET_ERROR_EINVAL);
 #elif defined(__unix__)
     struct ifreq ifr;
     struct ifconf ifc;
@@ -329,10 +337,10 @@ EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
     struct ifreq *it = ifc.ifc_req;
     const struct ifreq *const end = it + (ifc.ifc_len / sizeof(struct ifreq));
 
-    // TODO: If multiple adapters, which one to choose?
-    // Only getting the first one that isn't loopback
-    // Meaning if you use WIFI it will probably get the ethernet addr instead
+    // Use the interface corresponding to the IP address selected in Vita3K's network settings.
     for (; it != end; ++it) {
+        if (selected_addr.name != it->ifr_name)
+            continue;
         strcpy(ifr.ifr_name, it->ifr_name);
         if (ioctl(sock, SIOCGIFFLAGS, &ifr) == 0) {
             if (!(ifr.ifr_flags & IFF_LOOPBACK)) { // don't count loopback
@@ -350,38 +358,16 @@ EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
 
     if (success)
         memcpy(addr->data, ifr.ifr_hwaddr.sa_data, 6);
-    else {
-        // If there are no adapters connected (why?), use a predefiend one
-
-        // MAC addresses consists of 6 octets, the first half is the organization while the other half
-        // is the NIC (Network Interface Controller)
-        uint8_t magicMac[6] = {
-            // Organization
-            0xEE,
-            0xEE, // EE as in ExtremeExploit (why not?)
-            0xEE,
-            // NIC
-            0xBA,
-            0xDA, // Badass (sounds cool ig)
-            0x55,
-        };
-        memcpy(addr->data, magicMac, 6);
-    }
+    else
+        RET_NET_ERRNO(SCE_NET_ERROR_EINVAL);
 #elif defined(__APPLE__)
     char hint[IFNAMSIZ] = {};
-    get_primary_interface_name(hint, sizeof(hint));
+    if (selected_addr.name.rfind("en", 0) != 0)
+        RET_NET_ERRNO(SCE_NET_ERROR_EINVAL);
+    strncpy(hint, selected_addr.name.c_str(), sizeof(hint) - 1);
 
-    if (!get_mac_address(hint, addr->data)) {
-        uint8_t magicMac[6] = {
-            0x02, // LAA
-            0x41, // 'A'
-            0x50, // 'P'
-            0x50, // 'P'
-            0x4C, // 'L'
-            0x45, // 'E'
-        };
-        memcpy(addr->data, magicMac, 6);
-    }
+    if (!get_mac_address(hint, addr->data))
+        RET_NET_ERRNO(SCE_NET_ERROR_EINVAL);
 #else
     return UNIMPLEMENTED();
 #endif

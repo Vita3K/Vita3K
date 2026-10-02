@@ -181,7 +181,10 @@ struct KernelState {
     bool delete_callback(SceUID id);
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
 
-    bool is_threads_paused() { return !paused_threads_status.empty(); }
+    bool is_threads_paused() {
+        const std::lock_guard<std::mutex> lock(mutex);
+        return threads_paused;
+    }
     void pause_threads();
     void resume_threads();
 
@@ -199,4 +202,5 @@ struct KernelState {
 private:
     std::atomic<SceUID> next_uid{ 1 };
     std::map<SceUID, ThreadStatus> paused_threads_status;
+    bool threads_paused = false;
 };

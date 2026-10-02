@@ -169,6 +169,8 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     {
         const std::lock_guard<std::mutex> lock(mutex);
         threads.emplace(thread->id, thread);
+        if (threads_paused)
+            paused_threads_status[thread->id] = thread->pause();
     }
 
     ThreadParams params;
@@ -213,20 +215,25 @@ void KernelState::process_exit() {
 
 void KernelState::pause_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
+    // Already paused: keep the statuses recorded by the first call, they are needed to resume.
+    if (threads_paused)
+        return;
+    threads_paused = true;
+    paused_threads_status.clear();
     for (auto &[_, thread] : threads) {
-        paused_threads_status[thread->id] = thread->status;
-        if (thread->status == ThreadStatus::running)
-            thread->suspend();
+        paused_threads_status[thread->id] = thread->pause();
     }
 }
 
 void KernelState::resume_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
     for (auto &[_, thread] : threads) {
-        if (paused_threads_status[thread->id] == ThreadStatus::running)
-            thread->resume();
+        const auto previous = paused_threads_status.find(thread->id);
+        if (previous != paused_threads_status.end())
+            thread->resume_from_pause(previous->second);
     }
     paused_threads_status.clear();
+    threads_paused = false;
 }
 
 void KernelState::deinit(MemState &mem) {
@@ -278,6 +285,7 @@ void KernelState::deinit(MemState &mem) {
     next_uid = 1;
 
     paused_threads_status.clear();
+    threads_paused = false;
 }
 
 SceKernelModuleInfo *KernelState::find_module_by_addr(Address address) {

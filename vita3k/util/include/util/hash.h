@@ -20,8 +20,12 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <string_view>
 
 using Sha256Hash = std::array<uint8_t, 32>;
+
+std::string base64_encode(const std::string &input);
+std::string derive_password(const std::string_view &password);
 
 Sha256Hash sha256(const void *data, size_t size);
 typedef std::array<char, 65> Sha256HashText;

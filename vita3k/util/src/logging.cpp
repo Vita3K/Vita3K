@@ -172,6 +172,7 @@ void rebuild_default_logger() {
         duplicate_filter,
         spdlog::thread_pool(),
         spdlog::async_overflow_policy::overrun_oldest);
+    logger->set_level(spdlog::get_level());
     spdlog::set_default_logger(std::move(logger));
     spdlog::set_pattern(LOG_PATTERN);
 }

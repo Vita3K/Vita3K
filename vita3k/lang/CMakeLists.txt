@@ -29,6 +29,7 @@ add_custom_command(
 add_library(
 	lang
 	STATIC
+    include/lang/functions.h
 	include/lang/state.h
 	include/lang/strings.def
 	src/lang.cpp

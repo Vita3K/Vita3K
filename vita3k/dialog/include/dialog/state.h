@@ -100,9 +100,24 @@ struct NetcheckState {
     SceNetCheckDialogMode mode = SCE_NETCHECK_DIALOG_MODE_INVALID;
 };
 
+struct DialogLangState {
+    std::map<std::string, std::string> common = {
+        { "close", "Close" },
+        { "error", "Error" },
+        { "ok", "OK" },
+        { "connecting_please_wait", "Connecting... Please wait." },
+        { "search", "Search" },
+        { "select_all", "Select All" },
+        { "select", "Select" },
+        { "submit", "Submit" }
+    };
+    std::map<std::string, std::string> message = { { "load_app_failed", "Failed to load \"{}\".\nCheck vita3k.log to see console output for details.\n1. Have you installed the firmware?\n2. Re-dump your own PS Vita app/game and install it on Vita3K.\n3. If you want to install or boot Vitamin, it is not supported." } };
+};
+
 struct DialogState {
     mutable std::recursive_mutex mutex;
 
+    DialogLangState lang;
     DialogType type = NO_DIALOG;
     SceCommonDialogStatus status = SCE_COMMON_DIALOG_STATUS_NONE;
     SceCommonDialogStatus substatus = SCE_COMMON_DIALOG_STATUS_NONE;

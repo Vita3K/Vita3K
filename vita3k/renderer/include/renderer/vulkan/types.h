@@ -301,6 +301,7 @@ struct VKContext : public renderer::Context {
     vk::Format current_color_format;
     vk::ImageView current_color_view;
     vk::ImageView current_ds_view;
+    vk::Image current_ds_image;
 
     bool is_recording = false;
     bool in_renderpass = false;

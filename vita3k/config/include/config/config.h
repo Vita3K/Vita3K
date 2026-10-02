@@ -61,6 +61,13 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
 // Singular options produced in config file
 // Order is code(option_type, option_name, option_default, member_name)
 // When adding in a new macro for generation, ALL options must be stated.
+#if defined(__ANDROID__)
+#define VITA3K_DEFAULT_GUI_BACKEND "Compose"
+#elif defined(HAS_QT)
+#define VITA3K_DEFAULT_GUI_BACKEND "Qt"
+#else
+#define VITA3K_DEFAULT_GUI_BACKEND "ImGui"
+#endif
 #define CONFIG_KEYBOARD(code)                                                                                                          \
     code(PhysicalKeyCode, "keyboard-button-select", PhysicalKeyCode::ShiftRight, keyboard_button_select)                               \
     code(PhysicalKeyCode, "keyboard-button-start", PhysicalKeyCode::Enter, keyboard_button_start)                                      \
@@ -137,9 +144,14 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(bool, "pstv-mode", false, pstv_mode)                                                           \
     code(bool, "show-mode", false, show_mode)                                                           \
     code(bool, "demo-mode", false, demo_mode)                                                           \
+    code(bool, "show-gui", false, show_gui)                                                             \
+    code(std::string, "gui-backend", VITA3K_DEFAULT_GUI_BACKEND, gui_backend)                            \
+    code(bool, "show-info-bar", false, show_info_bar)                                                   \
     code(bool, "apps-list-grid", false, apps_list_grid)                                                 \
+    code(bool, "display-system-apps", true, display_system_apps)                                        \
     code(bool, "stretch_the_display_area", false, stretch_the_display_area)                             \
     code(bool, "fullscreen_hd_res_pixel_perfect", false, fullscreen_hd_res_pixel_perfect)               \
+    code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \
     code(std::string, "backend-renderer", "Vulkan", backend_renderer)                                   \
     code(std::string, "custom-driver-name", "", custom_driver_name)                                     \
@@ -164,6 +176,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
+    code(int, "bgm-volume", 65, bgm_volume)                                                              \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(int, "sys-date-format", (int)SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY, sys_date_format)           \
@@ -179,12 +192,21 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
     code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
     code(bool, "color-surface-debug", false, color_surface_debug)                                       \
+    code(bool, "show-touchpad-cursor", true, show_touchpad_cursor)                                      \
     code(bool, "performance-overlay", false, performance_overlay)                                       \
     code(int, "performance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)      \
     code(int, "performance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position) \
+    code(bool, "enable-gamepad-overlay", true, enable_gamepad_overlay)                                  \
+    code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
+    code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
+    code(int, "overlay-opacity", 100, overlay_opacity)                                                  \
     code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
     code(bool, "disable-motion", false, disable_motion)                                                 \
     code(float, "controller-analog-multiplier", 1.0f, controller_analog_multiplier)                     \
+    code(PhysicalKeyCode, "keyboard-gui-toggle-gui", PhysicalKeyCode::F10, keyboard_gui_toggle_gui)    \
+    code(PhysicalKeyCode, "keyboard-gui-toggle-gui-alt", PhysicalKeyCode::Unbound, keyboard_gui_toggle_gui_alt) \
+    code(bool, "display-info-message", false, display_info_message)                                     \
+    code(bool, "asia-font-support", false, asia_font_support)                                           \
     CONFIG_KEYBOARD(code)                                                                               \
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \

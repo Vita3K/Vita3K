@@ -25,6 +25,12 @@
 
 struct AppLaunchRequest;
 struct EmuEnvState;
+namespace app {
+class AppSessionController;
+}
+
+struct GuiState;
+bool handle_events(EmuEnvState &emuenv, GuiState &gui, app::AppSessionController *session = nullptr);
 
 ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv);
 ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const AppLaunchRequest &launch_request);

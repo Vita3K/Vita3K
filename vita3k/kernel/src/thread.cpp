@@ -151,12 +151,11 @@ void ThreadState::exit_delete(bool exit) {
     run_end_callback = exit;
     delete_requested = true;
 
-    if (status == ThreadStatus::running) {
+    if (status == ThreadStatus::running)
         stop(*cpu);
-    } else {
-        // dormant or suspend: wake run_loop() so it can observe delete_requested
-        status_cond.notify_all();
-    }
+
+    // run_loop() may be parked on status_cond while pause_requested is true, even if status is running.
+    status_cond.notify_all();
 
     // Wake if blocked in a wait
     wait_cv.notify_all();
@@ -216,9 +215,9 @@ void ThreadState::run_loop() {
         }
 
         // Park until we have something to do.
-        if (status != ThreadStatus::running) {
+        if (status != ThreadStatus::running || pause_requested) {
             status_cond.wait(lock, [&] {
-                return status == ThreadStatus::running || delete_requested;
+                return (status == ThreadStatus::running && !pause_requested) || delete_requested;
             });
             continue;
         }
@@ -260,6 +259,8 @@ void ThreadState::run_loop() {
             lock.lock();
 
             if (do_step || suspend_requested || hit_breakpoint(*cpu)) {
+                const bool debugger_suspended = do_step || hit_breakpoint(*cpu);
+                pause_suspended = pause_requested && suspend_requested && !debugger_suspended;
                 suspend_requested = false;
                 update_status(ThreadStatus::suspended);
             }
@@ -457,6 +458,9 @@ WaitResult ThreadState::wait(WaitTarget target, Deadline deadline, bool callback
         wait_cv.wait(lock, woken);
     else
         satisfied = wait_cv.wait_until(lock, deadline, woken);
+    // A wake during emulator pause must not let this guest thread run callbacks
+    // or return to its JIT loop until the pause has been lifted.
+    wait_cv.wait(lock, [&] { return !pause_requested || exiting(); });
     update_status(ThreadStatus::running);
     wait_target = {};
     if (exiting())
@@ -537,21 +541,57 @@ Address ThreadState::stack_top() const {
 }
 
 void ThreadState::suspend() {
-    assert(status == ThreadStatus::running);
+    bool should_stop = false;
     {
         const std::lock_guard<std::mutex> lock(mutex);
-        suspend_requested = true;
+        if (status == ThreadStatus::running) {
+            suspend_requested = true;
+            should_stop = true;
+        }
     }
-    stop(*cpu);
+    if (should_stop)
+        stop(*cpu);
 }
 
 void ThreadState::resume(bool step) {
-    assert(status == ThreadStatus::suspended || status == ThreadStatus::dormant);
     {
         const std::lock_guard<std::mutex> lock(mutex);
+        assert(status == ThreadStatus::suspended || status == ThreadStatus::dormant);
         single_stepping = step;
         suspend_requested = false;
         update_status(ThreadStatus::running);
+    }
+}
+
+ThreadStatus ThreadState::pause() {
+    bool should_stop = false;
+    ThreadStatus previous_status;
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        previous_status = status;
+        pause_requested = true;
+        if (status == ThreadStatus::running) {
+            suspend_requested = true;
+            should_stop = true;
+        }
+    }
+    if (should_stop)
+        stop(*cpu);
+    return previous_status;
+}
+
+void ThreadState::resume_from_pause(ThreadStatus previous_status) {
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        pause_requested = false;
+        if (previous_status == ThreadStatus::running) {
+            suspend_requested = false;
+            if (pause_suspended && status == ThreadStatus::suspended)
+                update_status(ThreadStatus::running);
+        }
+        pause_suspended = false;
+        status_cond.notify_all();
+        wait_cv.notify_all();
     }
 }
 

@@ -50,7 +50,7 @@ enum class AppSessionStopReason {
 
 class AppSessionController {
 public:
-    explicit AppSessionController(EmuEnvState &emuenv);
+    explicit AppSessionController(EmuEnvState &emuenv, bool preserve_renderer = false);
 
     bool has_active_session() const;
     bool is_running() const;
@@ -70,6 +70,7 @@ private:
     void reset_session_tracking();
 
     EmuEnvState &emuenv;
+    bool preserve_renderer;
     mutable std::mutex mutex;
     std::atomic<AppSessionPhase> current_phase{ AppSessionPhase::Idle };
     std::optional<std::reference_wrapper<renderer::FrameHost>> frame_host;

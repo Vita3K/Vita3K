@@ -102,6 +102,9 @@ public final class InputOverlay extends SurfaceView implements OnTouchListener
   {
     super(context/*, attrs*/);
 
+    // Render this SurfaceView above SDL's game SurfaceView.
+    setZOrderMediaOverlay(true);
+
     // Set the on touch listener.
     // Do not register the overlay as a touch listener
     // Instead let EmuSurface forward touch events

@@ -27,6 +27,8 @@
 enum class Frontend {
     // The full Qt interface
     qt,
+    // The full ImGui interface
+    imgui,
     // A plain SDL window that runs the app given on the command line and quits with it
     sdl,
 };
@@ -97,6 +99,7 @@ struct Config {
         bool texture_cache = true;
         bool stretch_the_display_area = false;
         bool fullscreen_hd_res_pixel_perfect = false;
+        bool show_touchpad_cursor = true;
         int file_loading_delay = 0;
         bool psn_signed_in = false;
         int sys_button = static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS);
