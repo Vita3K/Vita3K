@@ -156,6 +156,22 @@ struct GxmRecordState {
     float writing_mask = 0.0f;
 };
 
+// whether a draw recorded with this state may modify the depth or the stencil buffer
+inline bool may_write_depth_stencil(const GxmRecordState &record) {
+    const auto stencil_writes = [](const GxmStencilStateOp &op, const GxmStencilStateValues &values) {
+        return values.write_mask != 0
+            && (op.stencil_fail != SCE_GXM_STENCIL_OP_KEEP || op.depth_fail != SCE_GXM_STENCIL_OP_KEEP || op.depth_pass != SCE_GXM_STENCIL_OP_KEEP);
+    };
+
+    if (record.front_depth_write_mode == SCE_GXM_DEPTH_WRITE_ENABLED || stencil_writes(record.front_stencil_state_op, record.front_stencil_state_values))
+        return true;
+
+    if (record.two_sided == SCE_GXM_TWO_SIDED_ENABLED)
+        return record.back_depth_write_mode == SCE_GXM_DEPTH_WRITE_ENABLED || stencil_writes(record.back_stencil_state_op, record.back_stencil_state_values);
+
+    return false;
+}
+
 struct Context {
     RenderTarget *current_render_target{};
     GxmRecordState record;
