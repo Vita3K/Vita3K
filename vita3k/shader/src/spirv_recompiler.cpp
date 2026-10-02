@@ -122,7 +122,7 @@ struct VertexProgramOutputProperties {
     std::uint32_t component_count{};
     std::uint32_t location{};
 };
-using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
+using VertexProgramOutputPropertiesMap = std::unordered_map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
 
 // ******************************
 // * Functions (implementation) *
@@ -1603,11 +1603,13 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
     VertexProgramOutputPropertiesMap vertex_properties_map;
     // list is used here to gurantee the vertex outputs are written in right order
-    std::list<SceGxmVertexProgramOutputs> vertex_outputs_list;
+    std::vector<SceGxmVertexProgramOutputs> vertex_outputs_list;
     const auto add_vertex_output_info = [&](SceGxmVertexProgramOutputs vo, const char *name, std::uint32_t component_count, std::uint32_t location) {
         vertex_properties_map.emplace(vo, VertexProgramOutputProperties{ name, component_count, location });
         vertex_outputs_list.push_back(vo);
     };
+    vertex_properties_map.reserve(15);
+    vertex_outputs_list.reserve(15);
     add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION, "v_Position", 4, 0);
     add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0, "v_Color0", 4, 1);
     add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1, "v_Color1", 4, 2);
