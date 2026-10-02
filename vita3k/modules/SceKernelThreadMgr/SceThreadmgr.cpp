@@ -26,6 +26,7 @@
 
 #include <util/lock_and_find.h>
 
+#include <algorithm>
 #include <chrono>
 #include <thread>
 
@@ -863,6 +864,47 @@ static int wait_thread_end(KernelState &kernel, ThreadStatePtr &waiter, ThreadSt
     return 0;
 }
 
+static bool has_pending_callbacks(const ThreadState &thread) {
+    return std::ranges::any_of(thread.callbacks, [](const CallbackPtr &cb) { return cb->is_executable(); });
+}
+
+// Callbacks notified during the wait (e.g. VBlank) must run on the waiter, which may be what ends the target
+static int wait_thread_end_cb(KernelState &kernel, ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
+    while (true) {
+        process_callbacks(kernel, waiter->id);
+
+        std::unique_lock<std::mutex> waiter_lock(waiter->mutex);
+        {
+            const std::unique_lock<std::mutex> thread_lock(target->mutex);
+            if (target->status == ThreadStatus::dormant) {
+                if (stat != nullptr) {
+                    *stat = target->returned_value;
+                }
+                return 0;
+            }
+
+            waiter->update_status(ThreadStatus::wait);
+            target->waiting_threads.push_back(waiter);
+        }
+        const auto is_woken = [&]() { return waiter->status == ThreadStatus::run; };
+        while (!waiter->status_cond.wait_for(waiter_lock, std::chrono::milliseconds(1), is_woken)) {
+            if (has_pending_callbacks(*waiter))
+                break;
+        }
+        if (is_woken())
+            return 0;
+
+        // the target's exit locks it before the waiter, so leave the wait in the same order
+        waiter_lock.unlock();
+        const std::unique_lock<std::mutex> thread_lock(target->mutex);
+        waiter_lock.lock();
+        if (is_woken())
+            return 0;
+        std::erase(target->waiting_threads, waiter);
+        waiter->update_status(ThreadStatus::run);
+    }
+}
+
 EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     TRACY_FUNC(_sceKernelWaitThreadEnd, thid, stat, timeout);
     auto waiter = emuenv.kernel.get_thread(thread_id);
@@ -880,8 +922,7 @@ EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout)
     if (!target) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
-    process_callbacks(emuenv.kernel, thread_id);
-    return wait_thread_end(emuenv.kernel, waiter, target, stat);
+    return wait_thread_end_cb(emuenv.kernel, waiter, target, stat);
 }
 
 EXPORT(SceInt32, sceKernelCancelCallback, SceUID callbackId) {
