@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
           - platform: linux-x64
-            runs_on: ubuntu-latest
+            runs_on: ubuntu-26.04
             arch: x86_64
             cmake_preset: ci-linux-clang-appimage
             linuxdeploy_command: /usr/local/bin/linuxdeploy-x86_64.AppImage
@@ -31,7 +31,7 @@ jobs:
             qt_install_deps: 'true'
 
           - platform: linux-arm64
-            runs_on: ubuntu-24.04-arm
+            runs_on: ubuntu-26.04-arm
             arch: aarch64
             cmake_preset: ci-linux-clang-appimage
             linuxdeploy_command: /usr/local/bin/linuxdeploy-aarch64.AppImage
