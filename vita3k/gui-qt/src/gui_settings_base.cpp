@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gui-qt/gui_settings_base.h>
+#include <gui-qt/qt_utils.h>
 
 #include <QByteArray>
 #include <QDataStream>
@@ -31,8 +32,12 @@ void GuiSettingsBase::sync() {
         m_settings->sync();
 }
 
-QString GuiSettingsBase::get_settings_dir() const {
-    return m_settings_dir.absolutePath();
+fs::path GuiSettingsBase::get_settings_dir() const {
+    return gui::utils::to_fs_path(m_settings_dir.absolutePath());
+}
+
+fs::path GuiSettingsBase::get_static_themes_path() const {
+    return m_static_themes_path;
 }
 
 QVariant GuiSettingsBase::get_value(const QString &key, const QString &name, const QVariant &def) const {
