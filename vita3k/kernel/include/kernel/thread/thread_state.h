@@ -24,7 +24,6 @@
 #include <mem/block.h>
 #include <mem/ptr.h>
 
-#include <concepts>
 #include <condition_variable>
 #include <mutex>
 #include <optional>
@@ -112,9 +111,6 @@ struct ThreadState {
     std::string log_stack_traceback() const;
 
 private:
-    // Waits until done() holds, the thread is being deleted, or the deadline passes.
-    [[nodiscard]] WaitResult wait_until(Deadline deadline, std::predicate auto done);
-
     void push_arguments(const std::vector<uint32_t> &args);
     void dispatch_abort(CPUState &cpu);
 

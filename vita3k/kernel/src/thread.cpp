@@ -395,39 +395,38 @@ void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus>
     }
 }
 
-WaitResult ThreadState::wait_until(Deadline deadline, std::predicate auto done) {
-    std::unique_lock<std::mutex> lock(mutex);
-    const auto woken = [&] { return delete_requested || done(); };
-    update_status(ThreadStatus::wait);
-    bool satisfied = true;
-    if (deadline == Deadline::max())
-        wait_cv.wait(lock, woken);
-    else
-        satisfied = wait_cv.wait_until(lock, deadline, woken);
-    update_status(ThreadStatus::run);
-    if (delete_requested)
-        return std::unexpected{ ThreadExiting{} };
-    return satisfied ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_WAIT_TIMEOUT;
-}
-
 WaitResult ThreadState::delay_until(Deadline deadline) {
-    const WaitResult r = wait_until(deadline, [] { return false; });
-    // Reaching the deadline is the expected outcome of a delay
-    if (r && *r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
-        return SCE_KERNEL_OK;
-    return r;
+    while (true) {
+        const WaitResult r = wait(deadline);
+        if (!r)
+            return r;
+        // Reaching the deadline is the expected outcome of a delay
+        if (*r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+            return SCE_KERNEL_OK;
+    }
 }
 
 WaitResult ThreadState::wait_for_signal() {
-    return wait_until(Deadline::max(), [&] { return std::exchange(signal_pending, false); });
+    while (true) {
+        {
+            const std::lock_guard<std::mutex> lock(mutex);
+            if (std::exchange(signal_pending, false))
+                return SCE_KERNEL_OK;
+        }
+        const WaitResult r = wait(Deadline::max());
+        if (!r)
+            return r;
+    }
 }
 
 SceInt32 ThreadState::send_signal() {
-    const std::lock_guard<std::mutex> lock(mutex);
-    if (signal_pending)
-        return SCE_KERNEL_ERROR_ALREADY_SENT;
-    signal_pending = true;
-    wait_cv.notify_all();
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        if (signal_pending)
+            return SCE_KERNEL_ERROR_ALREADY_SENT;
+        signal_pending = true;
+    }
+    wake();
     return SCE_KERNEL_OK;
 }
 
@@ -444,7 +443,19 @@ WaitResult ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt
 }
 
 WaitResult ThreadState::wait(Deadline deadline) {
-    return wait_until(deadline, [&] { return std::exchange(wake_pending, false); });
+    std::unique_lock<std::mutex> lock(mutex);
+    const auto woken = [&] { return delete_requested || wake_pending; };
+    update_status(ThreadStatus::wait);
+    bool satisfied = true;
+    if (deadline == Deadline::max())
+        wait_cv.wait(lock, woken);
+    else
+        satisfied = wait_cv.wait_until(lock, deadline, woken);
+    update_status(ThreadStatus::run);
+    if (delete_requested)
+        return std::unexpected{ ThreadExiting{} };
+    wake_pending = false;
+    return satisfied ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_WAIT_TIMEOUT;
 }
 
 void ThreadState::wake() {
