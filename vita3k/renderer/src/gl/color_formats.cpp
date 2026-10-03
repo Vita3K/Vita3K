@@ -207,6 +207,17 @@ const GLint *translate_swizzle(SceGxmColorFormat fmt) {
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(fmt);
     const uint32_t swizzle = fmt & SCE_GXM_COLOR_SWIZZLE_MASK;
     switch (base_format) {
+    // Same mapping as U1U5U5U5 textures (see texture::translate_swizzle_1555), so that a
+    // surface sampled with its own format needs no extra swizzle.
+    case SCE_GXM_COLOR_BASE_FORMAT_U1U5U5U5:
+        switch (swizzle) {
+        case SCE_GXM_COLOR_SWIZZLE4_ABGR:
+        case SCE_GXM_COLOR_SWIZZLE4_BGRA:
+            return swizzle_argb;
+        default:
+            return swizzle_abgr;
+        }
+
     // 1 Component.
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
