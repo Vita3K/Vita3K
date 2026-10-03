@@ -125,7 +125,7 @@ SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, S
         return SCE_KERNEL_OK;
     } else if (is_wait) {
         const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = event->waiters.wait(event_lock, thread, { wait_pattern, result_pattern, user_data }, deadline);
+        const WaitResult r = event->waiters.wait(event_lock, thread, { SCE_KERNEL_WAITTYPE_EVENT, event_id }, { wait_pattern, result_pattern, user_data }, deadline);
         writeback_timeout(timeout, deadline);
         const SceInt32 err = guest_result(r);
         if (err < 0) {
@@ -386,7 +386,7 @@ SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID t
             }
 
             lock.unlock();
-            const WaitResult r = thread->wait(deadline);
+            const WaitResult r = thread->wait({ SCE_KERNEL_WAITTYPE_EVENT, event_id }, deadline);
             lock.lock();
             if (!r) {
                 timer->waiters.remove(waiter);
@@ -531,7 +531,7 @@ SceUID mutex_find(KernelState &kernel, const char *export_name, const char *pNam
     return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
 
-inline static int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, int lock_count, MutexPtr &mutex, SyncWeight weight, SceUInt *timeout, bool only_try) {
+inline static int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, int lock_count, MutexPtr &mutex, SyncWeight weight, SceUInt *timeout, bool only_try, WaitTarget target) {
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} lock_count: {} timeout: {} waiting_threads: {}",
             export_name, mutex->uid, thread_id, mutex->name, mutex->attr, mutex->lock_count, timeout ? *timeout : 0,
@@ -572,7 +572,7 @@ inline static int mutex_lock_impl(KernelState &kernel, MemState &mem, const char
 
         // Sleep thread!
         const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = mutex->waiters.wait(mutex_lock, thread, { lock_count }, deadline);
+        const WaitResult r = mutex->waiters.wait(mutex_lock, thread, target, { lock_count }, deadline);
         writeback_timeout(timeout, deadline);
 
         if (weight == SyncWeight::Light) {
@@ -607,7 +607,7 @@ int mutex_lock(KernelState &kernel, MemState &mem, const char *export_name, SceU
     if (!mutex)
         return unknown_mutex_id(export_name, weight);
 
-    return mutex_lock_impl(kernel, mem, export_name, thread_id, lock_count, mutex, weight, timeout, false);
+    return mutex_lock_impl(kernel, mem, export_name, thread_id, lock_count, mutex, weight, timeout, false, { weight == SyncWeight::Light ? SCE_KERNEL_WAITTYPE_LW_MUTEX : SCE_KERNEL_WAITTYPE_MUTEX, mutexid });
 }
 
 int mutex_try_lock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, SyncWeight weight) {
@@ -617,7 +617,8 @@ int mutex_try_lock(KernelState &kernel, MemState &mem, const char *export_name, 
     if (!mutex)
         return unknown_mutex_id(export_name, weight);
 
-    return mutex_lock_impl(kernel, mem, export_name, thread_id, lock_count, mutex, weight, nullptr, true);
+    // Never waits, so it has no wait target
+    return mutex_lock_impl(kernel, mem, export_name, thread_id, lock_count, mutex, weight, nullptr, true, {});
 }
 
 inline static int mutex_unlock_impl(KernelState &kernel, const char *export_name, SceUID thread_id, int unlock_count, MutexPtr &mutex) {
@@ -768,7 +769,7 @@ SceInt32 rwlock_lock(KernelState &kernel, MemState &mem, const char *export_name
     } else {
         // we need to wait
         const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = rwlock->waiters.wait(rwlock_lock, thread, { is_write }, deadline);
+        const WaitResult r = rwlock->waiters.wait(rwlock_lock, thread, { SCE_KERNEL_WAITTYPE_RW_LOCK, lock_id }, { is_write }, deadline);
         writeback_timeout(timeout, deadline);
         return guest_result(r);
     }
@@ -923,7 +924,7 @@ SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thr
 
     if (semaphore->val < needCount) {
         const Deadline deadline = deadline_from(pTimeout);
-        const WaitResult r = semaphore->waiters.wait(semaphore_lock, thread, { needCount }, deadline);
+        const WaitResult r = semaphore->waiters.wait(semaphore_lock, thread, { SCE_KERNEL_WAITTYPE_SEMAPHORE, semaId }, { needCount }, deadline);
         writeback_timeout(pTimeout, deadline);
         return guest_result(r);
     } else {
@@ -1082,13 +1083,14 @@ int condvar_wait(KernelState &kernel, MemState &mem, const char *export_name, Sc
         return error;
 
     const Deadline deadline = deadline_from(timeout);
-    const WaitResult r = condvar->waiters.wait(condition_variable_lock, thread, {}, deadline);
+    const WaitResult r = condvar->waiters.wait(condition_variable_lock, thread, { weight == SyncWeight::Light ? SCE_KERNEL_WAITTYPE_LW_COND_SIGNAL : SCE_KERNEL_WAITTYPE_COND_SIGNAL, condid }, {}, deadline);
     writeback_timeout(timeout, deadline);
     if (!r || *r != SCE_KERNEL_OK)
         return guest_result(r);
 
     condition_variable_lock.unlock();
-    return mutex_lock_impl(kernel, mem, export_name, thread_id, 1, condvar->associated_mutex, weight, timeout, false);
+    // Taking the mutex back is still part of the condition variable wait
+    return mutex_lock_impl(kernel, mem, export_name, thread_id, 1, condvar->associated_mutex, weight, timeout, false, { weight == SyncWeight::Light ? SCE_KERNEL_WAITTYPE_LW_COND_LW_MUTEX : SCE_KERNEL_WAITTYPE_COND_MUTEX, condid });
 }
 
 int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID condid, Condvar::SignalTarget signal_target, SyncWeight weight) {
@@ -1260,7 +1262,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         return SCE_KERNEL_OK;
     } else if (dowait) {
         const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = event->waiters.wait(event_lock, thread, { wait, flags, outBits }, deadline);
+        const WaitResult r = event->waiters.wait(event_lock, thread, { SCE_KERNEL_WAITTYPE_EVENTFLAG, event_id }, { wait, flags, outBits }, deadline);
         writeback_timeout(timeout, deadline);
         const SceInt32 err = guest_result(r);
         if (err == SCE_KERNEL_ERROR_WAIT_TIMEOUT && outBits) {
@@ -1494,7 +1496,7 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
 
         // sleep until we can read, if ASAP we can read as low as 1 byte
         const MsgPipe::WaitEntry entry{ .request_size = ASAP ? 1 : recvSize };
-        const WaitResult r = msgpipe->receivers.wait_until_ready(msgpipe_lock, thread, entry, deadline_from(pTimeout), [&](auto &waiter) {
+        const WaitResult r = msgpipe->receivers.wait_until_ready(msgpipe_lock, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, msgPipeId }, entry, deadline_from(pTimeout), [&](auto &waiter) {
             waiter.entry.notified = false;
             return can_receive();
         });
@@ -1547,7 +1549,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
 
         // sleep until there's more space, if ASAP we can insert as low as 1 byte
         const MsgPipe::WaitEntry entry{ .request_size = ASAP ? 1 : sendSize };
-        const WaitResult r = msgpipe->senders.wait_until_ready(msgpipe_lock, thread, entry, deadline_from(pTimeout), [&](auto &waiter) {
+        const WaitResult r = msgpipe->senders.wait_until_ready(msgpipe_lock, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, msgPipeId }, entry, deadline_from(pTimeout), [&](auto &waiter) {
             waiter.entry.notified = false;
             return can_send();
         });

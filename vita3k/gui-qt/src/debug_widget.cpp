@@ -212,13 +212,13 @@ void DebugWidget::refresh_current_tab() {
 
 static QString thread_status_string(ThreadStatus status) {
     switch (status) {
-    case ThreadStatus::run:
+    case ThreadStatus::running:
         return QStringLiteral("Running");
-    case ThreadStatus::wait:
+    case ThreadStatus::waiting:
         return QStringLiteral("Waiting");
     case ThreadStatus::dormant:
         return QStringLiteral("Dormant");
-    case ThreadStatus::suspend:
+    case ThreadStatus::suspended:
         return QStringLiteral("Suspended");
     default:
         return QStringLiteral("Unknown");

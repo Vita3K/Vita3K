@@ -126,9 +126,9 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
 
     if (kernel.debugger.wait_for_debugger) {
         kernel.debugger.wait_for_debugger = false;
-        status = ThreadStatus::suspend;
+        status = ThreadStatus::suspended;
     } else {
-        status = ThreadStatus::run;
+        status = ThreadStatus::running;
     }
     status_cond.notify_one();
 
@@ -148,7 +148,7 @@ void ThreadState::exit_delete(bool exit) {
     run_end_callback = exit;
     delete_requested = true;
 
-    if (status == ThreadStatus::run) {
+    if (status == ThreadStatus::running) {
         stop(*cpu);
     } else {
         // dormant or suspend: wake run_loop() so it can observe delete_requested
@@ -184,7 +184,7 @@ void ThreadState::run_loop() {
 
         const ThreadStatus old_status = status;
         const uint32_t old_returned_value = returned_value;
-        status = ThreadStatus::run;
+        status = ThreadStatus::running;
 
         lock.unlock();
         const int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
@@ -213,9 +213,9 @@ void ThreadState::run_loop() {
         }
 
         // Park until we have something to do.
-        if (status != ThreadStatus::run) {
+        if (status != ThreadStatus::running) {
             status_cond.wait(lock, [&] {
-                return status == ThreadStatus::run || delete_requested;
+                return status == ThreadStatus::running || delete_requested;
             });
             continue;
         }
@@ -233,7 +233,7 @@ void ThreadState::run_loop() {
         }
 
         // Active JIT loop. Lock held on entry and exit; unlocked only around run/step.
-        while (!delete_requested && !exit_requested && !guest_returned && status == ThreadStatus::run) {
+        while (!delete_requested && !exit_requested && !guest_returned && status == ThreadStatus::running) {
             const bool do_step = single_stepping;
             if (do_step)
                 single_stepping = false;
@@ -258,7 +258,7 @@ void ThreadState::run_loop() {
 
             if (do_step || suspend_requested || hit_breakpoint(*cpu)) {
                 suspend_requested = false;
-                update_status(ThreadStatus::suspend);
+                update_status(ThreadStatus::suspended);
             }
 
             // Guest function for this run_loop returned (or errored).
@@ -395,39 +395,38 @@ void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus>
     }
 }
 
-WaitResult ThreadState::wait_until(Deadline deadline, std::predicate auto done) {
-    std::unique_lock<std::mutex> lock(mutex);
-    const auto woken = [&] { return delete_requested || done(); };
-    update_status(ThreadStatus::wait);
-    bool satisfied = true;
-    if (deadline == Deadline::max())
-        wait_cv.wait(lock, woken);
-    else
-        satisfied = wait_cv.wait_until(lock, deadline, woken);
-    update_status(ThreadStatus::run);
-    if (delete_requested)
-        return std::unexpected{ ThreadExiting{} };
-    return satisfied ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_WAIT_TIMEOUT;
-}
-
 WaitResult ThreadState::delay_until(Deadline deadline) {
-    const WaitResult r = wait_until(deadline, [] { return false; });
-    // Reaching the deadline is the expected outcome of a delay
-    if (r && *r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
-        return SCE_KERNEL_OK;
-    return r;
+    while (true) {
+        const WaitResult r = wait({ SCE_KERNEL_WAITTYPE_DELAY }, deadline);
+        if (!r)
+            return r;
+        // Reaching the deadline is the expected outcome of a delay
+        if (*r == SCE_KERNEL_ERROR_WAIT_TIMEOUT)
+            return SCE_KERNEL_OK;
+    }
 }
 
 WaitResult ThreadState::wait_for_signal() {
-    return wait_until(Deadline::max(), [&] { return std::exchange(signal_pending, false); });
+    while (true) {
+        {
+            const std::lock_guard<std::mutex> lock(mutex);
+            if (std::exchange(signal_pending, false))
+                return SCE_KERNEL_OK;
+        }
+        const WaitResult r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL }, Deadline::max());
+        if (!r)
+            return r;
+    }
 }
 
 SceInt32 ThreadState::send_signal() {
-    const std::lock_guard<std::mutex> lock(mutex);
-    if (signal_pending)
-        return SCE_KERNEL_ERROR_ALREADY_SENT;
-    signal_pending = true;
-    wait_cv.notify_all();
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        if (signal_pending)
+            return SCE_KERNEL_ERROR_ALREADY_SENT;
+        signal_pending = true;
+    }
+    wake();
     return SCE_KERNEL_OK;
 }
 
@@ -440,11 +439,25 @@ WaitResult ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt
     }
     std::unique_lock<std::mutex> end_lock(end_waiters_mutex);
     lock.unlock();
-    return end_waiters.wait(end_lock, waiter, { exit_status }, Deadline::max());
+    return end_waiters.wait(end_lock, waiter, { SCE_KERNEL_WAITTYPE_WAITTHEND, id }, { exit_status }, Deadline::max());
 }
 
-WaitResult ThreadState::wait(Deadline deadline) {
-    return wait_until(deadline, [&] { return std::exchange(wake_pending, false); });
+WaitResult ThreadState::wait(WaitTarget target, Deadline deadline) {
+    std::unique_lock<std::mutex> lock(mutex);
+    const auto woken = [&] { return delete_requested || wake_pending; };
+    wait_target = target;
+    update_status(ThreadStatus::waiting);
+    bool satisfied = true;
+    if (deadline == Deadline::max())
+        wait_cv.wait(lock, woken);
+    else
+        satisfied = wait_cv.wait_until(lock, deadline, woken);
+    update_status(ThreadStatus::running);
+    wait_target = {};
+    if (delete_requested)
+        return std::unexpected{ ThreadExiting{} };
+    wake_pending = false;
+    return satisfied ? SCE_KERNEL_OK : SCE_KERNEL_ERROR_WAIT_TIMEOUT;
 }
 
 void ThreadState::wake() {
@@ -458,7 +471,7 @@ Address ThreadState::stack_top() const {
 }
 
 void ThreadState::suspend() {
-    assert(status == ThreadStatus::run);
+    assert(status == ThreadStatus::running);
     {
         const std::lock_guard<std::mutex> lock(mutex);
         suspend_requested = true;
@@ -467,12 +480,12 @@ void ThreadState::suspend() {
 }
 
 void ThreadState::resume(bool step) {
-    assert(status == ThreadStatus::suspend || status == ThreadStatus::dormant);
+    assert(status == ThreadStatus::suspended || status == ThreadStatus::dormant);
     {
         const std::lock_guard<std::mutex> lock(mutex);
         single_stepping = step;
         suspend_requested = false;
-        update_status(ThreadStatus::run);
+        update_status(ThreadStatus::running);
     }
 }
 
