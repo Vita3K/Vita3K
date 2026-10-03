@@ -61,6 +61,7 @@ bool initialize_session(const fs::path &storage_path, Root &root_paths, std::uni
         root_paths.set_shared_path(storage_path);
         root_paths.set_cache_path(storage_path / "cache" / "");
         root_paths.set_patch_path(storage_path / "patch" / "");
+        root_paths.set_cheat_path(storage_path / "cheats" / "");
 
         if (!fs::exists(root_paths.get_vita_fs_path()))
             fs::create_directories(root_paths.get_vita_fs_path());
@@ -70,6 +71,7 @@ bool initialize_session(const fs::path &storage_path, Root &root_paths, std::uni
         fs::create_directories(root_paths.get_log_path() / "shaderlog");
         fs::create_directories(root_paths.get_log_path() / "texturelog");
         fs::create_directories(root_paths.get_patch_path());
+        fs::create_directories(root_paths.get_cheat_path());
         fs::create_directories(root_paths.get_shared_path() / "textures");
 
         if (logging::init(root_paths, true) != Success)

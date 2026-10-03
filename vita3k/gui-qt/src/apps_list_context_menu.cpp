@@ -119,6 +119,7 @@ void AppsListContextMenu::build_single(const app::AppEntry &app) {
     add_compat_actions(app);
     add_copy_info_actions(app);
     add_custom_config_actions(app);
+    add_cheat_actions(app);
     addSeparator();
     add_open_folder_actions(app);
     addSeparator();
@@ -135,6 +136,7 @@ AppsListContextMenu::AppPaths AppsListContextMenu::make_app_paths(const app::App
         .app = m_emuenv.vita_fs_path / "ux0/app" / app.path,
         .save_data = m_emuenv.vita_fs_path / "ux0/user" / m_emuenv.io.user_id / "savedata" / app.savedata,
         .patch = m_emuenv.shared_path / "patch" / title_id,
+        .cheats = m_emuenv.cheat_path,
         .addcont = m_emuenv.vita_fs_path / "ux0/addcont" / app.addcont,
         .license = m_emuenv.vita_fs_path / "ux0/license" / title_id,
         .shader_cache = m_emuenv.cache_path / "shaders" / title_id,
@@ -390,6 +392,13 @@ void AppsListContextMenu::add_custom_config_actions(const app::AppEntry &app) {
     }
 }
 
+void AppsListContextMenu::add_cheat_actions(const app::AppEntry &app) {
+    auto *cheats = addAction(tr("Manage Cheats"));
+    connect(cheats, &QAction::triggered, this, [this, &app] {
+        emit manage_cheats_requested(app);
+    });
+}
+
 void AppsListContextMenu::add_open_folder_actions(const app::AppEntry &app) {
     auto *open_menu = addMenu(tr("Open Folder"));
 
@@ -409,6 +418,13 @@ void AppsListContextMenu::add_open_folder_actions(const app::AppEntry &app) {
         auto *a = open_menu->addAction(tr("Patch"));
         connect(a, &QAction::triggered, this, [this] {
             gui::utils::open_dir(m_paths.patch);
+        });
+    }
+
+    if (fs::exists(m_paths.cheats)) {
+        auto *a = open_menu->addAction(tr("Cheats"));
+        connect(a, &QAction::triggered, this, [this] {
+            gui::utils::open_dir(m_paths.cheats);
         });
     }
 

@@ -21,6 +21,7 @@
 #include <gui-qt/apps_list.h>
 #include <gui-qt/apps_list_context_menu.h>
 #include <gui-qt/archive_install_dialog.h>
+#include <gui-qt/cheats_dialog.h>
 #include <gui-qt/controls_dialog.h>
 #include <gui-qt/ctrl_keyboard_filter.h>
 #include <gui-qt/debug_widget.h>
@@ -431,6 +432,8 @@ void MainWindow::initialize() {
 
     connect(m_ui->trophy_collection_action, &QAction::triggered,
         this, &MainWindow::open_trophy_collection);
+
+    connect(m_ui->cheats_action, &QAction::triggered, this, [this] { open_cheats_for({}, {}); });
 
     connect(m_ui->vita_themes_action, &QAction::triggered,
         this, &MainWindow::open_vita_themes);
@@ -967,6 +970,7 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     const auto abort_boot = [&](const QString &msg) {
         QMessageBox::critical(this, tr("Error"), msg);
         m_app_session.stop(app::AppSessionStopReason::LaunchFailure);
+        refresh_cheats_dialog();
         if (m_theme_manager)
             m_theme_manager->set_vita_theme_bgm_blocked(false);
 
@@ -1010,6 +1014,7 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
         abort_boot(tr("Failed to start game threads."));
         return {};
     }
+    refresh_cheats_dialog();
 
     auto *kb_filter = new CtrlKeyboardFilter(emuenv, m_game_window);
     m_game_window->installEventFilter(kb_filter);
@@ -1060,6 +1065,7 @@ void MainWindow::on_game_closed() {
     m_app_session.stop(m_is_app_closing
             ? app::AppSessionStopReason::FrontendShutdown
             : app::AppSessionStopReason::UserRequest);
+    refresh_cheats_dialog();
     refresh_controllers(emuenv.ctrl, emuenv);
     if (m_controls_dialog)
         m_controls_dialog->sync_controller_state();
@@ -1378,6 +1384,22 @@ void MainWindow::open_trophy_collection() {
         register_auxiliary_window(m_trophy_dialog);
     }
     present_tool_window(m_trophy_dialog);
+}
+
+void MainWindow::open_cheats_for(const std::string &title_id, const QString &app_title) {
+    if (!m_cheats_dialog) {
+        m_cheats_dialog = new CheatsDialog(emuenv, this);
+        register_auxiliary_window(m_cheats_dialog);
+    }
+
+    m_cheats_dialog->set_app(title_id, app_title);
+    present_tool_window(m_cheats_dialog);
+}
+
+// Rows address cheats by index, so the dialog must never outlive the table the session loaded.
+void MainWindow::refresh_cheats_dialog() {
+    if (m_cheats_dialog)
+        m_cheats_dialog->reload();
 }
 
 void MainWindow::open_vita_themes() {
@@ -1760,6 +1782,10 @@ void MainWindow::on_context_menu_requested(const QPoint &global_pos, const std::
                 apply_log_gui_settings();
             });
             present_tool_window(dlg);
+        });
+    connect(&menu, &AppsListContextMenu::manage_cheats_requested,
+        this, [this](const app::AppEntry &app) {
+            open_cheats_for(app.title_id, QString::fromStdString(app.title));
         });
     connect(&menu, &AppsListContextMenu::refresh_requested,
         this, [this] { m_apps_list_widget->refresh(); });
