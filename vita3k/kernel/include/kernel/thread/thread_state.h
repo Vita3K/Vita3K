@@ -40,10 +40,10 @@ typedef std::function<void(CPUState &, uint32_t, SceUID)> CallImport;
 typedef std::function<std::string(Address)> ResolveNIDName;
 
 enum class ThreadStatus {
-    run, // Running
+    running, // Running
     dormant, // Waiting for a job
-    suspend, // Suspended by debugger
-    wait, // Waiting to be awaken by sync object or operation
+    suspended, // Suspended by debugger
+    waiting, // Waiting to be awaken by sync object or operation
 };
 
 struct ThreadState {
@@ -121,7 +121,7 @@ private:
     bool exit_requested = false;
     // sceKernelExitDeleteThread (or external kill): will return from top-level run_loop(), then host thread joins.
     bool delete_requested = false;
-    // Set by suspend(), consumed in run_loop() to transition to ThreadStatus::suspend.
+    // Set by suspend(), consumed in run_loop() to transition to ThreadStatus::suspended.
     bool suspend_requested = false;
     // Single stepping mode.
     bool single_stepping = false;

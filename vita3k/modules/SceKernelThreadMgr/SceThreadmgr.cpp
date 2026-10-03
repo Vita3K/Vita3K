@@ -717,7 +717,7 @@ EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) 
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
 
-    if (thread->status == ThreadStatus::run) {
+    if (thread->status == ThreadStatus::running) {
         return RET_ERROR(SCE_KERNEL_ERROR_RUNNING);
     }
 
