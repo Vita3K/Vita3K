@@ -32,6 +32,7 @@ require_arg "$PRESET" "preset"
 require_arg "$CONFIG" "config"
 
 cmake --preset "$PRESET"
+download_qt_translations "build/$PRESET/qt_translations"
 cmake --build "build/$PRESET" --config "$CONFIG"
 
 if [[ "$RUN_TESTS" == "true" ]]; then

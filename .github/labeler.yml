@@ -245,7 +245,7 @@ gui:
 gui/lang:
   - changed-files:
     - any-glob-to-any-file:
-      - 'lang/**'
+      - 'i18n/**'
       - 'vita3k/lang/**'
 qt:
   - changed-files:

@@ -21,6 +21,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
+#include <QLibraryInfo>
 #include <QLocale>
 #include <QSet>
 #include <QTranslator>
@@ -33,7 +34,7 @@ namespace gui::i18n {
 
 namespace {
 
-const std::array<UiLanguageOption, 23> k_ui_languages = { {
+const std::array<UiLanguageOption, 24> k_ui_languages = { {
     { "en", "English (US)" },
     { "en-GB", "English (UK)" },
     { "ja", "日本語" },
@@ -57,9 +58,11 @@ const std::array<UiLanguageOption, 23> k_ui_languages = { {
     { "uk", "Українська" },
     { "id", "Bahasa Indonesia" },
     { "ms", "Bahasa Melayu" },
+    { "ar", "العربية" },
 } };
 
 std::unique_ptr<QTranslator> s_translator;
+std::unique_ptr<QTranslator> s_qt_translator;
 
 static QStringList translation_search_paths(const fs::path &static_assets_path) {
     return {
@@ -89,6 +92,20 @@ static QSet<QString> available_translation_tags(const fs::path &static_assets_pa
     return tags;
 }
 
+static void install_qt_catalog(QApplication &app, const QLocale &locale, const fs::path &static_assets_path) {
+    QStringList paths = translation_search_paths(static_assets_path);
+    paths.append(QLibraryInfo::path(QLibraryInfo::TranslationsPath));
+
+    auto translator = std::make_unique<QTranslator>();
+    for (const QString &path : paths) {
+        if (translator->load(locale, QStringLiteral("qt"), QStringLiteral("_"), path)) {
+            s_qt_translator = std::move(translator);
+            app.installTranslator(s_qt_translator.get());
+            return;
+        }
+    }
+}
+
 } // namespace
 
 std::span<const UiLanguageOption> ui_language_options(const fs::path &static_assets_path) {
@@ -97,19 +114,11 @@ std::span<const UiLanguageOption> ui_language_options(const fs::path &static_ass
     available_languages.clear();
 
     const QSet<QString> tags = available_translation_tags(static_assets_path);
-    if (tags.isEmpty()) {
-        available_languages.push_back(k_ui_languages.front());
-        return available_languages;
-    }
-
     for (const auto &language : k_ui_languages) {
         const QString tag = QString::fromUtf8(language.tag.data(), static_cast<int>(language.tag.size()));
-        if (tags.contains(tag))
+        if (language.tag == "en" || tags.contains(tag))
             available_languages.push_back(language);
     }
-
-    if (available_languages.empty())
-        available_languages.push_back(k_ui_languages.front());
 
     return available_languages;
 }
@@ -124,8 +133,12 @@ QString language_name(std::string_view tag) {
 }
 
 bool apply_ui_language(QApplication &app, std::string_view configured_tag, const fs::path &static_assets_path) {
-    if (s_translator)
-        app.removeTranslator(s_translator.get());
+    for (auto *translator : { &s_translator, &s_qt_translator }) {
+        if (*translator) {
+            app.removeTranslator(translator->get());
+            translator->reset();
+        }
+    }
 
     s_translator = std::make_unique<QTranslator>();
 
@@ -136,6 +149,7 @@ bool apply_ui_language(QApplication &app, std::string_view configured_tag, const
     for (const QString &path : translation_search_paths(static_assets_path)) {
         if (s_translator->load(locale, QStringLiteral("vita3k"), QStringLiteral("_"), path)) {
             app.installTranslator(s_translator.get());
+            install_qt_catalog(app, locale, static_assets_path);
             return true;
         }
     }

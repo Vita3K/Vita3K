@@ -223,6 +223,7 @@ if(NOT ANDROID)
 		"${CMAKE_SOURCE_DIR}/i18n/qt/*.ts")
 	set(VITA3K_QT_QM_DIR "${CMAKE_BINARY_DIR}/qt_translations")
 	set(VITA3K_QT_QM_FILES "")
+	file(MAKE_DIRECTORY "${VITA3K_QT_QM_DIR}")
 
 	foreach(ts_file IN LISTS VITA3K_QT_TS_FILES)
 		get_filename_component(ts_name "${ts_file}" NAME_WE)
@@ -240,15 +241,16 @@ if(NOT ANDROID)
 	add_dependencies(vita3k qt_app_translations)
 
 	add_custom_target(update_qt_translations
+		COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_SOURCE_DIR}/template"
 		COMMAND $<TARGET_FILE:Qt6::lupdate>
 			-no-obsolete
 			-recursive
 			"${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
 			"${CMAKE_CURRENT_SOURCE_DIR}/gui-qt/src"
 			"${CMAKE_CURRENT_SOURCE_DIR}/gui-qt/include"
-			-ts "${CMAKE_SOURCE_DIR}/i18n/qt/vita3k_en.ts"
+			-ts "${CMAKE_SOURCE_DIR}/template/vita3k_template.ts"
 		WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-		COMMENT "Updating Qt translation source file")
+		COMMENT "Generating the Qt translation template")
 endif()
 
 set_target_properties(vita3k PROPERTIES OUTPUT_NAME Vita3K)
@@ -364,8 +366,8 @@ elseif(LINUX)
 			${CMAKE_CURRENT_SOURCE_DIR}/icons
 			${CMAKE_SOURCE_DIR}/data
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/")
-		install(FILES
-			${VITA3K_QT_QM_FILES}
+		install(DIRECTORY
+			"${VITA3K_QT_QM_DIR}/"
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/translations/")
 		install(FILES
 			"${CMAKE_SOURCE_DIR}/dist/image/${VITA3K_APP_ID}.svg"

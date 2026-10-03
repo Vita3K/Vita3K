@@ -90,3 +90,7 @@ fastlane/readme.md
 
 # Copilot local config
 .github/copilot-instructions.md
+
+# Translations
+/template/
+/android/app/src/main/res/values-*/strings.xml

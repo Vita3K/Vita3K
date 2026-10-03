@@ -30,6 +30,7 @@ export CCACHE_DIR
 CCACHE_DIR="$(cygpath -u "C:/msys2-ccache")"
 
 cmake --preset "$PRESET"
+download_qt_translations "build/$PRESET/qt_translations"
 cmake --build "build/$PRESET" --config "$CONFIG"
 
 BINDIR="build/${PRESET}/bin/${CONFIG}"

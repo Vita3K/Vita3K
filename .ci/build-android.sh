@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+source "$(dirname "$0")/common.sh"
+
 OUTPUT_DIR="${1:-}"
 if [[ -z "$OUTPUT_DIR" ]]; then
     echo "Usage: $0 <output-dir>" >&2
@@ -11,6 +13,8 @@ mkdir -p android/app/assets
 rm -rf android/app/assets/data android/app/assets/shaders-builtin
 cp -r data android/app/assets/data
 cp -r vita3k/shaders-builtin android/app/assets/shaders-builtin
+
+download_android_strings android/app/src/main/res
 
 chmod +x android/gradlew
 
