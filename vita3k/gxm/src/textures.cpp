@@ -84,6 +84,7 @@ uint32_t get_num_components(SceGxmTextureBaseFormat fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
         return 3;
 
     // 4 components
@@ -138,8 +139,12 @@ bool is_pvrt_format(SceGxmTextureBaseFormat base_format) {
         || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP;
 }
 
+bool is_etc_format(SceGxmTextureBaseFormat base_format) {
+    return base_format == SCE_GXM_TEXTURE_BASE_FORMAT_ETC1;
+}
+
 bool is_block_compressed_format(SceGxmTextureBaseFormat base_format) {
-    return is_bcn_format(base_format) || is_pvrt_format(base_format);
+    return is_bcn_format(base_format) || is_pvrt_format(base_format) || is_etc_format(base_format);
 }
 
 uint32_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
@@ -185,6 +190,7 @@ uint32_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
         return 2;
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
         return 4;
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
@@ -236,6 +242,7 @@ std::pair<uint32_t, uint32_t> get_block_size(SceGxmTextureBaseFormat base_format
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
         return { 4, 4 };
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
