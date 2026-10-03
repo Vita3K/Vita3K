@@ -179,7 +179,23 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     if (context.state.features.support_shader_interlock)
         // we must always store the depth stencil
         force_store = true;
-    context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, force_load, force_store, color_surface_fin == nullptr);
+    // GXM starts each scene with the background mask of the depth-stencil surface (1 without one).
+    // The mask is only tested once the scene updated it, or from the start if it begins cleared.
+    const SceGxmDepthStencilSurface &ds = context.record.depth_stencil_surface;
+    const bool background_mask = ds.mask || (!ds.depth_data && !ds.stencil_data);
+    context.mask_initialized = false;
+    context.mask_updated = false;
+    context.record.is_mask_read = features.use_mask_bit && !background_mask;
+    if (features.use_mask_bit && !background_mask)
+        rt->uses_mask = true;
+    if (features.use_mask_bit && rt->uses_mask)
+        // mask updates restart the render pass (see restart_render_pass_for_mask)
+        force_store = true;
+
+    context.current_pass_loads_ds = force_load;
+    context.current_pass_stores_ds = force_store;
+    context.current_pass_keeps_mask = features.use_mask_bit && rt->uses_mask;
+    context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, force_load, force_store, color_surface_fin == nullptr, false, context.current_pass_keeps_mask);
     if (context.state.features.support_shader_interlock)
         // also retrieve / create the shader interlock pass
         context.current_shader_interlock_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, true, true, color_surface_fin == nullptr, true);
@@ -282,15 +298,24 @@ static vk::DescriptorSet retrieve_color_descriptor(VKState &state, FrameDescript
 
     // we have no more frame descriptor available, create a bunch of new one for this specific layout
     // the type depends on the way we read it
-    vk::DescriptorPoolSize pool_size{
-        .type = state.features.support_shader_interlock ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eInputAttachment,
-        .descriptorCount = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
-    };
+    std::array<vk::DescriptorPoolSize, 2> pool_sizes{ {
+        {
+            .type = state.features.support_shader_interlock ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eInputAttachment,
+            .descriptorCount = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING,
+        },
+        {
+            // the mask (binding 1)
+            .type = vk::DescriptorType::eInputAttachment,
+            .descriptorCount = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING,
+        },
+    } };
 
     vk::DescriptorPoolCreateInfo descriptor_pool_info{
         .maxSets = DESCRIPTOR_PACK_SIZE * MAX_FRAMES_RENDERING
     };
-    descriptor_pool_info.setPoolSizes(pool_size);
+    descriptor_pool_info.setPoolSizes(pool_sizes);
+    if (!state.features.use_mask_bit)
+        descriptor_pool_info.poolSizeCount = 1;
 
     vk::DescriptorPool descriptor_pool = state.device.createDescriptorPool(descriptor_pool_info);
     state.frame_descriptor_pools.push_back(descriptor_pool);
@@ -361,6 +386,8 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
     refresh_pipeline = true;
     current_pipeline = nullptr;
     in_renderpass = true;
+    non_mask_draw_in_pass = false;
+    mask_updated = false;
 
     if (!create_descriptor_set)
         return;
@@ -384,6 +411,87 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
     };
     write_descr.setImageInfo(descr_color_info);
     state.device.updateDescriptorSets(write_descr, {});
+
+    if (state.features.use_mask_bit) {
+        vk::DescriptorImageInfo descr_mask_info{
+            .sampler = nullptr,
+            .imageView = render_target->mask.view,
+            .imageLayout = vk::ImageLayout::eGeneral,
+        };
+        vk::WriteDescriptorSet write_mask{
+            .dstSet = rendertarget_set,
+            .dstBinding = 1,
+            .dstArrayElement = 0,
+            .descriptorType = vk::DescriptorType::eInputAttachment,
+        };
+        write_mask.setImageInfo(descr_mask_info);
+        state.device.updateDescriptorSets(write_mask, {});
+    }
+}
+
+void VKContext::prepare_mask() {
+    if (mask_initialized)
+        return;
+    mask_initialized = true;
+
+    // The pre-render command buffer runs before the scene draws recorded so far:
+    // the mask holds the background mask from the start of the scene.
+    const SceGxmDepthStencilSurface &ds = record.depth_stencil_surface;
+    const float value = (ds.mask || (!ds.depth_data && !ds.stencil_data)) ? 1.0f : 0.0f;
+    const vk::PipelineStageFlags attachment_stages = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
+    const vk::AccessFlags attachment_access = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eInputAttachmentRead;
+
+    vk::MemoryBarrier before{
+        .srcAccessMask = attachment_access,
+        .dstAccessMask = vk::AccessFlagBits::eTransferWrite
+    };
+    prerender_cmd.pipelineBarrier(attachment_stages, vk::PipelineStageFlagBits::eTransfer, {}, before, {}, {});
+
+    const vk::ClearColorValue clear_value{ std::array<float, 4>{ value, value, value, value } };
+    prerender_cmd.clearColorImage(render_target->mask.image, vk::ImageLayout::eGeneral, clear_value, vkutil::color_subresource_range);
+
+    vk::MemoryBarrier after{
+        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = attachment_access
+    };
+    prerender_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, attachment_stages, {}, after, {}, {});
+}
+
+void VKContext::mask_barrier() {
+    // The mask is the second color attachment: a mask update (color attachment write)
+    // must wait for the previous draws testing the mask (input attachment reads).
+    vk::MemoryBarrier barrier{
+        .srcAccessMask = vk::AccessFlagBits::eInputAttachmentRead,
+        .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+    };
+    render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eColorAttachmentOutput,
+        vk::DependencyFlagBits::eByRegion, barrier, {}, {});
+}
+
+void VKContext::restart_render_pass_for_mask() {
+    // Start a new render pass that keeps the mask attachment and loads what previous mask updates
+    // wrote: a pipeline barrier inside the render pass is not enough everywhere (MoltenVK reads
+    // input attachments as textures).
+    mask_updated = false;
+    const bool keep_initial_ds = !non_mask_draw_in_pass;
+    stop_render_pass();
+
+    if (keep_initial_ds) {
+        // only mask updates were drawn: the same load operations restore the same initial depth-stencil
+        current_render_pass = state.pipeline_cache.retrieve_render_pass(current_color_format, current_pass_loads_ds, current_pass_stores_ds, !record.color_surface.data, false, true);
+    } else {
+        // the depth-stencil holds the result of the previous draws: load it back
+        if (!current_pass_stores_ds)
+            LOG_WARN_ONCE("First mask use of a render target after depth-stencil use, the depth-stencil is lost for this scene");
+        current_render_pass = state.pipeline_cache.retrieve_render_pass(current_color_format, true, true, !record.color_surface.data, false, true);
+        current_pass_loads_ds = true;
+        current_pass_stores_ds = true;
+    }
+    current_pass_keeps_mask = true;
+    // the next scenes of this render target keep the mask and the depth-stencil from the start
+    render_target->uses_mask = true;
+
+    start_render_pass();
 }
 
 void VKContext::stop_render_pass() {
@@ -521,7 +629,9 @@ void VKContext::check_for_macroblock_change(bool is_draw) {
         // TODO: with the feedback loop extension we can do better
         ignore_macroblock = true;
         // in this case we must load and store the depth stencil each time
-        current_render_pass = state.pipeline_cache.retrieve_render_pass(current_color_format, true, true, !record.color_surface.data);
+        current_render_pass = state.pipeline_cache.retrieve_render_pass(current_color_format, true, true, !record.color_surface.data, false, current_pass_keeps_mask);
+        current_pass_loads_ds = true;
+        current_pass_stores_ds = true;
     }
 
     // use the scissor to know in which macroblock we are

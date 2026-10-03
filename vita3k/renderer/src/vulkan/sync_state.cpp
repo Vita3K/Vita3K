@@ -32,11 +32,12 @@ void sync_clipping(VKContext &context) {
 
     const float res_multiplier = context.state.res_multiplier;
 
-    const int scissor_x = context.record.region_clip_min.x;
-    const int scissor_y = context.record.region_clip_min.y;
+    const GxmRegionClipTiles tiles = gxm_region_clip_tiles(context.record.region_clip_min, context.record.region_clip_max);
+    const int scissor_x = tiles.x0;
+    const int scissor_y = tiles.y0;
 
-    const unsigned int scissor_w = std::max(context.record.region_clip_max.x - context.record.region_clip_min.x + 1, 0);
-    const unsigned int scissor_h = std::max(context.record.region_clip_max.y - context.record.region_clip_min.y + 1, 0);
+    const unsigned int scissor_w = std::max(tiles.x1 - tiles.x0, 0);
+    const unsigned int scissor_h = std::max(tiles.y1 - tiles.y0, 0);
 
     switch (context.record.region_clip_mode) {
     case SCE_GXM_REGION_CLIP_NONE:
@@ -53,8 +54,8 @@ void sync_clipping(VKContext &context) {
         };
         break;
     case SCE_GXM_REGION_CLIP_INSIDE:
-        // TODO: Implement SCE_GXM_REGION_CLIP_INSIDE
-        LOG_WARN("STUB SCE_GXM_REGION_CLIP_INSIDE");
+        // The kept area is not a rectangle: draw() issues one call per band
+        // around the clipped tiles (see draw_region_clipped).
         context.scissor = vk::Rect2D{ { 0, 0 }, { context.render_target->width, context.render_target->height } };
         break;
     }

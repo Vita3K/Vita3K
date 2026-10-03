@@ -122,8 +122,10 @@ struct GxmRecordState {
 
     bool is_maskupdate = false;
     bool is_gamma_corrected = false;
+    // Vulkan: the fragment shader must test the mask bit (the scene updated it or it starts cleared)
+    bool is_mask_read = false;
 
-    uint8_t _padding[6] = {};
+    uint8_t _padding[5] = {};
 
     // Do not put any state not used for the Vulkan pipeline creation before vertex_streams
     std::array<GXMStreamInfo, SCE_GXM_MAX_VERTEX_STREAMS> vertex_streams;

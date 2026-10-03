@@ -386,3 +386,27 @@ struct SceGxmTransferImage {
     uint32_t height;
     int32_t stride;
 };
+
+// GXM region clipping works on whole 32x32 tiles: every tile touched by the
+// region is kept (SCE_GXM_REGION_CLIP_OUTSIDE) or dropped
+// (SCE_GXM_REGION_CLIP_INSIDE) entirely.  Returns the pixel bounds
+// [x0, x1) x [y0, y1) of the tiles covered by the inclusive region.
+struct GxmRegionClipTiles {
+    int x0, y0, x1, y1;
+
+    bool empty() const {
+        return x1 <= x0 || y1 <= y0;
+    }
+};
+
+inline GxmRegionClipTiles gxm_region_clip_tiles(const SceIVector2 &min, const SceIVector2 &max) {
+    constexpr int tile_shift = 5; // SCE_GXM_TILE_SHIFTX/Y
+    if (max.x < min.x || max.y < min.y)
+        return {};
+    return {
+        (min.x >> tile_shift) << tile_shift,
+        (min.y >> tile_shift) << tile_shift,
+        ((max.x >> tile_shift) + 1) << tile_shift,
+        ((max.y >> tile_shift) + 1) << tile_shift,
+    };
+}

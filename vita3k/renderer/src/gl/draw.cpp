@@ -220,10 +220,40 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     const GLenum mode = translate_primitive(type);
     const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
 
-    if (instance_count == 1) {
-        glDrawElements(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second));
+    const auto issue_draw = [&]() {
+        if (instance_count == 1) {
+            glDrawElements(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second));
+        } else {
+            glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count);
+        }
+    };
+
+    const GxmRegionClipTiles clip_tiles = gxm_region_clip_tiles(context.record.region_clip_min, context.record.region_clip_max);
+    if (context.record.region_clip_mode == SCE_GXM_REGION_CLIP_INSIDE && !clip_tiles.empty()) {
+        // SCE_GXM_REGION_CLIP_INSIDE drops the tiles covered by the region:
+        // draw once per band around them (GXM coordinates, top-left origin).
+        constexpr GLint far_edge = 16384;
+        const GLint h = context.current_framebuffer_height;
+        const GLint x0 = clip_tiles.x0, y0 = clip_tiles.y0, x1 = clip_tiles.x1, y1 = clip_tiles.y1;
+        const GLint bands[4][4] = {
+            { 0, 0, far_edge, y0 },
+            { 0, y1, far_edge, far_edge - y1 },
+            { 0, y0, x0, y1 - y0 },
+            { x1, y0, far_edge - x1, y1 - y0 },
+        };
+        const float res = renderer.res_multiplier;
+        glEnable(GL_SCISSOR_TEST);
+        for (const auto &band : bands) {
+            if (band[2] <= 0 || band[3] <= 0)
+                continue;
+            const GLint gl_y = (context.record.viewport_flip[1] == -1.0f) ? band[1] : h - band[1] - band[3];
+            glScissor(static_cast<GLint>(band[0] * res), static_cast<GLint>(gl_y * res),
+                static_cast<GLsizei>(band[2] * res), static_cast<GLsizei>(band[3] * res));
+            issue_draw();
+        }
+        glDisable(GL_SCISSOR_TEST);
     } else {
-        glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, reinterpret_cast<const void *>(index_gpu_ptr.second), instance_count);
+        issue_draw();
     }
 
     // Restore context for normal draws
