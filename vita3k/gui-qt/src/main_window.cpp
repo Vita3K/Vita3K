@@ -376,6 +376,12 @@ void MainWindow::initialize() {
     m_ui->setupUi(this);
     setObjectName(QStringLiteral("main_window"));
 
+    // Keep the pause/resume toolbar and menu actions in sync with pause requests that
+    // don't originate from this window (e.g. the in-game pause overlay).
+    m_app_session.set_pause_state_changed_callback([this] {
+        QMetaObject::invokeMethod(this, &MainWindow::refresh_emulation_actions, Qt::QueuedConnection);
+    });
+
     this->resize(1280, 720);
     this->setWindowIcon(QIcon(":/Vita3K.png"));
     this->setWindowTitle(QString::fromStdString(window_title));
@@ -1313,6 +1319,12 @@ void MainWindow::pump_sdl_events() {
         default:
             break;
         }
+    }
+
+    // Stop requested by overlay/ingame
+    if (m_app_session.stop_requested()) {
+        on_game_closed();
+        m_app_session.reset_stop_request();
     }
 }
 
