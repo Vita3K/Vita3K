@@ -397,7 +397,7 @@ void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus>
 
 WaitResult ThreadState::delay_until(Deadline deadline) {
     while (true) {
-        const WaitResult r = wait(deadline);
+        const WaitResult r = wait({ SCE_KERNEL_WAITTYPE_DELAY }, deadline);
         if (!r)
             return r;
         // Reaching the deadline is the expected outcome of a delay
@@ -413,7 +413,7 @@ WaitResult ThreadState::wait_for_signal() {
             if (std::exchange(signal_pending, false))
                 return SCE_KERNEL_OK;
         }
-        const WaitResult r = wait(Deadline::max());
+        const WaitResult r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL }, Deadline::max());
         if (!r)
             return r;
     }
@@ -439,12 +439,13 @@ WaitResult ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt
     }
     std::unique_lock<std::mutex> end_lock(end_waiters_mutex);
     lock.unlock();
-    return end_waiters.wait(end_lock, waiter, { exit_status }, Deadline::max());
+    return end_waiters.wait(end_lock, waiter, { SCE_KERNEL_WAITTYPE_WAITTHEND, id }, { exit_status }, Deadline::max());
 }
 
-WaitResult ThreadState::wait(Deadline deadline) {
+WaitResult ThreadState::wait(WaitTarget target, Deadline deadline) {
     std::unique_lock<std::mutex> lock(mutex);
     const auto woken = [&] { return delete_requested || wake_pending; };
+    wait_target = target;
     update_status(ThreadStatus::waiting);
     bool satisfied = true;
     if (deadline == Deadline::max())
@@ -452,6 +453,7 @@ WaitResult ThreadState::wait(Deadline deadline) {
     else
         satisfied = wait_cv.wait_until(lock, deadline, woken);
     update_status(ThreadStatus::running);
+    wait_target = {};
     if (delete_requested)
         return std::unexpected{ ThreadExiting{} };
     wake_pending = false;

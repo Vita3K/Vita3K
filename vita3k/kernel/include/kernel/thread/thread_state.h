@@ -39,11 +39,12 @@ typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::function<void(CPUState &, uint32_t, SceUID)> CallImport;
 typedef std::function<std::string(Address)> ResolveNIDName;
 
-enum class ThreadStatus {
-    running, // Running
-    dormant, // Waiting for a job
-    suspended, // Suspended by debugger
-    waiting, // Waiting to be awaken by sync object or operation
+// Values are what sceKernelGetThreadInfo reports
+enum class ThreadStatus : SceUInt32 {
+    running = SCE_KERNEL_THREAD_STATUS_RUNNING,
+    waiting = SCE_KERNEL_THREAD_STATUS_WAITING, // Waiting to be awaken by sync object or operation
+    dormant = SCE_KERNEL_THREAD_STATUS_DORMANT, // Waiting for a job
+    suspended = SCE_KERNEL_THREAD_STATUS_SUSPENDED, // Suspended by debugger
 };
 
 struct ThreadState {
@@ -65,6 +66,8 @@ struct ThreadState {
 
     CPUStatePtr cpu;
     ThreadStatus status = ThreadStatus::dormant;
+    // What the thread waits on while waiting, empty otherwise
+    WaitTarget wait_target;
 
     std::vector<CallbackPtr> callbacks;
     std::condition_variable status_cond;
@@ -100,9 +103,9 @@ struct ThreadState {
     // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
     [[nodiscard]] WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status);
 
-    // Waits until woken by wake(), deleted, or the deadline passes.
+    // Waits on target until woken by wake(), deleted, or the deadline passes.
     // A stale wake can end it early, so callers must recheck their condition.
-    [[nodiscard]] WaitResult wait(Deadline deadline);
+    [[nodiscard]] WaitResult wait(WaitTarget target, Deadline deadline);
     // Wakes this thread from wait().
     void wake();
 
