@@ -29,8 +29,32 @@
 #include <util/log.h>
 #include <util/vector_utils.h>
 
+#include <atomic>
+
 extern "C" {
 #include <libswscale/swscale.h>
+}
+
+namespace renderer::vulkan {
+// Metal Max Xeno (PCSH10100) CPU-samples a linear S8D24 depth target while
+// validating overworld attacks. The CPU hook records one bounded readback
+// request here and the Vulkan thread services it after the next render pass.
+std::atomic<uint64_t> g_metal_max_xeno_target_depth_sync_requests{ 0 };
+std::atomic<bool> g_metal_max_xeno_target_depth_sync_pending{ false };
+std::atomic<uint32_t> g_metal_max_xeno_target_depth_sync_min_x{ UINT32_MAX };
+std::atomic<uint32_t> g_metal_max_xeno_target_depth_sync_min_y{ UINT32_MAX };
+std::atomic<uint32_t> g_metal_max_xeno_target_depth_sync_max_x{ 0 };
+std::atomic<uint32_t> g_metal_max_xeno_target_depth_sync_max_y{ 0 };
+std::atomic<uint64_t> g_metal_max_xeno_target_depth_sync_area_key{ UINT64_MAX };
+}
+
+static void clear_metal_max_xeno_target_depth_sync_region() {
+    renderer::vulkan::g_metal_max_xeno_target_depth_sync_min_x.store(UINT32_MAX, std::memory_order_relaxed);
+    renderer::vulkan::g_metal_max_xeno_target_depth_sync_min_y.store(UINT32_MAX, std::memory_order_relaxed);
+    renderer::vulkan::g_metal_max_xeno_target_depth_sync_max_x.store(0, std::memory_order_relaxed);
+    renderer::vulkan::g_metal_max_xeno_target_depth_sync_max_y.store(0, std::memory_order_relaxed);
+    renderer::vulkan::g_metal_max_xeno_target_depth_sync_pending.store(false, std::memory_order_relaxed);
+    renderer::vulkan::g_metal_max_xeno_target_depth_sync_area_key.store(UINT64_MAX, std::memory_order_relaxed);
 }
 
 static bool format_support_surface_sync(SceGxmColorBaseFormat format) {
@@ -58,6 +82,14 @@ static bool format_need_additional_memory(SceGxmColorBaseFormat format) {
 }
 
 namespace renderer::vulkan {
+
+static bool is_metal_max_xeno_target_depth_surface(const SceGxmDepthStencilSurface &surface) {
+    // This title uses the S8 byte of a 960x544 linear S8D24 surface as a CPU
+    // visibility table for the targeting UI and attack validation.
+    return surface.depth_data.address() == 0x702A0280
+        && surface.get_format() == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24
+        && surface.get_type() == SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR;
+}
 
 static void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
     const bool trap_reads = (info.tiling == SurfaceTiling::Linear
@@ -720,6 +752,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
             || cached_info->tiling != tiling;
 
         if (!need_remake)
+            cached_info->last_frame_rendered = reinterpret_cast<VKContext *>(state.context)->frame_timestamp;
+        if (!need_remake)
             return {
                 cached_info->texture.view,
                 &cached_info->texture
@@ -750,6 +784,14 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
     cached_info->multisample_mode = target->multisample_mode;
     cached_info->stride_samples = depth_stencil->get_stride();
     cached_info->tiling = tiling;
+    cached_info->last_frame_rendered = reinterpret_cast<VKContext *>(state.context)->frame_timestamp;
+    cached_info->last_target_depth_sync_frame = 0;
+    cached_info->metal_max_xeno_target_depth_sync = is_metal_max_xeno_target_depth_surface(*depth_stencil);
+    cached_info->need_target_depth_buffer_sync = false;
+    cached_info->target_depth_sync_x = 0;
+    cached_info->target_depth_sync_y = 0;
+    cached_info->target_depth_sync_width = 0;
+    cached_info->target_depth_sync_height = 0;
 
     uint32_t bytes_per_sample;
     switch (depth_stencil->get_format()) {
@@ -764,6 +806,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
         break;
     }
     cached_info->total_bytes = bytes_per_sample * depth_stencil->get_stride() * memory_height;
+    if (cached_info->metal_max_xeno_target_depth_sync)
+        clear_metal_max_xeno_target_depth_sync_region();
 
     vkutil::Image &image = cached_info->texture;
 
@@ -1287,6 +1331,155 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
     last_written_surface = nullptr;
 
     return return_value;
+}
+
+DepthStencilSurfaceCacheInfo *VKSurfaceCache::perform_depth_stencil_sync() {
+    if (!state.features.enable_memory_mapping)
+        return nullptr;
+
+    const uint64_t requested_sync = g_metal_max_xeno_target_depth_sync_requests.load(std::memory_order_relaxed);
+    if (requested_sync == last_metal_max_xeno_depth_sync_request)
+        return nullptr;
+
+    DepthStencilSurfaceCacheInfo *depth_surface = nullptr;
+    uint64_t latest_frame = 0;
+    constexpr uint64_t metal_max_xeno_depth_sync_interval = 1;
+    for (auto &item : ds_surface_queue.items) {
+        DepthStencilSurfaceCacheInfo &surface = item.content;
+        const bool sync_due = surface.last_target_depth_sync_frame == 0
+            || surface.last_frame_rendered >= surface.last_target_depth_sync_frame + metal_max_xeno_depth_sync_interval;
+        if (surface.metal_max_xeno_target_depth_sync && surface.surface.depth_data && surface.texture.image
+            && sync_due
+            && surface.last_frame_rendered >= latest_frame) {
+            depth_surface = &surface;
+            latest_frame = surface.last_frame_rendered;
+        }
+    }
+
+    if (!depth_surface) {
+        clear_metal_max_xeno_target_depth_sync_region();
+        last_metal_max_xeno_depth_sync_request = requested_sync;
+        return nullptr;
+    }
+
+    uint32_t min_x = g_metal_max_xeno_target_depth_sync_min_x.exchange(UINT32_MAX, std::memory_order_relaxed);
+    uint32_t min_y = g_metal_max_xeno_target_depth_sync_min_y.exchange(UINT32_MAX, std::memory_order_relaxed);
+    uint32_t max_x = g_metal_max_xeno_target_depth_sync_max_x.exchange(0, std::memory_order_relaxed);
+    uint32_t max_y = g_metal_max_xeno_target_depth_sync_max_y.exchange(0, std::memory_order_relaxed);
+    g_metal_max_xeno_target_depth_sync_pending.store(false, std::memory_order_relaxed);
+
+    if (min_x > max_x || min_y > max_y) {
+        last_metal_max_xeno_depth_sync_request = requested_sync;
+        return nullptr;
+    }
+
+    min_x = std::min<uint32_t>(min_x, depth_surface->memory_width - 1);
+    max_x = std::min<uint32_t>(max_x, depth_surface->memory_width - 1);
+    min_y = std::min<uint32_t>(min_y, depth_surface->memory_height - 1);
+    max_y = std::min<uint32_t>(max_y, depth_surface->memory_height - 1);
+    if (min_x > max_x || min_y > max_y) {
+        last_metal_max_xeno_depth_sync_request = requested_sync;
+        return nullptr;
+    }
+
+    depth_surface->target_depth_sync_x = min_x;
+    depth_surface->target_depth_sync_y = min_y;
+    depth_surface->target_depth_sync_width = max_x - min_x + 1;
+    depth_surface->target_depth_sync_height = max_y - min_y + 1;
+
+    // Copy the depth aspect, not the Vulkan stencil aspect. On the tested
+    // hardware path the stencil copy stayed zero, while the game expects the
+    // CPU-visible S8 byte to be positive whenever geometry was drawn there.
+    const uint32_t pixel_count = depth_surface->target_depth_sync_width * depth_surface->target_depth_sync_height;
+    const uint32_t depth_bytes_per_sample = depth_surface->texture.format == vk::Format::eD16Unorm ? sizeof(uint16_t) : sizeof(uint32_t);
+    const uint32_t depth_bytes = pixel_count * depth_bytes_per_sample;
+    if (!depth_surface->target_depth_copy_buffer)
+        depth_surface->target_depth_copy_buffer = std::make_unique<vkutil::Buffer>();
+
+    vkutil::Buffer &copy_buffer = *depth_surface->target_depth_copy_buffer;
+    if (!copy_buffer.buffer || copy_buffer.size < depth_bytes) {
+        copy_buffer.destroy();
+        copy_buffer.size = depth_bytes;
+        copy_buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vkutil::vma_mapped_alloc);
+    }
+
+    VKContext *context = reinterpret_cast<VKContext *>(state.context);
+    vk::CommandBuffer cmd_buffer = context->render_cmd;
+
+    vk::ImageSubresourceRange depth_range = vkutil::ds_subresource_range;
+    depth_range.aspectMask = vk::ImageAspectFlagBits::eDepth;
+    depth_surface->texture.transition_to(cmd_buffer, vkutil::ImageLayout::TransferSrc, depth_range);
+
+    vk::ImageSubresourceLayers depth_layers = vkutil::color_subresource_layer;
+    depth_layers.aspectMask = vk::ImageAspectFlagBits::eDepth;
+
+    vk::BufferImageCopy copy{
+        .bufferOffset = 0,
+        .bufferRowLength = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource = depth_layers,
+        .imageOffset = { static_cast<int32_t>(depth_surface->target_depth_sync_x), static_cast<int32_t>(depth_surface->target_depth_sync_y), 0 },
+        .imageExtent = { depth_surface->target_depth_sync_width, depth_surface->target_depth_sync_height, 1 }
+    };
+    cmd_buffer.copyImageToBuffer(depth_surface->texture.image, vk::ImageLayout::eTransferSrcOptimal, copy_buffer.buffer, copy);
+    depth_surface->texture.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilReadOnly, depth_range);
+
+    depth_surface->need_target_depth_buffer_sync = true;
+    depth_surface->last_target_depth_sync_frame = depth_surface->last_frame_rendered;
+    last_metal_max_xeno_depth_sync_request = requested_sync;
+
+    return depth_surface;
+}
+
+void VKSurfaceCache::perform_post_depth_stencil_sync(const MemState &mem, DepthStencilSurfaceCacheInfo *surface) {
+    if (!surface || !surface->need_target_depth_buffer_sync || !surface->target_depth_copy_buffer || !surface->target_depth_copy_buffer->mapped_data)
+        return;
+
+    const uint32_t pixel_count = surface->target_depth_sync_width * surface->target_depth_sync_height;
+    if (pixel_count == 0) {
+        surface->need_target_depth_buffer_sync = false;
+        return;
+    }
+
+    Ptr<uint8_t> dst_ptr{ surface->surface.depth_data.address() };
+    if (!dst_ptr || !dst_ptr.valid(mem)) {
+        LOG_ERROR("Depth post-sync destination is invalid: {}", log_hex(surface->surface.depth_data.address()));
+        surface->need_target_depth_buffer_sync = false;
+        return;
+    }
+
+    uint8_t *dst = dst_ptr.get(mem);
+    const uint8_t *src = reinterpret_cast<const uint8_t *>(surface->target_depth_copy_buffer->mapped_data);
+
+    for (uint32_t row = 0; row < surface->target_depth_sync_height; row++) {
+        for (uint32_t col = 0; col < surface->target_depth_sync_width; col++) {
+            const uint32_t src_index = row * surface->target_depth_sync_width + col;
+            uint8_t value = 0;
+            if (surface->texture.format == vk::Format::eD32SfloatS8Uint) {
+                const float depth = reinterpret_cast<const float *>(src)[src_index];
+                if (depth >= 0.0f && depth < 0.999999f)
+                    value = 1;
+            } else if (surface->texture.format == vk::Format::eD24UnormS8Uint || surface->texture.format == vk::Format::eX8D24UnormPack32) {
+                const uint32_t packed_depth = reinterpret_cast<const uint32_t *>(src)[src_index] & 0x00FFFFFF;
+                if (packed_depth < 0x00FFFFEF)
+                    value = 1;
+            } else if (surface->texture.format == vk::Format::eD16Unorm) {
+                const uint16_t depth = reinterpret_cast<const uint16_t *>(src)[src_index];
+                if (depth < 0xFFFE)
+                    value = 1;
+            } else {
+                value = src[src_index] ? 1 : 0;
+            }
+
+            // The guest reads this byte with signed extension, so write +1 for
+            // visible depth instead of 0xFF.
+            const uint32_t dst_x = surface->target_depth_sync_x + col;
+            const uint32_t dst_y = surface->target_depth_sync_y + row;
+            dst[(dst_x + dst_y * surface->stride_samples) * sizeof(uint32_t) + 3] = value;
+        }
+    }
+
+    surface->need_target_depth_buffer_sync = false;
 }
 
 template <typename T>

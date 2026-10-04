@@ -1748,29 +1748,33 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
 
 EXPORT(int, sceGxmBeginSceneEx, SceGxmContext *immediateContext, uint32_t flags, const SceGxmRenderTarget *renderTarget, const SceGxmValidRegion *validRegion, SceGxmSyncObject *vertexSyncObject, Ptr<SceGxmSyncObject> fragmentSyncObject, const SceGxmColorSurface *colorSurface, const SceGxmDepthStencilSurface *loadDepthStencilSurface, const SceGxmDepthStencilSurface *storeDepthStencilSurface) {
     TRACY_FUNC(sceGxmBeginSceneEx, immediateContext, flags, renderTarget, validRegion, vertexSyncObject, fragmentSyncObject, colorSurface, loadDepthStencilSurface, storeDepthStencilSurface);
-    // storeDepthStencilSurface
-    if (!immediateContext) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    SceGxmDepthStencilSurface depth_stencil_surface = {};
+    const SceGxmDepthStencilSurface *depth_stencil_surface_ptr = loadDepthStencilSurface;
+
+    if (storeDepthStencilSurface) {
+        // Games may render into a store-only depth/stencil surface and later sample
+        // that memory on the CPU. Forward the store surface to the renderer so it
+        // tracks the image that receives the scene depth writes.
+        depth_stencil_surface = *storeDepthStencilSurface;
+        depth_stencil_surface_ptr = &depth_stencil_surface;
+
+        if (loadDepthStencilSurface) {
+            const bool same_depth = loadDepthStencilSurface->depth_data.address() == storeDepthStencilSurface->depth_data.address();
+            const bool same_stencil = loadDepthStencilSurface->stencil_data.address() == storeDepthStencilSurface->stencil_data.address();
+
+            if (same_depth && same_stencil) {
+                depth_stencil_surface.force_load = loadDepthStencilSurface->force_load;
+                depth_stencil_surface.background_depth = loadDepthStencilSurface->background_depth;
+                depth_stencil_surface.mask = loadDepthStencilSurface->mask;
+                depth_stencil_surface.stencil = loadDepthStencilSurface->stencil;
+            } else {
+                depth_stencil_surface.force_load = false;
+                LOG_WARN_ONCE("sceGxmBeginSceneEx with different load/store depth-stencil surfaces is approximated by using the store surface.");
+            }
+        }
     }
 
-    if (flags & 0xFFFFFFF0) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    }
-
-    if (!renderTarget || (vertexSyncObject != nullptr)) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    }
-
-    if (immediateContext->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    }
-
-    if (immediateContext->state.active) {
-        return RET_ERROR(SCE_GXM_ERROR_WITHIN_SCENE);
-    }
-
-    STUBBED("Using sceGxmBeginScene");
-    return CALL_EXPORT(sceGxmBeginScene, immediateContext, flags, renderTarget, validRegion, vertexSyncObject, fragmentSyncObject, colorSurface, loadDepthStencilSurface);
+    return CALL_EXPORT(sceGxmBeginScene, immediateContext, flags, renderTarget, validRegion, vertexSyncObject, fragmentSyncObject, colorSurface, depth_stencil_surface_ptr);
 }
 
 DECL_EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount);
