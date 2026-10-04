@@ -195,9 +195,14 @@ struct SyncSignalRequest {
     uint32_t timestamp;
 };
 struct ColorSurfaceCacheInfo;
+struct DepthStencilSurfaceCacheInfo;
 
 struct PostSurfaceSyncRequest {
     ColorSurfaceCacheInfo *cache_info;
+};
+
+struct PostDepthStencilSurfaceSyncRequest {
+    DepthStencilSurfaceCacheInfo *cache_info;
 };
 
 using CallbackRequestFunction = std::function<void()>;
@@ -223,6 +228,7 @@ typedef std::variant<
     FrameDoneRequest,
     BufferSyncRequest,
     PostSurfaceSyncRequest,
+    PostDepthStencilSurfaceSyncRequest,
     SyncSignalRequest,
     CallbackRequest>
     WaitThreadRequest;

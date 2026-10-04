@@ -141,6 +141,16 @@ struct DepthStencilSurfaceCacheInfo : public SurfaceCacheInfo {
 
     // used when texture viewport is not enabled
     std::vector<DepthSurfaceView> read_surfaces;
+
+    uint64_t last_frame_rendered = 0;
+    uint64_t last_target_depth_sync_frame = 0;
+    bool metal_max_xeno_target_depth_sync = false;
+    bool need_target_depth_buffer_sync = false;
+    uint32_t target_depth_sync_x = 0;
+    uint32_t target_depth_sync_y = 0;
+    uint32_t target_depth_sync_width = 0;
+    uint32_t target_depth_sync_height = 0;
+    std::unique_ptr<vkutil::Buffer> target_depth_copy_buffer;
 };
 
 // result when looking in the surface cache for a texture
@@ -182,6 +192,7 @@ private:
 
     VKRenderTarget *target = nullptr;
     ColorSurfaceCacheInfo *last_written_surface = nullptr;
+    uint64_t last_metal_max_xeno_depth_sync_request = 0;
 
     // destroy all framebuffers using view as their color or depth-stencil
     void destroy_framebuffers(vk::ImageView view);
@@ -220,9 +231,11 @@ public:
 
     // If non-null, the return value must be sent as a PostSurfaceSyncRequest
     ColorSurfaceCacheInfo *perform_surface_sync();
+    DepthStencilSurfaceCacheInfo *perform_depth_stencil_sync();
 
     // Called after the render has been done
     void perform_post_surface_sync(const MemState &mem, ColorSurfaceCacheInfo *surface);
+    void perform_post_depth_stencil_sync(const MemState &mem, DepthStencilSurfaceCacheInfo *surface);
 
     // destroy all framebuffers associated with render_target
     // (meaning their color or depth-stencil surface is not backed by memory)

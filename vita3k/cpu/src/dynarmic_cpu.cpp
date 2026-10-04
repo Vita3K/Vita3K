@@ -26,10 +26,21 @@
 #include <dynarmic/interface/A32/coprocessor.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
+#include <atomic>
 #include <bit>
 #include <memory>
 #include <optional>
 #include <string>
+
+namespace renderer::vulkan {
+extern std::atomic<uint64_t> g_metal_max_xeno_target_depth_sync_requests;
+extern std::atomic<bool> g_metal_max_xeno_target_depth_sync_pending;
+extern std::atomic<uint32_t> g_metal_max_xeno_target_depth_sync_min_x;
+extern std::atomic<uint32_t> g_metal_max_xeno_target_depth_sync_min_y;
+extern std::atomic<uint32_t> g_metal_max_xeno_target_depth_sync_max_x;
+extern std::atomic<uint32_t> g_metal_max_xeno_target_depth_sync_max_y;
+extern std::atomic<uint64_t> g_metal_max_xeno_target_depth_sync_area_key;
+}
 
 class ArmDynarmicCP15 : public Dynarmic::A32::Coprocessor {
     uint32_t tpidruro;
@@ -153,10 +164,54 @@ public:
         LOG_TRACE("{} ({}): {} {}", log_hex(self_), self.parent->thread_id, log_hex(address), disassembly);
     }
 
+    static void AtomicMin(std::atomic<uint32_t> &target, uint32_t value) {
+        uint32_t current = target.load(std::memory_order_relaxed);
+        while (value < current && !target.compare_exchange_weak(current, value, std::memory_order_relaxed)) {
+        }
+    }
+
+    static void AtomicMax(std::atomic<uint32_t> &target, uint32_t value) {
+        uint32_t current = target.load(std::memory_order_relaxed);
+        while (value > current && !target.compare_exchange_weak(current, value, std::memory_order_relaxed)) {
+        }
+    }
+
+    static void RequestMetalMaxXenoTargetFullSync() {
+        // Metal Max Xeno samples this depth/stencil surface from the CPU when
+        // validating overworld attacks. Keep the request cached so aiming does
+        // not force a GPU readback every frame.
+        constexpr uint32_t target_width = 960;
+        constexpr uint32_t target_height = 544;
+        constexpr uint32_t min_x = 0;
+        constexpr uint32_t min_y = 0;
+        constexpr uint32_t max_x = target_width - 1;
+        constexpr uint32_t max_y = target_height - 1;
+        const uint64_t area_key = static_cast<uint64_t>(min_x)
+            | (static_cast<uint64_t>(min_y) << 10)
+            | (static_cast<uint64_t>(max_x) << 20)
+            | (static_cast<uint64_t>(max_y) << 30);
+
+        const uint64_t previous_area = renderer::vulkan::g_metal_max_xeno_target_depth_sync_area_key.exchange(area_key, std::memory_order_relaxed);
+        if (previous_area == area_key)
+            return;
+
+        AtomicMin(renderer::vulkan::g_metal_max_xeno_target_depth_sync_min_x, min_x);
+        AtomicMin(renderer::vulkan::g_metal_max_xeno_target_depth_sync_min_y, min_y);
+        AtomicMax(renderer::vulkan::g_metal_max_xeno_target_depth_sync_max_x, max_x);
+        AtomicMax(renderer::vulkan::g_metal_max_xeno_target_depth_sync_max_y, max_y);
+
+        if (!renderer::vulkan::g_metal_max_xeno_target_depth_sync_pending.exchange(true, std::memory_order_relaxed))
+            renderer::vulkan::g_metal_max_xeno_target_depth_sync_requests.fetch_add(1, std::memory_order_relaxed);
+    }
+
     void PreCodeTranslationHook(bool is_thumb, Dynarmic::A32::VAddr pc, Dynarmic::A32::IREmitter &ir) override {
         if (cpu->log_code) {
             ir.CallHostFunction(&TraceInstruction, ir.Imm64((uint64_t)this), ir.Imm64(pc), ir.Imm64(is_thumb));
         }
+
+        // PCSH10100: overworld target validation entry point.
+        if (pc == 0x810ED9AC)
+            ir.CallHostFunction(&RequestMetalMaxXenoTargetFullSync);
     }
 
     template <typename T>
