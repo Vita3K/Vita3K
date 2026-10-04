@@ -141,6 +141,16 @@ struct DepthStencilSurfaceCacheInfo : public SurfaceCacheInfo {
 
     // used when texture viewport is not enabled
     std::vector<DepthSurfaceView> read_surfaces;
+
+    uint64_t last_frame_rendered = 0;
+    uint64_t last_depth_surface_sync_frame = 0;
+    std::shared_ptr<bool> need_depth_surface_sync;
+    bool need_depth_surface_buffer_sync = false;
+    uint32_t depth_surface_sync_x = 0;
+    uint32_t depth_surface_sync_y = 0;
+    uint32_t depth_surface_sync_width = 0;
+    uint32_t depth_surface_sync_height = 0;
+    std::unique_ptr<vkutil::Buffer> depth_surface_copy_buffer;
 };
 
 // result when looking in the surface cache for a texture
@@ -205,7 +215,7 @@ public:
     SurfaceRetrieveResult retrieve_color_surface_for_framebuffer(MemState &mem, SceGxmColorSurface *color);
     std::optional<TextureLookupResult> retrieve_color_surface_as_texture(const SceGxmTexture &texture, const SceGxmColorBaseFormat base_format, TextureViewport *texture_viewport);
 
-    SurfaceRetrieveResult retrieve_depth_stencil_for_framebuffer(SceGxmDepthStencilSurface *depth_stencil, const uint32_t width, const uint32_t height);
+    SurfaceRetrieveResult retrieve_depth_stencil_for_framebuffer(MemState &mem, SceGxmDepthStencilSurface *depth_stencil, const uint32_t width, const uint32_t height);
     std::optional<TextureLookupResult> retrieve_depth_stencil_as_texture(const SceGxmTexture &texture, TextureViewport *texture_viewport);
 
     Framebuffer &retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
@@ -220,9 +230,11 @@ public:
 
     // If non-null, the return value must be sent as a PostSurfaceSyncRequest
     ColorSurfaceCacheInfo *perform_surface_sync();
+    DepthStencilSurfaceCacheInfo *perform_depth_stencil_sync();
 
     // Called after the render has been done
     void perform_post_surface_sync(const MemState &mem, ColorSurfaceCacheInfo *surface);
+    void perform_post_depth_stencil_sync(const MemState &mem, DepthStencilSurfaceCacheInfo *surface);
 
     // destroy all framebuffers associated with render_target
     // (meaning their color or depth-stencil surface is not backed by memory)

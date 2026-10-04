@@ -109,6 +109,11 @@ void VKContext::wait_thread_function(const MemState &mem) {
 
                            state.surface_cache.perform_post_surface_sync(mem, request.cache_info);
                        },
+                       [&](PostDepthStencilSurfaceSyncRequest &request) {
+                           wait_for_fences();
+
+                           state.surface_cache.perform_post_depth_stencil_sync(mem, request.cache_info);
+                       },
                        [&](SyncSignalRequest &request) {
                            wait_for_fences();
 
@@ -449,8 +454,11 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     }
 
     ColorSurfaceCacheInfo *surface_info = nullptr;
-    if (state.features.enable_memory_mapping && !state.disable_surface_sync && submit)
+    DepthStencilSurfaceCacheInfo *depth_surface_info = nullptr;
+    if (state.features.enable_memory_mapping && !state.disable_surface_sync && submit) {
         surface_info = state.surface_cache.perform_surface_sync();
+        depth_surface_info = state.surface_cache.perform_depth_stencil_sync();
+    }
 
     prerender_cmd.end();
     render_cmd.end();
@@ -499,6 +507,10 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
 
         if (surface_info && surface_info->need_post_surface_sync) {
             state.request_queue.push(PostSurfaceSyncRequest{ surface_info });
+        }
+
+        if (depth_surface_info && depth_surface_info->need_depth_surface_buffer_sync) {
+            state.request_queue.push(PostDepthStencilSurfaceSyncRequest{ depth_surface_info });
         }
 
         if (notif1.address || notif2.address) {

@@ -89,6 +89,34 @@ static void protect_surface(MemState &mem, ColorSurfaceCacheInfo &info) {
         });
 }
 
+static bool depth_surface_support_surface_sync(const DepthStencilSurfaceCacheInfo &info) {
+    return info.tiling == SurfaceTiling::Linear
+        && info.surface.get_format() == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24
+        && info.surface.depth_data;
+}
+
+static void protect_depth_surface(MemState &mem, DepthStencilSurfaceCacheInfo &info) {
+    if (!depth_surface_support_surface_sync(info) || !info.need_depth_surface_sync)
+        return;
+
+    uint32_t addr_start = align(info.surface.depth_data.address(), KiB(4));
+    uint32_t addr_end = align_down(info.surface.depth_data.address() + info.total_bytes, KiB(4));
+    if (addr_start >= addr_end) {
+        // Small surfaces still need one protected page so CPU reads can request
+        // a readback, even if the protected range is less exact.
+        addr_start = align_down(info.surface.depth_data.address(), KiB(4));
+        addr_end = align(info.surface.depth_data.address() + info.total_bytes, KiB(4));
+    }
+
+    std::shared_ptr<bool> need_sync = info.need_depth_surface_sync;
+    add_protect(mem, addr_start, addr_end - addr_start, MemPerm::None,
+        [need_sync](Address, bool write) {
+            if (!write)
+                *need_sync = true;
+            return true;
+        });
+}
+
 ColorSurfaceCacheInfo::~ColorSurfaceCacheInfo() {
     sws_freeContext(sws_context);
 }
@@ -134,6 +162,9 @@ void VKSurfaceCache::destroy_surface(DepthStencilSurfaceCacheInfo &info) {
 
     destroy_queue.add(info.depth_view);
     destroy_queue.add(info.stencil_view);
+
+    if (info.depth_surface_copy_buffer)
+        destroy_queue.add_buffer(*info.depth_surface_copy_buffer);
 
     destroy_framebuffers(info.texture.view);
     destroy_queue.add_image(info.texture);
@@ -189,6 +220,9 @@ void VKSurfaceCache::cleanup() {
             state.device.destroy(info.stencil_view);
             info.stencil_view = nullptr;
         }
+
+        if (info.depth_surface_copy_buffer)
+            info.depth_surface_copy_buffer->destroy();
 
         info.texture.destroy();
     }
@@ -684,7 +718,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_color_surface_as_tex
     }
 }
 
-SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(SceGxmDepthStencilSurface *depth_stencil, const uint32_t width, const uint32_t height) {
+SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(MemState &mem, SceGxmDepthStencilSurface *depth_stencil, const uint32_t width, const uint32_t height) {
     // when writing we use the render target size which is already upscaled
     int32_t memory_width = static_cast<int32_t>(width / state.res_multiplier);
     int32_t memory_height = static_cast<int32_t>(height / state.res_multiplier);
@@ -720,10 +754,15 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
             || cached_info->tiling != tiling;
 
         if (!need_remake)
+            cached_info->last_frame_rendered = reinterpret_cast<VKContext *>(state.context)->frame_timestamp;
+        if (!need_remake) {
+            if (can_mprotect_mapped_memory)
+                protect_depth_surface(mem, *cached_info);
             return {
                 cached_info->texture.view,
                 &cached_info->texture
             };
+        }
     } else {
         // retrieve a new depth stencil
         cached_info = ds_surface_queue.get_lru();
@@ -750,6 +789,14 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
     cached_info->multisample_mode = target->multisample_mode;
     cached_info->stride_samples = depth_stencil->get_stride();
     cached_info->tiling = tiling;
+    cached_info->last_frame_rendered = reinterpret_cast<VKContext *>(state.context)->frame_timestamp;
+    cached_info->last_depth_surface_sync_frame = 0;
+    cached_info->need_depth_surface_sync = std::make_shared<bool>(false);
+    cached_info->need_depth_surface_buffer_sync = false;
+    cached_info->depth_surface_sync_x = 0;
+    cached_info->depth_surface_sync_y = 0;
+    cached_info->depth_surface_sync_width = 0;
+    cached_info->depth_surface_sync_height = 0;
 
     uint32_t bytes_per_sample;
     switch (depth_stencil->get_format()) {
@@ -764,6 +811,8 @@ SurfaceRetrieveResult VKSurfaceCache::retrieve_depth_stencil_for_framebuffer(Sce
         break;
     }
     cached_info->total_bytes = bytes_per_sample * depth_stencil->get_stride() * memory_height;
+    if (can_mprotect_mapped_memory)
+        protect_depth_surface(mem, *cached_info);
 
     vkutil::Image &image = cached_info->texture;
 
@@ -1068,7 +1117,7 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
     }
 
     if (depth_stencil) {
-        ds_result = retrieve_depth_stencil_for_framebuffer(depth_stencil, target->width, target->height);
+        ds_result = retrieve_depth_stencil_for_framebuffer(mem, depth_stencil, target->width, target->height);
     } else {
         ds_result.view = target->depthstencil.view;
         ds_result.base_image = &target->depthstencil;
@@ -1287,6 +1336,138 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
     last_written_surface = nullptr;
 
     return return_value;
+}
+
+DepthStencilSurfaceCacheInfo *VKSurfaceCache::perform_depth_stencil_sync() {
+    if (!state.features.enable_memory_mapping)
+        return nullptr;
+
+    DepthStencilSurfaceCacheInfo *depth_surface = nullptr;
+    uint64_t latest_frame = 0;
+    for (auto &item : ds_surface_queue.items) {
+        DepthStencilSurfaceCacheInfo &surface = item.content;
+        const bool sync_requested = surface.need_depth_surface_sync && *surface.need_depth_surface_sync;
+        const bool sync_due = surface.last_depth_surface_sync_frame == 0
+            || surface.last_frame_rendered > surface.last_depth_surface_sync_frame;
+        if (sync_requested && depth_surface_support_surface_sync(surface) && surface.texture.image
+            && sync_due
+            && surface.last_frame_rendered >= latest_frame) {
+            depth_surface = &surface;
+            latest_frame = surface.last_frame_rendered;
+        }
+    }
+
+    if (!depth_surface)
+        return nullptr;
+
+    if (depth_surface->memory_width <= 0 || depth_surface->memory_height <= 0) {
+        *depth_surface->need_depth_surface_sync = false;
+        return nullptr;
+    }
+
+    depth_surface->depth_surface_sync_x = 0;
+    depth_surface->depth_surface_sync_y = 0;
+    depth_surface->depth_surface_sync_width = static_cast<uint32_t>(depth_surface->memory_width);
+    depth_surface->depth_surface_sync_height = static_cast<uint32_t>(depth_surface->memory_height);
+
+    // CPU-visible linear S8D24 surfaces may be read after being used as depth
+    // attachments. Copy the depth aspect and synthesize the packed S8 byte
+    // during the post-sync step.
+    const uint32_t pixel_count = depth_surface->depth_surface_sync_width * depth_surface->depth_surface_sync_height;
+    const uint32_t depth_bytes_per_sample = depth_surface->texture.format == vk::Format::eD16Unorm ? sizeof(uint16_t) : sizeof(uint32_t);
+    const uint32_t depth_bytes = pixel_count * depth_bytes_per_sample;
+    if (!depth_surface->depth_surface_copy_buffer)
+        depth_surface->depth_surface_copy_buffer = std::make_unique<vkutil::Buffer>();
+
+    vkutil::Buffer &copy_buffer = *depth_surface->depth_surface_copy_buffer;
+    if (!copy_buffer.buffer || copy_buffer.size < depth_bytes) {
+        copy_buffer.destroy();
+        copy_buffer.size = depth_bytes;
+        copy_buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vkutil::vma_mapped_alloc);
+    }
+
+    VKContext *context = reinterpret_cast<VKContext *>(state.context);
+    vk::CommandBuffer cmd_buffer = context->render_cmd;
+
+    vk::ImageSubresourceRange depth_range = vkutil::ds_subresource_range;
+    depth_range.aspectMask = vk::ImageAspectFlagBits::eDepth;
+    depth_surface->texture.transition_to(cmd_buffer, vkutil::ImageLayout::TransferSrc, depth_range);
+
+    vk::ImageSubresourceLayers depth_layers = vkutil::color_subresource_layer;
+    depth_layers.aspectMask = vk::ImageAspectFlagBits::eDepth;
+
+    vk::BufferImageCopy copy{
+        .bufferOffset = 0,
+        .bufferRowLength = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource = depth_layers,
+        .imageOffset = { static_cast<int32_t>(depth_surface->depth_surface_sync_x), static_cast<int32_t>(depth_surface->depth_surface_sync_y), 0 },
+        .imageExtent = { depth_surface->depth_surface_sync_width, depth_surface->depth_surface_sync_height, 1 }
+    };
+    cmd_buffer.copyImageToBuffer(depth_surface->texture.image, vk::ImageLayout::eTransferSrcOptimal, copy_buffer.buffer, copy);
+    depth_surface->texture.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilReadOnly, depth_range);
+
+    *depth_surface->need_depth_surface_sync = false;
+    depth_surface->need_depth_surface_buffer_sync = true;
+    depth_surface->last_depth_surface_sync_frame = depth_surface->last_frame_rendered;
+
+    return depth_surface;
+}
+
+void VKSurfaceCache::perform_post_depth_stencil_sync(const MemState &mem, DepthStencilSurfaceCacheInfo *surface) {
+    if (!surface || !surface->need_depth_surface_buffer_sync || !surface->depth_surface_copy_buffer || !surface->depth_surface_copy_buffer->mapped_data)
+        return;
+
+    if (surface->surface.get_format() != SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24) {
+        surface->need_depth_surface_buffer_sync = false;
+        return;
+    }
+
+    const uint32_t pixel_count = surface->depth_surface_sync_width * surface->depth_surface_sync_height;
+    if (pixel_count == 0) {
+        surface->need_depth_surface_buffer_sync = false;
+        return;
+    }
+
+    Ptr<uint8_t> dst_ptr{ surface->surface.depth_data.address() };
+    if (!dst_ptr || !dst_ptr.valid(mem)) {
+        LOG_ERROR("Depth post-sync destination is invalid: {}", log_hex(surface->surface.depth_data.address()));
+        surface->need_depth_surface_buffer_sync = false;
+        return;
+    }
+
+    uint8_t *dst = dst_ptr.get(mem);
+    const uint8_t *src = reinterpret_cast<const uint8_t *>(surface->depth_surface_copy_buffer->mapped_data);
+
+    for (uint32_t row = 0; row < surface->depth_surface_sync_height; row++) {
+        for (uint32_t col = 0; col < surface->depth_surface_sync_width; col++) {
+            const uint32_t src_index = row * surface->depth_surface_sync_width + col;
+            uint8_t value = 0;
+            if (surface->texture.format == vk::Format::eD32SfloatS8Uint) {
+                const float depth = reinterpret_cast<const float *>(src)[src_index];
+                if (depth >= 0.0f && depth < 0.999999f)
+                    value = 1;
+            } else if (surface->texture.format == vk::Format::eD24UnormS8Uint || surface->texture.format == vk::Format::eX8D24UnormPack32) {
+                const uint32_t packed_depth = reinterpret_cast<const uint32_t *>(src)[src_index] & 0x00FFFFFF;
+                if (packed_depth < 0x00FFFFEF)
+                    value = 1;
+            } else if (surface->texture.format == vk::Format::eD16Unorm) {
+                const uint16_t depth = reinterpret_cast<const uint16_t *>(src)[src_index];
+                if (depth < 0xFFFE)
+                    value = 1;
+            } else {
+                value = src[src_index] ? 1 : 0;
+            }
+
+            // The guest reads this byte with signed extension, so write +1 for
+            // visible depth instead of 0xFF.
+            const uint32_t dst_x = surface->depth_surface_sync_x + col;
+            const uint32_t dst_y = surface->depth_surface_sync_y + row;
+            dst[(dst_x + dst_y * surface->stride_samples) * sizeof(uint32_t) + 3] = value;
+        }
+    }
+
+    surface->need_depth_surface_buffer_sync = false;
 }
 
 template <typename T>
