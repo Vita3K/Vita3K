@@ -184,6 +184,11 @@ struct KernelState {
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
 
     ThreadStatePtr get_thread(SceUID thread_id);
+
+    // Creates a callback owned by thread and returns its UID.
+    SceUID create_callback(const ThreadStatePtr &thread, const char *name, Ptr<SceKernelCallbackFunction> func, Ptr<void> common);
+    // Deletes the callback with this UID, so it never runs again. Returns false if there is none.
+    bool delete_callback(SceUID id);
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
 
     bool is_threads_paused() { return !paused_threads_status.empty(); }

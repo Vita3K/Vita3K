@@ -300,7 +300,7 @@ int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2
             // sceCtrlRead is blocking, wait for the next vsync for the buffer to be updated
             auto thread = emuenv.kernel.get_thread(thread_id);
 
-            wait_vblank(emuenv.display, emuenv.kernel, thread, state.last_vcount[port] + 1, false);
+            wait_vblank(emuenv.display, thread, state.last_vcount[port] + 1, false);
         }
         uint64_t vblank_count = emuenv.display.vblank_count.load();
         nb_returned_data = std::min<int32_t>(count, vblank_count - state.last_vcount[port]);

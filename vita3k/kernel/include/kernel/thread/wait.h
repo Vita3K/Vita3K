@@ -22,7 +22,7 @@
 #include <chrono>
 #include <expected>
 
-// Returned instead of a result when the waiting thread is being deleted. The guest never sees it.
+// Returned instead of a result when the waiting thread exits or is being deleted. The guest never sees it.
 struct ThreadExiting {};
 
 // Result of a wait: a guest return code, or ThreadExiting.
@@ -55,7 +55,7 @@ inline void writeback_timeout(SceUInt32 *timeout, Deadline deadline) {
 
 // Turns a wait result into the value returned to the guest.
 // ThreadExiting becomes SCE_KERNEL_OK, which the guest never sees: after the HLE call returns,
-// run_loop sees delete_requested and stops the thread before the next guest instruction.
+// run_loop sees the exit or delete request and stops the thread before the next guest instruction.
 inline SceInt32 guest_result(WaitResult r) {
     return r.value_or(SCE_KERNEL_OK);
 }

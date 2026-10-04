@@ -31,6 +31,8 @@ TRACY_MODULE_NAME(SceDisplay);
 
 static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const bool is_since_setbuf, const bool is_cb) {
     const auto &thread = emuenv.kernel.get_thread(thread_id);
+    if (is_cb)
+        thread->process_callbacks();
 
     if (emuenv.display.fps_hack)
         // a game can use a vcount of 2 to render as 30fps
@@ -50,7 +52,7 @@ static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const
         target_vcount = thread->last_vblank_waited;
     }
 
-    wait_vblank(emuenv.display, emuenv.kernel, thread, target_vcount, is_cb);
+    wait_vblank(emuenv.display, thread, target_vcount, is_cb);
 
     if (emuenv.display.abort.load())
         return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;

@@ -77,31 +77,18 @@ void start_sync_thread(EmuEnvState &emuenv) {
     emuenv.display.vblank_thread = std::make_unique<std::thread>(vblank_sync_thread, std::ref(emuenv));
 }
 
-void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePtr &wait_thread, const uint64_t target_vcount, const bool is_cb) {
+void wait_vblank(DisplayState &display, const ThreadStatePtr &wait_thread, const uint64_t target_vcount, const bool is_cb) {
     if (!wait_thread) {
         return;
     }
 
-    {
-        std::unique_lock<std::mutex> lock(display.mutex);
+    std::unique_lock<std::mutex> lock(display.mutex);
 
-        if (target_vcount <= display.vblank_count)
-            return;
+    if (target_vcount <= display.vblank_count)
+        return;
 
-        // the thread is being deleted, don't run its callbacks
-        if (!display.vblank_waiters.wait(lock, wait_thread, { SCE_KERNEL_WAITTYPE_EVENT }, { target_vcount }, Deadline::max()))
-            return;
-    }
-
-    if (is_cb) {
-        for (auto &[_, cb] : display.vblank_callbacks) {
-            if (cb->get_owner_thread_id() == wait_thread->id) {
-                std::string name = cb->get_name();
-                cb->execute(kernel, [name]() {
-                });
-            }
-        }
-    }
+    // Nothing runs after the wait, so a thread exiting during it needs no handling here
+    (void)display.vblank_waiters.wait(lock, wait_thread, { SCE_KERNEL_WAITTYPE_EVENT }, { target_vcount }, Deadline::max(), is_cb);
 }
 
 static void reset_swapchain_cycle(DisplayState &display, Address sync_object) {
