@@ -30,6 +30,14 @@ using WaitResult = std::expected<SceInt32, ThreadExiting>;
 
 using Deadline = std::chrono::steady_clock::time_point;
 
+// What a waiting thread is blocked on, as sceKernelGetThreadInfo reports it.
+struct WaitTarget {
+    // One of SCE_KERNEL_WAITTYPE_*, or 0 if not waiting
+    SceUInt32 type = 0;
+    // UID of the object waited on, or 0 if there is none
+    SceUID id = 0;
+};
+
 // Converts a guest timeout in microseconds into a deadline. A null timeout waits forever.
 inline Deadline deadline_from(const SceUInt32 *timeout) {
     if (!timeout)

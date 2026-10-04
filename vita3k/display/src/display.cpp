@@ -89,7 +89,7 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePt
             return;
 
         // the thread is being deleted, don't run its callbacks
-        if (!display.vblank_waiters.wait(lock, wait_thread, { target_vcount }, Deadline::max()))
+        if (!display.vblank_waiters.wait(lock, wait_thread, { SCE_KERNEL_WAITTYPE_EVENT }, { target_vcount }, Deadline::max()))
             return;
     }
 
