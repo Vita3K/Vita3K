@@ -215,7 +215,8 @@ int handle_touch_event(TouchState &state, SDL_TouchFingerEvent &finger) {
         state.finger_count++;
         break;
     }
-    case SDL_EVENT_FINGER_UP: {
+    case SDL_EVENT_FINGER_UP:
+    case SDL_EVENT_FINGER_CANCELED: {
         int finger_index = -1;
         for (int i = 0; i < state.finger_count; i++) {
             if (finger.fingerID == state.finger_buffer[i].fingerID) {
@@ -225,7 +226,7 @@ int handle_touch_event(TouchState &state, SDL_TouchFingerEvent &finger) {
                 state.finger_buffer[i] = state.finger_buffer[i + 1];
             }
         }
-        if (state.finger_count > 0)
+        if (finger_index != -1)
             state.finger_count--;
         break;
     }

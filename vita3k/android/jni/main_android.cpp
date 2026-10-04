@@ -467,12 +467,13 @@ SDLMAIN_DECLSPEC int SDL_main(int argc, char *argv[]) {
 
                 case SDL_EVENT_FINGER_DOWN:
                 case SDL_EVENT_FINGER_MOTION:
-                case SDL_EVENT_FINGER_UP: {
+                case SDL_EVENT_FINGER_UP:
+                case SDL_EVENT_FINGER_CANCELED: {
                     handle_touch_event(emuenv->touch, event.tfinger);
                     auto &mouse = emuenv->ctrl.overlay_mouse;
                     mouse.x.store(event.tfinger.x * 960.f, std::memory_order_relaxed);
                     mouse.y.store(event.tfinger.y * 544.f, std::memory_order_relaxed);
-                    mouse.pressed.store(event.type != SDL_EVENT_FINGER_UP, std::memory_order_relaxed);
+                    mouse.pressed.store(event.type == SDL_EVENT_FINGER_DOWN || event.type == SDL_EVENT_FINGER_MOTION, std::memory_order_relaxed);
                     break;
                 }
 
