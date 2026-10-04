@@ -25,6 +25,7 @@
 #include <mem/ptr.h>
 
 #include <condition_variable>
+#include <list>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -61,15 +62,12 @@ struct ThreadState {
     SceInt32 affinity_mask;
     uint64_t start_tick;
     uint64_t last_vblank_waited;
-    // set to true if thread is processing kernel callbacks
-    bool is_processing_callbacks = false;
 
     CPUStatePtr cpu;
     ThreadStatus status = ThreadStatus::dormant;
     // What the thread waits on while waiting, empty otherwise
     WaitTarget wait_target;
 
-    std::vector<CallbackPtr> callbacks;
     std::condition_variable status_cond;
     uint32_t returned_value = 0;
 
@@ -95,25 +93,36 @@ struct ThreadState {
     uint32_t run_guest_function(Address callback_address, SceSize args = 0, const Ptr<void> argp = Ptr<void>{});
 
     // Blocks this thread until the deadline passes.
-    [[nodiscard]] WaitResult delay_until(Deadline deadline);
+    [[nodiscard]] WaitResult delay_until(Deadline deadline, bool callbacks);
     // Blocks this thread until a signal is sent to it.
-    [[nodiscard]] WaitResult wait_for_signal();
+    [[nodiscard]] WaitResult wait_for_signal(bool callbacks);
     // Sends a signal to this thread. Fails if the previous one was not consumed yet.
     SceInt32 send_signal();
     // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
-    [[nodiscard]] WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status);
+    [[nodiscard]] WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, bool callbacks);
 
-    // Waits on target until woken by wake(), deleted, or the deadline passes.
-    // A stale wake can end it early, so callers must recheck their condition.
-    [[nodiscard]] WaitResult wait(WaitTarget target, Deadline deadline);
+    // Waits on target until woken by wake(), the thread exits or is deleted, or the deadline passes.
+    // With callbacks, it also returns after running callbacks that were notified meanwhile.
+    // A stale wake or callbacks can end it early, so callers must recheck their condition.
+    [[nodiscard]] WaitResult wait(WaitTarget target, Deadline deadline, bool callbacks);
     // Wakes this thread from wait().
     void wake();
+
+    // Runs the notified callbacks of this thread and returns how many ran. Called by the thread itself.
+    SceUInt32 process_callbacks();
+    // Tells this thread that one of its callbacks was notified, so a wait with callbacks runs it.
+    void notify_callbacks();
+    // Adds a callback this thread created. Called by the thread itself.
+    void add_callback(const CallbackPtr &cb);
 
     void suspend();
     void resume(bool step = false);
     std::string log_stack_traceback() const;
 
 private:
+    // Whether the thread is exiting or being deleted. Called with mutex held.
+    bool exiting() const { return exit_requested || delete_requested; }
+
     void push_arguments(const std::vector<uint32_t> &args);
     void dispatch_abort(CPUState &cpu);
 
@@ -144,6 +153,12 @@ private:
     bool signal_pending = false;
     // Set by wake() and consumed by the next wait().
     bool wake_pending = false;
+    // Set by notify_callbacks() and cleared when the callbacks run.
+    bool callbacks_pending = false;
+    // Set while the thread runs its callbacks. They don't nest.
+    bool is_processing_callbacks = false;
+    // Callbacks this thread created, in creation order. The kernel owns them. Only this thread touches the list.
+    std::list<std::weak_ptr<Callback>> callbacks;
 
     // Notified under mutex whenever a condition a wait may be blocked on changes.
     std::condition_variable wait_cv;

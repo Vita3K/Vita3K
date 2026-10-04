@@ -18,7 +18,9 @@
 #pragma once
 
 #include <kernel/types.h>
+#include <memory>
 #include <mutex>
+#include <optional>
 
 #define SCE_UID_INVALID_UID (SceUID)(0xFFFFFFFF)
 
@@ -27,18 +29,28 @@ struct ThreadState;
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 
 struct Callback {
+    // What the callback function receives about the notifications since it last ran
+    struct Notification {
+        SceUID notifier_id;
+        uint32_t count;
+        SceInt32 arg;
+    };
+
     /**
      * @brief Creates a Callback object
      *
+     * @param uid UID of the callback
+     * @param owner Thread that creates and owns the callback
      * @param name Name of the callback
      * @param cb_func Pointer to the callback function
      * @param pCommon User-provided parameter
      */
-    Callback(SceUID thread_id, std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon)
-        : thread_id(thread_id)
-        , name(name)
-        , cb_func(cb_func)
-        , userdata(pCommon) {}
+    Callback(SceUID uid, const ThreadStatePtr &owner, const std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon);
+
+    /**
+     * @return UID of this callback
+     */
+    SceUID get_uid() const { return this->uid; }
 
     /**
      * @return UID of the thread that created and owns this callback
@@ -95,9 +107,9 @@ struct Callback {
     void cancel();
 
     /**
-     * @return true if the callback can be executed, false otherwise
+     * @brief Drops the pending notifications and ignores new ones, the callback never runs again
      */
-    bool is_executable();
+    void mark_deleted();
 
     /**
      * @return Number of times callback has been notified since last execution
@@ -105,18 +117,18 @@ struct Callback {
     uint32_t get_num_notifications();
 
     /**
-     * @brief Runs callback in the context of creator thread
-     * @note Calling this method when Callback.executable() == false returns false and does nothing
-     * @note This should be called only in the creator thread
+     * @brief Takes the pending notifications and resets the callback, so new ones are kept for its next run
+     * @return The notifications, or nothing if the callback was not notified
      */
-    void execute(KernelState &kernel, const std::function<void()> &deleter);
+    std::optional<Notification> take_notification();
 
 private:
     void reset();
-    bool is_notified() const;
     std::mutex _mutex;
 
+    const SceUID uid; // UID of this callback
     const SceUID thread_id; // UID of the thread that created this callback
+    const std::weak_ptr<ThreadState> owner; // Thread that created this callback, woken when it is notified
     const std::string name; // Name of the callback
     const Ptr<SceKernelCallbackFunction> cb_func; // Function to execute when the callback should run
     const Ptr<void> userdata; // User-provided data - passed as pCommon
@@ -124,7 +136,7 @@ private:
     uint32_t num_notifications = 0; // Number of times this callback has been notified - reset every time it is run
     SceInt32 notification_arg = 0; // User-specified argument passed by sceKernelNotifyCallback
     SceUID notifier_id = SCE_UID_INVALID_UID; // UID of the last event that notified this thread - SCE_UID_INVALID_UID if not an event
+    bool deleted = false; // Set once the callback is deleted
 };
 
 typedef std::shared_ptr<Callback> CallbackPtr;
-uint32_t process_callbacks(KernelState &kernel, SceUID thread_id);

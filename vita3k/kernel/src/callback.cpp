@@ -16,38 +16,29 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <kernel/callback.h>
-#include <kernel/state.h>
 #include <kernel/thread/thread_state.h>
-#include <util/log.h>
 
 #include <mutex>
 
-uint32_t process_callbacks(KernelState &kernel, SceUID thread_id) {
-    ThreadStatePtr thread = kernel.get_thread(thread_id);
-    if (thread->is_processing_callbacks)
-        return 0;
-
-    thread->is_processing_callbacks = true;
-    uint32_t num_callbacks_processed = 0;
-    for (CallbackPtr &cb : thread->callbacks) {
-        if (cb->is_executable()) {
-            std::string name = cb->get_name();
-            cb->execute(kernel, [name]() {
-                LOG_WARN("Callback with name {} requested to be deleted, but this is not supported yet!", name);
-            });
-            num_callbacks_processed++;
-        }
-    }
-    thread->is_processing_callbacks = false;
-
-    return num_callbacks_processed;
-}
+Callback::Callback(SceUID uid, const ThreadStatePtr &owner, const std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon)
+    : uid(uid)
+    , thread_id(owner->id)
+    , owner(owner)
+    , name(name)
+    , cb_func(cb_func)
+    , userdata(pCommon) {}
 
 void Callback::notify(SceUID notifier_id, SceInt32 notify_arg) {
-    std::lock_guard lock(this->_mutex);
-    this->notifier_id = notifier_id;
-    this->notification_arg = notify_arg;
-    this->num_notifications++;
+    {
+        std::lock_guard lock(this->_mutex);
+        if (this->deleted)
+            return;
+        this->notifier_id = notifier_id;
+        this->notification_arg = notify_arg;
+        this->num_notifications++;
+    }
+    if (const ThreadStatePtr thread = owner.lock())
+        thread->notify_callbacks();
 }
 
 void Callback::event_notify(SceUID notifier_id) {
@@ -63,6 +54,12 @@ void Callback::cancel() {
     this->reset();
 }
 
+void Callback::mark_deleted() {
+    std::lock_guard lock(this->_mutex);
+    this->deleted = true;
+    this->reset();
+}
+
 SceUID Callback::get_notifier_id() {
     std::lock_guard lock(this->_mutex);
     return this->notifier_id;
@@ -73,29 +70,19 @@ SceInt32 Callback::get_notify_arg() {
     return this->notification_arg;
 }
 
-bool Callback::is_executable() {
-    // Lock the mutex to ensure that no other call is accessing this Callback
-    // If we don't lock, num_notifications could be modified right as we're reading it
-    std::lock_guard lock(this->_mutex);
-    return this->is_notified();
-}
-
 uint32_t Callback::get_num_notifications() {
     std::lock_guard lock(this->_mutex);
     return this->num_notifications;
 }
 
-void Callback::execute(KernelState &kernel, const std::function<void()> &deleter) {
+std::optional<Callback::Notification> Callback::take_notification() {
     std::lock_guard lock(this->_mutex);
-    if (!this->is_notified())
-        return;
+    if (this->num_notifications == 0)
+        return std::nullopt;
 
-    std::vector<uint32_t> args = { (uint32_t)(this->notifier_id), this->num_notifications, (uint32_t)this->notification_arg, this->userdata.address() };
-    int ret = kernel.get_thread(this->thread_id)->run_callback(this->cb_func.address(), args);
-    if (ret != 0) {
-        deleter();
-    }
-    this->reset(); // Callbacks return to their default state after running
+    const Notification notification{ this->notifier_id, this->num_notifications, this->notification_arg };
+    this->reset();
+    return notification;
 }
 
 /** Private methods **/
@@ -107,12 +94,4 @@ void Callback::execute(KernelState &kernel, const std::function<void()> &deleter
 void Callback::reset() {
     this->num_notifications = 0;
     this->notifier_id = SCE_UID_INVALID_UID;
-}
-
-/**
- * @return true if the callback has notifications pending, false otherwise
- * @note You MUST lock the callback's mutex before calling this function
- */
-bool Callback::is_notified() const {
-    return (this->num_notifications > 0);
 }

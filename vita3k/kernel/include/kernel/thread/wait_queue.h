@@ -52,13 +52,14 @@ public:
 
     // Blocks thread on target until a waker gives it a result, ready() holds, it is being deleted, or the deadline passes.
     // thread must be the guest thread making this HLE call. ready() is rechecked each time it is woken.
-    [[nodiscard]] WaitResult wait_until_ready(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline, std::predicate<Waiter &> auto ready) {
+    // With callbacks, the thread runs its notified callbacks while it waits.
+    [[nodiscard]] WaitResult wait_until_ready(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline, bool callbacks, std::predicate<Waiter &> auto ready) {
         Waiter waiter{ .thread = thread, .entry = std::move(entry) };
         waiter.priority = waiter.thread->priority;
         push(waiter);
         while (true) {
             lock.unlock();
-            const WaitResult r = waiter.thread->wait(target, deadline);
+            const WaitResult r = waiter.thread->wait(target, deadline, callbacks);
             lock.lock();
             // A waker's result wins, it already handed over what the waiter asked for
             if (waiter.result)
@@ -80,8 +81,9 @@ public:
 
     // Blocks thread on target until a waker gives it a result, it is being deleted, or the deadline passes.
     // thread must be the guest thread making this HLE call.
-    [[nodiscard]] WaitResult wait(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline) {
-        return wait_until_ready(lock, thread, target, std::move(entry), deadline, [](Waiter &) { return false; });
+    // With callbacks, the thread runs its notified callbacks while it waits.
+    [[nodiscard]] WaitResult wait(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline, bool callbacks) {
+        return wait_until_ready(lock, thread, target, std::move(entry), deadline, callbacks, [](Waiter &) { return false; });
     }
 
     bool empty() const {
