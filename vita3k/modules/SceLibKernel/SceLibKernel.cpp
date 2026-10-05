@@ -35,7 +35,6 @@
 #include <io/types.h>
 #include <kernel/types.h>
 #include <rtc/rtc.h>
-#include <util/lock_and_find.h>
 #include <util/log.h>
 #include <util/tracy.h>
 
@@ -1484,7 +1483,7 @@ EXPORT(int, sceKernelGetThreadRunStatus) {
 
 EXPORT(int, sceKernelGetTimerBase, SceUID timer_handle, SceKernelSysClock *time) {
     TRACY_FUNC(sceKernelGetTimerBase, timer_handle, time);
-    const TimerPtr timer_info = lock_and_find(timer_handle, emuenv.kernel.timers, emuenv.kernel.mutex);
+    const TimerPtr timer_info = emuenv.kernel.objects.find<Timer>(timer_handle);
 
     if (!timer_info)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
@@ -1506,7 +1505,7 @@ EXPORT(int, sceKernelGetTimerInfo) {
 
 EXPORT(int, sceKernelGetTimerTime, SceUID timer_handle, SceKernelSysClock *time) {
     TRACY_FUNC(sceKernelGetTimerTime, timer_handle, time);
-    const TimerPtr timer_info = lock_and_find(timer_handle, emuenv.kernel.timers, emuenv.kernel.mutex);
+    const TimerPtr timer_info = emuenv.kernel.objects.find<Timer>(timer_handle);
 
     if (!timer_info)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;

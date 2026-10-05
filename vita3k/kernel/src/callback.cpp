@@ -21,12 +21,13 @@
 #include <mutex>
 
 Callback::Callback(SceUID uid, const ThreadStatePtr &owner, const std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon)
-    : uid(uid)
-    , thread_id(owner->id)
+    : thread_id(owner->id)
     , owner(owner)
     , name(name)
     , cb_func(cb_func)
-    , userdata(pCommon) {}
+    , userdata(pCommon) {
+    this->uid = uid;
+}
 
 void Callback::notify(SceUID notifier_id, SceInt32 notify_arg) {
     {
