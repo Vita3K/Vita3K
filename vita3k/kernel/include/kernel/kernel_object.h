@@ -74,6 +74,13 @@ public:
         objects.emplace(uid, std::move(obj));
     }
 
+    // Returns the object with this UID, of any class, or null.
+    [[nodiscard]] std::shared_ptr<KernelObject> find(SceUID uid) const {
+        const std::lock_guard<std::mutex> lock(mutex);
+        const auto it = objects.find(uid);
+        return it == objects.end() ? nullptr : it->second;
+    }
+
     // Returns the T with this UID, or null.
     template <KernelObjectClass T>
     [[nodiscard]] std::shared_ptr<T> find(SceUID uid) const {
