@@ -968,11 +968,10 @@ int semaphore_cancel(KernelState &kernel, const char *export_name, SceUID thread
     }
 
     const std::lock_guard<std::mutex> semaphore_lock(semaphore->mutex);
-    const auto nb_threads = static_cast<SceUInt32>(semaphore->waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    if (setCount > semaphore->max)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_COUNT);
 
-    if (semaphore->val < setCount) {
-        return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
-    }
+    const auto nb_threads = static_cast<SceUInt32>(semaphore->waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
     if (setCount < 0) {
         semaphore->val = semaphore->init_val;
     } else {
