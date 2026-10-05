@@ -1297,6 +1297,7 @@ void MainWindow::pump_sdl_events() {
         case SDL_EVENT_FINGER_DOWN:
         case SDL_EVENT_FINGER_MOTION:
         case SDL_EVENT_FINGER_UP:
+        case SDL_EVENT_FINGER_CANCELED:
             handle_touch_event(emuenv.touch, event.tfinger);
             break;
 
