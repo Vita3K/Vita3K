@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <kernel/kernel_object.h>
 #include <kernel/thread/thread_state.h>
 #include <kernel/thread/wait_queue.h>
 #include <kernel/types.h>
@@ -27,17 +28,18 @@
 
 struct KernelState;
 
-// NOTE: uid is copied to sync primitives here for debugging,
-//       not really needed since they are put in std::map's
-struct SyncPrimitive {
-    SceUID uid{};
+enum class SyncWeight {
+    Light, // lightweight
+    Heavy // 'heavy'weight
+};
+
+struct SyncPrimitive : KernelObject {
     uint32_t attr{};
     std::mutex mutex;
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1]{};
-    virtual ~SyncPrimitive() = default;
 };
 
-struct SimpleEvent : SyncPrimitive {
+struct SimpleEvent final : WithUidClass<SyncPrimitive, UidClass::simple_event> {
     struct WaitEntry {
         SceUInt32 pattern;
         SceUInt32 *result_pattern;
@@ -56,9 +58,8 @@ struct SimpleEvent : SyncPrimitive {
 };
 
 typedef std::shared_ptr<SimpleEvent> SimpleEventPtr;
-typedef std::map<SceUID, SimpleEventPtr> SimpleEventPtrs;
 
-struct Timer : SyncPrimitive {
+struct Timer final : WithUidClass<SyncPrimitive, UidClass::timer> {
     explicit Timer(SceUInt32 attr)
         : waiters(attr) {}
 
@@ -75,9 +76,8 @@ struct Timer : SyncPrimitive {
 };
 
 typedef std::shared_ptr<Timer> TimerPtr;
-typedef std::map<SceUID, TimerPtr> TimerPtrs;
 
-struct Semaphore : SyncPrimitive {
+struct Semaphore final : WithUidClass<SyncPrimitive, UidClass::semaphore> {
     struct WaitEntry {
         int32_t need_count;
     };
@@ -92,7 +92,6 @@ struct Semaphore : SyncPrimitive {
 };
 
 typedef std::shared_ptr<Semaphore> SemaphorePtr;
-typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
 
 struct Mutex : SyncPrimitive {
     struct WaitEntry {
@@ -109,8 +108,15 @@ struct Mutex : SyncPrimitive {
     Ptr<SceKernelLwMutexWork> workarea;
 };
 
+struct LwMutex final : WithUidClass<Mutex, UidClass::lw_mutex> {
+    using WithUidClass::WithUidClass;
+};
+
+struct HeavyMutex final : WithUidClass<Mutex, UidClass::mutex> {
+    using WithUidClass::WithUidClass;
+};
+
 typedef std::shared_ptr<Mutex> MutexPtr;
-typedef std::map<SceUID, MutexPtr> MutexPtrs;
 
 enum class RWLockState {
     Unlocked,
@@ -121,7 +127,7 @@ enum class RWLockState {
 // the int value is the lock count for recursive locks
 typedef std::map<ThreadStatePtr, int> RWLockOwners;
 
-struct RWLock : SyncPrimitive {
+struct RWLock final : WithUidClass<SyncPrimitive, UidClass::rw_lock> {
     struct WaitEntry {
         bool is_write;
     };
@@ -135,9 +141,8 @@ struct RWLock : SyncPrimitive {
 };
 
 typedef std::shared_ptr<RWLock> RWLockPtr;
-typedef std::map<SceUID, RWLockPtr> RWLockPtrs;
 
-struct EventFlag : SyncPrimitive {
+struct EventFlag final : WithUidClass<SyncPrimitive, UidClass::event_flag> {
     struct WaitEntry {
         SceUInt32 wait_mode;
         SceUInt32 pattern;
@@ -152,7 +157,6 @@ struct EventFlag : SyncPrimitive {
 };
 
 typedef std::shared_ptr<EventFlag> EventFlagPtr;
-typedef std::map<SceUID, EventFlagPtr> EventFlagPtrs;
 
 struct Condvar : SyncPrimitive {
     struct SignalTarget {
@@ -178,10 +182,18 @@ struct Condvar : SyncPrimitive {
     WaitQueue<std::monostate> waiters;
     MutexPtr associated_mutex;
 };
-typedef std::shared_ptr<Condvar> CondvarPtr;
-typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
 
-struct MsgPipe : SyncPrimitive {
+struct LwCond final : WithUidClass<Condvar, UidClass::lw_cond> {
+    using WithUidClass::WithUidClass;
+};
+
+struct HeavyCond final : WithUidClass<Condvar, UidClass::cond> {
+    using WithUidClass::WithUidClass;
+};
+
+typedef std::shared_ptr<Condvar> CondvarPtr;
+
+struct MsgPipe final : WithUidClass<SyncPrimitive, UidClass::msg_pipe> {
     struct WaitEntry {
         SceSize request_size;
         // Woken to recheck the buffer and has not done so yet
@@ -198,17 +210,9 @@ struct MsgPipe : SyncPrimitive {
     ByteRingBuffer data_buffer;
 
     bool beingDeleted = false;
-
-    ~MsgPipe() override = default;
 };
 
 typedef std::shared_ptr<MsgPipe> MsgPipePtr;
-typedef std::map<SceUID, MsgPipePtr> MsgPipePtrs;
-
-enum class SyncWeight {
-    Light, // lightweight
-    Heavy // 'heavy'weight
-};
 
 // simple events
 SceUID simple_event_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr, SceUInt32 init_pattern);

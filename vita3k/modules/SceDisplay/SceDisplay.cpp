@@ -23,7 +23,6 @@
 #include <kernel/state.h>
 #include <packages/functions.h>
 #include <renderer/state.h>
-#include <util/lock_and_find.h>
 #include <util/types.h>
 
 #include <util/tracy.h>
@@ -201,7 +200,7 @@ EXPORT(int, sceDisplayGetVcountInternal) {
 EXPORT(SceInt32, sceDisplayRegisterVblankStartCallback, SceUID uid) {
     TRACY_FUNC(sceDisplayRegisterVblankStartCallback, uid);
 
-    const auto cb = lock_and_find(uid, emuenv.kernel.callbacks, emuenv.kernel.mutex);
+    const auto cb = emuenv.kernel.objects.find<Callback>(uid);
     if (!cb)
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
 

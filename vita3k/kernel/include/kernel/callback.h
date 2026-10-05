@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <kernel/kernel_object.h>
 #include <kernel/types.h>
 #include <memory>
 #include <mutex>
@@ -28,7 +29,7 @@ struct KernelState;
 struct ThreadState;
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 
-struct Callback {
+struct Callback final : WithUidClass<KernelObject, UidClass::callback> {
     // What the callback function receives about the notifications since it last ran
     struct Notification {
         SceUID notifier_id;
@@ -46,11 +47,6 @@ struct Callback {
      * @param pCommon User-provided parameter
      */
     Callback(SceUID uid, const ThreadStatePtr &owner, const std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon);
-
-    /**
-     * @return UID of this callback
-     */
-    SceUID get_uid() const { return this->uid; }
 
     /**
      * @return UID of the thread that created and owns this callback
@@ -126,7 +122,6 @@ private:
     void reset();
     std::mutex _mutex;
 
-    const SceUID uid; // UID of this callback
     const SceUID thread_id; // UID of the thread that created this callback
     const std::weak_ptr<ThreadState> owner; // Thread that created this callback, woken when it is notified
     const std::string name; // Name of the callback

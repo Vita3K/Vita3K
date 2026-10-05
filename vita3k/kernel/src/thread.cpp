@@ -516,7 +516,7 @@ SceUInt32 ThreadState::process_callbacks() {
         }
         // A callback that returns nonzero deletes itself
         if (ret != 0)
-            kernel.delete_callback(cb->get_uid());
+            kernel.delete_callback(cb->uid);
     }
     is_processing_callbacks = false;
     return processed;

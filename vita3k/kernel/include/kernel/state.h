@@ -58,7 +58,6 @@ typedef std::map<SceUID, CodecEngineBlock> CodecEngineBlocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
 typedef std::map<SceUID, ThreadStatePtr> ThreadStatePtrs;
 typedef std::map<SceUID, SceKernelModulePtr> SceKernelModuleInfoPtrs;
-typedef std::map<SceUID, CallbackPtr> CallbackPtrs;
 typedef unordered_map_fast<uint32_t, Address> ExportNids;
 // A NID hashes the function name alone, so same-named exports from different libraries collide.
 typedef unordered_map_fast<uint64_t, Address> LibExportNids;
@@ -120,17 +119,8 @@ struct KernelState {
     Ptr<const void> thread_event_end = Ptr<const void>(0);
     Address thread_event_end_arg = 0;
 
-    SimpleEventPtrs simple_events;
-    TimerPtrs timers;
-    SemaphorePtrs semaphores;
-    CondvarPtrs condvars;
-    CondvarPtrs lwcondvars;
-    MutexPtrs mutexes;
-    MutexPtrs lwmutexes; // also Mutexes for now
-    RWLockPtrs rwlocks;
-    EventFlagPtrs eventflags;
-    MsgPipePtrs msgpipes;
-    CallbackPtrs callbacks;
+    // Thread manager objects other than threads, by UID
+    KernelObjects objects;
 
     ThreadStatePtrs threads;
     void *jni_env;

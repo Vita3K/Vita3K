@@ -20,7 +20,6 @@
 #include <kernel/sync_primitives.h>
 
 #include <kernel/types.h>
-#include <util/lock_and_find.h>
 #include <util/log.h>
 
 static constexpr bool LOG_SYNC_PRIMITIVES = false;
@@ -41,22 +40,34 @@ inline static int unknown_cond_id(const char *export_name, SyncWeight weight) {
     return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_COND_ID);
 }
 
-inline static MutexPtrs &get_mutexes(KernelState &kernel, SyncWeight weight) {
-    return weight == SyncWeight::Light ? kernel.lwmutexes : kernel.mutexes;
-}
-
-inline static CondvarPtrs &get_condvars(KernelState &kernel, SyncWeight weight) {
-    return weight == SyncWeight::Light ? kernel.lwcondvars : kernel.condvars;
-}
-
 // Returns the mutex with this id, or null.
 inline static MutexPtr find_mutex(KernelState &kernel, SceUID mutexid, SyncWeight weight) {
-    return lock_and_find(mutexid, get_mutexes(kernel, weight), kernel.mutex);
+    if (weight == SyncWeight::Light)
+        return kernel.objects.find<LwMutex>(mutexid);
+    return kernel.objects.find<HeavyMutex>(mutexid);
+}
+
+// Removes the mutex with this id.
+inline static void remove_mutex(KernelState &kernel, SceUID mutexid, SyncWeight weight) {
+    if (weight == SyncWeight::Light)
+        kernel.objects.remove<LwMutex>(mutexid);
+    else
+        kernel.objects.remove<HeavyMutex>(mutexid);
 }
 
 // Returns the condition variable with this id, or null.
 inline static CondvarPtr find_condvar(KernelState &kernel, SceUID condid, SyncWeight weight) {
-    return lock_and_find(condid, get_condvars(kernel, weight), kernel.mutex);
+    if (weight == SyncWeight::Light)
+        return kernel.objects.find<LwCond>(condid);
+    return kernel.objects.find<HeavyCond>(condid);
+}
+
+// Removes the condition variable with this id.
+inline static void remove_condvar(KernelState &kernel, SceUID condid, SyncWeight weight) {
+    if (weight == SyncWeight::Light)
+        kernel.objects.remove<LwCond>(condid);
+    else
+        kernel.objects.remove<HeavyCond>(condid);
 }
 
 // *****************
@@ -87,14 +98,13 @@ SceUID simple_event_create(KernelState &kernel, MemState &mem, const char *expor
     event->auto_reset = (event->attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
     event->cb_wakeup_only = (event->attr & SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY);
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-    kernel.simple_events.emplace(uid, event);
+    kernel.objects.add(event);
 
     return uid;
 }
 
 SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait, bool callbacks) {
-    const SimpleEventPtr event = lock_and_find(event_id, kernel.simple_events, kernel.mutex);
+    const SimpleEventPtr event = kernel.objects.find<SimpleEvent>(event_id);
     if (!event) {
         // this may also be a timer event
         return timer_waitorpoll(kernel, export_name, thread_id, event_id, wait_pattern, result_pattern, user_data, timeout, is_wait, callbacks);
@@ -143,7 +153,7 @@ SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, S
 }
 
 SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 pattern, SceUInt64 user_data, bool is_set) {
-    const SimpleEventPtr event = lock_and_find(event_id, kernel.simple_events, kernel.mutex);
+    const SimpleEventPtr event = kernel.objects.find<SimpleEvent>(event_id);
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     }
@@ -191,7 +201,7 @@ SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, S
 }
 
 SceInt32 simple_event_clear(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 clear_pattern) {
-    const SimpleEventPtr event = lock_and_find(event_id, kernel.simple_events, kernel.mutex);
+    const SimpleEventPtr event = kernel.objects.find<SimpleEvent>(event_id);
     if (!event) {
         // this may also be a timer event
         return timer_clear(kernel, export_name, thread_id, event_id, clear_pattern);
@@ -210,7 +220,7 @@ SceInt32 simple_event_clear(KernelState &kernel, const char *export_name, SceUID
 }
 
 SceInt32 simple_event_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id) {
-    const SimpleEventPtr event = lock_and_find(event_id, kernel.simple_events, kernel.mutex);
+    const SimpleEventPtr event = kernel.objects.find<SimpleEvent>(event_id);
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     }
@@ -221,8 +231,7 @@ SceInt32 simple_event_delete(KernelState &kernel, const char *export_name, SceUI
     }
 
     if (event->waiters.empty()) {
-        const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-        kernel.eventflags.erase(event_id);
+        kernel.objects.remove<EventFlag>(event_id);
     } else {
         // TODO:
         LOG_WARN("Can't delete sync object, it has waiting threads.");
@@ -261,8 +270,7 @@ SceUID timer_create(KernelState &kernel, MemState &mem, const char *export_name,
     strncpy(timer->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
     timer->attr = attr;
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-    kernel.timers.emplace(uid, timer);
+    kernel.objects.add(timer);
 
     return uid;
 }
@@ -274,14 +282,12 @@ SceUID timer_find(KernelState &kernel, const char *export_name, const char *pNam
     if (LOG_SYNC_PRIMITIVES)
         LOG_DEBUG("{}: name: \"{}\"", export_name, pName);
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-
-    const auto it = std::find_if(kernel.timers.begin(), kernel.timers.end(), [=](const auto &timer) {
-        return strncmp(timer.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    const TimerPtr found = kernel.objects.find_if<Timer>([=](const Timer &timer) {
+        return strncmp(timer.name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
     });
 
-    if (it != kernel.timers.end())
-        return it->first;
+    if (found)
+        return found->uid;
 
     return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
@@ -295,7 +301,7 @@ static void timer_schedule_event(TimerPtr &timer) {
 }
 
 SceInt32 timer_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle, SceUID type, SceKernelSysClock *interval, SceInt32 repeats) {
-    TimerPtr timer = lock_and_find(timer_handle, kernel.timers, kernel.mutex);
+    TimerPtr timer = kernel.objects.find<Timer>(timer_handle);
     if (!timer)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
@@ -323,7 +329,7 @@ SceInt32 timer_set(KernelState &kernel, const char *export_name, SceUID thread_i
 // this function is actually only called by simple_event_waitorpoll
 // as the only way to wait for a timer is using the event function (a timer is an event)
 SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait, bool callbacks) {
-    TimerPtr timer = lock_and_find(event_id, kernel.timers, kernel.mutex);
+    TimerPtr timer = kernel.objects.find<Timer>(event_id);
     if (!timer) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     }
@@ -414,7 +420,7 @@ SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID t
 
 // this function is actually only called by simple_event_clear
 SceInt32 timer_clear(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 clear_pattern) {
-    TimerPtr timer = lock_and_find(event_id, kernel.timers, kernel.mutex);
+    TimerPtr timer = kernel.objects.find<Timer>(event_id);
     if (!timer) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
     }
@@ -430,7 +436,7 @@ SceInt32 timer_clear(KernelState &kernel, const char *export_name, SceUID thread
 }
 
 SceInt32 timer_start(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle) {
-    TimerPtr timer = lock_and_find(timer_handle, kernel.timers, kernel.mutex);
+    TimerPtr timer = kernel.objects.find<Timer>(timer_handle);
     if (!timer)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
@@ -448,7 +454,7 @@ SceInt32 timer_start(KernelState &kernel, const char *export_name, SceUID thread
 }
 
 SceInt32 timer_stop(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle) {
-    const TimerPtr timer = lock_and_find(timer_handle, kernel.timers, kernel.mutex);
+    const TimerPtr timer = kernel.objects.find<Timer>(timer_handle);
     if (!timer)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
@@ -478,7 +484,7 @@ SceUID mutex_create(KernelState &kernel, MemState &mem, const char *export_name,
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_COUNT);
     }
 
-    const MutexPtr mutex = std::make_shared<Mutex>(attr);
+    const MutexPtr mutex = weight == SyncWeight::Light ? MutexPtr(std::make_shared<LwMutex>(attr)) : std::make_shared<HeavyMutex>(attr);
     const SceUID uid = kernel.get_next_uid();
     mutex->uid = uid;
     mutex->init_count = init_count;
@@ -500,9 +506,7 @@ SceUID mutex_create(KernelState &kernel, MemState &mem, const char *export_name,
         workarea_mem->uid = uid;
     }
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-    auto &mutexes = get_mutexes(kernel, weight);
-    mutexes.emplace(uid, mutex);
+    kernel.objects.add(mutex);
 
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} init_count: {}",
@@ -519,14 +523,12 @@ SceUID mutex_find(KernelState &kernel, const char *export_name, const char *pNam
     if (LOG_SYNC_PRIMITIVES)
         LOG_DEBUG("{}: name: \"{}\"", export_name, pName);
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-
-    const auto it = std::find_if(kernel.mutexes.begin(), kernel.mutexes.end(), [=](const auto &mutex) {
-        return strncmp(mutex.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    const MutexPtr found = kernel.objects.find_if<HeavyMutex>([=](const Mutex &mutex) {
+        return strncmp(mutex.name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
     });
 
-    if (it != kernel.mutexes.end())
-        return it->first;
+    if (found)
+        return found->uid;
 
     return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
@@ -677,8 +679,7 @@ int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id,
     }
 
     if (mutex->waiters.empty()) {
-        const std::lock_guard<std::mutex> kernel_guard(kernel.mutex);
-        get_mutexes(kernel, weight).erase(mutexid);
+        remove_mutex(kernel, mutexid, weight);
     } else {
         // TODO:
         LOG_WARN("Can't delete sync object, it has waiting threads.");
@@ -719,8 +720,7 @@ SceUID rwlock_create(KernelState &kernel, MemState &mem, const char *export_name
     strncpy(rwlock->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
     rwlock->attr = attr;
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-    kernel.rwlocks.emplace(uid, rwlock);
+    kernel.objects.add(rwlock);
 
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {}",
@@ -732,7 +732,7 @@ SceUID rwlock_create(KernelState &kernel, MemState &mem, const char *export_name
 
 SceInt32 rwlock_lock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id, uint32_t *timeout, bool is_write, bool callbacks) {
     const ThreadStatePtr thread = kernel.get_thread(thread_id);
-    const RWLockPtr rwlock = lock_and_find(lock_id, kernel.rwlocks, kernel.mutex);
+    const RWLockPtr rwlock = kernel.objects.find<RWLock>(lock_id);
 
     if (!rwlock)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
@@ -777,7 +777,7 @@ SceInt32 rwlock_lock(KernelState &kernel, MemState &mem, const char *export_name
 
 SceInt32 rwlock_unlock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id, bool is_write) {
     const ThreadStatePtr current_thread = kernel.get_thread(thread_id);
-    const RWLockPtr rwlock = lock_and_find(lock_id, kernel.rwlocks, kernel.mutex);
+    const RWLockPtr rwlock = kernel.objects.find<RWLock>(lock_id);
 
     if (!rwlock)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
@@ -831,7 +831,7 @@ SceInt32 rwlock_unlock(KernelState &kernel, MemState &mem, const char *export_na
 
 SceInt32 rwlock_delete(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id) {
     const ThreadStatePtr thread = kernel.get_thread(thread_id);
-    const RWLockPtr rwlock = lock_and_find(lock_id, kernel.rwlocks, kernel.mutex);
+    const RWLockPtr rwlock = kernel.objects.find<RWLock>(lock_id);
 
     if (!rwlock)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
@@ -843,8 +843,7 @@ SceInt32 rwlock_delete(KernelState &kernel, MemState &mem, const char *export_na
     }
 
     if (rwlock->waiters.empty()) {
-        const std::lock_guard<std::mutex> kernel_guard(kernel.mutex);
-        kernel.rwlocks.erase(lock_id);
+        kernel.objects.remove<RWLock>(lock_id);
     } else {
         // TODO:
         LOG_WARN("Can't delete sync object, it has waiting threads.");
@@ -878,8 +877,7 @@ SceUID semaphore_create(KernelState &kernel, const char *export_name, const char
             export_name, uid, thread_id, name, attr, init_val, max_val);
     }
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-    kernel.semaphores.emplace(uid, semaphore);
+    kernel.objects.add(semaphore);
 
     return uid;
 }
@@ -891,14 +889,12 @@ SceUID semaphore_find(KernelState &kernel, const char *export_name, const char *
     if (LOG_SYNC_PRIMITIVES)
         LOG_DEBUG("{}: name: \"{}\"", export_name, pName);
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-
-    const auto it = std::find_if(kernel.semaphores.begin(), kernel.semaphores.end(), [=](const auto &sema) {
-        return strncmp(sema.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    const SemaphorePtr found = kernel.objects.find_if<Semaphore>([=](const Semaphore &sema) {
+        return strncmp(sema.name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
     });
 
-    if (it != kernel.semaphores.end())
-        return it->first;
+    if (found)
+        return found->uid;
 
     return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
@@ -907,7 +903,7 @@ SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thr
     assert(semaId >= 0);
 
     // TODO Don't lock twice.
-    const SemaphorePtr semaphore = lock_and_find(semaId, kernel.semaphores, kernel.mutex);
+    const SemaphorePtr semaphore = kernel.objects.find<Semaphore>(semaId);
     if (!semaphore) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
@@ -938,7 +934,7 @@ int semaphore_signal(KernelState &kernel, const char *export_name, SceUID thread
     assert(semaid >= 0);
 
     // TODO Don't lock twice.
-    const SemaphorePtr semaphore = lock_and_find(semaid, kernel.semaphores, kernel.mutex);
+    const SemaphorePtr semaphore = kernel.objects.find<Semaphore>(semaid);
     if (!semaphore) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
@@ -973,7 +969,7 @@ int semaphore_delete(KernelState &kernel, const char *export_name, SceUID thread
     assert(semaid >= 0);
 
     // TODO: Don't lock twice
-    const SemaphorePtr semaphore = lock_and_find(semaid, kernel.semaphores, kernel.mutex);
+    const SemaphorePtr semaphore = kernel.objects.find<Semaphore>(semaid);
     if (!semaphore) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
@@ -985,8 +981,7 @@ int semaphore_delete(KernelState &kernel, const char *export_name, SceUID thread
     }
 
     if (semaphore->waiters.empty()) {
-        const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-        kernel.semaphores.erase(semaid);
+        kernel.objects.remove<Semaphore>(semaid);
     } else {
         // TODO:
         LOG_WARN("Can't delete sync object, it has waiting threads.");
@@ -999,7 +994,7 @@ int semaphore_cancel(KernelState &kernel, const char *export_name, SceUID thread
     assert(semaid >= 0);
 
     // TODO: Don't lock twice
-    const SemaphorePtr semaphore = lock_and_find(semaid, kernel.semaphores, kernel.mutex);
+    const SemaphorePtr semaphore = kernel.objects.find<Semaphore>(semaid);
     if (!semaphore) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
@@ -1047,7 +1042,8 @@ SceUID condvar_create(KernelState &kernel, MemState &mem, const char *export_nam
             export_name, uid, thread_id, name, attr, assoc_mutexid);
     }
 
-    const CondvarPtr condvar = std::make_shared<Condvar>(attr);
+    const CondvarPtr condvar = weight == SyncWeight::Light ? CondvarPtr(std::make_shared<LwCond>(attr)) : std::make_shared<HeavyCond>(attr);
+    condvar->uid = uid;
     condvar->attr = attr;
     condvar->associated_mutex = std::move(assoc_mutex);
     strncpy(condvar->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
@@ -1055,9 +1051,7 @@ SceUID condvar_create(KernelState &kernel, MemState &mem, const char *export_nam
     if (weight == SyncWeight::Light)
         workarea.get(mem)->uid = uid;
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-    auto &condvars = get_condvars(kernel, weight);
-    condvars.emplace(uid, condvar);
+    kernel.objects.add(condvar);
 
     return uid;
 }
@@ -1139,8 +1133,7 @@ int condvar_delete(KernelState &kernel, const char *export_name, SceUID thread_i
     }
 
     if (condvar->waiters.empty()) {
-        const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-        get_condvars(kernel, weight).erase(condid);
+        remove_condvar(kernel, condid, weight);
     } else {
         // TODO:
         LOG_WARN("Can't delete sync object, it has waiting threads.");
@@ -1154,7 +1147,7 @@ int condvar_delete(KernelState &kernel, const char *export_name, SceUID thread_i
 // **************
 
 SceUID eventflag_clear(KernelState &kernel, const char *export_name, SceUID evfId, SceUInt32 bitPattern) {
-    const EventFlagPtr event = lock_and_find(evfId, kernel.eventflags, kernel.mutex);
+    const EventFlagPtr event = kernel.objects.find<EventFlag>(evfId);
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
     }
@@ -1190,8 +1183,7 @@ SceUID eventflag_create(KernelState &kernel, const char *export_name, SceUID thr
     event->flags = initPattern;
     strncpy(event->name, pName, KERNELOBJECT_MAX_NAME_LENGTH);
     event->attr = attr;
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-    kernel.eventflags.emplace(uid, event);
+    kernel.objects.add(event);
 
     return uid;
 }
@@ -1203,14 +1195,12 @@ SceUID eventflag_find(KernelState &kernel, const char *export_name, const char *
     if (LOG_SYNC_PRIMITIVES)
         LOG_DEBUG("{}: name: \"{}\"", export_name, pName);
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-
-    const auto it = std::find_if(kernel.eventflags.begin(), kernel.eventflags.end(), [=](const auto &evf) {
-        return strncmp(evf.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    const EventFlagPtr found = kernel.objects.find_if<EventFlag>([=](const EventFlag &evf) {
+        return strncmp(evf.name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
     });
 
-    if (it != kernel.eventflags.end())
-        return it->first;
+    if (found)
+        return found->uid;
 
     return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
@@ -1219,7 +1209,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
     assert(event_id >= 0);
 
     // TODO Don't lock twice.
-    const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
+    const EventFlagPtr event = kernel.objects.find<EventFlag>(event_id);
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
     }
@@ -1289,7 +1279,7 @@ SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thre
     assert(evfId >= 0);
 
     // TODO Don't lock twice.
-    const EventFlagPtr event = lock_and_find(evfId, kernel.eventflags, kernel.mutex);
+    const EventFlagPtr event = kernel.objects.find<EventFlag>(evfId);
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
     }
@@ -1339,7 +1329,7 @@ SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thre
 SceInt32 eventflag_cancel(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 pattern, SceUInt32 *num_wait_threads) {
     assert(event_id >= 0);
 
-    const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
+    const EventFlagPtr event = kernel.objects.find<EventFlag>(event_id);
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
     }
@@ -1369,7 +1359,7 @@ SceInt32 eventflag_cancel(KernelState &kernel, const char *export_name, SceUID t
 int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id) {
     assert(event_id >= 0);
 
-    const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
+    const EventFlagPtr event = kernel.objects.find<EventFlag>(event_id);
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
     }
@@ -1380,8 +1370,7 @@ int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread
     }
 
     if (event->waiters.empty()) {
-        const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-        kernel.eventflags.erase(event_id);
+        kernel.objects.remove<EventFlag>(event_id);
     } else {
         // TODO:
         LOG_WARN("Can't delete sync object, it has waiting threads.");
@@ -1414,8 +1403,7 @@ SceUID msgpipe_create(KernelState &kernel, const char *export_name, const char *
     msgpipe->uid = uid;
     strncpy(msgpipe->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-    kernel.msgpipes.emplace(uid, msgpipe);
+    kernel.objects.add(msgpipe);
 
     return uid;
 }
@@ -1427,14 +1415,12 @@ SceUID msgpipe_find(KernelState &kernel, const char *export_name, const char *pN
     if (LOG_SYNC_PRIMITIVES)
         LOG_DEBUG("{}: name: \"{}\"", export_name, pName);
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-
-    const auto it = std::find_if(kernel.msgpipes.begin(), kernel.msgpipes.end(), [=](const auto &msg_pipe) {
-        return strncmp(msg_pipe.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    const MsgPipePtr found = kernel.objects.find_if<MsgPipe>([=](const MsgPipe &msg_pipe) {
+        return strncmp(msg_pipe.name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
     });
 
-    if (it != kernel.msgpipes.end())
-        return it->first;
+    if (found)
+        return found->uid;
 
     return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
@@ -1455,7 +1441,7 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
 
     const bool ASAP = !(waitMode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
 
-    const MsgPipePtr msgpipe = lock_and_find(msgPipeId, kernel.msgpipes, kernel.mutex);
+    const MsgPipePtr msgpipe = kernel.objects.find<MsgPipe>(msgPipeId);
     if (!msgpipe) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
     }
@@ -1515,7 +1501,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
 
     const bool ASAP = !(waitMode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
 
-    const MsgPipePtr msgpipe = lock_and_find(msgPipeId, kernel.msgpipes, kernel.mutex);
+    const MsgPipePtr msgpipe = kernel.objects.find<MsgPipe>(msgPipeId);
     if (!msgpipe) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
     }
@@ -1565,7 +1551,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
 SceInt32 msgpipe_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgpipe_id) {
     assert(msgpipe_id >= 0);
 
-    const MsgPipePtr msgpipe = lock_and_find(msgpipe_id, kernel.msgpipes, kernel.mutex);
+    const MsgPipePtr msgpipe = kernel.objects.find<MsgPipe>(msgpipe_id);
     if (!msgpipe) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
     }
@@ -1584,8 +1570,7 @@ SceInt32 msgpipe_delete(KernelState &kernel, const char *export_name, SceUID thr
         msgpipe->receivers.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
     }
 
-    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-    kernel.msgpipes.erase(msgpipe->uid);
+    kernel.objects.remove<MsgPipe>(msgpipe->uid);
 
     return SCE_KERNEL_OK;
 }
