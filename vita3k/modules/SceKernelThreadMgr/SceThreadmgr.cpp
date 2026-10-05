@@ -1177,9 +1177,13 @@ EXPORT(Ptr<void>, sceKernelGetThreadTLSAddr, SceUID thid, int key) {
     return emuenv.kernel.get_thread_tls_addr(emuenv.mem, thid, key);
 }
 
-EXPORT(int, sceKernelGetThreadmgrUIDClass) {
-    TRACY_FUNC(sceKernelGetThreadmgrUIDClass);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetThreadmgrUIDClass, SceUID uid) {
+    TRACY_FUNC(sceKernelGetThreadmgrUIDClass, uid);
+    if (emuenv.kernel.get_thread(uid))
+        return std::to_underlying(UidClass::thread);
+    if (const std::shared_ptr<KernelObject> obj = emuenv.kernel.objects.find(uid))
+        return std::to_underlying(obj->get_uid_class());
+    return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_UID);
 }
 
 EXPORT(uint64_t, sceKernelGetTimerBaseWide, SceUID timer_handle) {
