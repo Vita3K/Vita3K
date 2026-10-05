@@ -105,7 +105,7 @@ struct Callback final : WithUidClass<KernelObject, UidClass::callback> {
     /**
      * @brief Drops the pending notifications and ignores new ones, the callback never runs again
      */
-    void mark_deleted();
+    void on_delete() override;
 
     /**
      * @return Number of times callback has been notified since last execution

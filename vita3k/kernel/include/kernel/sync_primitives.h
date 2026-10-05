@@ -49,6 +49,8 @@ struct SimpleEvent final : WithUidClass<SyncPrimitive, UidClass::simple_event> {
     explicit SimpleEvent(SceUInt32 attr)
         : waiters(attr) {}
 
+    void on_delete() override;
+
     WaitQueue<WaitEntry> waiters;
     SceUInt32 pattern = 0;
     SceUInt64 last_user_data = 0;
@@ -62,6 +64,8 @@ typedef std::shared_ptr<SimpleEvent> SimpleEventPtr;
 struct Timer final : WithUidClass<SyncPrimitive, UidClass::timer> {
     explicit Timer(SceUInt32 attr)
         : waiters(attr) {}
+
+    void on_delete() override;
 
     // Only the first waiter waits for the next event, the others wait for their turn
     WaitQueue<std::monostate> waiters;
@@ -85,6 +89,8 @@ struct Semaphore final : WithUidClass<SyncPrimitive, UidClass::semaphore> {
     explicit Semaphore(SceUInt32 attr)
         : waiters(attr) {}
 
+    void on_delete() override;
+
     WaitQueue<WaitEntry> waiters;
     int max = 0;
     int val = 0;
@@ -100,6 +106,8 @@ struct Mutex : SyncPrimitive {
 
     explicit Mutex(SceUInt32 attr)
         : waiters(attr) {}
+
+    void on_delete() override;
 
     int init_count = 0;
     int lock_count = 0;
@@ -135,6 +143,8 @@ struct RWLock final : WithUidClass<SyncPrimitive, UidClass::rw_lock> {
     explicit RWLock(SceUInt32 attr)
         : waiters(attr) {}
 
+    void on_delete() override;
+
     RWLockState state = RWLockState::Unlocked;
     RWLockOwners owners;
     WaitQueue<WaitEntry> waiters;
@@ -151,6 +161,8 @@ struct EventFlag final : WithUidClass<SyncPrimitive, UidClass::event_flag> {
 
     explicit EventFlag(SceUInt32 attr)
         : waiters(attr) {}
+
+    void on_delete() override;
 
     WaitQueue<WaitEntry> waiters;
     int flags = 0;
@@ -179,6 +191,8 @@ struct Condvar : SyncPrimitive {
     explicit Condvar(SceUInt32 attr)
         : waiters(attr) {}
 
+    void on_delete() override;
+
     WaitQueue<std::monostate> waiters;
     MutexPtr associated_mutex;
 };
@@ -204,25 +218,25 @@ struct MsgPipe final : WithUidClass<SyncPrimitive, UidClass::msg_pipe> {
         : receivers(attr)
         , data_buffer(bufSize) {}
 
+    void on_delete() override;
+
     // TODO do senders respect priority?
     WaitQueue<WaitEntry> senders;
     WaitQueue<WaitEntry> receivers;
     ByteRingBuffer data_buffer;
-
-    bool beingDeleted = false;
 };
 
 typedef std::shared_ptr<MsgPipe> MsgPipePtr;
 
 // simple events
-SceUID simple_event_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr, SceUInt32 init_pattern);
+SceUID simple_event_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr, SceUInt32 init_pattern);
 SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait, bool callbacks);
 SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 pattern, SceUInt64 user_data, bool is_set);
 SceInt32 simple_event_clear(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 clear_pattern);
 SceInt32 simple_event_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id);
 
 // Timer
-SceUID timer_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr);
+SceUID timer_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr);
 SceUID timer_find(KernelState &kernel, const char *export_name, const char *pName);
 SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait, bool callbacks);
 SceInt32 timer_clear(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 clear_pattern);
@@ -240,10 +254,10 @@ int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id,
 MutexPtr mutex_get(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, SyncWeight weight);
 
 // RWLock
-SceUID rwlock_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr);
-SceInt32 rwlock_lock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id, uint32_t *timeout, bool is_write, bool callbacks);
-SceInt32 rwlock_unlock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id, bool is_write);
-SceInt32 rwlock_delete(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id);
+SceUID rwlock_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr);
+SceInt32 rwlock_lock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID lock_id, uint32_t *timeout, bool is_write, bool callbacks);
+SceInt32 rwlock_unlock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID lock_id, bool is_write);
+SceInt32 rwlock_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID lock_id);
 
 // Semaphore
 SceUID semaphore_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, int init_val, int max_val);

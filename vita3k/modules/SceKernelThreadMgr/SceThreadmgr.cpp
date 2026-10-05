@@ -119,7 +119,7 @@ EXPORT(int, _sceKernelCreateMutex, const char *name, SceUInt attr, int init_coun
 
 EXPORT(SceUID, _sceKernelCreateRWLock, const char *name, SceUInt32 attr, SceKernelMutexOptParam *opt_param) {
     TRACY_FUNC(_sceKernelCreateRWLock, name, attr, opt_param);
-    return rwlock_create(emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr);
+    return rwlock_create(emuenv.kernel, export_name, name, thread_id, attr);
 }
 
 EXPORT(int, _sceKernelCreateSema, const char *name, SceUInt attr, int initVal, Ptr<SceKernelCreateSema_opt> opt) {
@@ -134,12 +134,12 @@ EXPORT(int, _sceKernelCreateSema_16XX, const char *name, SceUInt attr, int initV
 
 EXPORT(SceUID, _sceKernelCreateSimpleEvent, const char *name, SceUInt32 attr, SceUInt32 init_pattern, const SceKernelSimpleEventOptParam *pOptParam) {
     TRACY_FUNC(_sceKernelCreateSimpleEvent, name, attr, init_pattern, pOptParam);
-    return simple_event_create(emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr, init_pattern);
+    return simple_event_create(emuenv.kernel, export_name, name, thread_id, attr, init_pattern);
 }
 
 EXPORT(int, _sceKernelCreateTimer, const char *name, SceUInt32 attr, const uint32_t *opt_params) {
     TRACY_FUNC(_sceKernelCreateTimer, name, attr, opt_params);
-    return timer_create(emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr);
+    return timer_create(emuenv.kernel, export_name, name, thread_id, attr);
 }
 
 EXPORT(int, _sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea) {
@@ -569,24 +569,24 @@ EXPORT(SceInt32, _sceKernelLockMutexCB, SceUID mutexId, SceInt32 lockCount, SceU
 
 EXPORT(SceInt32, _sceKernelLockReadRWLock, SceUID lock_id, SceUInt32 *timeout) {
     TRACY_FUNC(_sceKernelLockReadRWLock, lock_id, timeout);
-    return rwlock_lock(emuenv.kernel, emuenv.mem, export_name, thread_id, lock_id, timeout, false, false);
+    return rwlock_lock(emuenv.kernel, export_name, thread_id, lock_id, timeout, false, false);
 }
 
 EXPORT(SceInt32, _sceKernelLockReadRWLockCB, SceUID lock_id, SceUInt32 *timeout) {
     TRACY_FUNC(_sceKernelLockReadRWLockCB, lock_id, timeout);
     emuenv.kernel.get_thread(thread_id)->process_callbacks();
-    return rwlock_lock(emuenv.kernel, emuenv.mem, export_name, thread_id, lock_id, timeout, false, true);
+    return rwlock_lock(emuenv.kernel, export_name, thread_id, lock_id, timeout, false, true);
 }
 
 EXPORT(SceInt32, _sceKernelLockWriteRWLock, SceUID lock_id, SceUInt32 *timeout) {
     TRACY_FUNC(_sceKernelLockWriteRWLock, lock_id, timeout);
-    return rwlock_lock(emuenv.kernel, emuenv.mem, export_name, thread_id, lock_id, timeout, true, false);
+    return rwlock_lock(emuenv.kernel, export_name, thread_id, lock_id, timeout, true, false);
 }
 
 EXPORT(SceInt32, _sceKernelLockWriteRWLockCB, SceUID lock_id, SceUInt32 *timeout) {
     TRACY_FUNC(_sceKernelLockWriteRWLockCB, lock_id, timeout);
     emuenv.kernel.get_thread(thread_id)->process_callbacks();
-    return rwlock_lock(emuenv.kernel, emuenv.mem, export_name, thread_id, lock_id, timeout, true, true);
+    return rwlock_lock(emuenv.kernel, export_name, thread_id, lock_id, timeout, true, true);
 }
 
 EXPORT(int, _sceKernelPMonThreadGetCounter) {
@@ -1096,7 +1096,7 @@ EXPORT(int, sceKernelDeleteMutex, SceUID mutexid) {
 
 EXPORT(SceInt32, sceKernelDeleteRWLock, SceUID lock_id) {
     TRACY_FUNC(sceKernelDeleteRWLock, lock_id);
-    return rwlock_delete(emuenv.kernel, emuenv.mem, export_name, thread_id, lock_id);
+    return rwlock_delete(emuenv.kernel, export_name, thread_id, lock_id);
 }
 
 EXPORT(int, sceKernelDeleteSema, SceUID semaid) {
@@ -1121,7 +1121,8 @@ EXPORT(int, sceKernelDeleteThread, SceUID thid) {
 
 EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
     TRACY_FUNC(sceKernelDeleteTimer, timer_handle);
-    emuenv.kernel.objects.remove<Timer>(timer_handle);
+    if (!emuenv.kernel.objects.remove<Timer>(timer_handle))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
     return 0;
 }
@@ -1397,12 +1398,12 @@ EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
 
 EXPORT(int, sceKernelUnlockReadRWLock, SceUID lock_id) {
     TRACY_FUNC(sceKernelUnlockReadRWLock, lock_id);
-    return rwlock_unlock(emuenv.kernel, emuenv.mem, export_name, thread_id, lock_id, false);
+    return rwlock_unlock(emuenv.kernel, export_name, thread_id, lock_id, false);
 }
 
 EXPORT(int, sceKernelUnlockWriteRWLock, SceUID lock_id) {
     TRACY_FUNC(sceKernelUnlockWriteRWLock, lock_id);
-    return rwlock_unlock(emuenv.kernel, emuenv.mem, export_name, thread_id, lock_id, true);
+    return rwlock_unlock(emuenv.kernel, export_name, thread_id, lock_id, true);
 }
 
 EXPORT(int, sceKernelUnregisterCallbackFromEvent) {

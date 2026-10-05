@@ -55,7 +55,7 @@ void Callback::cancel() {
     this->reset();
 }
 
-void Callback::mark_deleted() {
+void Callback::on_delete() {
     std::lock_guard lock(this->_mutex);
     this->deleted = true;
     this->reset();

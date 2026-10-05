@@ -56,7 +56,8 @@ public:
     [[nodiscard]] WaitResult wait_until_ready(std::unique_lock<std::mutex> &lock, const ThreadStatePtr &thread, WaitTarget target, Entry entry, Deadline deadline, bool callbacks, std::predicate<Waiter &> auto ready) {
         Waiter waiter{ .thread = thread, .entry = std::move(entry) };
         waiter.priority = waiter.thread->priority;
-        push(waiter);
+        if (!push(waiter))
+            return *waiter.result;
         while (true) {
             lock.unlock();
             const WaitResult r = waiter.thread->wait(target, deadline, callbacks);
@@ -134,6 +135,12 @@ public:
         return wake_if([](Waiter &) { return true; }, result);
     }
 
+    // Ends every wait with result, and makes later waits end with it right away.
+    void close(SceInt32 result) {
+        closed_result = result;
+        wake_all(result);
+    }
+
     // Wakes a waiter so it rechecks its condition, leaving it queued.
     static void notify(Waiter &waiter) {
         waiter.thread->wake();
@@ -146,13 +153,19 @@ public:
     }
 
     // Queues a waiter that the caller will block itself. Used by waits that need their own loop.
-    void push(Waiter &waiter) {
+    // Returns false on a closed queue, where the waiter gets the close result instead.
+    [[nodiscard]] bool push(Waiter &waiter) {
+        if (closed_result) {
+            waiter.result = closed_result;
+            return false;
+        }
         auto pos = waiters.end();
         if (by_priority) {
             // Lower value is higher priority, equal priorities keep FIFO order
             pos = std::find_if(waiters.begin(), waiters.end(), [&](const Waiter *w) { return w->priority > waiter.priority; });
         }
         waiters.insert(pos, &waiter);
+        return true;
     }
 
     // Takes a waiter off the queue if it is still on it.
@@ -163,4 +176,5 @@ public:
 private:
     bool by_priority = false;
     std::list<Waiter *> waiters;
+    std::optional<SceInt32> closed_result;
 };

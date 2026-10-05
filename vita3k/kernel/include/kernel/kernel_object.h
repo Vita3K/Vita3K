@@ -47,6 +47,8 @@ struct KernelObject {
     virtual ~KernelObject() = default;
     // Returns the class reported by sceKernelGetThreadmgrUIDClass.
     virtual UidClass get_uid_class() const = 0;
+    // Runs once when the object is deleted, while other threads may still hold it.
+    virtual void on_delete() {}
 
     SceUID uid{};
 };
@@ -91,14 +93,20 @@ public:
         return std::static_pointer_cast<T>(it->second);
     }
 
-    // Removes the T with this UID and returns it. Returns null if there is none.
+    // Removes the T with this UID and runs its on_delete(). Returns false if there is none.
     template <KernelObjectClass T>
-    std::shared_ptr<T> remove(SceUID uid) {
-        const std::lock_guard<std::mutex> lock(mutex);
-        const auto it = objects.find(uid);
-        if (it == objects.end() || it->second->get_uid_class() != T::uid_class)
-            return nullptr;
-        return std::static_pointer_cast<T>(std::move(objects.extract(it).mapped()));
+    bool remove(SceUID uid) {
+        std::shared_ptr<KernelObject> obj;
+        {
+            const std::lock_guard<std::mutex> lock(mutex);
+            const auto it = objects.find(uid);
+            if (it == objects.end() || it->second->get_uid_class() != T::uid_class)
+                return false;
+            obj = std::move(objects.extract(it).mapped());
+        }
+        // Without the table lock, since it takes the object's own lock
+        obj->on_delete();
+        return true;
     }
 
     // Returns the first T, in UID order, that pick accepts, or null.
