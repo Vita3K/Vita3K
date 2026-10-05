@@ -26,9 +26,10 @@
 #include <dynarmic/interface/A32/coprocessor.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
-#include <atomic>
 #include <bit>
+#include <chrono>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 
@@ -161,24 +162,52 @@ public:
     }
 
     static constexpr uint64_t INVALID_READ_LOG_FULL = 16;
-    static constexpr uint64_t INVALID_READ_LOG_EVERY = 1000000;
-    inline static std::atomic<uint64_t> invalid_read_count{ 0 };
+    static constexpr std::chrono::seconds INVALID_READ_INTERVAL{ 1 };
+    inline static std::mutex invalid_read_mutex;
+    inline static std::chrono::steady_clock::time_point invalid_read_last;
+    inline static std::chrono::steady_clock::time_point invalid_read_reported;
+    inline static uint64_t invalid_read_burst = 0;
+    inline static uint64_t invalid_read_unreported = 0;
 
     template <typename T>
     T MemoryRead(Dynarmic::A32::VAddr addr) {
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
-            const uint64_t n = invalid_read_count.fetch_add(1) + 1;
-            const bool verbose = (n <= INVALID_READ_LOG_FULL);
-            const bool periodic = (n % INVALID_READ_LOG_EVERY) == 0;
-
-            if (verbose) {
-                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x} (thread {})\n{}", sizeof(T) * 8, addr, parent->thread_id, this->cpu->save_context().description());
-            } else if (periodic) {
-                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x} (thread {}, occurrence #{}, further reports suppressed)", sizeof(T) * 8, addr, parent->thread_id, n);
+            bool verbose = false;
+            uint64_t previous_burst = 0;
+            uint64_t continuing = 0;
+            {
+                const std::lock_guard<std::mutex> lock(invalid_read_mutex);
+                const auto now = std::chrono::steady_clock::now();
+                // A second without an invalid read ends the burst
+                if (now - invalid_read_last >= INVALID_READ_INTERVAL) {
+                    previous_burst = invalid_read_unreported;
+                    invalid_read_burst = 0;
+                    invalid_read_unreported = 0;
+                    invalid_read_reported = now;
+                }
+                invalid_read_last = now;
+                if (++invalid_read_burst <= INVALID_READ_LOG_FULL) {
+                    verbose = true;
+                } else {
+                    invalid_read_unreported++;
+                    if (now - invalid_read_reported >= INVALID_READ_INTERVAL) {
+                        continuing = invalid_read_unreported;
+                        invalid_read_unreported = 0;
+                        invalid_read_reported = now;
+                    }
+                }
             }
 
-            if (verbose || periodic) {
+            if (previous_burst > 0)
+                LOG_ERROR("{} more invalid reads in the previous burst were not logged", previous_burst);
+            if (verbose) {
+                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x} (thread {})\n{}", sizeof(T) * 8, addr, parent->thread_id, this->cpu->save_context().description());
+            } else if (continuing > 0) {
+                LOG_ERROR("Invalid reads continuing: {} more since the last report, latest of uint{}_t at address: 0x{:x} (thread {})", continuing, sizeof(T) * 8, addr, parent->thread_id);
+            }
+
+            if (verbose || continuing > 0) {
                 auto pc = this->cpu->get_pc();
                 if (pc < parent->mem->host_page_size)
                     LOG_CRITICAL("PC is 0x{:x}", pc);
