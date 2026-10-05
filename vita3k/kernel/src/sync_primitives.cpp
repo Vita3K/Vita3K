@@ -231,7 +231,7 @@ SceInt32 simple_event_delete(KernelState &kernel, const char *export_name, SceUI
     }
 
     if (event->waiters.empty()) {
-        kernel.objects.remove<EventFlag>(event_id);
+        kernel.objects.remove<SimpleEvent>(event_id);
     } else {
         // TODO:
         LOG_WARN("Can't delete sync object, it has waiting threads.");
