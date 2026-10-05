@@ -74,6 +74,10 @@ static QString url_encode(const QString &input) {
     return QString(input.toUtf8().toPercentEncoding());
 }
 
+static std::string url_encode(const std::string &input) {
+    return url_encode(QString::fromStdString(input)).toStdString();
+}
+
 static quint64 directory_size(const QString &path) {
     quint64 total = 0;
     QDirIterator it(path, QDir::Files | QDir::Hidden, QDirIterator::Subdirectories);
@@ -212,7 +216,7 @@ void AppsListContextMenu::add_compat_actions(const app::AppEntry &app) {
         connect(check, &QAction::triggered, this, [title_id, &app] {
             const std::string url = title_id.starts_with("PCS")
                 ? "https://vita3k.org/compatibility?g=" + title_id
-                : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + app.title;
+                : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + url_encode(app.title);
             QDesktopServices::openUrl(QUrl(QString::fromStdString(url)));
         });
     } else {
@@ -271,14 +275,12 @@ void AppsListContextMenu::add_compat_actions(const app::AppEntry &app) {
         } else {
             auto *create_report = compat_menu->addAction(tr("Create State Report"));
             connect(create_report, &QAction::triggered, this, [this, &app, title_id] {
-                const auto title = url_encode(QString::fromStdString(app.title));
-
                 const auto app_summary = fmt::format(
                     "%23 App summary%0A"
                     "- App name: {}%0A"
                     "- App serial: {}%0A"
                     "- App version: {}",
-                    app.title, title_id, app.app_ver);
+                    url_encode(app.title), title_id, app.app_ver);
 
                 const auto vita3k_summary = fmt::format(
                     "%23 Vita3K summary%0A"
@@ -305,10 +307,10 @@ void AppsListContextMenu::add_compat_actions(const app::AppEntry &app) {
                     "- CPU: {}%0A"
                     "- GPU: {}%0A"
                     "- RAM: {} GB",
-                    user ? user : "?",
-                    CppCommon::Environment::OSVersion(),
-                    CppCommon::CPU::Architecture(),
-                    gpu_name,
+                    url_encode(std::string(user ? user : "?")),
+                    url_encode(CppCommon::Environment::OSVersion()),
+                    url_encode(CppCommon::CPU::Architecture()),
+                    url_encode(gpu_name),
                     SDL_GetSystemRAM() / 1000);
 
                 const auto rest = "%23 Issues%0A<!-- Summary of problems -->%0A%0A"
@@ -320,7 +322,7 @@ void AppsListContextMenu::add_compat_actions(const app::AppEntry &app) {
 
                 const auto url = fmt::format(
                     "{}/new?assignees=&labels=&projects=&template=1-ISSUE_TEMPLATE.md&title={} [{}]&body={}%0A%0A{}%0A%0A{}%0A%0A{}",
-                    ISSUES_URL, title.toStdString(), title_id,
+                    ISSUES_URL, url_encode(app.title), title_id,
                     app_summary, vita3k_summary, test_env, rest);
 
                 QDesktopServices::openUrl(QUrl(QString::fromStdString(url)));
