@@ -207,12 +207,16 @@ public:
                 LOG_ERROR("Invalid reads continuing: {} more since the last report, latest of uint{}_t at address: 0x{:x} (thread {})", continuing, sizeof(T) * 8, addr, parent->thread_id);
             }
 
-            if (verbose || continuing > 0) {
-                auto pc = this->cpu->get_pc();
-                if (pc < parent->mem->host_page_size)
-                    LOG_CRITICAL("PC is 0x{:x}", pc);
-                else
-                    LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+            const auto pc = this->cpu->get_pc();
+            if (pc < parent->mem->host_page_size) {
+                // A thread executing in the first page never recovers, so end its guest function
+                if (!cpu->halted) {
+                    LOG_CRITICAL("PC is 0x{:x}, stopping thread {}", pc, parent->thread_id);
+                    cpu->halted = true;
+                    cpu->jit->HaltExecution();
+                }
+            } else if (verbose || continuing > 0) {
+                LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
             }
             return 0;
         }
