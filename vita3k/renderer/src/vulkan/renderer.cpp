@@ -1210,6 +1210,10 @@ void VKState::render_frame(DisplayState &display, const GxmState &gxm, MemState 
 }
 
 void VKState::swap_window() {
+    const int pending_vsync = this->pending_vsync.exchange(-1, std::memory_order_relaxed);
+    if (pending_vsync >= 0)
+        screen_renderer.set_vsync(pending_vsync != 0);
+
     screen_renderer.swap_window();
 
     // look once a frame if we need to save the pipeline cache
