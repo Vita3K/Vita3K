@@ -65,6 +65,7 @@
 
 #include <cstdlib>
 #include <optional>
+#include <utility>
 
 int main(int argc, char *argv[]) {
 #ifdef __APPLE__
@@ -181,10 +182,14 @@ int main(int argc, char *argv[]) {
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
 
-        if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR | SDL_INIT_CAMERA)) {
+        if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMEPAD)) {
             LOG_ERROR("SDL initialisation failed: {}", SDL_GetError());
             QMessageBox::critical(nullptr, "Error", "SDL initialisation failed.");
             return SDLInitFailed;
+        }
+        for (const auto &[flag, name] : { std::pair{ SDL_INIT_HAPTIC, "haptic" }, std::pair{ SDL_INIT_SENSOR, "sensor" }, std::pair{ SDL_INIT_CAMERA, "camera" } }) {
+            if (!SDL_InitSubSystem(flag))
+                LOG_WARN("SDL {} initialisation failed, continuing without it: {}", name, SDL_GetError());
         }
     }
 
