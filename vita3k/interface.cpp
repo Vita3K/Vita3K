@@ -110,6 +110,11 @@ static bool is_nonpdrm(EmuEnvState &emuenv, const fs::path &output_path) {
 }
 
 static bool set_content_path(EmuEnvState &emuenv, const bool is_theme, fs::path &dest_path) {
+    if (emuenv.app_info.app_title_id.empty()) {
+        LOG_ERROR("param.sfo has no title ID, not installing it");
+        return false;
+    }
+
     const auto app_path = dest_path / "app" / emuenv.app_info.app_title_id;
 
     if (emuenv.app_info.app_category == "ac") {
