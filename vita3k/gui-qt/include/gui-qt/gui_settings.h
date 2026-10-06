@@ -20,6 +20,7 @@
 #include <gui-qt/gui_save.h>
 #include <gui-qt/gui_settings_base.h>
 
+#include <QSize>
 #include <QString>
 
 namespace gui {
@@ -63,7 +64,7 @@ const GuiSave l_visible = GuiSave(logger, QStringLiteral("visible"), true);
 const GuiSave l_bufferSize = GuiSave(logger, QStringLiteral("bufferSize"), 1000);
 const GuiSave l_fontFamily = GuiSave(logger, QStringLiteral("fontFamily"), QString());
 
-const GuiSave gw_geometry = GuiSave(game_window, QStringLiteral("geometry"), QByteArray());
+const GuiSave gw_size = GuiSave(game_window, QStringLiteral("size"), QSize());
 const GuiSave gw_roundedCorners = GuiSave(game_window, QStringLiteral("roundedCorners"), false);
 
 const GuiSave tr_geometry = GuiSave(trophy, QStringLiteral("geometry"), QByteArray());
