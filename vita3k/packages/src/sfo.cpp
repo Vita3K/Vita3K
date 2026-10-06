@@ -122,9 +122,7 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
         // Calculate the starting address of the key data in the content buffer
         const auto key_begin = content.begin() + sfile.header.key_table_start + sfile.entries[i].entry.key_offset;
 
-        // Extract the key data from the content buffer and assign it to 'key' as a string
-        // Subtract 1 from keySize to avoid including the null terminator
-        sfile.entries[i].data.first = std::string(key_begin, key_begin + keySize - 1);
+        sfile.entries[i].data.first = std::string(key_begin, std::find(key_begin, key_begin + keySize, '\0'));
     }
 
     // Parse each SFO entry and extract its associated data
