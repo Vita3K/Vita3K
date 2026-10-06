@@ -233,6 +233,7 @@ SceUID simple_event_create(KernelState &kernel, const char *export_name, const c
 SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait, bool callbacks);
 SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 pattern, SceUInt64 user_data, bool is_set);
 SceInt32 simple_event_clear(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 clear_pattern);
+SceInt32 simple_event_cancel(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 *num_wait_threads);
 SceInt32 simple_event_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id);
 
 // Timer
@@ -243,6 +244,7 @@ SceInt32 timer_clear(KernelState &kernel, const char *export_name, SceUID thread
 SceInt32 timer_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle, SceUID type, SceKernelSysClock *interval, SceInt32 repeats);
 SceInt32 timer_start(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle);
 SceInt32 timer_stop(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle);
+SceInt32 timer_cancel(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle, SceUInt32 *num_wait_threads);
 
 // Mutex
 SceUID mutex_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, int init_count, Ptr<SceKernelLwMutexWork> workarea, SyncWeight weight);
@@ -251,6 +253,7 @@ int mutex_lock(KernelState &kernel, MemState &mem, const char *export_name, SceU
 int mutex_try_lock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, SyncWeight weight);
 int mutex_unlock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, int unlock_count, SyncWeight weight);
 int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, SyncWeight weight);
+SceInt32 mutex_cancel(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, SceInt32 new_count, SceUInt32 *num_wait_threads);
 MutexPtr mutex_get(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, SyncWeight weight);
 
 // RWLock
@@ -258,6 +261,7 @@ SceUID rwlock_create(KernelState &kernel, const char *export_name, const char *n
 SceInt32 rwlock_lock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID lock_id, uint32_t *timeout, bool is_write, bool callbacks);
 SceInt32 rwlock_unlock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID lock_id, bool is_write);
 SceInt32 rwlock_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID lock_id);
+SceInt32 rwlock_cancel(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID lock_id, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag);
 
 // Semaphore
 SceUID semaphore_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, int init_val, int max_val);
@@ -289,3 +293,4 @@ SceUID msgpipe_find(KernelState &kernel, const char *export_name, const char *pN
 SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgPipeId, SceUInt32 waitMode, void *pRecvBuf, SceSize recvSize, SceUInt32 *pTimeout, bool callbacks);
 SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgPipeId, SceUInt32 waitMode, const void *pSendBuf, SceSize sendSize, SceUInt32 *pTimeout, bool callbacks);
 SceInt32 msgpipe_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgpipe_id);
+SceInt32 msgpipe_cancel(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgpipe_id, SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads);

@@ -1113,9 +1113,9 @@ EXPORT(int, sceKernelCallWithChangeStack) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCancelEvent) {
-    TRACY_FUNC(sceKernelCancelEvent);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelCancelEvent, SceUID eventId, SceUInt32 *pNumWaitThreads) {
+    TRACY_FUNC(sceKernelCancelEvent, eventId, pNumWaitThreads);
+    return CALL_EXPORT(_sceKernelCancelEvent, eventId, pNumWaitThreads);
 }
 
 EXPORT(SceInt32, sceKernelCancelEventFlag, SceUID event_id, SceUInt pattern, SceUInt32 *num_wait_thread) {
@@ -1128,19 +1128,19 @@ EXPORT(int, sceKernelCancelEventWithSetPattern) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCancelMsgPipe) {
-    TRACY_FUNC(sceKernelCancelMsgPipe);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelCancelMsgPipe, SceUID msgPipeId, SceUInt32 *pNumSendWaitThreads, SceUInt32 *pNumReceiveWaitThreads) {
+    TRACY_FUNC(sceKernelCancelMsgPipe, msgPipeId, pNumSendWaitThreads, pNumReceiveWaitThreads);
+    return CALL_EXPORT(_sceKernelCancelMsgPipe, msgPipeId, pNumSendWaitThreads, pNumReceiveWaitThreads);
 }
 
-EXPORT(int, sceKernelCancelMutex) {
-    TRACY_FUNC(sceKernelCancelMutex);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelCancelMutex, SceUID mutexId, SceInt32 newCount, SceUInt32 *pNumWaitThreads) {
+    TRACY_FUNC(sceKernelCancelMutex, mutexId, newCount, pNumWaitThreads);
+    return CALL_EXPORT(_sceKernelCancelMutex, mutexId, newCount, pNumWaitThreads);
 }
 
-EXPORT(int, sceKernelCancelRWLock) {
-    TRACY_FUNC(sceKernelCancelRWLock);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelCancelRWLock, SceUID rwLockId, SceUInt32 *pNumReadWaitThreads, SceUInt32 *pNumWriteWaitThreads, SceInt32 flag) {
+    TRACY_FUNC(sceKernelCancelRWLock, rwLockId, pNumReadWaitThreads, pNumWriteWaitThreads, flag);
+    return CALL_EXPORT(_sceKernelCancelRWLock, rwLockId, pNumReadWaitThreads, pNumWriteWaitThreads, flag);
 }
 
 EXPORT(int, sceKernelCancelSema, SceUID semaId, SceInt32 setCount, SceUInt32 *pNumWaitThreads) {
@@ -1148,9 +1148,9 @@ EXPORT(int, sceKernelCancelSema, SceUID semaId, SceInt32 setCount, SceUInt32 *pN
     return CALL_EXPORT(_sceKernelCancelSema, semaId, setCount, pNumWaitThreads);
 }
 
-EXPORT(int, sceKernelCancelTimer) {
-    TRACY_FUNC(sceKernelCancelTimer);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelCancelTimer, SceUID timerId, SceUInt32 *pNumWaitThreads) {
+    TRACY_FUNC(sceKernelCancelTimer, timerId, pNumWaitThreads);
+    return CALL_EXPORT(_sceKernelCancelTimer, timerId, pNumWaitThreads);
 }
 
 EXPORT(int, sceKernelChangeCurrentThreadAttr) {
