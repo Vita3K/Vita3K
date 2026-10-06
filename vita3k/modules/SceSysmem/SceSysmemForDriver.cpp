@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceSysmemForDriver.h"
+#include "SceSysmem.h"
 #include <modules/sysmem_state.h>
 
 #include <kernel/state.h>
@@ -118,6 +119,19 @@ static void count_block(SysmemState &state, SceKernelMemBlockType type, SceSSize
     }
 }
 
+static bool takes_from_user(SceKernelMemBlockType type) {
+    if ((type & MEMBLOCK_TYPE_PARTITION_INDEX_MASK) == MEMBLOCK_TYPE_PARTITION_INDEX_USER_CDIALOG)
+        return false;
+    switch (type & MEMBLOCK_TYPE_PHYMEMPART_MASK) {
+    case MEMBLOCK_TYPE_PHYMEMPART_CDRAM:
+    case MEMBLOCK_TYPE_PHYMEMPART_PHYCONT:
+    case MEMBLOCK_TYPE_PHYMEMPART_CDIALOG:
+        return false;
+    default:
+        return true;
+    }
+}
+
 SceUID add_block(SysmemState &state, const char *name, SceKernelMemBlockType type, Address base, SceSize size) {
     const SceUID uid = state.get_next_uid();
     const auto block = std::make_shared<KernelMemBlock>();
@@ -163,6 +177,9 @@ EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType 
 
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
+
+    if (takes_from_user(type) && (static_cast<uint64_t>(state->allocated_user) + size > get_max_user_memory(emuenv)))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
 
     Ptr<void> address;
     if (base_address) {

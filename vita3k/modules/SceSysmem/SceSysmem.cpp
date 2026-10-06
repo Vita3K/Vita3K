@@ -251,9 +251,7 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
     return CALL_EXPORT(ksceKernelFreeMemBlock, uid);
 }
 
-EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
-    TRACY_FUNC(sceKernelGetFreeMemorySize, info);
-
+uint32_t get_max_user_memory(EmuEnvState &emuenv) {
     // Default memory configuration
     uint32_t max_user = MiB(256);
 
@@ -278,6 +276,14 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
         }
     } else
         LOG_WARN_ONCE("ATTRIBUTE2 key not found in SFO data.");
+
+    return max_user;
+}
+
+EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
+    TRACY_FUNC(sceKernelGetFreeMemorySize, info);
+
+    const uint32_t max_user = get_max_user_memory(emuenv);
 
     // Define other memory limits
     constexpr uint32_t max_cdram = MiB(112); // Max cdram memory (112 MiB)
