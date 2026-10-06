@@ -948,7 +948,7 @@ std::optional<AppLaunchRequest> MainWindow::boot_game_once(const AppLaunchReques
     if (m_theme_manager)
         m_theme_manager->set_vita_theme_bgm_blocked(true);
 
-    bool launch_fullscreen = emuenv.cfg.boot_apps_full_screen;
+    bool launch_fullscreen = emuenv.cfg.boot_apps_full_screen || emuenv.cfg.fullscreen;
     if (m_game_container) {
         launch_fullscreen = m_game_container->visibility() == QWindow::FullScreen;
     }
