@@ -19,5 +19,7 @@
 
 #include <module/module.h>
 
+uint32_t get_max_user_memory(EmuEnvState &emuenv);
+
 DECL_EXPORT(SceUID, sceKernelFindMemBlockByAddr, Address addr, uint32_t size);
 DECL_EXPORT(int, sceKernelFreeMemBlock, SceUID uid);
