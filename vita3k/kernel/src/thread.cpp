@@ -502,8 +502,8 @@ SceUInt32 ThreadState::process_callbacks() {
         const std::optional<Callback::Notification> notification = cb->take_notification();
         if (!notification)
             continue;
-        const uint32_t ret = run_callback(cb->get_callback_function().address(),
-            { static_cast<uint32_t>(notification->notifier_id), notification->count, static_cast<uint32_t>(notification->arg), cb->get_user_common_ptr().address() });
+        const uint32_t ret = run_callback(cb->cb_func.address(),
+            { static_cast<uint32_t>(notification->notifier_id), notification->count, static_cast<uint32_t>(notification->arg), cb->userdata.address() });
         ++processed;
         // A callback that exits the thread also ends the wait it runs in
         {
