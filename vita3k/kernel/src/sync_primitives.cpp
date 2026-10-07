@@ -132,6 +132,18 @@ SceInt32 SimpleEvent::clear(SceUInt32 clear_pattern) {
     return SCE_KERNEL_OK;
 }
 
+SceInt32 SimpleEvent::cancel(SceUInt32 *num_wait_threads) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+
+    const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    if (num_wait_threads)
+        *num_wait_threads = nb_threads;
+
+    return SCE_KERNEL_OK;
+}
+
 // *********
 // * Timer *
 // *********
@@ -292,6 +304,23 @@ SceInt32 Timer::stop() {
     return static_cast<int>(was_stopped);
 }
 
+SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+
+    const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    // The event set with sceKernelSetTimerEvent is canceled too
+    is_repeat = false;
+    is_pulse = false;
+    event_interval = 0;
+    next_event = std::numeric_limits<uint64_t>::max();
+    if (num_wait_threads)
+        *num_wait_threads = nb_threads;
+
+    return SCE_KERNEL_OK;
+}
+
 // *********
 // * Mutex *
 // *********
@@ -407,6 +436,26 @@ SceInt32 Mutex::release(const ThreadStatePtr &thread, int unlock_count) {
     return SCE_KERNEL_OK;
 }
 
+SceInt32 Mutex::cancel(const ThreadStatePtr &thread, int new_count, SceUInt32 *num_wait_threads) {
+    const auto guard = lock();
+    if (!guard)
+        return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
+
+    // -1 restores the lock count the mutex was created with
+    if (new_count == -1)
+        new_count = init_count;
+    if (new_count < 0 || (new_count > 1 && !(attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE)))
+        return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
+
+    const auto nb_threads = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    lock_count = new_count;
+    owner = new_count > 0 ? thread : nullptr;
+    if (num_wait_threads)
+        *num_wait_threads = nb_threads;
+
+    return SCE_KERNEL_OK;
+}
+
 // **************
 // * RWLock *
 // **************
@@ -494,6 +543,32 @@ SceInt32 RWLock::release(const ThreadStatePtr &thread) {
         }
         return true;
     });
+
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 RWLock::cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
+
+    const auto is_writer = [](auto &waiter) { return waiter.entry.is_write; };
+    const auto nb_writers = static_cast<SceUInt32>(waiters.wake_if(is_writer, SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_readers = static_cast<SceUInt32>(waiters.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+
+    // The lock is reset, and only the calling thread may hold it afterwards
+    owners.clear();
+    if (flag & SCE_KERNEL_RW_LOCK_CANCEL_WITH_WRITE_LOCK) {
+        owners.emplace(thread, 1);
+        state = RWLockState::WriteLocked;
+    } else {
+        state = RWLockState::Unlocked;
+    }
+
+    if (num_read_wait_threads)
+        *num_read_wait_threads = nb_readers;
+    if (num_write_wait_threads)
+        *num_write_wait_threads = nb_writers;
 
     return SCE_KERNEL_OK;
 }
@@ -617,6 +692,9 @@ SceInt32 Condvar::wait(MemState &mem, const ThreadStatePtr &thread, SceUInt32 *t
     // Report a wait ended by the mutex with the mutex error codes
     if (result == SCE_KERNEL_ERROR_WAIT_DELETE)
         return lightweight() ? SCE_KERNEL_ERROR_WAIT_DELETE_LW_MUTEX : SCE_KERNEL_ERROR_WAIT_DELETE_MUTEX;
+    // only heavy mutexes can be canceled
+    if (result == SCE_KERNEL_ERROR_WAIT_CANCEL)
+        return SCE_KERNEL_ERROR_WAIT_CANCEL_MUTEX;
     return result;
 }
 
@@ -870,4 +948,21 @@ SceSize MsgPipe::send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const v
     const SceSize copied_size = (SceSize)data_buffer.Insert(buf, size);
     wake_waiter(receivers, data_buffer.Used());
     return copied_size;
+}
+
+SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
+
+    const auto nb_senders = static_cast<SceUInt32>(senders.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    const auto nb_receivers = static_cast<SceUInt32>(receivers.wake_all(SCE_KERNEL_ERROR_WAIT_CANCEL));
+    data_buffer.Clear();
+
+    if (num_send_wait_threads)
+        *num_send_wait_threads = nb_senders;
+    if (num_receive_wait_threads)
+        *num_receive_wait_threads = nb_receivers;
+
+    return SCE_KERNEL_OK;
 }
