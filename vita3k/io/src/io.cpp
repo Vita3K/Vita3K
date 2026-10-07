@@ -93,7 +93,7 @@ SceSize get_directory_used_size(const VitaIoDevice device, const std::string &vf
 
 static bool is_valid_output_path(const VitaIoDevice device) {
     return !(device == VitaIoDevice::savedata0 || device == VitaIoDevice::savedata1 || device == VitaIoDevice::app0
-        || device == VitaIoDevice::_INVALID || device == VitaIoDevice::addcont0 || device == VitaIoDevice::tty0
+        || device == VitaIoDevice::_INVALID || device == VitaIoDevice::addcont0 || device == VitaIoDevice::cache0 || device == VitaIoDevice::tty0
         || device == VitaIoDevice::tty1 || device == VitaIoDevice::tty2 || device == VitaIoDevice::tty3
         || device == VitaIoDevice::music0 || device == VitaIoDevice::photo0 || device == VitaIoDevice::video0);
 }
@@ -160,6 +160,7 @@ void init_device_paths(IOState &io) {
     io.device_paths.savedata0 = "user/" + io.user_id + "/savedata/" + io.savedata;
     io.device_paths.app0 = "app/" + io.app_path;
     io.device_paths.addcont0 = "addcont/" + io.addcont;
+    io.device_paths.cache0 = "cache/" + io.title_id;
 }
 
 bool init_savedata_app_path(IOState &io, const fs::path &vita_fs_path) {
@@ -242,6 +243,11 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
     }
     case VitaIoDevice::addcont0: { // Redirect addcont0: to ux0:addcont/<title_id>
         relative_path = device::remove_device_from_path(relative_path, device, device_paths.addcont0);
+        device = VitaIoDevice::ux0;
+        break;
+    }
+    case VitaIoDevice::cache0: { // Redirect cache0: to ux0:cache/<title_id>
+        relative_path = device::remove_device_from_path(relative_path, device, device_paths.cache0);
         device = VitaIoDevice::ux0;
         break;
     }
