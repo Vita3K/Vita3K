@@ -19,6 +19,12 @@ public:
     std::size_t Free() const { return capacity - used; }
     std::size_t Used() const { return used; }
 
+    void Clear() {
+        start = 0;
+        end = 0;
+        used = 0;
+    }
+
     std::size_t Insert(const void *in, std::size_t size) {
         if (Full()) {
             return 0;

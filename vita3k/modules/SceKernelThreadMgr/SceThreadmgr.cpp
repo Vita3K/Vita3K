@@ -64,9 +64,17 @@ EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const 
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelCancelEvent) {
-    TRACY_FUNC(_sceKernelCancelEvent);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelCancelEvent, SceUID eventId, SceUInt32 *pNumWaitThreads) {
+    TRACY_FUNC(_sceKernelCancelEvent, eventId, pNumWaitThreads);
+    if (const SimpleEventPtr event = emuenv.kernel.objects.find<SimpleEvent>(eventId))
+        return event->cancel(pNumWaitThreads);
+    // this may also be a timer event
+    if (const TimerPtr timer = emuenv.kernel.objects.find<Timer>(eventId)) {
+        const SceInt32 result = timer->cancel(pNumWaitThreads);
+        // Deleted since the lookup, reported like the other event functions do
+        return result == SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID ? SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID : result;
+    }
+    return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
 }
 
 EXPORT(SceInt32, _sceKernelCancelEventFlag, SceUID event_id, SceUInt pattern, SceUInt32 *num_wait_thread) {
@@ -82,19 +90,28 @@ EXPORT(int, _sceKernelCancelEventWithSetPattern) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelCancelMsgPipe) {
-    TRACY_FUNC(_sceKernelCancelMsgPipe);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelCancelMsgPipe, SceUID msgPipeId, SceUInt32 *pNumSendWaitThreads, SceUInt32 *pNumReceiveWaitThreads) {
+    TRACY_FUNC(_sceKernelCancelMsgPipe, msgPipeId, pNumSendWaitThreads, pNumReceiveWaitThreads);
+    const MsgPipePtr msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgPipeId);
+    if (!msgpipe)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    return msgpipe->cancel(pNumSendWaitThreads, pNumReceiveWaitThreads);
 }
 
-EXPORT(int, _sceKernelCancelMutex) {
-    TRACY_FUNC(_sceKernelCancelMutex);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelCancelMutex, SceUID mutexId, SceInt32 newCount, SceUInt32 *pNumWaitThreads) {
+    TRACY_FUNC(_sceKernelCancelMutex, mutexId, newCount, pNumWaitThreads);
+    const MutexPtr mutex = emuenv.kernel.objects.find<HeavyMutex>(mutexId);
+    if (!mutex)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+    return mutex->cancel(emuenv.kernel.get_thread(thread_id), newCount, pNumWaitThreads);
 }
 
-EXPORT(int, _sceKernelCancelRWLock) {
-    TRACY_FUNC(_sceKernelCancelRWLock);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelCancelRWLock, SceUID rwLockId, SceUInt32 *pNumReadWaitThreads, SceUInt32 *pNumWriteWaitThreads, SceInt32 flag) {
+    TRACY_FUNC(_sceKernelCancelRWLock, rwLockId, pNumReadWaitThreads, pNumWriteWaitThreads, flag);
+    const RWLockPtr rwlock = emuenv.kernel.objects.find<RWLock>(rwLockId);
+    if (!rwlock)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
+    return rwlock->cancel(emuenv.kernel.get_thread(thread_id), pNumReadWaitThreads, pNumWriteWaitThreads, flag);
 }
 
 EXPORT(int, _sceKernelCancelSema, SceUID semaId, SceInt32 setCount, SceUInt32 *pNumWaitThreads) {
@@ -105,9 +122,12 @@ EXPORT(int, _sceKernelCancelSema, SceUID semaId, SceInt32 setCount, SceUInt32 *p
     return semaphore->cancel(setCount, pNumWaitThreads);
 }
 
-EXPORT(int, _sceKernelCancelTimer) {
-    TRACY_FUNC(_sceKernelCancelTimer);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelCancelTimer, SceUID timerId, SceUInt32 *pNumWaitThreads) {
+    TRACY_FUNC(_sceKernelCancelTimer, timerId, pNumWaitThreads);
+    const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timerId);
+    if (!timer)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+    return timer->cancel(pNumWaitThreads);
 }
 
 EXPORT(SceUID, _sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID mutexId, const SceKernelCondOptParam *pOptParam) {

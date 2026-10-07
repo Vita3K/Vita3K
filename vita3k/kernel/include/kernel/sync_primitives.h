@@ -47,6 +47,7 @@ public:
     SceInt32 wait_or_poll(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait, bool callbacks);
     SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
     SceInt32 clear(SceUInt32 clear_pattern);
+    SceInt32 cancel(SceUInt32 *num_wait_threads);
 
     struct WaitEntry {
         SceUInt32 pattern;
@@ -74,6 +75,7 @@ public:
     SceInt32 clear();
     SceInt32 start();
     SceInt32 stop();
+    SceInt32 cancel(SceUInt32 *num_wait_threads);
 
     // Only the first waiter waits for the next event, the others wait for their turn
     WaitQueue<std::monostate> waiters;
@@ -125,6 +127,7 @@ public:
 
     SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, bool only_try, WaitTarget target, bool callbacks);
     SceInt32 release(const ThreadStatePtr &thread, int unlock_count);
+    SceInt32 cancel(const ThreadStatePtr &thread, int new_count, SceUInt32 *num_wait_threads);
 
     struct WaitEntry {
         int32_t lock_count;
@@ -165,6 +168,7 @@ public:
 
     SceInt32 acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 *timeout, bool callbacks);
     SceInt32 release(const ThreadStatePtr &thread);
+    SceInt32 cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag);
 
     struct WaitEntry {
         bool is_write;
@@ -255,6 +259,7 @@ public:
 
     SceSize receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void *buf, SceSize size, SceUInt32 *timeout, bool callbacks);
     SceSize send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const void *buf, SceSize size, SceUInt32 *timeout, bool callbacks);
+    SceInt32 cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads);
 
 private:
     struct WaitEntry {
