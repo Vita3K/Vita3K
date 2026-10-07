@@ -18,14 +18,20 @@
 #include "SceSysmem.h"
 #include "SceSysmemForDriver.h"
 
+#include <emuenv/state.h>
 #include <kernel/state.h>
 #include <kernel/types.h>
+#include <mem/functions.h>
 #include <modules/sysmem_state.h>
 
 #include <packages/sfo.h>
 
 #include <util/align.h>
+#include <util/fs.h>
 #include <util/string_utils.h>
+
+#include <array>
+#include <utility>
 
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceSysmem);
@@ -254,6 +260,39 @@ EXPORT(int, sceKernelGetSubbudgetInfo) {
 EXPORT(bool, sceKernelIsPSVitaTV) {
     TRACY_FUNC(sceKernelIsPSVitaTV);
     return emuenv.cfg.current_config.pstv_mode;
+}
+
+void create_system_font_blocks(EmuEnvState &emuenv) {
+    constexpr std::array<std::pair<const char *, const char *>, 2> fonts = { {
+        { "SceSysDefaultLtnFont", "ltn0.pvf" },
+        { "SceSysDefaultJpnFont", "jpn0.pvf" },
+    } };
+
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    const std::lock_guard<std::mutex> guard(state->mutex);
+
+    for (const auto &[name, file] : fonts) {
+        std::vector<uint8_t> data;
+        if (!fs_utils::read_data(emuenv.vita_fs_path / "sa0/data/font/pvf" / file, data) || data.empty()) {
+            LOG_WARN("Missing {} for {}, install the firmware font package", file, name);
+            continue;
+        }
+
+        const uint32_t size = align(static_cast<uint32_t>(data.size()), 0x1000);
+        // Below main memory and far above the uncached range, so app allocations keep their addresses.
+        const Ptr<uint8_t> address(alloc_aligned(emuenv.mem, size, name, 0x1000, 0x7F000000));
+        if (!address)
+            continue;
+        memcpy(address.get(emuenv.mem), data.data(), data.size());
+
+        const auto block = std::make_shared<KernelMemBlock>();
+        block->type = SCE_KERNEL_MEMBLOCK_TYPE_USER_RW;
+        block->mappedBase = address;
+        block->mappedSize = size;
+        block->size = sizeof(SceKernelMemBlockInfo);
+        std::strncpy(block->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
+        state->blocks.emplace(state->get_next_uid(), block);
+    }
 }
 
 EXPORT(SceUID, sceKernelOpenMemBlock, const char *pName, int flags) {
