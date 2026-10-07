@@ -58,6 +58,9 @@ public:
     WaitQueue<WaitEntry> waiters;
     SceUInt32 pattern;
     SceUInt64 last_user_data = 0;
+
+private:
+    void on_delete() override;
 };
 
 typedef std::shared_ptr<SimpleEvent> SimpleEventPtr;
@@ -84,6 +87,7 @@ public:
     uint64_t event_interval = 0;
 
 private:
+    void on_delete() override;
     void schedule_event();
 };
 
@@ -106,6 +110,9 @@ public:
     const int max;
     WaitQueue<WaitEntry> waiters;
     int val;
+
+private:
+    void on_delete() override;
 };
 
 typedef std::shared_ptr<Semaphore> SemaphorePtr;
@@ -130,6 +137,7 @@ public:
     ThreadStatePtr owner;
 
 private:
+    void on_delete() override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_mutex; }
 };
 
@@ -166,6 +174,9 @@ public:
     // the int value is the lock count for recursive locks
     std::map<ThreadStatePtr, int> owners;
     WaitQueue<WaitEntry> waiters;
+
+private:
+    void on_delete() override;
 };
 
 typedef std::shared_ptr<RWLock> RWLockPtr;
@@ -187,6 +198,9 @@ public:
 
     WaitQueue<WaitEntry> waiters;
     SceUInt32 flags;
+
+private:
+    void on_delete() override;
 };
 
 typedef std::shared_ptr<EventFlag> EventFlagPtr;
@@ -219,6 +233,7 @@ public:
     WaitQueue<std::monostate> waiters;
 
 private:
+    void on_delete() override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_cond; }
 };
 
