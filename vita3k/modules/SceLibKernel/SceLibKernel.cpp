@@ -1279,19 +1279,8 @@ EXPORT(int, sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea) {
     TRACY_FUNC(sceKernelDeleteLwCond, workarea);
     SceUID lightweight_condition_id = workarea.get(emuenv.mem)->uid;
 
-    const CondvarPtr condvar = emuenv.kernel.objects.find<LwCond>(lightweight_condition_id);
-    if (!condvar)
+    if (!emuenv.kernel.objects.remove<LwCond>(lightweight_condition_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
-
-    {
-        const auto guard = condvar->lock();
-        if (guard && !condvar->waiters.empty()) {
-            // TODO:
-            LOG_WARN("Can't delete sync object, it has waiting threads.");
-            return SCE_KERNEL_OK;
-        }
-    }
-    emuenv.kernel.objects.remove<LwCond>(lightweight_condition_id);
 
     return SCE_KERNEL_OK;
 }
