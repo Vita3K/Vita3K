@@ -20,16 +20,14 @@
 #include <kernel/kernel_object.h>
 #include <kernel/types.h>
 #include <memory>
-#include <mutex>
 #include <optional>
+#include <string>
 
-#define SCE_UID_INVALID_UID (SceUID)(0xFFFFFFFF)
-
-struct KernelState;
 struct ThreadState;
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 
-struct Callback final : WithUidClass<KernelObject, UidClass::callback> {
+class Callback final : public WithUidClass<KernelObject, UidClass::callback> {
+public:
     // What the callback function receives about the notifications since it last ran
     struct Notification {
         SceUID notifier_id;
@@ -37,101 +35,42 @@ struct Callback final : WithUidClass<KernelObject, UidClass::callback> {
         SceInt32 arg;
     };
 
-    /**
-     * @brief Creates a Callback object
-     *
-     * @param uid UID of the callback
-     * @param owner Thread that creates and owns the callback
-     * @param name Name of the callback
-     * @param cb_func Pointer to the callback function
-     * @param pCommon User-provided parameter
-     */
-    Callback(SceUID uid, const ThreadStatePtr &owner, const std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon);
+    Callback(const ThreadStatePtr &owner, const std::string &name, Ptr<SceKernelCallbackFunction> cb_func, Ptr<void> pCommon);
 
-    /**
-     * @return UID of the thread that created and owns this callback
-     */
-    SceUID get_owner_thread_id() const { return this->thread_id; }
-
-    /**
-     * @return Name of the callback
-     */
-    const std::string &get_name() const { return this->name; }
-
-    /**
-     * @return Callback function
-     */
-    Ptr<SceKernelCallbackFunction> get_callback_function() const { return this->cb_func; }
-
-    /**
-     * @return UID of the event that notified the callback last
-     */
-    SceUID get_notifier_id();
-
-    /**
-     * @return notifyArg from last time callback was notified
-     */
-    SceInt32 get_notify_arg();
-
-    /**
-     * @return User-provided common argument
-     */
-    Ptr<void> get_user_common_ptr() const { return this->userdata; }
-
-    /**
-     * @brief Notify this callback
-     * @param notifier_id UID of the notifying event
-     * @param notify_arg User-specified notification argument
-     */
     void notify(SceUID notifier_id, SceInt32 notify_arg);
-
-    /**
-     * @brief Notify this callback from an event, without notification argument
-     * @param notifier_id UID of the event that notifies this callback
-     */
+    // Notifies from an event, without notification argument
     void event_notify(SceUID notifier_id);
-
-    /**
-     * @brief Notify this callback directly (not from event)
-     * @param notify_arg User-specified notification argument
-     */
+    // Notifies directly, not from an event
     void direct_notify(SceInt32 notify_arg);
-
-    /**
-     * @brief Cancels every notification sent to this callback
-     */
+    // Cancels every notification sent to this callback
     void cancel();
 
-    /**
-     * @brief Drops the pending notifications and ignores new ones, the callback never runs again
-     */
-    void mark_deleted();
-
-    /**
-     * @return Number of times callback has been notified since last execution
-     */
+    // UID of the event that notified the callback last
+    SceUID get_notifier_id();
+    // notifyArg from the last time the callback was notified
+    SceInt32 get_notify_arg();
+    // Number of times the callback has been notified since it last ran
     uint32_t get_num_notifications();
 
-    /**
-     * @brief Takes the pending notifications and resets the callback, so new ones are kept for its next run
-     * @return The notifications, or nothing if the callback was not notified
-     */
+    // Takes the pending notifications, so new ones are kept for the next run. Returns nothing if the callback was not notified.
     std::optional<Notification> take_notification();
 
-private:
-    void reset();
-    std::mutex _mutex;
-
     const SceUID thread_id; // UID of the thread that created this callback
-    const std::weak_ptr<ThreadState> owner; // Thread that created this callback, woken when it is notified
-    const std::string name; // Name of the callback
+    const std::string name;
     const Ptr<SceKernelCallbackFunction> cb_func; // Function to execute when the callback should run
     const Ptr<void> userdata; // User-provided data - passed as pCommon
+
+private:
+    // Drops the pending notifications, so the callback never runs again
+    void on_delete() override;
+    // Clears the notifications. The lock must be held.
+    void reset();
+
+    const std::weak_ptr<ThreadState> owner; // Thread that created this callback, woken when it is notified
 
     uint32_t num_notifications = 0; // Number of times this callback has been notified - reset every time it is run
     SceInt32 notification_arg = 0; // User-specified argument passed by sceKernelNotifyCallback
     SceUID notifier_id = SCE_UID_INVALID_UID; // UID of the last event that notified this thread - SCE_UID_INVALID_UID if not an event
-    bool deleted = false; // Set once the callback is deleted
 };
 
 typedef std::shared_ptr<Callback> CallbackPtr;

@@ -243,10 +243,10 @@ void DebugWidget::refresh_threads() {
 void DebugWidget::refresh_mutexes() {
     m_mutexes_tree->clear();
 
-    emuenv.kernel.objects.for_each<HeavyMutex>([&](Mutex &mutex) {
+    emuenv.kernel.objects.for_each<HeavyMutex>([&](const Mutex &mutex) {
         auto *item = new QTreeWidgetItem(m_mutexes_tree);
         item->setText(0, QStringLiteral("0x%1").arg(mutex.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromUtf8(mutex.name));
+        item->setText(1, QString::fromStdString(mutex.name));
         item->setText(2, QString::number(mutex.lock_count));
         item->setText(3, QString::number(mutex.attr));
         item->setText(4, QString::number(mutex.waiters.size()));
@@ -257,10 +257,10 @@ void DebugWidget::refresh_mutexes() {
 void DebugWidget::refresh_lw_mutexes() {
     m_lw_mutexes_tree->clear();
 
-    emuenv.kernel.objects.for_each<LwMutex>([&](Mutex &mutex) {
+    emuenv.kernel.objects.for_each<LwMutex>([&](const Mutex &mutex) {
         auto *item = new QTreeWidgetItem(m_lw_mutexes_tree);
         item->setText(0, QStringLiteral("0x%1").arg(mutex.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromUtf8(mutex.name));
+        item->setText(1, QString::fromStdString(mutex.name));
         item->setText(2, QString::number(mutex.lock_count));
         item->setText(3, QString::number(mutex.attr));
         item->setText(4, QString::number(mutex.waiters.size()));
@@ -271,10 +271,10 @@ void DebugWidget::refresh_lw_mutexes() {
 void DebugWidget::refresh_condvars() {
     m_condvars_tree->clear();
 
-    emuenv.kernel.objects.for_each<HeavyCond>([&](Condvar &cv) {
+    emuenv.kernel.objects.for_each<HeavyCond>([&](const Condvar &cv) {
         auto *item = new QTreeWidgetItem(m_condvars_tree);
         item->setText(0, QStringLiteral("0x%1").arg(cv.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromUtf8(cv.name));
+        item->setText(1, QString::fromStdString(cv.name));
         item->setText(2, QString::number(cv.attr));
         item->setText(3, QString::number(cv.waiters.size()));
     });
@@ -283,10 +283,10 @@ void DebugWidget::refresh_condvars() {
 void DebugWidget::refresh_lw_condvars() {
     m_lw_condvars_tree->clear();
 
-    emuenv.kernel.objects.for_each<LwCond>([&](Condvar &cv) {
+    emuenv.kernel.objects.for_each<LwCond>([&](const Condvar &cv) {
         auto *item = new QTreeWidgetItem(m_lw_condvars_tree);
         item->setText(0, QStringLiteral("0x%1").arg(cv.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromUtf8(cv.name));
+        item->setText(1, QString::fromStdString(cv.name));
         item->setText(2, QString::number(cv.attr));
         item->setText(3, QString::number(cv.waiters.size()));
     });
@@ -295,10 +295,10 @@ void DebugWidget::refresh_lw_condvars() {
 void DebugWidget::refresh_semaphores() {
     m_semaphores_tree->clear();
 
-    emuenv.kernel.objects.for_each<Semaphore>([&](Semaphore &sema) {
+    emuenv.kernel.objects.for_each<Semaphore>([&](const Semaphore &sema) {
         auto *item = new QTreeWidgetItem(m_semaphores_tree);
         item->setText(0, QStringLiteral("0x%1").arg(sema.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromUtf8(sema.name));
+        item->setText(1, QString::fromStdString(sema.name));
         item->setText(2, QStringLiteral("%1 / %2").arg(sema.val).arg(sema.max));
         item->setText(3, QString::number(sema.max));
         item->setText(4, QString::number(sema.waiters.size()));
@@ -308,10 +308,10 @@ void DebugWidget::refresh_semaphores() {
 void DebugWidget::refresh_event_flags() {
     m_event_flags_tree->clear();
 
-    emuenv.kernel.objects.for_each<EventFlag>([&](EventFlag &ef) {
+    emuenv.kernel.objects.for_each<EventFlag>([&](const EventFlag &ef) {
         auto *item = new QTreeWidgetItem(m_event_flags_tree);
         item->setText(0, QStringLiteral("0x%1").arg(ef.uid, 8, 16, QLatin1Char('0')).toUpper());
-        item->setText(1, QString::fromUtf8(ef.name));
+        item->setText(1, QString::fromStdString(ef.name));
         item->setText(2, QStringLiteral("0x%1").arg(static_cast<uint>(ef.flags), 8, 16, QLatin1Char('0')).toUpper());
         item->setText(3, QString::number(ef.attr));
         item->setText(4, QString::number(ef.waiters.size()));
