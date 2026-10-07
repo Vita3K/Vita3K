@@ -17,12 +17,16 @@
 
 #include <module/module.h>
 
+#include <emuenv/state.h>
+#include <io/state.h>
+
 EXPORT(int, sceAppUtilCacheGetDevInfo) {
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilCacheMount) {
-    return UNIMPLEMENTED();
+    fs::create_directories(emuenv.vita_fs_path / "ux0" / emuenv.io.device_paths.cache0);
+    return 0;
 }
 
 EXPORT(int, sceAppUtilCacheUmount) {
