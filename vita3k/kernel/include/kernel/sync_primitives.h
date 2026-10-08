@@ -108,7 +108,7 @@ typedef std::shared_ptr<Timer> TimerPtr;
 
 class Semaphore final : public WithUidClass<SyncPrimitive, UidClass::semaphore> {
 public:
-    Semaphore(SceUInt32 attr, const char *name, int init_val, int max_val);
+    Semaphore(SceUInt32 attr, const char *name, SceInt32 init_val, SceInt32 max_val);
 
     SceInt32 wait(const ThreadStatePtr &thread, SceInt32 need_count, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceInt32 need_count);
@@ -116,13 +116,13 @@ public:
     SceInt32 cancel(SceInt32 set_count, SceUInt32 *num_wait_threads);
 
     struct WaitEntry {
-        int32_t need_count;
+        SceInt32 need_count;
     };
 
-    const int init_val;
-    const int max;
+    const SceInt32 init_val;
+    const SceInt32 max;
     WaitQueue<WaitEntry> waiters;
-    int val;
+    SceInt32 val;
 
 private:
     void on_delete() override;
@@ -132,32 +132,32 @@ typedef std::shared_ptr<Semaphore> SemaphorePtr;
 
 class Mutex : public SyncPrimitive {
 public:
-    Mutex(SceUInt32 attr, const char *name, int init_count, ThreadStatePtr thread, Ptr<SceKernelLwMutexWork> workarea = {});
+    Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStatePtr thread, Ptr<SceKernelLwMutexWork> workarea = {});
     // Returns the error for a name or count the guest can't use, or 0.
-    static SceInt32 check_create(const char *name, SceUInt32 attr, int init_count);
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_count);
 
-    SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, bool callbacks);
+    SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks);
     // Same as acquire, but reports the wait as target, for a condition variable taking its mutex back
-    SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, WaitTarget target, bool callbacks);
-    SceInt32 try_acquire(MemState &mem, const ThreadStatePtr &thread, int count);
-    SceInt32 release(const ThreadStatePtr &thread, int unlock_count);
-    SceInt32 cancel(const ThreadStatePtr &thread, int new_count, SceUInt32 *num_wait_threads);
+    SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, WaitTarget target, bool callbacks);
+    SceInt32 try_acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
+    SceInt32 release(const ThreadStatePtr &thread, SceInt32 unlock_count);
+    SceInt32 cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt32 *num_wait_threads);
 
     struct WaitEntry {
-        int32_t lock_count;
+        SceInt32 lock_count;
     };
 
-    const int init_count;
+    const SceInt32 init_count;
     const Ptr<SceKernelLwMutexWork> workarea;
     WaitQueue<WaitEntry> waiters;
-    int lock_count;
+    SceInt32 lock_count;
     ThreadStatePtr owner;
 
 private:
     void on_delete() override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_mutex; }
     // Takes the mutex if it is free or owned by thread, or returns why it can't. The lock must be held.
-    SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, int count);
+    SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
     // Writes the owner and lock count to a lightweight mutex's work area, which the guest reads. The lock must be held.
     void update_workarea(MemState &mem);
 };
