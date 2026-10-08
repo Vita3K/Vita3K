@@ -42,7 +42,6 @@
 #endif
 
 #ifdef __ANDROID__
-#include <SDL3/SDL_vulkan.h>
 #include <jni.h>
 
 static std::atomic<bool> has_surface{ false };
@@ -75,21 +74,20 @@ ScreenRenderer::ScreenRenderer(VKState &state)
 }
 
 bool ScreenRenderer::create() {
-    if (this->surface) {
-#ifdef __ANDROID__
-        SDL_Vulkan_DestroySurface(state.instance, this->surface, nullptr);
-#else
-        state.instance.destroySurfaceKHR(this->surface);
-#endif
-        this->surface = nullptr;
-    }
+    if (this->surface)
+        destroy_surface();
 
     auto *frame_host = static_cast<renderer::State &>(state).frame;
 
     const renderer::DisplayHandle display_handle = frame_host->handle();
     bool surface_created = false;
 
-    if (const auto *handle = std::get_if<renderer::Win32DisplayHandle>(&display_handle)) {
+    if (const auto *provider = frame_host->vulkan_surface_provider()) {
+        this->surface = vk::SurfaceKHR(provider->create_surface(static_cast<VkInstance>(state.instance)));
+        if (!this->surface)
+            return false;
+        surface_created = true;
+    } else if (const auto *handle = std::get_if<renderer::Win32DisplayHandle>(&display_handle)) {
 #ifdef _WIN32
         vk::Win32SurfaceCreateInfoKHR create_info{};
         create_info.hinstance = GetModuleHandle(nullptr);
@@ -108,22 +106,6 @@ bool ScreenRenderer::create() {
         vk::MetalSurfaceCreateInfoEXT create_info{};
         create_info.pLayer = static_cast<const CAMetalLayer *>(metal_layer);
         this->surface = state.instance.createMetalSurfaceEXT(create_info);
-        surface_created = true;
-#endif
-    } else if (const auto *handle = std::get_if<renderer::AndroidDisplayHandle>(&display_handle)) {
-#ifdef __ANDROID__
-        if (!handle->window) {
-            LOG_WARN("Android SDL window is not ready yet; deferring Vulkan surface recreation");
-            return false;
-        }
-
-        VkSurfaceKHR surface_handle = VK_NULL_HANDLE;
-        if (!SDL_Vulkan_CreateSurface(handle->window, state.instance, nullptr, &surface_handle)) {
-            LOG_WARN("SDL_Vulkan_CreateSurface failed: {}", SDL_GetError());
-            return false;
-        }
-
-        this->surface = surface_handle;
         surface_created = true;
 #endif
     } else if (const auto *handle = std::get_if<renderer::WaylandDisplayHandle>(&display_handle)) {
@@ -402,11 +384,15 @@ void ScreenRenderer::cleanup() {
 
     command_buffers.clear();
 
-#ifdef __ANDROID__
-    SDL_Vulkan_DestroySurface(state.instance, surface, nullptr);
-#else
-    state.instance.destroy(surface);
-#endif
+    destroy_surface();
+}
+
+void ScreenRenderer::destroy_surface() {
+    const auto *frame_host = static_cast<renderer::State &>(state).frame;
+    if (const auto *provider = frame_host->vulkan_surface_provider())
+        provider->destroy_surface(static_cast<VkInstance>(state.instance), static_cast<VkSurfaceKHR>(surface));
+    else
+        state.instance.destroySurfaceKHR(surface);
     surface = nullptr;
 }
 
