@@ -217,37 +217,37 @@ int main(int argc, char *argv[]) {
 
     app::load_users(emuenv);
 
-    if (cfg.content_path.has_value()) {
-        const auto extension = string_utils::tolower(cfg.content_path->extension().string());
+    if (emuenv.cfg.content_path.has_value()) {
+        const auto extension = string_utils::tolower(emuenv.cfg.content_path->extension().string());
         const auto is_archive = (extension == ".vpk") || (extension == ".zip");
-        const auto is_rif = (extension == ".rif") || (cfg.content_path->filename() == "work.bin");
-        const auto is_directory = fs::is_directory(*cfg.content_path);
+        const auto is_rif = (extension == ".rif") || (emuenv.cfg.content_path->filename() == "work.bin");
+        const auto is_directory = fs::is_directory(*emuenv.cfg.content_path);
 
         std::string boot_title_id;
 
         if (is_archive) {
-            LOG_INFO("Installing archive from CLI: {}", cfg.content_path->string());
-            std::vector<ContentInfo> contents_info = install_archive(emuenv, *cfg.content_path);
+            LOG_INFO("Installing archive from CLI: {}", emuenv.cfg.content_path->string());
+            std::vector<ContentInfo> contents_info = install_archive(emuenv, *emuenv.cfg.content_path);
             const auto content_index = std::find_if(contents_info.begin(), contents_info.end(), [](const ContentInfo &c) {
                 return c.category == "gd";
             });
             if (content_index != contents_info.end() && content_index->state)
                 boot_title_id = content_index->title_id;
         } else if (is_directory) {
-            LOG_INFO("Installing contents from CLI: {}", cfg.content_path->string());
-            if (install_contents(emuenv, *cfg.content_path) == 1 && emuenv.app_info.app_category == "gd")
+            LOG_INFO("Installing contents from CLI: {}", emuenv.cfg.content_path->string());
+            if (install_contents(emuenv, *emuenv.cfg.content_path) == 1 && emuenv.app_info.app_category == "gd")
                 boot_title_id = emuenv.app_info.app_title_id;
         } else if (is_rif) {
-            LOG_INFO("Installing license from CLI: {}", cfg.content_path->string());
-            copy_license(emuenv, *cfg.content_path);
+            LOG_INFO("Installing license from CLI: {}", emuenv.cfg.content_path->string());
+            copy_license(emuenv, *emuenv.cfg.content_path);
         } else {
-            LOG_ERROR("File: [{}] is not a supported content type.", cfg.content_path->string());
+            LOG_ERROR("File: [{}] is not a supported content type.", emuenv.cfg.content_path->string());
         }
 
-        cfg.content_path.reset();
+        emuenv.cfg.content_path.reset();
 
         if (!boot_title_id.empty()) {
-            cfg.run_app_path = boot_title_id;
+            emuenv.cfg.run_app_path = boot_title_id;
             LOG_INFO("Content installed, will auto-boot: {}", boot_title_id);
         }
 
