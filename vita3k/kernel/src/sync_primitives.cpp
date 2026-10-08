@@ -510,11 +510,7 @@ void RWLock::on_delete() {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
-SceInt32 RWLock::acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 *timeout, bool callbacks) {
-    auto guard = lock();
-    if (!guard)
-        return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
-
+SceInt32 RWLock::try_take(const ThreadStatePtr &thread, bool is_write) {
     // if it is a read lock, it is always recursive
     bool is_recursive = !is_write || (attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE);
 
@@ -534,15 +530,42 @@ SceInt32 RWLock::acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 
         state = is_write ? RWLockState::WriteLocked : RWLockState::ReadLocked;
 
         return SCE_KERNEL_OK;
-    } else if (!is_recursive && owners.contains(thread)) {
-        return SCE_KERNEL_ERROR_RW_LOCK_RECURSIVE;
-    } else {
-        // we need to wait
-        const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = waiters.wait(guard, thread, { SCE_KERNEL_WAITTYPE_RW_LOCK, uid }, { is_write }, deadline, callbacks);
-        writeback_timeout(timeout, deadline);
-        return guest_result(r);
     }
+    if (!is_recursive && owners.contains(thread))
+        return SCE_KERNEL_ERROR_RW_LOCK_RECURSIVE;
+
+    return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
+}
+
+SceInt32 RWLock::acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 *timeout, bool callbacks) {
+    auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
+
+    if (const SceInt32 result = try_take(thread, is_write); result != SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK)
+        return result;
+
+    // we need to wait
+    const Deadline deadline = deadline_from(timeout);
+    const WaitResult r = waiters.wait(guard, thread, { SCE_KERNEL_WAITTYPE_RW_LOCK, uid }, { is_write }, deadline, callbacks);
+    writeback_timeout(timeout, deadline);
+    return guest_result(r);
+}
+
+SceInt32 RWLock::try_acquire(const ThreadStatePtr &thread, bool is_write) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
+
+    return try_take(thread, is_write);
+}
+
+SceInt32 RWLock::try_acquire_read(const ThreadStatePtr &thread) {
+    return try_acquire(thread, false);
+}
+
+SceInt32 RWLock::try_acquire_write(const ThreadStatePtr &thread) {
+    return try_acquire(thread, true);
 }
 
 SceInt32 RWLock::acquire_read(const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks) {
