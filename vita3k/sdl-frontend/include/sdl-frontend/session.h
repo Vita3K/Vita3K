@@ -48,7 +48,8 @@ struct Hooks {
 };
 
 // Boots launch_request in an SDL window and runs it until the app exits or the window is closed,
-// following in-process relaunches. Returns 0, or -1 if the app couldn't start.
+// following in-process relaunches. Returns the code the app exited with, 0 if the window was closed,
+// or -1 if the app couldn't start.
 int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchRequest launch_request, const Hooks &hooks = {});
 
 } // namespace sdl_frontend

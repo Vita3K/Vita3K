@@ -367,7 +367,10 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
 
         LOG_INFO("Shutting down game");
 
-        if (pending_launch_request) {
+        if (pending_launch_request && pending_launch_request->reason == AppLaunchReason::ProcessExit) {
+            exit_code = pending_launch_request->exit_code;
+            LOG_INFO("The app exited with code {}", exit_code);
+        } else if (pending_launch_request) {
             launch_request = std::move(*pending_launch_request);
             relaunch_requested = true;
             LOG_INFO("Relaunching in-process with self '{}'", launch_request.self_path);
