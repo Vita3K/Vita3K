@@ -42,12 +42,6 @@ app::AppSessionController *get_app_session_controller();
 Root &get_root_paths();
 
 std::string jstring_to_string(JNIEnv *env, jstring str);
-bool is_ime_dialog_active(const EmuEnvState &emuenv);
-bool is_any_ime_active(const EmuEnvState &emuenv);
-void finish_ime_dialog(EmuEnvState &emuenv);
-void cancel_ime_dialog(EmuEnvState &emuenv);
-bool submit_current_ime(EmuEnvState &emuenv);
-bool dismiss_current_ime(EmuEnvState &emuenv);
 
 class ScopedJniCallback {
 public:

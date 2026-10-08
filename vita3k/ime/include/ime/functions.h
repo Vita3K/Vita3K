@@ -23,6 +23,21 @@
 #include <utility>
 #include <vector>
 
+struct EmuEnvState;
+
+// Whether the guest shows an IME dialog
+bool is_ime_dialog_active(const EmuEnvState &emuenv);
+// Whether the guest shows an IME, through sceIme or an IME dialog
+bool is_any_ime_active(const EmuEnvState &emuenv);
+// Closes the IME dialog with its current text
+void finish_ime_dialog(EmuEnvState &emuenv);
+// Closes the IME dialog without its text, if the guest made it cancelable
+void cancel_ime_dialog(EmuEnvState &emuenv);
+// Presses enter on the active IME. Returns false if there is none.
+bool submit_current_ime(EmuEnvState &emuenv);
+// Closes the active IME. Returns false if there is none, or it can't be closed.
+bool dismiss_current_ime(EmuEnvState &emuenv);
+
 void ime_commit_text(Ime &ime, const std::u16string &text);
 void ime_set_preedit(Ime &ime, const std::u16string &preedit);
 

@@ -1,6 +1,7 @@
 add_library(
     ime
     STATIC
+    src/active_ime.cpp
     src/ime.cpp
     include/ime/state.h
     include/ime/types.h
@@ -8,4 +9,4 @@ add_library(
 )
 
 target_include_directories(ime PUBLIC include)
-target_link_libraries(ime PRIVATE mem)
+target_link_libraries(ime PRIVATE dialog emuenv mem util)
