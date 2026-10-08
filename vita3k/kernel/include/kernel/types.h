@@ -50,6 +50,11 @@
 #define SCE_KERNEL_ATTR_TH_FIFO 0x00000000U
 #define SCE_KERNEL_ATTR_TH_PRIO 0x00002000U
 
+// Lets sceKernelOpen* find the object by name
+#define SCE_KERNEL_ATTR_OPENABLE 0x00000080U
+// Lets several threads wait on an event flag at once
+#define SCE_EVENT_WAITMULTIPLE 0x00001000U
+
 #define SCE_KERNEL_EVENT_ATTR_MANUAL_RESET 0x00000000U
 #define SCE_KERNEL_EVENT_ATTR_AUTO_RESET 0x00000100U
 

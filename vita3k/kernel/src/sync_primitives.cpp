@@ -29,7 +29,7 @@ SyncPrimitive::SyncPrimitive(SceUInt32 attr, const char *name)
 SceInt32 SyncPrimitive::check_name(const char *name, SceUInt32 attr) {
     if (!name)
         return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
-    if ((strlen(name) > KERNELOBJECT_MAX_NAME_LENGTH) && ((attr & 0x80) == 0x80))
+    if ((strlen(name) > KERNELOBJECT_MAX_NAME_LENGTH) && (attr & SCE_KERNEL_ATTR_OPENABLE))
         return SCE_KERNEL_ERROR_UID_NAME_TOO_LONG;
     return SCE_KERNEL_OK;
 }
@@ -324,7 +324,7 @@ SceInt32 Timer::stop() {
     time = get_current_time();
     next_event = std::numeric_limits<uint64_t>::max();
 
-    return static_cast<int>(was_stopped);
+    return static_cast<SceInt32>(was_stopped);
 }
 
 std::expected<uint64_t, SceInt32> Timer::set_time(uint64_t new_time) {
@@ -356,7 +356,7 @@ SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
 // * Mutex *
 // *********
 
-Mutex::Mutex(SceUInt32 attr, const char *name, int init_count, ThreadStatePtr thread, Ptr<SceKernelLwMutexWork> workarea)
+Mutex::Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStatePtr thread, Ptr<SceKernelLwMutexWork> workarea)
     : SyncPrimitive(attr, name)
     , init_count(init_count)
     , workarea(workarea)
@@ -364,7 +364,7 @@ Mutex::Mutex(SceUInt32 attr, const char *name, int init_count, ThreadStatePtr th
     , lock_count(init_count)
     , owner(init_count > 0 ? std::move(thread) : nullptr) {}
 
-SceInt32 Mutex::check_create(const char *name, SceUInt32 attr, int init_count) {
+SceInt32 Mutex::check_create(const char *name, SceUInt32 attr, SceInt32 init_count) {
     if (const SceInt32 error = check_name(name, attr))
         return error;
     if (init_count < 0)
@@ -379,7 +379,7 @@ void Mutex::on_delete() {
     owner = nullptr;
 }
 
-SceInt32 Mutex::try_take(MemState &mem, const ThreadStatePtr &thread, int count) {
+SceInt32 Mutex::try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 count) {
     bool is_recursive = (attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE);
 
     // Already owned
@@ -421,11 +421,11 @@ void Mutex::update_workarea(MemState &mem) {
     workarea.get(mem)->owner = owner->id;
 }
 
-SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, bool callbacks) {
+SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks) {
     return acquire(mem, thread, count, timeout, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_MUTEX : SCE_KERNEL_WAITTYPE_MUTEX, uid }, callbacks);
 }
 
-SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, WaitTarget target, bool callbacks) {
+SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, WaitTarget target, bool callbacks) {
     auto guard = lock();
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
@@ -446,7 +446,7 @@ SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, int count, 
     return try_take(mem, thread, count);
 }
 
-SceInt32 Mutex::try_acquire(MemState &mem, const ThreadStatePtr &thread, int count) {
+SceInt32 Mutex::try_acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count) {
     const auto guard = lock();
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
@@ -454,7 +454,7 @@ SceInt32 Mutex::try_acquire(MemState &mem, const ThreadStatePtr &thread, int cou
     return try_take(mem, thread, count);
 }
 
-SceInt32 Mutex::release(const ThreadStatePtr &thread, int unlock_count) {
+SceInt32 Mutex::release(const ThreadStatePtr &thread, SceInt32 unlock_count) {
     const auto guard = lock();
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
@@ -480,7 +480,7 @@ SceInt32 Mutex::release(const ThreadStatePtr &thread, int unlock_count) {
     return SCE_KERNEL_OK;
 }
 
-SceInt32 Mutex::cancel(const ThreadStatePtr &thread, int new_count, SceUInt32 *num_wait_threads) {
+SceInt32 Mutex::cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt32 *num_wait_threads) {
     const auto guard = lock();
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
@@ -629,7 +629,7 @@ SceInt32 RWLock::cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_t
 // * Semaphore *
 // **************
 
-Semaphore::Semaphore(SceUInt32 attr, const char *name, int init_val, int max_val)
+Semaphore::Semaphore(SceUInt32 attr, const char *name, SceInt32 init_val, SceInt32 max_val)
     : WithUidClass(attr, name)
     , init_val(init_val)
     , max(max_val)
@@ -784,7 +784,7 @@ void EventFlag::on_delete() {
 }
 
 SceInt32 EventFlag::try_take(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {
-    if ((attr & 0x1000) == 0 && !waiters.empty()) {
+    if (!(attr & SCE_EVENT_WAITMULTIPLE) && !waiters.empty()) {
         return SCE_KERNEL_ERROR_EVF_MULTI;
     }
 
@@ -878,7 +878,7 @@ SceInt32 EventFlag::set(SceUInt32 pattern) {
         return true;
     });
 
-    return 0;
+    return SCE_KERNEL_OK;
 }
 
 SceInt32 EventFlag::clear(SceUInt32 pattern) {
