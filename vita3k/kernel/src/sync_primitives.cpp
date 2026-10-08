@@ -49,11 +49,11 @@ void SimpleEvent::on_delete() {
 }
 
 SceInt32 SimpleEvent::try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
-    if (result_pattern)
-        *result_pattern = pattern;
-
     if (!(pattern & wait_pattern))
         return SCE_KERNEL_ERROR_EVENT_COND;
+
+    if (result_pattern)
+        *result_pattern = pattern;
 
     if (auto_reset)
         // all common bits are zeroed
@@ -77,14 +77,9 @@ SceInt32 SimpleEvent::wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern,
     const WaitResult r = waiters.wait(guard, thread, { SCE_KERNEL_WAITTYPE_EVENT, uid }, { wait_pattern, result_pattern, user_data }, deadline, callbacks);
     writeback_timeout(timeout, deadline);
     const SceInt32 err = guest_result(r);
-    if (err < 0) {
-        // set it only if a timeout occurs
-        // otherwise set in set_or_pulse
-        if (user_data)
-            *user_data = last_user_data;
-        if (result_pattern)
-            *result_pattern = pattern;
-    }
+    // The result pattern is only written when the wait succeeds, by set_or_pulse
+    if (err < 0 && user_data)
+        *user_data = last_user_data;
     return err;
 }
 
