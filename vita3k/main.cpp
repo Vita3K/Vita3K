@@ -19,6 +19,7 @@
 #include "interface.h"
 
 #include <app/functions.h>
+#include <app/session_controller.h>
 #include <config/functions.h>
 #include <config/version.h>
 #include <emuenv/state.h>
@@ -33,6 +34,7 @@
 #include <packages/license.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
+#include <sdl-frontend/session.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -72,7 +74,6 @@ int main(int argc, char *argv[]) {
     qputenv("QT_MAC_NO_CONTAINER_LAYER", "1");
 #endif
 
-    QApplication app(argc, argv);
     QCoreApplication::setOrganizationName(QStringLiteral("Vita3K"));
     QCoreApplication::setApplicationName(QStringLiteral("Vita3K"));
 
@@ -158,7 +159,12 @@ int main(int argc, char *argv[]) {
 
     fs::create_directories(cfg.get_vita_fs_path());
 
-    gui::i18n::apply_ui_language(app, cfg.user_lang, emuenv.static_assets_path);
+    // The SDL frontend runs without Qt, so it needs no display server
+    std::optional<QApplication> qt_app;
+    if (cfg.frontend == Frontend::qt) {
+        qt_app.emplace(argc, argv);
+        gui::i18n::apply_ui_language(*qt_app, cfg.user_lang, emuenv.static_assets_path);
+    }
 
 #ifdef _WIN32
     {
@@ -171,8 +177,6 @@ int main(int argc, char *argv[]) {
         if (logging::init(root_paths, false) != Success)
             return InitConfigFailed;
     } else {
-        std::atexit(SDL_Quit);
-
         // Joystick events on background thread
         SDL_SetHint(SDL_HINT_JOYSTICK_THREAD, "1");
         // Enable HIDAPI rumble for DS4/DS
@@ -181,13 +185,17 @@ int main(int argc, char *argv[]) {
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
 
-        if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR)) {
-            LOG_ERROR("SDL initialisation failed: {}", SDL_GetError());
-            QMessageBox::critical(nullptr, "Error", "SDL initialisation failed.");
-            return SDLInitFailed;
+        // The SDL frontend initializes SDL for each session itself
+        if (qt_app) {
+            std::atexit(SDL_Quit);
+            if (!SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMEPAD | SDL_INIT_HAPTIC | SDL_INIT_SENSOR)) {
+                LOG_ERROR("SDL initialisation failed: {}", SDL_GetError());
+                QMessageBox::critical(nullptr, "Error", "SDL initialisation failed.");
+                return SDLInitFailed;
+            }
+            if (!SDL_InitSubSystem(SDL_INIT_CAMERA))
+                LOG_WARN("SDL camera initialisation failed, continuing without it: {}", SDL_GetError());
         }
-        if (!SDL_InitSubSystem(SDL_INIT_CAMERA))
-            LOG_WARN("SDL camera initialisation failed, continuing without it: {}", SDL_GetError());
     }
 
     LOG_INFO("{}", window_title);
@@ -200,7 +208,9 @@ int main(int argc, char *argv[]) {
         run_type = app::AppRunType::Extracted;
 
     if (!app::init(emuenv, cfg, root_paths)) {
-        QMessageBox::critical(nullptr, "Error", "Emulated environment initialization failed.");
+        LOG_ERROR("Emulated environment initialization failed.");
+        if (qt_app)
+            QMessageBox::critical(nullptr, "Error", "Emulated environment initialization failed.");
         return 1;
     }
 
@@ -256,6 +266,19 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (emuenv.cfg.frontend == Frontend::sdl) {
+        if (!emuenv.cfg.run_app_path) {
+            LOG_ERROR("The SDL frontend needs an installed app to run, given with -r");
+            return 1;
+        }
+        app::AppSessionController session(emuenv);
+        const int exit_code = sdl_frontend::run(emuenv, session, AppLaunchRequest{ .app_path = *emuenv.cfg.run_app_path });
+#ifdef _WIN32
+        CoUninitialize();
+#endif
+        return exit_code;
+    }
+
     const QString gui_configs_dir = gui::utils::to_qt_path(emuenv.config_path / "gui-configs");
     auto gui_settings = std::make_shared<GuiSettings>(gui_configs_dir);
     auto persistent_settings = std::make_shared<PersistentSettings>(gui_configs_dir);
@@ -264,7 +287,7 @@ int main(int argc, char *argv[]) {
 
     mainwindow.show();
     if (mainwindow.prompt_startup_warnings())
-        app.exec();
+        qt_app->exec();
 
 #ifdef _WIN32
     CoUninitialize();
