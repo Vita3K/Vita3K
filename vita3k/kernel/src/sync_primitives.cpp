@@ -925,11 +925,11 @@ void MsgPipe::wake_waiter(WaitQueue<WaitEntry> &waiters, std::size_t available) 
     }
 }
 
-SceSize MsgPipe::receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void *buf, SceSize size, SceUInt32 *timeout, bool callbacks) {
+std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void *buf, SceSize size, SceUInt32 *timeout, bool callbacks) {
     const bool ASAP = !(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
 
     if (size > data_buffer.Capacity())
-        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+        return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
 
     const auto copyOut = [&] {
         if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE) {
@@ -941,7 +941,7 @@ SceSize MsgPipe::receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void
 
     auto guard = lock();
     if (!guard)
-        return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
+        return std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
 
     const auto can_receive = [&] {
         const std::size_t availableSize = data_buffer.Used();
@@ -958,8 +958,11 @@ SceSize MsgPipe::receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void
             waiter.entry.notified = false;
             return can_receive();
         });
-        if (!r || *r != SCE_KERNEL_OK)
-            return guest_result(r);
+        // The thread is exiting, which the guest never sees
+        if (!r)
+            return 0;
+        if (*r != SCE_KERNEL_OK)
+            return std::unexpected(*r);
     }
 
     const SceSize copied_size = (SceSize)copyOut();
@@ -968,15 +971,15 @@ SceSize MsgPipe::receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void
 }
 
 // FIXME this should be SendVector!
-SceSize MsgPipe::send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const void *buf, SceSize size, SceUInt32 *timeout, bool callbacks) {
+std::expected<SceSize, SceInt32> MsgPipe::send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const void *buf, SceSize size, SceUInt32 *timeout, bool callbacks) {
     const bool ASAP = !(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
 
     if (size > data_buffer.Capacity())
-        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+        return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
 
     auto guard = lock();
     if (!guard)
-        return SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID;
+        return std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
 
     // If ASAP and there's at least 1 free byte, or FULL and there's enough space, copy and return directly.
     const auto can_send = [&] {
@@ -994,8 +997,11 @@ SceSize MsgPipe::send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const v
             waiter.entry.notified = false;
             return can_send();
         });
-        if (!r || *r != SCE_KERNEL_OK)
-            return guest_result(r);
+        // The thread is exiting, which the guest never sees
+        if (!r)
+            return 0;
+        if (*r != SCE_KERNEL_OK)
+            return std::unexpected(*r);
     }
 
     const SceSize copied_size = (SceSize)data_buffer.Insert(buf, size);

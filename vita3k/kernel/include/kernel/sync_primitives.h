@@ -23,6 +23,7 @@
 #include <kernel/types.h>
 #include <util/byte_ring_buffer.h>
 
+#include <expected>
 #include <limits>
 #include <map>
 #include <string>
@@ -273,8 +274,9 @@ class MsgPipe final : public WithUidClass<SyncPrimitive, UidClass::msg_pipe> {
 public:
     MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size);
 
-    SceSize receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void *buf, SceSize size, SceUInt32 *timeout, bool callbacks);
-    SceSize send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const void *buf, SceSize size, SceUInt32 *timeout, bool callbacks);
+    // Both return the size transferred, or the error
+    std::expected<SceSize, SceInt32> receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void *buf, SceSize size, SceUInt32 *timeout, bool callbacks);
+    std::expected<SceSize, SceInt32> send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const void *buf, SceSize size, SceUInt32 *timeout, bool callbacks);
     SceInt32 cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads);
 
 private:
