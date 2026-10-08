@@ -48,40 +48,52 @@ void SimpleEvent::on_delete() {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
-SceInt32 SimpleEvent::wait_or_poll(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait, bool callbacks) {
+SceInt32 SimpleEvent::try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
+    if (result_pattern)
+        *result_pattern = pattern;
+
+    if (!(pattern & wait_pattern))
+        return SCE_KERNEL_ERROR_EVENT_COND;
+
+    if (auto_reset)
+        // all common bits are zeroed
+        pattern &= ~wait_pattern;
+
+    if (user_data)
+        *user_data = last_user_data;
+
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 SimpleEvent::wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
 
-    if (result_pattern)
-        *result_pattern = pattern;
+    if (const SceInt32 result = try_take(wait_pattern, result_pattern, user_data); result != SCE_KERNEL_ERROR_EVENT_COND)
+        return result;
 
-    if (pattern & wait_pattern) {
-        if (auto_reset)
-            // all common bits are zeroed
-            pattern &= ~wait_pattern;
-
+    const Deadline deadline = deadline_from(timeout);
+    const WaitResult r = waiters.wait(guard, thread, { SCE_KERNEL_WAITTYPE_EVENT, uid }, { wait_pattern, result_pattern, user_data }, deadline, callbacks);
+    writeback_timeout(timeout, deadline);
+    const SceInt32 err = guest_result(r);
+    if (err < 0) {
+        // set it only if a timeout occurs
+        // otherwise set in set_or_pulse
         if (user_data)
             *user_data = last_user_data;
-
-        return SCE_KERNEL_OK;
-    } else if (is_wait) {
-        const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = waiters.wait(guard, thread, { SCE_KERNEL_WAITTYPE_EVENT, uid }, { wait_pattern, result_pattern, user_data }, deadline, callbacks);
-        writeback_timeout(timeout, deadline);
-        const SceInt32 err = guest_result(r);
-        if (err < 0) {
-            // set it only if a timeout occurs
-            // otherwise set in set_or_pulse
-            if (user_data)
-                *user_data = last_user_data;
-            if (result_pattern)
-                *result_pattern = pattern;
-        }
-        return err;
-    } else {
-        return SCE_KERNEL_ERROR_EVENT_COND;
+        if (result_pattern)
+            *result_pattern = pattern;
     }
+    return err;
+}
+
+SceInt32 SimpleEvent::poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+
+    return try_take(wait_pattern, result_pattern, user_data);
 }
 
 SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set) {
@@ -184,28 +196,20 @@ SceInt32 Timer::set_event(SceUID type, SceKernelSysClock interval, SceInt32 repe
     return SCE_KERNEL_OK;
 }
 
-SceInt32 Timer::wait_or_poll(const ThreadStatePtr &thread, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait, bool callbacks) {
-    if (timeout)
-        LOG_WARN_ONCE("Ignoring timeout");
+void Timer::advance_next_event(uint64_t current_time) {
+    if (is_repeat) {
+        // the event repeats every event_interval, go to the next one after current_time
+        next_event += ((current_time - next_event - 1) / event_interval + 1) * event_interval;
+    } else {
+        next_event = std::numeric_limits<uint64_t>::max();
+    }
+}
 
-    auto guard = lock();
-    if (!guard)
-        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
-
+SceInt32 Timer::try_take(SceUInt32 *result_pattern, SceUInt64 *user_data, uint64_t current_time) {
     if (result_pattern)
         *result_pattern = SCE_KERNEL_EVENT_TIMER;
     if (user_data)
         *user_data = 0;
-
-    uint64_t current_time = get_current_time();
-    auto set_next_event = [&]() {
-        if (is_repeat) {
-            // the event repeats every event_interval, go to the next one after current_time
-            next_event += ((current_time - next_event - 1) / event_interval + 1) * event_interval;
-        } else {
-            next_event = std::numeric_limits<uint64_t>::max();
-        }
-    };
 
     if (next_event < current_time) {
         if (!is_pulse) {
@@ -213,56 +217,75 @@ SceInt32 Timer::wait_or_poll(const ThreadStatePtr &thread, SceUInt32 *result_pat
             event_set = true;
         }
 
-        set_next_event();
+        advance_next_event(current_time);
     }
 
-    if (event_set) {
-        if (attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET) {
-            event_set = false;
-        }
-
-        return SCE_KERNEL_OK;
-    } else if (is_wait) {
-        WaitQueue<std::monostate>::Waiter waiter{ .thread = thread, .priority = thread->priority };
-        waiters.push(waiter);
-
-        while (true) {
-            // A waker ended the wait, such as a delete
-            if (waiter.result)
-                return *waiter.result;
-            // only the first waiter waits for the event, the others wait until they are first
-            const bool is_first = waiters.front() == &waiter;
-            Deadline deadline = Deadline::max();
-            if (is_first && next_event != std::numeric_limits<uint64_t>::max()) {
-                const uint64_t wait_time = next_event > current_time ? next_event - current_time : 0;
-                deadline = std::chrono::steady_clock::now() + std::chrono::microseconds(wait_time);
-            }
-
-            guard.unlock();
-            const WaitResult r = thread->wait({ SCE_KERNEL_WAITTYPE_EVENT, uid }, deadline, callbacks);
-            guard.lock();
-            if (!r) {
-                waiters.remove(waiter);
-                waiters.notify_all();
-                return guest_result(r);
-            }
-
-            current_time = get_current_time();
-            if (waiters.front() == &waiter && (event_set || current_time > next_event))
-                break;
-        }
-
-        waiters.remove(waiter);
-
-        event_set = !is_pulse && !(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
-        set_next_event();
-        // notify the other waiting threads
-        waiters.notify_all();
-
-        return SCE_KERNEL_OK;
-    } else {
+    if (!event_set)
         return SCE_KERNEL_ERROR_EVENT_COND;
+
+    if (attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET)
+        event_set = false;
+
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
+    if (timeout)
+        LOG_WARN_ONCE("Ignoring timeout");
+
+    auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+
+    uint64_t current_time = get_current_time();
+    if (const SceInt32 result = try_take(result_pattern, user_data, current_time); result != SCE_KERNEL_ERROR_EVENT_COND)
+        return result;
+
+    WaitQueue<std::monostate>::Waiter waiter{ .thread = thread, .priority = thread->priority };
+    waiters.push(waiter);
+
+    while (true) {
+        // A waker ended the wait, such as a delete
+        if (waiter.result)
+            return *waiter.result;
+        // only the first waiter waits for the event, the others wait until they are first
+        const bool is_first = waiters.front() == &waiter;
+        Deadline deadline = Deadline::max();
+        if (is_first && next_event != std::numeric_limits<uint64_t>::max()) {
+            const uint64_t wait_time = next_event > current_time ? next_event - current_time : 0;
+            deadline = std::chrono::steady_clock::now() + std::chrono::microseconds(wait_time);
+        }
+
+        guard.unlock();
+        const WaitResult r = thread->wait({ SCE_KERNEL_WAITTYPE_EVENT, uid }, deadline, callbacks);
+        guard.lock();
+        if (!r) {
+            waiters.remove(waiter);
+            waiters.notify_all();
+            return guest_result(r);
+        }
+
+        current_time = get_current_time();
+        if (waiters.front() == &waiter && (event_set || current_time > next_event))
+            break;
     }
+
+    waiters.remove(waiter);
+
+    event_set = !is_pulse && !(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
+    advance_next_event(current_time);
+    // notify the other waiting threads
+    waiters.notify_all();
+
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 Timer::poll(SceUInt32 *result_pattern, SceUInt64 *user_data) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
+
+    return try_take(result_pattern, user_data, get_current_time());
 }
 
 SceInt32 Timer::clear() {
@@ -348,11 +371,7 @@ void Mutex::on_delete() {
     owner = nullptr;
 }
 
-SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, bool only_try, WaitTarget target, bool callbacks) {
-    auto guard = lock();
-    if (!guard)
-        return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
-
+SceInt32 Mutex::try_take(MemState &mem, const ThreadStatePtr &thread, int count) {
     bool is_recursive = (attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE);
 
     // Already owned
@@ -372,27 +391,10 @@ SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, int count, 
             return SCE_KERNEL_ERROR_MUTEX_RECURSIVE;
         }
         // Owned by someone else
+        if (lightweight())
+            return SCE_KERNEL_ERROR_LW_MUTEX_FAILED_TO_OWN;
 
-        // Don't sleep if only_try is set
-        if (only_try) {
-            if (lightweight())
-                return SCE_KERNEL_ERROR_LW_MUTEX_FAILED_TO_OWN;
-
-            return SCE_KERNEL_ERROR_MUTEX_FAILED_TO_OWN;
-        }
-
-        // Sleep thread!
-        const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = waiters.wait(guard, thread, target, { count }, deadline, callbacks);
-        writeback_timeout(timeout, deadline);
-
-        // A deleted mutex has no owner, and its work area may be freed already
-        if (lightweight() && owner == thread) {
-            workarea.get(mem)->lockCount = lock_count;
-            workarea.get(mem)->owner = thread->id;
-        }
-
-        return guest_result(r);
+        return SCE_KERNEL_ERROR_MUTEX_FAILED_TO_OWN;
     }
     // Not owned
     // Take ownership!
@@ -408,6 +410,37 @@ SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, int count, 
     }
 
     return SCE_KERNEL_OK;
+}
+
+SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, WaitTarget target, bool callbacks) {
+    auto guard = lock();
+    if (!guard)
+        return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
+
+    // Owned by someone else, wait until it is handed over
+    if (lock_count > 0 && owner != thread) {
+        const Deadline deadline = deadline_from(timeout);
+        const WaitResult r = waiters.wait(guard, thread, target, { count }, deadline, callbacks);
+        writeback_timeout(timeout, deadline);
+
+        // A deleted mutex has no owner, and its work area may be freed already
+        if (lightweight() && owner == thread) {
+            workarea.get(mem)->lockCount = lock_count;
+            workarea.get(mem)->owner = thread->id;
+        }
+
+        return guest_result(r);
+    }
+
+    return try_take(mem, thread, count);
+}
+
+SceInt32 Mutex::try_acquire(MemState &mem, const ThreadStatePtr &thread, int count) {
+    const auto guard = lock();
+    if (!guard)
+        return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
+
+    return try_take(mem, thread, count);
 }
 
 SceInt32 Mutex::release(const ThreadStatePtr &thread, int unlock_count) {
@@ -501,6 +534,14 @@ SceInt32 RWLock::acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 
         writeback_timeout(timeout, deadline);
         return guest_result(r);
     }
+}
+
+SceInt32 RWLock::acquire_read(const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks) {
+    return acquire(thread, false, timeout, callbacks);
+}
+
+SceInt32 RWLock::acquire_write(const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks) {
+    return acquire(thread, true, timeout, callbacks);
 }
 
 SceInt32 RWLock::release(const ThreadStatePtr &thread) {
@@ -688,7 +729,7 @@ SceInt32 Condvar::wait(MemState &mem, const ThreadStatePtr &thread, SceUInt32 *t
 
     guard.unlock();
     // Taking the mutex back is still part of the condition variable wait
-    const SceInt32 result = associated_mutex->acquire(mem, thread, 1, timeout, false, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_COND_LW_MUTEX : SCE_KERNEL_WAITTYPE_COND_MUTEX, uid }, callbacks);
+    const SceInt32 result = associated_mutex->acquire(mem, thread, 1, timeout, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_COND_LW_MUTEX : SCE_KERNEL_WAITTYPE_COND_MUTEX, uid }, callbacks);
     // Report a wait ended by the mutex with the mutex error codes
     if (result == SCE_KERNEL_ERROR_WAIT_DELETE)
         return lightweight() ? SCE_KERNEL_ERROR_WAIT_DELETE_LW_MUTEX : SCE_KERNEL_ERROR_WAIT_DELETE_MUTEX;
@@ -731,11 +772,7 @@ void EventFlag::on_delete() {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
-SceInt32 EventFlag::wait_or_poll(const ThreadStatePtr &thread, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool is_wait, bool callbacks) {
-    auto guard = lock();
-    if (!guard)
-        return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
-
+SceInt32 EventFlag::try_take(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {
     if ((attr & 0x1000) == 0 && !waiters.empty()) {
         return SCE_KERNEL_ERROR_EVF_MULTI;
     }
@@ -751,31 +788,47 @@ SceInt32 EventFlag::wait_or_poll(const ThreadStatePtr &thread, SceUInt32 pattern
         *out_bits = flags;
     }
 
-    if (condition) {
-        if (wait_mode & SCE_EVENT_WAITCLEAR) {
-            flags = 0;
-        }
-
-        if (wait_mode & SCE_EVENT_WAITCLEAR_PAT) {
-            flags &= ~pattern;
-        }
-
-        return SCE_KERNEL_OK;
-    } else if (is_wait) {
-        const Deadline deadline = deadline_from(timeout);
-        const WaitResult r = waiters.wait(guard, thread, { SCE_KERNEL_WAITTYPE_EVENTFLAG, uid }, { wait_mode, pattern, out_bits }, deadline, callbacks);
-        writeback_timeout(timeout, deadline);
-        const SceInt32 err = guest_result(r);
-        if ((err == SCE_KERNEL_ERROR_WAIT_TIMEOUT || err == SCE_KERNEL_ERROR_WAIT_DELETE) && out_bits) {
-            // set it only on a timeout or a delete
-            // otherwise set in set or cancel
-            *out_bits = flags;
-        }
-
-        return err;
-    } else {
+    if (!condition)
         return SCE_KERNEL_ERROR_EVF_COND;
+
+    if (wait_mode & SCE_EVENT_WAITCLEAR) {
+        flags = 0;
     }
+
+    if (wait_mode & SCE_EVENT_WAITCLEAR_PAT) {
+        flags &= ~pattern;
+    }
+
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 EventFlag::wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks) {
+    auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
+
+    if (const SceInt32 result = try_take(pattern, wait_mode, out_bits); result != SCE_KERNEL_ERROR_EVF_COND)
+        return result;
+
+    const Deadline deadline = deadline_from(timeout);
+    const WaitResult r = waiters.wait(guard, thread, { SCE_KERNEL_WAITTYPE_EVENTFLAG, uid }, { wait_mode, pattern, out_bits }, deadline, callbacks);
+    writeback_timeout(timeout, deadline);
+    const SceInt32 err = guest_result(r);
+    if ((err == SCE_KERNEL_ERROR_WAIT_TIMEOUT || err == SCE_KERNEL_ERROR_WAIT_DELETE) && out_bits) {
+        // set it only on a timeout or a delete
+        // otherwise set in set or cancel
+        *out_bits = flags;
+    }
+
+    return err;
+}
+
+SceInt32 EventFlag::poll(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits) {
+    const auto guard = lock();
+    if (!guard)
+        return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
+
+    return try_take(pattern, wait_mode, out_bits);
 }
 
 SceInt32 EventFlag::set(SceUInt32 pattern) {
