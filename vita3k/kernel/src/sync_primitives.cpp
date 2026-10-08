@@ -185,6 +185,8 @@ SceInt32 Timer::set_event(SceUID type, SceKernelSysClock interval, SceInt32 repe
     is_pulse = type != 0;
     is_repeat = repeats != 0;
     event_interval = interval;
+    // A new timer event starts from not notified
+    event_set = false;
 
     if (is_started)
         schedule_event();
