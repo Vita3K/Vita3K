@@ -18,6 +18,7 @@
 #include "android_state.h"
 
 #include <dialog/state.h>
+#include <ime/functions.h>
 #include <ime/keyboard.h>
 #include <ime/state.h>
 #include <util/string_utils.h>

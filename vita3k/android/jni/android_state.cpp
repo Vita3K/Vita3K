@@ -17,15 +17,10 @@
 
 #include "android_state.h"
 
-#include <dialog/state.h>
-#include <ime/state.h>
 #include <io/state.h>
 #include <util/log.h>
-#include <util/string_utils.h>
 
 #include <algorithm>
-#include <cstdio>
-#include <cstring>
 #include <exception>
 
 namespace {
@@ -55,77 +50,6 @@ std::string jstring_to_string(JNIEnv *env, jstring str) {
     std::string result(utf);
     env->ReleaseStringUTFChars(str, utf);
     return result;
-}
-
-bool is_ime_dialog_active(const EmuEnvState &emuenv) {
-    return emuenv.common_dialog.type == IME_DIALOG
-        && emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING;
-}
-
-bool is_any_ime_active(const EmuEnvState &emuenv) {
-    return emuenv.ime.state || is_ime_dialog_active(emuenv);
-}
-
-void finish_ime_dialog(EmuEnvState &emuenv) {
-    auto &dialog = emuenv.common_dialog;
-    auto &ime = emuenv.ime;
-
-    std::lock_guard<std::recursive_mutex> dialog_lock(dialog.mutex);
-    std::lock_guard<std::mutex> ime_lock(ime.mutex);
-
-    const size_t copy_len = std::min(static_cast<size_t>(ime.str.length()),
-        static_cast<size_t>(dialog.ime.max_length));
-    if (dialog.ime.result) {
-        std::memcpy(dialog.ime.result, ime.str.c_str(), copy_len * sizeof(uint16_t));
-        dialog.ime.result[copy_len] = 0;
-    }
-
-    const std::string utf8 = string_utils::utf16_to_utf8(ime.str);
-    std::snprintf(dialog.ime.text, sizeof(dialog.ime.text), "%s", utf8.c_str());
-    dialog.ime.status = SCE_IME_DIALOG_BUTTON_ENTER;
-    dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-}
-
-void cancel_ime_dialog(EmuEnvState &emuenv) {
-    auto &dialog = emuenv.common_dialog;
-    if (!dialog.ime.cancelable)
-        return;
-
-    std::lock_guard<std::recursive_mutex> dialog_lock(dialog.mutex);
-    dialog.ime.status = SCE_IME_DIALOG_BUTTON_CLOSE;
-    dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
-}
-
-bool submit_current_ime(EmuEnvState &emuenv) {
-    if (!is_any_ime_active(emuenv))
-        return false;
-
-    if (is_ime_dialog_active(emuenv)) {
-        finish_ime_dialog(emuenv);
-    } else {
-        std::lock_guard<std::mutex> lock(emuenv.ime.mutex);
-        emuenv.ime.event_id = SCE_IME_EVENT_PRESS_ENTER;
-    }
-
-    return true;
-}
-
-bool dismiss_current_ime(EmuEnvState &emuenv) {
-    if (!is_any_ime_active(emuenv))
-        return false;
-
-    if (is_ime_dialog_active(emuenv)) {
-        cancel_ime_dialog(emuenv);
-        if (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
-            return false;
-    } else {
-        std::lock_guard<std::mutex> lock(emuenv.ime.mutex);
-        emuenv.ime.event_id = SCE_IME_EVENT_PRESS_CLOSE;
-    }
-
-    return true;
 }
 
 ScopedJniCallback::ScopedJniCallback(JNIEnv *env, jobject callback_obj, const char *method_name, const char *method_sig)
