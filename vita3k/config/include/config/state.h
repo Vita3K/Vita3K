@@ -23,6 +23,14 @@
 
 #include <optional>
 
+// The frontend that runs the emulator
+enum class Frontend {
+    // The full Qt interface
+    qt,
+    // A plain SDL window that runs the app given on the command line and quits with it
+    sdl,
+};
+
 // Configuration File options
 struct Config {
     // Optional config settings
@@ -44,6 +52,7 @@ struct Config {
     bool fullscreen = false;
     bool console = false;
     bool load_app_list = false;
+    Frontend frontend = Frontend::qt;
 
     fs::path get_vita_fs_path() const {
         return fs_utils::utf8_to_path(vita_fs_path);
