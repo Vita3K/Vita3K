@@ -409,15 +409,16 @@ SceInt32 Mutex::try_take(MemState &mem, const ThreadStatePtr &thread, int count)
 
     lock_count += count;
     owner = thread;
-
-    if (lightweight()) {
-        workarea.get(mem)->lockCount = lock_count;
-        if (owner == thread) {
-            workarea.get(mem)->owner = thread->id;
-        }
-    }
+    update_workarea(mem);
 
     return SCE_KERNEL_OK;
+}
+
+void Mutex::update_workarea(MemState &mem) {
+    if (!lightweight())
+        return;
+    workarea.get(mem)->lockCount = lock_count;
+    workarea.get(mem)->owner = owner->id;
 }
 
 SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, bool callbacks) {
@@ -436,10 +437,8 @@ SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, int count, 
         writeback_timeout(timeout, deadline);
 
         // A deleted mutex has no owner, and its work area may be freed already
-        if (lightweight() && owner == thread) {
-            workarea.get(mem)->lockCount = lock_count;
-            workarea.get(mem)->owner = thread->id;
-        }
+        if (owner == thread)
+            update_workarea(mem);
 
         return guest_result(r);
     }

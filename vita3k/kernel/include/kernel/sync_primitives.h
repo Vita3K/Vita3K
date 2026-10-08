@@ -158,6 +158,8 @@ private:
     bool lightweight() const { return get_uid_class() == UidClass::lw_mutex; }
     // Takes the mutex if it is free or owned by thread, or returns why it can't. The lock must be held.
     SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, int count);
+    // Writes the owner and lock count to a lightweight mutex's work area, which the guest reads. The lock must be held.
+    void update_workarea(MemState &mem);
 };
 
 class LwMutex final : public WithUidClass<Mutex, UidClass::lw_mutex> {
