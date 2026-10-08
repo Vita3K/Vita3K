@@ -103,6 +103,8 @@ private:
     void copy_to_vao(const void *data);
     void create_surface_image();
     void destroy_swapchain();
+    // Destroys the surface through whatever made it
+    void destroy_surface();
     bool ensure_swapchain();
     bool rebuild_swapchain_if_visible();
     bool surface_matches_window_size();

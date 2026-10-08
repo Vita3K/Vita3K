@@ -392,18 +392,24 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
 
         std::vector<const char *> instance_extensions;
         instance_extensions.reserve(8);
-        instance_extensions.push_back(vk::KHRSurfaceExtensionName);
-#ifdef _WIN32
-        instance_extensions.push_back(vk::KHRWin32SurfaceExtensionName);
-#elif defined(__APPLE__)
-        instance_extensions.push_back(vk::EXTMetalSurfaceExtensionName);
-#elif defined(__ANDROID__)
-        instance_extensions.push_back(vk::KHRAndroidSurfaceExtensionName);
-#else
         auto *frame_host = this->renderer::State::frame;
-        if (!select_linux_surface_extension(*this, frame_host->handle(), instance_extensions))
-            return false;
+        if (const auto *provider = frame_host->vulkan_surface_provider()) {
+            instance_extensions = provider->instance_extensions();
+            if (instance_extensions.empty()) {
+                LOG_ERROR("The window gave no Vulkan instance extensions for its surface");
+                return false;
+            }
+        } else {
+            instance_extensions.push_back(vk::KHRSurfaceExtensionName);
+#ifdef _WIN32
+            instance_extensions.push_back(vk::KHRWin32SurfaceExtensionName);
+#elif defined(__APPLE__)
+            instance_extensions.push_back(vk::EXTMetalSurfaceExtensionName);
+#elif !defined(__ANDROID__)
+            if (!select_linux_surface_extension(*this, frame_host->handle(), instance_extensions))
+                return false;
 #endif
+        }
 
         const std::set<std::string> optional_instance_extensions = {
             vk::KHRGetPhysicalDeviceProperties2ExtensionName,

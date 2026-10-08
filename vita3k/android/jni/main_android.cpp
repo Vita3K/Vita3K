@@ -37,6 +37,7 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_vulkan.h>
 
 #include <algorithm>
 #include <cstdio>
@@ -147,7 +148,7 @@ void handle_ime_text_input(EmuEnvState &emuenv, const char *text) {
     ime::notify_ime_state_changed();
 }
 
-class AndroidFrameHost final : public renderer::FrameHost {
+class AndroidFrameHost final : public renderer::FrameHost, public renderer::VulkanSurfaceProvider {
 public:
     explicit AndroidFrameHost(SDL_Window *window, SDL_GLContext *gl_context)
         : m_window(window)
@@ -155,7 +156,39 @@ public:
     }
 
     renderer::DisplayHandle handle() const override {
-        return renderer::AndroidDisplayHandle{ m_window };
+        return {};
+    }
+
+    const renderer::VulkanSurfaceProvider *vulkan_surface_provider() const override {
+        return this;
+    }
+
+    std::vector<const char *> instance_extensions() const override {
+        Uint32 count = 0;
+        const char *const *extensions = SDL_Vulkan_GetInstanceExtensions(&count);
+        if (!extensions) {
+            LOG_ERROR("SDL_Vulkan_GetInstanceExtensions failed: {}", SDL_GetError());
+            return {};
+        }
+        return { extensions, extensions + count };
+    }
+
+    VkSurfaceKHR create_surface(VkInstance instance) const override {
+        if (!m_window) {
+            LOG_WARN("Android SDL window is not ready yet; deferring Vulkan surface recreation");
+            return VK_NULL_HANDLE;
+        }
+
+        VkSurfaceKHR surface = VK_NULL_HANDLE;
+        if (!SDL_Vulkan_CreateSurface(m_window, instance, nullptr, &surface)) {
+            LOG_WARN("SDL_Vulkan_CreateSurface failed: {}", SDL_GetError());
+            return VK_NULL_HANDLE;
+        }
+        return surface;
+    }
+
+    void destroy_surface(VkInstance instance, VkSurfaceKHR surface) const override {
+        SDL_Vulkan_DestroySurface(instance, surface, nullptr);
     }
 
     int drawable_width() const override {
