@@ -1628,14 +1628,20 @@ EXPORT(int, sceKernelTryLockMutex, SceUID mutexid, int lock_count) {
     return mutex->try_acquire(emuenv.mem, emuenv.kernel.get_thread(thread_id), lock_count);
 }
 
-EXPORT(int, sceKernelTryLockReadRWLock) {
-    TRACY_FUNC(sceKernelTryLockReadRWLock);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelTryLockReadRWLock, SceUID lock_id) {
+    TRACY_FUNC(sceKernelTryLockReadRWLock, lock_id);
+    const RWLockPtr rwlock = emuenv.kernel.objects.find<RWLock>(lock_id);
+    if (!rwlock)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
+    return rwlock->try_acquire_read(emuenv.kernel.get_thread(thread_id));
 }
 
-EXPORT(int, sceKernelTryLockWriteRWLock) {
-    TRACY_FUNC(sceKernelTryLockWriteRWLock);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelTryLockWriteRWLock, SceUID lock_id) {
+    TRACY_FUNC(sceKernelTryLockWriteRWLock, lock_id);
+    const RWLockPtr rwlock = emuenv.kernel.objects.find<RWLock>(lock_id);
+    if (!rwlock)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
+    return rwlock->try_acquire_write(emuenv.kernel.get_thread(thread_id));
 }
 
 EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
