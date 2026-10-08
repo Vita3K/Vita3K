@@ -327,6 +327,14 @@ SceInt32 Timer::stop() {
     return static_cast<int>(was_stopped);
 }
 
+std::expected<uint64_t, SceInt32> Timer::set_time(uint64_t new_time) {
+    const auto guard = lock();
+    if (!guard)
+        return std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+
+    return std::exchange(time, new_time);
+}
+
 SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
     const auto guard = lock();
     if (!guard)
@@ -410,6 +418,10 @@ SceInt32 Mutex::try_take(MemState &mem, const ThreadStatePtr &thread, int count)
     }
 
     return SCE_KERNEL_OK;
+}
+
+SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, bool callbacks) {
+    return acquire(mem, thread, count, timeout, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_MUTEX : SCE_KERNEL_WAITTYPE_MUTEX, uid }, callbacks);
 }
 
 SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, WaitTarget target, bool callbacks) {

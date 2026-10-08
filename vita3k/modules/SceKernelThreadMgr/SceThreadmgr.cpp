@@ -647,7 +647,7 @@ EXPORT(int, _sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
-    return mutex->acquire(emuenv.mem, emuenv.kernel.get_thread(thread_id), lock_count, ptimeout, { SCE_KERNEL_WAITTYPE_LW_MUTEX, lwmutexid }, false);
+    return mutex->acquire(emuenv.mem, emuenv.kernel.get_thread(thread_id), lock_count, ptimeout, false);
 }
 
 EXPORT(int, _sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *timeout) {
@@ -655,7 +655,7 @@ EXPORT(int, _sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *t
     const MutexPtr mutex = emuenv.kernel.objects.find<HeavyMutex>(mutexid);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
-    return mutex->acquire(emuenv.mem, emuenv.kernel.get_thread(thread_id), lock_count, timeout, { SCE_KERNEL_WAITTYPE_MUTEX, mutexid }, false);
+    return mutex->acquire(emuenv.mem, emuenv.kernel.get_thread(thread_id), lock_count, timeout, false);
 }
 
 EXPORT(SceInt32, _sceKernelLockMutexCB, SceUID mutexId, SceInt32 lockCount, SceUInt32 *pTimeout) {
@@ -664,7 +664,7 @@ EXPORT(SceInt32, _sceKernelLockMutexCB, SceUID mutexId, SceInt32 lockCount, SceU
     const MutexPtr mutex = emuenv.kernel.objects.find<HeavyMutex>(mutexId);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
-    return mutex->acquire(emuenv.mem, emuenv.kernel.get_thread(thread_id), lockCount, pTimeout, { SCE_KERNEL_WAITTYPE_MUTEX, mutexId }, true);
+    return mutex->acquire(emuenv.mem, emuenv.kernel.get_thread(thread_id), lockCount, pTimeout, true);
 }
 
 EXPORT(SceInt32, _sceKernelLockReadRWLock, SceUID lock_id, SceUInt32 *timeout) {
@@ -1549,14 +1549,14 @@ EXPORT(SceInt32, sceKernelSetEventFlag, SceUID evfId, SceUInt32 bitPattern) {
 EXPORT(int, sceKernelSetTimerTimeWide, SceUID timer_handle, SceUInt64 time) {
     TRACY_FUNC(sceKernelSetTimerTimeWide, timer_handle, time);
     const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
-    const auto guard = timer ? timer->lock() : std::unique_lock<std::mutex>();
-    if (!guard)
+    if (!timer)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
-    auto oldTime = timer->time;
-    timer->time = time;
+    const auto old_time = timer->set_time(time);
+    if (!old_time)
+        return RET_ERROR(old_time.error());
 
-    return oldTime;
+    return *old_time;
 }
 
 EXPORT(int, sceKernelSignalCond, SceUID condid) {

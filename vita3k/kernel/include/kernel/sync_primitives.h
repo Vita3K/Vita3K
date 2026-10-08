@@ -81,6 +81,8 @@ public:
     SceInt32 start();
     SceInt32 stop();
     SceInt32 cancel(SceUInt32 *num_wait_threads);
+    // Replaces time and returns its old value, or the error.
+    std::expected<uint64_t, SceInt32> set_time(uint64_t new_time);
 
     // Only the first waiter waits for the next event, the others wait for their turn
     WaitQueue<std::monostate> waiters;
@@ -134,6 +136,8 @@ public:
     // Returns the error for a name or count the guest can't use, or 0.
     static SceInt32 check_create(const char *name, SceUInt32 attr, int init_count);
 
+    SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, bool callbacks);
+    // Same as acquire, but reports the wait as target, for a condition variable taking its mutex back
     SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, WaitTarget target, bool callbacks);
     SceInt32 try_acquire(MemState &mem, const ThreadStatePtr &thread, int count);
     SceInt32 release(const ThreadStatePtr &thread, int unlock_count);
