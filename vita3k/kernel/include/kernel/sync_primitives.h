@@ -44,7 +44,8 @@ class SimpleEvent final : public WithUidClass<SyncPrimitive, UidClass::simple_ev
 public:
     SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
 
-    SceInt32 wait_or_poll(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait, bool callbacks);
+    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
+    SceInt32 poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
     SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
     SceInt32 clear(SceUInt32 clear_pattern);
     SceInt32 cancel(SceUInt32 *num_wait_threads);
@@ -62,6 +63,8 @@ public:
 
 private:
     void on_delete() override;
+    // Takes the event if wait_pattern matches, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
+    SceInt32 try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
 };
 
 typedef std::shared_ptr<SimpleEvent> SimpleEventPtr;
@@ -71,7 +74,8 @@ public:
     Timer(SceUInt32 attr, const char *name);
 
     SceInt32 set_event(SceUID type, SceKernelSysClock interval, SceInt32 repeats);
-    SceInt32 wait_or_poll(const ThreadStatePtr &thread, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait, bool callbacks);
+    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
+    SceInt32 poll(SceUInt32 *result_pattern, SceUInt64 *user_data);
     SceInt32 clear();
     SceInt32 start();
     SceInt32 stop();
@@ -91,6 +95,10 @@ public:
 private:
     void on_delete() override;
     void schedule_event();
+    // Moves next_event to the first event after current_time, or to never if the event doesn't repeat.
+    void advance_next_event(uint64_t current_time);
+    // Takes the event if it is set by current_time, or returns SCE_KERNEL_ERROR_EVENT_COND. The lock must be held.
+    SceInt32 try_take(SceUInt32 *result_pattern, SceUInt64 *user_data, uint64_t current_time);
 };
 
 typedef std::shared_ptr<Timer> TimerPtr;
@@ -125,7 +133,8 @@ public:
     // Returns the error for a name or count the guest can't use, or 0.
     static SceInt32 check_create(const char *name, SceUInt32 attr, int init_count);
 
-    SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, bool only_try, WaitTarget target, bool callbacks);
+    SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, int count, SceUInt32 *timeout, WaitTarget target, bool callbacks);
+    SceInt32 try_acquire(MemState &mem, const ThreadStatePtr &thread, int count);
     SceInt32 release(const ThreadStatePtr &thread, int unlock_count);
     SceInt32 cancel(const ThreadStatePtr &thread, int new_count, SceUInt32 *num_wait_threads);
 
@@ -142,6 +151,8 @@ public:
 private:
     void on_delete() override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_mutex; }
+    // Takes the mutex if it is free or owned by thread, or returns why it can't. The lock must be held.
+    SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, int count);
 };
 
 class LwMutex final : public WithUidClass<Mutex, UidClass::lw_mutex> {
@@ -166,7 +177,8 @@ class RWLock final : public WithUidClass<SyncPrimitive, UidClass::rw_lock> {
 public:
     RWLock(SceUInt32 attr, const char *name);
 
-    SceInt32 acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 *timeout, bool callbacks);
+    SceInt32 acquire_read(const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks);
+    SceInt32 acquire_write(const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks);
     SceInt32 release(const ThreadStatePtr &thread);
     SceInt32 cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag);
 
@@ -181,6 +193,7 @@ public:
 
 private:
     void on_delete() override;
+    SceInt32 acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 *timeout, bool callbacks);
 };
 
 typedef std::shared_ptr<RWLock> RWLockPtr;
@@ -189,7 +202,8 @@ class EventFlag final : public WithUidClass<SyncPrimitive, UidClass::event_flag>
 public:
     EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
 
-    SceInt32 wait_or_poll(const ThreadStatePtr &thread, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool is_wait, bool callbacks);
+    SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks);
+    SceInt32 poll(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
     SceInt32 set(SceUInt32 pattern);
     SceInt32 clear(SceUInt32 pattern);
     SceInt32 cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads);
@@ -205,6 +219,8 @@ public:
 
 private:
     void on_delete() override;
+    // Takes the flags if pattern matches them, or returns why it can't. The lock must be held.
+    SceInt32 try_take(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
 };
 
 typedef std::shared_ptr<EventFlag> EventFlagPtr;
