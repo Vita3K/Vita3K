@@ -961,7 +961,7 @@ std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, 
 
     if (!can_receive()) {
         if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT)
-            return 0;
+            return std::unexpected(SCE_KERNEL_ERROR_MSG_PIPE_EMPTY);
 
         // sleep until we can read, if ASAP we can read as low as 1 byte
         const WaitEntry entry{ .request_size = ASAP ? 1 : size };
@@ -1000,7 +1000,7 @@ std::expected<SceSize, SceInt32> MsgPipe::send(const ThreadStatePtr &thread, Sce
 
     if (!can_send()) {
         if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT)
-            return 0;
+            return std::unexpected(SCE_KERNEL_ERROR_MSG_PIPE_FULL);
 
         // sleep until there's more space, if ASAP we can insert as low as 1 byte
         const WaitEntry entry{ .request_size = ASAP ? 1 : size };
