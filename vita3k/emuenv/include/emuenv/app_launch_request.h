@@ -31,4 +31,6 @@ struct AppLaunchRequest {
     std::string self_path{};
     std::vector<std::string> argv{};
     AppLaunchReason reason = AppLaunchReason::User;
+    // For ProcessExit, the code the guest exited with
+    int exit_code = 0;
 };
