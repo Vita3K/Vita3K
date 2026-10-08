@@ -121,8 +121,9 @@ SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, b
         return true;
     });
 
+    // A pulse clears its own bits, the others go back to what they were
     if (!is_set) {
-        pattern = old_pattern;
+        pattern = old_pattern & ~set_pattern;
         last_user_data = old_user_data;
     }
 
