@@ -200,10 +200,3 @@ Mp3DecoderState::Mp3DecoderState(uint32_t channels) {
     int err = avcodec_open2(context, codec, nullptr);
     assert(err == 0);
 }
-
-Mp3DecoderState::~Mp3DecoderState() {
-    avcodec_close(context);
-    av_free(context);
-
-    context = nullptr;
-}
