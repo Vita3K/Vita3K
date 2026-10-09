@@ -338,6 +338,8 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                 // tiles are 32x32
                 stride_in_pixels = align(stride_in_pixels, 32);
                 break;
+            default:
+                break;
             }
 
             std::uint32_t swizz_raw = 0;
