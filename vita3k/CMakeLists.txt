@@ -334,7 +334,7 @@ elseif(LINUX)
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/metainfo"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/doc/${VITA3K_APP_NAME}"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${APPDIR}/usr/share/licenses/${VITA3K_APP_NAME}"
-			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "${APPDIR}/usr/share/${VITA3K_APP_NAME}/"
+			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "${APPDIR}/usr/share/${VITA3K_APP_NAME}/data"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "${APPDIR}/usr/share/${VITA3K_APP_NAME}/translations"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${APPDIR}/usr/share/${VITA3K_APP_NAME}/shaders-builtin"
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "${APPDIR}/usr/share/VITA3K_APP_NAME/icons"
