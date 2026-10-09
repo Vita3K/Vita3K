@@ -179,6 +179,6 @@ SettingsDialogTooltips::SettingsDialogTooltips(QObject *parent)
     , windows_rounded_corners(tr("Enable rounded corners for the game window on Windows.\nUnsupported Windows versions may ignore this setting."))
     , log_buffer_size(tr("Set the maximum number of log lines to keep in memory.\nSet to 0 to remove the user cap and use the built-in safety limit."))
     , log_font(tr("Choose the font family used by the log view."))
-    , gui_stylesheet(tr("Select the visual theme for the application.\nYou can also place custom .qss files in the gui-configs folder."))
+    , gui_stylesheet(tr("Select the visual theme for the application.\nPlace custom themes in gui-configs/custom-themes; non-Windows OS may keep theme assets in separate folders."))
     , ui_language(tr("Select the desktop interface language used by the Qt frontend.\nUse System Default to follow the operating system language.")) {
 }
