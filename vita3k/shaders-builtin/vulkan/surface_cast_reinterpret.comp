@@ -1,0 +1,52 @@
+// Vita3K emulator project
+// Copyright (C) 2026 Vita3K team
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(push_constant) uniform PushConstants {
+    uint out_width;      // scaled cast width  (== ratio * scaled_store_w)
+    uint out_height;     // scaled cast height
+    uint scaled_store_w; // store texels per row at the current resolution
+    uint scaled_store_h; // store rows at the current resolution
+    uint ratio;          // bppStore / bppReq  (== 2 here)
+    uint half_index;     // which 32-bit word of each store texel this view reads
+} pc;
+
+layout(set = 0, binding = 0) uniform usampler2D u_store;
+layout(set = 0, binding = 1, r32ui) uniform writeonly uimage2D u_cast;
+
+void main() {
+    const uint x = gl_GlobalInvocationID.x;
+    const uint y = gl_GlobalInvocationID.y;
+    if (x >= pc.out_width || y >= pc.out_height)
+        return;
+
+    uint s = x / pc.ratio;
+    if (s >= pc.scaled_store_w)
+        s = pc.scaled_store_w - 1u;
+
+    uint ys = y;
+    if (ys >= pc.scaled_store_h)
+        ys = pc.scaled_store_h - 1u;
+
+    const uvec2 words = texelFetch(u_store, ivec2(int(s), int(ys)), 0).xy;
+    const uint word = (pc.half_index == 0u) ? words.x : words.y;
+
+    imageStore(u_cast, ivec2(int(x), int(y)), uvec4(word, 0u, 0u, 0u));
+}
