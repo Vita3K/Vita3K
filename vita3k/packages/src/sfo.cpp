@@ -74,9 +74,10 @@ bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &ke
     return true;
 }
 
-void get_param_info(sfo::SfoAppInfo &app_info, const vfs::FileBuffer &param, int sys_lang) {
+bool get_param_info(sfo::SfoAppInfo &app_info, const vfs::FileBuffer &param, int sys_lang) {
     SfoFile sfo_handle;
-    sfo::load(sfo_handle, param);
+    if (!sfo::load(sfo_handle, param))
+        return false;
     sfo::get_data_by_key(app_info.app_version, sfo_handle, "APP_VER");
     if (app_info.app_version[0] == '0')
         app_info.app_version.erase(app_info.app_version.begin());
@@ -94,14 +95,21 @@ void get_param_info(sfo::SfoAppInfo &app_info, const vfs::FileBuffer &param, int
     std::replace(app_info.app_title.begin(), app_info.app_title.end(), '\n', ' ');
     boost::trim(app_info.app_title);
     sfo::get_data_by_key(app_info.app_title_id, sfo_handle, "TITLE_ID");
+    return true;
 }
 
 bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
-    if (content.empty()) {
+    if (content.size() < sizeof(SfoHeader)) {
         return false;
     }
 
     memcpy(&sfile.header, content.data(), sizeof(SfoHeader));
+
+    const uint64_t index_end = sizeof(SfoHeader) + static_cast<uint64_t>(sfile.header.tables_entries) * sizeof(SfoIndexTableEntry);
+    if (sfile.header.magic != 0x46535000 || index_end > sfile.header.key_table_start
+        || sfile.header.key_table_start > sfile.header.data_table_start || sfile.header.data_table_start > content.size()) {
+        return false;
+    }
 
     sfile.entries.resize(sfile.header.tables_entries + 1);
 
@@ -114,6 +122,10 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
     // Parse each SFO entry and extract its associated key
     for (uint32_t i = 0; i < sfile.header.tables_entries; i++) {
         // Calculate the size of the key for the current entry by subtracting the offsets
+        if (sfile.entries[i].entry.key_offset >= sfile.entries[i + 1].entry.key_offset
+            || sfile.header.key_table_start + sfile.entries[i + 1].entry.key_offset > sfile.header.data_table_start) {
+            return false;
+        }
         uint32_t keySize = sfile.entries[i + 1].entry.key_offset - sfile.entries[i].entry.key_offset;
 
         // Resize the 'key' data to hold the correct amount of characters for the key
@@ -122,14 +134,16 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
         // Calculate the starting address of the key data in the content buffer
         const auto key_begin = content.begin() + sfile.header.key_table_start + sfile.entries[i].entry.key_offset;
 
-        // Extract the key data from the content buffer and assign it to 'key' as a string
-        // Subtract 1 from keySize to avoid including the null terminator
-        sfile.entries[i].data.first = std::string(key_begin, key_begin + keySize - 1);
+        sfile.entries[i].data.first = std::string(key_begin, std::find(key_begin, key_begin + keySize, '\0'));
     }
 
     // Parse each SFO entry and extract its associated data
     for (uint32_t i = 0; i < sfile.header.tables_entries; i++) {
         const uint32_t dataSize = sfile.entries[i].entry.data_len;
+        if (static_cast<uint64_t>(sfile.header.data_table_start) + sfile.entries[i].entry.data_offset + dataSize > content.size()
+            || (sfile.entries[i].entry.data_fmt == SfoDataFormat::UINT32_T && dataSize < sizeof(uint32_t))) {
+            return false;
+        }
 
         // Resize the destination string to match the data size
         sfile.entries[i].data.second.resize(dataSize);
