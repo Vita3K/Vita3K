@@ -207,11 +207,11 @@ static Config::CurrentConfig get_runtime_current_config_after_save(
         case config::RestartRequiredSetting::GraphicsDevice:
             runtime_current.gpu_idx = previous_current.gpu_idx;
             break;
-#ifdef __ANDROID__
         case config::RestartRequiredSetting::CustomDriver:
+#ifdef __ANDROID__
             runtime_current.custom_driver_name = previous_current.custom_driver_name;
-            break;
 #endif
+            break;
         case config::RestartRequiredSetting::HighAccuracy:
             runtime_current.high_accuracy = previous_current.high_accuracy;
             break;

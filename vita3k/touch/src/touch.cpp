@@ -241,6 +241,8 @@ int handle_touch_event(TouchState &state, SDL_TouchFingerEvent &finger) {
         }
         break;
     }
+    default:
+        break;
     }
 
     return 0;
@@ -275,6 +277,8 @@ int handle_touchpad_event(TouchState &state, SDL_GamepadTouchpadEvent &touchpad)
                 state.touchpad_buffer[i].which = touch_id;
             }
         }
+        break;
+    default:
         break;
     }
 

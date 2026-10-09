@@ -1341,6 +1341,9 @@ static void swizzle_text_T(T *pixels, uint32_t nb_pixel, ColorSurfaceCacheInfo *
             // ARGB
             swizzle_text_T_4<T, 2>(pixels, nb_pixel);
             break;
+        default:
+            // RGBA, nothing to swap
+            break;
         }
     }
 }
