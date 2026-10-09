@@ -9,6 +9,7 @@ artifacts_store_dir="$repo_root/artifacts-store"
 
 mapfile -t artifact_dirs < <(find . -mindepth 1 -maxdepth 1 -type d -name 'vita3k-*' -print | sort)
 
+# The zip archives stay for installed builds whose updater still downloads them
 for dir in "${artifact_dirs[@]}"; do
     abs_dir="$(cd "$dir" && pwd)"
     bin_dir="$abs_dir/bin"
@@ -31,21 +32,25 @@ for dir in "${artifact_dirs[@]}"; do
             cp "$abs_dir"/*.AppImage* "$artifacts_master_dir/"
             cp "$abs_dir"/*.AppImage* "$artifacts_store_dir/"
             (cd "$bin_dir" && zip -r "$artifacts_master_dir/ubuntu-latest.zip" .)
-            (cd "$bin_dir" && 7z a -mx=9 "$artifacts_store_dir/vita3k-${BUILD_VARIABLE}-${GIT_SHORT_SHA}-ubuntu-x86_64.7z" .)
+            (cd "$bin_dir" && 7z a -mx=9 "$artifacts_master_dir/ubuntu-latest.7z" .)
+            cp "$artifacts_master_dir/ubuntu-latest.7z" "$artifacts_store_dir/vita3k-${BUILD_VARIABLE}-${GIT_SHORT_SHA}-ubuntu-x86_64.7z"
             ;;
         vita3k-*-linux-arm64)
             cp "$abs_dir"/*.AppImage* "$artifacts_master_dir/"
             cp "$abs_dir"/*.AppImage* "$artifacts_store_dir/"
             (cd "$bin_dir" && zip -r "$artifacts_master_dir/ubuntu-aarch64-latest.zip" .)
-            (cd "$bin_dir" && 7z a -mx=9 "$artifacts_store_dir/vita3k-${BUILD_VARIABLE}-${GIT_SHORT_SHA}-ubuntu-aarch64.7z" .)
+            (cd "$bin_dir" && 7z a -mx=9 "$artifacts_master_dir/ubuntu-aarch64-latest.7z" .)
+            cp "$artifacts_master_dir/ubuntu-aarch64-latest.7z" "$artifacts_store_dir/vita3k-${BUILD_VARIABLE}-${GIT_SHORT_SHA}-ubuntu-aarch64.7z"
             ;;
         vita3k-*-windows-x64)
-            (cd "$bin_dir" && zip -r "$artifacts_master_dir/windows-latest.zip" .)
-            (cd "$bin_dir" && 7z a -mx=9 "$artifacts_store_dir/vita3k-${BUILD_VARIABLE}-${GIT_SHORT_SHA}-windows-x86_64.7z" .)
+            (cd "$abs_dir" && zip -r "$artifacts_master_dir/windows-latest.zip" .)
+            (cd "$abs_dir" && 7z a -mx=9 "$artifacts_master_dir/windows-latest.7z" .)
+            cp "$artifacts_master_dir/windows-latest.7z" "$artifacts_store_dir/vita3k-${BUILD_VARIABLE}-${GIT_SHORT_SHA}-windows-x86_64.7z"
             ;;
         vita3k-*-windows-arm64)
-            (cd "$bin_dir" && zip -r "$artifacts_master_dir/windows-arm64-latest.zip" .)
-            (cd "$bin_dir" && 7z a -mx=9 "$artifacts_store_dir/vita3k-${BUILD_VARIABLE}-${GIT_SHORT_SHA}-windows-arm64.7z" .)
+            (cd "$abs_dir" && zip -r "$artifacts_master_dir/windows-arm64-latest.zip" .)
+            (cd "$abs_dir" && 7z a -mx=9 "$artifacts_master_dir/windows-arm64-latest.7z" .)
+            cp "$artifacts_master_dir/windows-arm64-latest.7z" "$artifacts_store_dir/vita3k-${BUILD_VARIABLE}-${GIT_SHORT_SHA}-windows-arm64.7z"
             ;;
         *)
             echo "Unknown artifact directory: $artifact_name" >&2
