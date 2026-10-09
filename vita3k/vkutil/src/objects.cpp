@@ -42,6 +42,9 @@ Image::Image(Image &&other) noexcept {
     *this = std::move(other);
 }
 Image &Image::operator=(Image &&other) noexcept {
+    if (this == &other)
+        return *this;
+    destroy();
     allocation = other.allocation;
     image = std::exchange(other.image, nullptr);
     view = std::exchange(other.view, nullptr);
@@ -144,6 +147,9 @@ Buffer::Buffer(Buffer &&other) noexcept {
     *this = std::move(other);
 }
 Buffer &Buffer::operator=(Buffer &&other) noexcept {
+    if (this == &other)
+        return *this;
+    destroy();
     allocation = std::exchange(other.allocation, nullptr);
     buffer = std::exchange(other.buffer, nullptr);
     size = std::exchange(other.size, 0);
