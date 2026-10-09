@@ -22,6 +22,8 @@
 #include <util/align.h>
 #include <util/log.h>
 
+#include <utility>
+
 namespace vkutil {
 
 static vma::Allocator allocator = nullptr;
@@ -37,18 +39,18 @@ void deinit() {
 Image::Image() = default;
 
 Image::Image(Image &&other) noexcept {
-    memcpy(this, &other, sizeof(Image));
-    other.sampler = nullptr;
-    other.view = nullptr;
-    other.image = nullptr;
-    other.layout = ImageLayout::Undefined;
+    *this = std::move(other);
 }
 Image &Image::operator=(Image &&other) noexcept {
-    memcpy(this, &other, sizeof(Image));
-    other.sampler = nullptr;
-    other.view = nullptr;
-    other.image = nullptr;
-    other.layout = ImageLayout::Undefined;
+    allocation = other.allocation;
+    image = std::exchange(other.image, nullptr);
+    view = std::exchange(other.view, nullptr);
+    sampler = std::exchange(other.sampler, nullptr);
+    width = other.width;
+    height = other.height;
+    format = other.format;
+    layout = std::exchange(other.layout, ImageLayout::Undefined);
+    destroy_on_deletion = other.destroy_on_deletion;
     return *this;
 }
 
@@ -139,18 +141,14 @@ void Image::transition_to_discard(vk::CommandBuffer buffer, ImageLayout new_layo
 Buffer::Buffer() = default;
 
 Buffer::Buffer(Buffer &&other) noexcept {
-    memcpy(this, &other, sizeof(Buffer));
-    other.allocation = nullptr;
-    other.buffer = nullptr;
-    other.size = 0;
-    other.mapped_data = nullptr;
+    *this = std::move(other);
 }
 Buffer &Buffer::operator=(Buffer &&other) noexcept {
-    memcpy(this, &other, sizeof(Buffer));
-    other.allocation = nullptr;
-    other.buffer = nullptr;
-    other.size = 0;
-    other.mapped_data = nullptr;
+    allocation = std::exchange(other.allocation, nullptr);
+    buffer = std::exchange(other.buffer, nullptr);
+    size = std::exchange(other.size, 0);
+    mapped_data = std::exchange(other.mapped_data, nullptr);
+    destroy_on_deletion = other.destroy_on_deletion;
     return *this;
 }
 
