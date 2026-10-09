@@ -325,7 +325,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
 }
 
 void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format,
-    Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config) {
+    Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config, int32_t base_vertex) {
     void *indices_ptr = indices.get(mem);
 
     context.check_for_macroblock_change(true);
@@ -502,7 +502,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     // bind the vertex streams
     bind_vertex_streams(context, mem, instance_count, max_index);
 
-    context.render_cmd.drawIndexed(count, instance_count, 0, 0, 0);
+    context.render_cmd.drawIndexed(count, instance_count, 0, base_vertex, 0);
 
     context.vertex_uniform_storage_allocated = false;
     context.fragment_uniform_storage_allocated = false;
