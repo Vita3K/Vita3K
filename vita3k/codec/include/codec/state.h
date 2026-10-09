@@ -189,7 +189,6 @@ struct Mp3DecoderState : public DecoderState {
     bool receive(uint8_t *data, DecoderSize *size) override;
 
     explicit Mp3DecoderState(uint32_t channels);
-    ~Mp3DecoderState() override;
 };
 
 struct ADPCMHistory {
