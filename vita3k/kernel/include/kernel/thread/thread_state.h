@@ -54,6 +54,8 @@ struct ThreadState {
     SceUID id;
     Address entry_point;
 
+    CPUStatePtr cpu;
+
     Block stack;
     int stack_size;
     Block tls;
@@ -63,7 +65,6 @@ struct ThreadState {
     uint64_t start_tick;
     uint64_t last_vblank_waited;
 
-    CPUStatePtr cpu;
     ThreadStatus status = ThreadStatus::dormant;
     // What the thread waits on while waiting, empty otherwise
     WaitTarget wait_target;
