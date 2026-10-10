@@ -26,7 +26,9 @@
 #include <dynarmic/interface/A32/coprocessor.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
+#include <atomic>
 #include <bit>
+#include <chrono>
 #include <memory>
 #include <optional>
 #include <string>
@@ -159,17 +161,41 @@ public:
         }
     }
 
+    static constexpr uint64_t INVALID_READ_LOG_FULL = 16;
+    inline static std::atomic<uint64_t> invalid_read_count{ 0 };
+    inline static std::atomic<int64_t> invalid_read_reported_second{ 0 };
+
     template <typename T>
     T MemoryRead(Dynarmic::A32::VAddr addr) {
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
-            LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x}\n{}", sizeof(T) * 8, addr, this->cpu->save_context().description());
+            const uint64_t n = invalid_read_count.fetch_add(1, std::memory_order_relaxed) + 1;
+            const bool verbose = n <= INVALID_READ_LOG_FULL;
+            bool periodic = false;
+            if (!verbose) {
+                // One line a second while they continue
+                const int64_t second = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+                int64_t reported = invalid_read_reported_second.load(std::memory_order_relaxed);
+                periodic = reported != second && invalid_read_reported_second.compare_exchange_strong(reported, second, std::memory_order_relaxed);
+            }
 
-            auto pc = this->cpu->get_pc();
-            if (pc < parent->mem->host_page_size)
-                LOG_CRITICAL("PC is 0x{:x}", pc);
-            else
+            if (verbose) {
+                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x} (thread {})\n{}", sizeof(T) * 8, addr, parent->thread_id, this->cpu->save_context().description());
+            } else if (periodic) {
+                LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x} (thread {}, {} invalid reads so far)", sizeof(T) * 8, addr, parent->thread_id, n);
+            }
+
+            const auto pc = this->cpu->get_pc();
+            if (pc < parent->mem->host_page_size) {
+                // A thread executing in the first page never recovers, so end its guest function
+                if (!cpu->halted) {
+                    LOG_CRITICAL("PC is 0x{:x}, stopping thread {}", pc, parent->thread_id);
+                    cpu->halted = true;
+                    cpu->jit->HaltExecution();
+                }
+            } else if (verbose || periodic) {
                 LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+            }
             return 0;
         }
 
