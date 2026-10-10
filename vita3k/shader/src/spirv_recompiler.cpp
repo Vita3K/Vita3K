@@ -1571,7 +1571,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     o_op.num = 0;
     o_op.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
 
-    for (const auto vo : vertex_outputs_list) {
+    for (const auto &[vo, properties] : vertex_properties_map) {
         if (vertex_outputs & vo) {
             const auto vo_typed = static_cast<SceGxmVertexProgramOutputs>(vo);
             VertexProgramOutputProperties properties = vertex_properties_map.at(vo_typed);
