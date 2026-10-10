@@ -380,8 +380,10 @@ bool init_paths(Root &root_paths) {
         if (fs::exists(exe_path / "shaders-builtin"))
             root_paths.set_static_assets_path(exe_path);
 
-        // AppImage root
-        if (APPDIR != NULL && fs::exists(fs::path(APPDIR) / "usr/share/Vita3K"))
+        // AppImage data directory (Anylinux layout, then the legacy layout)
+        if (APPDIR != NULL && fs::exists(fs::path(APPDIR) / "share/Vita3K"))
+            root_paths.set_static_assets_path(fs::path(APPDIR) / "share/Vita3K");
+        else if (APPDIR != NULL && fs::exists(fs::path(APPDIR) / "usr/share/Vita3K"))
             root_paths.set_static_assets_path(fs::path(APPDIR) / "usr/share/Vita3K");
 
         // shared path

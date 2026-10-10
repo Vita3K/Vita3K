@@ -28,7 +28,6 @@ jobs:
             runs_on: ubuntu-26.04
             arch: x86_64
             cmake_preset: ci-linux-clang-appimage
-            linuxdeploy_command: /usr/local/bin/linuxdeploy-x86_64.AppImage
             cache_path: ''
             qt_install_deps: 'true'
 
@@ -36,7 +35,6 @@ jobs:
             runs_on: ubuntu-26.04-arm
             arch: aarch64
             cmake_preset: ci-linux-clang-appimage
-            linuxdeploy_command: /usr/local/bin/linuxdeploy-aarch64.AppImage
             cache_path: ''
             qt_install_deps: 'true'
 
@@ -84,7 +82,7 @@ jobs:
             cache-${{ matrix.platform }}-${{ env.BUILD_CONFIG }}-
 
       - name: Set up build environment (Linux)
-        run: bash ./.ci/setup-linux.sh ${{ matrix.arch }} with-appimage
+        run: bash ./.ci/setup-linux.sh
         if: startsWith(matrix.platform, 'linux-')
 
       - name: Set up build environment (macOS)
@@ -162,10 +160,12 @@ jobs:
           install-deps: ${{ matrix.qt_install_deps }}
 
       - name: Build desktop target (Linux/macOS)
-        env:
-          VITA3K_LINUXDEPLOY_COMMAND: ${{ matrix.linuxdeploy_command }}
         run: bash ./.ci/build-desktop.sh --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
         if: startsWith(matrix.platform, 'linux-') || startsWith(matrix.platform, 'macos-')
+
+      - name: Package Linux AppImage with Anylinux
+        run: bash ./.ci/package-appimage.sh --preset ${{ matrix.cmake_preset }} --config ${{ env.BUILD_CONFIG }}
+        if: startsWith(matrix.platform, 'linux-')
 
       - name: Build desktop target (Windows MSVC)
         shell: bash

@@ -15,9 +15,10 @@ build
 # CMake user presets
 CMakeUserPresets.json
 compile_commands.json
-# AppImage builder
-appimage/linuxdeploy*.AppImage
 /.gdbinit
+
+# Locally downloaded AppImage tools
+/appimage/*.AppImage
 
 # generated linux metainfo.xml
 dist/linux/*.metainfo.xml

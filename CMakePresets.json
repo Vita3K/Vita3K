@@ -126,8 +126,7 @@
       "displayName": "Linux AppImage with Ninja and Clang",
       "description": "Linux AppImage build using Ninja Multi-Config generator and Clang compiler",
       "cacheVariables": {
-        "CMAKE_INSTALL_PREFIX": "/usr",
-        "BUILD_APPIMAGE": true
+        "CMAKE_INSTALL_PREFIX": "/usr"
       }
     },
     {
@@ -144,9 +143,7 @@
       "inherits": "ci-linux-clang",
       "description": "CI preset for Linux Clang AppImage builds",
       "cacheVariables": {
-        "CMAKE_INSTALL_PREFIX": "/usr",
-        "BUILD_APPIMAGE": true,
-        "LINUXDEPLOY_COMMAND": "$env{VITA3K_LINUXDEPLOY_COMMAND}"
+        "CMAKE_INSTALL_PREFIX": "/usr"
       }
     },
     {
