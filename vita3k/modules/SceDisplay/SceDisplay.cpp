@@ -17,6 +17,7 @@
 
 #include "SceDisplay.h"
 
+#include <cheat/state.h>
 #include <display/functions.h>
 #include <display/state.h>
 #include <io/state.h>
@@ -158,6 +159,7 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
 
     emuenv.display.last_setframe_vblank_count = emuenv.display.vblank_count.load();
     emuenv.frame_count++;
+    emuenv.cheat.count_frame();
 
 #ifdef TRACY_ENABLE
     FrameMarkNamed("SCE frame buffer"); // Tracy - Secondary frame end mark for the emulated frame buffer

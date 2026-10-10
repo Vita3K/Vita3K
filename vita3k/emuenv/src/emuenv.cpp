@@ -20,6 +20,7 @@
 #include <app/state.h>
 #include <audio/state.h>
 #include <camera/state.h>
+#include <cheat/state.h>
 #include <compat/state.h>
 #include <config/state.h>
 #include <ctrl/state.h>
@@ -100,7 +101,9 @@ EmuEnvState::EmuEnvState()
     , _camera(new CameraState)
     , camera(*_camera)
     , _compat(new CompatState)
-    , compat(*_compat) {
+    , compat(*_compat)
+    , _cheat(new CheatState)
+    , cheat(*_cheat) {
 }
 DISABLE_WARNING_END;
 
