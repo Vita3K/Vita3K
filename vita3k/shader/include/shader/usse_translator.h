@@ -153,8 +153,12 @@ private:
                 return repeat_index * 4;
             }
         }
-        if (repeat_mode == RepeatMode::EXTERNAL && bank != RegisterBank::FPINTERNAL) {
-            return repeat_index * 4;
+        if (repeat_mode == RepeatMode::EXTERNAL) {
+            if (bank == RegisterBank::FPINTERNAL) {
+                return repeat_index;
+            } else {
+                return repeat_index * 4;
+            }
         }
         if (repeat_mode == RepeatMode::SLMSI) {
             auto inc = repeat_increase[op.index][repeat_index];
