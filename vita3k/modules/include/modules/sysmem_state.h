@@ -24,6 +24,7 @@
 #include <mutex>
 #include <string>
 
+struct EmuEnvState;
 struct MemState;
 
 // Shared SysmemState definition used by SceSysmem and kubridge HLE.
@@ -49,3 +50,6 @@ struct SysmemState {
         return next_uid++;
     }
 };
+
+// The shell keeps these fonts in shared blocks that libpvf and WebKit open by name before an app starts.
+void create_system_font_blocks(EmuEnvState &emuenv);
