@@ -296,6 +296,8 @@ struct VKContext : public renderer::Context {
 
     vk::Framebuffer current_framebuffer;
     vk::Framebuffer current_shader_interlock_framebuffer = nullptr;
+    uint32_t current_framebuffer_width = 0;
+    uint32_t current_framebuffer_height = 0;
     // we need the format or image for some cases
     vkutil::Image *current_color_base_image;
     vk::Format current_color_format;
@@ -351,6 +353,7 @@ struct VKRenderTarget : public renderer::RenderTarget {
     vk::Device device;
     uint16_t width;
     uint16_t height;
+    bool msaa_no_downscale_active = false;
     vkutil::Image color;
     vkutil::Image depthstencil;
 
