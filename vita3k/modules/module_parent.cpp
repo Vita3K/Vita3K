@@ -37,7 +37,15 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
+#include <cstring>
 #include <unordered_set>
+
+#include <util/elf.h>
+// clang-format off
+#define SCE_ELF_DEFS_TARGET
+#include <sce-elf-defs.h>
+#undef SCE_ELF_DEFS_TARGET
+// clang-format on
 
 static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
@@ -304,6 +312,106 @@ SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
     }
 
     return load_module_data(module_buffer.data());
+}
+
+SceUID load_virtual_module(EmuEnvState &emuenv, const std::string &module_name) {
+    // A virtual module has no file on disk and is implemented entirely through HLE
+    // This allows homebrews that check for loaded modules to find them
+    // while still integrating with the module system :)
+
+    // check if module is already loaded
+    std::string module_path = "ur0:tai/" + module_name;
+    {
+        const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+        const auto &loaded_modules = emuenv.kernel.loaded_modules;
+        auto module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [&](const auto &p) {
+            return module_path == p.second->info.path;
+        });
+        if (module_iter != loaded_modules.end())
+            return module_iter->first; // already loaded, return existing UID
+    }
+
+    // generate a fake nid for the virtual module, or use known ones for known plugins
+    uint32_t module_nid = 0;
+    if (module_name == "kubridge") {
+        module_nid = 0xB623A402;
+    } else if (module_name == "fd_fix") {
+        module_nid = 0xDF089812;
+    } else {
+        // use crc32 to generate a fake nid
+        uint32_t crc = 0xFFFFFFFF;
+        for (char c : module_name) {
+            crc ^= static_cast<uint8_t>(c);
+            for (int i = 0; i < 8; ++i) {
+                crc = (crc >> 1) ^ (0xEDB88320 & (-(crc & 1)));
+            }
+        }
+        module_nid = ~crc;
+
+        // check for nid collision
+        {
+            const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+            bool collision;
+            do {
+                collision = false;
+                for (const auto &[nid, mapped_uid] : emuenv.kernel.module_uid_by_nid) {
+                    if (nid == module_nid) {
+                        LOG_INFO("NID {} already in use, using different nid", module_nid);
+                        module_nid += 2;
+                        collision = true;
+                        break;
+                    }
+                }
+            } while (collision);
+        }
+    }
+
+    // Allocate guest memory for fake sce_module_info_raw
+    Address dummy_info_addr = alloc(emuenv.mem, sizeof(sce_module_info_raw), "virtual_module_info");
+    sce_module_info_raw *raw_info = Ptr<sce_module_info_raw>(dummy_info_addr).get(emuenv.mem);
+    std::memset(raw_info, 0, sizeof(sce_module_info_raw));
+    raw_info->module_nid = module_nid;
+    std::strncpy(raw_info->name, module_name.c_str(), 27);
+
+    // Populate KernelModule Info
+    const SceKernelModulePtr kernelModuleInfo = std::make_shared<KernelModule>();
+    std::memset(kernelModuleInfo.get(), 0, sizeof(KernelModule));
+
+    kernelModuleInfo->info_segment_address = Ptr<const uint8_t>(dummy_info_addr);
+    kernelModuleInfo->info_offset = 0;
+
+    auto *sceKernelModuleInfo = &kernelModuleInfo->info;
+    sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
+    std::strncpy(sceKernelModuleInfo->module_name, module_name.c_str(), 28);
+    // unk28
+    std::strncpy(sceKernelModuleInfo->path, module_path.c_str(), 255);
+
+    // set up a segment to point to the dummy info block so that
+    // when the module is unloaded, unload_self will free the block
+    sceKernelModuleInfo->segments[0].size = sizeof(SceKernelSegmentInfo);
+    sceKernelModuleInfo->segments[0].vaddr = Ptr<const void>(dummy_info_addr);
+    sceKernelModuleInfo->segments[0].memsz = sizeof(sce_module_info_raw);
+    sceKernelModuleInfo->segments[0].filesz = sizeof(sce_module_info_raw);
+    sceKernelModuleInfo->segments[0].perms = 0; // standard virtual memory segment
+
+    sceKernelModuleInfo->state = 6; // loaded and linked
+
+    const SceUID uid = emuenv.kernel.get_next_uid();
+    sceKernelModuleInfo->modid = uid;
+
+    {
+        const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+        emuenv.kernel.loaded_modules[uid] = kernelModuleInfo;
+    }
+
+    {
+        const std::lock_guard<std::mutex> guard(emuenv.kernel.export_nids_mutex);
+        emuenv.kernel.module_uid_by_nid[module_nid] = uid;
+    }
+
+    LOG_INFO("Loaded virtual module {} (NID: 0x{:08X})", module_name, module_nid);
+
+    return uid;
 }
 
 int unload_module(EmuEnvState &emuenv, SceUID module_id) {
