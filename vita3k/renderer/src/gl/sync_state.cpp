@@ -153,16 +153,17 @@ void sync_viewport_real(const GLState &state, GLContext &context, const float xO
 
 void sync_clipping(const GLState &state, GLContext &context) {
     const GLsizei display_h = context.current_framebuffer_height;
-    const GLsizei scissor_x = context.record.region_clip_min.x;
+    const GxmRegionClipTiles tiles = gxm_region_clip_tiles(context.record.region_clip_min, context.record.region_clip_max);
+    const GLsizei scissor_x = tiles.x0;
     GLsizei scissor_y = 0;
 
     if (context.record.viewport_flip[1] == -1.0f)
-        scissor_y = context.record.region_clip_min.y;
+        scissor_y = tiles.y0;
     else
-        scissor_y = display_h - context.record.region_clip_max.y - 1;
+        scissor_y = display_h - tiles.y1;
 
-    const GLsizei scissor_w = context.record.region_clip_max.x - context.record.region_clip_min.x + 1;
-    const GLsizei scissor_h = context.record.region_clip_max.y - context.record.region_clip_min.y + 1;
+    const GLsizei scissor_w = std::max(tiles.x1 - tiles.x0, 0);
+    const GLsizei scissor_h = std::max(tiles.y1 - tiles.y0, 0);
 
     switch (context.record.region_clip_mode) {
     case SCE_GXM_REGION_CLIP_NONE:
@@ -178,9 +179,9 @@ void sync_clipping(const GLState &state, GLContext &context) {
             static_cast<GLsizei>(scissor_w * state.res_multiplier), static_cast<GLsizei>(scissor_h * state.res_multiplier));
         break;
     case SCE_GXM_REGION_CLIP_INSIDE:
-        // TODO: Implement SCE_GXM_REGION_CLIP_INSIDE
+        // The kept area is not a rectangle: draw() issues one call per band
+        // around the clipped tiles.
         glDisable(GL_SCISSOR_TEST);
-        LOG_WARN("Unimplemented region clip mode used: SCE_GXM_REGION_CLIP_INSIDE");
         break;
     }
 }

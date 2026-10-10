@@ -938,6 +938,11 @@ void VKState::late_init(const Config &cfg, const std::string_view game_id, MemSt
         features.support_shader_interlock = false;
     }
 
+    // the mask bit is a second color attachment, which the shader interlock pass does not have
+    features.use_mask_bit = !features.support_shader_interlock;
+    if (!features.use_mask_bit)
+        LOG_WARN("The GXM mask bit is not emulated with shader interlock");
+
     // texture viewport is faster but not entirely accurate
     if (support_standard_layout && !use_high_accuracy) {
         LOG_INFO("The Vulkan renderer is using texture viewport for better performance");
@@ -1247,6 +1252,7 @@ uint32_t VKState::get_features_mask() {
             bool use_memory_mapping : 1;
             bool use_rgb_attributes : 1;
             bool use_scaled_attributes : 1;
+            bool use_mask_bit : 1;
         };
         uint32_t value;
     } features_mask;
@@ -1258,6 +1264,7 @@ uint32_t VKState::get_features_mask() {
     features_mask.use_memory_mapping = features.enable_memory_mapping;
     features_mask.use_rgb_attributes = features.support_rgb_attributes;
     features_mask.use_scaled_attributes = pipeline_cache.support_scaled_vertex_attribute;
+    features_mask.use_mask_bit = features.use_mask_bit;
 
     return features_mask.value;
 }
