@@ -19,9 +19,9 @@
 #include <compat/state.h>
 #include <config/state.h>
 #include <fmt/std.h>
+#include <util/archive_utils.h>
 #include <util/log.h>
 
-#include <miniz.h>
 #include <pugixml.hpp>
 
 #include <regex>
@@ -151,31 +151,11 @@ bool load_from_disk(CompatState &state, const std::filesystem::path &cache_path)
 }
 
 bool install_db(CompatState &state, const std::filesystem::path &cache_path,
-    std::span<const uint8_t> zip_data, const std::string &new_version) {
-    mz_zip_archive zip{};
-    if (!mz_zip_reader_init_mem(&zip, zip_data.data(), zip_data.size(), 0)) {
-        LOG_ERROR("Failed to open zip from memory");
+    std::span<const uint8_t> archive_data, const std::string &new_version) {
+    if (!archive_utils::extract_7z(archive_data, cache_path)) {
+        LOG_ERROR("Failed to extract compatibility database archive");
         return false;
     }
-
-    const mz_uint num_files = mz_zip_reader_get_num_files(&zip);
-    for (mz_uint i = 0; i < num_files; ++i) {
-        mz_zip_archive_file_stat stat;
-        if (!mz_zip_reader_file_stat(&zip, i, &stat)) {
-            LOG_ERROR("Failed to stat file {} in zip", i);
-            mz_zip_reader_end(&zip);
-            return false;
-        }
-
-        const auto out_path = cache_path / stat.m_filename;
-        if (!mz_zip_reader_extract_to_file(&zip, i, reinterpret_cast<const char *>(out_path.u8string().c_str()), 0)) {
-            LOG_ERROR("Failed to extract {} from zip", stat.m_filename);
-            mz_zip_reader_end(&zip);
-            return false;
-        }
-    }
-
-    mz_zip_reader_end(&zip);
 
     if (!load_from_disk(state, cache_path))
         return false;

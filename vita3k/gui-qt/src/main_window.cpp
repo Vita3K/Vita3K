@@ -505,6 +505,19 @@ void MainWindow::initialize() {
         m_update_available = available;
         update_update_available_button();
     });
+    m_update_manager->set_skipped_build(static_cast<std::uint64_t>(emuenv.cfg.skipped_update_build));
+    connect(m_update_manager, &UpdateManager::skip_build_requested, this, [this](const std::uint64_t build_number) {
+        emuenv.cfg.skipped_update_build = static_cast<int>(build_number);
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+    });
+
+    // Only the options that pick the configuration carry over, the others start one-shot jobs
+    QStringList restart_arguments;
+    if (!emuenv.cfg.config_path.empty() && emuenv.cfg.config_path != emuenv.config_path)
+        restart_arguments << QStringLiteral("--config-location") << gui::utils::to_qt_path(emuenv.cfg.config_path);
+    if (!emuenv.cfg.overwrite_config)
+        restart_arguments << QStringLiteral("--keep-config");
+    m_update_manager->set_restart_arguments(restart_arguments);
     update_update_available_button();
 
     setMinimumSize(350, minimumSizeHint().height());

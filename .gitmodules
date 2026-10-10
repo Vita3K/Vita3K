@@ -84,3 +84,6 @@
 [submodule "external/substitute"]
 	path = external/substitute
 	url = https://github.com/Vita3K/substitute.git
+[submodule "external/7zip"]
+	path = external/7zip
+	url = https://github.com/ip7z/7zip.git

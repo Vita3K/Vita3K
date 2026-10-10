@@ -73,8 +73,7 @@ case "$PLATFORM" in
         popd > /dev/null
         ;;
     windows-*)
-        mkdir -p "$OUTPUT_DIR/bin"
-        cp -R "$build_dir/." "$OUTPUT_DIR/bin/"
+        cp -R "$build_dir/." "$OUTPUT_DIR/"
         ;;
     *)
         echo "Unsupported desktop platform: $PLATFORM" >&2

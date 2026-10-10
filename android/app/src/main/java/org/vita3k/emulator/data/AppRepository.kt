@@ -14,7 +14,7 @@ internal object AppRepository {
     private const val COMPAT_VERSION_URL =
         "https://api.github.com/repos/Vita3K/compatibility/releases/latest"
     private const val COMPAT_DB_URL =
-        "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml.zip"
+        "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml.7z"
     private const val UPDATE_RELEASE_URL =
         "https://api.github.com/repos/Vita3K/Vita3K/releases/tags/continuous"
     private const val UPDATE_PAGE_URL =
@@ -49,8 +49,8 @@ internal object AppRepository {
                 return@withContext false
             }
 
-            val zipData = httpGetBytes(COMPAT_DB_URL) ?: return@withContext false
-            NativeLib.installCompatibilityDatabase(zipData, latestVersion)
+            val archiveData = httpGetBytes(COMPAT_DB_URL) ?: return@withContext false
+            NativeLib.installCompatibilityDatabase(archiveData, latestVersion)
         } catch (error: Exception) {
             Log.w(TAG, "Failed to sync compatibility database", error)
             false
