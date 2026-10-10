@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <cstring>
 
+#include <gxm/functions.h>
 #include <gxm/types.h>
 #include <renderer/functions.h>
 #include <renderer/pvrt-dec.h>
@@ -231,6 +232,39 @@ void convert_U8U3U3U2_to_U8U8U8U8(void *dest, const void *data, const uint32_t w
             dst[row * width + col] = value;
         }
     }
+}
+
+bool is_u5u5u5u1(const SceGxmTextureFormat format) {
+    if (gxm::get_base_format(format) != SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5)
+        return false;
+
+    switch (format & SCE_GXM_TEXTURE_SWIZZLE_MASK) {
+    case SCE_GXM_TEXTURE_SWIZZLE4_RGBA:
+    case SCE_GXM_TEXTURE_SWIZZLE4_BGRA:
+    case SCE_GXM_TEXTURE_SWIZZLE4_RGB1:
+    case SCE_GXM_TEXTURE_SWIZZLE4_BGR1:
+        return true;
+    default:
+        return false;
+    }
+}
+
+void convert_u5u5u5u1_to_u1u5u5u5(void *dest, const void *data, const uint32_t width, const uint32_t height) {
+    auto dst = static_cast<uint16_t *>(dest);
+    auto src = static_cast<const uint16_t *>(data);
+
+    // move the 1-bit field from bit 0 to bit 15, the 5-bit fields keep their order
+    for (uint32_t i = 0; i < width * height; ++i)
+        dst[i] = static_cast<uint16_t>((src[i] >> 1) | (src[i] << 15));
+}
+
+void convert_u1u5u5u5_to_u5u5u5u1(void *dest, const void *data, const uint32_t width, const uint32_t height) {
+    auto dst = static_cast<uint16_t *>(dest);
+    auto src = static_cast<const uint16_t *>(data);
+
+    // move the 1-bit field from bit 15 to bit 0, the 5-bit fields keep their order
+    for (uint32_t i = 0; i < width * height; ++i)
+        dst[i] = static_cast<uint16_t>((src[i] << 1) | (src[i] >> 15));
 }
 
 void convert_f32m_to_f32(void *dest, const void *data, const uint32_t width, const uint32_t height) {
