@@ -12,6 +12,8 @@ env:
   BUILD_CONFIG: Release
   QT_VERSION: '6.11.0'
   SCCACHE_GHA_ENABLED: "true"
+  # The VitaAutotests commit to test with. Bump it to pick up new tests.
+  AUTOTESTS_REF: a4608200569a730fcaf1d5cd1e464dc8844b5151
 
 jobs:
   desktop-build:
@@ -212,6 +214,18 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACT_DIR }}
+
+      - name: Check out the autotests
+        uses: actions/checkout@v7
+        with:
+          repository: Vita3K/VitaAutotests
+          ref: ${{ env.AUTOTESTS_REF }}
+          path: autotests
+        if: matrix.platform == 'linux-x64'
+
+      - name: Run the autotests
+        run: bash ./.ci/run-autotests.sh "build/${{ matrix.cmake_preset }}/bin/${{ env.BUILD_CONFIG }}/Vita3K" autotests
+        if: matrix.platform == 'linux-x64'
 
   android-build:
     name: Android
