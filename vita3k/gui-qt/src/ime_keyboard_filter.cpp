@@ -104,12 +104,12 @@ bool ImeKeyboardFilter::eventFilter(QObject *watched, QEvent *event) {
 
                 const std::string utf8 = string_utils::utf16_to_utf8(ime.str);
                 snprintf(dialog.ime.text, sizeof(dialog.ime.text), "%s", utf8.c_str());
-                ime.event_id = SCE_IME_EVENT_PRESS_ENTER;
+                ime.queue_event(SCE_IME_EVENT_PRESS_ENTER);
                 dialog.ime.status = SCE_IME_DIALOG_BUTTON_ENTER;
                 dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
                 dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
             } else {
-                ime.event_id = SCE_IME_EVENT_PRESS_ENTER;
+                ime.queue_submit_events();
             }
             return true;
 
@@ -118,13 +118,13 @@ bool ImeKeyboardFilter::eventFilter(QObject *watched, QEvent *event) {
                 if (dialog.ime.cancelable) {
                     std::lock_guard<std::recursive_mutex> dlock(dialog.mutex);
                     std::lock_guard lock(ime.mutex);
-                    ime.event_id = SCE_IME_EVENT_PRESS_CLOSE;
+                    ime.queue_event(SCE_IME_EVENT_PRESS_CLOSE);
                     dialog.ime.status = SCE_IME_DIALOG_BUTTON_CLOSE;
                     dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
                     dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
                 }
             } else {
-                ime.event_id = SCE_IME_EVENT_PRESS_CLOSE;
+                ime.queue_event(SCE_IME_EVENT_PRESS_CLOSE);
             }
             return true;
 

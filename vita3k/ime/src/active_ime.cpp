@@ -74,7 +74,7 @@ bool submit_current_ime(EmuEnvState &emuenv) {
         finish_ime_dialog(emuenv);
     } else {
         std::lock_guard<std::mutex> lock(emuenv.ime.mutex);
-        emuenv.ime.event_id = SCE_IME_EVENT_PRESS_ENTER;
+        emuenv.ime.queue_submit_events();
     }
 
     return true;
@@ -90,7 +90,7 @@ bool dismiss_current_ime(EmuEnvState &emuenv) {
             return false;
     } else {
         std::lock_guard<std::mutex> lock(emuenv.ime.mutex);
-        emuenv.ime.event_id = SCE_IME_EVENT_PRESS_CLOSE;
+        emuenv.ime.queue_event(SCE_IME_EVENT_PRESS_CLOSE);
     }
 
     return true;
