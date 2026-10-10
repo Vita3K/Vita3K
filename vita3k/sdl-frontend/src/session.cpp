@@ -358,8 +358,11 @@ int run(EmuEnvState &emuenv, app::AppSessionController &session, AppLaunchReques
 
             app::update_runtime_metrics(emuenv, runtime_metrics);
 
-            if (!session.is_running())
+            // Stop requested by overlay/ingame OR crashed
+            if (session.stop_requested() || !session.is_running()) {
                 running = false;
+                session.reset_stop_request();
+            }
 
             if (running)
                 SDL_Delay(16);
