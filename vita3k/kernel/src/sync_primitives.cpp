@@ -567,33 +567,33 @@ RWLock::RWLock(SceUInt32 attr, const char *name)
     : WithUidClass(attr, name)
     , waiters(attr) {}
 
+SceInt32 RWLock::check_create(const char *name, SceUInt32 attr) {
+    if (const SceInt32 error = check_name(name, attr))
+        return error;
+    if (attr & ~(SCE_KERNEL_RW_LOCK_ATTR_RECURSIVE | SCE_KERNEL_RW_LOCK_ATTR_CEILING | SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE))
+        return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    return SCE_KERNEL_OK;
+}
+
 void RWLock::on_delete() {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
 SceInt32 RWLock::try_take(const ThreadStatePtr &thread, bool is_write) {
-    // if it is a read lock, it is always recursive
-    bool is_recursive = !is_write || (attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE);
-
-    // cases where we don't need to wait :
-    if (state == RWLockState::Unlocked // the lock is unlocked
-        || (!is_write && state == RWLockState::ReadLocked) // we want a read lock when the lock is readlocked
-        || (is_recursive && owners.contains(thread))) { // the thread asking has already locked this lock
-
-        auto it = owners.find(thread);
-        if (it != owners.end()) {
-            // increase the count
-            it->second++;
-        } else {
-            owners.emplace(thread, 1);
-        }
-
-        state = is_write ? RWLockState::WriteLocked : RWLockState::ReadLocked;
-
+    // The writer may take the write lock again only if the lock is recursive
+    if (is_write && state == RWLockState::WriteLocked && owners.contains(thread)) {
+        if (!(attr & SCE_KERNEL_RW_LOCK_ATTR_RECURSIVE))
+            return SCE_KERNEL_ERROR_RW_LOCK_RECURSIVE;
+        owners[thread]++;
         return SCE_KERNEL_OK;
     }
-    if (!is_recursive && owners.contains(thread))
-        return SCE_KERNEL_ERROR_RW_LOCK_RECURSIVE;
+
+    // Readers share the lock, but a reader and a writer don't, even in the same thread
+    if (state == RWLockState::Unlocked || (!is_write && state == RWLockState::ReadLocked)) {
+        owners[thread]++;
+        state = is_write ? RWLockState::WriteLocked : RWLockState::ReadLocked;
+        return SCE_KERNEL_OK;
+    }
 
     return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
 }
@@ -637,15 +637,26 @@ SceInt32 RWLock::acquire_write(const ThreadStatePtr &thread, SceUInt32 *timeout,
     return acquire(thread, true, timeout, callbacks);
 }
 
-SceInt32 RWLock::release(const ThreadStatePtr &thread) {
+SceInt32 RWLock::release_read(const ThreadStatePtr &thread) {
+    return release(thread, false);
+}
+
+SceInt32 RWLock::release_write(const ThreadStatePtr &thread) {
+    return release(thread, true);
+}
+
+SceInt32 RWLock::release(const ThreadStatePtr &thread, bool is_write) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID;
 
+    // Only the writer may write unlock, and only a reader may read unlock
+    if (!is_write && state == RWLockState::Unlocked)
+        return SCE_KERNEL_ERROR_RW_LOCK_UNLOCK_UDF;
     auto it = owners.find(thread);
-    if (it == owners.end()) {
-        return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_UNLOCK;
-    }
+    const RWLockState held = is_write ? RWLockState::WriteLocked : RWLockState::ReadLocked;
+    if (state != held || it == owners.end())
+        return is_write ? SCE_KERNEL_ERROR_RW_LOCK_NOT_OWNED : SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_UNLOCK;
 
     // decrease the lock count
     it->second--;

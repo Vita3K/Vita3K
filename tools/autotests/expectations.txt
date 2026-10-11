@@ -29,7 +29,7 @@ mutex                 pass
 mutex_waits           fail     # a mutex isn't unlocked when the thread holding it ends
 open                  fail     # opening an object that isn't openable
 queue_order           fail     # priority changes while waiting, reader/writer lock writer priority, pipe queue order
-rwlock                fail     # reader/writer lock unlock errors and writer priority
+rwlock                fail     # reader/writer lock writer priority
 sema_mutex_edges      pass
 sema_poll_negative    pass
 sema_waits            pass

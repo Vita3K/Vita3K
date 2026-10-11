@@ -182,7 +182,7 @@ EXPORT(int, _sceKernelCreateMutex, const char *name, SceUInt attr, int init_coun
 
 EXPORT(SceUID, _sceKernelCreateRWLock, const char *name, SceUInt32 attr, SceKernelMutexOptParam *opt_param) {
     TRACY_FUNC(_sceKernelCreateRWLock, name, attr, opt_param);
-    if (const SceInt32 error = SyncPrimitive::check_name(name, attr))
+    if (const SceInt32 error = RWLock::check_create(name, attr))
         return RET_ERROR(error);
 
     const auto rwlock = std::make_shared<RWLock>(attr, name);
@@ -1682,7 +1682,7 @@ EXPORT(int, sceKernelUnlockReadRWLock, SceUID lock_id) {
     const RWLockPtr rwlock = emuenv.kernel.objects.find<RWLock>(lock_id);
     if (!rwlock)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
-    return rwlock->release(emuenv.kernel.get_thread(thread_id));
+    return rwlock->release_read(emuenv.kernel.get_thread(thread_id));
 }
 
 EXPORT(int, sceKernelUnlockWriteRWLock, SceUID lock_id) {
@@ -1690,7 +1690,7 @@ EXPORT(int, sceKernelUnlockWriteRWLock, SceUID lock_id) {
     const RWLockPtr rwlock = emuenv.kernel.objects.find<RWLock>(lock_id);
     if (!rwlock)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
-    return rwlock->release(emuenv.kernel.get_thread(thread_id));
+    return rwlock->release_write(emuenv.kernel.get_thread(thread_id));
 }
 
 EXPORT(int, sceKernelUnregisterCallbackFromEvent) {

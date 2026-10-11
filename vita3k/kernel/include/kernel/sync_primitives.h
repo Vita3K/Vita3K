@@ -192,11 +192,15 @@ class RWLock final : public WithUidClass<SyncPrimitive, UidClass::rw_lock> {
 public:
     RWLock(SceUInt32 attr, const char *name);
 
+    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
+    static SceInt32 check_create(const char *name, SceUInt32 attr);
+
     SceInt32 acquire_read(const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks);
     SceInt32 acquire_write(const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks);
     SceInt32 try_acquire_read(const ThreadStatePtr &thread);
     SceInt32 try_acquire_write(const ThreadStatePtr &thread);
-    SceInt32 release(const ThreadStatePtr &thread);
+    SceInt32 release_read(const ThreadStatePtr &thread);
+    SceInt32 release_write(const ThreadStatePtr &thread);
     SceInt32 cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag);
 
     struct WaitEntry {
@@ -212,6 +216,7 @@ private:
     void on_delete() override;
     SceInt32 acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 *timeout, bool callbacks);
     SceInt32 try_acquire(const ThreadStatePtr &thread, bool is_write);
+    SceInt32 release(const ThreadStatePtr &thread, bool is_write);
     // Takes the lock if it is free for this kind of lock, or returns why it can't. The lock must be held.
     SceInt32 try_take(const ThreadStatePtr &thread, bool is_write);
 };
