@@ -35,7 +35,7 @@ sema_poll_negative    pass
 sema_waits            pass
 semaphore             pass
 simple_event          fail     # simple event create bit, result pattern of a failed wait
-thread                fail     # thread exit status errors, starting a running thread, end wait timeout
+thread                fail     # thread exit status errors, starting a running thread, deleting itself
 thread_create_edges   fail     # creating a thread with no entry
 thread_edges          fail     # DelayThreadCB(0), deleting a deleted thread
 thread_info           pass
@@ -52,4 +52,4 @@ uid                   pass
 uid_class             pass
 uid_semantics         fail     # opening gives a new UID
 wait_order            pass
-wait_own_end          timeout  # hangs on a thread waiting for its own end
+wait_own_end          pass

@@ -987,25 +987,35 @@ EXPORT(int, _sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, uint32_t t
     return guest_result(thread->wait_for_signal(true));
 }
 
+// Waits for target to end, writing the time left back to timeout
+static int wait_thread_end(const ThreadStatePtr &waiter, const ThreadStatePtr &target, int *stat, SceUInt *timeout, bool callbacks) {
+    const Deadline deadline = deadline_from(timeout);
+    const WaitResult r = target->wait_for_thread_end(waiter, stat, deadline, callbacks);
+    writeback_timeout(timeout, deadline);
+    return guest_result(r);
+}
+
 EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     TRACY_FUNC(_sceKernelWaitThreadEnd, thid, stat, timeout);
-    auto waiter = emuenv.kernel.get_thread(thread_id);
-    auto target = emuenv.kernel.get_thread(thid);
-    if (!target) {
+    const ThreadStatePtr waiter = emuenv.kernel.get_thread(thread_id);
+    const ThreadStatePtr target = emuenv.kernel.get_thread(thid);
+    if (!target)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-    }
-    return guest_result(target->wait_for_thread_end(waiter, stat, false));
+    if (target == waiter)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
+    return wait_thread_end(waiter, target, stat, timeout, false);
 }
 
 EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout) {
     TRACY_FUNC(_sceKernelWaitThreadEndCB, thid, stat, timeout);
-    auto waiter = emuenv.kernel.get_thread(thread_id);
+    const ThreadStatePtr waiter = emuenv.kernel.get_thread(thread_id);
     waiter->process_callbacks();
-    auto target = emuenv.kernel.get_thread(thid);
-    if (!target) {
+    const ThreadStatePtr target = emuenv.kernel.get_thread(thid);
+    if (!target)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-    }
-    return guest_result(target->wait_for_thread_end(waiter, stat, true));
+    if (target == waiter)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
+    return wait_thread_end(waiter, target, stat, timeout, true);
 }
 
 EXPORT(SceInt32, sceKernelCancelCallback, SceUID callbackId) {

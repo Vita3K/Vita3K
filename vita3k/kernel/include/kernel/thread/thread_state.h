@@ -99,7 +99,7 @@ struct ThreadState {
     // Sends a signal to this thread. Fails if the previous one was not consumed yet.
     SceInt32 send_signal();
     // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
-    [[nodiscard]] WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, bool callbacks);
+    [[nodiscard]] WaitResult wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks);
 
     // Waits on target until woken by wake(), the thread exits or is deleted, or the deadline passes.
     // With callbacks, it also returns after running callbacks that were notified meanwhile.
