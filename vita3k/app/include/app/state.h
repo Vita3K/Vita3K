@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cstdint>
+#include <ctime>
 #include <map>
 #include <mutex>
 #include <string>
@@ -27,9 +28,28 @@ struct EmuEnvState;
 
 namespace app {
 
+enum UserSortState {
+    NOT_SORTED,
+    ASCENDANT,
+    DESCENDANT
+};
+
+enum UserSortType {
+    APP_VER,
+    CATEGORY,
+    COMPAT,
+    LAST_TIME,
+    TITLE,
+    TITLE_ID
+};
+
 struct User {
     std::string id;
     std::string name = "Vita3K";
+    std::string avatar = "default";
+    UserSortType sort_apps_type = TITLE;
+    UserSortState sort_apps_state = ASCENDANT;
+    bool system_music = true;
     std::string theme_id = "default";
     bool use_theme_bg = true;
     std::string start_type = "default";

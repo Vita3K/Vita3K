@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.LaunchedEffect
 import org.vita3k.emulator.data.AppStorage
 import org.vita3k.emulator.ui.navigation.AppNavigation
 import org.vita3k.emulator.ui.theme.Vita3KTheme
@@ -101,6 +102,12 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        if (AppStorage.readGuiBackend(this) == "ImGui") {
+            startActivity(ImGuiActivity.createLaunchIntent(this))
+            finish()
+            return
+        }
+
         prepareFrontendRuntime()
         setTheme(R.style.Theme_Vita3K)
 
@@ -108,6 +115,13 @@ class MainActivity : AppCompatActivity() {
         appsListViewModel.initialize(storagePath)
 
         setContent {
+            LaunchedEffect(appsListViewModel.initialized) {
+                if (appsListViewModel.initialized && NativeLib.getGuiBackend() == "ImGui") {
+                    startActivity(ImGuiActivity.createLaunchIntent(this@MainActivity))
+                    finish()
+                }
+            }
+
             Vita3KTheme {
                 AppNavigation(
                     appsListViewModel = appsListViewModel,

@@ -254,6 +254,9 @@ static void render_loop(renderer::State &state, DisplayState &display, GxmState 
 
         process_batches(state, state.features, mem, config, 500);
 
+        if (state.paused.load(std::memory_order_relaxed) && !config.current_config.v_sync)
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
+
         if (state.render_abort.load(std::memory_order_relaxed))
             break;
 
@@ -272,7 +275,10 @@ static void render_loop(renderer::State &state, DisplayState &display, GxmState 
         }
 
         state.render_frame(display, gxm, mem);
+        if (state.frontend_frame_callback)
+            state.frontend_frame_callback();
         state.swap_window();
+
         state.async_flip_requested.store(false, std::memory_order_relaxed);
 
 #ifdef TRACY_ENABLE

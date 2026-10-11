@@ -905,8 +905,8 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
     uint32_t delta_col_samples = delta_samples % stride_samples;
     uint32_t delta_row_samples = delta_samples / stride_samples;
 
-    vk::ImageView ds_attachment = reinterpret_cast<VKContext *>(state.context)->current_ds_view;
-    const bool reading_ds_attachment = cached_info.texture.view == ds_attachment;
+    vk::Image ds_attachment = reinterpret_cast<VKContext *>(state.context)->current_ds_image;
+    const bool reading_ds_attachment = cached_info.texture.image == ds_attachment;
     const bool same_dimension = memory_width == cached_info.memory_width
         && memory_height == cached_info.memory_height
         && delta_col_samples == 0
@@ -1044,7 +1044,7 @@ std::optional<TextureLookupResult> VKSurfaceCache::retrieve_depth_stencil_as_tex
 
 static Framebuffer empty_framebuffer{};
 Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
-    vk::RenderPass standard_render_pass, vk::RenderPass interlock_render_pass, vk::ImageView &color_view, vk::ImageView &ds_view) {
+    vk::RenderPass standard_render_pass, vk::RenderPass interlock_render_pass, vk::ImageView &color_view, vk::ImageView &ds_view, vk::Image &ds_image) {
     if (!target) {
         LOG_ERROR("Unable to retrieve framebuffer with no active render target!");
         return empty_framebuffer;
@@ -1076,6 +1076,7 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
 
     color_view = color_result.view;
     ds_view = ds_result.view;
+    ds_image = ds_result.base_image->image;
 
     std::pair<vk::ImageView, vk::ImageView> key = { color_view, ds_view };
     auto it = framebuffer_array.find(key);
@@ -1164,7 +1165,10 @@ bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, Ca
         // submit this command
         vk::SubmitInfo submit_info{};
         submit_info.setCommandBuffers(surface_cmd);
-        state.general_queue.submit(submit_info, fence);
+        {
+            std::lock_guard<std::mutex> lock(state.queue_mutex);
+            state.general_queue.submit(submit_info, fence);
+        }
 
         // now we need to wait for the fence, then destroy it along with the command buffer
         // to prevent memory leaks
@@ -1493,7 +1497,10 @@ std::vector<uint32_t> VKSurfaceCache::dump_frame(Ptr<const void> address, uint32
     cmd_buffer.copyImageToBuffer(info.texture.image, vk::ImageLayout::eGeneral, temp_buff.buffer, image_copy);
 
     // this will cause a waitIdle, not an issue
-    vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
+    {
+        std::lock_guard<std::mutex> lock(state.queue_mutex);
+        vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
+    }
 
     memcpy(frame.data(), temp_buff.mapped_data, frame.size() * 4);
 

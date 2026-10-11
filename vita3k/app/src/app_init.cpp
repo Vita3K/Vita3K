@@ -48,11 +48,13 @@
 #include <overlay/trophy_notification.h>
 #include <packages/sfo.h>
 #include <regmgr/state.h>
+#include <renderer/frame_host.h>
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
 #include <touch/state.h>
 
+#include <interface.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -65,6 +67,8 @@
 
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_video.h>
+#include <imgui.h>
 
 #ifdef __ANDROID__
 #include <SDL3/SDL_system.h>
@@ -76,6 +80,222 @@
 
 #include <algorithm>
 #include <fstream>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <cstdio>
+#include <windows.h>
+#endif
+
+namespace app {
+void update_viewport(EmuEnvState &state) {
+    int w = 0;
+    int h = 0;
+
+    SDL_GetWindowSize(state.window.get(), &w, &h);
+    state.window_size.x = w;
+    state.window_size.y = h;
+
+    SDL_GetWindowSizeInPixels(state.window.get(), &w, &h);
+    state.drawable_size.x = w;
+    state.drawable_size.y = h;
+
+    state.system_dpi_scale = SDL_GetWindowPixelDensity(state.window.get());
+    state.manual_dpi_scale = SDL_GetDisplayContentScale(SDL_GetDisplayForWindow(state.window.get()));
+    ImGui::GetIO().FontGlobalScale = 1.f * state.manual_dpi_scale;
+
+    if (h > 0) {
+        const float window_aspect = static_cast<float>(w) / h;
+        const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+        const bool fullscreen_hd_res_pixel_perfect_en = state.cfg.fullscreen_hd_res_pixel_perfect && state.display.fullscreen && !(w % DEFAULT_RES_WIDTH) && !(h % (DEFAULT_RES_HEIGHT - 4));
+        if (state.cfg.stretch_the_display_area && !fullscreen_hd_res_pixel_perfect_en) {
+            // Match the aspect ratio to the screen size.
+            state.logical_viewport_size.x = static_cast<SceFloat>(state.window_size.x);
+            state.logical_viewport_size.y = static_cast<SceFloat>(state.window_size.y);
+            state.logical_viewport_pos.x = 0;
+            state.logical_viewport_pos.y = 0;
+
+            state.drawable_viewport_size.x = static_cast<SceFloat>(state.drawable_size.x);
+            state.drawable_viewport_size.y = static_cast<SceFloat>(state.drawable_size.y);
+            state.drawable_viewport_pos.x = 0;
+            state.drawable_viewport_pos.y = 0;
+        } else if ((window_aspect > vita_aspect) && !fullscreen_hd_res_pixel_perfect_en) {
+            // Window is wide. Pin top and bottom.
+            state.logical_viewport_size.x = state.window_size.y * vita_aspect;
+            state.logical_viewport_size.y = static_cast<SceFloat>(state.window_size.y);
+            state.logical_viewport_pos.x = (state.window_size.x - state.logical_viewport_size.x) / 2;
+            state.logical_viewport_pos.y = 0;
+
+            state.drawable_viewport_size.x = state.drawable_size.y * vita_aspect;
+            state.drawable_viewport_size.y = static_cast<SceFloat>(state.drawable_size.y);
+            state.drawable_viewport_pos.x = (state.drawable_size.x - state.drawable_viewport_size.x) / 2;
+            state.drawable_viewport_pos.y = 0;
+        } else {
+            // Window is tall. Pin left and right.
+            state.logical_viewport_size.x = static_cast<SceFloat>(state.window_size.x);
+            state.logical_viewport_size.y = state.window_size.x / vita_aspect;
+            state.logical_viewport_pos.x = 0;
+            state.logical_viewport_pos.y = (state.window_size.y - state.logical_viewport_size.y) / 2;
+
+            state.drawable_viewport_size.x = static_cast<SceFloat>(state.drawable_size.x);
+            state.drawable_viewport_size.y = state.drawable_size.x / vita_aspect;
+            state.drawable_viewport_pos.x = 0;
+            state.drawable_viewport_pos.y = (state.drawable_size.y - state.drawable_viewport_size.y) / 2;
+        }
+
+        state.gui_scale.x = state.logical_viewport_size.x / static_cast<float>(DEFAULT_RES_WIDTH) / state.manual_dpi_scale;
+        state.gui_scale.y = state.logical_viewport_size.y / static_cast<float>(DEFAULT_RES_HEIGHT) / state.manual_dpi_scale;
+    } else {
+        state.logical_viewport_pos.x = 0;
+        state.logical_viewport_pos.y = 0;
+        state.logical_viewport_size.x = 0;
+        state.logical_viewport_size.y = 0;
+
+        state.drawable_viewport_pos.x = 0;
+        state.drawable_viewport_pos.y = 0;
+        state.drawable_viewport_size.x = 0;
+        state.drawable_viewport_size.y = 0;
+    }
+
+    // Update nearest font level
+    float scale = state.gui_scale.y * state.system_dpi_scale * state.manual_dpi_scale;
+    state.current_font_level = 0;
+    for (int i = 0; i <= state.max_font_level; i++) {
+        if (i == state.max_font_level || scale <= FontScaleCandidates[i]) {
+            state.current_font_level = i;
+            break;
+        }
+        if (FontScaleCandidates[i] / scale > scale / FontScaleCandidates[i + 1]) {
+            state.current_font_level = i;
+            break;
+        }
+    }
+}
+
+#if defined(_WIN32) && !defined(__ANDROID__)
+void init_console() {
+    if (!AttachConsole(ATTACH_PARENT_PROCESS))
+        AllocConsole();
+
+    FILE *stream = nullptr;
+    freopen_s(&stream, "CONIN$", "r", stdin);
+    freopen_s(&stream, "CONOUT$", "w", stdout);
+    freopen_s(&stream, "CONOUT$", "w", stderr);
+}
+#endif
+
+class SdlFrameHost final : public renderer::FrameHost {
+public:
+    explicit SdlFrameHost(SDL_Window *window)
+        : window(window) {
+    }
+
+    ~SdlFrameHost() override {
+        destroy_render_context();
+    }
+
+    bool create_gl_context(bool vsync) {
+        constexpr int minor_versions[] = { 6, 5, 4 };
+        for (const int minor : minor_versions) {
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+            SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+            SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+            gl_context = SDL_GL_CreateContext(window);
+            if (gl_context) {
+                SDL_GL_SetSwapInterval(vsync ? 1 : 0);
+                return true;
+            }
+        }
+
+        LOG_ERROR("Failed to create an OpenGL context: {}", SDL_GetError());
+        return false;
+    }
+
+    renderer::DisplayHandle handle() const override {
+        const SDL_PropertiesID properties = SDL_GetWindowProperties(window);
+#ifdef _WIN32
+        return renderer::Win32DisplayHandle{ SDL_GetPointerProperty(properties, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr) };
+#elif defined(__APPLE__)
+        return renderer::MacOSDisplayHandle{ SDL_GetPointerProperty(properties, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr) };
+#else
+        if (void *display = SDL_GetPointerProperty(properties, SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr)) {
+            return renderer::WaylandDisplayHandle{
+                display,
+                SDL_GetPointerProperty(properties, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr)
+            };
+        }
+        if (void *display = SDL_GetPointerProperty(properties, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr)) {
+            return renderer::X11DisplayHandle{
+                display,
+                static_cast<std::uintptr_t>(SDL_GetNumberProperty(properties, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0)),
+                nullptr
+            };
+        }
+        return {};
+#endif
+    }
+
+    int drawable_width() const override {
+        int width = 0;
+        int height = 0;
+        SDL_GetWindowSizeInPixels(window, &width, &height);
+        return width;
+    }
+
+    int drawable_height() const override {
+        int width = 0;
+        int height = 0;
+        SDL_GetWindowSizeInPixels(window, &width, &height);
+        return height;
+    }
+
+    std::vector<std::string> font_dirs() const override {
+        return {};
+    }
+
+    void *get_proc_address(const char *name) const override {
+        return reinterpret_cast<void *>(SDL_GL_GetProcAddress(name));
+    }
+
+    bool make_current() override {
+        return gl_context && SDL_GL_MakeCurrent(window, gl_context);
+    }
+
+    void done_current() override {
+        if (gl_context)
+            SDL_GL_MakeCurrent(window, nullptr);
+    }
+
+    void prepare_for_render_thread() override {
+        done_current();
+    }
+
+    void swap_buffers() override {
+        if (gl_context)
+            SDL_GL_SwapWindow(window);
+    }
+
+    bool set_vsync(bool enabled) override {
+        return !gl_context || SDL_GL_SetSwapInterval(enabled ? 1 : 0);
+    }
+
+    void destroy_render_context() override {
+        if (gl_context) {
+            SDL_GL_DestroyContext(gl_context);
+            gl_context = nullptr;
+        }
+    }
+
+private:
+    SDL_Window *window = nullptr;
+    SDL_GLContext gl_context = nullptr;
+};
+
+} // namespace app
 
 namespace app {
 
@@ -441,6 +661,66 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 #endif
     LOG_INFO("VitaFS path: {}", state.vita_fs_path);
 
+#if !defined(__ANDROID__)
+#ifdef HAS_QT
+    if (!state.cfg.console && state.cfg.frontend != Frontend::sdl
+        && (state.cfg.frontend == Frontend::imgui || state.cfg.gui_backend != "Qt")) {
+#else
+    if (!state.cfg.console && state.cfg.frontend != Frontend::sdl) {
+#endif
+        SDL_WindowFlags window_flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+        switch (state.backend_renderer) {
+        case renderer::Backend::OpenGL:
+            window_flags |= SDL_WINDOW_OPENGL;
+            break;
+        case renderer::Backend::Vulkan:
+            window_flags |= SDL_WINDOW_VULKAN;
+            break;
+        default:
+            LOG_ERROR("Unimplemented backend renderer: {}.", state.cfg.backend_renderer);
+            return false;
+        }
+
+        if (state.cfg.fullscreen) {
+            state.display.fullscreen = true;
+            window_flags |= SDL_WINDOW_FULLSCREEN;
+        }
+
+        state.manual_dpi_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+        state.window = WindowPtr(SDL_CreateWindow(window_title,
+                                     static_cast<int>(DEFAULT_RES_WIDTH * state.manual_dpi_scale),
+                                     static_cast<int>(DEFAULT_RES_HEIGHT * state.manual_dpi_scale),
+                                     window_flags),
+            SDL_DestroyWindow);
+        if (!state.window) {
+            LOG_ERROR("SDL failed to create window: {}", SDL_GetError());
+            return false;
+        }
+
+        state.manual_dpi_scale = SDL_GetDisplayContentScale(SDL_GetDisplayForWindow(state.window.get()));
+        auto frame_host = std::make_unique<SdlFrameHost>(state.window.get());
+        if (state.backend_renderer == renderer::Backend::OpenGL
+            && !frame_host->create_gl_context(state.cfg.current_config.v_sync)) {
+            return false;
+        }
+
+        state.frame_host = std::move(frame_host);
+        if (!renderer::init(*state.frame_host, state.renderer, state.backend_renderer, state.cfg, root_paths)) {
+            LOG_ERROR("Failed to initialize the renderer for the SDL frontend.");
+            return false;
+        }
+
+        const int width = state.frame_host->drawable_width();
+        const int height = state.frame_host->drawable_height();
+        state.display.viewport_drawable_w = width;
+        state.display.viewport_drawable_h = height;
+        state.display.viewport_w = static_cast<float>(width);
+        state.display.viewport_h = static_cast<float>(height);
+        state.drawable_viewport_size = { static_cast<float>(width), static_cast<float>(height) };
+        state.logical_viewport_size = state.drawable_viewport_size;
+    }
+#endif
+
     if (!init(state.io, state.cache_path, state.log_path, state.vita_fs_path, state.cfg.console)) {
         LOG_ERROR("Failed to initialize file system for the emulator!");
         return false;
@@ -457,7 +737,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     return true;
 }
 
-void shutdown_app_runtime(EmuEnvState &state) {
+void shutdown_app_runtime(EmuEnvState &state, const bool preserve_renderer) {
     state.audio.stop_all_ports();
 
     gxm::shutdown(state);
@@ -473,30 +753,24 @@ void shutdown_app_runtime(EmuEnvState &state) {
 
     state.renderer->preclose_action();
     renderer::stop_render_thread(*state.renderer);
+    state.renderer->overlay_manager = nullptr;
     gxm::destroy_all_contexts(state, true);
     gxm::destroy_all_render_targets(state, true);
     state.gxm.deinit();
     state.overlay_manager.reset();
 
     state.display.deinit();
-
     state.netctl.deinit();
-
     ngs::deinit(state.ngs, state.mem);
 
     // trophy (maybe namespace this?)
     deinit(state.np);
 
     state.http.deinit();
-
     state.net.deinit();
-
     io_deinit(state.io);
-
     state.camera.deinit();
-
     state.common_dialog.deinit();
-
     state.ime.deinit();
 
     state.touch.reset_runtime();
@@ -516,8 +790,12 @@ void shutdown_app_runtime(EmuEnvState &state) {
 
     state.kernel.deinit(state.mem);
 
-    state.renderer->cleanup();
-    state.renderer.reset();
+    if (preserve_renderer) {
+        state.renderer->cleanup(true);
+    } else {
+        state.renderer->cleanup();
+        state.renderer.reset();
+    }
 
     deinit_mem(state.mem);
 }

@@ -23,9 +23,25 @@
 #include <span>
 #include <string>
 
+struct EmuEnvState;
+
 namespace compat {
+
+struct UpdateMessageTexts {
+    std::string error_title;
+    std::string updated_title;
+    std::string check_failed;
+    std::string download_failed;
+    std::string load_failed;
+    std::string new_app_listed;
+    std::string app_listed;
+    std::string download_app_listed;
+};
+
 std::optional<UpdateInfo> parse_ver_resp(const CompatState &state, const std::string &body);
 bool load_from_disk(CompatState &state, const std::filesystem::path &cache_path);
+bool load_app_compat_db(CompatState &state, EmuEnvState &emuenv, const UpdateMessageTexts &message_texts);
+bool update_app_compat_db(CompatState &state, EmuEnvState &emuenv, const UpdateMessageTexts &message_texts);
 CompatibilityState get_app_compat(const CompatState &state, const std::string &title_id);
 bool install_db(CompatState &state, const std::filesystem::path &cache_path,
     std::span<const uint8_t> zip_data, const std::string &new_version);

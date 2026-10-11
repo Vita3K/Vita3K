@@ -1474,6 +1474,20 @@ private fun InterfaceSettingsSection(
         onShowHelp = onShowHelp
     ) {
         SettingsSubsectionTitle(title = stringResource(R.string.settings_interface_ui_options))
+        val frontendTitle = stringResource(R.string.settings_interface_frontend)
+        val frontendOptions = listOf("Compose", "ImGui")
+        SettingsChoiceField(
+            title = frontendTitle,
+            options = frontendOptions,
+            selectedIndex = frontendOptions.indexOf(cfg.guiBackend).coerceAtLeast(0),
+            onSelect = { index -> onUpdate { guiBackend = frontendOptions[index] } },
+            help = SettingsHelpEntry(
+                title = frontendTitle,
+                body = stringResource(R.string.settings_interface_frontend_desc),
+                scope = SettingsScope.Global
+            ),
+            onShowHelp = onShowHelp
+        )
         val uiLanguageTitle = stringResource(R.string.settings_emulator_ui_language)
         val uiLanguageOptions = UiLanguages.options
         val uiLanguageIndex = uiLanguageOptions.indexOfFirst { it.tag == cfg.userLang }.let { index ->

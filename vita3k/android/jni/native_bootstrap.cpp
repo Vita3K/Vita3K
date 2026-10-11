@@ -206,6 +206,13 @@ Java_org_vita3k_emulator_NativeLib_isInitialized(JNIEnv *, jclass) {
     return get_emuenv() ? JNI_TRUE : JNI_FALSE;
 }
 
+JNIEXPORT jstring JNICALL
+Java_org_vita3k_emulator_NativeLib_getGuiBackend(JNIEnv *env, jclass) {
+    const auto *emuenv = get_emuenv();
+    const auto &backend = emuenv ? emuenv->cfg.gui_backend : std::string("Compose");
+    return env->NewStringUTF(backend.c_str());
+}
+
 JNIEXPORT jboolean JNICALL
 Java_org_vita3k_emulator_NativeLib_isOfficialBuild(JNIEnv *, jclass) {
     return is_official_build ? JNI_TRUE : JNI_FALSE;

@@ -20,6 +20,7 @@ object NativeLib {
     external fun prepareFrontend(): Boolean
     external fun init(storagePath: String): Boolean
     external fun isInitialized(): Boolean
+    external fun getGuiBackend(): String
     external fun isOfficialBuild(): Boolean
 
     // --- Apps list ---

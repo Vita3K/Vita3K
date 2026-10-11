@@ -118,13 +118,14 @@ struct State {
     uint32_t shaders_count_compiled = 0;
     uint32_t programs_count_pre_compiled = 0;
 
-    bool should_display;
+    std::atomic<bool> should_display{ false };
 
     std::atomic<bool> async_flip_requested{ false };
     std::atomic<int> pending_vsync{ -1 };
 
     std::unique_ptr<std::thread> render_thread;
     std::atomic<bool> render_abort{ false };
+    std::function<void()> frontend_frame_callback;
 
     std::vector<ShadersHash> precompile_queue;
     bool precompile_requested = false;
@@ -162,7 +163,7 @@ struct State {
     void init_overlay_font_dirs();
 
     virtual bool init() = 0;
-    virtual void cleanup() {};
+    virtual void cleanup(bool preserve_frontend = false) {};
     virtual void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) = 0;
 
     virtual TextureCache *get_texture_cache() = 0;

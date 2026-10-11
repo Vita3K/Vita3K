@@ -17,12 +17,14 @@
 
 #include <app/functions.h>
 
+#include <audio/state.h>
 #include <camera/camera.h>
 #include <config/functions.h>
 #include <config/state.h>
 #include <emuenv/state.h>
 #include <io/functions.h>
 #include <io/state.h>
+#include <kernel/state.h>
 #include <packages/license.h>
 #include <packages/sfo.h>
 #include <renderer/functions.h>
@@ -34,6 +36,11 @@
 
 #include <SDL3/SDL_camera.h>
 #include <SDL3/SDL_gamepad.h>
+#ifdef __ANDROID__
+#include <SDL3/SDL_system.h>
+#include <host/dialog/filesystem.h>
+#include <jni.h>
+#endif
 
 #include <algorithm>
 
@@ -371,5 +378,124 @@ void request_in_process_launch(EmuEnvState &emuenv, AppLaunchRequest request) {
     if (emuenv.renderer)
         emuenv.renderer->should_display = true;
 }
+
+#ifdef __ANDROID__
+namespace {
+
+JNIEnv *get_emulator_activity(jobject &activity, jclass &activity_class) {
+    auto *env = reinterpret_cast<JNIEnv *>(SDL_GetAndroidJNIEnv());
+    if (!env)
+        return nullptr;
+
+    activity = reinterpret_cast<jobject>(SDL_GetAndroidActivity());
+    if (!activity)
+        return nullptr;
+
+    activity_class = env->GetObjectClass(activity);
+    if (!activity_class) {
+        env->DeleteLocalRef(activity);
+        activity = nullptr;
+        return nullptr;
+    }
+
+    return env;
+}
+
+void release_emulator_activity(JNIEnv *env, jobject activity, jclass activity_class) {
+    if (activity_class)
+        env->DeleteLocalRef(activity_class);
+    if (activity)
+        env->DeleteLocalRef(activity);
+}
+
+} // namespace
+
+std::vector<std::string> get_custom_drivers() {
+    std::vector<std::string> drivers;
+    jobject activity = nullptr;
+    jclass activity_class = nullptr;
+    JNIEnv *env = get_emulator_activity(activity, activity_class);
+    if (!env)
+        return drivers;
+
+    const jmethodID method = env->GetMethodID(activity_class, "getCustomDriversForGui", "()[Ljava/lang/String;");
+    if (method) {
+        auto *names = reinterpret_cast<jobjectArray>(env->CallObjectMethod(activity, method));
+        if (names && !env->ExceptionCheck()) {
+            const jsize count = env->GetArrayLength(names);
+            drivers.reserve(static_cast<size_t>(count));
+            for (jsize index = 0; index < count; ++index) {
+                auto *name = reinterpret_cast<jstring>(env->GetObjectArrayElement(names, index));
+                if (!name)
+                    continue;
+                const char *value = env->GetStringUTFChars(name, nullptr);
+                if (value) {
+                    drivers.emplace_back(value);
+                    env->ReleaseStringUTFChars(name, value);
+                }
+                env->DeleteLocalRef(name);
+            }
+            env->DeleteLocalRef(names);
+        }
+    }
+    if (env->ExceptionCheck())
+        env->ExceptionClear();
+    release_emulator_activity(env, activity, activity_class);
+    return drivers;
+}
+
+void add_custom_driver(EmuEnvState &) {
+    fs::path archive_path;
+    if (host::dialog::filesystem::open_file(archive_path, { { "Custom driver archive", { "zip" } } }) != host::dialog::filesystem::Result::SUCCESS)
+        return;
+
+    jobject activity = nullptr;
+    jclass activity_class = nullptr;
+    JNIEnv *env = get_emulator_activity(activity, activity_class);
+    if (!env)
+        return;
+
+    const jmethodID method = env->GetMethodID(activity_class, "installCustomDriverForGui", "(Ljava/lang/String;)Ljava/lang/String;");
+    if (method) {
+        const std::string archive_path_utf8 = fs_utils::path_to_utf8(archive_path);
+        jstring path = env->NewStringUTF(archive_path_utf8.c_str());
+        auto *installed_name = reinterpret_cast<jstring>(env->CallObjectMethod(activity, method, path));
+        if (installed_name && !env->ExceptionCheck()) {
+            const char *name = env->GetStringUTFChars(installed_name, nullptr);
+            if (name && *name)
+                LOG_INFO("Successfully installed custom driver {}", name);
+            if (name)
+                env->ReleaseStringUTFChars(installed_name, name);
+            env->DeleteLocalRef(installed_name);
+        }
+        if (path)
+            env->DeleteLocalRef(path);
+    }
+    if (env->ExceptionCheck())
+        env->ExceptionClear();
+    release_emulator_activity(env, activity, activity_class);
+}
+
+void remove_custom_driver(EmuEnvState &, const std::string &driver) {
+    jobject activity = nullptr;
+    jclass activity_class = nullptr;
+    JNIEnv *env = get_emulator_activity(activity, activity_class);
+    if (!env)
+        return;
+
+    const jmethodID method = env->GetMethodID(activity_class, "removeCustomDriverForGui", "(Ljava/lang/String;)Z");
+    if (method) {
+        jstring name = env->NewStringUTF(driver.c_str());
+        const jboolean removed = env->CallBooleanMethod(activity, method, name);
+        if (removed)
+            LOG_INFO("Removed custom driver {}", driver);
+        if (name)
+            env->DeleteLocalRef(name);
+    }
+    if (env->ExceptionCheck())
+        env->ExceptionClear();
+    release_emulator_activity(env, activity, activity_class);
+}
+#endif
 
 } // namespace app

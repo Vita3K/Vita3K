@@ -2496,6 +2496,23 @@ QGroupBox[flat=&quot;true&quot;]::title {
                    <item>
                     <widget class="QComboBox" name="ui_language_box"/>
                    </item>
+                    <item>
+                     <widget class="QLabel" name="gui_backend_label">
+                      <property name="toolTip">
+                       <string>The selection takes effect after restarting Vita3K.</string>
+                      </property>
+                      <property name="text">
+                       <string>GUI Frontend</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QComboBox" name="gui_backend_box">
+                      <property name="toolTip">
+                       <string>The selection takes effect after restarting Vita3K.</string>
+                      </property>
+                     </widget>
+                    </item>
                    <item>
                     <widget class="QCheckBox" name="show_welcome">
                      <property name="text">

@@ -106,8 +106,7 @@ Java_org_vita3k_emulator_NativeLib_performAppAction(JNIEnv *env, jclass, jstring
         const auto app = find_app_by_title_id(title_id);
         if (!app.has_value())
             return JNI_FALSE;
-        app::delete_app(*emuenv, app->path);
-        return JNI_TRUE;
+        return app::delete_app(*emuenv, app->path) ? JNI_TRUE : JNI_FALSE;
     }
     case ACTION_DELETE_SAVE_DATA: {
         const auto app = find_app_by_title_id(title_id);

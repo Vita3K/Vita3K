@@ -21,6 +21,8 @@
 #include "util/log.h"
 #include "vkutil/vkutil.h"
 
+#include <mutex>
+
 #include <cstdint>
 #include <exception>
 
@@ -165,12 +167,19 @@ bool ScreenRenderer::setup() {
 
     for (const auto &format : surface_formats) {
         // actually we don't care that much because we will just be copying what the game rendered
-        // rgba8 or bgra8 should be the best as it matches the format output from the vita (we don't care about the swizzle)
-        if ((format.format == vk::Format::eB8G8R8A8Unorm || format.format == vk::Format::eR8G8B8A8Unorm)
+        // Prefer RGBA8 because the FSR storage-image shader has an rgba8 format qualifier.
+        if (format.format == vk::Format::eR8G8B8A8Unorm
             && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
             surface_format = format;
             surface_format_found = true;
             break;
+        }
+
+        // Keep BGRA8 as a fallback for devices without an RGBA8 surface format.
+        if (!surface_format_found && format.format == vk::Format::eB8G8R8A8Unorm
+            && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+            surface_format = format;
+            surface_format_found = true;
         }
     }
     if (!surface_format_found)
@@ -535,7 +544,6 @@ void ScreenRenderer::swap_window() {
     submit_info.setWaitDstStageMask(dst_masks);
     submit_info.setSignalSemaphores(image_ready_semaphores[current_frame]);
     submit_info.setCommandBuffers(current_cmd_buffer);
-    state.general_queue.submit(submit_info, fences[swapchain_image_idx]);
 
     // then present the surface
     vk::PresentInfoKHR present_info{
@@ -546,7 +554,12 @@ void ScreenRenderer::swap_window() {
         .pImageIndices = &swapchain_image_idx,
     };
 
-    auto result = state.general_queue.presentKHR(&present_info);
+    vk::Result result;
+    {
+        std::lock_guard<std::mutex> lock(state.queue_mutex);
+        state.general_queue.submit(submit_info, fences[swapchain_image_idx]);
+        result = state.general_queue.presentKHR(&present_info);
+    }
     if (result == vk::Result::eSuboptimalKHR) {
         need_rebuild = !surface_matches_window_size();
     } else if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR) {
@@ -568,9 +581,14 @@ void ScreenRenderer::set_filter(const std::string_view &filter) {
         return;
 
     this->filter.reset();
-    if (filter == "FSR")
-        this->filter = std::make_unique<FSRScreenFilter>(*this);
-    else if (filter == "FXAA")
+    if (filter == "FSR") {
+        if (surface_format.format != vk::Format::eR8G8B8A8Unorm) {
+            // The FSR shaders write to an rgba8 storage image, which must match the swapchain format.
+            LOG_WARN("FSR requires an RGBA8 swapchain format, falling back to bilinear filtering.");
+            this->filter = std::make_unique<BilinearScreenFilter>(*this);
+        } else
+            this->filter = std::make_unique<FSRScreenFilter>(*this);
+    } else if (filter == "FXAA")
         this->filter = std::make_unique<FXAAScreenFilter>(*this);
     else if (filter == "Bicubic")
         this->filter = std::make_unique<BicubicScreenFilter>(*this);

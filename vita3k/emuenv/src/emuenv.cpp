@@ -42,6 +42,7 @@
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <touch/state.h>
+#include <v3kn/state.h>
 
 #include <gdbstub/state.h>
 
@@ -91,6 +92,8 @@ EmuEnvState::EmuEnvState()
     , license(*_license)
     , _regmgr(new RegMgrState)
     , regmgr(*_regmgr)
+    , _v3kn(new V3KNState)
+    , v3kn(*_v3kn)
     , _sfo_handle(new SfoFile)
     , sfo_handle(*_sfo_handle)
     , _gdb(new GDBState)

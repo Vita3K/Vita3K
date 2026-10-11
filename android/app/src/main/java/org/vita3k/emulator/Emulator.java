@@ -115,6 +115,10 @@ public class Emulator extends SDLActivity
         return intent;
     }
 
+    protected boolean isImGuiFrontend() {
+        return false;
+    }
+
     public InputOverlay getmOverlay() {
         return mSurface != null ? mSurface.getmOverlay() : null;
     }
@@ -161,7 +165,8 @@ public class Emulator extends SDLActivity
                     ((ViewGroup) mSurface.getParent()).addView(overlay);
                 }
                 refreshControllerOverlayScope();
-                refreshUiState(true);
+                if (!isImGuiFrontend())
+                    refreshUiState(true);
             }
         });
         return mSurface;
@@ -170,6 +175,17 @@ public class Emulator extends SDLActivity
     @Override
     protected String[] getArguments() {
         Intent intent = getIntent();
+
+        if (intent.getBooleanExtra("imgui_frontend", false)) {
+            String[] restartArgs = intent.getStringArrayExtra(APP_RESTART_PARAMETERS);
+            if (restartArgs == null || restartArgs.length == 0)
+                return new String[]{"--imgui"};
+
+            String[] args = new String[restartArgs.length + 1];
+            args[0] = "--imgui";
+            System.arraycopy(restartArgs, 0, args, 1, restartArgs.length);
+            return args;
+        }
 
         // Check for restart parameters first (used by in-process relaunches)
         String[] args = intent.getStringArrayExtra(APP_RESTART_PARAMETERS);
@@ -208,12 +224,16 @@ public class Emulator extends SDLActivity
         savedStateRegistryController.performAttach();
         savedStateRegistryController.performRestore(savedInstanceState);
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE);
-        prepareComposeHostTree();
+        if (!isImGuiFrontend())
+            prepareComposeHostTree();
         setWindowStyle(true);
         applyImmersiveMode();
         refreshNativeDisplayRotation();
 
         currentGameId = resolveCurrentTitleId(getIntent());
+        if (isImGuiFrontend())
+            return;
+
         String gameTitle = getIntent().getStringExtra(EXTRA_GAME_TITLE);
         sessionViewModel = new EmulationSessionViewModel(getApplication());
         sessionViewModel.initialize(currentGameId, gameTitle);
@@ -234,8 +254,10 @@ public class Emulator extends SDLActivity
     protected void onResume() {
         super.onResume();
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME);
-        refreshUiState(false);
         refreshNativeDisplayRotation();
+        if (isImGuiFrontend())
+            return;
+        refreshUiState(false);
         updateControllerConnectionState();
         resumeFromBackgroundIfNeeded();
     }
@@ -254,7 +276,8 @@ public class Emulator extends SDLActivity
 
     @Override
     protected void onPause() {
-        suspendForBackgroundIfNeeded();
+        if (!isImGuiFrontend())
+            suspendForBackgroundIfNeeded();
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE);
         super.onPause();
     }
@@ -328,6 +351,31 @@ public class Emulator extends SDLActivity
 
     @Keep
     public void restartApp(String app_path, String exec_path, String exec_args){
+        if (isImGuiFrontend()) {
+            java.util.ArrayList<String> args = new java.util.ArrayList<>();
+            args.add("-r");
+            args.add(app_path);
+            if (exec_path != null && !exec_path.isEmpty()) {
+                args.add("--self");
+                args.add(exec_path);
+            }
+            if (exec_args != null && !exec_args.isEmpty()) {
+                args.add("--app-args");
+                args.add(exec_args);
+            }
+
+            Intent intent = ImGuiActivity.createLaunchIntent(this)
+                    .putExtra(APP_RESTART_PARAMETERS, args.toArray(new String[0]))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            android.app.PendingIntent restart = android.app.PendingIntent.getActivity(
+                    this, 0, intent,
+                    android.app.PendingIntent.FLAG_CANCEL_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+            android.app.AlarmManager alarm = (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            alarm.set(android.app.AlarmManager.ELAPSED_REALTIME,
+                    android.os.SystemClock.elapsedRealtime() + 300, restart);
+            return;
+        }
+
         final String[] guestArgs = exec_args != null && !exec_args.isEmpty()
                 ? new String[]{exec_args}
                 : new String[0];
@@ -444,9 +492,8 @@ public class Emulator extends SDLActivity
 
     public void refreshControllerOverlayScope() {
         InputOverlay overlay = getmOverlay();
-        if (overlay != null) {
+        if (overlay != null)
             overlay.refreshOverlayScope(currentGameId);
-        }
     }
 
     public void requestNativeQuit() {
@@ -679,6 +726,21 @@ public class Emulator extends SDLActivity
                         StorageAccess.createFilePickerIntent(new String[]{"*/*"}),
                         "Choose a file"),
                 FILE_DIALOG_CODE);
+    }
+
+    @Keep
+    public String[] getCustomDriversForGui() {
+        return NativeLib.INSTANCE.getInstalledCustomDrivers();
+    }
+
+    @Keep
+    public String installCustomDriverForGui(String path) {
+        return NativeLib.INSTANCE.installCustomDriver(path);
+    }
+
+    @Keep
+    public boolean removeCustomDriverForGui(String driverName) {
+        return NativeLib.INSTANCE.removeCustomDriver(driverName);
     }
 
     @Keep
@@ -1247,9 +1309,8 @@ public class Emulator extends SDLActivity
     }
 
     private void updateControllerConnectionState() {
-        if (sessionViewModel != null) {
+        if (sessionViewModel != null)
             sessionViewModel.setControllerConnected(this, InputDeviceUtils.hasPhysicalGamepadConnected());
-        }
     }
 
     private void refreshUiState(boolean forceOverlayRebind) {

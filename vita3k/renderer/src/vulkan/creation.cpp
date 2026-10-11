@@ -26,6 +26,8 @@
 
 #include <vkutil/vkutil.h>
 
+#include <mutex>
+
 namespace renderer::vulkan {
 
 VKContext::VKContext(VKState &state, MemState &mem)
@@ -188,7 +190,10 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
     color.transition_to_discard(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
     // depth stencil
     depthstencil.transition_to_discard(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
-    vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
+    {
+        std::lock_guard<std::mutex> lock(state.queue_mutex);
+        vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
+    }
 
     constexpr uint16_t SCE_GXM_MAX_SCENES_PER_RENDERTARGET = 8;
     // hopefully this will always be enough

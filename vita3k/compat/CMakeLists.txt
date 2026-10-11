@@ -7,5 +7,6 @@ add_library(
 )
 
 target_include_directories(compat PUBLIC include)
+target_include_directories(compat PRIVATE ${CMAKE_SOURCE_DIR}/vita3k/util/include)
 target_link_libraries(compat PUBLIC emuenv)
-target_link_libraries(compat PRIVATE app config dialog pugixml::pugixml miniz)
+target_link_libraries(compat PRIVATE app config dialog pugixml::pugixml miniz util)

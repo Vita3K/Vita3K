@@ -44,6 +44,21 @@ static bool is_common_dialog_running(const EmuEnvState &emuenv) {
 
 static SceTouchData recover_touch_events(const EmuEnvState &emuenv) {
     const auto &touch = emuenv.touch;
+    int viewport_drawable_w;
+    int viewport_drawable_h;
+    float viewport_x;
+    float viewport_y;
+    float viewport_w;
+    float viewport_h;
+    {
+        const std::lock_guard<std::mutex> lock(emuenv.display.viewport_mutex);
+        viewport_drawable_w = emuenv.display.viewport_drawable_w;
+        viewport_drawable_h = emuenv.display.viewport_drawable_h;
+        viewport_x = emuenv.display.viewport_x;
+        viewport_y = emuenv.display.viewport_y;
+        viewport_w = emuenv.display.viewport_w;
+        viewport_h = emuenv.display.viewport_h;
+    }
     SceTouchData touch_data;
     memset(&touch_data, 0, sizeof(touch_data));
 
@@ -51,8 +66,8 @@ static SceTouchData recover_touch_events(const EmuEnvState &emuenv) {
         touch_data.report[i].id = static_cast<uint8_t>(touch.finger_buffer[i].touchID);
         touch_data.report[i].force = touch.force_touch_enabled[touch.touchscreen_port] ? 128 : 0;
 
-        float x = (touch.finger_buffer[i].x * emuenv.display.viewport_drawable_w - emuenv.display.viewport_x) / emuenv.display.viewport_w;
-        float y = (touch.finger_buffer[i].y * emuenv.display.viewport_drawable_h - emuenv.display.viewport_y) / emuenv.display.viewport_h;
+        float x = (touch.finger_buffer[i].x * viewport_drawable_w - viewport_x) / viewport_w;
+        float y = (touch.finger_buffer[i].y * viewport_drawable_h - viewport_y) / viewport_h;
         touch_data.report[i].x = static_cast<uint16_t>(x * 1920);
 
         if (touch.touchscreen_port == SCE_TOUCH_PORT_FRONT) {

@@ -117,6 +117,9 @@ struct ThreadState {
 
     void suspend();
     void resume(bool step = false);
+    // Pause/resume the emulator without changing a thread's wait state.
+    ThreadStatus pause();
+    void resume_from_pause(ThreadStatus previous_status);
     std::string log_stack_traceback() const;
 
 private:
@@ -135,6 +138,9 @@ private:
     bool delete_requested = false;
     // Set by suspend(), consumed in run_loop() to transition to ThreadStatus::suspended.
     bool suspend_requested = false;
+    // Emulator pause is separate from a guest wait or debugger suspension.
+    bool pause_requested = false;
+    bool pause_suspended = false;
     // Single stepping mode.
     bool single_stepping = false;
 

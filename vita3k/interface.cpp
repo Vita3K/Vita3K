@@ -20,22 +20,33 @@
 
 #include "module/load_module.h"
 
+#include <app/functions.h>
+#include <app/session_controller.h>
+#include <audio/state.h>
+#include <bgm_player/functions.h>
+#include <config/functions.h>
 #include <config/state.h>
 #include <ctime>
+#include <ctrl/functions.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
 #include <display/functions.h>
 #include <display/state.h>
 #include <emuenv/state.h>
+#include <gui/functions.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/state.h>
 #include <lang/state.h>
+#include <motion/event_handler.h>
+#include <packages/functions.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
 #include <packages/vci.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache.h>
+#include <touch/functions.h>
+#include <touch/state.h>
 
 #include <miniz.h>
 #include <pugixml.hpp>
@@ -47,7 +58,18 @@
 #include <util/vector_utils.h>
 #include <util/vita_theme_utils.h>
 
+#include <gui/imgui_impl_sdl.h>
+#include <gui/state.h>
+
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_scancode.h>
+#include <SDL3/SDL_sensor.h>
+#include <SDL3/SDL_video.h>
+
 #include <gdbstub/functions.h>
+#include <gxm/state.h>
+#include <ime/functions.h>
 #include <stb_image_write.h>
 
 #if USE_DISCORD
@@ -56,8 +78,10 @@
 
 #include "patch/patch.h"
 
+#include <cstring>
 #include <memory>
 #include <regex>
+#include <set>
 
 typedef std::shared_ptr<mz_zip_archive> ZipPtr;
 
@@ -575,6 +599,18 @@ static std::vector<uint32_t> get_current_app_frame(EmuEnvState &emuenv, uint32_t
     return frame;
 }
 
+static void update_live_area_last_app_frame(EmuEnvState &emuenv, GuiState &gui) {
+    uint32_t width = 0;
+    uint32_t height = 0;
+    auto frame = get_current_app_frame(emuenv, width, height);
+    if (frame.empty()) {
+        LOG_ERROR("Failed to dump current app frame for live area");
+        return;
+    }
+
+    gui.live_area_last_app_frame = ImGui_Texture(gui.imgui_state.get(), frame.data(), width, height);
+}
+
 void take_screenshot(EmuEnvState &emuenv) {
     if (emuenv.cfg.screenshot_format == None)
         return;
@@ -618,6 +654,520 @@ void take_screenshot(EmuEnvState &emuenv) {
     }
 }
 
+static void switch_full_screen(EmuEnvState &emuenv) {
+    emuenv.display.fullscreen = !emuenv.display.fullscreen;
+    emuenv.renderer->set_fullscreen(emuenv.display.fullscreen);
+    SDL_SetWindowFullscreen(emuenv.window.get(), emuenv.display.fullscreen.load());
+    app::update_viewport(emuenv);
+}
+
+static input::PhysicalKeyCode physical_key_from_sdl_scancode(const SDL_Scancode scancode) {
+    if (scancode <= SDL_SCANCODE_UNKNOWN || scancode >= SDL_SCANCODE_COUNT)
+        return input::PhysicalKeyCode::Unbound;
+
+    return static_cast<input::PhysicalKeyCode>(0x00070000u | static_cast<uint32_t>(scancode));
+}
+
+static std::set<input::PhysicalKeyCode> sdl_pressed_keys;
+
+static void update_sdl_keyboard_state(EmuEnvState &emuenv, const input::PhysicalKeyCode key, const bool pressed) {
+    if (key == input::PhysicalKeyCode::Unbound)
+        return;
+
+    if (pressed)
+        sdl_pressed_keys.insert(key);
+    else
+        sdl_pressed_keys.erase(key);
+
+    const auto &cfg = emuenv.cfg;
+    const auto is_pressed = [](const input::PhysicalKeyCode primary, const input::PhysicalKeyCode alternate) {
+        return (primary != input::PhysicalKeyCode::Unbound && sdl_pressed_keys.contains(primary))
+            || (alternate != input::PhysicalKeyCode::Unbound && sdl_pressed_keys.contains(alternate));
+    };
+    const auto set_bit_if_pressed = [&is_pressed](const input::PhysicalKeyCode primary, const input::PhysicalKeyCode alternate, const uint32_t bit, uint32_t &mask) {
+        if (is_pressed(primary, alternate))
+            mask |= bit;
+    };
+
+    float axes[4] = {
+        static_cast<float>(is_pressed(cfg.keyboard_leftstick_right, cfg.keyboard_leftstick_right_alt)) - static_cast<float>(is_pressed(cfg.keyboard_leftstick_left, cfg.keyboard_leftstick_left_alt)),
+        static_cast<float>(is_pressed(cfg.keyboard_leftstick_down, cfg.keyboard_leftstick_down_alt)) - static_cast<float>(is_pressed(cfg.keyboard_leftstick_up, cfg.keyboard_leftstick_up_alt)),
+        static_cast<float>(is_pressed(cfg.keyboard_rightstick_right, cfg.keyboard_rightstick_right_alt)) - static_cast<float>(is_pressed(cfg.keyboard_rightstick_left, cfg.keyboard_rightstick_left_alt)),
+        static_cast<float>(is_pressed(cfg.keyboard_rightstick_down, cfg.keyboard_rightstick_down_alt)) - static_cast<float>(is_pressed(cfg.keyboard_rightstick_up, cfg.keyboard_rightstick_up_alt)),
+    };
+    uint32_t buttons = 0;
+    uint32_t buttons_ext = 0;
+    const auto set_common_buttons = [&cfg, &set_bit_if_pressed](uint32_t &mask) {
+        set_bit_if_pressed(cfg.keyboard_button_select, cfg.keyboard_button_select_alt, SCE_CTRL_SELECT, mask);
+        set_bit_if_pressed(cfg.keyboard_button_start, cfg.keyboard_button_start_alt, SCE_CTRL_START, mask);
+        set_bit_if_pressed(cfg.keyboard_button_up, cfg.keyboard_button_up_alt, SCE_CTRL_UP, mask);
+        set_bit_if_pressed(cfg.keyboard_button_right, cfg.keyboard_button_right_alt, SCE_CTRL_RIGHT, mask);
+        set_bit_if_pressed(cfg.keyboard_button_down, cfg.keyboard_button_down_alt, SCE_CTRL_DOWN, mask);
+        set_bit_if_pressed(cfg.keyboard_button_left, cfg.keyboard_button_left_alt, SCE_CTRL_LEFT, mask);
+        set_bit_if_pressed(cfg.keyboard_button_triangle, cfg.keyboard_button_triangle_alt, SCE_CTRL_TRIANGLE, mask);
+        set_bit_if_pressed(cfg.keyboard_button_circle, cfg.keyboard_button_circle_alt, SCE_CTRL_CIRCLE, mask);
+        set_bit_if_pressed(cfg.keyboard_button_cross, cfg.keyboard_button_cross_alt, SCE_CTRL_CROSS, mask);
+        set_bit_if_pressed(cfg.keyboard_button_square, cfg.keyboard_button_square_alt, SCE_CTRL_SQUARE, mask);
+        set_bit_if_pressed(cfg.keyboard_button_psbutton, cfg.keyboard_button_psbutton_alt, SCE_CTRL_PSBUTTON, mask);
+    };
+    set_common_buttons(buttons);
+    set_common_buttons(buttons_ext);
+    set_bit_if_pressed(cfg.keyboard_button_l1, cfg.keyboard_button_l1_alt, SCE_CTRL_L, buttons);
+    set_bit_if_pressed(cfg.keyboard_button_r1, cfg.keyboard_button_r1_alt, SCE_CTRL_R, buttons);
+    set_bit_if_pressed(cfg.keyboard_button_l1, cfg.keyboard_button_l1_alt, SCE_CTRL_L1, buttons_ext);
+    set_bit_if_pressed(cfg.keyboard_button_r1, cfg.keyboard_button_r1_alt, SCE_CTRL_R1, buttons_ext);
+    set_bit_if_pressed(cfg.keyboard_button_l2, cfg.keyboard_button_l2_alt, SCE_CTRL_L2, buttons_ext);
+    set_bit_if_pressed(cfg.keyboard_button_r2, cfg.keyboard_button_r2_alt, SCE_CTRL_R2, buttons_ext);
+    set_bit_if_pressed(cfg.keyboard_button_l3, cfg.keyboard_button_l3_alt, SCE_CTRL_L3, buttons_ext);
+    set_bit_if_pressed(cfg.keyboard_button_r3, cfg.keyboard_button_r3_alt, SCE_CTRL_R3, buttons_ext);
+
+    std::lock_guard<std::mutex> lock(emuenv.ctrl.mutex);
+    emuenv.ctrl.keyboard_state.buttons = buttons;
+    emuenv.ctrl.keyboard_state.buttons_ext = buttons_ext;
+    for (size_t i = 0; i < 4; ++i)
+        emuenv.ctrl.keyboard_state.axes[i] = axes[i];
+}
+
+static void clear_sdl_keyboard_state(EmuEnvState &emuenv) {
+    sdl_pressed_keys.clear();
+    std::lock_guard<std::mutex> lock(emuenv.ctrl.mutex);
+    emuenv.ctrl.keyboard_state = {};
+}
+
+bool handle_events(EmuEnvState &emuenv, GuiState &gui, app::AppSessionController *session) {
+    std::lock_guard<std::mutex> render_lock(gui.render_mutex);
+    const bool ime_dialog_active = emuenv.common_dialog.type == IME_DIALOG
+        && emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING;
+    if (ime_dialog_active && !SDL_TextInputActive(emuenv.window.get())) {
+        if (gui.imgui_state)
+            clear_sdl_keyboard_state(emuenv);
+        SDL_StartTextInput(emuenv.window.get());
+    } else if (!ime_dialog_active && gui.imgui_state
+        && !gui.imgui_state->is_typing && !ImGui::GetIO().WantTextInput
+        && SDL_TextInputActive(emuenv.window.get())) {
+        SDL_StopTextInput(emuenv.window.get());
+    }
+    const auto allow_switch_state = !emuenv.io.title_id.empty() && !gui.vita_area.live_area_screen && !gui.vita_area.app_close && !gui.vita_area.online_storage && (!gui.vita_area.home_screen || emuenv.kernel.is_threads_paused()) && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog && gui::get_sys_apps_state(gui);
+
+    const auto toggle_pause = [session]() {
+        if (session && session->is_running())
+            session->set_pause_reason(app::AppSessionPauseReason::User, !session->is_paused());
+    };
+
+    const auto ui_navigation = [&emuenv, &gui, session, allow_switch_state, &toggle_pause](const uint32_t sce_ctrl_btn) {
+        switch (sce_ctrl_btn) {
+        case SCE_CTRL_CROSS:
+        case SCE_CTRL_CIRCLE:
+            gui.is_key_locked = true;
+            if (gui.vita_area.start_screen)
+                gui::close_start_screen(gui, emuenv);
+            break;
+        case SCE_CTRL_PSBUTTON:
+            gui.is_key_locked = true;
+            if (allow_switch_state) {
+                if (!emuenv.cfg.show_live_area_screen) {
+                    toggle_pause();
+                } else {
+                    const auto live_area_app_index = gui::get_live_area_current_open_apps_list_index(gui, emuenv.io.app_path);
+                    if (live_area_app_index == gui.live_area_current_open_apps_list.end())
+                        gui::open_live_area(gui, emuenv, emuenv.io.app_path);
+                    else {
+                        if ((gui.live_area_app_current_open < 0) || (gui.live_area_current_open_apps_list[gui.live_area_app_current_open] != emuenv.io.app_path))
+                            gui.live_area_app_current_open = static_cast<int32_t>(std::distance(live_area_app_index, gui.live_area_current_open_apps_list.end()) - 1);
+                        gui.vita_area.information_bar = true;
+                        gui.vita_area.live_area_screen = true;
+                    }
+                    emuenv.display.imgui_render = true;
+#ifdef __ANDROID__
+                    gui::set_controller_overlay_state(0);
+#endif
+
+                    if (session && session->is_running()) {
+                        const bool was_paused = session->is_paused();
+                        if (!was_paused)
+                            update_live_area_last_app_frame(emuenv, gui);
+
+                        session->set_pause_reason(app::AppSessionPauseReason::Menu, true);
+                        if (!was_paused) {
+                            app::update_app_time_used(emuenv, emuenv.io.app_path);
+                            gui.gate_animation.start(GateAnimationState::ReturnApp);
+                            bgm_player::switch_bgm_state(false);
+                        }
+                    }
+                }
+            } else if (!gui::get_sys_apps_state(gui))
+                gui::close_system_app(gui, emuenv);
+            break;
+        default: break;
+        }
+
+        if (gui.vita_area.app_close) {
+            const auto cancel = [&gui]() {
+                gui.vita_area.app_close = false;
+            };
+            const auto confirm = [&gui, &emuenv]() {
+                const auto app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open] : emuenv.app_path;
+                gui::close_and_run_new_app(emuenv, app_path);
+            };
+            switch (sce_ctrl_btn) {
+            case SCE_CTRL_CIRCLE:
+                if (emuenv.cfg.sys_button == 1)
+                    cancel();
+                else
+                    confirm();
+                break;
+            case SCE_CTRL_CROSS:
+                if (emuenv.cfg.sys_button == 1)
+                    confirm();
+                else
+                    cancel();
+                break;
+            default: break;
+            }
+        } else if (gui.vita_area.user_management)
+            gui::browse_users_management(gui, emuenv, sce_ctrl_btn);
+        else if (gui.vita_area.manual)
+            gui::browse_pages_manual(gui, emuenv, sce_ctrl_btn);
+        else if (gui.vita_area.home_screen)
+            gui::browse_home_apps_list(gui, emuenv, sce_ctrl_btn, session);
+        else if (gui.vita_area.live_area_screen)
+            gui::browse_live_area_apps_list(gui, emuenv, sce_ctrl_btn, session);
+    };
+
+    emuenv.drop_inputs = gui.configuration_menu.settings_dialog || gui.configuration_menu.custom_settings_dialog || gui.controls_menu.controllers_dialog || gui.controls_menu.controls_dialog;
+    std::set<uint32_t> last_buttons;
+
+    const auto update_mouse_position = [&emuenv](const float x, const float y) {
+        int window_width = 0;
+        int window_height = 0;
+        int pixel_width = 0;
+        int pixel_height = 0;
+        SDL_GetWindowSize(emuenv.window.get(), &window_width, &window_height);
+        SDL_GetWindowSizeInPixels(emuenv.window.get(), &pixel_width, &pixel_height);
+        const float scale_x = window_width > 0 ? static_cast<float>(pixel_width) / window_width : 1.0f;
+        const float scale_y = window_height > 0 ? static_cast<float>(pixel_height) / window_height : 1.0f;
+        emuenv.touch.mouse_x = x * scale_x;
+        emuenv.touch.mouse_y = y * scale_y;
+
+        auto &display = emuenv.display;
+        std::lock_guard<std::mutex> lock(display.viewport_mutex);
+        if (display.viewport_w > 0.f && display.viewport_h > 0.f) {
+            auto &mouse = emuenv.ctrl.overlay_mouse;
+            mouse.x.store((emuenv.touch.mouse_x - display.viewport_x) * 960.f / display.viewport_w,
+                std::memory_order_relaxed);
+            mouse.y.store((emuenv.touch.mouse_y - display.viewport_y) * 544.f / display.viewport_h,
+                std::memory_order_relaxed);
+        }
+    };
+
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        const bool route_text_to_ime = ime_dialog_active
+            && (event.type == SDL_EVENT_TEXT_INPUT || event.type == SDL_EVENT_TEXT_EDITING);
+        if (!route_text_to_ime)
+            ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
+        switch (event.type) {
+        case SDL_EVENT_QUIT:
+            bgm_player::destroy_bgm_player();
+            if (!emuenv.io.app_path.empty())
+                app::update_app_time_used(emuenv, emuenv.io.app_path);
+            if (emuenv.audio.adapter)
+                emuenv.audio.switch_state(true);
+            // Wake guest threads blocked on GXM notifications/display work before
+            // waiting for process_exit() to delete them.
+            emuenv.gxm.display_queue.abort();
+            emuenv.display.abort = true;
+            emuenv.renderer->notification_ready.notify_all();
+            emuenv.kernel.process_exit();
+            if (emuenv.display.vblank_thread)
+                emuenv.display.vblank_thread->join();
+            gui.is_capturing_keys = false;
+            return false;
+
+        case SDL_EVENT_KEY_DOWN: {
+            if (gui.controller_binding_capture >= 0) {
+                gui.controller_binding_capture = -1;
+                continue;
+            }
+            if (ime_dialog_active) {
+                switch (event.key.key) {
+                case SDLK_BACKSPACE: {
+                    std::lock_guard lock(emuenv.ime.mutex);
+                    ime_backspace(emuenv.ime);
+                    continue;
+                }
+                case SDLK_LEFT: {
+                    std::lock_guard lock(emuenv.ime.mutex);
+                    ime_cursor_left(emuenv.ime);
+                    continue;
+                }
+                case SDLK_RIGHT: {
+                    std::lock_guard lock(emuenv.ime.mutex);
+                    ime_cursor_right(emuenv.ime);
+                    continue;
+                }
+                case SDLK_RETURN:
+                case SDLK_KP_ENTER: {
+                    auto &dialog = emuenv.common_dialog;
+                    std::lock_guard<std::recursive_mutex> dialog_lock(dialog.mutex);
+                    std::lock_guard ime_lock(emuenv.ime.mutex);
+                    const size_t copy_len = std::min(static_cast<size_t>(emuenv.ime.str.length()), static_cast<size_t>(dialog.ime.max_length));
+                    std::memcpy(dialog.ime.result, emuenv.ime.str.c_str(), copy_len * sizeof(uint16_t));
+                    dialog.ime.result[copy_len] = 0;
+                    const std::string utf8 = string_utils::utf16_to_utf8(emuenv.ime.str);
+                    snprintf(dialog.ime.text, sizeof(dialog.ime.text), "%s", utf8.c_str());
+                    emuenv.ime.event_id = SCE_IME_EVENT_PRESS_ENTER;
+                    dialog.ime.status = SCE_IME_DIALOG_BUTTON_ENTER;
+                    dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+                    dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+                    continue;
+                }
+                case SDLK_ESCAPE: {
+                    auto &dialog = emuenv.common_dialog;
+                    std::lock_guard<std::recursive_mutex> dialog_lock(dialog.mutex);
+                    if (dialog.ime.cancelable) {
+                        std::lock_guard ime_lock(emuenv.ime.mutex);
+                        emuenv.ime.event_id = SCE_IME_EVENT_PRESS_CLOSE;
+                        dialog.ime.status = SCE_IME_DIALOG_BUTTON_CLOSE;
+                        dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+                        dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+                    }
+                    continue;
+                }
+                default:
+                    continue;
+                }
+            }
+            const auto physical_key = physical_key_from_sdl_scancode(event.key.scancode);
+            update_sdl_keyboard_state(emuenv, physical_key, true);
+            const auto get_sce_ctrl_btn_from_physical_key = [&emuenv](const input::PhysicalKeyCode key) {
+                if (key == emuenv.cfg.keyboard_button_up || key == emuenv.cfg.keyboard_button_up_alt)
+                    return SCE_CTRL_UP;
+                else if (key == emuenv.cfg.keyboard_button_right || key == emuenv.cfg.keyboard_button_right_alt)
+                    return SCE_CTRL_RIGHT;
+                else if (key == emuenv.cfg.keyboard_button_down || key == emuenv.cfg.keyboard_button_down_alt)
+                    return SCE_CTRL_DOWN;
+                else if (key == emuenv.cfg.keyboard_button_left || key == emuenv.cfg.keyboard_button_left_alt)
+                    return SCE_CTRL_LEFT;
+                else if (key == emuenv.cfg.keyboard_button_l1 || key == emuenv.cfg.keyboard_button_l1_alt)
+                    return SCE_CTRL_L1;
+                else if (key == emuenv.cfg.keyboard_button_r1 || key == emuenv.cfg.keyboard_button_r1_alt)
+                    return SCE_CTRL_R1;
+                else if (key == emuenv.cfg.keyboard_button_triangle || key == emuenv.cfg.keyboard_button_triangle_alt)
+                    return SCE_CTRL_TRIANGLE;
+                else if (key == emuenv.cfg.keyboard_button_circle || key == emuenv.cfg.keyboard_button_circle_alt)
+                    return SCE_CTRL_CIRCLE;
+                else if (key == emuenv.cfg.keyboard_button_cross || key == emuenv.cfg.keyboard_button_cross_alt)
+                    return SCE_CTRL_CROSS;
+                else if (key == emuenv.cfg.keyboard_button_psbutton || key == emuenv.cfg.keyboard_button_psbutton_alt)
+                    return SCE_CTRL_PSBUTTON;
+                else
+                    return static_cast<SceCtrlButtons>(0);
+            };
+
+            auto sce_ctrl_btn = get_sce_ctrl_btn_from_physical_key(physical_key);
+            if (gui.is_capturing_keys && physical_key != input::PhysicalKeyCode::Unbound) {
+                gui.is_key_capture_dropped = false;
+                if (physical_key == input::PhysicalKeyCode::Escape) {
+                    LOG_ERROR("Key is reserved!");
+                    gui.captured_key = gui.old_captured_key;
+                    gui.is_key_capture_dropped = true;
+                } else
+                    gui.captured_key = static_cast<int>(physical_key);
+                gui.is_capturing_keys = false;
+                auto capture_completion = std::move(gui.key_capture_completion);
+                gui.key_capture_completion = {};
+                if (capture_completion)
+                    capture_completion();
+            }
+
+            if (ImGui::GetIO().WantTextInput || gui.is_key_locked || (emuenv.drop_inputs && !gui.vita_area.live_area_screen) || gui.gate_animation.state != GateAnimationState::None)
+                continue;
+#ifdef __ANDROID__
+            if (event.key.scancode == SDL_SCANCODE_AC_BACK)
+                sce_ctrl_btn = SCE_CTRL_PSBUTTON;
+#else
+            if (allow_switch_state && (physical_key == emuenv.cfg.keyboard_gui_toggle_gui || physical_key == emuenv.cfg.keyboard_gui_toggle_gui_alt))
+                emuenv.display.imgui_render = !emuenv.display.imgui_render;
+            if ((physical_key == emuenv.cfg.keyboard_gui_toggle_touch || physical_key == emuenv.cfg.keyboard_gui_toggle_touch_alt) && !gui.is_key_capture_dropped)
+                toggle_touchscreen(emuenv.touch);
+            if ((physical_key == emuenv.cfg.keyboard_gui_fullscreen || physical_key == emuenv.cfg.keyboard_gui_fullscreen_alt) && !gui.is_key_capture_dropped)
+                switch_full_screen(emuenv);
+            if ((physical_key == emuenv.cfg.keyboard_toggle_texture_replacement || physical_key == emuenv.cfg.keyboard_toggle_texture_replacement_alt) && !gui.is_key_capture_dropped)
+                toggle_texture_replacement(emuenv);
+            if ((physical_key == emuenv.cfg.keyboard_take_screenshot || physical_key == emuenv.cfg.keyboard_take_screenshot_alt) && !gui.is_key_capture_dropped)
+                take_screenshot(emuenv);
+            if ((physical_key == emuenv.cfg.keyboard_pinch_modifier || physical_key == emuenv.cfg.keyboard_pinch_modifier_alt || physical_key == emuenv.cfg.keyboard_alternate_pinch_in || physical_key == emuenv.cfg.keyboard_alternate_pinch_in_alt || physical_key == emuenv.cfg.keyboard_alternate_pinch_out || physical_key == emuenv.cfg.keyboard_alternate_pinch_out_alt) && !gui.is_key_capture_dropped)
+                pinch_modifier(emuenv.touch, true);
+
+            constexpr float pinch_amount = 0.5f;
+            if ((physical_key == emuenv.cfg.keyboard_alternate_pinch_in || physical_key == emuenv.cfg.keyboard_alternate_pinch_in_alt) && !gui.is_key_capture_dropped)
+                pinch_automove(emuenv.touch, -pinch_amount);
+            if ((physical_key == emuenv.cfg.keyboard_alternate_pinch_out || physical_key == emuenv.cfg.keyboard_alternate_pinch_out_alt) && !gui.is_key_capture_dropped)
+                pinch_automove(emuenv.touch, pinch_amount);
+#endif
+            if (sce_ctrl_btn != 0) {
+                if (last_buttons.contains(sce_ctrl_btn))
+                    continue;
+                last_buttons.insert(sce_ctrl_btn);
+                ui_navigation(sce_ctrl_btn);
+            }
+            break;
+        }
+
+        case SDL_EVENT_KEY_UP: {
+            gui.is_key_locked = false;
+            const auto physical_key = physical_key_from_sdl_scancode(event.key.scancode);
+            if (!ime_dialog_active)
+                update_sdl_keyboard_state(emuenv, physical_key, false);
+            if (physical_key == emuenv.cfg.keyboard_pinch_modifier || physical_key == emuenv.cfg.keyboard_pinch_modifier_alt || physical_key == emuenv.cfg.keyboard_alternate_pinch_in || physical_key == emuenv.cfg.keyboard_alternate_pinch_in_alt || physical_key == emuenv.cfg.keyboard_alternate_pinch_out || physical_key == emuenv.cfg.keyboard_alternate_pinch_out_alt) {
+                pinch_modifier(emuenv.touch, false);
+                pinch_automove(emuenv.touch, 0.0f);
+            }
+            break;
+        }
+
+        case SDL_EVENT_TEXT_INPUT: {
+            if (ime_dialog_active) {
+                std::lock_guard lock(emuenv.ime.mutex);
+                ime_commit_text(emuenv.ime, string_utils::utf8_to_utf16(event.text.text));
+            }
+            break;
+        }
+
+        case SDL_EVENT_TEXT_EDITING: {
+            if (ime_dialog_active) {
+                std::lock_guard lock(emuenv.ime.mutex);
+                ime_set_preedit(emuenv.ime, string_utils::utf8_to_utf16(event.edit.text));
+            }
+            break;
+        }
+
+        case SDL_EVENT_MOUSE_WHEEL:
+            pinch_move(emuenv.touch, event.wheel.y);
+            gui.is_nav_button = false;
+            break;
+        case SDL_EVENT_MOUSE_MOTION:
+            update_mouse_position(event.motion.x, event.motion.y);
+            gui.is_nav_button = false;
+            break;
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            update_mouse_position(event.button.x, event.button.y);
+            if (event.button.button == SDL_BUTTON_LEFT) {
+                emuenv.touch.mouse_button_left = true;
+                emuenv.ctrl.overlay_mouse.pressed.store(true, std::memory_order_relaxed);
+            }
+            if (event.button.button == SDL_BUTTON_RIGHT)
+                emuenv.touch.mouse_button_right = true;
+            gui.is_nav_button = false;
+            break;
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+            update_mouse_position(event.button.x, event.button.y);
+            if (event.button.button == SDL_BUTTON_LEFT) {
+                emuenv.touch.mouse_button_left = false;
+                emuenv.ctrl.overlay_mouse.pressed.store(false, std::memory_order_relaxed);
+            }
+            if (event.button.button == SDL_BUTTON_RIGHT)
+                emuenv.touch.mouse_button_right = false;
+            gui.is_nav_button = false;
+            break;
+
+        case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+            if (gui.controller_binding_capture >= 0) {
+                const auto binding = static_cast<size_t>(gui.controller_binding_capture);
+                if (binding < emuenv.cfg.controller_binds.size()) {
+                    emuenv.cfg.controller_binds[binding] = event.gbutton.button;
+                    config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+                }
+                gui.controller_binding_capture = -1;
+                continue;
+            }
+            if (!emuenv.kernel.is_threads_paused() && event.gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD)
+                toggle_touchscreen(emuenv.touch);
+            if (ImGui::GetIO().WantTextInput || gui.is_key_locked || (emuenv.drop_inputs && !gui.vita_area.live_area_screen) || gui.gate_animation.state != GateAnimationState::None)
+                continue;
+            for (const auto &binding : get_controller_bindings_ext(emuenv)) {
+                if (event.gbutton.button == binding.controller) {
+                    if (last_buttons.contains(binding.button))
+                        continue;
+                    last_buttons.insert(binding.button);
+                    ui_navigation(binding.button);
+                    break;
+                }
+            }
+            break;
+
+        case SDL_EVENT_GAMEPAD_BUTTON_UP:
+            gui.is_key_locked = false;
+            break;
+
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+            handle_touchpad_event(emuenv.touch, event.gtouchpad);
+            break;
+        case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
+            handle_motion_event(emuenv, event.gsensor.sensor, event.gsensor);
+            break;
+        case SDL_EVENT_SENSOR_UPDATE:
+            handle_motion_event(emuenv, SDL_GetSensorTypeForID(event.sensor.which), event.sensor);
+            break;
+        case SDL_EVENT_GAMEPAD_ADDED:
+        case SDL_EVENT_GAMEPAD_REMOVED:
+            refresh_controllers(emuenv.ctrl, emuenv);
+            break;
+        case SDL_EVENT_WINDOW_RESIZED:
+        case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+            app::update_viewport(emuenv);
+            break;
+        case SDL_EVENT_WINDOW_FOCUS_LOST:
+            clear_sdl_keyboard_state(emuenv);
+            pinch_modifier(emuenv.touch, false);
+            pinch_automove(emuenv.touch, 0.0f);
+            emuenv.touch.renderer_focused = false;
+            emuenv.touch.mouse_button_left = false;
+            emuenv.touch.mouse_button_right = false;
+            emuenv.ctrl.overlay_mouse.pressed.store(false, std::memory_order_relaxed);
+            gui.is_key_locked = false;
+            break;
+        case SDL_EVENT_WINDOW_FOCUS_GAINED:
+            emuenv.touch.renderer_focused = true;
+            break;
+        case SDL_EVENT_FINGER_DOWN:
+        case SDL_EVENT_FINGER_MOTION:
+        case SDL_EVENT_FINGER_UP:
+            handle_touch_event(emuenv.touch, event.tfinger);
+            break;
+        case SDL_EVENT_DROP_FILE: {
+            const auto drop_file = fs_utils::utf8_to_path(event.drop.data);
+            const auto extension = string_utils::tolower(drop_file.extension().string());
+            if (extension == ".pup") {
+                const std::string fw_version = install_pup(emuenv.vita_fs_path, drop_file);
+                if (!fw_version.empty()) {
+                    LOG_INFO("Firmware {} installed successfully!", fw_version);
+                    gui::refresh_modules_list(emuenv);
+                    if (emuenv.cfg.initial_setup)
+                        gui::init_theme(gui, emuenv, emuenv.app.user_list.users[emuenv.cfg.user_id].theme_id);
+                }
+            } else if ((extension == ".vpk") || (extension == ".zip"))
+                install_archive(emuenv, drop_file);
+            else if ((extension == ".rif") || (drop_file.filename() == "work.bin"))
+                copy_license(emuenv, drop_file);
+            else if (fs::is_directory(drop_file))
+                install_contents(emuenv, drop_file);
+            else if (drop_file.filename() == "theme.xml")
+                install_content(emuenv, drop_file.parent_path());
+            else
+                LOG_ERROR("File dropped: [{}] is not supported.", drop_file.filename());
+            break;
+        }
+        default: break;
+        }
+    }
+
+    return true;
+}
+
 ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv) {
     return load_app(main_module_id, emuenv, AppLaunchRequest{
                                                 .app_path = emuenv.io.app_path,
@@ -630,6 +1180,9 @@ ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const AppLaunchR
         LOG_ERROR(message);
         return ModuleLoadFailed;
     }
+
+    if (emuenv.cfg.boot_apps_full_screen && !emuenv.display.fullscreen.load())
+        switch_full_screen(emuenv);
 
     if (emuenv.cfg.gdbstub) {
         emuenv.kernel.debugger.wait_for_debugger = true;

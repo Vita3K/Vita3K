@@ -184,7 +184,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
         // also retrieve / create the shader interlock pass
         context.current_shader_interlock_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, true, true, color_surface_fin == nullptr, true);
 
-    Framebuffer &framebuffer = state.surface_cache.retrieve_framebuffer_handle(mem, color_surface_fin, ds_surface_fin, context.current_render_pass, context.current_shader_interlock_pass, context.current_color_view, context.current_ds_view);
+    Framebuffer &framebuffer = state.surface_cache.retrieve_framebuffer_handle(mem, color_surface_fin, ds_surface_fin, context.current_render_pass, context.current_shader_interlock_pass, context.current_color_view, context.current_ds_view, context.current_ds_image);
     context.current_framebuffer = framebuffer.standard;
     context.current_shader_interlock_framebuffer = framebuffer.shader_interlock;
     context.current_color_base_image = framebuffer.base_image;
@@ -478,7 +478,10 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     vk::SubmitInfo submit_info{};
     submit_info.setCommandBuffers(cmdbuffers_to_submit);
 
-    state.general_queue.submit(submit_info, fence);
+    {
+        std::lock_guard<std::mutex> lock(state.queue_mutex);
+        state.general_queue.submit(submit_info, fence);
+    }
     cmdbuffers_to_submit.clear();
     state.frame().rendered_fences.push_back(fence);
 

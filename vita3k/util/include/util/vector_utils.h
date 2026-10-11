@@ -56,8 +56,13 @@ size_t find_index(const T &v, const V &value) {
 }
 
 template <typename T, typename V>
+bool contains(const T &v, const V &value) {
+    return std::find(v.begin(), v.end(), value) != v.end();
+}
+
+template <typename T, typename V>
 bool push_if_not_exists(T &v, const V &value) {
-    if (!std::ranges::contains(v, value)) {
+    if (!contains(v, value)) {
         v.push_back(value);
         return false;
     } else {

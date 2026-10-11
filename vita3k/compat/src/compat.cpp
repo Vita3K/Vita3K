@@ -18,14 +18,20 @@
 #include <compat/functions.h>
 #include <compat/state.h>
 #include <config/state.h>
+#include <emuenv/state.h>
 #include <fmt/std.h>
+#include <util/fs.h>
+#include <util/info_message.h>
 #include <util/log.h>
+#include <util/net_utils.h>
 
 #include <miniz.h>
 #include <pugixml.hpp>
 
+#include <fstream>
 #include <regex>
 #include <span>
+#include <vector>
 
 enum class LabelId : uint32_t {
     Nothing = 1260231569, // 0x4b1d9b91
@@ -148,6 +154,145 @@ bool load_from_disk(CompatState &state, const std::filesystem::path &cache_path)
     }
 
     return parse_xml(state, buffer.data(), buffer.size());
+}
+
+bool load_app_compat_db(CompatState &state, EmuEnvState &emuenv, const UpdateMessageTexts &message_texts) {
+    const std::filesystem::path cache_path(emuenv.cache_path.native());
+    load_from_disk(state, cache_path);
+    return update_app_compat_db(state, emuenv, message_texts);
+}
+
+bool update_app_compat_db(CompatState &state, EmuEnvState &emuenv, const UpdateMessageTexts &message_texts) {
+    static constexpr const char *latest_link = "https://api.github.com/repos/Vita3K/compatibility/releases/latest";
+    static constexpr const char *app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml.zip";
+
+    const auto version_response = net_utils::get_web_response(latest_link);
+    if (version_response.empty()) {
+        LOG_WARN("Could not check for compatibility database updates");
+        util::info_message_queue().push({
+            .function = "compatibility database update",
+            .title = message_texts.error_title,
+            .level = spdlog::level::err,
+            .msg = message_texts.check_failed,
+        });
+        return false;
+    }
+
+    const auto update = parse_ver_resp(state, version_response);
+    if (!update) {
+        util::info_message_queue().push({
+            .function = "compatibility database update",
+            .title = message_texts.error_title,
+            .level = spdlog::level::err,
+            .msg = message_texts.check_failed,
+        });
+        return false;
+    }
+    if (!update->needs_update) {
+        LOG_INFO("Applications compatibility database is up to date.");
+        return false;
+    }
+
+    const auto app_compat_db_path = emuenv.cache_path / "app_compat_db.xml";
+    const bool compat_db_exist = fs::exists(app_compat_db_path);
+    const auto new_app_compat_db_path = emuenv.cache_path / "new_app_compat_db.xml.zip";
+    const auto archive_path_utf8 = fs_utils::path_to_utf8(new_app_compat_db_path);
+    if (!net_utils::download_file(app_compat_db_link, archive_path_utf8)) {
+        LOG_WARN("Could not download compatibility database version {}", update->latest_ver);
+        fs::remove(new_app_compat_db_path);
+        util::info_message_queue().push({
+            .function = "compatibility database update",
+            .title = message_texts.error_title,
+            .level = spdlog::level::err,
+            .msg = fmt::format(fmt::runtime(message_texts.download_failed), update->latest_ver),
+        });
+        return false;
+    }
+
+    fs::ifstream archive(new_app_compat_db_path, std::ios::binary | std::ios::ate);
+    if (!archive) {
+        LOG_ERROR("Could not open downloaded compatibility database at {}", archive_path_utf8);
+        fs::remove(new_app_compat_db_path);
+        util::info_message_queue().push({
+            .function = "compatibility database update",
+            .title = message_texts.error_title,
+            .level = spdlog::level::err,
+            .msg = fmt::format(fmt::runtime(message_texts.download_failed), update->latest_ver),
+        });
+        return false;
+    }
+
+    const auto archive_size = static_cast<std::streamoff>(archive.tellg());
+    if (archive_size <= 0) {
+        LOG_ERROR("Downloaded compatibility database is empty");
+        archive.close();
+        fs::remove(new_app_compat_db_path);
+        util::info_message_queue().push({
+            .function = "compatibility database update",
+            .title = message_texts.error_title,
+            .level = spdlog::level::err,
+            .msg = fmt::format(fmt::runtime(message_texts.download_failed), update->latest_ver),
+        });
+        return false;
+    }
+
+    std::vector<uint8_t> archive_data(static_cast<size_t>(archive_size));
+    archive.seekg(0);
+    if (!archive.read(reinterpret_cast<char *>(archive_data.data()), static_cast<std::streamsize>(archive_size))) {
+        LOG_ERROR("Failed to read downloaded compatibility database");
+        archive.close();
+        fs::remove(new_app_compat_db_path);
+        util::info_message_queue().push({
+            .function = "compatibility database update",
+            .title = message_texts.error_title,
+            .level = spdlog::level::err,
+            .msg = fmt::format(fmt::runtime(message_texts.download_failed), update->latest_ver),
+        });
+        return false;
+    }
+    archive.close();
+
+    const auto old_db_updated_at = state.db_updated_at;
+    const auto old_issue_count = state.db_issue_count;
+    const auto old_app_count = state.app_compat_db.size();
+    const std::filesystem::path cache_path(emuenv.cache_path.native());
+    const bool installed = install_db(state, cache_path,
+        std::span<const uint8_t>(archive_data.data(), archive_data.size()), update->latest_ver);
+    fs::remove(new_app_compat_db_path);
+    if (!installed) {
+        util::info_message_queue().push({
+            .function = "compatibility database update",
+            .title = message_texts.error_title,
+            .level = spdlog::level::err,
+            .msg = fmt::format(fmt::runtime(message_texts.load_failed), update->latest_ver),
+        });
+        return false;
+    }
+
+    util::InfoMessage message{
+        .function = "compatibility database update",
+        .title = message_texts.updated_title,
+        .level = spdlog::level::info,
+    };
+    const auto added_app_count = static_cast<int32_t>(state.app_compat_db.size()) - static_cast<int32_t>(old_app_count);
+    if (!compat_db_exist)
+        message.msg = fmt::format(fmt::runtime(message_texts.download_app_listed), state.db_updated_at, state.app_compat_db.size());
+    else if (!old_db_updated_at.empty() && added_app_count > 0)
+        message.msg = fmt::format(fmt::runtime(message_texts.new_app_listed), old_db_updated_at, state.db_updated_at, added_app_count);
+    else
+        message.msg = fmt::format(fmt::runtime(message_texts.app_listed), old_db_updated_at, state.db_updated_at, state.app_compat_db.size());
+    util::info_message_queue().push(std::move(message));
+
+    if (compat_db_exist) {
+        const auto dif = static_cast<int32_t>(state.db_issue_count) - static_cast<int32_t>(old_issue_count);
+        if (!old_db_updated_at.empty() && dif > 0)
+            LOG_INFO("Compatibility database updated from {} to {}: {} new issues, {} apps", old_db_updated_at, state.db_updated_at, dif, state.app_compat_db.size());
+        else
+            LOG_INFO("Compatibility database updated to {}: {} apps", state.db_updated_at, state.app_compat_db.size());
+    } else
+        LOG_INFO("Compatibility database downloaded: {} apps", state.app_compat_db.size());
+
+    return true;
 }
 
 bool install_db(CompatState &state, const std::filesystem::path &cache_path,
