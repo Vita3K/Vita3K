@@ -37,6 +37,14 @@ inline static uint64_t get_current_time() {
         .count();
 }
 
+// Copies the start of full to info, as many bytes as the size the game set in info asks for. A size
+// past the struct must be refused before.
+template <typename T>
+static void write_info(T *info, T full) {
+    full.size = info->size;
+    memcpy(info, &full, info->size);
+}
+
 // Waits on a simple event or a timer, which are both events.
 static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
@@ -260,18 +268,19 @@ EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallback
     if (!pInfo)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR); // TODO check result
 
-    if (pInfo->size != sizeof(*pInfo))
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+    if (pInfo->size > sizeof(*pInfo))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
 
-    pInfo->callbackId = callbackId;
-    strncpy(pInfo->name, cb->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
-    pInfo->name[KERNELOBJECT_MAX_NAME_LENGTH] = '\0';
-    pInfo->attr = 0;
-    pInfo->threadId = cb->thread_id;
-    pInfo->callbackFunc = cb->cb_func;
-    pInfo->notifyId = cb->get_notifier_id();
-    pInfo->notifyArg = cb->get_notify_arg();
-    pInfo->pCommon = cb->userdata;
+    SceKernelCallbackInfo info{};
+    info.callbackId = callbackId;
+    strncpy(info.name, cb->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
+    info.attr = 0;
+    info.threadId = cb->thread_id;
+    info.callbackFunc = cb->cb_func;
+    info.notifyId = cb->get_notifier_id();
+    info.notifyArg = cb->get_notify_arg();
+    info.pCommon = cb->userdata;
+    write_info(pInfo, info);
 
     return SCE_KERNEL_OK;
 }
@@ -287,14 +296,16 @@ EXPORT(SceInt32, _sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pI
     if (!info)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
-    if (info->size != sizeof(*info))
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+    if (info->size > sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
 
-    info->condId = condId;
-    strncpy(info->name, condvar->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
-    info->attr = condvar->attr;
-    info->mutexId = condvar->associated_mutex->uid;
-    info->numWaitThreads = condvar->waiters.size();
+    SceKernelCondInfo full{};
+    full.condId = condId;
+    strncpy(full.name, condvar->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    full.attr = condvar->attr;
+    full.mutexId = condvar->associated_mutex->uid;
+    full.numWaitThreads = condvar->waiters.size();
+    write_info(info, full);
 
     return SCE_KERNEL_OK;
 }
@@ -310,15 +321,17 @@ EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFla
     if (!info)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
-    if (info->size != sizeof(*info))
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+    if (info->size > sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
 
-    info->evfId = evfId;
-    strncpy(info->name, eventflag->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
-    info->attr = eventflag->attr;
-    info->initPattern = eventflag->flags; // Todo, give only current pattern
-    info->currentPattern = eventflag->flags;
-    info->numWaitThreads = eventflag->waiters.size();
+    SceKernelEventFlagInfo full{};
+    full.evfId = evfId;
+    strncpy(full.name, eventflag->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    full.attr = eventflag->attr;
+    full.initPattern = eventflag->flags; // Todo, give only current pattern
+    full.currentPattern = eventflag->flags;
+    full.numWaitThreads = eventflag->waiters.size();
+    write_info(info, full);
 
     return SCE_KERNEL_OK;
 }
@@ -353,37 +366,29 @@ EXPORT(int, _sceKernelGetLwCondInfoById) {
 
 EXPORT(int, _sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKernelLwMutexInfo> info, SceSize size) {
     TRACY_FUNC(_sceKernelGetLwMutexInfoById, lightweight_mutex_id, info, size);
-    SceKernelLwMutexInfo *info_data = info.get(emuenv.mem);
-    SceSize info_size = info_data->size;
-    SceKernelLwMutexInfo info_data_local;
-    if (info_size < sizeof(SceKernelLwMutexInfo)) {
-        info_data = &info_data_local;
-        info_data_local.size = info_size;
-    }
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lightweight_mutex_id);
     const auto guard = mutex ? mutex->lock() : std::unique_lock<std::mutex>();
-    if (guard) {
-        info_data->uid = lightweight_mutex_id;
-        strncpy(info_data->name, mutex->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
-        info_data->attr = mutex->attr;
-        info_data->pWork = mutex->workarea;
-        info_data->initCount = mutex->init_count;
-        info_data->currentCount = mutex->lock_count;
-        if (mutex->owner == 0) {
-            info_data->currentOwnerId = 0;
-        } else {
-            info_data->currentOwnerId = mutex->owner->id;
-        }
-        info_data->numWaitThreads = static_cast<SceUInt32>(mutex->waiters.size());
-        if (info_size < sizeof(SceKernelLwMutexInfo)) {
-            memcpy(info.get(emuenv.mem), &info_data_local, info_size);
-        } else {
-            info_data->size = sizeof(SceKernelLwMutexInfo);
-        }
-        return SCE_KERNEL_OK;
-    } else {
+    if (!guard)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
-    }
+
+    SceKernelLwMutexInfo *info_data = info.get(emuenv.mem);
+    if (!info_data)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    if (info_data->size > sizeof(*info_data))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+
+    SceKernelLwMutexInfo full{};
+    full.uid = lightweight_mutex_id;
+    strncpy(full.name, mutex->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    full.attr = mutex->attr;
+    full.pWork = mutex->workarea;
+    full.initCount = mutex->init_count;
+    full.currentCount = mutex->lock_count;
+    full.currentOwnerId = mutex->owner ? mutex->owner->id : 0;
+    full.numWaitThreads = static_cast<SceUInt32>(mutex->waiters.size());
+    write_info(info_data, full);
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelGetMsgPipeInfo) {
@@ -395,33 +400,22 @@ EXPORT(int, _sceKernelGetMutexInfo, SceUID mutexId, SceKernelMutexInfo *pInfo) {
     TRACY_FUNC(_sceKernelGetMutexInfo, mutexId, pInfo);
     if (!pInfo)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
-    SceKernelMutexInfo *info_data = pInfo;
-    SceSize info_size = info_data->size;
-    SceKernelMutexInfo info_data_local;
-    if (info_size < sizeof(*pInfo)) {
-        info_data = &info_data_local;
-        info_data_local.size = info_size;
-    }
+    if (pInfo->size > sizeof(*pInfo))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     const MutexPtr mutex = emuenv.kernel.objects.find<HeavyMutex>(mutexId);
     const auto guard = mutex ? mutex->lock() : std::unique_lock<std::mutex>();
     if (!guard)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
-    info_data->mutexId = mutexId;
-    strncpy(pInfo->name, mutex->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
-    info_data->attr = mutex->attr;
-    info_data->initCount = mutex->init_count;
-    info_data->currentCount = mutex->lock_count;
-    if (mutex->owner) {
-        info_data->currentOwnerId = mutex->owner->id;
-    } else {
-        info_data->currentOwnerId = 0;
-    }
-    info_data->numWaitThreads = mutex->waiters.size();
-    if (info_size < sizeof(*pInfo)) {
-        memcpy(pInfo, &info_data_local, info_size);
-    } else {
-        info_data->size = sizeof(*pInfo);
-    }
+
+    SceKernelMutexInfo info{};
+    info.mutexId = mutexId;
+    strncpy(info.name, mutex->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = mutex->attr;
+    info.initCount = mutex->init_count;
+    info.currentCount = mutex->lock_count;
+    info.currentOwnerId = mutex->owner ? mutex->owner->id : 0;
+    info.numWaitThreads = mutex->waiters.size();
+    write_info(pInfo, info);
     return SCE_KERNEL_OK;
 }
 
@@ -489,16 +483,18 @@ EXPORT(SceInt32, _sceKernelGetSemaInfo, SceUID semaId, Ptr<SceKernelSemaInfo> pI
     if (!info)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
-    if (info->size != sizeof(*info))
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+    if (info->size > sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
 
-    info->attr = semaphore->attr;
-    info->currentCount = semaphore->val;
-    info->initCount = semaphore->init_val;
-    info->maxCount = semaphore->max;
-    strncpy(info->name, semaphore->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
-    info->semaId = semaId;
-    info->numWaitThreads = semaphore->waiters.size();
+    SceKernelSemaInfo full{};
+    full.attr = semaphore->attr;
+    full.currentCount = semaphore->val;
+    full.initCount = semaphore->init_val;
+    full.maxCount = semaphore->max;
+    strncpy(full.name, semaphore->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    full.semaId = semaId;
+    full.numWaitThreads = semaphore->waiters.size();
+    write_info(info, full);
 
     return SCE_KERNEL_OK;
 }

@@ -20,7 +20,7 @@ lw_cond               pass
 lw_mutex              pass
 lw_work               pass
 lw_work_layout        fail     # lightweight mutex and condition variable work area contents
-misc_edges            fail     # duplicate names and info sizes
+misc_edges            fail     # two openable objects with the same name
 msgpipe               pass
 msgpipe_edges         pass
 msgpipe_waits         pass
