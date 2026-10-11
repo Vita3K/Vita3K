@@ -216,9 +216,9 @@ EXPORT(int, sceAppMgrGetAppMgrState) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGetAppParam) {
-    TRACY_FUNC(sceAppMgrGetAppParam);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceAppMgrGetAppParam, char *param) {
+    TRACY_FUNC(sceAppMgrGetAppParam, param);
+    return CALL_EXPORT(_sceAppMgrGetAppParam, param);
 }
 
 EXPORT(int, sceAppMgrGetAppParam2) {

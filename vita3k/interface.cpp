@@ -688,6 +688,9 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
     }
     emuenv.main_thread_id = main_thread->id;
 
+    // Before any guest code runs, module_start functions included, since they can read it too
+    emuenv.set_launch_uri(emuenv.cfg.launch_uri);
+
     // Run `module_start` export (entry point) of loaded libraries
     for (auto &[_, module] : emuenv.kernel.loaded_modules) {
         if (module->info.modid != main_module_id)
