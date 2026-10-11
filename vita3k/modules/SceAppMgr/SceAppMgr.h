@@ -24,6 +24,7 @@ enum SceAppMgrErrorCode : uint32_t {
     SCE_APPMGR_ERROR_INVALID_PARAMETER2 = 0x80801000, //!< Invalid parameter (wrong value)
     SCE_APPMGR_ERROR_BUSY = 0x80802000, //!< Busy
     SCE_APPMGR_ERROR_STATE = 0x80802013, //!< Invalid state
+    SCE_APPMGR_ERROR_APP_PARAM_READ = 0x80802015, //!< The app param was already read
     SCE_APPMGR_ERROR_NULL_POINTER = 0x80802016, //!< NULL pointer
     SCE_APPMGR_ERROR_INVALID = 0x8080201A, //!< Invalid param
     SCE_APPMGR_ERROR_TOO_LONG_ARGV = 0x8080201D, //!< argv is too long
@@ -63,6 +64,7 @@ typedef struct sceAppMgrAppParamGetStringOptParam {
 
 DECL_EXPORT(SceInt32, __sceAppMgrGetAppState, SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion);
 DECL_EXPORT(SceInt32, _sceAppMgrAppParamGetString, int pid, int param, char *string, sceAppMgrAppParamGetStringOptParam *optParam);
+DECL_EXPORT(SceInt32, _sceAppMgrGetAppParam, char *param);
 DECL_EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[], const SceAppMgrLoadExecOptParam *optParam);
 DECL_EXPORT(SceInt32, _sceAppMgrMmsMount, SceInt32 id, char *mount_point);
 

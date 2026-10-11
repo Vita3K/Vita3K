@@ -529,6 +529,7 @@ void reset_app_state(EmuEnvState &state) {
     state.current_app_title.clear();
     state.self_name.clear();
     state.self_path.clear();
+    state.launch_uri.reset();
     state.main_thread_id = 0;
     state.drop_inputs = false;
     state.missing_nids.clear();

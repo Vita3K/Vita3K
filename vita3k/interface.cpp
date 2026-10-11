@@ -701,6 +701,7 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
         cfg_args = split(emuenv.cfg.app_args, ",\\s+");
         args = &cfg_args;
     }
+    emuenv.launch_uri = emuenv.cfg.launch_uri;
     if (!args->empty()) {
         // why is this flipped
         std::vector<uint8_t> buf;

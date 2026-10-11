@@ -356,6 +356,7 @@ void abort_game_launch(EmuEnvState &emuenv) {
     emuenv.license_title_id.clear();
     emuenv.self_name.clear();
     emuenv.self_path.clear();
+    emuenv.launch_uri.reset();
     emuenv.main_thread_id = 0;
     emuenv.app_info = {};
     emuenv.drop_inputs = false;
