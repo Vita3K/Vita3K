@@ -1171,8 +1171,20 @@ EXPORT(SceUID, sceKernelCreateCallback, char *name, SceUInt32 attr, Ptr<SceKerne
     return emuenv.kernel.create_callback(emuenv.kernel.get_thread(thread_id), name, callbackFunc, pCommon);
 }
 
+// Whether a game may create a thread with this priority, absolute or relative to the default one
+static bool is_user_priority(int priority) {
+    return (priority >= SCE_KERNEL_HIGHEST_PRIORITY_USER && priority <= SCE_KERNEL_LOWEST_PRIORITY_USER)
+        || (priority >= SCE_KERNEL_HIGHEST_DEFAULT_PRIORITY && priority <= SCE_KERNEL_LOWEST_DEFAULT_PRIORITY);
+}
+
 EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry entry, int init_priority, SceKernelCreateThread_opt *options) {
     TRACY_FUNC(sceKernelCreateThreadForUser, name, entry, init_priority, options);
+    if (!name)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    if (init_priority != SCE_KERNEL_CURRENT_THREAD_PRIORITY && !is_user_priority(init_priority))
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_PRIORITY);
+    if (options->stack_size <= 0)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_STACK_SIZE);
     if (options->cpu_affinity_mask & ~SCE_KERNEL_CPU_MASK_USER_ALL) {
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }

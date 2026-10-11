@@ -39,10 +39,10 @@ thread                fail     # thread exit status errors, starting a running t
 thread_create_edges   fail     # creating a thread with no entry
 thread_edges          fail     # DelayThreadCB(0), deleting a deleted thread
 thread_info           pass
-thread_null_name      crash    # crashes on a thread with a NULL name
-thread_priority       fail     # priority limits
-thread_stack_negative fail     # a thread with a negative stack size can be created
-thread_stack_zero     fail     # a thread with a stack size of 0 can be created
+thread_null_name      pass
+thread_priority       pass
+thread_stack_negative pass
+thread_stack_zero     pass
 thread_state          fail     # thread exit status errors, stack free size, old affinity mask
 timeouts              fail     # time left after a wait
 timer                 fail     # timer events, stopped timers and old times
