@@ -219,6 +219,11 @@ class EventFlag final : public WithUidClass<SyncPrimitive, UidClass::event_flag>
 public:
     EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
 
+    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
+    static SceInt32 check_create(const char *name, SceUInt32 attr);
+    // Returns the error a poll or wait for pattern with wait_mode gets, or SCE_KERNEL_OK
+    static SceInt32 check_wait(SceUInt32 pattern, SceUInt32 wait_mode);
+
     SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
     SceInt32 set(SceUInt32 pattern);

@@ -144,7 +144,7 @@ EXPORT(SceUID, _sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID m
 
 EXPORT(SceUID, _sceKernelCreateEventFlag, const char *pName, SceUInt32 attr, SceUInt32 initPattern, const SceKernelEventFlagOptParam *pOptParam) {
     TRACY_FUNC(_sceKernelCreateEventFlag, pName, attr, initPattern, pOptParam);
-    if (const SceInt32 error = SyncPrimitive::check_name(pName, attr))
+    if (const SceInt32 error = EventFlag::check_create(pName, attr))
         return RET_ERROR(error);
 
     const auto event = std::make_shared<EventFlag>(attr, pName, initPattern);

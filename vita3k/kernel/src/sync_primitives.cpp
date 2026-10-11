@@ -851,6 +851,25 @@ EventFlag::EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern)
     , waiters(attr)
     , flags(init_pattern) {}
 
+SceInt32 EventFlag::check_create(const char *name, SceUInt32 attr) {
+    if (const SceInt32 error = check_name(name, attr))
+        return error;
+    if (attr & ~(SCE_EVENT_WAITMULTIPLE | SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE))
+        return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 EventFlag::check_wait(SceUInt32 pattern, SceUInt32 wait_mode) {
+    if (pattern == 0)
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    if (wait_mode & ~(SCE_EVENT_WAITOR | SCE_EVENT_WAITCLEAR | SCE_EVENT_WAITCLEAR_PAT))
+        return SCE_KERNEL_ERROR_ILLEGAL_MODE;
+    // Only one way of clearing the bits after the wait
+    if ((wait_mode & SCE_EVENT_WAITCLEAR) && (wait_mode & SCE_EVENT_WAITCLEAR_PAT))
+        return SCE_KERNEL_ERROR_ILLEGAL_MODE;
+    return SCE_KERNEL_OK;
+}
+
 void EventFlag::on_delete() {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
@@ -889,6 +908,8 @@ SceInt32 EventFlag::wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUIn
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
+    if (const SceInt32 error = check_wait(pattern, wait_mode))
+        return error;
 
     if (const SceInt32 result = try_take(pattern, wait_mode, out_bits); result != SCE_KERNEL_ERROR_EVF_COND)
         return result;
@@ -910,6 +931,8 @@ SceInt32 EventFlag::poll(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVF_ID;
+    if (const SceInt32 error = check_wait(pattern, wait_mode))
+        return error;
 
     return try_take(pattern, wait_mode, out_bits);
 }
