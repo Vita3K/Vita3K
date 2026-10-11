@@ -871,11 +871,9 @@ SceInt32 Condvar::signal(SignalTarget target) {
     if (target.type == SignalTarget::Type::Specific) {
         // Search for specified waiting thread
         auto *waiter = waiters.find_if([&](auto &w) { return w.thread->id == target.thread_id; });
-        if (waiter) {
-            waiters.wake(*waiter);
-        } else {
-            LOG_ERROR("Condition variable {}: target thread {} not found", uid, target.thread_id);
-        }
+        if (!waiter)
+            return SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
+        waiters.wake(*waiter);
     } else {
         waiters.wake_all();
     }
