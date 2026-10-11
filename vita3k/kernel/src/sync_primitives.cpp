@@ -785,12 +785,16 @@ SceInt32 Condvar::wait(MemState &mem, const ThreadStatePtr &thread, SceUInt32 *t
     const Deadline deadline = deadline_from(timeout);
     const WaitResult r = waiters.wait(guard, thread, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_COND_SIGNAL : SCE_KERNEL_WAITTYPE_COND_SIGNAL, uid }, {}, deadline, callbacks);
     writeback_timeout(timeout, deadline);
-    if (!r || *r != SCE_KERNEL_OK)
+    // A timed out wait still takes the mutex back, as long as that takes
+    const bool timed_out = r && *r == SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+    if (!r || (*r != SCE_KERNEL_OK && !timed_out))
         return guest_result(r);
 
     guard.unlock();
     // Taking the mutex back is still part of the condition variable wait
-    const SceInt32 result = associated_mutex->acquire(mem, thread, 1, timeout, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_COND_LW_MUTEX : SCE_KERNEL_WAITTYPE_COND_MUTEX, uid }, callbacks);
+    const SceInt32 result = associated_mutex->acquire(mem, thread, 1, timed_out ? nullptr : timeout, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_COND_LW_MUTEX : SCE_KERNEL_WAITTYPE_COND_MUTEX, uid }, callbacks);
+    if (timed_out && result == SCE_KERNEL_OK)
+        return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
     // Report a wait ended by the mutex with the mutex error codes
     if (result == SCE_KERNEL_ERROR_WAIT_DELETE)
         return lightweight() ? SCE_KERNEL_ERROR_WAIT_DELETE_LW_MUTEX : SCE_KERNEL_ERROR_WAIT_DELETE_MUTEX;
