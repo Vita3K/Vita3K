@@ -1045,6 +1045,23 @@ MsgPipe::MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size)
     , receivers(attr)
     , data_buffer(buf_size) {}
 
+SceInt32 MsgPipe::check_create(const char *name, SceUInt32 type, SceUInt32 attr, SceSize buf_size) {
+    if (const SceInt32 error = check_name(name, attr))
+        return error;
+    if (type != SCE_KERNEL_MSG_PIPE_TYPE_USER_MAIN)
+        return SCE_KERNEL_ERROR_ILLEGAL_TYPE;
+    if (attr & ~(SCE_KERNEL_MSG_PIPE_ATTR_TH_MASK | SCE_KERNEL_ATTR_OPENABLE | SCE_KERNEL_EVENT_ATTR_AUTO_RESET | SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY))
+        return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    if (buf_size == 0)
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+    return SCE_KERNEL_OK;
+}
+
+// Returns whether a send or receive takes this wait mode
+static bool is_msg_pipe_mode(SceUInt32 wait_mode) {
+    return !(wait_mode & ~(SCE_KERNEL_MSG_PIPE_MODE_FULL | SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT | SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE));
+}
+
 void MsgPipe::on_delete() {
     // Wake up every thread
     senders.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
@@ -1064,6 +1081,8 @@ void MsgPipe::wake_waiter(WaitQueue<WaitEntry> &waiters, std::size_t available) 
 std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void *buf, SceSize size, SceUInt32 *timeout, bool callbacks) {
     const bool ASAP = !(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
 
+    if (!is_msg_pipe_mode(wait_mode))
+        return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_MODE);
     if (size > data_buffer.Capacity())
         return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
 
@@ -1110,6 +1129,8 @@ std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, 
 std::expected<SceSize, SceInt32> MsgPipe::send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const void *buf, SceSize size, SceUInt32 *timeout, bool callbacks) {
     const bool ASAP = !(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
 
+    if (!is_msg_pipe_mode(wait_mode))
+        return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_MODE);
     if (size > data_buffer.Capacity())
         return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
 

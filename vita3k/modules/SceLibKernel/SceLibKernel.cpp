@@ -1201,7 +1201,7 @@ EXPORT(int, sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const ch
 
 EXPORT(int, sceKernelCreateMsgPipe, const char *name, uint32_t type, uint32_t attr, SceSize bufSize, const SceKernelCreateMsgPipeOpt *opt) {
     TRACY_FUNC(sceKernelCreateMsgPipe, name, type, attr, bufSize, opt);
-    if (const SceInt32 error = SyncPrimitive::check_name(name, attr))
+    if (const SceInt32 error = MsgPipe::check_create(name, type, attr, bufSize))
         return RET_ERROR(error);
 
     const auto msgpipe = std::make_shared<MsgPipe>(attr, name, bufSize);
