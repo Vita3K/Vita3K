@@ -47,7 +47,7 @@ thread_state          fail     # thread exit status errors, stack free size, old
 timeouts              fail     # time left after a wait
 timer                 fail     # timer events, stopped timers and old times
 timer_edges           fail     # timer event result pattern and timer base
-timer_wait_no_event   timeout  # hangs on a timer wait with no event set
+timer_wait_no_event   pass
 uid                   pass
 uid_class             pass
 uid_semantics         fail     # opening gives a new UID

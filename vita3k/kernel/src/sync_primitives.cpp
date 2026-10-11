@@ -232,9 +232,6 @@ SceInt32 Timer::try_take(SceUInt32 *result_pattern, SceUInt64 *user_data, uint64
 }
 
 SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks) {
-    if (timeout)
-        LOG_WARN_ONCE("Ignoring timeout");
-
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID;
@@ -243,19 +240,22 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
     if (const SceInt32 result = try_take(result_pattern, user_data, current_time); result != SCE_KERNEL_ERROR_EVENT_COND)
         return result;
 
+    const Deadline guest_deadline = deadline_from(timeout);
     WaitQueue<std::monostate>::Waiter waiter{ .thread = thread, .priority = thread->priority };
     waiters.push(waiter);
 
     while (true) {
         // A waker ended the wait, such as a delete
-        if (waiter.result)
+        if (waiter.result) {
+            writeback_timeout(timeout, guest_deadline);
             return *waiter.result;
+        }
         // only the first waiter waits for the event, the others wait until they are first
         const bool is_first = waiters.front() == &waiter;
-        Deadline deadline = Deadline::max();
+        Deadline deadline = guest_deadline;
         if (is_first && next_event != std::numeric_limits<uint64_t>::max()) {
             const uint64_t wait_time = next_event > current_time ? next_event - current_time : 0;
-            deadline = std::chrono::steady_clock::now() + std::chrono::microseconds(wait_time);
+            deadline = std::min(deadline, std::chrono::steady_clock::now() + std::chrono::microseconds(wait_time));
         }
 
         guard.unlock();
@@ -270,9 +270,18 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
         current_time = get_current_time();
         if (waiters.front() == &waiter && (event_set || current_time > next_event))
             break;
+
+        // The guest's timeout ran out before an event came
+        if (std::chrono::steady_clock::now() >= guest_deadline) {
+            waiters.remove(waiter);
+            waiters.notify_all();
+            writeback_timeout(timeout, guest_deadline);
+            return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
+        }
     }
 
     waiters.remove(waiter);
+    writeback_timeout(timeout, guest_deadline);
 
     event_set = !is_pulse && !(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
     advance_next_event(current_time);
