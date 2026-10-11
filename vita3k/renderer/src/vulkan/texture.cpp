@@ -27,7 +27,21 @@
 #include <util/align.h>
 #include <vkutil/vkutil.h>
 
+#include <unordered_map>
+
 namespace renderer::vulkan {
+
+static bool format_supports_linear_filtering(const vk::PhysicalDevice &device, vk::Format format) {
+    static std::unordered_map<vk::Format, bool> cache;
+    const auto it = cache.find(format);
+    if (it != cache.end())
+        return it->second;
+
+    const vk::FormatProperties props = device.getFormatProperties(format);
+    const bool supported = static_cast<bool>(props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+    cache[format] = supported;
+    return supported;
+}
 
 // return if this format can be used to read a depth stencil buffer
 // Only return the formats we support and make sense for now
@@ -125,7 +139,8 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
 
     if (lookup_result.has_value()) {
         // get the sampler now
-        context.state.texture_cache.cache_and_bind_sampler(texture, is_depth_surface);
+        const bool no_linear = !format_supports_linear_filtering(context.state.physical_device, lookup_result->format);
+        context.state.texture_cache.cache_and_bind_sampler(texture, no_linear);
     } else {
         context.state.texture_cache.cache_and_bind_texture(texture, mem);
         auto &image = context.state.texture_cache.current_texture->texture;
@@ -134,6 +149,9 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
             image.layout,
             image.format
         };
+        if (context.state.texture_cache.use_sampler_cache
+            && !format_supports_linear_filtering(context.state.physical_device, image.format))
+            context.state.texture_cache.cache_and_bind_sampler(texture, true);
     }
 
     const vk::ImageLayout layout = vkutil::get_underlying_layout(lookup_result->layout);
