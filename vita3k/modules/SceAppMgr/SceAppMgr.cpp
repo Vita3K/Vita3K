@@ -189,9 +189,22 @@ EXPORT(int, _sceAppMgrGetAppMgrState) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceAppMgrGetAppParam) {
-    TRACY_FUNC(_sceAppMgrGetAppParam);
-    return UNIMPLEMENTED();
+// The size sceAppMgrGetAppParam writes at most, without a terminator if the URI fills it
+constexpr size_t APP_PARAM_SIZE = 1024;
+
+EXPORT(SceInt32, _sceAppMgrGetAppParam, char *param) {
+    TRACY_FUNC(_sceAppMgrGetAppParam, param);
+    if (!param)
+        return RET_ERROR(SCE_APPMGR_ERROR_NULL_POINTER);
+
+    // Only the first call gets the launch URI, the ones after it get an empty string
+    if (!emuenv.launch_uri) {
+        param[0] = '\0';
+        return SCE_APPMGR_ERROR_APP_PARAM_READ;
+    }
+    memcpy(param, emuenv.launch_uri->c_str(), std::min(emuenv.launch_uri->size() + 1, APP_PARAM_SIZE));
+    emuenv.launch_uri.reset();
+    return 0;
 }
 
 EXPORT(int, _sceAppMgrGetAppParam2) {

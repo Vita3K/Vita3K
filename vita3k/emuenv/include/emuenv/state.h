@@ -134,6 +134,8 @@ public:
     fs::path patch_path{}; // Path for patch files
     std::string self_name{};
     std::string self_path{};
+    // The URI the running app was launched with, until sceAppMgrGetAppParam takes it
+    std::optional<std::string> launch_uri;
     Config &cfg;
     SceUID main_thread_id{};
     size_t frame_count = 0;

@@ -167,6 +167,7 @@ static void check_members(Config &self, const Config &rhs) {
     self.console = rhs.console;
     self.frontend = rhs.frontend;
     self.app_args = rhs.app_args;
+    self.launch_uri = rhs.launch_uri;
     self.load_app_list = rhs.load_app_list;
     self.self_path = rhs.self_path;
 }
@@ -351,6 +352,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
     input->add_flag("--console,-z", command_line.console, "Start the emulator in console mode.")
        ->default_val(false)->group("Input");
     input->add_option("--app-args,-Z", command_line.app_args, "Argument for app, use ', ' to separate arguments.")
+        ->default_str("")->group("Input");
+    input->add_option("--launch-uri", command_line.launch_uri, "URI the app gets from sceAppMgrGetAppParam, as if another app launched it with it, like psgm:play?titleid=PCSA00000&arg=1")
         ->default_str("")->group("Input");
     input->add_option("--load-app-list,-a", command_line.load_app_list, "Starts the emulator with load app list.")
        ->default_val(false)->group("Input");
