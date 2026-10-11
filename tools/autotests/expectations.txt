@@ -20,7 +20,7 @@ lw_cond               pass
 lw_mutex              pass
 lw_work               pass
 lw_work_layout        fail     # lightweight mutex and condition variable work area contents
-misc_edges            fail     # duplicate names, info sizes, UID classes and the time of an unknown timer
+misc_edges            fail     # duplicate names, info sizes and UID classes
 msgpipe               pass
 msgpipe_edges         pass
 msgpipe_waits         pass

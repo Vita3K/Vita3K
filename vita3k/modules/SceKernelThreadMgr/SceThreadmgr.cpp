@@ -1397,8 +1397,11 @@ EXPORT(uint64_t, sceKernelGetTimerBaseWide, SceUID timer_handle) {
     const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
     const auto guard = timer ? timer->lock() : std::unique_lock<std::mutex>();
 
-    if (!guard)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+    // An error code could be taken for a time, so an unknown timer gets all ones
+    if (!guard) {
+        RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+        return std::numeric_limits<uint64_t>::max();
+    }
 
     return timer->time;
 }
@@ -1408,8 +1411,11 @@ EXPORT(uint64_t, sceKernelGetTimerTimeWide, SceUID timer_handle) {
     const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
     const auto guard = timer ? timer->lock() : std::unique_lock<std::mutex>();
 
-    if (!guard)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+    // An error code could be taken for a time, so an unknown timer gets all ones
+    if (!guard) {
+        RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+        return std::numeric_limits<uint64_t>::max();
+    }
 
     return get_current_time() - timer->time;
 }
