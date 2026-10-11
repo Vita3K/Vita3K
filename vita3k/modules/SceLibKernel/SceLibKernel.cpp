@@ -1712,7 +1712,7 @@ EXPORT(int, sceKernelSetTimerEvent, SceUID timer_handle, SceInt32 type, SceKerne
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
     if (!interval)
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
     return timer->set_event(type, *interval, repeats);
 }

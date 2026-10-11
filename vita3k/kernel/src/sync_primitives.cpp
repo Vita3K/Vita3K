@@ -217,8 +217,10 @@ SceInt32 Timer::set_event(SceUID type, SceKernelSysClock interval, SceInt32 repe
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
+    if (type != SCE_KERNEL_TIMER_TYPE_SET_EVENT && type != SCE_KERNEL_TIMER_TYPE_PULSE_EVENT)
+        return SCE_KERNEL_ERROR_ILLEGAL_TYPE;
 
-    is_pulse = type != 0;
+    is_pulse = type == SCE_KERNEL_TIMER_TYPE_PULSE_EVENT;
     is_repeat = repeats != 0;
     event_interval = interval;
 

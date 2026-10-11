@@ -79,6 +79,9 @@
 
 #define SCE_KERNEL_EVENT_TIMER 0x00008000U
 
+#define SCE_KERNEL_TIMER_TYPE_SET_EVENT 0
+#define SCE_KERNEL_TIMER_TYPE_PULSE_EVENT 1
+
 #define SCE_KERNEL_MSG_PIPE_TYPE_USER_MAIN 0x00000040U
 
 // The bits that order the threads waiting on a message pipe, separately for senders and receivers
