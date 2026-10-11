@@ -1192,6 +1192,8 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
     TRACY_FUNC(sceKernelCreateThreadForUser, name, entry, init_priority, options);
     if (!name)
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_MEMORY_ACCESS);
+    if (!entry)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     if (init_priority != SCE_KERNEL_CURRENT_THREAD_PRIORITY && !is_user_priority(init_priority))
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_PRIORITY);
     if (options->stack_size <= 0)
