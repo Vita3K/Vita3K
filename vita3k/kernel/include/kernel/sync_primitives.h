@@ -110,6 +110,9 @@ class Semaphore final : public WithUidClass<SyncPrimitive, UidClass::semaphore> 
 public:
     Semaphore(SceUInt32 attr, const char *name, SceInt32 init_val, SceInt32 max_val);
 
+    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val);
+
     SceInt32 wait(const ThreadStatePtr &thread, SceInt32 need_count, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceInt32 need_count);
     SceInt32 signal(SceInt32 count);

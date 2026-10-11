@@ -191,10 +191,11 @@ EXPORT(SceUID, _sceKernelCreateRWLock, const char *name, SceUInt32 attr, SceKern
 
 EXPORT(int, _sceKernelCreateSema, const char *name, SceUInt attr, int initVal, Ptr<SceKernelCreateSema_opt> opt) {
     TRACY_FUNC(_sceKernelCreateSema, name, attr, initVal, opt);
-    if (const SceInt32 error = SyncPrimitive::check_name(name, attr))
+    const SceInt32 max_val = opt.get(emuenv.mem)->maxVal;
+    if (const SceInt32 error = Semaphore::check_create(name, attr, initVal, max_val))
         return RET_ERROR(error);
 
-    const auto semaphore = std::make_shared<Semaphore>(attr, name, initVal, opt.get(emuenv.mem)->maxVal);
+    const auto semaphore = std::make_shared<Semaphore>(attr, name, initVal, max_val);
     return emuenv.kernel.objects.add(semaphore, emuenv.kernel.get_next_uid());
 }
 
@@ -1504,7 +1505,6 @@ EXPORT(SceUID, sceKernelOpenTimer, const char *pName) {
 
 EXPORT(int, sceKernelPollSema, SceUID semaid, int32_t needCount) {
     TRACY_FUNC(sceKernelPollSema, semaid, needCount);
-    assert(needCount >= 0);
     const SemaphorePtr semaphore = emuenv.kernel.objects.find<Semaphore>(semaid);
     if (!semaphore) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);

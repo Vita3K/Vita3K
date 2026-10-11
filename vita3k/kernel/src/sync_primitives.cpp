@@ -661,6 +661,16 @@ Semaphore::Semaphore(SceUInt32 attr, const char *name, SceInt32 init_val, SceInt
     , waiters(attr)
     , val(init_val) {}
 
+SceInt32 Semaphore::check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val) {
+    if (const SceInt32 error = check_name(name, attr))
+        return error;
+    if (attr & ~(SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE))
+        return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
+    if (init_val < 0 || max_val <= 0 || init_val > max_val)
+        return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
+    return SCE_KERNEL_OK;
+}
+
 void Semaphore::on_delete() {
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
@@ -669,6 +679,8 @@ SceInt32 Semaphore::wait(const ThreadStatePtr &thread, SceInt32 need_count, SceU
     auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
+    if (need_count <= 0 || need_count > max)
+        return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
     if (val < need_count) {
         const Deadline deadline = deadline_from(timeout);
@@ -686,6 +698,8 @@ SceInt32 Semaphore::poll(SceInt32 need_count) {
     const auto guard = lock();
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
+    if (need_count <= 0 || need_count > max)
+        return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
 
     if (val < need_count) {
         return SCE_KERNEL_ERROR_SEMA_ZERO;
@@ -699,7 +713,9 @@ SceInt32 Semaphore::signal(SceInt32 count) {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID;
 
-    if (val + count > max) {
+    if (count < 0)
+        return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
+    if (count > max - val) {
         return SCE_KERNEL_ERROR_SEMA_OVF;
     }
     val += count;

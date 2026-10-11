@@ -31,9 +31,9 @@ open                  fail     # opening an object that isn't openable
 queue_order           fail     # priority changes while waiting, reader/writer lock writer priority, pipe queue order
 rwlock                fail     # reader/writer lock unlock errors and writer priority
 sema_mutex_edges      fail     # semaphore and mutex create and count checks
-sema_poll_negative    fail     # a poll for a negative count succeeds
+sema_poll_negative    pass
 sema_waits            pass
-semaphore             fail     # semaphore count checks
+semaphore             pass
 simple_event          fail     # simple event create bit, result pattern of a failed wait
 thread                fail     # thread exit status errors, starting a running thread, end wait timeout
 thread_create_edges   fail     # creating a thread with no entry
