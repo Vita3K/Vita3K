@@ -20,7 +20,7 @@ lw_cond               pass
 lw_mutex              pass
 lw_work               pass
 lw_work_layout        fail     # lightweight mutex and condition variable work area contents
-misc_edges            fail     # duplicate names, info sizes and UID classes
+misc_edges            fail     # duplicate names and info sizes
 msgpipe               pass
 msgpipe_edges         pass
 msgpipe_waits         pass
@@ -37,7 +37,7 @@ semaphore             pass
 simple_event          pass
 thread                fail     # thread exit status errors, starting a running thread, deleting itself
 thread_create_edges   pass
-thread_edges          fail     # DelayThreadCB(0), deleting a deleted thread
+thread_edges          fail     # DelayThreadCB(0)
 thread_info           pass
 thread_null_name      pass
 thread_priority       pass

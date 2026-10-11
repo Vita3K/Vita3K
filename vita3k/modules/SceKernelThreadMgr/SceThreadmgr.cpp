@@ -1317,9 +1317,10 @@ EXPORT(int, sceKernelDeleteSimpleEvent, SceUID event_id) {
 EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     TRACY_FUNC(sceKernelDeleteThread, thid);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thid);
-    if (!thread || thread->status != ThreadStatus::dormant) {
-        return SCE_KERNEL_ERROR_NOT_DORMANT;
-    }
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    if (thread->status != ThreadStatus::dormant)
+        return RET_ERROR(SCE_KERNEL_ERROR_NOT_DORMANT);
     thread->exit_delete(false);
     return 0;
 }
@@ -1389,7 +1390,7 @@ EXPORT(SceInt32, sceKernelGetThreadmgrUIDClass, SceUID uid) {
         return std::to_underlying(UidClass::thread);
     if (const std::shared_ptr<KernelObject> obj = emuenv.kernel.objects.find(uid))
         return std::to_underlying(obj->get_uid_class());
-    return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_UID);
+    return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
 }
 
 EXPORT(uint64_t, sceKernelGetTimerBaseWide, SceUID timer_handle) {
