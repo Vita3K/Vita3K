@@ -45,6 +45,9 @@ class SimpleEvent final : public WithUidClass<SyncPrimitive, UidClass::simple_ev
 public:
     SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
 
+    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
+
     SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
     SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);

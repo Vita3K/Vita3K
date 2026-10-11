@@ -60,6 +60,8 @@
 
 // The system event a wait on an event gets as its result when the wait ends with an error
 #define SCE_KERNEL_EVENT_ERROR 0x00000010U
+// The bits of a simple event a game may set and clear, the others are system events
+#define SCE_KERNEL_EVENT_USER_DEFINED_MASK 0xFF000000U
 
 #define SCE_KERNEL_ATTR_NOTIFY_CB_ALL 0x00000000U
 #define SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY 0x00000800U
