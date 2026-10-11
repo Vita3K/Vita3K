@@ -58,6 +58,9 @@
 #define SCE_KERNEL_EVENT_ATTR_MANUAL_RESET 0x00000000U
 #define SCE_KERNEL_EVENT_ATTR_AUTO_RESET 0x00000100U
 
+// The system event a wait on an event gets as its result when the wait ends with an error
+#define SCE_KERNEL_EVENT_ERROR 0x00000010U
+
 #define SCE_KERNEL_ATTR_NOTIFY_CB_ALL 0x00000000U
 #define SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY 0x00000800U
 
