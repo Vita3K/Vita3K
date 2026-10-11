@@ -42,7 +42,7 @@ SimpleEvent::SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_patter
     : WithUidClass(attr, name)
     , auto_reset(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET)
     , waiters(attr)
-    , pattern(init_pattern) {}
+    , pattern(init_pattern | SCE_KERNEL_EVENT_CREATE) {}
 
 SceInt32 SimpleEvent::check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern) {
     if (const SceInt32 error = check_name(name, attr))
@@ -55,6 +55,20 @@ SceInt32 SimpleEvent::check_create(const char *name, SceUInt32 attr, SceUInt32 i
 }
 
 void SimpleEvent::on_delete() {
+    // Waits for the delete event end with it, the others with an error
+    waiters.wake_if([&](auto &waiter) {
+        const WaitEntry &wait = waiter.entry;
+        if (!(wait.pattern & SCE_KERNEL_EVENT_DELETE))
+            return false;
+
+        if (wait.result_pattern)
+            *wait.result_pattern = (pattern | SCE_KERNEL_EVENT_DELETE) & wait.pattern;
+
+        if (wait.user_data)
+            *wait.user_data = last_user_data;
+
+        return true;
+    });
     waiters.wake_all(SCE_KERNEL_ERROR_WAIT_DELETE);
 }
 
@@ -66,7 +80,7 @@ SceInt32 SimpleEvent::try_take(SceUInt32 wait_pattern, SceUInt32 *result_pattern
     }
 
     if (result_pattern)
-        *result_pattern = pattern;
+        *result_pattern = pattern & wait_pattern;
 
     if (auto_reset)
         // all common bits are zeroed
@@ -93,7 +107,7 @@ SceInt32 SimpleEvent::wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern,
     writeback_timeout(timeout, deadline);
     const SceInt32 err = guest_result(r);
     // A timed out wait keeps the 0 try_take wrote, one ended by a delete or a cancel gets the error
-    // event, and set_or_pulse writes the bits of one that succeeds
+    // event, and set_or_pulse or on_delete writes the bits of one that succeeds
     if (err < 0 && err != SCE_KERNEL_ERROR_WAIT_TIMEOUT && result_pattern)
         *result_pattern = SCE_KERNEL_EVENT_ERROR;
     if (err < 0 && user_data)
@@ -120,9 +134,7 @@ SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, b
 
     const SceUInt32 old_pattern = pattern;
     const SceUInt64 old_user_data = last_user_data;
-    const SceUInt32 new_pattern = pattern | set_pattern;
-
-    pattern = new_pattern;
+    pattern |= set_pattern;
     last_user_data = user_data;
 
     waiters.wake_if([&](auto &waiter) {
@@ -131,7 +143,7 @@ SceInt32 SimpleEvent::set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, b
             return false;
 
         if (wait.result_pattern)
-            *wait.result_pattern = new_pattern;
+            *wait.result_pattern = pattern & wait.pattern;
 
         if (wait.user_data)
             *wait.user_data = last_user_data;

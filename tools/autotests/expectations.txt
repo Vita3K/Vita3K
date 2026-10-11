@@ -9,9 +9,9 @@ cond_signal           pass
 cond_waits            fail     # SignalCond wakes every waiter, SignalCondTo of a thread that isn't waiting
 core_affinity         fail     # threads ignore their core affinity and the priorities on a core
 delay                 pass
-event_bit_mask        fail     # simple event user bit mask and create bit
-event_bits            fail     # simple event create bit, and waits on a deleted event
-event_edges           fail     # event pattern 0, wait modes and attribute checks
+event_bit_mask        pass
+event_bits            pass
+event_edges           pass
 event_flag            pass
 event_flag_waits      pass
 exit_process          pass
@@ -34,7 +34,7 @@ sema_mutex_edges      pass
 sema_poll_negative    pass
 sema_waits            pass
 semaphore             pass
-simple_event          fail     # simple event create bit, result pattern of a failed wait
+simple_event          pass
 thread                fail     # thread exit status errors, starting a running thread, deleting itself
 thread_create_edges   fail     # creating a thread with no entry
 thread_edges          fail     # DelayThreadCB(0), deleting a deleted thread
