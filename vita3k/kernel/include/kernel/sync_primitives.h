@@ -159,6 +159,8 @@ public:
 private:
     void on_delete() override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_mutex; }
+    // Returns ILLEGAL_COUNT for a lock or unlock count the mutex can't take, or SCE_KERNEL_OK
+    SceInt32 check_count(SceInt32 count) const;
     // Takes the mutex if it is free or owned by thread, or returns why it can't. The lock must be held.
     SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
     // Writes the owner and lock count to a lightweight mutex's work area, which the guest reads. The lock must be held.

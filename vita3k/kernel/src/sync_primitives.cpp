@@ -378,9 +378,17 @@ Mutex::Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateP
 SceInt32 Mutex::check_create(const char *name, SceUInt32 attr, SceInt32 init_count) {
     if (const SceInt32 error = check_name(name, attr))
         return error;
+    if (attr & ~(SCE_KERNEL_MUTEX_ATTR_RECURSIVE | SCE_KERNEL_MUTEX_ATTR_CEILING | SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE))
+        return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
     if (init_count < 0)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
-    if (init_count > 1 && (attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE))
+    if (init_count > 1 && !(attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE))
+        return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 Mutex::check_count(SceInt32 count) const {
+    if (count <= 0 || (count > 1 && !(attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE)))
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
     return SCE_KERNEL_OK;
 }
@@ -398,10 +406,15 @@ SceInt32 Mutex::try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 c
         // Owned by ourselves
         if (owner == thread) {
             if (is_recursive) {
+                if (lightweight()) {
+                    // A lightweight mutex doesn't check for overflow, its count just wraps
+                    lock_count = static_cast<SceInt32>(static_cast<SceUInt32>(lock_count) + static_cast<SceUInt32>(count));
+                    workarea.get(mem)->lockCount = lock_count;
+                    return SCE_KERNEL_OK;
+                }
+                if (count > std::numeric_limits<SceInt32>::max() - lock_count)
+                    return SCE_KERNEL_ERROR_MUTEX_LOCK_OVF;
                 lock_count += count;
-                if (lightweight())
-                    workarea.get(mem)->lockCount += count;
-
                 return SCE_KERNEL_OK;
             }
             if (lightweight())
@@ -440,6 +453,8 @@ SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 co
     auto guard = lock();
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
+    if (const SceInt32 error = check_count(count))
+        return error;
 
     // Owned by someone else, wait until it is handed over
     if (lock_count > 0 && owner != thread) {
@@ -461,6 +476,8 @@ SceInt32 Mutex::try_acquire(MemState &mem, const ThreadStatePtr &thread, SceInt3
     const auto guard = lock();
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
+    if (const SceInt32 error = check_count(count))
+        return error;
 
     return try_take(mem, thread, count);
 }
@@ -470,21 +487,22 @@ SceInt32 Mutex::release(const ThreadStatePtr &thread, SceInt32 unlock_count) {
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
 
-    if (thread == owner) {
-        if (unlock_count > lock_count) {
-            return SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF;
-        }
+    if (const SceInt32 error = check_count(unlock_count))
+        return error;
+    if (thread != owner)
+        return lightweight() ? SCE_KERNEL_ERROR_LW_MUTEX_NOT_OWNED : SCE_KERNEL_ERROR_MUTEX_NOT_OWNED;
+    if (unlock_count > lock_count)
+        return lightweight() ? SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF : SCE_KERNEL_ERROR_MUTEX_UNLOCK_UDF;
 
-        lock_count -= unlock_count;
+    lock_count -= unlock_count;
 
-        if (lock_count == 0) {
-            owner = nullptr;
+    if (lock_count == 0) {
+        owner = nullptr;
 
-            if (auto *waiter = waiters.front()) {
-                lock_count += waiter->entry.lock_count;
-                owner = waiter->thread;
-                waiters.wake(*waiter);
-            }
+        if (auto *waiter = waiters.front()) {
+            lock_count += waiter->entry.lock_count;
+            owner = waiter->thread;
+            waiters.wake(*waiter);
         }
     }
 

@@ -17,7 +17,7 @@ event_flag_waits      pass
 exit_process          pass
 info                  fail     # event flag initial pattern, message pipe info
 lw_cond               pass
-lw_mutex              fail     # lightweight mutex count and ownership checks
+lw_mutex              pass
 lw_work               pass
 lw_work_layout        fail     # lightweight mutex and condition variable work area contents
 misc_edges            fail     # duplicate names, info sizes, UID classes and timer event errors
@@ -25,12 +25,12 @@ msgpipe               pass
 msgpipe_edges         fail     # message pipe create, attribute and mode checks
 msgpipe_waits         pass
 multi_events          fail     # waiting on several events, callbacks registered to events
-mutex                 fail     # heavy mutex count and ownership checks
+mutex                 pass
 mutex_waits           fail     # a mutex isn't unlocked when the thread holding it ends
 open                  fail     # opening an object that isn't openable
 queue_order           fail     # priority changes while waiting, reader/writer lock writer priority, pipe queue order
 rwlock                fail     # reader/writer lock unlock errors and writer priority
-sema_mutex_edges      fail     # semaphore and mutex create and count checks
+sema_mutex_edges      pass
 sema_poll_negative    pass
 sema_waits            pass
 semaphore             pass
