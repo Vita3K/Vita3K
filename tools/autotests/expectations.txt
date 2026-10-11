@@ -22,7 +22,7 @@ lw_work               pass
 lw_work_layout        fail     # lightweight mutex and condition variable work area contents
 misc_edges            fail     # duplicate names, info sizes, UID classes and timer event errors
 msgpipe               pass
-msgpipe_edges         fail     # message pipe create, attribute and mode checks
+msgpipe_edges         pass
 msgpipe_waits         pass
 multi_events          fail     # waiting on several events, callbacks registered to events
 mutex                 pass

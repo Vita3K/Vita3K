@@ -1098,9 +1098,10 @@ std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, 
     if (!guard)
         return std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
 
+    // An ASAP receive needs at least 1 byte to move, so one of 0 bytes never ends
     const auto can_receive = [&] {
         const std::size_t availableSize = data_buffer.Used();
-        return (availableSize >= size) || (ASAP && availableSize >= 1);
+        return ASAP ? size >= 1 && availableSize >= 1 : availableSize >= size;
     };
 
     if (!can_receive()) {
@@ -1138,10 +1139,10 @@ std::expected<SceSize, SceInt32> MsgPipe::send(const ThreadStatePtr &thread, Sce
     if (!guard)
         return std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
 
-    // If ASAP and there's at least 1 free byte, or FULL and there's enough space, copy and return directly.
+    // An ASAP send needs at least 1 byte to move, so one of 0 bytes never ends
     const auto can_send = [&] {
         const std::size_t freeSize = data_buffer.Free();
-        return (freeSize >= size) || (ASAP && (freeSize >= 1));
+        return ASAP ? size >= 1 && freeSize >= 1 : freeSize >= size;
     };
 
     if (!can_send()) {

@@ -1794,10 +1794,10 @@ EXPORT(int, sceKernelTryReceiveMsgPipe, SceUID msgpipe_id, char *recv_buf, SceSi
     if (!msgpipe)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
     const auto size = msgpipe->receive(emuenv.kernel.get_thread(thread_id), wait_mode | SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT, recv_buf, msg_size, nullptr, false);
+    if (result)
+        *result = size.value_or(0);
     if (!size)
         return size.error();
-    if (result)
-        *result = *size;
     return SCE_KERNEL_OK;
 }
 
@@ -1812,10 +1812,10 @@ EXPORT(int, sceKernelTrySendMsgPipe, SceUID msgPipeId, const void *pSendBuf, Sce
     if (!msgpipe)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
     const auto size = msgpipe->send(emuenv.kernel.get_thread(thread_id), waitMode | SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT, pSendBuf, sendSize, nullptr, false);
+    if (pResult)
+        *pResult = size.value_or(0);
     if (!size)
         return size.error();
-    if (pResult)
-        *pResult = *size;
     return SCE_KERNEL_OK;
 }
 
