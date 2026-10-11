@@ -46,6 +46,7 @@ struct Config {
     // Setting not present in the YAML file
     fs::path config_path = {};
     std::string app_args;
+    std::string launch_uri;
     std::string self_path;
     bool overwrite_config = true;
     bool load_config = false;

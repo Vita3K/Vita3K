@@ -116,6 +116,9 @@ private:
     std::unique_ptr<CompatState> _compat;
     mutable std::mutex _launch_request_mutex;
     std::optional<AppLaunchRequest> _pending_launch_request;
+    // The URI the running app was launched with, until sceAppMgrGetAppParam takes it
+    mutable std::mutex _launch_uri_mutex;
+    std::optional<std::string> _launch_uri;
 
 public:
     // App info contained in its `param.sfo` file
@@ -198,6 +201,22 @@ public:
     void clear_app_launch_request() {
         std::scoped_lock lock(_launch_request_mutex);
         _pending_launch_request.reset();
+    }
+
+    void set_launch_uri(std::string uri) {
+        std::scoped_lock lock(_launch_uri_mutex);
+        _launch_uri = std::move(uri);
+    }
+
+    // Returns the launch URI to the first caller only
+    std::optional<std::string> take_launch_uri() {
+        std::scoped_lock lock(_launch_uri_mutex);
+        return std::exchange(_launch_uri, std::nullopt);
+    }
+
+    void clear_launch_uri() {
+        std::scoped_lock lock(_launch_uri_mutex);
+        _launch_uri.reset();
     }
 
     Root get_root_paths() const {
