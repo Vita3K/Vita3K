@@ -854,8 +854,9 @@ SceInt32 Condvar::wait(MemState &mem, const ThreadStatePtr &thread, SceUInt32 *t
     const SceInt32 result = associated_mutex->acquire(mem, thread, 1, timed_out ? nullptr : timeout, { lightweight() ? SCE_KERNEL_WAITTYPE_LW_COND_LW_MUTEX : SCE_KERNEL_WAITTYPE_COND_MUTEX, uid }, callbacks);
     if (timed_out && result == SCE_KERNEL_OK)
         return SCE_KERNEL_ERROR_WAIT_TIMEOUT;
-    // Report a wait ended by the mutex with the mutex error codes
-    if (result == SCE_KERNEL_ERROR_WAIT_DELETE)
+    // Report a wait ended by the mutex with the mutex error codes, also when the mutex was deleted
+    // before the wait went back to it
+    if (result == SCE_KERNEL_ERROR_WAIT_DELETE || result == SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID || result == SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID)
         return lightweight() ? SCE_KERNEL_ERROR_WAIT_DELETE_LW_MUTEX : SCE_KERNEL_ERROR_WAIT_DELETE_MUTEX;
     // only heavy mutexes can be canceled
     if (result == SCE_KERNEL_ERROR_WAIT_CANCEL)

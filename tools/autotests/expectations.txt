@@ -4,7 +4,7 @@
 callback              pass
 callback_edges        pass
 cond                  pass
-cond_rwlock_edges     fail     # condition variable and reader/writer lock error codes
+cond_rwlock_edges     pass
 cond_signal           pass
 cond_waits            fail     # SignalCond wakes every waiter
 core_affinity         fail     # threads ignore their core affinity and the priorities on a core
