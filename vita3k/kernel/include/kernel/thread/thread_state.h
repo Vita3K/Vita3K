@@ -69,7 +69,9 @@ struct ThreadState {
     WaitTarget wait_target;
 
     std::condition_variable status_cond;
-    uint32_t returned_value = 0;
+    // The exit status the guest sees: DORMANT until the first start, NOT_DORMANT while the thread
+    // runs, then what it returned or exited with
+    uint32_t returned_value = SCE_KERNEL_ERROR_DORMANT;
 
     ThreadState() = delete;
     explicit ThreadState(SceUID id, KernelState &kernel, MemState &mem);

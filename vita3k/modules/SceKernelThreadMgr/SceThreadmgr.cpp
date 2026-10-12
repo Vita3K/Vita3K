@@ -571,6 +571,9 @@ EXPORT(int, _sceKernelGetThreadExitStatus, SceUID thid, SceInt32 *pExitStatus) {
     if (thread->status != ThreadStatus::dormant) {
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     }
+    // A thread that never started has no exit status yet
+    if (thread->returned_value == static_cast<uint32_t>(SCE_KERNEL_ERROR_DORMANT))
+        return SCE_KERNEL_ERROR_DORMANT;
     if (pExitStatus) {
         *pExitStatus = thread->returned_value;
     }
@@ -606,9 +609,7 @@ EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadIn
     info->status = std::to_underlying(thread->status);
     info->waitType = thread->wait_target.type;
     info->waitId = thread->wait_target.id;
-    if (thread->status == ThreadStatus::dormant) {
-        info->exitStatus = thread->returned_value;
-    }
+    info->exitStatus = thread->returned_value;
     return SCE_KERNEL_OK;
 }
 

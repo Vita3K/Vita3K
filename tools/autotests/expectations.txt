@@ -62,7 +62,7 @@ simple_event_null_pointers      pass
 simple_event_wait_null          pass
 strings                         fail     # sceClibMemchr, case of bytes above 0x7F
 sysmodule                       fail     # system modules don't load without firmware
-thread                          fail     # thread exit status errors, starting a running thread, deleting itself
+thread                          fail     # starting a running thread, deleting itself
 thread_create_current_priority  pass
 thread_create_edges             pass
 thread_edges                    fail     # DelayThreadCB(0)
@@ -73,7 +73,7 @@ thread_null_name                pass
 thread_priority                 pass
 thread_stack_negative           pass
 thread_stack_zero               pass
-thread_state                    fail     # thread exit status errors, stack free size, old affinity mask
+thread_state                    fail     # stack free size, old affinity mask
 timeouts                        pass
 timer                           fail     # timer events, stopped timers and old times
 timer_edges                     fail     # timer event result pattern and timer base
