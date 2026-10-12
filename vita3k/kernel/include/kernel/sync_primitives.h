@@ -45,6 +45,9 @@ class SimpleEvent final : public WithUidClass<SyncPrimitive, UidClass::simple_ev
 public:
     SimpleEvent(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
 
+    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceUInt32 init_pattern);
+
     SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data);
     SceInt32 set_or_pulse(SceUInt32 set_pattern, SceUInt64 user_data, bool is_set);
@@ -110,6 +113,9 @@ class Semaphore final : public WithUidClass<SyncPrimitive, UidClass::semaphore> 
 public:
     Semaphore(SceUInt32 attr, const char *name, SceInt32 init_val, SceInt32 max_val);
 
+    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_val, SceInt32 max_val);
+
     SceInt32 wait(const ThreadStatePtr &thread, SceInt32 need_count, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceInt32 need_count);
     SceInt32 signal(SceInt32 count);
@@ -156,6 +162,8 @@ public:
 private:
     void on_delete() override;
     bool lightweight() const { return get_uid_class() == UidClass::lw_mutex; }
+    // Returns ILLEGAL_COUNT for a lock or unlock count the mutex can't take, or SCE_KERNEL_OK
+    SceInt32 check_count(SceInt32 count) const;
     // Takes the mutex if it is free or owned by thread, or returns why it can't. The lock must be held.
     SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
     // Writes the owner and lock count to a lightweight mutex's work area, which the guest reads. The lock must be held.
@@ -184,11 +192,15 @@ class RWLock final : public WithUidClass<SyncPrimitive, UidClass::rw_lock> {
 public:
     RWLock(SceUInt32 attr, const char *name);
 
+    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
+    static SceInt32 check_create(const char *name, SceUInt32 attr);
+
     SceInt32 acquire_read(const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks);
     SceInt32 acquire_write(const ThreadStatePtr &thread, SceUInt32 *timeout, bool callbacks);
     SceInt32 try_acquire_read(const ThreadStatePtr &thread);
     SceInt32 try_acquire_write(const ThreadStatePtr &thread);
-    SceInt32 release(const ThreadStatePtr &thread);
+    SceInt32 release_read(const ThreadStatePtr &thread);
+    SceInt32 release_write(const ThreadStatePtr &thread);
     SceInt32 cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag);
 
     struct WaitEntry {
@@ -204,6 +216,7 @@ private:
     void on_delete() override;
     SceInt32 acquire(const ThreadStatePtr &thread, bool is_write, SceUInt32 *timeout, bool callbacks);
     SceInt32 try_acquire(const ThreadStatePtr &thread, bool is_write);
+    SceInt32 release(const ThreadStatePtr &thread, bool is_write);
     // Takes the lock if it is free for this kind of lock, or returns why it can't. The lock must be held.
     SceInt32 try_take(const ThreadStatePtr &thread, bool is_write);
 };
@@ -213,6 +226,11 @@ typedef std::shared_ptr<RWLock> RWLockPtr;
 class EventFlag final : public WithUidClass<SyncPrimitive, UidClass::event_flag> {
 public:
     EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern);
+
+    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
+    static SceInt32 check_create(const char *name, SceUInt32 attr);
+    // Returns the error a poll or wait for pattern with wait_mode gets, or SCE_KERNEL_OK
+    static SceInt32 check_wait(SceUInt32 pattern, SceUInt32 wait_mode);
 
     SceInt32 wait(const ThreadStatePtr &thread, SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits, SceUInt32 *timeout, bool callbacks);
     SceInt32 poll(SceUInt32 pattern, SceUInt32 wait_mode, SceUInt32 *out_bits);
@@ -284,6 +302,9 @@ typedef std::shared_ptr<Condvar> CondvarPtr;
 class MsgPipe final : public WithUidClass<SyncPrimitive, UidClass::msg_pipe> {
 public:
     MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size);
+
+    // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
+    static SceInt32 check_create(const char *name, SceUInt32 type, SceUInt32 attr, SceSize buf_size);
 
     // Both return the size transferred, or the error
     std::expected<SceSize, SceInt32> receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void *buf, SceSize size, SceUInt32 *timeout, bool callbacks);

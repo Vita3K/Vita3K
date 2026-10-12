@@ -4,52 +4,52 @@
 callback              pass
 callback_edges        pass
 cond                  pass
-cond_rwlock_edges     fail     # condition variable and reader/writer lock error codes
+cond_rwlock_edges     pass
 cond_signal           pass
-cond_waits            fail     # SignalCond wakes every waiter, SignalCondTo of a thread that isn't waiting
+cond_waits            fail     # SignalCond wakes every waiter
 core_affinity         fail     # threads ignore their core affinity and the priorities on a core
 delay                 pass
-event_bit_mask        fail     # simple event user bit mask and create bit
-event_bits            fail     # simple event create bit, and waits on a deleted event
-event_edges           fail     # event pattern 0, wait modes and attribute checks
+event_bit_mask        pass
+event_bits            pass
+event_edges           pass
 event_flag            pass
 event_flag_waits      pass
 exit_process          pass
 info                  fail     # event flag initial pattern, message pipe info
 lw_cond               pass
-lw_mutex              fail     # lightweight mutex count and ownership checks
+lw_mutex              pass
 lw_work               pass
 lw_work_layout        fail     # lightweight mutex and condition variable work area contents
-misc_edges            fail     # duplicate names, info sizes, UID classes and timer event errors
+misc_edges            fail     # two openable objects with the same name
 msgpipe               pass
-msgpipe_edges         fail     # message pipe create, attribute and mode checks
+msgpipe_edges         pass
 msgpipe_waits         pass
 multi_events          fail     # waiting on several events, callbacks registered to events
-mutex                 fail     # heavy mutex count and ownership checks
+mutex                 pass
 mutex_waits           fail     # a mutex isn't unlocked when the thread holding it ends
 open                  fail     # opening an object that isn't openable
 queue_order           fail     # priority changes while waiting, reader/writer lock writer priority, pipe queue order
-rwlock                fail     # reader/writer lock unlock errors and writer priority
-sema_mutex_edges      fail     # semaphore and mutex create and count checks
-sema_poll_negative    fail     # a poll for a negative count succeeds
+rwlock                fail     # reader/writer lock writer priority
+sema_mutex_edges      pass
+sema_poll_negative    pass
 sema_waits            pass
-semaphore             fail     # semaphore count checks
-simple_event          fail     # simple event create bit, result pattern of a failed wait
-thread                fail     # thread exit status errors, starting a running thread, end wait timeout
-thread_create_edges   fail     # creating a thread with no entry
-thread_edges          fail     # DelayThreadCB(0), deleting a deleted thread
+semaphore             pass
+simple_event          pass
+thread                fail     # thread exit status errors, starting a running thread, deleting itself
+thread_create_edges   pass
+thread_edges          fail     # DelayThreadCB(0)
 thread_info           pass
-thread_null_name      crash    # crashes on a thread with a NULL name
-thread_priority       fail     # priority limits
-thread_stack_negative fail     # a thread with a negative stack size can be created
-thread_stack_zero     fail     # a thread with a stack size of 0 can be created
+thread_null_name      pass
+thread_priority       pass
+thread_stack_negative pass
+thread_stack_zero     pass
 thread_state          fail     # thread exit status errors, stack free size, old affinity mask
 timeouts              fail     # time left after a wait
 timer                 fail     # timer events, stopped timers and old times
 timer_edges           fail     # timer event result pattern and timer base
-timer_wait_no_event   timeout  # hangs on a timer wait with no event set
+timer_wait_no_event   pass
 uid                   pass
 uid_class             pass
 uid_semantics         fail     # opening gives a new UID
 wait_order            pass
-wait_own_end          timeout  # hangs on a thread waiting for its own end
+wait_own_end          pass

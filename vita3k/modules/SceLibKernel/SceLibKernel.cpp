@@ -1201,7 +1201,7 @@ EXPORT(int, sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const ch
 
 EXPORT(int, sceKernelCreateMsgPipe, const char *name, uint32_t type, uint32_t attr, SceSize bufSize, const SceKernelCreateMsgPipeOpt *opt) {
     TRACY_FUNC(sceKernelCreateMsgPipe, name, type, attr, bufSize, opt);
-    if (const SceInt32 error = SyncPrimitive::check_name(name, attr))
+    if (const SceInt32 error = MsgPipe::check_create(name, type, attr, bufSize))
         return RET_ERROR(error);
 
     const auto msgpipe = std::make_shared<MsgPipe>(attr, name, bufSize);
@@ -1712,7 +1712,7 @@ EXPORT(int, sceKernelSetTimerEvent, SceUID timer_handle, SceInt32 type, SceKerne
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
     if (!interval)
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
     return timer->set_event(type, *interval, repeats);
 }
@@ -1746,6 +1746,8 @@ EXPORT(int, sceKernelSignalLwCondTo, Ptr<SceKernelLwCondWork> workarea, SceUID t
     const CondvarPtr condvar = emuenv.kernel.objects.find<LwCond>(condid);
     if (!condvar)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
+    if (!emuenv.kernel.get_thread(thread_target))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     return condvar->signal(Condvar::SignalTarget(Condvar::SignalTarget::Type::Specific, thread_target));
 }
 
@@ -1794,10 +1796,10 @@ EXPORT(int, sceKernelTryReceiveMsgPipe, SceUID msgpipe_id, char *recv_buf, SceSi
     if (!msgpipe)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
     const auto size = msgpipe->receive(emuenv.kernel.get_thread(thread_id), wait_mode | SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT, recv_buf, msg_size, nullptr, false);
+    if (result)
+        *result = size.value_or(0);
     if (!size)
         return size.error();
-    if (result)
-        *result = *size;
     return SCE_KERNEL_OK;
 }
 
@@ -1812,10 +1814,10 @@ EXPORT(int, sceKernelTrySendMsgPipe, SceUID msgPipeId, const void *pSendBuf, Sce
     if (!msgpipe)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
     const auto size = msgpipe->send(emuenv.kernel.get_thread(thread_id), waitMode | SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT, pSendBuf, sendSize, nullptr, false);
+    if (pResult)
+        *pResult = size.value_or(0);
     if (!size)
         return size.error();
-    if (pResult)
-        *pResult = *size;
     return SCE_KERNEL_OK;
 }
 

@@ -58,15 +58,34 @@
 #define SCE_KERNEL_EVENT_ATTR_MANUAL_RESET 0x00000000U
 #define SCE_KERNEL_EVENT_ATTR_AUTO_RESET 0x00000100U
 
+// System events of a simple event: set when it is created, reported to waits for it when it is
+// deleted, and the result of a wait that ends with an error
+#define SCE_KERNEL_EVENT_CREATE 0x00000004U
+#define SCE_KERNEL_EVENT_DELETE 0x00000008U
+#define SCE_KERNEL_EVENT_ERROR 0x00000010U
+// The bits of a simple event a game may set and clear, the others are system events
+#define SCE_KERNEL_EVENT_USER_DEFINED_MASK 0xFF000000U
+
 #define SCE_KERNEL_ATTR_NOTIFY_CB_ALL 0x00000000U
 #define SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY 0x00000800U
 
 #define SCE_KERNEL_MUTEX_ATTR_RECURSIVE 0x2U
 #define SCE_KERNEL_MUTEX_ATTR_CEILING 0x4U
 
+#define SCE_KERNEL_RW_LOCK_ATTR_RECURSIVE 0x2U
+#define SCE_KERNEL_RW_LOCK_ATTR_CEILING 0x4U
+
 #define SCE_KERNEL_RW_LOCK_CANCEL_WITH_WRITE_LOCK 0x1U
 
 #define SCE_KERNEL_EVENT_TIMER 0x00008000U
+
+#define SCE_KERNEL_TIMER_TYPE_SET_EVENT 0
+#define SCE_KERNEL_TIMER_TYPE_PULSE_EVENT 1
+
+#define SCE_KERNEL_MSG_PIPE_TYPE_USER_MAIN 0x00000040U
+
+// The bits that order the threads waiting on a message pipe, separately for senders and receivers
+#define SCE_KERNEL_MSG_PIPE_ATTR_TH_MASK 0x0000000FU
 
 #define SCE_KERNEL_MSG_PIPE_MODE_ASAP 0x00000000U
 #define SCE_KERNEL_MSG_PIPE_MODE_FULL 0x00000001U
