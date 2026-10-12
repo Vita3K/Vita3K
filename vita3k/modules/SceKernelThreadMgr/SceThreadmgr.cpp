@@ -844,10 +844,6 @@ EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) 
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
 
-    if (thread->status == ThreadStatus::running) {
-        return RET_ERROR(SCE_KERNEL_ERROR_RUNNING);
-    }
-
     const int res = thread->start(arglen, argp, true);
     if (res < 0) {
         return RET_ERROR(res);
@@ -1315,6 +1311,9 @@ EXPORT(int, sceKernelDeleteSimpleEvent, SceUID event_id) {
 
 EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     TRACY_FUNC(sceKernelDeleteThread, thid);
+    // A thread can't delete itself, it has to exit and delete
+    if (thid == thread_id)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thid);
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);

@@ -111,7 +111,7 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
 int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback) {
     std::unique_lock<std::mutex> thread_lock(mutex);
     if (status != ThreadStatus::dormant)
-        return SCE_KERNEL_ERROR_RUNNING;
+        return SCE_KERNEL_ERROR_NOT_DORMANT;
 
     run_start_callback = run_entry_callback;
     returned_value = SCE_KERNEL_ERROR_NOT_DORMANT;
