@@ -57,6 +57,8 @@ static SceInt32 wait_event(EmuEnvState &emuenv, const char *export_name, SceUID 
 
 EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, Ptr<SceKernelCreateLwMutex_opt> opt) {
     TRACY_FUNC(__sceKernelCreateLwMutex, workarea, name, attr, opt);
+    if (!workarea)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     const int init_count = opt.get(emuenv.mem)->init_count;
     if (const SceInt32 error = Mutex::check_create(name, attr, init_count))
         return RET_ERROR(error);

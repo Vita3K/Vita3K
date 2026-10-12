@@ -30,7 +30,7 @@ info                            fail     # event flag initial pattern, message p
 lw_cond                         pass
 lw_cond_errors                  fail     # lightweight condition variable info by UID
 lw_mutex                        pass
-lw_mutex_errors                 fail     # a NULL lightweight mutex work area
+lw_mutex_errors                 pass
 lw_work                         pass
 lw_work_layout                  fail     # lightweight mutex and condition variable work area contents
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
