@@ -1370,9 +1370,16 @@ EXPORT(SceInt32, sceKernelGetThreadCpuAffinityMask, SceUID thid) {
     return CALL_EXPORT(_sceKernelGetThreadCpuAffinityMask, thid);
 }
 
-EXPORT(int, sceKernelGetThreadStackFreeSize) {
-    TRACY_FUNC(sceKernelGetThreadStackFreeSize);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetThreadStackFreeSize, SceUID thid) {
+    TRACY_FUNC(sceKernelGetThreadStackFreeSize, thid);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thid ? thid : thread_id);
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+
+    // A dormant thread's whole stack is free, a started one's is free below its stack pointer
+    if (thread->status == ThreadStatus::dormant)
+        return thread->stack_size;
+    return static_cast<int>(read_sp(*thread->cpu) - thread->stack.get());
 }
 
 EXPORT(Ptr<void>, sceKernelGetThreadTLSAddr, SceUID thid, int key) {

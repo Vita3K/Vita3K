@@ -66,14 +66,14 @@ thread                          pass
 thread_create_current_priority  pass
 thread_create_edges             pass
 thread_edges                    fail     # DelayThreadCB(0)
-thread_errors                   fail     # stack free size of unknown UIDs, affinity checks
+thread_errors                   fail     # affinity checks at creation, the VFP attribute, thread info sizes
 thread_info                     pass
 thread_lifecycle                fail     # starting with more arguments than the stack holds
 thread_null_name                pass
 thread_priority                 pass
 thread_stack_negative           pass
 thread_stack_zero               pass
-thread_state                    fail     # stack free size
+thread_state                    pass
 timeouts                        pass
 timer                           fail     # timer events, stopped timers and old times
 timer_edges                     fail     # timer event result pattern and timer base
