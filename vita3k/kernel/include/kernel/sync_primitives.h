@@ -149,6 +149,8 @@ public:
     SceInt32 try_acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
     SceInt32 release(const ThreadStatePtr &thread, SceInt32 unlock_count);
     SceInt32 cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt32 *num_wait_threads);
+    // Unlocks the mutex of an owner that ended and gives it to the next waiter. The lock must be held.
+    void release_ended_owner();
 
     struct WaitEntry {
         SceInt32 lock_count;
@@ -167,6 +169,8 @@ private:
     SceInt32 check_count(SceInt32 count) const;
     // Takes the mutex if it is free or owned by thread, or returns why it can't. The lock must be held.
     SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
+    // Gives the unlocked mutex to the first waiter, if there is one. The lock must be held.
+    void hand_over();
     // Writes the owner and lock count to a lightweight mutex's work area, which the guest reads. The lock must be held.
     void update_workarea(MemState &mem);
 };

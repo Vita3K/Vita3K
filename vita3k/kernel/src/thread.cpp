@@ -19,6 +19,7 @@
 #include <kernel/thread/thread_state.h>
 
 #include <kernel/state.h>
+#include <kernel/sync_primitives.h>
 #include <mem/ptr.h>
 #include <util/align.h>
 
@@ -199,12 +200,23 @@ void ThreadState::run_loop() {
         returned_value = old_returned_value;
     };
 
+    // A mutex the thread still holds when it ends goes to its next waiter
+    auto release_mutexes = [&]() {
+        lock.unlock();
+        kernel.objects.for_each<HeavyMutex>([&](Mutex &mutex) {
+            if (mutex.owner.get() == this)
+                mutex.release_ended_owner();
+        });
+        lock.lock();
+    };
+
     while (true) {
         // Check if this call-level is done (normal exit, guest return, or delete).
         if (exit_requested || guest_returned || delete_requested) {
             // Top-level fires the end callback and parks dormant
             if (top_level && status != ThreadStatus::dormant) {
                 run_thread_end_callback();
+                release_mutexes();
                 update_status(ThreadStatus::dormant);
             }
             // Return from nested levels to the top level (or completely if deleted)

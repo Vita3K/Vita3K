@@ -528,17 +528,24 @@ SceInt32 Mutex::release(const ThreadStatePtr &thread, SceInt32 unlock_count) {
 
     lock_count -= unlock_count;
 
-    if (lock_count == 0) {
-        owner = nullptr;
-
-        if (auto *waiter = waiters.front()) {
-            lock_count += waiter->entry.lock_count;
-            owner = waiter->thread;
-            waiters.wake(*waiter);
-        }
-    }
+    if (lock_count == 0)
+        hand_over();
 
     return SCE_KERNEL_OK;
+}
+
+void Mutex::release_ended_owner() {
+    lock_count = 0;
+    hand_over();
+}
+
+void Mutex::hand_over() {
+    owner = nullptr;
+    if (auto *waiter = waiters.front()) {
+        lock_count += waiter->entry.lock_count;
+        owner = waiter->thread;
+        waiters.wake(*waiter);
+    }
 }
 
 SceInt32 Mutex::cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt32 *num_wait_threads) {

@@ -45,7 +45,7 @@ multi_events                    fail     # waiting on several events, callbacks 
 multi_events_errors             fail     # waiting on several events with unknown UIDs
 mutex                           pass
 mutex_errors                    crash    # closing unknown UIDs, a NULL name
-mutex_waits                     fail     # a mutex isn't unlocked when the thread holding it ends
+mutex_waits                     pass
 open                            fail     # opening an object that isn't openable
 queue_order                     fail     # priority changes while waiting, reader/writer lock writer priority, pipe queue order
 rtc                             crash    # RTC date range checks, a NULL tick
