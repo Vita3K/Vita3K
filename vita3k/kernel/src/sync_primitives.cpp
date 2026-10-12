@@ -20,6 +20,7 @@
 #include <kernel/sync_primitives.h>
 
 #include <kernel/types.h>
+#include <util/align.h>
 #include <util/log.h>
 
 SyncPrimitive::SyncPrimitive(SceUInt32 attr, const char *name)
@@ -1083,7 +1084,8 @@ MsgPipe::MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size)
     : WithUidClass(attr, name)
     , senders(attr & SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_S ? WaitQueue<WaitEntry>::Order::priority : WaitQueue<WaitEntry>::Order::fifo)
     , receivers(attr & SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_R ? WaitQueue<WaitEntry>::Order::priority : WaitQueue<WaitEntry>::Order::fifo)
-    , data_buffer(buf_size) {}
+    // A pipe's buffer is a whole number of 4 KiB pages
+    , data_buffer(align(buf_size, 0x1000)) {}
 
 SceInt32 MsgPipe::check_create(const char *name, SceUInt32 type, SceUInt32 attr, SceSize buf_size) {
     if (const SceInt32 error = check_name(name, attr))
