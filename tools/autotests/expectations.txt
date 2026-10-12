@@ -74,7 +74,7 @@ thread_priority                 pass
 thread_stack_negative           pass
 thread_stack_zero               pass
 thread_state                    fail     # thread exit status errors, stack free size, old affinity mask
-timeouts                        fail     # time left after a wait
+timeouts                        pass
 timer                           fail     # timer events, stopped timers and old times
 timer_edges                     fail     # timer event result pattern and timer base
 timer_errors                    crash    # timer set time, info and close of unknown UIDs, a NULL pointer

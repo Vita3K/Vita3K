@@ -1133,10 +1133,12 @@ std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, 
 
         // sleep until we can read, if ASAP we can read as low as 1 byte
         const WaitEntry entry{ .request_size = ASAP ? 1 : size };
-        const WaitResult r = receivers.wait_until_ready(guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid }, entry, deadline_from(timeout), callbacks, [&](auto &waiter) {
+        const Deadline deadline = deadline_from(timeout);
+        const WaitResult r = receivers.wait_until_ready(guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid }, entry, deadline, callbacks, [&](auto &waiter) {
             waiter.entry.notified = false;
             return can_receive();
         });
+        writeback_timeout(timeout, deadline);
         // The thread is exiting, which the guest never sees
         if (!r)
             return 0;
@@ -1174,10 +1176,12 @@ std::expected<SceSize, SceInt32> MsgPipe::send(const ThreadStatePtr &thread, Sce
 
         // sleep until there's more space, if ASAP we can insert as low as 1 byte
         const WaitEntry entry{ .request_size = ASAP ? 1 : size };
-        const WaitResult r = senders.wait_until_ready(guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid }, entry, deadline_from(timeout), callbacks, [&](auto &waiter) {
+        const Deadline deadline = deadline_from(timeout);
+        const WaitResult r = senders.wait_until_ready(guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid }, entry, deadline, callbacks, [&](auto &waiter) {
             waiter.entry.notified = false;
             return can_send();
         });
+        writeback_timeout(timeout, deadline);
         // The thread is exiting, which the guest never sees
         if (!r)
             return 0;
