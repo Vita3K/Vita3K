@@ -151,6 +151,8 @@ struct KernelState {
 
     uint64_t start_tick;
     SceRtcTick base_tick;
+    // Returns the process time at a time of the host clock that timers count with
+    uint64_t process_time_at(uint64_t clock_time) const;
     Ptr<SceProcessParam> process_param;
     Ptr<void> client_vtable = Ptr<void>(0);
     Ptr<Address> shellsvc_client = Ptr<Address>(0);

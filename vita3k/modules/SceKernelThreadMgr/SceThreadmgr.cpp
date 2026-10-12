@@ -1408,7 +1408,7 @@ EXPORT(uint64_t, sceKernelGetTimerBaseWide, SceUID timer_handle) {
         return std::numeric_limits<uint64_t>::max();
     }
 
-    return timer->time;
+    return timer->base ? emuenv.kernel.process_time_at(timer->base) : 0;
 }
 
 EXPORT(uint64_t, sceKernelGetTimerTimeWide, SceUID timer_handle) {
@@ -1422,7 +1422,7 @@ EXPORT(uint64_t, sceKernelGetTimerTimeWide, SceUID timer_handle) {
         return std::numeric_limits<uint64_t>::max();
     }
 
-    return get_current_time() - timer->time;
+    return timer->count();
 }
 
 EXPORT(SceInt32, sceKernelNotifyCallback, SceUID callbackId, SceInt32 notifyArg) {
@@ -1584,15 +1584,16 @@ EXPORT(SceInt32, sceKernelSetEventFlag, SceUID evfId, SceUInt32 bitPattern) {
     return event->set(bitPattern);
 }
 
-EXPORT(int, sceKernelSetTimerTimeWide, SceUID timer_handle, SceUInt64 time) {
+EXPORT(SceUInt64, sceKernelSetTimerTimeWide, SceUID timer_handle, SceUInt64 time) {
     TRACY_FUNC(sceKernelSetTimerTimeWide, timer_handle, time);
     const TimerPtr timer = emuenv.kernel.objects.find<Timer>(timer_handle);
-    if (!timer)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+    const auto old_time = timer ? timer->set_time(time) : std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
-    const auto old_time = timer->set_time(time);
-    if (!old_time)
-        return RET_ERROR(old_time.error());
+    // Like the time getters, an unknown timer gets all ones, which can't be taken for a time
+    if (!old_time) {
+        RET_ERROR(old_time.error());
+        return std::numeric_limits<uint64_t>::max();
+    }
 
     return *old_time;
 }

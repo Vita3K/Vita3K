@@ -84,8 +84,10 @@ public:
     SceInt32 start();
     SceInt32 stop();
     SceInt32 cancel(SceUInt32 *num_wait_threads);
-    // Replaces time and returns its old value, or the error.
+    // Replaces the count and returns its old value, or the error.
     std::expected<uint64_t, SceInt32> set_time(uint64_t new_time);
+    // Returns how much time the timer counted. The lock must be held.
+    uint64_t count() const;
 
     // Only the first waiter waits for the next event, the others wait for their turn
     WaitQueue<std::monostate> waiters;
@@ -94,7 +96,10 @@ public:
     bool is_repeat = false;
     bool is_pulse = false;
     bool event_set = false;
-    uint64_t time = 0;
+    // The clock time the count runs from while the timer is started, 0 if it never started
+    uint64_t base = 0;
+    // The count while the timer is stopped
+    uint64_t stopped_count = 0;
     uint64_t next_event = std::numeric_limits<uint64_t>::max();
     uint64_t event_interval = 0;
 

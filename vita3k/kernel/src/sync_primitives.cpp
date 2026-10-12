@@ -348,8 +348,9 @@ SceInt32 Timer::start() {
     if (is_started)
         return 1;
 
+    // The count goes on from where it stopped
     is_started = true;
-    time = get_current_time();
+    base = get_current_time() - stopped_count;
 
     if (event_interval != 0)
         schedule_event();
@@ -362,12 +363,14 @@ SceInt32 Timer::stop() {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
-    const bool was_stopped = !is_started;
+    if (!is_started)
+        return 0;
+
+    stopped_count = count();
     is_started = false;
-    time = get_current_time();
     next_event = std::numeric_limits<uint64_t>::max();
 
-    return static_cast<SceInt32>(was_stopped);
+    return 1;
 }
 
 std::expected<uint64_t, SceInt32> Timer::set_time(uint64_t new_time) {
@@ -375,7 +378,16 @@ std::expected<uint64_t, SceInt32> Timer::set_time(uint64_t new_time) {
     if (!guard)
         return std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
-    return std::exchange(time, new_time);
+    const uint64_t old_count = count();
+    if (is_started)
+        base = get_current_time() - new_time;
+    else
+        stopped_count = new_time;
+    return old_count;
+}
+
+uint64_t Timer::count() const {
+    return is_started ? get_current_time() - base : stopped_count;
 }
 
 SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
