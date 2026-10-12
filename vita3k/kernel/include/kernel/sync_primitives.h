@@ -152,7 +152,7 @@ public:
     // Same as acquire, but reports the wait as target, for a condition variable taking its mutex back
     SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, WaitTarget target, bool callbacks);
     SceInt32 try_acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
-    SceInt32 release(const ThreadStatePtr &thread, SceInt32 unlock_count);
+    SceInt32 release(MemState &mem, const ThreadStatePtr &thread, SceInt32 unlock_count);
     SceInt32 cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt32 *num_wait_threads);
     // Unlocks the mutex of an owner that ended and gives it to the next waiter. The lock must be held.
     void release_ended_owner();

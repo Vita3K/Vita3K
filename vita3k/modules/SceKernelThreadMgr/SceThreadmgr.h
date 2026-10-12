@@ -39,6 +39,7 @@ DECL_EXPORT(int, _sceKernelWaitEvent, SceUID event_id, SceUInt32 bit_pattern, Sc
 DECL_EXPORT(int, _sceKernelWaitEventCB, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout);
 DECL_EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, Ptr<SceKernelCreateLwMutex_opt> opt);
 DECL_EXPORT(int, _sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea);
+DECL_EXPORT(int, _sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea);
 DECL_EXPORT(int, _sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout);
 DECL_EXPORT(int, _sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKernelLwMutexInfo> info, SceSize size);
 DECL_EXPORT(SceUID, _sceKernelCreateRWLock, const char *name, SceUInt32 attr, SceKernelMutexOptParam *opt_param);

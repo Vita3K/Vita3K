@@ -492,7 +492,7 @@ void Mutex::update_workarea(MemState &mem) {
     if (!lightweight())
         return;
     workarea.get(mem)->lockCount = lock_count;
-    workarea.get(mem)->owner = owner->id;
+    workarea.get(mem)->owner = owner ? owner->id : 0;
 }
 
 SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks) {
@@ -532,7 +532,7 @@ SceInt32 Mutex::try_acquire(MemState &mem, const ThreadStatePtr &thread, SceInt3
     return try_take(mem, thread, count);
 }
 
-SceInt32 Mutex::release(const ThreadStatePtr &thread, SceInt32 unlock_count) {
+SceInt32 Mutex::release(MemState &mem, const ThreadStatePtr &thread, SceInt32 unlock_count) {
     const auto guard = lock();
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
@@ -548,6 +548,7 @@ SceInt32 Mutex::release(const ThreadStatePtr &thread, SceInt32 unlock_count) {
 
     if (lock_count == 0)
         hand_over();
+    update_workarea(mem);
 
     return SCE_KERNEL_OK;
 }
@@ -863,7 +864,7 @@ SceInt32 Condvar::wait(MemState &mem, const ThreadStatePtr &thread, SceUInt32 *t
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID : SCE_KERNEL_ERROR_UNKNOWN_COND_ID;
 
-    if (const SceInt32 error = associated_mutex->release(thread, 1))
+    if (const SceInt32 error = associated_mutex->release(mem, thread, 1))
         return error;
 
     const Deadline deadline = deadline_from(timeout);

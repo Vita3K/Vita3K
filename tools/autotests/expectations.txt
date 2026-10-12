@@ -32,7 +32,7 @@ lw_cond_errors                  fail     # lightweight condition variable info b
 lw_mutex                        pass
 lw_mutex_errors                 pass
 lw_work                         pass
-lw_work_layout                  fail     # lightweight mutex and condition variable work area contents
+lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 misc_edges                      fail     # two openable objects with the same name
 msgpipe                         pass

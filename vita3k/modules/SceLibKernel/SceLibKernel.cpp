@@ -1271,12 +1271,7 @@ EXPORT(SceUID, sceKernelCreateTimer, const char *name, SceUInt32 attr, const uin
 
 EXPORT(int, sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea) {
     TRACY_FUNC(sceKernelDeleteLwCond, workarea);
-    SceUID lightweight_condition_id = workarea.get(emuenv.mem)->uid;
-
-    if (!emuenv.kernel.objects.remove<LwCond>(lightweight_condition_id))
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
-
-    return SCE_KERNEL_OK;
+    return CALL_EXPORT(_sceKernelDeleteLwCond, workarea);
 }
 
 EXPORT(int, sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
@@ -1821,7 +1816,7 @@ EXPORT(int, sceKernelUnlockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int unlo
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
-    return mutex->release(emuenv.kernel.get_thread(thread_id), unlock_count);
+    return mutex->release(emuenv.mem, emuenv.kernel.get_thread(thread_id), unlock_count);
 }
 
 EXPORT(int, sceKernelUnlockLwMutex_0, Ptr<SceKernelLwMutexWork> workarea, int unlock_count) {
@@ -1835,7 +1830,7 @@ EXPORT(int, sceKernelUnlockLwMutex2, Ptr<SceKernelLwMutexWork> workarea, int unl
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
-    return mutex->release(emuenv.kernel.get_thread(thread_id), unlock_count);
+    return mutex->release(emuenv.mem, emuenv.kernel.get_thread(thread_id), unlock_count);
 }
 
 EXPORT(SceInt32, sceKernelWaitCond, SceUID condId, SceUInt32 *pTimeout) {

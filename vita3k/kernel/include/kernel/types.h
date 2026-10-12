@@ -758,7 +758,8 @@ struct SceKernelLwMutexInfo {
 
 struct SceKernelLwCondWork {
     SceUID uid;
-    std::uint8_t padding[12];
+    SceUID lwMutexUid;
+    std::uint32_t unknown[2];
 };
 static_assert(sizeof(SceKernelLwCondWork) == 16, "Incorrect size");
 

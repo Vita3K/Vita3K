@@ -66,6 +66,7 @@ EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const 
     const auto mutex = std::make_shared<LwMutex>(attr, name, init_count, emuenv.kernel.get_thread(thread_id), workarea);
     const SceUID uid = emuenv.kernel.objects.add(mutex, emuenv.kernel.get_next_uid());
     SceKernelLwMutexWork *workarea_mem = workarea.get(emuenv.mem);
+    *workarea_mem = {};
     workarea_mem->lockCount = init_count;
     if (workarea_mem->lockCount)
         workarea_mem->owner = thread_id;
@@ -172,7 +173,10 @@ EXPORT(int, _sceKernelCreateLwCond, Ptr<SceKernelLwCondWork> workarea, const cha
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
 
     const auto condvar = std::make_shared<LwCond>(attr, name, mutex);
-    workarea.get(emuenv.mem)->uid = emuenv.kernel.objects.add(condvar, emuenv.kernel.get_next_uid());
+    SceKernelLwCondWork *work = workarea.get(emuenv.mem);
+    *work = {};
+    work->uid = emuenv.kernel.objects.add(condvar, emuenv.kernel.get_next_uid());
+    work->lwMutexUid = assoc_mutex_uid;
     return SCE_KERNEL_OK;
 }
 
@@ -239,6 +243,8 @@ EXPORT(int, _sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea) {
     if (!emuenv.kernel.objects.remove<LwCond>(lightweight_condition_id))
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
 
+    workarea.get(emuenv.mem)->uid = SCE_UID_INVALID_UID;
+    workarea.get(emuenv.mem)->lwMutexUid = SCE_UID_INVALID_UID;
     return SCE_KERNEL_OK;
 }
 
@@ -1709,7 +1715,7 @@ EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
     const MutexPtr mutex = emuenv.kernel.objects.find<HeavyMutex>(mutexid);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
-    return mutex->release(emuenv.kernel.get_thread(thread_id), unlock_count);
+    return mutex->release(emuenv.mem, emuenv.kernel.get_thread(thread_id), unlock_count);
 }
 
 EXPORT(int, sceKernelUnlockReadRWLock, SceUID lock_id) {
