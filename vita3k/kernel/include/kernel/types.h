@@ -86,6 +86,8 @@
 
 // The bits that order the threads waiting on a message pipe, separately for senders and receivers
 #define SCE_KERNEL_MSG_PIPE_ATTR_TH_MASK 0x0000000FU
+#define SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_S 0x00000001U
+#define SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_R 0x00000002U
 
 #define SCE_KERNEL_MSG_PIPE_MODE_ASAP 0x00000000U
 #define SCE_KERNEL_MSG_PIPE_MODE_FULL 0x00000001U

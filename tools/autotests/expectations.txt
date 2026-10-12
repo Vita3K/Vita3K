@@ -47,7 +47,7 @@ mutex                           pass
 mutex_errors                    crash    # closing unknown UIDs, a NULL name
 mutex_waits                     pass
 open                            fail     # opening an object that isn't openable
-queue_order                     fail     # priority changes while waiting, message pipe queue order
+queue_order                     fail     # priority changes while waiting
 rtc                             crash    # RTC date range checks, a NULL tick
 rwlock                          pass
 rwlock_errors                   fail     # closing unknown UIDs

@@ -1080,7 +1080,8 @@ SceInt32 EventFlag::cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads) {
 
 MsgPipe::MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size)
     : WithUidClass(attr, name)
-    , receivers(attr)
+    , senders(attr & SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_S ? WaitQueue<WaitEntry>::Order::priority : WaitQueue<WaitEntry>::Order::fifo)
+    , receivers(attr & SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_R ? WaitQueue<WaitEntry>::Order::priority : WaitQueue<WaitEntry>::Order::fifo)
     , data_buffer(buf_size) {}
 
 SceInt32 MsgPipe::check_create(const char *name, SceUInt32 type, SceUInt32 attr, SceSize buf_size) {

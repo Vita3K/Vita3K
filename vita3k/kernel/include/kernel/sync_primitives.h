@@ -332,7 +332,6 @@ private:
     // Wakes the first waiter whose request now fits and that was not woken already, so it retries its transfer
     static void wake_waiter(WaitQueue<WaitEntry> &waiters, std::size_t available);
 
-    // TODO do senders respect priority?
     WaitQueue<WaitEntry> senders;
     WaitQueue<WaitEntry> receivers;
     ByteRingBuffer data_buffer;
