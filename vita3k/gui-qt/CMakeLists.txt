@@ -28,6 +28,7 @@ add_library(gui-qt STATIC
     src/theme_surface.cpp
     src/vita_theme.cpp
     src/vita_themes_dialog.cpp
+    src/save_data_manager_dialog.cpp
     src/trophy_collection_dialog.cpp
     src/update_manager.cpp
     src/gui_language.cpp
@@ -73,6 +74,7 @@ add_library(gui-qt STATIC
     include/gui-qt/theme_surface.h
     include/gui-qt/vita_theme.h
     include/gui-qt/vita_themes_dialog.h
+    include/gui-qt/save_data_manager_dialog.h
     include/gui-qt/trophy_collection_dialog.h
     include/gui-qt/update_manager.h
     include/gui-qt/gui_language.h
