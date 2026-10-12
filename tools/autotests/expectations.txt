@@ -66,7 +66,7 @@ thread                          pass
 thread_create_current_priority  pass
 thread_create_edges             pass
 thread_edges                    fail     # DelayThreadCB(0)
-thread_errors                   fail     # the VFP attribute, thread info sizes
+thread_errors                   fail     # the VFP attribute
 thread_info                     pass
 thread_lifecycle                fail     # starting with more arguments than the stack holds
 thread_null_name                pass

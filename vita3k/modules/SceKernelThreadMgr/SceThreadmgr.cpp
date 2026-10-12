@@ -590,24 +590,26 @@ EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadIn
     if (!info)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
 
-    if (info->size != sizeof(*info))
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+    if (info->size > sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
 
     // TODO: SCE_KERNEL_ERROR_ILLEGAL_CONTEXT check
 
     const std::lock_guard<std::mutex> lock(thread->mutex);
-    strncpy(info->name, thread->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
-    info->stack = Ptr<void>(thread->stack.get());
-    info->stackSize = thread->stack_size;
-    info->initPriority = thread->priority; // Todo Give only current priority
-    info->currentPriority = thread->priority;
-    info->initCpuAffinityMask = thread->affinity_mask; // Todo Give init affinity
-    info->currentCpuAffinityMask = thread->affinity_mask;
-    info->entry = SceKernelThreadEntry(thread->entry_point);
-    info->status = std::to_underlying(thread->status);
-    info->waitType = thread->wait_target.type;
-    info->waitId = thread->wait_target.id;
-    info->exitStatus = thread->returned_value;
+    SceKernelThreadInfo full{};
+    strncpy(full.name, thread->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
+    full.stack = Ptr<void>(thread->stack.get());
+    full.stackSize = thread->stack_size;
+    full.initPriority = thread->priority; // Todo Give only current priority
+    full.currentPriority = thread->priority;
+    full.initCpuAffinityMask = thread->affinity_mask; // Todo Give init affinity
+    full.currentCpuAffinityMask = thread->affinity_mask;
+    full.entry = SceKernelThreadEntry(thread->entry_point);
+    full.status = std::to_underlying(thread->status);
+    full.waitType = thread->wait_target.type;
+    full.waitId = thread->wait_target.id;
+    full.exitStatus = thread->returned_value;
+    write_info(info, full);
     return SCE_KERNEL_OK;
 }
 
