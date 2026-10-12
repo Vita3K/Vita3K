@@ -10,7 +10,7 @@ cond                            pass
 cond_errors                     fail     # condition variable unknown UID errors and close
 cond_rwlock_edges               pass
 cond_signal                     pass
-cond_waits                      fail     # SignalCond wakes every waiter
+cond_waits                      pass
 core_affinity                   fail     # threads ignore their core affinity and the priorities on a core
 delay                           pass
 directories                     fail     # directory mode, not empty and wrong type errors

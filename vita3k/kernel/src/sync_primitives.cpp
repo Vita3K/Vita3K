@@ -877,6 +877,10 @@ SceInt32 Condvar::signal(SignalTarget target) {
         if (!waiter)
             return SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
         waiters.wake(*waiter);
+    } else if (target.type == SignalTarget::Type::Any) {
+        // Wakes the first waiter in queue order
+        if (auto *waiter = waiters.front())
+            waiters.wake(*waiter);
     } else {
         waiters.wake_all();
     }
