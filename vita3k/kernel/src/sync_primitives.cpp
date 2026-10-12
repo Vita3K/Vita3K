@@ -240,8 +240,9 @@ void Timer::advance_next_event(uint64_t current_time) {
 }
 
 SceInt32 Timer::try_take(SceUInt32 *result_pattern, SceUInt64 *user_data, uint64_t current_time) {
+    // A take that fails gets no bits, like a simple event poll
     if (result_pattern)
-        *result_pattern = SCE_KERNEL_EVENT_TIMER;
+        *result_pattern = 0;
     if (user_data)
         *user_data = 0;
 
@@ -257,6 +258,8 @@ SceInt32 Timer::try_take(SceUInt32 *result_pattern, SceUInt64 *user_data, uint64
     if (!event_set)
         return SCE_KERNEL_ERROR_EVENT_COND;
 
+    if (result_pattern)
+        *result_pattern = SCE_KERNEL_EVENT_TIMER;
     if (attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET)
         event_set = false;
 
@@ -314,6 +317,8 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
 
     waiters.remove(waiter);
     writeback_timeout(timeout, guest_deadline);
+    if (result_pattern)
+        *result_pattern = SCE_KERNEL_EVENT_TIMER;
 
     event_set = !is_pulse && !(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
     advance_next_event(current_time);

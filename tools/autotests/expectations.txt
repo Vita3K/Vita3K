@@ -76,7 +76,7 @@ thread_stack_zero               pass
 thread_state                    pass
 timeouts                        pass
 timer                           pass
-timer_edges                     fail     # the result pattern of a failed timer poll
+timer_edges                     pass
 timer_errors                    crash    # timer set time, info and close of unknown UIDs, a NULL pointer
 timer_event_interval_zero       pass
 timer_wait_no_event             pass
