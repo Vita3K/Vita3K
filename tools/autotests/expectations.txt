@@ -26,7 +26,7 @@ fiber_entry_returns             crash    # the fiber module doesn't load without
 fibers                          crash    # the fiber module doesn't load without firmware, fiber argument checks
 files                           fail     # closed file, EXCL, access mode and wrong type errors
 format                          fail     # sceClibSnprintf with %#x, %.0d and long arguments
-info                            fail     # callback notification count
+info                            pass
 lw_cond                         pass
 lw_cond_errors                  fail     # lightweight condition variable info by UID
 lw_mutex                        pass

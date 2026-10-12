@@ -280,6 +280,7 @@ EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallback
     info.threadId = cb->thread_id;
     info.callbackFunc = cb->cb_func;
     info.notifyId = cb->get_notifier_id();
+    info.notifyCount = static_cast<SceInt32>(cb->get_num_notifications());
     info.notifyArg = cb->get_notify_arg();
     info.pCommon = cb->userdata;
     write_info(pInfo, info);
