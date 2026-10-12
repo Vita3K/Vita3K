@@ -255,6 +255,8 @@ public:
     };
 
     WaitQueue<WaitEntry> waiters;
+    // The pattern the event flag was created with, for its info
+    const SceUInt32 init_pattern;
     SceUInt32 flags;
 
 private:

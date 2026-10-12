@@ -917,6 +917,7 @@ SceInt32 Condvar::signal(SignalTarget target) {
 EventFlag::EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern)
     : WithUidClass(attr, name)
     , waiters(attr)
+    , init_pattern(init_pattern)
     , flags(init_pattern) {}
 
 SceInt32 EventFlag::check_create(const char *name, SceUInt32 attr) {

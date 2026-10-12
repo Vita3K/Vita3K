@@ -330,7 +330,7 @@ EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFla
     full.evfId = evfId;
     strncpy(full.name, eventflag->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
     full.attr = eventflag->attr;
-    full.initPattern = eventflag->flags; // Todo, give only current pattern
+    full.initPattern = eventflag->init_pattern;
     full.currentPattern = eventflag->flags;
     full.numWaitThreads = eventflag->waiters.size();
     write_info(info, full);
