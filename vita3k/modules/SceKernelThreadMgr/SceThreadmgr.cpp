@@ -393,9 +393,27 @@ EXPORT(int, _sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKe
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelGetMsgPipeInfo) {
-    TRACY_FUNC(_sceKernelGetMsgPipeInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetMsgPipeInfo, SceUID msgPipeId, SceKernelMppInfo *pInfo) {
+    TRACY_FUNC(_sceKernelGetMsgPipeInfo, msgPipeId, pInfo);
+    const MsgPipePtr msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgPipeId);
+    const auto guard = msgpipe ? msgpipe->lock() : std::unique_lock<std::mutex>();
+    if (!guard)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    if (!pInfo)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    if (pInfo->size > sizeof(*pInfo))
+        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
+
+    SceKernelMppInfo info{};
+    info.mppId = msgPipeId;
+    strncpy(info.name, msgpipe->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info.attr = msgpipe->attr;
+    info.bufSize = static_cast<SceInt32>(msgpipe->data_buffer.Capacity());
+    info.freeSize = static_cast<SceInt32>(msgpipe->data_buffer.Free());
+    info.numSendWaitThreads = static_cast<SceInt32>(msgpipe->senders.size());
+    info.numReceiveWaitThreads = static_cast<SceInt32>(msgpipe->receivers.size());
+    write_info(pInfo, info);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelGetMutexInfo, SceUID mutexId, SceKernelMutexInfo *pInfo) {

@@ -1357,9 +1357,9 @@ EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, SceKernelModuleInfo *i
     return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NOENT);
 }
 
-EXPORT(int, sceKernelGetMsgPipeInfo) {
-    TRACY_FUNC(sceKernelGetMsgPipeInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetMsgPipeInfo, SceUID msgPipeId, SceKernelMppInfo *pInfo) {
+    TRACY_FUNC(sceKernelGetMsgPipeInfo, msgPipeId, pInfo);
+    return CALL_EXPORT(_sceKernelGetMsgPipeInfo, msgPipeId, pInfo);
 }
 
 EXPORT(int, sceKernelGetMutexInfo, SceUID mutexId, SceKernelMutexInfo *info) {

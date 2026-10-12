@@ -323,20 +323,20 @@ public:
     std::expected<SceSize, SceInt32> send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const void *buf, SceSize size, SceUInt32 *timeout, bool callbacks);
     SceInt32 cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads);
 
-private:
     struct WaitEntry {
         SceSize request_size;
         // Woken to recheck the buffer and has not done so yet
         bool notified = false;
     };
 
-    void on_delete() override;
-    // Wakes the first waiter whose request now fits and that was not woken already, so it retries its transfer
-    static void wake_waiter(WaitQueue<WaitEntry> &waiters, std::size_t available);
-
     WaitQueue<WaitEntry> senders;
     WaitQueue<WaitEntry> receivers;
     ByteRingBuffer data_buffer;
+
+private:
+    void on_delete() override;
+    // Wakes the first waiter whose request now fits and that was not woken already, so it retries its transfer
+    static void wake_waiter(WaitQueue<WaitEntry> &waiters, std::size_t available);
 };
 
 typedef std::shared_ptr<MsgPipe> MsgPipePtr;

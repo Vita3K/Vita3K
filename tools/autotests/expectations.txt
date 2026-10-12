@@ -26,7 +26,7 @@ fiber_entry_returns             crash    # the fiber module doesn't load without
 fibers                          crash    # the fiber module doesn't load without firmware, fiber argument checks
 files                           fail     # closed file, EXCL, access mode and wrong type errors
 format                          fail     # sceClibSnprintf with %#x, %.0d and long arguments
-info                            fail     # message pipe info, callback notification count
+info                            fail     # callback notification count
 lw_cond                         pass
 lw_cond_errors                  fail     # lightweight condition variable info by UID
 lw_mutex                        pass
@@ -37,7 +37,7 @@ memblock                        crash    # memory block info, allocation sizes, 
 misc_edges                      fail     # two openable objects with the same name
 msgpipe                         pass
 msgpipe_edges                   pass
-msgpipe_errors                  crash    # message pipe info and close of unknown UIDs, a NULL buffer
+msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
 msgpipe_vectors                 fail     # message pipe vector sends and receives
 msgpipe_waits                   pass
 mspace                          fail     # sceClib memory space info

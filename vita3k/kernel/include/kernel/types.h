@@ -813,6 +813,17 @@ struct SceKernelCondInfo {
     SceUInt32 numWaitThreads;
 };
 
+struct SceKernelMppInfo {
+    SceSize size;
+    SceUID mppId;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    SceUInt32 attr;
+    SceInt32 bufSize;
+    SceInt32 freeSize;
+    SceInt32 numSendWaitThreads;
+    SceInt32 numReceiveWaitThreads;
+};
+
 struct SceKernelEventFlagInfo {
     SceSize size;
     SceUID evfId;
