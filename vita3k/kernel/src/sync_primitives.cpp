@@ -614,6 +614,11 @@ SceInt32 RWLock::try_take(const ThreadStatePtr &thread, bool is_write) {
         return SCE_KERNEL_OK;
     }
 
+    // A waiting writer goes before new readers
+    const bool writer_waits = waiters.find_if([](auto &waiter) { return waiter.entry.is_write; }) != nullptr;
+    if (!is_write && writer_waits)
+        return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
+
     // Readers share the lock, but a reader and a writer don't, even in the same thread
     if (state == RWLockState::Unlocked || (!is_write && state == RWLockState::ReadLocked)) {
         owners[thread]++;
@@ -695,25 +700,18 @@ SceInt32 RWLock::release(const ThreadStatePtr &thread, bool is_write) {
 
     state = RWLockState::Unlocked;
 
-    bool woke_writer = false;
-    waiters.wake_if([&](auto &waiter) {
-        const bool waiting_is_write = waiter.entry.is_write;
-
-        if (woke_writer || (state == RWLockState::ReadLocked && waiting_is_write)) {
-            // only awaken read threads
-            return false;
-        }
-
-        owners.emplace(waiter.thread, 1);
-
-        if (waiting_is_write) {
-            state = RWLockState::WriteLocked;
-            woke_writer = true;
-        } else {
-            state = RWLockState::ReadLocked;
-        }
-        return true;
-    });
+    // The first waiting writer goes first, even before readers that waited longer. Without one,
+    // every waiting reader gets the lock at once.
+    if (auto *writer = waiters.find_if([](auto &waiter) { return waiter.entry.is_write; })) {
+        owners.emplace(writer->thread, 1);
+        state = RWLockState::WriteLocked;
+        waiters.wake(*writer);
+    } else if (waiters.wake_if([&](auto &waiter) {
+                   owners.emplace(waiter.thread, 1);
+                   return true;
+               })) {
+        state = RWLockState::ReadLocked;
+    }
 
     return SCE_KERNEL_OK;
 }
