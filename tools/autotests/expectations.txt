@@ -73,7 +73,7 @@ thread_null_name                pass
 thread_priority                 pass
 thread_stack_negative           pass
 thread_stack_zero               pass
-thread_state                    fail     # stack free size, old affinity mask
+thread_state                    fail     # stack free size
 timeouts                        pass
 timer                           fail     # timer events, stopped timers and old times
 timer_edges                     fail     # timer event result pattern and timer base

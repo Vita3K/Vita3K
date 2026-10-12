@@ -681,6 +681,9 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchReq
             affinity = *affinity_ptr.get(emuenv.mem);
         }
     }
+    // A main thread without its own affinity runs on every user core and reports them all
+    if (affinity == SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT)
+        affinity = SCE_KERNEL_CPU_MASK_USER_ALL;
     const ThreadStatePtr main_thread = emuenv.kernel.create_thread(emuenv.mem, emuenv.io.title_id.c_str(), entry_point, priority, affinity, stack_size, nullptr);
     if (!main_thread) {
         LOG_ERROR("Failed to init main thread.");
