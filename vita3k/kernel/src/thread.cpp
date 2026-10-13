@@ -215,6 +215,17 @@ void ThreadState::run_loop() {
         lock.lock();
     };
 
+    // The callbacks the thread created end with it, with their pending notifications
+    auto delete_callbacks = [&]() {
+        lock.unlock();
+        for (const auto &weak_cb : callbacks) {
+            if (const CallbackPtr cb = weak_cb.lock())
+                kernel.delete_callback(cb->uid);
+        }
+        callbacks.clear();
+        lock.lock();
+    };
+
     while (true) {
         // Check if this call-level is done (normal exit, guest return, or delete).
         if (exit_requested || guest_returned || delete_requested) {
@@ -222,6 +233,7 @@ void ThreadState::run_loop() {
             if (top_level && status != ThreadStatus::dormant) {
                 run_thread_end_callback();
                 release_mutexes();
+                delete_callbacks();
                 update_status(ThreadStatus::dormant);
             }
             // Return from nested levels to the top level (or completely if deleted)
@@ -544,7 +556,7 @@ SceUInt32 ThreadState::process_callbacks() {
         // A callback that exits the thread also ends the wait it runs in
         {
             const std::lock_guard<std::mutex> lock(mutex);
-            // The callbacks after this one keep their notifications for when the thread runs again
+            // The thread's other callbacks are deleted when it ends, with their notifications
             if (exiting())
                 break;
         }

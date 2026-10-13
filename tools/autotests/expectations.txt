@@ -14,7 +14,7 @@ callback_inner_wait             fail     # waits stay queued while a callback wa
 callback_nesting                fail     # callbacks don't run inside callbacks
 callback_outer_timeout          fail     # a wait whose timeout passes during a callback
 callback_outer_wake             fail     # waits stay queued during callbacks
-callback_owner_end              fail     # callbacks stay when their thread ends
+callback_owner_end              pass
 callback_priority_requeue       fail     # waits stay queued during callbacks, so a cancel counts and ends them
 callback_requeue_order          fail     # a wait keeps its place in the queue after a callback
 callback_stack                  fail     # callbacks don't run inside callbacks
