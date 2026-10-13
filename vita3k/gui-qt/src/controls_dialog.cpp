@@ -342,7 +342,7 @@ ControlsDialog::ControlsDialog(EmuEnvState &emuenv,
     setWindowFlag(Qt::WindowCloseButtonHint, true);
     setWindowFlag(Qt::WindowContextHelpButtonHint, false);
     setAttribute(Qt::WA_DeleteOnClose);
-    setWindowIcon(QIcon(QStringLiteral(":/Vita3K.png")));
+    setWindowIcon(QIcon(QStringLiteral(":/org.vita3k.vita3k.svg")));
     setMinimumWidth(1250);
     m_ui->settingsCategory->setFrameShape(QFrame::NoFrame);
     m_ui->settingsCategory->setFocusPolicy(Qt::NoFocus);

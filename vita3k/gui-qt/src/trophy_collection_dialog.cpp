@@ -135,7 +135,7 @@ TrophyCollectionDialog::TrophyCollectionDialog(EmuEnvState &emuenv,
     setWindowFlag(Qt::WindowCloseButtonHint, true);
     setWindowFlag(Qt::WindowContextHelpButtonHint, false);
     setAttribute(Qt::WA_DeleteOnClose);
-    setWindowIcon(QIcon(QStringLiteral(":/Vita3K.png")));
+    setWindowIcon(QIcon(QStringLiteral(":/org.vita3k.vita3k.svg")));
 
     m_app_model = new QStandardItemModel(0, AC_Count, this);
     m_app_model->setHorizontalHeaderLabels({ tr("Icon"), tr("App"), tr("Progress"), tr("Trophies") });
