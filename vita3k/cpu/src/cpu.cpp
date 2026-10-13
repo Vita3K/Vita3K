@@ -108,6 +108,10 @@ uint32_t read_tpidruro(CPUState &state) {
     return state.cpu->get_tpidruro();
 }
 
+uint32_t read_tpidrurw(CPUState &state) {
+    return state.cpu->get_tpidrurw();
+}
+
 void write_reg(CPUState &state, size_t index, uint32_t value) {
     state.cpu->set_reg(index, value);
 }
@@ -126,6 +130,10 @@ void write_lr(CPUState &state, uint32_t value) {
 
 void write_tpidruro(CPUState &state, uint32_t value) {
     state.cpu->set_tpidruro(value);
+}
+
+void write_tpidrurw(CPUState &state, uint32_t value) {
+    state.cpu->set_tpidrurw(value);
 }
 
 bool is_thumb_mode(CPUState &state) {

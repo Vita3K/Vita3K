@@ -40,7 +40,7 @@ event_notify_callback           fail     # callbacks registered to simple events
 exit_process                    pass
 exit_process_thread             pass
 fiber_entry_returns             crash    # the fiber module doesn't load without firmware
-fiber_vfp                       crash    # TPIDRURW reads and writes
+fiber_vfp                       fail     # libfiber doesn't load without firmware
 fibers                          crash    # the fiber module doesn't load without firmware, fiber argument checks
 files                           fail     # closed file, EXCL, access mode and wrong type errors
 format                          fail     # sceClibSnprintf with %#x, %.0d and long arguments
@@ -53,9 +53,9 @@ lw_work                         pass
 lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 misc_edges                      fail     # two openable objects with the same name
-module_start_thread             crash    # TPIDRURW reads and writes
+module_start_thread             fail     # the stack size and attributes of the thread module start and stop run on
 module_start_threads            fail     # thread event handlers don't run for module start and stop threads
-module_start_vfp                crash    # TPIDRURW reads and writes
+module_start_vfp                fail     # threads start with FPSCR 0
 msgpipe                         pass
 msgpipe_async                   fail     # message pipe sends and receives that don't wait
 msgpipe_edges                   pass
@@ -82,7 +82,7 @@ sema_mutex_edges                pass
 sema_poll_negative              pass
 sema_waits                      pass
 semaphore                       pass
-shader_patcher_callback         crash    # TPIDRURW reads and writes
+shader_patcher_callback         fail     # a library callback's caller gets its FPSCR and TPIDRURW back after it
 simple_event                    pass
 simple_event_errors             fail     # simple event info, close and delete of unknown UIDs
 simple_event_null_pointers      pass
@@ -91,7 +91,7 @@ strings                         fail     # sceClibMemchr, case of bytes above 0x
 sysmodule                       fail     # system modules don't load without firmware
 thread                          pass
 thread_change_attr              fail     # ChangeCurrentThreadAttr takes every bit
-thread_context_for_vm           crash    # TPIDRURW reads and writes
+thread_context_for_vm           fail     # the ForVM calls need neither the VM attribute nor a suspended target
 thread_create_attr              fail     # thread creation takes every attribute bit, thread info shows none
 thread_create_current_priority  pass
 thread_create_edges             pass
@@ -100,9 +100,9 @@ thread_end_waits                pass
 thread_errors                   fail     # the VFP attribute
 thread_event_handler            fail     # thread event handlers run once per thread end, unknown thread and handler errors
 thread_event_handler_edges      fail     # thread event handlers run once per thread end, two handlers
-thread_event_handler_vfp        crash    # TPIDRURW reads and writes
+thread_event_handler_vfp        fail     # the end handler doesn't run, and handlers keep the thread's VFP state
 thread_fpscr                    fail     # threads start with FPSCR 0, callbacks keep the thread's FPSCR
-thread_id_registers             crash    # TPIDRURW reads and writes
+thread_id_registers             pass
 thread_info                     pass
 thread_info_fields              fail     # thread info process, attributes, affinity, CPU and run time fields
 thread_lifecycle                fail     # starting with more arguments than the stack holds

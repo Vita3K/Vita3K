@@ -555,7 +555,7 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
         infoCpu->sb = 100000; // Todo
         infoCpu->st = 100000; // Todo
         infoCpu->teehbr = 100000; // Todo
-        infoCpu->tpidrurw = read_tpidruro(*thread->cpu);
+        infoCpu->tpidrurw = read_tpidrurw(*thread->cpu);
     }
 
     SceKernelThreadVfpRegisterInfo *infoVfp = pVfpRegisterInfo.get(emuenv.mem);

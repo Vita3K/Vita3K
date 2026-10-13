@@ -116,6 +116,8 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
     run_start_callback = run_entry_callback;
     returned_value = SCE_KERNEL_ERROR_NOT_DORMANT;
     load_context(*cpu, init_cpu_ctx);
+    // A thread starts with TPIDRURW at 0, also when it starts again
+    write_tpidrurw(*cpu, 0);
     write_pc(*cpu, entry_point);
     write_lr(*cpu, kernel.halt_instruction_pc);
     write_reg(*cpu, 0, arglen);
@@ -318,6 +320,8 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     // save the current context before overwriting PC/LR for the callback
     const CPUContext previous_ctx = save_context(*cpu);
     const uint32_t previous_tpidruro = read_tpidruro(*cpu);
+    // A callback sees the thread's TPIDRURW, and the thread gets its own value back after it
+    const uint32_t previous_tpidrurw = read_tpidrurw(*cpu);
     const uint32_t previous_returned_value = returned_value;
 
     // we shouldn't have to clean the context I believe
@@ -338,6 +342,7 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     // but do it just in case
     load_context(*cpu, previous_ctx);
     write_tpidruro(*cpu, previous_tpidruro);
+    write_tpidrurw(*cpu, previous_tpidrurw);
 
     // The callback's result isn't the thread's exit status, unless the callback ended the thread
     const uint32_t result = returned_value;
