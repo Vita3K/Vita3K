@@ -39,7 +39,7 @@ uvec4 con3;
 #define A_HALF
 #include "../../../external/GPUOpen/ffx_a.h"
 layout(set=0,binding=1) uniform texture2D InputTexture;
-layout(set=0,binding=2,rgba16f) uniform image2D OutputTexture;
+layout(set=0,binding=2,rgba8) writeonly uniform image2D OutputTexture;
 layout(set=0,binding=3) uniform sampler InputSampler;
 #define FSR_EASU_H 1
 AH4 FsrEasuRH(AF2 p) { AH4 res = AH4(textureGather(sampler2D(InputTexture,InputSampler), p, 0)); return res; }
@@ -50,6 +50,11 @@ AH4 FsrEasuBH(AF2 p) { AH4 res = AH4(textureGather(sampler2D(InputTexture,InputS
 
 void CurrFilter(AU2 pos)
 {
+	// Each workgroup covers a 16x16 tile, while the dispatch is rounded up.
+	// Ignore invocations outside the actual output image.
+	if (any(greaterThanEqual(pos, output_dim)))
+		return;
+
 	AH3 c;
 	FsrEasuH(c, pos, con0, con1, con2, con3);
 	imageStore(OutputTexture, ASU2(pos), AH4(c, 1));
@@ -69,4 +74,3 @@ void main()
 	gxy.x -= 8u;
 	CurrFilter(gxy);
 }
-
