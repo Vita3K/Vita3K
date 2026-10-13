@@ -30,4 +30,6 @@ private:
     FrontendState state;
 };
 
+int run_frontend(EmuEnvState &emuenv);
+
 } // namespace sdl_frontend

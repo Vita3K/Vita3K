@@ -8,9 +8,11 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import androidx.annotation.Keep
 import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
 
+@Keep
 object StorageAccess {
 
     @JvmStatic

@@ -26,6 +26,8 @@
 
 #include <vkutil/vkutil.h>
 
+#include <mutex>
+
 namespace renderer::vulkan {
 
 VKContext::VKContext(VKState &state, MemState &mem)

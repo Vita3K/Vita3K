@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <ctime>
 #include <map>
@@ -52,3 +53,20 @@ struct CompatState {
 
     std::map<std::string, Compatibility> app_compat_db;
 };
+
+namespace compat {
+
+using ::BOOTABLE;
+using ::Compatibility;
+using ::CompatibilityState;
+using ::CompatState;
+using ::INGAME_LESS;
+using ::INGAME_MORE;
+using ::INTRO;
+using ::MENU;
+using ::NOTHING;
+using ::PLAYABLE;
+using ::UNKNOWN;
+using ::UpdateInfo;
+
+} // namespace compat

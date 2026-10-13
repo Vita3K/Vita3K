@@ -20,7 +20,7 @@ namespace sdl {
 void init_console();
 #endif
 
-bool initialize(bool has_video);
+bool initialize(bool has_video = true);
 
 EventResult process_event(EmuEnvState &emuenv, const SDL_Event &event, bool allow_hotkeys = false);
 void toggle_pause(EmuEnvState &emuenv);

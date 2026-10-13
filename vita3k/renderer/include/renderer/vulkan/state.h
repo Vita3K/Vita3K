@@ -125,6 +125,7 @@ struct VKState : public renderer::State {
     bool support_fsr = false;
     // support for the VK_KHR_uniform_buffer_standard_layout extension, needed for memory mapping and texture viewport
     bool support_standard_layout = false;
+    bool supports_shader_interlock = false;
     bool support_rasterized_order_access = false;
     bool support_native_rgba4_surface = false;
     LinuxSurfaceType linux_surface_type = LinuxSurfaceType::Unknown;
@@ -139,7 +140,7 @@ struct VKState : public renderer::State {
     bool init() override;
     bool create(std::unique_ptr<renderer::State> &state, const Config &config);
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
-    void cleanup() override;
+    void cleanup(bool preserve_frontend = false) override;
     void wait_thread_function(const MemState &mem);
 
     TextureCache *get_texture_cache() override {

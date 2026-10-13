@@ -10,7 +10,6 @@
 
 #include <SDL3/SDL_rect.h>
 
-#include <cstddef>
 #include <functional>
 #include <string>
 
@@ -29,8 +28,14 @@ struct ScrollbarLayout {
     std::size_t max_first_index;
 };
 
+struct CoordinateScale {
+    float x{ 1.f };
+    float y{ 1.f };
+};
+
 enum class FrontendScreen {
-    AppSelector
+    AppSelector,
+    UserSelector
 };
 
 struct FrontendState {

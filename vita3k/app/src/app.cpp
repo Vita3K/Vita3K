@@ -17,12 +17,14 @@
 
 #include <app/functions.h>
 
+#include <audio/state.h>
 #include <camera/camera.h>
 #include <config/functions.h>
 #include <config/state.h>
 #include <emuenv/state.h>
 #include <io/functions.h>
 #include <io/state.h>
+#include <kernel/state.h>
 #include <packages/license.h>
 #include <packages/sfo.h>
 #include <renderer/functions.h>

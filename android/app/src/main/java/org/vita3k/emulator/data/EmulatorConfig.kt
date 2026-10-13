@@ -85,6 +85,7 @@ class EmulatorConfig {
     @JvmField var fileLoadingDelay: Int = 0
 
     // Emulator
+    @JvmField var guiBackend: String = "Compose"
     @JvmField var showLiveAreaScreen: Boolean = false
     @JvmField var showCompileShaders: Boolean = true
     @JvmField var checkForUpdates: Boolean = true
@@ -160,6 +161,7 @@ class EmulatorConfig {
         config.stretchDisplayArea = stretchDisplayArea
         config.fullscreenHdResPixelPerfect = fullscreenHdResPixelPerfect
         config.fileLoadingDelay = fileLoadingDelay
+        config.guiBackend = guiBackend
         config.showLiveAreaScreen = showLiveAreaScreen
         config.showCompileShaders = showCompileShaders
         config.checkForUpdates = checkForUpdates
@@ -239,6 +241,7 @@ class EmulatorConfig {
             stretchDisplayArea == other.stretchDisplayArea &&
             fullscreenHdResPixelPerfect == other.fullscreenHdResPixelPerfect &&
             fileLoadingDelay == other.fileLoadingDelay &&
+            guiBackend == other.guiBackend &&
             showLiveAreaScreen == other.showLiveAreaScreen &&
             showCompileShaders == other.showCompileShaders &&
             checkForUpdates == other.checkForUpdates &&
@@ -315,6 +318,7 @@ class EmulatorConfig {
         result = 31 * result + stretchDisplayArea.hashCode()
         result = 31 * result + fullscreenHdResPixelPerfect.hashCode()
         result = 31 * result + fileLoadingDelay
+        result = 31 * result + guiBackend.hashCode()
         result = 31 * result + showLiveAreaScreen.hashCode()
         result = 31 * result + showCompileShaders.hashCode()
         result = 31 * result + checkForUpdates.hashCode()

@@ -63,6 +63,7 @@ struct DialogState;
 struct Ime;
 struct License;
 struct RegMgrState;
+struct V3KNState;
 struct SfoFile;
 struct GDBState;
 struct HTTPState;
@@ -110,6 +111,7 @@ private:
     std::unique_ptr<Ime> _ime;
     std::unique_ptr<License> _license;
     std::unique_ptr<RegMgrState> _regmgr;
+    std::unique_ptr<V3KNState> _v3kn;
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
     std::unique_ptr<HTTPState> _http;
@@ -173,6 +175,7 @@ public:
     Ime &ime;
     License &license;
     RegMgrState &regmgr;
+    V3KNState &v3kn;
     SfoFile &sfo_handle;
     NIDSet missing_nids;
     GDBState &gdb;
@@ -180,9 +183,6 @@ public:
     CameraState &camera;
     CompatState &compat;
     CheatState &cheat;
-    int max_font_level = 0;
-    int current_font_level = 0;
-
     std::unique_ptr<overlay::display_manager> overlay_manager;
 
     void post_app_launch_request(AppLaunchRequest request) {

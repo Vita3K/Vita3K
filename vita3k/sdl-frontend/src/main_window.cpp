@@ -20,6 +20,7 @@
 #include <emuenv/state.h>
 #include <io/state.h>
 #include <renderer/state.h>
+#include <sdl-frontend/app_selector.h>
 #include <sdl-frontend/functions.h>
 #include <sdl/functions.h>
 #include <util/exit_code.h>
@@ -129,7 +130,9 @@ static int run_frontend_loop(EmuEnvState &emuenv, MainWindow &main_window) {
             }
             if (!running || launch_request)
                 continue;
-            if (frontend_state.screen == FrontendScreen::AppSelector)
+            if (frontend_state.screen == FrontendScreen::UserSelector)
+                handle_user_selector_event(emuenv, frontend_state, window, event, shared_event.vita_button);
+            else
                 handle_app_selector_event(emuenv, frontend_state, window, event,
                     shared_event.vita_button, running);
             launch_request = emuenv.take_app_launch_request();
@@ -139,7 +142,7 @@ static int run_frontend_loop(EmuEnvState &emuenv, MainWindow &main_window) {
             return Success;
 
         if (launch_request) {
-            suspend_app_selector(emuenv, window);
+            suspend_app_selector(window);
             const auto result = run(emuenv, session, *window,
                 std::move(*launch_request), hooks);
             if (result.window_closed)
@@ -156,7 +159,9 @@ static int run_frontend_loop(EmuEnvState &emuenv, MainWindow &main_window) {
             continue;
         }
 
-        if (frontend_state.screen == FrontendScreen::AppSelector)
+        if (frontend_state.screen == FrontendScreen::UserSelector)
+            render_user_selector(emuenv);
+        else
             render_app_selector(emuenv, window);
         SDL_Delay(16);
     }

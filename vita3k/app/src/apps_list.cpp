@@ -564,7 +564,7 @@ void reset_last_time_app_used(EmuEnvState &emuenv, const std::string &app_path) 
     save_app_times(emuenv);
 }
 
-void delete_app(EmuEnvState &emuenv, const std::string &app_path) {
+bool delete_app(EmuEnvState &emuenv, const std::string &app_path) {
     AppEntry app_entry;
     {
         auto &state = emuenv.app.apps_list;
@@ -573,7 +573,7 @@ void delete_app(EmuEnvState &emuenv, const std::string &app_path) {
             [&](const AppEntry &app) { return app.path == app_path; });
         if (it == state.apps.end()) {
             LOG_WARN("'{}' not found in apps list.", app_path);
-            return;
+            return false;
         }
         app_entry = *it;
     }
@@ -641,6 +641,7 @@ void delete_app(EmuEnvState &emuenv, const std::string &app_path) {
         LOG_INFO("App successfully deleted '{}' [{}].", app_entry.title_id, app_entry.title);
     } catch (const std::exception &e) {
         LOG_ERROR("Failed to delete '{}' [{}]: {}", app_entry.title_id, app_entry.title, e.what());
+        return false;
     }
 
     {
@@ -652,17 +653,34 @@ void delete_app(EmuEnvState &emuenv, const std::string &app_path) {
         for (auto &[user_id, times] : state.app_times) {
             std::erase_if(times, [&](const AppTime &t) { return t.app_path == app_path; });
         }
-
         save_app_times(emuenv);
     }
 
     save_apps_cache(emuenv);
+    return true;
 }
 
 std::vector<AppEntry> get_apps(const EmuEnvState &emuenv) {
     const auto &state = emuenv.app.apps_list;
     std::lock_guard<std::mutex> lock(state.mutex);
     return state.apps;
+}
+
+std::optional<AppEntry> get_app(const EmuEnvState &emuenv, const std::string &app_path) {
+    const auto &state = emuenv.app.apps_list;
+    std::lock_guard<std::mutex> lock(state.mutex);
+    const auto it = std::ranges::find_if(state.apps, [&](const AppEntry &app) {
+        return app.path == app_path;
+    });
+    if (it == state.apps.end())
+        return std::nullopt;
+    return *it;
+}
+
+void sort_apps(EmuEnvState &emuenv, const std::function<bool(const AppEntry &, const AppEntry &)> &compare) {
+    auto &state = emuenv.app.apps_list;
+    std::lock_guard<std::mutex> lock(state.mutex);
+    std::sort(state.apps.begin(), state.apps.end(), compare);
 }
 
 std::map<std::string, AppTime> get_user_app_times(const EmuEnvState &emuenv) {

@@ -2,12 +2,16 @@ package org.vita3k.emulator
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import org.vita3k.emulator.data.AppInfo
+import org.vita3k.emulator.data.AppRepository
 import org.vita3k.emulator.data.AppStorage
 import org.vita3k.emulator.ui.navigation.AppNavigation
 import org.vita3k.emulator.ui.theme.Vita3KTheme
@@ -104,21 +108,35 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         prepareFrontendRuntime()
-        setTheme(R.style.Theme_Vita3K)
 
         val storagePath = AppStorage.storageRootPath(this)
-        appsListViewModel.initialize(storagePath)
+        lifecycleScope.launch {
+            if (!NativeLib.isInitialized() && !AppRepository.initialize(storagePath)) {
+                Log.e("Vita3K", "Failed to initialize native session for frontend selection")
+                Toast.makeText(this@MainActivity, R.string.apps_list_init_failed, Toast.LENGTH_LONG).show()
+                finish()
+                return@launch
+            }
 
-        setContent {
-            Vita3KTheme {
-                AppNavigation(
-                    appsListViewModel = appsListViewModel,
-                    installViewModel = installViewModel,
-                    settingsViewModel = settingsViewModel,
-                    userManagementViewModel = userManagementViewModel,
-                    onAppLaunch = { app -> launchApp(app.titleId, app.title) },
-                    onCreateAppShortcut = { app -> createAppShortcut(app) }
-                )
+            if (NativeLib.getGlobalConfig().guiBackend == "ImGui") {
+                startActivity(ImGuiActivity.createLaunchIntent(this@MainActivity))
+                finish()
+                return@launch
+            }
+
+            setTheme(R.style.Theme_Vita3K)
+            appsListViewModel.initialize(storagePath)
+            setContent {
+                Vita3KTheme {
+                    AppNavigation(
+                        appsListViewModel = appsListViewModel,
+                        installViewModel = installViewModel,
+                        settingsViewModel = settingsViewModel,
+                        userManagementViewModel = userManagementViewModel,
+                        onAppLaunch = { app -> launchApp(app.titleId, app.title) },
+                        onCreateAppShortcut = { app -> createAppShortcut(app) }
+                    )
+                }
             }
         }
     }
