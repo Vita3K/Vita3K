@@ -46,9 +46,17 @@ public:
         std::optional<SceInt32> result;
     };
 
+    // How the queue orders its waiters
+    enum class Order {
+        fifo,
+        priority,
+    };
+
     WaitQueue() = default;
     explicit WaitQueue(SceUInt32 attr)
         : by_priority(attr & SCE_KERNEL_ATTR_TH_PRIO) {}
+    explicit WaitQueue(Order order)
+        : by_priority(order == Order::priority) {}
 
     // Blocks thread on target until a waker gives it a result, ready() holds, it is being deleted, or the deadline passes.
     // thread must be the guest thread making this HLE call. ready() is rechecked each time it is woken.

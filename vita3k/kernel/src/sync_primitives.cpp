@@ -20,6 +20,7 @@
 #include <kernel/sync_primitives.h>
 
 #include <kernel/types.h>
+#include <util/align.h>
 #include <util/log.h>
 
 SyncPrimitive::SyncPrimitive(SceUInt32 attr, const char *name)
@@ -240,8 +241,9 @@ void Timer::advance_next_event(uint64_t current_time) {
 }
 
 SceInt32 Timer::try_take(SceUInt32 *result_pattern, SceUInt64 *user_data, uint64_t current_time) {
+    // A take that fails gets no bits, like a simple event poll
     if (result_pattern)
-        *result_pattern = SCE_KERNEL_EVENT_TIMER;
+        *result_pattern = 0;
     if (user_data)
         *user_data = 0;
 
@@ -257,6 +259,8 @@ SceInt32 Timer::try_take(SceUInt32 *result_pattern, SceUInt64 *user_data, uint64
     if (!event_set)
         return SCE_KERNEL_ERROR_EVENT_COND;
 
+    if (result_pattern)
+        *result_pattern = SCE_KERNEL_EVENT_TIMER;
     if (attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET)
         event_set = false;
 
@@ -314,6 +318,8 @@ SceInt32 Timer::wait(const ThreadStatePtr &thread, SceUInt32 *result_pattern, Sc
 
     waiters.remove(waiter);
     writeback_timeout(timeout, guest_deadline);
+    if (result_pattern)
+        *result_pattern = SCE_KERNEL_EVENT_TIMER;
 
     event_set = !is_pulse && !(attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
     advance_next_event(current_time);
@@ -348,8 +354,9 @@ SceInt32 Timer::start() {
     if (is_started)
         return 1;
 
+    // The count goes on from where it stopped
     is_started = true;
-    time = get_current_time();
+    base = get_current_time() - stopped_count;
 
     if (event_interval != 0)
         schedule_event();
@@ -362,12 +369,14 @@ SceInt32 Timer::stop() {
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
-    const bool was_stopped = !is_started;
+    if (!is_started)
+        return 0;
+
+    stopped_count = count();
     is_started = false;
-    time = get_current_time();
     next_event = std::numeric_limits<uint64_t>::max();
 
-    return static_cast<SceInt32>(was_stopped);
+    return 1;
 }
 
 std::expected<uint64_t, SceInt32> Timer::set_time(uint64_t new_time) {
@@ -375,7 +384,16 @@ std::expected<uint64_t, SceInt32> Timer::set_time(uint64_t new_time) {
     if (!guard)
         return std::unexpected(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
-    return std::exchange(time, new_time);
+    const uint64_t old_count = count();
+    if (is_started)
+        base = get_current_time() - new_time;
+    else
+        stopped_count = new_time;
+    return old_count;
+}
+
+uint64_t Timer::count() const {
+    return is_started ? get_current_time() - base : stopped_count;
 }
 
 SceInt32 Timer::cancel(SceUInt32 *num_wait_threads) {
@@ -474,7 +492,7 @@ void Mutex::update_workarea(MemState &mem) {
     if (!lightweight())
         return;
     workarea.get(mem)->lockCount = lock_count;
-    workarea.get(mem)->owner = owner->id;
+    workarea.get(mem)->owner = owner ? owner->id : 0;
 }
 
 SceInt32 Mutex::acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks) {
@@ -514,7 +532,7 @@ SceInt32 Mutex::try_acquire(MemState &mem, const ThreadStatePtr &thread, SceInt3
     return try_take(mem, thread, count);
 }
 
-SceInt32 Mutex::release(const ThreadStatePtr &thread, SceInt32 unlock_count) {
+SceInt32 Mutex::release(MemState &mem, const ThreadStatePtr &thread, SceInt32 unlock_count) {
     const auto guard = lock();
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID : SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID;
@@ -528,17 +546,25 @@ SceInt32 Mutex::release(const ThreadStatePtr &thread, SceInt32 unlock_count) {
 
     lock_count -= unlock_count;
 
-    if (lock_count == 0) {
-        owner = nullptr;
-
-        if (auto *waiter = waiters.front()) {
-            lock_count += waiter->entry.lock_count;
-            owner = waiter->thread;
-            waiters.wake(*waiter);
-        }
-    }
+    if (lock_count == 0)
+        hand_over();
+    update_workarea(mem);
 
     return SCE_KERNEL_OK;
+}
+
+void Mutex::release_ended_owner() {
+    lock_count = 0;
+    hand_over();
+}
+
+void Mutex::hand_over() {
+    owner = nullptr;
+    if (auto *waiter = waiters.front()) {
+        lock_count += waiter->entry.lock_count;
+        owner = waiter->thread;
+        waiters.wake(*waiter);
+    }
 }
 
 SceInt32 Mutex::cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt32 *num_wait_threads) {
@@ -589,6 +615,11 @@ SceInt32 RWLock::try_take(const ThreadStatePtr &thread, bool is_write) {
         owners[thread]++;
         return SCE_KERNEL_OK;
     }
+
+    // A waiting writer goes before new readers
+    const bool writer_waits = waiters.find_if([](auto &waiter) { return waiter.entry.is_write; }) != nullptr;
+    if (!is_write && writer_waits)
+        return SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_LOCK;
 
     // Readers share the lock, but a reader and a writer don't, even in the same thread
     if (state == RWLockState::Unlocked || (!is_write && state == RWLockState::ReadLocked)) {
@@ -671,25 +702,18 @@ SceInt32 RWLock::release(const ThreadStatePtr &thread, bool is_write) {
 
     state = RWLockState::Unlocked;
 
-    bool woke_writer = false;
-    waiters.wake_if([&](auto &waiter) {
-        const bool waiting_is_write = waiter.entry.is_write;
-
-        if (woke_writer || (state == RWLockState::ReadLocked && waiting_is_write)) {
-            // only awaken read threads
-            return false;
-        }
-
-        owners.emplace(waiter.thread, 1);
-
-        if (waiting_is_write) {
-            state = RWLockState::WriteLocked;
-            woke_writer = true;
-        } else {
-            state = RWLockState::ReadLocked;
-        }
-        return true;
-    });
+    // The first waiting writer goes first, even before readers that waited longer. Without one,
+    // every waiting reader gets the lock at once.
+    if (auto *writer = waiters.find_if([](auto &waiter) { return waiter.entry.is_write; })) {
+        owners.emplace(writer->thread, 1);
+        state = RWLockState::WriteLocked;
+        waiters.wake(*writer);
+    } else if (waiters.wake_if([&](auto &waiter) {
+                   owners.emplace(waiter.thread, 1);
+                   return true;
+               })) {
+        state = RWLockState::ReadLocked;
+    }
 
     return SCE_KERNEL_OK;
 }
@@ -840,7 +864,7 @@ SceInt32 Condvar::wait(MemState &mem, const ThreadStatePtr &thread, SceUInt32 *t
     if (!guard)
         return lightweight() ? SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID : SCE_KERNEL_ERROR_UNKNOWN_COND_ID;
 
-    if (const SceInt32 error = associated_mutex->release(thread, 1))
+    if (const SceInt32 error = associated_mutex->release(mem, thread, 1))
         return error;
 
     const Deadline deadline = deadline_from(timeout);
@@ -877,6 +901,10 @@ SceInt32 Condvar::signal(SignalTarget target) {
         if (!waiter)
             return SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
         waiters.wake(*waiter);
+    } else if (target.type == SignalTarget::Type::Any) {
+        // Wakes the first waiter in queue order
+        if (auto *waiter = waiters.front())
+            waiters.wake(*waiter);
     } else {
         waiters.wake_all();
     }
@@ -891,6 +919,7 @@ SceInt32 Condvar::signal(SignalTarget target) {
 EventFlag::EventFlag(SceUInt32 attr, const char *name, SceUInt32 init_pattern)
     : WithUidClass(attr, name)
     , waiters(attr)
+    , init_pattern(init_pattern)
     , flags(init_pattern) {}
 
 SceInt32 EventFlag::check_create(const char *name, SceUInt32 attr) {
@@ -1054,8 +1083,10 @@ SceInt32 EventFlag::cancel(SceUInt32 pattern, SceUInt32 *num_wait_threads) {
 
 MsgPipe::MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size)
     : WithUidClass(attr, name)
-    , receivers(attr)
-    , data_buffer(buf_size) {}
+    , senders(attr & SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_S ? WaitQueue<WaitEntry>::Order::priority : WaitQueue<WaitEntry>::Order::fifo)
+    , receivers(attr & SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_R ? WaitQueue<WaitEntry>::Order::priority : WaitQueue<WaitEntry>::Order::fifo)
+    // A pipe's buffer is a whole number of 4 KiB pages
+    , data_buffer(align(buf_size, 0x1000)) {}
 
 SceInt32 MsgPipe::check_create(const char *name, SceUInt32 type, SceUInt32 attr, SceSize buf_size) {
     if (const SceInt32 error = check_name(name, attr))
@@ -1122,10 +1153,12 @@ std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, 
 
         // sleep until we can read, if ASAP we can read as low as 1 byte
         const WaitEntry entry{ .request_size = ASAP ? 1 : size };
-        const WaitResult r = receivers.wait_until_ready(guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid }, entry, deadline_from(timeout), callbacks, [&](auto &waiter) {
+        const Deadline deadline = deadline_from(timeout);
+        const WaitResult r = receivers.wait_until_ready(guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid }, entry, deadline, callbacks, [&](auto &waiter) {
             waiter.entry.notified = false;
             return can_receive();
         });
+        writeback_timeout(timeout, deadline);
         // The thread is exiting, which the guest never sees
         if (!r)
             return 0;
@@ -1163,10 +1196,12 @@ std::expected<SceSize, SceInt32> MsgPipe::send(const ThreadStatePtr &thread, Sce
 
         // sleep until there's more space, if ASAP we can insert as low as 1 byte
         const WaitEntry entry{ .request_size = ASAP ? 1 : size };
-        const WaitResult r = senders.wait_until_ready(guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid }, entry, deadline_from(timeout), callbacks, [&](auto &waiter) {
+        const Deadline deadline = deadline_from(timeout);
+        const WaitResult r = senders.wait_until_ready(guard, thread, { SCE_KERNEL_WAITTYPE_MSG_PIPE, uid }, entry, deadline, callbacks, [&](auto &waiter) {
             waiter.entry.notified = false;
             return can_send();
         });
+        writeback_timeout(timeout, deadline);
         // The thread is exiting, which the guest never sees
         if (!r)
             return 0;

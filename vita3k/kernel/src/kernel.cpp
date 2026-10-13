@@ -142,6 +142,11 @@ void KernelState::invalidate_jit_cache(Address start, size_t length) {
     }
 }
 
+uint64_t KernelState::process_time_at(uint64_t clock_time) const {
+    // The process started at the host clock time start_tick - base_tick.tick
+    return clock_time - (start_tick - base_tick.tick);
+}
+
 ThreadStatePtr KernelState::get_thread(SceUID thread_id) {
     return lock_and_find(thread_id, threads, mutex);
 }

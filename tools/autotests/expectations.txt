@@ -10,7 +10,7 @@ cond                            pass
 cond_errors                     fail     # condition variable unknown UID errors and close
 cond_rwlock_edges               pass
 cond_signal                     pass
-cond_waits                      fail     # SignalCond wakes every waiter
+cond_waits                      pass
 core_affinity                   fail     # threads ignore their core affinity and the priorities on a core
 delay                           pass
 directories                     fail     # directory mode, not empty and wrong type errors
@@ -26,18 +26,18 @@ fiber_entry_returns             crash    # the fiber module doesn't load without
 fibers                          crash    # the fiber module doesn't load without firmware, fiber argument checks
 files                           fail     # closed file, EXCL, access mode and wrong type errors
 format                          fail     # sceClibSnprintf with %#x, %.0d and long arguments
-info                            fail     # event flag initial pattern, message pipe info
+info                            pass
 lw_cond                         pass
 lw_cond_errors                  fail     # lightweight condition variable info by UID
 lw_mutex                        pass
 lw_mutex_errors                 pass
 lw_work                         pass
-lw_work_layout                  fail     # lightweight mutex and condition variable work area contents
+lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 misc_edges                      fail     # two openable objects with the same name
 msgpipe                         pass
 msgpipe_edges                   pass
-msgpipe_errors                  crash    # message pipe info and close of unknown UIDs, a NULL buffer
+msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
 msgpipe_vectors                 fail     # message pipe vector sends and receives
 msgpipe_waits                   pass
 mspace                          fail     # sceClib memory space info
@@ -45,12 +45,13 @@ multi_events                    fail     # waiting on several events, callbacks 
 multi_events_errors             fail     # waiting on several events with unknown UIDs
 mutex                           pass
 mutex_errors                    crash    # closing unknown UIDs, a NULL name
-mutex_waits                     fail     # a mutex isn't unlocked when the thread holding it ends
+mutex_waits                     pass
 open                            fail     # opening an object that isn't openable
-queue_order                     fail     # priority changes while waiting, reader/writer lock writer priority, pipe queue order
+queue_order                     fail     # priority changes while waiting
 rtc                             crash    # RTC date range checks, a NULL tick
-rwlock                          fail     # reader/writer lock writer priority
+rwlock                          pass
 rwlock_errors                   fail     # closing unknown UIDs
+rwlock_reader_again             pass
 sema_errors                     crash    # closing unknown UIDs, a NULL name
 sema_mutex_edges                pass
 sema_poll_negative              pass
@@ -62,21 +63,21 @@ simple_event_null_pointers      pass
 simple_event_wait_null          pass
 strings                         fail     # sceClibMemchr, case of bytes above 0x7F
 sysmodule                       fail     # system modules don't load without firmware
-thread                          fail     # thread exit status errors, starting a running thread, deleting itself
+thread                          pass
 thread_create_current_priority  pass
 thread_create_edges             pass
 thread_edges                    fail     # DelayThreadCB(0)
-thread_errors                   fail     # stack free size of unknown UIDs, affinity checks
+thread_errors                   fail     # the VFP attribute
 thread_info                     pass
 thread_lifecycle                fail     # starting with more arguments than the stack holds
 thread_null_name                pass
 thread_priority                 pass
 thread_stack_negative           pass
 thread_stack_zero               pass
-thread_state                    fail     # thread exit status errors, stack free size, old affinity mask
-timeouts                        fail     # time left after a wait
-timer                           fail     # timer events, stopped timers and old times
-timer_edges                     fail     # timer event result pattern and timer base
+thread_state                    pass
+timeouts                        pass
+timer                           pass
+timer_edges                     pass
 timer_errors                    crash    # timer set time, info and close of unknown UIDs, a NULL pointer
 timer_event_interval_zero       pass
 timer_wait_no_event             pass
@@ -87,3 +88,4 @@ uid_semantics                   fail     # opening gives a new UID
 wait_delete_timeout             pass
 wait_order                      pass
 wait_own_end                    pass
+wait_priority_change            fail     # a waiter changed to any priority goes behind the others at it

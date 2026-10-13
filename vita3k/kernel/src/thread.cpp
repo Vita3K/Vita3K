@@ -19,6 +19,7 @@
 #include <kernel/thread/thread_state.h>
 
 #include <kernel/state.h>
+#include <kernel/sync_primitives.h>
 #include <mem/ptr.h>
 #include <util/align.h>
 
@@ -110,9 +111,10 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
 int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback) {
     std::unique_lock<std::mutex> thread_lock(mutex);
     if (status != ThreadStatus::dormant)
-        return SCE_KERNEL_ERROR_RUNNING;
+        return SCE_KERNEL_ERROR_NOT_DORMANT;
 
     run_start_callback = run_entry_callback;
+    returned_value = SCE_KERNEL_ERROR_NOT_DORMANT;
     load_context(*cpu, init_cpu_ctx);
     write_pc(*cpu, entry_point);
     write_lr(*cpu, kernel.halt_instruction_pc);
@@ -199,12 +201,23 @@ void ThreadState::run_loop() {
         returned_value = old_returned_value;
     };
 
+    // A mutex the thread still holds when it ends goes to its next waiter
+    auto release_mutexes = [&]() {
+        lock.unlock();
+        kernel.objects.for_each<HeavyMutex>([&](Mutex &mutex) {
+            if (mutex.owner.get() == this)
+                mutex.release_ended_owner();
+        });
+        lock.lock();
+    };
+
     while (true) {
         // Check if this call-level is done (normal exit, guest return, or delete).
         if (exit_requested || guest_returned || delete_requested) {
             // Top-level fires the end callback and parks dormant
             if (top_level && status != ThreadStatus::dormant) {
                 run_thread_end_callback();
+                release_mutexes();
                 update_status(ThreadStatus::dormant);
             }
             // Return from nested levels to the top level (or completely if deleted)
@@ -305,6 +318,7 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     // save the current context before overwriting PC/LR for the callback
     const CPUContext previous_ctx = save_context(*cpu);
     const uint32_t previous_tpidruro = read_tpidruro(*cpu);
+    const uint32_t previous_returned_value = returned_value;
 
     // we shouldn't have to clean the context I believe
     write_pc(*cpu, callback_address);
@@ -325,7 +339,11 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     load_context(*cpu, previous_ctx);
     write_tpidruro(*cpu, previous_tpidruro);
 
-    return returned_value;
+    // The callback's result isn't the thread's exit status, unless the callback ended the thread
+    const uint32_t result = returned_value;
+    if (!exit_requested && !delete_requested)
+        returned_value = previous_returned_value;
+    return result;
 }
 
 void ThreadState::dispatch_abort(CPUState &cpu) {

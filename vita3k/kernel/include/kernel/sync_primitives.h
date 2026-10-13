@@ -84,8 +84,10 @@ public:
     SceInt32 start();
     SceInt32 stop();
     SceInt32 cancel(SceUInt32 *num_wait_threads);
-    // Replaces time and returns its old value, or the error.
+    // Replaces the count and returns its old value, or the error.
     std::expected<uint64_t, SceInt32> set_time(uint64_t new_time);
+    // Returns how much time the timer counted. The lock must be held.
+    uint64_t count() const;
 
     // Only the first waiter waits for the next event, the others wait for their turn
     WaitQueue<std::monostate> waiters;
@@ -94,7 +96,10 @@ public:
     bool is_repeat = false;
     bool is_pulse = false;
     bool event_set = false;
-    uint64_t time = 0;
+    // The clock time the count runs from while the timer is started, 0 if it never started
+    uint64_t base = 0;
+    // The count while the timer is stopped
+    uint64_t stopped_count = 0;
     uint64_t next_event = std::numeric_limits<uint64_t>::max();
     uint64_t event_interval = 0;
 
@@ -147,8 +152,10 @@ public:
     // Same as acquire, but reports the wait as target, for a condition variable taking its mutex back
     SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, WaitTarget target, bool callbacks);
     SceInt32 try_acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
-    SceInt32 release(const ThreadStatePtr &thread, SceInt32 unlock_count);
+    SceInt32 release(MemState &mem, const ThreadStatePtr &thread, SceInt32 unlock_count);
     SceInt32 cancel(const ThreadStatePtr &thread, SceInt32 new_count, SceUInt32 *num_wait_threads);
+    // Unlocks the mutex of an owner that ended and gives it to the next waiter. The lock must be held.
+    void release_ended_owner();
 
     struct WaitEntry {
         SceInt32 lock_count;
@@ -167,6 +174,8 @@ private:
     SceInt32 check_count(SceInt32 count) const;
     // Takes the mutex if it is free or owned by thread, or returns why it can't. The lock must be held.
     SceInt32 try_take(MemState &mem, const ThreadStatePtr &thread, SceInt32 count);
+    // Gives the unlocked mutex to the first waiter, if there is one. The lock must be held.
+    void hand_over();
     // Writes the owner and lock count to a lightweight mutex's work area, which the guest reads. The lock must be held.
     void update_workarea(MemState &mem);
 };
@@ -246,6 +255,8 @@ public:
     };
 
     WaitQueue<WaitEntry> waiters;
+    // The pattern the event flag was created with, for its info
+    const SceUInt32 init_pattern;
     SceUInt32 flags;
 
 private:
@@ -312,21 +323,20 @@ public:
     std::expected<SceSize, SceInt32> send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const void *buf, SceSize size, SceUInt32 *timeout, bool callbacks);
     SceInt32 cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads);
 
-private:
     struct WaitEntry {
         SceSize request_size;
         // Woken to recheck the buffer and has not done so yet
         bool notified = false;
     };
 
-    void on_delete() override;
-    // Wakes the first waiter whose request now fits and that was not woken already, so it retries its transfer
-    static void wake_waiter(WaitQueue<WaitEntry> &waiters, std::size_t available);
-
-    // TODO do senders respect priority?
     WaitQueue<WaitEntry> senders;
     WaitQueue<WaitEntry> receivers;
     ByteRingBuffer data_buffer;
+
+private:
+    void on_delete() override;
+    // Wakes the first waiter whose request now fits and that was not woken already, so it retries its transfer
+    static void wake_waiter(WaitQueue<WaitEntry> &waiters, std::size_t available);
 };
 
 typedef std::shared_ptr<MsgPipe> MsgPipePtr;

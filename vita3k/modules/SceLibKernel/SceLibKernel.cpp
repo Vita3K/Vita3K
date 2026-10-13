@@ -54,12 +54,6 @@ enum class TimerFlags : uint32_t {
 
 TRACY_MODULE_NAME(SceLibKernel);
 
-inline static uint64_t get_current_time() {
-    return std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::high_resolution_clock::now().time_since_epoch())
-        .count();
-}
-
 VAR_EXPORT(__sce_libcparam) {
     // This variable almost newer used. So I return something that looks good, but not exacly correct.
     return (emuenv.kernel.process_param ? emuenv.kernel.process_param.get(emuenv.mem)->sce_libc_param.address() : 0);
@@ -1277,12 +1271,7 @@ EXPORT(SceUID, sceKernelCreateTimer, const char *name, SceUInt32 attr, const uin
 
 EXPORT(int, sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea) {
     TRACY_FUNC(sceKernelDeleteLwCond, workarea);
-    SceUID lightweight_condition_id = workarea.get(emuenv.mem)->uid;
-
-    if (!emuenv.kernel.objects.remove<LwCond>(lightweight_condition_id))
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_COND_ID);
-
-    return SCE_KERNEL_OK;
+    return CALL_EXPORT(_sceKernelDeleteLwCond, workarea);
 }
 
 EXPORT(int, sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
@@ -1363,9 +1352,9 @@ EXPORT(int, sceKernelGetModuleInfoByAddr, Ptr<void> addr, SceKernelModuleInfo *i
     return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NOENT);
 }
 
-EXPORT(int, sceKernelGetMsgPipeInfo) {
-    TRACY_FUNC(sceKernelGetMsgPipeInfo);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetMsgPipeInfo, SceUID msgPipeId, SceKernelMppInfo *pInfo) {
+    TRACY_FUNC(sceKernelGetMsgPipeInfo, msgPipeId, pInfo);
+    return CALL_EXPORT(_sceKernelGetMsgPipeInfo, msgPipeId, pInfo);
 }
 
 EXPORT(int, sceKernelGetMutexInfo, SceUID mutexId, SceKernelMutexInfo *info) {
@@ -1462,17 +1451,7 @@ EXPORT(int, sceKernelGetThreadEventInfo) {
 
 EXPORT(int, sceKernelGetThreadExitStatus, SceUID thid, SceInt32 *pExitStatus) {
     TRACY_FUNC(sceKernelGetThreadExitStatus, thid, pExitStatus);
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(thid ? thid : thread_id);
-    if (!thread) {
-        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
-    }
-    if (thread->status != ThreadStatus::dormant) {
-        return SCE_KERNEL_ERROR_NOT_DORMANT;
-    }
-    if (pExitStatus) {
-        *pExitStatus = thread->returned_value;
-    }
-    return 0;
+    return CALL_EXPORT(_sceKernelGetThreadExitStatus, thid, pExitStatus);
 }
 
 EXPORT(int, sceKernelGetThreadId) {
@@ -1498,7 +1477,7 @@ EXPORT(int, sceKernelGetTimerBase, SceUID timer_handle, SceKernelSysClock *time)
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
-    *time = timer->time;
+    *time = timer->base ? emuenv.kernel.process_time_at(timer->base) : 0;
 
     return 0;
 }
@@ -1521,7 +1500,7 @@ EXPORT(int, sceKernelGetTimerTime, SceUID timer_handle, SceKernelSysClock *time)
     if (!guard)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
-    *time = get_current_time() - timer->time;
+    *time = timer->count();
 
     return 0;
 }
@@ -1837,7 +1816,7 @@ EXPORT(int, sceKernelUnlockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int unlo
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
-    return mutex->release(emuenv.kernel.get_thread(thread_id), unlock_count);
+    return mutex->release(emuenv.mem, emuenv.kernel.get_thread(thread_id), unlock_count);
 }
 
 EXPORT(int, sceKernelUnlockLwMutex_0, Ptr<SceKernelLwMutexWork> workarea, int unlock_count) {
@@ -1851,7 +1830,7 @@ EXPORT(int, sceKernelUnlockLwMutex2, Ptr<SceKernelLwMutexWork> workarea, int unl
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
-    return mutex->release(emuenv.kernel.get_thread(thread_id), unlock_count);
+    return mutex->release(emuenv.mem, emuenv.kernel.get_thread(thread_id), unlock_count);
 }
 
 EXPORT(SceInt32, sceKernelWaitCond, SceUID condId, SceUInt32 *pTimeout) {

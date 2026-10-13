@@ -86,6 +86,8 @@
 
 // The bits that order the threads waiting on a message pipe, separately for senders and receivers
 #define SCE_KERNEL_MSG_PIPE_ATTR_TH_MASK 0x0000000FU
+#define SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_S 0x00000001U
+#define SCE_KERNEL_MSG_PIPE_ATTR_TH_PRIO_R 0x00000002U
 
 #define SCE_KERNEL_MSG_PIPE_MODE_ASAP 0x00000000U
 #define SCE_KERNEL_MSG_PIPE_MODE_FULL 0x00000001U
@@ -756,7 +758,8 @@ struct SceKernelLwMutexInfo {
 
 struct SceKernelLwCondWork {
     SceUID uid;
-    std::uint8_t padding[12];
+    SceUID lwMutexUid;
+    std::uint32_t unknown[2];
 };
 static_assert(sizeof(SceKernelLwCondWork) == 16, "Incorrect size");
 
@@ -809,6 +812,17 @@ struct SceKernelCondInfo {
     SceUInt32 attr;
     SceUID mutexId;
     SceUInt32 numWaitThreads;
+};
+
+struct SceKernelMppInfo {
+    SceSize size;
+    SceUID mppId;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    SceUInt32 attr;
+    SceInt32 bufSize;
+    SceInt32 freeSize;
+    SceInt32 numSendWaitThreads;
+    SceInt32 numReceiveWaitThreads;
 };
 
 struct SceKernelEventFlagInfo {
