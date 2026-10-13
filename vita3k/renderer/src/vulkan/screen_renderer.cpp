@@ -21,6 +21,8 @@
 #include "util/log.h"
 #include "vkutil/vkutil.h"
 
+#include <mutex>
+
 #include <cstdint>
 #include <exception>
 
@@ -542,7 +544,6 @@ void ScreenRenderer::swap_window() {
     submit_info.setWaitDstStageMask(dst_masks);
     submit_info.setSignalSemaphores(image_ready_semaphores[current_frame]);
     submit_info.setCommandBuffers(current_cmd_buffer);
-    state.general_queue.submit(submit_info, fences[swapchain_image_idx]);
 
     // then present the surface
     vk::PresentInfoKHR present_info{
@@ -553,7 +554,12 @@ void ScreenRenderer::swap_window() {
         .pImageIndices = &swapchain_image_idx,
     };
 
-    auto result = state.general_queue.presentKHR(&present_info);
+    vk::Result result;
+    {
+        std::lock_guard<std::mutex> lock(state.queue_mutex);
+        state.general_queue.submit(submit_info, fences[swapchain_image_idx]);
+        result = state.general_queue.presentKHR(&present_info);
+    }
     if (result == vk::Result::eSuboptimalKHR) {
         need_rebuild = !surface_matches_window_size();
     } else if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR) {
