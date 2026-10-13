@@ -175,8 +175,15 @@
       "generator": "Ninja Multi-Config"
     },
     {
+      "name": "macos-xcode",
+      "inherits": "macos",
+      "displayName": "macOS with Xcode",
+      "description": "macOS native build using Xcode generator and default compiler",
+      "generator": "Xcode"
+    },
+    {
       "name": "ci-macos-x64",
-      "inherits": "macos-ninja",
+      "inherits": "macos-xcode",
       "description": "CI preset for macOS x86_64 builds",
       "cacheVariables": {
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
@@ -188,7 +195,7 @@
     },
     {
       "name": "ci-macos-arm64",
-      "inherits": "macos-ninja",
+      "inherits": "macos-xcode",
       "description": "CI preset for macOS arm64 builds",
       "cacheVariables": {
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
@@ -197,13 +204,6 @@
         "FORCE_BUILD_OPENSSL_MAC": true,
         "VITA3K_FORCE_CUSTOM_BOOST": true
       }
-    },
-    {
-      "name": "macos-xcode",
-      "inherits": "macos",
-      "displayName": "macOS with Xcode",
-      "description": "Linux native build using Xcode generator and default compiler",
-      "generator": "Xcode"
     }
   ],
   "buildPresets": [
