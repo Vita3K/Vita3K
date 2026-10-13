@@ -23,6 +23,7 @@
 TRACY_MODULE_NAME(SceThreadmgrForDriver);
 
 #include <kernel/state.h>
+#include <kernel/sync_primitives.h>
 
 EXPORT(int, ksceKernelCancelCallback) {
     return UNIMPLEMENTED();
@@ -78,7 +79,12 @@ EXPORT(int, ksceKernelCreateMsgPipe) {
 
 EXPORT(int, ksceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
     TRACY_FUNC(ksceKernelCreateMutex, name, attr, init_count, opt_param);
-    return CALL_EXPORT(_sceKernelCreateMutex, name, attr, init_count, opt_param);
+    // Kernel modules use attributes games can't, like 0x8000 for SceSysmodule's mutex
+    if (const SceInt32 error = Mutex::check_create(name, attr, init_count, true))
+        return RET_ERROR(error);
+
+    const auto mutex = std::make_shared<HeavyMutex>(attr, name, init_count, emuenv.kernel.get_thread(thread_id));
+    return emuenv.kernel.objects.add(mutex, emuenv.kernel.get_next_uid());
 }
 
 EXPORT(int, ksceKernelCreateSema) {

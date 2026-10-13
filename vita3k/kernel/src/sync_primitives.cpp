@@ -407,10 +407,10 @@ Mutex::Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStateP
     , lock_count(init_count)
     , owner(init_count > 0 ? std::move(thread) : nullptr) {}
 
-SceInt32 Mutex::check_create(const char *name, SceUInt32 attr, SceInt32 init_count) {
+SceInt32 Mutex::check_create(const char *name, SceUInt32 attr, SceInt32 init_count, bool kernel) {
     if (const SceInt32 error = check_name(name, attr))
         return error;
-    if (attr & ~(SCE_KERNEL_MUTEX_ATTR_RECURSIVE | SCE_KERNEL_MUTEX_ATTR_CEILING | SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE))
+    if (!kernel && attr & ~(SCE_KERNEL_MUTEX_ATTR_RECURSIVE | SCE_KERNEL_MUTEX_ATTR_CEILING | SCE_KERNEL_ATTR_TH_PRIO | SCE_KERNEL_ATTR_OPENABLE))
         return SCE_KERNEL_ERROR_ILLEGAL_ATTR;
     if (init_count < 0)
         return SCE_KERNEL_ERROR_ILLEGAL_COUNT;

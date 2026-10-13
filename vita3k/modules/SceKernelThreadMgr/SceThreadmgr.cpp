@@ -60,7 +60,7 @@ EXPORT(int, __sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const 
     if (!workarea)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     const int init_count = opt.get(emuenv.mem)->init_count;
-    if (const SceInt32 error = Mutex::check_create(name, attr, init_count))
+    if (const SceInt32 error = Mutex::check_create(name, attr, init_count, false))
         return RET_ERROR(error);
 
     const auto mutex = std::make_shared<LwMutex>(attr, name, init_count, emuenv.kernel.get_thread(thread_id), workarea);
@@ -183,7 +183,7 @@ EXPORT(int, _sceKernelCreateMsgPipeWithLR) {
 
 EXPORT(int, _sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
     TRACY_FUNC(_sceKernelCreateMutex, name, attr, init_count, opt_param);
-    if (const SceInt32 error = Mutex::check_create(name, attr, init_count))
+    if (const SceInt32 error = Mutex::check_create(name, attr, init_count, false))
         return RET_ERROR(error);
 
     const auto mutex = std::make_shared<HeavyMutex>(attr, name, init_count, emuenv.kernel.get_thread(thread_id));

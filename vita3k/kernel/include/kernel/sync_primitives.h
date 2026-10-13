@@ -139,8 +139,9 @@ typedef std::shared_ptr<Semaphore> SemaphorePtr;
 class Mutex : public SyncPrimitive {
 public:
     Mutex(SceUInt32 attr, const char *name, SceInt32 init_count, ThreadStatePtr thread, Ptr<SceKernelLwMutexWork> workarea = {});
-    // Returns the error for a name or count the guest can't use, or 0.
-    static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_count);
+    // Returns the error for a name, attributes or count the caller can't use, or 0. Kernel callers may
+    // use attributes games can't.
+    static SceInt32 check_create(const char *name, SceUInt32 attr, SceInt32 init_count, bool kernel);
 
     SceInt32 acquire(MemState &mem, const ThreadStatePtr &thread, SceInt32 count, SceUInt32 *timeout, bool callbacks);
     // Same as acquire, but reports the wait as target, for a condition variable taking its mutex back
