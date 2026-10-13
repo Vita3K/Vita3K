@@ -23,7 +23,10 @@
 
 #include <chrono>
 #include <cstdint>
+#include <ctime>
+#include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -58,17 +61,9 @@ struct SettingsCommitResult {
     std::vector<config::RestartRequiredSetting> restart_required_settings;
 };
 
-/// Describes the state of the application to be run
-enum class AppRunType {
-    /// Run type is unknown
-    Unknown,
-    /// Extracted, files are as they are on console
-    Extracted,
-};
-
 bool init_paths(Root &root_paths);
 bool init(EmuEnvState &state, Config &cfg, const Root &root_paths);
-void shutdown_app_runtime(EmuEnvState &state);
+void shutdown_app_runtime(EmuEnvState &state, bool preserve_renderer = false);
 void reset_app_state(EmuEnvState &state);
 bool late_init(EmuEnvState &state);
 void apply_renderer_config(EmuEnvState &emuenv);
@@ -83,13 +78,16 @@ bool scan_apps(EmuEnvState &emuenv);
 bool load_cached_apps(EmuEnvState &emuenv);
 void save_apps_cache(EmuEnvState &emuenv);
 AppEntry read_app_info(EmuEnvState &emuenv, const std::string &title_id);
+void update_app(EmuEnvState &emuenv, const AppEntry &app);
 void load_app_times(EmuEnvState &emuenv);
 void save_app_times(EmuEnvState &emuenv);
 void update_last_time_app_used(EmuEnvState &emuenv, const std::string &app_path);
 void update_app_time_used(EmuEnvState &emuenv, const std::string &app_path);
 void reset_last_time_app_used(EmuEnvState &emuenv, const std::string &app_path);
-void delete_app(EmuEnvState &emuenv, const std::string &app_path);
+bool delete_app(EmuEnvState &emuenv, const std::string &app_path);
 std::vector<AppEntry> get_apps(const EmuEnvState &emuenv);
+std::optional<AppEntry> get_app(const EmuEnvState &emuenv, const std::string &app_path);
+void sort_apps(EmuEnvState &emuenv, const std::function<bool(const AppEntry &, const AppEntry &)> &compare);
 std::map<std::string, AppTime> get_user_app_times(const EmuEnvState &emuenv);
 int get_supported_memory_mapping_mask(const EmuEnvState &emuenv, int gpu_idx = -1);
 void ensure_camera_defaults(Config &cfg);
@@ -113,6 +111,7 @@ void request_in_process_launch(EmuEnvState &emuenv, AppLaunchRequest request);
 void load_users(EmuEnvState &emuenv);
 void save_user(EmuEnvState &emuenv, const std::string &user_id);
 std::string create_user(EmuEnvState &emuenv, const std::string &name);
+std::string create_user(EmuEnvState &emuenv, User user);
 void delete_user(EmuEnvState &emuenv, const std::string &user_id);
 bool activate_user(EmuEnvState &emuenv, const std::string &user_id);
 

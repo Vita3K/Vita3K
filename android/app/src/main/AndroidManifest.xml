@@ -114,6 +114,19 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ImGuiActivity"
+            android:alwaysRetainTaskState="true"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:preferMinimalPostProcessing="true"
+            android:theme="@style/Theme.Design.NoActionBar"
+            android:exported="false"
+            tools:targetApi="r" />
+
+        <activity android:name=".ImGuiRestartActivity"
+            android:process=":imgui_restart"
+            android:theme="@style/Theme.Vita3K.Starting"
+            android:exported="false" />
+
         <!-- SDL game rendering activity -->
         <activity android:name=".Emulator"
             android:alwaysRetainTaskState="true"

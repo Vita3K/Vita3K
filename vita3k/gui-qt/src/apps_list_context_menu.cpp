@@ -161,11 +161,13 @@ void AppsListContextMenu::build_multi(const std::vector<const app::AppEntry *> &
             QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
         if (result != QMessageBox::Yes)
             return;
+        bool deleted_any = false;
         for (const auto *app : apps) {
-            if (app)
-                app::delete_app(m_emuenv, app->path);
+            if (app && app::delete_app(m_emuenv, app->path))
+                deleted_any = true;
         }
-        emit refresh_requested();
+        if (deleted_any)
+            emit refresh_requested();
     });
 
     auto *delete_shader_cache = addAction(tr("Delete Shader Caches"));
@@ -474,8 +476,8 @@ void AppsListContextMenu::add_delete_actions(const app::AppEntry &app) {
                     QString::fromStdString(app.title_id)),
             QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
         if (result == QMessageBox::Yes) {
-            app::delete_app(m_emuenv, app.path);
-            emit refresh_requested();
+            if (app::delete_app(m_emuenv, app.path))
+                emit refresh_requested();
         }
     });
 

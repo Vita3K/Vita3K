@@ -20,10 +20,10 @@
 
 #include "module/load_module.h"
 
+#include <app/functions.h>
 #include <config/state.h>
 #include <ctime>
 #include <ctrl/state.h>
-#include <dialog/state.h>
 #include <display/functions.h>
 #include <display/state.h>
 #include <emuenv/state.h>
@@ -31,6 +31,7 @@
 #include <io/vfs.h>
 #include <kernel/state.h>
 #include <lang/state.h>
+#include <packages/functions.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
 #include <packages/vci.h>
@@ -48,6 +49,7 @@
 #include <util/vita_theme_utils.h>
 
 #include <gdbstub/functions.h>
+#include <gxm/state.h>
 #include <stb_image_write.h>
 
 #if USE_DISCORD
@@ -56,6 +58,7 @@
 
 #include "patch/patch.h"
 
+#include <cstring>
 #include <memory>
 #include <regex>
 
@@ -361,7 +364,7 @@ static std::vector<fs::path> get_contents_path(const fs::path &path) {
     return contents_path;
 }
 
-static bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
+bool install_content(EmuEnvState &emuenv, const fs::path &content_path) {
     const auto sfo_path{ content_path / "sce_sys/param.sfo" };
     const auto theme_path{ content_path / "theme.xml" };
     vfs::FileBuffer buffer;
@@ -569,7 +572,7 @@ void toggle_texture_replacement(EmuEnvState &emuenv) {
     emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
 }
 
-static std::vector<uint32_t> get_current_app_frame(EmuEnvState &emuenv, uint32_t &width, uint32_t &height) {
+std::vector<uint32_t> get_current_app_frame(EmuEnvState &emuenv, uint32_t &width, uint32_t &height) {
     // Dump the current frame from the emulator display
     std::vector<uint32_t> frame = emuenv.renderer->dump_frame(emuenv.display, width, height);
     if (frame.empty() || (frame.size() != (width * height))) {

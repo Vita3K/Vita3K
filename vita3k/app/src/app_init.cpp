@@ -53,6 +53,7 @@
 #include <renderer/texture_cache.h>
 #include <touch/state.h>
 
+#include <interface.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -76,6 +77,13 @@
 
 #include <algorithm>
 #include <fstream>
+
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 namespace app {
 
@@ -459,7 +467,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     return true;
 }
 
-void shutdown_app_runtime(EmuEnvState &state) {
+void shutdown_app_runtime(EmuEnvState &state, const bool preserve_renderer) {
     state.audio.stop_all_ports();
 
     gxm::shutdown(state);
@@ -475,6 +483,7 @@ void shutdown_app_runtime(EmuEnvState &state) {
 
     state.renderer->preclose_action();
     renderer::stop_render_thread(*state.renderer);
+    state.renderer->overlay_manager = nullptr;
     gxm::destroy_all_contexts(state, true);
     gxm::destroy_all_render_targets(state, true);
     state.gxm.deinit();
@@ -518,8 +527,12 @@ void shutdown_app_runtime(EmuEnvState &state) {
 
     state.kernel.deinit(state.mem);
 
-    state.renderer->cleanup();
-    state.renderer.reset();
+    if (preserve_renderer) {
+        state.renderer->cleanup(true);
+    } else {
+        state.renderer->cleanup();
+        state.renderer.reset();
+    }
 
     deinit_mem(state.mem);
 }
