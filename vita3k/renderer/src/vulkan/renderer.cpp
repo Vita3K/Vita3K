@@ -920,6 +920,9 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
     }
 
     support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);
+    // The FSR storage shaders write rgba8; BGRA8 swapchain views are not format-compatible.
+    support_fsr &= screen_renderer.surface_format.format == vk::Format::eR8G8B8A8Unorm;
+    support_fsr &= static_cast<bool>(physical_device.getFormatProperties(screen_renderer.surface_format.format).optimalTilingFeatures & vk::FormatFeatureFlagBits::eStorageImage);
 
     return true;
 }
