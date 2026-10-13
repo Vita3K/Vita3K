@@ -1,15 +1,30 @@
 # Expected outcome of each VitaAutotests test on Vita3K, with what each one that doesn't pass
 # catches: pass, fail (exits normally with other output), crash (Vita3K exits with an error) or
 # timeout. Every test must be listed, and one that doesn't do what its line says fails the run.
+address_ranges                  pass
 audioout                        crash    # audio port size, rate and format checks, a NULL volume pointer
 callback                        pass
+callback_changes                pass
 callback_edges                  pass
 callback_errors                 crash    # callback NULL argument errors, a NULL name
+callback_event_results          fail     # events that end a wait during a callback with NOTIFY_CALLBACK, a pulse during a callback
+callback_event_waits            fail     # a simple event set by a callback ends the wait with NOTIFY_CALLBACK
+callback_info                   fail     # the argument in a running callback's info, waits stay queued during callbacks
+callback_inner_wait             fail     # waits stay queued while a callback waits
+callback_nesting                fail     # callbacks don't run inside callbacks
+callback_outer_timeout          fail     # a wait whose timeout passes during a callback
+callback_outer_wake             fail     # waits stay queued during callbacks
+callback_owner_end              fail     # callbacks stay when their thread ends
+callback_priority_requeue       fail     # waits stay queued during callbacks, so a cancel counts and ends them
+callback_requeue_order          fail     # a wait keeps its place in the queue after a callback
+callback_stack                  fail     # callbacks don't run inside callbacks
+cb_waits                        fail     # a CB delay of 0 succeeds, CB waits that fail at once run the pending callbacks
 clocks                          fail     # a NULL process time pointer
 cond                            pass
 cond_errors                     fail     # condition variable unknown UID errors and close
 cond_rwlock_edges               pass
 cond_signal                     pass
+cond_signal_all_order           fail     # a condition waiter waiting for its mutex reports the condition's UID
 cond_waits                      pass
 core_affinity                   fail     # threads ignore their core affinity and the priorities on a core
 delay                           pass
@@ -21,8 +36,11 @@ event_edges                     pass
 event_flag                      pass
 event_flag_errors               crash    # closing unknown UIDs, a NULL name
 event_flag_waits                pass
+event_notify_callback           fail     # callbacks registered to simple events
 exit_process                    pass
+exit_process_thread             pass
 fiber_entry_returns             crash    # the fiber module doesn't load without firmware
+fiber_vfp                       crash    # TPIDRURW reads and writes
 fibers                          crash    # the fiber module doesn't load without firmware, fiber argument checks
 files                           fail     # closed file, EXCL, access mode and wrong type errors
 format                          fail     # sceClibSnprintf with %#x, %.0d and long arguments
@@ -35,7 +53,11 @@ lw_work                         pass
 lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 misc_edges                      fail     # two openable objects with the same name
+module_start_thread             crash    # TPIDRURW reads and writes
+module_start_threads            fail     # thread event handlers don't run for module start and stop threads
+module_start_vfp                crash    # TPIDRURW reads and writes
 msgpipe                         pass
+msgpipe_async                   fail     # message pipe sends and receives that don't wait
 msgpipe_edges                   pass
 msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
 msgpipe_vectors                 fail     # message pipe vector sends and receives
@@ -43,10 +65,13 @@ msgpipe_waits                   pass
 mspace                          fail     # sceClib memory space info
 multi_events                    fail     # waiting on several events, callbacks registered to events
 multi_events_errors             fail     # waiting on several events with unknown UIDs
+multi_events_waits              fail     # multiple event wait results, wait type and auto reset
 mutex                           pass
 mutex_errors                    crash    # closing unknown UIDs, a NULL name
 mutex_waits                     pass
 open                            fail     # opening an object that isn't openable
+owner_end                       fail     # a write lock stays locked when its owner ends
+priority_requeue_others         fail     # waiters keep their place in a priority queue when their priority changes
 queue_order                     fail     # priority changes while waiting
 rtc                             crash    # RTC date range checks, a NULL tick
 rwlock                          pass
@@ -57,6 +82,7 @@ sema_mutex_edges                pass
 sema_poll_negative              pass
 sema_waits                      pass
 semaphore                       pass
+shader_patcher_callback         crash    # TPIDRURW reads and writes
 simple_event                    pass
 simple_event_errors             fail     # simple event info, close and delete of unknown UIDs
 simple_event_null_pointers      pass
@@ -64,24 +90,44 @@ simple_event_wait_null          pass
 strings                         fail     # sceClibMemchr, case of bytes above 0x7F
 sysmodule                       fail     # system modules don't load without firmware
 thread                          pass
+thread_change_attr              fail     # ChangeCurrentThreadAttr takes every bit
+thread_context_for_vm           crash    # TPIDRURW reads and writes
+thread_create_attr              fail     # thread creation takes every attribute bit, thread info shows none
 thread_create_current_priority  pass
 thread_create_edges             pass
 thread_edges                    fail     # DelayThreadCB(0)
+thread_end_waits                pass
 thread_errors                   fail     # the VFP attribute
+thread_event_handler            fail     # thread event handlers run once per thread end, unknown thread and handler errors
+thread_event_handler_edges      fail     # thread event handlers run once per thread end, two handlers
+thread_event_handler_vfp        crash    # TPIDRURW reads and writes
+thread_fpscr                    fail     # threads start with FPSCR 0, callbacks keep the thread's FPSCR
+thread_id_registers             crash    # TPIDRURW reads and writes
 thread_info                     pass
+thread_info_fields              fail     # thread info process, attributes, affinity, CPU and run time fields
 thread_lifecycle                fail     # starting with more arguments than the stack holds
+thread_nouse_vfp                fail     # a waiting thread keeps d16 across its wait
 thread_null_name                pass
 thread_priority                 pass
+thread_ready_status             fail     # a thread that can run but doesn't reports RUNNING instead of READY
+thread_restart                  fail     # a new thread's TLS slot 0 is 1, the stack free size after a restart
+thread_signal                   crash    # a signal to a UID that isn't a thread
+thread_signal_timeout           timeout  # WaitSignal ignores its timeout
+thread_signal_wait_id           fail     # a thread waiting for a signal reports wait UID 0
+thread_stack_free               fail     # the stack free size is the room below the stack pointer, not a high-water mark
 thread_stack_negative           pass
 thread_stack_zero               pass
 thread_state                    pass
+thread_vfp_exception            fail     # threads start with FPSCR 0, callbacks see the thread's VFP exception setting
 timeouts                        pass
 timer                           pass
+timer_callback                  fail     # callbacks registered to timers
 timer_edges                     pass
 timer_errors                    crash    # timer set time, info and close of unknown UIDs, a NULL pointer
 timer_event_interval_zero       pass
 timer_wait_no_event             pass
 tls                             crash    # TLS key 256 and slots by thread UID
+tls_start_slots                 fail     # the stack ends are in TLS slots 2 and 3 the other way around, and slots 6 and 7 are 0
 uid                             pass
 uid_class                       pass
 uid_semantics                   fail     # opening gives a new UID
@@ -89,3 +135,4 @@ wait_delete_timeout             pass
 wait_order                      pass
 wait_own_end                    pass
 wait_priority_change            fail     # a waiter changed to any priority goes behind the others at it
+wait_zero_timeout               fail     # multiple event waits with a timeout of 0

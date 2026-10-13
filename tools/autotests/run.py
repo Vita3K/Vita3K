@@ -33,7 +33,8 @@ OUTPUT_RE = re.compile(rb"\[export_sceClibPrintf\]: (.*)")
 
 
 def find_tests(checkout: Path) -> dict[str, Path]:
-    return {source.stem: source for source in sorted((checkout / "tests").rglob("*.c"))}
+    """Returns the source of every test, which is every .c file next to an .expected file."""
+    return {expected.stem: expected.with_suffix(".c") for expected in sorted((checkout / "tests").rglob("*.expected"))}
 
 
 def load_expectations(path: Path, tests: dict[str, Path]) -> dict[str, str]:
