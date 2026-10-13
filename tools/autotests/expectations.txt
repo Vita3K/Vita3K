@@ -55,7 +55,7 @@ memblock                        crash    # memory block info, allocation sizes, 
 misc_edges                      fail     # two openable objects with the same name
 module_start_thread             fail     # the stack size and attributes of the thread module start and stop run on
 module_start_threads            fail     # thread event handlers don't run for module start and stop threads
-module_start_vfp                fail     # threads start with FPSCR 0
+module_start_vfp                pass
 msgpipe                         pass
 msgpipe_async                   fail     # message pipe sends and receives that don't wait
 msgpipe_edges                   pass
@@ -101,7 +101,7 @@ thread_errors                   fail     # the VFP attribute
 thread_event_handler            fail     # thread event handlers run once per thread end, unknown thread and handler errors
 thread_event_handler_edges      fail     # thread event handlers run once per thread end, two handlers
 thread_event_handler_vfp        fail     # the end handler doesn't run, and handlers keep the thread's VFP state
-thread_fpscr                    fail     # threads start with FPSCR 0, callbacks keep the thread's FPSCR
+thread_fpscr                    pass
 thread_id_registers             pass
 thread_info                     pass
 thread_info_fields              fail     # thread info process, attributes, affinity, CPU and run time fields
@@ -118,7 +118,7 @@ thread_stack_free               fail     # the stack free size is the room below
 thread_stack_negative           pass
 thread_stack_zero               pass
 thread_state                    pass
-thread_vfp_exception            fail     # threads start with FPSCR 0, callbacks see the thread's VFP exception setting
+thread_vfp_exception            pass
 timeouts                        pass
 timer                           pass
 timer_callback                  fail     # callbacks registered to timers

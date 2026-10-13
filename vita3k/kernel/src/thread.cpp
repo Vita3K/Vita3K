@@ -33,6 +33,8 @@
 
 // Set in the wait type of a wait that runs callbacks
 constexpr SceUInt32 WAITTYPE_CB_BIT = 0x80000000U;
+// The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
+constexpr uint32_t INITIAL_FPSCR = 0x03000000U;
 
 int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option = nullptr) {
     constexpr size_t KERNEL_TLS_SIZE = 0x800;
@@ -99,6 +101,7 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
 
     CPUContext ctx;
     ctx.set_sp(stack_top());
+    ctx.fpscr = INITIAL_FPSCR;
     if (option) {
         ctx.cpu_registers[0] = option->attr;
         ctx.cpu_registers[1] = option->size;
@@ -310,7 +313,7 @@ void ThreadState::push_arguments(const std::vector<uint32_t> &args) {
     write_sp(*cpu, sp);
 }
 
-uint32_t ThreadState::run_callback(Address callback_address, const std::vector<uint32_t> &args) {
+uint32_t ThreadState::run_callback(Address callback_address, const std::vector<uint32_t> &args, bool fresh_vfp_state) {
     std::unique_lock<std::mutex> thread_lock(mutex);
     if (call_level == 0) {
         LOG_ERROR("run_callback should not be called as the first thread entry");
@@ -323,6 +326,12 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     // A callback sees the thread's TPIDRURW, and the thread gets its own value back after it
     const uint32_t previous_tpidrurw = read_tpidrurw(*cpu);
     const uint32_t previous_returned_value = returned_value;
+    int &vfp_exception = tls.get_ptr<int>().get(mem)[TLS_VFP_EXCEPTION];
+    const int previous_vfp_exception = vfp_exception;
+    if (fresh_vfp_state) {
+        write_fpscr(*cpu, INITIAL_FPSCR);
+        vfp_exception = 0;
+    }
 
     // we shouldn't have to clean the context I believe
     write_pc(*cpu, callback_address);
@@ -343,6 +352,8 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     load_context(*cpu, previous_ctx);
     write_tpidruro(*cpu, previous_tpidruro);
     write_tpidrurw(*cpu, previous_tpidrurw);
+    if (fresh_vfp_state)
+        vfp_exception = previous_vfp_exception;
 
     // The callback's result isn't the thread's exit status, unless the callback ended the thread
     const uint32_t result = returned_value;
@@ -525,8 +536,9 @@ SceUInt32 ThreadState::process_callbacks() {
         const std::optional<Callback::Notification> notification = cb->take_notification();
         if (!notification)
             continue;
+        // A callback starts with the VFP state of a new thread, and the thread gets its own back after it
         const uint32_t ret = run_callback(cb->cb_func.address(),
-            { static_cast<uint32_t>(notification->notifier_id), notification->count, static_cast<uint32_t>(notification->arg), cb->userdata.address() });
+            { static_cast<uint32_t>(notification->notifier_id), notification->count, static_cast<uint32_t>(notification->arg), cb->userdata.address() }, true);
         ++processed;
         // A callback that exits the thread also ends the wait it runs in
         {

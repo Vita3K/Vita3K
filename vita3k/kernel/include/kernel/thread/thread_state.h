@@ -87,7 +87,8 @@ struct ThreadState {
     void run_loop();
 
     // this function must be called from the thread itself (inside a svc call)
-    uint32_t run_callback(Address callback_address, const std::vector<uint32_t> &args);
+    // With fresh_vfp_state, the call starts with the FPSCR and VFP exception setting of a new thread
+    uint32_t run_callback(Address callback_address, const std::vector<uint32_t> &args, bool fresh_vfp_state = false);
 
     // this function is called from another thread when this one is dormant
     // it is only used for module loading and gxm display queue right now
