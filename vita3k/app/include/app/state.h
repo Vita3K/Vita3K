@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cstdint>
+#include <ctime>
 #include <map>
 #include <mutex>
 #include <string>
@@ -45,6 +46,8 @@ enum UserSortType {
 struct User {
     std::string id;
     std::string name = "Vita3K";
+    std::string avatar = "default";
+    bool system_music = true;
     UserSortType sort_apps_type = TITLE;
     UserSortState sort_apps_state = ASCENDANT;
     std::string theme_id = "default";

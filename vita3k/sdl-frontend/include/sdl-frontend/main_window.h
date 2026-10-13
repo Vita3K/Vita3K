@@ -32,4 +32,6 @@ private:
     SDL_Window *sdl_window = nullptr;
 };
 
+int run_frontend(EmuEnvState &emuenv);
+
 } // namespace sdl_frontend

@@ -20,6 +20,7 @@
 #include <emuenv/state.h>
 #include <io/state.h>
 #include <renderer/state.h>
+#include <sdl-frontend/app_selector.h>
 #include <sdl-frontend/functions.h>
 #include <sdl/functions.h>
 #include <util/exit_code.h>
@@ -84,7 +85,6 @@ int run_frontend(EmuEnvState &emuenv) {
 #endif
     if (!main_window.initialize(emuenv))
         return SDLInitFailed;
-    auto &frontend_state = main_window.frontend_state();
 
     app::AppSessionController session(emuenv);
     Hooks hooks{};
@@ -113,6 +113,7 @@ int run_frontend(EmuEnvState &emuenv) {
         if (!run_initial_setup(emuenv, main_window.window()))
             return SDLInitFailed;
     }
+    auto &state = main_window.frontend_state();
     if (!initialize_app_selector(emuenv, main_window.window()))
         return SDLInitFailed;
 
@@ -126,9 +127,8 @@ int run_frontend(EmuEnvState &emuenv) {
         while (SDL_PollEvent(&event)) {
             const auto shared_event = sdl::process_event(emuenv, event);
             if (event.type == SDL_EVENT_DROP_COMPLETE) {
-                if (frontend_state.screen == FrontendScreen::AppSelector)
-                    handle_app_selector_event(emuenv, frontend_state, main_window.window(), event,
-                        shared_event.vita_button, running);
+                if (state.screen == FrontendScreen::AppSelector)
+                    handle_app_selector_event(emuenv, state, main_window.window(), event, shared_event.vita_button, running);
                 continue;
             }
             if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat
@@ -144,9 +144,10 @@ int run_frontend(EmuEnvState &emuenv) {
             }
             if (!running || launch_request)
                 continue;
-            if (frontend_state.screen == FrontendScreen::AppSelector)
-                handle_app_selector_event(emuenv, frontend_state, main_window.window(), event,
-                    shared_event.vita_button, running);
+            if (state.screen == FrontendScreen::UserSelector)
+                handle_user_selector_event(emuenv, state, main_window.window(), event, shared_event.vita_button);
+            else
+                handle_app_selector_event(emuenv, state, main_window.window(), event, shared_event.vita_button, running);
             launch_request = emuenv.take_app_launch_request();
         }
 
@@ -154,7 +155,7 @@ int run_frontend(EmuEnvState &emuenv) {
             return Success;
 
         if (launch_request) {
-            suspend_app_selector(emuenv, main_window.window());
+            suspend_app_selector(main_window.window());
             const auto result = run(emuenv, session, *main_window.window(),
                 std::move(*launch_request), hooks);
             if (result.window_closed)
@@ -162,7 +163,6 @@ int run_frontend(EmuEnvState &emuenv) {
 
             if (result.exit_code != Success && !result.app_exited)
                 LOG_ERROR("App launch failed with code {}; returning to the app selector.", result.exit_code);
-
             sdl::update_viewport(main_window.window(), emuenv.cfg.current_config.stretch_the_display_area,
                 emuenv.cfg.current_config.fullscreen_hd_res_pixel_perfect, emuenv.display.fullscreen.load());
             sdl::set_default_window_title(main_window.window());
@@ -171,7 +171,9 @@ int run_frontend(EmuEnvState &emuenv) {
             continue;
         }
 
-        if (frontend_state.screen == FrontendScreen::AppSelector)
+        if (state.screen == FrontendScreen::UserSelector)
+            render_user_selector(emuenv);
+        else
             render_app_selector(emuenv, main_window.window());
         SDL_Delay(16);
     }

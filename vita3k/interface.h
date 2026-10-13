@@ -20,6 +20,7 @@
 #include <util/exit_code.h>
 #include <util/fs.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -30,5 +31,6 @@ ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv);
 ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const AppLaunchRequest &launch_request);
 ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id);
 ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id, const AppLaunchRequest &launch_request);
+std::vector<uint32_t> get_current_app_frame(EmuEnvState &emuenv, uint32_t &width, uint32_t &height);
 void toggle_texture_replacement(EmuEnvState &emuenv);
 void take_screenshot(EmuEnvState &emuenv);

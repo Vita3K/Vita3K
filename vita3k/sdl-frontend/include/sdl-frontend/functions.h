@@ -14,7 +14,11 @@
 #include <cstdint>
 
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_render.h>
+
+#include <optional>
+#include <string>
 
 namespace sdl_frontend {
 
@@ -38,13 +42,29 @@ void handle_app_selector_event(EmuEnvState &emuenv, FrontendState &state, SDL_Wi
 bool initialize_app_selector(EmuEnvState &emuenv, SDL_Window *window);
 void render_app_selector(EmuEnvState &emuenv, SDL_Window *window);
 bool resume_app_selector(EmuEnvState &emuenv, SDL_Window *window);
-
+std::size_t user_selector_visible_items(float logical_window_width);
+void begin_user_selector(EmuEnvState &emuenv);
+void reset_user_selector();
+void handle_user_selector_event(EmuEnvState &emuenv, FrontendState &state, SDL_Window *window,
+    const SDL_Event &event, uint32_t vita_button);
+void render_user_selector(EmuEnvState &emuenv);
+std::optional<std::string> handle_user_selector_event(EmuEnvState &emuenv, FrontendState &state, SDL_Window *window,
+    SDL_Renderer *renderer, const SDL_Event &event, uint32_t vita_button, CoordinateScale coordinate_scale,
+    float viewport_x, float viewport_y, float logical_window_width, float logical_window_height);
+std::size_t user_selector_item_at(float x, float y, CoordinateScale window_scale, float logical_window_height,
+    std::size_t first_item, std::size_t visible_items, std::size_t user_count);
+void render_user_selector(EmuEnvState &emuenv, SDL_Renderer *renderer, CoordinateScale coordinate_scale,
+    float viewport_x, float viewport_y, float logical_window_width, float logical_window_height);
+void destroy_user_selector_icons();
+void draw_selector_text(SDL_Renderer *renderer, CoordinateScale coordinate_scale, float x, float y,
+    const char *text, SDL_Color color);
 // Boots a launch request in a caller-owned window, following in-process relaunches.
 // Returns the app exit code, 0 if the window closed, or -1 if the app couldn't start.
 SessionResult run(EmuEnvState &emuenv, app::AppSessionController &session, SDL_Window &window,
     AppLaunchRequest launch_request, const Hooks &hooks = {});
+
 int run_frontend(EmuEnvState &emuenv);
 bool run_initial_setup(EmuEnvState &emuenv, SDL_Window *window);
-void suspend_app_selector(EmuEnvState &emuenv, SDL_Window *window);
+void suspend_app_selector(SDL_Window *window);
 
 } // namespace sdl_frontend
