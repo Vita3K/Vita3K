@@ -635,6 +635,7 @@ EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadIn
     full.waitType = thread->wait_target.type;
     full.waitId = thread->wait_target.id;
     full.exitStatus = thread->returned_value;
+    full.fNotifyCallback = thread->callbacks_notified() ? 1 : 0;
     write_info(info, full);
     return SCE_KERNEL_OK;
 }

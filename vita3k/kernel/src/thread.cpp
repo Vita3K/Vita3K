@@ -488,7 +488,7 @@ WaitResult ThreadState::wait(WaitTarget target, Deadline deadline, bool callback
     std::unique_lock<std::mutex> lock(mutex);
     // Callbacks don't nest, so inside a callback this is a plain wait
     const bool runs_callbacks = callbacks && !is_processing_callbacks;
-    const auto woken = [&] { return exiting() || wake_pending || (runs_callbacks && callbacks_pending); };
+    const auto woken = [&] { return exiting() || wake_pending || (runs_callbacks && callbacks_notified()); };
     wait_target = { callbacks ? target.type | WAITTYPE_CB_BIT : target.type, target.id };
     update_status(ThreadStatus::waiting);
     bool satisfied = true;
@@ -501,7 +501,7 @@ WaitResult ThreadState::wait(WaitTarget target, Deadline deadline, bool callback
     if (exiting())
         return std::unexpected{ ThreadExiting{} };
     wake_pending = false;
-    if (runs_callbacks && callbacks_pending) {
+    if (runs_callbacks && callbacks_notified()) {
         lock.unlock();
         process_callbacks();
         lock.lock();
@@ -524,10 +524,6 @@ SceUInt32 ThreadState::process_callbacks() {
     if (is_processing_callbacks)
         return 0;
 
-    {
-        const std::lock_guard<std::mutex> lock(mutex);
-        callbacks_pending = false;
-    }
     is_processing_callbacks = true;
     SceUInt32 processed = 0;
     for (auto it = callbacks.begin(); it != callbacks.end();) {
@@ -548,11 +544,9 @@ SceUInt32 ThreadState::process_callbacks() {
         // A callback that exits the thread also ends the wait it runs in
         {
             const std::lock_guard<std::mutex> lock(mutex);
-            if (exiting()) {
-                // The callbacks after this one keep their notifications for when the thread runs again
-                callbacks_pending = true;
+            // The callbacks after this one keep their notifications for when the thread runs again
+            if (exiting())
                 break;
-            }
         }
         // A callback that returns nonzero deletes itself
         if (ret != 0)
@@ -562,10 +556,16 @@ SceUInt32 ThreadState::process_callbacks() {
     return processed;
 }
 
-void ThreadState::notify_callbacks() {
+void ThreadState::add_notified_callback() {
     const std::lock_guard<std::mutex> lock(mutex);
-    callbacks_pending = true;
+    ++notified_callbacks;
     wait_cv.notify_all();
+}
+
+void ThreadState::remove_notified_callback() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    if (notified_callbacks > 0)
+        --notified_callbacks;
 }
 
 void ThreadState::add_callback(const CallbackPtr &cb) {

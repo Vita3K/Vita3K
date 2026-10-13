@@ -124,10 +124,14 @@ struct ThreadState {
 
     // Runs the notified callbacks of this thread and returns how many ran. Called by the thread itself.
     SceUInt32 process_callbacks();
-    // Tells this thread that one of its callbacks was notified, so a wait with callbacks runs it.
-    void notify_callbacks();
     // Adds a callback this thread created. Called by the thread itself.
     void add_callback(const CallbackPtr &cb);
+    // Counts a callback of this thread that was notified and hasn't run for it yet, waking a wait
+    // with callbacks, and stops counting it. Called by the callback with its lock held.
+    void add_notified_callback();
+    void remove_notified_callback();
+    // Whether a callback of this thread was notified and hasn't run yet. Called with mutex held.
+    bool callbacks_notified() const { return notified_callbacks > 0; }
 
     void suspend();
     void resume(bool step = false);
@@ -167,8 +171,8 @@ private:
     bool signal_pending = false;
     // Set by wake() and consumed by the next wait().
     bool wake_pending = false;
-    // Set by notify_callbacks() and cleared when the callbacks run.
-    bool callbacks_pending = false;
+    // Callbacks of this thread with notifications they haven't run for.
+    SceUInt32 notified_callbacks = 0;
     // Set while the thread runs its callbacks. They don't nest.
     bool is_processing_callbacks = false;
     // Callbacks this thread created, in creation order. The kernel owns them. Only this thread touches the list.

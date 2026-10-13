@@ -9,7 +9,7 @@ callback_edges                  pass
 callback_errors                 crash    # callback NULL argument errors, a NULL name
 callback_event_results          fail     # events that end a wait during a callback with NOTIFY_CALLBACK, a pulse during a callback
 callback_event_waits            fail     # a simple event set by a callback ends the wait with NOTIFY_CALLBACK
-callback_info                   fail     # the argument in a running callback's info, waits stay queued during callbacks
+callback_info                   fail     # waits stay queued during callbacks
 callback_inner_wait             fail     # waits stay queued while a callback waits
 callback_nesting                fail     # callbacks don't run inside callbacks
 callback_outer_timeout          fail     # a wait whose timeout passes during a callback
