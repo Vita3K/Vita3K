@@ -34,7 +34,7 @@ uvec4 con0;
 #define A_HALF
 #include "../../../external/GPUOpen/ffx_a.h"
 layout(set=0,binding=1) uniform texture2D InputTexture;
-layout(set=0,binding=2,rgba16f) uniform image2D OutputTexture;
+layout(set=0,binding=2,rgba8) uniform image2D OutputTexture;
 layout(set=0,binding=3) uniform sampler InputSampler;
 #define FSR_RCAS_H
 AH4 FsrRcasLoadH(ASW2 p) { return AH4(texelFetch(sampler2D(InputTexture,InputSampler), ASU2(p), 0)); }
