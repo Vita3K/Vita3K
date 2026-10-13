@@ -192,7 +192,7 @@ static uint8_t float_to_byte(float f) {
     const auto clamped_f = std::clamp(f, -1.0f, 1.0f);
     const auto mapped = (clamped_f * 0.5f) + 0.5f;
 
-    return static_cast<uint8_t>(mapped * 255);
+    return static_cast<uint8_t>(mapped * 255.0f + 0.5f);
 }
 
 static void apply_controller(EmuEnvState &emuenv, uint32_t *buttons, float axes[4], SDL_Gamepad *controller, bool ext) {

@@ -20,6 +20,8 @@
 #include <app/discord.h>
 #include <util/log.h>
 
+#include <chrono>
+
 struct DiscordState {
     std::unique_ptr<discord::Core> core;
     bool running = false;
@@ -37,7 +39,9 @@ bool init() {
     discord::Core *core{};
     auto result = discord::Core::Create(570296795943403530, DiscordCreateFlags_NoRequireDiscord, &core);
     if (result != discord::Result::Ok) {
-        LOG_ERROR("Failed to initialize Discord Rich Presence, err_code: {}", static_cast<int>(result));
+        // InternalError is what the SDK returns when the Discord client is not running, which is expected.
+        if (result != discord::Result::InternalError)
+            LOG_ERROR("Failed to initialize Discord Rich Presence, err_code: {}", static_cast<int>(result));
         return false;
     }
     discord_state.core.reset(core);
@@ -74,6 +78,35 @@ void clear_presence() {
 void shutdown() {
     discord_state.running = false;
     discord_state.core.reset();
+}
+
+bool update_init_status(bool discord_rich_presence, bool *discord_rich_presence_old) {
+    using clock = std::chrono::steady_clock;
+    static constexpr auto retry_delay = std::chrono::seconds(5);
+    static clock::time_point last_try{};
+
+    if (!discord_rich_presence) {
+        if (*discord_rich_presence_old) {
+            clear_presence();
+            shutdown();
+        }
+        *discord_rich_presence_old = false;
+        return false;
+    }
+
+    bool connected = false;
+    if (!is_running()) {
+        // Discord may be opened after Vita3K, so keep trying at a low rate.
+        const auto now = clock::now();
+        if (!*discord_rich_presence_old || now - last_try >= retry_delay) {
+            last_try = now;
+            connected = init();
+        }
+    }
+    *discord_rich_presence_old = true;
+
+    run_callbacks();
+    return connected;
 }
 
 void update_presence(const std::string &state, const std::string &details, bool reset_timer) {

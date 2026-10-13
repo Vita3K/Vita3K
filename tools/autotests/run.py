@@ -115,8 +115,12 @@ def main() -> int:
 
     # Installing runs the vpk once, with "list" so it only prints the test names
     install_log = logs / "install.log"
-    if run_vita3k(vita3k, extra_args, ["--launch-uri", f"psgm:play?titleid={TITLE_ID}&arg=list", str(vpk)], install_log, timeout) != 0:
-        print(f"installing {vpk} failed, see {install_log}")
+    code = run_vita3k(vita3k, extra_args, ["--launch-uri", f"psgm:play?titleid={TITLE_ID}&arg=list", str(vpk)], install_log, timeout)
+    if code != 0:
+        reason = "timeout" if code is None else f"exit {code}"
+        print(f"install/start failed ({reason}), log: {install_log}", flush=True)
+        if install_log.exists():
+            print(install_log.read_text(encoding="utf-8", errors="replace"), flush=True)
         return 1
 
     counts = {"passed": 0, "failed as expected": 0, "skipped": 0, "unexpected": 0}
@@ -172,3 +176,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+    

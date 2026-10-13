@@ -7,6 +7,7 @@ import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.input.InputManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -23,6 +24,7 @@ import android.widget.Toast;
 import androidx.annotation.Keep;
 import androidx.compose.ui.platform.ComposeView;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
@@ -49,6 +51,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 
 import org.libsdl.app.SDLActivity;
 import org.libsdl.app.SDLDummyEdit;
@@ -71,7 +75,7 @@ public class Emulator extends SDLActivity
     private static final long IME_RESTORE_DELAY_MS = 250L;
     public static final String EXTRA_TITLE_ID = "title_id";
     public static final String EXTRA_GAME_TITLE = "game_title";
-    private static final String APP_RESTART_PARAMETERS = "AppStartParameters";
+    protected static final String APP_RESTART_PARAMETERS = "AppStartParameters";
     static final int FILE_DIALOG_CODE = 545;
     static final int FOLDER_DIALOG_CODE = 546;
     static final int FOLDER_ACCESS_SETTINGS_CODE = 547;
@@ -113,6 +117,10 @@ public class Emulator extends SDLActivity
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         return intent;
+    }
+
+    protected boolean isImGuiFrontend() {
+        return false;
     }
 
     public InputOverlay getmOverlay() {
@@ -161,7 +169,8 @@ public class Emulator extends SDLActivity
                     ((ViewGroup) mSurface.getParent()).addView(overlay);
                 }
                 refreshControllerOverlayScope();
-                refreshUiState(true);
+                if (!isImGuiFrontend())
+                    refreshUiState(true);
             }
         });
         return mSurface;
@@ -214,6 +223,9 @@ public class Emulator extends SDLActivity
         refreshNativeDisplayRotation();
 
         currentGameId = resolveCurrentTitleId(getIntent());
+        if (isImGuiFrontend())
+            return;
+
         String gameTitle = getIntent().getStringExtra(EXTRA_GAME_TITLE);
         sessionViewModel = new EmulationSessionViewModel(getApplication());
         sessionViewModel.initialize(currentGameId, gameTitle);
@@ -234,9 +246,11 @@ public class Emulator extends SDLActivity
     protected void onResume() {
         super.onResume();
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME);
-        refreshUiState(false);
         refreshNativeDisplayRotation();
-        updateControllerConnectionState();
+        if (!isImGuiFrontend()) {
+            refreshUiState(false);
+            updateControllerConnectionState();
+        }
         resumeFromBackgroundIfNeeded();
     }
 
@@ -299,6 +313,9 @@ public class Emulator extends SDLActivity
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (isImGuiFrontend())
+            return super.dispatchKeyEvent(event);
+
         if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && nativeKeyboardRequested) {
             if (event.getAction() == KeyEvent.ACTION_UP && event.getRepeatCount() == 0) {
                 dismissImeFromKeyboard(mTextEdit);
@@ -637,6 +654,47 @@ public class Emulator extends SDLActivity
             ensurePauseMenuOnTop();
             sessionViewModel.openMenu(this, true);
         });
+    }
+
+    @Keep
+    public boolean requestInstallUpdate() {
+        FutureTask<Boolean> request = new FutureTask<>(() -> {
+            File externalFilesDir = getExternalFilesDir(null);
+            File apkFile = new File(externalFilesDir != null ? externalFilesDir : getFilesDir(), "vita3k-latest.apk");
+
+            if (!apkFile.isFile()) {
+                Log.e(TAG, "Update APK not found at " + apkFile.getAbsolutePath());
+                Toast.makeText(this, R.string.update_apk_not_found, Toast.LENGTH_LONG).show();
+                return false;
+            }
+
+            try {
+                Uri apkUri = FileProvider.getUriForFile(
+                        this,
+                        BuildConfig.APPLICATION_ID + ".fileprovider",
+                        apkFile);
+                Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(intent);
+                return true;
+            } catch (android.content.ActivityNotFoundException | SecurityException | IllegalArgumentException e) {
+                Log.e(TAG, "Failed to launch Android package installer.", e);
+                Toast.makeText(this, R.string.update_installer_launch_failed, Toast.LENGTH_LONG).show();
+                return false;
+            }
+        });
+        runOnUiThread(request);
+        try {
+            return request.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Log.e(TAG, "Interrupted while requesting Android update installation.", e);
+            return false;
+        } catch (ExecutionException e) {
+            Log.e(TAG, "Android update installation request failed.", e.getCause());
+            return false;
+        }
     }
 
     @Keep
