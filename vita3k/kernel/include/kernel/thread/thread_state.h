@@ -40,6 +40,15 @@ typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::function<void(CPUState &, uint32_t, SceUID)> CallImport;
 typedef std::function<std::string(Address)> ResolveNIDName;
 
+// The attribute of every user thread, which thread info always reports
+constexpr SceUInt32 THREAD_ATTR_USER = 0x80000000U;
+// Attributes a thread may be created with, which the Vita Development Wiki calls
+// SCE_KERNEL_THREAD_ATTR_NOUSE_VFP and SCE_KERNEL_THREAD_ATTR_VM
+constexpr SceUInt32 THREAD_ATTR_NOUSE_VFP = 0x01000000U;
+constexpr SceUInt32 THREAD_ATTR_VM = 0x04000000U;
+// Another attribute a Vita accepts for a thread, with no known name or effect
+constexpr SceUInt32 THREAD_ATTR_UNKNOWN_2000 = 0x00002000U;
+
 // Values are what sceKernelGetThreadInfo reports
 enum class ThreadStatus : SceUInt32 {
     running = SCE_KERNEL_THREAD_STATUS_RUNNING,
@@ -58,6 +67,8 @@ struct ThreadState {
     int stack_size;
     Block tls;
 
+    // What thread info reports, the creation attributes and THREAD_ATTR_USER
+    SceUInt32 attr = THREAD_ATTR_USER;
     int priority;
     SceInt32 affinity_mask;
     uint64_t start_tick;

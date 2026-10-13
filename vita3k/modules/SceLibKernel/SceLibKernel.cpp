@@ -1147,9 +1147,13 @@ EXPORT(SceInt32, sceKernelCancelTimer, SceUID timerId, SceUInt32 *pNumWaitThread
     return CALL_EXPORT(_sceKernelCancelTimer, timerId, pNumWaitThreads);
 }
 
-EXPORT(int, sceKernelChangeCurrentThreadAttr) {
-    TRACY_FUNC(sceKernelChangeCurrentThreadAttr);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelChangeCurrentThreadAttr, SceUInt clear_attr, SceUInt set_attr) {
+    TRACY_FUNC(sceKernelChangeCurrentThreadAttr, clear_attr, set_attr);
+    // A Vita takes only these, and thread info doesn't show a change to either
+    constexpr SceUInt32 CHANGEABLE_ATTRS = THREAD_ATTR_NOUSE_VFP | THREAD_ATTR_USER;
+    if ((clear_attr | set_attr) & ~CHANGEABLE_ATTRS)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelCheckThreadStack) {

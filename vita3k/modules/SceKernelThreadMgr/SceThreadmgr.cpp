@@ -623,6 +623,7 @@ EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadIn
     const std::lock_guard<std::mutex> lock(thread->mutex);
     SceKernelThreadInfo full{};
     strncpy(full.name, thread->name.c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
+    full.attr = thread->attr;
     full.stack = Ptr<void>(thread->stack.get());
     full.stackSize = thread->stack_size;
     full.initPriority = thread->priority; // Todo Give only current priority
@@ -1205,6 +1206,9 @@ static bool is_user_priority(int priority) {
         || (priority >= SCE_KERNEL_HIGHEST_DEFAULT_PRIORITY && priority <= SCE_KERNEL_LOWEST_DEFAULT_PRIORITY);
 }
 
+// The attributes sceKernelCreateThread takes
+constexpr SceUInt32 THREAD_CREATE_ATTRS = THREAD_ATTR_UNKNOWN_2000 | THREAD_ATTR_NOUSE_VFP | THREAD_ATTR_VM | THREAD_ATTR_USER;
+
 EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry entry, int init_priority, SceKernelCreateThread_opt *options) {
     TRACY_FUNC(sceKernelCreateThreadForUser, name, entry, init_priority, options);
     if (!name)
@@ -1217,6 +1221,8 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_STACK_SIZE);
     if (options->cpu_affinity_mask & ~SCE_KERNEL_CPU_MASK_USER_ALL)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_CPU_AFFINITY_MASK);
+    if (options->attr & ~THREAD_CREATE_ATTRS)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
     // The new thread starts at the creating thread's current priority
     if (init_priority == SCE_KERNEL_CURRENT_THREAD_PRIORITY)
         init_priority = emuenv.kernel.get_thread(thread_id)->priority;
@@ -1224,6 +1230,7 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
     const ThreadStatePtr thread = emuenv.kernel.create_thread(emuenv.mem, name, entry.cast<void>(), init_priority, options->cpu_affinity_mask, options->stack_size, options->option.get(emuenv.mem));
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_ERROR);
+    thread->attr = options->attr | THREAD_ATTR_USER;
     return thread->id;
 }
 

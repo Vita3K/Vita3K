@@ -90,21 +90,21 @@ simple_event_wait_null          pass
 strings                         fail     # sceClibMemchr, case of bytes above 0x7F
 sysmodule                       fail     # system modules don't load without firmware
 thread                          pass
-thread_change_attr              fail     # ChangeCurrentThreadAttr takes every bit
+thread_change_attr              pass
 thread_context_for_vm           fail     # the ForVM calls need neither the VM attribute nor a suspended target
-thread_create_attr              fail     # thread creation takes every attribute bit, thread info shows none
+thread_create_attr              pass
 thread_create_current_priority  pass
 thread_create_edges             pass
 thread_edges                    fail     # DelayThreadCB(0)
 thread_end_waits                pass
-thread_errors                   fail     # the VFP attribute
+thread_errors                   pass
 thread_event_handler            fail     # thread event handlers run once per thread end, unknown thread and handler errors
 thread_event_handler_edges      fail     # thread event handlers run once per thread end, two handlers
 thread_event_handler_vfp        fail     # the end handler doesn't run, and handlers keep the thread's VFP state
 thread_fpscr                    pass
 thread_id_registers             pass
 thread_info                     pass
-thread_info_fields              fail     # thread info process, attributes, affinity, CPU and run time fields
+thread_info_fields              fail     # thread info process, affinity, CPU and run time fields
 thread_lifecycle                fail     # starting with more arguments than the stack holds
 thread_nouse_vfp                fail     # a waiting thread keeps d16 across its wait
 thread_null_name                pass
