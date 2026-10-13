@@ -992,19 +992,16 @@ EXPORT(SceInt32, _sceKernelWaitSemaCB, SceUID semaId, SceInt32 needCount, SceUIn
     return semaphore->wait(emuenv.kernel.get_thread(thread_id), needCount, pTimeout, true);
 }
 
-EXPORT(int, _sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout) {
+EXPORT(int, _sceKernelWaitSignal, uint32_t unknown, uint32_t delay, SceUInt32 *timeout) {
     TRACY_FUNC(_sceKernelWaitSignal, unknown, delay, timeout);
-    STUBBED("sceKernelWaitSignal");
-    const auto thread = emuenv.kernel.get_thread(thread_id);
-    return guest_result(thread->wait_for_signal(false));
+    return guest_result(emuenv.kernel.get_thread(thread_id)->wait_for_signal(timeout, false));
 }
 
-EXPORT(int, _sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, uint32_t timeout) {
+EXPORT(int, _sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, SceUInt32 *timeout) {
     TRACY_FUNC(_sceKernelWaitSignalCB, unknown, delay, timeout);
-    STUBBED("sceKernelWaitSignalCB");
-    const auto thread = emuenv.kernel.get_thread(thread_id);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
     thread->process_callbacks();
-    return guest_result(thread->wait_for_signal(true));
+    return guest_result(thread->wait_for_signal(timeout, true));
 }
 
 // Waits for target to end, writing the time left back to timeout
@@ -1588,8 +1585,11 @@ EXPORT(int, sceKernelResumeThreadForVM, SceUID threadId) {
 
 EXPORT(int, sceKernelSendSignal, SceUID target_thread_id) {
     TRACY_FUNC(sceKernelSendSignal, target_thread_id);
-    STUBBED("sceKernelSendSignal");
-    const auto thread = emuenv.kernel.get_thread(target_thread_id);
+    if (target_thread_id == 0)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(target_thread_id);
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     return thread->send_signal();
 }
 

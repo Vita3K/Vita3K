@@ -1910,12 +1910,12 @@ EXPORT(SceInt32, sceKernelWaitSemaCB, SceUID semaId, SceInt32 needCount, SceUInt
     return CALL_EXPORT(_sceKernelWaitSemaCB, semaId, needCount, pTimeout);
 }
 
-EXPORT(int, sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout) {
+EXPORT(int, sceKernelWaitSignal, uint32_t unknown, uint32_t delay, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelWaitSignal, unknown, delay, timeout);
     return CALL_EXPORT(_sceKernelWaitSignal, unknown, delay, timeout);
 }
 
-EXPORT(int, sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, uint32_t timeout) {
+EXPORT(int, sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelWaitSignalCB, unknown, delay, timeout);
     return CALL_EXPORT(_sceKernelWaitSignalCB, unknown, delay, timeout);
 }

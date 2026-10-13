@@ -97,8 +97,8 @@ struct ThreadState {
 
     // Blocks this thread until the deadline passes.
     [[nodiscard]] WaitResult delay_until(Deadline deadline, bool callbacks);
-    // Blocks this thread until a signal is sent to it.
-    [[nodiscard]] WaitResult wait_for_signal(bool callbacks);
+    // Blocks this thread until a signal is sent to it or the timeout passes, writing the time left back.
+    [[nodiscard]] WaitResult wait_for_signal(SceUInt32 *timeout, bool callbacks);
     // Sends a signal to this thread. Fails if the previous one was not consumed yet.
     SceInt32 send_signal();
     // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.

@@ -443,17 +443,23 @@ WaitResult ThreadState::delay_until(Deadline deadline, bool callbacks) {
     }
 }
 
-WaitResult ThreadState::wait_for_signal(bool callbacks) {
-    while (true) {
-        {
-            const std::lock_guard<std::mutex> lock(mutex);
-            if (std::exchange(signal_pending, false))
-                return SCE_KERNEL_OK;
-        }
-        const WaitResult r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL }, Deadline::max(), callbacks);
-        if (!r)
-            return r;
+WaitResult ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
+    const auto take_signal = [this] {
+        const std::lock_guard<std::mutex> lock(mutex);
+        return std::exchange(signal_pending, false);
+    };
+    // A signal sent before ends the wait at once, with the timeout untouched
+    if (take_signal())
+        return SCE_KERNEL_OK;
+    const Deadline deadline = deadline_from(timeout);
+    WaitResult r = SCE_KERNEL_OK;
+    while (!take_signal()) {
+        r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL }, deadline, callbacks);
+        if (!r || *r != SCE_KERNEL_OK)
+            break;
     }
+    writeback_timeout(timeout, deadline);
+    return r;
 }
 
 SceInt32 ThreadState::send_signal() {
