@@ -21,6 +21,8 @@
 #include "util/log.h"
 #include "vkutil/vkutil.h"
 
+#include <mutex>
+
 #include <cstdint>
 #include <exception>
 
