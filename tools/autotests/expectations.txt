@@ -51,6 +51,7 @@ queue_order                     fail     # priority changes while waiting
 rtc                             crash    # RTC date range checks, a NULL tick
 rwlock                          pass
 rwlock_errors                   fail     # closing unknown UIDs
+rwlock_reader_again             pass
 sema_errors                     crash    # closing unknown UIDs, a NULL name
 sema_mutex_edges                pass
 sema_poll_negative              pass
@@ -87,3 +88,4 @@ uid_semantics                   fail     # opening gives a new UID
 wait_delete_timeout             pass
 wait_order                      pass
 wait_own_end                    pass
+wait_priority_change            fail     # a waiter changed to any priority goes behind the others at it
