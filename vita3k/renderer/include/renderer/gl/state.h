@@ -44,7 +44,7 @@ struct GLState : public renderer::State {
     bool context_is_current = false;
 
     bool init() override;
-    void cleanup() override;
+    void cleanup(bool preserve_frontend = false) override;
     void late_init(const Config &cfg, const std::string_view game_id, MemState &mem) override;
 
     TextureCache *get_texture_cache() override {

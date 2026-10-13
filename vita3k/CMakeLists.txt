@@ -114,12 +114,15 @@ if(NOT ANDROID)
 		set(HAS_QT TRUE)
 	endif()
 	if(HAS_QT)
-		include(${CMAKE_SOURCE_DIR}/cmake/qt6.cmake)
-		add_compile_definitions(HAS_QT)
 		message(STATUS "Qt SDK detected, building with the Qt frontend.")
 	else()
-		message(STATUS "Qt SDK not detected, using the SDL frontend. Install Qt 6.11.0 or newer to use the Qt frontend.")
+		message(STATUS "Qt SDK not detected, using ImGui frontend. Install Qt 6.11.0 or newer to use the Qt frontend.")
 	endif()
+endif()
+
+if(HAS_QT)
+	include(${CMAKE_SOURCE_DIR}/cmake/qt6.cmake)
+	add_compile_definitions(HAS_QT)
 endif()
 
 add_subdirectory(app)
@@ -127,16 +130,19 @@ add_subdirectory(audio)
 add_subdirectory(camera)
 add_subdirectory(cheat)
 add_subdirectory(input)
+add_subdirectory(bgm_player)
 add_subdirectory(config)
 add_subdirectory(cpu)
 add_subdirectory(ctrl)
 add_subdirectory(codec)
 add_subdirectory(compat)
 add_subdirectory(dialog)
+add_subdirectory(host)
 add_subdirectory(display)
 add_subdirectory(features)
 add_subdirectory(glutil)
 add_subdirectory(updater)
+add_subdirectory(gui-imgui)
 if(HAS_QT)
 	add_subdirectory(gui-qt)
 endif()
@@ -166,9 +172,11 @@ add_subdirectory(shader)
 add_subdirectory(threads)
 add_subdirectory(touch)
 add_subdirectory(util)
+add_subdirectory(vita_shell)
 add_subdirectory(gdbstub)
 add_subdirectory(packages)
 add_subdirectory(vkutil)
+add_subdirectory(v3kn)
 
 if(ANDROID)
 	add_library(vita3k SHARED
@@ -225,7 +233,7 @@ if(WIN32)
 	target_sources(vita3k PRIVATE util/src/vc_runtime_checker.cpp)
 endif()
 
-target_link_libraries(vita3k PRIVATE app audio cheat compat config ctrl dialog display ime lang gdbstub gxm io miniz modules motion packages patch pugixml::pugixml renderer sdl sdl-frontend shader touch util psvpfsparser)
+target_link_libraries(vita3k PRIVATE app audio cheat compat config ctrl dialog display gui-imgui ime lang gdbstub gxm io miniz modules motion packages patch pugixml::pugixml renderer sdl sdl-frontend shader touch util vita_shell psvpfsparser)
 if(HAS_QT)
 	target_link_libraries(vita3k PRIVATE gui-qt)
 endif()
@@ -369,7 +377,9 @@ if(APPLE)
 		TARGET vita3k
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/../Resources/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/lang" "$<TARGET_FILE_DIR:vita3k>/../Resources/lang"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:vita3k>/../Resources/shaders-builtin")
+	# Qt translations are copied only when the Qt frontend is enabled.
 	if(HAS_QT)
 		add_custom_command(TARGET vita3k POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy_directory "${VITA3K_QT_QM_DIR}" "$<TARGET_FILE_DIR:vita3k>/../Resources/translations")
@@ -424,6 +434,9 @@ elseif(LINUX)
 			"${VITA3K_QT_QM_DIR}/"
 			DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/translations/")
 	endif()
+	install(DIRECTORY
+		"${CMAKE_SOURCE_DIR}/lang"
+		DESTINATION "${CMAKE_INSTALL_DATADIR}/Vita3K/")
 	install(FILES
 		"${CMAKE_CURRENT_SOURCE_DIR}/${VITA3K_APP_ID}.svg"
 		PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
@@ -455,6 +468,7 @@ elseif(LINUX)
 		TARGET vita3k
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:vita3k>/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/lang" "$<TARGET_FILE_DIR:vita3k>/lang"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/COPYING.txt" "$<TARGET_FILE_DIR:vita3k>/COPYING.txt"
@@ -481,6 +495,7 @@ elseif(WIN32)
 		TARGET vita3k
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/lang" "$<TARGET_FILE_DIR:vita3k>/lang"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "$<TARGET_FILE_DIR:vita3k>/icons"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/COPYING.txt" "$<TARGET_FILE_DIR:vita3k>/COPYING.txt"
@@ -511,12 +526,18 @@ elseif(WIN32)
 				--verbose 0 "$<TARGET_FILE:vita3k>")
 	endif()
 elseif(ANDROID)
+	set(VITA3K_ANDROID_ASSET_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../android/app/assets")
 	add_custom_command(
 		TARGET vita3k
 		POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "${CMAKE_CURRENT_SOURCE_DIR}/../android/app/assets/data"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${CMAKE_CURRENT_SOURCE_DIR}/../android/app/assets/shaders-builtin"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "${CMAKE_CURRENT_SOURCE_DIR}/../android/app/assets/icons"
+		COMMAND ${CMAKE_COMMAND} -E make_directory "${VITA3K_ANDROID_ASSET_DIR}/data"
+			"${VITA3K_ANDROID_ASSET_DIR}/lang"
+			"${VITA3K_ANDROID_ASSET_DIR}/shaders-builtin"
+			"${VITA3K_ANDROID_ASSET_DIR}/icons"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "${VITA3K_ANDROID_ASSET_DIR}/data"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/lang" "${VITA3K_ANDROID_ASSET_DIR}/lang"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "${VITA3K_ANDROID_ASSET_DIR}/shaders-builtin"
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/icons" "${VITA3K_ANDROID_ASSET_DIR}/icons"
 	)
 endif()
 

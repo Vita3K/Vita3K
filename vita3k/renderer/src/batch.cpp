@@ -277,7 +277,10 @@ static void render_loop(renderer::State &state, DisplayState &display, GxmState 
         state.render_frame(display, gxm, mem);
         if (state.screenshot_requested.exchange(false) && state.screenshot_callback)
             state.screenshot_callback();
+        if (state.frontend_frame_callback)
+            state.frontend_frame_callback();
         state.swap_window();
+
         state.async_flip_requested.store(false, std::memory_order_relaxed);
 
 #ifdef TRACY_ENABLE

@@ -17,6 +17,11 @@
 #include <renderer/vulkan/screen_renderer.h>
 #endif
 
+#include <cstdlib>
+#include <string>
+#include <utility>
+#include <vector>
+
 namespace sdl {
 
 FrameHost::FrameHost(SDL_Window *window, SDL_GLContext *gl_context)

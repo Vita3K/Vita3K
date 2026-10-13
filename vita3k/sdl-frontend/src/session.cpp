@@ -18,16 +18,22 @@
 #include <sdl-frontend/functions.h>
 #include <sdl/frame_host.h>
 #include <sdl/functions.h>
+#include <sdl/sdl_event.h>
+#include <sdl/sdl_title.h>
+#include <sdl/sdl_window.h>
 
 #include <app/functions.h>
 #include <app/session_controller.h>
+#include <app/state.h>
 #include <audio/state.h>
+#include <bgm_player/functions.h>
 #include <config/state.h>
 #include <ctrl/functions.h>
 #include <ctrl/state.h>
 #include <display/state.h>
 #include <emuenv/state.h>
 #include <ime/functions.h>
+#include <io/state.h>
 #include <motion/event_handler.h>
 #include <renderer/state.h>
 #include <touch/functions.h>
@@ -37,6 +43,12 @@
 
 #include <SDL3/SDL.h>
 
+#include <cstring>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <utility>
 namespace sdl_frontend {
 
 // SDL_Quit at the end of a session stops the audio device, so the next session opens a new one
@@ -271,6 +283,10 @@ SessionResult run(EmuEnvState &emuenv, app::AppSessionController &session, SDL_W
             fail_launch();
             return;
         }
+
+        const auto user = emuenv.app.user_list.users.find(emuenv.io.user_id);
+        if (user != emuenv.app.user_list.users.end() && user->second.system_music)
+            bgm_player::switch_bgm_state(true);
 
         if (auto request = emuenv.take_app_launch_request())
             pending_launch_request = std::move(request);

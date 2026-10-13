@@ -389,8 +389,8 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths,
         ->default_str("")->group("Input");
     input->add_option("--load-app-list,-a", command_line.load_app_list, "Starts the emulator with load app list.")
        ->default_val(false)->group("Input");
-    const std::map<std::string, Frontend> frontends{ { "qt", Frontend::qt }, { "sdl", Frontend::sdl } };
-    input->add_option("--frontend", command_line.frontend, "Frontend to use: qt for the full interface, sdl for a plain window that runs the app given by -r and quits with it")
+    const std::map<std::string, Frontend> frontends{ { "qt", Frontend::qt }, { "imgui", Frontend::imgui }, { "sdl", Frontend::sdl } };
+    input->add_option("--frontend", command_line.frontend, "Frontend to use: qt for the configured full interface, imgui to force ImGui, or sdl for a basic SDL game selector (or directly run the app given by -r)")
         ->transform(CLI::CheckedTransformer(frontends, CLI::ignore_case))->default_str("qt")->group("Input");
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
