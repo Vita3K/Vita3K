@@ -110,7 +110,7 @@ thread_nouse_vfp                fail     # a waiting thread keeps d16 across its
 thread_null_name                pass
 thread_priority                 pass
 thread_ready_status             fail     # a thread that can run but doesn't reports RUNNING instead of READY
-thread_restart                  fail     # a new thread's TLS slot 0 is 1, the stack free size after a restart
+thread_restart                  fail     # the stack free size of a thread started again
 thread_signal                   fail     # a thread waiting for a signal reports wait UID 0
 thread_signal_timeout           pass
 thread_signal_wait_id           fail     # a thread waiting for a signal reports wait UID 0

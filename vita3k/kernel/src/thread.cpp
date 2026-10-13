@@ -85,7 +85,6 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
 
     int *tls_array = tls.get_ptr<int>().get(mem);
 
-    tls_array[TLS_PROCESS_ID] = 1; // stubbed. unused
     tls_array[TLS_THREAD_ID] = id;
     tls_array[TLS_SP_TOP] = stack.get();
     tls_array[TLS_SP_BOTTOM] = stack.get() + stack_size;
