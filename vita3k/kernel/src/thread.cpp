@@ -525,6 +525,16 @@ WaitResult ThreadState::wait(WaitTarget target, Deadline deadline, bool callback
         wait_cv.wait(lock, woken);
     else
         satisfied = wait_cv.wait_until(lock, deadline, woken);
+    // Woken while a ForVM suspend holds it, the thread stays in the call as suspended until the
+    // resume. One whose timeout passed leaves its queue first and stops in run_loop, so a later
+    // wake doesn't take the place of the timeout.
+    if (vm_suspended() && satisfied && !exiting()) {
+        wait_target = {};
+        vm_held_in_wait = true;
+        update_status(ThreadStatus::suspended);
+        wait_cv.wait(lock, [&] { return !vm_suspended() || exiting(); });
+        vm_held_in_wait = false;
+    }
     // A wake during emulator pause must not let this guest thread run callbacks
     // or return to its JIT loop until the pause has been lifted.
     wait_cv.wait(lock, [&] { return !pause_requested || exiting(); });
@@ -665,14 +675,19 @@ void ThreadState::resume_from_pause(ThreadStatus previous_status) {
 }
 
 int ThreadState::vm_suspend() {
-    int count;
-    {
-        const std::lock_guard<std::mutex> lock(mutex);
-        count = ++vm_suspend_count;
-        suspend_requested = true;
+    std::unique_lock<std::mutex> lock(mutex);
+    const int count = ++vm_suspend_count;
+    suspend_requested = true;
+    if (status == ThreadStatus::running) {
+        stop(*cpu);
+        // Like on a Vita, return once the thread has stopped, so its context holds still
+        wait_for_vm_stop(lock);
     }
-    stop(*cpu);
     return count;
+}
+
+void ThreadState::wait_for_vm_stop(std::unique_lock<std::mutex> &lock) {
+    status_cond.wait(lock, [&] { return status != ThreadStatus::running || !vm_suspended() || exiting(); });
 }
 
 int ThreadState::vm_resume() {
@@ -681,8 +696,12 @@ int ThreadState::vm_resume() {
         return vm_suspend_count;
     // A thread that didn't reach guest code since the suspend, like one still waiting, never stopped
     suspend_requested = false;
-    if (status == ThreadStatus::suspended)
+    // A thread held in its wait call marks itself running once it leaves
+    if (status == ThreadStatus::suspended && !vm_held_in_wait)
         update_status(ThreadStatus::running);
+    // A thread held in its wait call waits for this, and so may a suspend that waits for it to stop
+    wait_cv.notify_all();
+    status_cond.notify_all();
     return 0;
 }
 

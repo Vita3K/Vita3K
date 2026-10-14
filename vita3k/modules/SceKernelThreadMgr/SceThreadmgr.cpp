@@ -575,6 +575,8 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
         return RET_ERROR(error);
 
     std::unique_lock<std::mutex> lock(thread->mutex);
+    // A thread whose wait timed out while suspended stops on its way back to its code
+    thread->wait_for_vm_stop(lock);
     if (!thread->vm_suspended())
         return RET_ERROR(SCE_KERNEL_ERROR_NOT_SUSPENDED);
     const auto context = save_context(*thread->cpu);
@@ -592,7 +594,7 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
 
     if (infoVfp) {
         static_assert(sizeof(infoVfp->reg) == sizeof(context.fpu_registers));
-        if (thread->status == ThreadStatus::waiting) {
+        if (thread->in_wait()) {
             // Inside a syscall a Vita reports the FPSCR the kernel runs with, and only d8 to d15,
             // which a call keeps. Every other d register reads this NaN.
             constexpr uint32_t SCRUBBED[2] = { 0x7F80DEADU, 0x7FF8DEADU };
