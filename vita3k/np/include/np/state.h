@@ -24,6 +24,8 @@
 
 #include <map>
 #include <mutex>
+#include <optional>
+#include <unordered_map>
 #include <vector>
 
 struct SceNpServiceStateCallback {
@@ -70,11 +72,25 @@ enum SceNpServiceState : uint32_t {
     SCE_NP_SERVICE_STATE_ONLINE = 3
 };
 
+struct NpTusRequest {
+    SceInt32 title_context_id = 0;
+    std::optional<SceInt32> result;
+};
+
+struct NpTusState {
+    bool inited = false;
+    std::mutex access_mutex;
+    // Simulated handles and immediate TSS failures; no PSN authentication or storage.
+    std::unordered_map<SceUID, bool> title_contexts;
+    std::unordered_map<SceUID, NpTusRequest> requests;
+};
+
 struct NpState {
     bool inited = false;
     np_callbacks cbs;
     SceUID state_cb_id;
 
     NpTrophyState trophy_state;
+    NpTusState tus_state;
     np::CommunicationID comm_id;
 };

@@ -18,6 +18,7 @@
 #pragma once
 
 #include <mem/ptr.h>
+#include <rtc/rtc.h>
 #include <util/types.h>
 
 #include <cstdint>
@@ -65,6 +66,26 @@ struct CommunicationConfig {
     Ptr<void> unk0;
     Ptr<void> unk1;
 };
+
+#define SCE_NP_COMMUNICATION_PASSPHRASE_SIZE (128)
+struct SceNpCommunicationPassphrase {
+    SceUChar8 data[SCE_NP_COMMUNICATION_PASSPHRASE_SIZE];
+};
+
+#define SCE_NP_TUS_MAX_CTX_NUM (32)
+
+enum SceNpTssStatusCodeType : SceInt32 {
+    SCE_NP_TSS_STATUS_TYPE_OK = 0,
+    SCE_NP_TSS_STATUS_TYPE_PARTIAL = 1,
+    SCE_NP_TSS_STATUS_TYPE_NOT_MODIFIED = 2
+};
+
+struct SceNpTssDataStatus {
+    SceRtcTick lastModified;
+    SceInt32 statusCodeType;
+    SceSize contentLength;
+};
+static_assert(sizeof(SceNpTssDataStatus) == 0x10);
 
 constexpr auto SCE_NP_TROPHY_INVALID_TROPHY_ID = -1;
 
