@@ -77,6 +77,7 @@ msgpipe                         pass
 msgpipe_async                   fail     # message pipe sends and receives that don't wait
 msgpipe_edges                   pass
 msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
+msgpipe_failed_sizes            fail     # the sizes failed calls write, the vector calls
 msgpipe_modes                   fail     # bytes sent to a waiting receive stay in the pipe, timed out calls write no size
 msgpipe_order                   fail     # a send reaches only one waiting receiver
 msgpipe_receiver_leaves         fail     # bytes sent to a waiting receive stay in the pipe
@@ -169,6 +170,7 @@ thread_stack_negative           pass
 thread_stack_zero               pass
 thread_state                    pass
 thread_status_matrix            fail     # READY, the current CPU of a thread that isn't running
+thread_suspend_for_vm_stops     pass
 thread_vfp_exception            pass
 timeouts                        pass
 timer                           pass
