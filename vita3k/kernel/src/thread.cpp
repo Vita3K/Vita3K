@@ -86,8 +86,12 @@ int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_pr
     int *tls_array = tls.get_ptr<int>().get(mem);
 
     tls_array[TLS_THREAD_ID] = id;
-    tls_array[TLS_SP_TOP] = stack.get();
-    tls_array[TLS_SP_BOTTOM] = stack.get() + stack_size;
+    tls_array[TLS_SP_TOP] = stack.get() + stack_size;
+    tls_array[TLS_SP_BOTTOM] = stack.get();
+    // A Vita starts every thread with a different random value in each of these. These are the
+    // values one thread had on a PS Vita TV, the same for every thread so runs repeat.
+    tls_array[TLS_RESERVED_6] = static_cast<int>(0xFEFA7314);
+    tls_array[TLS_STACK_CHECK_GUARD] = static_cast<int>(0xC325C2A7);
     tls_array[TLS_CURRENT_PRIORITY] = priority;
     tls_array[TLS_CPU_AFFINITY_MASK] = affinity_mask;
 

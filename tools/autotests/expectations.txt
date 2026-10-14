@@ -181,7 +181,7 @@ timer_modes                     fail     # sceKernelSetTimerTime
 timer_wait_no_event             pass
 tls                             crash    # TLS key 256 and slots by thread UID
 tls_process_id                  fail     # thread info doesn't report the process ID
-tls_start_slots                 fail     # the stack ends are in TLS slots 2 and 3 the other way around, and slots 6 and 7 are 0
+tls_start_slots                 pass
 uid                             pass
 uid_class                       pass
 uid_semantics                   fail     # opening gives a new UID
