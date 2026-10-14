@@ -1288,6 +1288,10 @@ static int delay_thread(KernelState &kernel, SceUID thread_id, SceUInt delay_us)
 }
 
 static int delay_thread_cb(KernelState &kernel, SceUID thread_id, SceUInt delay_us) {
+    // Like the plain delay, and without running callbacks
+    if (delay_us == 0)
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+
     // Time spent in callbacks counts toward the delay
     const Deadline deadline = std::chrono::steady_clock::now() + std::chrono::microseconds(delay_us);
     const ThreadStatePtr thread = kernel.get_thread(thread_id);

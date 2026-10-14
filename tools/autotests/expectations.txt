@@ -19,7 +19,7 @@ callback_priority_requeue       fail     # waits stay queued during callbacks, s
 callback_requeue_order          fail     # a wait keeps its place in the queue after a callback
 callback_stack                  fail     # callbacks don't run inside callbacks
 cancel_calls                    fail     # the waiting count a semaphore cancel writes, rwlock cancel flag checks
-cb_waits                        fail     # a CB delay of 0 succeeds, CB waits that fail at once run the pending callbacks
+cb_waits                        fail     # CB waits that fail at once run the pending callbacks
 claim_races                     fail     # a thread whose wait ended reports RUNNING or DORMANT instead of READY until it runs
 clocks                          fail     # a NULL process time pointer
 cond                            pass
@@ -35,7 +35,7 @@ create_attrs                    fail     # the attribute bits each create accept
 cross_core_scheduling           fail     # threads ignore their core and priority
 delay                           pass
 delay_negative                  pass
-delay_variants                  fail     # DelayThreadCB(0) succeeds, a delay reports wait UID 0
+delay_variants                  fail     # a delay reports wait UID 0
 delay_wait_id                   fail     # a delaying thread reports wait UID 0
 delete_with_waiters             pass
 directories                     fail     # directory mode, not empty and wrong type errors
@@ -139,7 +139,7 @@ thread_cpu_fields               fail     # the CPU fields of thread info, thread
 thread_create_attr              pass
 thread_create_current_priority  pass
 thread_create_edges             pass
-thread_edges                    fail     # DelayThreadCB(0)
+thread_edges                    pass
 thread_end_waits                pass
 thread_errors                   pass
 thread_event_handler            fail     # unknown thread and handler errors
