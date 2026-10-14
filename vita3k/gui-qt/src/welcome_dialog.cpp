@@ -44,7 +44,7 @@ WelcomeDialog::WelcomeDialog(EmuEnvState &emuenv, bool is_manual_show, QWidget *
         setAttribute(Qt::WA_DeleteOnClose);
 
     m_ui->icon_label->setPixmap(
-        QPixmap(":/Vita3K.png").scaled(72, 72, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        QPixmap(":/org.vita3k.vita3k.svg").scaled(72, 72, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
     m_ui->label_desc->setTextFormat(Qt::PlainText);
     m_ui->label_desc->setText(tr(

@@ -36,7 +36,7 @@ AboutDialog::AboutDialog(EmuEnvState &emuenv, QWidget *parent)
 
     m_ui->close_button->setDefault(true);
     m_ui->icon_label->setPixmap(
-        QPixmap(":/Vita3K.png").scaled(128, 128, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        QPixmap(":/org.vita3k.vita3k.svg").scaled(128, 128, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
     m_ui->description_label->setTextFormat(Qt::RichText);
     m_ui->description_label->setTextInteractionFlags(Qt::TextBrowserInteraction);

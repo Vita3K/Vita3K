@@ -1,8 +1,7 @@
 <RCC>
 	<qresource prefix="/">
 		<file>icons/PSV_Layout.svg</file>
-		<file>Vita3K.ico</file>
-		<file>Vita3K.png</file>
+		<file>org.vita3k.vita3k.svg</file>
 		<file>icons/bronze.png</file>
 		<file>icons/silver.png</file>
 		<file>icons/gold.png</file>
