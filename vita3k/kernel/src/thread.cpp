@@ -170,13 +170,14 @@ void ThreadState::exit_delete(bool exit) {
 void ThreadState::run_loop() {
     bool guest_returned = false;
 
-    // Set thread-local CPU state so signal handlers can access it.
-    // The guard clears it on any exit so a recycled host thread never sees
-    // a stale CPUState pointer.
-    set_current_cpu_state(cpu.get());
+    // Set thread-local CPU state so signal handlers can access it. The guard puts back what was
+    // there before on any exit, so a nested run_loop for a callback leaves the outer one's state
+    // set, and a recycled host thread never sees a stale CPUState pointer.
     struct CpuStateGuard {
-        ~CpuStateGuard() { set_current_cpu_state(nullptr); }
+        CPUState *const previous = get_current_cpu_state();
+        ~CpuStateGuard() { set_current_cpu_state(previous); }
     } cpu_state_guard;
+    set_current_cpu_state(cpu.get());
 
     std::unique_lock<std::mutex> lock(mutex);
     ++call_level;
