@@ -33,6 +33,8 @@
 
 // Set in the wait type of a wait that runs callbacks
 constexpr SceUInt32 WAITTYPE_CB_BIT = 0x80000000U;
+// What a thread waiting for a thread signal reports as its wait UID on a Vita, which isn't a UID
+constexpr SceUID SIGNAL_WAIT_ID = 0x00010221;
 // The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
 constexpr uint32_t INITIAL_FPSCR = 0x03000000U;
 
@@ -482,7 +484,7 @@ WaitResult ThreadState::wait_for_signal(SceUInt32 *timeout, bool callbacks) {
     const Deadline deadline = deadline_from(timeout);
     WaitResult r = SCE_KERNEL_OK;
     while (!take_signal()) {
-        r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL }, deadline, callbacks);
+        r = wait({ SCE_KERNEL_WAITTYPE_SIGNAL, SIGNAL_WAIT_ID }, deadline, callbacks);
         if (!r || *r != SCE_KERNEL_OK)
             break;
     }

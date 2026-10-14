@@ -159,9 +159,9 @@ thread_priority                 pass
 thread_ready_status             fail     # a thread that can run but doesn't reports RUNNING instead of READY
 thread_restart                  fail     # the stack free size of a thread started again
 thread_run_order                fail     # threads ignore their core and priority
-thread_signal                   fail     # a thread waiting for a signal reports wait UID 0
+thread_signal                   pass
 thread_signal_timeout           pass
-thread_signal_wait_id           fail     # a thread waiting for a signal reports wait UID 0
+thread_signal_wait_id           pass
 thread_stack_fill               fail     # the stack free size is the room below the stack pointer
 thread_stack_free               fail     # the stack free size is the room below the stack pointer, not a high-water mark
 thread_stack_free_scan          fail     # the stack free size is the room below the stack pointer, not a scan of the stack
