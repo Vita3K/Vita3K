@@ -613,8 +613,8 @@ enum SceSysmoduleInternalModuleId : uint32_t {
 enum TlsItems {
     TLS_PROCESS_ID = 0, // unused, and 0 when a thread is created, as on a Vita
     TLS_THREAD_ID = 1,
-    TLS_SP_TOP = 2,
-    TLS_SP_BOTTOM = 3,
+    TLS_SP_TOP = 2, // the high end of the stack
+    TLS_SP_BOTTOM = 3, // its low end
     TLS_VFP_EXCEPTION = 4,
     TLS_RESERVED_5 = 5,
     TLS_RESERVED_6 = 6, // libc reserved longjump addr

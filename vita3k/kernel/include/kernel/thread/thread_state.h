@@ -48,6 +48,8 @@ constexpr SceUInt32 THREAD_ATTR_NOUSE_VFP = 0x01000000U;
 constexpr SceUInt32 THREAD_ATTR_VM = 0x04000000U;
 // Another attribute a Vita accepts for a thread, with no known name or effect
 constexpr SceUInt32 THREAD_ATTR_UNKNOWN_2000 = 0x00002000U;
+// The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
+constexpr uint32_t INITIAL_FPSCR = 0x03000000U;
 
 // Values are what sceKernelGetThreadInfo reports
 enum class ThreadStatus : SceUInt32 {
@@ -138,6 +140,12 @@ struct ThreadState {
     // Pause/resume the emulator without changing a thread's wait state.
     ThreadStatus pause();
     void resume_from_pause(ThreadStatus previous_status);
+    // Suspends the thread for sceKernelSuspendThreadForVM: it stops before it next runs guest code
+    // until as many vm_resume calls. Each returns the suspend count after it.
+    int vm_suspend();
+    int vm_resume();
+    // Whether vm_suspend holds the thread. Called with mutex held.
+    bool vm_suspended() const { return vm_suspend_count > 0; }
     std::string log_stack_traceback() const;
 
 private:
@@ -179,6 +187,8 @@ private:
     bool wake_pending = false;
     // Callbacks of this thread with notifications they haven't run for.
     SceUInt32 notified_callbacks = 0;
+    // The vm_suspend calls that no vm_resume undid yet.
+    int vm_suspend_count = 0;
     // Set while the thread runs its callbacks. They don't nest.
     bool is_processing_callbacks = false;
     // Callbacks this thread created, in creation order. The kernel owns them. Only this thread touches the list.

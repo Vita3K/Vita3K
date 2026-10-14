@@ -2,7 +2,8 @@
 
 Each test is launched with the URI psgm:play?titleid=VTST00000&arg=<name>, as another app would
 launch it on a Vita, and its output is compared with its .expected file, which holds what a real
-Vita prints. Logs and outputs go to build/logs/ in the VitaAutotests checkout.
+Vita prints. The output is the file the test writes every line to in the emulated Vita, since
+Vita3K's log drops repeated lines. Logs and outputs go to build/logs/ in the VitaAutotests checkout.
 
 The expectations file gives every test one outcome, one "name outcome" per line with # comments:
   pass     it exits normally and prints its expected output
@@ -30,6 +31,8 @@ import sys
 TITLE_ID = "VTST00000"
 OUTCOMES = ("pass", "fail", "crash", "timeout")
 OUTPUT_RE = re.compile(rb"\[export_sceClibPrintf\]: (.*)")
+# Where in the emulated Vita each test writes its output
+OUTPUT_DIR = Path("ux0/data/vita-autotests/output")
 
 
 def find_tests(checkout: Path) -> dict[str, Path]:
@@ -68,8 +71,17 @@ def run_vita3k(vita3k: str, extra_args: list[str], args: list[str], log: Path, t
             return None
 
 
-def guest_output(log: Path) -> bytes:
-    """Returns what the guest printed, from the lines Vita3K logs for each sceClibPrintf."""
+def output_file(name: str) -> Path:
+    """Returns the file the test writes its output to in the emulated Vita Vita3K uses."""
+    data = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
+    return data / "Vita3K" / "Vita3K" / OUTPUT_DIR / f"{name}.txt"
+
+
+def guest_output(name: str, log: Path) -> bytes:
+    """Returns what the test printed: its output file, or the lines Vita3K logs for each sceClibPrintf if it wrote none."""
+    path = output_file(name)
+    if path.exists():
+        return path.read_bytes()
     lines = (OUTPUT_RE.search(line) for line in log.read_bytes().splitlines())
     return b"".join(match.group(1) + b"\n" for match in lines if match)
 
@@ -105,8 +117,10 @@ def main() -> int:
     counts = {"passed": 0, "failed as expected": 0, "unexpected": 0}
     for name in args.names or sorted(tests):
         log = logs / f"{name}.log"
+        # So a run that never starts the test can't pass with an older output
+        output_file(name).unlink(missing_ok=True)
         code = run_vita3k(vita3k, extra_args, ["-r", TITLE_ID, "--launch-uri", f"psgm:play?titleid={TITLE_ID}&arg={name}"], log, timeout)
-        output = guest_output(log)
+        output = guest_output(name, log)
         (logs / f"{name}.output").write_bytes(output)
         expected_output = tests[name].with_suffix(".expected").read_bytes()
 
