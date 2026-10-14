@@ -193,6 +193,9 @@ void ThreadState::run_loop() {
 
         const ThreadStatus old_status = status;
         const uint32_t old_returned_value = returned_value;
+        // The handler runs guest code on this thread, which an exit or delete request would end at once
+        const bool old_exit_requested = std::exchange(exit_requested, false);
+        const bool old_delete_requested = std::exchange(delete_requested, false);
         status = ThreadStatus::running;
 
         lock.unlock();
@@ -203,6 +206,9 @@ void ThreadState::run_loop() {
 
         status = old_status;
         returned_value = old_returned_value;
+        // Keeping any request that came while the handler ran, like a teardown's delete
+        exit_requested = exit_requested || old_exit_requested;
+        delete_requested = delete_requested || old_delete_requested;
     };
 
     // A mutex the thread still holds when it ends goes to its next waiter
@@ -231,6 +237,9 @@ void ThreadState::run_loop() {
         if (exit_requested || guest_returned || delete_requested) {
             // Top-level fires the end callback and parks dormant
             if (top_level && status != ThreadStatus::dormant) {
+                // A thread that returns from its entry ends like one that exits, end handler included
+                if (guest_returned)
+                    run_end_callback = true;
                 run_thread_end_callback();
                 release_mutexes();
                 delete_callbacks();

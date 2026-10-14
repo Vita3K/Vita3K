@@ -141,9 +141,9 @@ thread_create_edges             pass
 thread_edges                    fail     # DelayThreadCB(0)
 thread_end_waits                pass
 thread_errors                   pass
-thread_event_handler            fail     # thread event handlers run once per thread end, unknown thread and handler errors
-thread_event_handler_edges      fail     # thread event handlers run once per thread end, two handlers
-thread_event_handler_vfp        fail     # the end handler doesn't run, and handlers keep the thread's VFP state
+thread_event_handler            fail     # unknown thread and handler errors
+thread_event_handler_edges      fail     # one start and one end handler for every thread whatever was registered, and an end handler sees the exit status instead of NOT_DORMANT
+thread_event_handler_vfp        fail     # thread event handlers keep the thread's VFP state
 thread_exit_status              fail     # an end wait for an ended thread writes back part of its timeout
 thread_fpscr                    pass
 thread_id_registers             pass
