@@ -19,7 +19,7 @@ callback_priority_requeue       fail     # waits stay queued during callbacks, s
 callback_requeue_order          fail     # a wait keeps its place in the queue after a callback
 callback_stack                  fail     # callbacks don't run inside callbacks
 cancel_calls                    fail     # the waiting count a semaphore cancel writes, rwlock cancel flag checks
-cb_waits                        fail     # a free lightweight mutex runs the pending callbacks, the vector message pipe calls and sceKernelWaitMultipleEvents
+cb_waits                        fail     # the vector message pipe calls and sceKernelWaitMultipleEvents
 claim_races                     fail     # a thread whose wait ended reports RUNNING or DORMANT instead of READY until it runs
 clocks                          fail     # a NULL process time pointer
 cond                            pass

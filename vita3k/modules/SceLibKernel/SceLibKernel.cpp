@@ -1538,8 +1538,13 @@ EXPORT(int, sceKernelLockLwMutexCB, Ptr<SceKernelLwMutexWork> workarea, int lock
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
-    emuenv.kernel.get_thread(thread_id)->process_callbacks();
-    return mutex->acquire(emuenv.mem, emuenv.kernel.get_thread(thread_id), lock_count, ptimeout, true);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    // A Vita takes a lightweight mutex no other thread holds in user code, which runs no callbacks
+    const SceInt32 taken = mutex->try_acquire(emuenv.mem, thread, lock_count);
+    if (taken != SCE_KERNEL_ERROR_LW_MUTEX_FAILED_TO_OWN)
+        return taken;
+    thread->process_callbacks();
+    return mutex->acquire(emuenv.mem, thread, lock_count, ptimeout, true);
 }
 
 EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *timeout) {
