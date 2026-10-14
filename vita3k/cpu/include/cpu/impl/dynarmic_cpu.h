@@ -71,6 +71,9 @@ public:
     uint32_t get_tpidruro() override;
     void set_tpidruro(uint32_t val) override;
 
+    uint32_t get_tpidrurw() override;
+    void set_tpidrurw(uint32_t val) override;
+
     float get_float_reg(uint8_t idx) override;
     void set_float_reg(uint8_t idx, float val) override;
 

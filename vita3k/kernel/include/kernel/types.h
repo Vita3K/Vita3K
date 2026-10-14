@@ -611,7 +611,7 @@ enum SceSysmoduleInternalModuleId : uint32_t {
 
 // Indexes in thread local storage (TLS) for system data. It is used mostly by libkernel.
 enum TlsItems {
-    TLS_PROCESS_ID = 0,
+    TLS_PROCESS_ID = 0, // unused, and 0 when a thread is created, as on a Vita
     TLS_THREAD_ID = 1,
     TLS_SP_TOP = 2,
     TLS_SP_BOTTOM = 3,

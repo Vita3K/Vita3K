@@ -28,16 +28,16 @@ Callback::Callback(const ThreadStatePtr &owner, const std::string &name, Ptr<Sce
     , owner(owner) {}
 
 void Callback::notify(SceUID notifier_id, SceInt32 notify_arg) {
-    {
-        const auto guard = lock();
-        if (!guard)
-            return;
-        this->notifier_id = notifier_id;
-        this->notification_arg = notify_arg;
-        this->num_notifications++;
+    const auto guard = lock();
+    if (!guard)
+        return;
+    this->notifier_id = notifier_id;
+    this->notification_arg = notify_arg;
+    // The owner already counts a callback with notifications, and only the first one wakes it
+    if (this->num_notifications++ == 0) {
+        if (const ThreadStatePtr thread = owner.lock())
+            thread->add_notified_callback();
     }
-    if (const ThreadStatePtr thread = owner.lock())
-        thread->notify_callbacks();
 }
 
 void Callback::event_notify(SceUID notifier_id) {
@@ -84,6 +84,11 @@ std::optional<Callback::Notification> Callback::take_notification() {
 }
 
 void Callback::reset() {
+    if (this->num_notifications != 0) {
+        if (const ThreadStatePtr thread = owner.lock())
+            thread->remove_notified_callback();
+    }
     this->num_notifications = 0;
+    this->notification_arg = 0;
     this->notifier_id = SCE_UID_INVALID_UID;
 }

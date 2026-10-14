@@ -33,6 +33,7 @@
 
 class ArmDynarmicCP15 : public Dynarmic::A32::Coprocessor {
     uint32_t tpidruro;
+    uint32_t tpidrurw;
     uint32_t sctlr;
     uint32_t dacr;
 
@@ -41,6 +42,7 @@ public:
 
     explicit ArmDynarmicCP15()
         : tpidruro(0)
+        , tpidrurw(0)
         , sctlr(0)
         , dacr(0) {
     }
@@ -58,6 +60,11 @@ public:
         // MCR p15, 0, Rt, c13, c0, 3 — write TPIDRURO
         if (CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 3) {
             return &tpidruro;
+        }
+
+        // MCR p15, 0, Rt, c13, c0, 2: write TPIDRURW
+        if (!two && CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 2) {
+            return &tpidrurw;
         }
 
         // MCR p15, 0, Rt, c1, c0, 0 — write SCTLR
@@ -83,6 +90,11 @@ public:
         // MRC p15, 0, Rt, c13, c0, 3 — read TPIDRURO (thread-local storage)
         if (CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 3) {
             return &tpidruro;
+        }
+
+        // MRC p15, 0, Rt, c13, c0, 2: read TPIDRURW
+        if (!two && CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 2) {
+            return &tpidrurw;
         }
 
         // MRC p15, 0, Rt, c1, c0, 0 — read SCTLR
@@ -119,6 +131,14 @@ public:
 
     uint32_t get_tpidruro() const {
         return tpidruro;
+    }
+
+    void set_tpidrurw(uint32_t tpidrurw) {
+        this->tpidrurw = tpidrurw;
+    }
+
+    uint32_t get_tpidrurw() const {
+        return tpidrurw;
     }
 };
 
@@ -444,6 +464,14 @@ uint32_t DynarmicCPU::get_tpidruro() {
 
 void DynarmicCPU::set_tpidruro(uint32_t val) {
     cp15->set_tpidruro(val);
+}
+
+uint32_t DynarmicCPU::get_tpidrurw() {
+    return cp15->get_tpidrurw();
+}
+
+void DynarmicCPU::set_tpidrurw(uint32_t val) {
+    cp15->set_tpidrurw(val);
 }
 
 void DynarmicCPU::set_pc(uint32_t val) {

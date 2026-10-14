@@ -40,6 +40,15 @@ typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::function<void(CPUState &, uint32_t, SceUID)> CallImport;
 typedef std::function<std::string(Address)> ResolveNIDName;
 
+// The attribute of every user thread, which thread info always reports
+constexpr SceUInt32 THREAD_ATTR_USER = 0x80000000U;
+// Attributes a thread may be created with, which the Vita Development Wiki calls
+// SCE_KERNEL_THREAD_ATTR_NOUSE_VFP and SCE_KERNEL_THREAD_ATTR_VM
+constexpr SceUInt32 THREAD_ATTR_NOUSE_VFP = 0x01000000U;
+constexpr SceUInt32 THREAD_ATTR_VM = 0x04000000U;
+// Another attribute a Vita accepts for a thread, with no known name or effect
+constexpr SceUInt32 THREAD_ATTR_UNKNOWN_2000 = 0x00002000U;
+
 // Values are what sceKernelGetThreadInfo reports
 enum class ThreadStatus : SceUInt32 {
     running = SCE_KERNEL_THREAD_STATUS_RUNNING,
@@ -58,6 +67,8 @@ struct ThreadState {
     int stack_size;
     Block tls;
 
+    // What thread info reports, the creation attributes and THREAD_ATTR_USER
+    SceUInt32 attr = THREAD_ATTR_USER;
     int priority;
     SceInt32 affinity_mask;
     uint64_t start_tick;
@@ -87,7 +98,8 @@ struct ThreadState {
     void run_loop();
 
     // this function must be called from the thread itself (inside a svc call)
-    uint32_t run_callback(Address callback_address, const std::vector<uint32_t> &args);
+    // With fresh_vfp_state, the call starts with the FPSCR and VFP exception setting of a new thread
+    uint32_t run_callback(Address callback_address, const std::vector<uint32_t> &args, bool fresh_vfp_state = false);
 
     // this function is called from another thread when this one is dormant
     // it is only used for module loading and gxm display queue right now
@@ -96,8 +108,8 @@ struct ThreadState {
 
     // Blocks this thread until the deadline passes.
     [[nodiscard]] WaitResult delay_until(Deadline deadline, bool callbacks);
-    // Blocks this thread until a signal is sent to it.
-    [[nodiscard]] WaitResult wait_for_signal(bool callbacks);
+    // Blocks this thread until a signal is sent to it or the timeout passes, writing the time left back.
+    [[nodiscard]] WaitResult wait_for_signal(SceUInt32 *timeout, bool callbacks);
     // Sends a signal to this thread. Fails if the previous one was not consumed yet.
     SceInt32 send_signal();
     // Blocks waiter until this thread becomes dormant, then writes its exit status to exit_status.
@@ -112,10 +124,14 @@ struct ThreadState {
 
     // Runs the notified callbacks of this thread and returns how many ran. Called by the thread itself.
     SceUInt32 process_callbacks();
-    // Tells this thread that one of its callbacks was notified, so a wait with callbacks runs it.
-    void notify_callbacks();
     // Adds a callback this thread created. Called by the thread itself.
     void add_callback(const CallbackPtr &cb);
+    // Counts a callback of this thread that was notified and hasn't run for it yet, waking a wait
+    // with callbacks, and stops counting it. Called by the callback with its lock held.
+    void add_notified_callback();
+    void remove_notified_callback();
+    // Whether a callback of this thread was notified and hasn't run yet. Called with mutex held.
+    bool callbacks_notified() const { return notified_callbacks > 0; }
 
     void suspend();
     void resume(bool step = false);
@@ -155,8 +171,8 @@ private:
     bool signal_pending = false;
     // Set by wake() and consumed by the next wait().
     bool wake_pending = false;
-    // Set by notify_callbacks() and cleared when the callbacks run.
-    bool callbacks_pending = false;
+    // Callbacks of this thread with notifications they haven't run for.
+    SceUInt32 notified_callbacks = 0;
     // Set while the thread runs its callbacks. They don't nest.
     bool is_processing_callbacks = false;
     // Callbacks this thread created, in creation order. The kernel owns them. Only this thread touches the list.

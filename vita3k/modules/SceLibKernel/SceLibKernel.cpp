@@ -1147,9 +1147,13 @@ EXPORT(SceInt32, sceKernelCancelTimer, SceUID timerId, SceUInt32 *pNumWaitThread
     return CALL_EXPORT(_sceKernelCancelTimer, timerId, pNumWaitThreads);
 }
 
-EXPORT(int, sceKernelChangeCurrentThreadAttr) {
-    TRACY_FUNC(sceKernelChangeCurrentThreadAttr);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelChangeCurrentThreadAttr, SceUInt clear_attr, SceUInt set_attr) {
+    TRACY_FUNC(sceKernelChangeCurrentThreadAttr, clear_attr, set_attr);
+    // A Vita takes only these, and thread info doesn't show a change to either
+    constexpr SceUInt32 CHANGEABLE_ATTRS = THREAD_ATTR_NOUSE_VFP | THREAD_ATTR_USER;
+    if ((clear_attr | set_attr) & ~CHANGEABLE_ATTRS)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelCheckThreadStack) {
@@ -1910,12 +1914,12 @@ EXPORT(SceInt32, sceKernelWaitSemaCB, SceUID semaId, SceInt32 needCount, SceUInt
     return CALL_EXPORT(_sceKernelWaitSemaCB, semaId, needCount, pTimeout);
 }
 
-EXPORT(int, sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout) {
+EXPORT(int, sceKernelWaitSignal, uint32_t unknown, uint32_t delay, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelWaitSignal, unknown, delay, timeout);
     return CALL_EXPORT(_sceKernelWaitSignal, unknown, delay, timeout);
 }
 
-EXPORT(int, sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, uint32_t timeout) {
+EXPORT(int, sceKernelWaitSignalCB, uint32_t unknown, uint32_t delay, SceUInt32 *timeout) {
     TRACY_FUNC(sceKernelWaitSignalCB, unknown, delay, timeout);
     return CALL_EXPORT(_sceKernelWaitSignalCB, unknown, delay, timeout);
 }
