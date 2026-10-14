@@ -199,7 +199,8 @@ void ThreadState::run_loop() {
         status = ThreadStatus::running;
 
         lock.unlock();
-        const int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
+        // A thread event handler starts with the VFP state of a new thread, like a callback
+        const int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg }, true);
         if (ret != 0)
             LOG_WARN("Thread end event handler returned {}", log_hex(ret));
         lock.lock();
@@ -266,7 +267,8 @@ void ThreadState::run_loop() {
             run_start_callback = false;
             lock.unlock();
             if (kernel.thread_event_start) {
-                const int ret = run_callback(kernel.thread_event_start.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_start_arg });
+                // A thread event handler starts with the VFP state of a new thread, like a callback
+                const int ret = run_callback(kernel.thread_event_start.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_start_arg }, true);
                 if (ret != 0)
                     LOG_WARN("Thread start event handler returned {}", log_hex(ret));
             }
