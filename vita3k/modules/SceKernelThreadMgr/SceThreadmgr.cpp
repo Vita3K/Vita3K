@@ -536,35 +536,76 @@ EXPORT(int, _sceKernelGetSystemTime) {
     return UNIMPLEMENTED();
 }
 
+// Returns the error for a register info of the given size, or 0
+static int register_info_size_error(SceSize size, SceSize expected) {
+    if (size < expected)
+        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+    if (size > expected)
+        return SCE_KERNEL_ERROR_NO_MEMORY;
+    return 0;
+}
+
+// Finds the thread a ForVM call may act on. Returns 0 or the error.
+static int vm_target(EmuEnvState &emuenv, SceUID thread_id, SceUID target_id, ThreadStatePtr &thread) {
+    if (target_id == thread_id)
+        return SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
+    thread = emuenv.kernel.get_thread(target_id);
+    if (!thread)
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    if (!(thread->attr & THREAD_ATTR_VM))
+        return SCE_KERNEL_ERROR_ILLEGAL_PERMISSION;
+    return 0;
+}
+
 EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
     TRACY_FUNC(_sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
-    STUBBED("Stub");
-
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(threadId);
-    if (!thread)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-
-    const auto context = save_context(*thread->cpu);
     SceKernelThreadCpuRegisterInfo *infoCpu = pCpuRegisterInfo.get(emuenv.mem);
+    SceKernelThreadVfpRegisterInfo *infoVfp = pVfpRegisterInfo.get(emuenv.mem);
     if (infoCpu) {
-        if (infoCpu->size != sizeof(*infoCpu))
-            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+        if (const int error = register_info_size_error(infoCpu->size, sizeof(*infoCpu)))
+            return RET_ERROR(error);
+    }
+    if (infoVfp) {
+        if (const int error = register_info_size_error(infoVfp->size, sizeof(*infoVfp)))
+            return RET_ERROR(error);
+    }
 
-        infoCpu->cpsr = context.cpsr;
-        memcpy(infoCpu->reg, context.cpu_registers.data(), 16 * 4);
+    ThreadStatePtr thread;
+    if (const int error = vm_target(emuenv, thread_id, threadId, thread))
+        return RET_ERROR(error);
+
+    std::unique_lock<std::mutex> lock(thread->mutex);
+    if (!thread->vm_suspended())
+        return RET_ERROR(SCE_KERNEL_ERROR_NOT_SUSPENDED);
+    const auto context = save_context(*thread->cpu);
+
+    if (infoCpu) {
+        // A thread a guest can suspend runs in user mode
+        infoCpu->cpsr = (context.cpsr & ~0x1FU) | 0x10;
+        static_assert(sizeof(infoCpu->reg) == sizeof(context.cpu_registers));
+        memcpy(infoCpu->reg, context.cpu_registers.data(), sizeof(infoCpu->reg));
         infoCpu->sb = 100000; // Todo
         infoCpu->st = 100000; // Todo
         infoCpu->teehbr = 100000; // Todo
         infoCpu->tpidrurw = read_tpidrurw(*thread->cpu);
     }
 
-    SceKernelThreadVfpRegisterInfo *infoVfp = pVfpRegisterInfo.get(emuenv.mem);
     if (infoVfp) {
-        if (infoVfp->size != sizeof(*infoVfp))
-            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
-
-        infoVfp->fpscr = context.fpscr;
-        memcpy(infoVfp->reg, context.fpu_registers.data(), 64 * 4);
+        static_assert(sizeof(infoVfp->reg) == sizeof(context.fpu_registers));
+        if (thread->status == ThreadStatus::waiting) {
+            // Inside a syscall a Vita reports the FPSCR the kernel runs with, and only d8 to d15,
+            // which a call keeps. Every other d register reads this NaN.
+            constexpr uint32_t SCRUBBED[2] = { 0x7F80DEADU, 0x7FF8DEADU };
+            infoVfp->fpscr = INITIAL_FPSCR;
+            for (size_t i = 0; i < std::size(infoVfp->reg); i += 2)
+                memcpy(&infoVfp->reg[i], SCRUBBED, sizeof(SCRUBBED));
+            // d8 to d15 are s16 to s31
+            memcpy(&infoVfp->reg[16], &context.fpu_registers[16], 16 * sizeof(infoVfp->reg[0]));
+        } else {
+            // A thread stopped in its own code has its own VFP state
+            infoVfp->fpscr = context.fpscr;
+            memcpy(infoVfp->reg, context.fpu_registers.data(), sizeof(infoVfp->reg));
+        }
     }
 
     return SCE_KERNEL_OK;
@@ -1580,15 +1621,10 @@ EXPORT(int, sceKernelRegisterCallbackToEvent) {
 
 EXPORT(int, sceKernelResumeThreadForVM, SceUID threadId) {
     TRACY_FUNC(sceKernelResumeThreadForVM, threadId);
-    STUBBED("STUB");
-
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(threadId);
-    if (!thread)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-
-    thread->resume();
-
-    return 0;
+    ThreadStatePtr thread;
+    if (const int error = vm_target(emuenv, thread_id, threadId, thread))
+        return RET_ERROR(error);
+    return thread->vm_resume();
 }
 
 EXPORT(int, sceKernelSendSignal, SceUID target_thread_id) {
@@ -1683,15 +1719,10 @@ EXPORT(int, sceKernelStopTimer, SceUID timer_handle) {
 
 EXPORT(int, sceKernelSuspendThreadForVM, SceUID threadId) {
     TRACY_FUNC(sceKernelSuspendThreadForVM, threadId);
-    STUBBED("STUB");
-
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(threadId);
-    if (!thread)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-
-    thread->suspend();
-
-    return 0;
+    ThreadStatePtr thread;
+    if (const int error = vm_target(emuenv, thread_id, threadId, thread))
+        return RET_ERROR(error);
+    return thread->vm_suspend();
 }
 
 EXPORT(int, sceKernelTryLockMutex, SceUID mutexid, int lock_count) {

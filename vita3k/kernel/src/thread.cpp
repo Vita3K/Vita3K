@@ -35,8 +35,6 @@
 constexpr SceUInt32 WAITTYPE_CB_BIT = 0x80000000U;
 // What a thread waiting for a thread signal reports as its wait UID on a Vita, which isn't a UID
 constexpr SceUID SIGNAL_WAIT_ID = 0x00010221;
-// The FPSCR a thread starts with: round to nearest, flush-to-zero and default NaN
-constexpr uint32_t INITIAL_FPSCR = 0x03000000U;
 
 int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option = nullptr) {
     constexpr size_t KERNEL_TLS_SIZE = 0x800;
@@ -654,7 +652,8 @@ void ThreadState::resume_from_pause(ThreadStatus previous_status) {
     {
         const std::lock_guard<std::mutex> lock(mutex);
         pause_requested = false;
-        if (previous_status == ThreadStatus::running) {
+        // A ForVM suspend made while the thread still ran outlasts the pause
+        if (previous_status == ThreadStatus::running && !vm_suspended()) {
             suspend_requested = false;
             if (pause_suspended && status == ThreadStatus::suspended)
                 update_status(ThreadStatus::running);
@@ -663,6 +662,28 @@ void ThreadState::resume_from_pause(ThreadStatus previous_status) {
         status_cond.notify_all();
         wait_cv.notify_all();
     }
+}
+
+int ThreadState::vm_suspend() {
+    int count;
+    {
+        const std::lock_guard<std::mutex> lock(mutex);
+        count = ++vm_suspend_count;
+        suspend_requested = true;
+    }
+    stop(*cpu);
+    return count;
+}
+
+int ThreadState::vm_resume() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    if (vm_suspend_count == 0 || --vm_suspend_count > 0)
+        return vm_suspend_count;
+    // A thread that didn't reach guest code since the suspend, like one still waiting, never stopped
+    suspend_requested = false;
+    if (status == ThreadStatus::suspended)
+        update_status(ThreadStatus::running);
+    return 0;
 }
 
 std::string ThreadState::log_stack_traceback() const {

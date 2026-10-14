@@ -131,9 +131,9 @@ syscall_registers               fail     # r1 to r3 and r12 after a syscall
 sysmodule                       fail     # system modules don't load without firmware
 thread                          pass
 thread_change_attr              pass
-thread_context_for_vm           fail     # the ForVM calls need neither the VM attribute nor a suspended target
+thread_context_for_vm           pass
 thread_context_set_for_vm       fail     # sceKernelSetThreadContextForVM checks, its writes don't reach the thread
-thread_context_vfp              fail     # the ForVM suspend count, the VFP state the ForVM context shows for a waiting thread
+thread_context_vfp              pass
 thread_cpu_fields               fail     # the CPU fields of thread info, threads ignore their core
 thread_create_attr              pass
 thread_create_current_priority  pass
@@ -168,7 +168,7 @@ thread_stack_free_scan          fail     # the stack free size is the room below
 thread_stack_negative           pass
 thread_stack_zero               pass
 thread_state                    pass
-thread_status_matrix            timeout  # the ForVM calls use the debugger's suspend, which leaves Vita3K hung after the app exits
+thread_status_matrix            fail     # READY, the current CPU of a thread that isn't running
 thread_vfp_exception            pass
 timeouts                        pass
 timer                           pass
