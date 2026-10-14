@@ -136,7 +136,9 @@ struct ThreadState {
     bool callbacks_notified() const { return notified_callbacks > 0; }
 
     void suspend();
-    void resume(bool step = false);
+    // Resumes a thread the debugger suspended. Returns whether it runs again, which it doesn't while
+    // a ForVM suspend holds it.
+    bool resume(bool step = false);
     // Pause/resume the emulator without changing a thread's wait state.
     ThreadStatus pause();
     void resume_from_pause(ThreadStatus previous_status);
@@ -168,6 +170,8 @@ private:
     bool delete_requested = false;
     // Set by suspend(), consumed in run_loop() to transition to ThreadStatus::suspended.
     bool suspend_requested = false;
+    // Set while suspend(), a step or a breakpoint holds the thread suspended, until resume().
+    bool debugger_suspended = false;
     // Emulator pause is separate from a guest wait or debugger suspension.
     bool pause_requested = false;
     bool pause_suspended = false;
