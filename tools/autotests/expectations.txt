@@ -103,6 +103,7 @@ nonblocking_wait_preempt        fail     # threads ignore their core and priorit
 object_limits                   fail     # no limit on the number of objects
 open                            fail     # opening an object that isn't openable
 owner_end                       fail     # a write lock stays locked when its owner ends
+owner_end_more                  fail     # a write lock stays locked when its owner ends
 poll_calls                      fail     # a poll takes a count a queued waiter waits for, the bits failed polls write
 preempt_latency                 fail     # threads ignore their core and priority
 preempt_status                  fail     # threads ignore their core and priority
@@ -159,6 +160,7 @@ thread_cpu_fields               fail     # the CPU fields of thread info, thread
 thread_create_attr              pass
 thread_create_current_priority  pass
 thread_create_edges             pass
+thread_delete_lookup            fail     # a deleted thread can still be found, dormant, until its host thread ends
 thread_edges                    pass
 thread_end_waits                pass
 thread_errors                   pass
