@@ -701,6 +701,19 @@ SceInt32 RWLock::release(const ThreadStatePtr &thread, bool is_write) {
     if (!owners.empty())
         return SCE_KERNEL_OK;
 
+    hand_over();
+    return SCE_KERNEL_OK;
+}
+
+void RWLock::release_ended_writer(const ThreadState &thread) {
+    // A write lock has a single owner, whatever its count
+    if (state != RWLockState::WriteLocked || owners.empty() || owners.begin()->first.get() != &thread)
+        return;
+    owners.clear();
+    hand_over();
+}
+
+void RWLock::hand_over() {
     state = RWLockState::Unlocked;
 
     // The first waiting writer goes first, even before readers that waited longer. Without one,
@@ -715,8 +728,6 @@ SceInt32 RWLock::release(const ThreadStatePtr &thread, bool is_write) {
                })) {
         state = RWLockState::ReadLocked;
     }
-
-    return SCE_KERNEL_OK;
 }
 
 SceInt32 RWLock::cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag) {

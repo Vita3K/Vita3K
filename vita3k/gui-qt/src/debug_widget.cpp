@@ -218,6 +218,8 @@ static QString thread_status_string(ThreadStatus status) {
         return QStringLiteral("Waiting");
     case ThreadStatus::dormant:
         return QStringLiteral("Dormant");
+    case ThreadStatus::deleted:
+        return QStringLiteral("Deleted");
     case ThreadStatus::suspended:
         return QStringLiteral("Suspended");
     default:

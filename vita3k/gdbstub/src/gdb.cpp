@@ -499,7 +499,8 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                         auto thread = pair.second;
                         if (thread->status == ThreadStatus::running) {
                             thread->suspend();
-                            thread->status_cond.wait(lock, [=]() { return thread->status == ThreadStatus::suspended || thread->status == ThreadStatus::dormant; });
+                            // A thread that ends meanwhile stops as dormant, or as deleted if it deletes itself
+                            thread->status_cond.wait(lock, [=]() { return thread->status == ThreadStatus::suspended || thread->status == ThreadStatus::dormant || thread->status == ThreadStatus::deleted; });
                         }
                     }
                 }

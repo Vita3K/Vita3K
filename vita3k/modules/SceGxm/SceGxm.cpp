@@ -4915,7 +4915,8 @@ EXPORT(int, sceGxmTerminate) {
     // a later sceGxmInitialize reassigns this std::thread, which terminates if still joinable
     if (emuenv.gxm.display_host_thread.joinable())
         emuenv.gxm.display_host_thread.join();
-    emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread)->exit_delete();
+    // The display queue thread is dormant once the host thread that ran it was joined
+    emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread)->remove();
     return 0;
 }
 
