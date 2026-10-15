@@ -390,7 +390,15 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     // Use precise callback accesses only for processes that request this facility.
     config.check_halt_on_memory_access = checked_memory;
     if (checked_memory) {
-        // Neither native fastmem nor the GPU page table can represent these permissions.
+        // Neither native fastmem nor the GPU page table can represent these permissions. The guest
+        // page table only maps readable and writable pages: every other access takes the callbacks.
+        if (!log_mem && cpu_opt && parent->mem->guest_page_table) {
+            config.page_table = reinterpret_cast<decltype(config.page_table)>(parent->mem->guest_page_table.get());
+            config.absolute_offset_page_table = true;
+            // An access crossing into a page with another mapping must not use the first page's base.
+            config.detect_misaligned_access_via_page_table = 16 | 32 | 64 | 128;
+            config.only_detect_misalignment_via_page_table_on_page_boundary = true;
+        }
     } else if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
         config.absolute_offset_page_table = true;
