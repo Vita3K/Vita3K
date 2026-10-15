@@ -148,7 +148,7 @@ standby_merge                   fail     # threads ignore their core and priorit
 standby_merge_irq               fail     # threads ignore their core and priority
 stat_mode                       fail     # file and directory stat modes, attributes and directory sizes
 strings                         fail     # sceClibMemchr, case of bytes above 0x7F
-suspend_for_vm_edges            fail     # a ForVM suspend of a dormant thread works, a resume with no suspend returns 0
+suspend_for_vm_edges            pass
 suspend_ready_order             fail     # threads ignore their core and priority
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
 sysmodule                       fail     # system modules don't load without firmware

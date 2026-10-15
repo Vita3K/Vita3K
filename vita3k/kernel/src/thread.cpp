@@ -329,6 +329,9 @@ void ThreadState::run_loop(bool top_level) {
     }
 }
 
+// What a ForVM resume returns for a thread no ForVM suspend holds, an error with no public name
+constexpr int VM_NOT_SUSPENDED = static_cast<int>(0x80028033);
+
 void ThreadState::push_arguments(const std::vector<uint32_t> &args) {
     Address sp = read_sp(*cpu);
     for (size_t i = 0; i < std::min(args.size(), static_cast<size_t>(4)); i++) {
@@ -682,6 +685,8 @@ void ThreadState::resume_from_pause(ThreadStatus previous_status) {
 
 int ThreadState::vm_suspend() {
     std::unique_lock<std::mutex> lock(mutex);
+    if (status == ThreadStatus::dormant)
+        return SCE_KERNEL_ERROR_DORMANT;
     const int count = ++vm_suspend_count;
     if (status == ThreadStatus::running) {
         stop(*cpu);
@@ -697,7 +702,9 @@ void ThreadState::wait_for_vm_stop(std::unique_lock<std::mutex> &lock) {
 
 int ThreadState::vm_resume() {
     const std::lock_guard<std::mutex> lock(mutex);
-    if (vm_suspend_count == 0 || --vm_suspend_count > 0)
+    if (vm_suspend_count == 0)
+        return VM_NOT_SUSPENDED;
+    if (--vm_suspend_count > 0)
         return vm_suspend_count;
     // A thread held in its wait call marks itself running once it leaves, and a suspend of the
     // debugger's outlasts this one

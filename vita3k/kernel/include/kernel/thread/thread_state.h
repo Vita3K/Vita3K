@@ -153,7 +153,8 @@ struct ThreadState {
     ThreadStatus pause();
     void resume_from_pause(ThreadStatus previous_status);
     // Suspends the thread for sceKernelSuspendThreadForVM: it doesn't run guest code until as many
-    // vm_resume calls. vm_suspend returns once it has stopped. Each returns the suspend count after it.
+    // vm_resume calls. vm_suspend returns once it has stopped. Each returns the suspend count after
+    // it, or an error for a dormant thread or a resume with no suspend.
     int vm_suspend();
     int vm_resume();
     // Whether vm_suspend holds the thread. Called with mutex held.

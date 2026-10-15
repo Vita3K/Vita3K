@@ -1631,7 +1631,8 @@ EXPORT(int, sceKernelResumeThreadForVM, SceUID threadId) {
     ThreadStatePtr thread;
     if (const int error = vm_target(emuenv, thread_id, threadId, thread))
         return RET_ERROR(error);
-    return thread->vm_resume();
+    const int count = thread->vm_resume();
+    return count < 0 ? RET_ERROR(count) : count;
 }
 
 EXPORT(int, sceKernelSendSignal, SceUID target_thread_id) {
@@ -1729,7 +1730,8 @@ EXPORT(int, sceKernelSuspendThreadForVM, SceUID threadId) {
     ThreadStatePtr thread;
     if (const int error = vm_target(emuenv, thread_id, threadId, thread))
         return RET_ERROR(error);
-    return thread->vm_suspend();
+    const int count = thread->vm_suspend();
+    return count < 0 ? RET_ERROR(count) : count;
 }
 
 EXPORT(int, sceKernelTryLockMutex, SceUID mutexid, int lock_count) {
