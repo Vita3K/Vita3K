@@ -203,6 +203,5 @@ struct KernelState {
 
 private:
     std::atomic<SceUID> next_uid{ 1 };
-    std::map<SceUID, ThreadStatus> paused_threads_status;
     bool threads_paused = false;
 };
