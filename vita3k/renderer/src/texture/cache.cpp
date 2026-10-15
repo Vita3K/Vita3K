@@ -325,8 +325,8 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
     const SceGxmTextureFormat fmt = gxm::get_format(gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
 
-    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422) {
-        LOG_ERROR_ONCE("Unimplemented YUV format 0x{:0X}, please report it to the developers.", fmt::underlying(base_format));
+    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422 && gxm_texture.texture_type() != SCE_GXM_TEXTURE_LINEAR && gxm_texture.texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        LOG_ERROR_ONCE("Unimplemented non-linear YUV422 texture (type 0x{:0X}), please report it to the developers.", fmt::underlying(gxm_texture.texture_type()));
         return;
     }
 
@@ -532,6 +532,14 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
                 static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, layout_width, layout_height,
                 base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3);
             pixels = texture_data_decompressed.data();
+            bpp = 32;
+            upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
+            break;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
+            texture_data_decompressed.resize(pixels_per_stride * memory_height * 4);
+            yuv422_texture_to_rgba(texture_data_decompressed.data(), static_cast<const uint8_t *>(pixels), pixels_per_stride, memory_height, fmt);
+            pixels = texture_data_decompressed.data();
+            bytes_per_pixel = 4;
             bpp = 32;
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
             break;
