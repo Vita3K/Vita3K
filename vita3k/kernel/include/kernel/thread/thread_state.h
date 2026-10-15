@@ -73,7 +73,6 @@ struct ThreadState {
     SceUInt32 attr = THREAD_ATTR_USER;
     int priority;
     SceInt32 affinity_mask;
-    uint64_t start_tick;
     uint64_t last_vblank_waited;
 
     CPUStatePtr cpu;
