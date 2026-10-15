@@ -266,7 +266,12 @@ void SaveDataManagerDialog::reload() {
         const bool exportable = savedata::can_export(path);
         QString details = QStringLiteral("<b>%1</b><br>").arg(escape(app_title));
         details += tr("Save ID: %1").arg(QString::fromStdString(save_id)) + QStringLiteral("<br>");
-        details += tr("PS Vita export: %1").arg(encrypted ? tr("still encrypted, import it first") : exportable ? tr("available") : tr("unavailable, not created on a PS Vita")) + QStringLiteral("<br>");
+        QString export_state = tr("unavailable, not created on a PS Vita");
+        if (encrypted)
+            export_state = tr("still encrypted, import it first");
+        else if (exportable)
+            export_state = tr("available");
+        details += tr("PS Vita export: %1").arg(export_state) + QStringLiteral("<br>");
         for (const auto &entry : slot_list) {
             details += QStringLiteral("<br><b>") + tr("Slot %1").arg(entry.id) + QStringLiteral("</b> ") + format_date_time(entry.modified).toHtmlEscaped();
             details += QStringLiteral("<br>") + escape(entry.title);
