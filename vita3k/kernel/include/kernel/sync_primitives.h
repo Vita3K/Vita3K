@@ -213,6 +213,9 @@ public:
     SceInt32 release_read(const ThreadStatePtr &thread);
     SceInt32 release_write(const ThreadStatePtr &thread);
     SceInt32 cancel(const ThreadStatePtr &thread, SceUInt32 *num_read_wait_threads, SceUInt32 *num_write_wait_threads, SceInt32 flag);
+    // Releases the write lock if thread, which is ending, holds it. A read lock stays held, like on
+    // a Vita. The lock must be held.
+    void release_ended_writer(const ThreadState &thread);
 
     struct WaitEntry {
         bool is_write;
@@ -230,6 +233,9 @@ private:
     SceInt32 release(const ThreadStatePtr &thread, bool is_write);
     // Takes the lock if it is free for this kind of lock, or returns why it can't. The lock must be held.
     SceInt32 try_take(const ThreadStatePtr &thread, bool is_write);
+    // Unlocks the lock nobody holds anymore, and gives it to the waiters that get it next. The lock
+    // must be held.
+    void hand_over();
 };
 
 typedef std::shared_ptr<RWLock> RWLockPtr;

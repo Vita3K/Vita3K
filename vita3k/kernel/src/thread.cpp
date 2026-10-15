@@ -210,13 +210,14 @@ void ThreadState::run_loop(bool top_level) {
         request_ending(old_ending);
     };
 
-    // A mutex the thread still holds when it ends goes to its next waiter
-    auto release_mutexes = [&]() {
+    // A mutex or a write lock the thread still holds when it ends goes to its next waiter
+    auto release_locks = [&]() {
         lock.unlock();
         kernel.objects.for_each<HeavyMutex>([&](Mutex &mutex) {
             if (mutex.owner.get() == this)
                 mutex.release_ended_owner();
         });
+        kernel.objects.for_each<RWLock>([&](RWLock &rwlock) { rwlock.release_ended_writer(*this); });
         lock.lock();
     };
 
@@ -244,7 +245,7 @@ void ThreadState::run_loop(bool top_level) {
             if (status != ThreadStatus::dormant) {
                 if (ending != Ending::remove)
                     run_thread_end_callback();
-                release_mutexes();
+                release_locks();
                 delete_callbacks();
                 update_status(ThreadStatus::dormant);
             }

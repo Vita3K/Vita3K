@@ -102,8 +102,8 @@ name_lookup                     fail     # opening gives the object's own UID, o
 nonblocking_wait_preempt        fail     # threads ignore their core and priority
 object_limits                   fail     # no limit on the number of objects
 open                            fail     # opening an object that isn't openable
-owner_end                       fail     # a write lock stays locked when its owner ends
-owner_end_more                  fail     # a write lock stays locked when its owner ends
+owner_end                       pass
+owner_end_more                  pass
 poll_calls                      fail     # a poll takes a count a queued waiter waits for, the bits failed polls write
 preempt_latency                 fail     # threads ignore their core and priority
 preempt_status                  fail     # threads ignore their core and priority
