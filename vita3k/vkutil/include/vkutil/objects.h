@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include <vkutil/vkutil.h>
 
 #include <bit>
@@ -91,33 +93,72 @@ struct Buffer {
 
 // structure that holds contiguous data
 // if the end is reached, it starts back at the beginning
+// Ring heap in the style of RPCS3's data_heap: [tail, head) (monotonic byte counters) may still be read
+// by submitted or not yet submitted GPU work. The owner records head with every submission and moves
+// tail forward once that submission's fence has signaled; when an allocation does not fit, allocate()
+// calls make_room() (wait for the oldest pending submission) until it does.
 class RingBuffer {
 protected:
     vkutil::Buffer buffer;
     vk::BufferUsageFlags usage;
 
-    uint32_t cursor = ~0;
+    uint64_t head = 0;
+    uint64_t tail = 0;
+    // head when the current buffer was created (offsets are relative to it, see grow)
+    uint64_t base = 0;
     uint32_t capacity;
+    // buffers replaced by grow(), kept until the work recorded before the replacement has completed
+    std::vector<std::pair<vkutil::Buffer, uint64_t>> retired;
+
+    // Replace the buffer with a larger empty one (data in flight stays in the retired buffer).
+    virtual bool grow(const uint32_t needed) {
+        return false;
+    }
 
 public:
     // any buffer alignment on vulkan is at most 256 on 99% of instances
     uint32_t alignment = 256;
     uint32_t data_offset = 0;
+    const char *name = "ring";
+    // Waits for the oldest pending submission and releases its data; false when nothing is pending.
+    std::function<bool()> make_room;
+    // When the work not yet submitted alone fills the ring, grow up to this size instead of overwriting
+    // (only for rings bound per draw: descriptor sets keep referencing the buffer of the others).
+    uint32_t max_capacity = 0;
+
+    // biggest request the ring can ever hold, after growing
+    uint32_t max_request() const {
+        return std::max(capacity, max_capacity);
+    }
+
+    uint64_t get_head() const {
+        return head;
+    }
+    // everything allocated before position has been consumed by the GPU
+    void release_until(const uint64_t position) {
+        tail = std::max(tail, position);
+        std::erase_if(retired, [position](const auto &entry) { return position >= entry.second; });
+    }
 
     explicit RingBuffer(vk::BufferUsageFlags usage, const size_t capacity);
     virtual ~RingBuffer() = default;
     virtual void create() = 0;
 
     // Allocate new data from ring buffer
-    void allocate(const uint32_t data_size);
+    // When the work not yet submitted alone fills the ring and it cannot grow, nothing can be waited for:
+    // the allocation then fails if overwrite_when_full is false, and overwrites the oldest data otherwise.
+    bool allocate(uint32_t data_size, bool overwrite_when_full = true);
     // copy the content to the framebuffer
     // cmd_buffer may not be used
     virtual void copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset = 0) = 0;
 
     // allocate then copy
-    void allocate(vk::CommandBuffer cmd_buffer, const uint32_t data_size, const void *data) {
-        allocate(data_size);
-        copy(cmd_buffer, data_size, data);
+    bool allocate(vk::CommandBuffer cmd_buffer, const uint32_t data_size, const void *data, bool overwrite_when_full = true) {
+        if (!allocate(data_size, overwrite_when_full))
+            return false;
+        // allocate() cuts what the ring cannot hold
+        copy(cmd_buffer, std::min(data_size, capacity), data);
+        return true;
     }
 
     vk::Buffer handle() const {
@@ -150,6 +191,7 @@ public:
         : RingBuffer(usage, capacity) {
     }
     void create() override;
+    bool grow(const uint32_t needed) override;
 
     void copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset = 0) override;
 };

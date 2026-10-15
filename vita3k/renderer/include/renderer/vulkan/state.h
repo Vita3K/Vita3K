@@ -51,6 +51,9 @@ struct Viewport {
 struct VKState : public renderer::State {
     MemState *mem;
 
+    // every live context, they all use the fences of the frames
+    std::vector<VKContext *> contexts;
+
     // 0 = automatic, > 0 = order in instance.enumeratePhysicalDevices
     int gpu_idx;
 
