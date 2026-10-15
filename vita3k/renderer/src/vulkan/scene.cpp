@@ -255,7 +255,11 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
 }
 
 // vertex count is only used with double buffer mapping
-static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t instance_count, uint32_t max_index) {
+// base_index: smallest index of the draw when its indices were rebased on it (copy path only): per-vertex
+// streams then start at that vertex instead of vertex 0.
+// Returns false when a stream is too big for its ring: the draw must be skipped, as a cut stream
+// would make the vertex fetch read past the buffer.
+static bool bind_vertex_streams(VKContext &context, MemState &mem, uint32_t instance_count, uint32_t max_index, uint32_t base_index = 0) {
     GxmRecordState &state = context.record;
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     VertexProgram *vkvert = vertex_program.renderer_data.get();
@@ -292,8 +296,11 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
     }
 
     if (max_stream_idx == 0)
-        return;
+        return true;
 
+    // bit i is set when stream i was copied into the ring
+    uint32_t uploaded = 0;
+    bool fits = true;
     for (int i = 0; i < max_stream_idx; i++) {
         if (state.vertex_streams[i].data) {
             if (context.state.features.enable_memory_mapping) {
@@ -304,6 +311,11 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
             } else {
                 const uint8_t *stream = state.vertex_streams[i].data.get(mem);
                 uint32_t stream_size = state.vertex_streams[i].size;
+                if (base_index != 0 && !gxm::is_stream_instancing(static_cast<SceGxmIndexSource>(vertex_program.streams[i].indexSource))) {
+                    const uint32_t skip = static_cast<uint32_t>(std::min<uint64_t>(static_cast<uint64_t>(base_index) * vertex_program.streams[i].stride, stream_size));
+                    stream += skip;
+                    stream_size -= skip;
+                }
 #ifdef __APPLE__
                 // Vulkan allows any stride, but Metal only allows multiples of 4.
                 const bool restride = vertex_program.streams[i].stride % 4 != 0;
@@ -311,7 +323,19 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
                     restride_stream(stream, stream_size, vertex_program.streams[i].stride);
                 }
 #endif
-                context.vertex_stream_ring_buffer.allocate(context.prerender_cmd, stream_size, stream);
+                if (stream_size > context.vertex_stream_ring_buffer.max_request()) {
+                    LOG_ERROR("Vertex stream {} of {} bytes does not fit in the vertex ring, skipping the draw", i, stream_size);
+                    fits = false;
+                } else {
+                    if (context.vertex_stream_ring_buffer.allocate(context.prerender_cmd, stream_size, stream, false)) {
+                        uploaded |= 1u << i;
+                    } else {
+                        LOG_ERROR("The vertex ring is full of work not submitted yet, skipping the draw");
+                        fits = false;
+                    }
+                }
+                // the ring may have been replaced by a larger buffer (RingBuffer::grow)
+                context.vertex_stream_buffers[i] = context.vertex_stream_ring_buffer.handle();
                 context.vertex_stream_offsets[i] = context.vertex_stream_ring_buffer.data_offset;
 
 #ifdef __APPLE__
@@ -326,7 +350,22 @@ static void bind_vertex_streams(VKContext &context, MemState &mem, uint32_t inst
         }
     }
 
+    if (!fits)
+        return false;
+
+    if (!context.state.features.enable_memory_mapping) {
+        for (int i = 0; i < max_stream_idx; i++) {
+            if (!(uploaded & (1u << i))) {
+                // a stream no attribute reads still needs a valid buffer: the one it was bound to may be a
+                // ring replaced by a larger one (RingBuffer::grow) and already destroyed. This is done once
+                // every stream is uploaded, as an upload may replace the ring.
+                context.vertex_stream_buffers[i] = context.vertex_stream_ring_buffer.handle();
+            }
+        }
+    }
+
     context.render_cmd.bindVertexBuffers(0, max_stream_idx, context.vertex_stream_buffers, context.vertex_stream_offsets);
+    return true;
 }
 
 struct OrderedMaskIndices {
@@ -557,7 +596,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     vert_ublock.screen_width = context.render_target->width / context.state.res_multiplier;
     vert_ublock.screen_height = context.render_target->height / context.state.res_multiplier;
 
-    if (context.curr_vert_ublock.changed || memcmp(&context.prev_vert_ublock, &vert_ublock, sizeof(vert_ublock)) != 0) {
+    if (context.info_blocks_stale || context.curr_vert_ublock.changed || memcmp(&context.prev_vert_ublock, &vert_ublock, sizeof(vert_ublock)) != 0) {
         // TODO: this intermediate step can be avoided
         context.curr_vert_ublock.copy_to(context.shader_info_temp);
         context.vertex_info_uniform_buffer.allocate(context.prerender_cmd, context.curr_vert_ublock.get_size(), context.shader_info_temp);
@@ -575,12 +614,14 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     else if (!has_msaa && has_downscale)
         frag_ublock.res_multiplier /= 2;
 
-    if (context.curr_frag_ublock.changed || memcmp(&context.prev_frag_ublock, &frag_ublock, sizeof(frag_ublock)) != 0) {
+    if (context.info_blocks_stale || context.curr_frag_ublock.changed || memcmp(&context.prev_frag_ublock, &frag_ublock, sizeof(frag_ublock)) != 0) {
         // TODO: this intermediate step can be avoided
         context.curr_frag_ublock.copy_to(context.shader_info_temp);
         context.fragment_info_uniform_buffer.allocate(context.prerender_cmd, context.curr_frag_ublock.get_size(), context.shader_info_temp);
         memcpy(&context.prev_frag_ublock, &frag_ublock, sizeof(frag_ublock));
     }
+
+    context.info_blocks_stale = false;
 
     // create, update and bind descriptors (uniforms and textures)
     draw_bind_descriptors(context, mem);
@@ -590,6 +631,10 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     const size_t index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
 
     uint32_t max_index = 0;
+    // first vertex copied by the copy path, the indices are rebased on it
+    uint32_t min_index = 0;
+    // false when the indices or a vertex stream are too big for their ring, the draw is then skipped
+    bool draw_fits = true;
     if (use_memory_mapping) {
 #ifdef __APPLE__
         // macOS does not yet have memory mapping but it will soon
@@ -630,15 +675,62 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
             }
         }
 #endif
-        if (count) {
+        if (count && index_size * count > context.index_stream_ring_buffer.max_request()) {
+            LOG_ERROR("{} indices do not fit in the index ring, skipping the draw", count);
+            draw_fits = false;
+        }
+        if (count && draw_fits) {
             const size_t index_buffer_size = index_size * count;
-            context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
-            context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
+            // Copy only the vertex range the draw uses: rebase the indices on the smallest one, so the vertex
+            // streams are copied from that vertex instead of vertex 0. A draw using a few vertices at the end of a
+            // large buffer otherwise copies the whole buffer, and the ring wraps over data not yet consumed.
+            // The shader reads the original index when it uses the INDEX semantic, so the indices are left as they are then.
+            const bool index_used = context.record.vertex_program.get(mem)->program.get(mem)->program_flags & SCE_GXM_PROGRAM_FLAG_INDEX_USED;
+            if (instance_count == 1 && !index_used) {
+                min_index = UINT32_MAX;
+                if (format == SCE_GXM_INDEX_FORMAT_U16) {
+                    const uint16_t *data = static_cast<const uint16_t *>(indices_ptr);
+                    for (size_t i = 0; i < count; i++)
+                        min_index = std::min<uint32_t>(min_index, data[i]);
+                } else {
+                    const uint32_t *data = static_cast<const uint32_t *>(indices_ptr);
+                    for (size_t i = 0; i < count; i++)
+                        min_index = std::min<uint32_t>(min_index, data[i]);
+                }
+            }
+            bool index_allocated;
+            if (min_index == 0) {
+                index_allocated = context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr, false);
+            } else {
+                context.rebased_indices.resize(index_buffer_size);
+                if (format == SCE_GXM_INDEX_FORMAT_U16) {
+                    const uint16_t *data = static_cast<const uint16_t *>(indices_ptr);
+                    uint16_t *out = reinterpret_cast<uint16_t *>(context.rebased_indices.data());
+                    for (size_t i = 0; i < count; i++)
+                        out[i] = static_cast<uint16_t>(data[i] - min_index);
+                } else {
+                    const uint32_t *data = static_cast<const uint32_t *>(indices_ptr);
+                    uint32_t *out = reinterpret_cast<uint32_t *>(context.rebased_indices.data());
+                    for (size_t i = 0; i < count; i++)
+                        out[i] = data[i] - min_index;
+                }
+                index_allocated = context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, context.rebased_indices.data(), false);
+            }
+            if (index_allocated) {
+                context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
+            } else {
+                LOG_ERROR("The index ring is full of work not submitted yet, skipping the draw");
+                draw_fits = false;
+            }
         }
     }
 
     // bind the vertex streams
-    bind_vertex_streams(context, mem, instance_count, max_index);
+    if (!draw_fits || !bind_vertex_streams(context, mem, instance_count, max_index, min_index)) {
+        context.vertex_uniform_storage_allocated = false;
+        context.fragment_uniform_storage_allocated = false;
+        return;
+    }
 
     if (ordered_fetch) {
         if (ordered_indices) {

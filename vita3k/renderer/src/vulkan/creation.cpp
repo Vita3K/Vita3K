@@ -53,6 +53,18 @@ VKContext::VKContext(VKState &state, MemState &mem)
     vertex_info_uniform_buffer.alignment = uniform_alignment;
     fragment_info_uniform_buffer.alignment = uniform_alignment;
 
+    vertex_stream_ring_buffer.name = "vertex streams";
+    index_stream_ring_buffer.name = "indices";
+    vertex_uniform_stream_ring_buffer.name = "vertex uniforms";
+    fragment_uniform_stream_ring_buffer.name = "fragment uniforms";
+    vertex_info_uniform_buffer.name = "vertex info";
+    fragment_info_uniform_buffer.name = "fragment info";
+    for (vkutil::RingBuffer *ring : rings())
+        ring->make_room = [this]() { return wait_oldest_submission(); };
+    // bound per draw, so they can grow when a single scene does not fit
+    vertex_stream_ring_buffer.max_capacity = MiB(256);
+    index_stream_ring_buffer.max_capacity = MiB(256);
+
     if (state.features.enable_memory_mapping) {
         // use the default buffer
         std::fill_n(vertex_stream_buffers, SCE_GXM_MAX_VERTEX_STREAMS, state.default_buffer.buffer);
@@ -151,6 +163,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
 }
 
 VKContext::~VKContext() {
+    std::erase(state.contexts, this);
     for (auto pool : visibility_query_pools)
         state.device.destroy(pool);
     visibility_buffers.clear();
@@ -240,6 +253,8 @@ VKRenderTarget::~VKRenderTarget() {
 
 bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem) {
     context = std::make_unique<VKContext>(state, mem);
+    // only a fully constructed context is registered, the destructor unregisters it
+    state.contexts.push_back(static_cast<VKContext *>(context.get()));
     return true;
 }
 
