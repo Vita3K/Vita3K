@@ -1,6 +1,7 @@
 # Expected outcome of each VitaAutotests test on Vita3K, with what each one that doesn't pass
-# catches: pass, fail (exits normally with other output), crash (Vita3K exits with an error) or
-# timeout. Every test must be listed, and one that doesn't do what its line says fails the run.
+# catches: pass, fail (exits normally with other output), crash (Vita3K exits with an error),
+# timeout, or skip (not run, for a test whose outcome depends on how busy the host is). Every test
+# must be listed, and one that doesn't do what its line says fails the run.
 address_ranges                  pass
 audioout                        crash    # audio port size, rate and format checks, a NULL volume pointer
 callback                        pass
