@@ -216,6 +216,81 @@ std::vector<std::pair<Address, uint32_t>> guest_alias_ranges(const MemState &mem
     }
     return ranges;
 }
+uint8_t *contiguous_guest_pointer(const MemState &mem, Address addr, uint32_t size) {
+    if (!mem.guest_mappings_active.load(std::memory_order_acquire))
+        return native_pointer(mem, addr);
+    const uint64_t end = uint64_t(addr) + std::max<uint32_t>(size, 1);
+    std::lock_guard lock(mem.guest_mapping_mutex);
+    if (mem.guest_page_table) {
+        // Absolute-offset entries: one shared entry means one contiguous host block.
+        const PagePtr first = mem.guest_page_table[addr / page_size];
+        if (!first)
+            return nullptr;
+        for (uint64_t p = (addr & ~4095u) + page_size; p < end; p += page_size)
+            if (mem.guest_page_table[p / page_size] != first)
+                return nullptr;
+        return first + addr;
+    }
+    // No table: contiguous only if no page of the range is mapped.
+    const auto it = mem.guest_mappings.lower_bound(addr & ~4095u);
+    if (it != mem.guest_mappings.end() && it->first < end)
+        return nullptr;
+    return native_pointer(mem, addr);
+}
+// Page-by-page access through the mappings that ignores guest permissions, as HLE library functions
+// always have: a guest memcpy onto a page the app write-protected must still land (the app would have
+// handled the abort and retried). Only unmapped/decommitted pages fail.
+static bool access_unchecked(MemState &mem, Address addr, uint8_t *data, uint32_t size, bool write, Address &fault) {
+    std::lock_guard lock(mem.guest_mapping_mutex);
+    while (size) {
+        if (!is_valid_addr(mem, addr)) {
+            fault = addr;
+            return false;
+        }
+        const auto it = mem.guest_mappings.find(addr & ~4095u);
+        uint8_t *ptr;
+        if (it == mem.guest_mappings.end())
+            ptr = native_pointer(mem, addr);
+        else if (it->second.backing)
+            ptr = backing_pointer(mem, *it->second.backing) + (addr & 4095u);
+        else {
+            fault = addr;
+            return false;
+        }
+        const uint32_t count = std::min(size, page_size - (addr & 4095u));
+        if (write)
+            std::memcpy(ptr, data, count);
+        else
+            std::memcpy(data, ptr, count);
+        addr += count;
+        data += count;
+        size -= count;
+    }
+    return true;
+}
+bool copy_guest_memory(MemState &mem, Address dst, Address src, uint32_t size, Address &fault) {
+    if (!size)
+        return true;
+    uint8_t *d = contiguous_guest_pointer(mem, dst, size);
+    const uint8_t *s = contiguous_guest_pointer(mem, src, size);
+    if (d && s) {
+        std::memmove(d, s, size);
+        return true;
+    }
+    // Through a temporary: also gives memmove semantics when the two views alias the same pages.
+    std::vector<uint8_t> tmp(size);
+    return access_unchecked(mem, src, tmp.data(), size, false, fault) && access_unchecked(mem, dst, tmp.data(), size, true, fault);
+}
+bool fill_guest_memory(MemState &mem, Address dst, uint8_t value, uint32_t size, Address &fault) {
+    if (!size)
+        return true;
+    if (uint8_t *d = contiguous_guest_pointer(mem, dst, size)) {
+        std::memset(d, value, size);
+        return true;
+    }
+    std::vector<uint8_t> tmp(size, value);
+    return access_unchecked(mem, dst, tmp.data(), size, true, fault);
+}
 bool check_guest_memory_access(MemState &mem, Address addr, uint32_t size, bool write, Address &fault) {
     std::lock_guard lock(mem.guest_mapping_mutex);
     return check_access_locked(mem, addr, size, write, fault);
