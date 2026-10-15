@@ -149,16 +149,19 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
 
 void ThreadState::exit(SceInt32 status) {
     std::lock_guard<std::mutex> guard(mutex);
-    run_end_callback = true;
-    exit_requested = true;
+    request_ending(Ending::exit);
     returned_value = static_cast<uint32_t>(status);
 }
 
-void ThreadState::exit_delete(bool exit) {
+void ThreadState::exit_delete(SceInt32 status) {
     std::lock_guard<std::mutex> lock(mutex);
+    request_ending(Ending::exit_delete);
+    returned_value = static_cast<uint32_t>(status);
+}
 
-    run_end_callback = exit;
-    delete_requested = true;
+void ThreadState::remove() {
+    std::lock_guard<std::mutex> lock(mutex);
+    request_ending(Ending::remove);
 
     if (status == ThreadStatus::running)
         stop(*cpu);
@@ -185,18 +188,13 @@ void ThreadState::run_loop(bool top_level) {
     std::unique_lock<std::mutex> lock(mutex);
 
     auto run_thread_end_callback = [&]() {
-        if (!run_end_callback)
-            return;
-        run_end_callback = false;
-
         if (!kernel.thread_event_end)
             return;
 
         const ThreadStatus old_status = status;
         const uint32_t old_returned_value = returned_value;
-        // The handler runs guest code on this thread, which an exit or delete request would end at once
-        const bool old_exit_requested = std::exchange(exit_requested, false);
-        const bool old_delete_requested = std::exchange(delete_requested, false);
+        // The handler runs guest code on this thread, which a pending ending would end at once
+        const Ending old_ending = std::exchange(ending, Ending::none);
         status = ThreadStatus::running;
 
         lock.unlock();
@@ -208,9 +206,8 @@ void ThreadState::run_loop(bool top_level) {
 
         status = old_status;
         returned_value = old_returned_value;
-        // Keeping any request that came while the handler ran, like a teardown's delete
-        exit_requested = exit_requested || old_exit_requested;
-        delete_requested = delete_requested || old_delete_requested;
+        // Keeping a stronger request that came while the handler ran, like a teardown's remove
+        request_ending(old_ending);
     };
 
     // A mutex the thread still holds when it ends goes to its next waiter
@@ -235,30 +232,33 @@ void ThreadState::run_loop(bool top_level) {
     };
 
     while (true) {
-        // Check if this call-level is done (normal exit, guest return, or delete).
-        if (exit_requested || guest_returned || delete_requested) {
-            // Top-level fires the end callback and parks dormant
-            if (top_level && status != ThreadStatus::dormant) {
-                // A thread that returns from its entry ends like one that exits, end handler included
-                if (guest_returned)
-                    run_end_callback = true;
-                run_thread_end_callback();
+        // This level is done once its guest function returned or the thread is ending
+        if (exiting() || guest_returned) {
+            // A nested level returns to the one below it
+            if (!top_level)
+                break;
+            // A thread that returns from its entry ends like one that exits, end handler included
+            if (guest_returned)
+                request_ending(Ending::exit);
+            // The top level ends the thread and parks it dormant
+            if (status != ThreadStatus::dormant) {
+                if (ending != Ending::remove)
+                    run_thread_end_callback();
                 release_mutexes();
                 delete_callbacks();
                 update_status(ThreadStatus::dormant);
             }
-            // Return from nested levels to the top level (or completely if deleted)
-            if (!top_level || delete_requested)
+            if (ending != Ending::exit)
                 break;
-            exit_requested = false;
+            ending = Ending::none;
             guest_returned = false;
-            // Status is now dormant: we'll park until the next start() or exit_delete().
+            // Status is now dormant: we'll park until the next start() or a delete
         }
 
         // Park until we have something to do.
         if (status != ThreadStatus::running || pause_requested) {
             status_cond.wait(lock, [&] {
-                return (status == ThreadStatus::running && !pause_requested) || delete_requested;
+                return (status == ThreadStatus::running && !pause_requested) || exiting();
             });
             continue;
         }
@@ -277,7 +277,7 @@ void ThreadState::run_loop(bool top_level) {
         }
 
         // Active JIT loop. Lock held on entry and exit; unlocked only around run/step.
-        while (!delete_requested && !exit_requested && !guest_returned && status == ThreadStatus::running) {
+        while (!exiting() && !guest_returned && status == ThreadStatus::running) {
             const bool do_step = single_stepping;
             if (do_step)
                 single_stepping = false;
@@ -378,7 +378,7 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
 
     // The callback's result isn't the thread's exit status, unless the callback ended the thread
     const uint32_t result = returned_value;
-    if (!exit_requested && !delete_requested)
+    if (!exiting())
         returned_value = previous_returned_value;
     return result;
 }

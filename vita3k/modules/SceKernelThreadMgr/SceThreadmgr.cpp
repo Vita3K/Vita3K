@@ -1398,7 +1398,7 @@ EXPORT(int, sceKernelDeleteThread, SceUID thid) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     if (thread->status != ThreadStatus::dormant)
         return RET_ERROR(SCE_KERNEL_ERROR_NOT_DORMANT);
-    thread->exit_delete(false);
+    thread->remove();
     return 0;
 }
 
@@ -1413,9 +1413,7 @@ EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
 EXPORT(int, sceKernelExitDeleteThread, int status) {
     TRACY_FUNC(sceKernelExitDeleteThread, status);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    // Record the exit status for sceKernelWaitThreadEnd, then delete
-    thread->exit(status);
-    thread->exit_delete();
+    thread->exit_delete(status);
 
     return status;
 }

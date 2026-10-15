@@ -24,6 +24,7 @@
 #include <mem/block.h>
 #include <mem/ptr.h>
 
+#include <algorithm>
 #include <condition_variable>
 #include <list>
 #include <mutex>
@@ -90,8 +91,12 @@ struct ThreadState {
 
     int init(const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
     int start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback = false);
+    // Ends the thread like sceKernelExitThread: the end handler runs, then it parks dormant
     void exit(SceInt32 status);
-    void exit_delete(bool exit = true);
+    // Ends the thread like sceKernelExitDeleteThread: the end handler runs, then it's deleted
+    void exit_delete(SceInt32 status);
+    // Deletes a dormant thread, or one being torn down, without running its end handler
+    void remove();
 
     void update_status(ThreadStatus status, std::optional<ThreadStatus> expected = std::nullopt);
     Address stack_top() const;
@@ -157,8 +162,21 @@ struct ThreadState {
     std::string log_stack_traceback() const;
 
 private:
-    // Whether the thread is exiting or being deleted. Called with mutex held.
-    bool exiting() const { return exit_requested || delete_requested; }
+    // How a thread ends, each value stronger than the ones before it
+    enum class Ending : uint8_t {
+        none,
+        // An exit, or a return from the entry: the end handler runs, then the thread parks dormant
+        exit,
+        // The end handler runs, then the host thread ends
+        exit_delete,
+        // The host thread ends without running the end handler
+        remove,
+    };
+
+    // Whether the thread is ending. Called with mutex held.
+    bool exiting() const { return ending != Ending::none; }
+    // Asks the thread to end, keeping a stronger request already made. Called with mutex held.
+    void request_ending(Ending how) { ending = std::max(ending, how); }
 
     void push_arguments(const std::vector<uint32_t> &args);
     void dispatch_abort(CPUState &cpu);
@@ -166,10 +184,7 @@ private:
     KernelState &kernel;
 
     CPUContext init_cpu_ctx;
-    // sceKernelExitThread (or top-level guest function return): park at dormant, thread reusable via start() / run_guest_function().
-    bool exit_requested = false;
-    // sceKernelExitDeleteThread (or external kill): will return from top-level run_loop(), then host thread joins.
-    bool delete_requested = false;
+    Ending ending = Ending::none;
     // Set by suspend(), consumed in run_loop() to transition to ThreadStatus::suspended.
     bool suspend_requested = false;
     // Set while suspend(), a step or a breakpoint holds the thread suspended, until resume().
@@ -182,8 +197,6 @@ private:
 
     // when calling sceKernelStartThread
     bool run_start_callback = false;
-    // when calling sceKernelExitThread or sceKernelExitDeleteThread
-    bool run_end_callback = false;
 
     MemState &mem;
 

@@ -211,7 +211,7 @@ void KernelState::process_exit() {
     {
         std::lock_guard<std::mutex> lock(mutex);
         for (auto &[_, thread] : threads)
-            thread->exit_delete(false);
+            thread->remove();
     }
 
     std::unique_lock<std::mutex> lock(mutex);
