@@ -25,6 +25,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 struct AllocMemPage {
     uint32_t allocated : 4;
@@ -71,6 +72,9 @@ struct MemState {
     struct BackingPage {
         Address address;
         std::unique_ptr<uint8_t[]> retained;
+        // Addresses mapped to this page by map_guest_memory; entries whose mapping later
+        // changed are dropped lazily by guest_alias_ranges.
+        std::vector<Address> aliases;
         explicit BackingPage(Address address)
             : address(address) {}
     };

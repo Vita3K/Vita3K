@@ -75,8 +75,12 @@ bool map_guest_memory(MemState &mem, Address dest, uint32_t size, Address source
             return false;
         pages.push_back(page.backing);
     }
-    for (uint32_t offset = 0; offset < size; offset += page_size)
-        mem.guest_mappings[dest + offset] = { pages[offset / page_size], perm };
+    for (uint32_t offset = 0; offset < size; offset += page_size) {
+        auto &backing = pages[offset / page_size];
+        if (dest + offset != backing->address && std::find(backing->aliases.begin(), backing->aliases.end(), dest + offset) == backing->aliases.end())
+            backing->aliases.push_back(dest + offset);
+        mem.guest_mappings[dest + offset] = { backing, perm };
+    }
     mem.guest_mappings_active.store(true, std::memory_order_release);
     return true;
 }
@@ -129,6 +133,32 @@ uint8_t *resolve_guest_pointer(const MemState &mem, Address addr) {
     if (it == mem.guest_mappings.end())
         return native_pointer(mem, addr);
     return it->second.backing ? backing_pointer(mem, *it->second.backing) + (addr & 4095u) : nullptr;
+}
+std::vector<std::pair<Address, uint32_t>> guest_alias_ranges(const MemState &mem, Address addr, uint32_t size) {
+    std::vector<std::pair<Address, uint32_t>> ranges{ { addr, size } };
+    if (!size)
+        return ranges;
+    std::lock_guard lock(mem.guest_mapping_mutex);
+    const uint64_t end = uint64_t(addr) + size;
+    const auto outside = [&](Address page) { return page + page_size <= addr || page >= end; };
+    for (auto it = mem.guest_mappings.lower_bound(addr & ~4095u); it != mem.guest_mappings.end() && it->first < end; ++it) {
+        const auto &backing = it->second.backing;
+        if (!backing || (backing.use_count() == 1 && backing->address == it->first))
+            continue;
+        // The page's other views: its backing's home address and every address still mapped to it.
+        if (outside(backing->address))
+            ranges.emplace_back(backing->address, page_size);
+        auto &aliases = backing->aliases;
+        aliases.erase(std::remove_if(aliases.begin(), aliases.end(), [&](Address alias) {
+            const auto found = mem.guest_mappings.find(alias);
+            return found == mem.guest_mappings.end() || found->second.backing != backing;
+        }),
+            aliases.end());
+        for (const auto alias : aliases)
+            if (outside(alias))
+                ranges.emplace_back(alias, page_size);
+    }
+    return ranges;
 }
 bool check_guest_memory_access(MemState &mem, Address addr, uint32_t size, bool write, Address &fault) {
     std::lock_guard lock(mem.guest_mapping_mutex);
