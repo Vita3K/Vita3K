@@ -5,7 +5,7 @@
 address_ranges                  pass
 affinity_mask_values            fail     # the CPU fields of thread info, threads ignore their core
 affinity_migrate                fail     # the CPU fields of thread info, threads ignore their core
-atomics                         fail     # every sceKernelAtomic call
+atomics                         pass
 audioout                        crash    # audio port size, rate and format checks, a NULL volume pointer
 callback                        pass
 callback_changes                pass
