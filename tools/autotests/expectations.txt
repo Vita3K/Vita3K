@@ -19,7 +19,7 @@ callback_priority_requeue       fail     # waits stay queued during callbacks, s
 callback_requeue_order          fail     # a wait keeps its place in the queue after a callback
 callback_stack                  fail     # callbacks don't run inside callbacks
 cancel_calls                    fail     # the waiting count a semaphore cancel writes, rwlock cancel flag checks
-cb_waits                        fail     # a CB delay of 0 succeeds, CB waits that fail at once run the pending callbacks
+cb_waits                        fail     # sceKernelWaitMultipleEvents
 claim_races                     fail     # a thread whose wait ended reports RUNNING or DORMANT instead of READY until it runs
 clocks                          fail     # a NULL process time pointer
 cond                            pass
@@ -35,7 +35,7 @@ create_attrs                    fail     # the attribute bits each create accept
 cross_core_scheduling           fail     # threads ignore their core and priority
 delay                           pass
 delay_negative                  pass
-delay_variants                  fail     # DelayThreadCB(0) succeeds, a delay reports wait UID 0
+delay_variants                  fail     # a delay reports wait UID 0
 delay_wait_id                   fail     # a delaying thread reports wait UID 0
 delete_with_waiters             pass
 directories                     fail     # directory mode, not empty and wrong type errors
@@ -77,10 +77,11 @@ msgpipe                         pass
 msgpipe_async                   fail     # message pipe sends and receives that don't wait
 msgpipe_edges                   pass
 msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
-msgpipe_modes                   fail     # bytes sent to a waiting receive stay in the pipe, timed out calls write no size
+msgpipe_failed_sizes            fail     # failed try calls in FULL mode or while another thread waits write a size, a FULL receive that times out takes no bytes
+msgpipe_modes                   fail     # bytes sent to a waiting receive stay in the pipe
 msgpipe_order                   fail     # a send reaches only one waiting receiver
 msgpipe_receiver_leaves         fail     # bytes sent to a waiting receive stay in the pipe
-msgpipe_vectors                 fail     # message pipe vector sends and receives
+msgpipe_vectors                 pass
 msgpipe_waits                   pass
 mspace                          fail     # sceClib memory space info
 multi_events                    fail     # waiting on several events, callbacks registered to events
@@ -138,7 +139,7 @@ thread_cpu_fields               fail     # the CPU fields of thread info, thread
 thread_create_attr              pass
 thread_create_current_priority  pass
 thread_create_edges             pass
-thread_edges                    fail     # DelayThreadCB(0)
+thread_edges                    pass
 thread_end_waits                pass
 thread_errors                   pass
 thread_event_handler            fail     # unknown thread and handler errors
@@ -169,6 +170,7 @@ thread_stack_negative           pass
 thread_stack_zero               pass
 thread_state                    pass
 thread_status_matrix            fail     # READY, the current CPU of a thread that isn't running
+thread_suspend_for_vm_stops     pass
 thread_vfp_exception            pass
 timeouts                        pass
 timer                           pass

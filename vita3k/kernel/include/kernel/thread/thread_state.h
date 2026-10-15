@@ -136,16 +136,22 @@ struct ThreadState {
     bool callbacks_notified() const { return notified_callbacks > 0; }
 
     void suspend();
-    void resume(bool step = false);
+    // Resumes a thread the debugger suspended. Returns whether it runs again, which it doesn't while
+    // a ForVM suspend holds it.
+    bool resume(bool step = false);
     // Pause/resume the emulator without changing a thread's wait state.
     ThreadStatus pause();
     void resume_from_pause(ThreadStatus previous_status);
-    // Suspends the thread for sceKernelSuspendThreadForVM: it stops before it next runs guest code
-    // until as many vm_resume calls. Each returns the suspend count after it.
+    // Suspends the thread for sceKernelSuspendThreadForVM: it doesn't run guest code until as many
+    // vm_resume calls. vm_suspend returns once it has stopped. Each returns the suspend count after it.
     int vm_suspend();
     int vm_resume();
     // Whether vm_suspend holds the thread. Called with mutex held.
     bool vm_suspended() const { return vm_suspend_count > 0; }
+    // Waits, with mutex held through lock, until the thread no longer runs or vm_suspend no longer holds it
+    void wait_for_vm_stop(std::unique_lock<std::mutex> &lock);
+    // Whether the thread is inside a wait call, also one that ended while vm_suspend held it. Called with mutex held.
+    bool in_wait() const { return status == ThreadStatus::waiting || vm_held_in_wait; }
     std::string log_stack_traceback() const;
 
 private:
@@ -164,6 +170,8 @@ private:
     bool delete_requested = false;
     // Set by suspend(), consumed in run_loop() to transition to ThreadStatus::suspended.
     bool suspend_requested = false;
+    // Set while suspend(), a step or a breakpoint holds the thread suspended, until resume().
+    bool debugger_suspended = false;
     // Emulator pause is separate from a guest wait or debugger suspension.
     bool pause_requested = false;
     bool pause_suspended = false;
@@ -189,6 +197,8 @@ private:
     SceUInt32 notified_callbacks = 0;
     // The vm_suspend calls that no vm_resume undid yet.
     int vm_suspend_count = 0;
+    // Set while vm_suspend holds the thread in a wait call that already ended.
+    bool vm_held_in_wait = false;
     // Set while the thread runs its callbacks. They don't nest.
     bool is_processing_callbacks = false;
     // Callbacks this thread created, in creation order. The kernel owns them. Only this thread touches the list.

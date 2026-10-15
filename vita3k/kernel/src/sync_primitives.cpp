@@ -1121,20 +1121,36 @@ void MsgPipe::wake_waiter(WaitQueue<WaitEntry> &waiters, std::size_t available) 
     }
 }
 
-std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void *buf, SceSize size, SceUInt32 *timeout, bool callbacks) {
+// The size of all the pieces together
+static uint64_t total_size(std::span<const MsgPipeVector> pieces) {
+    uint64_t total = 0;
+    for (const MsgPipeVector &piece : pieces)
+        total += piece.size;
+    return total;
+}
+
+std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceUInt32 *timeout, bool callbacks) {
     const bool ASAP = !(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
 
     if (!is_msg_pipe_mode(wait_mode))
         return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_MODE);
-    if (size > data_buffer.Capacity())
+    if (total_size(pieces) > data_buffer.Capacity())
         return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
+    const SceSize size = static_cast<SceSize>(total_size(pieces));
 
+    // Fills the pieces in order with what the pipe holds
     const auto copyOut = [&] {
-        if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE) {
-            return data_buffer.Peek(buf, size);
-        } else {
-            return data_buffer.Remove(buf, size);
+        std::size_t copied = 0;
+        for (const MsgPipeVector &piece : pieces) {
+            if (piece.size == 0)
+                continue;
+            void *const out = piece.base.get(mem);
+            const std::size_t piece_copied = (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE) ? data_buffer.Peek(out, piece.size, copied) : data_buffer.Remove(out, piece.size);
+            copied += piece_copied;
+            if (piece_copied < piece.size)
+                break;
         }
+        return copied;
     };
 
     auto guard = lock();
@@ -1171,14 +1187,14 @@ std::expected<SceSize, SceInt32> MsgPipe::receive(const ThreadStatePtr &thread, 
     return copied_size;
 }
 
-// FIXME this should be SendVector!
-std::expected<SceSize, SceInt32> MsgPipe::send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const void *buf, SceSize size, SceUInt32 *timeout, bool callbacks) {
+std::expected<SceSize, SceInt32> MsgPipe::send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceUInt32 *timeout, bool callbacks) {
     const bool ASAP = !(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
 
     if (!is_msg_pipe_mode(wait_mode))
         return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_MODE);
-    if (size > data_buffer.Capacity())
+    if (total_size(pieces) > data_buffer.Capacity())
         return std::unexpected(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
+    const SceSize size = static_cast<SceSize>(total_size(pieces));
 
     auto guard = lock();
     if (!guard)
@@ -1209,9 +1225,18 @@ std::expected<SceSize, SceInt32> MsgPipe::send(const ThreadStatePtr &thread, Sce
             return std::unexpected(*r);
     }
 
-    const SceSize copied_size = (SceSize)data_buffer.Insert(buf, size);
+    // Copies the pieces in order into the pipe, as far as it has room
+    std::size_t copied = 0;
+    for (const MsgPipeVector &piece : pieces) {
+        if (piece.size == 0)
+            continue;
+        const std::size_t piece_copied = data_buffer.Insert(piece.base.get(mem), piece.size);
+        copied += piece_copied;
+        if (piece_copied < piece.size)
+            break;
+    }
     wake_waiter(receivers, data_buffer.Used());
-    return copied_size;
+    return static_cast<SceSize>(copied);
 }
 
 SceInt32 MsgPipe::cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads) {

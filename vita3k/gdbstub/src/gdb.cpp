@@ -457,10 +457,12 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                         auto &thread = pair.second;
                         if (thread->status == ThreadStatus::suspended) {
                             lock.unlock();
-                            thread->resume();
+                            // A thread a ForVM suspend holds stays suspended
+                            const bool runs = thread->resume();
                             lock.lock();
 
-                            thread->status_cond.wait(lock, [&]() { return thread->status != ThreadStatus::suspended; });
+                            if (runs)
+                                thread->status_cond.wait(lock, [&]() { return thread->status != ThreadStatus::suspended; });
                         }
                     }
                 }
