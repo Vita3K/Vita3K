@@ -170,7 +170,7 @@ void ThreadState::exit_delete(bool exit) {
     wait_cv.notify_all();
 }
 
-void ThreadState::run_loop() {
+void ThreadState::run_loop(bool top_level) {
     bool guest_returned = false;
 
     // Set thread-local CPU state so signal handlers can access it. The guard puts back what was
@@ -183,8 +183,6 @@ void ThreadState::run_loop() {
     set_current_cpu_state(cpu.get());
 
     std::unique_lock<std::mutex> lock(mutex);
-    ++call_level;
-    const bool top_level = call_level == 1;
 
     auto run_thread_end_callback = [&]() {
         if (!run_end_callback)
@@ -324,8 +322,6 @@ void ThreadState::run_loop() {
             }
         }
     }
-
-    --call_level;
 }
 
 void ThreadState::push_arguments(const std::vector<uint32_t> &args) {
@@ -344,10 +340,6 @@ void ThreadState::push_arguments(const std::vector<uint32_t> &args) {
 
 uint32_t ThreadState::run_callback(Address callback_address, const std::vector<uint32_t> &args, bool fresh_vfp_state) {
     std::unique_lock<std::mutex> thread_lock(mutex);
-    if (call_level == 0) {
-        LOG_ERROR("run_callback should not be called as the first thread entry");
-        return 0;
-    }
 
     // save the current context before overwriting PC/LR for the callback
     const CPUContext previous_ctx = save_context(*cpu);
@@ -370,7 +362,7 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
 
     // unlock but then immediately lock back in the run_loop function
     // shouldn't cause an issue, but maybe we could use a recursive mutex instead
-    run_loop();
+    run_loop(false);
 
     thread_lock.lock();
 

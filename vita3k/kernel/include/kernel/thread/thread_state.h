@@ -96,7 +96,10 @@ struct ThreadState {
     void update_status(ThreadStatus status, std::optional<ThreadStatus> expected = std::nullopt);
     Address stack_top() const;
 
-    void run_loop();
+    // Runs the thread's guest code. The host thread runs the top level, which parks the thread
+    // dormant between starts until it's deleted. A callback runs a nested level, which returns
+    // when the callback does or the thread ends.
+    void run_loop(bool top_level = true);
 
     // this function must be called from the thread itself (inside a svc call)
     // With fresh_vfp_state, the call starts with the FPSCR and VFP exception setting of a new thread
@@ -176,10 +179,6 @@ private:
     bool pause_suspended = false;
     // Single stepping mode.
     bool single_stepping = false;
-
-    // Number of active run_loop frames. The top-level host thread keeps one
-    // frame alive (run_loop()) while parked dormant; callbacks add nested frames.
-    int call_level = 0;
 
     // when calling sceKernelStartThread
     bool run_start_callback = false;
