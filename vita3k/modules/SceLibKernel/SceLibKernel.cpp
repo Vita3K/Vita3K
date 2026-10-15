@@ -149,9 +149,20 @@ EXPORT(int, sceClibMemcmpConstTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<void>, sceClibMemcpy, Ptr<void> dst, const void *src, SceSize len) {
+// Guest copies go through the guest mappings: with kubridge aliases a range can span pages backed by
+// different host blocks, and a single host memcpy from the first page would write the wrong memory.
+static void clib_copy(EmuEnvState &emuenv, SceUID thread_id, const char *name, Address dst, Address src, SceSize len) {
+    Address fault = 0;
+    if (!copy_guest_memory(emuenv.mem, dst, src, len, fault)) {
+        const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+        LOG_ERROR("{}(dst=0x{:08X}, src=0x{:08X}, len={}) faulted at 0x{:08X}; guest lr=0x{:08X}",
+            name, dst, src, len, fault, thread ? read_lr(*thread->cpu) : 0);
+    }
+}
+
+EXPORT(Ptr<void>, sceClibMemcpy, Ptr<void> dst, Ptr<const void> src, SceSize len) {
     TRACY_FUNC(sceClibMemcpy, dst, src, len);
-    memcpy(dst.get(emuenv.mem), src, len);
+    clib_copy(emuenv, thread_id, "sceClibMemcpy", dst.address(), src.address(), len);
     return dst;
 }
 
@@ -175,7 +186,7 @@ EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> dst, const Ptr<void> src, SceSiz
     if (dst.address() == src.address()) {
         LOG_ERROR("sceClibMemcpy({},{},{}) src == dst", log_hex_full(src.address()), log_hex_full(dst.address()), len);
         assert(false);
-        CALL_EXPORT(sceClibMemcpy, dst, src.get(emuenv.mem), len);
+        CALL_EXPORT(sceClibMemcpy, dst, src, len);
         return dst;
     }
     const auto diff = std::abs((int)(src.address() - dst.address()));
@@ -183,13 +194,13 @@ EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> dst, const Ptr<void> src, SceSiz
         LOG_ERROR("sceClibMemcpy({},{},{}) src/dst overlap", log_hex_full(src.address()), log_hex_full(dst.address()), len);
         assert(false);
     }
-    CALL_EXPORT(sceClibMemcpy, dst, src.get(emuenv.mem), len);
+    CALL_EXPORT(sceClibMemcpy, dst, src, len);
     return dst;
 }
 
-EXPORT(Ptr<void>, sceClibMemmove, Ptr<void> dst, const void *src, SceSize len) {
+EXPORT(Ptr<void>, sceClibMemmove, Ptr<void> dst, Ptr<const void> src, SceSize len) {
     TRACY_FUNC(sceClibMemmove, dst, src, len);
-    memmove(dst.get(emuenv.mem), src, len);
+    clib_copy(emuenv, thread_id, "sceClibMemmove", dst.address(), src.address(), len);
     return dst;
 }
 
@@ -200,7 +211,12 @@ EXPORT(int, sceClibMemmoveChk) {
 
 EXPORT(Ptr<void>, sceClibMemset, Ptr<void> dst, int ch, SceSize len) {
     TRACY_FUNC(sceClibMemset, dst, ch, len);
-    memset(dst.get(emuenv.mem), ch, len);
+    Address fault = 0;
+    if (!fill_guest_memory(emuenv.mem, dst.address(), static_cast<uint8_t>(ch), len, fault)) {
+        const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+        LOG_ERROR("sceClibMemset(dst=0x{:08X}, ch={}, len={}) faulted at 0x{:08X}; guest lr=0x{:08X}",
+            dst.address(), ch, len, fault, thread ? read_lr(*thread->cpu) : 0);
+    }
     return dst;
 }
 
