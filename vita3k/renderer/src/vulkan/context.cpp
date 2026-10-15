@@ -481,6 +481,9 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     state.general_queue.submit(submit_info, fence);
     cmdbuffers_to_submit.clear();
     state.frame().rendered_fences.push_back(fence);
+    // the ring buffers (info uniforms in every mode) release this work's data once the fence signals
+    if (fence)
+        pending_submissions.push_back({ fence, ring_heads() });
 
     if (state.features.enable_memory_mapping) {
         // send it to the wait queue
@@ -547,6 +550,17 @@ void VKContext::check_for_macroblock_change(bool is_draw) {
     }
 }
 
+bool VKContext::wait_oldest_submission() {
+    if (pending_submissions.empty())
+        return false;
+    const PendingSubmission oldest = pending_submissions.front();
+    pending_submissions.pop_front();
+    if (state.device.waitForFences(oldest.fence, VK_TRUE, std::numeric_limits<uint64_t>::max()) != vk::Result::eSuccess)
+        LOG_ERROR("Could not wait for a submission fence to free ring buffer space");
+    release_rings(oldest.heads);
+    return true;
+}
+
 void new_frame(VKContext &context) {
     if (context.state.features.enable_memory_mapping) {
         FrameDoneRequest request = { context.frame_timestamp };
@@ -582,6 +596,13 @@ void new_frame(VKContext &context) {
                 assert(false);
                 return;
             }
+        }
+
+        // these submissions are done: release their ring data before their fences get reset and reused
+        while (!context.pending_submissions.empty()
+            && std::ranges::find(frame.rendered_fences, context.pending_submissions.front().fence) != frame.rendered_fences.end()) {
+            context.release_rings(context.pending_submissions.front().heads);
+            context.pending_submissions.pop_front();
         }
 
         // reset the fences in both case (the wait thread does not do that as they can still be used)
