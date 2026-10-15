@@ -39,11 +39,11 @@
 #include <gui-qt/physical_key_qt.h>
 #include <gui-qt/pkg_install_dialog.h>
 #include <gui-qt/qt_utils.h>
+#include <gui-qt/save_data_manager_dialog.h>
 #include <gui-qt/settings_dialog.h>
 #include <gui-qt/settings_dialog_tooltips.h>
 #include <gui-qt/theme_manager.h>
 #include <gui-qt/theme_surface.h>
-#include <gui-qt/save_data_manager_dialog.h>
 #include <gui-qt/trophy_collection_dialog.h>
 #include <gui-qt/update_manager.h>
 #include <gui-qt/user_management_dialog.h>
