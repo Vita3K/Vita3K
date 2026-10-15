@@ -162,6 +162,9 @@ void ThreadState::exit_delete(SceInt32 status) {
 void ThreadState::remove() {
     std::lock_guard<std::mutex> lock(mutex);
     request_ending(Ending::remove);
+    // A dormant thread is gone at once
+    if (status == ThreadStatus::dormant)
+        update_status(ThreadStatus::deleted);
 
     if (status == ThreadStatus::running)
         stop(*cpu);
@@ -241,13 +244,14 @@ void ThreadState::run_loop(bool top_level) {
             // A thread that returns from its entry ends like one that exits, end handler included
             if (guest_returned)
                 request_ending(Ending::exit);
-            // The top level ends the thread and parks it dormant
-            if (status != ThreadStatus::dormant) {
+            // The top level ends a thread that ran. An exit leaves it dormant, while a delete makes
+            // it gone for guest calls before its end waiters wake.
+            if (status != ThreadStatus::dormant && status != ThreadStatus::deleted) {
                 if (ending != Ending::remove)
                     run_thread_end_callback();
                 release_locks();
                 delete_callbacks();
-                update_status(ThreadStatus::dormant);
+                update_status(ending == Ending::exit ? ThreadStatus::dormant : ThreadStatus::deleted);
             }
             if (ending != Ending::exit)
                 break;
@@ -424,7 +428,7 @@ uint32_t ThreadState::run_guest_function(Address callback_address, SceSize args,
     start(args, argp);
     {
         std::unique_lock<std::mutex> lock(mutex);
-        status_cond.wait(lock, [&]() { return status == ThreadStatus::dormant; });
+        status_cond.wait(lock, [&]() { return status == ThreadStatus::dormant || status == ThreadStatus::deleted; });
     }
 
     entry_point = old_entry_point;
@@ -444,7 +448,7 @@ void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus>
     this->status = status;
     status_cond.notify_all();
 
-    if (status == ThreadStatus::dormant) {
+    if (status == ThreadStatus::dormant || status == ThreadStatus::deleted) {
         const std::lock_guard<std::mutex> end_lock(end_waiters_mutex);
         end_waiters.wake_if([&](auto &waiter) {
             if (waiter.entry.exit_status)
@@ -495,9 +499,14 @@ SceInt32 ThreadState::send_signal() {
     return SCE_KERNEL_OK;
 }
 
+bool ThreadState::is_deleted() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    return status == ThreadStatus::deleted;
+}
+
 WaitResult ThreadState::wait_for_thread_end(const ThreadStatePtr &waiter, SceInt32 *exit_status, Deadline deadline, bool callbacks) {
     std::unique_lock<std::mutex> lock(mutex);
-    if (status == ThreadStatus::dormant) {
+    if (status == ThreadStatus::dormant || status == ThreadStatus::deleted) {
         if (exit_status)
             *exit_status = static_cast<SceInt32>(returned_value);
         return SCE_KERNEL_OK;

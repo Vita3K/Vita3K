@@ -57,6 +57,7 @@ enum class ThreadStatus : SceUInt32 {
     running = SCE_KERNEL_THREAD_STATUS_RUNNING,
     waiting = SCE_KERNEL_THREAD_STATUS_WAITING, // Waiting to be awaken by sync object or operation
     dormant = SCE_KERNEL_THREAD_STATUS_DORMANT, // Waiting for a job
+    deleted = SCE_KERNEL_THREAD_STATUS_DELETED, // Gone for guest calls, until its host thread ends
     suspended = SCE_KERNEL_THREAD_STATUS_SUSPENDED, // Suspended by debugger
 };
 
@@ -99,6 +100,8 @@ struct ThreadState {
     void remove();
 
     void update_status(ThreadStatus status, std::optional<ThreadStatus> expected = std::nullopt);
+    // Whether the thread is deleted, so guest calls can't find it
+    bool is_deleted();
     Address stack_top() const;
 
     // Runs the thread's guest code. The host thread runs the top level, which parks the thread

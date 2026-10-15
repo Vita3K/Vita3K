@@ -160,7 +160,7 @@ thread_cpu_fields               fail     # the CPU fields of thread info, thread
 thread_create_attr              pass
 thread_create_current_priority  pass
 thread_create_edges             pass
-thread_delete_lookup            fail     # a deleted thread can still be found, dormant, until its host thread ends
+thread_delete_lookup            pass
 thread_edges                    pass
 thread_end_waits                pass
 thread_errors                   pass
