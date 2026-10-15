@@ -9,6 +9,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 
@@ -289,5 +290,33 @@ TEST(guest_mapping, exclusive_store_checks_alias_permissions) {
         EXPECT_FALSE(compare_exchange_guest_memory(mem, source_address + 1, 8, 23, 19, swapped, fault));
         ASSERT_TRUE(access_guest_memory(mem, source_address, &value, sizeof(value), false, fault));
         EXPECT_EQ(value, 19U);
+    });
+}
+
+TEST(guest_mapping, alias_ranges_follow_remaps) {
+    for_each_memory_mode([](MemState &mem) {
+        ASSERT_NE(allocate_page(mem, source_address, "guest_mapping_source"), 0U);
+        ASSERT_NE(allocate_page(mem, first_alias_address, "guest_mapping_alias_1"), 0U);
+        ASSERT_NE(allocate_page(mem, second_alias_address, "guest_mapping_alias_2"), 0U);
+        const auto has = [](const auto &ranges, Address addr) {
+            return std::any_of(ranges.begin(), ranges.end(), [addr](const auto &r) { return r.first == addr; });
+        };
+
+        // A page that is only committed has no other view.
+        ASSERT_TRUE(commit_guest_memory(mem, second_alias_address, page_size, MemPerm::ReadWrite));
+        EXPECT_EQ(guest_alias_ranges(mem, second_alias_address + 16, 32).size(), 1U);
+
+        ASSERT_TRUE(map_guest_memory(mem, first_alias_address, page_size, source_address, MemPerm::ReadWrite));
+        auto ranges = guest_alias_ranges(mem, source_address + 16, 32);
+        EXPECT_TRUE(has(ranges, first_alias_address));
+        ranges = guest_alias_ranges(mem, first_alias_address + 16, 32);
+        EXPECT_TRUE(has(ranges, source_address));
+
+        // Remapping the alias elsewhere drops it from the source's views.
+        ASSERT_TRUE(map_guest_memory(mem, first_alias_address, page_size, second_alias_address, MemPerm::ReadWrite));
+        ranges = guest_alias_ranges(mem, source_address + 16, 32);
+        EXPECT_FALSE(has(ranges, first_alias_address));
+        ranges = guest_alias_ranges(mem, second_alias_address + 16, 32);
+        EXPECT_TRUE(has(ranges, first_alias_address));
     });
 }
