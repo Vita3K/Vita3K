@@ -142,6 +142,18 @@ static Sha256Hash get_shader_hash(const SceGxmProgram &program) {
     return hash_bytes;
 }
 
+// The shader generated for a fragment program can depend on the color surface it writes to,
+// give each variant its own hash so they are cached separately
+Sha256Hash get_fragment_shader_hash(const SceGxmProgram &program, const Sha256Hash &program_hash, SceGxmColorFormat color_format) {
+    const int output_index = shader::get_single_component_output_index(program, color_format);
+    if (output_index < 0)
+        return program_hash;
+
+    Sha256Hash variant_hash = program_hash;
+    variant_hash.back() ^= static_cast<uint8_t>(0x80 | output_index);
+    return variant_hash;
+}
+
 template <typename R>
 static R load_shader_generic(const fs::path &shader_path) {
     std::size_t read_size = 0;
@@ -159,7 +171,7 @@ static R load_shader_generic(const fs::path &shader_path) {
 
 static shader::GeneratedShader load_shader_generic(shader::Target target, const SceGxmProgram &program, const FeatureState &features, const shader::Hints &hints, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shaderlog_path, const char *shader_type_str, const std::string &shader_version, bool shader_cache) {
     // TODO: no need to recompute the hash here
-    const std::string hash_text = hex_string(get_shader_hash(program));
+    const std::string hash_text = hex_string(get_fragment_shader_hash(program, get_shader_hash(program), hints.color_format));
     // Set Shader Hash with Version
     const std::string hash_hex_ver = fmt::format("{}-{}", shader_version, hash_text);
     const auto get_shader_path = [&](const char *ext) {

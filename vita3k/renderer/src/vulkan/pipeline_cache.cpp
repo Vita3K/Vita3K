@@ -925,7 +925,8 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
             .pName = "main_fs"
         };
     } else if (!is_fragment_disabled) {
-        fragment_shader = retrieve_shader(gxm_fragment_shader, fragment_program.hash, false, maskupdate, mem, hints, record.is_gamma_corrected);
+        const Sha256Hash fragment_hash = get_fragment_shader_hash(*gxm_fragment_shader, fragment_program.hash, hints.color_format);
+        fragment_shader = retrieve_shader(gxm_fragment_shader, fragment_hash, false, maskupdate, mem, hints, record.is_gamma_corrected);
     }
     const vk::PipelineShaderStageCreateInfo shader_stages[] = { vertex_shader, fragment_shader };
     // Depth-only draws still need the mask test before depth/stencil updates.
@@ -1054,6 +1055,10 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     // and also add the primitive type
     key ^= static_cast<uint64_t>(type);
 
+    // the record only contains the base format of the color surface, but the fragment shader can depend on its swizzle
+    const SceGxmProgram *gxm_fragment_shader = fragment_program_gxm.program.get(mem);
+    key ^= static_cast<uint64_t>(shader::get_single_component_output_index(*gxm_fragment_shader, record.color_surface.colorFormat) + 1) << 56;
+
     // can't use constexpr because of apple clang...
     const vk::Pipeline pipeline_compiling = std::bit_cast<vk::Pipeline, uint64_t>(~0ULL);
     // if the pipeline is in the pipeline cache, we can expect its creation time to be almost instantaneous
@@ -1075,7 +1080,6 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     }
 
     // get the correct renderpass here
-    const SceGxmProgram *gxm_fragment_shader = fragment_program_gxm.program.get(mem);
     const bool maskupdate = fragment_program_gxm.is_maskupdate;
     const bool is_fragment_disabled = record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED || gxm_fragment_shader->has_no_effect();
     const bool use_shader_interlock = !maskupdate && !is_fragment_disabled && !context.shader_hints.masked_framebuffer_fetch && state.features.support_shader_interlock && gxm_fragment_shader->is_frag_color_used();

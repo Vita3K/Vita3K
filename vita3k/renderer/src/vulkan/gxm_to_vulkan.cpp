@@ -284,8 +284,11 @@ static constexpr vk::ComponentMapping swizzle_gba1 = { Swizzle::eG, Swizzle::eB,
 namespace color {
 
 static vk::ComponentMapping translate_swizzle1(SceGxmColorSwizzle1Mode mode) {
+    // single component surfaces are always stored in the red channel,
+    // the fragment shader writes the component selected by the swizzle there
     switch (mode) {
     case SCE_GXM_COLOR_SWIZZLE1_R:
+    case SCE_GXM_COLOR_SWIZZLE1_G: // same value as SCE_GXM_COLOR_SWIZZLE1_A
         return swizzle_r001;
     default:
         LOG_ERROR("Unknown swizzle mode {}", log_hex(mode));

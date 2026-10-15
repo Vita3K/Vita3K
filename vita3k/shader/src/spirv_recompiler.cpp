@@ -1577,6 +1577,30 @@ usse::SpirvCode create_visibility_reduce_shader() {
     return code;
 }
 
+int get_single_component_output_index(const SceGxmProgram &program, SceGxmColorFormat color_format) {
+    // native color shaders write the surface format themselves
+    if (!program.is_fragment() || program.is_native_color())
+        return -1;
+
+    if ((color_format & SCE_GXM_COLOR_SWIZZLE_MASK) != SCE_GXM_COLOR_SWIZZLE1_G)
+        return -1;
+
+    switch (gxm::get_base_format(color_format)) {
+    case SCE_GXM_COLOR_BASE_FORMAT_U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_S8:
+        // SCE_GXM_COLOR_SWIZZLE1_A
+        return 3;
+    case SCE_GXM_COLOR_BASE_FORMAT_F16:
+    case SCE_GXM_COLOR_BASE_FORMAT_S16:
+    case SCE_GXM_COLOR_BASE_FORMAT_U16:
+    case SCE_GXM_COLOR_BASE_FORMAT_F32:
+        // SCE_GXM_COLOR_SWIZZLE1_G
+        return 1;
+    default:
+        return -1;
+    }
+}
+
 static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters,
     const SceGxmProgram &program, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translate_state) {
     std::vector<std::vector<spv::Decoration>> decorations;
@@ -1627,6 +1651,14 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
 
     if (!is_float_data_type(color_val_operand.type))
         color = utils::convert_to_float(b, utils, color, color_val_operand.type, true);
+
+    // the host surface only has a red channel, move the component the surface stores there
+    const int single_component_index = get_single_component_output_index(program, translate_state.hints->color_format);
+    if (single_component_index >= 0) {
+        const spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
+        const unsigned int src = static_cast<unsigned int>(single_component_index);
+        color = b.createOp(spv::OpVectorShuffle, v4, { { true, color }, { true, color }, { false, src }, { false, 1 }, { false, 2 }, { false, 3 } });
+    }
 
     if (program.is_frag_color_used() && features.should_use_shader_interlock()) {
         spv::Id signed_i32 = b.makeIntType(32);

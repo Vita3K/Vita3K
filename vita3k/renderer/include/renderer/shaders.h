@@ -18,6 +18,7 @@
 #pragma once
 
 #include <util/fs.h>
+#include <util/hash.h>
 
 #include <cstdint>
 #include <string>
@@ -29,6 +30,7 @@ struct Hints;
 
 struct SceGxmProgram;
 struct FeatureState;
+enum SceGxmColorFormat : uint32_t;
 
 namespace renderer {
 
@@ -36,6 +38,7 @@ struct ShadersHash;
 struct State;
 
 // Shaders.
+Sha256Hash get_fragment_shader_hash(const SceGxmProgram &program, const Sha256Hash &program_hash, SceGxmColorFormat color_format);
 bool get_shaders_cache_hashs(State &renderer);
 void save_shaders_cache_hashs(State &renderer, std::vector<ShadersHash> &shaders_cache_hashs);
 std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const shader::Hints &hints, bool maskupdate, const fs::path &shader_cache_path, const fs::path &shader_log_path, const std::string &shader_version, bool shader_cache);
