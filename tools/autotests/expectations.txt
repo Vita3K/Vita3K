@@ -1,7 +1,11 @@
 # Expected outcome of each VitaAutotests test on Vita3K, with what each one that doesn't pass
-# catches: pass, fail (exits normally with other output), crash (Vita3K exits with an error) or
-# timeout. Every test must be listed, and one that doesn't do what its line says fails the run.
+# catches: pass, fail (exits normally with other output), crash (Vita3K exits with an error),
+# timeout, or skip (not run, for a test whose outcome depends on how busy the host is). Every test
+# must be listed, and one that doesn't do what its line says fails the run.
 address_ranges                  pass
+affinity_mask_values            fail     # the CPU fields of thread info, threads ignore their core
+affinity_migrate                fail     # the CPU fields of thread info, threads ignore their core
+atomics                         pass
 audioout                        crash    # audio port size, rate and format checks, a NULL volume pointer
 callback                        pass
 callback_changes                pass
@@ -24,17 +28,20 @@ claim_races                     fail     # a thread whose wait ended reports RUN
 clocks                          fail     # a NULL process time pointer
 cond                            pass
 cond_errors                     fail     # condition variable unknown UID errors and close
+cond_mutex_delete               pass
 cond_rwlock_edges               pass
 cond_semantics                  fail     # a signaled condition waiter whose timeout passes while it waits for the mutex
 cond_signal                     pass
 cond_signal_all_order           fail     # a condition waiter waiting for its mutex reports the condition's UID
 cond_waits                      pass
 core_affinity                   fail     # threads ignore their core affinity and the priorities on a core
+core_choice                     fail     # the CPU fields of thread info, threads ignore their core
 create_attributes               fail     # the attributes condition variables, lightweight condition variables, timers and mutexes accept, simple event attribute 0x800
 create_attrs                    fail     # the attribute bits each create accepts
 cross_core_scheduling           fail     # threads ignore their core and priority
 delay                           pass
 delay_negative                  pass
+delay_precision                 skip     # timing, how long short delays and timeouts take
 delay_variants                  fail     # a delay reports wait UID 0
 delay_wait_id                   fail     # a delaying thread reports wait UID 0
 delete_with_waiters             pass
@@ -97,14 +104,20 @@ object_limits                   fail     # no limit on the number of objects
 open                            fail     # opening an object that isn't openable
 owner_end                       fail     # a write lock stays locked when its owner ends
 poll_calls                      fail     # a poll takes a count a queued waiter waits for, the bits failed polls write
+preempt_latency                 fail     # threads ignore their core and priority
+preempt_status                  fail     # threads ignore their core and priority
 priority_change_preempt         fail     # threads ignore their core and priority
 priority_inheritance            fail     # threads ignore their core and priority
 priority_queue_areas            fail     # threads ignore their core and priority
 priority_requeue_others         fail     # waiters keep their place in a priority queue when their priority changes
+queue_area_bounds               fail     # threads ignore their core and priority
 queue_order                     fail     # priority changes while waiting
 queue_order_matrix              fail     # a waiter whose priority changes keeps its place in a priority queue
+ready_changes                   fail     # threads ignore their core and priority
+ready_cpu_field                 fail     # the CPU fields of thread info, threads ignore their core
 ready_queue_order               fail     # threads ignore their core and priority
 release_preempt                 fail     # threads ignore their core and priority
+remote_priority_change          fail     # threads ignore their core and priority
 rtc                             crash    # RTC date range checks, a NULL tick
 rwlock                          pass
 rwlock_attr_bits                pass
@@ -113,6 +126,7 @@ rwlock_errors                   fail     # closing unknown UIDs
 rwlock_reader_again             pass
 rwlock_wake_order               fail     # rwlock info counts no waiters
 savedata_slot_id                fail     # save data slot ID range checks
+self_priority_drop              fail     # threads ignore their core and priority
 sema_errors                     crash    # closing unknown UIDs, a NULL name
 sema_head_leaves                fail     # a semaphore wait takes a count past an earlier waiter that needs more
 sema_mutex_edges                pass
@@ -126,10 +140,16 @@ simple_event_errors             fail     # simple event info, close and delete o
 simple_event_info               fail     # simple event info
 simple_event_null_pointers      pass
 simple_event_wait_null          pass
+stagnant_mask                   pass
+standby_handover_order          skip     # threads ignore their core and priority, so the order is a race of about 1 ms
+standby_merge                   fail     # threads ignore their core and priority
+standby_merge_irq               fail     # threads ignore their core and priority
 stat_mode                       fail     # file and directory stat modes, attributes and directory sizes
 strings                         fail     # sceClibMemchr, case of bytes above 0x7F
+suspend_ready_order             fail     # threads ignore their core and priority
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
 sysmodule                       fail     # system modules don't load without firmware
+system_info                     fail     # the active CPU mask, size checks and per-core counters
 thread                          pass
 thread_change_attr              pass
 thread_context_for_vm           pass
@@ -172,6 +192,7 @@ thread_state                    pass
 thread_status_matrix            fail     # READY, the current CPU of a thread that isn't running
 thread_suspend_for_vm_stops     pass
 thread_vfp_exception            pass
+timeout_threshold               skip     # timing, which short timeouts end at once
 timeouts                        pass
 timer                           pass
 timer_callback                  fail     # callbacks registered to timers
@@ -180,13 +201,17 @@ timer_errors                    crash    # timer set time, info and close of unk
 timer_event_interval_zero       pass
 timer_info_cancel               fail     # timer info fields
 timer_modes                     fail     # sceKernelSetTimerTime
+timer_period                    skip     # timing, how evenly a repeating timer fires
 timer_wait_no_event             pass
+timer_wake_cores                fail     # threads ignore their core and priority
+timer_wake_order                fail     # threads ignore their core and priority
 tls                             crash    # TLS key 256 and slots by thread UID
 tls_process_id                  fail     # thread info doesn't report the process ID
 tls_start_slots                 pass
 uid                             pass
 uid_class                       pass
 uid_semantics                   fail     # opening gives a new UID
+vblank_wake_core                fail     # threads ignore their core and priority
 wait_delete_timeout             pass
 wait_info_retries               fail     # a woken thread reports RUNNING instead of READY, bytes sent to a waiting receive stay in the pipe
 wait_order                      pass
@@ -194,4 +219,8 @@ wait_own_end                    pass
 wait_priority_change            fail     # a waiter changed to any priority goes behind the others at it
 wait_zero_timeout               fail     # multiple event waits with a timeout of 0
 wake_all_order                  fail     # threads ignore their core and priority
+wake_core_origin                fail     # threads ignore their core and priority
 wake_handoff                    fail     # a waiter woken by a set or an unlock still reports its wait for a while
+wake_kinds_order                fail     # threads ignore their core and priority
+wake_ready_areas                fail     # threads ignore their core and priority
+yield_order                     fail     # threads ignore their core and priority

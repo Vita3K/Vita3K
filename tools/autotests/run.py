@@ -10,6 +10,7 @@ The expectations file gives every test one outcome, one "name outcome" per line 
   fail     it exits normally with other output
   crash    Vita3K exits with an error, like after a host crash or a failed assert
   timeout  it doesn't end within the timeout
+  skip     it isn't run, for a test whose outcome on Vita3K depends on how busy the host is
 Without an expectations file, every test is expected to pass.
 
 VITA3K is the Vita3K binary to run, VITA3K_ARGS adds options to every run, like "-B Vulkan", and
@@ -29,7 +30,7 @@ import subprocess
 import sys
 
 TITLE_ID = "VTST00000"
-OUTCOMES = ("pass", "fail", "crash", "timeout")
+OUTCOMES = ("pass", "fail", "crash", "timeout", "skip")
 OUTPUT_RE = re.compile(rb"\[export_sceClibPrintf\]: (.*)")
 # Where in the emulated Vita each test writes its output
 OUTPUT_DIR = Path("ux0/data/vita-autotests/output")
@@ -114,8 +115,12 @@ def main() -> int:
         print(f"installing {vpk} failed, see {install_log}")
         return 1
 
-    counts = {"passed": 0, "failed as expected": 0, "unexpected": 0}
+    counts = {"passed": 0, "failed as expected": 0, "skipped": 0, "unexpected": 0}
     for name in args.names or sorted(tests):
+        if expectations[name] == "skip":
+            print(f"SKIP {name}")
+            counts["skipped"] += 1
+            continue
         log = logs / f"{name}.log"
         # So a run that never starts the test can't pass with an older output
         output_file(name).unlink(missing_ok=True)

@@ -38,8 +38,10 @@
 #include <util/log.h>
 #include <util/tracy.h>
 
+#include <atomic>
 #include <cmath>
 #include <cstdlib>
+#include <type_traits>
 
 enum class TimerFlags : uint32_t {
     FIFO_THREAD = 0x00000000,
@@ -727,364 +729,410 @@ EXPORT(int, sceIoWrite2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelAtomicAddAndGet16) {
-    TRACY_FUNC(sceKernelAtomicAddAndGet16);
-    return UNIMPLEMENTED();
+// The sum of two values, wrapping at the width of their type
+template <typename T>
+static T wrap_add(T a, T b) {
+    using U = std::make_unsigned_t<T>;
+    return static_cast<T>(static_cast<U>(a) + static_cast<U>(b));
 }
 
-EXPORT(int, sceKernelAtomicAddAndGet32) {
-    TRACY_FUNC(sceKernelAtomicAddAndGet32);
-    return UNIMPLEMENTED();
+// The difference of two values, wrapping at the width of their type
+template <typename T>
+static T wrap_sub(T a, T b) {
+    using U = std::make_unsigned_t<T>;
+    return static_cast<T>(static_cast<U>(a) - static_cast<U>(b));
 }
 
-EXPORT(int, sceKernelAtomicAddAndGet64) {
-    TRACY_FUNC(sceKernelAtomicAddAndGet64);
-    return UNIMPLEMENTED();
+// Sets *store to new_value if it holds value, and returns the old value either way
+template <typename T>
+static T atomic_compare_and_set(T *store, T value, T new_value) {
+    std::atomic_ref(*store).compare_exchange_strong(value, new_value);
+    return value;
 }
 
-EXPORT(int, sceKernelAtomicAddAndGet8) {
-    TRACY_FUNC(sceKernelAtomicAddAndGet8);
-    return UNIMPLEMENTED();
+// Adds value to *store, or stores limit instead once the sum reaches it, and returns whether it
+// did. Despite the name, that's what a Vita does. The sum is taken at 32 bits for the narrower
+// types, so it only wraps at 32 and 64 bits.
+template <typename T>
+static SceBool atomic_add_unless(T *store, T value, T limit) {
+    using Sum = std::conditional_t<sizeof(T) == 8, SceInt64, SceInt32>;
+    std::atomic_ref ref(*store);
+    T old = ref.load();
+    Sum sum;
+    do {
+        sum = wrap_add<Sum>(old, value);
+    } while (!ref.compare_exchange_weak(old, sum >= limit ? limit : static_cast<T>(sum)));
+    return sum >= limit;
 }
 
-EXPORT(int, sceKernelAtomicAddUnless16) {
-    TRACY_FUNC(sceKernelAtomicAddUnless16);
-    return UNIMPLEMENTED();
+// Decrements *store if it's positive, or at 8 and 16 bits also if it's 0, and returns the old value
+template <typename T>
+static T atomic_dec_if_positive(T *store) {
+    std::atomic_ref ref(*store);
+    T old = ref.load();
+    while ((sizeof(T) <= 2 ? old >= 0 : old > 0) && !ref.compare_exchange_weak(old, static_cast<T>(old - 1))) {
+    }
+    return old;
 }
 
-EXPORT(int, sceKernelAtomicAddUnless32) {
-    TRACY_FUNC(sceKernelAtomicAddUnless32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicAddAndGet16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicAddAndGet16, store, value);
+    return wrap_add(std::atomic_ref(*store).fetch_add(value), value);
 }
 
-EXPORT(int, sceKernelAtomicAddUnless64) {
-    TRACY_FUNC(sceKernelAtomicAddUnless64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicAddAndGet32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicAddAndGet32, store, value);
+    return wrap_add(std::atomic_ref(*store).fetch_add(value), value);
 }
 
-EXPORT(int, sceKernelAtomicAddUnless8) {
-    TRACY_FUNC(sceKernelAtomicAddUnless8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicAddAndGet64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicAddAndGet64, store, value);
+    return wrap_add(std::atomic_ref(*store).fetch_add(value), value);
 }
 
-EXPORT(int, sceKernelAtomicAndAndGet16) {
-    TRACY_FUNC(sceKernelAtomicAndAndGet16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicAddAndGet8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicAddAndGet8, store, value);
+    return wrap_add(std::atomic_ref(*store).fetch_add(value), value);
 }
 
-EXPORT(int, sceKernelAtomicAndAndGet32) {
-    TRACY_FUNC(sceKernelAtomicAndAndGet32);
-    return UNIMPLEMENTED();
+EXPORT(SceBool, sceKernelAtomicAddUnless16, SceInt16 *store, SceInt16 value, SceInt16 limit) {
+    TRACY_FUNC(sceKernelAtomicAddUnless16, store, value, limit);
+    return atomic_add_unless(store, value, limit);
 }
 
-EXPORT(int, sceKernelAtomicAndAndGet64) {
-    TRACY_FUNC(sceKernelAtomicAndAndGet64);
-    return UNIMPLEMENTED();
+EXPORT(SceBool, sceKernelAtomicAddUnless32, SceInt32 *store, SceInt32 value, SceInt32 limit) {
+    TRACY_FUNC(sceKernelAtomicAddUnless32, store, value, limit);
+    return atomic_add_unless(store, value, limit);
 }
 
-EXPORT(int, sceKernelAtomicAndAndGet8) {
-    TRACY_FUNC(sceKernelAtomicAndAndGet8);
-    return UNIMPLEMENTED();
+EXPORT(SceBool, sceKernelAtomicAddUnless64, SceInt64 *store, SceInt64 value, SceInt64 limit) {
+    TRACY_FUNC(sceKernelAtomicAddUnless64, store, value, limit);
+    return atomic_add_unless(store, value, limit);
 }
 
-EXPORT(int, sceKernelAtomicClearAndGet16) {
-    TRACY_FUNC(sceKernelAtomicClearAndGet16);
-    return UNIMPLEMENTED();
+EXPORT(SceBool, sceKernelAtomicAddUnless8, SceInt8 *store, SceInt8 value, SceInt8 limit) {
+    TRACY_FUNC(sceKernelAtomicAddUnless8, store, value, limit);
+    return atomic_add_unless(store, value, limit);
 }
 
-EXPORT(int, sceKernelAtomicClearAndGet32) {
-    TRACY_FUNC(sceKernelAtomicClearAndGet32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicAndAndGet16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicAndAndGet16, store, value);
+    return static_cast<SceInt16>(std::atomic_ref(*store).fetch_and(value) & value);
 }
 
-EXPORT(int, sceKernelAtomicClearAndGet64) {
-    TRACY_FUNC(sceKernelAtomicClearAndGet64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicAndAndGet32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicAndAndGet32, store, value);
+    return static_cast<SceInt32>(std::atomic_ref(*store).fetch_and(value) & value);
 }
 
-EXPORT(int, sceKernelAtomicClearAndGet8) {
-    TRACY_FUNC(sceKernelAtomicClearAndGet8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicAndAndGet64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicAndAndGet64, store, value);
+    return static_cast<SceInt64>(std::atomic_ref(*store).fetch_and(value) & value);
 }
 
-EXPORT(int, sceKernelAtomicClearMask16) {
-    TRACY_FUNC(sceKernelAtomicClearMask16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicAndAndGet8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicAndAndGet8, store, value);
+    return static_cast<SceInt8>(std::atomic_ref(*store).fetch_and(value) & value);
 }
 
-EXPORT(int, sceKernelAtomicClearMask32) {
-    TRACY_FUNC(sceKernelAtomicClearMask32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicClearAndGet16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicClearAndGet16, store, value);
+    return static_cast<SceInt16>(std::atomic_ref(*store).fetch_and(static_cast<SceInt16>(~value)) & ~value);
 }
 
-EXPORT(int, sceKernelAtomicClearMask64) {
-    TRACY_FUNC(sceKernelAtomicClearMask64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicClearAndGet32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicClearAndGet32, store, value);
+    return static_cast<SceInt32>(std::atomic_ref(*store).fetch_and(static_cast<SceInt32>(~value)) & ~value);
 }
 
-EXPORT(int, sceKernelAtomicClearMask8) {
-    TRACY_FUNC(sceKernelAtomicClearMask8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicClearAndGet64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicClearAndGet64, store, value);
+    return static_cast<SceInt64>(std::atomic_ref(*store).fetch_and(static_cast<SceInt64>(~value)) & ~value);
 }
 
-EXPORT(int, sceKernelAtomicCompareAndSet16) {
-    TRACY_FUNC(sceKernelAtomicCompareAndSet16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicClearAndGet8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicClearAndGet8, store, value);
+    return static_cast<SceInt8>(std::atomic_ref(*store).fetch_and(static_cast<SceInt8>(~value)) & ~value);
 }
 
-EXPORT(int, sceKernelAtomicCompareAndSet32) {
-    TRACY_FUNC(sceKernelAtomicCompareAndSet32);
-    return UNIMPLEMENTED();
+EXPORT(void, sceKernelAtomicClearMask16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicClearMask16, store, value);
+    std::atomic_ref(*store).fetch_and(static_cast<SceInt16>(~value));
 }
 
-EXPORT(int, sceKernelAtomicCompareAndSet64) {
-    TRACY_FUNC(sceKernelAtomicCompareAndSet64);
-    return UNIMPLEMENTED();
+EXPORT(void, sceKernelAtomicClearMask32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicClearMask32, store, value);
+    std::atomic_ref(*store).fetch_and(static_cast<SceInt32>(~value));
 }
 
-EXPORT(int, sceKernelAtomicCompareAndSet8) {
-    TRACY_FUNC(sceKernelAtomicCompareAndSet8);
-    return UNIMPLEMENTED();
+EXPORT(void, sceKernelAtomicClearMask64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicClearMask64, store, value);
+    std::atomic_ref(*store).fetch_and(static_cast<SceInt64>(~value));
 }
 
-EXPORT(int, sceKernelAtomicDecIfPositive16) {
-    TRACY_FUNC(sceKernelAtomicDecIfPositive16);
-    return UNIMPLEMENTED();
+EXPORT(void, sceKernelAtomicClearMask8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicClearMask8, store, value);
+    std::atomic_ref(*store).fetch_and(static_cast<SceInt8>(~value));
 }
 
-EXPORT(int, sceKernelAtomicDecIfPositive32) {
-    TRACY_FUNC(sceKernelAtomicDecIfPositive32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicCompareAndSet16, SceInt16 *store, SceInt16 value, SceInt16 new_value) {
+    TRACY_FUNC(sceKernelAtomicCompareAndSet16, store, value, new_value);
+    return atomic_compare_and_set(store, value, new_value);
 }
 
-EXPORT(int, sceKernelAtomicDecIfPositive64) {
-    TRACY_FUNC(sceKernelAtomicDecIfPositive64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicCompareAndSet32, SceInt32 *store, SceInt32 value, SceInt32 new_value) {
+    TRACY_FUNC(sceKernelAtomicCompareAndSet32, store, value, new_value);
+    return atomic_compare_and_set(store, value, new_value);
 }
 
-EXPORT(int, sceKernelAtomicDecIfPositive8) {
-    TRACY_FUNC(sceKernelAtomicDecIfPositive8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicCompareAndSet64, SceInt64 *store, SceInt64 value, SceInt64 new_value) {
+    TRACY_FUNC(sceKernelAtomicCompareAndSet64, store, value, new_value);
+    return atomic_compare_and_set(store, value, new_value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndAdd16) {
-    TRACY_FUNC(sceKernelAtomicGetAndAdd16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicCompareAndSet8, SceInt8 *store, SceInt8 value, SceInt8 new_value) {
+    TRACY_FUNC(sceKernelAtomicCompareAndSet8, store, value, new_value);
+    return atomic_compare_and_set(store, value, new_value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndAdd32) {
-    TRACY_FUNC(sceKernelAtomicGetAndAdd32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicDecIfPositive16, SceInt16 *store) {
+    TRACY_FUNC(sceKernelAtomicDecIfPositive16, store);
+    return atomic_dec_if_positive(store);
 }
 
-EXPORT(int, sceKernelAtomicGetAndAdd64) {
-    TRACY_FUNC(sceKernelAtomicGetAndAdd64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicDecIfPositive32, SceInt32 *store) {
+    TRACY_FUNC(sceKernelAtomicDecIfPositive32, store);
+    return atomic_dec_if_positive(store);
 }
 
-EXPORT(int, sceKernelAtomicGetAndAdd8) {
-    TRACY_FUNC(sceKernelAtomicGetAndAdd8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicDecIfPositive64, SceInt64 *store) {
+    TRACY_FUNC(sceKernelAtomicDecIfPositive64, store);
+    return atomic_dec_if_positive(store);
 }
 
-EXPORT(int, sceKernelAtomicGetAndAnd16) {
-    TRACY_FUNC(sceKernelAtomicGetAndAnd16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicDecIfPositive8, SceInt8 *store) {
+    TRACY_FUNC(sceKernelAtomicDecIfPositive8, store);
+    return atomic_dec_if_positive(store);
 }
 
-EXPORT(int, sceKernelAtomicGetAndAnd32) {
-    TRACY_FUNC(sceKernelAtomicGetAndAnd32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicGetAndAdd16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndAdd16, store, value);
+    return std::atomic_ref(*store).fetch_add(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndAnd64) {
-    TRACY_FUNC(sceKernelAtomicGetAndAnd64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicGetAndAdd32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndAdd32, store, value);
+    return std::atomic_ref(*store).fetch_add(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndAnd8) {
-    TRACY_FUNC(sceKernelAtomicGetAndAnd8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicGetAndAdd64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndAdd64, store, value);
+    return std::atomic_ref(*store).fetch_add(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndClear16) {
-    TRACY_FUNC(sceKernelAtomicGetAndClear16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicGetAndAdd8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndAdd8, store, value);
+    return std::atomic_ref(*store).fetch_add(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndClear32) {
-    TRACY_FUNC(sceKernelAtomicGetAndClear32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicGetAndAnd16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndAnd16, store, value);
+    return std::atomic_ref(*store).fetch_and(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndClear64) {
-    TRACY_FUNC(sceKernelAtomicGetAndClear64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicGetAndAnd32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndAnd32, store, value);
+    return std::atomic_ref(*store).fetch_and(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndClear8) {
-    TRACY_FUNC(sceKernelAtomicGetAndClear8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicGetAndAnd64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndAnd64, store, value);
+    return std::atomic_ref(*store).fetch_and(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndOr16) {
-    TRACY_FUNC(sceKernelAtomicGetAndOr16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicGetAndAnd8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndAnd8, store, value);
+    return std::atomic_ref(*store).fetch_and(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndOr32) {
-    TRACY_FUNC(sceKernelAtomicGetAndOr32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicGetAndClear16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndClear16, store, value);
+    return std::atomic_ref(*store).fetch_and(static_cast<SceInt16>(~value));
 }
 
-EXPORT(int, sceKernelAtomicGetAndOr64) {
-    TRACY_FUNC(sceKernelAtomicGetAndOr64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicGetAndClear32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndClear32, store, value);
+    return std::atomic_ref(*store).fetch_and(static_cast<SceInt32>(~value));
 }
 
-EXPORT(int, sceKernelAtomicGetAndOr8) {
-    TRACY_FUNC(sceKernelAtomicGetAndOr8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicGetAndClear64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndClear64, store, value);
+    return std::atomic_ref(*store).fetch_and(static_cast<SceInt64>(~value));
 }
 
-EXPORT(int, sceKernelAtomicGetAndSet16) {
-    TRACY_FUNC(sceKernelAtomicGetAndSet16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicGetAndClear8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndClear8, store, value);
+    return std::atomic_ref(*store).fetch_and(static_cast<SceInt8>(~value));
 }
 
-EXPORT(int, sceKernelAtomicGetAndSet32) {
-    TRACY_FUNC(sceKernelAtomicGetAndSet32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicGetAndOr16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndOr16, store, value);
+    return std::atomic_ref(*store).fetch_or(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndSet64) {
-    TRACY_FUNC(sceKernelAtomicGetAndSet64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicGetAndOr32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndOr32, store, value);
+    return std::atomic_ref(*store).fetch_or(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndSet8) {
-    TRACY_FUNC(sceKernelAtomicGetAndSet8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicGetAndOr64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndOr64, store, value);
+    return std::atomic_ref(*store).fetch_or(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndSub16) {
-    TRACY_FUNC(sceKernelAtomicGetAndSub16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicGetAndOr8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndOr8, store, value);
+    return std::atomic_ref(*store).fetch_or(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndSub32) {
-    TRACY_FUNC(sceKernelAtomicGetAndSub32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicGetAndSet16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndSet16, store, value);
+    return std::atomic_ref(*store).exchange(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndSub64) {
-    TRACY_FUNC(sceKernelAtomicGetAndSub64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicGetAndSet32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndSet32, store, value);
+    return std::atomic_ref(*store).exchange(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndSub8) {
-    TRACY_FUNC(sceKernelAtomicGetAndSub8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicGetAndSet64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndSet64, store, value);
+    return std::atomic_ref(*store).exchange(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndXor16) {
-    TRACY_FUNC(sceKernelAtomicGetAndXor16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicGetAndSet8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndSet8, store, value);
+    return std::atomic_ref(*store).exchange(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndXor32) {
-    TRACY_FUNC(sceKernelAtomicGetAndXor32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicGetAndSub16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndSub16, store, value);
+    return std::atomic_ref(*store).fetch_sub(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndXor64) {
-    TRACY_FUNC(sceKernelAtomicGetAndXor64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicGetAndSub32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndSub32, store, value);
+    return std::atomic_ref(*store).fetch_sub(value);
 }
 
-EXPORT(int, sceKernelAtomicGetAndXor8) {
-    TRACY_FUNC(sceKernelAtomicGetAndXor8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicGetAndSub64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndSub64, store, value);
+    return std::atomic_ref(*store).fetch_sub(value);
 }
 
-EXPORT(int, sceKernelAtomicOrAndGet16) {
-    TRACY_FUNC(sceKernelAtomicOrAndGet16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicGetAndSub8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndSub8, store, value);
+    return std::atomic_ref(*store).fetch_sub(value);
 }
 
-EXPORT(int, sceKernelAtomicOrAndGet32) {
-    TRACY_FUNC(sceKernelAtomicOrAndGet32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicGetAndXor16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndXor16, store, value);
+    return std::atomic_ref(*store).fetch_xor(value);
 }
 
-EXPORT(int, sceKernelAtomicOrAndGet64) {
-    TRACY_FUNC(sceKernelAtomicOrAndGet64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicGetAndXor32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndXor32, store, value);
+    return std::atomic_ref(*store).fetch_xor(value);
 }
 
-EXPORT(int, sceKernelAtomicOrAndGet8) {
-    TRACY_FUNC(sceKernelAtomicOrAndGet8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicGetAndXor64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndXor64, store, value);
+    return std::atomic_ref(*store).fetch_xor(value);
 }
 
-EXPORT(int, sceKernelAtomicSet16) {
-    TRACY_FUNC(sceKernelAtomicSet16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicGetAndXor8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicGetAndXor8, store, value);
+    return std::atomic_ref(*store).fetch_xor(value);
 }
 
-EXPORT(int, sceKernelAtomicSet32) {
-    TRACY_FUNC(sceKernelAtomicSet32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicOrAndGet16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicOrAndGet16, store, value);
+    return static_cast<SceInt16>(std::atomic_ref(*store).fetch_or(value) | value);
 }
 
-EXPORT(int, sceKernelAtomicSet64) {
-    TRACY_FUNC(sceKernelAtomicSet64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicOrAndGet32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicOrAndGet32, store, value);
+    return static_cast<SceInt32>(std::atomic_ref(*store).fetch_or(value) | value);
 }
 
-EXPORT(int, sceKernelAtomicSet8) {
-    TRACY_FUNC(sceKernelAtomicSet8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicOrAndGet64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicOrAndGet64, store, value);
+    return static_cast<SceInt64>(std::atomic_ref(*store).fetch_or(value) | value);
 }
 
-EXPORT(int, sceKernelAtomicSubAndGet16) {
-    TRACY_FUNC(sceKernelAtomicSubAndGet16);
-    return UNIMPLEMENTED();
+EXPORT(SceInt8, sceKernelAtomicOrAndGet8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicOrAndGet8, store, value);
+    return static_cast<SceInt8>(std::atomic_ref(*store).fetch_or(value) | value);
 }
 
-EXPORT(int, sceKernelAtomicSubAndGet32) {
-    TRACY_FUNC(sceKernelAtomicSubAndGet32);
-    return UNIMPLEMENTED();
+EXPORT(void, sceKernelAtomicSet16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicSet16, store, value);
+    std::atomic_ref(*store).store(value);
 }
 
-EXPORT(int, sceKernelAtomicSubAndGet64) {
-    TRACY_FUNC(sceKernelAtomicSubAndGet64);
-    return UNIMPLEMENTED();
+EXPORT(void, sceKernelAtomicSet32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicSet32, store, value);
+    std::atomic_ref(*store).store(value);
 }
 
-EXPORT(int, sceKernelAtomicSubAndGet8) {
-    TRACY_FUNC(sceKernelAtomicSubAndGet8);
-    return UNIMPLEMENTED();
+EXPORT(void, sceKernelAtomicSet64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicSet64, store, value);
+    std::atomic_ref(*store).store(value);
 }
 
-EXPORT(int, sceKernelAtomicXorAndGet16) {
-    TRACY_FUNC(sceKernelAtomicXorAndGet16);
-    return UNIMPLEMENTED();
+EXPORT(void, sceKernelAtomicSet8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicSet8, store, value);
+    std::atomic_ref(*store).store(value);
 }
 
-EXPORT(int, sceKernelAtomicXorAndGet32) {
-    TRACY_FUNC(sceKernelAtomicXorAndGet32);
-    return UNIMPLEMENTED();
+EXPORT(SceInt16, sceKernelAtomicSubAndGet16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicSubAndGet16, store, value);
+    return wrap_sub(std::atomic_ref(*store).fetch_sub(value), value);
 }
 
-EXPORT(int, sceKernelAtomicXorAndGet64) {
-    TRACY_FUNC(sceKernelAtomicXorAndGet64);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelAtomicSubAndGet32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicSubAndGet32, store, value);
+    return wrap_sub(std::atomic_ref(*store).fetch_sub(value), value);
 }
 
-EXPORT(int, sceKernelAtomicXorAndGet8) {
-    TRACY_FUNC(sceKernelAtomicXorAndGet8);
-    return UNIMPLEMENTED();
+EXPORT(SceInt64, sceKernelAtomicSubAndGet64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicSubAndGet64, store, value);
+    return wrap_sub(std::atomic_ref(*store).fetch_sub(value), value);
+}
+
+EXPORT(SceInt8, sceKernelAtomicSubAndGet8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicSubAndGet8, store, value);
+    return wrap_sub(std::atomic_ref(*store).fetch_sub(value), value);
+}
+
+EXPORT(SceInt16, sceKernelAtomicXorAndGet16, SceInt16 *store, SceInt16 value) {
+    TRACY_FUNC(sceKernelAtomicXorAndGet16, store, value);
+    return static_cast<SceInt16>(std::atomic_ref(*store).fetch_xor(value) ^ value);
+}
+
+EXPORT(SceInt32, sceKernelAtomicXorAndGet32, SceInt32 *store, SceInt32 value) {
+    TRACY_FUNC(sceKernelAtomicXorAndGet32, store, value);
+    return static_cast<SceInt32>(std::atomic_ref(*store).fetch_xor(value) ^ value);
+}
+
+EXPORT(SceInt64, sceKernelAtomicXorAndGet64, SceInt64 *store, SceInt64 value) {
+    TRACY_FUNC(sceKernelAtomicXorAndGet64, store, value);
+    return static_cast<SceInt64>(std::atomic_ref(*store).fetch_xor(value) ^ value);
+}
+
+EXPORT(SceInt8, sceKernelAtomicXorAndGet8, SceInt8 *store, SceInt8 value) {
+    TRACY_FUNC(sceKernelAtomicXorAndGet8, store, value);
+    return static_cast<SceInt8>(std::atomic_ref(*store).fetch_xor(value) ^ value);
 }
 
 EXPORT(int, sceKernelBacktrace) {
@@ -1900,8 +1948,9 @@ EXPORT(int, sceKernelUnlockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int unlo
     TRACY_FUNC(sceKernelUnlockLwMutex, workarea, unlock_count);
     const auto lwmutexid = workarea.get(emuenv.mem)->uid;
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
+    // A delete clears the owner in the work area, so a Vita reports the unlock as not owned
     if (!mutex)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
+        return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_NOT_OWNED);
     return mutex->release(emuenv.mem, emuenv.kernel.get_thread(thread_id), unlock_count);
 }
 
@@ -1914,8 +1963,9 @@ EXPORT(int, sceKernelUnlockLwMutex2, Ptr<SceKernelLwMutexWork> workarea, int unl
     TRACY_FUNC(sceKernelUnlockLwMutex2, workarea, unlock_count);
     const auto lwmutexid = workarea.get(emuenv.mem)->uid;
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
+    // A delete clears the owner in the work area, so a Vita reports the unlock as not owned
     if (!mutex)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
+        return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_NOT_OWNED);
     return mutex->release(emuenv.mem, emuenv.kernel.get_thread(thread_id), unlock_count);
 }
 
