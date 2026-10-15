@@ -1607,6 +1607,11 @@ EXPORT(int, sceKernelPulseEventWithNotifyCallback) {
     return UNIMPLEMENTED();
 }
 
+// Whether a message pipe call failed in its wait, rather than on its arguments
+static bool is_wait_error(SceInt32 error) {
+    return error == SCE_KERNEL_ERROR_WAIT_TIMEOUT || error == SCE_KERNEL_ERROR_WAIT_DELETE || error == SCE_KERNEL_ERROR_WAIT_CANCEL;
+}
+
 static SceInt32 receive_msg_pipe(EmuEnvState &emuenv, const char *export_name, SceUID thread_id, SceUID msgPipeId, void *pRecvBuf, SceSize recvSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout, bool callbacks) {
     const MsgPipePtr msgpipe = emuenv.kernel.objects.find<MsgPipe>(msgPipeId);
     if (!msgpipe)
@@ -1614,8 +1619,12 @@ static SceInt32 receive_msg_pipe(EmuEnvState &emuenv, const char *export_name, S
     if (callbacks)
         emuenv.kernel.get_thread(thread_id)->process_callbacks();
     const auto size = msgpipe->receive(emuenv.kernel.get_thread(thread_id), waitMode, pRecvBuf, recvSize, pTimeout, callbacks);
-    if (!size)
+    if (!size) {
+        // A wait that ends without data still reports a size of 0
+        if (pResult && is_wait_error(size.error()))
+            *pResult = 0;
         return size.error();
+    }
     if (pResult)
         *pResult = *size;
     return SCE_KERNEL_OK;
@@ -1657,8 +1666,12 @@ static SceInt32 send_msg_pipe(EmuEnvState &emuenv, const char *export_name, SceU
     if (callbacks)
         emuenv.kernel.get_thread(thread_id)->process_callbacks();
     const auto size = msgpipe->send(emuenv.kernel.get_thread(thread_id), waitMode, pSendBuf, sendSize, pTimeout, callbacks);
-    if (!size)
+    if (!size) {
+        // A wait that ends without data still reports a size of 0
+        if (pResult && is_wait_error(size.error()))
+            *pResult = 0;
         return size.error();
+    }
     if (pResult)
         *pResult = *size;
     return SCE_KERNEL_OK;

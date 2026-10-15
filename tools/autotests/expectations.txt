@@ -77,8 +77,8 @@ msgpipe                         pass
 msgpipe_async                   fail     # message pipe sends and receives that don't wait
 msgpipe_edges                   pass
 msgpipe_errors                  crash    # closing unknown UIDs, a NULL buffer
-msgpipe_failed_sizes            fail     # the sizes failed calls write, the vector calls
-msgpipe_modes                   fail     # bytes sent to a waiting receive stay in the pipe, timed out calls write no size
+msgpipe_failed_sizes            fail     # the sizes failed try calls write, a FULL receive that times out takes no bytes, the vector calls
+msgpipe_modes                   fail     # bytes sent to a waiting receive stay in the pipe
 msgpipe_order                   fail     # a send reaches only one waiting receiver
 msgpipe_receiver_leaves         fail     # bytes sent to a waiting receive stay in the pipe
 msgpipe_vectors                 fail     # message pipe vector sends and receives
