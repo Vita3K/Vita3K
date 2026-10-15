@@ -825,7 +825,8 @@ vk::Pipeline PipelineCache::compile_pipeline(SceGxmPrimitiveType type, vk::Rende
     const vk::PipelineVertexInputStateCreateInfo vertex_input = get_vertex_input_state(vertex_program_gxm, mem);
 
     const vk::PipelineShaderStageCreateInfo vertex_shader = retrieve_shader(vertex_program_gxm.program.get(mem), vertex_program.hash, true, fragment_program_gxm.is_maskupdate, mem, hints);
-    const vk::PipelineShaderStageCreateInfo fragment_shader = retrieve_shader(gxm_fragment_shader, fragment_program.hash, false, fragment_program_gxm.is_maskupdate, mem, hints, record.is_gamma_corrected);
+    const Sha256Hash fragment_hash = get_fragment_shader_hash(*gxm_fragment_shader, fragment_program.hash, hints.color_format);
+    const vk::PipelineShaderStageCreateInfo fragment_shader = retrieve_shader(gxm_fragment_shader, fragment_hash, false, fragment_program_gxm.is_maskupdate, mem, hints, record.is_gamma_corrected);
     const vk::PipelineShaderStageCreateInfo shader_stages[] = { vertex_shader, fragment_shader };
     // disable the fragment shader if gxm asks us to
     const bool is_fragment_disabled = record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED || gxm_fragment_shader->has_no_effect();
@@ -946,6 +947,10 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     // and also add the primitive type
     key ^= static_cast<uint64_t>(type);
 
+    // the record only contains the base format of the color surface, but the fragment shader can depend on its swizzle
+    const SceGxmProgram *gxm_fragment_shader = fragment_program_gxm.program.get(mem);
+    key ^= static_cast<uint64_t>(shader::get_single_component_output_index(*gxm_fragment_shader, record.color_surface.colorFormat) + 1) << 56;
+
     // can't use constexpr because of apple clang...
     const vk::Pipeline pipeline_compiling = std::bit_cast<vk::Pipeline, uint64_t>(~0ULL);
     // if the pipeline is in the pipeline cache, we can expect its creation time to be almost instantaneous
@@ -967,7 +972,6 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     }
 
     // get the correct renderpass here
-    const SceGxmProgram *gxm_fragment_shader = fragment_program_gxm.program.get(mem);
     const bool use_shader_interlock = state.features.support_shader_interlock && gxm_fragment_shader->is_frag_color_used();
     const vk::RenderPass render_pass = use_shader_interlock ? context.current_shader_interlock_pass : context.current_render_pass;
     // update the shader hints

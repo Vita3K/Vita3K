@@ -86,12 +86,12 @@ static const GLint *translate_swizzle(SceGxmColorSwizzle2Mode mode) {
 }
 
 static const GLint *translate_swizzle(SceGxmColorSwizzle1Mode mode) {
+    // single component surfaces are always stored in the red channel,
+    // the fragment shader writes the component selected by the swizzle there
     switch (mode) {
     case SCE_GXM_COLOR_SWIZZLE1_R:
+    case SCE_GXM_COLOR_SWIZZLE1_G: // same value as SCE_GXM_COLOR_SWIZZLE1_A
         return swizzle_r;
-    case SCE_GXM_COLOR_SWIZZLE1_G:
-        LOG_ERROR("unimplemented swizzle1 mode {}", log_hex(mode));
-        break;
     }
 
     return swizzle_r;
