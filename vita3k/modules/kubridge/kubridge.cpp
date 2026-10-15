@@ -106,7 +106,8 @@ EXPORT(int, kuKernelMemProtect, Ptr<void> addr, SceSize len, uint32_t prot) {
         if (!owned_range(*state, addr.address(), size) || !protect_guest_memory(emuenv.mem, addr.address(), size, ku_prot_to_memperm(prot)))
             return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
-    emuenv.kernel.invalidate_jit_cache(addr.address(), size);
+    // No JIT invalidation: permissions do not change memory contents and the JIT bakes nothing
+    // that depends on them. Flycast locks and unlocks texture pages here every frame.
     return 0;
 }
 
