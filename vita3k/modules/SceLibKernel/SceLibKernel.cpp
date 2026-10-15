@@ -1948,8 +1948,9 @@ EXPORT(int, sceKernelUnlockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int unlo
     TRACY_FUNC(sceKernelUnlockLwMutex, workarea, unlock_count);
     const auto lwmutexid = workarea.get(emuenv.mem)->uid;
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
+    // A delete clears the owner in the work area, so a Vita reports the unlock as not owned
     if (!mutex)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
+        return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_NOT_OWNED);
     return mutex->release(emuenv.mem, emuenv.kernel.get_thread(thread_id), unlock_count);
 }
 
@@ -1962,8 +1963,9 @@ EXPORT(int, sceKernelUnlockLwMutex2, Ptr<SceKernelLwMutexWork> workarea, int unl
     TRACY_FUNC(sceKernelUnlockLwMutex2, workarea, unlock_count);
     const auto lwmutexid = workarea.get(emuenv.mem)->uid;
     const MutexPtr mutex = emuenv.kernel.objects.find<LwMutex>(lwmutexid);
+    // A delete clears the owner in the work area, so a Vita reports the unlock as not owned
     if (!mutex)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_LW_MUTEX_ID);
+        return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_NOT_OWNED);
     return mutex->release(emuenv.mem, emuenv.kernel.get_thread(thread_id), unlock_count);
 }
 

@@ -28,7 +28,7 @@ claim_races                     fail     # a thread whose wait ended reports RUN
 clocks                          fail     # a NULL process time pointer
 cond                            pass
 cond_errors                     fail     # condition variable unknown UID errors and close
-cond_mutex_delete               fail     # the unlock error of a deleted lightweight mutex
+cond_mutex_delete               pass
 cond_rwlock_edges               pass
 cond_semantics                  fail     # a signaled condition waiter whose timeout passes while it waits for the mutex
 cond_signal                     pass
