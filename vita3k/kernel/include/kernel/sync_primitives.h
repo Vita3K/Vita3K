@@ -26,6 +26,7 @@
 #include <expected>
 #include <limits>
 #include <map>
+#include <span>
 #include <string>
 #include <variant>
 
@@ -311,6 +312,12 @@ public:
 
 typedef std::shared_ptr<Condvar> CondvarPtr;
 
+// One piece of a message pipe transfer, a buffer in guest memory
+struct MsgPipeVector {
+    Ptr<void> base;
+    SceSize size;
+};
+
 class MsgPipe final : public WithUidClass<SyncPrimitive, UidClass::msg_pipe> {
 public:
     MsgPipe(SceUInt32 attr, const char *name, std::size_t buf_size);
@@ -318,9 +325,9 @@ public:
     // Returns the error a create with these arguments gets, or SCE_KERNEL_OK
     static SceInt32 check_create(const char *name, SceUInt32 type, SceUInt32 attr, SceSize buf_size);
 
-    // Both return the size transferred, or the error
-    std::expected<SceSize, SceInt32> receive(const ThreadStatePtr &thread, SceUInt32 wait_mode, void *buf, SceSize size, SceUInt32 *timeout, bool callbacks);
-    std::expected<SceSize, SceInt32> send(const ThreadStatePtr &thread, SceUInt32 wait_mode, const void *buf, SceSize size, SceUInt32 *timeout, bool callbacks);
+    // Both move the bytes of the pieces in order, and return the size transferred, or the error
+    std::expected<SceSize, SceInt32> receive(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceUInt32 *timeout, bool callbacks);
+    std::expected<SceSize, SceInt32> send(const ThreadStatePtr &thread, MemState &mem, SceUInt32 wait_mode, std::span<const MsgPipeVector> pieces, SceUInt32 *timeout, bool callbacks);
     SceInt32 cancel(SceUInt32 *num_send_wait_threads, SceUInt32 *num_receive_wait_threads);
 
     struct WaitEntry {
