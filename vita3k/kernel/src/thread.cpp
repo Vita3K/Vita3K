@@ -674,6 +674,9 @@ void ThreadState::wait_for_vm_stop(std::unique_lock<std::mutex> &lock) {
 
 int ThreadState::vm_resume() {
     const std::lock_guard<std::mutex> lock(mutex);
+    // Like on a Vita, a dormant thread fails before the count does
+    if (status == ThreadStatus::dormant)
+        return SCE_KERNEL_ERROR_DORMANT;
     if (holds.vm == 0)
         return VM_NOT_SUSPENDED;
     if (--holds.vm > 0)
