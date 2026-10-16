@@ -264,7 +264,7 @@ EXPORT(int, ksceKernelFreeMemBlock, SceUID uid) {
 
     const Blocks::const_iterator block = state->blocks.find(uid);
     if (block == state->blocks.end())
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
 
     free(emuenv.mem, block->second->mappedBase.address());
     count_block(*state, block->second->type, -static_cast<SceSSize>(block->second->mappedSize));
