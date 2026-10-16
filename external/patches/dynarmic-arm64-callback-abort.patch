@@ -1,0 +1,44 @@
+diff --git a/src/dynarmic/backend/arm64/emit_arm64_memory.cpp b/src/dynarmic/backend/arm64/emit_arm64_memory.cpp
+index 339e2c59..80aca74c 100644
+--- a/src/dynarmic/backend/arm64/emit_arm64_memory.cpp
++++ b/src/dynarmic/backend/arm64/emit_arm64_memory.cpp
+@@ -139,6 +139,10 @@ void CallbackOnlyEmitReadMemory(oaknut::CodeGenerator& code, EmitContext& ctx, I
+         code.DMB(oaknut::BarrierOp::ISH);
+     }
+ 
++    oaknut::Label memory_access_end;
++    ctx.conf.emit_check_memory_abort(code, ctx, inst, memory_access_end);
++    code.l(memory_access_end);
++
+     if constexpr (bitsize == 128) {
+         code.MOV(Q8.B16(), Q0.B16());
+         ctx.reg_alloc.DefineAsRegister(inst, Q8);
+@@ -160,6 +164,10 @@ void CallbackOnlyEmitExclusiveReadMemory(oaknut::CodeGenerator& code, EmitContex
+         code.DMB(oaknut::BarrierOp::ISH);
+     }
+ 
++    oaknut::Label memory_access_end;
++    ctx.conf.emit_check_memory_abort(code, ctx, inst, memory_access_end);
++    code.l(memory_access_end);
++
+     if constexpr (bitsize == 128) {
+         code.MOV(Q8.B16(), Q0.B16());
+         ctx.reg_alloc.DefineAsRegister(inst, Q8);
+@@ -181,6 +189,9 @@ void CallbackOnlyEmitWriteMemory(oaknut::CodeGenerator& code, EmitContext& ctx,
+     if (ordered) {
+         code.DMB(oaknut::BarrierOp::ISH);
+     }
++    oaknut::Label memory_access_end;
++    ctx.conf.emit_check_memory_abort(code, ctx, inst, memory_access_end);
++    code.l(memory_access_end);
+ }
+ 
+ template<size_t bitsize>
+@@ -202,6 +213,7 @@ void CallbackOnlyEmitExclusiveWriteMemory(oaknut::CodeGenerator& code, EmitConte
+     if (ordered) {
+         code.DMB(oaknut::BarrierOp::ISH);
+     }
++    ctx.conf.emit_check_memory_abort(code, ctx, inst, end);
+     code.l(end);
+     ctx.reg_alloc.DefineAsRegister(inst, X0);
+ }

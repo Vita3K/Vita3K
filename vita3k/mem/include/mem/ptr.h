@@ -57,6 +57,8 @@ public:
     T *get(const MemState &mem) const {
         if (addr == 0) {
             return nullptr;
+        } else if (mem.guest_mappings_active.load(std::memory_order_acquire)) {
+            return reinterpret_cast<T *>(resolve_guest_pointer(mem, addr));
         } else if (mem.use_page_table) {
             return reinterpret_cast<T *>(mem.page_table[addr / KiB(4)] + addr);
         } else {
@@ -68,8 +70,7 @@ public:
     bool atomic_compare_and_swap(MemState &mem, U value, U expected) {
         static_assert(std::is_arithmetic_v<U>);
         static_assert(std::is_same_v<U, T>);
-        uint8_t *mem_ptr = mem.use_page_table ? mem.page_table[addr / KiB(4)] : mem.memory.get();
-        const auto ptr = reinterpret_cast<volatile U *>(&mem_ptr[addr]);
+        const auto ptr = reinterpret_cast<volatile U *>(get(mem));
         return ::atomic_compare_and_swap(ptr, value, expected);
     }
 

@@ -488,6 +488,7 @@ void free(MemState &state, Address address) {
     assert(page_num >= 0);
 
     AllocMemPage &page = state.alloc_table[page_num];
+    release_guest_mappings(state, address, page.size * STANDARD_PAGE_SIZE);
     if (!page.allocated) {
         LOG_CRITICAL("Freeing unallocated page");
     }
@@ -558,6 +559,12 @@ const char *mem_name(Address address, MemState &state) {
 
 void deinit_mem(MemState &state) {
     const std::lock_guard<std::mutex> gen_lock(state.generation_mutex);
+
+    {
+        const std::lock_guard<std::mutex> mapping_lock(state.guest_mapping_mutex);
+        state.guest_mappings.clear();
+        state.guest_mappings_active.store(false);
+    }
 
     {
         const std::lock_guard<std::mutex> prot_lock(state.protect_mutex);

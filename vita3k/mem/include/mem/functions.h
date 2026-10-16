@@ -48,6 +48,16 @@ constexpr MemPerm most_restrictive_perm(MemPerm a, MemPerm b) {
 }
 
 bool init(MemState &state, const bool use_page_table);
+// Kubridge mappings share backing; they never copy destination data to source.
+bool map_guest_memory(MemState &mem, Address dest, uint32_t size, Address source, MemPerm perm);
+bool commit_guest_memory(MemState &mem, Address dest, uint32_t size, MemPerm perm);
+bool protect_guest_memory(MemState &mem, Address dest, uint32_t size, MemPerm perm);
+bool decommit_guest_memory(MemState &mem, Address dest, uint32_t size);
+void release_guest_mappings(MemState &mem, Address dest, uint32_t size);
+uint8_t *resolve_guest_pointer(const MemState &mem, Address addr);
+bool access_guest_memory(MemState &mem, Address addr, void *data, uint32_t size, bool write, Address &fault);
+bool check_guest_memory_access(MemState &mem, Address addr, uint32_t size, bool write, Address &fault);
+bool compare_exchange_guest_memory(MemState &mem, Address addr, uint32_t size, uint64_t value, uint64_t expected, bool &swapped, Address &fault);
 void deinit_mem(MemState &state);
 Address alloc(MemState &state, uint32_t size, const char *name, Address start_addr = user_main_memory_start);
 Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned int alignment, Address start_addr = user_main_memory_start);

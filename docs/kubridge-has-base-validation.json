@@ -1,0 +1,57 @@
+{
+  "date": "2026-09-19",
+  "host": "macOS ARM64 (16 KiB host pages)",
+  "source_head": "5f582584efaf85101f9613a79d189bd64ba68ffa",
+  "working_tree_changes": false,
+  "dynarmic_head": "86458a0bd369d63ba4c2ef812cacbb6c9080c065",
+  "build": "cmake --build build/macos --target mem-tests vita3k --parallel 4: exit 0",
+  "memory_tests": {
+    "result": "PASS",
+    "count": 22,
+    "new_cases": 9,
+    "new_case_memory_modes": [
+      false,
+      true
+    ]
+  },
+  "dynarmic_patch_tests": [
+    "clean-copy application PASS",
+    "repeated CMake configure PASS",
+    "already-patched dry-run rejection PASS",
+    "byte-identical build-source comparison PASS"
+  ],
+  "dynarmic_build_source": "build/macos/external/dynarmic-patched",
+  "dynarmic_build_source_sha256": "c7837f0b7f3eeda94a9fdc734f2c204966456ba15b029a54257b93d79ebcb358",
+  "dynarmic_submodule_clean": true,
+  "fastmem_probe": {
+    "environment": "vita3k",
+    "tag": "fastmem-probe-20260919-a1-1a-r2",
+    "result": "PASS",
+    "restored": true,
+    "artifact_sha256": "d80a16a046196a031034a01d54a6246046b751fdbf15eb64486d380f3a67b79a",
+    "vita3k_sha256": "2fa973b2f826672e114077bc8b7e0f887e3ff9f45fa9b99bb169ff23dc172c4f",
+    "launcher": "identical bundle relocated to avoid forced portable/fs"
+  },
+  "probe_evidence": "../../vitasanshiro/docs/evidence/a0-fastmem-2026-09-19/vita3k-has-base-r3",
+  "source_sha256": {
+    "external/CMakeLists.txt": "212a70e836af0fe87a21a94fcb3963b09f15281df686e5d0aba113ff7c745967",
+    "vita3k/cpu/include/cpu/impl/dynarmic_cpu.h": "5ad062eed5330e99554df267ee215e308877cb9f90489a0f2050e6e47ba91620",
+    "vita3k/cpu/src/dynarmic_cpu.cpp": "433ff143f53af6f0b634a3730f6dcb8b38db17f0c5ba731311cd9e893ec6b2bd",
+    "vita3k/kernel/src/thread.cpp": "9e7ff8b5c9edbdaa8e1535309423697d42f192a3662f79b99678e0a6643d0f97",
+    "vita3k/mem/CMakeLists.txt": "4e36c7e3240047fcd782991b9c27a4ed82085a81c317da069fd199aca4be41fc",
+    "vita3k/mem/include/mem/functions.h": "91e73a8f3f2b1be6ae35c014d8dbfc03c05ca1af2b4104882058d2b26f79c98e",
+    "vita3k/mem/include/mem/ptr.h": "8e8295b8ec6d97c68936bc878ee9f7eb9eedb47bff0bf94ee5539c787c93d13a",
+    "vita3k/mem/include/mem/state.h": "d7b79c455ff844a93b0141348180263581d53200a512423daaa88184f465d4ba",
+    "vita3k/mem/src/mem.cpp": "fcdb38f4fb41583102838dec05c024a42a920097d90a5a4da699afce82eaa90e",
+    "vita3k/modules/kubridge/kubridge.cpp": "b924bade377a6db4002502273e843be98906f795eb6c68c0d00c341a0bd8fff8",
+    "external/patches/dynarmic.cmake": "7be3b8c4aa4919f9dcd7cf3551668edf34f64cdf81abe31aed3eab829083f22f",
+    "external/patches/dynarmic-arm64-callback-abort.patch": "808f1c201af9f5f78a807ff3649ed4184303c92a8764a77d0a3f2e54760a129b",
+    "vita3k/mem/src/guest_mapping.cpp": "024f86b2cfc8c262bf2131d179456e56c5f19de3876868a268050f9806353a3c",
+    "vita3k/mem/tests/guest_mapping_tests.cpp": "4d7b9ee4690edfb16d298891eadf494f672ef31c8130c7ce56159ad6161325e0",
+    "external/dynarmic/src/dynarmic/backend/arm64/emit_arm64_memory.cpp": "6bd36b28a27a9b071fe0dd7709276caa059a471ff3641df933fbbcf6db4155b6"
+  },
+  "build_notes": [
+    "macdeployqt reported a missing optional liblzma.5.dylib while packaging the existing bundle; the built bundle launched and completed the probe.",
+    "No performance claim; x86_64 and Windows builds not tested."
+  ]
+}

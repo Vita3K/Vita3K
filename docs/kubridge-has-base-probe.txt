@@ -1,0 +1,25 @@
+[817753 us] FASTMEM_PROBE build=fastmem-probe-20260919-a1-1a-r2
+[818776 us] fastmem-probe scope=B2-capability-only title=SATV00009
+[818999 us] region=8192 page=4096; no SH2 semantics or timing claimed
+[909706 us] PASS reserve base uid=0x00000002 addr=0x80454000 size=8192
+[912272 us] PASS commit base RWX addr=0x80454000 prot=0x70
+[914944 us] PASS reserve alias uid=0x00000003 addr=0x80456000 size=8192
+[917016 us] PASS commit alias HAS_BASE addr=0x80456000 prot=0x70
+[917792 us] PASS widths off=0x0000
+[917912 us] PASS widths off=0x0001
+[917996 us] PASS widths off=0x0fff
+[918076 us] PASS widths off=0x0ffe
+[918144 us] PASS widths off=0x0ffc
+[919254 us] PASS remap page/baseOffset/write isolation/restore
+[921113 us] PASS protected alias remains readable
+[922897 us] PASS restore alias RWX
+[925281 us] INFO about to execute registered JIT fault pc=0x80454140 far=0x80456000
+[927172 us] PASS registered JIT fault-site backpatch, two calls without another fault
+[929077 us] PASS controlled data-abort PC/FAR recovery exactly-once
+[931134 us] PASS JIT alias write/publish/execute/patch
+[933276 us] PASS release alias decommit=0
+[934236 us] INFO release alias reservation retained until process exit uid=0x00000003
+[935541 us] PASS release base decommit=0
+[936532 us] INFO release base reservation retained until process exit uid=0x00000002
+[936758 us] SUMMARY pass=1 fail=0 skipped=0 status=PASS failures=0
+[936841 us] exit status=0

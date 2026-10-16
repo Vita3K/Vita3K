@@ -21,6 +21,7 @@
 #include <mem/functions.h>
 #include <mem/util.h>
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -65,6 +66,20 @@ struct MemExternalMapping {
 struct MemState {
     std::mutex generation_mutex;
     std::mutex protect_mutex;
+    mutable std::mutex guest_mapping_mutex;
+    std::atomic<bool> guest_mappings_active{ false };
+    struct BackingPage {
+        Address address;
+        std::unique_ptr<uint8_t[]> retained;
+        explicit BackingPage(Address address)
+            : address(address) {}
+    };
+    struct VirtualPage {
+        std::shared_ptr<BackingPage> backing;
+        MemPerm perm = MemPerm::None;
+    };
+    // Guest 4 KiB mappings, independent of host page size and GPU mappings.
+    std::map<Address, VirtualPage> guest_mappings;
 
     uint32_t host_page_size = 0;
     Memory memory;

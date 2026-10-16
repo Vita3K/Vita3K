@@ -179,8 +179,22 @@ public:
         }
     }
 
+    void MemoryAbort(Address address, bool write) {
+        parent->abort_fault_addr.store(address);
+        parent->abort_is_write.store(write);
+        parent->abort_pending.store(true);
+        cpu->jit->HaltExecution(Dynarmic::HaltReason::MemoryAbort);
+    }
+
     template <typename T>
     T MemoryRead(Dynarmic::A32::VAddr addr) {
+        if (parent->mem->guest_mappings_active.load(std::memory_order_acquire)) {
+            T value{};
+            Address fault{};
+            if (!access_guest_memory(*parent->mem, addr, &value, sizeof(value), false, fault))
+                MemoryAbort(fault, false);
+            return value;
+        }
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
             LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x}\n{}", sizeof(T) * 8, addr, this->cpu->save_context().description());
@@ -218,6 +232,12 @@ public:
 
     template <typename T>
     void MemoryWrite(Dynarmic::A32::VAddr addr, T value) {
+        if (parent->mem->guest_mappings_active.load(std::memory_order_acquire)) {
+            Address fault{};
+            if (!access_guest_memory(*parent->mem, addr, &value, sizeof(value), true, fault))
+                MemoryAbort(fault, true);
+            return;
+        }
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
             LOG_ERROR("Invalid write of uint{}_t at addr: 0x{:x}, val = 0x{:x}\n{}", sizeof(T) * 8, addr, value, this->cpu->save_context().description());
@@ -254,6 +274,15 @@ public:
 
     template <typename T>
     bool MemoryWriteExclusive(Dynarmic::A32::VAddr addr, T value, T expected) {
+        if (parent->mem->guest_mappings_active.load(std::memory_order_acquire)) {
+            Address fault{};
+            bool swapped;
+            if (!compare_exchange_guest_memory(*parent->mem, addr, sizeof(T), value, expected, swapped, fault)) {
+                MemoryAbort(fault, true);
+                return false;
+            }
+            return swapped;
+        }
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
             LOG_ERROR("Invalid exclusive write of uint{}_t at addr: 0x{:x}, val = 0x{:x}, expected = 0x{:x}\n{}", sizeof(T) * 8, addr, value, expected, this->cpu->save_context().description());
@@ -356,7 +385,13 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     Dynarmic::A32::UserConfig config{};
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
-    if (parent->mem->use_page_table) {
+    checked_memory = parent->mem->guest_mappings_active.load(std::memory_order_acquire);
+    // Kubridge mappings need per-guest-page permissions, even on 16 KiB hosts.
+    // Use precise callback accesses only for processes that request this facility.
+    config.check_halt_on_memory_access = checked_memory;
+    if (checked_memory) {
+        // Neither native fastmem nor the GPU page table can represent these permissions.
+    } else if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
         config.absolute_offset_page_table = true;
     } else if (!log_mem && cpu_opt) {
@@ -367,6 +402,8 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.coprocessors[15] = cp15;
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
+    if (checked_memory)
+        config.optimizations &= ~Dynarmic::OptimizationFlag::GetSetElimination;
     config.enable_cycle_counting = false;
 
     return std::make_unique<Dynarmic::A32::Jit>(config);
@@ -383,12 +420,23 @@ DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, bool cpu_opt
 
 DynarmicCPU::~DynarmicCPU() = default;
 
+void DynarmicCPU::refresh_memory_mode() {
+    const std::lock_guard lock(jit_replacement_mutex);
+    if (checked_memory == parent->mem->guest_mappings_active.load(std::memory_order_acquire))
+        return;
+    const auto context = save_context();
+    jit = make_jit();
+    load_context(context);
+    clear_exclusive();
+}
+
 int DynarmicCPU::run() {
     halted = false;
     break_ = false;
     parent->svc_called = false;
     Dynarmic::HaltReason halt_reason;
     do {
+        refresh_memory_mode();
         halt_reason = jit->Run();
     } while ((halt_reason == Dynarmic::HaltReason::Step) || (halt_reason == Dynarmic::HaltReason::CacheInvalidation));
 
@@ -396,6 +444,7 @@ int DynarmicCPU::run() {
 }
 
 int DynarmicCPU::step() {
+    refresh_memory_mode();
     parent->svc_called = false;
     jit->Step();
     return 0;
@@ -411,6 +460,7 @@ void DynarmicCPU::trigger_breakpoint() {
 }
 
 void DynarmicCPU::set_log_code(bool log) {
+    const std::lock_guard lock(jit_replacement_mutex);
     if (log_code == log)
         return;
 
@@ -419,6 +469,7 @@ void DynarmicCPU::set_log_code(bool log) {
 }
 
 void DynarmicCPU::set_log_mem(bool log) {
+    const std::lock_guard lock(jit_replacement_mutex);
     if (log_mem == log)
         return;
 
@@ -435,6 +486,7 @@ bool DynarmicCPU::get_log_mem() {
 }
 
 void DynarmicCPU::stop() {
+    const std::lock_guard lock(jit_replacement_mutex);
     jit->HaltExecution();
 }
 
@@ -545,7 +597,12 @@ std::size_t DynarmicCPU::processor_id() const {
 }
 
 void DynarmicCPU::invalidate_jit_cache(Address start, size_t length) {
-    jit->InvalidateCacheRange(start, length);
+    const std::lock_guard lock(jit_replacement_mutex);
+    // A write through one alias may modify code cached at any other alias.
+    if (parent->mem->guest_mappings_active.load(std::memory_order_acquire))
+        jit->ClearCache();
+    else
+        jit->InvalidateCacheRange(start, length);
 }
 
 void DynarmicCPU::clear_exclusive() {

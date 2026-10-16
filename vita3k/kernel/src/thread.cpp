@@ -26,6 +26,7 @@
 #include <util/log.h>
 
 #include <cassert>
+#include <cstddef>
 #include <cstring>
 #include <memory>
 #include <sstream>
@@ -386,34 +387,83 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
 
 void ThreadState::dispatch_abort(CPUState &cpu) {
     const uint32_t fault_addr = cpu.abort_fault_addr.load();
+    const bool is_write = cpu.abort_is_write.load();
     // DABT = type 0
     const Address handler = kernel.exception_handlers[0].load();
-    if (!handler)
+    if (!handler) {
+        LOG_ERROR("Thread {} ({}) received an unhandled DABT at FAR=0x{:08X}", name, id, fault_addr);
+        // dispatch_abort is called with run_loop's mutex released. Mark the
+        // thread for termination and let the outer loop acquire the mutex and
+        // perform the normal shutdown path.
+        exit(SCE_KERNEL_ERROR_ERROR);
         return;
+    }
 
-    // Build KuKernelAbortContext on guest stack for the handler to read.
-    // Note: by the time we get here, the page has already been unprotected
-    // by the protect_tree mechanism, and the CPU may have executed past
-    // the faulting instruction. The handler is called as a notification;
-    // we don't restore from AbortContext afterward.
-    // { r0-r12, sp, lr, pc, FAR } = 17 uint32_t = 68 bytes
-    const uint32_t ctx_size = 17 * 4;
+    // Layout consumed by kubridge's exception handler. The VFP registers are
+    // represented as d0-d31 (two consecutive 32-bit S registers each).
+    struct KuKernelAbortContext {
+        uint32_t regs[16];
+        uint64_t vfpRegisters[32];
+        uint32_t SPSR;
+        uint32_t FPSCR;
+        uint32_t FPEXC;
+        uint32_t FSR;
+        uint32_t FAR;
+        uint32_t exceptionType;
+    };
+    static_assert(offsetof(KuKernelAbortContext, regs) == 0x00);
+    static_assert(offsetof(KuKernelAbortContext, vfpRegisters) == 0x40);
+    static_assert(offsetof(KuKernelAbortContext, SPSR) == 0x140);
+    static_assert(sizeof(KuKernelAbortContext) == 0x158);
+
+    const CPUContext fault_ctx = save_context(cpu);
+    const uint32_t ctx_size = sizeof(KuKernelAbortContext);
     const uint32_t sp_orig = read_sp(cpu);
     const uint32_t sp_aligned = align_down(sp_orig - ctx_size, 8);
 
-    auto *ctx = Ptr<uint32_t>(sp_aligned).get(*cpu.mem);
-    for (int i = 0; i < 13; i++)
-        ctx[i] = read_reg(cpu, i);
-    ctx[13] = sp_aligned + ctx_size;
-    ctx[14] = read_lr(cpu);
-    ctx[15] = read_pc(cpu);
-    ctx[16] = fault_addr;
+    KuKernelAbortContext context{};
+    auto *ctx = &context;
+    for (int i = 0; i < 16; i++)
+        ctx->regs[i] = fault_ctx.cpu_registers[i];
+    std::memcpy(ctx->vfpRegisters, fault_ctx.fpu_registers.data(), sizeof(ctx->vfpRegisters));
+    ctx->SPSR = fault_ctx.cpsr;
+    ctx->FPSCR = fault_ctx.fpscr;
+    // Dynarmic does not expose FPEXC; VFP is always available to the emulated
+    // ARMv7 CPU, so advertise the normal VFP enable bit.
+    ctx->FPEXC = 1u << 30;
+    // Short-descriptor page permission fault, with WnR set for writes.
+    ctx->FSR = 0x0Fu | (is_write ? (1u << 11) : 0u);
+    ctx->FAR = fault_addr;
+    ctx->exceptionType = 0;
 
     LOG_DEBUG("DABT handler=0x{:08X} FAR=0x{:08X} PC=0x{:08X} SP=0x{:08X} sp_aligned=0x{:08X}",
-        handler, fault_addr, ctx[15], sp_orig, sp_aligned);
+        handler, fault_addr, ctx->regs[15], sp_orig, sp_aligned);
 
-    // run_callback saves/restores full CPU context internally
+    // run_callback restores the faulting CPU context after the handler. Apply
+    // the handler's edits from KuKernelAbortContext afterward so a handler can
+    // resume at a new PC, adjust GPRs, or alter the saved FP state.
+    Address stack_fault;
+    if (sp_orig < ctx_size || !access_guest_memory(*cpu.mem, sp_aligned, ctx, ctx_size, true, stack_fault)) {
+        LOG_ERROR("Cannot place DABT context on thread {} stack", id);
+        exit(SCE_KERNEL_ERROR_ERROR);
+        return;
+    }
+    // Keep the saved context above the handler's stack frame.
+    write_sp(cpu, sp_aligned);
     run_callback(handler, { sp_aligned });
+    if (!access_guest_memory(*cpu.mem, sp_aligned, ctx, ctx_size, false, stack_fault)) {
+        LOG_ERROR("Cannot read DABT context from thread {} stack", id);
+        exit(SCE_KERNEL_ERROR_ERROR);
+        return;
+    }
+
+    CPUContext resumed_ctx = fault_ctx;
+    for (int i = 0; i < 16; i++)
+        resumed_ctx.cpu_registers[i] = ctx->regs[i];
+    resumed_ctx.cpsr = ctx->SPSR;
+    resumed_ctx.fpscr = ctx->FPSCR;
+    std::memcpy(resumed_ctx.fpu_registers.data(), ctx->vfpRegisters, sizeof(ctx->vfpRegisters));
+    load_context(cpu, resumed_ctx);
 }
 
 uint32_t ThreadState::run_guest_function(Address callback_address, SceSize args, const Ptr<void> argp) {
