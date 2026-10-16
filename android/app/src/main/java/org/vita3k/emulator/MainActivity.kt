@@ -2,10 +2,12 @@ package org.vita3k.emulator
 
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import org.vita3k.emulator.data.AppInfo
 import org.vita3k.emulator.data.AppStorage
 import org.vita3k.emulator.ui.navigation.AppNavigation
 import org.vita3k.emulator.ui.theme.Vita3KTheme
@@ -114,7 +116,8 @@ class MainActivity : AppCompatActivity() {
                     installViewModel = installViewModel,
                     settingsViewModel = settingsViewModel,
                     userManagementViewModel = userManagementViewModel,
-                    onAppLaunch = { app -> launchApp(app.titleId, app.title) }
+                    onAppLaunch = { app -> launchApp(app.titleId, app.title) },
+                    onCreateAppShortcut = { app -> createAppShortcut(app) }
                 )
             }
         }
@@ -191,6 +194,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun launchApp(titleId: String, appTitle: String) {
         emulatorLauncher.launch(Emulator.createLaunchIntent(this, titleId, appTitle))
+    }
+
+    private fun createAppShortcut(app: AppInfo) {
+        val created = Emulator.createShortcut(this, app.titleId, app.title, app.iconFile)
+        val messageResId = if (created) {
+            R.string.shortcut_create_requested
+        } else {
+            R.string.shortcut_create_unsupported
+        }
+        Toast.makeText(this, getString(messageResId), Toast.LENGTH_SHORT).show()
     }
 
     private fun launchFilePicker(mimeTypes: Array<String>) {
