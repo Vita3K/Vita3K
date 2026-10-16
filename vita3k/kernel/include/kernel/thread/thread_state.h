@@ -150,6 +150,8 @@ struct ThreadState {
     // Lets a thread the debugger stopped run again, for one instruction with step. Returns whether it
     // runs, which it doesn't while something else holds it.
     bool resume(bool step = false);
+    // Whether the thread has stopped for the debugger, where suspend() stops it. Called with mutex held.
+    bool stopped_for_debugger() const { return holds.debugger && status == ThreadStatus::suspended; }
     // Stops the thread while the emulator is paused, and lets it run again after
     void pause();
     void resume_from_pause();

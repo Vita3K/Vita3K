@@ -416,6 +416,19 @@ static std::string cmd_write_binary(EmuEnvState &state, PacketCommand &command) 
 
 static std::string cmd_detach(EmuEnvState &state, PacketCommand &command) { return "OK"; }
 
+// The stop reply for a thread that stopped on a trap
+static std::string stop_reply(SceUID thread_id) {
+    return "T05thread:" + to_hex(thread_id) + ";";
+}
+
+static std::vector<ThreadStatePtr> list_threads(EmuEnvState &state) {
+    const auto guard = std::lock_guard(state.kernel.mutex);
+    std::vector<ThreadStatePtr> threads;
+    for (const auto &[_, thread] : state.kernel.threads)
+        threads.push_back(thread);
+    return threads;
+}
+
 static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
     const std::string content = content_string(command);
     constexpr auto watch_delay = std::chrono::milliseconds(100);
@@ -428,86 +441,66 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
 
         const char cmd = text[0];
         switch (cmd) {
-        case 'c':
-        case 'C':
         case 's':
         case 'S': {
-            bool step = cmd == 's' || cmd == 'S';
+            // The action names the thread to step, else it's the current one
+            const size_t colon = text.find(':');
+            SceUID thread_id = colon == std::string::npos ? 0 : static_cast<SceUID>(parse_hex(text.substr(colon + 1)));
+            if (thread_id <= 0)
+                thread_id = state.gdb.current_thread;
+            const ThreadStatePtr thread = state.kernel.get_thread(thread_id);
+            if (!thread)
+                return "E00";
 
-            // inferior_thread is the thread that triggered breakpoint before
-            // step or run that thread
-
-            if (state.gdb.inferior_thread != 0) {
-                const auto guard = std::lock_guard(state.kernel.mutex);
-                auto thread = state.kernel.threads[state.gdb.inferior_thread];
-                auto thread_lock = std::unique_lock(thread->mutex);
-                thread->resume(step);
-                if (step) {
-                    // Wait until it finish stepping
-                    // TODO if that thread waits for sync primitive, dead lock.
-                    thread->status_cond.wait(thread_lock, [&]() { return thread->status == ThreadStatus::suspended; });
-                }
+            // A thread something else holds steps once that lets it go
+            if (thread->resume(true)) {
+                // TODO: a step into a call that waits on a thread the debugger holds never returns
+                auto lock = std::unique_lock(thread->mutex);
+                thread->status_cond.wait(lock, [&]() { return thread->stopped_for_debugger() || thread->status == ThreadStatus::dormant || thread->status == ThreadStatus::deleted; });
             }
 
-            if (!step) {
-                // resume the world
-                {
-                    auto lock = std::unique_lock(state.kernel.mutex);
-                    for (const auto &pair : state.kernel.threads) {
-                        auto &thread = pair.second;
-                        if (thread->status == ThreadStatus::suspended) {
-                            lock.unlock();
-                            // A thread a ForVM suspend holds stays suspended
-                            const bool runs = thread->resume();
-                            lock.lock();
+            state.gdb.current_thread = thread_id;
+            return stop_reply(thread_id);
+        }
+        case 'c':
+        case 'C': {
+            // Resume the world. A thread something else holds stays stopped.
+            for (const ThreadStatePtr &thread : list_threads(state))
+                thread->resume();
 
-                            if (runs)
-                                thread->status_cond.wait(lock, [&]() { return thread->status != ThreadStatus::suspended; });
-                        }
+            // Wait until some thread hits a breakpoint
+            ThreadStatePtr stopped;
+            while (!stopped) {
+                auto lock = std::unique_lock(state.kernel.mutex);
+
+                if (state.gdb.server_die)
+                    return "";
+                for (const auto &[_, thread] : state.kernel.threads) {
+                    const auto thread_guard = std::lock_guard(thread->mutex);
+                    if (thread->stopped_for_debugger() && hit_breakpoint(*thread->cpu)) {
+                        stopped = thread;
+                        break;
                     }
                 }
-                // wait until some threads trigger breakpoint
-                bool did_break = false;
-                while (!did_break) {
-                    auto lock = std::unique_lock(state.kernel.mutex);
 
-                    if (state.gdb.server_die)
-                        return "";
-                    for (const auto &[id, thread] : state.kernel.threads) {
-                        const auto thread_guard = std::lock_guard(thread->mutex);
-                        if (thread->status == ThreadStatus::suspended && hit_breakpoint(*thread->cpu)) {
-                            state.gdb.inferior_thread = id;
-                            did_break = true;
-                            break;
-                        }
-                    }
+                lock.unlock();
 
-                    lock.unlock();
-
-                    std::this_thread::sleep_for(std::chrono::milliseconds(watch_delay));
-                }
-
-                auto thread = state.kernel.get_thread(state.gdb.inferior_thread);
-                LOG_INFO("GDB Breakpoint trigger (thread name: {}, thread_id: {})", thread->name, thread->id);
-                LOG_INFO("PC: {} LR: {}", read_pc(*thread->cpu), read_lr(*thread->cpu));
-                LOG_INFO("{}", thread->log_stack_traceback());
-
-                // stop the world
-                {
-                    auto lock = std::unique_lock(state.kernel.mutex);
-                    for (const auto &pair : state.kernel.threads) {
-                        auto thread = pair.second;
-                        if (thread->status == ThreadStatus::running) {
-                            thread->suspend();
-                            // A thread that ends meanwhile stops as dormant, or as deleted if it deletes itself
-                            thread->status_cond.wait(lock, [=]() { return thread->status == ThreadStatus::suspended || thread->status == ThreadStatus::dormant || thread->status == ThreadStatus::deleted; });
-                        }
-                    }
-                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(watch_delay));
             }
 
-            state.gdb.current_thread = state.gdb.inferior_thread;
-            return "S05";
+            LOG_INFO("GDB Breakpoint trigger (thread name: {}, thread_id: {})", stopped->name, stopped->id);
+            LOG_INFO("PC: {} LR: {}", read_pc(*stopped->cpu), read_lr(*stopped->cpu));
+            LOG_INFO("{}", stopped->log_stack_traceback());
+
+            // Stop the world. A thread inside a kernel call stops when the call returns.
+            for (const ThreadStatePtr &thread : list_threads(state)) {
+                thread->suspend();
+                auto lock = std::unique_lock(thread->mutex);
+                thread->status_cond.wait(lock, [&]() { return thread->status != ThreadStatus::running; });
+            }
+
+            state.gdb.current_thread = stopped->id;
+            return stop_reply(stopped->id);
         }
         default:
             LOG_GDB("Unsupported vCont command '{}'", cmd);
@@ -587,9 +580,10 @@ static std::string cmd_add_breakpoint(EmuEnvState &state, PacketCommand &command
 
     LOG_GDB("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
 
-    // kind is 2 if it's thumb mode
+    // kind is 2 for a 16-bit Thumb instruction, 3 for a 32-bit one and 4 for ARM. A 16-bit BKPT
+    // over the first halfword stops at a 32-bit Thumb instruction too.
     // https://sourceware.org/gdb/current/onlinedocs/gdb/ARM-Breakpoint-Kinds.html#ARM-Breakpoint-Kinds
-    state.kernel.debugger.add_breakpoint(state.mem, address, kind == 2);
+    state.kernel.debugger.add_breakpoint(state.mem, address, kind == 2 || kind == 3);
 
     return "OK";
 }
@@ -783,16 +777,22 @@ void server_open(EmuEnvState &state) {
 #ifdef _WIN32
     int32_t err = WSAStartup(MAKEWORD(2, 2), &state.gdb.wsaData);
     if (err) {
-        LOG_GDB("GDB Server Failed: Could not start WSA service.");
+        LOG_ERROR("GDB Server Failed: Could not start WSA service.");
         return;
     }
 #endif
 
     state.gdb.listen_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (state.gdb.listen_socket == -1) {
-        LOG_GDB("GDB Server Failed: Could not create socket.");
+        LOG_ERROR("GDB Server Failed: Could not create socket.");
         return;
     }
+
+#ifndef _WIN32
+    // An earlier session's connection keeps the port in TIME_WAIT for a while after it ends
+    const int reuse = 1;
+    setsockopt(state.gdb.listen_socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+#endif
 
     sockaddr_in socket_address{};
     socket_address.sin_family = AF_INET;
@@ -804,12 +804,12 @@ void server_open(EmuEnvState &state) {
 #endif
 
     if (bind(state.gdb.listen_socket, (sockaddr *)&socket_address, sizeof(socket_address)) == -1) {
-        LOG_GDB("GDB Server Failed: Could not bind socket.");
+        LOG_ERROR("GDB Server Failed: Could not bind socket.");
         return;
     }
 
     if (listen(state.gdb.listen_socket, 1) == -1) {
-        LOG_GDB("GDB Server Failed: Could not listen on socket.");
+        LOG_ERROR("GDB Server Failed: Could not listen on socket.");
         return;
     }
 
