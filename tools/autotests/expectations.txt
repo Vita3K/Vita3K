@@ -81,9 +81,9 @@ lw_work_layout                  fail     # UID values in the work area, locking 
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 memblock_alignment              pass
 memblock_base_block             pass
-memblock_for_vm                 crash    # a second free of a block for code with the call for code
-memblock_for_vm_domain          crash    # a second free of a block for code with the call for code
-memblock_for_vm_space           fail     # blocks for code don't share 16 MiB of address space
+memblock_for_vm                 pass
+memblock_for_vm_domain          pass
+memblock_for_vm_space           pass
 memblock_free_sizes             pass
 memblock_neighbors              fail     # skips itself as blocks are never next to each other, a find over two blocks gives the first
 memblock_open                   fail     # every flag is taken, and an open gives the original block at its address instead of a new mapping

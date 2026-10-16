@@ -86,6 +86,11 @@ constexpr SceUInt32 MEMBLOCK_TYPE_MEMORY_ATTR_SHIFT = 8;
 constexpr SceUInt32 MEMBLOCK_TYPE_USER_ACCESS_MASK = 0x000000F0;
 constexpr SceUInt32 MEMBLOCK_TYPE_USER_ACCESS_SHIFT = 4;
 
+// The access bits of a block, which the info calls report without execute
+constexpr SceUInt32 SCE_KERNEL_MEMORY_ACCESS_R = 0x04;
+constexpr SceUInt32 SCE_KERNEL_MEMORY_ACCESS_W = 0x02;
+constexpr SceUInt32 SCE_KERNEL_MEMORY_ACCESS_X = 0x01;
+
 constexpr SceUInt32 MEMBLOCK_TYPE_PARTITION_INDEX_USER_CDRAM = 0x09000000;
 constexpr SceUInt32 MEMBLOCK_TYPE_PARTITION_INDEX_USER_CDIALOG = 0x0E000000;
 constexpr SceUInt32 MEMBLOCK_TYPE_PHYMEMPART_CDRAM = 0x00400000;
@@ -111,6 +116,12 @@ constexpr Address USER_CDIALOG_UNCACHED_BASE = 0x68000000;
 constexpr Address USER_UNCACHED_BASE = 0x70000000;
 constexpr Address USER_MAIN_BASE = 0x80000000;
 constexpr Address USER_CDIALOG_BASE = 0xD0000000;
+
+struct SysmemState;
+
+// Adds a block of the type at base to the blocks and counts it in its partition's free size, with the
+// state's mutex held
+SceUID add_block(SysmemState &state, const char *name, SceKernelMemBlockType type, Address base, SceSize size);
 
 DECL_EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOptKernel *opt);
 DECL_EXPORT(int, ksceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep);

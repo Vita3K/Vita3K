@@ -118,6 +118,23 @@ static void count_block(SysmemState &state, SceKernelMemBlockType type, SceSSize
     }
 }
 
+SceUID add_block(SysmemState &state, const char *name, SceKernelMemBlockType type, Address base, SceSize size) {
+    const SceUID uid = state.get_next_uid();
+    const auto block = std::make_shared<KernelMemBlock>();
+    block->type = type;
+    block->mappedBase = Ptr<void>(base);
+    block->mappedSize = size;
+    block->size = sizeof(SceKernelMemBlockInfo);
+    // What the info calls report: the normal memory type bits of the memory attributes, and an app's
+    // read and write access
+    block->memoryType = ((type & MEMBLOCK_TYPE_MEMORY_ATTR_MASK) >> MEMBLOCK_TYPE_MEMORY_ATTR_SHIFT) & SCE_KERNEL_MEMORY_TYPE_NORMAL;
+    block->access = ((type & MEMBLOCK_TYPE_USER_ACCESS_MASK) >> MEMBLOCK_TYPE_USER_ACCESS_SHIFT) & (SCE_KERNEL_MEMORY_ACCESS_R | SCE_KERNEL_MEMORY_ACCESS_W);
+    std::strncpy(block->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
+    state.blocks.emplace(uid, block);
+    count_block(state, type, size);
+    return uid;
+}
+
 EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOptKernel *opt) {
     MemState &mem = emuenv.mem;
 
@@ -161,21 +178,7 @@ EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType 
         }
     }
 
-    const SceUID uid = state->get_next_uid();
-    const auto block = std::make_shared<KernelMemBlock>();
-    block->type = type;
-    block->mappedBase = address;
-    block->mappedSize = size;
-    block->size = sizeof(SceKernelMemBlockInfo);
-    // What the info calls report: the normal memory type bits of the memory attributes, and an app's
-    // access
-    block->memoryType = ((type & MEMBLOCK_TYPE_MEMORY_ATTR_MASK) >> MEMBLOCK_TYPE_MEMORY_ATTR_SHIFT) & SCE_KERNEL_MEMORY_TYPE_NORMAL;
-    block->access = (type & MEMBLOCK_TYPE_USER_ACCESS_MASK) >> MEMBLOCK_TYPE_USER_ACCESS_SHIFT;
-    std::strncpy(block->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
-    state->blocks.emplace(uid, block);
-    count_block(*state, type, size);
-
-    return uid;
+    return add_block(*state, name, type, address.address(), size);
 }
 
 EXPORT(int, ksceKernelAllocMemBlockWithInfo) {

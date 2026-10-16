@@ -134,6 +134,7 @@
 #define SCE_UID_INVALID_UID (SceUID)(0xFFFFFFFF)
 
 #define SCE_ERROR_ERRNO_EINVAL 0x80010016
+#define SCE_ERROR_ERRNO_ENOSYS 0x80010058
 
 constexpr size_t MODULE_INFO_NUM_SEGMENTS = 4;
 
@@ -702,6 +703,11 @@ struct SceKernelStopModuleOpt {
     SceUInt32 flags;
     SceUInt32 epilogue;
     SceUInt32 stop;
+};
+
+struct SceKernelVARange {
+    Address addr;
+    SceSize size;
 };
 
 struct SceKernelMemBlockInfo {

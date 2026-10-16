@@ -161,34 +161,29 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType 
     return CALL_EXPORT(ksceKernelAllocMemBlock, pName, type, size, optp ? &k_opt : nullptr);
 }
 
-EXPORT(int, sceKernelAllocMemBlockForVM, const char *pName, SceSize size) {
+EXPORT(SceUID, sceKernelAllocMemBlockForVM, const char *pName, SceSize size) {
     TRACY_FUNC(sceKernelAllocMemBlockForVM, pName, size);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
-    const auto guard = std::lock_guard<std::mutex>(state->mutex);
+    std::unique_lock<std::mutex> lock(state->mutex);
+    if (!pName)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    // A size of 0 gets past this, and the allocation fails on it
+    if (size % MiB(1))
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_MEMBLOCK_SIZE);
+    if (size > MiB(16) - state->vm_space_used)
+        return RET_ERROR(SCE_KERNEL_ERROR_MEMBLOCK_OVERFLOW);
+    state->vm_space_used += size;
+    lock.unlock();
 
-    MemState &mem = emuenv.mem;
-    assert(pName != nullptr);
-
-    if (size < 0x1000 || (size & 0xFFF) != 0) {
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    const SceUID uid = CALL_EXPORT(ksceKernelAllocMemBlock, pName, SCE_KERNEL_MEMBLOCK_TYPE_USER_RX, size, nullptr);
+    lock.lock();
+    // The block is missing if the allocation failed, or if another thread freed it before the lock
+    const Blocks::const_iterator block = state->blocks.find(uid);
+    if (block == state->blocks.end()) {
+        state->vm_space_used -= size;
+        return uid < 0 ? uid : RET_ERROR(SCE_KERNEL_ERROR_INVALID_UID);
     }
-
-    const Ptr<void> address(alloc(mem, size, pName));
-    if (!address) {
-        return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
-    }
-
-    const SceUID uid = state->get_next_uid();
-
-    const KernelMemBlockPtr sceKernelMemBlock = std::make_shared<KernelMemBlock>();
-    sceKernelMemBlock->mappedBase = address;
-    sceKernelMemBlock->mappedSize = size;
-    sceKernelMemBlock->size = sizeof(SceKernelMemBlockInfo);
-    std::strncpy(sceKernelMemBlock->name, pName, KERNELOBJECT_MAX_NAME_LENGTH);
-    state->blocks.emplace(uid, sceKernelMemBlock);
-    state->vm_blocks.emplace(uid, sceKernelMemBlock);
-    state->allocated_user += size;
-
+    state->vm_blocks.emplace(uid, SceKernelVARange{ block->second->mappedBase.address(), size });
     return uid;
 }
 
@@ -209,7 +204,12 @@ EXPORT(int, sceKernelCloseMemBlock) {
 
 EXPORT(int, sceKernelCloseVMDomain) {
     TRACY_FUNC(sceKernelCloseVMDomain);
-    return UNIMPLEMENTED();
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    const auto guard = std::lock_guard<std::mutex>(state->mutex);
+    if (!state->vm_domain_open)
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
+    state->vm_domain_open = false;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(SceUID, sceKernelFindMemBlockByAddr, Address addr, uint32_t size) {
@@ -233,18 +233,15 @@ EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
 EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
     TRACY_FUNC(sceKernelFreeMemBlockForVM, uid);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
-    const auto guard = std::lock_guard<std::mutex>(state->mutex);
-
-    assert(uid >= 0);
-    const Blocks::const_iterator block = state->vm_blocks.find(uid);
-    assert(block != state->vm_blocks.end());
-
-    free(emuenv.mem, block->second->mappedBase.address());
-    state->allocated_user -= block->second->mappedSize;
-    state->blocks.erase(uid);
-    state->vm_blocks.erase(block);
-
-    return SCE_KERNEL_OK;
+    {
+        const auto guard = std::lock_guard<std::mutex>(state->mutex);
+        const auto block = state->vm_blocks.find(uid);
+        if (block == state->vm_blocks.end())
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+        state->vm_space_used -= block->second.size;
+        state->vm_blocks.erase(block);
+    }
+    return CALL_EXPORT(ksceKernelFreeMemBlock, uid);
 }
 
 EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
@@ -352,7 +349,13 @@ EXPORT(SceUID, sceKernelOpenMemBlock, const char *pName, int flags) {
 
 EXPORT(int, sceKernelOpenVMDomain) {
     TRACY_FUNC(sceKernelOpenVMDomain);
-    return UNIMPLEMENTED();
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    const auto guard = std::lock_guard<std::mutex>(state->mutex);
+    // Blocks for code are always writable here, so the domain is only a state
+    if (state->vm_domain_open)
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOSYS);
+    state->vm_domain_open = true;
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelSyncVMDomain, SceUID block_uid, Address base, uint32_t size) {
@@ -360,17 +363,16 @@ EXPORT(int, sceKernelSyncVMDomain, SceUID block_uid, Address base, uint32_t size
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
-    const auto it = state->vm_blocks.find(block_uid);
-    if (it == state->vm_blocks.end()) {
+    // The blocks for code first, then any block
+    SceKernelVARange range;
+    if (const auto vm_block = state->vm_blocks.find(block_uid); vm_block != state->vm_blocks.end())
+        range = vm_block->second;
+    else if (const auto block = state->blocks.find(block_uid); block != state->blocks.end())
+        range = { block->second->mappedBase.address(), block->second->mappedSize };
+    else
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
-    }
-
-    const auto block = it->second;
-    const uint32_t block_base_end = block->mappedBase.address() + block->mappedSize;
-    const uint32_t base_end = base + size;
-    if (block->mappedBase.address() > base_end || base > block_base_end) {
-        return RET_ERROR(SCE_KERNEL_ERROR_BLOCK_ERROR);
-    }
+    if (base < range.addr || uint64_t(base) + size > uint64_t(range.addr) + range.size)
+        return RET_ERROR(SCE_KERNEL_ERROR_MEMBLOCK_RANGE_ERROR);
     invalidate_jit_cache(*emuenv.kernel.get_thread(thread_id)->cpu, base, size);
 
     return 0;
