@@ -28,6 +28,8 @@
 #include <util/string_utils.h>
 
 #include <util/tracy.h>
+
+#include <algorithm>
 TRACY_MODULE_NAME(SceSysmem);
 
 std::string to_debug_str(const MemState &mem, SceKernelMemBlockType type) {
@@ -38,6 +40,7 @@ std::string to_debug_str(const MemState &mem, SceKernelMemBlockType type) {
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW";
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW";
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW";
+    default: break;
     }
     return std::to_string(type);
 }
@@ -47,10 +50,11 @@ struct SceKernelAllocMemBlockOpt {
     SceUInt32 attr;
     SceSize alignment;
     SceUInt32 uidBaseBlock;
-    const char *strBaseBlockName;
+    Ptr<const char> strBaseBlockName;
     int flags;
     int reserved[10];
 };
+static_assert(sizeof(SceKernelAllocMemBlockOpt) == 0x40);
 
 struct SceKernelFreeMemorySizeInfo {
     int size; //!< sizeof(SceKernelFreeMemorySizeInfo)
@@ -63,23 +67,98 @@ LIBRARY_INIT(SceSysmem) {
     emuenv.kernel.obj_store.create<SysmemState>();
 }
 
+// The error for a block type an app can't allocate, or 0
+static SceInt32 type_error(SceKernelMemBlockType type) {
+    switch (type) {
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_R:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_DEVICE_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_GAME_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_CDIALOG_NC_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDIALOG_RO_UNCACHE:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDIALOG_RW_UNCACHE:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDIALOG_RO:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDIALOG_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_L1WBWA_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_R:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
+        return 0;
+    // Types a Vita knows but keeps from apps
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_TOOL_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_TOOL_NC_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDIALOG_RX_UNCACHE:
+        return SCE_KERNEL_ERROR_ILLEGAL_MEMBLOCK_TYPE;
+    default:
+        return SCE_KERNEL_ERROR_ILLEGAL_BLOCK_TYPE;
+    }
+}
+
+// The error for a size a block of a user type can't have, or 0
+static SceInt32 size_error(SceKernelMemBlockType type, SceSize size) {
+    if (size == 0)
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    switch (type & MEMBLOCK_TYPE_PHYMEMPART_MASK) {
+    case MEMBLOCK_TYPE_PHYMEMPART_CDRAM:
+        return size % MEMBLOCK_CDRAM_MIN_ALIGNMENT ? SCE_KERNEL_ERROR_NO_FREE_PHYSICAL_PAGE_CDRAM : 0;
+    case MEMBLOCK_TYPE_PHYMEMPART_PHYCONT:
+        return size % MEMBLOCK_PHYCONT_MIN_ALIGNMENT ? SCE_KERNEL_ERROR_INVALID_ARGUMENT : 0;
+    default:
+        return size % MEMBLOCK_MIN_ALIGNMENT ? SCE_KERNEL_ERROR_ILLEGAL_MEMBLOCK_SIZE : 0;
+    }
+}
+
+// The error for an alignment a block of a user type can't ask for, or 0
+static SceInt32 alignment_error(SceKernelMemBlockType type, SceSize alignment) {
+    const SceUInt32 phymempart = type & MEMBLOCK_TYPE_PHYMEMPART_MASK;
+    if (phymempart == MEMBLOCK_TYPE_PHYMEMPART_PHYCONT || (alignment & (alignment - 1)) != 0)
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    if (alignment == 0)
+        return 0;
+    if (phymempart == MEMBLOCK_TYPE_PHYMEMPART_CDRAM) {
+        if (alignment < MEMBLOCK_CDRAM_MIN_ALIGNMENT)
+            return SCE_KERNEL_ERROR_NO_FREE_PHYSICAL_PAGE_CDRAM;
+        return alignment > MiB(64) ? SCE_KERNEL_ERROR_INVALID_ARGUMENT : 0;
+    }
+    return alignment > MiB(16) ? SCE_KERNEL_ERROR_INVALID_ARGUMENT : 0;
+}
+
 EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOpt *optp) {
     TRACY_FUNC(sceKernelAllocMemBlock, pName, type, size, optp);
+    if (!pName)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+    if (optp) {
+        constexpr SceSize OPT_SIZES[] = { 0x14, 0x38, 0x3C, 0x40 };
+        // An app can't choose an address, a physical address or a base block
+        constexpr SceUInt32 ALLOWED_ATTRS = SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT | SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_ENABLE_OPEN
+            | SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_PHYCONT;
+        if (!std::ranges::contains(OPT_SIZES, optp->size))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+        // The last word of the largest option must be 0
+        if (optp->size == sizeof(SceKernelAllocMemBlockOpt) && optp->reserved[9] != 0)
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+        if (optp->attr & ~ALLOWED_ATTRS)
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    }
+    if (const SceInt32 error = type_error(type))
+        return RET_ERROR(error);
+    if (const SceInt32 error = size_error(type, size))
+        return RET_ERROR(error);
 
     // Build kernel opts from user opts
-    SceKernelAllocMemBlockKernelOpt k_opt = {};
+    SceKernelAllocMemBlockOptKernel k_opt = {};
     k_opt.size = sizeof(k_opt);
-    SceKernelAllocMemBlockKernelOpt *k_opt_ptr = nullptr;
-
-    if (optp) {
-        if (optp->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT) {
-            k_opt.attr |= SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT;
-            k_opt.alignment = optp->alignment;
-        }
-        k_opt_ptr = &k_opt;
+    if (optp && (optp->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT)) {
+        if (const SceInt32 error = alignment_error(type, optp->alignment))
+            return RET_ERROR(error);
+        k_opt.attr |= SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT;
+        k_opt.alignment = optp->alignment;
     }
 
-    return CALL_EXPORT(ksceKernelAllocMemBlock, pName, type, size, k_opt_ptr);
+    return CALL_EXPORT(ksceKernelAllocMemBlock, pName, type, size, optp ? &k_opt : nullptr);
 }
 
 EXPORT(int, sceKernelAllocMemBlockForVM, const char *pName, SceSize size) {
