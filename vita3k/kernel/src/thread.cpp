@@ -136,9 +136,6 @@ int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_call
         write_reg(*cpu, 1, 0);
     }
 
-    // The first thread to start waits for the debugger
-    if (std::exchange(kernel.debugger.wait_for_debugger, false))
-        holds.debugger = true;
     status = ThreadStatus::running;
     status_cond.notify_one();
 
@@ -634,6 +631,9 @@ void ThreadState::suspend() {
 
 bool ThreadState::resume(bool step) {
     const std::lock_guard<std::mutex> lock(mutex);
+    // A step happens now or not at all
+    if (step && (holds.pause || holds.vm > 0))
+        return false;
     holds.debugger = false;
     step_requested = step;
     status_cond.notify_all();

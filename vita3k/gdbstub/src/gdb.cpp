@@ -452,12 +452,12 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             if (!thread)
                 return "E00";
 
-            // A thread something else holds steps once that lets it go
-            if (thread->resume(true)) {
-                // TODO: a step into a call that waits on a thread the debugger holds never returns
-                auto lock = std::unique_lock(thread->mutex);
-                thread->status_cond.wait(lock, [&]() { return thread->stopped_for_debugger() || thread->status == ThreadStatus::dormant || thread->status == ThreadStatus::deleted; });
-            }
+            // A thread something else holds can't step, and gdb takes the error as a stop
+            if (!thread->resume(true))
+                return "E01";
+            // TODO: a step into a call that waits on a thread the debugger holds never returns
+            auto lock = std::unique_lock(thread->mutex);
+            thread->status_cond.wait(lock, [&]() { return thread->stopped_for_debugger() || thread->status == ThreadStatus::dormant || thread->status == ThreadStatus::deleted; });
 
             state.gdb.current_thread = thread_id;
             return stop_reply(thread_id);
@@ -465,8 +465,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
         case 'c':
         case 'C': {
             // Resume the world. A thread something else holds stays stopped.
-            for (const ThreadStatePtr &thread : list_threads(state))
-                thread->resume();
+            state.kernel.resume_suspended_threads();
 
             // Wait until some thread hits a breakpoint
             ThreadStatePtr stopped;
@@ -493,8 +492,8 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
             LOG_INFO("{}", stopped->log_stack_traceback());
 
             // Stop the world. A thread inside a kernel call stops when the call returns.
+            state.kernel.suspend_threads();
             for (const ThreadStatePtr &thread : list_threads(state)) {
-                thread->suspend();
                 auto lock = std::unique_lock(thread->mutex);
                 thread->status_cond.wait(lock, [&]() { return thread->status != ThreadStatus::running; });
             }
@@ -761,6 +760,10 @@ static void server_listen(EmuEnvState &state) {
     }
 
     LOG_INFO("GDB Server Received Connection");
+
+    // A reply goes out at once, without waiting for the ack of the '+' sent before it
+    const int nodelay = 1;
+    setsockopt(state.gdb.client_socket, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char *>(&nodelay), sizeof(nodelay));
 
     int64_t status;
 

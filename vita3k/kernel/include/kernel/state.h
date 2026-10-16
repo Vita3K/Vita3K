@@ -189,6 +189,9 @@ struct KernelState {
     }
     void pause_threads();
     void resume_threads();
+    // Stops every thread for the debugger, and the threads created until the resume start stopped
+    void suspend_threads();
+    void resume_suspended_threads();
 
     // Kill all guest threads and block until they have exited. Must only be called from a host thread.
     void process_exit();
@@ -204,4 +207,5 @@ struct KernelState {
 private:
     std::atomic<SceUID> next_uid{ 1 };
     bool threads_paused = false;
+    bool threads_suspended = false;
 };

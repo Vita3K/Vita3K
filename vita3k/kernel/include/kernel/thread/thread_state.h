@@ -148,7 +148,7 @@ struct ThreadState {
     // Stops the thread for the debugger, the next time it would run guest code
     void suspend();
     // Lets a thread the debugger stopped run again, for one instruction with step. Returns whether it
-    // runs, which it doesn't while something else holds it.
+    // runs, which it doesn't while something else holds it. A step then doesn't happen at all.
     bool resume(bool step = false);
     // Whether the thread has stopped for the debugger, where suspend() stops it. Called with mutex held.
     bool stopped_for_debugger() const { return holds.debugger && status == ThreadStatus::suspended; }

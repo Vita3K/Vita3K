@@ -181,6 +181,8 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
         threads.emplace(thread->id, thread);
         if (threads_paused)
             thread->pause();
+        if (threads_suspended)
+            thread->suspend();
     }
 
     ThreadParams params;
@@ -237,6 +239,20 @@ void KernelState::resume_threads() {
     for (auto &[_, thread] : threads)
         thread->resume_from_pause();
     threads_paused = false;
+}
+
+void KernelState::suspend_threads() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    threads_suspended = true;
+    for (auto &[_, thread] : threads)
+        thread->suspend();
+}
+
+void KernelState::resume_suspended_threads() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    threads_suspended = false;
+    for (auto &[_, thread] : threads)
+        thread->resume();
 }
 
 void KernelState::deinit(MemState &mem) {
