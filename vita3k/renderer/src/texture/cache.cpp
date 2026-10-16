@@ -67,6 +67,30 @@ uint64_t hash_texture_data(const SceGxmTexture &texture, uint32_t texture_size, 
     }
 }
 
+// Write protection only covers the host pages lying entirely inside a texture.
+// Hash what it misses: the partial pages at both ends and, for paletted formats,
+// the palette. A game rewriting just those bytes would otherwise keep sampling
+// the first upload.
+static uint64_t hash_unprotected_data(const SceGxmTexture &texture, uint32_t texture_size, Address protect_begin, Address protect_end, const MemState &mem) {
+    const Address begin = texture.data_addr << 2;
+    const Address end = begin + texture_size;
+    uint64_t hash = 0;
+
+    if (protect_begin > begin)
+        hash = hash_data(Ptr<const uint8_t>(begin).get(mem), protect_begin - begin);
+    if (end > protect_end)
+        hash = XXH3_64bits_withSeed(Ptr<const uint8_t>(protect_end).get(mem), end - protect_end, hash);
+
+    switch (gxm::get_base_format(gxm::get_format(texture))) {
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+        return hash ^ hash_palette_data(texture, 16, mem);
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+        return hash ^ hash_palette_data(texture, 256, mem);
+    default:
+        return hash;
+    }
+}
+
 // Function to hash an arbitrary swizzled texture in the most optimized way possible
 // this is a recursive function which calls itself on the 4 higher block making the sizzle
 // once a block entirely in the swizzle is found, it stops and hash it
@@ -686,6 +710,8 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         }
 
         info->use_hash = should_use_hash;
+        if (!info->use_hash)
+            info->unprotected_hash = hash_unprotected_data(gxm_texture, info->texture_size, range_protect_begin, range_protect_end, mem);
         if (info->use_hash) {
             if (import_textures || export_textures)
                 info->hash = hash_texture_nostride(gxm_texture, mem);
@@ -709,7 +735,9 @@ void TextureCache::cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemS
         } else {
             range_protect_begin = align(gxm_texture.data_addr << 2, mem.host_page_size);
             range_protect_end = align_down((gxm_texture.data_addr << 2) + info->texture_size, mem.host_page_size);
-            upload = info->dirty;
+            const uint64_t previous_hash = info->unprotected_hash;
+            info->unprotected_hash = hash_unprotected_data(gxm_texture, info->texture_size, range_protect_begin, range_protect_end, mem);
+            upload = info->dirty || previous_hash != info->unprotected_hash;
         }
     }
     current_info = info;
