@@ -63,6 +63,8 @@ fiber_vfp                       fail     # libfiber doesn't load without firmwar
 fibers                          crash    # the fiber module doesn't load without firmware, fiber argument checks
 files                           fail     # closed file, EXCL, access mode and wrong type errors
 format                          fail     # sceClibSnprintf with %#x, %.0d and long arguments
+gxm_map_memory                  fail     # attribute, alignment, range and overlap checks, a map before sceGxmInitialize
+gxm_map_no_block                crash    # unmapping a range in no block
 handoff_more                    fail     # an unlock to a waiter for a count of 2 leaves a recursive mutex free
 head_leaves_more                fail     # a reader behind a waiting writer only gets the lock after the writer
 info                            pass
@@ -77,6 +79,19 @@ lw_mutex_semantics              pass
 lw_work                         pass
 lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
+memblock_alignment              pass
+memblock_base_block             pass
+memblock_for_vm                 pass
+memblock_for_vm_domain          pass
+memblock_for_vm_space           pass
+memblock_free_sizes             pass
+memblock_neighbors              fail     # skips itself as blocks are never next to each other, a find over two blocks gives the first
+memblock_open                   fail     # every flag is taken, and an open gives the original block at its address instead of a new mapping
+memblock_opt_attrs              pass
+memblock_opt_effects            fail     # memory block UIDs aren't process UIDs, sceKernelOpenMemBlock, what PHYCONT takes
+memblock_placement              fail     # lookups past a block, the errors when memory runs out
+memblock_types_all              pass
+memblock_vaddr_paddr            pass
 misc_edges                      fail     # two openable objects with the same name
 module_start_thread             fail     # the stack size and attributes of the thread module start and stop run on
 module_start_threads            fail     # thread event handlers don't run for module start and stop threads

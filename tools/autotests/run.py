@@ -13,6 +13,10 @@ The expectations file gives every test one outcome, one "name outcome" per line 
   skip     it isn't run, for a test whose outcome on Vita3K depends on how busy the host is
 Without an expectations file, every test is expected to pass.
 
+A test whose precondition doesn't hold, one a Vita doesn't promise, ends with test_skip() and prints
+only "SKIP: <reason>" and DONE. That run is reported as skipped whatever the test's expectation, which
+then says how the test does when it runs.
+
 VITA3K is the Vita3K binary to run, VITA3K_ARGS adds options to every run, like "-B Vulkan", and
 TIMEOUT is the seconds a test may take, 60 by default. Exits with 0 when every test has the outcome
 it is expected to have.
@@ -128,6 +132,12 @@ def main() -> int:
         output = guest_output(name, log)
         (logs / f"{name}.output").write_bytes(output)
         expected_output = tests[name].with_suffix(".expected").read_bytes()
+
+        lines = output.decode("latin-1").splitlines()
+        if code == 0 and len(lines) == 2 and lines[0].startswith("SKIP: ") and lines[1] == "DONE":
+            print(f"SKIP {name} ({lines[0][len('SKIP: '):]})")
+            counts["skipped"] += 1
+            continue
 
         if code is None:
             outcome = "timeout"
