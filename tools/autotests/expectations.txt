@@ -7,6 +7,7 @@ affinity_mask_values            fail     # the CPU fields of thread info, thread
 affinity_migrate                fail     # the CPU fields of thread info, threads ignore their core
 atomics                         pass
 audioout                        crash    # audio port size, rate and format checks, a NULL volume pointer
+cache_mount                     fail     # sceAppUtilCacheMount's init and mount checks, cache0: before a mount
 callback                        pass
 callback_changes                pass
 callback_edges                  pass
@@ -147,9 +148,12 @@ standby_merge                   fail     # threads ignore their core and priorit
 standby_merge_irq               fail     # threads ignore their core and priority
 stat_mode                       fail     # file and directory stat modes, attributes and directory sizes
 strings                         fail     # sceClibMemchr, case of bytes above 0x7F
+suspend_for_vm_edges            pass
+suspend_for_vm_notify           fail     # a thread a ForVM suspend holds shows a notified callback's pc
 suspend_ready_order             fail     # threads ignore their core and priority
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
 sysmodule                       fail     # system modules don't load without firmware
+system_font_blocks              crash    # opening the system font blocks by name
 system_info                     fail     # the active CPU mask, size checks and per-core counters
 thread                          pass
 thread_change_attr              pass

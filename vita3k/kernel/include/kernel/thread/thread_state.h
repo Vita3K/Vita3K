@@ -145,23 +145,28 @@ struct ThreadState {
     // Whether a callback of this thread was notified and hasn't run yet. Called with mutex held.
     bool callbacks_notified() const { return notified_callbacks > 0; }
 
+    // Stops the thread for the debugger, the next time it would run guest code
     void suspend();
-    // Resumes a thread the debugger suspended. Returns whether it runs again, which it doesn't while
-    // a ForVM suspend holds it.
+    // Lets a thread the debugger stopped run again, for one instruction with step. Returns whether it
+    // runs, which it doesn't while something else holds it. A step then doesn't happen at all.
     bool resume(bool step = false);
-    // Pause/resume the emulator without changing a thread's wait state.
-    ThreadStatus pause();
-    void resume_from_pause(ThreadStatus previous_status);
+    // Whether the thread has stopped for the debugger, where suspend() stops it. Called with mutex held.
+    bool stopped_for_debugger() const { return holds.debugger && status == ThreadStatus::suspended; }
+    // Stops the thread while the emulator is paused, and lets it run again after
+    void pause();
+    void resume_from_pause();
     // Suspends the thread for sceKernelSuspendThreadForVM: it doesn't run guest code until as many
-    // vm_resume calls. vm_suspend returns once it has stopped. Each returns the suspend count after it.
+    // vm_resume calls. vm_suspend returns once it has stopped. Each returns the suspend count after
+    // it, or an error for a dormant thread or a resume with no suspend.
     int vm_suspend();
     int vm_resume();
     // Whether vm_suspend holds the thread. Called with mutex held.
-    bool vm_suspended() const { return vm_suspend_count > 0; }
+    bool vm_suspended() const { return holds.vm > 0; }
     // Waits, with mutex held through lock, until the thread no longer runs or vm_suspend no longer holds it
     void wait_for_vm_stop(std::unique_lock<std::mutex> &lock);
-    // Whether the thread is inside a wait call, also one that ended while vm_suspend held it. Called with mutex held.
-    bool in_wait() const { return status == ThreadStatus::waiting || vm_held_in_wait; }
+    // Whether the thread is inside a kernel call: waiting, or held on its way back from one. Called
+    // with mutex held.
+    bool in_wait() const { return status == ThreadStatus::waiting || (status == ThreadStatus::suspended && stop_point == StopPoint::syscall); }
     std::string log_stack_traceback() const;
 
 private:
@@ -176,8 +181,33 @@ private:
         remove,
     };
 
+    // What keeps the thread from running guest code. It runs only while nothing holds it.
+    struct Holds {
+        // The emulator is paused
+        bool pause = false;
+        // The debugger stopped it, or it hit a breakpoint or finished a step
+        bool debugger = false;
+        // The sceKernelSuspendThreadForVM calls no sceKernelResumeThreadForVM undid yet
+        int vm = 0;
+
+        bool any() const { return pause || debugger || vm > 0; }
+        // Whether the guest sees the thread as SUSPENDED. A pause alone doesn't show.
+        bool shown() const { return debugger || vm > 0; }
+    };
+
+    // Where a held thread stopped
+    enum class StopPoint : uint8_t {
+        // In its own code
+        guest_code,
+        // On its way back from a call into the kernel
+        syscall,
+    };
+
     // Whether the thread is ending. Called with mutex held.
     bool exiting() const { return ending != Ending::none; }
+    // Keeps the thread from going on into guest code while anything holds it, unless it's ending.
+    // Called with mutex held through lock.
+    void wait_while_held(std::unique_lock<std::mutex> &lock, StopPoint where);
     // Asks the thread to end, keeping a stronger request already made. Called with mutex held.
     void request_ending(Ending how) { ending = std::max(ending, how); }
 
@@ -188,15 +218,11 @@ private:
 
     CPUContext init_cpu_ctx;
     Ending ending = Ending::none;
-    // Set by suspend(), consumed in run_loop() to transition to ThreadStatus::suspended.
-    bool suspend_requested = false;
-    // Set while suspend(), a step or a breakpoint holds the thread suspended, until resume().
-    bool debugger_suspended = false;
-    // Emulator pause is separate from a guest wait or debugger suspension.
-    bool pause_requested = false;
-    bool pause_suspended = false;
-    // Single stepping mode.
-    bool single_stepping = false;
+    Holds holds;
+    // The debugger asked for one instruction, after which the thread holds again
+    bool step_requested = false;
+    // Where the thread stopped the last time something held it
+    StopPoint stop_point = StopPoint::guest_code;
 
     // when calling sceKernelStartThread
     bool run_start_callback = false;
@@ -209,10 +235,6 @@ private:
     bool wake_pending = false;
     // Callbacks of this thread with notifications they haven't run for.
     SceUInt32 notified_callbacks = 0;
-    // The vm_suspend calls that no vm_resume undid yet.
-    int vm_suspend_count = 0;
-    // Set while vm_suspend holds the thread in a wait call that already ended.
-    bool vm_held_in_wait = false;
     // Set while the thread runs its callbacks. They don't nest.
     bool is_processing_callbacks = false;
     // Callbacks this thread created, in creation order. The kernel owns them. Only this thread touches the list.
