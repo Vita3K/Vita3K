@@ -238,6 +238,24 @@ bool create(std::unique_ptr<State> &state, const Config &config) {
     gl_state.features.use_mask_bit = false;
 #else
     gl_state.features.use_mask_bit = true;
+
+    // Workaround for AMD integrated GPUs. sync_mask() fills the mask texture with
+    // glClearTexImage, which is a fast clear there: it writes the clear value into the
+    // surface's compression metadata instead of into the texels, and a read-only image
+    // binding does not resolve that metadata. imageLoad(f_mask) then returns zero, the
+    // mask test in frag_output_finalize() discards every fragment, and the whole frame
+    // comes out black. Measured on a Radeon Vega iGPU with driver 25.8.1; clearing to a
+    // value a fast clear cannot encode, or binding the image read-write, both avoid it.
+    //
+    // The mask bit is only used by a handful of titles, so switching the emulation off
+    // costs far less than a black screen. This is a heuristic on the driver's renderer
+    const char *gl_vendor = reinterpret_cast<const char *>(glGetString(GL_VENDOR));
+    const std::string_view vendor = gl_vendor ? gl_vendor : "";
+    const std::string_view gpu_name = state->get_gpu_name();
+    if ((vendor.contains("ATI") || vendor.contains("AMD")) && gpu_name.ends_with("Graphics")) {
+        gl_state.features.use_mask_bit = false;
+        LOG_WARN("Mask bit emulation disabled on {}: this driver does not make glClearTexImage visible to image loads", gpu_name);
+    }
 #endif
 
     return gl_state.init();
