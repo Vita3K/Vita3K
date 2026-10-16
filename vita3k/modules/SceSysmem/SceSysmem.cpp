@@ -240,8 +240,8 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
     assert(block != state->vm_blocks.end());
 
     free(emuenv.mem, block->second->mappedBase.address());
-    state->allocated_user -= block->second->size;
-    state->blocks.erase(block);
+    state->allocated_user -= block->second->mappedSize;
+    state->blocks.erase(uid);
     state->vm_blocks.erase(block);
 
     return SCE_KERNEL_OK;

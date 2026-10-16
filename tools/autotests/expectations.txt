@@ -81,15 +81,15 @@ lw_work_layout                  fail     # UID values in the work area, locking 
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
 memblock_alignment              pass
 memblock_base_block             pass
-memblock_for_vm                 crash    # freeing a block for code with the call for code
-memblock_for_vm_domain          crash    # freeing a block for code with the call for code
-memblock_for_vm_space           crash    # freeing a block for code with the call for code
-memblock_free_sizes             fail     # freeing a block gives none of it back, CDRAM and common dialog blocks count as main memory
+memblock_for_vm                 crash    # a second free of a block for code with the call for code
+memblock_for_vm_domain          crash    # a second free of a block for code with the call for code
+memblock_for_vm_space           fail     # blocks for code don't share 16 MiB of address space
+memblock_free_sizes             pass
 memblock_neighbors              fail     # skips itself as blocks are never next to each other, a find over two blocks gives the first
 memblock_open                   fail     # every flag is taken, and an open gives the original block at its address instead of a new mapping
 memblock_opt_attrs              pass
 memblock_opt_effects            fail     # memory block UIDs aren't process UIDs, sceKernelOpenMemBlock, what PHYCONT takes
-memblock_placement              fail     # lookups past a block, the free sizes after a free, the errors when memory runs out
+memblock_placement              fail     # lookups past a block, the errors when memory runs out
 memblock_types_all              pass
 memblock_vaddr_paddr            pass
 misc_edges                      fail     # two openable objects with the same name

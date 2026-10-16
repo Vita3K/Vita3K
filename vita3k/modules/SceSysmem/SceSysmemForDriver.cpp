@@ -98,6 +98,26 @@ static SceSize min_alignment(SceKernelMemBlockType type) {
     }
 }
 
+// Adds size, negative for a freed block, to the allocated count of the partition a block of the type
+// takes from. Common dialog blocks take from none.
+static void count_block(SysmemState &state, SceKernelMemBlockType type, SceSSize size) {
+    if ((type & MEMBLOCK_TYPE_PARTITION_INDEX_MASK) == MEMBLOCK_TYPE_PARTITION_INDEX_USER_CDIALOG)
+        return;
+    switch (type & MEMBLOCK_TYPE_PHYMEMPART_MASK) {
+    case MEMBLOCK_TYPE_PHYMEMPART_CDRAM:
+        state.allocated_cdram += size;
+        break;
+    case MEMBLOCK_TYPE_PHYMEMPART_PHYCONT:
+        state.allocated_phycont += size;
+        break;
+    case MEMBLOCK_TYPE_PHYMEMPART_CDIALOG:
+        break;
+    default:
+        state.allocated_user += size;
+        break;
+    }
+}
+
 EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOptKernel *opt) {
     MemState &mem = emuenv.mem;
 
@@ -153,24 +173,7 @@ EXPORT(SceUID, ksceKernelAllocMemBlock, const char *name, SceKernelMemBlockType 
     block->access = (type & MEMBLOCK_TYPE_USER_ACCESS_MASK) >> MEMBLOCK_TYPE_USER_ACCESS_SHIFT;
     std::strncpy(block->name, name, KERNELOBJECT_MAX_NAME_LENGTH);
     state->blocks.emplace(uid, block);
-
-    switch (type) {
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
-        state->allocated_user += size;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
-        state->allocated_cdram += size;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
-        state->allocated_phycont += size;
-        break;
-    default:
-        state->allocated_user += size;
-        break;
-    }
+    count_block(*state, type, size);
 
     return uid;
 }
@@ -264,25 +267,7 @@ EXPORT(int, ksceKernelFreeMemBlock, SceUID uid) {
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
 
     free(emuenv.mem, block->second->mappedBase.address());
-
-    switch (block->second->type) {
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
-        state->allocated_user -= block->second->size;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
-        state->allocated_cdram -= block->second->size;
-        break;
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
-    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
-        state->allocated_phycont -= block->second->size;
-        break;
-    default:
-        state->allocated_user -= block->second->size;
-        break;
-    }
-
+    count_block(*state, block->second->type, -static_cast<SceSSize>(block->second->mappedSize));
     state->blocks.erase(block);
     return SCE_KERNEL_OK;
 }
