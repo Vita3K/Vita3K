@@ -1108,7 +1108,7 @@ Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmCo
         fb_interlock = state.device.createFramebuffer(fb_info);
     }
 
-    return (framebuffer_array[key] = { fb_standard, fb_interlock, color_result.base_image });
+    return (framebuffer_array[key] = { fb_standard, fb_interlock, color_result.base_image, framebuffer_width, framebuffer_height });
 }
 
 bool VKSurfaceCache::check_for_surface(MemState &mem, Address source_address, CallbackRequestFunction &callback, Address target_address) {

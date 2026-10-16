@@ -41,18 +41,18 @@ COMMAND_SET_STATE(region_clip) {
     render_context->record.region_clip_mode = helper.pop<SceGxmRegionClipMode>();
 
     // see COMMAND_SET_STATE(viewport) for an explanation
-    uint32_t factor = 1;
+    float factor = 1.0f;
     const bool has_msaa = (render_context->current_render_target && render_context->current_render_target->multisample_mode);
     const bool has_downscale = render_context->record.color_surface.downscale;
     if (has_msaa && !has_downscale)
-        factor = 2;
+        factor = 2.0f;
     else if (!has_msaa && has_downscale)
-        factor = 1;
+        factor = 0.5f;
 
-    const uint32_t xMin = helper.pop<uint32_t>() * factor;
-    const uint32_t xMax = helper.pop<uint32_t>() * factor;
-    const uint32_t yMin = helper.pop<uint32_t>() * factor;
-    const uint32_t yMax = helper.pop<uint32_t>() * factor;
+    const uint32_t xMin = static_cast<uint32_t>(helper.pop<uint32_t>() * factor);
+    const uint32_t xMax = static_cast<uint32_t>(helper.pop<uint32_t>() * factor);
+    const uint32_t yMin = static_cast<uint32_t>(helper.pop<uint32_t>() * factor);
+    const uint32_t yMax = static_cast<uint32_t>(helper.pop<uint32_t>() * factor);
 
     render_context->record.region_clip_min.x = static_cast<SceInt>(align_down(xMin, SCE_GXM_TILE_SIZEX));
     render_context->record.region_clip_min.y = static_cast<SceInt>(align_down(yMin, SCE_GXM_TILE_SIZEY));
@@ -157,7 +157,7 @@ COMMAND_SET_STATE(viewport) {
         if (has_msaa && !has_downscale)
             factor = 2.0f;
         else if (!has_msaa && has_downscale)
-            factor = 1.0f;
+            factor = 0.5f;
 
         const float xOffset = helper.pop<float>() * factor;
         const float yOffset = helper.pop<float>() * factor;

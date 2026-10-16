@@ -153,8 +153,15 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
 
     if (rt->multisample_mode && !context.record.color_surface.downscale) {
         // using MSAA without downscaling, emulate this as best as we can by multiplying the width and height of the render target by 2
-        rt->width *= 2;
-        rt->height *= 2;
+        if (!rt->msaa_no_downscale_active) {
+            rt->width *= 2;
+            rt->height *= 2;
+            rt->msaa_no_downscale_active = true;
+        }
+    } else if (rt->msaa_no_downscale_active) {
+        rt->width /= 2;
+        rt->height /= 2;
+        rt->msaa_no_downscale_active = false;
     }
 
     SceGxmDepthStencilSurface *ds_surface_fin = &context.record.depth_stencil_surface;
@@ -188,6 +195,8 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     context.current_framebuffer = framebuffer.standard;
     context.current_shader_interlock_framebuffer = framebuffer.shader_interlock;
     context.current_color_base_image = framebuffer.base_image;
+    context.current_framebuffer_width = framebuffer.width;
+    context.current_framebuffer_height = framebuffer.height;
 
     // make sure we are not keeping any texture from the previous pass
     // (textures can be still bound even though they are not used)
@@ -341,7 +350,7 @@ void VKContext::start_render_pass(bool create_descriptor_set) {
     } else {
         curr_renderpass_info.renderArea = vk::Rect2D{
             .offset = { 0, 0 },
-            .extent = { render_target->width, render_target->height }
+            .extent = { current_framebuffer_width, current_framebuffer_height }
         };
     }
 
@@ -466,19 +475,18 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     if (!submit)
         return;
 
-    if (render_target->multisample_mode && !record.color_surface.downscale) {
-        // revert changes made in set_context
-        render_target->width /= 2;
-        render_target->height /= 2;
-    }
-
     vk::Fence fence = next_fence;
     next_fence = nullptr;
 
     vk::SubmitInfo submit_info{};
     submit_info.setCommandBuffers(cmdbuffers_to_submit);
 
-    state.general_queue.submit(submit_info, fence);
+    try {
+        state.general_queue.submit(submit_info, fence);
+    } catch (const vk::SystemError &error) {
+        LOG_ERROR("Vulkan queue submit failed: {}", error.what());
+        throw;
+    }
     cmdbuffers_to_submit.clear();
     state.frame().rendered_fences.push_back(fence);
 
