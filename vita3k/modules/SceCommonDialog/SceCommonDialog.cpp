@@ -1238,6 +1238,8 @@ EXPORT(int, sceSaveDataDialogContinue, const SceSaveDataDialogParam *p) {
             for (std::uint32_t i = 0; i < emuenv.common_dialog.savedata.slot_list_size; i++) {
                 slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
                 emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
+                if (slot_list[i].id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX)
+                    continue;
                 emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);
                 check_save_file(i, emuenv, export_name);
             }
@@ -1386,11 +1388,11 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
         }
 
         const std::span slots(list_param->slotList.get(emuenv.mem), slot_list_size);
-        const bool has_invalid_id = std::ranges::any_of(slots, [](const SceAppUtilSaveDataSlot &slot) {
+        const bool all_ids_invalid = !slots.empty() && std::ranges::all_of(slots, [](const SceAppUtilSaveDataSlot &slot) {
             return slot.id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX;
         });
 
-        if (has_invalid_id) {
+        if (all_ids_invalid) {
             // Hardware finishes the sub status with this error and slot id -1
             emuenv.common_dialog.savedata.slot_id[0] = 0xFFFFFFFF;
             emuenv.common_dialog.result = (SceCommonDialogResult)SCE_SAVEDATA_DIALOG_ERROR_PARAM;
@@ -1401,6 +1403,8 @@ EXPORT(int, sceSaveDataDialogInit, const SceSaveDataDialogParam *p) {
         for (SceUInt i = 0; i < slot_list_size; i++) {
             slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
             emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
+            if (slot_list[i].id >= SCE_APPUTIL_SAVEDATA_SLOT_MAX)
+                continue;
             emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);
             check_save_file(i, emuenv, export_name);
         }
