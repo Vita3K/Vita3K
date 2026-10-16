@@ -351,6 +351,7 @@ struct SceGxmPrecomputedDraw {
     Ptr<const void> index_data;
     uint32_t vertex_count;
     uint32_t instance_count;
+    int32_t base_vertex;
 };
 
 struct SceGxmPrecomputedFragmentState {

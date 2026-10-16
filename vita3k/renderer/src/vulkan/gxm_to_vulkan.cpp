@@ -688,6 +688,7 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
     // TODO: the following is not fully supported
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
@@ -714,6 +715,23 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
         LOG_ERROR("Unknown format {}", log_hex(base_format));
         return {};
     }
+}
+
+vk::Format translate_format(SceGxmTextureFormat format) {
+    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
+    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5) {
+        switch (format & SCE_GXM_TEXTURE_SWIZZLE_MASK) {
+        case SCE_GXM_TEXTURE_SWIZZLE4_RGBA:
+        case SCE_GXM_TEXTURE_SWIZZLE4_BGRA:
+        case SCE_GXM_TEXTURE_SWIZZLE4_RGB1:
+        case SCE_GXM_TEXTURE_SWIZZLE4_BGR1:
+            return vk::Format::eR5G5B5A1UnormPack16;
+        default:
+            return vk::Format::eA1R5G5B5UnormPack16;
+        }
+    }
+
+    return translate_format(base_format);
 }
 
 vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
@@ -829,6 +847,9 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
         return vk::Format::eBc7UnormBlock;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ETC1:
+        return vk::Format::eEtc2R8G8B8UnormBlock;
 
 #define ASTC_FMT(b_x, b_y)                              \
     case SCE_GXM_TEXTURE_BASE_FORMAT_ASTC##b_x##x##b_y: \
