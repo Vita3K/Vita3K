@@ -63,6 +63,8 @@ fiber_vfp                       fail     # libfiber doesn't load without firmwar
 fibers                          crash    # the fiber module doesn't load without firmware, fiber argument checks
 files                           fail     # closed file, EXCL, access mode and wrong type errors
 format                          fail     # sceClibSnprintf with %#x, %.0d and long arguments
+gxm_map_memory                  fail     # attribute, alignment, range and overlap checks, a map before sceGxmInitialize
+gxm_map_no_block                crash    # unmapping a range in no block
 handoff_more                    fail     # an unlock to a waiter for a count of 2 leaves a recursive mutex free
 head_leaves_more                fail     # a reader behind a waiting writer only gets the lock after the writer
 info                            pass
@@ -77,6 +79,19 @@ lw_mutex_semantics              pass
 lw_work                         pass
 lw_work_layout                  fail     # UID values in the work area, locking a deleted lightweight mutex through it
 memblock                        crash    # memory block info, allocation sizes, a NULL pointer
+memblock_alignment              fail     # alignments past 16 MiB and ones that aren't powers of two are taken
+memblock_base_block             fail     # blocks made from a base block are taken, without sharing its memory
+memblock_for_vm                 crash    # freeing a block for code with the call for code
+memblock_for_vm_domain          crash    # freeing a block for code with the call for code
+memblock_for_vm_space           crash    # freeing a block for code with the call for code
+memblock_free_sizes             fail     # freeing a block gives none of it back, CDRAM and common dialog blocks count as main memory
+memblock_neighbors              fail     # skips itself as blocks are never next to each other, a find over two blocks gives the first
+memblock_open                   fail     # every flag is taken, and an open gives the original block at its address instead of a new mapping
+memblock_opt_attrs              fail     # every option size and attr bit is taken
+memblock_opt_effects            fail     # the 0x40 option's last word, sceKernelOpenMemBlock, what PHYCONT takes
+memblock_placement              fail     # lookups past a block, the free sizes after a free, the errors when memory runs out
+memblock_types_all              fail     # every type code is taken
+memblock_vaddr_paddr            fail     # virtual and physical address requests are taken
 misc_edges                      fail     # two openable objects with the same name
 module_start_thread             fail     # the stack size and attributes of the thread module start and stop run on
 module_start_threads            fail     # thread event handlers don't run for module start and stop threads
@@ -148,7 +163,7 @@ standby_merge                   fail     # threads ignore their core and priorit
 standby_merge_irq               fail     # threads ignore their core and priority
 stat_mode                       fail     # file and directory stat modes, attributes and directory sizes
 strings                         fail     # sceClibMemchr, case of bytes above 0x7F
-suspend_for_vm_edges            pass
+suspend_for_vm_edges            fail     # a resume of a dormant thread fails as if it weren't suspended
 suspend_for_vm_notify           fail     # a thread a ForVM suspend holds shows a notified callback's pc
 suspend_ready_order             fail     # threads ignore their core and priority
 syscall_registers               fail     # r1 to r3 and r12 after a syscall
