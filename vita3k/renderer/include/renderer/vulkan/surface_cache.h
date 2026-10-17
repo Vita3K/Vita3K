@@ -64,8 +64,10 @@ struct Framebuffer {
 
 struct CastedTexture {
     vkutil::Image texture;
-    // only used if an image to image copy is not possible
+    // only used if an image to image copy is not possible (cropped/partial reads)
     vkutil::Buffer transition_buffer;
+    // storage view of the texture, used as the compute de-interleave output
+    vk::ImageView reinterpret_view = nullptr;
     uint64_t scene_timestamp = 0;
     uint32_t cropped_x = 0;
     uint32_t cropped_y = 0;
@@ -91,6 +93,10 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
 
     // same image with a different view(swizzle) used for sampling
     vk::ImageView alternate_view = nullptr;
+
+    // R32G32_UINT view of this surface, used as the raw-word input to the
+    // typeless reinterpret compute pass. Only created if that path is taken.
+    vk::ImageView reinterpret_store_view = nullptr;
 
     // only used when upscaling is enabled, to downscale the image first
     std::unique_ptr<vkutil::Image> blit_image;
@@ -156,6 +162,16 @@ struct SurfaceRetrieveResult {
     vkutil::Image *base_image;
 };
 
+// for use with the surface_cast_reinterpret shader
+struct ReinterpretPushConstants {
+    uint32_t out_width;
+    uint32_t out_height;
+    uint32_t scaled_store_w;
+    uint32_t scaled_store_h;
+    uint32_t ratio;
+    uint32_t half_index;
+};
+
 class VKSurfaceCache {
 private:
     VKState &state;
@@ -188,6 +204,22 @@ private:
 
     void destroy_surface(ColorSurfaceCacheInfo &info);
     void destroy_surface(DepthStencilSurfaceCacheInfo &info);
+
+    // compute pipeline that re-groups a typeless byte-reinterpret so the wanted
+    // 32-bit half is written coherently at fully upscaled resolution, instead of
+    // being interleaved every column (which misaligns the sampling)
+    vk::ShaderModule reinterpret_shader = nullptr;
+    vk::DescriptorSetLayout reinterpret_desc_layout = nullptr;
+    vk::PipelineLayout reinterpret_pipeline_layout = nullptr;
+    vk::Pipeline reinterpret_pipeline = nullptr;
+    vk::DescriptorPool reinterpret_desc_pool = nullptr;
+    std::vector<vk::DescriptorSet> reinterpret_desc_sets;
+    uint32_t reinterpret_desc_idx = 0;
+    // point sampler used to texelFetch the store inside the reinterpret shader
+    vk::Sampler reinterpret_sampler = nullptr;
+
+    // lazily build the reinterpret compute pipeline (no-op once built)
+    void ensure_reinterpret_pipeline();
 
 public:
     // when creating a mutable image, can we pass as an argument
