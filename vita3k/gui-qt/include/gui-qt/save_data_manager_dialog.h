@@ -45,6 +45,10 @@ public:
 public Q_SLOTS:
     void reload();
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+    void reject() override;
+
 private:
     enum Column {
         Icon = 0,
@@ -85,4 +89,5 @@ private:
     QPushButton *m_open_button = nullptr;
 
     int m_icon_size = 64;
+    bool m_busy = false;
 };

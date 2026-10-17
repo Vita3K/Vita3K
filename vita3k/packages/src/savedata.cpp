@@ -90,13 +90,20 @@ std::vector<SlotInfo> read_slots(const fs::path &save_path) {
 
 // Both directions write next to the destination first, so a failure never leaves a half written folder behind
 static bool run_to_temp(const fs::path &dst, const std::function<int(const std::filesystem::path &, std::ostream &)> &job, std::string &error) {
+    const auto fail = [&error](const std::string &message, const fs::path &tmp) {
+        error = message;
+        LOG_ERROR("Savedata conversion failed: {}", error);
+        boost::system::error_code ec;
+        if (!tmp.empty())
+            fs::remove_all(tmp, ec);
+        LOG_WARN_IF(ec, "Failed to remove {}: {}", tmp, ec.message());
+        return false;
+    };
+
     boost::system::error_code ec;
     const fs::path tmp = fs::unique_path(fs_utils::path_concat(dst, ".%%%%%%%%.tmp"), ec);
-    if (ec || !fs::create_directory(tmp, ec)) {
-        error = ec ? ec.message() : "Failed to create " + tmp.string();
-        LOG_ERROR("Savedata conversion failed: {}", error);
-        return false;
-    }
+    if (ec || !fs::create_directory(tmp, ec))
+        return fail(ec ? ec.message() : "Failed to create " + tmp.string(), {});
 
     std::ostringstream log;
     int result = -1;
@@ -105,16 +112,34 @@ static bool run_to_temp(const fs::path &dst, const std::function<int(const std::
     } catch (const std::exception &e) {
         log << e.what() << '\n';
     }
+    if (result < 0)
+        return fail(last_line(log.str()), tmp);
 
-    if (result < 0) {
-        error = last_line(log.str());
-        LOG_ERROR("Savedata conversion failed: {}", error);
-        fs::remove_all(tmp);
-        return false;
+    fs::path backup;
+    if (fs::exists(dst, ec)) {
+        backup = fs::unique_path(fs_utils::path_concat(dst, ".%%%%%%%%.bak"), ec);
+        if (!ec)
+            fs::rename(dst, backup, ec);
+        if (ec)
+            return fail(fmt::format("Failed to move the existing {} aside: {}", dst, ec.message()), tmp);
     }
 
-    fs::remove_all(dst);
-    fs::rename(tmp, dst);
+    fs::rename(tmp, dst, ec);
+    if (ec) {
+        const std::string message = fmt::format("Failed to move the new save data into {}: {}", dst, ec.message());
+        if (!backup.empty()) {
+            boost::system::error_code restore_ec;
+            fs::rename(backup, dst, restore_ec);
+            if (restore_ec)
+                return fail(fmt::format("{}\nThe previous save data is kept at {}", message, backup), tmp);
+        }
+        return fail(message, tmp);
+    }
+
+    if (!backup.empty()) {
+        fs::remove_all(backup, ec);
+        LOG_WARN_IF(ec, "Failed to remove {}: {}", backup, ec.message());
+    }
     return true;
 }
 

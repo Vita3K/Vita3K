@@ -1415,6 +1415,8 @@ void MainWindow::open_user_management() {
             this, [this] {
                 if (m_trophy_dialog)
                     m_trophy_dialog->reload();
+                if (m_save_data_dialog)
+                    m_save_data_dialog->reload();
             });
     }
     present_tool_window(m_user_mgmt_dialog);
